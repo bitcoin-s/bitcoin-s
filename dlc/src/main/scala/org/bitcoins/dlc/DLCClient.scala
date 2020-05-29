@@ -11,7 +11,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -33,100 +33,22 @@ import scala.util.{Failure, Success}
 /** This case class allows for the construction and execution of
   * Discreet Log Contracts between two parties.
   *
-  * @param outcomes The ContractInfo from the local view
-  * @param oraclePubKey The Oracle's permanent public key
-  * @param preCommittedR The Oracle's one-time event-specific public key
+  * @param offer The DLCOffer associated with this DLC
+  * @param accept The DLCAccept (without sigs) associated with this DLC
   * @param isInitiator True if this client sends the offer message
   * @param extPrivKey This client's extended private key (at the account level) for this event
   * @param nextAddressIndex The next unused address index for the provided extPrivKey
-  * @param remotePubKeys Remote's public keys for this event
-  * @param input This client's total collateral contribution
-  * @param remoteInput Remote's total collateral contribution
   * @param fundingUtxos This client's funding BitcoinUTXOSpendingInfo collection
-  * @param remoteFundingInputs Remote's funding outpoints and their outputs
-  * @param timeouts The timeouts for this DLC
-  * @param feeRate The predicted fee rate used for all transactions
-  * @param changeSPK This client's change ScriptPubKey used in the funding tx
-  * @param remoteChangeSPK Remote's change ScriptPubKey used in the funding tx
   */
 case class DLCClient(
-    outcomes: ContractInfo,
-    oraclePubKey: SchnorrPublicKey,
-    preCommittedR: SchnorrNonce,
+    offer: DLCMessage.DLCOffer,
+    accept: DLCMessage.DLCAcceptWithoutSigs,
     isInitiator: Boolean,
     extPrivKey: ExtPrivateKey,
     nextAddressIndex: Int,
-    remotePubKeys: DLCPublicKeys,
-    input: CurrencyUnit,
-    remoteInput: CurrencyUnit,
-    fundingUtxos: Vector[ScriptSignatureParams[InputInfo]],
-    remoteFundingInputs: Vector[OutputReference],
-    timeouts: DLCTimeouts,
-    feeRate: SatoshisPerVirtualByte,
-    changeSPK: ScriptPubKey,
-    remoteChangeSPK: ScriptPubKey,
-    network: BitcoinNetwork)(implicit ec: ExecutionContext)
+    fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(
+    implicit ec: ExecutionContext)
     extends BitcoinSLogger {
-
-  private val pubKeys =
-    DLCPublicKeys.fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network)
-
-  val remoteOutcomes: ContractInfo = ContractInfo(outcomes.map {
-    case (hash, amt) => (hash, (input + remoteInput - amt).satoshis)
-  })
-
-  private val changeAddress =
-    BitcoinAddress.fromScriptPubKey(changeSPK, network).get
-  private val remoteChangeAddress =
-    BitcoinAddress.fromScriptPubKey(remoteChangeSPK, network).get
-
-  private val (offerOutcomes,
-               offerPubKeys,
-               offerInput,
-               offerFundingInputs,
-               offerChangeAddress,
-               acceptPubKeys,
-               acceptInput,
-               acceptFundingInputs,
-               acceptChangeAddress) = if (isInitiator) {
-    (outcomes,
-     pubKeys,
-     input,
-     fundingUtxos.map(_.outputReference),
-     changeAddress,
-     remotePubKeys,
-     remoteInput,
-     remoteFundingInputs,
-     remoteChangeAddress)
-  } else {
-    (remoteOutcomes,
-     remotePubKeys,
-     remoteInput,
-     remoteFundingInputs,
-     remoteChangeAddress,
-     pubKeys,
-     input,
-     fundingUtxos.map(_.outputReference),
-     changeAddress)
-  }
-
-  private val offer = DLCMessage.DLCOffer(
-    contractInfo = offerOutcomes,
-    oracleInfo = DLCMessage.OracleInfo(oraclePubKey, preCommittedR),
-    pubKeys = offerPubKeys,
-    totalCollateral = offerInput.satoshis,
-    fundingInputs = offerFundingInputs,
-    changeAddress = offerChangeAddress,
-    feeRate = feeRate,
-    timeouts = timeouts
-  )
-
-  private val accept = DLCMessage.DLCAcceptWithoutSigs(
-    totalCollateral = acceptInput.satoshis,
-    pubKeys = acceptPubKeys,
-    fundingInputs = acceptFundingInputs,
-    changeAddress = acceptChangeAddress,
-    eventId = offer.eventId)
 
   private val dlcTxBuilder = DLCTxBuilder(offer, accept)
 
@@ -135,6 +57,32 @@ case class DLCClient(
                                         extPrivKey,
                                         nextAddressIndex,
                                         fundingUtxos)
+
+  private val remotePubKeys = if (isInitiator) {
+    accept.pubKeys
+  } else {
+    offer.pubKeys
+  }
+
+  private val outcomes = if (isInitiator) {
+    offer.contractInfo
+  } else {
+    dlcTxBuilder.acceptOutcomes
+  }
+
+  val messages: Vector[Sha256DigestBE] = outcomes.keys.toVector
+
+  private val feeRate = offer.feeRate
+
+  private val remoteFundingInputs = if (isInitiator) {
+    accept.fundingInputs
+  } else {
+    offer.fundingInputs
+  }
+
+  private val oraclePubKey = offer.oracleInfo.pubKey
+
+  val timeouts: DLCTimeouts = offer.timeouts
 
   val fundingPrivKey: ECPrivateKey =
     extPrivKey
@@ -157,13 +105,6 @@ case class DLCClient(
 
   val finalRemoteScriptPubKey: ScriptPubKey =
     remotePubKeys.finalAddress.scriptPubKey
-
-  /** This is only used as a placeholder and we use an invariant
-    * when signing to ensure that this is never used.
-    *
-    * In the future, allowing this behavior should be done in TxBuilder.
-    */
-  private val emptyChangeSPK: ScriptPubKey = EmptyScriptPubKey
 
   val fundingPubKey: ECPublicKey = fundingPrivKey.publicKey
 
@@ -339,7 +280,7 @@ case class DLCClient(
       }
       localCetData <- Future.sequence(localCetDataFs).map(_.toMap)
 
-      remoteCETDataFs = outcomes.keys.toVector.map { msg =>
+      remoteCETDataFs = messages.map { msg =>
         if (isInitiator) {
           for {
             utx <- dlcTxBuilder.buildAcceptCET(msg)
@@ -357,7 +298,7 @@ case class DLCClient(
       fundingTx <- dlcTxSigner.signFundingTx(fundingSigs)
       refundTx <- dlcTxSigner.signRefundTx(cetSigs.refundSig)
     } yield {
-      val cetInfos = outcomes.keys.map { msg =>
+      val cetInfos = messages.map { msg =>
         val (localCet, localWitness) = localCetData(msg)
         val (remoteCet, remoteWitness) = remoteCETData(msg)
         msg -> CETInfo(localCet, localWitness, remoteCet.txIdBE, remoteWitness)
@@ -405,7 +346,7 @@ case class DLCClient(
               msg -> (tx, witness)
             }
         }
-        val remoteCETDataFs = outcomes.keys.toVector.map { msg =>
+        val remoteCETDataFs = messages.map { msg =>
           if (isInitiator) {
             for {
               utx <- dlcTxBuilder.buildAcceptCET(msg)
@@ -428,7 +369,7 @@ case class DLCClient(
           _ <- sendSigs(cetSigs, localFundingSigs)
           fundingTx <- getFundingTx
         } yield {
-          val cetInfos = outcomes.keys.map { msg =>
+          val cetInfos = messages.map { msg =>
             val (localCet, localWitness) = localCetData(msg)
             val (remoteCet, remoteWitness) = remoteCetData(msg)
             msg -> CETInfo(localCet,
@@ -459,16 +400,22 @@ case class DLCClient(
       if (payoutValue < Policy.dustThreshold) {
         Future.successful(None)
       } else {
+        val inputs = InputUtil.calcSequenceForInputs(Vector(spendingInfo))
+        val lockTime = TxUtil.calcLockTime(Vector(spendingInfo)).get
+        val builder = RawTxBuilder().setLockTime(lockTime) ++= inputs += TransactionOutput(
+          payoutValue,
+          sweepSPK)
 
-        val utxF = StandardNonInteractiveFinalizer.txFrom(
-          outputs = Vector(TransactionOutput(payoutValue, sweepSPK)),
-          utxos = Vector(spendingInfo),
-          feeRate = feeRate,
-          changeSPK = emptyChangeSPK
-        )
+        val finalizer = SanityCheckFinalizer(Vector(spendingInfo.inputInfo),
+                                             Vector(sweepSPK),
+                                             feeRate)
+          .andThen(AddWitnessDataFinalizer(Vector(spendingInfo.inputInfo)))
 
-        val signedTxF = utxF.flatMap(utx =>
-          RawTxSigner.sign(utx, Vector(spendingInfo), feeRate))
+        val utxF = finalizer.buildTx(builder.result())
+
+        val signedTxF = utxF.flatMap { utx =>
+          RawTxSigner.sign(utx, Vector(spendingInfo), feeRate)
+        }
         signedTxF.map(Some(_))
       }
     } else {
@@ -498,7 +445,6 @@ case class DLCClient(
   }
 
   def createMutualCloseSig(
-      eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
     dlcTxSigner.createMutualCloseTxSig(oracleSig)
   }
@@ -565,7 +511,7 @@ case class DLCClient(
 
     oracleSigF.flatMap { oracleSig =>
       val msgOpt =
-        outcomes.keys.find(msg => oraclePubKey.verify(msg.bytes, oracleSig))
+        messages.find(msg => oraclePubKey.verify(msg.bytes, oracleSig))
       val (msg, cet, cetScriptWitness) = msgOpt match {
         case Some(msg) =>
           val cetInfo = cetInfos(msg)
@@ -782,6 +728,91 @@ case class DLCClient(
 object DLCClient {
 
   def apply(
+      outcomes: ContractInfo,
+      oraclePubKey: SchnorrPublicKey,
+      preCommittedR: SchnorrNonce,
+      isInitiator: Boolean,
+      extPrivKey: ExtPrivateKey,
+      nextAddressIndex: Int,
+      remotePubKeys: DLCPublicKeys,
+      input: CurrencyUnit,
+      remoteInput: CurrencyUnit,
+      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]],
+      remoteFundingInputs: Vector[OutputReference],
+      timeouts: DLCTimeouts,
+      feeRate: SatoshisPerVirtualByte,
+      changeSPK: ScriptPubKey,
+      remoteChangeSPK: ScriptPubKey,
+      network: BitcoinNetwork)(implicit ec: ExecutionContext): DLCClient = {
+    val pubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(extPrivKey,
+                                                       nextAddressIndex,
+                                                       network)
+
+    val remoteOutcomes: ContractInfo = ContractInfo(outcomes.map {
+      case (hash, amt) => (hash, (input + remoteInput - amt).satoshis)
+    })
+
+    val changeAddress = BitcoinAddress.fromScriptPubKey(changeSPK, network).get
+    val remoteChangeAddress =
+      BitcoinAddress.fromScriptPubKey(remoteChangeSPK, network).get
+
+    val (offerOutcomes,
+         offerPubKeys,
+         offerInput,
+         offerFundingInputs,
+         offerChangeAddress,
+         acceptPubKeys,
+         acceptInput,
+         acceptFundingInputs,
+         acceptChangeAddress) = if (isInitiator) {
+      (outcomes,
+       pubKeys,
+       input,
+       fundingUtxos.map(_.outputReference),
+       changeAddress,
+       remotePubKeys,
+       remoteInput,
+       remoteFundingInputs,
+       remoteChangeAddress)
+    } else {
+      (remoteOutcomes,
+       remotePubKeys,
+       remoteInput,
+       remoteFundingInputs,
+       remoteChangeAddress,
+       pubKeys,
+       input,
+       fundingUtxos.map(_.outputReference),
+       changeAddress)
+    }
+
+    val offer = DLCMessage.DLCOffer(
+      contractInfo = offerOutcomes,
+      oracleInfo = DLCMessage.OracleInfo(oraclePubKey, preCommittedR),
+      pubKeys = offerPubKeys,
+      totalCollateral = offerInput.satoshis,
+      fundingInputs = offerFundingInputs,
+      changeAddress = offerChangeAddress,
+      feeRate = feeRate,
+      timeouts = timeouts
+    )
+
+    val accept = DLCMessage.DLCAcceptWithoutSigs(
+      totalCollateral = acceptInput.satoshis,
+      pubKeys = acceptPubKeys,
+      fundingInputs = acceptFundingInputs,
+      changeAddress = acceptChangeAddress,
+      eventId = offer.eventId)
+
+    DLCClient(offer,
+              accept,
+              isInitiator,
+              extPrivKey,
+              nextAddressIndex,
+              fundingUtxos)
+  }
+
+  def apply(
       outcomeWin: String,
       outcomeLose: String,
       oraclePubKey: SchnorrPublicKey,
@@ -839,30 +870,22 @@ object DLCClient {
       totalCollateral: CurrencyUnit,
       changeSPK: P2WPKHWitnessSPKV0,
       network: BitcoinNetwork)(implicit ec: ExecutionContext): DLCClient = {
-    val outcomes: ContractInfo = ContractInfo(offer.contractInfo.map {
-      case (hash, amt) =>
-        (hash, (totalCollateral + offer.totalCollateral - amt).satoshis)
-    })
-
-    DLCClient(
-      outcomes = outcomes,
-      oraclePubKey = offer.oracleInfo.pubKey,
-      preCommittedR = offer.oracleInfo.rValue,
-      isInitiator = false,
-      extPrivKey = extPrivKey,
-      nextAddressIndex = nextAddressIndex,
-      remotePubKeys = offer.pubKeys,
-      input = totalCollateral,
-      remoteInput = offer.totalCollateral,
-      fundingUtxos = fundingUtxos,
-      remoteFundingInputs = offer.fundingInputs,
-      timeouts = offer.timeouts,
-      feeRate = offer.feeRate,
-      changeSPK = changeSPK,
-      remoteChangeSPK =
-        offer.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
-      network = network
+    val accept = DLCMessage.DLCAcceptWithoutSigs(
+      totalCollateral.satoshis,
+      DLCPublicKeys.fromExtPrivKeyAndIndex(extPrivKey,
+                                           nextAddressIndex,
+                                           network),
+      fundingUtxos.map(_.outputReference),
+      Bech32Address(changeSPK, network),
+      offer.eventId
     )
+
+    DLCClient(offer = offer,
+              accept = accept,
+              isInitiator = false,
+              extPrivKey = extPrivKey,
+              nextAddressIndex = nextAddressIndex,
+              fundingUtxos = fundingUtxos)
   }
 
   def fromOfferAndAccept(
@@ -870,41 +893,20 @@ object DLCClient {
       accept: DLCMessage.DLCAccept,
       extPrivKey: ExtPrivateKey,
       nextAddressIndex: Int,
-      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]],
-      network: BitcoinNetwork)(implicit ec: ExecutionContext): DLCClient = {
-    val pubKeys = DLCPublicKeys
-      .fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network)
-    require(
-      pubKeys == offer.pubKeys,
-      s"ExtPrivateKey must match the one in your Offer message: ${offer.pubKeys}, got: $pubKeys")
-    require(
-      fundingUtxos.zip(offer.fundingInputs).forall {
-        case (info, OutputReference(outPoint, output)) =>
-          info.output == output && info.outPoint == outPoint
-      },
-      s"Funding UTXOs must match those in your Offer message: ${offer.fundingInputs}, got: ${fundingUtxos
-        .map(utxo => OutputReference(utxo.outPoint, utxo.output))}"
-    )
+      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(
+      implicit ec: ExecutionContext): DLCClient = {
+    val acceptWithoutSigs = DLCMessage.DLCAcceptWithoutSigs(
+      accept.totalCollateral,
+      accept.pubKeys,
+      accept.fundingInputs,
+      accept.changeAddress,
+      accept.eventId)
 
-    DLCClient(
-      outcomes = offer.contractInfo,
-      oraclePubKey = offer.oracleInfo.pubKey,
-      preCommittedR = offer.oracleInfo.rValue,
-      isInitiator = true,
-      extPrivKey = extPrivKey,
-      nextAddressIndex = nextAddressIndex,
-      remotePubKeys = accept.pubKeys,
-      input = offer.totalCollateral,
-      remoteInput = accept.totalCollateral,
-      fundingUtxos = fundingUtxos,
-      remoteFundingInputs = accept.fundingInputs,
-      timeouts = offer.timeouts,
-      feeRate = offer.feeRate,
-      changeSPK =
-        offer.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
-      remoteChangeSPK =
-        accept.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
-      network = network
-    )
+    DLCClient(offer = offer,
+              accept = acceptWithoutSigs,
+              isInitiator = true,
+              extPrivKey = extPrivKey,
+              nextAddressIndex = nextAddressIndex,
+              fundingUtxos = fundingUtxos)
   }
 }

@@ -471,9 +471,12 @@ class DLCClientTest extends BitcoinSAsyncTest {
   def runTests(
       exec: (Int, Int, Boolean) => Future[Assertion],
       local: Boolean): Future[Assertion] = {
-    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
-      (0 until numOutcomes).map { outcomeIndex =>
-        exec(outcomeIndex, numOutcomes, local)
+    val testFs = numOutcomesToTest.map { numOutcomes =>
+      (0 until numOutcomes).foldLeft(Future.successful(succeed)) {
+        case (lastTestF, outcomeIndex) =>
+          lastTestF.flatMap { _ =>
+            exec(outcomeIndex, numOutcomes, local)
+          }
       }
     }
 

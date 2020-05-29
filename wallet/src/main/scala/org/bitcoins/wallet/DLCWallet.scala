@@ -349,8 +349,7 @@ abstract class DLCWallet extends Wallet {
         accept,
         keyManager.rootExtPrivKey.deriveChildPrivKey(dlc.account),
         dlc.keyIndex,
-        spendingInfos.map(_.toScriptSignatureParams),
-        offer.network
+        spendingInfos.map(_.toScriptSignatureParams)
       )
       cetSigs <- client.createCETSigs
       fundingSigs <- client.createFundingTransactionSigs()
@@ -372,7 +371,7 @@ abstract class DLCWallet extends Wallet {
                              fundingInputs,
                              outcomeSigs)
     } yield {
-      val correctNumberOfSigs = sign.cetSigs.outcomeSigs.size == client.outcomes.size
+      val correctNumberOfSigs = sign.cetSigs.outcomeSigs.size == client.messages.size
 
       correctNumberOfSigs && sign.cetSigs.outcomeSigs.foldLeft(true) {
         case (ret, (outcome, sig)) =>
@@ -611,7 +610,7 @@ abstract class DLCWallet extends Wallet {
         throw new UnsupportedOperationException(
           "Cannot execute a losing outcome")
 
-      sigMessage <- client.createMutualCloseSig(eventId, oracleSig)
+      sigMessage <- client.createMutualCloseSig(oracleSig)
     } yield sigMessage
   }
 
