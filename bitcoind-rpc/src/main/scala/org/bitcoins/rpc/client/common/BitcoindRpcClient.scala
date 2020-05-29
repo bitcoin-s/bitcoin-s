@@ -86,10 +86,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   }
 
   /** Gets the number of compact filters in the database */
-  override def getFilterCount: Future[Int] =
-    Future.failed(
-      throw new UnsupportedOperationException(
-        s"bitcoind ${instance.getVersion} does not support block filters"))
+  override def getFilterCount: Future[Int] = ???
 
   /** Returns the block height of the given block stamp */
   override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
@@ -105,8 +102,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] =
-    Future.successful(Vector.empty)
+      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = ???
 
   /** Gets the block height of the closest block to the given time */
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
