@@ -3,7 +3,6 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.stream.ActorMaterializer
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.currency._
 import org.bitcoins.node.Node
@@ -16,7 +15,6 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
     implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
 

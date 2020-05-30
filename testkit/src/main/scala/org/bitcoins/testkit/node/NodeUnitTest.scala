@@ -153,7 +153,7 @@ trait NodeUnitTest extends BitcoinSFixture {
       }
     }
 
-    system.scheduler.schedule(2.second, interval, genBlock)
+    system.scheduler.scheduleAtFixedRate(2.second, interval)(genBlock)
     ()
   }
 }
