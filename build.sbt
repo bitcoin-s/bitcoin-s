@@ -317,7 +317,8 @@ lazy val feeProvider = project
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-fee-provider",
-    libraryDependencies ++= Deps.feeProvider
+    libraryDependencies ++= Deps.feeProvider,
+    publish / skip := true
   )
   .dependsOn(core, appCommons)
 
