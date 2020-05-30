@@ -326,7 +326,8 @@ lazy val feeProviderTest = project
   .in(file("fee-provider-test"))
   .settings(
     name := "bitcoin-s-fee-provider-test",
-    libraryDependencies ++= Deps.feeProviderTest
+    libraryDependencies ++= Deps.feeProviderTest,
+    publish / skip := true
   )
   .dependsOn(core, core % testAndCompile, testkit)
 
