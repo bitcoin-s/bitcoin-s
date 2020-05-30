@@ -5,7 +5,6 @@ import java.time.{Duration, Instant}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, Uri}
-import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.api.FeeRateApi
 import org.bitcoins.core.util.TimeUtil
@@ -17,8 +16,7 @@ import scala.util.Try
 object HttpFeeRateProvider {
 
   def makeApiCall(uri: Uri)(implicit system: ActorSystem): Future[String] = {
-    implicit val mat: ActorMaterializer = ActorMaterializer.create(system)
-    implicit val ec: ExecutionContextExecutor = mat.executionContext
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
     Http()
       .singleRequest(HttpRequest(uri = uri))
       .flatMap(
