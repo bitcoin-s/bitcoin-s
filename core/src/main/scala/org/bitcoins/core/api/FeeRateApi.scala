@@ -4,7 +4,7 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 
 import scala.concurrent.Future
 
-abstract class FeeRateApi {
+trait FeeRateApi {
 
   def getFeeRate: Future[FeeUnit]
 

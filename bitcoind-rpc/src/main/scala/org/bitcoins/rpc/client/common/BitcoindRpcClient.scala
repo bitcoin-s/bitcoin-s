@@ -3,11 +3,15 @@ package org.bitcoins.rpc.client.common
 import java.io.File
 
 import akka.actor.ActorSystem
+import org.bitcoins.core.api.FeeRateApi
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
+
+import scala.concurrent.Future
 
 /**
   * This class is not guaranteed to be compatible with any particular
@@ -27,6 +31,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     implicit
     override val system: ActorSystem)
     extends Client
+    with FeeRateApi
     with BlockchainRpc
     with MessageRpc
     with MempoolRpc
@@ -44,6 +49,15 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   require(version == BitcoindVersion.Unknown || version == instance.getVersion,
           s"bitcoind version must be $version, got ${instance.getVersion}")
 
+  override def getFeeRate: Future[FeeUnit] =
+    estimateSmartFee(blocks = 6).flatMap { result =>
+      result.feerate match {
+        case Some(feeRate) => Future.successful(feeRate)
+        case None =>
+          Future.failed(
+            new RuntimeException("Unexpected error when getting fee rate"))
+      }
+    }
 }
 
 object BitcoindRpcClient {
