@@ -8,7 +8,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.util.BytesUtil
@@ -55,6 +55,10 @@ object JsonWriters {
   implicit object ScriptPubKeyWrites extends Writes[ScriptPubKey] {
     override def writes(o: ScriptPubKey): JsValue =
       JsString(BytesUtil.encodeHex(o.asmBytes))
+  }
+
+  implicit object WitnessScriptPubKeyWrites extends Writes[WitnessScriptPubKey] {
+    override def writes(o: WitnessScriptPubKey): JsValue = ScriptPubKeyWrites.writes(o)
   }
 
   implicit object TransactionInputWrites extends Writes[TransactionInput] {
