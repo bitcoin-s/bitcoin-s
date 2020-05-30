@@ -789,6 +789,8 @@ object PSBT extends Factory[PSBT] {
       Vector(GlobalPSBTRecord.UnsignedTransaction(unsignedTx)))
     val inputMaps = {
       tx match {
+        case EmptyTransaction =>
+          Vector.empty
         case btx: BaseTransaction =>
           btx.inputs.map(InputPSBTMap.fromTransactionInput).toVector
         case wtx: WitnessTransaction =>
