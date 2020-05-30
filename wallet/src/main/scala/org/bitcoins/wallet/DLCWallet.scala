@@ -11,8 +11,11 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import org.bitcoins.dlc._
+import org.bitcoins.dlc.sign.DLCTxSigner
+import org.bitcoins.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.wallet.models._
 
 import scala.concurrent.Future
@@ -98,16 +101,17 @@ abstract class DLCWallet extends Wallet {
     logger.debug(s"Checking if DLC Offer has already been made ($eventId)")
     for {
       dlc <- initDLC(eventId = eventId, isInitiator = true)
-      fundingInputs <- dlcInputsDAO.findByEventId(eventId, isInitiator = true)
       dlcOfferDbOpt <- dlcOfferDAO.findByEventId(eventId)
       dlcOffer <- dlcOfferDbOpt match {
         case Some(dlcOfferDb) =>
           logger.debug(
             s"DLC Offer ($eventId) has already been made, returning offer")
 
-          val inputRefs = fundingInputs.map(_.toOutputReference)
-          val offer = dlcOfferDb.toDLCOffer(inputRefs)
-          Future.successful(offer)
+          dlcInputsDAO.findByEventId(eventId, isInitiator = true).map {
+            fundingInputs =>
+              val inputRefs = fundingInputs.map(_.toOutputReference)
+              dlcOfferDb.toDLCOffer(inputRefs)
+          }
         case None =>
           createNewDLCOffer(
             dlc = dlc,
@@ -193,10 +197,7 @@ abstract class DLCWallet extends Wallet {
   override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
 
-    val eventId =
-      DLCMessage.calcEventId(offer.oracleInfo,
-                             offer.contractInfo,
-                             offer.timeouts)
+    val eventId = offer.eventId
 
     val collateral = offer.contractInfo.values.max - offer.totalCollateral
 
@@ -204,17 +205,21 @@ abstract class DLCWallet extends Wallet {
     for {
       dlc <- initDLC(eventId = eventId, isInitiator = false)
       accountOpt <- accountDAO.findByAccount(dlc.account)
-      fundingInputs <- dlcInputsDAO.findByEventId(eventId, isInitiator = false)
-      outcomeSigDbs <- dlcSigsDAO.findByEventId(eventId)
       dlcAcceptDbOpt <- dlcAcceptDAO.findByEventId(eventId)
       dlcAccept <- dlcAcceptDbOpt match {
         case Some(dlcAcceptDb) =>
           logger.debug(
             s"DLC Accept ($eventId) has already been made, returning accept")
-          val inputRefs = fundingInputs.map(_.toOutputReference)
-          val outcomeSigs = outcomeSigDbs.map(_.toTuple).toMap
-          val accept = dlcAcceptDb.toDLCAccept(inputRefs, outcomeSigs)
-          Future.successful(accept)
+          for {
+            fundingInputs <- dlcInputsDAO.findByEventId(eventId,
+                                                        isInitiator = false)
+            outcomeSigDbs <- dlcSigsDAO.findByEventId(eventId)
+          } yield {
+            val inputRefs = fundingInputs.map(_.toOutputReference)
+            val outcomeSigs = outcomeSigDbs.map(_.toTuple).toMap
+
+            dlcAcceptDb.toDLCAccept(inputRefs, outcomeSigs)
+          }
         case None =>
           createNewDLCAccept(dlc, accountOpt.get, collateral, offer)
       }
@@ -241,20 +246,30 @@ abstract class DLCWallet extends Wallet {
       changeSPK = txBuilder.finalizer.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
       changeAddr = Bech32Address(changeSPK, network)
 
-      client = DLCClient.fromOffer(
-        offer,
-        keyManager.rootExtPrivKey
-          .deriveChildPrivKey(account.hdAccount), // todo change to a ExtSign.deriveAndSignFuture
-        dlc.keyIndex,
-        spendingInfos,
-        collateral,
-        changeSPK,
-        network
-      )
-      cetSigs <- client.createCETSigs
+      // todo change to a ExtSign.deriveAndSignFuture
+      extPrivKey = keyManager.rootExtPrivKey.deriveChildPrivKey(
+        account.hdAccount)
+
       dlcPubKeys = DLCPublicKeys.fromExtPubKeyAndIndex(account.xpub,
                                                        dlc.keyIndex,
                                                        network)
+
+      acceptWithoutSigs = DLCAcceptWithoutSigs(
+        totalCollateral = collateral.satoshis,
+        pubKeys = dlcPubKeys,
+        fundingInputs = utxos,
+        changeAddress = changeAddr,
+        eventId = offer.eventId
+      )
+
+      signer = DLCTxSigner(offer = offer,
+                           accept = acceptWithoutSigs,
+                           isInitiator = false,
+                           extPrivKey = extPrivKey,
+                           nextAddressIndex = dlc.keyIndex,
+                           fundingUtxos = spendingInfos)
+
+      cetSigs <- signer.createCETSigs()
 
       _ = logger.debug(
         s"DLC Accept data collected, creating database entry, ${dlc.eventId.hex}")
@@ -336,23 +351,12 @@ abstract class DLCWallet extends Wallet {
     for {
       _ <- registerDLCAccept(accept)
       dlcOpt <- dlcDAO.findByEventId(accept.eventId)
-      offerOpt <- dlcOfferDAO.findByEventId(accept.eventId)
-      offer = offerOpt.get // Safe, we throw in registerDLCAccept if it is None
       dlc = dlcOpt.get
-      fundingInputs <- dlcInputsDAO.findByEventId(accept.eventId,
-                                                  isInitiator = true)
-      spendingInfoDbs <- listUtxos(fundingInputs.map(_.outPoint))
-      spendingInfos = spendingInfoDbs.flatMap(
-        _.toUTXOInfo(keyManager).toSingles)
-      client = DLCClient.fromOfferAndAccept(
-        offer.toDLCOffer(fundingInputs.map(_.toOutputReference)),
-        accept,
-        keyManager.rootExtPrivKey.deriveChildPrivKey(dlc.account),
-        dlc.keyIndex,
-        spendingInfos.map(_.toScriptSignatureParams)
-      )
-      cetSigs <- client.createCETSigs
-      fundingSigs <- client.createFundingTransactionSigs()
+      signer <- signerFromDb(accept.eventId)
+
+      cetSigs <- signer.createCETSigs()
+      fundingSigs <- signer.createFundingTxSigs()
+
       updatedDLCDb = dlc.copy(refundSigOpt = Some(cetSigs.refundSig))
       _ <- dlcDAO.update(updatedDLCDb)
     } yield {
@@ -361,41 +365,30 @@ abstract class DLCWallet extends Wallet {
   }
 
   def verifyCETSigs(sign: DLCSign): Future[Boolean] = {
-    for {
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(
-        sign.eventId)
-
-      client <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
-    } yield {
-      val correctNumberOfSigs = sign.cetSigs.outcomeSigs.size == client.messages.size
+    verifierFromDb(sign.eventId).map { verifier =>
+      val correctNumberOfSigs =
+        sign.cetSigs.outcomeSigs.size == verifier.builder.offerOutcomes.size
 
       correctNumberOfSigs && sign.cetSigs.outcomeSigs.foldLeft(true) {
         case (ret, (outcome, sig)) =>
-          ret && client.verifyCETSig(outcome, sig)
+          ret && verifier.verifyCETSig(outcome, sig)
       }
     }
   }
 
   def verifyRefundSig(sign: DLCSign): Future[Boolean] = {
-    for {
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(
-        sign.eventId)
-
-      client <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
-    } yield client.verifyRefundSig(sign.cetSigs.refundSig)
+    verifierFromDb(sign.eventId).map { verifier =>
+      verifier.verifyRefundSig(sign.cetSigs.refundSig)
+    }
   }
 
   def verifyFundingSigs(
       inputs: Vector[DLCFundingInputDb],
       sign: DLCSign): Future[Boolean] = {
     if (inputs.count(!_.isInitiator) == sign.fundingSigs.keys.size) {
-      for {
-        (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(
-          sign.eventId)
-
-        client <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
-
-      } yield client.verifyRemoteFundingSigs(sign.fundingSigs)
+      verifierFromDb(sign.eventId).map { verifier =>
+        verifier.verifyRemoteFundingSigs(sign.fundingSigs)
+      }
     } else {
       logger.info(
         "Funding Signatures provided did not have the correct amount of inputs")
@@ -484,6 +477,61 @@ abstract class DLCWallet extends Wallet {
     } yield (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs)
   }
 
+  private def fundingUtxosFromDb(
+      dlcDb: DLCDb,
+      fundingInputs: Vector[DLCFundingInputDb]): Future[
+    Vector[ScriptSignatureParams[InputInfo]]] = {
+    val outPoints =
+      fundingInputs.filter(_.isInitiator == dlcDb.isInitiator).map(_.outPoint)
+
+    listUtxos(outPoints).map(_.map(info => info.toUTXOInfo(keyManager)))
+  }
+
+  private def verifierFromDb(
+      eventId: Sha256DigestBE): Future[DLCSignatureVerifier] = {
+    getAllDLCData(eventId).map {
+      case (dlcDb, dlcOffer, dlcAccept, fundingInputsDb, _) =>
+        val offerFundingInputs =
+          fundingInputsDb.filter(_.isInitiator).map(_.toOutputReference)
+        val acceptFundingInputs =
+          fundingInputsDb.filterNot(_.isInitiator).map(_.toOutputReference)
+
+        DLCSignatureVerifier(
+          dlcOffer.toDLCOffer(offerFundingInputs),
+          dlcAccept.toDLCAcceptWithoutSigs(acceptFundingInputs),
+          isInitiator = dlcDb.isInitiator)
+    }
+  }
+
+  private def signerFromDb(eventId: Sha256DigestBE): Future[DLCTxSigner] = {
+    for {
+      (dlcDb, dlcOffer, dlcAccept, fundingInputsDb, _) <- getAllDLCData(eventId)
+      signer <- signerFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputsDb)
+    } yield signer
+  }
+
+  private def signerFromDb(
+      dlcDb: DLCDb,
+      dlcOffer: DLCOfferDb,
+      dlcAccept: DLCAcceptDb,
+      fundingInputsDb: Vector[DLCFundingInputDb]): Future[DLCTxSigner] = {
+    fundingUtxosFromDb(dlcDb, fundingInputsDb).map { fundingUtxos =>
+      val offerFundingInputs =
+        fundingInputsDb.filter(_.isInitiator).map(_.toOutputReference)
+      val acceptFundingInputs =
+        fundingInputsDb.filterNot(_.isInitiator).map(_.toOutputReference)
+
+      DLCTxSigner(
+        dlcOffer.toDLCOffer(offerFundingInputs),
+        dlcAccept.toDLCAcceptWithoutSigs(acceptFundingInputs),
+        dlcDb.isInitiator,
+        keyManager.rootExtPrivKey.deriveChildPrivKey(dlcDb.account),
+        dlcDb.keyIndex,
+        fundingUtxos
+      )
+    }
+  }
+
   private def clientFromDb(
       dlcDb: DLCDb,
       dlcOffer: DLCOfferDb,
@@ -556,16 +604,14 @@ abstract class DLCWallet extends Wallet {
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
     for {
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(eventId)
+      signer <- signerFromDb(eventId)
 
-      client <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
-
-      payout = client.getPayout(oracleSig)
+      payout = signer.getPayout(oracleSig)
       _ = if (payout <= 0.satoshis)
         throw new UnsupportedOperationException(
           "Cannot execute a losing outcome")
 
-      sigMessage <- client.createMutualCloseSig(oracleSig)
+      sigMessage <- signer.createMutualCloseTxSig(oracleSig)
     } yield sigMessage
   }
 
@@ -634,27 +680,31 @@ abstract class DLCWallet extends Wallet {
       mutualCloseSig: DLCMutualCloseSig): Future[Transaction] = {
     for {
       _ <- updateDLCOracleSig(mutualCloseSig.eventId, mutualCloseSig.oracleSig)
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(
-        mutualCloseSig.eventId)
+      signer <- signerFromDb(mutualCloseSig.eventId)
 
-      client <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
-
-      tx <- client.createMutualCloseTx(mutualCloseSig.oracleSig,
-                                       mutualCloseSig.mutualSig)
+      tx <- signer.signMutualCloseTx(mutualCloseSig.oracleSig,
+                                     mutualCloseSig.mutualSig)
     } yield tx
   }
 
   override def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction] = {
     for {
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
-        eventId)
+      (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(eventId)
 
-      (_, setup) <- clientAndSetupFromDb(dlcDb,
-                                         dlcOffer,
-                                         dlcAccept,
-                                         fundingInputs,
-                                         outcomeSigs)
-    } yield setup.fundingTx
+      signer <- signerFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
+      fundingTx <- {
+        if (dlcDb.isInitiator) {
+          // TODO: If this is called after seeing the funding tx on-chain, it should return that one
+          signer.builder.buildFundingTx
+        } else {
+          val remoteSigs = fundingInputs
+            .filter(_.isInitiator)
+            .map(input => (input.outPoint, input.sigs))
+            .toMap
+          signer.signFundingTx(FundingSignatures(remoteSigs))
+        }
+      }
+    } yield fundingTx
   }
 
   override def executeDLCForceClose(

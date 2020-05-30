@@ -129,12 +129,7 @@ case class DLCClient(
     ConditionalPath.NoCondition)
 
   def getPayout(oracleSig: SchnorrDigitalSignature): CurrencyUnit = {
-    val (offerPayout, acceptPayout) = dlcTxBuilder.getPayouts(oracleSig)
-    if (isInitiator) {
-      offerPayout
-    } else {
-      acceptPayout
-    }
+    dlcTxSigner.getPayout(oracleSig)
   }
 
   def createFundingTransactionSigs(): Future[FundingSignatures] = {

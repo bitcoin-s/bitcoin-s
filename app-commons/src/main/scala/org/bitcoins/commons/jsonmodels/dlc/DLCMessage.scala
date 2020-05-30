@@ -308,6 +308,14 @@ object DLCMessage {
       eventId: Sha256DigestBE)
       extends DLCSetupMessage {
 
+    def withoutSigs: DLCAcceptWithoutSigs = {
+      DLCAcceptWithoutSigs(totalCollateral,
+                           pubKeys,
+                           fundingInputs,
+                           changeAddress,
+                           eventId)
+    }
+
     def toJson: Value = {
       val fundingInputsJson =
         fundingInputs.map(

@@ -1,12 +1,17 @@
 package org.bitcoins.dlc.sign
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.DLCMutualCloseSig
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+  DLCAcceptWithoutSigs,
+  DLCMutualCloseSig,
+  DLCOffer
+}
 import org.bitcoins.commons.jsonmodels.dlc.{
   CETSignatures,
   DLCPublicKeys,
   FundingSignatures
 }
 import org.bitcoins.core.crypto.ExtPrivateKey
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
@@ -75,8 +80,19 @@ case class DLCTxSigner(
     require(
       pubKeys == accept.pubKeys,
       "Given ExtPrivateKey and index does not match the public keys in accept")
-    require(fundingUtxos.map(_.outputReference) == accept.fundingInputs,
-            "Funding ScriptSignatureParams did not match accept funding inputs")
+    require(
+      fundingUtxos.map(_.outputReference) == accept.fundingInputs,
+      s"Funding ScriptSignatureParams ($fundingUtxos) did not match accept funding inputs (${accept.fundingInputs})"
+    )
+  }
+
+  def getPayout(sig: SchnorrDigitalSignature): CurrencyUnit = {
+    val (offerPayout, acceptPayout) = builder.getPayouts(sig)
+    if (isInitiator) {
+      offerPayout
+    } else {
+      acceptPayout
+    }
   }
 
   def createFundingTxSigs(): Future[FundingSignatures] = {
@@ -273,5 +289,23 @@ case class DLCTxSigner(
       cetSigs <- Future.sequence(cetSigFs).map(_.toMap)
       refundSig <- createRefundSig()
     } yield CETSignatures(cetSigs, refundSig)
+  }
+}
+
+object DLCTxSigner {
+
+  def apply(
+      offer: DLCOffer,
+      accept: DLCAcceptWithoutSigs,
+      isInitiator: Boolean,
+      extPrivKey: ExtPrivateKey,
+      nextAddressIndex: Int,
+      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(
+      implicit ec: ExecutionContext): DLCTxSigner = {
+    DLCTxSigner(DLCTxBuilder(offer, accept),
+                isInitiator,
+                extPrivKey,
+                nextAddressIndex,
+                fundingUtxos)
   }
 }

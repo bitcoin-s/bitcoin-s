@@ -1,5 +1,9 @@
 package org.bitcoins.dlc.verify
 
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+  DLCAcceptWithoutSigs,
+  DLCOffer
+}
 import org.bitcoins.commons.jsonmodels.dlc.FundingSignatures
 import org.bitcoins.core.crypto.{
   TransactionSignatureChecker,
@@ -12,7 +16,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.Sha256DigestBE
 import org.bitcoins.dlc.builder.DLCTxBuilder
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
@@ -93,5 +97,16 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
         Policy.standardFlags
       )
       .isValid
+  }
+}
+
+object DLCSignatureVerifier {
+
+  def apply(
+      offer: DLCOffer,
+      accept: DLCAcceptWithoutSigs,
+      isInitiator: Boolean)(
+      implicit ec: ExecutionContext): DLCSignatureVerifier = {
+    DLCSignatureVerifier(DLCTxBuilder(offer, accept), isInitiator)
   }
 }
