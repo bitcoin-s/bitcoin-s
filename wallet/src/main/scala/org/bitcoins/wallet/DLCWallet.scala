@@ -9,7 +9,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
@@ -533,10 +532,6 @@ abstract class DLCWallet extends Wallet {
     }
   }
 
-  private def executorFromDb(eventId: Sha256DigestBE): Future[DLCExecutor] = {
-    signerFromDb(eventId).map(DLCExecutor.apply)
-  }
-
   private def executorFromDb(
       dlcDb: DLCDb,
       dlcOffer: DLCOfferDb,
@@ -546,58 +541,34 @@ abstract class DLCWallet extends Wallet {
       DLCExecutor.apply)
   }
 
-  private def clientFromDb(
-      dlcDb: DLCDb,
-      dlcOffer: DLCOfferDb,
-      dlcAccept: DLCAcceptDb,
-      fundingInputs: Vector[DLCFundingInputDb]): Future[DLCClient] = {
-    val extPrivKey = keyManager.rootExtPrivKey.deriveChildPrivKey(dlcDb.account)
-
-    val offerInputs =
-      fundingInputs.filter(_.isInitiator).map(_.toOutputReference)
-    val acceptInputs =
-      fundingInputs.filterNot(_.isInitiator).map(_.toOutputReference)
-
-    val offer = dlcOffer.toDLCOffer(offerInputs)
-    val accept = dlcAccept.toDLCAcceptWithoutSigs(acceptInputs)
-
-    val outPoints = if (dlcDb.isInitiator) {
-      offerInputs.map(_.outPoint)
-    } else {
-      acceptInputs.map(_.outPoint)
-    }
-
-    val utxosF =
-      listUtxos(outPoints).map(_.map(info => info.toUTXOInfo(keyManager)))
-
-    utxosF.map { fundingUtxos =>
-      DLCClient(offer = offer,
-                accept = accept,
-                isInitiator = dlcDb.isInitiator,
-                extPrivKey = extPrivKey,
-                nextAddressIndex = dlcDb.keyIndex,
-                fundingUtxos = fundingUtxos)
+  private def executorAndSetupFromDb(
+      eventId: Sha256DigestBE): Future[(DLCExecutor, SetupDLC)] = {
+    getAllDLCData(eventId).flatMap {
+      case (dlcDb, dlcOffer, dlcAccept, fundingInputsDb, outcomeSigDbs) =>
+        executorAndSetupFromDb(dlcDb,
+                               dlcOffer,
+                               dlcAccept,
+                               fundingInputsDb,
+                               outcomeSigDbs)
     }
   }
 
-  private def clientAndSetupFromDb(
+  private def executorAndSetupFromDb(
       dlcDb: DLCDb,
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
       fundingInputs: Vector[DLCFundingInputDb],
-      outcomeSigDbs: Vector[DLCCETSignatureDb]): Future[(DLCClient, SetupDLC)] = {
+      outcomeSigDbs: Vector[DLCCETSignatureDb]): Future[
+    (DLCExecutor, SetupDLC)] = {
 
-    clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
-      .flatMap { client =>
+    executorFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
+      .flatMap { executor =>
         val outcomeSigs = outcomeSigDbs.map(_.toTuple).toMap
 
         val setupF = if (dlcDb.isInitiator) {
-          // TODO: Note that the funding tx in this setup is not signed
+          // Note that the funding tx in this setup is not signed
           val cetSigs = CETSignatures(outcomeSigs, dlcAccept.refundSig)
-          client.setupDLCOffer(
-            Future.successful(cetSigs),
-            (_, _) => FutureUtil.unit,
-            Future.successful(client.createUnsignedFundingTransaction))
+          executor.setupDLCOffer(cetSigs)
         } else {
           val cetSigs = CETSignatures(outcomeSigs, dlcDb.refundSigOpt.get)
           val fundingSigs =
@@ -605,12 +576,10 @@ abstract class DLCWallet extends Wallet {
               .filter(_.isInitiator)
               .map(input => (input.outPoint, input.sigs))
               .toMap
-          client.setupDLCAccept(
-            _ => FutureUtil.unit,
-            Future.successful((cetSigs, FundingSignatures(fundingSigs))))
+          executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs))
         }
 
-        setupF.map((client, _))
+        setupF.map((executor, _))
       }
   }
 
@@ -636,21 +605,12 @@ abstract class DLCWallet extends Wallet {
     for {
       _ <- updateDLCOracleSig(eventId, oracleSig)
 
-      executor <- executorFromDb(eventId)
+      (executor, setup) <- executorAndSetupFromDb(eventId)
 
       payout = executor.getPayout(oracleSig)
       _ = if (payout <= 0.satoshis)
         throw new UnsupportedOperationException(
           "Cannot execute a losing outcome")
-
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
-        eventId)
-
-      (_, setup) <- clientAndSetupFromDb(dlcDb,
-                                         dlcOffer,
-                                         dlcAccept,
-                                         fundingInputs,
-                                         outcomeSigs)
 
       outcome <- executor.executeUnilateralDLC(setup, oracleSig)
     } yield {
@@ -667,18 +627,11 @@ abstract class DLCWallet extends Wallet {
       eventId: Sha256DigestBE,
       cet: Transaction): Future[Option[Transaction]] = {
     for {
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
-        eventId)
-
-      (client, setup) <- clientAndSetupFromDb(dlcDb,
-                                              dlcOffer,
-                                              dlcAccept,
-                                              fundingInputs,
-                                              outcomeSigs)
+      (executor, setup) <- executorAndSetupFromDb(eventId)
 
       newAddr <- getNewAddress(AddressType.SegWit)
 
-      outcome <- client.executeRemoteUnilateralDLC(
+      outcome <- executor.executeRemoteUnilateralDLC(
         setup,
         cet,
         newAddr.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
@@ -737,16 +690,9 @@ abstract class DLCWallet extends Wallet {
   override def executeDLCRefund(
       eventId: Sha256DigestBE): Future[(Transaction, Option[Transaction])] = {
     for {
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
-        eventId)
+      (executor, setup) <- executorAndSetupFromDb(eventId)
 
-      (client, setup) <- clientAndSetupFromDb(dlcDb,
-                                              dlcOffer,
-                                              dlcAccept,
-                                              fundingInputs,
-                                              outcomeSigs)
-
-      outcome <- client.executeRefundDLC(setup)
+      outcome <- executor.executeRefundDLC(setup)
     } yield {
       outcome match {
         case closing: RefundDLCOutcomeWithClosing =>
@@ -761,16 +707,9 @@ abstract class DLCWallet extends Wallet {
       eventId: Sha256DigestBE,
       forceCloseTx: Transaction): Future[Option[Transaction]] = {
     for {
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
-        eventId)
+      (executor, setup) <- executorAndSetupFromDb(eventId)
 
-      (client, setup) <- clientAndSetupFromDb(dlcDb,
-                                              dlcOffer,
-                                              dlcAccept,
-                                              fundingInputs,
-                                              outcomeSigs)
-
-      outcome <- client.executeJusticeDLC(setup, forceCloseTx)
+      outcome <- executor.executeJusticeDLC(setup, forceCloseTx)
     } yield {
       outcome match {
         case closing: UnilateralDLCOutcomeWithClosing =>

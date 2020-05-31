@@ -36,3 +36,18 @@ case class CETInfo(
     witness: P2WSHWitnessV0,
     remoteTxid: DoubleSha256DigestBE,
     remoteWitness: P2WSHWitnessV0)
+
+object CETInfo {
+
+  def mapFromMaps(
+      localCetData: Map[Sha256DigestBE, (Transaction, P2WSHWitnessV0)],
+      remoteCetData: Map[Sha256DigestBE, (Transaction, P2WSHWitnessV0)]): Map[
+    Sha256DigestBE,
+    CETInfo] = {
+    localCetData.map {
+      case (msg, (localCet, localWitness)) =>
+        val (remoteCet, remoteWitness) = remoteCetData(msg)
+        msg -> CETInfo(localCet, localWitness, remoteCet.txIdBE, remoteWitness)
+    }
+  }
+}

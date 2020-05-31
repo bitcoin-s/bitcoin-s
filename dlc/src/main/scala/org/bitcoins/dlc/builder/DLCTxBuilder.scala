@@ -140,6 +140,16 @@ case class DLCTxBuilder(
     } yield cet
   }
 
+  def buildCET(
+      msg: Sha256DigestBE,
+      isInitiator: Boolean): Future[WitnessTransaction] = {
+    if (isInitiator) {
+      buildOfferCET(msg)
+    } else {
+      buildAcceptCET(msg)
+    }
+  }
+
   def getOfferCETWitness(msg: Sha256DigestBE): Future[P2WSHWitnessV0] = {
     cetBuilderF
       .map(_.buildOfferToLocalP2PK(msg))
@@ -150,6 +160,16 @@ case class DLCTxBuilder(
     cetBuilderF
       .map(_.buildAcceptToLocalP2PK(msg))
       .map(P2WSHWitnessV0(_))
+  }
+
+  def getCETWitness(
+      msg: Sha256DigestBE,
+      isInitiator: Boolean): Future[P2WSHWitnessV0] = {
+    if (isInitiator) {
+      getOfferCETWitness(msg)
+    } else {
+      getAcceptCETWitness(msg)
+    }
   }
 
   lazy val buildRefundTx: Future[WitnessTransaction] = {

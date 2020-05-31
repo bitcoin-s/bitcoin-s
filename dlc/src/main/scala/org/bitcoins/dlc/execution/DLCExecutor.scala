@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.execution
 
+import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, FundingSignatures}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
@@ -26,6 +27,7 @@ import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
 import org.bitcoins.dlc.{
+  CETInfo,
   RefundDLCOutcome,
   RefundDLCOutcomeWithClosing,
   RefundDLCOutcomeWithDustClosing,
@@ -47,6 +49,68 @@ case class DLCExecutor(signer: DLCTxSigner) extends BitcoinSLogger {
   val isInitiator: Boolean = signer.isInitiator
 
   val messages: Vector[Sha256DigestBE] = builder.offerOutcomes.keys.toVector
+
+  def setupDLCOffer(cetSigs: CETSignatures): Future[SetupDLC] = {
+    require(isInitiator, "You should call setupDLCAccept")
+
+    setupDLC(cetSigs, None)
+  }
+
+  def setupDLCAccept(
+      cetSigs: CETSignatures,
+      fundingSigs: FundingSignatures): Future[SetupDLC] = {
+    require(!isInitiator, "You should call setupDLCOffer")
+
+    setupDLC(cetSigs, Some(fundingSigs))
+  }
+
+  def setupDLC(
+      cetSigs: CETSignatures,
+      fundingSigsOpt: Option[FundingSignatures]): Future[SetupDLC] = {
+    if (!isInitiator) {
+      require(fundingSigsOpt.isDefined,
+              "Accepting party must provide remote funding signatures")
+    }
+
+    val CETSignatures(outcomeSigs, refundSig) = cetSigs
+    val localCetDataFs = outcomeSigs.map {
+      case (msg, sig) =>
+        for {
+          tx <- signer.signCET(msg, sig)
+          witness <- builder.getCETWitness(msg, isInitiator)
+        } yield {
+          msg -> (tx, witness)
+        }
+    }
+    val remoteCETDataFs = messages.map { msg =>
+      for {
+        utx <- builder.buildCET(msg, !isInitiator)
+        witness <- builder.getCETWitness(msg, !isInitiator)
+      } yield {
+        msg -> (utx, witness)
+      }
+    }
+
+    for {
+      localCetData <- Future.sequence(localCetDataFs).map(_.toMap)
+      remoteCetData <- Future.sequence(remoteCETDataFs).map(_.toMap)
+      fundingTx <- {
+        fundingSigsOpt match {
+          case Some(fundingSigs) => signer.signFundingTx(fundingSigs)
+          case None              => builder.buildFundingTx
+        }
+      }
+      refundTx <- signer.signRefundTx(refundSig)
+    } yield {
+      val cetInfos = CETInfo.mapFromMaps(localCetData, remoteCetData)
+
+      SetupDLC(
+        fundingTx,
+        cetInfos,
+        refundTx
+      )
+    }
+  }
 
   def getPayout(sig: SchnorrDigitalSignature): CurrencyUnit = {
     signer.getPayout(sig)
