@@ -323,8 +323,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       override def run(): Unit = {
         if (!fundingTxP.isCompleted) {
           clientF.foreach { client =>
-            val fundingTxResultF = client.getRawTransaction(
-              dlcOffer.createUnsignedFundingTransaction.txIdBE)
+            val fundingTxResultF =
+              client.getRawTransaction(dlcOffer.fundingTxIdBE)
 
             fundingTxResultF.onComplete {
               case Success(fundingTxResult) =>
