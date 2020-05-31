@@ -216,4 +216,15 @@ object DLCTxBuilder {
           s"Signature does not correspond to a possible outcome! $oracleSig")
     }
   }
+
+  def tweakedPubKey(
+      fundingPubKey: ECPublicKey,
+      toLocalCETKey: ECPublicKey,
+      sigPubKey: ECPublicKey): ECPublicKey = {
+    val tweak = CryptoUtil.sha256(toLocalCETKey.bytes).flip
+
+    val tweakPubKey = ECPrivateKey.fromBytes(tweak.bytes).publicKey
+
+    sigPubKey.add(fundingPubKey).add(tweakPubKey)
+  }
 }

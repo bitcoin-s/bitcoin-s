@@ -15,13 +15,13 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
+import org.bitcoins.dlc.execution.DLCExecutor
 import org.bitcoins.dlc.sign.DLCTxSigner
 import org.bitcoins.dlc.verify.DLCSignatureVerifier
 import scodec.bits.ByteVector
@@ -59,6 +59,8 @@ case class DLCClient(
                                         nextAddressIndex,
                                         fundingUtxos)
 
+  private val dlcExecutor = DLCExecutor(dlcTxSigner)
+
   private val remotePubKeys = if (isInitiator) {
     accept.pubKeys
   } else {
@@ -74,8 +76,6 @@ case class DLCClient(
   val messages: Vector[Sha256DigestBE] = outcomes.keys.toVector
 
   private val feeRate = offer.feeRate
-
-  private val oraclePubKey = offer.oracleInfo.pubKey
 
   val timeouts: DLCTimeouts = offer.timeouts
 
@@ -421,10 +421,6 @@ case class DLCClient(
     }
   }
 
-  private def isToLocalOutput(output: TransactionOutput): Boolean = {
-    output.scriptPubKey.isInstanceOf[P2WSHWitnessSPKV0]
-  }
-
   /** Constructs and executes on the unilateral spending branch of a DLC
     * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#closing-transaction-unilateral]]
     *
@@ -434,67 +430,16 @@ case class DLCClient(
       dlcSetup: SetupDLC,
       oracleSigF: Future[SchnorrDigitalSignature]): Future[
     UnilateralDLCOutcome] = {
-    val SetupDLC(fundingTx, cetInfos, _) = dlcSetup
-
     oracleSigF.flatMap { oracleSig =>
-      val msgOpt =
-        messages.find(msg => oraclePubKey.verify(msg.bytes, oracleSig))
-      val (msg, cet, cetScriptWitness) = msgOpt match {
-        case Some(msg) =>
-          val cetInfo = cetInfos(msg)
-          (msg, cetInfo.tx, cetInfo.witness)
-        case None =>
-          throw new IllegalArgumentException(
-            s"Signature does not correspond to any possible outcome! $oracleSig")
-      }
-
-      val output = cet.outputs.head
-
-      val privKeyWithoutTweak = oracleSig.sig.add(fundingPrivKey.fieldElement)
-      val tweakHash = CryptoUtil.sha256(cetToLocalPrivKey.publicKey.bytes).flip
-      val tweak = FieldElement(tweakHash.bytes)
-      val privKey = privKeyWithoutTweak.add(tweak).toPrivateKey
-
-      // Spend the true case on the correct CET
-      val cetSpendingInfo = ScriptSignatureParams(
-        inputInfo = P2WSHV0InputInfo(
-          outPoint = TransactionOutPoint(cet.txIdBE, UInt32.zero),
-          amount = output.value,
-          scriptWitness = cetScriptWitness,
-          conditionalPath = ConditionalPath.nonNestedTrue
-        ),
-        signer = privKey,
-        hashType = HashType.sigHashAll
-      )
-
-      if (isToLocalOutput(output)) {
-        val localSpendingTxF =
-          constructClosingTx(cetSpendingInfo, msg, spendsToLocal = true)
-
-        localSpendingTxF.map {
-          case Some(localSpendingTx) =>
-            UnilateralDLCOutcomeWithClosing(
-              fundingTx = fundingTx,
-              cet = cet,
-              closingTx = localSpendingTx,
-              cetSpendingInfo = cetSpendingInfo
-            )
-          case None =>
-            UnilateralDLCOutcomeWithDustClosing(fundingTx = fundingTx,
-                                                cet = cet)
-        }
-      } else {
-        Future.successful(
-          UnilateralDLCOutcomeWithDustClosing(fundingTx = fundingTx, cet = cet)
-        )
-      }
+      dlcExecutor.executeUnilateralDLC(dlcSetup, oracleSig)
     }
   }
 
   def executeUnilateralDLC(
       dlcSetup: SetupDLC,
-      oracleSig: SchnorrDigitalSignature): Future[UnilateralDLCOutcome] =
-    executeUnilateralDLC(dlcSetup, Future.successful(oracleSig))
+      oracleSig: SchnorrDigitalSignature): Future[UnilateralDLCOutcome] = {
+    dlcExecutor.executeUnilateralDLC(dlcSetup, oracleSig)
+  }
 
   /** Constructs the closing transaction on the to_remote output of a counter-party's unilateral CET broadcast
     * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#closing-transaction-unilateral]]
@@ -503,52 +448,7 @@ case class DLCClient(
       dlcSetup: SetupDLC,
       publishedCET: Transaction,
       sweepSPK: WitnessScriptPubKey): Future[UnilateralDLCOutcome] = {
-    val output = publishedCET.outputs.last
-
-    val spendingInfo = ScriptSignatureParams(
-      inputInfo = P2WPKHV0InputInfo(
-        outPoint = TransactionOutPoint(publishedCET.txIdBE, UInt32.one),
-        amount = output.value,
-        pubKey = finalPrivKey.publicKey),
-      signer = finalPrivKey,
-      hashType = HashType.sigHashAll
-    )
-
-    if (isToLocalOutput(output)) {
-      Future.successful(
-        UnilateralDLCOutcomeWithDustClosing(fundingTx = dlcSetup.fundingTx,
-                                            cet = publishedCET)
-      )
-    } else {
-      val msgOpt =
-        dlcSetup.cets.find(_._2.remoteTxid == publishedCET.txIdBE).map(_._1)
-
-      msgOpt match {
-        case Some(msg) =>
-          val txF =
-            constructClosingTx(spendingInfo = spendingInfo,
-                               msg = msg,
-                               spendsToLocal = false,
-                               sweepSPK = sweepSPK)
-
-          txF.map {
-            case Some(tx) =>
-              UnilateralDLCOutcomeWithClosing(
-                fundingTx = dlcSetup.fundingTx,
-                cet = publishedCET,
-                closingTx = tx,
-                cetSpendingInfo = spendingInfo
-              )
-            case None =>
-              UnilateralDLCOutcomeWithDustClosing(
-                fundingTx = dlcSetup.fundingTx,
-                cet = publishedCET)
-          }
-        case None =>
-          throw new IllegalArgumentException(
-            s"Published CET $publishedCET does not correspond to any known outcome")
-      }
-    }
+    dlcExecutor.executeRemoteUnilateralDLC(dlcSetup, publishedCET, sweepSPK)
   }
 
   /** Constructs and executes on the justice spending branch of a DLC
@@ -560,51 +460,7 @@ case class DLCClient(
   def executeJusticeDLC(
       dlcSetup: SetupDLC,
       timedOutCET: Transaction): Future[UnilateralDLCOutcome] = {
-    val justiceOutput = timedOutCET.outputs.head
-
-    val (cetScriptWitness, msg) =
-      dlcSetup.cets.find(_._2.remoteTxid == timedOutCET.txIdBE) match {
-        case Some((msg, cetInfo)) => (cetInfo.remoteWitness, msg)
-        case None =>
-          throw new IllegalArgumentException(
-            s"Timed out CET $timedOutCET does not correspond to any known outcome")
-      }
-
-    val justiceSpendingInfo = ScriptSignatureParams(
-      inputInfo = P2WSHV0InputInfo(
-        outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.zero),
-        amount = justiceOutput.value,
-        scriptWitness = cetScriptWitness,
-        conditionalPath = ConditionalPath.nonNestedFalse
-      ),
-      signer = cetToLocalPrivKey,
-      hashType = HashType.sigHashAll
-    )
-
-    if (isToLocalOutput(justiceOutput)) {
-      val justiceSpendingTxF =
-        constructClosingTx(spendingInfo = justiceSpendingInfo,
-                           msg = msg,
-                           spendsToLocal = false)
-
-      justiceSpendingTxF.map {
-        case Some(justiceSpendingTx) =>
-          UnilateralDLCOutcomeWithClosing(
-            fundingTx = dlcSetup.fundingTx,
-            cet = timedOutCET,
-            closingTx = justiceSpendingTx,
-            cetSpendingInfo = justiceSpendingInfo
-          )
-        case None =>
-          UnilateralDLCOutcomeWithDustClosing(fundingTx = dlcSetup.fundingTx,
-                                              cet = timedOutCET)
-      }
-    } else {
-      Future.successful(
-        UnilateralDLCOutcomeWithDustClosing(fundingTx = dlcSetup.fundingTx,
-                                            cet = timedOutCET)
-      )
-    }
+    dlcExecutor.executeJusticeDLC(dlcSetup, timedOutCET)
   }
 
   /** Constructs and executes on the refund spending branch of a DLC
@@ -613,42 +469,7 @@ case class DLCClient(
     * @return Each transaction published and its spending info
     */
   def executeRefundDLC(dlcSetup: SetupDLC): Future[RefundDLCOutcome] = {
-    val SetupDLC(fundingTx, _, refundTx) =
-      dlcSetup
-
-    val (localOutput, vout) = if (isInitiator) {
-      (refundTx.outputs.head, UInt32.zero)
-    } else {
-      (refundTx.outputs.last, UInt32.one)
-    }
-
-    val localRefundSpendingInfo = ScriptSignatureParams(
-      inputInfo = P2WPKHV0InputInfo(
-        outPoint = TransactionOutPoint(refundTx.txIdBE, vout),
-        amount = localOutput.value,
-        pubKey = finalPrivKey.publicKey
-      ),
-      signer = finalPrivKey,
-      hashType = HashType.sigHashAll
-    )
-
-    val localSpendingTxF = constructClosingTx(
-      localRefundSpendingInfo,
-      msg = Sha256DigestBE(ByteVector.fill(32)(0.toByte)), // Not used
-      spendsToLocal = false)
-
-    localSpendingTxF.map {
-      case Some(localSpendingTx) =>
-        RefundDLCOutcomeWithClosing(
-          fundingTx = fundingTx,
-          refundTx = refundTx,
-          closingTx = localSpendingTx,
-          refundSpendingInfo = localRefundSpendingInfo
-        )
-      case None =>
-        RefundDLCOutcomeWithDustClosing(fundingTx = fundingTx,
-                                        refundTx = refundTx)
-    }
+    dlcExecutor.executeRefundDLC(dlcSetup)
   }
 }
 

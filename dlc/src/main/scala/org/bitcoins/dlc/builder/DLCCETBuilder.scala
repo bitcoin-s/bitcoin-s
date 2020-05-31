@@ -2,7 +2,7 @@ package org.bitcoins.dlc.builder
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{ContractInfo, OracleInfo}
 import org.bitcoins.commons.jsonmodels.dlc.DLCTimeouts
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
@@ -54,11 +54,8 @@ case class DLCCETBuilder(
       fundingPubKey: ECPublicKey,
       toLocalCETKey: ECPublicKey,
       otherToLocalCETKey: ECPublicKey): P2PKWithTimeoutScriptPubKey = {
-    val tweak = CryptoUtil.sha256(toLocalCETKey.bytes).flip
-
-    val tweakPubKey = ECPrivateKey.fromBytes(tweak.bytes).publicKey
-
-    val pubKey = sigPubKeys(msg).add(fundingPubKey).add(tweakPubKey)
+    val pubKey =
+      DLCTxBuilder.tweakedPubKey(fundingPubKey, toLocalCETKey, sigPubKeys(msg))
 
     P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,

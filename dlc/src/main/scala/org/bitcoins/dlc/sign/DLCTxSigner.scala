@@ -27,8 +27,10 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto.{
+  CryptoUtil,
   ECPrivateKey,
   ECPublicKey,
+  FieldElement,
   SchnorrDigitalSignature,
   Sha256DigestBE
 }
@@ -42,7 +44,7 @@ case class DLCTxSigner(
     extPrivKey: ExtPrivateKey,
     nextAddressIndex: Int,
     fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(
-    implicit ec: ExecutionContext) {
+    implicit val ec: ExecutionContext) {
   private val offer = builder.offer
   private val accept = builder.accept
 
@@ -307,5 +309,17 @@ object DLCTxSigner {
                 extPrivKey,
                 nextAddressIndex,
                 fundingUtxos)
+  }
+
+  def tweakedPrivKey(
+      fundingPrivKey: ECPrivateKey,
+      cetToLocalPrivKey: ECPrivateKey,
+      oracleSig: SchnorrDigitalSignature): ECPrivateKey = {
+    val privKeyWithoutTweak = oracleSig.sig.add(fundingPrivKey.fieldElement)
+
+    val tweakHash = CryptoUtil.sha256(cetToLocalPrivKey.publicKey.bytes).flip
+    val tweak = FieldElement(tweakHash.bytes)
+
+    privKeyWithoutTweak.add(tweak).toPrivateKey
   }
 }

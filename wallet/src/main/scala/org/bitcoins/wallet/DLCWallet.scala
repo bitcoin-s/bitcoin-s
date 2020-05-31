@@ -14,6 +14,7 @@ import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import org.bitcoins.dlc._
+import org.bitcoins.dlc.execution.DLCExecutor
 import org.bitcoins.dlc.sign.DLCTxSigner
 import org.bitcoins.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.wallet.models._
@@ -532,6 +533,19 @@ abstract class DLCWallet extends Wallet {
     }
   }
 
+  private def executorFromDb(eventId: Sha256DigestBE): Future[DLCExecutor] = {
+    signerFromDb(eventId).map(DLCExecutor.apply)
+  }
+
+  private def executorFromDb(
+      dlcDb: DLCDb,
+      dlcOffer: DLCOfferDb,
+      dlcAccept: DLCAcceptDb,
+      fundingInputsDb: Vector[DLCFundingInputDb]): Future[DLCExecutor] = {
+    signerFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputsDb).map(
+      DLCExecutor.apply)
+  }
+
   private def clientFromDb(
       dlcDb: DLCDb,
       dlcOffer: DLCOfferDb,
@@ -622,21 +636,23 @@ abstract class DLCWallet extends Wallet {
     for {
       _ <- updateDLCOracleSig(eventId, oracleSig)
 
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
-        eventId)
+      executor <- executorFromDb(eventId)
 
-      (client, setup) <- clientAndSetupFromDb(dlcDb,
-                                              dlcOffer,
-                                              dlcAccept,
-                                              fundingInputs,
-                                              outcomeSigs)
-
-      payout = client.getPayout(oracleSig)
+      payout = executor.getPayout(oracleSig)
       _ = if (payout <= 0.satoshis)
         throw new UnsupportedOperationException(
           "Cannot execute a losing outcome")
 
-      outcome <- client.executeUnilateralDLC(setup, oracleSig)
+      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
+        eventId)
+
+      (_, setup) <- clientAndSetupFromDb(dlcDb,
+                                         dlcOffer,
+                                         dlcAccept,
+                                         fundingInputs,
+                                         outcomeSigs)
+
+      outcome <- executor.executeUnilateralDLC(setup, oracleSig)
     } yield {
       outcome match {
         case closing: UnilateralDLCOutcomeWithClosing =>
