@@ -3,6 +3,7 @@ package org.bitcoins.dlc
 import org.bitcoins.core.protocol.script.{P2PKHScriptPubKey, P2WSHWitnessV0}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPublicKey, Sha256DigestBE}
+import org.bitcoins.dlc.execution.{CETInfo, SetupDLC}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits.ByteVector
 

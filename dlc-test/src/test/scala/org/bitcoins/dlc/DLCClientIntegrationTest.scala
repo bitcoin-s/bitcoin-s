@@ -30,6 +30,18 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.execution.{
+  CooperativeDLCOutcome,
+  DLCOutcome,
+  RefundDLCOutcome,
+  RefundDLCOutcomeWithClosing,
+  RefundDLCOutcomeWithDustClosing,
+  SetupDLC,
+  UnilateralDLCOutcome,
+  UnilateralDLCOutcomeWithClosing,
+  UnilateralDLCOutcomeWithDustClosing
+}
+import org.bitcoins.dlc.testgen.TestDLCClient
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -96,7 +108,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
   val csvTimeout: UInt32 = UInt32(30)
 
   def constructDLC(numOutcomes: Int): Future[
-    (DLCClient, DLCClient, Vector[Sha256DigestBE])] = {
+    (TestDLCClient, TestDLCClient, Vector[Sha256DigestBE])] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
       Bitcoins((input + Satoshis(200)).satoshis)
     }
@@ -197,7 +209,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       val (outcomes, otherOutcomes) =
         DLCTestUtil.genContractInfos(outcomeHashes, totalInput)
 
-      val acceptDLC = DLCClient(
+      val acceptDLC = TestDLCClient(
         outcomes = outcomes,
         oraclePubKey = oraclePubKey,
         preCommittedR = preCommittedR,
@@ -223,7 +235,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         network = RegTest
       )
 
-      val offerDLC = DLCClient(
+      val offerDLC = TestDLCClient(
         outcomes = otherOutcomes,
         oraclePubKey = oraclePubKey,
         preCommittedR = preCommittedR,
@@ -297,8 +309,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
   }
 
   def setupDLC(
-      dlcAccept: DLCClient,
-      dlcOffer: DLCClient): Future[(SetupDLC, SetupDLC)] = {
+      dlcAccept: TestDLCClient,
+      dlcOffer: TestDLCClient): Future[(SetupDLC, SetupDLC)] = {
     val offerSigReceiveP =
       Promise[CETSignatures]()
     val sendAcceptSigs = { sigs: CETSignatures =>
@@ -369,8 +381,12 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     }
   }
 
-  def constructAndSetupDLC(numOutcomes: Int): Future[
-    (DLCClient, SetupDLC, DLCClient, SetupDLC, Vector[Sha256DigestBE])] = {
+  def constructAndSetupDLC(numOutcomes: Int): Future[(
+      TestDLCClient,
+      SetupDLC,
+      TestDLCClient,
+      SetupDLC,
+      Vector[Sha256DigestBE])] = {
     for {
       (acceptDLC, offerDLC, outcomeHashes) <- constructDLC(numOutcomes)
       (acceptSetup, offerSetup) <- setupDLC(acceptDLC, offerDLC)

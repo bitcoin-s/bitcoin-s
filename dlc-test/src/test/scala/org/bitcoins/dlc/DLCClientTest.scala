@@ -26,6 +26,18 @@ import org.bitcoins.core.wallet.builder.{
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.execution.{
+  CooperativeDLCOutcome,
+  DLCOutcome,
+  RefundDLCOutcome,
+  RefundDLCOutcomeWithClosing,
+  RefundDLCOutcomeWithDustClosing,
+  SetupDLC,
+  UnilateralDLCOutcome,
+  UnilateralDLCOutcomeWithClosing,
+  UnilateralDLCOutcomeWithDustClosing
+}
+import org.bitcoins.dlc.testgen.TestDLCClient
 import org.bitcoins.testkit.core.gen.{ScriptGenerators, TransactionGenerators}
 import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
@@ -198,15 +210,17 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
   val feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
 
-  def constructDLCClients(
-      numOutcomes: Int): (DLCClient, DLCClient, Vector[Sha256DigestBE]) = {
+  def constructDLCClients(numOutcomes: Int): (
+      TestDLCClient,
+      TestDLCClient,
+      Vector[Sha256DigestBE]) = {
     val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
 
     val (outcomes, remoteOutcomes) =
       DLCTestUtil.genContractInfos(outcomeHashes, totalInput)
 
     // Offer is local
-    val dlcOffer: DLCClient = DLCClient(
+    val dlcOffer: TestDLCClient = TestDLCClient(
       outcomes = outcomes,
       oraclePubKey = oraclePubKey,
       preCommittedR = preCommittedR,
@@ -228,7 +242,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
     )
 
     // Accept is remote
-    val dlcAccept: DLCClient = DLCClient(
+    val dlcAccept: TestDLCClient = TestDLCClient(
       outcomes = remoteOutcomes,
       oraclePubKey = oraclePubKey,
       preCommittedR = preCommittedR,
@@ -294,8 +308,12 @@ class DLCClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  def setupDLC(numOutcomes: Int): Future[
-    (SetupDLC, DLCClient, SetupDLC, DLCClient, Vector[Sha256DigestBE])] = {
+  def setupDLC(numOutcomes: Int): Future[(
+      SetupDLC,
+      TestDLCClient,
+      SetupDLC,
+      TestDLCClient,
+      Vector[Sha256DigestBE])] = {
     val (dlcOffer, dlcAccept, outcomeHashes) = constructDLCClients(numOutcomes)
 
     val offerSigReceiveP =

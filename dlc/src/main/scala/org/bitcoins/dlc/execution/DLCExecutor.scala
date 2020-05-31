@@ -26,16 +26,6 @@ import org.bitcoins.core.wallet.utxo.{
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
-import org.bitcoins.dlc.{
-  CETInfo,
-  RefundDLCOutcome,
-  RefundDLCOutcomeWithClosing,
-  RefundDLCOutcomeWithDustClosing,
-  SetupDLC,
-  UnilateralDLCOutcome,
-  UnilateralDLCOutcomeWithClosing,
-  UnilateralDLCOutcomeWithDustClosing
-}
 
 import scala.concurrent.{ExecutionContext, Future}
 

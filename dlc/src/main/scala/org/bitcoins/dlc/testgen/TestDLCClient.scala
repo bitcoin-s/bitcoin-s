@@ -1,4 +1,4 @@
-package org.bitcoins.dlc
+package org.bitcoins.dlc.testgen
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   ContractInfo,
@@ -8,16 +8,22 @@ import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
-import org.bitcoins.dlc.execution.DLCExecutor
+import org.bitcoins.dlc.execution.{
+  CooperativeDLCOutcome,
+  DLCExecutor,
+  RefundDLCOutcome,
+  SetupDLC,
+  UnilateralDLCOutcome
+}
 import org.bitcoins.dlc.sign.DLCTxSigner
 import scodec.bits.ByteVector
 
@@ -34,7 +40,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   * @param nextAddressIndex The next unused address index for the provided extPrivKey
   * @param fundingUtxos This client's funding BitcoinUTXOSpendingInfo collection
   */
-case class DLCClient( // TODO: Move this to testgen package, rename to TestDLCClient, move DLCOutcome, SetupDLC to execution
+case class TestDLCClient(
     offer: DLCMessage.DLCOffer,
     accept: DLCMessage.DLCAcceptWithoutSigs,
     isInitiator: Boolean,
@@ -168,7 +174,7 @@ case class DLCClient( // TODO: Move this to testgen package, rename to TestDLCCl
   }
 }
 
-object DLCClient {
+object TestDLCClient {
 
   def apply(
       outcomes: ContractInfo,
@@ -186,7 +192,7 @@ object DLCClient {
       feeRate: SatoshisPerVirtualByte,
       changeSPK: ScriptPubKey,
       remoteChangeSPK: ScriptPubKey,
-      network: BitcoinNetwork)(implicit ec: ExecutionContext): DLCClient = {
+      network: BitcoinNetwork)(implicit ec: ExecutionContext): TestDLCClient = {
     val pubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(extPrivKey,
                                                        nextAddressIndex,
                                                        network)
@@ -247,12 +253,12 @@ object DLCClient {
       changeAddress = acceptChangeAddress,
       eventId = offer.eventId)
 
-    DLCClient(offer,
-              accept,
-              isInitiator,
-              extPrivKey,
-              nextAddressIndex,
-              fundingUtxos)
+    TestDLCClient(offer,
+                  accept,
+                  isInitiator,
+                  extPrivKey,
+                  nextAddressIndex,
+                  fundingUtxos)
   }
 
   def apply(
@@ -274,7 +280,7 @@ object DLCClient {
       feeRate: SatoshisPerVirtualByte,
       changeSPK: WitnessScriptPubKeyV0,
       remoteChangeSPK: WitnessScriptPubKeyV0,
-      network: BitcoinNetwork)(implicit ec: ExecutionContext): DLCClient = {
+      network: BitcoinNetwork)(implicit ec: ExecutionContext): TestDLCClient = {
     val hashWin = CryptoUtil.sha256(ByteVector(outcomeWin.getBytes)).flip
     val hashLose = CryptoUtil.sha256(ByteVector(outcomeLose.getBytes)).flip
 
@@ -285,7 +291,7 @@ object DLCClient {
       )
     )
 
-    DLCClient(
+    TestDLCClient(
       outcomes = outcomes,
       oraclePubKey = oraclePubKey,
       preCommittedR = preCommittedR,

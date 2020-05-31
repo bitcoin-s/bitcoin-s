@@ -1,4 +1,4 @@
-package org.bitcoins.dlc
+package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}

@@ -1,4 +1,4 @@
-package org.bitcoins.dlc
+package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0

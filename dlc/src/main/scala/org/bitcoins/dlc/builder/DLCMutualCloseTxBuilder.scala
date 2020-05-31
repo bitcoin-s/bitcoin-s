@@ -1,7 +1,6 @@
 package org.bitcoins.dlc.builder
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{ContractInfo, OracleInfo}
-import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.{FilterDustFinalizer, RawTxBuilder}

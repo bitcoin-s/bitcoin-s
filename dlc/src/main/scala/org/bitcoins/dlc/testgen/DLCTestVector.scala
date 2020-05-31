@@ -28,8 +28,7 @@ import org.bitcoins.core.wallet.utxo.{
   SegwitV0NativeInputInfo
 }
 import org.bitcoins.crypto._
-import org.bitcoins.dlc.{
-  DLCClient,
+import org.bitcoins.dlc.execution.{
   UnilateralDLCOutcomeWithClosing,
   UnilateralDLCOutcomeWithDustClosing
 }
@@ -153,7 +152,7 @@ object DLCTestVector {
       OutputReference(info.outPoint, info.output)
     }
 
-    val offerDLC = DLCClient(
+    val offerDLC = TestDLCClient(
       outcomeWin = possibleOutcomes.head,
       outcomeLose = possibleOutcomes.last,
       oraclePubKey = oracleKey.schnorrPublicKey,
@@ -177,7 +176,7 @@ object DLCTestVector {
       network = RegTest
     )
 
-    val acceptDLC = DLCClient(
+    val acceptDLC = TestDLCClient(
       outcomeWin = possibleOutcomes.head,
       outcomeLose = possibleOutcomes.last,
       oraclePubKey = oracleKey.schnorrPublicKey,
