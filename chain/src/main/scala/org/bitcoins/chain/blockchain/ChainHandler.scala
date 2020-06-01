@@ -46,22 +46,30 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getBlockCount(): Future[Int] = {
     logger.debug(s"Querying for block count")
-    blockHeaderDAO.maxHeight.map { height =>
-      logger.debug(s"getBlockCount result: count=$height")
-      height
-    }
+    getBestBlockHeader().map(_.height)
   }
 
   override def getBestBlockHeader(): Future[BlockHeaderDb] = {
-    for {
-      hash <- getBestBlockHash()
-      headerOpt <- getHeader(hash)
-    } yield headerOpt match {
-      case None =>
-        throw new RuntimeException(
-          s"We found best hash=${hash.hex} but could not retrieve the full header!!!")
-      case Some(header) => header
+    logger.debug(s"Querying for best block hash")
+    //https://bitcoin.org/en/glossary/block-chain
+    val groupedChains = blockchains.groupBy(_.tip.chainWork)
+    val maxWork = groupedChains.keys.max
+    val chains = groupedChains(maxWork)
+
+    val bestHeader: BlockHeaderDb = chains match {
+      case Vector() =>
+        // This should never happen
+        val errMsg = s"Did not find blockchain with work $maxWork"
+        logger.error(errMsg)
+        throw new RuntimeException(errMsg)
+      case chain +: Vector() =>
+        chain.tip
+      case chain +: rest =>
+        logger.warn(
+          s"We have multiple competing blockchains: ${(chain +: rest).map(_.tip.hashBE.hex).mkString(", ")}")
+        chain.tip
     }
+    Future.successful(bestHeader)
   }
 
   /** @inheritdoc */
@@ -111,26 +119,7 @@ case class ChainHandler(
     * @inheritdoc
     */
   override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
-    logger.debug(s"Querying for best block hash")
-    //https://bitcoin.org/en/glossary/block-chain
-    val groupedChains = blockchains.groupBy(_.tip.chainWork)
-    val maxWork = groupedChains.keys.max
-    val chains = groupedChains(maxWork)
-
-    val hashBE: DoubleSha256DigestBE = chains match {
-      case Vector() =>
-        // This should never happen
-        val errMsg = s"Did not find blockchain with work $maxWork"
-        logger.error(errMsg)
-        throw new RuntimeException(errMsg)
-      case chain +: Vector() =>
-        chain.tip.hashBE
-      case chain +: rest =>
-        logger.warn(
-          s"We have multiple competing blockchains: ${(chain +: rest).map(_.tip.hashBE.hex).mkString(", ")}")
-        chain.tip.hashBE
-    }
-    Future.successful(hashBE)
+    getBestBlockHeader().map(_.hashBE)
   }
 
   /** @inheritdoc */
@@ -373,17 +362,15 @@ case class ChainHandler(
 
   /** @inheritdoc */
   override def getBestFilterHeader(): Future[CompactFilterHeaderDb] = {
-    //this seems realy brittle, is there a guarantee
-    //that the highest filter header count is our best filter header?
+    filterHeaderDAO.getBestFilter
+  }
+
+  def getHighestFilter: Future[CompactFilterHeaderDb] = {
     val filterCountF = getFilterHeaderCount()
     val ourBestFilterHeader = for {
       count <- filterCountF
       filterHeader <- getFilterHeadersAtHeight(count)
     } yield {
-      //TODO: Figure out what the best way to select
-      //the best filter header is if we have competing
-      //chains. (Same thing applies to getBestBlockHash()
-      //for now, just do the dumb thing and pick the first one
       filterHeader match {
         case tip1 +: _ +: _ =>
           tip1

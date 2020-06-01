@@ -42,6 +42,11 @@ case class CompactFilterHeaderDAO()(
     TableQuery[CompactFilterHeaderTable]
   }
 
+  private lazy val blockHeaderTable: profile.api.TableQuery[
+    BlockHeaderDAO#BlockHeaderTable] = {
+    BlockHeaderDAO().table
+  }
+
   override def createAll(filterHeaders: Vector[CompactFilterHeaderDb]): Future[
     Vector[CompactFilterHeaderDb]] = {
     createAllNoAutoInc(ts = filterHeaders, database = safeDatabase)
@@ -104,6 +109,17 @@ case class CompactFilterHeaderDAO()(
     Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
+  }
+
+  def getBestFilter: Future[CompactFilterHeaderDb] = {
+    val join = table join blockHeaderTable on (_.blockHash === _.hash)
+    val query = join.groupBy(_._1).map {
+      case (filter, headers) =>
+        filter -> headers.map(_._2.chainWork).max
+    }
+    safeDatabase
+      .runVec(query.result)
+      .map(_.maxBy(_._2.getOrElse(BigInt(-1)))._1)
   }
 
 }
