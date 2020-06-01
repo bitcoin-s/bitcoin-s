@@ -10,6 +10,9 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
+import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.core.api.ChainQueryApi.FilterResponse
+import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.ECPrivateKey
@@ -35,6 +38,23 @@ class BitcoindV19RpcClient(override val instance: BitcoindInstance)(
     with DescriptorRpc
     with PsbtRpc
     with V19BlockFilterRpc {
+
+  override def getFiltersBetweenHeights(
+      startHeight: Int,
+      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
+    Future.sequence(
+      startHeight
+        .until(endHeight)
+        .map { height =>
+          for {
+            hash <- getBlockHash(height)
+            filter <- getBlockFilter(hash, FilterType.Basic)
+          } yield FilterResponse(filter.filter, hash, height)
+        }
+        .toVector)
+  }
+
+  override def getFilterCount: Future[Int] = getBlockCount
 
   override lazy val version: BitcoindVersion = BitcoindVersion.V19
 

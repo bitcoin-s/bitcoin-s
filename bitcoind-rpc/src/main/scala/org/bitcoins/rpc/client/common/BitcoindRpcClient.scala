@@ -3,8 +3,12 @@ package org.bitcoins.rpc.client.common
 import java.io.File
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.api.FeeRateApi
+import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
+import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
@@ -32,6 +36,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     override val system: ActorSystem)
     extends Client
     with FeeRateApi
+    with NodeApi
+    with ChainQueryApi
     with BlockchainRpc
     with MessageRpc
     with MempoolRpc
@@ -49,6 +55,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   require(version == BitcoindVersion.Unknown || version == instance.getVersion,
           s"bitcoind version must be $version, got ${instance.getVersion}")
 
+  // Fee Rate Provider
+
   override def getFeeRate: Future[FeeUnit] =
     estimateSmartFee(blocks = 6).flatMap { result =>
       result.feerate match {
@@ -58,6 +66,52 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
             new RuntimeException("Unexpected error when getting fee rate"))
       }
     }
+  // Chain Query Api
+
+  /** Gets the height of the given block */
+  override def getBlockHeight(
+      blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+    getBlockHeader(blockHash).map(header => Some(header.height))
+  }
+
+  /** Gets number of confirmations for the given block hash */
+  override def getNumberOfConfirmations(
+      blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+    getBlockHeader(blockHash).map(header => Some(header.confirmations))
+  }
+
+  /** Gets the number of compact filters in the database */
+  override def getFilterCount: Future[Int] = ???
+
+  /** Returns the block height of the given block stamp */
+  override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
+    blockStamp match {
+      case blockHeight: BlockStamp.BlockHeight =>
+        Future.successful(blockHeight.height)
+      case blockHash: BlockStamp.BlockHash =>
+        getBlockHeader(blockHash.hash).map(_.height)
+      case blockTime: BlockStamp.BlockTime =>
+        Future.failed(
+          new UnsupportedOperationException(s"Not implemented: $blockTime"))
+    }
+
+  override def getFiltersBetweenHeights(
+      startHeight: Int,
+      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = ???
+
+  /** Gets the block height of the closest block to the given time */
+  override def epochSecondToBlockHeight(time: Long): Future[Int] =
+    Future.failed(
+      new UnsupportedOperationException(
+        "epochSecondToBlockHeight is not supported by bitcoind"))
+
+  // Node Api
+
+  override def broadcastTransaction(transaction: Transaction): Future[Unit] =
+    sendRawTransaction(transaction).map(_ => ())
+
+  override def downloadBlocks(
+      blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = FutureUtil.unit
 }
 
 object BitcoindRpcClient {
