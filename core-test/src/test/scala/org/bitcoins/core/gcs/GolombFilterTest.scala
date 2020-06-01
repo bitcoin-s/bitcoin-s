@@ -54,7 +54,7 @@ class GolombFilterTest extends BitcoinSUnitTest {
     }
 
     val genRandHashes: Gen[Vector[UInt64]] =
-      Gen.listOfN(1000, NumberGenerator.uInt64).map(_.toVector)
+      Gen.listOfN(100, NumberGenerator.uInt64).map(_.toVector)
 
     forAll(genKey, genData, genRandHashes) {
       case (k, data, randHashes) =>
