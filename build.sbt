@@ -62,6 +62,7 @@ lazy val `bitcoin-s` = project
     bench,
     eclairRpc,
     eclairRpcTest,
+    bundle,
     gui,
     keyManager,
     keyManagerTest,
@@ -264,6 +265,11 @@ lazy val cliTest = project
     cli,
     testkit
   )
+
+lazy val bundle = project
+  .in(file("app/bundle"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(appServer, gui)
 
 lazy val gui = project
   .in(file("app/gui"))
