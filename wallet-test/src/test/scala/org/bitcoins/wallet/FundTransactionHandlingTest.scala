@@ -215,7 +215,6 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
 
       taggedAddr <- wallet.getNewAddress(Vector(tag))
       _ <- wallet.sendToAddress(taggedAddr, destination.value * 2, None)
-
       taggedBalance <- wallet.getBalance(tag)
       _ = assert(taggedBalance == destination.value * 2)
 
@@ -232,7 +231,6 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
           )
       utx <- txBuilder.buildTx()
       tx <- RawTxSigner.sign(utx, utxoInfos, feeRate)
-
     } yield {
       assert(tx.inputs.forall(input =>
         expectedUtxos.exists(_.outPoint == input.previousOutput)))
