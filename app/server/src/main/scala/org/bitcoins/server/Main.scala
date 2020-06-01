@@ -6,6 +6,7 @@ import java.nio.file.{Files, Paths}
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
+import akka.http.scaladsl.Http
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.Core
@@ -25,7 +26,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.AccountDAO
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 
 object Main extends App {
   implicit val system = ActorSystem("bitcoin-s")
@@ -130,6 +131,8 @@ object Main extends App {
 
     start
   }
+
+  BitcoinSServer.startedFP.success(startFut)
 
   startFut.failed.foreach { err =>
     logger.error(s"Error on server startup!", err)
@@ -305,4 +308,19 @@ object Main extends App {
       }
     } yield chainApiWithWork
   }
+}
+
+object BitcoinSServer {
+  private[server] val startedFP = Promise[Future[Http.ServerBinding]]()
+
+  /** Allows the above server to be bundled with other projects.
+    *
+    * Main.startFut will be null when called from elsewhere due
+    * to the delayed initialization of scala Apps.
+    *
+    * In contrast this Future will be initialized immediately and
+    * only initialized to to Main's startFut when that future has
+    * been initialized.
+    */
+  val startedF: Future[Http.ServerBinding] = startedFP.future.flatten
 }
