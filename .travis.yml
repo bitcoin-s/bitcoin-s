@@ -38,7 +38,7 @@ matrix:
       scala:
         - 2.13.2
     - os: linux
-      name: "PostgreSQL Test"
+      name: "PostgreSQL tests"
       env:
         - PG_ENABLED="1"
         - TEST_COMMAND="dbCommonsTest/test chainTest/test nodeTest/test walletTest/test"

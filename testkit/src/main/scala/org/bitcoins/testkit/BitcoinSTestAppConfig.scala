@@ -102,17 +102,6 @@ object BitcoinSTestAppConfig {
   def configWithEmbeddedDb(
       project: Option[ProjectType],
       pgUrl: ProjectType => Option[String]): Config = {
-    def slqiteConfigForProject(project: ProjectType): String = {
-      ""
-//      val name = project.toString().toLowerCase()
-//      s"""
-//         | $name.db {
-//         |   url = "jdbc:sqlite:file:$name.db:?mode=memory&cache=shared"
-//         |   connectionPool = disabled
-//         |   keepAliveConnection = true
-//         | }
-//         |""".stripMargin
-    }
 
     def pgConfigForProject(project: ProjectType): String = {
       val name = project.toString().toLowerCase()
@@ -132,7 +121,7 @@ object BitcoinSTestAppConfig {
       if (pgUrl(project).isDefined)
         pgConfigForProject(project)
       else
-        slqiteConfigForProject(project)
+        ""
 
     val confStr = project match {
       case None    => ProjectType.all.map(configForProject).mkString("\n")
