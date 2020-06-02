@@ -1,16 +1,16 @@
 package org.bitcoins.node.models
 
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.fixtures.NodeDAOFixture
 
-class BroadcastAbleTransactionDAOTest extends NodeDAOFixture {
+class BroadcastAbleTransactionDAOTest extends NodeDAOFixture with EmbeddedPg {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   behavior of "BroadcastAbleTransactionDAO"
 

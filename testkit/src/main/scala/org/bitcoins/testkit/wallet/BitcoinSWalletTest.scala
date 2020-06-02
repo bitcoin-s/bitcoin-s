@@ -18,7 +18,7 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
-import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
@@ -36,12 +36,15 @@ import scala.concurrent.{
   Promise
 }
 
-trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
+trait BitcoinSWalletTest
+    extends BitcoinSFixture
+    with WalletLogger
+    with EmbeddedPg {
   import BitcoinSWalletTest._
 
   /** Wallet config with data directory set to user temp directory */
   implicit protected def config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   implicit protected def walletAppConfig: WalletAppConfig = {
     config.walletConf
@@ -49,6 +52,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
+    super[EmbeddedPg].beforeAll()
   }
 
   def nodeApi: NodeApi = MockNodeApi
@@ -591,11 +595,11 @@ object BitcoinSWalletTest extends WalletLogger {
 
   def destroyWallet(wallet: WalletApi): Future[Unit] = {
     import wallet.walletConfig.ec
-    val destroyWalletF =
-      wallet.walletConfig
-        .dropAll()
-        .map(_ => ())
-    destroyWalletF
+    for {
+
+      _ <- wallet.walletConfig.dropTable("flyway_schema_history")
+      _ <- wallet.walletConfig.dropAll()
+    } yield ()
   }
 
 }

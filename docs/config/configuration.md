@@ -196,3 +196,54 @@ akka {
     }
 }
 ```
+
+Sqlite and PostgreSQL
+
+By default, bitcoin-s uses Sqlite to store its data. 
+It creates three Sqlite databases in `~/.bitcoin-s/${network}`: `chain.sqlite` for `chain` project, 
+`node.sqlite` for `node` project and `wallet.sqlite` the wallet. This is the default configuration, 
+it doesn't require additional changes in the config file. 
+
+`bitcoin-s` also supports PostgreSQL as a database backend. In order to use a 
+PostgreSQL database for all project you need to add following into your config file: 
+
+```$xslt
+bitcoin-s {
+    common {
+        profile = "slick.jdbc.PostgresProfile$"
+        db {
+            url = "jdbc:postgresql://localhost:5432/database"
+            driver = "org.postgresql.Driver"
+            username = "user"
+            password = "topsecret"
+        }
+    }
+}
+```
+
+Also you can use mix databases and drivers in one configuration. For example,
+This configuration file enables Sqlite for `node` project (it's default, so its configuration 
+is omitted), and `walletdb` and `chaindb` PostgreSQL databases for `wallet` and `chain` projects:
+
+```$xslt
+bitcoin-s {
+    chain {
+        profile = "slick.jdbc.PostgresProfile$"
+        db {
+            url = "jdbc:postgresql://localhost:5432/chaindb"
+            driver = "org.postgresql.Driver"
+            username = "user"
+            password = "topsecret"
+        }
+    }
+    wallet {
+        profile = "slick.jdbc.PostgresProfile$"
+        db {
+            url = "jdbc:postgresql://localhost:5432/walletdb"
+            driver = "org.postgresql.Driver"
+            username = "user"
+            password = "topsecret"
+        }
+    }
+}
+```

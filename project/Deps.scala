@@ -26,12 +26,13 @@ object Deps {
     val asyncNewScalaV = "0.10.0"
 
     val flywayV = "6.4.2"
-    val postgresV = "9.4.1210"
+    val postgresV = "42.2.12"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
     val sqliteV = "3.31.1"
     val scalameterV = "0.17"
     val scalamockV = "4.4.0"
+    val pgEmbeddedV = "0.13.3"
 
     val newMicroPickleV = "0.8.0"
     val newMicroJsonV = newMicroPickleV
@@ -117,6 +118,7 @@ object Deps {
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
     val scalaTestPlus = "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ()
+    val pgEmbedded = "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV withSources () withJavadoc ()
   }
 
   object Test {
@@ -132,13 +134,16 @@ object Deps {
     val playJson = Compile.playJson % "test"
     val akkaTestkit = "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
     val scalameter = "com.storm-enroute" %% "scalameter" % V.scalameterV % "test" withSources () withJavadoc ()
+    val pgEmbedded = "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
   }
 
   val chain = List(
     Compile.logback
   )
 
-  val chainTest = List()
+  val chainTest = List(
+    Test.pgEmbedded
+  )
 
   def appCommons(scalaVersion: String) = List(
     Compile.newMicroPickle,
@@ -208,8 +213,10 @@ object Deps {
     Compile.sourcecode,
     Compile.logback,
     Compile.sqlite,
+    Compile.postgres,
     Compile.slickHikari,
-    Test.scalaTest
+    Test.scalaTest,
+    Test.pgEmbedded
   )
 
   def cli(scalaVersion: String) = List(
@@ -268,7 +275,8 @@ object Deps {
 
   val nodeTest = List(
     Test.akkaTestkit,
-    Test.scalaTest
+    Test.scalaTest,
+    Test.pgEmbedded
   )
 
   val testkit = List(
@@ -276,6 +284,7 @@ object Deps {
     Compile.scalacheck,
     Compile.scalaTest,
     Compile.scalaTestPlus,
+    Compile.pgEmbedded,
     Test.akkaTestkit
   )
 
@@ -294,7 +303,8 @@ object Deps {
   )
 
   val walletTest = List(
-    Test.akkaTestkit
+    Test.akkaTestkit,
+    Test.pgEmbedded
   )
 
   val docs = List(

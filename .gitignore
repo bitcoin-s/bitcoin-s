@@ -82,3 +82,6 @@ website/static/api
 #bloop 
 .bloop/
 .metals/
+
+#OSX
+.DS_Store

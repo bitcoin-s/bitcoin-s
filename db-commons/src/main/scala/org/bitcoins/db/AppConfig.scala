@@ -1,26 +1,21 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.protocol.blockchain.ChainParams
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file.{Files, Path, Paths}
 
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.config.RegTest
+import ch.qos.logback.classic.Level
 import com.typesafe.config._
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.protocol.blockchain.{
+  ChainParams,
+  MainNetChainParams,
+  RegTestNetChainParams,
+  TestNetChainParams
+}
 import org.bitcoins.core.util.BitcoinSLogger
 
-import org.bitcoins.core.protocol.blockchain.MainNetChainParams
-import org.bitcoins.core.protocol.blockchain.TestNetChainParams
-import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
-import java.nio.file.Files
-
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Properties
 import scala.util.matching.Regex
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import ch.qos.logback.classic.Level
 
 /**
   * Everything needed to configure functionality
@@ -98,7 +93,7 @@ abstract class AppConfig extends LoggerConfig {
       // that as our config. here we have to do the reverse, to
       // get the keys to resolve correctly
       val reconstructedStr = s"""
-      bitcoin-s: ${this.config.asReadableJson}
+      "bitcoin-s": ${this.config.asReadableJson}
       """
       val reconstructed = ConfigFactory.parseString(reconstructedStr)
       newConfigOfType(reconstructed +: configOverrides)

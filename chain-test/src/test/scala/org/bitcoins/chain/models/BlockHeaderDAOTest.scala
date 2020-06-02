@@ -4,7 +4,11 @@ import akka.actor.ActorSystem
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
+import org.bitcoins.testkit.chain.{
+  BlockHeaderHelper,
+  ChainDbUnitTest,
+  ChainUnitTest
+}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -12,7 +16,7 @@ import scala.concurrent.Future
 /**
   * Created by chris on 9/8/16.
   */
-class BlockHeaderDAOTest extends ChainUnitTest {
+class BlockHeaderDAOTest extends ChainDbUnitTest {
 
   override type FixtureParam = BlockHeaderDAO
 
@@ -222,7 +226,8 @@ class BlockHeaderDAOTest extends ChainUnitTest {
 
       getHeightF.map {
         case headers =>
-          assert(headers == Seq(blockHeader, blockHeader1))
+          assert(headers.toSet.size == 2)
+          assert(headers.toSet == Set(blockHeader, blockHeader1))
       }
   }
 

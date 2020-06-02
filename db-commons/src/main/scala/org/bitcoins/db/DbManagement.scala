@@ -1,6 +1,6 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.FlywayException
 
@@ -33,26 +33,16 @@ trait DbManagement extends BitcoinSLogger {
 
   def allTables: List[TableQuery[Table[_]]]
 
-  /** Creates all tables in our table list, in one SQL transaction */
-  def createAll()(implicit ec: ExecutionContext): Future[Unit] = {
-    val query = {
-      val querySeq =
-        allTables
-          .map(createTableQuery(_, createIfNotExists = true))
-          .map { query =>
-            // DIRTY HACK. For some reason Slick doesn't know that Sqlite can do CREATE INDEX IF NOT EXISTS
-            val statements = query.statements.map(
-              _.replace("create index", "create index if not exists"))
-            query.overrideStatements(statements)
-          }
-      DBIO.seq(querySeq: _*).transactionally
-    }
-
-    database.run(query).map(_ => logger.debug(s"Created tables"))
-  }
-
   def dropAll()(implicit ec: ExecutionContext): Future[Unit] = {
-    Future.sequence(allTables.reverse.map(dropTable(_))).map(_ => ())
+    val result =
+      FutureUtil
+        .foldLeftAsync((), allTables.reverse) { (_, table) =>
+          dropTable(table)
+        }
+    result.failed.foreach { e =>
+      e.printStackTrace()
+    }
+    result
   }
 
   /** The query needed to create the given table */
@@ -86,18 +76,25 @@ trait DbManagement extends BitcoinSLogger {
     result
   }
 
+  def dropTable(tableName: String): Future[Int] = {
+    val result = database.run(sqlu"""DROP TABLE IF EXISTS #$tableName""")
+    import scala.concurrent.ExecutionContext.Implicits.global
+    result.failed.foreach { ex =>
+      ex.printStackTrace()
+    }
+    result
+  }
+
   /** Executes migrations related to this database
     *
     * @see [[https://flywaydb.org/documentation/api/#programmatic-configuration-java]] */
   def migrate(): Int = {
-    val url = jdbcUrl
-    val username = ""
-    val password = ""
-    //appConfig.dbName is for the format 'walletdb.sqlite' or 'nodedb.sqlite' etc
-    //we need to remove the '.sqlite' suffix
-    val name = dbName.split('.').head.mkString
-    val config = Flyway.configure().locations(s"classpath:${name}/migration/")
-    val flyway = config.dataSource(url, username, password).load
+    val module = appConfig.moduleName
+    val config =
+      Flyway
+        .configure()
+        .locations(s"classpath:${driverName}/${module}/migration/")
+    val flyway = config.dataSource(jdbcUrl, username, password).load
 
     try {
       flyway.migrate()

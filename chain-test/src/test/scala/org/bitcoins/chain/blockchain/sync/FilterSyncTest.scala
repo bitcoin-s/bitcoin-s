@@ -2,15 +2,15 @@ package org.bitcoins.chain.blockchain.sync
 
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.core.gcs.{FilterType, GolombFilter}
+import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.fixture.BitcoindV19ChainHandler
-import org.bitcoins.testkit.chain.{ChainUnitTest, SyncUtil}
+import org.bitcoins.testkit.chain.{ChainDbUnitTest, SyncUtil}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-class FilterSyncTest extends ChainUnitTest {
+class FilterSyncTest extends ChainDbUnitTest {
 
   override type FixtureParam = BitcoindV19ChainHandler
 
@@ -53,7 +53,7 @@ class FilterSyncTest extends ChainUnitTest {
 
   it must "sync a bunch of filter headers from an external data source" in {
     fixture =>
-      val BitcoindV19ChainHandler(bitcoind, chainHandler) = fixture
+      val BitcoindV19ChainHandler(bitcoind, _) = fixture
 
       val numBlocks = 100
       val generatedBlocksF = for {
@@ -75,7 +75,7 @@ class FilterSyncTest extends ChainUnitTest {
 
   it must "be able to call filterSync() and not fail when nothing has happened" in {
     fixture =>
-      val BitcoindV19ChainHandler(bitcoind, chainHandler) = fixture
+      val BitcoindV19ChainHandler(bitcoind, _) = fixture
 
       val generated1BlockF = for {
         addr <- bitcoind.getNewAddress

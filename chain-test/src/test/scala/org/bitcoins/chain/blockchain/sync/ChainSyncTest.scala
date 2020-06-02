@@ -4,13 +4,13 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.testkit.chain.{ChainUnitTest, SyncUtil}
 import org.bitcoins.testkit.chain.fixture.BitcoindChainHandlerViaRpc
+import org.bitcoins.testkit.chain.{ChainDbUnitTest, SyncUtil}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-class ChainSyncTest extends ChainUnitTest {
+class ChainSyncTest extends ChainDbUnitTest {
   override type FixtureParam = BitcoindChainHandlerViaRpc
 
   implicit override val system = ActorSystem(

@@ -15,10 +15,10 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPrivateKey
 }
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
+  ChainDbUnitTest,
   ChainTestUtil,
   ChainUnitTest
 }
@@ -29,20 +29,14 @@ import play.api.libs.json.Json
 import scala.concurrent.Future
 import scala.io.BufferedSource
 
-class ChainHandlerTest extends ChainUnitTest {
+class ChainHandlerTest extends ChainDbUnitTest {
 
   override type FixtureParam = ChainHandler
 
   implicit override val system = ActorSystem("ChainUnitTest")
 
   // we're working with mainnet data
-  implicit override lazy val appConfig: ChainAppConfig = {
-    import BitcoinSTestAppConfig.ProjectType
-
-    val memoryDb =
-      BitcoinSTestAppConfig.configWithMemoryDb(Some(ProjectType.Chain))
-    mainnetAppConfig.withOverrides(memoryDb)
-  }
+  implicit override lazy val appConfig: ChainAppConfig = mainnetAppConfig
 
   val source: BufferedSource = FileUtil.getFileAsSource("block_headers.json")
   val arrStr: String = source.getLines.next

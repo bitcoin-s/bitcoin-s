@@ -497,10 +497,12 @@ object Wallet extends WalletLogger {
     val accountCreationF =
       createAccountFutures.flatMap(accounts => Future.sequence(accounts))
 
-    accountCreationF.foreach(_ =>
-      logger.debug(s"Created root level accounts for wallet"))
+    accountCreationF.foreach { _ =>
+      logger.debug(s"Created root level accounts for wallet")
+    }
 
     accountCreationF.failed.foreach { err =>
+      err.printStackTrace()
       logger.error(s"Failed to create root level accounts: $err")
     }
 

@@ -6,6 +6,8 @@ import org.bitcoins.wallet.models._
 import org.scalatest._
 import org.scalatest.flatspec.FixtureAsyncFlatSpec
 
+import scala.concurrent.Future
+
 case class WalletDAOs(
     accountDAO: AccountDAO,
     addressDAO: AddressDAO,
@@ -31,6 +33,12 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
   implicit private val walletConfig: WalletAppConfig = config
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    makeFixture(build = () => walletConfig.createAll().map(_ => daos),
-                destroy = () => walletConfig.dropAll())(test)
+    makeFixture(build = () => Future(walletConfig.migrate()).map(_ => daos),
+                destroy = () => dropAll())(test)
+
+  def dropAll(): Future[Unit] =
+    for {
+      _ <- walletConfig.dropTable("flyway_schema_history")
+      _ <- walletConfig.dropAll()
+    } yield ()
 }

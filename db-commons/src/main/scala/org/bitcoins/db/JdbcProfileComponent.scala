@@ -45,6 +45,17 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
     dbConfig.config.getString("db.url")
   }
 
+  lazy val driverName: String = {
+    val parts = jdbcUrl.split(":")
+    require(parts.size >= 2 && parts(0) == "jdbc",
+            s"`${jdbcUrl}` must be a valid JDBC URL")
+    parts(1)
+  }
+
+  lazy val username: String = dbConfig.config.getString("db.username")
+
+  lazy val password: String = dbConfig.config.getString("db.password")
+
   /** The database we are connecting to */
   lazy val database: Database = {
     dbConfig.db

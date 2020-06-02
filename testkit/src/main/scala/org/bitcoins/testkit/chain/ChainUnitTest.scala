@@ -461,15 +461,18 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   def setupAllTables()(
       implicit appConfig: ChainAppConfig,
-      ec: ExecutionContext): Future[Unit] = {
-    appConfig.createAll()
+      ec: ExecutionContext): Future[Unit] = Future {
+    appConfig.migrate()
+    ()
   }
 
   def destroyAllTables()(
       implicit appConfig: ChainAppConfig,
-      ec: ExecutionContext): Future[Unit] = {
-    appConfig.dropAll()
-  }
+      ec: ExecutionContext): Future[Unit] =
+    for {
+      _ <- appConfig.dropTable("flyway_schema_history")
+      _ <- appConfig.dropAll()
+    } yield ()
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
   def setupHeaderTableWithGenesisHeader()(

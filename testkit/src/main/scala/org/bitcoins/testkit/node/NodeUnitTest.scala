@@ -20,6 +20,7 @@ import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
+import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.NodeUnitTest.NodeFundedWalletBitcoind
@@ -36,10 +37,15 @@ import org.scalatest.FutureOutcome
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-trait NodeUnitTest extends BitcoinSFixture {
+trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.nodeConf)
+    super[EmbeddedPg].beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    super[EmbeddedPg].afterAll()
   }
 
   /** Wallet config with data directory set to user temp directory */

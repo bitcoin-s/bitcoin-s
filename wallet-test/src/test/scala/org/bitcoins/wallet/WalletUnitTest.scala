@@ -9,6 +9,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.KeyManagerUnlockError.MnemonicNotFound
 import org.bitcoins.keymanager.{KeyManagerUnlockError, WalletStorage}
+import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.api.WalletApi
