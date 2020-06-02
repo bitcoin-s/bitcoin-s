@@ -1,7 +1,8 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
@@ -10,8 +11,6 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   WalletWithBitcoindV19
 }
 import org.scalatest.FutureOutcome
-
-import scala.concurrent.Future
 
 class RescanHandlingTest extends BitcoinSWalletTest {
 
@@ -54,6 +53,8 @@ class RescanHandlingTest extends BitcoinSWalletTest {
       val wallet = fixture.wallet
 
       for {
+        balance <- wallet.getBalance()
+        _ = assert(balance != Satoshis.zero)
         utxos <- wallet.spendingInfoDAO.findAll()
         _ = assert(utxos.nonEmpty)
 
@@ -194,11 +195,10 @@ class RescanHandlingTest extends BitcoinSWalletTest {
       val oldestHeightF = for {
         utxos <- utxosF
         blockhashes = utxos.map(_.blockHash)
-        heights <- Future.sequence {
-          blockhashes.map(h =>
-            wallet.chainQueryApi.getBlockHeight(h.get).map(_.get))
+        heights <- FutureUtil.sequentially(blockhashes) { hash =>
+          wallet.chainQueryApi.getBlockHeight(hash.get)
         }
-      } yield heights.min
+      } yield heights.min.get
 
       //ok now that we have the height of the oldest utxo, let's rescan up to then
       val rescanF = for {
