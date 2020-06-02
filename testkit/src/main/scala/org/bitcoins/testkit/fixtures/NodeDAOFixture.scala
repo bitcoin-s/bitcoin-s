@@ -4,6 +4,8 @@ import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.testkit.node.NodeUnitTest
 import org.scalatest._
 
+import scala.concurrent.Future
+
 case class NodeDAOs(txDAO: BroadcastAbleTransactionDAO)
 
 /** Provides a fixture where all DAOs used by the node projects are provided */
@@ -17,8 +19,9 @@ trait NodeDAOFixture extends NodeUnitTest {
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
     makeFixture(build = () =>
-                  nodeConfig
-                    .createAll()(executionContext)
+                  Future(
+                    nodeConfig
+                      .migrate())(executionContext)
                     .map(_ => daos),
                 destroy = () =>
                   nodeConfig

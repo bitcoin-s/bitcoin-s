@@ -24,8 +24,9 @@ case class SpendingInfoDAO()(
     implicit val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends CRUDAutoInc[SpendingInfoDb] {
-  import org.bitcoins.db.DbCommonsColumnMappers._
   import profile.api._
+  private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  import mappers._
 
   /** The table inside our database we are inserting into */
   override val table: profile.api.TableQuery[SpendingInfoTable] =
@@ -176,7 +177,6 @@ case class SpendingInfoDAO()(
     */
   case class SpendingInfoTable(tag: Tag)
       extends TableAutoInc[SpendingInfoDb](tag, "txo_spending_info") {
-    import org.bitcoins.db.DbCommonsColumnMappers._
 
     def outPoint: Rep[TransactionOutPoint] =
       column("tx_outpoint")

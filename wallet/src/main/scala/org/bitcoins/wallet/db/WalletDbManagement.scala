@@ -42,9 +42,9 @@ trait WalletDbManagement extends DbManagement {
   override lazy val allTables: List[TableQuery[Table[_]]] = {
     List(accountTable,
          addressTable,
-         utxoTable,
          txTable,
          incomingTxTable,
+         utxoTable,
          outgoingTxTable)
   }
 

@@ -13,8 +13,9 @@ case class AccountDAO()(
     override val appConfig: WalletAppConfig)
     extends CRUD[AccountDb, (HDCoin, Int)]
     with SlickUtil[AccountDb, (HDCoin, Int)] {
-  import org.bitcoins.db.DbCommonsColumnMappers._
   import profile.api._
+  private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  import mappers._
 
   override val table: TableQuery[AccountTable] = TableQuery[AccountTable]
 
@@ -58,8 +59,6 @@ case class AccountDAO()(
 
   class AccountTable(tag: Tag)
       extends Table[AccountDb](tag, "wallet_accounts") {
-
-    import org.bitcoins.db.DbCommonsColumnMappers._
 
     def xpub: Rep[ExtPublicKey] = column[ExtPublicKey]("xpub")
 

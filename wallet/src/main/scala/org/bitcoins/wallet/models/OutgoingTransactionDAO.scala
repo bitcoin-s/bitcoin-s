@@ -26,7 +26,8 @@ case class OutgoingTransactionDAO()(
   class OutgoingTransactionTable(tag: Tag)
       extends TxTable[OutgoingTransactionDb](tag, "wallet_outgoing_txs") {
 
-    import org.bitcoins.db.DbCommonsColumnMappers._
+    private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+    import mappers._
 
     def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.Unique)
 
@@ -73,7 +74,7 @@ case class OutgoingTransactionDAO()(
       (txIdBE, inputAmount, sentAmount, actualFee, expectedFee, feeRate) <> (fromTuple, toTuple)
 
     def primaryKey: PrimaryKey =
-      primaryKey("pk_tx", sourceColumns = txIdBE)
+      primaryKey("pk_out_tx", sourceColumns = txIdBE)
 
     def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_, TransactionDb] = {
       foreignKey("fk_underlying_tx",

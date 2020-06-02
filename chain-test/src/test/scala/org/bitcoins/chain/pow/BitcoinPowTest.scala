@@ -3,26 +3,23 @@ package org.bitcoins.chain.pow
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.testkit.chain.fixture.{ChainFixture, ChainFixtureTag}
-import org.bitcoins.testkit.chain.{ChainTestUtil, ChainUnitTest}
+import org.bitcoins.testkit.chain.{
+  ChainDbUnitTest,
+  ChainTestUtil,
+  ChainUnitTest
+}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
-import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 
-class BitcoinPowTest extends ChainUnitTest {
+class BitcoinPowTest extends ChainDbUnitTest {
 
   override type FixtureParam = ChainFixture
 
-  implicit override lazy val appConfig: ChainAppConfig = {
-    import BitcoinSTestAppConfig.ProjectType
-    val memoryDb =
-      BitcoinSTestAppConfig.configWithMemoryDb(Some(ProjectType.Chain))
-    mainnetAppConfig.withOverrides(memoryDb)
-  }
+  // we're working with mainnet data
+  implicit override lazy val appConfig: ChainAppConfig = mainnetAppConfig
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainFixture(test)

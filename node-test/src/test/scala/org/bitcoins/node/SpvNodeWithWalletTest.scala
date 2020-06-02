@@ -19,7 +19,7 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = SpvNodeFundedWalletBitcoind
 

@@ -118,14 +118,13 @@ class P2PClientTest extends BitcoindRpcTest {
 
   override def beforeAll(): Unit = {
     implicit val chainConf = config.chainConf
-    for {
-      _ <- chainConf.createAll()
-    } yield ()
+    chainConf.migrate()
   }
 
   override def afterAll(): Unit = {
     implicit val chainConf = config.chainConf
     for {
+      _ <- chainConf.dropTable("flyway_schema_history")
       _ <- chainConf.dropAll()
     } yield ()
     super.afterAll()

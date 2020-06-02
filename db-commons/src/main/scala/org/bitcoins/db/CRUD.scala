@@ -173,6 +173,7 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
     * the database.
     */
   private val foreignKeysPragma = sqlu"PRAGMA foreign_keys = TRUE;"
+  private val sqlite = jdbcProfile.driverName == "sqlite"
 
   /** Logs the given action and error, if we are not on mainnet */
   private def logAndThrowError(
@@ -187,7 +188,9 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
   /** Runs the given DB action */
   def run[R](action: DBIOAction[R, NoStream, _])(
       implicit ec: ExecutionContext): Future[R] = {
-    val result = database.run[R](foreignKeysPragma >> action)
+    val result =
+      if (sqlite) database.run[R](foreignKeysPragma >> action)
+      else database.run[R](action)
     result.recoverWith { logAndThrowError(action) }
   }
 
@@ -197,7 +200,9 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
     */
   def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(
       implicit ec: ExecutionContext): Future[Vector[R]] = {
-    val result = database.run[Seq[R]](foreignKeysPragma >> action)
+    val result =
+      if (sqlite) database.run[Seq[R]](foreignKeysPragma >> action)
+      else database.run[Seq[R]](action)
     result.map(_.toVector).recoverWith { logAndThrowError(action) }
   }
 }

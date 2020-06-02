@@ -5,7 +5,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.db.NodeDbManagement
-import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BitcoinSUnitTest}
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -13,10 +13,10 @@ import org.bitcoins.wallet.db.WalletDbManagement
 
 import scala.concurrent.ExecutionContext
 
-class DbManagementTest extends BitcoinSAsyncTest {
+class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   def dbConfig(project: ProjectType): Config = {
-    BitcoinSTestAppConfig.configWithMemoryDb(Some(project))
+    BitcoinSTestAppConfig.configWithEmbeddedDb(Some(project), pgUrl)
   }
 
   def createChainDbManagement(
@@ -57,7 +57,8 @@ class DbManagementTest extends BitcoinSAsyncTest {
                                           dbConfig(ProjectType.Wallet))
     val walletDbManagement = createWalletDbManagement(walletAppConfig)
     val result = walletDbManagement.migrate()
-    assert(result == 4)
+    val expected = if (walletAppConfig.driverName == "postgresql") 1 else 4
+    assert(result == expected)
   }
 
   it must "run migrations for node db" in {

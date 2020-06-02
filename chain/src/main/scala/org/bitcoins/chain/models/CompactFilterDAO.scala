@@ -13,12 +13,12 @@ case class CompactFilterDAO()(
     override val appConfig: ChainAppConfig)
     extends CRUD[CompactFilterDb, DoubleSha256DigestBE]
     with SlickUtil[CompactFilterDb, DoubleSha256DigestBE] {
-  import org.bitcoins.db.DbCommonsColumnMappers._
+  val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  import mappers._
   import profile.api._
 
   class CompactFilterTable(tag: Tag)
       extends Table[CompactFilterDb](tag, "cfilters") {
-    import org.bitcoins.db.DbCommonsColumnMappers._
 
     def hash = column[DoubleSha256DigestBE]("hash")
 

@@ -20,8 +20,9 @@ case class BlockHeaderDAO()(
     extends CRUD[BlockHeaderDb, DoubleSha256DigestBE]
     with SlickUtil[BlockHeaderDb, DoubleSha256DigestBE] {
 
-  import org.bitcoins.db.DbCommonsColumnMappers._
   import profile.api._
+  private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  import mappers._
 
   override val table =
     profile.api.TableQuery[BlockHeaderTable]
@@ -290,7 +291,6 @@ case class BlockHeaderDAO()(
   /** A table that stores block headers related to a blockchain */
   class BlockHeaderTable(tag: Tag)
       extends Table[BlockHeaderDb](tag, "block_headers") {
-    import org.bitcoins.db.DbCommonsColumnMappers._
 
     def height = column[Int]("height")
 

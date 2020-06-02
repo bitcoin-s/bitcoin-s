@@ -1,7 +1,7 @@
 package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
+import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.testkit.chain.fixture.ChainFixture
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.FutureOutcome
