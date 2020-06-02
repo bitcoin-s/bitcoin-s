@@ -365,25 +365,6 @@ case class ChainHandler(
     filterHeaderDAO.getBestFilter
   }
 
-  def getHighestFilter: Future[CompactFilterHeaderDb] = {
-    val filterCountF = getFilterHeaderCount()
-    val ourBestFilterHeader = for {
-      count <- filterCountF
-      filterHeader <- getFilterHeadersAtHeight(count)
-    } yield {
-      filterHeader match {
-        case tip1 +: _ +: _ =>
-          tip1
-        case tip +: _ =>
-          tip
-        case Vector() =>
-          sys.error(s"No filter headers found in database!")
-      }
-    }
-
-    ourBestFilterHeader
-  }
-
   /** @inheritdoc */
   override def getFilterHeader(
       blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] =

@@ -525,6 +525,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
     for {
       _ <- chainHandler.blockHeaderDAO.createAll(headersWithNoWork)
+      isMissingWork <- chainHandler.isMissingChainWork
+      _ = assert(isMissingWork)
       newHandler <- chainHandler.recalculateChainWork
       headerDb <- newHandler.getBestBlockHeader()
     } yield {
