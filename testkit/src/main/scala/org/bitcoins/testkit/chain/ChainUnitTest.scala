@@ -18,7 +18,7 @@ import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
 import org.scalatest._
 import play.api.libs.json.{JsError, JsSuccess, Json}
@@ -463,6 +463,7 @@ object ChainUnitTest extends ChainVerificationLogger {
       implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[Unit] = Future {
     appConfig.migrate()
+    ()
   }
 
   def destroyAllTables()(
