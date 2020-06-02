@@ -51,14 +51,7 @@ public class Secp256k1Context {
    * to Bouncy Castle implementations in the case of having no libsecp present.
    */
   public static boolean isEnabled() {
-      String secpDisabled = System.getenv("DISABLE_SECP256K1");
-      if (secpDisabled != null &&
-              (secpDisabled.toLowerCase().equals("true") ||
-                      secpDisabled.equals("1"))) {
-          return false;
-      } else {
-          return enabled;
-      }
+      return enabled;
   }
 
   public static long getContext() {

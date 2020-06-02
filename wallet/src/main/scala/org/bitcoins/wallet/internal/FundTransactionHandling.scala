@@ -11,9 +11,9 @@ import org.bitcoins.core.protocol.transaction.{
   TxUtil
 }
 import org.bitcoins.core.wallet.builder.{
-  NonInteractiveWithChangeFinalizer,
   RawTxBuilder,
-  RawTxBuilderWithFinalizer
+  RawTxBuilderWithFinalizer,
+  StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
@@ -151,7 +151,7 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
 
       val txBuilder = RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
 
-      val finalizer = NonInteractiveWithChangeFinalizer(
+      val finalizer = StandardNonInteractiveFinalizer(
         utxoSpendingInfos.map(_.inputInfo),
         feeRate,
         change.scriptPubKey)

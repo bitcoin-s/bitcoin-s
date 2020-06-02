@@ -3,7 +3,7 @@ import sbt._
 object Deps {
 
   object V {
-    val bouncyCastle = "1.65"
+    val bouncyCastle = "1.65.01"
     val logback = "1.2.3"
     val scalacheck = "1.14.3"
     val scalaTest = "3.1.2"
@@ -13,9 +13,9 @@ object Deps {
     val spray = "1.3.5"
     val zeromq = "0.5.2"
     val akkav = "10.1.12"
-    val akkaStreamv = "2.5.31"
-    val playv = "2.7.4"
-    val scodecV = "1.1.12"
+    val akkaStreamv = "2.6.5"
+    val playv = "2.8.1"
+    val scodecV = "1.1.14"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.4"
     val typesafeConfigV = "1.4.0"
@@ -23,8 +23,6 @@ object Deps {
     val scalaFxV = "14-R19"
     val javaFxV = "14.0.1"
 
-    // async dropped Scala 2.11 in 0.10.0
-    val asyncOldScalaV = "0.9.7"
     val asyncNewScalaV = "0.10.0"
 
     val flywayV = "6.4.2"
@@ -35,10 +33,6 @@ object Deps {
     val scalameterV = "0.17"
     val scalamockV = "4.4.0"
     val pgEmbeddedV = "0.13.3"
-
-    // Wallet/node/chain server deps
-    val oldMicroPickleV = "0.7.4"
-    val oldMicroJsonV = oldMicroPickleV
 
     val newMicroPickleV = "0.8.0"
     val newMicroJsonV = newMicroPickleV
@@ -108,14 +102,8 @@ object Deps {
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
     val flyway = "org.flywaydb" % "flyway-core" % V.flywayV
 
-    // zero dep JSON library. Have to use different versiont to juggle
-    // Scala 2.11/12/13
-    val oldMicroJson = "com.lihaoyi" %% "ujson" % V.oldMicroJsonV
     val newMicroJson = "com.lihaoyi" %% "ujson" % V.newMicroJsonV
 
-    // serializing to and from JSON Have to use different versiont to juggle
-    // Scala 2.11/12/13
-    val oldMicroPickle = "com.lihaoyi" %% "upickle" % V.oldMicroPickleV
     val newMicroPickle = "com.lihaoyi" %% "upickle" % V.newMicroPickleV
 
     // get access to reflection data at compile-time
@@ -134,7 +122,6 @@ object Deps {
   }
 
   object Test {
-    val oldAsync = "org.scala-lang.modules" %% "scala-async" % V.asyncOldScalaV % "test" withSources () withJavadoc ()
     val newAsync = "org.scala-lang.modules" %% "scala-async" % V.asyncNewScalaV % "test" withSources () withJavadoc ()
     val junitInterface = "com.novocode" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
     val logback = Compile.logback % "test"
@@ -159,8 +146,7 @@ object Deps {
   )
 
   def appCommons(scalaVersion: String) = List(
-    if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
-    else Compile.newMicroPickle,
+    Compile.newMicroPickle,
     Compile.playJson,
     Compile.slf4j
   )
@@ -213,7 +199,7 @@ object Deps {
     Test.logback,
     Test.scalaTest,
     Test.scalacheck,
-    if (scalaVersion.startsWith("2.11")) Test.oldAsync else Test.newAsync
+    Test.newAsync
   )
 
   val bench = List(
@@ -235,8 +221,7 @@ object Deps {
 
   def cli(scalaVersion: String) = List(
     Compile.sttp,
-    if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
-    else Compile.newMicroPickle,
+    Compile.newMicroPickle,
     Compile.logback,
     Compile.scopt,
     //we can remove this dependency when this is fixed
@@ -248,8 +233,7 @@ object Deps {
   val gui = List(Compile.scalaFx) ++ Compile.javaFxDeps
 
   def server(scalaVersion: String) = List(
-    if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
-    else Compile.newMicroPickle,
+    Compile.newMicroPickle,
     Compile.logback,
     Compile.akkaActor,
     Compile.akkaHttp
@@ -268,6 +252,17 @@ object Deps {
     Test.logback,
     Test.scalaTest,
     Test.scalacheck
+  )
+
+  val feeProvider = List(
+    Compile.akkaHttp,
+    Compile.akkaActor,
+    Compile.akkaStream
+  )
+
+  val feeProviderTest = List(
+    Test.akkaTestkit,
+    Test.scalaTest
   )
 
   val node = List(
@@ -294,8 +289,7 @@ object Deps {
   )
 
   def keyManager(scalaVersion: String) = List(
-    if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
-    else Compile.newMicroJson
+    Compile.newMicroJson
   )
 
   val keyManagerTest = List(
@@ -304,8 +298,7 @@ object Deps {
   )
 
   def wallet(scalaVersion: String) = List(
-    if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
-    else Compile.newMicroJson,
+    Compile.newMicroJson,
     Compile.logback
   )
 

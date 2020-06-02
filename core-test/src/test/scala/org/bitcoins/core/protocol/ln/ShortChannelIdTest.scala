@@ -36,7 +36,7 @@ class ShortChannelIdTest extends BitcoinSUnitTest {
       .fromHumanReadableString("0x0x65536")
     an[IllegalArgumentException] must be thrownBy ShortChannelId
       .fromHumanReadableString("0x0x-1")
-    an[NoSuchElementException] must be thrownBy ShortChannelId
+    an[IllegalArgumentException] must be thrownBy ShortChannelId
       .fromHumanReadableString("1x1x1x1")
     ShortChannelId.fromHumanReadableString("cafebabe") must be(
       ShortChannelId.fromHex("cafebabe"))

@@ -99,7 +99,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
 
       signedTx <- bitcoind.getNewAddress.flatMap {
-        wallet.sendToAddress(_, valueToBitcoind, feeRate)
+        wallet.sendToAddress(_, valueToBitcoind, Some(feeRate))
       }
 
       txid <- bitcoind.sendRawTransaction(signedTx)

@@ -94,7 +94,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       tx <- wallet
         .sendToAddress(addressFromBitcoind,
                        5.bitcoin,
-                       SatoshisPerByte(100.sats))
+                       Some(SatoshisPerByte(100.sats)))
       _ = txFromWalletP.success(tx)
       updatedBloom <- spv.updateBloomFilter(tx).map(_.bloomFilter)
       _ = spv.broadcastTransaction(tx)

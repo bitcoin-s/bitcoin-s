@@ -7,6 +7,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
+import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.ECPrivateKey
@@ -30,6 +31,20 @@ class BitcoindV16RpcClient(override val instance: BitcoindInstance)(
     with V16SendRpc {
 
   override def version: BitcoindVersion = BitcoindVersion.V16
+
+  override def getFilterCount: Future[Int] = {
+    Future.failed(
+      new UnsupportedOperationException(
+        s"bitcoind ${instance.getVersion} does not support block filters"))
+  }
+
+  override def getFiltersBetweenHeights(
+      startHeight: Int,
+      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
+    Future.failed(
+      new UnsupportedOperationException(
+        s"bitcoind ${instance.getVersion} does not support block filters"))
+  }
 
   def signRawTransaction(
       transaction: Transaction): Future[SignRawTransactionResult] =

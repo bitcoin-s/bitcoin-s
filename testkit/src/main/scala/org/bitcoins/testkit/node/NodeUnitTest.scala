@@ -159,7 +159,7 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
       }
     }
 
-    system.scheduler.schedule(2.second, interval, genBlock)
+    system.scheduler.scheduleAtFixedRate(2.second, interval)(genBlock)
     ()
   }
 }

@@ -8,20 +8,15 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
-import org.bitcoins.core.protocol.{
-  Address,
-  BitcoinAddress,
-  P2PKHAddress,
-  P2SHAddress
-}
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature, WitnessScriptPubKey}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerKiloByte}
+import org.bitcoins.core.wallet.fee.{
+  BitcoinFeeUnit,
+  SatoshisPerKiloByte,
+  SatoshisPerVirtualByte
+}
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonWriters._
 import java.time.LocalDateTime
@@ -121,6 +116,10 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   WalletCreateFundedPsbtResult,
   WalletProcessPsbtResult
 }
+import org.bitcoins.commons.jsonmodels.wallet.{
+  BitcoinerLiveEstimate,
+  BitcoinerLiveResult
+}
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
@@ -185,6 +184,7 @@ object JsonSerializers {
   implicit val doubleSha256DigestWrites: Writes[DoubleSha256Digest] =
     DoubleSha256DigestWrites
   implicit val scriptPubKeyWrites: Writes[ScriptPubKey] = ScriptPubKeyWrites
+  implicit val witnessScriptPubKeyWrites: Writes[WitnessScriptPubKey] = WitnessScriptPubKeyWrites
   implicit val transactionInputWrites: Writes[TransactionInput] =
     TransactionInputWrites
   implicit val uInt32Writes: Writes[UInt32] = UInt32Writes
@@ -258,6 +258,14 @@ object JsonSerializers {
       def reads(json: JsValue): JsResult[SatoshisPerKiloByte] =
         SerializerUtil.processJsNumber(num =>
           SatoshisPerKiloByte(Satoshis(num.toBigInt)))(json)
+    }
+
+  implicit val satsPerVBReads: Reads[SatoshisPerVirtualByte] =
+    new Reads[SatoshisPerVirtualByte] {
+
+      def reads(json: JsValue): JsResult[SatoshisPerVirtualByte] =
+        SerializerUtil.processJsNumber(num =>
+          SatoshisPerVirtualByte(Satoshis(num.toBigInt)))(json)
     }
 
   implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
@@ -561,6 +569,12 @@ object JsonSerializers {
   implicit val createWalletResultReads: Reads[CreateWalletResult] =
     Json.reads[CreateWalletResult]
 
+  implicit val bitcoinerLiveEstimateReads: Reads[BitcoinerLiveEstimate] =
+    Json.reads[BitcoinerLiveEstimate]
+
+  implicit val bitcoinerLiveResultReads: Reads[BitcoinerLiveResult] =
+    Json.reads[BitcoinerLiveResult]
+
   // Map stuff
   implicit def mapDoubleSha256DigestReadsPreV19: Reads[
     Map[DoubleSha256Digest, GetMemPoolResultPreV19]] =
@@ -586,6 +600,10 @@ object JsonSerializers {
     Map[BitcoinAddress, LabelResult]] =
     Reads.mapReads[BitcoinAddress, LabelResult](s =>
       JsSuccess(BitcoinAddress.fromString(s).get))
+
+  implicit def mapBitcoinerLiveEstimateReads: Reads[
+    Map[Int, BitcoinerLiveEstimate]] =
+    Reads.mapReads[Int, BitcoinerLiveEstimate](s => JsSuccess(s.toInt))
 
   implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] =
     mapWrites[BitcoinAddress, Bitcoins](_.value)

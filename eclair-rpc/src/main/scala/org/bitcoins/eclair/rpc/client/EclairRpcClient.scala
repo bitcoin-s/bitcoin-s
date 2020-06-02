@@ -13,7 +13,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 import org.bitcoins.commons.jsonmodels.eclair._
@@ -54,12 +53,11 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     extends EclairApi
     with StartStop[EclairRpcClient] {
 
-  implicit val m = ActorMaterializer.create(system)
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def getDaemon: EclairInstance = instance
 
-  implicit override def executionContext: ExecutionContext = m.executionContext
+  implicit override val executionContext: ExecutionContext = system.dispatcher
 
   override def allChannels(): Future[Vector[ChannelDesc]] = {
     eclairCall[Vector[ChannelDesc]]("allchannels")
@@ -403,7 +401,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       }
     }
 
-    val cancellable = system.scheduler.schedule(interval, interval, runnable)
+    val cancellable = system.scheduler.scheduleAtFixedRate(interval, interval)(runnable)
 
     p.future.onComplete(_ => cancellable.cancel())
 
@@ -666,7 +664,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
   }
 
   private def sendRequest(req: HttpRequest): Future[HttpResponse] = {
-    val respF = Http(m.system).singleRequest(req)
+    val respF = Http(system).singleRequest(req)
     respF
   }
 
@@ -698,16 +696,20 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
             s"Given binary ($binary) does not exist!")
         }
       case (None, Some(path)) =>
+        val eclairBinDir =
+          s"eclair-node-${EclairRpcClient.version}-${EclairRpcClient.commit}${File.separator}bin${File.separator}"
         val eclairV =
-          s"eclair-node-${EclairRpcClient.version}-${EclairRpcClient.commit}.jar"
-        val fullPath = path + eclairV
+          if (sys.props("os.name").toLowerCase.contains("windows"))
+            eclairBinDir + "eclair-node.bat"
+          else
+            eclairBinDir + "eclair-node.sh"
 
-        val jar = new File(fullPath)
+        val jar = new File(path, eclairV)
         if (jar.exists) {
-          fullPath
+          jar.getPath
         } else {
           throw new NoSuchFileException(
-            s"Could not Eclair Jar at location $fullPath")
+            s"Could not Eclair Jar at location ${jar.getPath}")
         }
       case (None, None) =>
         val msg = List(
@@ -736,7 +738,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
           .map(path => s"-Dlogback.configurationFile=$path")
           .getOrElse("")
         val cmd =
-          s"java -jar -Declair.datadir=${instance.authCredentials.datadir.get} $logback $pathToEclairJar &"
+          s"${pathToEclairJar} -Declair.datadir=${instance.authCredentials.datadir.get} $logback"
         val p = Process(cmd)
         val result = p.run()
         logger.debug(
@@ -862,7 +864,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       }
     }
 
-    val cancellable = system.scheduler.schedule(interval, interval, runnable)
+    val cancellable = system.scheduler.scheduleAtFixedRate(interval, interval)(runnable)
 
     val f = p.future
 
@@ -942,8 +944,8 @@ object EclairRpcClient {
       implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "12ac145"
+  private[bitcoins] val commit = "69c538e"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.3.3"
+  private[bitcoins] val version = "0.4"
 }

@@ -10,7 +10,7 @@ import scala.math.BigInt
 trait CryptoBytesUtil {
 
   def decodeHex(hex: String): ByteVector = {
-    if (hex.isEmpty) ByteVector.empty else ByteVector.fromHex(hex).get
+    if (hex.isEmpty) ByteVector.empty else ByteVector.fromValidHex(hex)
   }
 
   def encodeHex(bytes: ByteVector): String = bytes.toHex
@@ -73,14 +73,14 @@ trait CryptoBytesUtil {
     * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
     * 00000001 instead of just 1.
     */
-  final def addPadding(paddingNeeded: Int, hex: String): String = {
+  @inline final def addPadding(paddingNeeded: Int, hex: String): String = {
     val builder = new StringBuilder
     var counter = 0
     while (counter < paddingNeeded) {
       builder.append(Z)
       counter+=1
     }
-    builder.append(hex)
+    builder.appendAll(hex)
     builder.result()
   }
 
@@ -97,7 +97,8 @@ trait CryptoBytesUtil {
     bits.bytes
   }
 
-  def toByteVector[T <: NetworkElement](h: Seq[T]): ByteVector = {
+  @inline
+  final def toByteVector[T <: NetworkElement](h: Seq[T]): ByteVector = {
     ByteVector.concat(h.map(_.bytes))
   }
 }

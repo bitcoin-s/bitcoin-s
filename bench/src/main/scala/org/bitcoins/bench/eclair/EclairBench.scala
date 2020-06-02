@@ -23,6 +23,7 @@ import scala.util.{Failure, Success}
   * and when the corresponding web socket event was received. It writes all results into [[OutputFileName]]
   * in CSV format.
   */
+@scala.annotation.nowarn
 object EclairBench extends App with EclairRpcTestUtil {
 
   import PaymentLog._
@@ -96,6 +97,7 @@ object EclairBench extends App with EclairRpcTestUtil {
         }
       })
     } yield paymentIds.flatten
+
 
   def runTests(network: EclairNetwork): Future[Vector[PaymentLogEntry]] = {
     println("Setting up the test network")

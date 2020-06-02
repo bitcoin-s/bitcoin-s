@@ -100,7 +100,7 @@ val changePrivKey = ECPrivateKey.freshPrivateKey
 val changeSPK = P2PKHScriptPubKey(pubKey = changePrivKey.publicKey)
 
 // We chose a finalizer that adds a change output to our tx based on a fee rate
-val finalizer = NonInteractiveWithChangeFinalizer(
+val finalizer = StandardNonInteractiveFinalizer(
     Vector(inputInfo),
     feeRate,
     changeSPK)

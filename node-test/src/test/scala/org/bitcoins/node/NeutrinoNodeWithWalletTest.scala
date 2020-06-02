@@ -122,7 +122,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
         // send
         addr <- bitcoind.getNewAddress
-        _ <- wallet.sendToAddress(addr, TestAmount, FeeRate)
+        _ <- wallet.sendToAddress(addr, TestAmount, Some(FeeRate))
 
         _ <- bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))

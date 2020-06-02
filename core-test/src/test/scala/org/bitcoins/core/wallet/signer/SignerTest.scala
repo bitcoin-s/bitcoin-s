@@ -40,8 +40,8 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.builder.{
-  NonInteractiveWithChangeFinalizer,
-  RawTxSigner
+  RawTxSigner,
+  StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
@@ -128,7 +128,7 @@ class SignerTest extends BitcoinSAsyncTest {
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
 
         for {
-          unsignedTx <- NonInteractiveWithChangeFinalizer.txFrom(
+          unsignedTx <- StandardNonInteractiveFinalizer.txFrom(
             destinations,
             creditingTxsInfos,
             fee,
@@ -264,7 +264,7 @@ class SignerTest extends BitcoinSAsyncTest {
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
         for {
-          unsignedTx <- NonInteractiveWithChangeFinalizer.txFrom(
+          unsignedTx <- StandardNonInteractiveFinalizer.txFrom(
             destinations,
             creditingTxsInfos,
             fee,

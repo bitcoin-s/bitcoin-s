@@ -65,7 +65,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         _ = assert(address1 == address2, "Must generate same address")
         _ <- wallet.sendToAddress(address1,
                                   Satoshis(10000),
-                                  SatoshisPerVirtualByte.one)
+                                  Some(SatoshisPerVirtualByte.one))
         address3 <- wallet.getUnusedAddress
       } yield {
         assert(address1 != address3, "Must generate a new address")
@@ -127,7 +127,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       tempAddress <- wallet.getNewAddress()
       tx <- wallet.sendToAddress(tempAddress,
                                  Bitcoins(1),
-                                 SatoshisPerVirtualByte(Satoshis(3)))
+                                 Some(SatoshisPerVirtualByte(Satoshis(3))))
       spentDbs <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       spentAddresses <- wallet.listSpentAddresses()
     } yield {

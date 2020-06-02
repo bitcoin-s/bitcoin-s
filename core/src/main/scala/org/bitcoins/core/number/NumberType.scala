@@ -82,7 +82,7 @@ sealed abstract class Number[T <: Number[T]]
     }
   }
 
-  override def bytes: ByteVector = BytesUtil.decodeHex(hex)
+  override lazy val bytes: ByteVector = BytesUtil.decodeHex(hex)
 }
 
 /**
@@ -110,13 +110,13 @@ sealed abstract class UInt5 extends UnsignedNumber[UInt5] {
 
   def toUInt8: UInt8 = UInt8(toInt)
 
-  override def hex: String = toUInt8.hex
+  override val hex: String = toUInt8.hex
 }
 
 sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   override def apply: A => UInt8 = UInt8(_)
 
-  override def hex: String = BytesUtil.encodeHex(toInt.toShort).slice(2, 4)
+  override val hex: String = BytesUtil.encodeHex(toInt.toShort).slice(2, 4)
 
   override def andMask = 0xff
 
@@ -140,7 +140,7 @@ sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   * Represents a uint64_t in C
   */
 sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
-  override def hex: String = encodeHex(underlying)
+  override val hex: String = encodeHex(underlying)
   override def apply: A => UInt64 = UInt64(_)
   override def andMask = 0xFFFFFFFFFFFFFFFFL
 
@@ -170,7 +170,7 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
 sealed abstract class Int32 extends SignedNumber[Int32] {
   override def apply: A => Int32 = Int32(_)
   override def andMask = 0xffffffff
-  override def hex: String = BytesUtil.encodeHex(toInt)
+  override val hex: String = BytesUtil.encodeHex(toInt)
 }
 
 /**
@@ -179,7 +179,7 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
   override def andMask = 0xFFFFFFFFFFFFFFFFL
-  override def hex: String = BytesUtil.encodeHex(toLong)
+  override val hex: String = BytesUtil.encodeHex(toLong)
 }
 
 /**
@@ -315,14 +315,20 @@ object UInt32
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  lazy val zero = UInt32(BigInt(0))
-  lazy val one = UInt32(BigInt(1))
+  /** Cache from 0 to 256 UInt32 */
+  private val cached: Vector[UInt32] = {
+    0.until(256).map(i => UInt32(BigInt(i))).toVector
+  }
+
+  lazy val zero = cached(0)
+  lazy val one = cached(1)
 
   private lazy val minUnderlying: A = 0
   private lazy val maxUnderlying: A = BigInt(4294967295L)
 
   lazy val min = zero
   lazy val max = UInt32(maxUnderlying)
+
 
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
@@ -344,9 +350,7 @@ object UInt32
 
   /** Checks if we have the number cached, if not allocates a new object to represent the number */
   private def checkCached(long: Long): UInt32 = {
-    if (long == 0) zero
-    else if (long == 1) one
-    else if (long == maxUnderlying) max
+    if (long < 256 && long >= 0) cached(long.toInt)
     else {
       UInt32(BigInt(long))
     }
@@ -362,14 +366,25 @@ object UInt64
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  lazy val zero = UInt64(BigInt(0))
-  lazy val one = UInt64(BigInt(1))
+  lazy val zero = cached(0)
+  lazy val one = cached(1)
 
   private lazy val minUnderlying: A = 0
   private lazy val maxUnderlying: A = BigInt("18446744073709551615")
 
   lazy val min = UInt64(minUnderlying)
   lazy val max = UInt64(maxUnderlying)
+
+  /** Cache from 0 to 256 UInt64 */
+  private val cached: Vector[UInt64] = {
+    0.until(256).map(i => UInt64(BigInt(i))).toVector
+  }
+
+  lazy val twentyThree = UInt64(BigInt(23)) //p2sh compact size uint
+  lazy val twentyFive = UInt64(BigInt(25)) //p2pkh compact size uint
+  lazy val oneHundredFive = UInt64(BigInt(105)) //multisig spk 3 public keys
+  lazy val thirtyFour = UInt64(BigInt(34)) //p2wsh compact size uint
+  lazy val twentyTwo = UInt64(BigInt(22)) //p2pwpkh compact size uint
 
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
@@ -379,7 +394,16 @@ object UInt64
     UInt64(NumberUtil.toUnsignedInt(bytes))
   }
 
+  def apply(long: Long): UInt64 = {
+    checkCached(long)
+  }
+
   def apply(num: BigInt): UInt64 = UInt64Impl(num)
+
+  private def checkCached(num: Long): UInt64 = {
+    if (num < 256 && num >= 0) cached(num.toInt)
+    else UInt64Impl(num)
+  }
 }
 
 object Int32
@@ -391,9 +415,14 @@ object Int32
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  val zero = Int32(BigInt(0))
-  val one = Int32(BigInt(1))
-  val two = Int32(BigInt(2))
+  /** Cache from 0 to 256 Int32 */
+  private val cached: Vector[Int32] = {
+    0.until(256).map(i => Int32(BigInt(i))).toVector
+  }
+
+  val zero = cached(0)
+  val one = cached(1)
+  val two = cached(2)
 
   private lazy val minUnderlying: A = BigInt(-2147483648)
   private lazy val maxUnderlying: A = BigInt(2147483647)
@@ -416,10 +445,7 @@ object Int32
   def apply(bigInt: BigInt): Int32 = Int32Impl(bigInt)
 
   private def checkCached(int: Int): Int32 = {
-    if (int == 0) zero
-    else if (int == 1) one
-    else if (int == 2) two
-    else if (int == maxUnderlying) max
+    if (int < 256 && int >= 0) cached(int)
     else {
       Int32(BigInt(int))
     }
@@ -435,8 +461,13 @@ object Int64
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  lazy val zero = Int64(0)
-  lazy val one = Int64(1)
+  /** Cache from 0 to 256 Int64 */
+  private val cached: Vector[Int64] = {
+    0.until(256).map(i => Int64(BigInt(i))).toVector
+  }
+
+  lazy val zero = cached(0)
+  lazy val one = cached(1)
 
   private lazy val minUnderlying: A = -9223372036854775808L
   private lazy val maxUnderlying: A = 9223372036854775807L
@@ -452,7 +483,15 @@ object Int64
     Int64(BigInt(bytes.toArray).toLong)
   }
 
-  def apply(long: Long): Int64 = Int64(BigInt(long))
+  def apply(long: Long): Int64 = {
+    checkCached(long)
+  }
 
   def apply(bigInt: BigInt): Int64 = Int64Impl(bigInt)
+
+
+  private def checkCached(long: Long): Int64 = {
+    if (long < 256 && long >= 0) cached(long.toInt)
+    else Int64(BigInt(long))
+  }
 }

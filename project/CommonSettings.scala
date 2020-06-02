@@ -45,11 +45,16 @@ object CommonSettings {
     scalacOptions in (Compile, console) ~= (_ filterNot (s =>
       s == "-Ywarn-unused-import"
         || s =="-Ywarn-unused"
+        || s =="-Xfatal-warnings"
         //for 2.13 -- they use different compiler opts
         || s == "-Xlint:unused")),
+
+    //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
+    scalacOptions in (Compile,doc) ~= (_ filterNot (s =>
+      s == "-Xfatal-warnings")),
+
     scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
     scalacOptions in Test := testCompilerOpts,
-
     Compile / compile / javacOptions ++= {
       if (isCI) {
         //jdk11 is used on CI, we need to use the --release flag to make sure
@@ -72,7 +77,7 @@ object CommonSettings {
     )
   }
 
-  private val scala2_13CompilerOpts = Seq("-Xlint:unused")
+  private val scala2_13CompilerOpts = Seq("-Xlint:unused","-Xfatal-warnings")
 
   private val nonScala2_13CompilerOpts = Seq(
     "-Xmax-classfile-name",
