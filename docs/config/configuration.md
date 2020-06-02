@@ -197,7 +197,7 @@ akka {
 }
 ```
 
-Sqlite and PostgreSQL
+## Database configuration
 
 By default, bitcoin-s uses Sqlite to store its data. 
 It creates three Sqlite databases in `~/.bitcoin-s/${network}`: `chain.sqlite` for `chain` project, 
