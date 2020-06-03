@@ -46,7 +46,11 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getBlockCount(): Future[Int] = {
     logger.debug(s"Querying for block count")
-    getBestBlockHeader().map(_.height)
+    getBestBlockHeader().map { header =>
+      val height = header.height
+      logger.debug(s"getBlockCount result: count=$height")
+      height
+    }
   }
 
   override def getBestBlockHeader(): Future[BlockHeaderDb] = {
@@ -349,8 +353,9 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getFilterHeaderCount: Future[Int] = {
     logger.debug(s"Querying for filter header count")
-    filterHeaderDAO.maxHeight.map { height =>
-      logger.debug(s"getFilterHeaderCount result: count=$height")
+    filterHeaderDAO.getBestFilter.map { filterHeader =>
+      val height = filterHeader.height
+      logger.debug(s"getFilterCount result: count=$height")
       height
     }
   }
@@ -373,7 +378,8 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getFilterCount: Future[Int] = {
     logger.debug(s"Querying for filter count")
-    filterDAO.maxHeight.map { height =>
+    filterDAO.getBestFilter.map { filter =>
+      val height = filter.height
       logger.debug(s"getFilterCount result: count=$height")
       height
     }
@@ -475,7 +481,7 @@ case class ChainHandler(
     } yield isMissingWork
   }
 
-  def recalculateChainWork: Future[ChainApi] = {
+  def recalculateChainWork: Future[ChainHandler] = {
     logger.info("Calculating chain work for previous blocks")
 
     val batchSize = chainConfig.chain.difficultyChangeInterval
@@ -514,7 +520,7 @@ case class ChainHandler(
     }
 
     for {
-      tips <- blockHeaderDAO.chainTips
+      tips <- blockHeaderDAO.chainTipsByHeight
       fullChains <- FutureUtil.sequentially(tips)(tip =>
         blockHeaderDAO.getFullBlockchainFrom(tip))
 

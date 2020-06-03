@@ -14,7 +14,6 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.{BytesUtil, NumberUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.{
@@ -70,7 +69,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val bigIntMapper: BaseColumnType[BigInt] =
     MappedColumnType
-      .base[BigInt, String](BytesUtil.encodeHex, NumberUtil.toBigInt)
+      .base[BigInt, Array[Byte]](_.toByteArray.dropWhile(_ == 0x00),
+                                 BigInt(1, _))
 
   implicit val ecPublicKeyMapper: BaseColumnType[ECPublicKey] =
     MappedColumnType.base[ECPublicKey, String](_.hex, ECPublicKey.fromHex)

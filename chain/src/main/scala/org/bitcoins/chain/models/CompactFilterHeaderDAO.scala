@@ -119,7 +119,7 @@ case class CompactFilterHeaderDAO()(
     }
     safeDatabase
       .runVec(query.result)
-      .map(_.maxBy(_._2.getOrElse(BigInt(-1)))._1)
+      .map(_.maxBy(_._2.getOrElse(BigInt(0)))._1)
   }
 
 }
