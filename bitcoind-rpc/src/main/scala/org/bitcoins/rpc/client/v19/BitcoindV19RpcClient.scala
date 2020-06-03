@@ -15,6 +15,7 @@ import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
@@ -42,16 +43,24 @@ class BitcoindV19RpcClient(override val instance: BitcoindInstance)(
   override def getFiltersBetweenHeights(
       startHeight: Int,
       endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
-    Future.sequence(
-      startHeight
-        .until(endHeight)
-        .map { height =>
-          for {
-            hash <- getBlockHash(height)
-            filter <- getBlockFilter(hash, FilterType.Basic)
-          } yield FilterResponse(filter.filter, hash, height)
+    val allHeights = startHeight.to(endHeight)
+
+    def f(range: Vector[Int]): Future[Vector[FilterResponse]] = {
+      val filterFs = range.map { height =>
+        for {
+          hash <- getBlockHash(height)
+          filter <- getBlockFilter(hash, FilterType.Basic)
+        } yield {
+          FilterResponse(filter.filter, hash, height)
         }
-        .toVector)
+      }
+      Future.sequence(filterFs)
+    }
+
+    FutureUtil.batchExecute(elements = allHeights.toVector,
+                            f = f,
+                            init = Vector.empty,
+                            batchSize = 25)
   }
 
   override def getFilterCount: Future[Int] = getBlockCount

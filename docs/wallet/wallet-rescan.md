@@ -17,6 +17,7 @@ To run this example you need to make sure you have access to a bitcoind binary. 
 
 ```scala mdoc:invisible
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.fixtures._
 import org.bitcoins.testkit.wallet._
 import org.bitcoins.server.BitcoinSAppConfig
 import akka.actor.ActorSystem
@@ -33,8 +34,9 @@ implicit val appConfig: BitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTes
 
 //ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it
 val walletWithBitcoindF = for {
-  w <- BitcoinSWalletTest.createWalletBitcoindNodeChainQueryApi()
-} yield w
+  bitcoind <- BitcoinSFixture.createBitcoindWithFunds()
+  walletWithBitcoind <- BitcoinSWalletTest.createWalletWithBitcoindCallbacks(bitcoind)
+} yield walletWithBitcoind
 
 val walletF = walletWithBitcoindF.map(_.wallet)
 

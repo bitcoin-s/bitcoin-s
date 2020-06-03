@@ -1,17 +1,17 @@
 package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi, NodeChainQueryApi}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
-import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -45,75 +45,41 @@ abstract class SyncUtil extends BitcoinSLogger {
       }
   }
 
-  def getChainQueryApi(bitcoindV19RpcClient: BitcoindV19RpcClient)(
-      implicit ec: ExecutionContext): ChainQueryApi = {
+  def getTestChainQueryApi(bitcoind: BitcoindRpcClient): ChainQueryApi = {
     new ChainQueryApi {
 
       /** Gets the height of the given block */
       override def getBlockHeight(
-          blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
-        bitcoindV19RpcClient
-          .getBlockHeader(blockHash)
-          .map(b => Some(b.height))
-      }
+          blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
+        bitcoind.getBlockHeight(blockHash)
 
       /** Gets the hash of the block that is what we consider "best" */
       override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
-        bitcoindV19RpcClient.getBestBlockHash
+        bitcoind.getBestBlockHash
       }
 
       /** Gets number of confirmations for the given block hash */
       override def getNumberOfConfirmations(
           blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = {
-        bitcoindV19RpcClient.getBlock(blockHashOpt).map { b =>
-          Some(b.confirmations)
-        }
+        bitcoind.getNumberOfConfirmations(blockHashOpt)
       }
 
       /** Gets the number of compact filters in the database */
       override def getFilterCount: Future[Int] = {
-        //filter count should be same as block height?
-        bitcoindV19RpcClient.getBlockCount
+        bitcoind.getFilterCount
       }
 
       /** Returns the block height of the given block stamp */
-      override def getHeightByBlockStamp(
-          blockStamp: BlockStamp): Future[Int] = {
-        blockStamp match {
-          case BlockStamp.BlockHash(hash) => getBlockHeight(hash).map(_.get)
-          case BlockStamp.BlockHeight(height) =>
-            Future.successful(height)
-          case BlockStamp.BlockTime(_) =>
-            throw new RuntimeException("Cannot query by block time")
-        }
-      }
+      override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
+        bitcoind.getHeightByBlockStamp(blockStamp)
 
       override def epochSecondToBlockHeight(time: Long): Future[Int] =
         Future.successful(0)
 
       override def getFiltersBetweenHeights(
           startHeight: Int,
-          endHeight: Int): Future[Vector[FilterResponse]] = {
-        val allHeights = startHeight.to(endHeight)
-
-        def f(range: Vector[Int]): Future[Vector[FilterResponse]] = {
-          val filterFs = range.map { height =>
-            for {
-              hash <- bitcoindV19RpcClient.getBlockHash(height)
-              filter <- bitcoindV19RpcClient.getBlockFilter(hash,
-                                                            FilterType.Basic)
-            } yield {
-              FilterResponse(filter.filter, hash, height)
-            }
-          }
-          Future.sequence(filterFs)
-        }
-
-        FutureUtil.batchExecute(elements = allHeights.toVector,
-                                f = f,
-                                init = Vector.empty,
-                                batchSize = 25)
-      }
+          endHeight: Int): Future[Vector[FilterResponse]] =
+        bitcoind.getFiltersBetweenHeights(startHeight, endHeight)
     }
   }
 
@@ -168,26 +134,22 @@ abstract class SyncUtil extends BitcoinSLogger {
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
         logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
-        val f: Vector[DoubleSha256Digest] => Future[Wallet] = {
-          case hashes =>
-            val fetchedBlocks: Vector[Future[Block]] = hashes.map {
-              bitcoindRpcClient
-                .getBlockRaw(_)
-            }
-            val blocksF = Future.sequence(fetchedBlocks)
+        val f: Vector[DoubleSha256Digest] => Future[Wallet] = { hashes =>
+          val blocksF =
+            FutureUtil.sequentially(hashes)(bitcoindRpcClient.getBlockRaw)
 
-            val updatedWalletF = for {
-              blocks <- blocksF
-              wallet <- walletF
-              processedWallet <- {
-                FutureUtil.foldLeftAsync(wallet, blocks) {
-                  case (wallet, block) =>
-                    wallet.processBlock(block).map(_.asInstanceOf[Wallet])
-                }
+          val updatedWalletF = for {
+            blocks <- blocksF
+            wallet <- walletF
+            processedWallet <- {
+              FutureUtil.foldLeftAsync(wallet, blocks) {
+                case (wallet, block) =>
+                  wallet.processBlock(block)
               }
-            } yield processedWallet
+            }
+          } yield processedWallet
 
-            updatedWalletF
+          updatedWalletF
         }
 
         val batchSize = 25
@@ -213,20 +175,20 @@ abstract class SyncUtil extends BitcoinSLogger {
     }
   }
 
-  def getNodeChainQueryApi(bitcoindV19RpcClient: BitcoindV19RpcClient)(
+  def getNodeChainQueryApi(bitcoind: BitcoindRpcClient)(
       implicit ec: ExecutionContext): NodeChainQueryApi = {
-    val chainQuery = SyncUtil.getChainQueryApi(bitcoindV19RpcClient)
-    val nodeApi = SyncUtil.getNodeApi(bitcoindV19RpcClient)
+    val chainQuery = SyncUtil.getTestChainQueryApi(bitcoind)
+    val nodeApi = SyncUtil.getNodeApi(bitcoind)
     NodeChainQueryApi(nodeApi, chainQuery)
   }
 
   def getNodeChainQueryApiWalletCallback(
-      bitcoindV19RpcClient: BitcoindV19RpcClient,
+      bitcoind: BitcoindRpcClient,
       walletF: Future[Wallet])(
       implicit ec: ExecutionContext): NodeChainQueryApi = {
-    val chainQuery = SyncUtil.getChainQueryApi(bitcoindV19RpcClient)
+    val chainQuery = SyncUtil.getTestChainQueryApi(bitcoind)
     val nodeApi =
-      SyncUtil.getNodeApiWalletCallback(bitcoindV19RpcClient, walletF)
+      SyncUtil.getNodeApiWalletCallback(bitcoind, walletF)
     NodeChainQueryApi(nodeApi, chainQuery)
   }
 }
