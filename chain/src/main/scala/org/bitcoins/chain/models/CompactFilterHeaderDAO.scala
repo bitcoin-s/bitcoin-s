@@ -13,7 +13,13 @@ case class CompactFilterHeaderDAO()(
     with SlickUtil[CompactFilterHeaderDb, DoubleSha256DigestBE] {
   import profile.api._
   val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
-  import mappers._
+  import mappers.doubleSha256DigestBEMapper
+  implicit private val bigIntMapper: BaseColumnType[BigInt] =
+    if (appConfig.driverName == "postgresql") {
+      mappers.bigIntPostgresMapper
+    } else {
+      mappers.bigIntMapper
+    }
 
   class CompactFilterHeaderTable(tag: Tag)
       extends Table[CompactFilterHeaderDb](tag, "cfheaders") {

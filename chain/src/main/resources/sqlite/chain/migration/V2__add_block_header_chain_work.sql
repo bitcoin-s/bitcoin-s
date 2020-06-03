@@ -1,1 +1,1 @@
-ALTER TABLE "block_headers" ADD COLUMN "chainWork" VARBINARY(32) NOT NULL DEFAULT "00";
+ALTER TABLE "block_headers" ADD COLUMN "chain_work" VARBINARY(32) NOT NULL DEFAULT "00";

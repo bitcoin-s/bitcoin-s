@@ -14,8 +14,18 @@ case class CompactFilterDAO()(
     extends CRUD[CompactFilterDb, DoubleSha256DigestBE]
     with SlickUtil[CompactFilterDb, DoubleSha256DigestBE] {
   val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
-  import mappers._
+  import mappers.{
+    byteVectorMapper,
+    doubleSha256DigestBEMapper,
+    filterTypeMapper
+  }
   import profile.api._
+  implicit private val bigIntMapper: BaseColumnType[BigInt] =
+    if (appConfig.driverName == "postgresql") {
+      mappers.bigIntPostgresMapper
+    } else {
+      mappers.bigIntMapper
+    }
 
   class CompactFilterTable(tag: Tag)
       extends Table[CompactFilterDb](tag, "cfilters") {

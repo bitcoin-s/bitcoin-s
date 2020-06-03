@@ -22,7 +22,14 @@ case class BlockHeaderDAO()(
 
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
-  import mappers._
+  import mappers.{doubleSha256DigestBEMapper, int32Mapper, uInt32Mapper}
+
+  implicit private val bigIntMapper: BaseColumnType[BigInt] =
+    if (appConfig.driverName == "postgresql") {
+      mappers.bigIntPostgresMapper
+    } else {
+      mappers.bigIntMapper
+    }
 
   override val table =
     profile.api.TableQuery[BlockHeaderTable]
@@ -360,8 +367,7 @@ case class BlockHeaderDAO()(
 
     def hex = column[String]("hex")
 
-    def chainWork: Rep[BigInt] =
-      column[BigInt]("chainWork", O.SqlType("VARBINARY(32)"))
+    def chainWork: Rep[BigInt] = column[BigInt]("chain_work")
 
     /** The sql index for searching based on [[height]] */
     def heightIndex = index("block_headers_height_index", height)
