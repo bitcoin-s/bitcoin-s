@@ -270,6 +270,27 @@ trait JsonResponse {
   def escaped: Boolean
 }
 
+case class GetDLC(eventId: Sha256DigestBE)
+
+object GetDLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetDLC] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          GetDLC(eventId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing eventId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 case class CreateDLCOffer(
     oracleInfo: OracleInfo,
     contractInfo: ContractInfo,

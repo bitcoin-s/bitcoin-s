@@ -25,7 +25,8 @@ case class DLCAcceptDb(
       outcomeSigs: Map[Sha256DigestBE, PartialSignature]): DLCAccept = {
     val pubKeys =
       DLCPublicKeys(fundingKey, toLocalCETKey, finalAddress)
-    val cetSigs = CETSignatures(outcomeSigs, refundSig)
+    val cetSigs =
+      CETSignatures(outcomeSigs.filter(_._2.pubKey == fundingKey), refundSig)
     DLCAccept(totalCollateral.satoshis,
               pubKeys,
               fundingInputs,

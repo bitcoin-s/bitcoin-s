@@ -22,6 +22,174 @@ import scala.concurrent.Future
 
 abstract class DLCWallet extends Wallet {
 
+  override def listDLCs(): Future[Vector[DLCStatus]] = {
+    for {
+      eventIds <- dlcDAO.findAll().map(_.map(_.eventId))
+      dlcFs = eventIds.map(getDLC)
+      dlcs <- Future.sequence(dlcFs)
+    } yield {
+      dlcs.collect {
+        case Some(dlc) => dlc
+      }
+    }
+  }
+
+  override def getDLC(eventId: Sha256DigestBE): Future[Option[DLCStatus]] = {
+    val dlcOptF = for {
+      dlcDbOpt <- dlcDAO.findByEventId(eventId)
+      dlcOfferOpt <- dlcOfferDAO.findByEventId(eventId)
+    } yield {
+      for {
+        dlcDb <- dlcDbOpt
+        dlcOffer <- dlcOfferOpt
+      } yield (dlcDb, dlcOffer)
+    }
+
+    dlcOptF.flatMap {
+      case None => Future.successful(None)
+      case Some((dlcDb, dlcOffer)) =>
+        val outcomeFF = for {
+          dlcAcceptOpt <- dlcAcceptDAO.findByEventId(eventId)
+          fundingInputsDb <- dlcInputsDAO.findByEventId(eventId)
+          fundingInputs = fundingInputsDb.map(_.toOutputReference)
+        } yield {
+          val offered = DLCStatus.Offered(eventId,
+                                          dlcDb.isInitiator,
+                                          dlcOffer.toDLCOffer(fundingInputs))
+
+          dlcAcceptOpt match {
+            case None => Future.successful(offered)
+            case Some(dlcAccept) =>
+              dlcSigsDAO.findByEventId(eventId).flatMap { cetSigsDb =>
+                val accepted = offered.toAccepted(
+                  dlcAccept.toDLCAccept(fundingInputs,
+                                        cetSigsDb.map(_.toTuple).toMap))
+
+                val initiatorCetSigs =
+                  cetSigsDb.filter(_.signature.pubKey == dlcOffer.fundingKey)
+                if (initiatorCetSigs.isEmpty) {
+                  Future.successful(accepted)
+                } else {
+                  val sigsMap = initiatorCetSigs.map {
+                    case DLCCETSignatureDb(_, outcomeHash, signature) =>
+                      outcomeHash -> signature
+                  }.toMap
+                  val cetSigs = CETSignatures(sigsMap, dlcDb.refundSigOpt.get)
+                  val fundingSigsMap = fundingInputsDb
+                    .filter(_.isInitiator)
+                    .map(input => input.outPoint -> input.sigs)
+                    .toMap
+                  val fundingSigs = FundingSignatures(fundingSigsMap)
+                  val signed =
+                    accepted.toSigned(DLCSign(cetSigs, fundingSigs, eventId))
+
+                  executorFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputsDb)
+                    .flatMap { client =>
+                      val fundingTxF = client.builder.buildFundingTx.flatMap(
+                        tx => transactionDAO.findByTxId(tx.txId))
+
+                      fundingTxF.flatMap {
+                        case None => Future.successful(signed)
+                        case Some(fundingTx) =>
+                          val broadcasted =
+                            signed.toBroadcasted(fundingTx.transaction)
+                          val confirmed = broadcasted.toConfirmed
+                          val msgs = client.messages
+                          dlcDb.oracleSigOpt match {
+                            case None =>
+                              val txIdFs = msgs.map(msg =>
+                                client.builder
+                                  .buildCET(msg, !client.isInitiator)
+                                  .map(_.txId))
+                              for {
+                                remoteTxIds <- Future.sequence(txIdFs)
+                                txs <- transactionDAO.findByTxIds(remoteTxIds)
+                              } yield {
+                                if (txs.isEmpty) {
+                                  broadcasted
+                                } else {
+                                  val remoteCET = txs.head.transaction
+                                  confirmed.toRemoteClaiming(remoteCET)
+                                }
+                              }
+                            case Some(oracleSig) =>
+                              val msg = msgs
+                                .find(msg =>
+                                  client.builder.oraclePubKey.verify(msg.bytes,
+                                                                     oracleSig))
+                                .get
+
+                              val statusFF = for {
+                                mutualTxId <-
+                                  client.builder
+                                    .buildMutualCloseTx(oracleSig)
+                                    .map(_.txId)
+                                refundTxId <-
+                                  client.builder.buildRefundTx.map(_.txId)
+                                localTxId <-
+                                  client.builder
+                                    .buildCET(msg, client.isInitiator)
+                                    .map(_.txId)
+                                remoteTxId <-
+                                  client.builder
+                                    .buildCET(msg, !client.isInitiator)
+                                    .map(_.txId)
+                                txIds = Vector(mutualTxId,
+                                               refundTxId,
+                                               localTxId,
+                                               remoteTxId)
+                                txs <- transactionDAO.findByTxIds(txIds)
+                              } yield {
+                                val fundSpendTx = txs.head
+                                if (fundSpendTx.txId == mutualTxId) {
+                                  client.signer
+                                    .createMutualCloseTxSig(oracleSig)
+                                    .map { closeSig =>
+                                      confirmed
+                                        .toCloseOffered(closeSig)
+                                        .toClosed(fundSpendTx.transaction)
+                                    }
+                                } else if (fundSpendTx.txId == refundTxId) {
+                                  Future.successful(confirmed.toRefunded(
+                                    fundSpendTx.transaction))
+                                } else if (fundSpendTx.txId == localTxId) {
+                                  executorAndSetupFromDb(dlcDb,
+                                                         dlcOffer,
+                                                         dlcAccept,
+                                                         fundingInputsDb,
+                                                         cetSigsDb).flatMap {
+                                    case (_, setup) =>
+                                      val claiming = confirmed.toClaiming(
+                                        oracleSig,
+                                        fundSpendTx.transaction)
+                                      client
+                                        .executeUnilateralDLC(setup, oracleSig)
+                                        .map { outcome =>
+                                          val closingTx = outcome
+                                            .asInstanceOf[
+                                              UnilateralDLCOutcomeWithClosing]
+                                            .closingTx
+                                          claiming.toClaimed(closingTx)
+                                        }
+                                  }
+                                } else {
+                                  val remoteClaiming = confirmed
+                                    .toRemoteClaiming(fundSpendTx.transaction)
+                                  Future.successful(remoteClaiming)
+                                }
+                              }
+                              statusFF.flatMap(identity)
+                          }
+                      }
+                    }
+                }
+              }
+          }
+        }
+        outcomeFF.flatten.map(Some(_))
+    }
+  }
+
   private def initDLC(
       eventId: Sha256DigestBE,
       isInitiator: Boolean): Future[DLCDb] = {
@@ -354,6 +522,23 @@ abstract class DLCWallet extends Wallet {
 
       updatedDLCDb = dlc.copy(refundSigOpt = Some(cetSigs.refundSig))
       _ <- dlcDAO.update(updatedDLCDb)
+      sigs =
+        cetSigs.outcomeSigs
+          .map(sig => DLCCETSignatureDb(accept.eventId, sig._1, sig._2))
+          .toVector
+      _ <- dlcSigsDAO.createAll(sigs)
+      fundingInputs <- dlcInputsDAO.findByEventId(accept.eventId)
+      updatedInputs = fundingSigs.map {
+        case (outPoint, sigs) =>
+          fundingInputs.find(_.outPoint == outPoint) match {
+            case Some(inputDb) =>
+              inputDb.copy(sigs = sigs)
+            case None =>
+              throw new NoSuchElementException(
+                s"Received signature for outPoint (${outPoint.hex}) that does not correspond to this eventId (${accept.eventId.hex})")
+          }
+      }
+      _ <- dlcInputsDAO.upsertAll(updatedInputs.toVector)
     } yield {
       DLCSign(cetSigs, fundingSigs, accept.eventId)
     }
@@ -592,6 +777,7 @@ abstract class DLCWallet extends Wallet {
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
     for {
+      _ <- updateDLCOracleSig(eventId, oracleSig)
       signer <- signerFromDb(eventId)
 
       payout = signer.getPayout(oracleSig)

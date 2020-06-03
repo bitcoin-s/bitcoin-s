@@ -177,9 +177,7 @@ class DLCPane(glassPane: VBox) {
       text = "Status"
       prefWidth = 150
       cellValueFactory = { status =>
-        new StringProperty(status,
-                           "Status",
-                           DLCStatus.statusString(status.value))
+        new StringProperty(status, "Status", status.value.statusString)
       }
     }
 

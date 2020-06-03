@@ -2,6 +2,7 @@ package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -53,6 +54,12 @@ object Picklers {
 
   implicit val partialSignaturePickler: ReadWriter[PartialSignature] =
     readwriter[String].bimap(_.hex, PartialSignature.fromHex)
+
+  implicit val dlcStatusPickler: ReadWriter[DLCStatus] =
+    readwriter[String].bimap(
+      _.toJson.toString,
+      str => DLCStatus.fromJson(ujson.read(str))
+    )
 
   implicit val dlcOfferPickler: ReadWriter[DLCOffer] =
     readwriter[String]

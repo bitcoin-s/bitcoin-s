@@ -132,6 +132,20 @@ object ConsoleCli {
       cmd("isempty")
         .action((_, conf) => conf.copy(command = IsEmpty))
         .text("Checks if the wallet contains any data"),
+      cmd("getdlcs")
+        .action((_, conf) => conf.copy(command = GetDLCs))
+        .text("Returns all dlcs in the wallet"),
+      cmd("getdlc")
+        .action((_, conf) => conf.copy(command = GetDLC(null)))
+        .text("Gets a specific dlc in the wallet")
+        .children(
+          opt[Sha256DigestBE]("eventid")
+            .required()
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case _: GetDLC => GetDLC(eventId)
+                case other     => other
+              }))),
       cmd("createdlcoffer")
         .hidden()
         .action((_, conf) =>
@@ -890,6 +904,10 @@ object ConsoleCli {
       case IsEmpty =>
         RequestParam("isempty")
       // DLCs
+      case GetDLCs =>
+        RequestParam("getdlcs")
+      case GetDLC(eventId) =>
+        RequestParam("getdlc", Seq(up.writeJs(eventId)))
       case CreateDLCOffer(oracleInfo,
                           contractInfo,
                           collateral,
@@ -1134,6 +1152,10 @@ object CliCommand {
   }
 
   // DLC
+  case object GetDLCs extends CliCommand
+
+  case class GetDLC(eventId: Sha256DigestBE) extends CliCommand
+
   case class CreateDLCOffer(
       oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
