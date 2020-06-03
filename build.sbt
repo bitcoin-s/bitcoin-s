@@ -306,9 +306,9 @@ lazy val dbCommons = project
 
 lazy val dbCommonsTest = project
   .in(file("db-commons-test"))
+  .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-db-commons-test",
-    skip in publish := true
   )
   .dependsOn(testkit)
 
@@ -317,17 +317,16 @@ lazy val feeProvider = project
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-fee-provider",
-    libraryDependencies ++= Deps.feeProvider,
-    publish / skip := true
+    libraryDependencies ++= Deps.feeProvider
   )
   .dependsOn(core, appCommons)
 
 lazy val feeProviderTest = project
   .in(file("fee-provider-test"))
+  .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-fee-provider-test",
-    libraryDependencies ++= Deps.feeProviderTest,
-    publish / skip := true
+    libraryDependencies ++= Deps.feeProviderTest
   )
   .dependsOn(core, core % testAndCompile, testkit)
 
