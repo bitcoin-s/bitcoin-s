@@ -46,8 +46,7 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getBlockCount(): Future[Int] = {
     logger.debug(s"Querying for block count")
-    getBestBlockHeader().map { header =>
-      val height = header.height
+    blockHeaderDAO.bestHeight.map { height =>
       logger.debug(s"getBlockCount result: count=$height")
       height
     }
@@ -139,7 +138,7 @@ case class ChainHandler(
           throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
-    val blockCountF = getBlockCount
+    val blockCountF = getBlockCount()
     for {
       startHeight <- startHeightF
       blockCount <- blockCountF
