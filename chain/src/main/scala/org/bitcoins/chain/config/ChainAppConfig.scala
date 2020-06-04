@@ -68,6 +68,7 @@ case class ChainAppConfig(
       } else {
         val genesisHeader =
           BlockHeaderDbHelper.fromBlockHeader(height = 0,
+                                              chainWork = BigInt(0),
                                               bh =
                                                 chain.genesisBlock.blockHeader)
         val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
@@ -100,9 +101,9 @@ object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {
   /** Constructs a chain verification configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  override def fromDatadir(datadir: Path, useLogbackConf: Boolean, confs: Vector[Config])(
-      implicit ec: ExecutionContext): ChainAppConfig =
-    ChainAppConfig(datadir,
-                   useLogbackConf,
-                   confs: _*)
+  override def fromDatadir(
+      datadir: Path,
+      useLogbackConf: Boolean,
+      confs: Vector[Config])(implicit ec: ExecutionContext): ChainAppConfig =
+    ChainAppConfig(datadir, useLogbackConf, confs: _*)
 }

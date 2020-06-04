@@ -10,6 +10,7 @@ import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
+import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
@@ -355,9 +356,20 @@ object ChainUnitTest extends ChainVerificationLogger {
         logger.error(s"Failed to parse headers from block_headers.json: $err")
         Future.failed(new RuntimeException(err.toString))
       case JsSuccess(headers, _) =>
+        var prevHeaderOpt: Option[BlockHeaderDb] = None
         val dbHeaders = headers.zipWithIndex.map {
           case (header, height) =>
-            BlockHeaderDbHelper.fromBlockHeader(height + OFFSET, header)
+            val chainWork = prevHeaderOpt match {
+              case None => Pow.getBlockProof(header)
+              case Some(prevHeader) =>
+                prevHeader.chainWork + Pow.getBlockProof(header)
+            }
+
+            val newHeader = BlockHeaderDbHelper.fromBlockHeader(height + OFFSET,
+                                                                chainWork,
+                                                                header)
+            prevHeaderOpt = Some(newHeader)
+            newHeader
         }
 
         @tailrec

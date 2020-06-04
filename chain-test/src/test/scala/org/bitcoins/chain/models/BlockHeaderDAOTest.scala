@@ -10,6 +10,7 @@ import org.bitcoins.testkit.chain.{
   ChainUnitTest
 }
 import org.scalatest.FutureOutcome
+import scodec.bits._
 
 import scala.concurrent.Future
 

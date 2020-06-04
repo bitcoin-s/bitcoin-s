@@ -67,6 +67,15 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       DoubleSha256DigestBE.fromHex
     )
 
+  implicit val bigIntMapper: BaseColumnType[BigInt] =
+    MappedColumnType
+      .base[BigInt, Array[Byte]](_.toByteArray.dropWhile(_ == 0x00),
+                                 BigInt(1, _))
+
+  implicit val bigIntPostgresMapper: BaseColumnType[BigInt] =
+    MappedColumnType
+      .base[BigInt, BigDecimal](BigDecimal(_), _.toBigInt)
+
   implicit val ecPublicKeyMapper: BaseColumnType[ECPublicKey] =
     MappedColumnType.base[ECPublicKey, String](_.hex, ECPublicKey.fromHex)
 

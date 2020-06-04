@@ -100,7 +100,7 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
   it should "successfully submit a header" in {
     val genesisHeader = RegTestNetChainParams.genesisBlock.blockHeader
     val genesisHeaderDb =
-      BlockHeaderDbHelper.fromBlockHeader(height = 1, genesisHeader)
+      BlockHeaderDbHelper.fromBlockHeader(height = 1, BigInt(0), genesisHeader)
     val nextHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
     clientF.flatMap(client =>
       client.submitHeader(nextHeader.blockHeader).map(_ => succeed))

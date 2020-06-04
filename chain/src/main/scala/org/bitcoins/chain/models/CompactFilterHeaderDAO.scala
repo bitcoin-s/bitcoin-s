@@ -13,7 +13,13 @@ case class CompactFilterHeaderDAO()(
     with SlickUtil[CompactFilterHeaderDb, DoubleSha256DigestBE] {
   import profile.api._
   val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
-  import mappers._
+  import mappers.doubleSha256DigestBEMapper
+  implicit private val bigIntMapper: BaseColumnType[BigInt] =
+    if (appConfig.driverName == "postgresql") {
+      mappers.bigIntPostgresMapper
+    } else {
+      mappers.bigIntMapper
+    }
 
   class CompactFilterHeaderTable(tag: Tag)
       extends Table[CompactFilterHeaderDb](tag, "cfheaders") {
@@ -40,6 +46,11 @@ case class CompactFilterHeaderDAO()(
 
   override val table: profile.api.TableQuery[CompactFilterHeaderTable] = {
     TableQuery[CompactFilterHeaderTable]
+  }
+
+  private lazy val blockHeaderTable: profile.api.TableQuery[
+    BlockHeaderDAO#BlockHeaderTable] = {
+    BlockHeaderDAO().table
   }
 
   override def createAll(filterHeaders: Vector[CompactFilterHeaderDb]): Future[
@@ -104,6 +115,17 @@ case class CompactFilterHeaderDAO()(
     Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
+  }
+
+  def getBestFilter: Future[CompactFilterHeaderDb] = {
+    val join = table join blockHeaderTable on (_.blockHash === _.hash)
+    val query = join.groupBy(_._1).map {
+      case (filter, headers) =>
+        filter -> headers.map(_._2.chainWork).max
+    }
+    safeDatabase
+      .runVec(query.result)
+      .map(_.maxBy(_._2.getOrElse(BigInt(0)))._1)
   }
 
 }

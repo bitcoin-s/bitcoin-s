@@ -47,6 +47,7 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
       } else {
         val headerDb = BlockHeaderDbHelper.fromBlockHeader(
           height = currentTip.height + 1,
+          chainWork = currentTip.chainWork + Pow.getBlockProof(newPotentialTip),
           bh = newPotentialTip
         )
         TipUpdateResult.Success(headerDb)

@@ -22,7 +22,14 @@ case class BlockHeaderDAO()(
 
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
-  import mappers._
+  import mappers.{doubleSha256DigestBEMapper, int32Mapper, uInt32Mapper}
+
+  implicit private val bigIntMapper: BaseColumnType[BigInt] =
+    if (appConfig.driverName == "postgresql") {
+      mappers.bigIntPostgresMapper
+    } else {
+      mappers.bigIntMapper
+    }
 
   override val table =
     profile.api.TableQuery[BlockHeaderTable]
@@ -126,6 +133,19 @@ case class BlockHeaderDAO()(
     table.filter(_.height === height).result
   }
 
+  /** Retrieves a [[BlockHeaderDb]] with the given chain work */
+  def getAtChainWork(work: BigInt): Future[Vector[BlockHeaderDb]] = {
+    val query = getAtChainWorkQuery(work)
+    safeDatabase.runVec(query)
+  }
+
+  def getAtChainWorkQuery(work: BigInt): profile.StreamingProfileAction[
+    Seq[BlockHeaderDb],
+    BlockHeaderDb,
+    Effect.Read] = {
+    table.filter(_.chainWork === work).result
+  }
+
   /** Gets Block Headers between (inclusive) start height and stop hash, could be out of order */
   def getBetweenHeightAndHash(
       startHeight: Int,
@@ -223,10 +243,24 @@ case class BlockHeaderDAO()(
     query
   }
 
-  /** Returns the chainTips in our database. This can be multiple headers if we have
-    * competing blockchains (fork) */
-  def chainTips: Future[Vector[BlockHeaderDb]] = {
-    logger.debug(s"Getting chaintips from: ${dbConfig.config}")
+  /** Returns the block height of the block with the most work from our database */
+  def bestHeight: Future[Int] = {
+    chainTips.map(_.maxBy(_.chainWork).height)
+  }
+
+  private val maxWorkQuery: profile.ProfileAction[
+    BigInt,
+    NoStream,
+    Effect.Read] = {
+    val query = table.map(_.chainWork).max.getOrElse(BigInt(0)).result
+    query
+  }
+
+  /** Returns the chainTips in our database calculated by max height, not work.
+    * This should only be used if the chain work has not been calculated
+    */
+  def chainTipsByHeight: Future[Vector[BlockHeaderDb]] = {
+    logger.debug(s"Getting chain tips from: ${dbConfig.config}")
     val aggregate = {
       maxHeightQuery.flatMap { height =>
         logger.debug(s"Max block height: $height")
@@ -235,6 +269,22 @@ case class BlockHeaderDAO()(
           logger.debug(s"Headers at $height: $headers")
         }
         atHeight
+      }
+    }
+
+    safeDatabase.runVec(aggregate)
+  }
+
+  def chainTips: Future[Vector[BlockHeaderDb]] = {
+    logger.debug(s"Getting chain tips from: ${dbConfig.config}")
+    val aggregate = {
+      maxWorkQuery.flatMap { work =>
+        logger.debug(s"Max block work: $work")
+        val atChainWork = getAtChainWorkQuery(work)
+        atChainWork.map { headers =>
+          logger.debug(s"Headers at $work: $headers")
+        }
+        atChainWork
       }
     }
 
@@ -267,6 +317,13 @@ case class BlockHeaderDAO()(
     val diffInterval = appConfig.chain.difficultyChangeInterval
     val height = Math.max(0, header.height - diffInterval)
     val headersF = getBetweenHeights(from = height, to = header.height)
+    headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
+  }
+
+  /** Retrieves a full blockchain with the best tip being the given header */
+  def getFullBlockchainFrom(header: BlockHeaderDb)(
+      implicit ec: ExecutionContext): Future[Blockchain] = {
+    val headersF = getBetweenHeights(from = 0, to = header.height)
     headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
   }
 
@@ -310,6 +367,8 @@ case class BlockHeaderDAO()(
 
     def hex = column[String]("hex")
 
+    def chainWork: Rep[BigInt] = column[BigInt]("chain_work")
+
     /** The sql index for searching based on [[height]] */
     def heightIndex = index("block_headers_height_index", height)
 
@@ -324,7 +383,8 @@ case class BlockHeaderDAO()(
        time,
        nBits,
        nonce,
-       hex).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
+       hex,
+       chainWork).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
     }
 
   }
