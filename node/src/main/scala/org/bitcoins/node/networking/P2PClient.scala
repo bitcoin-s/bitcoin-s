@@ -168,8 +168,7 @@ case class P2PClientActor(
 
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed) =>
-        logger.debug(s"Closed command received: ${closeCmd}")
-
+        logger.info(s"We've been disconnected by $peer command=${closeCmd}")
         //tell our peer message handler we are disconnecting
         val newPeerMsgRecv = currentPeerMsgHandlerRecv.disconnect()
 
