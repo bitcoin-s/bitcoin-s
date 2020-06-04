@@ -1,11 +1,14 @@
 package org.bitcoins.gui.dlc
 
+import org.bitcoins.cli.CliCommand.{GetDLC, GetDLCs}
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleInfo
-import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
+import org.bitcoins.crypto.{ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.TaskRunner
 import org.bitcoins.gui.dlc.dialog._
 import scalafx.beans.property.ObjectProperty
+import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.{TextArea, TextField}
 import scalafx.stage.Window
 
@@ -21,6 +24,38 @@ class DLCPaneModel(
   // constructors to signal that you want some default
   val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
+
+  val dlcs: ObservableBuffer[DLCStatus] = new ObservableBuffer[DLCStatus]()
+
+  def getDLCs: Vector[DLCStatus] = {
+    ConsoleCli.exec(GetDLCs, Config.empty) match {
+      case Failure(exception) => throw exception
+      case Success(dlcsStr) =>
+        ujson.read(dlcsStr).arr.toVector.map(DLCStatus.fromJson)
+    }
+  }
+
+  def setUp(): Unit = {
+    dlcs.clear()
+    dlcs ++= getDLCs
+  }
+
+  def updateDLC(eventId: Sha256DigestBE): Unit = {
+    ConsoleCli.exec(GetDLC(eventId), Config.empty) match {
+      case Failure(exception) => throw exception
+      case Success(dlcStatus) =>
+        dlcs += DLCStatus.fromJson(ujson.read(dlcStatus))
+        dlcs.find(_.eventId == eventId).foreach(dlcs -= _)
+    }
+  }
+
+  def updateDLCs(): Unit = {
+    val newDLCs = getDLCs
+    val toAdd = newDLCs.diff(dlcs)
+    val toRemove = dlcs.diff(newDLCs)
+    dlcs ++= toAdd
+    dlcs --= toRemove
+  }
 
   def printDLCDialogResult[T <: CliCommand](
       caption: String,
@@ -38,6 +73,7 @@ class DLCPaneModel(
                 err.printStackTrace()
                 resultArea.text = s"Error executing command:\n${err.getMessage}"
             }
+            updateDLCs()
           }
         )
       case None => ()

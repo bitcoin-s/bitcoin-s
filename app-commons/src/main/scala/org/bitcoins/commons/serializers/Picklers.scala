@@ -57,7 +57,7 @@ object Picklers {
 
   implicit val dlcStatusPickler: ReadWriter[DLCStatus] =
     readwriter[String].bimap(
-      _.toJson.toString,
+      _.toJson.render(indent = 2),
       str => DLCStatus.fromJson(ujson.read(str))
     )
 
