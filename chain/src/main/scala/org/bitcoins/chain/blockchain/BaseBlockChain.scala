@@ -39,7 +39,7 @@ private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
   protected[blockchain] def compObjectfromHeaders(
       headers: scala.collection.immutable.Seq[BlockHeaderDb]): Blockchain
 
-  val tip: BlockHeaderDb = headers.head
+  val tip: BlockHeaderDb = headers.maxBy(_.height)
 
   /** The height of the chain */
   val height: Int = tip.height

@@ -4,6 +4,7 @@ import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
+import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.number.UInt32
@@ -45,22 +46,33 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getBlockCount(): Future[Int] = {
     logger.debug(s"Querying for block count")
-    blockHeaderDAO.maxHeight.map { height =>
+    blockHeaderDAO.bestHeight.map { height =>
       logger.debug(s"getBlockCount result: count=$height")
       height
     }
   }
 
   override def getBestBlockHeader(): Future[BlockHeaderDb] = {
-    for {
-      hash <- getBestBlockHash()
-      headerOpt <- getHeader(hash)
-    } yield headerOpt match {
-      case None =>
-        throw new RuntimeException(
-          s"We found best hash=${hash.hex} but could not retrieve the full header!!!")
-      case Some(header) => header
+    logger.debug(s"Querying for best block hash")
+    //https://bitcoin.org/en/glossary/block-chain
+    val groupedChains = blockchains.groupBy(_.tip.chainWork)
+    val maxWork = groupedChains.keys.max
+    val chains = groupedChains(maxWork)
+
+    val bestHeader: BlockHeaderDb = chains match {
+      case Vector() =>
+        // This should never happen
+        val errMsg = s"Did not find blockchain with work $maxWork"
+        logger.error(errMsg)
+        throw new RuntimeException(errMsg)
+      case chain +: Vector() =>
+        chain.tip
+      case chain +: rest =>
+        logger.warn(
+          s"We have multiple competing blockchains: ${(chain +: rest).map(_.tip.hashBE.hex).mkString(", ")}")
+        chain.tip
     }
+    Future.successful(bestHeader)
   }
 
   /** @inheritdoc */
@@ -110,28 +122,7 @@ case class ChainHandler(
     * @inheritdoc
     */
   override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
-    logger.debug(s"Querying for best block hash")
-    //naive implementation, this is looking for the tip with the _most_ proof of work
-    //this does _not_ mean that it is on the chain that has the most work
-    //TODO: Enhance this in the future to return the "heaviest" header
-    //https://bitcoin.org/en/glossary/block-chain
-    val groupedChains = blockchains.groupBy(_.tip.height)
-    val maxHeight = groupedChains.keys.max
-    val chains = groupedChains(maxHeight)
-
-    val hashBE: DoubleSha256DigestBE = chains match {
-      case Vector() =>
-        val errMsg = s"Did not find blockchain with height $maxHeight"
-        logger.error(errMsg)
-        throw new RuntimeException(errMsg)
-      case chain +: Vector() =>
-        chain.tip.hashBE
-      case chain +: rest =>
-        logger.warn(
-          s"We have multiple competing blockchains: ${(chain +: rest).map(_.tip.hashBE.hex).mkString(", ")}")
-        chain.tip.hashBE
-    }
-    Future.successful(hashBE)
+    getBestBlockHeader().map(_.hashBE)
   }
 
   /** @inheritdoc */
@@ -147,7 +138,7 @@ case class ChainHandler(
           throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
-    val blockCountF = getBlockCount
+    val blockCountF = getBlockCount()
     for {
       startHeight <- startHeightF
       blockCount <- blockCountF
@@ -361,8 +352,9 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getFilterHeaderCount: Future[Int] = {
     logger.debug(s"Querying for filter header count")
-    filterHeaderDAO.maxHeight.map { height =>
-      logger.debug(s"getFilterHeaderCount result: count=$height")
+    filterHeaderDAO.getBestFilter.map { filterHeader =>
+      val height = filterHeader.height
+      logger.debug(s"getFilterCount result: count=$height")
       height
     }
   }
@@ -374,28 +366,7 @@ case class ChainHandler(
 
   /** @inheritdoc */
   override def getBestFilterHeader(): Future[CompactFilterHeaderDb] = {
-    //this seems realy brittle, is there a guarantee
-    //that the highest filter header count is our best filter header?
-    val filterCountF = getFilterHeaderCount()
-    val ourBestFilterHeader = for {
-      count <- filterCountF
-      filterHeader <- getFilterHeadersAtHeight(count)
-    } yield {
-      //TODO: Figure out what the best way to select
-      //the best filter header is if we have competing
-      //chains. (Same thing applies to getBestBlockHash()
-      //for now, just do the dumb thing and pick the first one
-      filterHeader match {
-        case tip1 +: _ +: _ =>
-          tip1
-        case tip +: _ =>
-          tip
-        case Vector() =>
-          sys.error(s"No filter headers found in database!")
-      }
-    }
-
-    ourBestFilterHeader
+    filterHeaderDAO.getBestFilter
   }
 
   /** @inheritdoc */
@@ -406,7 +377,8 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getFilterCount: Future[Int] = {
     logger.debug(s"Querying for filter count")
-    filterDAO.maxHeight.map { height =>
+    filterDAO.getBestFilter.map { filter =>
+      val height = filter.height
       logger.debug(s"getFilterCount result: count=$height")
       height
     }
@@ -485,6 +457,101 @@ case class ChainHandler(
       }
     }
     loop(Future.successful(to), Vector.empty)
+  }
+
+  def isMissingChainWork: Future[Boolean] = {
+    for {
+      first100 <- blockHeaderDAO.getBetweenHeights(0, 100)
+      first100MissingWork = first100.nonEmpty && first100.exists(
+        _.chainWork == BigInt(0))
+      isMissingWork <- {
+        if (first100MissingWork) {
+          Future.successful(true)
+        } else {
+          for {
+            height <- getBestHashBlockHeight()
+            last100 <- blockHeaderDAO.getBetweenHeights(height - 100, height)
+            last100MissingWork = last100.nonEmpty && last100.exists(
+              _.chainWork == BigInt(0))
+          } yield last100MissingWork
+        }
+      }
+
+    } yield isMissingWork
+  }
+
+  def recalculateChainWork: Future[ChainHandler] = {
+    logger.info("Calculating chain work for previous blocks")
+
+    val batchSize = chainConfig.chain.difficultyChangeInterval
+    def loop(
+        currentChainWork: BigInt,
+        remainingHeaders: Vector[BlockHeaderDb],
+        accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
+      if (remainingHeaders.isEmpty) {
+        blockHeaderDAO.upsertAll(accum.takeRight(batchSize))
+      } else {
+        val header = remainingHeaders.head
+
+        val newChainWork = currentChainWork + Pow.getBlockProof(
+          header.blockHeader)
+        val newHeader = header.copy(chainWork = newChainWork)
+
+        // Add the last batch to the database and create log
+        if (header.height % batchSize == 0) {
+          logger.info(
+            s"Recalculating chain work... current height: ${header.height}")
+          val updated = accum :+ newHeader
+          // updated the latest batch
+          blockHeaderDAO
+            .upsertAll(updated.takeRight(batchSize))
+            .flatMap(
+              _ =>
+                loop(
+                  newChainWork,
+                  remainingHeaders.tail,
+                  updated.takeRight(batchSize)
+                ))
+        } else {
+          loop(newChainWork, remainingHeaders.tail, accum :+ newHeader)
+        }
+      }
+    }
+
+    for {
+      tips <- blockHeaderDAO.chainTipsByHeight
+      fullChains <- FutureUtil.sequentially(tips)(tip =>
+        blockHeaderDAO.getFullBlockchainFrom(tip))
+
+      commonHistory = fullChains.foldLeft(fullChains.head.headers)(
+        (accum, chain) => chain.intersect(accum).toVector)
+      sortedHeaders = commonHistory.sortBy(_.height)
+
+      diffedChains = fullChains.map { blockchain =>
+        val sortedFullHeaders = blockchain.headers.sortBy(_.height)
+        // Remove the common blocks
+        sortedFullHeaders.diff(sortedHeaders)
+      }
+
+      commonWithWork <- loop(BigInt(0), sortedHeaders, Vector.empty)
+      finalCommon = Vector(sortedHeaders.head) ++ commonWithWork.takeRight(
+        batchSize)
+      commonChainWork = finalCommon.lastOption
+        .map(_.chainWork)
+        .getOrElse(BigInt(0))
+      newBlockchains <- FutureUtil.sequentially(diffedChains) { blockchain =>
+        loop(commonChainWork, blockchain, Vector.empty)
+          .map { newHeaders =>
+            val relevantHeaders =
+              (finalCommon ++ newHeaders).takeRight(
+                chainConfig.chain.difficultyChangeInterval)
+            Blockchain(relevantHeaders)
+          }
+      }
+    } yield {
+      logger.info("Finished calculating chain work")
+      this.copy(blockchains = newBlockchains.toVector)
+    }
   }
 }
 

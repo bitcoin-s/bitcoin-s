@@ -11,6 +11,7 @@ import org.bitcoins.chain.models.{
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{
@@ -126,6 +127,14 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val start = System.currentTimeMillis()
     for {
       _ <- nodeAppConfig.initialize()
+      // get chainApi so we don't need to call chainApiFromDb on every call
+      chainApi <- chainApiFromDb
+
+      isMissingChainWork <- chainApi.isMissingChainWork
+      _ <- if (isMissingChainWork) {
+        chainApi.recalculateChainWork
+      } else FutureUtil.unit
+
       node <- {
         val isInitializedF = for {
           _ <- peerMsgSenderF.map(_.connect())
@@ -136,14 +145,13 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           logger.error(s"Failed to connect with peer=$peer with err=${err}"))
 
         isInitializedF.map { _ =>
-          logger.info(s"Our peer=${peer} has been initialized")
+          logger.info(s"Our peer=$peer has been initialized")
           logger.info(s"Our node has been full started. It took=${System
             .currentTimeMillis() - start}ms")
           this
         }
       }
-      // get chainApi so we don't need to call chainApiFromDb on every call
-      chainApi <- chainApiFromDb
+
       bestHash <- chainApi.getBestBlockHash()
       bestHeight <- chainApi.getBestHashBlockHeight()
       filterCount <- chainApi.getFilterCount
@@ -195,6 +203,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       header <- chainApi
         .getHeader(hash)
         .map(_.get) // .get is safe since this is an internal call
+
     } yield {
       peerMsgSenderF.map(_.sendGetHeadersMessage(hash.flip))
       logger.info(s"Starting sync node, height=${header.height} hash=$hash")
