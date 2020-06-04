@@ -5,15 +5,15 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.core.gen.CryptoGenerators._
 import org.bitcoins.testkit.core.gen.NumberGenerator
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 import scodec.bits.{ByteVector, _}
 
-class GolombFilterTest extends BitcoinSUnitTest {
+class GolombFilterTest extends BitcoinSAsyncTest {
   behavior of "GolombFilter"
 
   it must "match encoded data for arbitrary GCS parameters" in {
-    forAll(genKey, genPMRand) {
+    forAllParallel(genKey, genPMRand) {
       case (k, (p, m, rand)) =>
         val data1 = rand + UInt64.one
         val data2 = data1 + UInt64.one
@@ -21,7 +21,7 @@ class GolombFilterTest extends BitcoinSUnitTest {
         val encodedData = GCS.encodeSortedSet(data, p)
         val filter =
           GolombFilter(k, m, p, CompactSizeUInt(UInt64(2)), encodedData)
-        val binarySearchMatcher = new BinarySearchFilterMatcher(filter)
+        val binarySearchMatcher = BinarySearchFilterMatcher(filter)
 
         assert(!binarySearchMatcher.matchesHash(rand))
         assert(binarySearchMatcher.matchesHash(data1))
@@ -29,7 +29,7 @@ class GolombFilterTest extends BitcoinSUnitTest {
         assert(!binarySearchMatcher.matchesAnyHash(Vector(rand)))
         assert(binarySearchMatcher.matchesAnyHash(Vector(rand, data1, data2)))
 
-        val simpleMatcher = new SimpleFilterMatcher(filter)
+        val simpleMatcher = SimpleFilterMatcher(filter)
 
         assert(!simpleMatcher.matchesHash(rand))
         assert(simpleMatcher.matchesHash(data1))
@@ -46,7 +46,7 @@ class GolombFilterTest extends BitcoinSUnitTest {
       Gen
         .listOfN(16, NumberGenerator.byte)
         .map(ByteVector(_))
-        .map(SipHashKey(_))
+        .map(SipHashKey)
 
     val genData: Gen[Vector[ByteVector]] = Gen.chooseNum(1, 10000).flatMap {
       size =>
@@ -56,11 +56,11 @@ class GolombFilterTest extends BitcoinSUnitTest {
     val genRandHashes: Gen[Vector[UInt64]] =
       Gen.listOfN(100, NumberGenerator.uInt64).map(_.toVector)
 
-    forAll(genKey, genData, genRandHashes) {
+    forAllParallel(genKey, genData, genRandHashes) {
       case (k, data, randHashes) =>
         val filter = GCS.buildBasicBlockFilter(data, k)
-        val binarySearchMatcher = new BinarySearchFilterMatcher(filter)
-        val simpleMatcher = new SimpleFilterMatcher(filter)
+        val binarySearchMatcher = BinarySearchFilterMatcher(filter)
+        val simpleMatcher = SimpleFilterMatcher(filter)
         val hashes = binarySearchMatcher.decodedHashes
 
         data.foreach(element => assert(binarySearchMatcher.matches(element)))
@@ -70,8 +70,8 @@ class GolombFilterTest extends BitcoinSUnitTest {
         val hashesNotInData: Vector[UInt64] =
           randHashes.filterNot(hashes.contains)
 
-        hashesNotInData.foreach(hash =>
-          assert(!binarySearchMatcher.matchesHash(hash)))
+        assert(hashesNotInData.forall(hash =>
+          !binarySearchMatcher.matchesHash(hash)))
     }
   }
 

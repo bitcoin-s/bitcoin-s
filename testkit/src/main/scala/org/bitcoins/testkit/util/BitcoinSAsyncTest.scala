@@ -196,7 +196,7 @@ trait BaseAsyncTest
     sequenceTestRuns(testRunFs)
   }
 
-  /** Runs all property based tests in parallel. This is a convinient optimization
+  /** Runs all property based tests in parallel. This is a convenient optimization
     * for synchronous property based tests */
   def forAllParallel[A](gen: Gen[A])(
       func: A => Assertion): Future[Assertion] = {
@@ -204,6 +204,30 @@ trait BaseAsyncTest
       Future {
         func(a)
       }
+    }
+  }
+
+  /** Runs all property based tests in parallel. This is a convenient optimization
+    * for synchronous property based tests */
+  def forAllParallel[A, B, C](genA: Gen[A], genB: Gen[B])(
+      func: (A, B) => Assertion): Future[Assertion] = {
+    forAllAsync(genA, genB) {
+      case (inputA, inputB) =>
+        Future {
+          func(inputA, inputB)
+        }
+    }
+  }
+
+  /** Runs all property based tests in parallel. This is a convenient optimization
+    * for synchronous property based tests */
+  def forAllParallel[A, B, C](genA: Gen[A], genB: Gen[B], genC: Gen[C])(
+      func: (A, B, C) => Assertion): Future[Assertion] = {
+    forAllAsync(genA, genB, genC) {
+      case (inputA, inputB, inputC) =>
+        Future {
+          func(inputA, inputB, inputC)
+        }
     }
   }
 }
