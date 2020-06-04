@@ -30,7 +30,7 @@ case class ChainAppConfig(
     ChainAppConfig(directory, useLogbackConf, configs: _*)
   protected[bitcoins] def baseDatadir: Path = directory
 
-  override def appConfig: ChainAppConfig = this
+  override lazy val appConfig: ChainAppConfig = this
 
   /**
     * Checks whether or not the chain project is initialized by
