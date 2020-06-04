@@ -125,8 +125,6 @@ case class WalletAppConfig(
       5.second
     }
   }
-
-
 }
 
 object WalletAppConfig extends AppConfigFactory[WalletAppConfig] {
