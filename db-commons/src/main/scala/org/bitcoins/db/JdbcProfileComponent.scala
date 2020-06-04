@@ -6,8 +6,6 @@ import org.bitcoins.core.util.BitcoinSLogger
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import scala.util.{Failure, Success, Try}
-
 trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
 
   def appConfig: ConfigType
@@ -17,19 +15,7 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
     * that require datbase connections
     */
   val dbConfig: DatabaseConfig[JdbcProfile] = {
-    val slickDbConfig = {
-      Try {
-        DatabaseConfig.forConfig[JdbcProfile](path = appConfig.moduleName,
-                                              config = appConfig.config)
-      } match {
-        case Success(value) =>
-          value
-        case Failure(exception) =>
-          logger.error(s"Error when loading database from config: $exception")
-          logger.error(s"Configuration: ${appConfig.config.asReadableJson}")
-          throw exception
-      }
-    }
+    val slickDbConfig = appConfig.slickDbConfig
 
     logger.debug(s"Resolved DB config: ${slickDbConfig.config.asReadableJson}")
 
