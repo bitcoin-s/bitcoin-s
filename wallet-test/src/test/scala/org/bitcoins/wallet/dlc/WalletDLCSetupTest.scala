@@ -65,12 +65,24 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         dlcDb <- walletB.addDLCSigs(sign)
         outcomeSigs <- walletB.dlcSigsDAO.findByEventId(sign.eventId)
 
+        walletAChange <- walletA.addressDAO.read(offer.changeAddress)
+        walletAFinal <- walletA.addressDAO.read(offer.pubKeys.finalAddress)
+
+        walletBChange <- walletB.addressDAO.read(accept.changeAddress)
+        walletBFinal <- walletB.addressDAO.read(accept.pubKeys.finalAddress)
+
       } yield {
         assert(dlcDb.eventId == sign.eventId)
         assert(dlcDb.refundSigOpt.isDefined)
         assert(dlcDb.refundSigOpt.get === sign.cetSigs.refundSig)
         assert(sign.cetSigs.outcomeSigs.forall(sig =>
           outcomeSigs.exists(_.toTuple == sig)))
+
+        // Test that the Addresses are in the wallet's database
+        assert(walletAChange.isDefined)
+        assert(walletAFinal.isDefined)
+        assert(walletBChange.isDefined)
+        assert(walletBFinal.isDefined)
       }
   }
 
