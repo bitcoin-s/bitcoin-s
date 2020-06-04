@@ -5,17 +5,14 @@ import java.nio.file.{Files, Path, Paths}
 import ch.qos.logback.classic.Level
 import com.typesafe.config._
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
-import org.bitcoins.core.protocol.blockchain.{
-  ChainParams,
-  MainNetChainParams,
-  RegTestNetChainParams,
-  TestNetChainParams
-}
+import org.bitcoins.core.protocol.blockchain.{ChainParams, MainNetChainParams, RegTestNetChainParams, TestNetChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Properties
 import scala.util.matching.Regex
+import scala.util.{Failure, Properties, Success, Try}
 
 /**
   * Everything needed to configure functionality
@@ -300,6 +297,19 @@ abstract class AppConfig extends LoggerConfig {
   override val useLogbackConf: Boolean =
     config.getBooleanOrElse("logging.logback", default = false)
 
+  lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
+    Try {
+      DatabaseConfig.forConfig[JdbcProfile](path = moduleName,
+        config = config)
+    } match {
+      case Success(value) =>
+        value
+      case Failure(exception) =>
+        logger.error(s"Error when loading database from config: $exception")
+        logger.error(s"Configuration: ${config.asReadableJson}")
+        throw exception
+    }
+  }
 }
 
 object AppConfig extends BitcoinSLogger {
