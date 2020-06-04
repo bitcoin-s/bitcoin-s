@@ -300,15 +300,6 @@ object ConsoleCli {
                   send.copy(amount = btc)
                 case other => other
               })),
-          opt[SatoshisPerVirtualByte]("feerate")
-            .text("Fee rate in sats per virtual byte")
-            .optional()
-            .action((feeRate, conf) =>
-              conf.copy(command = conf.command match {
-                case send: SendWithAlgo =>
-                  send.copy(feeRateOpt = Some(feeRate))
-                case other => other
-              })),
           arg[CoinSelectionAlgo]("algo")
             .text("Coin selection algo")
             .optional()
@@ -317,12 +308,21 @@ object ConsoleCli {
                 case send: SendWithAlgo =>
                   send.copy(algo = algo)
                 case other => other
+              })),
+          opt[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate in sats per virtual byte")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendWithAlgo =>
+                  send.copy(feeRateOpt = Some(feeRate))
+                case other => other
               }))
         ),
       cmd("opreturncommit")
         .action((_, conf) =>
           conf.copy(command = OpReturnCommit("", hashMessage = false, None)))
-        .text("Send money to the given address")
+        .text("Creates OP_RETURN commitment transaction")
         .children(
           arg[String]("message")
             .text("message to put into OP_RETURN commitment")
@@ -380,7 +380,7 @@ object ConsoleCli {
         .text("Combines all the given PSBTs")
         .children(
           arg[Seq[PSBT]]("psbts")
-            .text("PSBT serialized in hex or base64 format")
+            .text("PSBTs serialized in hex or base64 format")
             .required()
             .action((seq, conf) =>
               conf.copy(command = conf.command match {
@@ -394,7 +394,7 @@ object ConsoleCli {
         .text("Combines all the given PSBTs")
         .children(
           arg[Seq[PSBT]]("psbts")
-            .text("PSBT serialized in hex or base64 format")
+            .text("PSBTs serialized in hex or base64 format")
             .required()
             .action((seq, conf) =>
               conf.copy(command = conf.command match {
