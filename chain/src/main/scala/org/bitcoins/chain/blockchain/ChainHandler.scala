@@ -469,7 +469,7 @@ case class ChainHandler(
           Future.successful(true)
         } else {
           for {
-            height <- getBestHashBlockHeight()
+            height <- blockHeaderDAO.maxHeight
             last100 <- blockHeaderDAO.getBetweenHeights(height - 100, height)
             last100MissingWork = last100.nonEmpty && last100.exists(
               _.chainWork == BigInt(0))
