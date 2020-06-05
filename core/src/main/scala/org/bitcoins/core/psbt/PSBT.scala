@@ -551,7 +551,7 @@ case class PSBT(
 
     require(
       allSigs.groupBy(_.pubKey).values.forall(_.length == 1),
-      s"Cannot add differing signatures for associated public keys, got: $intersect"
+      s"Cannot add differing signatures for associated public keys, got: $allSigs"
     )
     val newElements = inputMaps(inputIndex).elements ++ partialSignatures
 

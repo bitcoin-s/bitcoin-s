@@ -244,7 +244,7 @@ class DLCPane(glassPane: VBox) {
 
     new TableView[DLCStatus](model.dlcs) {
       columns ++= Seq(eventIdCol,
-                      statusCol,
+                      //statusCol,
                       initiatorCol,
                       collateralCol,
                       oracleCol,
