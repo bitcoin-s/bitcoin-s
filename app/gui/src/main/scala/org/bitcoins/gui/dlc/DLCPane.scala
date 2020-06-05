@@ -173,13 +173,14 @@ class DLCPane(glassPane: VBox) {
       }
     }
 
+    /*
     val statusCol = new TableColumn[DLCStatus, String] {
       text = "Status"
       prefWidth = 150
       cellValueFactory = { status =>
         new StringProperty(status, "Status", status.value.statusString)
       }
-    }
+    }*/
 
     val initiatorCol = new TableColumn[DLCStatus, String] {
       text = "Initiator"

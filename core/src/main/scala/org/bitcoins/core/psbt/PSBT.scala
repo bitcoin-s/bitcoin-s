@@ -545,8 +545,6 @@ case class PSBT(
     require(
       !inputMaps(inputIndex).isFinalized,
       s"Cannot update an InputPSBTMap that is finalized, index: $inputIndex")
-    val intersect =
-      inputMaps(inputIndex).partialSignatures.intersect(partialSignatures)
     val allSigs = inputMaps(inputIndex).partialSignatures ++ partialSignatures
 
     require(

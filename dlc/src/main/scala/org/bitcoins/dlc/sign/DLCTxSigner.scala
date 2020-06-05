@@ -216,13 +216,7 @@ case class DLCTxSigner(
       isOffer: Boolean): Future[PSBT] = {
     for {
       fundingTx <- builder.buildFundingTx
-      utx <- {
-        if (isOffer) {
-          builder.buildOfferCET(msg)
-        } else {
-          builder.buildAcceptCET(msg)
-        }
-      }
+      utx <- builder.buildCET(msg, isOffer)
 
       psbt <-
         PSBT

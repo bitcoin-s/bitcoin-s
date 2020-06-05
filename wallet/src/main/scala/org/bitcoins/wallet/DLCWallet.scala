@@ -754,20 +754,26 @@ abstract class DLCWallet extends Wallet {
   private def executorAndSetupFromDb(
       dlcDb: DLCDb,
       dlcOffer: DLCOfferDb,
-      dlcAccept: DLCAcceptDb,
+      dlcAcceptDb: DLCAcceptDb,
       fundingInputs: Vector[DLCFundingInputDb],
       outcomeSigDbs: Vector[DLCCETSignatureDb]): Future[
     (DLCExecutor, SetupDLC)] = {
 
-    executorFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
+    executorFromDb(dlcDb, dlcOffer, dlcAcceptDb, fundingInputs)
       .flatMap { executor =>
-        val outcomeSigs = outcomeSigDbs.map(_.toTuple).toMap
-
         val setupF = if (dlcDb.isInitiator) {
-          // Note that the funding tx in this setup is not signed
-          val cetSigs = CETSignatures(outcomeSigs, dlcAccept.refundSig)
+          // TODO: Note that the funding tx in this setup is not signed
+          val outcomeSigs = outcomeSigDbs
+            .filter(_.signature.pubKey == dlcAcceptDb.fundingKey)
+            .map(_.toTuple)
+            .toMap
+          val cetSigs = CETSignatures(outcomeSigs, dlcAcceptDb.refundSig)
           executor.setupDLCOffer(cetSigs)
         } else {
+          val outcomeSigs = outcomeSigDbs
+            .filter(_.signature.pubKey == dlcOffer.fundingKey)
+            .map(_.toTuple)
+            .toMap
           val cetSigs = CETSignatures(outcomeSigs, dlcDb.refundSigOpt.get)
           val fundingSigs =
             fundingInputs
