@@ -481,7 +481,7 @@ case class ChainHandler(
   }
 
   def recalculateChainWork: Future[ChainHandler] = {
-    logger.info("Calculating chain work for previous blocks")
+      logger.info("Calculating chain work for previous blocks")
 
     val batchSize = chainConfig.chain.difficultyChangeInterval
     def loop(
