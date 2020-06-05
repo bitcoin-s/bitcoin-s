@@ -5,15 +5,13 @@ import java.nio.file.{Files, Paths}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
-import akka.http.scaladsl.Http
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi}
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.keymanager.KeyManagerInitializeError
@@ -30,130 +28,132 @@ import org.bitcoins.wallet.models.AccountDAO
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 
-object Main extends App {
-  implicit val system = ActorSystem("bitcoin-s")
-  implicit val ec: ExecutionContext = system.dispatcher
-  val argsWithIndex = args.zipWithIndex
+object Main extends App with BitcoinSLogger {
 
-  implicit val conf = {
+  private def runMain(): Unit = {
+    import akka.http.scaladsl.model.HttpEntity
+    val _ = HttpEntity.Empty
+    implicit val system = ActorSystem("bitcoin-s")
+    implicit val ec: ExecutionContext = system.dispatcher
+    val argsWithIndex = args.zipWithIndex
 
-    val dataDirIndexOpt = {
-      argsWithIndex.find(_._1.toLowerCase == "--datadir")
-    }
-    val datadirPath = dataDirIndexOpt match {
-      case None => AppConfig.DEFAULT_BITCOIN_S_DATADIR
-      case Some((_, dataDirIndex)) =>
-        val str = args(dataDirIndex + 1)
-        Paths.get(str)
-    }
-    BitcoinSAppConfig(datadirPath)
-  }
+    implicit val conf: BitcoinSAppConfig = {
 
-  val rpcPortOpt: Option[Int] = {
-    val portOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcport")
-    portOpt.map {
-      case (_, idx) => args(idx + 1).toInt
-    }
-  }
-  private val logger = HttpLoggerImpl(conf.nodeConf).getLogger
-
-  implicit val walletConf: WalletAppConfig = conf.walletConf
-  implicit val nodeConf: NodeAppConfig = conf.nodeConf
-  require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled,
-    "Either Neutrino or SPV mode should be enabled")
-  implicit val chainConf: ChainAppConfig = conf.chainConf
-
-  val peerSocket =
-    parseInetSocketAddress(nodeConf.peers.head, nodeConf.network.port)
-  val peer = Peer.fromSocket(peerSocket)
-  val bip39PasswordOpt = None //todo need to prompt user for this
-
-  //initialize the config, run migrations
-  val configInitializedF = conf.initialize()
-
-  //run chainwork migration
-  val chainApiF = configInitializedF.flatMap { _ =>
-    runChainWorkCalc()
-  }
-
-  //get a node that isn't started
-  val uninitializedNodeF = configInitializedF.flatMap {_ =>
-    createNode
-  }
-
-  //get our wallet
-  val walletF = for {
-    _ <- configInitializedF
-    uninitializedNode <- uninitializedNodeF
-    chainApi <- chainApiF
-    wallet <- createWallet(uninitializedNode,
-      chainApi,
-      BitcoinerLiveFeeRateProvider(60),
-      bip39PasswordOpt)
-  } yield wallet
-
-
-  //add callbacks to our unitialized node
-  val nodeWithCallbacksF = for {
-    uninitializedNode <- uninitializedNodeF
-    wallet <- walletF
-    initNode <- addCallbacksAndBloomFilterToNode(uninitializedNode, wallet)
-  } yield initNode
-
-  //start and sync our node
-  val syncedNodeF = for {
-    node <- nodeWithCallbacksF
-    _ <- node.start()
-    _ = if (nodeConf.isSPVEnabled) {
-      logger.info(s"Starting SPV node sync")
-    } else if (nodeConf.isNeutrinoEnabled) {
-      logger.info(s"Starting neutrino node sync")
-    } else {
-      logger.info(s"Starting unknown type of node sync")
-    }
-    _ <- node.sync()
-  } yield node
-
-
-  val entity = HttpEntity.Empty
-  val response = HttpResponse(status = 503,
-    entity = entity)
-  require(response != null, s"Response was null")
-
-  //start our http server now that we are synced
-  val startFut = for {
-    node <- syncedNodeF
-    wallet <- walletF
-    binding <- startHttpServer(node,wallet)
-  } yield {
-    logger.info(s"Done starting Main!")
-    sys.addShutdownHook {
-      logger.error(s"Exiting process")
-
-      node
-        .stop()
-        .foreach(_ =>
-          if (nodeConf.isSPVEnabled) {
-            logger.info(s"Stopped SPV node")
-          } else if (nodeConf.isNeutrinoEnabled) {
-            logger.info(s"Stopped neutrino node")
-          } else {
-            logger.info(s"Stopped unknown type of node")
-          })
-      system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
+      val dataDirIndexOpt = {
+        argsWithIndex.find(_._1.toLowerCase == "--datadir")
+      }
+      val datadirPath = dataDirIndexOpt match {
+        case None => AppConfig.DEFAULT_BITCOIN_S_DATADIR
+        case Some((_, dataDirIndex)) =>
+          val str = args(dataDirIndex + 1)
+          Paths.get(str)
+      }
+      BitcoinSAppConfig(datadirPath)
     }
 
-    binding
+    val rpcPortOpt: Option[Int] = {
+      val portOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcport")
+      portOpt.map {
+        case (_, idx) => args(idx + 1).toInt
+      }
+    }
+    val logger = HttpLoggerImpl(conf.nodeConf).getLogger
+
+    implicit val walletConf: WalletAppConfig = conf.walletConf
+    implicit val nodeConf: NodeAppConfig = conf.nodeConf
+    require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled,
+      "Either Neutrino or SPV mode should be enabled")
+    implicit val chainConf: ChainAppConfig = conf.chainConf
+
+    val peerSocket =
+      parseInetSocketAddress(nodeConf.peers.head, nodeConf.network.port)
+    val peer = Peer.fromSocket(peerSocket)
+    val bip39PasswordOpt = None //todo need to prompt user for this
+
+    //initialize the config, run migrations
+    val configInitializedF = conf.initialize()
+
+    //run chainwork migration
+    val chainApiF = configInitializedF.flatMap { _ =>
+      runChainWorkCalc()
+    }
+
+    //get a node that isn't started
+    val uninitializedNodeF = configInitializedF.flatMap {_ =>
+      createNode(peer)(nodeConf,chainConf,system)
+    }
+
+    //get our wallet
+    val walletF = for {
+      _ <- configInitializedF
+      uninitializedNode <- uninitializedNodeF
+      chainApi <- chainApiF
+      wallet <- createWallet(uninitializedNode,
+        chainApi,
+        BitcoinerLiveFeeRateProvider(60),
+        bip39PasswordOpt)
+    } yield wallet
+
+
+    //add callbacks to our unitialized node
+    val nodeWithCallbacksF = for {
+      uninitializedNode <- uninitializedNodeF
+      wallet <- walletF
+      initNode <- addCallbacksAndBloomFilterToNode(uninitializedNode, wallet)
+    } yield initNode
+
+    //start and sync our node
+    val syncedNodeF = for {
+      node <- nodeWithCallbacksF
+      _ <- node.start()
+      _ = if (nodeConf.isSPVEnabled) {
+        logger.info(s"Starting SPV node sync")
+      } else if (nodeConf.isNeutrinoEnabled) {
+        logger.info(s"Starting neutrino node sync")
+      } else {
+        logger.info(s"Starting unknown type of node sync")
+      }
+      _ <- node.sync()
+    } yield node
+
+    //start our http server now that we are synced
+    val startFut = for {
+      node <- syncedNodeF
+      wallet <- walletF
+      binding <- startHttpServer(node,wallet, rpcPortOpt)
+    } yield {
+      logger.info(s"Done starting Main!")
+      sys.addShutdownHook {
+        logger.error(s"Exiting process")
+
+        node
+          .stop()
+          .foreach(_ =>
+            if (nodeConf.isSPVEnabled) {
+              logger.info(s"Stopped SPV node")
+            } else if (nodeConf.isNeutrinoEnabled) {
+              logger.info(s"Stopped neutrino node")
+            } else {
+              logger.info(s"Stopped unknown type of node")
+            })
+        system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
+      }
+
+      binding
+    }
+
+    BitcoinSServer.startedFP.success(startFut)
+
+    startFut.failed.foreach { err =>
+      logger.error(s"Error on server startup!", err)
+    }
   }
 
-  BitcoinSServer.startedFP.success(startFut)
-
-  startFut.failed.foreach { err =>
-    logger.error(s"Error on server startup!", err)
-  }
+  //start everything!
+  runMain()
 
   /** Checks if the user already has a wallet */
-  private def hasWallet(): Future[Boolean] = {
+  private def hasWallet()(implicit walletConf: WalletAppConfig, ec: ExecutionContext): Future[Boolean] = {
     val walletDB = walletConf.dbPath resolve walletConf.dbName
     val hdCoin = walletConf.defaultAccount.coin
     if (Files.exists(walletDB) && walletConf.seedExists()) {
@@ -163,7 +163,7 @@ object Main extends App {
     }
   }
 
-  private def createNode: Future[Node] = {
+  private def createNode(peer: Peer)(implicit nodeConf: NodeAppConfig, chainConf: ChainAppConfig, system: ActorSystem): Future[Node] = {
     if (nodeConf.isSPVEnabled) {
       Future.successful(SpvNode(peer, nodeConf, chainConf, system))
     } else if (nodeConf.isNeutrinoEnabled) {
@@ -178,7 +178,8 @@ object Main extends App {
       nodeApi: Node,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
-      bip39PasswordOpt: Option[String]): Future[WalletApi] = {
+      bip39PasswordOpt: Option[String])(implicit walletConf: WalletAppConfig, system: ActorSystem): Future[WalletApi] = {
+    import system.dispatcher
     hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
@@ -221,7 +222,7 @@ object Main extends App {
     }
   }
 
-  private def createCallbacks(wallet: WalletApi): Future[NodeCallbacks] = {
+  private def createCallbacks(wallet: WalletApi)(implicit nodeConf: NodeAppConfig, ec: ExecutionContext): Future[NodeCallbacks] = {
     import DataMessageHandler._
     lazy val onTx: OnTxReceived = { tx =>
       wallet.processTransaction(tx, blockHash = None).map(_ => ())
@@ -255,7 +256,8 @@ object Main extends App {
     }
   }
 
-  private def addCallbacksAndBloomFilterToNode(node: Node, wallet: WalletApi): Future[Node] = {
+  private def addCallbacksAndBloomFilterToNode(node: Node, wallet: WalletApi)(implicit nodeAppConfig: NodeAppConfig,
+                                                                  ec: ExecutionContext): Future[Node] = {
     for {
       nodeWithBloomFilter <- node match {
         case spvNode: SpvNode =>
@@ -273,7 +275,7 @@ object Main extends App {
   }
 
   /** Log the given message, shut down the actor system and quit. */
-  private def error(message: Any): Nothing = {
+  private def error(message: Any)(implicit system: ActorSystem): Nothing = {
     logger.error(s"FATAL: $message")
     logger.error(s"Shutting down actor system")
     Await.result(system.terminate(), 10.seconds)
@@ -308,7 +310,7 @@ object Main extends App {
   }
 
   /** This is needed for migrations V2/V3 on the chain project to re-calculate the total work for the chain */
-  private def runChainWorkCalc(): Future[ChainApi] = {
+  private def runChainWorkCalc()(implicit chainAppConfig: ChainAppConfig, ec: ExecutionContext): Future[ChainApi] = {
     for {
       chainApi <- ChainHandler.fromDatabase(blockHeaderDAO = BlockHeaderDAO(),
         CompactFilterHeaderDAO(),
@@ -323,33 +325,37 @@ object Main extends App {
     } yield chainApiWithWork
   }
 
-  private def startHttpServer(node: Node, wallet: WalletApi): Future[Http.ServerBinding] = for {
-    syncedChainApi <- node.chainApiFromDb()
-    walletRoutes = WalletRoutes(wallet, node)
-    nodeRoutes = NodeRoutes(node)
-    chainRoutes = ChainRoutes(syncedChainApi)
-    coreRoutes = CoreRoutes(Core)
-    server = {
-      rpcPortOpt match {
-        case Some(rpcport) =>
-          Server(nodeConf,
-            Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-            rpcport = rpcport)
-        case None =>
-          conf.rpcPortOpt match {
-            case Some(rpcport) =>
-              Server(nodeConf,
-                Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                rpcport)
-            case None =>
-              Server(nodeConf,
-                Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
-          }
+  private def startHttpServer(node: Node, wallet: WalletApi, rpcPortOpt: Option[Int])(implicit system: ActorSystem, conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
+    import system.dispatcher
+    implicit val nodeConf: NodeAppConfig = conf.nodeConf
+    for {
+      syncedChainApi <- node.chainApiFromDb()
+      walletRoutes = WalletRoutes(wallet, node)
+      nodeRoutes = NodeRoutes(node)
+      chainRoutes = ChainRoutes(syncedChainApi)
+      coreRoutes = CoreRoutes(Core)
+      server = {
+        rpcPortOpt match {
+          case Some(rpcport) =>
+            Server(nodeConf,
+              Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+              rpcport = rpcport)
+          case None =>
+            conf.rpcPortOpt match {
+              case Some(rpcport) =>
+                Server(nodeConf,
+                  Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                  rpcport)
+              case None =>
+                Server(nodeConf,
+                  Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
+            }
+        }
       }
+      start <- server.start()
+    } yield {
+      start
     }
-    start <- server.start()
-  } yield {
-    start
   }
 }
 
