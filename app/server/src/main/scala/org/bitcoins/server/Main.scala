@@ -4,6 +4,7 @@ import java.net.InetSocketAddress
 import java.nio.file.{Files, Paths}
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpEntity
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -64,6 +65,13 @@ object Main extends App {
     parseInetSocketAddress(nodeConf.peers.head, nodeConf.network.port)
   val peer = Peer.fromSocket(peerSocket)
   val bip39PasswordOpt = None //todo need to prompt user for this
+
+  //there is a _really_ weird initialization error in akka
+  //with this value, this needs to be added here otherwise
+  //we will get NPE in Server.start(). I have no idea why
+  //see: https://github.com/akka/akka-http/issues/3221
+  val entity = HttpEntity.Empty
+
   val startFut = for {
     _ <- conf.initialize()
 
