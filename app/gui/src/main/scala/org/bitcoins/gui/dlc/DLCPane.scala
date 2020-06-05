@@ -7,6 +7,7 @@ import scalafx.Includes._
 import scalafx.beans.property.{LongProperty, StringProperty}
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
+import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout._
 
 class DLCPane(glassPane: VBox) {
@@ -252,9 +253,31 @@ class DLCPane(glassPane: VBox) {
                       eventCol,
                       contractMaturityCol)
       margin = Insets(10, 0, 10, 0)
-      selectionModel().selectionMode = SelectionMode.Multiple
+      selectionModel().selectionMode = SelectionMode.Single
     }
   }
+
+  private val copyMenuItem = new MenuItem {
+    text = "Copy"
+    onAction = { _ =>
+      val cell = tableView.selectionModel().selectedCells.head
+      val data = tableView.columns.get(cell.column).getCellData(cell.row)
+      if (data == null) {
+        ()
+      } else {
+        val str = data.toString
+        if (str.isEmpty) {
+          ()
+        } else {
+          val content = ClipboardContent()
+          content.putString(data.toString)
+          Clipboard.systemClipboard.content = content
+        }
+      }
+    }
+  }
+
+  tableView.setContextMenu(new ContextMenu(copyMenuItem))
 
   model.setUp()
 
