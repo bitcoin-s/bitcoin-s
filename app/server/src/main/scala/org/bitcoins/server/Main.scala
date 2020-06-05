@@ -4,7 +4,10 @@ import java.net.InetSocketAddress
 import java.nio.file.{Files, Paths}
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi}
 import org.bitcoins.core.util.FutureUtil
@@ -64,8 +67,10 @@ object Main extends App {
   val startFut = for {
     _ <- conf.initialize()
 
+    //run chainwork migration
+    chainApi <- runChainWorkCalc()
+
     uninitializedNode <- createNode
-    chainApi <- uninitializedNode.chainApiFromDb()
     wallet <- createWallet(uninitializedNode,
                            chainApi,
                            BitcoinerLiveFeeRateProvider(60),
@@ -283,5 +288,21 @@ object Main extends App {
       case Array(host, port) => new InetSocketAddress(host, parsePort(port))
       case _                 => throw new RuntimeException(s"Invalid peer address: $address")
     }
+  }
+
+  /** This is needed for migrations V2/V3 on the chain project to re-calculate the total work for the chain */
+  private def runChainWorkCalc(): Future[ChainApi] = {
+    for {
+      chainApi <- ChainHandler.fromDatabase(blockHeaderDAO = BlockHeaderDAO(),
+        CompactFilterHeaderDAO(),
+        CompactFilterDAO())
+      isMissingChainWork <- chainApi.isMissingChainWork
+      chainApiWithWork <- if (isMissingChainWork) {
+        chainApi.recalculateChainWork
+      } else {
+        logger.info(s"Chain work already calculated")
+        Future.successful(chainApi)
+      }
+    } yield chainApiWithWork
   }
 }
