@@ -48,7 +48,8 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
                                         dbConfig(ProjectType.Chain))
     val chainDbManagement = createChainDbManagement(chainAppConfig)
     val result = chainDbManagement.migrate()
-    assert(result == 2)
+    val expected = if (chainAppConfig.driverName == "postgresql") 2 else 3
+    assert(result == expected)
   }
 
   it must "run migrations for wallet db" in {
