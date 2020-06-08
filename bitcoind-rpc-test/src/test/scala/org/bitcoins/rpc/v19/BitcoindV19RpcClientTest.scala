@@ -101,10 +101,11 @@ class BitcoindV19RpcClientTest extends BitcoindRpcTest {
 
     val psbt =
       "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA=="
-    val updatedF =
-      clientF.flatMap(client => client.utxoUpdatePsbt(psbt, Seq(descriptor)))
 
-    updatedF.map { result =>
+    for {
+      (client, _) <- clientPairF
+      result <- client.utxoUpdatePsbt(psbt, Seq(descriptor))
+    } yield {
       assert(result.contains(psbt))
     }
   }
