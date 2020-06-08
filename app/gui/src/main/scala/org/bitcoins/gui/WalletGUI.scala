@@ -121,4 +121,8 @@ object WalletGUI extends JFXApp {
   model.taskRunner = taskRunner
 
   Platform.runLater(sendButton.requestFocus())
+
+  override def stopApp(): Unit = {
+    sys.exit(0) // Kills the server if GUI is closed in AppBundle
+  }
 }
