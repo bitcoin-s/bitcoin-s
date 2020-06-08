@@ -481,11 +481,10 @@ case class ChainHandler(
   }
 
   def recalculateChainWork: Future[ChainHandler] = {
-      logger.info("Calculating chain work for previous blocks")
+    logger.info("Calculating chain work for previous blocks")
 
     val batchSize = chainConfig.chain.difficultyChangeInterval
     def loop(
-        currentChainWork: BigInt,
         remainingHeaders: Vector[BlockHeaderDb],
         accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
       if (remainingHeaders.isEmpty) {
@@ -493,6 +492,8 @@ case class ChainHandler(
       } else {
         val header = remainingHeaders.head
 
+        val currentChainWork =
+          accum.lastOption.map(_.chainWork).getOrElse(BigInt(0))
         val newChainWork = currentChainWork + Pow.getBlockProof(
           header.blockHeader)
         val newHeader = header.copy(chainWork = newChainWork)
@@ -508,12 +509,11 @@ case class ChainHandler(
             .flatMap(
               _ =>
                 loop(
-                  newChainWork,
                   remainingHeaders.tail,
                   updated.takeRight(batchSize)
                 ))
         } else {
-          loop(newChainWork, remainingHeaders.tail, accum :+ newHeader)
+          loop(remainingHeaders.tail, accum :+ newHeader)
         }
       }
     }
@@ -533,18 +533,13 @@ case class ChainHandler(
         sortedFullHeaders.diff(sortedHeaders)
       }
 
-      commonWithWork <- loop(BigInt(0), sortedHeaders, Vector.empty)
-      finalCommon = Vector(sortedHeaders.head) ++ commonWithWork.takeRight(
-        batchSize)
-      commonChainWork = finalCommon.lastOption
-        .map(_.chainWork)
-        .getOrElse(BigInt(0))
+      commonWithWork <- loop(sortedHeaders, Vector.empty)
+      finalCommon = commonWithWork.takeRight(batchSize)
       newBlockchains <- FutureUtil.sequentially(diffedChains) { blockchain =>
-        loop(commonChainWork, blockchain, Vector.empty)
+        loop(blockchain, finalCommon)
           .map { newHeaders =>
             val relevantHeaders =
-              (finalCommon ++ newHeaders).takeRight(
-                chainConfig.chain.difficultyChangeInterval)
+              newHeaders.takeRight(chainConfig.chain.difficultyChangeInterval)
             Blockchain(relevantHeaders)
           }
       }
