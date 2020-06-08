@@ -21,7 +21,8 @@
       "core/adding-spks",
       "core/spending-info",
       "core/psbts",
-      "core/txbuilder"
+      "core/txbuilder",
+      "core/lightning-network"
     ],
     "Crypto Module": [
       "crypto/crypto-intro",
