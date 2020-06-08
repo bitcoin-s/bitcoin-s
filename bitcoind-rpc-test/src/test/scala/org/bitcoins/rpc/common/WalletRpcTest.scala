@@ -4,17 +4,17 @@ import java.io.File
 import java.util.Scanner
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
-import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.RpcUtil
@@ -38,7 +38,7 @@ class WalletRpcTest extends BitcoindRpcTest {
     for {
       _ <- walletClient.start()
       _ <- walletClient.getNewAddress.flatMap(
-        walletClient.generateToAddress(200, _))
+        walletClient.generateToAddress(101, _))
       _ <- walletClient.encryptWallet(password)
       _ <- walletClient.stop()
       _ <- RpcUtil.awaitServerShutdown(walletClient)
@@ -357,9 +357,13 @@ class WalletRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to import an address" in {
+
+    val address = Bech32Address
+      .fromString("bcrt1q9h9wkz6ad49szfl035wh3qdacuslkp6j9pfp4j")
+      .get
+
     for {
       (client, otherClient, _) <- clientsF
-      address <- client.getNewAddress
       _ <- otherClient.importAddress(address)
       txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
                                                             otherClient,
@@ -369,7 +373,7 @@ class WalletRpcTest extends BitcoindRpcTest {
     } yield {
       val entry =
         list
-          .find(addr => addr.involvesWatchonly.contains(true))
+          .find(_.involvesWatchonly.contains(true))
           .get
       assert(entry.address == address)
       assert(entry.involvesWatchonly.contains(true))
