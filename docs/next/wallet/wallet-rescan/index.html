@@ -76,8 +76,9 @@ an API with the ability to query for filters.</p>
 
 <span class="hljs-comment">//ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it</span>
 <span class="hljs-keyword">val</span> walletWithBitcoindF = <span class="hljs-keyword">for</span> {
-  w &lt;- <span class="hljs-type">BitcoinSWalletTest</span>.createWalletBitcoindNodeChainQueryApi()
-} <span class="hljs-keyword">yield</span> w
+  bitcoind &lt;- <span class="hljs-type">BitcoinSFixture</span>.createBitcoindWithFunds()
+  walletWithBitcoind &lt;- <span class="hljs-type">BitcoinSWalletTest</span>.createWalletWithBitcoindCallbacks(bitcoind)
+} <span class="hljs-keyword">yield</span> walletWithBitcoind
 
 <span class="hljs-keyword">val</span> walletF = walletWithBitcoindF.map(_.wallet)
 
