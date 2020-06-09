@@ -13,6 +13,7 @@ sealed trait DLCStatus {
   def eventId: Sha256DigestBE
   def isInitiator: Boolean
   def offer: DLCOffer
+  def statusString: String
 }
 
 sealed trait AcceptedDLCStatus extends DLCStatus {
@@ -21,30 +22,12 @@ sealed trait AcceptedDLCStatus extends DLCStatus {
 
 object DLCStatus {
 
-  def statusString(status: DLCStatus): String = {
-    status match {
-      case _: Offered         => "OFFERED"
-      case _: Accepted        => "ACCEPTED"
-      case _: Signed          => "SIGNED"
-      case _: Broadcasted     => "BROADCASTED"
-      case _: Confirmed       => "CONFIRMED"
-      case _: CloseOffered    => "CLOSE OFFERED"
-      case _: Closed          => "CLOSED"
-      case _: Claiming        => "CLAIMING"
-      case _: Claimed         => "CLAIMED"
-      case _: Penalized       => "PENALIZED"
-      case _: RemoteClaiming  => "REMOTE CLAIMING"
-      case _: RemoteClaimed   => "REMOTE CLAIMED"
-      case _: RemotePenalized => "REMOTE PENALIZED"
-      case _: Refunded        => "REFUNDED"
-    }
-  }
-
   case class Offered(
       eventId: Sha256DigestBE,
       isInitiator: Boolean,
       offer: DLCOffer)
       extends DLCStatus {
+    override val statusString: String = "OFFERED"
 
     def toAccepted(accept: DLCAccept): Accepted = {
       Accepted(eventId, isInitiator, offer, accept)
@@ -57,6 +40,7 @@ object DLCStatus {
       offer: DLCOffer,
       accept: DLCAccept)
       extends AcceptedDLCStatus {
+    override val statusString: String = "ACCEPTED"
 
     def toSigned(sign: DLCSign): Signed = {
       Signed(eventId, isInitiator, offer, accept, sign)
@@ -70,6 +54,7 @@ object DLCStatus {
       accept: DLCAccept,
       sign: DLCSign)
       extends AcceptedDLCStatus {
+    override val statusString: String = "SIGNED"
 
     def toBroadcasted(fundingTx: Transaction): Broadcasted = {
       Broadcasted(eventId, isInitiator, offer, accept, sign, fundingTx)
@@ -88,6 +73,7 @@ object DLCStatus {
       sign: DLCSign,
       fundingTx: Transaction)
       extends AcceptedDLCStatus {
+    override val statusString: String = "BROADCASTED"
 
     def toConfirmed: Confirmed = {
       Confirmed(eventId, isInitiator, offer, accept, sign, fundingTx)
@@ -102,6 +88,7 @@ object DLCStatus {
       sign: DLCSign,
       fundingTx: Transaction)
       extends AcceptedDLCStatus {
+    override val statusString: String = "CONFIRMED"
 
     def toCloseOffered(closeSig: DLCMutualCloseSig): CloseOffered = {
       CloseOffered(eventId,
@@ -140,6 +127,7 @@ object DLCStatus {
       fundingTx: Transaction,
       closeSig: DLCMutualCloseSig)
       extends AcceptedDLCStatus {
+    override val statusString: String = "CLOSE OFFERED"
 
     def toClosed(closeTx: Transaction): Closed = {
       Closed(eventId,
@@ -166,7 +154,9 @@ object DLCStatus {
       fundingTx: Transaction,
       closeSig: DLCMutualCloseSig,
       closeTx: Transaction)
-      extends AcceptedDLCStatus
+      extends AcceptedDLCStatus {
+    override val statusString: String = "CLOSED"
+  }
 
   case class Claiming(
       eventId: Sha256DigestBE,
@@ -178,6 +168,7 @@ object DLCStatus {
       oracleSig: SchnorrDigitalSignature,
       cet: Transaction)
       extends AcceptedDLCStatus {
+    override val statusString: String = "CLAIMING"
 
     def toClaimed(closingTx: Transaction): Claimed = {
       Claimed(eventId,
@@ -214,7 +205,9 @@ object DLCStatus {
       oracleSig: SchnorrDigitalSignature,
       cet: Transaction,
       closingTx: Transaction)
-      extends AcceptedDLCStatus
+      extends AcceptedDLCStatus {
+    override val statusString: String = "CLAIMED"
+  }
 
   case class Penalized(
       eventId: Sha256DigestBE,
@@ -226,7 +219,9 @@ object DLCStatus {
       oracleSig: SchnorrDigitalSignature,
       cet: Transaction,
       penaltyTx: Transaction)
-      extends AcceptedDLCStatus
+      extends AcceptedDLCStatus {
+    override val statusString: String = "PENALIZED"
+  }
 
   case class RemoteClaiming(
       eventId: Sha256DigestBE,
@@ -237,6 +232,7 @@ object DLCStatus {
       fundingTx: Transaction,
       cet: Transaction)
       extends AcceptedDLCStatus {
+    override val statusString: String = "REMOTE CLAIMING"
 
     def toRemoteClaimed(closingTx: Transaction): RemoteClaimed = {
       RemoteClaimed(eventId,
@@ -270,7 +266,9 @@ object DLCStatus {
       fundingTx: Transaction,
       cet: Transaction,
       closingTx: Transaction)
-      extends AcceptedDLCStatus
+      extends AcceptedDLCStatus {
+    override val statusString: String = "REMOTE CLAIMED"
+  }
 
   case class RemotePenalized(
       eventId: Sha256DigestBE,
@@ -281,7 +279,9 @@ object DLCStatus {
       fundingTx: Transaction,
       cet: Transaction,
       penaltyTx: Transaction)
-      extends AcceptedDLCStatus
+      extends AcceptedDLCStatus {
+    override val statusString: String = "REMOTE PENALIZED"
+  }
 
   case class Refunded(
       eventId: Sha256DigestBE,
@@ -291,5 +291,7 @@ object DLCStatus {
       sign: DLCSign,
       fundingTx: Transaction,
       refundTx: Transaction)
-      extends AcceptedDLCStatus
+      extends AcceptedDLCStatus {
+    override val statusString: String = "REFUNDED"
+  }
 }
