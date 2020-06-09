@@ -157,6 +157,10 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
 
   case class WitnessUTXO(witnessUTXO: TransactionOutput)
       extends InputPSBTRecord {
+//    require(
+//      !witnessUTXO.scriptPubKey.isInstanceOf[BIP143VulnerableScriptPubKey],
+//      "This UTXO is vulnerable to the BIP143 vulnerability, use NonWitnessOrUnknownUTXO instead"
+//    )
     override type KeyId = WitnessUTXOKeyId.type
     override val key: ByteVector = ByteVector(WitnessUTXOKeyId.byte)
     override val value: ByteVector = witnessUTXO.bytes

@@ -579,22 +579,29 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   private def changeToWitnessUTXO(
       transactionOutput: TransactionOutput): InputPSBTMap = {
     val newElements = transactionOutput.scriptPubKey match {
-      case _: WitnessScriptPubKey =>
+      case rs: WitnessScriptPubKey
+          if !rs.isInstanceOf[BIP143VulnerableScriptPubKey] =>
         filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
       case _: P2SHScriptPubKey =>
-        if (
-          redeemScriptOpt.isDefined && redeemScriptOpt.get.redeemScript
-            .isInstanceOf[WitnessScriptPubKey]
-        ) {
-          filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
+        if (redeemScriptOpt.isDefined) {
+          val redeemScript = redeemScriptOpt.get.redeemScript
+          if (
+            redeemScript
+              .isInstanceOf[WitnessScriptPubKey] && !redeemScript
+              .isInstanceOf[BIP143VulnerableScriptPubKey]
+          ) {
+            filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
+          } else {
+            elements
+          }
         } else {
           elements
         }
-      case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
-          _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
-          EmptyScriptPubKey | _: LockTimeScriptPubKey |
-          _: NonStandardScriptPubKey | _: WitnessCommitment |
-          _: ConditionalScriptPubKey =>
+      case _: BIP143VulnerableScriptPubKey | _: P2PKHScriptPubKey |
+          _: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
+          _: MultiSignatureScriptPubKey | EmptyScriptPubKey |
+          _: LockTimeScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment | _: ConditionalScriptPubKey =>
         elements
     }
 
@@ -602,6 +609,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   }
 
   /**
+    * After a discovered vulnerability in BIP-143, this is no longer safe for SegwitV0
     * Check if this satisfies criteria for witness. If it does, delete the NonWitnessOrUnknownUTXO field
     * This is useful for following reasons.
     * 1. Compresses the size of the data
@@ -649,10 +657,10 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
 
     sigComponentF.map { sigComponent =>
       val utxos = spendingInfo.inputInfo match {
-        case _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
+        case _: UnassignedSegwitNativeInputInfo =>
           Vector(WitnessUTXO(spendingInfo.output))
         case _: RawInputInfo | _: P2SHNonSegwitInputInfo |
-            _: UnassignedSegwitNativeInputInfo =>
+            _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
           nonWitnessTxOpt match {
             case None => Vector.empty
             case Some(nonWitnessTx) =>
@@ -700,10 +708,10 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
       val builder = Vector.newBuilder[InputPSBTRecord]
 
       spendingInfo.inputInfo match {
-        case _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
+        case _: UnassignedSegwitNativeInputInfo =>
           builder.+=(WitnessUTXO(spendingInfo.output))
         case _: RawInputInfo | _: P2SHNonSegwitInputInfo |
-            _: UnassignedSegwitNativeInputInfo =>
+            _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
           nonWitnessTxOpt match {
             case None => ()
             case Some(nonWitnessTx) =>

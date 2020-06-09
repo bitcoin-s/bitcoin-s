@@ -13,13 +13,7 @@ import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{
-  ECDigitalSignature,
-  ECPublicKey,
-  Factory,
-  NetworkElement,
-  Sign
-}
+import org.bitcoins.crypto._
 import scodec.bits._
 
 import scala.annotation.tailrec
@@ -203,8 +197,12 @@ case class PSBT(
           inputMap.redeemScriptOpt.isDefined && WitnessScriptPubKey
             .isWitnessScriptPubKey(
               inputMap.redeemScriptOpt.get.redeemScript.asm)
+        val notBIP143Vulnerable =
+          !out.scriptPubKey.isInstanceOf[BIP143VulnerableScriptPubKey]
 
-        if (outIsWitnessScript || hasWitScript || hasWitRedeemScript) {
+        if (
+          (outIsWitnessScript || hasWitScript || hasWitRedeemScript) && notBIP143Vulnerable
+        ) {
           inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(out)
         } else {
           inputMap.filterRecords(
@@ -627,7 +625,7 @@ case class PSBT(
             case (Some(_), _: NonWitnessTransaction) =>
               Failure(new RuntimeException(
                 s"Extracted program is not witness transaction, but input $index has WitnessUTXO record"))
-            case (None, _) =>
+            case (None, _: NonWitnessTransaction) =>
               utxoOpt match {
                 case Some(utxo) =>
                   val input = tx.inputs(index)
@@ -642,6 +640,74 @@ case class PSBT(
                   if (inputResult == ScriptOk) {
                     Success(tx)
                   } else {
+                    Failure(
+                      new RuntimeException(
+                        s"Input $index was invalid: $inputResult"))
+                  }
+                case None =>
+                  logger.info(
+                    s"No UTXO record was provided for input $index, hence no validation was done for this input")
+
+                  Success(tx)
+              }
+            case (None, wtx: WitnessTransaction) =>
+              utxoOpt match {
+                case Some(utxo) =>
+                  val input = tx.inputs(index)
+                  val output = utxo.transactionSpent.outputs(
+                    input.previousOutput.vout.toInt)
+                  val txSigComponent = output.scriptPubKey match {
+                    case _: WitnessScriptPubKey =>
+                      WitnessTxSigComponent(wtx,
+                                            UInt32(index),
+                                            output,
+                                            Policy.standardFlags)
+                    case _: P2SHScriptPubKey =>
+                      (inputMap.finalizedScriptWitnessOpt,
+                       inputMap.finalizedScriptSigOpt) match {
+                        case (Some(_), _) =>
+                          WitnessTxSigComponent(wtx,
+                                                UInt32(index),
+                                                output,
+                                                Policy.standardFlags)
+                        case (None, Some(finalizedScriptSig)) =>
+                          finalizedScriptSig.scriptSig match {
+                            case p2sh: P2SHScriptSignature
+                                if p2sh.redeemScript
+                                  .isInstanceOf[WitnessScriptPubKey] =>
+                              WitnessTxSigComponent(wtx,
+                                                    UInt32(index),
+                                                    output,
+                                                    Policy.standardFlags)
+                            case _: ScriptSignature =>
+                              BaseTxSigComponent(wtx,
+                                                 UInt32(index),
+                                                 output,
+                                                 Policy.standardFlags)
+                          }
+
+                        case (None, None) =>
+                          BaseTxSigComponent(wtx,
+                                             UInt32(index),
+                                             output,
+                                             Policy.standardFlags)
+                      }
+                    case _: NonWitnessScriptPubKey =>
+                      BaseTxSigComponent(wtx,
+                                         UInt32(index),
+                                         output,
+                                         Policy.standardFlags)
+                  }
+                  val inputResult = ScriptInterpreter.run(
+                    PreExecutionScriptProgram(txSigComponent))
+                  if (inputResult == ScriptOk) {
+                    Success(tx)
+                  } else {
+                    println("============")
+                    println(output.scriptPubKey)
+                    println(
+                      (inputMap.witnessScriptOpt, inputMap.redeemScriptOpt))
+                    println("============")
                     Failure(
                       new RuntimeException(
                         s"Input $index was invalid: $inputResult"))
@@ -680,8 +746,7 @@ case class PSBT(
               case None => witness
               case Some(
                     InputPSBTRecord.FinalizedScriptWitness(scriptWitness)) =>
-                TransactionWitness(
-                  witness.updated(index, scriptWitness).toVector)
+                witness.updated(index, scriptWitness)
             }
         }
         WitnessTransaction(transaction.version,
