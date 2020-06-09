@@ -114,7 +114,8 @@ class PSBTTest extends BitcoinSAsyncTest {
             val finalizedPsbtT = signedPSBT.finalizePSBT
             finalizedPsbtT match {
               case Success(finalizedPsbt) =>
-                assert(finalizedPsbt.extractTransactionAndValidate.isSuccess)
+                val txT = finalizedPsbt.extractTransactionAndValidate
+                assert(txT.isSuccess, txT.failed)
               case Failure(exception) => fail(exception)
             }
           }
@@ -169,7 +170,7 @@ class PSBTTest extends BitcoinSAsyncTest {
     forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
-      case ((creditingTxsInfo, destinations), (changeSPK, _), network) =>
+      case ((creditingTxsInfo, destinations), (changeSPK, _), _) =>
         val crediting =
           creditingTxsInfo.foldLeft(0L)(_ + _.amount.satoshis.toLong)
         val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
