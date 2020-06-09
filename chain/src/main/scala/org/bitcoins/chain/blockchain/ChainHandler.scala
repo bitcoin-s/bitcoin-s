@@ -496,7 +496,18 @@ case class ChainHandler(
           accum.lastOption.map(_.chainWork).getOrElse(BigInt(0))
         val newChainWork = currentChainWork + Pow.getBlockProof(
           header.blockHeader)
-        val newHeader = header.copy(chainWork = newChainWork)
+        val newHeader = BlockHeaderDb(
+          header.height,
+          header.hashBE,
+          header.version,
+          header.previousBlockHashBE,
+          header.merkleRootHashBE,
+          header.time,
+          header.nBits,
+          header.nonce,
+          header.hex,
+          newChainWork
+        )
 
         // Add the last batch to the database and create log
         if (header.height % batchSize == 0) {
