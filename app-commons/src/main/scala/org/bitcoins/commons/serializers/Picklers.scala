@@ -11,6 +11,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import play.api.libs.json.Json
 import upickle.default._
 
 object Picklers {
@@ -56,20 +57,19 @@ object Picklers {
 
   implicit val dlcOfferPickler: ReadWriter[DLCOffer] =
     readwriter[String]
-      .bimap(_.toJsonStr, str => DLCOffer.fromJson(ujson.read(str)))
+      .bimap(_.toJsonStr, str => DLCOffer.fromJson(Json.parse(str)))
 
   implicit val dlcAcceptPickler: ReadWriter[DLCAccept] =
     readwriter[String]
-      .bimap(_.toJsonStr, str => DLCAccept.fromJson(ujson.read(str).obj))
+      .bimap(_.toJsonStr, str => DLCAccept.fromJson(Json.parse(str)))
 
   implicit val dlcSignPickler: ReadWriter[DLCSign] =
     readwriter[String]
-      .bimap(_.toJsonStr, str => DLCSign.fromJson(ujson.read(str).obj))
+      .bimap(_.toJsonStr, str => DLCSign.fromJson(Json.parse(str)))
 
   implicit val dlcMutualCloseSigPickler: ReadWriter[DLCMutualCloseSig] =
-    readwriter[String].bimap(
-      _.toJsonStr,
-      str => DLCMutualCloseSig.fromJson(ujson.read(str).obj))
+    readwriter[String]
+      .bimap(_.toJsonStr, str => DLCMutualCloseSig.fromJson(Json.parse(str)))
 
   implicit val blockStampPickler: ReadWriter[BlockStamp] =
     readwriter[String].bimap(_.mkString, BlockStamp.fromString(_).get)

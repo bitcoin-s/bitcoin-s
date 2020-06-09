@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import play.api.libs.json.Json
 import ujson._
 import upickle.default._
 
@@ -318,7 +319,7 @@ object AcceptDLCOffer extends ServerJsonModels {
     jsArr.arr.toList match {
       case offerJs :: escapedJs :: Nil =>
         Try {
-          val offer = DLCOffer.fromJson(ujson.read(offerJs.str))
+          val offer = DLCOffer.fromJson(Json.parse(offerJs.str))
           val escaped = escapedJs.bool
           AcceptDLCOffer(offer, escaped)
         }
@@ -341,7 +342,7 @@ object SignDLC extends ServerJsonModels {
     jsArr.arr.toList match {
       case acceptJs :: escapedJs :: Nil =>
         Try {
-          val accept = DLCAccept.fromJson(ujson.read(acceptJs.str))
+          val accept = DLCAccept.fromJson(Json.parse(acceptJs.str))
           val escaped = escapedJs.bool
           SignDLC(accept, escaped)
         }
@@ -364,7 +365,7 @@ object AddDLCSigs extends ServerJsonModels {
     jsArr.arr.toList match {
       case sigsJs :: Nil =>
         Try {
-          val sigs = DLCSign.fromJson(ujson.read(sigsJs.str))
+          val sigs = DLCSign.fromJson(Json.parse(sigsJs.str))
           AddDLCSigs(sigs)
         }
       case Nil =>
@@ -414,7 +415,7 @@ object AcceptDLCMutualClose extends ServerJsonModels {
       case mutualCloseSigJs :: noBroadcastJs :: Nil =>
         Try {
           val mutualCloseSig =
-            DLCMutualCloseSig.fromJson(ujson.read(mutualCloseSigJs.str))
+            DLCMutualCloseSig.fromJson(Json.parse(mutualCloseSigJs.str))
           val noBroadcast = noBroadcastJs.bool
           AcceptDLCMutualClose(mutualCloseSig, noBroadcast)
         }

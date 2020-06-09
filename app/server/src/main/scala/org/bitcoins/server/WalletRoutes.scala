@@ -14,6 +14,7 @@ import org.bitcoins.crypto.NetworkElement
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.WalletLogger
 import org.bitcoins.wallet.api.WalletApi
+import play.api.libs.json.Json
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -36,7 +37,7 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
       escaped: Boolean): HttpEntity.Strict = {
     val json = dlcMessage.toJson
     val sendString =
-      if (escaped) escape(json.toString()) else json.render(indent = 2)
+      if (escaped) escape(json.toString()) else Json.prettyPrint(json)
     Server.httpSuccess(sendString)
   }
 

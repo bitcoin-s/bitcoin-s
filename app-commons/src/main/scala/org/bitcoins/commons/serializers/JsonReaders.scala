@@ -8,6 +8,13 @@ import java.util.UUID
 import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
 import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.dlc.{
+  CETSignatures,
+  DLCPublicKeys,
+  DLCTimeouts,
+  FundingSignatures
+}
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config._
@@ -27,25 +34,16 @@ import org.bitcoins.core.protocol.script.{
   WitnessVersion0
 }
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{
-  Address,
-  BitcoinAddress,
-  P2PKHAddress,
-  P2SHAddress
-}
+import org.bitcoins.core.protocol._
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECDigitalSignature,
-  ECPublicKey,
-  RipeMd160Digest,
-  RipeMd160DigestBE,
-  Sha256Digest,
-  Sha256Hash160Digest
+import org.bitcoins.core.wallet.fee.{
+  BitcoinFeeUnit,
+  SatoshisPerByte,
+  SatoshisPerVirtualByte
 }
+import org.bitcoins.crypto._
 import play.api.libs.json._
 
 import scala.concurrent.duration._
@@ -109,6 +107,12 @@ object JsonReaders {
   implicit object Sha256DigestReads extends Reads[Sha256Digest] {
     override def reads(json: JsValue): JsResult[Sha256Digest] =
       SerializerUtil.processJsString[Sha256Digest](Sha256Digest.fromHex)(json)
+  }
+
+  implicit object Sha256DigestBEReads extends Reads[Sha256DigestBE] {
+    override def reads(json: JsValue): JsResult[Sha256DigestBE] =
+      SerializerUtil.processJsString[Sha256DigestBE](Sha256DigestBE.fromHex)(
+        json)
   }
 
   implicit object RipeMd160DigestReads extends Reads[RipeMd160Digest] {
@@ -180,6 +184,13 @@ object JsonReaders {
       case JsString(s) => JsSuccess(UInt32.fromHex(s))
       case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
         SerializerUtil.buildJsErrorMsg("jsnumber", err)
+    }
+  }
+
+  implicit object BlockStampWithFutureReads
+      extends Reads[BlockStampWithFuture] {
+    override def reads(json: JsValue): JsResult[BlockStampWithFuture] = {
+      json.validate[UInt32].map(BlockStampWithFuture.fromUInt32)
     }
   }
 
@@ -373,6 +384,12 @@ object JsonReaders {
     }
   }
 
+  implicit object OutputReferenceReads extends Reads[OutputReference] {
+    override def reads(json: JsValue): JsResult[OutputReference] = {
+      SerializerUtil.processJsString(OutputReference.fromHex)(json)
+    }
+  }
+
   implicit object RpcAddressReads extends Reads[RpcAddress] {
 
     def reads(json: JsValue): JsResult[RpcAddress] = json match {
@@ -420,6 +437,59 @@ object JsonReaders {
         case "NONE|ANYONECANPAY"   => HashType.sigHashNoneAnyoneCanPay
         case "SINGLE|ANYONECANPAY" => HashType.sigHashSingleAnyoneCanPay
       }(json)
+  }
+
+  implicit object SchnorrDigitalSignatureReads
+      extends Reads[SchnorrDigitalSignature] {
+    override def reads(json: JsValue): JsResult[SchnorrDigitalSignature] = {
+      SerializerUtil.processJsString(SchnorrDigitalSignature.fromHex)(json)
+    }
+  }
+
+  implicit object OracleInfoReads extends Reads[OracleInfo] {
+    override def reads(json: JsValue): JsResult[OracleInfo] =
+      SerializerUtil.processJsString(OracleInfo.fromHex)(json)
+  }
+
+  implicit object ContractInfoReads extends Reads[ContractInfo] {
+    override def reads(json: JsValue): JsResult[ContractInfo] =
+      mapReads[Sha256DigestBE, Satoshis](json).map(ContractInfo.apply)
+  }
+
+  implicit val dlcTimeoutsReads: Reads[DLCTimeouts] = Json.reads[DLCTimeouts]
+
+  implicit val dlcPublicKeysReads: Reads[DLCPublicKeys] =
+    Json.reads[DLCPublicKeys]
+
+  implicit val cetSignaturesReads: Reads[CETSignatures] = {
+    implicit val r: Reads[Map[Sha256DigestBE, PartialSignature]] =
+      Reads[Map[Sha256DigestBE, PartialSignature]](
+        mapReads[Sha256DigestBE, PartialSignature])
+    Json.reads[CETSignatures]
+  }
+
+  implicit val fundingSignaturesReads: Reads[FundingSignatures] =
+    Reads[FundingSignatures] { json =>
+      mapReads[String, Vector[PartialSignature]](json)
+        .map(_.map {
+          case (outPoint, sigs) => TransactionOutPoint(outPoint) -> sigs
+        })
+        .map(FundingSignatures.apply)
+    }
+
+  implicit val dlcOfferReads: Reads[DLCOffer] = Json.reads[DLCOffer]
+
+  implicit val dlcAcceptReads: Reads[DLCAccept] = Json.reads[DLCAccept]
+
+  implicit val dlcSignReads: Reads[DLCSign] = Json.reads[DLCSign]
+
+  implicit val dlcMutualCloseSigReads: Reads[DLCMutualCloseSig] =
+    Json.reads[DLCMutualCloseSig]
+
+  implicit object PartialSignatureReads extends Reads[PartialSignature] {
+    override def reads(json: JsValue): JsResult[PartialSignature] = {
+      SerializerUtil.processJsString(PartialSignature.fromHex)(json)
+    }
   }
 
   implicit object FinalizedPsbtReads extends Reads[FinalizedPsbt] {
@@ -551,6 +621,13 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[BitcoinFeeUnit] =
       SerializerUtil.processJsNumber[BitcoinFeeUnit](num =>
         SatoshisPerByte(Satoshis((num * 100000).toBigInt)))(json)
+  }
+
+  implicit object SatoshisPerVirtualByteReads
+      extends Reads[SatoshisPerVirtualByte] {
+    override def reads(json: JsValue): JsResult[SatoshisPerVirtualByte] = {
+      json.validate[Satoshis].map(SatoshisPerVirtualByte.apply)
+    }
   }
 
   implicit object FileReads extends Reads[File] {

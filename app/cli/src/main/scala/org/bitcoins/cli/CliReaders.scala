@@ -14,6 +14,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import play.api.libs.json.Json
 import scopt._
 
 /** scopt readers for parsing CLI params and options */
@@ -159,7 +160,7 @@ object CliReaders {
 
     // this will be a JSON string
     override def reads: String => DLCOffer = str => {
-      DLCOffer.fromJson(ujson.read(str))
+      DLCOffer.fromJson(Json.parse(str))
     }
   }
 
@@ -168,7 +169,7 @@ object CliReaders {
 
     // this will be a JSON string
     override def reads: String => DLCAccept = str => {
-      DLCAccept.fromJson(ujson.read(str))
+      DLCAccept.fromJson(Json.parse(str))
     }
   }
 
@@ -177,7 +178,7 @@ object CliReaders {
 
     // this will be a JSON string
     override def reads: String => DLCSign = str => {
-      DLCSign.fromJson(ujson.read(str))
+      DLCSign.fromJson(Json.parse(str))
     }
   }
 
@@ -186,6 +187,6 @@ object CliReaders {
       override def arity: Int = 1
 
       override def reads: String => DLCMutualCloseSig =
-        str => DLCMutualCloseSig.fromJson(ujson.read(str))
+        str => DLCMutualCloseSig.fromJson(Json.parse(str))
     }
 }

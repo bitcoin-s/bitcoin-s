@@ -44,6 +44,7 @@ import org.bitcoins.wallet.MockWalletApi
 import org.bitcoins.wallet.models._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpec}
+import play.api.libs.json.Json
 import scodec.bits.ByteVector
 import ujson.Value.InvalidData
 import ujson._
@@ -590,7 +591,7 @@ class RoutesSpec
 
       (mockWalletApi
         .acceptDLCOffer(_: DLCOffer))
-        .expects(DLCOffer.fromJson(ujson.read(offerStr)))
+        .expects(DLCOffer.fromJson(Json.parse(offerStr)))
         .returning(
           Future.successful(
             DLCAccept(
@@ -620,7 +621,7 @@ class RoutesSpec
 
       (mockWalletApi
         .signDLC(_: DLCAccept))
-        .expects(DLCAccept.fromJson(ujson.read(acceptStr)))
+        .expects(DLCAccept.fromJson(Json.parse(acceptStr)))
         .returning(
           Future.successful(
             DLCSign(
@@ -645,7 +646,7 @@ class RoutesSpec
 
       (mockWalletApi
         .addDLCSigs(_: DLCSign))
-        .expects(DLCSign.fromJson(ujson.read(sigsStr)))
+        .expects(DLCSign.fromJson(Json.parse(sigsStr)))
         .returning(Future.successful(DLCDb(
           eventId = eventId,
           isInitiator = false,

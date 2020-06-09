@@ -474,9 +474,7 @@ lazy val dlc = project
   .in(file("dlc"))
   .settings(CommonSettings.prodSettings: _*)
   .settings(
-    name := "bitcoin-s-dlc",
-    // version number needed for MicroJson
-    libraryDependencies ++= Deps.dlc(scalaVersion.value)
+    name := "bitcoin-s-dlc"
   )
   .dependsOn(core, appCommons)
 
