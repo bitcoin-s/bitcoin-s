@@ -9,17 +9,17 @@ import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 class AddressFactoryTest extends BitcoinSUnitTest {
 
   "AddressFactory" must "create an address from a base58 encoded string" in {
-    Address(TestUtil.bitcoinAddress.get.value) must be(TestUtil.bitcoinAddress)
+    Address(TestUtil.bitcoinAddress.value) must be(TestUtil.bitcoinAddress)
   }
 
   it must "create an address from a sequence of bytes" in {
-    val decoded = Base58.decode(TestUtil.bitcoinAddress.get.value)
+    val decoded = Base58.decode(TestUtil.bitcoinAddress.value)
     Address(decoded) must be(TestUtil.bitcoinAddress)
   }
 
   it must "throw an exception if we give a hex string to create a bitcoin address from" in {
     intercept[IllegalArgumentException] {
-      throw Address.fromHex("01234567890abcdef").failed.get
+      Address.fromHex("01234567890abcdef")
     }
   }
 }

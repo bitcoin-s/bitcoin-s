@@ -37,7 +37,7 @@ object TestUtil {
   def testP2SHAddress = BitcoinAddress("2MzYbQdkSVp5wVyMRp6A5PHPuQNHpiaTbCj")
 
   val bech32Address: Bech32Address =
-    Bech32Address.fromString("bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf").get
+    Bech32Address.fromString("bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf")
   def bitcoinAddress = BitcoinAddress("1C4kYhyLftmkn48YarSoLupxHfYFo8kp64")
   def multiSigAddress = BitcoinAddress("342ftSRCvFHfCeFFBuz4xwbeqnDw6BGUey")
 

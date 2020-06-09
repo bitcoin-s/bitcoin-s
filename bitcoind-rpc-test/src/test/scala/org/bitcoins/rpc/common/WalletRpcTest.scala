@@ -360,7 +360,6 @@ class WalletRpcTest extends BitcoindRpcTest {
 
     val address = Bech32Address
       .fromString("bcrt1q9h9wkz6ad49szfl035wh3qdacuslkp6j9pfp4j")
-      .get
 
     for {
       (client, otherClient, _) <- clientsF

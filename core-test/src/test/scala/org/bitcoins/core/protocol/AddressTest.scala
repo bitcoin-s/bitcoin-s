@@ -12,13 +12,13 @@ class AddressTest extends BitcoinSUnitTest {
   it must "have serialization symmetry" in {
     forAll(AddressGenerator.address) { addr =>
       val fromSPK = Address
-        .fromScriptPubKey(addr.scriptPubKey, addr.networkParameters)
+        .fromScriptPubKeyT(addr.scriptPubKey, addr.networkParameters)
       fromSPK match {
         case Success(newAddr)   => assert(newAddr.value == addr.value)
         case Failure(exception) => fail(exception.getMessage)
       }
 
-      val fromStringT = Address.fromString(addr.value)
+      val fromStringT = Address.fromStringT(addr.value)
       fromStringT match {
         case Success(newAddr)   => assert(newAddr.value == addr.value)
         case Failure(exception) => fail(exception.getMessage)

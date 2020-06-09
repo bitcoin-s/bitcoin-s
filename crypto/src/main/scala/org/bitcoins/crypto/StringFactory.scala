@@ -13,7 +13,7 @@ trait StringFactory[T] {
     fromStringT(string).toOption
   }
 
-  /** Tries to parsea  string to type t, returns [[scala.util.Failure]] if the fails */
+  /** Tries to parse string to type t, returns [[scala.util.Failure]] if the fails */
   def fromStringT(string: String): Try[T] = {
     Try(fromString(string))
   }

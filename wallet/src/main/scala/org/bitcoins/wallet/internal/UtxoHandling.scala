@@ -87,7 +87,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     */
   private def findAddress(
       spk: ScriptPubKey): Future[CompatEither[AddUtxoError, AddressDb]] =
-    BitcoinAddress.fromScriptPubKey(spk, networkParameters) match {
+    BitcoinAddress.fromScriptPubKeyT(spk, networkParameters) match {
       case Success(address) =>
         addressDAO.findAddress(address).map {
           case Some(addrDb) => CompatRight(addrDb)

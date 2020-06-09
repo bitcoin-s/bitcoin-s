@@ -152,7 +152,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   /** Tries to convert the given string a to a
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] */
   def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
-    val decoded = fromString(string)
+    val decoded = fromStringT(string)
     decoded.flatMap {
       case bech32Addr =>
         val bytes = bech32Addr.data
@@ -182,14 +182,19 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   }
 
   /** Decodes bech32 string to the [[org.bitcoins.core.protocol.BtcHumanReadablePart HumanReadablePart]] & data part */
-  override def fromString(bech32: String): Try[Bech32Address] = {
-    for {
+  override def fromString(bech32: String): Bech32Address = {
+    val bech32T = for {
       (hrp, data) <- Bech32.splitToHrpAndData(bech32)
       btcHrp <- BtcHumanReadablePart(hrp)
     } yield Bech32Address(btcHrp, data)
+
+    bech32T match {
+      case Success(bech32) => bech32
+      case Failure(exn) => throw exn
+    }
   }
 
-  override def fromScriptPubKey(
+  override def fromScriptPubKeyT(
       spk: ScriptPubKey,
       np: NetworkParameters): Try[Bech32Address] =
     spk match {
@@ -232,9 +237,9 @@ object P2PKHAddress extends AddressFactory[P2PKHAddress] {
     P2PKHAddress(spk.pubKeyHash, networkParameters)
   }
 
-  override def fromString(address: String): Try[P2PKHAddress] = {
+  override def fromString(address: String): P2PKHAddress = {
     val decodeCheckP2PKH: Try[ByteVector] = Base58.decodeCheck(address)
-    decodeCheckP2PKH.flatMap { bytes =>
+    val p2pkhT = decodeCheckP2PKH.flatMap { bytes =>
       val networkBytes: Option[(NetworkParameters, ByteVector)] =
         Networks.knownNetworks
           .map(n => (n, n.p2pkhNetworkByte))
@@ -259,9 +264,14 @@ object P2PKHAddress extends AddressFactory[P2PKHAddress] {
               s"Given address was not a valid P2PKH address, got: $address"))
       }
     }
+
+    p2pkhT match {
+      case Success(p2pkh) => p2pkh
+      case Failure(exn) => throw exn
+    }
   }
 
-  override def fromScriptPubKey(
+  override def fromScriptPubKeyT(
       spk: ScriptPubKey,
       np: NetworkParameters): Try[P2PKHAddress] =
     spk match {
@@ -306,9 +316,9 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
       network: NetworkParameters): P2SHAddress =
     P2SHAddressImpl(hash, network)
 
-  override def fromString(address: String): Try[P2SHAddress] = {
+  override def fromString(address: String): P2SHAddress = {
     val decodeCheckP2SH: Try[ByteVector] = Base58.decodeCheck(address)
-    decodeCheckP2SH.flatMap { bytes =>
+    val p2shT = decodeCheckP2SH.flatMap { bytes =>
       val networkBytes: Option[(NetworkParameters, ByteVector)] =
         Networks.knownNetworks
           .map(n => (n, n.p2shNetworkByte))
@@ -333,9 +343,14 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
               s"Given address was not a valid P2PKH address, got: $address"))
       }
     }
+
+    p2shT match {
+      case Success(p2sh) => p2sh
+      case Failure(exn) => throw exn
+    }
   }
 
-  override def fromScriptPubKey(
+  override def fromScriptPubKeyT(
       spk: ScriptPubKey,
       np: NetworkParameters): Try[P2SHAddress] =
     spk match {
@@ -355,18 +370,23 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
 object BitcoinAddress extends AddressFactory[BitcoinAddress] {
 
   /** Creates a [[org.bitcoins.core.protocol.BitcoinAddress BitcoinAddress]] from the given string value */
-  def apply(value: String): Try[BitcoinAddress] = fromString(value)
+  def apply(value: String): BitcoinAddress = fromString(value)
 
-  override def fromString(value: String): Try[BitcoinAddress] = {
-    P2PKHAddress
-      .fromString(value)
-      .orElse(P2SHAddress.fromString(value))
-      .orElse(Bech32Address.fromString(value))
-      .orElse(Failure(new IllegalArgumentException(
-        s"Could not decode the given value to a BitcoinAddress, got: $value")))
+  override def fromString(value: String): BitcoinAddress = {
+    val addressT = P2PKHAddress
+      .fromStringT(value)
+      .orElse(P2SHAddress.fromStringT(value))
+      .orElse(Bech32Address.fromStringT(value))
+
+    addressT match {
+      case Success(addr) => addr
+      case Failure(_) =>
+        throw new IllegalArgumentException(
+          s"Could not decode the given value to a BitcoinAddress, got: $value")
+    }
   }
 
-  override def fromScriptPubKey(
+  override def fromScriptPubKeyT(
       spk: ScriptPubKey,
       np: NetworkParameters): Try[BitcoinAddress] =
     spk match {
@@ -387,31 +407,32 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
 
 object Address extends AddressFactory[Address] {
 
-  def fromBytes(bytes: ByteVector): Try[Address] = {
+  def fromBytes(bytes: ByteVector): Address = {
     val encoded = Base58.encode(bytes)
     BitcoinAddress.fromString(encoded)
   }
 
-  def fromHex(hex: String): Try[Address] =
+  def fromHex(hex: String): Address =
     fromBytes(BytesUtil.decodeHex(hex))
 
-  def apply(bytes: ByteVector): Try[Address] = fromBytes(bytes)
+  def apply(bytes: ByteVector): Address = fromBytes(bytes)
 
-  def apply(str: String): Try[Address] = fromString(str)
+  def apply(str: String): Address = fromString(str)
 
-  override def fromString(str: String): Try[Address] = {
+  override def fromString(str: String): Address = {
     BitcoinAddress.fromString(str)
   }
-  override def fromScriptPubKey(
+
+  override def fromScriptPubKeyT(
       spk: ScriptPubKey,
       network: NetworkParameters): Try[Address] =
     network match {
-      case _: BitcoinNetwork => BitcoinAddress.fromScriptPubKey(spk, network)
+      case _: BitcoinNetwork => BitcoinAddress.fromScriptPubKeyT(spk, network)
     }
 
   def apply(
       spk: ScriptPubKey,
       networkParameters: NetworkParameters): Try[Address] = {
-    fromScriptPubKey(spk, networkParameters)
+    fromScriptPubKeyT(spk, networkParameters)
   }
 }

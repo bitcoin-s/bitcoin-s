@@ -46,7 +46,7 @@ class WalletGUIModel() {
         taskRunner.run(
           caption = s"Send $amount to $address",
           op = {
-            ConsoleCli.exec(SendToAddress(BitcoinAddress(address).get,
+            ConsoleCli.exec(SendToAddress(BitcoinAddress.fromString(address),
                                           Bitcoins(BigDecimal(amount)),
                                           satoshisPerVirtualByte = None),
                             Config.empty) match {

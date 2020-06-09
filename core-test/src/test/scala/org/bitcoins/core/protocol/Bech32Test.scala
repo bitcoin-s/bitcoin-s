@@ -21,7 +21,7 @@ class Bech32Test extends BitcoinSUnitTest {
 
   it must "decode a regtest address from Bitcoin Core" in {
     val addrStr = "bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf"
-    val addrT = Address.fromString(addrStr)
+    val addrT = Address.fromStringT(addrStr)
     addrT match {
       case Success(addr: Bech32Address) => assert(addr.value == addrStr)
       case _                            => fail()
