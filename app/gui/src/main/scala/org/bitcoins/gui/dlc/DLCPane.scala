@@ -3,8 +3,8 @@ package org.bitcoins.gui.dlc
 import javafx.event.{ActionEvent, EventHandler}
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.geometry.{Insets, Pos}
-import scalafx.scene.control.{Button, ButtonBar, Label, TextArea, TextField}
-import scalafx.scene.layout.{BorderPane, GridPane, HBox, Region, VBox}
+import scalafx.scene.control._
+import scalafx.scene.layout._
 
 class DLCPane(glassPane: VBox) {
 
