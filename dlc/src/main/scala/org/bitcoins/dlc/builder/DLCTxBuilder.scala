@@ -13,6 +13,9 @@ import org.bitcoins.crypto._
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/** Given all non-signature DLC setup information, this
+  * builder can construct any (unsigned) DLC component.
+  */
 case class DLCTxBuilder(
     offer: DLCOffer,
     accept: DLCAcceptWithoutSigs
@@ -87,6 +90,7 @@ case class DLCTxBuilder(
                             acceptOutcomes)
   }
 
+  /** Constructs the unsigned funding transaction */
   lazy val buildFundingTx: Future[Transaction] = {
     DLCFundingTxBuilder(
       offerFundingKey = offerFundingKey,
@@ -126,6 +130,9 @@ case class DLCTxBuilder(
     }
   }
 
+  /** Constructs the initiator's unsigned Contract Execution Transaction
+    * (CET) for a given outcome hash
+    */
   def buildOfferCET(msg: Sha256DigestBE): Future[WitnessTransaction] = {
     for {
       cetBuilder <- cetBuilderF
@@ -133,6 +140,9 @@ case class DLCTxBuilder(
     } yield cet
   }
 
+  /** Constructs the non-initiator's unsigned Contract Execution
+    * Transaction (CET) for a given outcome hash
+    */
   def buildAcceptCET(msg: Sha256DigestBE): Future[WitnessTransaction] = {
     for {
       cetBuilder <- cetBuilderF
@@ -140,6 +150,9 @@ case class DLCTxBuilder(
     } yield cet
   }
 
+  /** Constructs the given party's unsigned Contract Execution
+    * Transaction (CET) for a given outcome hash
+    */
   def buildCET(
       msg: Sha256DigestBE,
       isInitiator: Boolean): Future[WitnessTransaction] = {
@@ -150,18 +163,27 @@ case class DLCTxBuilder(
     }
   }
 
+  /** Constructs the initiator's P2WSH redeem script corresponding to
+    * the CET for a given outcome hash
+    */
   def getOfferCETWitness(msg: Sha256DigestBE): Future[P2WSHWitnessV0] = {
     cetBuilderF
       .map(_.buildOfferToLocalP2PK(msg))
       .map(P2WSHWitnessV0(_))
   }
 
+  /** Constructs the non-initiator's P2WSH redeem script corresponding to
+    * the CET for a given outcome hash
+    */
   def getAcceptCETWitness(msg: Sha256DigestBE): Future[P2WSHWitnessV0] = {
     cetBuilderF
       .map(_.buildAcceptToLocalP2PK(msg))
       .map(P2WSHWitnessV0(_))
   }
 
+  /** Constructs the given party's P2WSH redeem script corresponding to
+    * the CET for a given outcome hash
+    */
   def getCETWitness(
       msg: Sha256DigestBE,
       isInitiator: Boolean): Future[P2WSHWitnessV0] = {
@@ -172,6 +194,7 @@ case class DLCTxBuilder(
     }
   }
 
+  /** Constructs the unsigned refund transaction */
   lazy val buildRefundTx: Future[WitnessTransaction] = {
     val builderF = for {
       fundingTx <- buildFundingTx
@@ -196,6 +219,7 @@ case class DLCTxBuilder(
     builderF.flatMap(_.buildRefundTx())
   }
 
+  /** Constructs the unsigned mutual close transaction for a given oracle signature */
   def buildMutualCloseTx(sig: SchnorrDigitalSignature): Future[Transaction] = {
     val builderF = for {
       fundingTx <- buildFundingTx
@@ -237,6 +261,9 @@ object DLCTxBuilder {
     }
   }
 
+  /** Computes the tweaked public key used in a CET to_local
+    * output's success branch
+    */
   def tweakedPubKey(
       fundingPubKey: ECPublicKey,
       toLocalCETKey: ECPublicKey,

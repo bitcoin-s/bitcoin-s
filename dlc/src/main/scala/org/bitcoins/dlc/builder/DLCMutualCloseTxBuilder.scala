@@ -8,6 +8,7 @@ import org.bitcoins.crypto.SchnorrDigitalSignature
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/** Responsible for constructing unsigned DLC mutual close transactions */
 case class DLCMutualCloseTxBuilder(
     oracleInfo: OracleInfo,
     offerFinalSPK: ScriptPubKey,
@@ -21,6 +22,7 @@ case class DLCMutualCloseTxBuilder(
     msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
   }.toMap
 
+  /** Constructs an unsigned mutual close transaction given an oracle signature */
   def buildMutualCloseTx(sig: SchnorrDigitalSignature)(
       implicit ec: ExecutionContext): Future[Transaction] = {
     val builder = RawTxBuilder()

@@ -275,6 +275,10 @@ object StandardNonInteractiveFinalizer {
   }
 }
 
+/** Adds a future fee amount to the output with the given
+  * ScriptPubKey and subtracts that amount in equal portions
+  * from the specified change ScriptPubKeys.
+  */
 case class AddFutureFeeFinalizer(
     spk: ScriptPubKey,
     futureFee: CurrencyUnit,
@@ -318,6 +322,10 @@ case class AddFutureFeeFinalizer(
   }
 }
 
+/** Assumes the input transaction has had no fee considerations
+  * and subtracts the estimated fee in equal portions from the
+  * outputs with the specified ScriptPubKeys
+  */
 case class SubtractFeeFromOutputsFinalizer(
     inputInfos: Vector[InputInfo],
     feeRate: FeeUnit,
@@ -374,6 +382,10 @@ object SubtractFeeFromOutputsFinalizer {
   }
 }
 
+/** Assumes the input transaction has had no fee considerations
+  * and that all inputs are P2WPKH. Subtracts the estimated fee
+  * in equal portions from the outputs with the specified ScriptPubKeys
+  */
 case class P2WPKHSubtractFeesFromOutputsFinalizer(
     feeRate: FeeUnit,
     spks: Vector[ScriptPubKey])
@@ -394,7 +406,15 @@ case class P2WPKHSubtractFeesFromOutputsFinalizer(
   }
 }
 
-// Note: spendingVBytes may be 0
+/** Finalizes a dual-funded transaction given the InputInfos
+  * from both parties and the non-change output ScriptPubKey.
+  *
+  * This includes adding the future fee of spending transactions
+  * to the non-change output as well as subtracting relevant fees
+  * from the change outputs. This finalizer filters dust outputs.
+  *
+  * Note: spendingVBytes may be 0
+  */
 case class DualFundingTxFinalizer(
     spendingVBytes: Long,
     feeRate: FeeUnit,
@@ -421,6 +441,16 @@ case class DualFundingTxFinalizer(
   }
 }
 
+/** Finalizes a dual-funded transaction given the non-change output
+  * ScriptPubKey and under the assumption that all funding inputs
+  * from both parties are P2WPKH UTXOs.
+  *
+  * This includes adding the future fee of spending transactions
+  * to the non-change output as well as subtracting relevant fees
+  * from the change outputs. This finalizer filters dust outputs.
+  *
+  * Note: spendingVBytes may be 0
+  */
 case class P2WPKHDualFundingTxFinalizer(
     spendingVBytes: Long,
     feeRate: FeeUnit,

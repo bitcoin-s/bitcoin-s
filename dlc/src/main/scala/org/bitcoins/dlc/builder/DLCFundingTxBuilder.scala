@@ -17,6 +17,9 @@ import org.bitcoins.crypto.ECPublicKey
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/** Responsible for constructing an unsigned DLC funding transaction
+  * as well as all of its components (ScriptPubKeys, etc.)
+  */
 case class DLCFundingTxBuilder(
     offerFundingKey: ECPublicKey,
     acceptFundingKey: ECPublicKey,
@@ -27,11 +30,15 @@ case class DLCFundingTxBuilder(
     acceptFundingInputs: Vector[OutputReference],
     offerChangeSPK: ScriptPubKey,
     acceptChangeSPK: ScriptPubKey) {
+
+  /** The total collateral of both parties combined */
   val totalInput: CurrencyUnit = offerInput + acceptInput
 
+  /** The sum of all funding input amounts from the initiator */
   val offerTotalFunding: CurrencyUnit =
     offerFundingInputs.map(_.output.value).sum
 
+  /** The sum of all funding input amounts from the non-initiator */
   val acceptTotalFunding: CurrencyUnit =
     acceptFundingInputs.map(_.output.value).sum
 
@@ -42,9 +49,11 @@ case class DLCFundingTxBuilder(
     acceptTotalFunding >= acceptInput,
     "Accept funding inputs must add up to at least accept's total collateral")
 
+  /** The 2-of-2 MultiSignatureScriptPubKey to be wrapped in P2WSH and used as the funding output */
   val fundingMultiSig: MultiSignatureScriptPubKey =
     MultiSignatureScriptPubKey(2, Vector(offerFundingKey, acceptFundingKey))
 
+  /** The funding output's P2WSH(MultiSig) ScriptPubKey */
   val fundingSPK: P2WSHWitnessSPKV0 = P2WSHWitnessSPKV0(fundingMultiSig)
 
   private val spendingFee = DLCTxBuilder.approxCETVBytes + DLCTxBuilder.approxToLocalClosingVBytes
@@ -52,6 +61,7 @@ case class DLCFundingTxBuilder(
   val fundingTxFinalizer: P2WPKHDualFundingTxFinalizer =
     P2WPKHDualFundingTxFinalizer(spendingFee, feeRate, fundingSPK)
 
+  /** Constructs the unsigned DLC funding transaction */
   def buildFundingTx()(implicit ec: ExecutionContext): Future[Transaction] = {
     val builder = RawTxBuilderWithFinalizer(fundingTxFinalizer)
 

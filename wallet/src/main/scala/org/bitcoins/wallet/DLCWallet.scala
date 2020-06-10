@@ -12,14 +12,7 @@ import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
-import org.bitcoins.dlc.execution.{
-  DLCExecutor,
-  RefundDLCOutcomeWithClosing,
-  RefundDLCOutcomeWithDustClosing,
-  SetupDLC,
-  UnilateralDLCOutcomeWithClosing,
-  UnilateralDLCOutcomeWithDustClosing
-}
+import org.bitcoins.dlc.execution._
 import org.bitcoins.dlc.sign.DLCTxSigner
 import org.bitcoins.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.wallet.models._
@@ -490,7 +483,7 @@ abstract class DLCWallet extends Wallet {
     val outPoints =
       fundingInputs.filter(_.isInitiator == dlcDb.isInitiator).map(_.outPoint)
 
-    listUtxos(outPoints).map(_.map(info => info.toUTXOInfo(keyManager)))
+    listUtxos(outPoints).map(_.map(_.toUTXOInfo(keyManager)))
   }
 
   private def verifierFromDb(

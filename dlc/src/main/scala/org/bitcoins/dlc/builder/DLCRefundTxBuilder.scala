@@ -20,6 +20,7 @@ import org.bitcoins.crypto.ECPublicKey
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/** Responsible for constructing the unsigned DLC refund transaction */
 case class DLCRefundTxBuilder(
     offerInput: CurrencyUnit,
     offerFundingKey: ECPublicKey,
@@ -40,6 +41,7 @@ case class DLCRefundTxBuilder(
     conditionalPath = ConditionalPath.NoCondition
   )
 
+  /** Constructs the unsigned DLC refund transaction */
   def buildRefundTx()(
       implicit ec: ExecutionContext): Future[WitnessTransaction] = {
     val builder = RawTxBuilder().setLockTime(timeouts.contractTimeout.toUInt32)

@@ -30,17 +30,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
-import org.bitcoins.dlc.execution.{
-  CooperativeDLCOutcome,
-  DLCOutcome,
-  RefundDLCOutcome,
-  RefundDLCOutcomeWithClosing,
-  RefundDLCOutcomeWithDustClosing,
-  SetupDLC,
-  UnilateralDLCOutcome,
-  UnilateralDLCOutcomeWithClosing,
-  UnilateralDLCOutcomeWithDustClosing
-}
+import org.bitcoins.dlc.execution._
 import org.bitcoins.dlc.testgen.TestDLCClient
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.testkit.dlc.DLCTestUtil

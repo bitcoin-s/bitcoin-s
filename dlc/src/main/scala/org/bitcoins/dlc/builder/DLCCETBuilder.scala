@@ -17,6 +17,10 @@ import org.bitcoins.crypto._
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/** Responsible for constructing unsigned
+  * Contract Execution Transactions (CETs)
+  * and their ScriptPubKeys
+  */
 case class DLCCETBuilder(
     offerOutcomes: ContractInfo,
     acceptOutcomes: ContractInfo,
@@ -64,16 +68,25 @@ case class DLCCETBuilder(
     )
   }
 
+  /** Constructs the initiator's to_local ScriptPubKey (not
+    * yet wrapped in a P2WSH) for a given outcome hash
+    */
   def buildOfferToLocalP2PK(
       msg: Sha256DigestBE): P2PKWithTimeoutScriptPubKey = {
     buildToLocalP2PK(msg, offerFundingKey, offerToLocalKey, acceptToLocalKey)
   }
 
+  /** Constructs the non-initiator's to_local ScriptPubKey
+    * (not yet wrapped in a P2WSH) for a given outcome hash
+    */
   def buildAcceptToLocalP2PK(
       msg: Sha256DigestBE): P2PKWithTimeoutScriptPubKey = {
     buildToLocalP2PK(msg, acceptFundingKey, acceptToLocalKey, offerToLocalKey)
   }
 
+  /** Constructs a given parties Contract Execution Transaction
+    * (CET) for a given outcome hash
+    */
   def buildCET(msg: Sha256DigestBE, isOffer: Boolean)(
       implicit ec: ExecutionContext): Future[WitnessTransaction] = {
     val builder = RawTxBuilder().setLockTime(timeouts.contractMaturity.toUInt32)
@@ -120,11 +133,17 @@ case class DLCCETBuilder(
     }
   }
 
+  /** Constructs the initiator's unsigned Contract Execution
+    * Transaction (CET) for a given outcome hash
+    */
   def buildOfferCET(msg: Sha256DigestBE)(
       implicit ec: ExecutionContext): Future[WitnessTransaction] = {
     buildCET(msg, isOffer = true)
   }
 
+  /** Constructs the non-initiator's unsigned Contract Execution
+    * Transaction (CET) for a given outcome hash
+    */
   def buildAcceptCET(msg: Sha256DigestBE)(
       implicit ec: ExecutionContext): Future[WitnessTransaction] = {
     buildCET(msg, isOffer = false)

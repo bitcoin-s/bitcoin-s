@@ -20,6 +20,7 @@ import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
+/** Responsible for verifying all DLC signatures */
 case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
 
   private lazy val fundingTx = Await.result(builder.buildFundingTx, 5.seconds)
@@ -55,6 +56,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
       }
   }
 
+  /** Verifies remote's CET signature for a given outcome hash */
   def verifyCETSig(outcome: Sha256DigestBE, sig: PartialSignature): Boolean = {
     val cetF = if (isInitiator) {
       builder.buildOfferCET(outcome)
@@ -80,6 +82,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
       .isValid
   }
 
+  /** Verifies remote's refund signature */
   def verifyRefundSig(sig: PartialSignature): Boolean = {
     val refundTx = Await.result(builder.buildRefundTx, 5.seconds)
 

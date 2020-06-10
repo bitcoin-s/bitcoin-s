@@ -31,7 +31,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 /** This case class allows for the construction and execution of
-  * Discreet Log Contracts between two parties.
+  * Discreet Log Contracts between two parties running on this machine (for tests).
   *
   * @param offer The DLCOffer associated with this DLC
   * @param accept The DLCAccept (without sigs) associated with this DLC
@@ -81,6 +81,10 @@ case class TestDLCClient(
     Await.result(utxF, 5.seconds)
   }
 
+  /** Sets up the non-initiator's DLC given functions for sending
+    * CETSignatures to the initiator as well as receiving CETSignatures
+    * and FundingSignatures from them
+    */
   def setupDLCAccept(
       sendSigs: CETSignatures => Future[Unit],
       getSigs: Future[(CETSignatures, FundingSignatures)]): Future[SetupDLC] = {
@@ -96,6 +100,11 @@ case class TestDLCClient(
     }
   }
 
+  /** Sets up the initiator's DLC given functions for getting CETSignatures
+    * from the non-initiator as well as sending signatures to them, and lastly
+    * a Future which will be populated with the broadcasted (or relayed) fully
+    * signed funding transaction
+    */
   def setupDLCOffer(
       getSigs: Future[CETSignatures],
       sendSigs: (CETSignatures, FundingSignatures) => Future[Unit],
@@ -114,6 +123,10 @@ case class TestDLCClient(
     }
   }
 
+  /** Initiates and executes a cooperative close given a function
+    * for sending signatures to the counterparty and a Future which
+    * will be populated with the broadcasted (or relayed) mutual close tx
+    */
   def initiateMutualClose(
       dlcSetup: SetupDLC,
       sig: SchnorrDigitalSignature,
@@ -133,6 +146,7 @@ case class TestDLCClient(
     }
   }
 
+  /** Executes a mutual close given remote's signatures */
   def executeMutualClose(
       dlcSetup: SetupDLC,
       getSigs: Future[(SchnorrDigitalSignature, PartialSignature)]): Future[
@@ -147,6 +161,7 @@ case class TestDLCClient(
     }
   }
 
+  /** Constructs a UnilateralDLCOutcome given an oracle signature */
   def executeUnilateralDLC(
       dlcSetup: SetupDLC,
       oracleSigF: Future[SchnorrDigitalSignature]): Future[
@@ -156,6 +171,7 @@ case class TestDLCClient(
     }
   }
 
+  /** Constructs a UnilateralDLCOutcome given remote's published CET */
   def executeRemoteUnilateralDLC(
       dlcSetup: SetupDLC,
       publishedCET: Transaction,
@@ -163,12 +179,14 @@ case class TestDLCClient(
     dlcExecutor.executeRemoteUnilateralDLC(dlcSetup, publishedCET, sweepSPK)
   }
 
+  /** Constructs a UnilateralDLCOutcome given remote's timed-out CET */
   def executeJusticeDLC(
       dlcSetup: SetupDLC,
       timedOutCET: Transaction): Future[UnilateralDLCOutcome] = {
     dlcExecutor.executeJusticeDLC(dlcSetup, timedOutCET)
   }
 
+  /** Constructs a RefundDLCOutcome */
   def executeRefundDLC(dlcSetup: SetupDLC): Future[RefundDLCOutcome] = {
     dlcExecutor.executeRefundDLC(dlcSetup)
   }

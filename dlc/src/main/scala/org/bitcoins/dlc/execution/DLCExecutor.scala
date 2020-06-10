@@ -29,6 +29,7 @@ import org.bitcoins.dlc.sign.DLCTxSigner
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/** Responsible for constructing SetupDLCs and DLCOutcomes */
 case class DLCExecutor(signer: DLCTxSigner) extends BitcoinSLogger {
   implicit private val ec: ExecutionContext = signer.ec
 
@@ -40,12 +41,19 @@ case class DLCExecutor(signer: DLCTxSigner) extends BitcoinSLogger {
 
   val messages: Vector[Sha256DigestBE] = builder.offerOutcomes.keys.toVector
 
+  /** Constructs the initiator's SetupDLC given the non-initiator's
+    * CETSignatures which should arrive in a DLC accept message
+    */
   def setupDLCOffer(cetSigs: CETSignatures): Future[SetupDLC] = {
     require(isInitiator, "You should call setupDLCAccept")
 
     setupDLC(cetSigs, None)
   }
 
+  /** Constructs the non-initiator's SetupDLC given the initiator's
+    * CETSignatures and FundingSignatures which should arrive in
+    * a DLC sign message
+    */
   def setupDLCAccept(
       cetSigs: CETSignatures,
       fundingSigs: FundingSignatures): Future[SetupDLC] = {
@@ -54,6 +62,9 @@ case class DLCExecutor(signer: DLCTxSigner) extends BitcoinSLogger {
     setupDLC(cetSigs, Some(fundingSigs))
   }
 
+  /** Constructs a SetupDLC given the necessary signature information
+    * from the counter-party.
+    */
   def setupDLC(
       cetSigs: CETSignatures,
       fundingSigsOpt: Option[FundingSignatures]): Future[SetupDLC] = {
@@ -102,6 +113,7 @@ case class DLCExecutor(signer: DLCTxSigner) extends BitcoinSLogger {
     }
   }
 
+  /** Return's this party's payout for a given oracle signature */
   def getPayout(sig: SchnorrDigitalSignature): CurrencyUnit = {
     signer.getPayout(sig)
   }

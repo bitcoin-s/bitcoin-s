@@ -38,6 +38,9 @@ import org.bitcoins.dlc.builder.DLCTxBuilder
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/** Responsible for constructing all DLC signatures
+  * and signed transactions
+  */
 case class DLCTxSigner(
     builder: DLCTxBuilder,
     isInitiator: Boolean,
@@ -88,6 +91,7 @@ case class DLCTxSigner(
     )
   }
 
+  /** Return's this party's payout for a given oracle signature */
   def getPayout(sig: SchnorrDigitalSignature): CurrencyUnit = {
     val (offerPayout, acceptPayout) = builder.getPayouts(sig)
     if (isInitiator) {
@@ -97,6 +101,7 @@ case class DLCTxSigner(
     }
   }
 
+  /** Creates this party's FundingSignatures */
   def createFundingTxSigs(): Future[FundingSignatures] = {
     val sigFs =
       Vector.newBuilder[Future[(TransactionOutPoint, PartialSignature)]]
@@ -126,6 +131,7 @@ case class DLCTxSigner(
     }
   }
 
+  /** Constructs the signed DLC funding transaction given remote FundingSignatures */
   def signFundingTx(remoteSigs: FundingSignatures): Future[Transaction] = {
     val fundingInputs = offer.fundingInputs ++ accept.fundingInputs
 
@@ -178,6 +184,7 @@ case class DLCTxSigner(
     }
   }
 
+  /** Constructs a DLCMutualCloseSig message given an oracle signature */
   def createMutualCloseTxSig(
       oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
     for {
@@ -188,6 +195,8 @@ case class DLCTxSigner(
     }
   }
 
+  /** Constructs a signed mutual close transaction given an oracle
+    * signature and remote's mutual close sig (both found in a DLCMutualCloseSig) */
   def signMutualCloseTx(
       oracleSig: SchnorrDigitalSignature,
       remoteSig: PartialSignature): Future[Transaction] = {
@@ -224,6 +233,7 @@ case class DLCTxSigner(
     }
   }
 
+  /** Signs remote's Contract Execution Transaction (CET) for a given outcome hash */
   def createRemoteCETSig(msg: Sha256DigestBE): Future[PartialSignature] = {
     for {
       psbt <- createPartiallySignedCET(msg, !isInitiator)
@@ -247,6 +257,9 @@ case class DLCTxSigner(
     }
   }
 
+  /** Creates a PSBT of the refund transaction which contain's this
+    * party's signature
+    */
   def createPartiallySignedRefundTx(): Future[PSBT] = {
     for {
       fundingTx <- builder.buildFundingTx
@@ -261,6 +274,7 @@ case class DLCTxSigner(
     }
   }
 
+  /** Creates this party's signature of the refund transaction */
   def createRefundSig(): Future[PartialSignature] = {
     for {
       psbt <- createPartiallySignedRefundTx()
@@ -270,18 +284,20 @@ case class DLCTxSigner(
     }
   }
 
+  /** Constructs the signed refund transaction given remote's signature */
   def signRefundTx(remoteSig: PartialSignature): Future[Transaction] = {
     for {
       unsignedPSBT <- createPartiallySignedRefundTx()
       psbt = unsignedPSBT.addSignature(remoteSig, inputIndex = 0)
 
       refundTxT = psbt.finalizePSBT.flatMap(_.extractTransactionAndValidate)
-      refuntTx <- Future.fromTry(refundTxT)
+      refundTx <- Future.fromTry(refundTxT)
     } yield {
-      refuntTx
+      refundTx
     }
   }
 
+  /** Creates all of this party's CETSignatures */
   def createCETSigs(): Future[CETSignatures] = {
     val cetSigFs = offer.contractInfo.keys.toVector.map { msg =>
       createRemoteCETSig(msg).map(msg -> _)
@@ -311,6 +327,10 @@ object DLCTxSigner {
                 fundingUtxos)
   }
 
+  /** Computes the tweaked private key used to claim a
+    * Contract Execution Transaction's to_local output
+    * given an oracle signature
+    */
   def tweakedPrivKey(
       fundingPrivKey: ECPrivateKey,
       cetToLocalPrivKey: ECPrivateKey,
