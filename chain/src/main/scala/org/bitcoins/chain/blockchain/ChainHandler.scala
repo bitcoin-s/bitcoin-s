@@ -496,18 +496,7 @@ case class ChainHandler(
           accum.lastOption.map(_.chainWork).getOrElse(BigInt(0))
         val newChainWork = currentChainWork + Pow.getBlockProof(
           header.blockHeader)
-        val newHeader = BlockHeaderDb(
-          header.height,
-          header.hashBE,
-          header.version,
-          header.previousBlockHashBE,
-          header.merkleRootHashBE,
-          header.time,
-          header.nBits,
-          header.nonce,
-          header.hex,
-          newChainWork
-        )
+        val newHeader = header.copy(chainWork = newChainWork)
 
         // Add the last batch to the database and create log
         if (header.height % batchSize == 0) {
@@ -529,34 +518,34 @@ case class ChainHandler(
       }
     }
 
+    def loop2(
+        maxHeight: Int,
+        accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
+      val highestHeaderOpt = accum.maxByOption(_.height)
+      val currentHeight = highestHeaderOpt.map(_.height).getOrElse(-1)
+      if (currentHeight == maxHeight) {
+        Future.successful(accum)
+      } else {
+        val batchHeight = Math.max(maxHeight, currentHeight + batchSize + 1)
+
+        for {
+          headersToCalc <- blockHeaderDAO.getBetweenHeights(currentHeight + 1,
+                                                            batchHeight)
+          sortedHeaders = headersToCalc.sortBy(_.height)
+          headersWithWork <- loop(sortedHeaders,
+                                  Vector(highestHeaderOpt).flatten)
+          next <- loop2(maxHeight, headersWithWork)
+        } yield next
+      }
+    }
+
     for {
-      tips <- blockHeaderDAO.chainTipsByHeight
-      fullChains <- FutureUtil.sequentially(tips)(tip =>
-        blockHeaderDAO.getFullBlockchainFrom(tip))
-
-      commonHistory = fullChains.foldLeft(fullChains.head.headers)(
-        (accum, chain) => chain.intersect(accum).toVector)
-      sortedHeaders = commonHistory.sortBy(_.height)
-
-      diffedChains = fullChains.map { blockchain =>
-        val sortedFullHeaders = blockchain.headers.sortBy(_.height)
-        // Remove the common blocks
-        sortedFullHeaders.diff(sortedHeaders)
-      }
-
-      commonWithWork <- loop(sortedHeaders, Vector.empty)
-      finalCommon = commonWithWork.takeRight(batchSize)
-      newBlockchains <- FutureUtil.sequentially(diffedChains) { blockchain =>
-        loop(blockchain, finalCommon)
-          .map { newHeaders =>
-            val relevantHeaders =
-              newHeaders.takeRight(chainConfig.chain.difficultyChangeInterval)
-            Blockchain(relevantHeaders)
-          }
-      }
+      maxHeight <- blockHeaderDAO.maxHeight
+      _ <- loop2(maxHeight, Vector.empty)
+      newBlockchains <- blockHeaderDAO.getBlockchains()
     } yield {
       logger.info("Finished calculating chain work")
-      this.copy(blockchains = newBlockchains.toVector)
+      this.copy(blockchains = newBlockchains)
     }
   }
 }
