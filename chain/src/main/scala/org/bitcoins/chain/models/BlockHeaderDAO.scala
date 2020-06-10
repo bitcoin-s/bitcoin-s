@@ -232,7 +232,8 @@ case class BlockHeaderDAO()(
     Int,
     NoStream,
     Effect.Read] = {
-    val noWork = table.filter(_.chainWork === BigInt(0))
+    val noWork =
+      table.filter(h => h.chainWork === BigInt(0) || h.chainWork == null)
     noWork.map(_.height).min.getOrElse(0).result
   }
 

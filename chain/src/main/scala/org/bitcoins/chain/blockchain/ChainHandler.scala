@@ -484,6 +484,7 @@ case class ChainHandler(
     logger.info("Calculating chain work for previous blocks")
 
     val batchSize = chainConfig.chain.difficultyChangeInterval
+
     def loop(
         remainingHeaders: Vector[BlockHeaderDb],
         accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
@@ -521,12 +522,14 @@ case class ChainHandler(
     def loop2(
         maxHeight: Int,
         accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
+
       val highestHeaderOpt = accum.maxByOption(_.height)
-      val currentHeight = highestHeaderOpt.map(_.height).getOrElse(-1)
+      val currentHeight = highestHeaderOpt.map(_.height).getOrElse(0)
+
       if (currentHeight == maxHeight) {
         Future.successful(accum)
       } else {
-        val batchHeight = Math.max(maxHeight, currentHeight + batchSize + 1)
+        val batchHeight = Math.min(maxHeight, currentHeight + batchSize)
 
         for {
           headersToCalc <- blockHeaderDAO.getBetweenHeights(currentHeight + 1,
