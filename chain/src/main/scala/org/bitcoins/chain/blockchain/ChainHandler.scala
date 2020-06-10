@@ -541,11 +541,11 @@ case class ChainHandler(
 
     for {
       maxHeight <- blockHeaderDAO.maxHeight
-      mostWorks <- blockHeaderDAO.chainTips
-      start = if (mostWorks.maxBy(_.chainWork).chainWork == 0) {
-        Vector.empty
+      startHeight <- blockHeaderDAO.getLowestNoWorkHeight
+      start <- if (startHeight == 0) {
+        Future.successful(Vector.empty)
       } else {
-        Vector(mostWorks.maxBy(_.chainWork))
+        blockHeaderDAO.getAtHeight(startHeight - 1)
       }
       _ <- loop2(maxHeight, start)
       newBlockchains <- blockHeaderDAO.getBlockchains()
