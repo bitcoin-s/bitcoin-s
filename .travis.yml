@@ -49,14 +49,8 @@ matrix:
     - os: osx
       name: "macOS wallet and node tests"
       env:
-<<<<<<< HEAD
         - CI="1"
-        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
-||||||| parent of cd4eca247d... Binary Outcome DLC (#871)
-        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
-=======
         - TEST_COMMAND="dlcTest/test dlc/coverageReport dlc/coverageAggregate dlc/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
->>>>>>> cd4eca247d... Binary Outcome DLC (#871)
       scala:
         - 2.13.2
 
