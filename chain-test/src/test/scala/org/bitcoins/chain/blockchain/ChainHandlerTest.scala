@@ -531,6 +531,10 @@ class ChainHandlerTest extends ChainDbUnitTest {
       headerDb <- newHandler.getBestBlockHeader()
     } yield {
       assert(headerDb.height == headersWithNoWork.head.height)
+      assert(
+        newHandler.blockchains.head
+          .groupBy(_.hashBE)
+          .forall(_._2.size == 1))
       assert(headerDb.hashBE == headersWithNoWork.head.hashBE)
       assert(headerDb.chainWork == BigInt(12885098501L))
     }

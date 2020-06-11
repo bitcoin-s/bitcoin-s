@@ -228,6 +228,20 @@ case class BlockHeaderDAO()(
     }
   }
 
+  private val lowestNoWorkQuery: profile.ProfileAction[
+    Int,
+    NoStream,
+    Effect.Read] = {
+    val noWork =
+      table.filter(h => h.chainWork === BigInt(0) || h.chainWork == null)
+    noWork.map(_.height).min.getOrElse(0).result
+  }
+
+  def getLowestNoWorkHeight: Future[Int] = {
+    val query = lowestNoWorkQuery
+    database.run(query)
+  }
+
   /** Returns the maximum block height from our database */
   def maxHeight: Future[Int] = {
     val query = maxHeightQuery
