@@ -85,7 +85,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     serialized must be(
       "lnbc1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kgetjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaq8rkx3yf5tcsyz3d73gafnh3cax9rn449d9p5uxz9ezhhypd0elx87sjle52x86fux2ypatgddc6k63n7erqz25le42c4u4ecky03ylcqca784w")
 
-    val deserialized = LnInvoice.fromString(serialized)
+    val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get.toString must be(invoice.toString)
   }
@@ -111,7 +111,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     serialized must be(
       "lnbc2500u1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpuaztrnwngzn3kdzw5hydlzf03qdgm2hdq27cqv3agm2awhz5se903vruatfhq77w3ls4evs3ch9zw97j25emudupq63nyw24cg27h2rspfj9srp")
 
-    val deserialized = LnInvoice.fromString(serialized)
+    val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get.toString must be(invoice.toString)
   }
@@ -145,7 +145,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     invoice.toString must be(
       "lnbc2500u1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpquwpc4curk03c9wlrswe78q4eyqc7d8d0xqzpuyk0sg5g70me25alkluzd2x62aysf2pyy8edtjeevuv4p2d5p76r4zkmneet7uvyakky2zr4cusd45tftc9c5fh0nnqpnl2jfll544esqchsrny")
 
-    val deserialized = LnInvoice.fromString(serialized)
+    val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get must be(invoice)
   }
@@ -176,7 +176,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     invoice.toString must be(
       "lnbc20m1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqhp58yjmdan79s6qqdhdzgynm4zwqd5d7xmw5fk98klysy043l2ahrqscc6gd6ql3jrc5yzme8v4ntcewwz5cnw92tz0pc8qcuufvq7khhr8wpald05e92xw006sq94mg8v2ndf4sefvf9sygkshp5zfem29trqq2yxxz7")
 
-    val deserialized = LnInvoice.fromString(serialized)
+    val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get must be(invoice)
   }
@@ -188,7 +188,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       "3925b6f67e2c340036ed12093dd44e0368df1b6ea26c53dbe4811f58fd5db8c1")
     val descriptionHashTagE = Right(LnTag.DescriptionHashTag(descriptionHash))
     val fallbackAddr = LnTag.FallbackAddressTag(
-      P2PKHAddress.fromString("mk2QpYatsKicvFVuTAQLBryyccRXMUaGHP").get)
+      P2PKHAddress.fromString("mk2QpYatsKicvFVuTAQLBryyccRXMUaGHP"))
 
     val lnTags = LnTaggedFields(paymentHash = paymentTag,
                                 descriptionOrHash = descriptionHashTagE,
@@ -209,7 +209,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     //For that reason, the example #5 output we are matching against has been modified to fit the order in which we encode our invoices.
     //TODO: Add checksum data to check
 
-    val deserialized = LnInvoice.fromString(serialized)
+    val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get.toString must be(serialized)
   }
@@ -218,7 +218,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       "lnbc20m1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqhp58yjmdan79s6qqdhdzgynm4zwqd5d7xmw5fk98klysy043l2ahrqsfpp3qjmp7lwpagxun9pygexvgpjdc4jdj85fr9yq20q82gphp2nflc7jtzrcazrra7wwgzxqc8u7754cdlpfrmccae92qgzqvzq2ps8pqqqqqqpqqqqq9qqqvpeuqafqxu92d8lr6fvg0r5gv0heeeqgcrqlnm6jhphu9y00rrhy4grqszsvpcgpy9qqqqqqgqqqqq7qqzqj9n4evl6mr5aj9f58zp6fyjzup6ywn3x6sk8akg5v4tgn2q8g4fhx05wf6juaxu9760yp46454gpg5mtzgerlzezqcqvjnhjh8z3g2qqdhhwkj"
 
     val fallbackAddr = LnTag.FallbackAddressTag(
-      P2PKHAddress.fromString("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T").get)
+      P2PKHAddress.fromString("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T"))
 
     val signature = ECDigitalSignature.fromRS(
       "91675cb3fad8e9d915343883a49242e074474e26d42c7ed914655689a8074553733e8e4ea5ce9b85f69e40d755a55014536b12323f8b220600c94ef2b9c51428")
@@ -258,7 +258,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val serialized = lnInvoice.toString
     serialized must be(expected)
 
-    val deserialized = LnInvoice.fromString(serialized)
+    val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get.toString must be(serialized)
   }
@@ -270,7 +270,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       "4nvjcpxlekvmxl6qcs9j3tz0469gqsjurz5"
 
     val fallbackAddr = LnTag.FallbackAddressTag(
-      P2SHAddress.fromString("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX").get)
+      P2SHAddress.fromString("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX"))
 
     val lnTags = LnTaggedFields(paymentHash = paymentTag,
                                 descriptionOrHash = descpriptionHashTag,
@@ -289,7 +289,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
     lnInvoice.toString must be(expected)
 
-    val deserialized = LnInvoice.fromString(serialized)
+    val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get.toString must be(serialized)
   }
@@ -306,8 +306,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
     val fallbackAddr = LnTag.FallbackAddressTag(
       Bech32Address
-        .fromString("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4")
-        .get)
+        .fromString("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"))
 
     val lnTags = LnTaggedFields(paymentHash = paymentTag,
                                 descriptionOrHash = descpriptionHashTag,
@@ -328,7 +327,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
     serialized must be(expected)
 
-    val deserialized = LnInvoice.fromString(serialized)
+    val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get must be(lnInvoice)
   }
@@ -344,8 +343,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val fallbackAddr = LnTag.FallbackAddressTag(
       Bech32Address
         .fromString(
-          "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3")
-        .get)
+          "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"))
 
     val lnTags = LnTaggedFields(paymentHash = paymentTag,
                                 descriptionOrHash = descpriptionHashTag,
@@ -366,7 +364,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
     lnInvoice.toString must be(expected)
 
-    val deserialized = LnInvoice.fromString(serialized)
+    val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get must be(lnInvoice)
   }
@@ -404,7 +402,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     // TODO uncomment when https://github.com/bitcoin-s/bitcoin-s/issues/1064 is fixed
     // serialized must be(expected)
 
-    val deserialized = LnInvoice.fromString(serialized)
+    val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get.toString must be(serialized)
   }
@@ -414,7 +412,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val bech32 =
       "lnbcrt1m1pd6ssf3pp5mqcepx6yzx7uu0uagw5x3c7kqhnpwr3mfn844hjux8tlza6ztr7sdqqxqrrss0rl3gzer9gfc54fs84rd4xk6g8nf0syharnnyljc9za933memdzxrjz0v2v94ntuhdxduk3z0nlmpmznryvvvl4gzgu28kjkm4ey98gpmyhjfa"
 
-    val invoiceT = LnInvoice.fromString(bech32)
+    val invoiceT = LnInvoice.fromStringT(bech32)
 
     val deserialized = invoiceT.get.toString
 
@@ -430,7 +428,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   it must "have serialization symmetry for the invoices" in {
 
     forAll(LnInvoiceGen.lnInvoice) { invoice =>
-      LnInvoice.fromString(invoice.toString).get == invoice
+      LnInvoice.fromStringT(invoice.toString).get == invoice
 
     }
   }
@@ -472,7 +470,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       "6b80b9b7320bc1203534e78f86b6a32945c35ab464e475ed00e92c7b98755f9d"
     val str =
       "lntb100n1pwz34mzpp5dwqtndejp0qjqdf5u78cdd4r99zuxk45vnj8tmgqayk8hxr4t7wsd890v3xgatjv96xjmmwygarzvpsxqczcgnrdpskumn9ds3r5gn5wfskgetnygkzyetkv4h8gg36yfeh2cnnvdexjcn9ygkzyat4d9jzyw3zxqcrzvfjxgenxtf5xs6n2tfkxcmnwtfc8qunjttpv93xycmrv3jx2etxvc3zcgn90p3ksctwvajjyw3zvf5hgenfdejhsg3vyfehjmtzdakzyw3zgf2yx42ngs386xqrrssqr6xn7dtkyxk0rhl98k3esksst578uwhud5glp9svq24ddwlgqwz6v9uf7mqljrj07xl87ufrn4yfplrsz2vpmc9xwv44634h54dq3sq257hh4"
-    val invoice = LnInvoice.fromString(str).get
+    val invoice = LnInvoice.fromStringT(str).get
 
     invoice.lnTags.paymentHash.hash.hex must be(expectedHash)
 
@@ -504,7 +502,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     // generated by Eclair 3.3.0-SNAPSHOT
     val serialized =
       "lnbcrt10n1p0px7lfpp5ghc2y7ttnwy58jx0dfcsdxy7ey0qfryn0wcmm04ckud0qw73kt9sdq9vehk7xqrrss9qypqqqsp5qlf6efygd26y03y66jdqqfmlxthplnu5cc8648fgn88twhpyvmgqg9k5kd0k8vv3xvvqpkhkt9chdl579maq45gvck4g0yd0eggmvfkzgvjmwn29r99p57tgyl3l3s82hlc4e97at55xl5lyzpfk6n36yyqqxeem8q"
-    val invoice = LnInvoice.fromString(serialized).get
+    val invoice = LnInvoice.fromStringT(serialized).get
     invoice.lnTags.secret must be(
       Some(LnTag.SecretTag(PaymentSecret.fromHex(
         "07d3aca4886ab447c49ad49a00277f32ee1fcf94c60faa9d2899ceb75c2466d0"))))
@@ -517,7 +515,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val strWithError =
       "lnbc2500u1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpuaztrnwngzn3kdzw5hydlzf03qdgm2hdq27cqv3agm2awhz5se903vruatfhq77w3ls4evs3ch9zw97j25emudupq63nyw24cg27h2rspfj9srqqqqqp"
 
-    assert(LnInvoice.fromString(strWithError).isFailure)
+    assert(LnInvoice.fromStringT(strWithError).isFailure)
   }
 
   it must "parse unknown tags" in {
@@ -536,7 +534,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       LnTaggedFields(Vector(paymentTag, descriptionTag, unknownTag))
     val expected = LnInvoice(hrpTestNetMilli, time, tags, key)
     val serialized = expected.toString
-    val deserialized = LnInvoice.fromString(serialized).get
+    val deserialized = LnInvoice.fromStringT(serialized).get
     deserialized must be(expected)
     deserialized.toString must be(serialized)
     deserialized.lnTags.tags.size must be(3)
@@ -547,7 +545,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
   it must "recover public keys" in {
     def testInvoice(str: String, nodeId: String): Unit = {
-      val i = LnInvoice.fromString(str).get
+      val i = LnInvoice.fromStringT(str).get
       i.toString must be(str)
       i.nodeId must be(NodeId.fromHex(nodeId))
     }

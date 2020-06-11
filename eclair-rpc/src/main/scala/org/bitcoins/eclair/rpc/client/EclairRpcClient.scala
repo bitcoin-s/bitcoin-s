@@ -358,7 +358,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     val responseF = eclairCall[InvoiceResult]("createinvoice", params: _*)
 
     responseF.flatMap { res =>
-      Future.fromTry(LnInvoice.fromString(res.serialized))
+      Future.fromTry(LnInvoice.fromStringT(res.serialized))
     }
   }
 
@@ -566,7 +566,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     val resF =
       eclairCall[InvoiceResult]("getinvoice", "paymentHash" -> paymentHash.hex)
     resF.flatMap { res =>
-      Future.fromTry(LnInvoice.fromString(res.serialized))
+      Future.fromTry(LnInvoice.fromStringT(res.serialized))
     }
   }
 
@@ -592,7 +592,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
           to.map(x => "to" -> x.getEpochSecond.toString)).flatten: _*)
     resF.flatMap(xs =>
       Future.sequence(xs.map(x =>
-        Future.fromTry(LnInvoice.fromString(x.serialized)))))
+        Future.fromTry(LnInvoice.fromStringT(x.serialized)))))
   }
 
   override def usableBalances(): Future[Vector[UsableBalancesResult]] = {

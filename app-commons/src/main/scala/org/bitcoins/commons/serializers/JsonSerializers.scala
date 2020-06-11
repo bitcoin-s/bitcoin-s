@@ -599,7 +599,7 @@ object JsonSerializers {
   implicit def mapAddressesByLabelReads: Reads[
     Map[BitcoinAddress, LabelResult]] =
     Reads.mapReads[BitcoinAddress, LabelResult](s =>
-      JsSuccess(BitcoinAddress.fromString(s).get))
+      JsSuccess(BitcoinAddress.fromString(s)))
 
   implicit def mapBitcoinerLiveEstimateReads: Reads[
     Map[Int, BitcoinerLiveEstimate]] =

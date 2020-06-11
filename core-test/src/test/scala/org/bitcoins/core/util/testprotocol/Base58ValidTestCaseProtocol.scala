@@ -24,7 +24,7 @@ object Base58ValidTestCaseProtocol extends DefaultJsonProtocol {
       def addressOrPrivateKey(
           elements: Vector[JsValue]): Either[Address, String] =
         configParams.isPrivKey match {
-          case false => Left(Address(elements(0).convertTo[String]).get)
+          case false => Left(Address(elements(0).convertTo[String]))
           case true  => Right(elements(0).convertTo[String])
         }
 

@@ -46,7 +46,7 @@ class Bech32Spec extends Properties("Bech32Spec") {
       val replacementChar = pickReplacementChar(l.head)
       val replaced = s"$f$replacementChar${l.tail}"
       //should fail because we replaced a char in the addr, so checksum invalid
-      Bech32Address.fromString(replaced).isFailure
+      Bech32Address.fromStringT(replaced).isFailure
     }
   }
 
@@ -55,7 +55,7 @@ class Bech32Spec extends Properties("Bech32Spec") {
       val old = addr.value
       val replaced = switchCaseRandChar(old)
       //should fail because we we switched the case of a random char
-      val actual = Bech32Address.fromString(replaced)
+      val actual = Bech32Address.fromStringT(replaced)
       actual.isFailure
     }
   }

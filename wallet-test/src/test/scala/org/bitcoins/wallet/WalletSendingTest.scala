@@ -26,7 +26,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   behavior of "Wallet"
 
   val testAddress: BitcoinAddress =
-    BitcoinAddress("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq").get
+    BitcoinAddress("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq")
 
   val amountToSend: Bitcoins = Bitcoins(0.5)
 
@@ -45,10 +45,10 @@ class WalletSendingTest extends BitcoinSWalletTest {
   }
 
   val addresses = Vector(
-    BitcoinAddress("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq").get,
-    BitcoinAddress("bcrt1qf4rju7adz5hpuymkfwvg5s94mydc8llk94v74w").get,
-    BitcoinAddress("bcrt1q9h9wkz6ad49szfl035wh3qdacuslkp6j9pfp4j").get,
-    BitcoinAddress("bcrt1q9scvqvyf3ssed8zqnfgk5zttnneatg2aszu5q9").get
+    BitcoinAddress("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq"),
+    BitcoinAddress("bcrt1qf4rju7adz5hpuymkfwvg5s94mydc8llk94v74w"),
+    BitcoinAddress("bcrt1q9h9wkz6ad49szfl035wh3qdacuslkp6j9pfp4j"),
+    BitcoinAddress("bcrt1q9scvqvyf3ssed8zqnfgk5zttnneatg2aszu5q9")
   )
 
   val amounts = Vector(
@@ -184,10 +184,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
 
     val sendToAddressesF =
-      wallet.sendToAddress(
-        BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").get,
-        Satoshis(1000),
-        feeRateOpt)
+      wallet.sendToAddress(BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
+                           Satoshis(1000),
+                           feeRateOpt)
 
     recoverToSucceededIf[IllegalArgumentException] {
       sendToAddressesF
@@ -198,10 +197,10 @@ class WalletSendingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
 
     val addrs = Vector(
-      BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").get,
-      BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").get,
-      BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").get,
-      BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").get
+      BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
+      BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
+      BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
+      BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
     )
 
     val sendToAddressesF =

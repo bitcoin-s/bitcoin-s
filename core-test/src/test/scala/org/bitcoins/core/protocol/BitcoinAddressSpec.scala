@@ -49,7 +49,7 @@ class BitcoinAddressSpec extends Properties("BitcoinAddressSpec") {
     Prop.forAll(AddressGenerator.address) { addr =>
       val spk = addr.scriptPubKey
       val network = addr.networkParameters
-      Address.fromScriptPubKey(spk, network).get == addr
+      Address.fromScriptPubKey(spk, network) == addr
     }
   }
 }

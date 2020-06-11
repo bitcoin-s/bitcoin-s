@@ -261,8 +261,8 @@ class WalletRpcTest extends BitcoindRpcTest {
               (BitcoinAddress.fromScriptPubKey(out.scriptPubKey, networkParam),
                out.value))
         assert(changeAddresses.size == 1)
-        assert(changeAddresses.head._1.get != address)
-        (changeAddresses.head._1.get, changeAddresses.head._2)
+        assert(changeAddresses.head._1 != address)
+        (changeAddresses.head._1, changeAddresses.head._2)
       }
     }
 
@@ -360,7 +360,6 @@ class WalletRpcTest extends BitcoindRpcTest {
 
     val address = Bech32Address
       .fromString("bcrt1q9h9wkz6ad49szfl035wh3qdacuslkp6j9pfp4j")
-      .get
 
     for {
       (client, otherClient, _) <- clientsF
