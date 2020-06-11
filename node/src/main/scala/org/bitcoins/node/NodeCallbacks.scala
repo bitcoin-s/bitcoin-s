@@ -13,7 +13,6 @@ import scala.concurrent.{ExecutionContext, Future}
   * Callbacks for responding to events in the node.
   * The appropriate callback is executed whenever the node receives
   * a `getdata` message matching it.
-  *
   */
 trait NodeCallbacks {
 
@@ -133,7 +132,11 @@ object NodeCallbacks {
 
   /** Empty callbacks that does nothing with the received data */
   val empty: NodeCallbacks =
-    apply(Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty)
+    NodeCallbacks(Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty)
 
   def apply(
       onCompactFiltersReceived: Vector[OnCompactFiltersReceived] = Vector.empty,
