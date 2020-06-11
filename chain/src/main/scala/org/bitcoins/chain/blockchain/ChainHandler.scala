@@ -529,20 +529,18 @@ case class ChainHandler(
       if (currentHeight >= maxHeight) {
         Future.successful(accum)
       } else {
-        val batchStartHeight = if (currentHeight == 0) {
-          0
+        val (batchStartHeight, prev) = if (currentHeight == 0) {
+          (0, Vector.empty)
         } else {
-          currentHeight + 1
+          (currentHeight + 1, Vector(highestHeaderOpt).flatten)
         }
 
         val batchEndHeight = Math.min(maxHeight, currentHeight + batchSize)
-
         for {
           headersToCalc <- blockHeaderDAO.getBetweenHeights(batchStartHeight,
                                                             batchEndHeight)
           sortedHeaders = headersToCalc.sortBy(_.height)
-          headersWithWork <- loop(sortedHeaders,
-                                  Vector(highestHeaderOpt).flatten)
+          headersWithWork <- loop(sortedHeaders, prev)
           next <- loop2(maxHeight, headersWithWork)
         } yield next
       }
