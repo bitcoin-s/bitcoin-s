@@ -44,7 +44,13 @@ matrix:
       name: "macOS wallet and node tests"
       env:
         - CI="1"
-        - TEST_COMMAND="dlcTest/test dlc/coverageReport dlc/coverageAggregate dlc/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
+        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
+      scala:
+        - 2.13.2
+    - os: osx
+      name: "macOS dlc tests"
+      env:
+        - TEST_COMMAND="dlcTest/test dlc/coverageReport dlc/coverageAggregate dlc/coveralls"
       scala:
         - 2.13.2
 
