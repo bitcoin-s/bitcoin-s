@@ -807,7 +807,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     paymentRequestF.map { paymentRequest =>
-      val i = LnInvoice.fromStringT(paymentRequest.serialized).get
+      val i = LnInvoice.fromString(paymentRequest.serialized)
       assert(i.amount.get.toMSat == amt)
       assert(paymentRequest.expiry == expiry)
     }
