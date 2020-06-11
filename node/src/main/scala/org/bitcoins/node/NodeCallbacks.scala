@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import org.bitcoins.core.api.{Callback, CallbackBinary, CallbackHandler}
+import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -70,8 +70,7 @@ trait NodeCallbacks {
 trait OnBlockReceived extends Callback[Block]
 
 /** Callback for handling a received Merkle block with its corresponding TXs */
-trait OnMerkleBlockReceived
-    extends CallbackBinary[MerkleBlock, Vector[Transaction]]
+trait OnMerkleBlockReceived extends Callback2[MerkleBlock, Vector[Transaction]]
 
 /** Callback for handling a received transaction */
 trait OnTxReceived extends Callback[Transaction]

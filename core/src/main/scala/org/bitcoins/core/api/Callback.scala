@@ -1,6 +1,6 @@
 package org.bitcoins.core.api
 
-import org.bitcoins.core.util.{FutureUtil, SeqWrapper}
+import org.bitcoins.core.util.SeqWrapper
 import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -12,14 +12,14 @@ trait Callback[T] {
 }
 
 /** A function with two parameters to be called in response to an event */
-trait CallbackBinary[T1, T2] extends Callback[(T1, T2)] {
+trait Callback2[T1, T2] extends Callback[(T1, T2)] {
   def apply(param1: T1, param2: T2): Future[Unit]
 
   override def apply(param: (T1, T2)): Future[Unit] = apply(param._1, param._2)
 }
 
 /** A function with three parameters to be called in response to an event */
-trait CallbackTernary[T1, T2, T3] extends Callback[(T1, T2, T3)] {
+trait Callback3[T1, T2, T3] extends Callback[(T1, T2, T3)] {
   def apply(param1: T1, param2: T2, param3: T3): Future[Unit]
 
   override def apply(param: (T1, T2, T3)): Future[Unit] =
@@ -40,11 +40,14 @@ case class CallbackHandler[C, T <: Callback[C]](
 
   def execute(param: C, recoverFunc: Throwable => Unit = _ => ())(
       implicit ec: ExecutionContext): Future[Unit] = {
-    FutureUtil.foldLeftAsync((), wrapped)((_, callback) =>
+    val executeFs = wrapped.map { callback =>
       callback(param).recover {
         case NonFatal(err) =>
           recoverFunc(err)
-      })
+      }
+    }
+
+    Future.sequence(executeFs).map(_ => ())
   }
 
   def execute(logger: Logger, param: C)(
