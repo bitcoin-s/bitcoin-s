@@ -59,7 +59,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
 
       address <- addrF
       tx <- wallet
-        .sendToAddress(address, 1.bitcoin, None)
+        .sendToAddress(address, sendAmount, None)
 
       bitcoindBalancePreBroadcast <- balanceF
       _ <- node.broadcastTransaction(tx)
