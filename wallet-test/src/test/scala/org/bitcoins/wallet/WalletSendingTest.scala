@@ -184,10 +184,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
 
     val sendToAddressesF =
-      wallet.sendToAddress(
-        BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
-        Satoshis(1000),
-        feeRateOpt)
+      wallet.sendToAddress(BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
+                           Satoshis(1000),
+                           feeRateOpt)
 
     recoverToSucceededIf[IllegalArgumentException] {
       sendToAddressesF

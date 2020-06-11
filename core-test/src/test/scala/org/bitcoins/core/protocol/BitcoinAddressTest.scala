@@ -103,7 +103,8 @@ class BitcoinAddressTest extends BitcoinSUnitTest {
   }
 
   it must "fail to create a bech32 address from an invalid ScriptPubKey" in {
-    assert(Bech32Address.fromScriptPubKeyT(EmptyScriptPubKey, RegTest).isFailure)
+    assert(
+      Bech32Address.fromScriptPubKeyT(EmptyScriptPubKey, RegTest).isFailure)
   }
 
   it must "create an address from a P2PKHScriptPubKey" in {
