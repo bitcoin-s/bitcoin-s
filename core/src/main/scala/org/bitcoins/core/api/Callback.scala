@@ -38,18 +38,24 @@ case class CallbackHandler[C, T <: Callback[C]](
     CallbackHandler(name, wrapped ++ other.wrapped)
   }
 
+  /** Executes the callbacks synchronously, if any fail, they are recovered by recoverFunc */
   def execute(param: C, recoverFunc: Throwable => Unit = _ => ())(
       implicit ec: ExecutionContext): Future[Unit] = {
     val executeFs = wrapped.map { callback =>
-      callback(param).recover {
-        case NonFatal(err) =>
-          recoverFunc(err)
-      }
+      // Need to wrap in another future so they are all started at once
+      // and do not block each other
+      Future {
+        callback(param).recover {
+          case NonFatal(err) =>
+            recoverFunc(err)
+        }
+      }.flatten
     }
 
     Future.sequence(executeFs).map(_ => ())
   }
 
+  /** Executes the callbacks synchronously, Failures are logged */
   def execute(logger: Logger, param: C)(
       implicit ec: ExecutionContext): Future[Unit] = {
     val recoverFunc = (err: Throwable) =>
