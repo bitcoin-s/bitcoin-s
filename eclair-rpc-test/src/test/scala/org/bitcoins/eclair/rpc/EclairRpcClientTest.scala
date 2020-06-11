@@ -326,7 +326,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  val testBitcoinAddress = BitcoinAddress("n3p1ct69ao3qxWvEvzLhLtWG2zJGTjN3EV").get
+  val testBitcoinAddress = BitcoinAddress("n3p1ct69ao3qxWvEvzLhLtWG2zJGTjN3EV")
 
   it should "be able to create an invoice with amount, expiry time, and fallbackAddress" in {
     for {
@@ -807,7 +807,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     paymentRequestF.map { paymentRequest =>
-      val i = LnInvoice.fromString(paymentRequest.serialized).get
+      val i = LnInvoice.fromString(paymentRequest.serialized)
       assert(i.amount.get.toMSat == amt)
       assert(paymentRequest.expiry == expiry)
     }

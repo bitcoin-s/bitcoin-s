@@ -227,7 +227,7 @@ object JsonReaders {
   implicit object AddressReads extends Reads[Address] {
     override def reads(json: JsValue): JsResult[Address] = json match {
       case JsString(s) =>
-        Address.fromString(s) match {
+        Address.fromStringT(s) match {
           case Success(address) => JsSuccess(address)
           case Failure(err) =>
             SerializerUtil.buildErrorMsg("address", err)
@@ -279,7 +279,7 @@ object JsonReaders {
   implicit object P2PKHAddressReads extends Reads[P2PKHAddress] {
     override def reads(json: JsValue): JsResult[P2PKHAddress] = json match {
       case JsString(s) =>
-        P2PKHAddress.fromString(s) match {
+        P2PKHAddress.fromStringT(s) match {
           case Success(address) => JsSuccess(address)
           case Failure(err) =>
             SerializerUtil.buildErrorMsg("p2pkhaddress", err)
@@ -293,7 +293,7 @@ object JsonReaders {
   implicit object P2SHAddressReads extends Reads[P2SHAddress] {
     override def reads(json: JsValue): JsResult[P2SHAddress] = json match {
       case JsString(s) =>
-        P2SHAddress.fromString(s) match {
+        P2SHAddress.fromStringT(s) match {
           case Success(address) => JsSuccess(address)
           case Failure(err) =>
             SerializerUtil.buildErrorMsg("p2shaddress", err)
@@ -338,7 +338,7 @@ object JsonReaders {
   implicit object BitcoinAddressReads extends Reads[BitcoinAddress] {
     override def reads(json: JsValue): JsResult[BitcoinAddress] = json match {
       case JsString(s) =>
-        BitcoinAddress.fromString(s) match {
+        BitcoinAddress.fromStringT(s) match {
           case Success(address) =>
             JsSuccess(address)
           case Failure(err) =>
@@ -392,7 +392,7 @@ object JsonReaders {
               .map(_.asInstanceOf[JsString].value)
           val addressResult = jsStrings.find(BitcoinAddress.isValid) match {
             case Some(s) =>
-              BitcoinAddress.fromString(s) match {
+              BitcoinAddress.fromStringT(s) match {
                 case Success(a) => JsSuccess(a)
                 case Failure(err) =>
                   SerializerUtil.buildErrorMsg("address", err)
@@ -996,7 +996,7 @@ object JsonReaders {
   implicit val lnInvoiceReads: Reads[LnInvoice] =
     Reads[LnInvoice] {
       case JsString(invoice) =>
-        LnInvoice.fromString(invoice) match {
+        LnInvoice.fromStringT(invoice) match {
           case Success(paymentRequest) => JsSuccess(paymentRequest)
           case Failure(err) =>
             JsError(s"Invalid refund invoice: ${err.toString}")

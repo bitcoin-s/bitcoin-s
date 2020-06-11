@@ -5,7 +5,7 @@ import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util._
-import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256Digest}
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256Digest, StringFactory}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
@@ -109,7 +109,7 @@ sealed abstract class LnInvoice {
   }
 }
 
-object LnInvoice extends BitcoinSLogger {
+object LnInvoice extends StringFactory[LnInvoice] with BitcoinSLogger {
   private case class LnInvoiceImpl(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
@@ -175,16 +175,15 @@ object LnInvoice extends BitcoinSLogger {
 
   }
 
-  def fromString(bech32String: String): Try[LnInvoice] = {
+  override def fromString(bech32String: String): LnInvoice = {
     val sepIndexes = {
       bech32String.zipWithIndex.filter {
         case (sep, _) => sep == Bech32.separator
       }
     }
     if (sepIndexes.isEmpty) {
-      Failure(
-        new IllegalArgumentException(
-          "LnInvoice did not have the correct separator"))
+      throw new IllegalArgumentException(
+          "LnInvoice did not have the correct separator")
     } else {
       val (_, sepIndex) = sepIndexes.last
 
@@ -193,9 +192,9 @@ object LnInvoice extends BitcoinSLogger {
       val (_, data) = bech32String.splitAt(sepIndex + 1)
 
       if (hrp.length < 1) {
-        Failure(new IllegalArgumentException("HumanReadablePart is too short"))
+        throw new IllegalArgumentException("HumanReadablePart is too short")
       } else if (data.length < 6) {
-        Failure(new IllegalArgumentException("Data part is too short"))
+        throw new IllegalArgumentException("Data part is too short")
       } else {
 
         val hrpValid = LnHumanReadablePart.fromString(hrp)
@@ -209,8 +208,13 @@ object LnInvoice extends BitcoinSLogger {
             }
         }
 
-        isChecksumValid.flatMap { d: Vector[UInt5] =>
+        val invoiceT = isChecksumValid.flatMap { d: Vector[UInt5] =>
           hrpValid.map(h => LnInvoice(h, d))
+        }
+
+        invoiceT match {
+          case Success(i) => i
+          case Failure(exn) => throw exn
         }
       }
     }

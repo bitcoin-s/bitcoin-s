@@ -48,7 +48,7 @@ class RoutesSpec
 
   // the genesis address
   val testAddressStr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
-  val testAddress = BitcoinAddress(testAddressStr).get
+  val testAddress = BitcoinAddress.fromString(testAddressStr)
 
   val mockWalletApi = mock[MockWalletApi]
 

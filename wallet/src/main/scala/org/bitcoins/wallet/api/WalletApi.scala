@@ -282,7 +282,7 @@ trait WalletApi extends WalletLogger {
 
   def getAddressInfo(
       spendingInfoDb: SpendingInfoDb): Future[Option[AddressInfo]] = {
-    val addressT = BitcoinAddress.fromScriptPubKey(
+    val addressT = BitcoinAddress.fromScriptPubKeyT(
       spk = spendingInfoDb.output.scriptPubKey,
       np = networkParameters)
     addressT match {
