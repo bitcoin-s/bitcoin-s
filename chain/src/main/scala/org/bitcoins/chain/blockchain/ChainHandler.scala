@@ -526,7 +526,7 @@ case class ChainHandler(
       val highestHeaderOpt = accum.maxByOption(_.height)
       val currentHeight = highestHeaderOpt.map(_.height).getOrElse(0)
 
-      if (currentHeight == maxHeight) {
+      if (currentHeight >= maxHeight) {
         Future.successful(accum)
       } else {
         val batchHeight = Math.min(maxHeight, currentHeight + batchSize)
