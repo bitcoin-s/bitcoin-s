@@ -523,7 +523,8 @@ case class ChainHandler(
         maxHeight: Int,
         accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
 
-      val highestHeaderOpt = accum.maxByOption(_.height)
+      val highestHeaderOpt =
+        if (accum.isEmpty) None else Some(accum.maxBy(_.height))
       val currentHeight = highestHeaderOpt.map(_.height).getOrElse(0)
 
       if (currentHeight >= maxHeight) {
