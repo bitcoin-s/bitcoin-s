@@ -352,10 +352,15 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getFilterHeaderCount: Future[Int] = {
     logger.debug(s"Querying for filter header count")
-    filterHeaderDAO.getBestFilter.map { filterHeader =>
-      val height = filterHeader.height
-      logger.debug(s"getFilterCount result: count=$height")
-      height
+    filterHeaderDAO.getBestFilterHeader.map { filterHeaderOpt =>
+      filterHeaderOpt match {
+        case Some(filterHeader) =>
+          val height = filterHeader.height
+          logger.debug(s"getFilterCount result: count=$height")
+          height
+        case None =>
+          0
+      }
     }
   }
 
@@ -365,8 +370,8 @@ case class ChainHandler(
     filterHeaderDAO.getAtHeight(height)
 
   /** @inheritdoc */
-  override def getBestFilterHeader(): Future[CompactFilterHeaderDb] = {
-    filterHeaderDAO.getBestFilter
+  override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] = {
+    filterHeaderDAO.getBestFilterHeader
   }
 
   /** @inheritdoc */
@@ -377,10 +382,14 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getFilterCount: Future[Int] = {
     logger.debug(s"Querying for filter count")
-    filterDAO.getBestFilter.map { filter =>
-      val height = filter.height
-      logger.debug(s"getFilterCount result: count=$height")
-      height
+    filterDAO.getBestFilter.map { filterOpt =>
+      filterOpt match {
+        case Some(filter) =>
+          val height = filter.height
+          logger.debug(s"getFilterCount result: count=$height")
+          height
+        case None => 0
+      }
     }
   }
 
