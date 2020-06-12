@@ -1,16 +1,13 @@
 package org.bitcoins.node
 
 import org.bitcoins.core.currency._
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeUnitTest.{
-  NeutrinoNodeFundedWalletBitcoind,
-  SpvNodeFundedWalletBitcoind
-}
+import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.scalatest.FutureOutcome
 
@@ -27,6 +24,11 @@ class BroadcastTransactionTest extends NodeUnitTest {
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withSpvNodeFundedWalletBitcoind(test, NodeCallbacks.empty)
+
+  private val sendAmount = 1.bitcoin
+
+  private val junkAddress: BitcoinAddress =
+    BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
 
   it must "broadcast a transaction" in { param =>
     val SpvNodeFundedWalletBitcoind(node, wallet, rpc) = param
@@ -47,27 +49,28 @@ class BroadcastTransactionTest extends NodeUnitTest {
         }
     }
 
-    for {
+    val addrF = rpc.getNewAddress
+    val balanceF = rpc.getBalance
 
-      address <- rpc.getNewAddress
+    for {
       _ <- wallet.getBloomFilter()
       _ <- node.sync()
       _ <- NodeTestUtil.awaitSync(node, rpc)
 
+      address <- addrF
       tx <- wallet
-        .sendToAddress(address, 1.bitcoin, Some(SatoshisPerByte(10.sats)))
+        .sendToAddress(address, sendAmount, None)
 
-      bitcoindBalancePreBroadcast <- rpc.getBalance
-      _ = node.broadcastTransaction(tx)
+      bitcoindBalancePreBroadcast <- balanceF
+      _ <- node.broadcastTransaction(tx)
       _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
                                          duration = 1.second)
-      fromBitcoind <- rpc.getRawTransaction(tx.txIdBE)
-      _ = assert(fromBitcoind.vout.exists(_.value == 1.bitcoin))
-
-      _ <- rpc.getNewAddress.flatMap(rpc.generateToAddress(1, _))
+      _ <- rpc.generateToAddress(blocks = 1, junkAddress)
       bitcoindBalancePostBroadcast <- rpc.getBalance
 
-    } yield assert(bitcoindBalancePreBroadcast < bitcoindBalancePostBroadcast)
+    } yield assert(
+      // pre-balance + sent amount + 1 block reward maturing
+      bitcoindBalancePreBroadcast + sendAmount + 50.bitcoins == bitcoindBalancePostBroadcast)
 
   }
 }
