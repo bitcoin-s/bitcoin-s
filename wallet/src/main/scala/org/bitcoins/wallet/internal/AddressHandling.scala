@@ -1,5 +1,7 @@
 package org.bitcoins.wallet.internal
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
@@ -366,6 +368,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  private val threadStarted = new AtomicBoolean(false)
+
   /** Background thread meant to ensure safety when calling [[getNewAddress()]]
     * We to ensure independent calls to getNewAddress don't result in a race condition
     * to the database that would generate the same address and cause an error.
@@ -374,16 +378,31 @@ private[wallet] trait AddressHandling extends WalletLogger {
   lazy val walletThread = new Thread(AddressQueueRunnable)
 
   lazy val addressRequestQueue = {
-    new java.util.concurrent.ArrayBlockingQueue[(
+    val queue = new java.util.concurrent.ArrayBlockingQueue[(
         AccountDb,
         HDChainType,
         Promise[AddressDb])](
       walletConfig.addressQueueSize
     )
+
+    if (!threadStarted.get) {
+      startWalletThread()
+    }
+
+    queue
   }
-  walletThread.setDaemon(true)
-  walletThread.setName(s"wallet-address-queue-${System.currentTimeMillis()}")
-  walletThread.start()
+
+  def startWalletThread(): Unit = {
+    walletThread.setDaemon(true)
+    walletThread.setName(s"wallet-address-queue-${System.currentTimeMillis()}")
+    walletThread.start()
+    threadStarted.set(true)
+  }
+
+  /** Kills the wallet's thread */
+  def stopWalletThread(): Unit = {
+    walletThread.interrupt()
+  }
 
   /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
     * seeing if things are in the queue. This is needed because otherwise
@@ -393,7 +412,13 @@ private[wallet] trait AddressHandling extends WalletLogger {
   private case object AddressQueueRunnable extends Runnable {
     override def run(): Unit = {
       while (!walletThread.isInterrupted) {
-        val (account, chainType, promise) = addressRequestQueue.take()
+        val (account, chainType, promise) = try {
+          addressRequestQueue.take()
+        } catch {
+          case _: java.lang.InterruptedException =>
+            return ()
+          case err: Throwable => throw err
+        }
         logger.debug(
           s"Processing $account $chainType in our address request queue")
 

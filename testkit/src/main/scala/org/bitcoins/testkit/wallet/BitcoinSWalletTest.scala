@@ -269,6 +269,7 @@ trait BitcoinSWalletTest
 
     val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
       FileUtil.deleteTmpDir(walletAppConfig.datadir)
+      walletAppConfig.stop()
       FutureUtil.unit
     }
     makeDependentFixture(builder, destroy = destroy)(test)
@@ -439,6 +440,7 @@ object BitcoinSWalletTest extends WalletLogger {
       wallet <- BitcoinSWalletTest.createWallet2Accounts(bitcoind,
                                                          bitcoind,
                                                          extraConfig)
+      _ = wallet.stopWalletThread()
 
       //create the wallet with the appropriate callbacks now that
       //we have them
@@ -623,7 +625,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
       _ <- wallet.walletConfig.dropTable("flyway_schema_history")
       _ <- wallet.walletConfig.dropAll()
-    } yield ()
+    } yield wallet.stop()
   }
 
 }

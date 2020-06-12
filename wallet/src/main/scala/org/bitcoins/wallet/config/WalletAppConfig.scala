@@ -132,9 +132,9 @@ object WalletAppConfig extends AppConfigFactory[WalletAppConfig] {
   /** Constructs a wallet configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  override def fromDatadir(datadir: Path, useLogbackConf: Boolean, confs: Vector[Config])(
-      implicit ec: ExecutionContext): WalletAppConfig =
-    WalletAppConfig(datadir,
-                    useLogbackConf,
-                    confs: _*)
+  override def fromDatadir(
+      datadir: Path,
+      useLogbackConf: Boolean,
+      confs: Vector[Config])(implicit ec: ExecutionContext): WalletAppConfig =
+    WalletAppConfig(datadir, useLogbackConf, confs: _*)
 }
