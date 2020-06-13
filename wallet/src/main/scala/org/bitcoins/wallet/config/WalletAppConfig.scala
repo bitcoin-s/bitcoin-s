@@ -9,6 +9,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
 import org.bitcoins.keymanager.{KeyManagerParams, WalletStorage}
 import org.bitcoins.wallet.db.WalletDbManagement
+import org.bitcoins.wallet.models.AccountDAO
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -123,6 +124,20 @@ case class WalletAppConfig(
       new FiniteDuration(javaDuration.toNanos, TimeUnit.NANOSECONDS)
     } else {
       5.second
+    }
+  }
+
+  /** Checks if the following exist
+   *  1. A wallet exists
+   *  2. seed exists
+   *  3. The account exists */
+  def hasWallet()(implicit ec: ExecutionContext): Future[Boolean] = {
+    val walletDB = dbPath.resolve(dbName)
+    val hdCoin = defaultAccount.coin
+    if (Files.exists(walletDB) && seedExists()) {
+      AccountDAO()(ec,this).read((hdCoin, 0)).map(_.isDefined)
+    } else {
+      Future.successful(false)
     }
   }
 }

@@ -156,19 +156,6 @@ object Main extends App with BitcoinSLogger {
   //start everything!
   runMain()
 
-  /** Checks if the user already has a wallet */
-  private def hasWallet()(
-      implicit walletConf: WalletAppConfig,
-      ec: ExecutionContext): Future[Boolean] = {
-    val walletDB = walletConf.dbPath resolve walletConf.dbName
-    val hdCoin = walletConf.defaultAccount.coin
-    if (Files.exists(walletDB) && walletConf.seedExists()) {
-      AccountDAO().read((hdCoin, 0)).map(_.isDefined)
-    } else {
-      Future.successful(false)
-    }
-  }
-
   private def createNode(peer: Peer)(
       implicit nodeConf: NodeAppConfig,
       chainConf: ChainAppConfig,
@@ -191,7 +178,7 @@ object Main extends App with BitcoinSLogger {
       implicit walletConf: WalletAppConfig,
       system: ActorSystem): Future[WalletApi] = {
     import system.dispatcher
-    hasWallet().flatMap { walletExists =>
+    walletConf.hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
 
