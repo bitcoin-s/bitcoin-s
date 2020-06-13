@@ -117,15 +117,23 @@ case class CompactFilterHeaderDAO()(
     query
   }
 
-  def getBestFilter: Future[CompactFilterHeaderDb] = {
+  def getBestFilterHeader: Future[Option[CompactFilterHeaderDb]] = {
     val join = table join blockHeaderTable on (_.blockHash === _.hash)
     val query = join.groupBy(_._1).map {
       case (filter, headers) =>
         filter -> headers.map(_._2.chainWork).max
     }
-    safeDatabase
-      .runVec(query.result)
-      .map(_.maxBy(_._2.getOrElse(BigInt(0)))._1)
+    val headersWithWorkF: Future[Vector[(CompactFilterHeaderDb,Option[BigInt])]] = {
+      safeDatabase.runVec(query.result)
+    }
+    headersWithWorkF.map { headersWithWork: Vector[(CompactFilterHeaderDb,Option[BigInt])] =>
+      if (headersWithWork.isEmpty) {
+       None
+      } else {
+        val highestWork = headersWithWork.maxBy(_._2.getOrElse(BigInt(0)))._1
+        Some(highestWork)
+      }
+    }
   }
 
 }
