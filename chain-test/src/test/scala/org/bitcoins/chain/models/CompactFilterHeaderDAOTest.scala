@@ -12,9 +12,10 @@ class CompactFilterHeaderDAOTest extends ChainDbUnitTest {
 
   behavior of "CompactFilterHeaderDAO"
 
-  it must "get the best filter header with a table with zero rows in it" in { filterHeaderDAO =>
-    filterHeaderDAO.getBestFilterHeader.map { opt =>
-      assert(opt == None)
-    }
+  it must "get the best filter header with a table with zero rows in it" in {
+    filterHeaderDAO =>
+      filterHeaderDAO.getBestFilterHeader.map { opt =>
+        assert(opt == None)
+      }
   }
 }
