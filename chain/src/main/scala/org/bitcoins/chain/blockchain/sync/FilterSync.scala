@@ -34,16 +34,23 @@ abstract class FilterSync extends ChainVerificationLogger {
       implicit ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[ChainApi] = {
 
-    val ourBestFilterHeaderF = chainApi.getBestFilterHeader()
+    val ourBestFilterHeaderOptF = chainApi.getBestFilterHeader()
     val ourBestBlockHeaderF = chainApi.getBestBlockHeader()
     for {
-      ours <- ourBestFilterHeaderF
+      oursOpt <- ourBestFilterHeaderOptF
       ourBestBlockHeader <- ourBestBlockHeaderF
-      syncedChainApi <- syncFiltersToTip(chainApi = chainApi,
-                                         ourBestHeader = ourBestBlockHeader,
-                                         ourBestFilterHeader = ours,
-                                         getFilterFunc = getFilterFunc,
-                                         batchSize)
+      syncedChainApi <- {
+        oursOpt match {
+          case Some(ours) =>
+            syncFiltersToTip(chainApi = chainApi,
+              ourBestHeader = ourBestBlockHeader,
+              ourBestFilterHeader = ours,
+              getFilterFunc = getFilterFunc,
+              batchSize)
+          case None =>
+            Future.failed(new RuntimeException(s"Cannot sync filters, we don't have any in the database"))
+        }
+      }
     } yield {
       syncedChainApi
     }
@@ -104,11 +111,19 @@ abstract class FilterSync extends ChainVerificationLogger {
             case (apiF, missingHeaders) =>
               for {
                 api <- apiF
-                bestFilter <- api.getBestFilterHeader()
-                newApi <- fetchFiltersForHeaderGroup(api,
-                                                     missingHeaders,
-                                                     bestFilter,
-                                                     getFilterFunc)
+                bestFilterOpt <- api.getBestFilterHeader()
+                newApi <- {
+                  bestFilterOpt match {
+                    case Some(bestFilter) =>
+                      fetchFiltersForHeaderGroup(api,
+                        missingHeaders,
+                        bestFilter,
+                        getFilterFunc)
+                    case None =>
+                      Future.failed(new RuntimeException(s"Cannot sync filter headers, we do not have any in the database"))
+                  }
+
+                }
               } yield newApi
           }
         }
