@@ -20,11 +20,12 @@ import org.scalatest.compatible.Assertion
 import scala.concurrent.Future
 
 class WalletUnitTest extends BitcoinSWalletTest {
+  private val bip39PasswordOpt: Option[String] = getBIP39PasswordOpt()
 
   override type FixtureParam = Wallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWallet(test, getBIP39PasswordOpt())
+    withNewWallet(test, bip39PasswordOpt)
 
   behavior of "Wallet - unit test"
 
@@ -169,8 +170,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
 
   it must "be able to call initialize twice without throwing an exception if we have the same key manager" in { wallet: Wallet =>
-    val twiceF = Wallet.initialize(wallet,None).flatMap { _ =>
-      Wallet.initialize(wallet, None)
+    val twiceF = Wallet.initialize(wallet,bip39PasswordOpt).flatMap { _ =>
+      Wallet.initialize(wallet, bip39PasswordOpt)
     }
 
     twiceF.map(_ => succeed)
@@ -179,7 +180,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it must "be able to detect an incompatible key manager with a wallet" in { wallet: Wallet =>
     recoverToSucceededIf[RuntimeException] {
-      Wallet.initialize(wallet,None).flatMap { _ =>
+      Wallet.initialize(wallet,bip39PasswordOpt).flatMap { _ =>
         //use a BIP39 password to make the key-managers different
         Wallet.initialize(wallet, Some("random-password-to-make-key-managers-different"))
       }
