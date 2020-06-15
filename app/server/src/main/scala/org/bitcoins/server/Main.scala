@@ -8,7 +8,11 @@ import akka.http.scaladsl.Http
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
+}
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
@@ -62,7 +66,7 @@ object Main extends App with BitcoinSLogger {
     implicit val walletConf: WalletAppConfig = conf.walletConf
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
     require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled,
-      "Either Neutrino or SPV mode should be enabled")
+            "Either Neutrino or SPV mode should be enabled")
     implicit val chainConf: ChainAppConfig = conf.chainConf
 
     val peerSocket =
@@ -79,8 +83,8 @@ object Main extends App with BitcoinSLogger {
     }
 
     //get a node that isn't started
-    val uninitializedNodeF = configInitializedF.flatMap {_ =>
-      createNode(peer)(nodeConf,chainConf,system)
+    val uninitializedNodeF = configInitializedF.flatMap { _ =>
+      createNode(peer)(nodeConf, chainConf, system)
     }
 
     //get our wallet
@@ -89,11 +93,10 @@ object Main extends App with BitcoinSLogger {
       uninitializedNode <- uninitializedNodeF
       chainApi <- chainApiF
       wallet <- createWallet(uninitializedNode,
-        chainApi,
-        BitcoinerLiveFeeRateProvider(60),
-        bip39PasswordOpt)
+                             chainApi,
+                             BitcoinerLiveFeeRateProvider(60),
+                             bip39PasswordOpt)
     } yield wallet
-
 
     //add callbacks to our unitialized node
     val nodeWithCallbacksF = for {
@@ -120,11 +123,13 @@ object Main extends App with BitcoinSLogger {
     val startFut = for {
       node <- syncedNodeF
       wallet <- walletF
-      binding <- startHttpServer(node,wallet, rpcPortOpt)
+      binding <- startHttpServer(node, wallet, rpcPortOpt)
     } yield {
       logger.info(s"Done starting Main!")
       sys.addShutdownHook {
         logger.error(s"Exiting process")
+
+        wallet.stop()
 
         node
           .stop()
@@ -153,7 +158,9 @@ object Main extends App with BitcoinSLogger {
   runMain()
 
   /** Checks if the user already has a wallet */
-  private def hasWallet()(implicit walletConf: WalletAppConfig, ec: ExecutionContext): Future[Boolean] = {
+  private def hasWallet()(
+      implicit walletConf: WalletAppConfig,
+      ec: ExecutionContext): Future[Boolean] = {
     val walletDB = walletConf.dbPath resolve walletConf.dbName
     val hdCoin = walletConf.defaultAccount.coin
     if (Files.exists(walletDB) && walletConf.seedExists()) {
@@ -163,7 +170,10 @@ object Main extends App with BitcoinSLogger {
     }
   }
 
-  private def createNode(peer: Peer)(implicit nodeConf: NodeAppConfig, chainConf: ChainAppConfig, system: ActorSystem): Future[Node] = {
+  private def createNode(peer: Peer)(
+      implicit nodeConf: NodeAppConfig,
+      chainConf: ChainAppConfig,
+      system: ActorSystem): Future[Node] = {
     if (nodeConf.isSPVEnabled) {
       Future.successful(SpvNode(peer, nodeConf, chainConf, system))
     } else if (nodeConf.isNeutrinoEnabled) {
@@ -178,7 +188,9 @@ object Main extends App with BitcoinSLogger {
       nodeApi: Node,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
-      bip39PasswordOpt: Option[String])(implicit walletConf: WalletAppConfig, system: ActorSystem): Future[WalletApi] = {
+      bip39PasswordOpt: Option[String])(
+      implicit walletConf: WalletAppConfig,
+      system: ActorSystem): Future[WalletApi] = {
     import system.dispatcher
     hasWallet().flatMap { walletExists =>
       if (walletExists) {
@@ -222,7 +234,9 @@ object Main extends App with BitcoinSLogger {
     }
   }
 
-  private def createCallbacks(wallet: WalletApi)(implicit nodeConf: NodeAppConfig, ec: ExecutionContext): Future[NodeCallbacks] = {
+  private def createCallbacks(wallet: WalletApi)(
+      implicit nodeConf: NodeAppConfig,
+      ec: ExecutionContext): Future[NodeCallbacks] = {
     import DataMessageHandler._
     lazy val onTx: OnTxReceived = { tx =>
       wallet.processTransaction(tx, blockHash = None).map(_ => ())
@@ -256,8 +270,9 @@ object Main extends App with BitcoinSLogger {
     }
   }
 
-  private def addCallbacksAndBloomFilterToNode(node: Node, wallet: WalletApi)(implicit nodeAppConfig: NodeAppConfig,
-                                                                  ec: ExecutionContext): Future[Node] = {
+  private def addCallbacksAndBloomFilterToNode(node: Node, wallet: WalletApi)(
+      implicit nodeAppConfig: NodeAppConfig,
+      ec: ExecutionContext): Future[Node] = {
     for {
       nodeWithBloomFilter <- node match {
         case spvNode: SpvNode =>
@@ -310,11 +325,13 @@ object Main extends App with BitcoinSLogger {
   }
 
   /** This is needed for migrations V2/V3 on the chain project to re-calculate the total work for the chain */
-  private def runChainWorkCalc()(implicit chainAppConfig: ChainAppConfig, ec: ExecutionContext): Future[ChainApi] = {
+  private def runChainWorkCalc()(
+      implicit chainAppConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[ChainApi] = {
     for {
       chainApi <- ChainHandler.fromDatabase(blockHeaderDAO = BlockHeaderDAO(),
-        CompactFilterHeaderDAO(),
-        CompactFilterDAO())
+                                            CompactFilterHeaderDAO(),
+                                            CompactFilterDAO())
       isMissingChainWork <- chainApi.isMissingChainWork
       chainApiWithWork <- if (isMissingChainWork) {
         chainApi.recalculateChainWork
@@ -325,7 +342,12 @@ object Main extends App with BitcoinSLogger {
     } yield chainApiWithWork
   }
 
-  private def startHttpServer(node: Node, wallet: WalletApi, rpcPortOpt: Option[Int])(implicit system: ActorSystem, conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
+  private def startHttpServer(
+      node: Node,
+      wallet: WalletApi,
+      rpcPortOpt: Option[Int])(
+      implicit system: ActorSystem,
+      conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
     import system.dispatcher
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
     for {
@@ -338,17 +360,17 @@ object Main extends App with BitcoinSLogger {
         rpcPortOpt match {
           case Some(rpcport) =>
             Server(nodeConf,
-              Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-              rpcport = rpcport)
+                   Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                   rpcport = rpcport)
           case None =>
             conf.rpcPortOpt match {
               case Some(rpcport) =>
                 Server(nodeConf,
-                  Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                  rpcport)
+                       Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                       rpcport)
               case None =>
                 Server(nodeConf,
-                  Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
+                       Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
             }
         }
       }

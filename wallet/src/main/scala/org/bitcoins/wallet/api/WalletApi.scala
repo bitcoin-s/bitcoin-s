@@ -58,6 +58,8 @@ trait WalletApi extends WalletLogger {
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
+  def stop(): Unit
+
   /**
     * Retrieves a bloom filter that that can be sent to a P2P network node
     * to get information about our transactions, pubkeys and scripts.

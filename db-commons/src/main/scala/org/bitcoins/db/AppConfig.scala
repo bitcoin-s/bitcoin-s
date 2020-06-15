@@ -5,7 +5,12 @@ import java.nio.file.{Files, Path, Paths}
 import ch.qos.logback.classic.Level
 import com.typesafe.config._
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
-import org.bitcoins.core.protocol.blockchain.{ChainParams, MainNetChainParams, RegTestNetChainParams, TestNetChainParams}
+import org.bitcoins.core.protocol.blockchain.{
+  ChainParams,
+  MainNetChainParams,
+  RegTestNetChainParams,
+  TestNetChainParams
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -35,6 +40,11 @@ abstract class AppConfig extends LoggerConfig {
     * something else entirely.
     */
   def initialize()(implicit ec: ExecutionContext): Future[Unit]
+
+  /** Releases the thread pool associated with this AppConfig's DB */
+  def stop(): Unit = {
+    slickDbConfig.db.close()
+  }
 
   /** Sub members of AppConfig should override this type with
     * the type of themselves, ensuring `withOverrides` return
@@ -299,8 +309,7 @@ abstract class AppConfig extends LoggerConfig {
 
   lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
     Try {
-      DatabaseConfig.forConfig[JdbcProfile](path = moduleName,
-        config = config)
+      DatabaseConfig.forConfig[JdbcProfile](path = moduleName, config = config)
     } match {
       case Success(value) =>
         value

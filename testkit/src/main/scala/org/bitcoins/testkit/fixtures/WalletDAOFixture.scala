@@ -32,6 +32,11 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
 
   implicit private val walletConfig: WalletAppConfig = config
 
+  override def afterAll(): Unit = {
+    super.afterAll()
+    walletConfig.stop()
+  }
+
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
     makeFixture(build = () => Future(walletConfig.migrate()).map(_ => daos),
                 destroy = () => dropAll())(test)

@@ -291,6 +291,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
         nestedAssertions.flatten
       }
 
+      wallet.stop()
       assert(assertions.forall(_.isCompleted))
     }
   }
