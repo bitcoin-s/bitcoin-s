@@ -6,8 +6,11 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
-import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.bitcoins.testkit.node.{
+  NodeTestUtil,
+  NodeUnitTest,
+  SpvNodeFundedWalletBitcoind
+}
 import org.bitcoins.wallet.api.WalletApi
 import org.scalatest.FutureOutcome
 import org.scalatest.exceptions.TestFailedException
@@ -24,7 +27,7 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
   override type FixtureParam = SpvNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withSpvNodeFundedWalletBitcoind(test, callbacks)
+    withSpvNodeFundedWalletBitcoind(test, callbacks, getBIP39PasswordOpt())
   }
 
   private val assertionP: Promise[Boolean] = Promise()
@@ -62,7 +65,7 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
 
   it must "load a bloom filter and receive information about received payments" in {
     param =>
-      val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
+      val SpvNodeFundedWalletBitcoind(spv, wallet, rpc, _) = param
 
       walletP.success(wallet)
 

@@ -24,7 +24,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   override type FixtureParam = WalletApi
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWallet(test)
+    withNewWallet(test, getBIP39PasswordOpt())
 
   behavior of "Wallet - unit test"
 

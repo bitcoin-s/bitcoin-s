@@ -21,7 +21,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   override type FixtureParam = FundedWallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withFundedWallet(test)
+    withFundedWallet(test, getBIP39PasswordOpt())
 
   behavior of "Wallet"
 

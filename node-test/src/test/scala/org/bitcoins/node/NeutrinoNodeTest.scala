@@ -8,8 +8,11 @@ import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
-import org.bitcoins.testkit.node.NodeUnitTest.NeutrinoNodeFundedWalletBitcoind
-import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.bitcoins.testkit.node.{
+  NeutrinoNodeFundedWalletBitcoind,
+  NodeTestUtil,
+  NodeUnitTest
+}
 import org.scalatest.{DoNotDiscover, FutureOutcome}
 
 import scala.concurrent.duration.DurationInt
@@ -27,6 +30,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withNeutrinoNodeFundedWalletBitcoind(test,
                                          callbacks,
+                                         getBIP39PasswordOpt(),
                                          Some(BitcoindVersion.Experimental))
 
   private val testTimeout = 30.seconds
