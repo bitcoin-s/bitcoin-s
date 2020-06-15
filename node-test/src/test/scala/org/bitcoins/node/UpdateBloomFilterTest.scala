@@ -48,7 +48,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   // confirmed
   private val txFromWalletP: Promise[Transaction] = Promise()
 
-  def addressCallback: DataMessageHandler.OnTxReceived = { tx: Transaction =>
+  def addressCallback: OnTxReceived = { tx: Transaction =>
     // we check if any of the addresses in the TX
     // pays to our wallet address
     for {
@@ -59,10 +59,11 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       if (result) {
         assertionP.success(true)
       }
+      ()
     }
   }
 
-  def txCallback: DataMessageHandler.OnMerkleBlockReceived = {
+  def txCallback: OnMerkleBlockReceived = {
     (_: MerkleBlock, txs: Vector[Transaction]) =>
       {
         txFromWalletP.future
@@ -70,6 +71,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
             if (txs.contains(tx)) {
               assertionP.success(true)
             }
+            ()
           }
       }
   }

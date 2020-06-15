@@ -3,16 +3,27 @@ package org.bitcoins.node
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
+}
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.Mutable
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{BroadcastAbleTransaction, BroadcastAbleTransactionDAO, Peer}
+import org.bitcoins.node.models.{
+  BroadcastAbleTransaction,
+  BroadcastAbleTransactionDAO,
+  Peer
+}
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
-import org.bitcoins.node.util.BitcoinSNodeUtil.Mutable
+import org.bitcoins.node.networking.peer.{
+  PeerMessageReceiver,
+  PeerMessageSender
+}
 import org.bitcoins.rpc.util.AsyncUtil
 import org.slf4j.Logger
 
