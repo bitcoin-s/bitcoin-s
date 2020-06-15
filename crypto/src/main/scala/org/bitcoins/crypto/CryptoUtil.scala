@@ -46,10 +46,9 @@ trait CryptoUtil {
   // The tag "BIP340/challenge"
   private val schnorrChallengeTagBytes = {
     ByteVector
-      .fromHex(
+      .fromValidHex(
         "07e00dcd3055c1b36ee93effe4d7f266024cdef4116982ff5dfdc1a97e77062907e00dcd3055c1b36ee93effe4d7f266024cdef4116982ff5dfdc1a97e770629"
       )
-      .get
   }
 
   def sha256SchnorrChallenge(bytes: ByteVector): Sha256Digest = {
@@ -59,10 +58,9 @@ trait CryptoUtil {
   // The tag "BIP340/nonce"
   private val schnorrNonceTagBytes = {
     ByteVector
-      .fromHex(
+      .fromValidHex(
         "a2ba14a6b39c1c505260bf3aceb07febde3ab34c35c9259d25bd6972f15e6564a2ba14a6b39c1c505260bf3aceb07febde3ab34c35c9259d25bd6972f15e6564"
       )
-      .get
   }
 
   def sha256SchnorrNonce(bytes: ByteVector): Sha256Digest = {
@@ -72,10 +70,9 @@ trait CryptoUtil {
   // The tag "BIP340/aux"
   private val schnorrAuxTagBytes = {
     ByteVector
-      .fromHex(
+      .fromValidHex(
         "4b07426ad8630dcdbadf8dee1e94f09ac2df4e7ee2629e5e6b27c8666c8cf31e4b07426ad8630dcdbadf8dee1e94f09ac2df4e7ee2629e5e6b27c8666c8cf31e"
       )
-      .get
   }
 
   def sha256SchnorrAuxRand(bytes: ByteVector): Sha256Digest = {
