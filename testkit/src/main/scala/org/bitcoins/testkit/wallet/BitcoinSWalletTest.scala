@@ -239,6 +239,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 
     val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
       FileUtil.deleteTmpDir(walletAppConfig.datadir)
+      walletAppConfig.stop()
       FutureUtil.unit
     }
     makeDependentFixture(builder, destroy = destroy)(test)
@@ -571,7 +572,7 @@ object BitcoinSWalletTest extends WalletLogger {
     val destroyWalletF =
       wallet.walletConfig
         .dropAll()
-        .map(_ => ())
+        .map(_ => wallet.stop())
     destroyWalletF
   }
 

@@ -44,6 +44,11 @@ abstract class AppConfig extends LoggerConfig {
     */
   def initialize()(implicit ec: ExecutionContext): Future[Unit]
 
+  /** Releases the thread pool associated with this AppConfig's DB */
+  def stop(): Unit = {
+    slickDbConfig.db.close()
+  }
+
   /** Sub members of AppConfig should override this type with
     * the type of themselves, ensuring `withOverrides` return
     * the correct type

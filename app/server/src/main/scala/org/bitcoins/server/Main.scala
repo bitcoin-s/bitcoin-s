@@ -107,6 +107,8 @@ object Main extends App {
     sys.addShutdownHook {
       logger.error(s"Exiting process")
 
+      wallet.stop()
+
       node
         .stop()
         .foreach(_ =>
