@@ -4,7 +4,7 @@ import _root_.org.scalatest.compatible.Assertion
 import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.node.NodeCallbacks
+import org.bitcoins.node.{NodeCallbacks, OnMerkleBlockReceived}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.core.gen.{
@@ -37,16 +37,14 @@ class MerkleBuffersTest extends BitcoinSAsyncTest {
       case (txs, otherTxs, block) =>
         var receivedExpectedTXs: Option[Try[Assertion]] = None
         var callbackCount: Int = 0
-        val callback: DataMessageHandler.OnMerkleBlockReceived = {
-          (_, merkleTxs) =>
-            receivedExpectedTXs = Some(
-              Try(
-                assert(txs == merkleTxs,
+        val callback: OnMerkleBlockReceived = { (_, merkleTxs) =>
+          receivedExpectedTXs = Some(
+            Try(assert(txs == merkleTxs,
                        "Received TXs in callback was not the ones we put in")))
-            callbackCount = callbackCount + 1
-            FutureUtil.unit
+          callbackCount = callbackCount + 1
+          FutureUtil.unit
         }
-        val callbacks = NodeCallbacks(onMerkleBlockReceived = Seq(callback))
+        val callbacks = NodeCallbacks(onMerkleBlockReceived = Vector(callback))
 
         val merkle = MerkleBlock(block, txs.map(_.txId))
         val _ = MerkleBuffers.putMerkle(merkle)

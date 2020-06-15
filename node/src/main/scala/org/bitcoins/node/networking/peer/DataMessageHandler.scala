@@ -2,12 +2,10 @@ package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
+import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeCallbacks, P2PLogger}
@@ -319,28 +317,4 @@ case class DataMessageHandler(
     Future.successful(this)
 
   }
-}
-
-object DataMessageHandler {
-
-  /** Callback for handling a received block */
-  type OnBlockReceived = Block => Future[Unit]
-
-  /** Callback for handling a received Merkle block with its corresponding TXs */
-  type OnMerkleBlockReceived =
-    (MerkleBlock, Vector[Transaction]) => Future[Unit]
-
-  /** Callback for handling a received transaction */
-  type OnTxReceived = Transaction => Future[Unit]
-
-  /** Callback for handling a received compact block filter */
-  type OnCompactFiltersReceived =
-    (Vector[(DoubleSha256Digest, GolombFilter)]) => Future[Unit]
-
-  /** Callback for handling a received block header */
-  type OnBlockHeadersReceived = Vector[BlockHeader] => Future[Unit]
-
-  /** Does nothing */
-  def noop[T]: T => Future[Unit] = _ => FutureUtil.unit
-
 }

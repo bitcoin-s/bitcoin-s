@@ -3,7 +3,6 @@ package org.bitcoins.node
 import akka.actor.Cancellable
 import org.bitcoins.core.currency._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
@@ -38,7 +37,7 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
   val amountFromBitcoind = 1.bitcoin
 
   def callbacks: NodeCallbacks = {
-    val onTx: DataMessageHandler.OnTxReceived = { tx =>
+    val onTx: OnTxReceived = { tx =>
       for {
         expectedTxId <- expectedTxIdF
         wallet <- walletF
@@ -56,7 +55,7 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
       }
     }
     NodeCallbacks(
-      onTxReceived = Seq(onTx)
+      onTxReceived = Vector(onTx)
     )
   }
 
