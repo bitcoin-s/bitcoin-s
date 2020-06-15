@@ -26,12 +26,6 @@ matrix:
     # possible to nest env.matrix. could a better solution be to write
     # a small script that generates a Travis config for us?
     - os: linux
-      name: "Linux compile for 2.11"
-      env:
-        - TEST_COMMAND="test:compile"
-      scala:
-        - 2.11.12
-    - os: linux
       name: "Secp256k1 Disabled Core Test"
       env:
         - DISABLE_SECP256K1="true"
@@ -49,14 +43,14 @@ matrix:
     - os: osx
       name: "macOS wallet and node tests"
       env:
-<<<<<<< HEAD
         - CI="1"
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
-||||||| parent of cd4eca247d... Binary Outcome DLC (#871)
-        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
-=======
-        - TEST_COMMAND="dlcTest/test dlc/coverageReport dlc/coverageAggregate dlc/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
->>>>>>> cd4eca247d... Binary Outcome DLC (#871)
+      scala:
+        - 2.13.2
+    - os: osx
+      name: "macOS dlc tests"
+      env:
+        - TEST_COMMAND="dlcTest/test dlc/coverageReport dlc/coverageAggregate dlc/coveralls"
       scala:
         - 2.13.2
 

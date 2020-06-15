@@ -59,6 +59,8 @@ trait WalletApi extends WalletLogger {
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
+  def stop(): Unit
+
   // TODO calculate one based off relevant data
   /** Gives a fee Rate to use for transactions if one is not specified */
   def getFeeRate: FeeUnit = Policy.defaultFeeRate

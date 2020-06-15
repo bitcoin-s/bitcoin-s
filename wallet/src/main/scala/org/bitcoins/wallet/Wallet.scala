@@ -70,6 +70,11 @@ abstract class Wallet
   val chainQueryApi: ChainQueryApi
   val creationTime: Instant = keyManager.creationTime
 
+  override def stop(): Unit = {
+    walletConfig.stop()
+    stopWalletThread()
+  }
+
   override def isEmpty(): Future[Boolean] =
     for {
       addressCount <- addressDAO.count()
@@ -412,9 +417,7 @@ abstract class Wallet
     val accountCreationF = accountDAO.create(newAccountDb)
     accountCreationF.map(created =>
       logger.debug(s"Created new account ${created.hdAccount}"))
-    accountCreationF
-      .map(_ =>
-        Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime))
+    accountCreationF.map(_ => this)
   }
 }
 
