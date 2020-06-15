@@ -135,10 +135,11 @@ object FundWalletUtil extends FundWalletUtil {
 
     import system.dispatcher
     for {
-      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi = nodeApi,
-                                                         chainQueryApi = chainQueryApi,
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(
+        nodeApi = nodeApi,
+        chainQueryApi = chainQueryApi,
         bip39PasswordOpt = bip39PasswordOpt,
-                                                         extraConfig = extraConfig)
+        extraConfig = extraConfig)
       funded <- FundWalletUtil.fundWallet(wallet)
     } yield funded
   }

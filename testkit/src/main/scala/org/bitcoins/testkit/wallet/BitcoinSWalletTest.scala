@@ -157,21 +157,28 @@ trait BitcoinSWalletTest
   /** Creates a wallet that is funded with some bitcoin, this wallet is NOT
     * peered with a bitcoind so the funds in the wallet are not tied to an
     * underlying blockchain */
-  def withFundedWallet(test: OneArgAsyncTest, bip39PasswordOpt: Option[String]): FutureOutcome = {
+  def withFundedWallet(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String]): FutureOutcome = {
     makeDependentFixture(
-      build = () => FundWalletUtil.createFundedWallet(nodeApi, chainQueryApi, bip39PasswordOpt),
+      build = () =>
+        FundWalletUtil.createFundedWallet(nodeApi,
+                                          chainQueryApi,
+                                          bip39PasswordOpt),
       destroy = { funded: FundedWallet =>
         destroyWallet(funded.wallet)
       }
     )(test)
   }
 
-  def withFundedSegwitWallet(test: OneArgAsyncTest, bip39PasswordOpt: Option[String]): FutureOutcome = {
+  def withFundedSegwitWallet(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String]): FutureOutcome = {
     makeDependentFixture(
       build = () =>
         FundWalletUtil.createFundedWallet(nodeApi,
                                           chainQueryApi,
-          bip39PasswordOpt,
+                                          bip39PasswordOpt,
                                           Some(segwitWalletConf)),
       destroy = { funded: FundedWallet =>
         destroyWallet(funded.wallet)
@@ -189,12 +196,16 @@ trait BitcoinSWalletTest
     withNewConfiguredWallet(segwitWalletConf)(test)
   }
 
-  def withNewWallet(test: OneArgAsyncTest, bip39PasswordOpt: Option[String]): FutureOutcome =
+  def withNewWallet(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String]): FutureOutcome =
     makeDependentFixture(build = { () =>
       createDefaultWallet(nodeApi, chainQueryApi, bip39PasswordOpt)
     }, destroy = destroyWallet)(test)
 
-  def withNewWallet2Accounts(test: OneArgAsyncTest, bip39PasswordOpt: Option[String]): FutureOutcome = {
+  def withNewWallet2Accounts(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String]): FutureOutcome = {
     makeDependentFixture(build = { () =>
       createWallet2Accounts(nodeApi, chainQueryApi, bip39PasswordOpt)
     }, destroy = destroyWallet)(test)
@@ -215,7 +226,9 @@ trait BitcoinSWalletTest
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
   }
 
-  def withNewWalletAndBitcoindV19(test: OneArgAsyncTest, bip39PasswordOpt: Option[String]): FutureOutcome = {
+  def withNewWalletAndBitcoindV19(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String]): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
       builder = { () =>
         BitcoinSFixture
@@ -233,13 +246,16 @@ trait BitcoinSWalletTest
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
   }
 
-  def withFundedWalletAndBitcoind(test: OneArgAsyncTest, bip39PasswordOpt: Option[String]): FutureOutcome = {
+  def withFundedWalletAndBitcoind(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String]): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = { () =>
       for {
         bitcoind <- BitcoinSFixture
           .createBitcoindWithFunds(None)
         wallet <- createWalletWithBitcoindCallbacks(bitcoind = bitcoind,
-          bip39PasswordOpt = bip39PasswordOpt)
+                                                    bip39PasswordOpt =
+                                                      bip39PasswordOpt)
         fundedWallet <- fundWalletWithBitcoind(wallet)
       } yield fundedWallet
     }
@@ -247,13 +263,15 @@ trait BitcoinSWalletTest
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
   }
 
-  def withFundedWalletAndBitcoindV19(test: OneArgAsyncTest, bip39PasswordOpt: Option[String]): FutureOutcome = {
+  def withFundedWalletAndBitcoindV19(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String]): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoindV19] = { () =>
       for {
         bitcoind <- BitcoinSFixture
           .createBitcoindWithFunds(Some(BitcoindVersion.V19))
           .map(_.asInstanceOf[BitcoindV19RpcClient])
-        wallet <- createWalletWithBitcoindCallbacks(bitcoind,bip39PasswordOpt)
+        wallet <- createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
         fundedWallet <- fundWalletWithBitcoind(wallet)
       } yield {
         WalletWithBitcoindV19(fundedWallet.wallet, bitcoind)
@@ -277,8 +295,8 @@ trait BitcoinSWalletTest
     makeDependentFixture(builder, destroy = destroy)(test)
   }
 
-
-  def getBIP39PasswordOpt(): Option[String] = KeyManagerTestUtil.bip39PasswordOpt
+  def getBIP39PasswordOpt(): Option[String] =
+    KeyManagerTestUtil.bip39PasswordOpt
 }
 
 object BitcoinSWalletTest extends WalletLogger {
@@ -362,7 +380,7 @@ object BitcoinSWalletTest extends WalletLogger {
     * example use this to override the default data directory, network
     * or account type.
     */
-  private def   createNewWallet(
+  private def createNewWallet(
       keyManager: BIP39KeyManager,
       bip39PasswordOpt: Option[String],
       extraConfig: Option[Config],
@@ -433,7 +451,8 @@ object BitcoinSWalletTest extends WalletLogger {
     val walletWithBitcoindF = for {
       wallet <- BitcoinSWalletTest.createWallet2Accounts(bitcoind,
                                                          bitcoind,
-                                                         bip39PasswordOpt = bip39PasswordOpt,
+                                                         bip39PasswordOpt =
+                                                           bip39PasswordOpt,
                                                          extraConfig)
       _ = wallet.stopWalletThread()
 
@@ -514,7 +533,9 @@ object BitcoinSWalletTest extends WalletLogger {
       created.bitcoind.asInstanceOf[BitcoindV19RpcClient])
   }
 
-  def createWalletWithBitcoindV19(bitcoind: BitcoindV19RpcClient, bip39PasswordOpt: Option[String])(
+  def createWalletWithBitcoindV19(
+      bitcoind: BitcoindV19RpcClient,
+      bip39PasswordOpt: Option[String])(
       implicit system: ActorSystem,
       config: BitcoinSAppConfig): Future[WalletWithBitcoindV19] = {
     import system.dispatcher
@@ -541,7 +562,9 @@ object BitcoinSWalletTest extends WalletLogger {
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     for {
-      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi, chainQueryApi, bip39PasswordOpt)
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi,
+                                                         chainQueryApi,
+                                                         bip39PasswordOpt)
       withBitcoind <- createWalletWithBitcoind(wallet, versionOpt)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded

@@ -158,14 +158,13 @@ trait ChainUnitTest
   /** Creates a compact filter DAO with zero rows in it */
   def withCompactFilterHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createFilterHeaderDAO(),
-      destroy = ChainUnitTest.destroyAllTables)(test)
+                destroy = ChainUnitTest.destroyAllTables)(test)
   }
-
 
   /** Creates a compact filter DAO with zero rows in it */
   def withCompactFilterDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createFilterDAO(),
-      destroy = ChainUnitTest.destroyAllTables)(test)
+                destroy = ChainUnitTest.destroyAllTables)(test)
   }
 
   def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {

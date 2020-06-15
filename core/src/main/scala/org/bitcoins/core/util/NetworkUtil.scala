@@ -19,11 +19,11 @@ abstract class NetworkUtil {
   }
 
   /** Parses a string that looks like this to [[java.net.InetSocketAddress]]
-   * "neutrino.testnet3.suredbits.com:18333"
-   * */
+    * "neutrino.testnet3.suredbits.com:18333"
+    * */
   def parseInetSocketAddress(
-                              address: String,
-                              defaultPort: Int): InetSocketAddress = {
+      address: String,
+      defaultPort: Int): InetSocketAddress = {
     address.split(":") match {
       case Array(host)       => new InetSocketAddress(host, defaultPort)
       case Array(host, port) => new InetSocketAddress(host, parsePort(port))

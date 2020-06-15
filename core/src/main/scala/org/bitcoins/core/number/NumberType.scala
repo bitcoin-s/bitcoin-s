@@ -161,7 +161,7 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
       hex.slice(2, hex.length)
     } else {
       val needed = 16 - hex.length
-      CryptoBytesUtil.addPadding(needed,hex)
+      CryptoBytesUtil.addPadding(needed, hex)
     }
   }
 }
@@ -331,7 +331,6 @@ object UInt32
   lazy val min = zero
   lazy val max = UInt32(maxUnderlying)
 
-
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
 
@@ -490,7 +489,6 @@ object Int64
   }
 
   def apply(bigInt: BigInt): Int64 = Int64Impl(bigInt)
-
 
   private def checkCached(long: Long): Int64 = {
     if (long < 256 && long >= 0) cached(long.toInt)

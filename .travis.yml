@@ -55,7 +55,7 @@ matrix:
     - stage: test
       name: Compile website and check formatting
       env:
-        - TEST_COMMAND="test:scalafmtCheck docs/mdoc"
+        - TEST_COMMAND="scalafmtCheck test:scalafmtCheck docs/mdoc"
       scala:
         - 2.13.2
 

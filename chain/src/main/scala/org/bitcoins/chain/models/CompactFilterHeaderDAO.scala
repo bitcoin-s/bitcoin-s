@@ -123,16 +123,18 @@ case class CompactFilterHeaderDAO()(
       case (filter, headers) =>
         filter -> headers.map(_._2.chainWork).max
     }
-    val headersWithWorkF: Future[Vector[(CompactFilterHeaderDb,Option[BigInt])]] = {
+    val headersWithWorkF: Future[
+      Vector[(CompactFilterHeaderDb, Option[BigInt])]] = {
       safeDatabase.runVec(query.result)
     }
-    headersWithWorkF.map { headersWithWork: Vector[(CompactFilterHeaderDb,Option[BigInt])] =>
-      if (headersWithWork.isEmpty) {
-       None
-      } else {
-        val highestWork = headersWithWork.maxBy(_._2.getOrElse(BigInt(0)))._1
-        Some(highestWork)
-      }
+    headersWithWorkF.map {
+      headersWithWork: Vector[(CompactFilterHeaderDb, Option[BigInt])] =>
+        if (headersWithWork.isEmpty) {
+          None
+        } else {
+          val highestWork = headersWithWork.maxBy(_._2.getOrElse(BigInt(0)))._1
+          Some(highestWork)
+        }
     }
   }
 

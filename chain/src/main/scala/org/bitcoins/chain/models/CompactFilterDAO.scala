@@ -127,13 +127,14 @@ case class CompactFilterDAO()(
 
   /** Gets the heaviest filter from the database */
   def getBestFilter: Future[Option[CompactFilterDb]] = {
-    val join = (table.join(blockHeaderTable))
+    val join = (table
+      .join(blockHeaderTable))
       .on(_.blockHash === _.hash)
     val query = join.groupBy(_._1).map {
       case (filter, headers) =>
         filter -> headers.map(_._2.chainWork).max
     }
-    val filtersWithWorkF: Future[Vector[(CompactFilterDb,Option[BigInt])]] = {
+    val filtersWithWorkF: Future[Vector[(CompactFilterDb, Option[BigInt])]] = {
       safeDatabase.runVec(query.result)
     }
 

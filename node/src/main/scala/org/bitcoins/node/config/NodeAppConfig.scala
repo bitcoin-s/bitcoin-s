@@ -74,8 +74,10 @@ case class NodeAppConfig(
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(chainConf: ChainAppConfig, system: ActorSystem): Future[Node] = {
-    NodeAppConfig.createNode(peer)(this,chainConf,system)
+  def createNode(peer: Peer)(
+      chainConf: ChainAppConfig,
+      system: ActorSystem): Future[Node] = {
+    NodeAppConfig.createNode(peer)(this, chainConf, system)
   }
 }
 
@@ -84,14 +86,17 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
   /** Constructs a node configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  override def fromDatadir(datadir: Path, useLogbackConf: Boolean, confs: Vector[Config])(
-      implicit ec: ExecutionContext): NodeAppConfig =
-    NodeAppConfig(datadir,
-                  useLogbackConf,
-                  confs: _*)
+  override def fromDatadir(
+      datadir: Path,
+      useLogbackConf: Boolean,
+      confs: Vector[Config])(implicit ec: ExecutionContext): NodeAppConfig =
+    NodeAppConfig(datadir, useLogbackConf, confs: _*)
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(implicit nodeConf: NodeAppConfig, chainConf: ChainAppConfig, system: ActorSystem): Future[Node] = {
+  def createNode(peer: Peer)(
+      implicit nodeConf: NodeAppConfig,
+      chainConf: ChainAppConfig,
+      system: ActorSystem): Future[Node] = {
     if (nodeConf.isSPVEnabled) {
       Future.successful(SpvNode(peer, nodeConf, chainConf, system))
     } else if (nodeConf.isNeutrinoEnabled) {
