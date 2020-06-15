@@ -115,7 +115,7 @@ case class DLCTxSigner(
             val sigF = BitcoinSigner.signSingle(utxoSingle,
                                                 fundingTx,
                                                 isDummySignature = false)
-            sigFs.addOne(sigF.map((utxo.outPoint, _)))
+            sigFs += sigF.map((utxo.outPoint, _))
           }
         }
       }
