@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.crypto.CryptoUtil
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
 
@@ -90,6 +90,20 @@ class CryptoUtilTest extends BitcoinSUnitTest {
         val sig = privKey.sign(message)
         val (recovPub1, recovPub2) = CryptoUtil.recoverPublicKey(sig, message)
         assert(recovPub1.verify(message, sig) && recovPub2.verify(message, sig))
+    }
+  }
+
+  it must "compute tagged hashes correctly" in {
+    forAll(NumberGenerator.bytevector) { bytes =>
+      assert(
+        CryptoUtil.sha256SchnorrChallenge(bytes) == CryptoUtil
+          .taggedSha256(bytes, "BIP340/challenge"))
+      assert(
+        CryptoUtil.sha256SchnorrNonce(bytes) == CryptoUtil
+          .taggedSha256(bytes, "BIP340/nonce"))
+      assert(
+        CryptoUtil.sha256SchnorrAuxRand(bytes) == CryptoUtil
+          .taggedSha256(bytes, "BIP340/aux"))
     }
   }
 
