@@ -213,7 +213,10 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   override def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
-    spendingInfoDAO.updateAll(updated)
+    for {
+      utxos <- spendingInfoDAO.updateAll(updated)
+      _ <- walletCallbacks.executeOnReservedUtxos(logger, utxos)
+    } yield utxos
   }
 
   override def unmarkUTXOsAsReserved(
@@ -244,7 +247,9 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           case (hash, utxos) =>
             updateUtxoConfirmedStates(utxos, hash)
         }
-    } yield updatedMempoolUtxos ++ updatedBlockUtxos.flatten
+      updated = updatedMempoolUtxos ++ updatedBlockUtxos.flatten
+      _ <- walletCallbacks.executeOnReservedUtxos(logger, updated)
+    } yield updated
   }
 
   /** @inheritdoc */

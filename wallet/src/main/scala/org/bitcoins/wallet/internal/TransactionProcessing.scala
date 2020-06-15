@@ -196,6 +196,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           for {
             incoming <- incomingTxoFut
             outgoing <- outgoingTxFut
+            _ <- walletCallbacks.executeOnTransactionProcessed(logger,
+                                                               transaction)
           } yield {
             ProcessTxResult(incoming.toList, outgoing.toList)
           }
