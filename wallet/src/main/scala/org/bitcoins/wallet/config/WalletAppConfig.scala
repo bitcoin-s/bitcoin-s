@@ -145,7 +145,7 @@ case class WalletAppConfig(
     if (Files.exists(walletDB) && seedExists()) {
       AccountDAO()(ec, this).read((hdCoin, 0)).map(_.isDefined)
     } else {
-      Future.successful(false) e
+      Future.successful(false)
     }
   }
 
