@@ -2,10 +2,14 @@ package org.bitcoins.node.config
 
 import java.nio.file.Path
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
+import org.bitcoins.node.{NeutrinoNode, Node, SpvNode}
 import org.bitcoins.node.db.NodeDbManagement
+import org.bitcoins.node.models.Peer
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -68,6 +72,11 @@ case class NodeAppConfig(
     0.until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
   }
+
+  /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
+  def createNode(peer: Peer)(chainConf: ChainAppConfig, system: ActorSystem): Future[Node] = {
+    NodeAppConfig.createNode(peer)(this,chainConf,system)
+  }
 }
 
 object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
@@ -81,4 +90,15 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
                   useLogbackConf,
                   confs: _*)
 
+  /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
+  def createNode(peer: Peer)(implicit nodeConf: NodeAppConfig, chainConf: ChainAppConfig, system: ActorSystem): Future[Node] = {
+    if (nodeConf.isSPVEnabled) {
+      Future.successful(SpvNode(peer, nodeConf, chainConf, system))
+    } else if (nodeConf.isNeutrinoEnabled) {
+      Future.successful(NeutrinoNode(peer, nodeConf, chainConf, system))
+    } else {
+      Future.failed(
+        new RuntimeException("Neither Neutrino nor SPV mode is enabled."))
+    }
+  }
 }

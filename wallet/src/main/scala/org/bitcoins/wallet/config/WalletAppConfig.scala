@@ -4,11 +4,20 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.Config
+import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
-import org.bitcoins.keymanager.{KeyManagerParams, WalletStorage}
+import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
+import org.bitcoins.keymanager.{
+  KeyManagerInitializeError,
+  KeyManagerParams,
+  WalletStorage
+}
+import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.wallet.api.WalletApi
 import org.bitcoins.wallet.db.WalletDbManagement
+import org.bitcoins.wallet.models.AccountDAO
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -125,9 +134,38 @@ case class WalletAppConfig(
       5.second
     }
   }
+
+  /** Checks if the following exist
+    *  1. A wallet exists
+    *  2. seed exists
+    *  3. The account exists */
+  def hasWallet()(implicit ec: ExecutionContext): Future[Boolean] = {
+    val walletDB = dbPath.resolve(dbName)
+    val hdCoin = defaultAccount.coin
+    if (Files.exists(walletDB) && seedExists()) {
+      AccountDAO()(ec, this).read((hdCoin, 0)).map(_.isDefined)
+    } else {
+      Future.successful(false)
+    }
+  }
+
+  /** Creates a wallet based on this [[WalletAppConfig]] */
+  def createWallet(
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      feeRateApi: FeeRateApi,
+      bip39PasswordOpt: Option[String])(
+      implicit ec: ExecutionContext): Future[WalletApi] = {
+    WalletAppConfig.createWallet(nodeApi = nodeApi,
+                                 chainQueryApi = chainQueryApi,
+                                 feeRateApi = feeRateApi,
+                                 bip39PasswordOpt = bip39PasswordOpt)(this, ec)
+  }
 }
 
-object WalletAppConfig extends AppConfigFactory[WalletAppConfig] {
+object WalletAppConfig
+    extends AppConfigFactory[WalletAppConfig]
+    with WalletLogger {
 
   /** Constructs a wallet configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
@@ -137,4 +175,53 @@ object WalletAppConfig extends AppConfigFactory[WalletAppConfig] {
       useLogbackConf: Boolean,
       confs: Vector[Config])(implicit ec: ExecutionContext): WalletAppConfig =
     WalletAppConfig(datadir, useLogbackConf, confs: _*)
+
+  /** Creates a wallet based on the given [[WalletAppConfig]] */
+  def createWallet(
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      feeRateApi: FeeRateApi,
+      bip39PasswordOpt: Option[String])(
+      implicit walletConf: WalletAppConfig,
+      ec: ExecutionContext): Future[WalletApi] = {
+    walletConf.hasWallet().flatMap { walletExists =>
+      if (walletExists) {
+        logger.info(s"Using pre-existing wallet")
+        // TODO change me when we implement proper password handling
+        BIP39LockedKeyManager.unlock(BIP39KeyManager.badPassphrase,
+                                     bip39PasswordOpt,
+                                     walletConf.kmParams) match {
+          case Right(km) =>
+            val wallet =
+              Wallet(km, nodeApi, chainQueryApi, feeRateApi, km.creationTime)
+            Future.successful(wallet)
+          case Left(err) =>
+            sys.error(s"Error initializing key manager, err=${err}")
+        }
+      } else {
+        logger.info(s"Initializing key manager")
+        val bip39PasswordOpt = None
+        val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
+          BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
+                                     bip39PasswordOpt = bip39PasswordOpt)
+
+        val keyManager = keyManagerE match {
+          case Right(keyManager) => keyManager
+          case Left(err) =>
+            sys.error(s"Error initializing key manager, err=${err}")
+        }
+
+        logger.info(s"Creating new wallet")
+        val unInitializedWallet =
+          Wallet(keyManager,
+                 nodeApi,
+                 chainQueryApi,
+                 feeRateApi,
+                 keyManager.creationTime)
+
+        Wallet.initialize(wallet = unInitializedWallet,
+                          bip39PasswordOpt = bip39PasswordOpt)
+      }
+    }
+  }
 }
