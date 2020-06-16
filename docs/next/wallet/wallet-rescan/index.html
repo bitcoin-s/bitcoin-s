@@ -74,10 +74,11 @@ an API with the ability to query for filters.</p>
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = system.dispatcher
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> appConfig: <span class="hljs-type">BitcoinSAppConfig</span> = <span class="hljs-type">BitcoinSTestAppConfig</span>.getNeutrinoTestConfig()
 
+<span class="hljs-keyword">val</span> bip39PasswordOpt = <span class="hljs-type">None</span>
 <span class="hljs-comment">//ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it</span>
 <span class="hljs-keyword">val</span> walletWithBitcoindF = <span class="hljs-keyword">for</span> {
   bitcoind &lt;- <span class="hljs-type">BitcoinSFixture</span>.createBitcoindWithFunds()
-  walletWithBitcoind &lt;- <span class="hljs-type">BitcoinSWalletTest</span>.createWalletWithBitcoindCallbacks(bitcoind)
+  walletWithBitcoind &lt;- <span class="hljs-type">BitcoinSWalletTest</span>.createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
 } <span class="hljs-keyword">yield</span> walletWithBitcoind
 
 <span class="hljs-keyword">val</span> walletF = walletWithBitcoindF.map(_.wallet)
