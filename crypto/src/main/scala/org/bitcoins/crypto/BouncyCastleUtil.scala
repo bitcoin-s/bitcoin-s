@@ -11,23 +11,20 @@ import org.bouncycastle.crypto.signers.{ECDSASigner, HMacDSAKCalculator}
 import org.bouncycastle.math.ec.{ECCurve, ECPoint}
 import scodec.bits.ByteVector
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object BouncyCastleUtil {
 
   private val curve: ECCurve = CryptoParams.curve.getCurve
   private val G: ECPoint = CryptoParams.curve.getG
-  private val N: BigInteger = CryptoParams.curve.getN
 
   private def getBigInteger(bytes: ByteVector): BigInteger = {
     new BigInteger(1, bytes.toArray)
   }
 
-  def addNumbers(num1: ByteVector, num2: ByteVector): BigInteger = {
-    val bigInteger1 = getBigInteger(num1)
-    val bigInteger2 = getBigInteger(num2)
-
-    bigInteger1.add(bigInteger2).mod(N)
+  def pubKeyTweakMul(publicKey: ECPublicKey, tweak: ByteVector): ECPublicKey = {
+    val point = publicKey.toPoint.multiply(getBigInteger(tweak))
+    ECPublicKey.fromPoint(point, publicKey.isCompressed)
   }
 
   def decodePoint(bytes: ByteVector): ECPoint = {
@@ -108,5 +105,80 @@ object BouncyCastleUtil {
       }
     }
     resultTry.getOrElse(false)
+  }
+
+  def schnorrSign(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    val nonceKey =
+      SchnorrNonce.kFromBipSchnorr(privateKey, dataToSign, auxRand)
+
+    schnorrSignWithNonce(dataToSign, privateKey, nonceKey)
+  }
+
+  def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
+    val rx = nonceKey.schnorrNonce
+    val k = nonceKey.nonceKey.fieldElement
+    val x = privateKey.schnorrKey.fieldElement
+    val e = CryptoUtil
+      .sha256SchnorrChallenge(
+        rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign)
+      .bytes
+
+    val challenge = x.multiply(FieldElement(e))
+    val sig = k.add(challenge)
+
+    SchnorrDigitalSignature(rx, sig)
+  }
+
+  def schnorrVerify(
+      data: ByteVector,
+      schnorrPubKey: SchnorrPublicKey,
+      signature: SchnorrDigitalSignature): Boolean = {
+    val rx = signature.rx
+    val sT = Try(signature.sig.toPrivateKey)
+
+    sT match {
+      case Success(s) =>
+        val eBytes = CryptoUtil
+          .sha256SchnorrChallenge(rx.bytes ++ schnorrPubKey.bytes ++ data)
+          .bytes
+
+        val e = FieldElement(eBytes)
+        val negE = e.negate
+
+        val sigPoint = s.publicKey
+        val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
+        val computedR = challengePoint.add(sigPoint)
+        val yCoord = computedR.toPoint.getRawYCoord
+
+        yCoord != null && yCoord.sqrt() != null && computedR.schnorrNonce == rx
+      case Failure(_) => false
+    }
+  }
+
+  def schnorrComputeSigPoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      pubKey: SchnorrPublicKey,
+      compressed: Boolean): ECPublicKey = {
+    val eBytes = CryptoUtil
+      .sha256SchnorrChallenge(nonce.bytes ++ pubKey.bytes ++ data)
+      .bytes
+
+    val e = FieldElement(eBytes)
+
+    val compressedSigPoint =
+      nonce.publicKey.add(pubKey.publicKey.tweakMultiply(e))
+
+    if (compressed) {
+      compressedSigPoint
+    } else {
+      compressedSigPoint.decompressed
+    }
   }
 }

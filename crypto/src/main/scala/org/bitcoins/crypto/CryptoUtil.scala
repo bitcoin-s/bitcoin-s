@@ -37,6 +37,48 @@ trait CryptoUtil {
     sha256(bits.toByteVector)
   }
 
+  def taggedSha256(bytes: ByteVector, tag: String): Sha256Digest = {
+    val tagHash = sha256(ByteVector(tag.getBytes()))
+    val tagBytes = tagHash.bytes ++ tagHash.bytes
+    sha256(tagBytes ++ bytes)
+  }
+
+  // The tag "BIP340/challenge"
+  private val schnorrChallengeTagBytes = {
+    ByteVector
+      .fromValidHex(
+        "07e00dcd3055c1b36ee93effe4d7f266024cdef4116982ff5dfdc1a97e77062907e00dcd3055c1b36ee93effe4d7f266024cdef4116982ff5dfdc1a97e770629"
+      )
+  }
+
+  def sha256SchnorrChallenge(bytes: ByteVector): Sha256Digest = {
+    sha256(schnorrChallengeTagBytes ++ bytes)
+  }
+
+  // The tag "BIP340/nonce"
+  private val schnorrNonceTagBytes = {
+    ByteVector
+      .fromValidHex(
+        "a2ba14a6b39c1c505260bf3aceb07febde3ab34c35c9259d25bd6972f15e6564a2ba14a6b39c1c505260bf3aceb07febde3ab34c35c9259d25bd6972f15e6564"
+      )
+  }
+
+  def sha256SchnorrNonce(bytes: ByteVector): Sha256Digest = {
+    sha256(schnorrNonceTagBytes ++ bytes)
+  }
+
+  // The tag "BIP340/aux"
+  private val schnorrAuxTagBytes = {
+    ByteVector
+      .fromValidHex(
+        "4b07426ad8630dcdbadf8dee1e94f09ac2df4e7ee2629e5e6b27c8666c8cf31e4b07426ad8630dcdbadf8dee1e94f09ac2df4e7ee2629e5e6b27c8666c8cf31e"
+      )
+  }
+
+  def sha256SchnorrAuxRand(bytes: ByteVector): Sha256Digest = {
+    sha256(schnorrAuxTagBytes ++ bytes)
+  }
+
   /** Performs SHA1(bytes). */
   def sha1(bytes: ByteVector): Sha1Digest = {
     val hash = MessageDigest.getInstance("SHA-1").digest(bytes.toArray).toList
