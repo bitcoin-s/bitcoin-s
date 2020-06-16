@@ -8,9 +8,22 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature, WitnessScriptPubKey}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
-import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.script.{
+  ScriptPubKey,
+  ScriptSignature,
+  WitnessScriptPubKey
+}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
+import org.bitcoins.core.protocol.{
+  Address,
+  BitcoinAddress,
+  P2PKHAddress,
+  P2SHAddress
+}
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee.{
   BitcoinFeeUnit,
@@ -184,7 +197,8 @@ object JsonSerializers {
   implicit val doubleSha256DigestWrites: Writes[DoubleSha256Digest] =
     DoubleSha256DigestWrites
   implicit val scriptPubKeyWrites: Writes[ScriptPubKey] = ScriptPubKeyWrites
-  implicit val witnessScriptPubKeyWrites: Writes[WitnessScriptPubKey] = WitnessScriptPubKeyWrites
+  implicit val witnessScriptPubKeyWrites: Writes[WitnessScriptPubKey] =
+    WitnessScriptPubKeyWrites
   implicit val transactionInputWrites: Writes[TransactionInput] =
     TransactionInputWrites
   implicit val uInt32Writes: Writes[UInt32] = UInt32Writes

@@ -401,7 +401,8 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       }
     }
 
-    val cancellable = system.scheduler.scheduleAtFixedRate(interval, interval)(runnable)
+    val cancellable =
+      system.scheduler.scheduleAtFixedRate(interval, interval)(runnable)
 
     p.future.onComplete(_ => cancellable.cancel())
 
@@ -864,7 +865,8 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       }
     }
 
-    val cancellable = system.scheduler.scheduleAtFixedRate(interval, interval)(runnable)
+    val cancellable =
+      system.scheduler.scheduleAtFixedRate(interval, interval)(runnable)
 
     val f = p.future
 

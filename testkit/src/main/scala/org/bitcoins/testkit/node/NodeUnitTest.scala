@@ -10,7 +10,12 @@ import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{PeerHandler, PeerMessageReceiver, PeerMessageReceiverState, PeerMessageSender}
+import org.bitcoins.node.networking.peer.{
+  PeerHandler,
+  PeerMessageReceiver,
+  PeerMessageReceiverState,
+  PeerMessageSender
+}
 import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -19,7 +24,11 @@ import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
-import org.bitcoins.testkit.node.fixture.{NeutrinoNodeConnectedWithBitcoind, NodeConnectedWithBitcoind, SpvNodeConnectedWithBitcoind}
+import org.bitcoins.testkit.node.fixture.{
+  NeutrinoNodeConnectedWithBitcoind,
+  NodeConnectedWithBitcoind,
+  SpvNodeConnectedWithBitcoind
+}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.scalatest.FutureOutcome
@@ -106,12 +115,15 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
       appConfig: BitcoinSAppConfig): FutureOutcome = {
 
     makeDependentFixture(
-      build = () =>
-        NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks = callbacks,
-          bip39PasswordOpt = bip39PasswordOpt,
-          versionOpt = Option(V18))(
-          system, // Force V18 because Spv is disabled on versions after
-          appConfig),
+      build =
+        () =>
+          NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks = callbacks,
+                                                         bip39PasswordOpt =
+                                                           bip39PasswordOpt,
+                                                         versionOpt =
+                                                           Option(V18))(
+            system, // Force V18 because Spv is disabled on versions after
+            appConfig),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
         _: NodeFundedWalletBitcoind)(system, appConfig)
     )(test)
@@ -128,9 +140,10 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
     makeDependentFixture(
       build = () =>
         NodeUnitTest
-          .createNeutrinoNodeFundedWalletBitcoind(callbacks, bip39PasswordOpt, versionOpt)(
-            system,
-            appConfig),
+          .createNeutrinoNodeFundedWalletBitcoind(
+            callbacks,
+            bip39PasswordOpt,
+            versionOpt)(system, appConfig),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
         _: NodeFundedWalletBitcoind)(system, appConfig)
     )(test)
@@ -157,7 +170,8 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
     ()
   }
 
-  def getBIP39PasswordOpt(): Option[String] = KeyManagerTestUtil.bip39PasswordOpt
+  def getBIP39PasswordOpt(): Option[String] =
+    KeyManagerTestUtil.bip39PasswordOpt
 }
 
 object NodeUnitTest extends P2PLogger {
@@ -235,15 +249,16 @@ object NodeUnitTest extends P2PLogger {
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createSpvNode(bitcoind, callbacks)
-      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind,
-                                                                 node,
-                                                                 node,
+      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
+        bitcoind,
+        node,
+        node,
         bip39PasswordOpt)
     } yield {
       SpvNodeFundedWalletBitcoind(node = node,
                                   wallet = fundedWallet.wallet,
                                   bitcoindRpc = fundedWallet.bitcoind,
-        bip39PasswordOpt)
+                                  bip39PasswordOpt)
     }
   }
 
@@ -259,15 +274,16 @@ object NodeUnitTest extends P2PLogger {
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createNeutrinoNode(bitcoind, callbacks)
-      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoindRpcClient = bitcoind,
-                                                                 nodeApi = node,
-                                                                 chainQueryApi = node,
+      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
+        bitcoindRpcClient = bitcoind,
+        nodeApi = node,
+        chainQueryApi = node,
         bip39PasswordOpt = bip39PasswordOpt)
     } yield {
       NeutrinoNodeFundedWalletBitcoind(node = node,
                                        wallet = fundedWallet.wallet,
                                        bitcoindRpc = fundedWallet.bitcoind,
-        bip39PasswordOpt = bip39PasswordOpt)
+                                       bip39PasswordOpt = bip39PasswordOpt)
     }
   }
 
@@ -278,7 +294,7 @@ object NodeUnitTest extends P2PLogger {
     import system.dispatcher
     val walletWithBitcoind = {
       WalletWithBitcoindRpc(fundedWalletBitcoind.wallet,
-                                               fundedWalletBitcoind.bitcoindRpc)
+                            fundedWalletBitcoind.bitcoindRpc)
     }
 
     //these need to be done in order, as the spv node needs to be

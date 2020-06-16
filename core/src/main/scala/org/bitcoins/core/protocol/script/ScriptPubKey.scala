@@ -251,11 +251,11 @@ object MultiSignatureScriptPubKey
 
       (hasRequiredSignaturesTry, hasMaximumSignaturesTry) match {
         case (Success(hasRequiredSignatures), Success(hasMaximumSignatures)) =>
-
           val isStandardOps = asm.forall(
             op =>
               op.isInstanceOf[ScriptConstant] || op
-                .isInstanceOf[BytesToPushOntoStack] || op.isInstanceOf[ScriptNumber] || op == OP_CHECKMULTISIG ||
+                .isInstanceOf[BytesToPushOntoStack] || op
+                .isInstanceOf[ScriptNumber] || op == OP_CHECKMULTISIG ||
                 op == OP_CHECKMULTISIGVERIFY)
 
           val result = isNotEmpty && containsMultiSigOp && hasRequiredSignatures &&
