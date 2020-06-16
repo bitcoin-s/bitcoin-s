@@ -116,7 +116,7 @@ val startedNodeF = nodeF.flatMap(_.start())
 
 //let's make a simple callback that print's the
 //blockhash everytime we receive a block on the network
-val blockReceivedFunc = { block: Block =>
+val blockReceivedFunc: OnBlockReceived = { block: Block =>
 Future.successful(
   println(s"Received blockhash=${block.blockHeader.hashBE}"))
 }

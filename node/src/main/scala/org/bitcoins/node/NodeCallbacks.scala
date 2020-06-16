@@ -1,133 +1,166 @@
 package org.bitcoins.node
 
+import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.node.networking.peer.DataMessageHandler._
 import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Callbacks for responding to events in the SPV node.
-  * The approriate callback is executed whenver the node receives
+  * Callbacks for responding to events in the node.
+  * The appropriate callback is executed whenever the node receives
   * a `getdata` message matching it.
-  *
   */
-case class NodeCallbacks(
-    onCompactFiltersReceived: Seq[OnCompactFiltersReceived] = Seq.empty,
-    onTxReceived: Seq[OnTxReceived] = Seq.empty,
-    onBlockReceived: Seq[OnBlockReceived] = Seq.empty,
-    onMerkleBlockReceived: Seq[OnMerkleBlockReceived] = Seq.empty,
-    onBlockHeadersReceived: Seq[OnBlockHeadersReceived] = Seq.empty
-) {
+trait NodeCallbacks {
 
-  def +(other: NodeCallbacks): NodeCallbacks = copy(
-    onCompactFiltersReceived = onCompactFiltersReceived ++ other.onCompactFiltersReceived,
-    onTxReceived = onTxReceived ++ other.onTxReceived,
-    onBlockReceived = onBlockReceived ++ other.onBlockReceived,
-    onMerkleBlockReceived = onMerkleBlockReceived ++ other.onMerkleBlockReceived,
-    onBlockHeadersReceived = onBlockHeadersReceived ++ other.onBlockHeadersReceived
-  )
+  def onCompactFiltersReceived: CallbackHandler[
+    Vector[(DoubleSha256Digest, GolombFilter)],
+    OnCompactFiltersReceived]
+
+  def onTxReceived: CallbackHandler[Transaction, OnTxReceived]
+
+  def onBlockReceived: CallbackHandler[Block, OnBlockReceived]
+
+  def onMerkleBlockReceived: CallbackHandler[
+    (MerkleBlock, Vector[Transaction]),
+    OnMerkleBlockReceived]
+
+  def onBlockHeadersReceived: CallbackHandler[
+    Vector[BlockHeader],
+    OnBlockHeadersReceived]
+
+  def +(other: NodeCallbacks): NodeCallbacks
 
   def executeOnTxReceivedCallbacks(logger: Logger, tx: Transaction)(
       implicit ec: ExecutionContext): Future[Unit] = {
-    onTxReceived
-      .foldLeft(FutureUtil.unit)((acc, callback) =>
-        acc.flatMap(_ =>
-          callback(tx).recover {
-            case err: Throwable =>
-              logger.error("onTxReceived Callback failed with error: ", err)
-          }))
+    onTxReceived.execute(logger, tx)
   }
 
   def executeOnBlockReceivedCallbacks(logger: Logger, block: Block)(
       implicit ec: ExecutionContext): Future[Unit] = {
-    onBlockReceived
-      .foldLeft(FutureUtil.unit)((acc, callback) =>
-        acc.flatMap(_ =>
-          callback(block).recover {
-            case err: Throwable =>
-              logger.error("onBlockReceived Callback failed with error: ", err)
-          }))
+    onBlockReceived.execute(logger, block)
   }
 
   def executeOnMerkleBlockReceivedCallbacks(
       logger: Logger,
       merkleBlock: MerkleBlock,
       txs: Vector[Transaction])(implicit ec: ExecutionContext): Future[Unit] = {
-    onMerkleBlockReceived
-      .foldLeft(FutureUtil.unit)((acc, callback) =>
-        acc.flatMap(_ =>
-          callback(merkleBlock, txs).recover {
-            case err: Throwable =>
-              logger.error("OnMerkleBlockReceived Callback failed with error: ",
-                           err)
-          }))
+    onMerkleBlockReceived.execute(logger, (merkleBlock, txs))
   }
 
   def executeOnCompactFiltersReceivedCallbacks(
       logger: Logger,
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)])(
       implicit ec: ExecutionContext): Future[Unit] = {
-    onCompactFiltersReceived
-      .foldLeft(FutureUtil.unit)((acc, callback) =>
-        acc.flatMap(_ =>
-          callback(blockFilters).recover {
-            case err: Throwable =>
-              logger.error(
-                "onCompactFiltersReceived Callback failed with error: ",
-                err)
-          }))
+    onCompactFiltersReceived.execute(logger, blockFilters)
   }
 
   def executeOnBlockHeadersReceivedCallbacks(
       logger: Logger,
       headers: Vector[BlockHeader])(
       implicit ec: ExecutionContext): Future[Unit] = {
-    onBlockHeadersReceived
-      .foldLeft(FutureUtil.unit)((acc, callback) =>
-        acc.flatMap(_ =>
-          callback(headers).recover {
-            case err: Throwable =>
-              logger.error(
-                "onBlockHeadersReceived Callback failed with error: ",
-                err)
-          }))
+    onBlockHeadersReceived.execute(logger, headers)
   }
 }
 
+/** Callback for handling a received block */
+trait OnBlockReceived extends Callback[Block]
+
+/** Callback for handling a received Merkle block with its corresponding TXs */
+trait OnMerkleBlockReceived extends Callback2[MerkleBlock, Vector[Transaction]]
+
+/** Callback for handling a received transaction */
+trait OnTxReceived extends Callback[Transaction]
+
+/** Callback for handling a received compact block filter */
+trait OnCompactFiltersReceived
+    extends Callback[Vector[(DoubleSha256Digest, GolombFilter)]]
+
+/** Callback for handling a received block header */
+trait OnBlockHeadersReceived extends Callback[Vector[BlockHeader]]
+
 object NodeCallbacks {
+
+  // Use Impl pattern here to enforce the correct names on the CallbackHandlers
+  private case class NodeCallbacksImpl(
+      onCompactFiltersReceived: CallbackHandler[
+        Vector[(DoubleSha256Digest, GolombFilter)],
+        OnCompactFiltersReceived],
+      onTxReceived: CallbackHandler[Transaction, OnTxReceived],
+      onBlockReceived: CallbackHandler[Block, OnBlockReceived],
+      onMerkleBlockReceived: CallbackHandler[
+        (MerkleBlock, Vector[Transaction]),
+        OnMerkleBlockReceived],
+      onBlockHeadersReceived: CallbackHandler[
+        Vector[BlockHeader],
+        OnBlockHeadersReceived]
+  ) extends NodeCallbacks {
+
+    override def +(other: NodeCallbacks): NodeCallbacks =
+      copy(
+        onCompactFiltersReceived = onCompactFiltersReceived ++ other.onCompactFiltersReceived,
+        onTxReceived = onTxReceived ++ other.onTxReceived,
+        onBlockReceived = onBlockReceived ++ other.onBlockReceived,
+        onMerkleBlockReceived = onMerkleBlockReceived ++ other.onMerkleBlockReceived,
+        onBlockHeadersReceived = onBlockHeadersReceived ++ other.onBlockHeadersReceived
+      )
+  }
 
   /** Constructs a set of callbacks that only acts on TX received */
   def onTxReceived(f: OnTxReceived): NodeCallbacks =
-    NodeCallbacks(onTxReceived = Seq(f))
+    NodeCallbacks(onTxReceived = Vector(f))
 
   /** Constructs a set of callbacks that only acts on block received */
   def onBlockReceived(f: OnBlockReceived): NodeCallbacks =
-    NodeCallbacks(onBlockReceived = Seq(f))
+    NodeCallbacks(onBlockReceived = Vector(f))
 
   /** Constructs a set of callbacks that only acts on merkle block received */
   def onMerkleBlockReceived(f: OnMerkleBlockReceived): NodeCallbacks =
-    NodeCallbacks(onMerkleBlockReceived = Seq(f))
+    NodeCallbacks(onMerkleBlockReceived = Vector(f))
 
   /** Constructs a set of callbacks that only acts on compact filter received */
   def onCompactFilterReceived(f: OnCompactFiltersReceived): NodeCallbacks =
-    NodeCallbacks(onCompactFiltersReceived = Seq(f))
+    NodeCallbacks(onCompactFiltersReceived = Vector(f))
 
   /** Constructs a set of callbacks that only acts on block headers received */
   def onBlockHeadersReceived(f: OnBlockHeadersReceived): NodeCallbacks =
-    NodeCallbacks(onBlockHeadersReceived = Seq(f))
+    NodeCallbacks(onBlockHeadersReceived = Vector(f))
 
   /** Empty callbacks that does nothing with the received data */
   val empty: NodeCallbacks =
-    NodeCallbacks(
-      onTxReceived = Seq.empty,
-      onBlockReceived = Seq.empty,
-      onMerkleBlockReceived = Seq.empty,
-      onCompactFiltersReceived = Seq.empty,
-      onBlockHeadersReceived = Seq.empty
+    NodeCallbacks(Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty)
+
+  def apply(
+      onCompactFiltersReceived: Vector[OnCompactFiltersReceived] = Vector.empty,
+      onTxReceived: Vector[OnTxReceived] = Vector.empty,
+      onBlockReceived: Vector[OnBlockReceived] = Vector.empty,
+      onMerkleBlockReceived: Vector[OnMerkleBlockReceived] = Vector.empty,
+      onBlockHeadersReceived: Vector[OnBlockHeadersReceived] = Vector.empty): NodeCallbacks = {
+    NodeCallbacksImpl(
+      onCompactFiltersReceived =
+        CallbackHandler[Vector[(DoubleSha256Digest, GolombFilter)],
+                        OnCompactFiltersReceived]("onCompactFilterReceived",
+                                                  onCompactFiltersReceived),
+      onTxReceived = CallbackHandler[Transaction, OnTxReceived]("onTxReceived",
+                                                                onTxReceived),
+      onBlockReceived =
+        CallbackHandler[Block, OnBlockReceived]("onBlockReceived",
+                                                onBlockReceived),
+      onMerkleBlockReceived =
+        CallbackHandler[(MerkleBlock, Vector[Transaction]),
+                        OnMerkleBlockReceived]("onCompactFilterReceived",
+                                               onMerkleBlockReceived),
+      onBlockHeadersReceived =
+        CallbackHandler[Vector[BlockHeader], OnBlockHeadersReceived](
+          "onCompactFilterReceived",
+          onBlockHeadersReceived)
     )
+  }
 }

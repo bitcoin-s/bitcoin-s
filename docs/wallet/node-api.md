@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.feeprovider._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.node.NodeCallbacks
+import org.bitcoins.node._
 import org.bitcoins.node.networking.peer.DataMessageHandler._
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
@@ -77,7 +77,7 @@ def createCallback(processBlock: Block => Future[Unit]): NodeCallbacks = {
     lazy val onBlock: OnBlockReceived = { block =>
       processBlock(block)
     }
-    NodeCallbacks(onBlockReceived = Seq(onBlock))
+    NodeCallbacks(onBlockReceived = Vector(onBlock))
   }
 
 // Here is a super simple example of a callback, this could be replaced with anything, from
