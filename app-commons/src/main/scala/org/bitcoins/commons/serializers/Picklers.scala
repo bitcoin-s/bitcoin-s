@@ -24,7 +24,7 @@ object Picklers {
     readwriter[String].bimap(_.hex, DoubleSha256DigestBE.fromHex)
 
   implicit val blockStampPickler: ReadWriter[BlockStamp] =
-    readwriter[String].bimap(_.mkString, BlockStamp.fromString(_).get)
+    readwriter[String].bimap(_.mkString, BlockStamp.fromString)
 
   implicit val psbtPickler: ReadWriter[PSBT] =
     readwriter[String].bimap(_.base64, PSBT.fromString)

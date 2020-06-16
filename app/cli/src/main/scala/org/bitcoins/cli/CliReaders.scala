@@ -71,7 +71,7 @@ object CliReaders {
                                         0,
                                         ZoneId.of("UTC"))
             BlockTime(time)
-          case _ => BlockStamp.fromString(str).get
+          case _ => BlockStamp.fromString(str)
         }
     }
 
