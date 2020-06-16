@@ -67,6 +67,7 @@ trait CryptoBytesUtil {
   def flipEndianness(bytes: ByteVector): String = encodeHex(bytes.reverse)
 
   private val Z: Char = '0'
+
   /**
     * Adds the amount padding bytes needed to fix the size of the hex string
     * for instance, ints are required to be 4 bytes. If the number is just 1
@@ -78,7 +79,7 @@ trait CryptoBytesUtil {
     var counter = 0
     while (counter < paddingNeeded) {
       builder.append(Z)
-      counter+=1
+      counter += 1
     }
     builder.appendAll(hex)
     builder.result()

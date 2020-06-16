@@ -6,13 +6,13 @@ import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.util._
 import org.bitcoins.crypto.{
   BaseECKey,
-  BouncyCastleUtil,
   CryptoContext,
   CryptoUtil,
   ECDigitalSignature,
   ECPrivateKey,
   ECPublicKey,
   Factory,
+  FieldElement,
   MaskedToString,
   NetworkElement
 }
@@ -213,12 +213,14 @@ sealed abstract class ExtPrivateKey
     //parse256(IL) + kpar (mod n)
     val tweak = CryptoContext.default match {
       case CryptoContext.LibSecp256k1 =>
-        NativeSecp256k1.privKeyTweakAdd(il.toArray, key.bytes.toArray)
+        val tweakByteArr =
+          NativeSecp256k1.privKeyTweakAdd(il.toArray, key.bytes.toArray)
+        ByteVector(tweakByteArr)
       case CryptoContext.BouncyCastle =>
-        val sum = BouncyCastleUtil.addNumbers(key.bytes, il)
-        sum.toByteArray
+        val sum = key.fieldElement.add(FieldElement(il))
+        sum.bytes
     }
-    val childKey = ECPrivateKey(ByteVector(tweak))
+    val childKey = ECPrivateKey(tweak)
     val fp = CryptoUtil.sha256Hash160(key.publicKey.bytes).bytes.take(4)
     ExtPrivateKey(version, depth + UInt8.one, fp, idx, ChainCode(ir), childKey)
   }
@@ -269,6 +271,20 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
       extends ExtPrivateKey {
     require(fingerprint.size == 4,
             "Fingerprint must be 4 bytes in size, got: " + fingerprint)
+  }
+
+  def freshRootKey(version: ExtKeyPrivVersion): ExtPrivateKey = {
+    val privKey = ECPrivateKey.freshPrivateKey
+    val chainCode = ChainCode.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
+
+    ExtPrivateKey(
+      version,
+      UInt8.zero,
+      UInt32.zero.bytes,
+      UInt32.zero,
+      chainCode,
+      privKey
+    )
   }
 
   /** Takes in a base58 string and tries to convert it to an extended private key */
