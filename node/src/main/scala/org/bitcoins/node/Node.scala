@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
