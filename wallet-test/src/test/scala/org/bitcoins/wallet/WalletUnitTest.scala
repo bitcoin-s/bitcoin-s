@@ -168,22 +168,25 @@ class WalletUnitTest extends BitcoinSWalletTest {
     }
   }
 
+  it must "be able to call initialize twice without throwing an exception if we have the same key manager" in {
+    wallet: Wallet =>
+      val twiceF = Wallet.initialize(wallet, bip39PasswordOpt).flatMap { _ =>
+        Wallet.initialize(wallet, bip39PasswordOpt)
+      }
 
-  it must "be able to call initialize twice without throwing an exception if we have the same key manager" in { wallet: Wallet =>
-    val twiceF = Wallet.initialize(wallet,bip39PasswordOpt).flatMap { _ =>
-      Wallet.initialize(wallet, bip39PasswordOpt)
-    }
-
-    twiceF.map(_ => succeed)
+      twiceF.map(_ => succeed)
 
   }
 
-  it must "be able to detect an incompatible key manager with a wallet" in { wallet: Wallet =>
-    recoverToSucceededIf[RuntimeException] {
-      Wallet.initialize(wallet,bip39PasswordOpt).flatMap { _ =>
-        //use a BIP39 password to make the key-managers different
-        Wallet.initialize(wallet, Some("random-password-to-make-key-managers-different"))
+  it must "be able to detect an incompatible key manager with a wallet" in {
+    wallet: Wallet =>
+      recoverToSucceededIf[RuntimeException] {
+        Wallet.initialize(wallet, bip39PasswordOpt).flatMap { _ =>
+          //use a BIP39 password to make the key-managers different
+          Wallet.initialize(
+            wallet,
+            Some("random-password-to-make-key-managers-different"))
+        }
       }
-    }
   }
 }
