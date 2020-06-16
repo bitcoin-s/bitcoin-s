@@ -1,6 +1,6 @@
 package org.bitcoins.core.api
 
-import org.bitcoins.core.util.SeqWrapper
+import org.bitcoins.core.util.{FutureUtil, SeqWrapper}
 import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,6 +24,12 @@ trait Callback3[T1, T2, T3] extends Callback[(T1, T2, T3)] {
 
   override def apply(param: (T1, T2, T3)): Future[Unit] =
     apply(param._1, param._2, param._3)
+}
+
+object Callback {
+
+  /** Does nothing */
+  def noop[T]: T => Future[Unit] = _ => FutureUtil.unit
 }
 
 /** Manages a set of callbacks, should be used to manage execution and logging if needed */

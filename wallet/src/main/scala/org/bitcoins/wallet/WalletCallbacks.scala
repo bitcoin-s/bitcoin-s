@@ -2,7 +2,6 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.wallet.models.{AddressDb, SpendingInfoDb}
 import org.slf4j.Logger
 
@@ -77,9 +76,6 @@ object WalletCallbacks {
       onNewAddressGenerated = onNewAddressGenerated ++ other.onNewAddressGenerated
     )
   }
-
-  /** Does nothing */
-  def noop[T]: T => Future[Unit] = _ => FutureUtil.unit
 
   /** Constructs a set of callbacks that only acts on processed transaction */
   def onTransactionProcessed(f: OnTransactionProcessed): WalletCallbacks =
