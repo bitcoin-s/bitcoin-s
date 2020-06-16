@@ -5,7 +5,12 @@ import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util._
-import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256Digest, StringFactory}
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  ECPrivateKey,
+  Sha256Digest,
+  StringFactory
+}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
@@ -183,7 +188,7 @@ object LnInvoice extends StringFactory[LnInvoice] with BitcoinSLogger {
     }
     if (sepIndexes.isEmpty) {
       throw new IllegalArgumentException(
-          "LnInvoice did not have the correct separator")
+        "LnInvoice did not have the correct separator")
     } else {
       val (_, sepIndex) = sepIndexes.last
 
@@ -213,7 +218,7 @@ object LnInvoice extends StringFactory[LnInvoice] with BitcoinSLogger {
         }
 
         invoiceT match {
-          case Success(i) => i
+          case Success(i)   => i
           case Failure(exn) => throw exn
         }
       }

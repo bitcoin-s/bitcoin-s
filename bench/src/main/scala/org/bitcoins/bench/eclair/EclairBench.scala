@@ -98,7 +98,6 @@ object EclairBench extends App with EclairRpcTestUtil {
       })
     } yield paymentIds.flatten
 
-
   def runTests(network: EclairNetwork): Future[Vector[PaymentLogEntry]] = {
     println("Setting up the test network")
     for {

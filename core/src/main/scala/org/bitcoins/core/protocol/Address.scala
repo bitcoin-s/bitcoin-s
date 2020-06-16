@@ -190,7 +190,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
 
     bech32T match {
       case Success(bech32) => bech32
-      case Failure(exn) => throw exn
+      case Failure(exn)    => throw exn
     }
   }
 
@@ -267,7 +267,7 @@ object P2PKHAddress extends AddressFactory[P2PKHAddress] {
 
     p2pkhT match {
       case Success(p2pkh) => p2pkh
-      case Failure(exn) => throw exn
+      case Failure(exn)   => throw exn
     }
   }
 
@@ -346,7 +346,7 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
 
     p2shT match {
       case Success(p2sh) => p2sh
-      case Failure(exn) => throw exn
+      case Failure(exn)  => throw exn
     }
   }
 

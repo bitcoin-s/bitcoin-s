@@ -5,8 +5,16 @@ import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0, ScriptPubKey}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
+import org.bitcoins.core.protocol.script.{
+  P2WPKHWitnessSPKV0,
+  P2WPKHWitnessV0,
+  ScriptPubKey
+}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.util.{EitherUtil, FutureUtil}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -202,15 +210,14 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
   }
 
-
   override def markUTXOsAsReserved(
-                                    utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
     spendingInfoDAO.updateAll(updated)
   }
 
   override def unmarkUTXOsAsReserved(
-                                      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     val unreserved = utxos.filterNot(_.state == TxoState.Reserved)
     require(unreserved.isEmpty, s"Some utxos are not reserved, got $unreserved")
 
@@ -241,7 +248,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   }
 
   /** @inheritdoc */
-  override def unmarkUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+  override def unmarkUTXOsAsReserved(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
     val utxosF = listUtxos()
     val utxosInTxF = for {
       utxos <- utxosF
@@ -254,7 +262,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   /** @inheritdoc */
   override def updateUtxoPendingStates(
-                               blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]] = {
+      blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]] = {
     for {
       infos <- spendingInfoDAO.findAllPendingConfirmation
       updatedInfos <- updateUtxoConfirmedStates(infos, blockHeader.hashBE)

@@ -17,7 +17,10 @@ import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStop}
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.BitcoindException
-import org.bitcoins.rpc.config.BitcoindAuthCredentials.{CookieBased, PasswordBased}
+import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
+  CookieBased,
+  PasswordBased
+}
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
 import org.bitcoins.rpc.util.AsyncUtil
 import play.api.libs.json._

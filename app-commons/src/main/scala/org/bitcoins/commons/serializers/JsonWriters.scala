@@ -57,8 +57,10 @@ object JsonWriters {
       JsString(BytesUtil.encodeHex(o.asmBytes))
   }
 
-  implicit object WitnessScriptPubKeyWrites extends Writes[WitnessScriptPubKey] {
-    override def writes(o: WitnessScriptPubKey): JsValue = ScriptPubKeyWrites.writes(o)
+  implicit object WitnessScriptPubKeyWrites
+      extends Writes[WitnessScriptPubKey] {
+    override def writes(o: WitnessScriptPubKey): JsValue =
+      ScriptPubKeyWrites.writes(o)
   }
 
   implicit object TransactionInputWrites extends Writes[TransactionInput] {

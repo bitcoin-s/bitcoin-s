@@ -43,12 +43,14 @@ abstract class FilterSync extends ChainVerificationLogger {
         oursOpt match {
           case Some(ours) =>
             syncFiltersToTip(chainApi = chainApi,
-              ourBestHeader = ourBestBlockHeader,
-              ourBestFilterHeader = ours,
-              getFilterFunc = getFilterFunc,
-              batchSize)
+                             ourBestHeader = ourBestBlockHeader,
+                             ourBestFilterHeader = ours,
+                             getFilterFunc = getFilterFunc,
+                             batchSize)
           case None =>
-            Future.failed(new RuntimeException(s"Cannot sync filters, we don't have any in the database"))
+            Future.failed(
+              new RuntimeException(
+                s"Cannot sync filters, we don't have any in the database"))
         }
       }
     } yield {
@@ -116,11 +118,12 @@ abstract class FilterSync extends ChainVerificationLogger {
                   bestFilterOpt match {
                     case Some(bestFilter) =>
                       fetchFiltersForHeaderGroup(api,
-                        missingHeaders,
-                        bestFilter,
-                        getFilterFunc)
+                                                 missingHeaders,
+                                                 bestFilter,
+                                                 getFilterFunc)
                     case None =>
-                      Future.failed(new RuntimeException(s"Cannot sync filter headers, we do not have any in the database"))
+                      Future.failed(new RuntimeException(
+                        s"Cannot sync filter headers, we do not have any in the database"))
                   }
 
                 }
