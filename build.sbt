@@ -73,6 +73,7 @@ lazy val `bitcoin-s` = project
     appServer,
     appServerTest,
     appCommons,
+    appCommonsTest,
     testkit,
     zmq
   )
@@ -230,6 +231,11 @@ lazy val appCommons = project
     core % testAndCompile
   )
 
+lazy val appCommonsTest = project
+  .in(file("app-commons-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .dependsOn(appCommons, testkit)
+
 lazy val appServer = project
   .in(file("app/server"))
   .settings(CommonSettings.prodSettings: _*)
@@ -314,7 +320,7 @@ lazy val dbCommonsTest = project
   .in(file("db-commons-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(
-    name := "bitcoin-s-db-commons-test",
+    name := "bitcoin-s-db-commons-test"
   )
   .dependsOn(testkit)
 

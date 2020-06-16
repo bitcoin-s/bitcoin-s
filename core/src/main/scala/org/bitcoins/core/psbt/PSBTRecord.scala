@@ -13,7 +13,9 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{
+  DummyECDigitalSignature,
   ECDigitalSignature,
   ECPublicKey,
   Factory,
@@ -167,6 +169,45 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
     override type KeyId = PartialSignatureKeyId.type
     override val key: ByteVector = ByteVector(PartialSignatureKeyId.byte) ++ pubKey.bytes
     override val value: ByteVector = signature.bytes
+  }
+
+  object PartialSignature extends Factory[PartialSignature] {
+
+    def dummyPartialSig(
+        pubKey: ECPublicKey = ECPublicKey.freshPublicKey): PartialSignature = {
+      PartialSignature(pubKey, DummyECDigitalSignature)
+    }
+
+    override def fromBytes(bytes: ByteVector): PartialSignature =
+      InputPSBTRecord(bytes) match {
+        case partialSignature: PartialSignature =>
+          partialSignature
+        case other: InputPSBTRecord =>
+          throw new IllegalArgumentException(
+            s"Invalid PartialSignature encoding, got: $other")
+      }
+
+    def vecFromBytes(bytes: ByteVector): Vector[PartialSignature] = {
+      @scala.annotation.tailrec
+      def loop(
+          remainingBytes: ByteVector,
+          accum: Vector[PartialSignature]): Vector[PartialSignature] = {
+        if (remainingBytes.isEmpty) {
+          accum
+        } else {
+          val record = fromBytes(remainingBytes)
+          val next = remainingBytes.drop(record.bytes.size)
+
+          loop(next, accum :+ record)
+        }
+      }
+
+      loop(bytes, Vector.empty)
+    }
+
+    def vecFromHex(hex: String): Vector[PartialSignature] = {
+      vecFromBytes(BytesUtil.decodeHex(hex))
+    }
   }
 
   case class SigHashType(hashType: HashType) extends InputPSBTRecord {
