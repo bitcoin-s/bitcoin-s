@@ -104,7 +104,7 @@ want.</p>
     <span class="hljs-keyword">lazy</span> <span class="hljs-keyword">val</span> onBlock: <span class="hljs-type">OnBlockReceived</span> = { block =&gt;
       processBlock(block)
     }
-    <span class="hljs-type">NodeCallbacks</span>(onBlockReceived = <span class="hljs-type">Seq</span>(onBlock))
+    <span class="hljs-type">NodeCallbacks</span>(onBlockReceived = <span class="hljs-type">Vector</span>(onBlock))
   }
 
 <span class="hljs-comment">// Here is a super simple example of a callback, this could be replaced with anything, from</span>
