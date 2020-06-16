@@ -128,15 +128,17 @@ object FundWalletUtil extends FundWalletUtil {
   def createFundedWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
+      bip39PasswordOpt: Option[String],
       extraConfig: Option[Config] = None)(
       implicit config: BitcoinSAppConfig,
       system: ActorSystem): Future[FundedWallet] = {
 
     import system.dispatcher
     for {
-      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi,
-                                                         chainQueryApi,
-                                                         extraConfig)
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi = nodeApi,
+                                                         chainQueryApi = chainQueryApi,
+        bip39PasswordOpt = bip39PasswordOpt,
+                                                         extraConfig = extraConfig)
       funded <- FundWalletUtil.fundWallet(wallet)
     } yield funded
   }

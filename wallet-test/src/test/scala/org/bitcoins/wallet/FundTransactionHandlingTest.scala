@@ -5,15 +5,18 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.util.TestUtil
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.WalletWithBitcoind
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.{
+  BitcoinSWalletTest,
+  WalletTestUtil,
+  WalletWithBitcoind
+}
 import org.scalatest.FutureOutcome
 
 class FundTransactionHandlingTest extends BitcoinSWalletTest {
 
   override type FixtureParam = WalletWithBitcoind
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWalletAndBitcoind(test)
+    withFundedWalletAndBitcoind(test, getBIP39PasswordOpt())
   }
 
   val destination = TransactionOutput(Bitcoins(0.5), TestUtil.p2pkhScriptPubKey)

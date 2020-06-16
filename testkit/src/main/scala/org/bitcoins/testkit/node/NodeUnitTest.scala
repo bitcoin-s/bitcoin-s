@@ -10,12 +10,7 @@ import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{
-  PeerHandler,
-  PeerMessageReceiver,
-  PeerMessageReceiverState,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer.{PeerHandler, PeerMessageReceiver, PeerMessageReceiverState, PeerMessageSender}
 import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -23,15 +18,10 @@ import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.node.NodeUnitTest.NodeFundedWalletBitcoind
-import org.bitcoins.testkit.node.fixture.{
-  NeutrinoNodeConnectedWithBitcoind,
-  NodeConnectedWithBitcoind,
-  SpvNodeConnectedWithBitcoind
-}
+import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
+import org.bitcoins.testkit.node.fixture.{NeutrinoNodeConnectedWithBitcoind, NodeConnectedWithBitcoind, SpvNodeConnectedWithBitcoind}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.Wallet
+import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration._
@@ -110,13 +100,16 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   def withSpvNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
-      callbacks: NodeCallbacks)(
+      callbacks: NodeCallbacks,
+      bip39PasswordOpt: Option[String])(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
 
     makeDependentFixture(
       build = () =>
-        NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks, Option(V18))(
+        NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks = callbacks,
+          bip39PasswordOpt = bip39PasswordOpt,
+          versionOpt = Option(V18))(
           system, // Force V18 because Spv is disabled on versions after
           appConfig),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
@@ -127,6 +120,7 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
   def withNeutrinoNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
       callbacks: NodeCallbacks,
+      bip39PasswordOpt: Option[String],
       versionOpt: Option[BitcoindVersion] = None)(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
@@ -134,7 +128,7 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
     makeDependentFixture(
       build = () =>
         NodeUnitTest
-          .createNeutrinoNodeFundedWalletBitcoind(callbacks, versionOpt)(
+          .createNeutrinoNodeFundedWalletBitcoind(callbacks, bip39PasswordOpt, versionOpt)(
             system,
             appConfig),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
@@ -162,31 +156,11 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
     system.scheduler.scheduleAtFixedRate(2.second, interval)(genBlock)
     ()
   }
+
+  def getBIP39PasswordOpt(): Option[String] = KeyManagerTestUtil.bip39PasswordOpt
 }
 
 object NodeUnitTest extends P2PLogger {
-
-  /**
-    * Creates
-    * 1. a funded bitcoind wallet
-    * 2. a funded bitcoin-s wallet
-    * 3. a chain handler with the appropriate tables created
-    * 4. a spv node that is connected to the bitcoin instance -- but not started!  */
-  trait NodeFundedWalletBitcoind {
-    def node: Node
-    def wallet: Wallet
-    def bitcoindRpc: BitcoindRpcClient
-  }
-  case class SpvNodeFundedWalletBitcoind(
-      node: SpvNode,
-      wallet: Wallet,
-      bitcoindRpc: BitcoindRpcClient)
-      extends NodeFundedWalletBitcoind
-  case class NeutrinoNodeFundedWalletBitcoind(
-      node: NeutrinoNode,
-      wallet: Wallet,
-      bitcoindRpc: BitcoindRpcClient)
-      extends NodeFundedWalletBitcoind
 
   def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(
       implicit appConfig: BitcoinSAppConfig,
@@ -252,6 +226,7 @@ object NodeUnitTest extends P2PLogger {
   /** Creates a spv node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
   def createSpvNodeFundedWalletBitcoind(
       callbacks: NodeCallbacks,
+      bip39PasswordOpt: Option[String],
       versionOpt: Option[BitcoindVersion] = None)(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[SpvNodeFundedWalletBitcoind] = {
@@ -262,17 +237,20 @@ object NodeUnitTest extends P2PLogger {
       node <- createSpvNode(bitcoind, callbacks)
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind,
                                                                  node,
-                                                                 node)
+                                                                 node,
+        bip39PasswordOpt)
     } yield {
       SpvNodeFundedWalletBitcoind(node = node,
                                   wallet = fundedWallet.wallet,
-                                  bitcoindRpc = fundedWallet.bitcoind)
+                                  bitcoindRpc = fundedWallet.bitcoind,
+        bip39PasswordOpt)
     }
   }
 
   /** Creates a neutrino node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
   def createNeutrinoNodeFundedWalletBitcoind(
       callbacks: NodeCallbacks,
+      bip39PasswordOpt: Option[String],
       versionOpt: Option[BitcoindVersion])(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[NeutrinoNodeFundedWalletBitcoind] = {
@@ -281,13 +259,15 @@ object NodeUnitTest extends P2PLogger {
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createNeutrinoNode(bitcoind, callbacks)
-      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind,
-                                                                 node,
-                                                                 node)
+      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoindRpcClient = bitcoind,
+                                                                 nodeApi = node,
+                                                                 chainQueryApi = node,
+        bip39PasswordOpt = bip39PasswordOpt)
     } yield {
       NeutrinoNodeFundedWalletBitcoind(node = node,
                                        wallet = fundedWallet.wallet,
-                                       bitcoindRpc = fundedWallet.bitcoind)
+                                       bitcoindRpc = fundedWallet.bitcoind,
+        bip39PasswordOpt = bip39PasswordOpt)
     }
   }
 
@@ -297,7 +277,7 @@ object NodeUnitTest extends P2PLogger {
       appConfig: BitcoinSAppConfig): Future[Unit] = {
     import system.dispatcher
     val walletWithBitcoind = {
-      BitcoinSWalletTest.WalletWithBitcoindRpc(fundedWalletBitcoind.wallet,
+      WalletWithBitcoindRpc(fundedWalletBitcoind.wallet,
                                                fundedWalletBitcoind.bitcoindRpc)
     }
 

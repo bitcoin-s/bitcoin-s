@@ -7,8 +7,11 @@ import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
-import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.bitcoins.testkit.node.{
+  NodeTestUtil,
+  NodeUnitTest,
+  SpvNodeFundedWalletBitcoind
+}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -23,7 +26,9 @@ class BroadcastTransactionTest extends NodeUnitTest {
   override type FixtureParam = SpvNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeFundedWalletBitcoind(test, NodeCallbacks.empty)
+    withSpvNodeFundedWalletBitcoind(test,
+                                    NodeCallbacks.empty,
+                                    getBIP39PasswordOpt())
 
   private val sendAmount = 1.bitcoin
 
@@ -31,7 +36,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
     BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
 
   it must "broadcast a transaction" in { param =>
-    val SpvNodeFundedWalletBitcoind(node, wallet, rpc) = param
+    val SpvNodeFundedWalletBitcoind(node, wallet, rpc, _) = param
 
     def hasSeenTx(transaction: Transaction): Future[Boolean] = {
       rpc

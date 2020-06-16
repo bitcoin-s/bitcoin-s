@@ -6,8 +6,8 @@ import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+import org.bitcoins.testkit.wallet.{
+  BitcoinSWalletTest,
   WalletWithBitcoind,
   WalletWithBitcoindRpc
 }
@@ -24,7 +24,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       .fromString("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq")
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWalletAndBitcoind(test)
+    withFundedWalletAndBitcoind(test, getBIP39PasswordOpt())
   }
 
   it should "track a utxo state change to pending spent" in { param =>

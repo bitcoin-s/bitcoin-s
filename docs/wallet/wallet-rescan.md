@@ -32,10 +32,11 @@ implicit val system: ActorSystem = ActorSystem(s"wallet-rescan-example")
 implicit val ec: ExecutionContext = system.dispatcher
 implicit val appConfig: BitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig()
 
+val bip39PasswordOpt = None
 //ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it
 val walletWithBitcoindF = for {
   bitcoind <- BitcoinSFixture.createBitcoindWithFunds()
-  walletWithBitcoind <- BitcoinSWalletTest.createWalletWithBitcoindCallbacks(bitcoind)
+  walletWithBitcoind <- BitcoinSWalletTest.createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
 } yield walletWithBitcoind
 
 val walletF = walletWithBitcoindF.map(_.wallet)
