@@ -3,8 +3,8 @@ package org.bitcoins.wallet
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+import org.bitcoins.testkit.wallet.{
+  BitcoinSWalletTest,
   WalletWithBitcoind,
   WalletWithBitcoindRpc
 }

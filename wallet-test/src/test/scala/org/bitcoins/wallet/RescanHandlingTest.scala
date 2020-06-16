@@ -5,8 +5,8 @@ import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+import org.bitcoins.testkit.wallet.{
+  BitcoinSWalletTest,
   WalletWithBitcoind,
   WalletWithBitcoindV19
 }
@@ -20,7 +20,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
 
   override type FixtureParam = WalletWithBitcoind
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWalletAndBitcoindV19(test)
+    withFundedWalletAndBitcoindV19(test, getBIP39PasswordOpt())
   }
 
   behavior of "Wallet rescans"

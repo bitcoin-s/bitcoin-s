@@ -8,8 +8,11 @@ import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
-import org.bitcoins.testkit.node.NodeUnitTest.NeutrinoNodeFundedWalletBitcoind
-import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.bitcoins.testkit.node.{
+  NeutrinoNodeFundedWalletBitcoind,
+  NodeTestUtil,
+  NodeUnitTest
+}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.WalletApi
 import org.scalatest.FutureOutcome
@@ -31,9 +34,11 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     if (EnvUtil.isCI && !EnvUtil.isLinux) {
       FutureOutcome.succeeded
     } else {
-      withNeutrinoNodeFundedWalletBitcoind(test,
-                                           callbacks,
-                                           Some(BitcoindVersion.Experimental))
+      withNeutrinoNodeFundedWalletBitcoind(
+        test = test,
+        callbacks = callbacks,
+        bip39PasswordOpt = getBIP39PasswordOpt(),
+        versionOpt = Some(BitcoindVersion.Experimental))
     }
   }
 
@@ -74,7 +79,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
   it must "receive information about received payments" taggedAs (UsesExperimentalBitcoind) in {
     param =>
-      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
+      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
       walletP.success(wallet)
 
@@ -145,7 +150,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
   it must "rescan and receive information about received payments" taggedAs (UsesExperimentalBitcoind) in {
     param =>
-      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
+      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
       walletP.success(wallet)
 

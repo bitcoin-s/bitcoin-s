@@ -2,8 +2,8 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+import org.bitcoins.testkit.wallet.{
+  BitcoinSWalletTest,
   WalletWithBitcoind,
   WalletWithBitcoindRpc
 }
@@ -15,7 +15,7 @@ class WalletBloomTest extends BitcoinSWalletTest {
   override type FixtureParam = WalletWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withFundedWalletAndBitcoind(test)
+    withFundedWalletAndBitcoind(test, getBIP39PasswordOpt())
 
   it should "generate a bloom filter that matches the pubkeys in our wallet" in {
     param =>
