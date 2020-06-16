@@ -22,8 +22,7 @@ import org.bitcoins.keymanager.KeyManagerInitializeError
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandler
-import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
+import org.bitcoins.node._
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -237,7 +236,6 @@ object Main extends App with BitcoinSLogger {
   private def createCallbacks(wallet: WalletApi)(
       implicit nodeConf: NodeAppConfig,
       ec: ExecutionContext): Future[NodeCallbacks] = {
-    import DataMessageHandler._
     lazy val onTx: OnTxReceived = { tx =>
       wallet.processTransaction(tx, blockHash = None).map(_ => ())
     }
@@ -258,13 +256,13 @@ object Main extends App with BitcoinSLogger {
     }
     if (nodeConf.isSPVEnabled) {
       Future.successful(
-        NodeCallbacks(onTxReceived = Seq(onTx),
-                      onBlockHeadersReceived = Seq(onHeaders)))
+        NodeCallbacks(onTxReceived = Vector(onTx),
+                      onBlockHeadersReceived = Vector(onHeaders)))
     } else if (nodeConf.isNeutrinoEnabled) {
       Future.successful(
-        NodeCallbacks(onBlockReceived = Seq(onBlock),
-                      onCompactFiltersReceived = Seq(onCompactFilters),
-                      onBlockHeadersReceived = Seq(onHeaders)))
+        NodeCallbacks(onBlockReceived = Vector(onBlock),
+                      onCompactFiltersReceived = Vector(onCompactFilters),
+                      onBlockHeadersReceived = Vector(onHeaders)))
     } else {
       Future.failed(new RuntimeException("Unexpected node type"))
     }

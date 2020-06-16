@@ -13,9 +13,9 @@ object Deps {
     val spray = "1.3.5"
     val zeromq = "0.5.2"
     val akkav = "10.1.12"
-    val akkaStreamv = "2.6.5"
+    val akkaStreamv = "2.6.6"
     val playv = "2.8.1"
-    val scodecV = "1.1.14"
+    val scodecV = "1.1.16"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.4"
     val typesafeConfigV = "1.4.0"
@@ -25,8 +25,8 @@ object Deps {
 
     val asyncNewScalaV = "0.10.0"
 
-    val flywayV = "6.4.4"
-    val postgresV = "42.2.12"
+    val flywayV = "6.4.2"
+    val postgresV = "42.2.14"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
     val sqliteV = "3.31.1"
