@@ -153,7 +153,7 @@ object Rescan extends ServerJsonModels {
 
     def parseBlockStamp(value: Value): Option[BlockStamp] =
       nullToOpt(value).map {
-        case Str(value) => BlockStamp.fromString(value).get
+        case Str(value) => BlockStamp.fromString(value)
         case Num(value) =>
           val int = value.toInt
           if (int >= 0 && int <= Int.MaxValue)
