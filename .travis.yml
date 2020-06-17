@@ -13,7 +13,7 @@ jobs:
 
     # compile website, to check for documentation regressions
     - stage: test
-      name: Compile website and check formatting
+      name: Compile website
       env:
         - TEST_COMMAND="docs/mdoc"
       scala: 2.13.2
