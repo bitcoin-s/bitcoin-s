@@ -314,7 +314,7 @@ lazy val dbCommons = project
     name := "bitcoin-s-db-commons",
     libraryDependencies ++= Deps.dbCommons
   )
-  .dependsOn(core)
+  .dependsOn(core, appCommons)
 
 lazy val dbCommonsTest = project
   .in(file("db-commons-test"))

@@ -1,26 +1,30 @@
 package org.bitcoins.db
 
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
+import org.bitcoins.core.config.{BitcoinNetwork, BitcoinNetworks}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.protocol.{
+  Bech32Address,
+  BitcoinAddress,
+  BlockTimeStamp
+}
+import org.bitcoins.core.psbt.InputPSBTMap
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.crypto.{
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -76,8 +80,18 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType
       .base[BigInt, BigDecimal](BigDecimal(_), _.toBigInt)
 
+  implicit val sha256DigestBEMapper: BaseColumnType[Sha256DigestBE] =
+    MappedColumnType.base[Sha256DigestBE, String](_.hex, Sha256DigestBE.fromHex)
+
   implicit val ecPublicKeyMapper: BaseColumnType[ECPublicKey] =
     MappedColumnType.base[ECPublicKey, String](_.hex, ECPublicKey.fromHex)
+
+  implicit val schnorrPublicKeyMapper: BaseColumnType[SchnorrPublicKey] =
+    MappedColumnType
+      .base[SchnorrPublicKey, String](_.hex, SchnorrPublicKey.fromHex)
+
+  implicit val schnorrNonceMapper: BaseColumnType[SchnorrNonce] =
+    MappedColumnType.base[SchnorrNonce, String](_.hex, SchnorrNonce.fromHex)
 
   implicit val sha256Hash160DigestMapper: BaseColumnType[Sha256Hash160Digest] =
     MappedColumnType
@@ -150,7 +164,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val segwitPathMappper: BaseColumnType[SegWitHDPath] =
     MappedColumnType
-      .base[SegWitHDPath, String](_.toString, SegWitHDPath.fromString(_)) // hm rethink .get?
+      .base[SegWitHDPath, String](_.toString, SegWitHDPath.fromString) // hm rethink .get?
 
   implicit val hdChainTypeMapper: BaseColumnType[HDChainType] =
     MappedColumnType.base[HDChainType, Int](_.index, HDChainType.fromInt)
@@ -162,6 +176,10 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val bitcoinAddressMapper: BaseColumnType[BitcoinAddress] =
     MappedColumnType
       .base[BitcoinAddress, String](_.value, BitcoinAddress.fromStringExn)
+
+  implicit val bech32AddressMapper: BaseColumnType[Bech32Address] =
+    MappedColumnType
+      .base[Bech32Address, String](_.value, Bech32Address.fromStringExn)
 
   implicit val scriptTypeMapper: BaseColumnType[ScriptType] =
     MappedColumnType
@@ -186,5 +204,56 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val satoshisPerByteMapper: BaseColumnType[SatoshisPerByte] = {
     MappedColumnType
       .base[SatoshisPerByte, Long](_.toLong, SatoshisPerByte.fromLong)
+  }
+
+  implicit val hdAccountMapper: BaseColumnType[HDAccount] = {
+    MappedColumnType.base[HDAccount, String](
+      _.toString,
+      str => HDAccount.fromPath(BIP32Path.fromString(str)).get)
+  }
+
+  implicit val contractInfoMapper: BaseColumnType[ContractInfo] = {
+    MappedColumnType
+      .base[ContractInfo, String](_.hex, ContractInfo.fromHex)
+  }
+
+  implicit val blockStampWithFutureMapper: BaseColumnType[BlockTimeStamp] = {
+    MappedColumnType.base[BlockTimeStamp, Long](
+      _.toUInt32.toLong,
+      long => BlockTimeStamp(UInt32(long)))
+  }
+
+  implicit val partialSigMapper: BaseColumnType[PartialSignature] = {
+    MappedColumnType
+      .base[PartialSignature, String](_.hex, PartialSignature.fromHex)
+  }
+
+  implicit val partialSigsMapper: BaseColumnType[Vector[PartialSignature]] = {
+    MappedColumnType
+      .base[Vector[PartialSignature], String](
+        _.foldLeft("")(_ ++ _.hex),
+        hex =>
+          if (hex.isEmpty) Vector.empty
+          else InputPSBTMap(hex ++ "00").partialSignatures)
+  }
+
+  implicit val satoshisPerVirtualByteMapper: BaseColumnType[
+    SatoshisPerVirtualByte] = {
+    MappedColumnType
+      .base[SatoshisPerVirtualByte, String](
+        _.currencyUnit.hex,
+        hex => SatoshisPerVirtualByte(Satoshis.fromHex(hex)))
+  }
+
+  implicit val networkMapper: BaseColumnType[BitcoinNetwork] = {
+    MappedColumnType
+      .base[BitcoinNetwork, String](_.name, BitcoinNetworks.fromString)
+  }
+
+  implicit val schnorrDigitalSignatureMapper: BaseColumnType[
+    SchnorrDigitalSignature] = {
+    MappedColumnType.base[SchnorrDigitalSignature, String](
+      _.hex,
+      SchnorrDigitalSignature.fromHex)
   }
 }
