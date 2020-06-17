@@ -204,7 +204,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
     addressRequestQueue.add((account, chainType, p))
     for {
       addressDb <- p.future
-      _ <- walletCallbacks.executeOnNewAddressGenerated(logger, addressDb)
+      _ <- walletCallbacks.executeOnNewAddressGenerated(logger,
+                                                        addressDb.address)
     } yield {
       addressDb.address
     }

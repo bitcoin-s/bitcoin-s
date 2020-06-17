@@ -1,8 +1,9 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.api.{Callback, CallbackHandler}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.wallet.models.{AddressDb, SpendingInfoDb}
+import org.bitcoins.wallet.models.SpendingInfoDb
 import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,7 +23,10 @@ trait WalletCallbacks {
     Transaction,
     OnTransactionBroadcast]
   def onReservedUtxos: CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos]
-  def onNewAddressGenerated: CallbackHandler[AddressDb, OnNewAddressGenerated]
+
+  def onNewAddressGenerated: CallbackHandler[
+    BitcoinAddress,
+    OnNewAddressGenerated]
 
   def +(other: WalletCallbacks): WalletCallbacks
 
@@ -41,9 +45,9 @@ trait WalletCallbacks {
     onReservedUtxos.execute(logger, utxos)
   }
 
-  def executeOnNewAddressGenerated(logger: Logger, addressDb: AddressDb)(
+  def executeOnNewAddressGenerated(logger: Logger, address: BitcoinAddress)(
       implicit ec: ExecutionContext): Future[Unit] = {
-    onNewAddressGenerated.execute(logger, addressDb)
+    onNewAddressGenerated.execute(logger, address)
   }
 
 }
@@ -55,7 +59,7 @@ trait OnTransactionBroadcast extends Callback[Transaction]
 
 trait OnReservedUtxos extends Callback[Vector[SpendingInfoDb]]
 
-trait OnNewAddressGenerated extends Callback[AddressDb]
+trait OnNewAddressGenerated extends Callback[BitcoinAddress]
 
 object WalletCallbacks {
 
@@ -67,7 +71,9 @@ object WalletCallbacks {
         Transaction,
         OnTransactionBroadcast],
       onReservedUtxos: CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos],
-      onNewAddressGenerated: CallbackHandler[AddressDb, OnNewAddressGenerated]
+      onNewAddressGenerated: CallbackHandler[
+        BitcoinAddress,
+        OnNewAddressGenerated]
   ) extends WalletCallbacks {
     override def +(other: WalletCallbacks): WalletCallbacks = copy(
       onTransactionProcessed = onTransactionProcessed ++ other.onTransactionProcessed,
@@ -116,9 +122,10 @@ object WalletCallbacks {
         CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos](
           "onReservedUtxos",
           onReservedUtxos),
-      onNewAddressGenerated = CallbackHandler[AddressDb, OnNewAddressGenerated](
-        "onNewAddressGenerated",
-        onNewAddressGenerated)
+      onNewAddressGenerated =
+        CallbackHandler[BitcoinAddress, OnNewAddressGenerated](
+          "onNewAddressGenerated",
+          onNewAddressGenerated)
     )
   }
 }

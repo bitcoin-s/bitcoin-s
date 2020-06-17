@@ -1,17 +1,17 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.currency._
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransaction,
   Transaction,
   TransactionOutput
 }
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.bitcoins.wallet.models.{AddressDb, SpendingInfoDb}
+import org.bitcoins.wallet.models.SpendingInfoDb
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.{Future, Promise}
@@ -27,11 +27,11 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
   it must "verify OnNewAddressGenerated callbacks are executed" in {
     fundedWallet: FundedWallet =>
-      val resultP: Promise[Boolean] = Promise()
+      val resultP: Promise[BitcoinAddress] = Promise()
 
-      val callback: OnNewAddressGenerated = (_: AddressDb) => {
+      val callback: OnNewAddressGenerated = (addr: BitcoinAddress) => {
         Future {
-          resultP.success(true)
+          resultP.success(addr)
           ()
         }
       }
@@ -45,16 +45,16 @@ class WalletCallbackTest extends BitcoinSWalletTest {
         exists <- wallet.contains(address, None)
         _ = assert(exists, "Wallet must contain address after generating it")
         result <- resultP.future
-      } yield assert(result)
+      } yield assert(result == address)
   }
 
   it must "verify OnTransactionProcessed callbacks are executed" in {
     fundedWallet: FundedWallet =>
-      val resultP: Promise[Boolean] = Promise()
+      val resultP: Promise[Transaction] = Promise()
 
-      val callback: OnTransactionProcessed = (_: Transaction) => {
+      val callback: OnTransactionProcessed = (tx: Transaction) => {
         Future {
-          resultP.success(true)
+          resultP.success(tx)
           ()
         }
       }
@@ -66,16 +66,16 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       for {
         _ <- wallet.processTransaction(EmptyTransaction, None)
         result <- resultP.future
-      } yield assert(result)
+      } yield assert(result == EmptyTransaction)
   }
 
   it must "verify OnTransactionBroadcast callbacks are executed" in {
     fundedWallet: FundedWallet =>
-      val resultP: Promise[Boolean] = Promise()
+      val resultP: Promise[Transaction] = Promise()
 
-      val callback: OnTransactionBroadcast = (_: Transaction) => {
+      val callback: OnTransactionBroadcast = (tx: Transaction) => {
         Future {
-          resultP.success(true)
+          resultP.success(tx)
           ()
         }
       }
@@ -87,7 +87,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       for {
         _ <- wallet.broadcastTransaction(EmptyTransaction)
         result <- resultP.future
-      } yield assert(result)
+      } yield assert(result == EmptyTransaction)
   }
 
   private val dummyOutput = TransactionOutput(
@@ -96,11 +96,11 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
   it must "verify OnReservedUtxos callbacks are executed when reserving" in {
     fundedWallet: FundedWallet =>
-      val resultP: Promise[Boolean] = Promise()
+      val resultP: Promise[Vector[SpendingInfoDb]] = Promise()
 
-      val callback: OnReservedUtxos = (_: Vector[SpendingInfoDb]) => {
+      val callback: OnReservedUtxos = (infos: Vector[SpendingInfoDb]) => {
         Future {
-          resultP.success(true)
+          resultP.success(infos)
           ()
         }
       }
@@ -110,20 +110,21 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet.addCallbacks(callbacks)
 
       for {
-        _ <- wallet.fundRawTransaction(Vector(dummyOutput),
-                                       SatoshisPerVirtualByte.one,
-                                       markAsReserved = true)
+        utxos <- wallet.listUtxos()
+        _ <- wallet.markUTXOsAsReserved(Vector(utxos.head))
         result <- resultP.future
-      } yield assert(result)
+      } yield assert(
+        // just compare outPoints because states will be changed so they won't be equal
+        result.map(_.outPoint) == Vector(utxos.head).map(_.outPoint))
   }
 
   it must "verify OnReservedUtxos callbacks are executed when un-reserving" in {
     fundedWallet: FundedWallet =>
-      val resultP: Promise[Boolean] = Promise()
+      val resultP: Promise[Vector[SpendingInfoDb]] = Promise()
 
-      val callback: OnReservedUtxos = (_: Vector[SpendingInfoDb]) => {
+      val callback: OnReservedUtxos = (infos: Vector[SpendingInfoDb]) => {
         Future {
-          resultP.success(true)
+          resultP.success(infos)
           ()
         }
       }
@@ -131,14 +132,13 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       val callbacks = WalletCallbacks.onReservedUtxos(callback)
 
       for {
-        tx <- fundedWallet.wallet.fundRawTransaction(Vector(dummyOutput),
-                                                     SatoshisPerVirtualByte.one,
-                                                     markAsReserved = true)
+        utxos <- fundedWallet.wallet.listUtxos()
+        reserved <- fundedWallet.wallet.markUTXOsAsReserved(Vector(utxos.head))
         wallet = fundedWallet.wallet.addCallbacks(callbacks)
 
-        utxos <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
-        _ <- wallet.unmarkUTXOsAsReserved(utxos.toVector)
+        _ <- wallet.unmarkUTXOsAsReserved(reserved)
         result <- resultP.future
-      } yield assert(result)
+        // just compare outPoints because states will be changed so they won't be equal
+      } yield assert(result.map(_.outPoint) == reserved.map(_.outPoint))
   }
 }
