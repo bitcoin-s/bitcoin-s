@@ -467,15 +467,15 @@ object Wallet extends WalletLogger {
             s"It is possible we have a different key manager being used than expected, keymanager=${keyManager}"
           Future.failed(new RuntimeException(errorMsg))
         } else {
-          logger.debug(s"Account already exists in database, no need to create it, account=${account}")
+          logger.debug(
+            s"Account already exists in database, no need to create it, account=${account}")
           Future.successful(account)
         }
       case None =>
         wallet.accountDAO
           .create(accountDb)
           .map { written =>
-            logger.info(
-              s"Created account=${accountDb} to DB")
+            logger.info(s"Created account=${accountDb} to DB")
             written
           }
     }
@@ -505,8 +505,9 @@ object Wallet extends WalletLogger {
           case Left(err) =>
             //probably means you haven't initialized the key manager via the
             //'CreateKeyManagerApi'
-            Future.failed(new RuntimeException(
-              s"Failed to create keymanager with params=$kmParams err=$err"))
+            Future.failed(
+              new RuntimeException(
+                s"Failed to create keymanager with params=$kmParams err=$err"))
         }
 
       }
