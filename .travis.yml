@@ -1,63 +1,97 @@
 language: scala
-
-env:
-  matrix:
-    - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
-    - TEST_COMMAND="appCommonsTest/test appServerTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
-    - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
-
 os: linux
-scala:
-  - 2.12.11
-  - 2.13.2
+dist: xenial
 
-# Fiddling with Travis config is not fun:-(
-# To avoid spending too much time waiting on Travis, you
-# can use this tool to parse the config file locally: https://github.com/travis-ci/travis-yml
-# After getting it set up, do:
-# $ curl -X POST --data-binary @.travis.yml localhost:9292/v1/parse | jq
-# this should return a big JSON object, where especially
-# config.matrix.include tells you a lot about what the build
-# is going to look like
-matrix:
+jobs:
   include:
-    - os: linux
+    - stage: compile
+      os: linux
+      name: "Compile & Formatting Check"
+      env:
+        - TEST_COMMAND="test:compile scalafmtCheck test:scalafmtCheck"
+      scala: 2.12.11
+
+    # compile website, to check for documentation regressions
+    - stage: test
+      name: Compile website
+      env:
+        - TEST_COMMAND="docs/mdoc"
+      scala: 2.13.2
+
+    - stage: test
+      name: Linux 2.13.2 bitcoind and eclair rpc tests
+      os: linux
+      env:
+        - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
+      scala: 2.13.2
+
+    - stage: test
+      name: Linux 2.12.11 bitcoind and eclair rpc tests
+      os: linux
+      env:
+        - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
+      scala: 2.12.11
+
+    - stage: test
+      name: Linux 2.13.2 App, Chain, Node, and Core Tests
+      os: linux
+      env:
+        - TEST_COMMAND="appCommonsTest/test appServerTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
+      scala: 2.13.2
+
+    - stage: test
+      name: Linux 2.12.11 App, Chain, Node, and Core Tests
+      os: linux
+      env:
+        - TEST_COMMAND="appCommonsTest/test appServerTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
+      scala: 2.12.11
+
+    - stage: test
+      name: Linux 2.13.2 KeyManager and Wallet tests
+      os: linux
+      env:
+        - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
+      scala: 2.13.2
+
+    - stage: test
+      name: Linux 2.12.11 KeyManager and Wallet tests
+      os: linux
+      env:
+        - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
+      scala: 2.12.11
+
+    - stage: test
+      os: linux
       name: "Secp256k1 Disabled Core Test"
       env:
         - DISABLE_SECP256K1="true"
         - TEST_COMMAND="coreTest/test cryptoTest/test"
-      scala:
-        - 2.13.2
-    - os: linux
+      scala: 2.13.2
+
+    - stage: test
+      os: linux
       name: "PostgreSQL tests"
       env:
         - PG_ENABLED="1"
         - TEST_COMMAND="dbCommonsTest/test chainTest/test nodeTest/test walletTest/test"
-      scala:
-        - 2.13.2
-    - os: osx
+      scala: 2.13.2
+
+    - stage: test
+      os: osx
       name: "macOS bitcoind and eclair tests"
       env:
         - TEST_COMMAND="appCommonsTest/test bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
-      scala:
-        - 2.13.2
+      scala: 2.13.2
+
     # skip all test tagged as UsesExperimentalBitcoind
     # TODO remove this condition once we have a neutrino enabled bitcoind binary for OSX
-    - os: osx
+    - stage: test
+      os: osx
       name: "macOS wallet and node tests"
       env:
         - CI="1"
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
-      scala:
-        - 2.13.2
-
-    # compile website, to check for documentation regressions
-    - stage: test
-      name: Compile website and check formatting
-      env:
-        - TEST_COMMAND="scalafmtCheck test:scalafmtCheck docs/mdoc"
-      scala:
-        - 2.13.2
+      scala: 2.13.2
 
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
@@ -89,9 +123,15 @@ before_cache:
 
 before_script:
   - git fetch --tags
-  - git submodule sync 
+  - git submodule sync
 
 stages:
+  - name: compile
+    if:
+      commit_message !~ /^Docs:/ AND NOT
+      ((branch = master AND type = push) OR (tag IS present))
+      # don't run tests on merge builds, just publish library
+      # and website
   - name: test
     if:
       commit_message !~ /^Docs:/ AND NOT
