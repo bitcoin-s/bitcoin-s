@@ -5,7 +5,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest
-import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
+import org.bitcoins.testkit.node.SpvNodeFundedWalletBitcoind
 import org.scalatest.{BeforeAndAfter, FutureOutcome}
 
 class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
@@ -17,14 +17,14 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   override type FixtureParam = SpvNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withSpvNodeFundedWalletBitcoind(test, NodeCallbacks.empty)
+    withSpvNodeFundedWalletBitcoind(test, NodeCallbacks.empty, None)
   }
 
   private val junkAddress: BitcoinAddress =
     BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
 
   it must "update the bloom filter with a TX" in { param =>
-    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
+    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc, _) = param
 
     for {
       _ <- wallet.getBloomFilter()
@@ -44,7 +44,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   }
 
   it must "update the bloom filter with an address" in { param =>
-    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
+    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc, _) = param
 
     for {
       _ <- wallet.getBloomFilter()
