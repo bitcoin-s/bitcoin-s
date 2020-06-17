@@ -36,7 +36,7 @@ sealed abstract class Address {
   /** The [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] the address represents */
   def scriptPubKey: ScriptPubKey
 
-  override def toString = value
+  override def toString: String = value
 }
 
 sealed abstract class BitcoinAddress extends Address
@@ -67,7 +67,7 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
     Base58.encode(bytes ++ checksum)
   }
 
-  override def scriptPubKey = P2SHScriptPubKey(hash)
+  override def scriptPubKey: P2SHScriptPubKey = P2SHScriptPubKey(hash)
 
   override def hash: Sha256Hash160Digest
 }
@@ -122,6 +122,9 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     //require(verifyChecksum(hrp, data), "checksum did not pass")
   }
 
+  def empty(network: NetworkParameters = MainNet): Bech32Address =
+    fromScriptPubKey(P2WSHWitnessSPKV0(EmptyScriptPubKey), network)
+
   def apply(
       witSPK: WitnessScriptPubKey,
       networkParameters: NetworkParameters): Bech32Address = {
@@ -153,31 +156,30 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] */
   def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
     val decoded = fromStringT(string)
-    decoded.flatMap {
-      case bech32Addr =>
-        val bytes = bech32Addr.data
-        val (v, _) = (bytes.head, bytes.tail)
-        val convertedProg = NumberUtil.convertUInt5sToUInt8(bytes.tail)
-        val progBytes = UInt8.toBytes(convertedProg)
-        val witVersion = WitnessVersion(v.toInt)
-        val pushOp = BitcoinScriptUtil.calculatePushOp(progBytes)
-        witVersion match {
-          case Some(v) =>
-            val witSPK = WitnessScriptPubKey(
-              List(v.version) ++ pushOp ++ List(ScriptConstant(progBytes)))
-            witSPK match {
-              case Some(spk) => Success(spk)
-              case None =>
-                Failure(
-                  new IllegalArgumentException(
-                    "Failed to decode bech32 into a witSPK"))
-            }
-          case None =>
-            Failure(
-              new IllegalArgumentException(
-                "Witness version was not valid, got: " + v))
-        }
-
+    decoded.flatMap { bech32Addr =>
+      val bytes = bech32Addr.data
+      val (v, _) = (bytes.head, bytes.tail)
+      val convertedProg = NumberUtil.convertUInt5sToUInt8(bytes.tail)
+      val progBytes = UInt8.toBytes(convertedProg)
+      val witVersion = WitnessVersion(v.toInt)
+      val pushOp = BitcoinScriptUtil.calculatePushOp(progBytes)
+      witVersion match {
+        case Some(v) =>
+          val witSPK = Try(
+            WitnessScriptPubKey(
+              List(v.version) ++ pushOp ++ List(ScriptConstant(progBytes))))
+          witSPK match {
+            case Success(spk) => Success(spk)
+            case Failure(err) =>
+              Failure(
+                new IllegalArgumentException(
+                  "Failed to decode bech32 into a witSPK: " + err.getMessage))
+          }
+        case None =>
+          Failure(
+            new IllegalArgumentException(
+              "Witness version was not valid, got: " + v))
+      }
     }
   }
 

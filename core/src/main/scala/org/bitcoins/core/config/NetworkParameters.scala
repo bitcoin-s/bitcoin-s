@@ -1,6 +1,7 @@
 package org.bitcoins.core.config
 
 import org.bitcoins.core.protocol.blockchain._
+import org.bitcoins.crypto.StringFactory
 import scodec.bits.ByteVector
 
 sealed abstract class NetworkParameters {
@@ -73,8 +74,8 @@ sealed abstract class MainNet extends BitcoinNetwork {
   /**
     * @inheritdoc
     */
-  override def dnsSeeds = {
-    List(
+  override def dnsSeeds: Vector[String] = {
+    Vector(
       "seed.bitcoin.sipa.be",
       "dnsseed.bluematt.me",
       "dnsseed.bitcoin.dashjr.org",
@@ -89,7 +90,7 @@ sealed abstract class MainNet extends BitcoinNetwork {
   /**
     * @inheritdoc
     */
-  override def magicBytes = ByteVector(0xf9, 0xbe, 0xb4, 0xd9)
+  override def magicBytes: ByteVector = ByteVector(0xf9, 0xbe, 0xb4, 0xd9)
 
 }
 
@@ -119,7 +120,7 @@ sealed abstract class TestNet3 extends BitcoinNetwork {
   /*
    * @inheritdoc
    */
-  override def magicBytes = ByteVector(0x0b, 0x11, 0x09, 0x07)
+  override def magicBytes: ByteVector = ByteVector(0x0b, 0x11, 0x09, 0x07)
 
 }
 
@@ -146,24 +147,44 @@ sealed abstract class RegTest extends BitcoinNetwork {
   /**
     * @inheritdoc
     */
-  override def magicBytes = ByteVector(0xfa, 0xbf, 0xb5, 0xda)
+  override def magicBytes: ByteVector = ByteVector(0xfa, 0xbf, 0xb5, 0xda)
 }
 
 final case object RegTest extends RegTest
 // $COVERAGE-ON$
 
-object Networks {
+object Networks extends StringFactory[NetworkParameters] {
+  val knownNetworks: Seq[NetworkParameters] = BitcoinNetworks.knownNetworks
+  val secretKeyBytes: Seq[ByteVector] = BitcoinNetworks.secretKeyBytes
+  val p2pkhNetworkBytes: Seq[ByteVector] = BitcoinNetworks.p2pkhNetworkBytes
+  val p2shNetworkBytes: Seq[ByteVector] = BitcoinNetworks.p2shNetworkBytes
+
+  def fromString(string: String): NetworkParameters =
+    BitcoinNetworks.fromString(string)
+
+  def magicToNetwork: Map[ByteVector, NetworkParameters] =
+    BitcoinNetworks.magicToNetwork
+
+  def bytesToNetwork: Map[ByteVector, NetworkParameters] =
+    BitcoinNetworks.bytesToNetwork
+}
+
+object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
   val knownNetworks: Seq[NetworkParameters] = Seq(MainNet, TestNet3, RegTest)
   val secretKeyBytes: Seq[ByteVector] = knownNetworks.map(_.privateKey)
   val p2pkhNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2pkhNetworkByte)
   val p2shNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2shNetworkByte)
 
   /** Uses the notation used in `bitcoin.conf` */
-  def fromString(string: String): Option[NetworkParameters] = string match {
-    case "mainnet" => Some(MainNet)
-    case "testnet" => Some(TestNet3)
-    case "regtest" => Some(RegTest)
-    case _: String => None
+  override def fromString(string: String): BitcoinNetwork = string match {
+    case "mainnet"  => MainNet
+    case "main"     => MainNet
+    case "testnet3" => TestNet3
+    case "testnet"  => TestNet3
+    case "test"     => TestNet3
+    case "regtest"  => RegTest
+    case _: String =>
+      throw new IllegalArgumentException(s"Invalid network $string")
   }
 
   /** Map of magic network bytes to the corresponding network */

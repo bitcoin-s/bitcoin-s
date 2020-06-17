@@ -60,7 +60,8 @@ case class RawTxBuilder() {
 
   /** Returns a RawTxBuilderWithFinalizer where building can continue
     * and where buildTx can be called once building is completed. */
-  def setFinalizer(finalizer: RawTxFinalizer): RawTxBuilderWithFinalizer = {
+  def setFinalizer[F <: RawTxFinalizer](
+      finalizer: F): RawTxBuilderWithFinalizer[F] = {
     RawTxBuilderWithFinalizer(this, finalizer)
   }
 
@@ -141,9 +142,9 @@ case class RawTxBuilder() {
   * access to the RawTxFinalizer's buildTx method which
   * completes the RawTxBuilder and then finalized the result.
   */
-case class RawTxBuilderWithFinalizer(
+case class RawTxBuilderWithFinalizer[F <: RawTxFinalizer](
     builder: RawTxBuilder,
-    finalizer: RawTxFinalizer) {
+    finalizer: F) {
 
   /** Completes the builder and finalizes the result */
   def buildTx()(implicit ec: ExecutionContext): Future[Transaction] = {

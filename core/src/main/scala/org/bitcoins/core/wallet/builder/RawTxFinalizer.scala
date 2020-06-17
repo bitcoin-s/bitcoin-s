@@ -1,6 +1,7 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.number.Int64
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
@@ -248,7 +249,8 @@ object StandardNonInteractiveFinalizer {
       outputs: Seq[TransactionOutput],
       utxos: Seq[InputSigningInfo[InputInfo]],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer = {
+      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer[
+    StandardNonInteractiveFinalizer] = {
     val inputs = InputUtil.calcSequenceForInputs(utxos, Policy.isRBFEnabled)
     val lockTime = TxUtil.calcLockTime(utxos).get
     val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
@@ -269,5 +271,69 @@ object StandardNonInteractiveFinalizer {
     val builderF = Future(txBuilderFrom(outputs, utxos, feeRate, changeSPK))
 
     builderF.flatMap(_.buildTx())
+  }
+}
+
+case class SubtractFeeFromOutputsFinalizer(
+    inputInfos: Vector[InputInfo],
+    feeRate: FeeUnit)
+    extends RawTxFinalizer {
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(
+      implicit ec: ExecutionContext): Future[Transaction] = {
+    val RawTxBuilderResult(version, inputs, outputs, lockTime) = txBuilderResult
+
+    val witnesses = inputInfos.map(InputInfo.getScriptWitness)
+    val txWithPossibleWitness = TransactionWitness.fromWitOpt(witnesses) match {
+      case _: EmptyWitness =>
+        BaseTransaction(version, inputs, outputs, lockTime)
+      case wit: TransactionWitness =>
+        WitnessTransaction(version, inputs, outputs, lockTime, wit)
+    }
+
+    val dummyTxF = TxUtil.addDummySigs(txWithPossibleWitness, inputInfos)
+
+    val outputsAfterFeeF = dummyTxF.map { dummyTx =>
+      SubtractFeeFromOutputsFinalizer.subtractFees(dummyTx,
+                                                   feeRate,
+                                                   outputs.map(_.scriptPubKey))
+    }
+
+    outputsAfterFeeF.map { outputsAfterFee =>
+      BaseTransaction(version, inputs, outputsAfterFee, lockTime)
+    }
+  }
+}
+
+object SubtractFeeFromOutputsFinalizer {
+
+  def subtractFees(
+      tx: Transaction,
+      feeRate: FeeUnit,
+      spks: Vector[ScriptPubKey]): Vector[TransactionOutput] = {
+    val fee = feeRate.calc(tx)
+
+    val outputs = tx.outputs.zipWithIndex.filter {
+      case (output, _) => spks.contains(output.scriptPubKey)
+    }
+    val unchangedOutputs = tx.outputs.zipWithIndex.filterNot {
+      case (output, _) => spks.contains(output.scriptPubKey)
+    }
+
+    val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
+    val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
+
+    val newOutputsWithoutRemainder = outputs.map {
+      case (output, index) =>
+        (TransactionOutput(output.value - feePerOutput, output.scriptPubKey),
+         index)
+    }
+    val (lastOutput, lastOutputIndex) = newOutputsWithoutRemainder.last
+    val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
+                                          lastOutput.scriptPubKey)
+    val newOutputs = newOutputsWithoutRemainder
+      .dropRight(1)
+      .:+((newLastOutput, lastOutputIndex))
+
+    (newOutputs ++ unchangedOutputs).sortBy(_._2).map(_._1).toVector
   }
 }

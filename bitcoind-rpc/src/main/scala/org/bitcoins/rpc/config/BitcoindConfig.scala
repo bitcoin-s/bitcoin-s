@@ -55,7 +55,7 @@ case class BitcoindConfig(
   /** The optional index of the first header section encountered */
   private lazy val firstHeaderSectionIndex: Option[Int] = {
     val indices =
-      List(RegTest, TestNet3, MainNet).map(headerSectionIndex).flatten
+      List(RegTest, TestNet3, MainNet).flatMap(headerSectionIndex)
     if (indices.nonEmpty) Some(indices.min) else None
   }
 
@@ -111,13 +111,13 @@ case class BitcoindConfig(
     String] = collectFrom(lines)(_)
 
   /** The blockchain network associated with this `bitcoind` config */
-  lazy val network = {
+  lazy val network: NetworkParameters = {
     val networkStrOpt =
       collectAllLines {
         case (network @ ("testnet" | "regtest" | "mainnet"), "1") => network
       }.lastOption
 
-    val networkOpt = networkStrOpt.flatMap(Networks.fromString)
+    val networkOpt = networkStrOpt.flatMap(Networks.fromStringOpt)
 
     (networkOpt, networkStrOpt) match {
       case (None, Some(badStr)) =>
@@ -323,7 +323,7 @@ object BitcoindConfig extends BitcoinSLogger {
     * default configuration is returned.
     */
   def fromDefaultDatadir: BitcoindConfig = {
-    if (DEFAULT_CONF_FILE.isFile()) {
+    if (DEFAULT_CONF_FILE.isFile) {
       apply(DEFAULT_CONF_FILE)
     } else {
       BitcoindConfig.empty
@@ -353,8 +353,7 @@ object BitcoindConfig extends BitcoinSLogger {
   }
 
   /** Default location of bitcoind conf file */
-  val DEFAULT_CONF_FILE: File = DEFAULT_DATADIR
-    .toPath()
+  val DEFAULT_CONF_FILE: File = DEFAULT_DATADIR.toPath
     .resolve("bitcoin.conf")
     .toFile
 
