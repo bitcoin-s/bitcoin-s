@@ -487,7 +487,7 @@ class RoutesSpec
         .expects(testAddress, Bitcoins(100), *)
         .returning(Future.successful(EmptyTransaction))
 
-      (mockNode.broadcastTransaction _)
+      (mockWalletApi.broadcastTransaction _)
         .expects(EmptyTransaction)
         .returning(FutureUtil.unit)
         .anyNumberOfTimes()
@@ -556,7 +556,7 @@ class RoutesSpec
                  *)
         .returning(Future.successful(EmptyTransaction))
 
-      (mockNode.broadcastTransaction _)
+      (mockWalletApi.broadcastTransaction _)
         .expects(EmptyTransaction)
         .returning(FutureUtil.unit)
         .anyNumberOfTimes()
@@ -635,7 +635,7 @@ class RoutesSpec
                  CoinSelectionAlgo.AccumulateSmallestViable)
         .returning(Future.successful(EmptyTransaction))
 
-      (mockNode.broadcastTransaction _)
+      (mockWalletApi.broadcastTransaction _)
         .expects(EmptyTransaction)
         .returning(FutureUtil.unit)
         .anyNumberOfTimes()
@@ -712,7 +712,7 @@ class RoutesSpec
         .expects(message, false, *)
         .returning(Future.successful(EmptyTransaction))
 
-      (mockNode.broadcastTransaction _)
+      (mockWalletApi.broadcastTransaction _)
         .expects(EmptyTransaction)
         .returning(FutureUtil.unit)
         .anyNumberOfTimes()
