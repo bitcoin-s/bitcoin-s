@@ -6,16 +6,16 @@ jobs:
   include:
     - stage: compile
       os: linux
-      name: "Compile"
+      name: "Compile & Formatting Check"
       env:
-        - TEST_COMMAND="test:compile"
+        - TEST_COMMAND="test:compile scalafmtCheck test:scalafmtCheck"
       scala: 2.12.11
 
     # compile website, to check for documentation regressions
     - stage: test
       name: Compile website and check formatting
       env:
-        - TEST_COMMAND="scalafmtCheck test:scalafmtCheck docs/mdoc"
+        - TEST_COMMAND="docs/mdoc"
       scala: 2.13.2
 
     - stage: test
