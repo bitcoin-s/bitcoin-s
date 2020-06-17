@@ -70,8 +70,9 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
       fromAccount: AccountDb,
       keyManagerOpt: Option[BIP39KeyManager],
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.AccumulateLargest,
-      markAsReserved: Boolean = false): Future[
-    (RawTxBuilderWithFinalizer, Vector[ScriptSignatureParams[InputInfo]])] = {
+      markAsReserved: Boolean = false): Future[(
+      RawTxBuilderWithFinalizer[StandardNonInteractiveFinalizer],
+      Vector[ScriptSignatureParams[InputInfo]])] = {
     val utxosF = for {
       utxos <- listUtxos(fromAccount.hdAccount)
 

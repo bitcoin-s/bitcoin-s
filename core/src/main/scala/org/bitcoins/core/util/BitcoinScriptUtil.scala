@@ -2,13 +2,21 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
   CSVScriptPubKey,
   EmptyScriptPubKey,
   _
+}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutput,
+  WitnessTransaction
 }
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{
@@ -18,13 +26,18 @@ import org.bitcoins.core.script.crypto.{
   OP_CHECKSIGVERIFY
 }
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.{
   ScriptError,
   ScriptErrorPubKeyType,
   ScriptErrorWitnessPubKeyType
 }
-import org.bitcoins.core.script.ExecutionInProgressScriptProgram
+import org.bitcoins.core.script.{
+  ExecutionInProgressScriptProgram,
+  PreExecutionScriptProgram
+}
 import org.bitcoins.core.serializers.script.ScriptParser
+import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import scodec.bits.ByteVector
 
@@ -92,8 +105,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * which is how Bitcoin Core handles this
     */
   def countsTowardsScriptOpLimit(token: ScriptToken): Boolean = token match {
-    case scriptOp: ScriptOperation if (scriptOp.opCode > OP_16.opCode) => true
-    case _: ScriptToken                                                => false
+    case scriptOp: ScriptOperation if scriptOp.opCode > OP_16.opCode => true
+    case _: ScriptToken                                              => false
   }
 
   /**
@@ -130,8 +143,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   def numPossibleSignaturesOnStack(
       program: ExecutionInProgressScriptProgram): ScriptNumber = {
     require(
-      program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(
-        OP_CHECKMULTISIGVERIFY),
+      program.script.headOption
+        .contains(OP_CHECKMULTISIG) || program.script.headOption
+        .contains(OP_CHECKMULTISIGVERIFY),
       "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op"
     )
     val nPossibleSignatures: ScriptNumber = program.stack.head match {
@@ -151,8 +165,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   def numRequiredSignaturesOnStack(
       program: ExecutionInProgressScriptProgram): ScriptNumber = {
     require(
-      program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(
-        OP_CHECKMULTISIGVERIFY),
+      program.script.headOption
+        .contains(OP_CHECKMULTISIG) || program.script.headOption
+        .contains(OP_CHECKMULTISIGVERIFY),
       "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op"
     )
     val nPossibleSignatures = numPossibleSignaturesOnStack(program)
@@ -209,18 +224,18 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         //so we can push the constant "00" or "81" onto the stack with a BytesToPushOntoStack pushop
         pushOp == BytesToPushOntoStack(1)
       case _: ScriptToken
-          if (token.bytes.size == 1 && ScriptNumberOperation
+          if token.bytes.size == 1 && ScriptNumberOperation
             .fromNumber(token.toLong.toInt)
-            .isDefined) =>
+            .isDefined =>
         //could have used the ScriptNumberOperation to push the number onto the stack
         false
       case token: ScriptToken =>
         token.bytes.size match {
-          case size if (size == 0)     => pushOp == OP_0
-          case size if (size <= 75)    => token.bytes.size == pushOp.toLong
-          case size if (size <= 255)   => pushOp == OP_PUSHDATA1
-          case size if (size <= 65535) => pushOp == OP_PUSHDATA2
-          case _: Long                 =>
+          case size if size == 0     => pushOp == OP_0
+          case size if size <= 75    => token.bytes.size == pushOp.toLong
+          case size if size <= 255   => pushOp == OP_PUSHDATA1
+          case size if size <= 65535 => pushOp == OP_PUSHDATA2
+          case _: Long               =>
             //default case is true because we have to use the largest push op as possible which is OP_PUSHDATA4
             true
         }
@@ -270,7 +285,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     // If the most-significant-byte - excluding the sign bit - is zero
     // then we're not minimal. Note how this test also rejects the
     // negative-zero encoding, 0x80.
-    if ((bytes.size > 0 && (bytes.last & 0x7f) == 0)) {
+    if (bytes.size > 0 && (bytes.last & 0x7f) == 0) {
       // One exception: if there's more than one byte and the most
       // significant bit of the second-most-significant-byte is set
       // it would conflict with the sign bit. An example of this case
@@ -548,15 +563,13 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * [[org.bitcoins.core.script.crypto.OP_CHECKMULTISIG OP_CHECKMULTISIG]] with
     * [[org.bitcoins.core.script.constant.ScriptNumber.zero ScriptNumber.zero]] */
   def minimalDummy(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
-    if (asm.headOption == Some(OP_0)) ScriptNumber.zero +: asm.tail
+    if (asm.headOption.contains(OP_0)) ScriptNumber.zero +: asm.tail
     else asm
   }
 
   /**
     * Checks that all the [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] in this script
     * is compressed public keys, this is required for BIP143
-    * @param spk
-    * @return
     */
   def isOnlyCompressedPubKey(spk: ScriptPubKey): Boolean = {
     spk match {
@@ -564,7 +577,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
         p2pkWithTimeout.pubKey.isCompressed && p2pkWithTimeout.timeoutPubKey.isCompressed
       case m: MultiSignatureScriptPubKey =>
-        !m.publicKeys.exists(k => !k.isCompressed)
+        m.publicKeys.forall(_.isCompressed)
       case l: LockTimeScriptPubKey =>
         isOnlyCompressedPubKey(l.nestedScriptPubKey)
       case conditional: ConditionalScriptPubKey =>
@@ -591,6 +604,62 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
                   len + compactSizeUInt.byteSize.toInt)
     val script: Vector[ScriptToken] = ScriptParser.fromBytes(scriptPubKeyBytes)
     f(script)
+  }
+
+  def verifyScript(
+      tx: Transaction,
+      utxos: Seq[ScriptSignatureParams[InputInfo]]): Boolean = {
+    val programs: Seq[PreExecutionScriptProgram] = tx.inputs.zipWithIndex.map {
+      case (input: TransactionInput, idx: Int) =>
+        val outpoint = input.previousOutput
+
+        val creditingTx = utxos.find(u => u.outPoint == outpoint).get
+
+        val output = creditingTx.output
+
+        val spk = output.scriptPubKey
+
+        val amount = output.value
+
+        val txSigComponent = spk match {
+          case witSPK: WitnessScriptPubKeyV0 =>
+            val o = TransactionOutput(amount, witSPK)
+            WitnessTxSigComponentRaw(tx.asInstanceOf[WitnessTransaction],
+                                     UInt32(idx),
+                                     o,
+                                     Policy.standardFlags)
+          case _: UnassignedWitnessScriptPubKey => ???
+          case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
+              _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
+              _: WitnessCommitment | _: CSVScriptPubKey | _: CLTVScriptPubKey |
+              _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+              EmptyScriptPubKey) =>
+            val o = TransactionOutput(CurrencyUnits.zero, x)
+            BaseTxSigComponent(tx, UInt32(idx), o, Policy.standardFlags)
+
+          case _: P2SHScriptPubKey =>
+            val p2shScriptSig =
+              tx.inputs(idx).scriptSignature.asInstanceOf[P2SHScriptSignature]
+            p2shScriptSig.redeemScript match {
+
+              case _: WitnessScriptPubKey =>
+                WitnessTxSigComponentP2SH(transaction =
+                                            tx.asInstanceOf[WitnessTransaction],
+                                          inputIndex = UInt32(idx),
+                                          output = output,
+                                          flags = Policy.standardFlags)
+
+              case _ =>
+                BaseTxSigComponent(tx,
+                                   UInt32(idx),
+                                   output,
+                                   Policy.standardFlags)
+            }
+        }
+
+        PreExecutionScriptProgram(txSigComponent)
+    }
+    ScriptInterpreter.runAllVerify(programs)
   }
 }
 

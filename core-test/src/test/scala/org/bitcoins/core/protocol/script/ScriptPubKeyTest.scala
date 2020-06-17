@@ -22,8 +22,8 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
          OP_EQUALVERIFY,
          OP_CHECKSIG)
   //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
-  val rawScriptPubKey = TestUtil.rawP2PKHScriptPubKey
-  val scriptPubKey = ScriptPubKey(rawScriptPubKey)
+  val rawScriptPubKey: String = TestUtil.rawP2PKHScriptPubKey
+  val scriptPubKey: ScriptPubKey = ScriptPubKey(rawScriptPubKey)
 
   "ScriptPubKey" must "give the expected asm from creating a scriptPubKey from hex" in {
     scriptPubKey.asm must be(expectedAsm)
@@ -35,9 +35,8 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
     val witnessProgram = Seq(ScriptConstant(pubKeyHash.bytes))
     val asm = OP_0 +: BytesToPushOntoStack(20) +: witnessProgram
     val witnessScriptPubKey = WitnessScriptPubKey(asm)
-    witnessScriptPubKey.isDefined must be(true)
-    witnessScriptPubKey.get.witnessVersion must be(WitnessVersion0)
-    witnessScriptPubKey.get.witnessProgram must be(witnessProgram)
+    witnessScriptPubKey.witnessVersion must be(WitnessVersion0)
+    witnessScriptPubKey.witnessProgram must be(witnessProgram)
   }
 
   it must "determine the correct descriptors" in {

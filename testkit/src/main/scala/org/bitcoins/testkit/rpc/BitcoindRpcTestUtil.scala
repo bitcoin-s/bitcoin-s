@@ -140,7 +140,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     val datadir = conf.datadir
     val written = BitcoindConfig.writeConfigToFile(conf, datadir)
-    logger.debug(s"Wrote conf to ${written}")
+    logger.debug(s"Wrote conf to $written")
     written
   }
 
@@ -178,7 +178,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
       if (filtered.isEmpty)
         throw new RuntimeException(
-          s"bitcoind ${known.toString} is not installed in ${binaryDirectory}. Run `sbt downloadBitcoind`")
+          s"bitcoind ${known.toString} is not installed in $binaryDirectory. Run `sbt downloadBitcoind`")
 
       // might be multiple versions downloaded for
       // each major version, i.e. 0.16.2 and 0.16.3
@@ -187,7 +187,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       versionFolder
         .resolve("bin")
         .resolve(if (Properties.isWin) "bitcoind.exe" else "bitcoind")
-        .toFile()
+        .toFile
   }
 
   /** Creates a `bitcoind` instance within the user temporary directory */
@@ -229,7 +229,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                                     authCredentials = auth,
                                     zmqConfig = ZmqConfig.fromPort(zmqPort),
                                     binary = binary,
-                                    datadir = configFile.getParent.toFile())
+                                    datadir = configFile.getParent.toFile)
 
     instance
   }
@@ -485,7 +485,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         .map(info => info.isEmpty || info.head.connected.contains(false))
         .recoverWith {
           case exception: BitcoindException
-              if exception.getMessage.contains("Node has not been added") =>
+              if exception.getMessage().contains("Node has not been added") =>
             from.getPeerInfo.map(
               _.forall(_.networkInfo.addr != to.instance.uri))
         }
@@ -848,6 +848,19 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       .flatMap(node.getBlockWithTransactions)
   }
 
+  /** Mines blocks until the specified block height. */
+  def waitUntilBlock(
+      blockHeight: Int,
+      client: BitcoindRpcClient,
+      addressForMining: BitcoinAddress)(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    for {
+      currentCount <- client.getBlockCount
+      blocksToMine = blockHeight - currentCount
+      _ <- client.generateToAddress(blocks = blocksToMine, addressForMining)
+    } yield ()
+  }
+
   /**
     * Produces a confirmed transaction from `sender` to `address`
     * for `amount`
@@ -941,7 +954,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
     require(
-      instance.datadir.getPath().startsWith(Properties.tmpDir),
+      instance.datadir.getPath.startsWith(Properties.tmpDir),
       s"${instance.datadir} is not in user temp dir! This could lead to bad things happening.")
 
     //start the bitcoind instance so eclair can properly use it

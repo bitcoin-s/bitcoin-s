@@ -23,10 +23,10 @@ class NetworkParametersTest extends BitcoinSUnitTest {
   }
 
   it must "get the correct Network from string" in {
-    assert(Networks.fromString("mainnet").contains(MainNet))
-    assert(Networks.fromString("testnet").contains(TestNet3))
-    assert(Networks.fromString("regtest").contains(RegTest))
-    assert(Networks.fromString("").isEmpty)
-    assert(Networks.fromString("craig wright is a fraud").isEmpty)
+    assert(Networks.fromString("mainnet") == MainNet)
+    assert(Networks.fromString("testnet") == TestNet3)
+    assert(Networks.fromString("regtest") == RegTest)
+    assert(Networks.fromStringOpt("").isEmpty)
+    assert(Networks.fromStringOpt("craig wright is a fraud").isEmpty)
   }
 }

@@ -81,6 +81,10 @@ case class ECSignatureParams[+InputType <: InputInfo](
     extends InputSigningInfo[InputType] {
   override def signers: Vector[Sign] = Vector(signer)
 
+  def toScriptSignatureParams: ScriptSignatureParams[InputType] = {
+    ScriptSignatureParams(inputInfo, signer, hashType)
+  }
+
   def mapInfo[T <: InputInfo](func: InputType => T): ECSignatureParams[T] = {
     this.copy(inputInfo = func(this.inputInfo))
   }

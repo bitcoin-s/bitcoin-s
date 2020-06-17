@@ -1,49 +1,16 @@
 package org.bitcoins.core.wallet.builder
 
-import org.bitcoins.core.crypto.{
-  BaseTxSigComponent,
-  WitnessTxSigComponentP2SH,
-  WitnessTxSigComponentRaw
-}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  CLTVScriptPubKey,
-  CSVScriptPubKey,
-  ConditionalScriptPubKey,
-  EmptyScriptPubKey,
-  MultiSignatureScriptPubKey,
-  NonStandardScriptPubKey,
-  P2PKHScriptPubKey,
-  P2PKScriptPubKey,
-  P2PKWithTimeoutScriptPubKey,
-  P2SHScriptPubKey,
-  P2SHScriptSignature,
-  P2WSHWitnessV0,
-  UnassignedWitnessScriptPubKey,
-  WitnessCommitment,
-  WitnessScriptPubKey,
-  WitnessScriptPubKeyV0
-}
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  Transaction,
-  TransactionConstants,
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput,
-  WitnessTransaction
-}
-import org.bitcoins.core.script.PreExecutionScriptProgram
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
   InputInfo,
-  InputSigningInfo,
   LockTimeInputInfo,
   ScriptSignatureParams
 }
@@ -297,64 +264,6 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     )
   }
 
-  def verifyScript(
-      tx: Transaction,
-      utxos: Vector[InputSigningInfo[InputInfo]]): Boolean = {
-    val programs: Vector[PreExecutionScriptProgram] =
-      tx.inputs.zipWithIndex.toVector.map {
-        case (input: TransactionInput, idx: Int) =>
-          val outpoint = input.previousOutput
-
-          val creditingTx =
-            utxos.find(u => u.outPoint.txId == outpoint.txId).get
-
-          val output = creditingTx.output
-
-          val spk = output.scriptPubKey
-
-          val amount = output.value
-
-          val txSigComponent = spk match {
-            case witSPK: WitnessScriptPubKeyV0 =>
-              val o = TransactionOutput(amount, witSPK)
-              WitnessTxSigComponentRaw(tx.asInstanceOf[WitnessTransaction],
-                                       UInt32(idx),
-                                       o,
-                                       Policy.standardFlags)
-            case _: UnassignedWitnessScriptPubKey => ???
-            case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
-                _: WitnessCommitment | _: CSVScriptPubKey |
-                _: CLTVScriptPubKey | _: ConditionalScriptPubKey |
-                _: NonStandardScriptPubKey | EmptyScriptPubKey) =>
-              val o = TransactionOutput(CurrencyUnits.zero, x)
-              BaseTxSigComponent(tx, UInt32(idx), o, Policy.standardFlags)
-
-            case _: P2SHScriptPubKey =>
-              val p2shScriptSig =
-                tx.inputs(idx).scriptSignature.asInstanceOf[P2SHScriptSignature]
-              p2shScriptSig.redeemScript match {
-
-                case _: WitnessScriptPubKey =>
-                  WitnessTxSigComponentP2SH(
-                    transaction = tx.asInstanceOf[WitnessTransaction],
-                    inputIndex = UInt32(idx),
-                    output = output,
-                    flags = Policy.standardFlags)
-
-                case _ =>
-                  BaseTxSigComponent(tx,
-                                     UInt32(idx),
-                                     output,
-                                     Policy.standardFlags)
-              }
-          }
-
-          PreExecutionScriptProgram(txSigComponent)
-      }
-    ScriptInterpreter.runAllVerify(programs)
-  }
-
   it should "sign a mix of spks in a tx and then have it verified" in {
     forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey) {
@@ -369,7 +278,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
           RawTxSigner.sign(utx, creditingTxsInfo.toVector, fee))
 
         txF.map { tx =>
-          assert(verifyScript(tx, creditingTxsInfo.toVector))
+          assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
         }
     }
   }
@@ -388,7 +297,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
           RawTxSigner.sign(utx, creditingTxsInfo.toVector, fee))
 
         txF.map { tx =>
-          assert(verifyScript(tx, creditingTxsInfo.toVector))
+          assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
         }
     }
   }

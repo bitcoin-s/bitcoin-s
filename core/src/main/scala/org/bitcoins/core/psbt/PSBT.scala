@@ -88,6 +88,22 @@ case class PSBT(
     PSBT(global, inputs, outputs)
   }
 
+  def finalizeInput(index: Int): Try[PSBT] = {
+    require(index >= 0 && index < inputMaps.size,
+            s"Index must be within 0 and the number of inputs, got: $index")
+    val inputMap = inputMaps(index)
+    if (inputMap.isFinalized) {
+      Success(this)
+    } else {
+      inputMap.finalize(transaction.inputs(index)).map { finalizedInputMap =>
+        val newInputMaps =
+          inputMaps.updated(index, finalizedInputMap)
+
+        PSBT(globalMap, newInputMaps, outputMaps)
+      }
+    }
+  }
+
   /** Finalizes this PSBT if possible, returns a Failure otherwise
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#input-finalizer]]
     */
@@ -502,28 +518,8 @@ case class PSBT(
       inputIndex: Int): PSBT =
     addSignature(PartialSignature(pubKey, sig), inputIndex)
 
-  def addSignature(
-      partialSignature: PartialSignature,
-      inputIndex: Int): PSBT = {
-    require(
-      inputIndex < inputMaps.size,
-      s"index must be less than the number of input maps present in the psbt, $inputIndex >= ${inputMaps.size}")
-    require(
-      !inputMaps(inputIndex).isFinalized,
-      s"Cannot update an InputPSBTMap that is finalized, index: $inputIndex")
-    require(
-      !inputMaps(inputIndex).partialSignatures
-        .exists(_.pubKey == partialSignature.pubKey),
-      s"Input has already been signed by ${partialSignature.pubKey}"
-    )
-
-    val newElements = inputMaps(inputIndex).elements :+ partialSignature
-
-    val newInputMaps =
-      inputMaps.updated(inputIndex, InputPSBTMap(newElements))
-
-    PSBT(globalMap, newInputMaps, outputMaps)
-  }
+  def addSignature(partialSignature: PartialSignature, inputIndex: Int): PSBT =
+    addSignatures(Vector(partialSignature), inputIndex)
 
   /** Adds all the PartialSignatures to the input map at the given index */
   def addSignatures(
@@ -549,6 +545,51 @@ case class PSBT(
       inputMaps.updated(inputIndex, InputPSBTMap(newElements))
 
     PSBT(globalMap, newInputMaps, outputMaps)
+  }
+
+  def verifyFinalizedInput(index: Int): Boolean = {
+    val inputMap = inputMaps(index)
+    require(inputMap.isFinalized, "Input must be finalized to verify")
+
+    val wUtxoOpt = inputMap.witnessUTXOOpt
+    val utxoOpt = inputMap.nonWitnessOrUnknownUTXOOpt
+
+    val newInput = {
+      val input = transaction.inputs(index)
+      val scriptSigOpt = inputMap.finalizedScriptSigOpt
+      val scriptSig =
+        scriptSigOpt.map(_.scriptSig).getOrElse(EmptyScriptSignature)
+      TransactionInput(input.previousOutput, scriptSig, input.sequence)
+    }
+
+    val tx = transaction.updateInput(index, newInput)
+
+    wUtxoOpt match {
+      case Some(wUtxo) =>
+        inputMap.finalizedScriptWitnessOpt match {
+          case Some(scriptWit) =>
+            val wtx = {
+              val wtx = WitnessTransaction.toWitnessTx(transaction)
+              wtx.updateWitness(index, scriptWit.scriptWitness)
+            }
+            val output = wUtxo.witnessUTXO
+
+            ScriptInterpreter.verifyInputScript(wtx, index, output)
+          case None =>
+            false
+        }
+      case None =>
+        utxoOpt match {
+          case Some(utxo) =>
+            val input = tx.inputs(index)
+            val output =
+              utxo.transactionSpent.outputs(input.previousOutput.vout.toInt)
+
+            ScriptInterpreter.verifyInputScript(tx, index, output)
+          case None =>
+            false
+        }
+    }
   }
 
   /**
