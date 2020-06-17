@@ -440,7 +440,7 @@ object Wallet extends WalletLogger {
     WalletImpl(keyManager, nodeApi, chainQueryApi, feeRateApi, creationTime)
   }
 
-  /** Creates the level 0 account for the given HD purpose */
+  /** Creates the level 0 account for the given HD purpose, if the root account exists do nothing */
   private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
       implicit walletAppConfig: WalletAppConfig,
       ec: ExecutionContext): Future[AccountDb] = {
@@ -451,15 +451,35 @@ object Wallet extends WalletLogger {
     // safe since we're deriving from a priv
     val xpub = keyManager.deriveXPub(account).get
     val accountDb = AccountDb(xpub, account)
-    logger.debug(
-      s"Creating account with constant prefix ${keyManager.kmParams.purpose}")
-    wallet.accountDAO
-      .create(accountDb)
-      .map { written =>
-        logger.debug(
-          s"Saved account with constant prefix ${keyManager.kmParams.purpose} to DB")
-        written
-      }
+    val accountDAO = wallet.accountDAO
+
+    //see if we already have this account in our database
+    //Three possible cases:
+    //1. We have nothing in our database, so we need to insert it
+    //2. We already have this account in our database, so we do nothing
+    //3. We have this account in our database, with a DIFFERENT xpub. This is bad. Fail with an exception
+    //   this most likely means that we have a different key manager than we expected
+    val accountOptF = accountDAO.read(account.coin, account.index)
+    accountOptF.flatMap {
+      case Some(account) =>
+        if (account.xpub != xpub) {
+          val errorMsg = s"Divergent xpubs for account=${account}. Existing database xpub=${account.xpub}, new xpub=${xpub}. " +
+            s"It is possible we have a different key manager being used than expected, keymanager=${keyManager}"
+          Future.failed(new RuntimeException(errorMsg))
+        } else {
+          logger.debug(
+            s"Account already exists in database, no need to create it, account=${account}")
+          Future.successful(account)
+        }
+      case None =>
+        wallet.accountDAO
+          .create(accountDb)
+          .map { written =>
+            logger.info(s"Created account=${accountDb} to DB")
+            written
+          }
+    }
+
   }
 
   def initialize(wallet: Wallet, bip39PasswordOpt: Option[String])(
@@ -485,8 +505,9 @@ object Wallet extends WalletLogger {
           case Left(err) =>
             //probably means you haven't initialized the key manager via the
             //'CreateKeyManagerApi'
-            throw new RuntimeException(
-              s"Failed to create keymanager with params=$kmParams err=$err")
+            Future.failed(
+              new RuntimeException(
+                s"Failed to create keymanager with params=$kmParams err=$err"))
         }
 
       }

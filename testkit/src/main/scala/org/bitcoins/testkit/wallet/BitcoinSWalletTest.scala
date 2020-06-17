@@ -418,7 +418,6 @@ object BitcoinSWalletTest extends WalletLogger {
       extraConfig: Option[Config] = None)(
       implicit config: BitcoinSAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
-
     val newWalletConf = extraConfig match {
       case None =>
         config.walletConf
