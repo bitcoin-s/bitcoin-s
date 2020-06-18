@@ -108,7 +108,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     } yield assert(signed.complete)
   }
 
-  private val SpreadInSeconds = 30
+  private val SpreadInSeconds = 40
 
   it should "be able to get the address info for a given address" in {
     for {
