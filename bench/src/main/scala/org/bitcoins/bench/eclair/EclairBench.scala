@@ -9,7 +9,6 @@ import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -27,7 +26,7 @@ object EclairBench extends App with EclairRpcTestUtil {
 
   import PaymentLog._
 
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   import system.dispatcher
 
   // put compiled test jar files into binaries/eclair/${version} directory
@@ -104,7 +103,7 @@ object EclairBench extends App with EclairRpcTestUtil {
         val _ = logEvent(event)
       }
       _ = println(
-        s"Set up ${NetworkSize} nodes, that will send $PaymentCount payments to the test node each")
+        s"Set up $NetworkSize nodes, that will send $PaymentCount payments to the test node each")
       _ = println(
         s"Test node data directory: ${network.testEclairNode.instance.authCredentials.datadir
           .getOrElse("")}")
@@ -115,18 +114,14 @@ object EclairBench extends App with EclairRpcTestUtil {
         duration = 1.second,
         maxTries = 100)
       _ <- TestAsyncUtil
-        .retryUntilSatisfied(condition =
-                               paymentLog.values().asScala.forall(_.completed),
-                             duration = 1.second,
-                             maxTries = 100)
+        .retryUntilSatisfied(
+          condition = EclairBenchUtil.paymentLogValues().forall(_.completed),
+          duration = 1.second,
+          maxTries = 100)
         .recover { case ex: Throwable => ex.printStackTrace() }
       _ = println("\nDone!")
     } yield {
-      paymentLog
-        .values()
-        .asScala
-        .toVector
-        .sortBy(_.paymentSentAt)
+      EclairBenchUtil.paymentLogValues().sortBy(_.paymentSentAt)
     }
   }
 
@@ -157,7 +152,7 @@ object EclairBench extends App with EclairRpcTestUtil {
             }
       val outputFile = new File(OutputFileName)
       Files.write(outputFile.toPath,
-                  csv.asJava,
+                  EclairBenchUtil.convertStrings(csv),
                   StandardOpenOption.CREATE,
                   StandardOpenOption.WRITE,
                   StandardOpenOption.TRUNCATE_EXISTING)
