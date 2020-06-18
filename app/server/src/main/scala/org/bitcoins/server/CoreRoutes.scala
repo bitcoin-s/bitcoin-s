@@ -71,5 +71,16 @@ case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
       }
+
+    case ServerCommand("decoderawtransaction", arr) =>
+      DecodeRawTransaction.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DecodeRawTransaction(tx)) =>
+          complete {
+            val jsonStr = SerializedTransaction.decodeRawTransaction(tx)
+            Server.httpSuccess(jsonStr)
+          }
+      }
   }
 }

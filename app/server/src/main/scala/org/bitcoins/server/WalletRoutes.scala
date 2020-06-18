@@ -256,15 +256,5 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         }
       }
 
-    case ServerCommand("decoderawtransaction", arr) =>
-      DecodeRawTransaction.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(DecodeRawTransaction(tx)) =>
-          complete {
-            val jsonStr = wallet.decodeRawTransaction(tx)
-            Server.httpSuccess(jsonStr)
-          }
-      }
   }
 }

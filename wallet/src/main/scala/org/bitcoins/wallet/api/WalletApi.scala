@@ -55,9 +55,6 @@ trait WalletApi extends WalletLogger {
 
   def networkParameters: NetworkParameters = walletConfig.network
 
-  def decodeRawTransaction(tx: Transaction): String =
-    SerializedTransaction.decodeRawTransaction(tx)
-
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
