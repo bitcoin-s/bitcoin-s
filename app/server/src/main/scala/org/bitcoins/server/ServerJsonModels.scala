@@ -140,6 +140,24 @@ object ConvertToPSBT extends ServerJsonModels {
   }
 }
 
+case class DecodeRawTransaction(tx: Transaction)
+
+object DecodeRawTransaction extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DecodeRawTransaction] = {
+    jsArr.arr.toList match {
+      case tx :: Nil =>
+        Try {
+          DecodeRawTransaction(Transaction.fromHex(tx.str))
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 case class Rescan(
     batchSize: Option[Int],
     startBlock: Option[BlockStamp],
