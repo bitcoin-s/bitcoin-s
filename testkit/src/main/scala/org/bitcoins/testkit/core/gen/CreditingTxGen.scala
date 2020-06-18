@@ -76,7 +76,8 @@ sealed abstract class CreditingTxGen {
         !ScriptGenerators.redeemScriptTooBig(output.output.scriptPubKey))
       .suchThat {
         case ScriptSignatureParams(
-              P2SHNestedSegwitV0InputInfo(_, _, _, witness, _, _),
+              P2SHNestedSegwitV0InputInfo(_, _, witness, _, _),
+              _,
               _,
               _) =>
           witness.stack.exists(_.length > ScriptInterpreter.MAX_PUSH_SIZE)
@@ -200,7 +201,7 @@ sealed abstract class CreditingTxGen {
         val updatedOutput = TransactionOutput(oldOutput.value, p2sh)
         val scriptWitnessOpt = InputInfo.getScriptWitness(o.inputInfo)
         val tc = TransactionConstants
-        val oldOutputs = o.inputInfo.prevTransaction.outputs
+        val oldOutputs = o.prevTransaction.outputs
         val updated = oldOutputs.updated(o.outPoint.vout.toInt, updatedOutput)
         val creditingTx =
           BaseTransaction(tc.validLockVersion, Nil, updated, tc.lockTime)
@@ -208,13 +209,13 @@ sealed abstract class CreditingTxGen {
         ScriptSignatureParams(
           InputInfo(
             TransactionOutPoint(creditingTx.txId, o.outPoint.vout),
-            creditingTx,
             updatedOutput,
             Some(redeemScript),
             scriptWitnessOpt,
             computeAllTrueConditionalPath(redeemScript, None, scriptWitnessOpt),
             o.signers.map(_.publicKey)
           ),
+          creditingTx,
           o.signers,
           hashType
         )
@@ -234,7 +235,7 @@ sealed abstract class CreditingTxGen {
             val csvSPK = CLTVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
             val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
             val tc = TransactionConstants
-            val oldOutputs = o.inputInfo.prevTransaction.outputs
+            val oldOutputs = o.prevTransaction.outputs
             val updated =
               oldOutputs.updated(o.outPoint.vout.toInt, updatedOutput)
             val creditingTx =
@@ -243,13 +244,13 @@ sealed abstract class CreditingTxGen {
             ScriptSignatureParams(
               InputInfo(
                 TransactionOutPoint(creditingTx.txId, o.outPoint.vout),
-                creditingTx,
                 updatedOutput,
                 InputInfo.getRedeemScript(o.inputInfo),
                 InputInfo.getScriptWitness(o.inputInfo),
                 ConditionalPath.NoCondition,
                 o.signers.map(_.publicKey)
               ),
+              creditingTx,
               o.signers,
               hashType
             )
@@ -269,7 +270,7 @@ sealed abstract class CreditingTxGen {
             val csvSPK = CSVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
             val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
             val tc = TransactionConstants
-            val oldOutputs = o.inputInfo.prevTransaction.outputs
+            val oldOutputs = o.prevTransaction.outputs
             val updated =
               oldOutputs.updated(o.outPoint.vout.toInt, updatedOutput)
             val creditingTx =
@@ -278,13 +279,13 @@ sealed abstract class CreditingTxGen {
             ScriptSignatureParams(
               InputInfo(
                 TransactionOutPoint(creditingTx.txId, o.outPoint.vout),
-                creditingTx,
                 updatedOutput,
                 InputInfo.getRedeemScript(o.inputInfo),
                 InputInfo.getScriptWitness(o.inputInfo),
                 ConditionalPath.NoCondition,
                 o.signers.map(_.publicKey)
               ),
+              creditingTx,
               o.signers,
               hashType
             )
@@ -309,7 +310,7 @@ sealed abstract class CreditingTxGen {
       .suchThat(output =>
         !ScriptGenerators.redeemScriptTooBig(output.output.scriptPubKey))
       .flatMap {
-        case ScriptSignatureParams(info, signers, _) =>
+        case ScriptSignatureParams(info, _, signers, _) =>
           val spk = info.scriptPubKey
           spk match {
             case rspk: RawScriptPubKey =>
@@ -351,7 +352,6 @@ sealed abstract class CreditingTxGen {
                   InputInfo(
                     TransactionOutPoint(creditingTx.txId,
                                         UInt32.apply(outputIndex)),
-                    creditingTx,
                     TransactionOutput(
                       creditingTx.outputs(outputIndex).value,
                       creditingTx.outputs(outputIndex).scriptPubKey),
@@ -360,6 +360,7 @@ sealed abstract class CreditingTxGen {
                     ConditionalPath.NoCondition,
                     signers.map(_.publicKey)
                   ),
+                  creditingTx,
                   signers,
                   hashType
                 )
@@ -425,13 +426,13 @@ sealed abstract class CreditingTxGen {
           ScriptSignatureParams(
             InputInfo(
               TransactionOutPoint(btx.txId, UInt32.apply(idx)),
-              btx,
               TransactionOutput(old.value, spk),
               redeemScript,
               scriptWitness,
               computeAllTrueConditionalPath(spk, redeemScript, scriptWitness),
               signers.toVector.map(_.publicKey)
             ),
+            btx,
             signers.toVector,
             hashType
           )

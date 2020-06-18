@@ -1,11 +1,7 @@
 package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.transaction.{
-  OutputReference,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.Sign
 
@@ -15,8 +11,23 @@ import org.bitcoins.crypto.Sign
   */
 sealed trait InputSigningInfo[+InputType <: InputInfo] {
   def inputInfo: InputType
+  def prevTransaction: Transaction
   def hashType: HashType
   def signers: Vector[Sign]
+
+  // If using EmptyTransaction we are testing or dummy signing
+  require(
+    prevTransaction == EmptyTransaction || outPoint.txId == prevTransaction.txId,
+    s"prevTransaction txId (${prevTransaction.txId.hex}) does not match the outPoint's (${outPoint.txId.hex})"
+  )
+
+  require(
+    prevTransaction == EmptyTransaction || prevTransaction
+      .outputs(outPoint.vout.toInt)
+      .value == amount,
+    s"prevTransaction output at index ${outPoint.vout.toInt} (${prevTransaction
+      .outputs(outPoint.vout.toInt)}) does match the corresponding value $amount"
+  )
 
   private val keysToSignFor = inputInfo.pubKeys
   require(signers.map(_.publicKey).forall(keysToSignFor.contains),
@@ -34,6 +45,7 @@ sealed trait InputSigningInfo[+InputType <: InputInfo] {
   */
 case class ScriptSignatureParams[+InputType <: InputInfo](
     inputInfo: InputType,
+    prevTransaction: Transaction,
     signers: Vector[Sign],
     hashType: HashType)
     extends InputSigningInfo[InputType] {
@@ -47,12 +59,12 @@ case class ScriptSignatureParams[+InputType <: InputInfo](
   }
 
   def toSingle(index: Int): ECSignatureParams[InputType] = {
-    ECSignatureParams(inputInfo, signers(index), hashType)
+    ECSignatureParams(inputInfo, prevTransaction, signers(index), hashType)
   }
 
   def toSingles: Vector[ECSignatureParams[InputType]] = {
     signers.map { signer =>
-      ECSignatureParams(inputInfo, signer, hashType)
+      ECSignatureParams(inputInfo, prevTransaction, signer, hashType)
     }
   }
 
@@ -66,9 +78,10 @@ object ScriptSignatureParams {
 
   def apply[InputType <: InputInfo](
       inputInfo: InputType,
+      prevTransaction: Transaction,
       signer: Sign,
       hashType: HashType): ScriptSignatureParams[InputType] =
-    ScriptSignatureParams(inputInfo, Vector(signer), hashType)
+    ScriptSignatureParams(inputInfo, prevTransaction, Vector(signer), hashType)
 }
 
 /** Stores the information needed to generate an ECDigitalSignature for
@@ -76,13 +89,14 @@ object ScriptSignatureParams {
   */
 case class ECSignatureParams[+InputType <: InputInfo](
     inputInfo: InputType,
+    prevTransaction: Transaction,
     signer: Sign,
     hashType: HashType)
     extends InputSigningInfo[InputType] {
   override def signers: Vector[Sign] = Vector(signer)
 
   def toScriptSignatureParams: ScriptSignatureParams[InputType] = {
-    ScriptSignatureParams(inputInfo, signer, hashType)
+    ScriptSignatureParams(inputInfo, prevTransaction, signer, hashType)
   }
 
   def mapInfo[T <: InputInfo](func: InputType => T): ECSignatureParams[T] = {

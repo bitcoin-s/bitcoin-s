@@ -189,13 +189,13 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
     ScriptSignatureParams(
       InputInfo(
         outPoint,
-        prevTransaction,
         output,
         redeemScriptOpt,
         scriptWitnessOpt,
         ConditionalPath.NoCondition, // TODO: Migrate to add the Column for this (default: NoConditionsLeft)
         Vector(sign.publicKey)
       ),
+      prevTransaction,
       Vector(sign),
       hashType
     )

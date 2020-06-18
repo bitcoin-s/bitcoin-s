@@ -8,33 +8,8 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  CLTVScriptPubKey,
-  CSVScriptPubKey,
-  ConditionalScriptPubKey,
-  EmptyScriptPubKey,
-  EmptyScriptWitness,
-  MultiSignatureScriptPubKey,
-  NonStandardScriptPubKey,
-  P2PKHScriptPubKey,
-  P2PKScriptPubKey,
-  P2PKWithTimeoutScriptPubKey,
-  P2SHScriptPubKey,
-  P2SHScriptSignature,
-  P2WPKHWitnessV0,
-  P2WSHWitnessV0,
-  UnassignedWitnessScriptPubKey,
-  WitnessCommitment,
-  WitnessScriptPubKey,
-  WitnessScriptPubKeyV0
-}
-import org.bitcoins.core.protocol.transaction.{
-  EmptyWitness,
-  Transaction,
-  TransactionInput,
-  TransactionOutput,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.PreExecutionScriptProgram
@@ -44,15 +19,7 @@ import org.bitcoins.core.wallet.builder.{
   StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.{
-  ECSignatureParams,
-  InputInfo,
-  InputSigningInfo,
-  P2WPKHV0InputInfo,
-  P2WSHV0InputInfo,
-  ScriptSignatureParams,
-  UnassignedSegwitNativeInputInfo
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.ECDigitalSignature
 import org.bitcoins.testkit.core.gen.{
   CreditingTxGen,
@@ -79,13 +46,13 @@ class SignerTest extends BitcoinSAsyncTest {
     val spendingInfo = ScriptSignatureParams(
       UnassignedSegwitNativeInputInfo(
         p2wpkh.outPoint,
-        p2wpkh.inputInfo.prevTransaction,
         p2wpkh.amount,
         p2wpkh.output.scriptPubKey.asInstanceOf[WitnessScriptPubKey],
         InputInfo.getScriptWitness(p2wpkh.inputInfo).get,
         p2wpkh.conditionalPath,
         p2wpkh.signers.map(_.publicKey)
       ),
+      p2wpkh.prevTransaction,
       p2wpkh.signers,
       p2wpkh.hashType
     )
@@ -299,7 +266,7 @@ class SignerTest extends BitcoinSAsyncTest {
               (psbt, spendInfo) =>
                 val idx = inputIndex(spendInfo, unsignedTx)
                 psbt
-                  .addWitnessUTXOToInput(spendInfo.output, idx)
+                  .addUTXOToInput(spendInfo.prevTransaction, idx)
                   .addScriptWitnessToInput(
                     InputInfo.getScriptWitness(spendInfo.inputInfo).get,
                     idx)

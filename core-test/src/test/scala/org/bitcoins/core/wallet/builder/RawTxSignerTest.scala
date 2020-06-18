@@ -48,15 +48,15 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
       ScriptSignatureParams(
         InputInfo(
           outPoint = outPoint,
-          creditingTx,
           output = creditingOutput,
           redeemScriptOpt = None,
           scriptWitnessOpt = None,
           conditionalPath = ConditionalPath.NoCondition,
           hashPreImages = Vector(privKey.publicKey)
         ),
-        privKey,
-        HashType.sigHashAll
+        prevTransaction = creditingTx,
+        signer = privKey,
+        hashType = HashType.sigHashAll
       )
     val utxos = Vector(utxo)
     val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(1))
@@ -86,15 +86,15 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
-        creditingTx,
         output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
         conditionalPath = ConditionalPath.NoCondition,
         hashPreImages = Vector(privKey.publicKey)
       ),
-      privKey,
-      HashType.sigHashAll
+      prevTransaction = creditingTx,
+      signer = privKey,
+      hashType = HashType.sigHashAll
     )
     val utxos = Vector(utxo)
 
@@ -125,13 +125,13 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
-        creditingTx,
         output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
         conditionalPath = ConditionalPath.NoCondition,
         hashPreImages = Vector(privKey.publicKey)
       ),
+      prevTransaction = creditingTx,
       signer = privKey,
       hashType = HashType.sigHashAll
     )
@@ -161,12 +161,12 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val cltvSpendingInfo = ScriptSignatureParams(
       LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
                                             UInt32.zero),
-                        EmptyTransaction,
                         Bitcoins.one,
                         cltvSPK,
                         ConditionalPath.NoCondition),
-      Vector(fundingPrivKey),
-      HashType.sigHashAll
+      prevTransaction = EmptyTransaction,
+      signers = Vector(fundingPrivKey),
+      hashType = HashType.sigHashAll
     )
 
     val utxos = Vector(cltvSpendingInfo)
@@ -199,12 +199,12 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val cltvSpendingInfo = ScriptSignatureParams(
       LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
                                             UInt32.zero),
-                        EmptyTransaction,
                         Bitcoins.one,
                         cltvSPK,
                         ConditionalPath.NoCondition),
-      Vector(fundingPrivKey),
-      HashType.sigHashAll
+      prevTransaction = EmptyTransaction,
+      signers = Vector(fundingPrivKey),
+      hashType = HashType.sigHashAll
     )
 
     val utxos = Vector(cltvSpendingInfo)
@@ -242,23 +242,23 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val cltvSpendingInfo1 = ScriptSignatureParams(
       LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
                                             UInt32.zero),
-                        EmptyTransaction,
                         Bitcoins.one,
                         cltvSPK1,
                         ConditionalPath.NoCondition),
-      Vector(fundingPrivKey1),
-      HashType.sigHashAll
+      prevTransaction = EmptyTransaction,
+      signers = Vector(fundingPrivKey1),
+      hashType = HashType.sigHashAll
     )
 
     val cltvSpendingInfo2 = ScriptSignatureParams(
       LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
                                             UInt32.one),
-                        EmptyTransaction,
                         Bitcoins.one,
                         cltvSPK2,
                         ConditionalPath.NoCondition),
-      Vector(fundingPrivKey2),
-      HashType.sigHashAll
+      prevTransaction = EmptyTransaction,
+      signers = Vector(fundingPrivKey2),
+      hashType = HashType.sigHashAll
     )
 
     val utxos = Vector(cltvSpendingInfo1, cltvSpendingInfo2)

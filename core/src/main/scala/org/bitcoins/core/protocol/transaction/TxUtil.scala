@@ -157,7 +157,9 @@ object TxUtil {
         }
 
         val mockSpendingInfo =
-          inputInfo.toSpendingInfo(mockSigners, HashType.sigHashAll)
+          inputInfo.toSpendingInfo(EmptyTransaction,
+                                   mockSigners,
+                                   HashType.sigHashAll)
 
         BitcoinSigner
           .sign(mockSpendingInfo, utx, isDummySignature = true)

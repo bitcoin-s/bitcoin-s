@@ -173,7 +173,7 @@ object PSBTGenerators {
         creditingTxsInfo.find(_.outPoint == input.previousOutput)
       infoOpt match {
         case Some(info) =>
-          (info, Some(info.inputInfo.prevTransaction))
+          (info, Some(info.prevTransaction))
         case None =>
           throw new RuntimeException(
             "CreditingTxGen.inputsAndOutputs is being inconsistent")

@@ -595,9 +595,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         outputIndex)
       spendingInfo = ScriptSignatureParams(
         P2PKInputInfo(TransactionOutPoint(creditingTx.txIdBE, inputIndex),
-                      creditingTx,
                       creditingTx.outputs(outputIndex.toInt).value,
                       scriptPubKey),
+        creditingTx,
         privateKey,
         hashType
       )
@@ -633,9 +633,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         outputIndex)
       spendingInfo = ScriptSignatureParams(
         P2PKHInputInfo(TransactionOutPoint(creditingTx.txIdBE, inputIndex),
-                       creditingTx,
                        creditingTx.outputs(outputIndex.toInt).value,
                        privateKey.publicKey),
+        creditingTx,
         privateKey,
         hashType
       )
@@ -661,10 +661,10 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       val spendingInfo = ScriptSignatureParams(
         P2PKWithTimeoutInputInfo(
           TransactionOutPoint(creditingTx.txIdBE, inputIndex),
-          creditingTx,
           creditingTx.outputs(outputIndex.toInt).value,
           spk,
           isBeforeTimeout = true),
+        creditingTx,
         privKey,
         hashType
       )
@@ -711,9 +711,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       spendingInfo = ScriptSignatureParams(
         MultiSignatureInputInfo(
           TransactionOutPoint(creditingTx.txIdBE, inputIndex),
-          creditingTx,
           creditingTx.outputs(outputIndex.toInt).value,
           multiSigScriptPubKey),
+        creditingTx,
         privateKeys.toVector,
         hashType
       )

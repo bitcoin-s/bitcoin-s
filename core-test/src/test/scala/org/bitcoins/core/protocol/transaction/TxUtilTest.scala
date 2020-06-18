@@ -29,7 +29,7 @@ class TxUtilTest extends BitcoinSUnitTest {
                                    UInt32.zero)
 
   private val inputInfos = Vector(
-    EmptyInputInfo(outPoint, EmptyTransaction, Bitcoins.one + Bitcoins.one))
+    EmptyInputInfo(outPoint, Bitcoins.one + Bitcoins.one))
   private val feeRate = SatoshisPerVirtualByte(Satoshis.one)
 
   it should "detect a bad fee on the tx" in {

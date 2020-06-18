@@ -3,24 +3,12 @@ package org.bitcoins.core.psbt
 import org.bitcoins.core.byteVectorOrdering
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{
-  NonWitnessTransaction,
-  Transaction,
-  TransactionInput,
-  TransactionOutput,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  Factory,
-  NetworkElement,
-  Sha256Hash160Digest,
-  Sign
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -516,6 +504,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 
     ScriptSignatureParams(
       infoSingle.inputInfo,
+      infoSingle.prevTransaction,
       signers,
       infoSingle.hashType
     )
@@ -567,14 +556,13 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       else HashType.sigHashAll
 
     val inputInfo = InputInfo(outPoint,
-                              txVec.head.transactionSpent,
                               output,
                               redeemScriptOpt,
                               scriptWitnessOpt,
                               conditionalPath,
                               Vector(signer.publicKey))
 
-    ECSignatureParams(inputInfo, signer, hashType)
+    ECSignatureParams(inputInfo, txVec.head.transactionSpent, signer, hashType)
   }
 
   private def changeToWitnessUTXO(

@@ -2,27 +2,7 @@ package org.bitcoins.wallet.internal
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.consensus.Consensus
-<<<<<<< HEAD
-import org.bitcoins.core.protocol.transaction.{
-  EmptyTransactionOutPoint,
-  InputUtil,
-  Transaction,
-  TransactionOutput,
-  TxUtil
-}
-||||||| merged common ancestors
-import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.transaction.{
-  EmptyTransactionOutPoint,
-  InputUtil,
-  Transaction,
-  TransactionOutput,
-  TxUtil
-}
-=======
-import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction._
->>>>>>> Rework signing logic to use full funding tx
 import org.bitcoins.core.wallet.builder.{
   RawTxBuilder,
   RawTxBuilderWithFinalizer,
@@ -125,16 +105,13 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         _ = selectedUtxosF.failed.foreach(err =>
           logger.error("Error selecting utxos to fund transaction ", err))
         addrInfoOptF = selectedUtxos.map { utxo =>
-          val addrInfoOptF = getAddressInfo(utxo)
-          //.get should be safe here because of foreign key at the database level
-        prevTxFs = selectedUtxos.map(utxo =>
-          transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
-        prevTxs <- Future.sequence(prevTxFs)
-        addrInfoOptF = selectedUtxos.zip(prevTxs).map {
-          case (utxo, prevTx) =>
-            val addrInfoOptF = getAddressInfo(utxo)
-            //.get should be safe here because of foreign key at the database level
-            addrInfoOptF.map(addrInfoOpt => (utxo, prevTx, addrInfoOpt.get))
+          // .gets should be safe here because of foreign key at the database level
+          for {
+            addrInfo <- getAddressInfo(utxo).map(_.get)
+            prevTx <- transactionDAO
+              .findByOutPoint(utxo.outPoint)
+              .map(_.get.transaction)
+          } yield (utxo, prevTx, addrInfo)
         }
         vec <- Future.sequence(addrInfoOptF)
       } yield vec

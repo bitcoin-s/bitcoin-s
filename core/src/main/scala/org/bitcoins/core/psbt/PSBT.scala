@@ -30,6 +30,16 @@ case class PSBT(
     outputMaps.size == transaction.outputs.size,
     s"There must be an output map for every output in the global transaction, outputs: ${transaction.outputs}")
 
+  require(
+    inputMaps.zip(transaction.inputs).forall {
+      case (inputMap, txIn) =>
+        val prevTxOpt = inputMap.nonWitnessOrUnknownUTXOOpt
+        prevTxOpt.isEmpty || prevTxOpt.get.transactionSpent.txId == txIn.previousOutput.txId
+    },
+    "Some of the inputMaps' nonWitnessOrUnknownUTXO txId does not match the unsigned transaction's txId" +
+      s"got $inputMaps, ${transaction.inputs}"
+  )
+
   import org.bitcoins.core.psbt.InputPSBTRecord._
   import org.bitcoins.core.psbt.PSBTInputKeyId._
 
@@ -764,7 +774,7 @@ object PSBT extends Factory[PSBT] {
 
   /**
     * Wraps a Vector of pairs of ScriptSignatureParams and the Transactions whose outputs are spent.
-    * Note that this Transaction is only necessary when the output is non-segwit.
+    * Note that this Transaction is only necessary when the output if it is pre-segwitV1.
     */
   case class SpendingInfoAndNonWitnessTxs(
       infoAndTxOpts: Vector[
@@ -841,10 +851,6 @@ object PSBT extends Factory[PSBT] {
     val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
 
     Future.sequence(inputMapFs).map { inputMaps =>
-      require(inputMaps.zip(unsignedTx.inputs).forall {
-        case (map, txIn) =>
-          map.nonWitnessOrUnknownUTXOOpt.get.transactionSpent.txId == txIn.previousOutput.txId
-      })
       PSBT(globalMap, inputMaps, outputMaps)
     }
   }

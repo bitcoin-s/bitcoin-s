@@ -28,26 +28,6 @@ class InputInfoTest extends BitcoinSAsyncTest {
 
   behavior of "InputInfo"
 
-  it must "fail given no a prevTransaction that doesn't match the outPoint" in {
-    val privKey = ECPrivateKey.freshPrivateKey
-    val pubKey = privKey.publicKey
-    val p2sh = P2SHScriptPubKey(P2PKScriptPubKey(pubKey))
-    val (creditingTx, _) = TransactionGenerators.buildCreditingTransaction(p2sh)
-    val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-
-    assertThrows[IllegalArgumentException] {
-      InputInfo(
-        outPoint = outPoint,
-        prevTransaction = EmptyTransaction,
-        output = TransactionOutput(CurrencyUnits.zero, p2sh),
-        redeemScriptOpt = Some(P2PKScriptPubKey(pubKey)),
-        scriptWitnessOpt = None,
-        conditionalPath = ConditionalPath.NoCondition,
-        hashPreImages = Vector(pubKey)
-      )
-    }
-  }
-
   it must "fail given no redeem script on P2SH" in {
     val privKey = ECPrivateKey.freshPrivateKey
     val pubKey = privKey.publicKey
@@ -58,7 +38,6 @@ class InputInfoTest extends BitcoinSAsyncTest {
     assertThrows[IllegalArgumentException] {
       InputInfo(
         outPoint = outPoint,
-        prevTransaction = creditingTx,
         output = TransactionOutput(CurrencyUnits.zero, p2sh),
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
@@ -83,7 +62,6 @@ class InputInfoTest extends BitcoinSAsyncTest {
     assertThrows[IllegalArgumentException] {
       InputInfo(
         outPoint = outPoint,
-        prevTransaction = creditingTx,
         output = TransactionOutput(CurrencyUnits.zero, p2sh),
         redeemScriptOpt = Some(P2WPKHWitnessSPKV0(pubKey)),
         scriptWitnessOpt = None,
@@ -108,7 +86,6 @@ class InputInfoTest extends BitcoinSAsyncTest {
     assertThrows[UnsupportedOperationException] {
       InputInfo(
         outPoint = outPoint,
-        prevTransaction = creditingTx,
         output = TransactionOutput(CurrencyUnits.zero, p2sh),
         redeemScriptOpt = Some(P2WPKHWitnessSPKV0(pubKey)),
         scriptWitnessOpt = Some(EmptyScriptWitness),
@@ -130,7 +107,6 @@ class InputInfoTest extends BitcoinSAsyncTest {
     assertThrows[RuntimeException] {
       InputInfo(
         outPoint = outPoint,
-        prevTransaction = creditingTx,
         output = TransactionOutput(CurrencyUnits.zero, p2sh),
         redeemScriptOpt = Some(unassingedWitnessSPK),
         scriptWitnessOpt = None,
@@ -151,7 +127,6 @@ class InputInfoTest extends BitcoinSAsyncTest {
     assertThrows[UnsupportedOperationException] {
       InputInfo(
         outPoint = outPoint,
-        prevTransaction = creditingTx,
         output = TransactionOutput(CurrencyUnits.zero, p2wpkh),
         redeemScriptOpt = None,
         scriptWitnessOpt = Some(EmptyScriptWitness),
@@ -172,7 +147,6 @@ class InputInfoTest extends BitcoinSAsyncTest {
     assertThrows[IllegalArgumentException] {
       InputInfo(
         outPoint = outPoint,
-        prevTransaction = creditingTx,
         output = TransactionOutput(CurrencyUnits.zero, p2wpkh),
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
@@ -196,7 +170,6 @@ class InputInfoTest extends BitcoinSAsyncTest {
     val spendingInfo =
       InputInfo(
         outPoint = outPoint,
-        prevTransaction = creditingTx,
         output = TransactionOutput(CurrencyUnits.zero, unassingedWitnessSPK),
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
@@ -206,7 +179,6 @@ class InputInfoTest extends BitcoinSAsyncTest {
     val expectedSpendingInfo =
       UnassignedSegwitNativeInputInfo(
         outPoint = outPoint,
-        prevTransaction = creditingTx,
         amount = CurrencyUnits.zero,
         scriptPubKey = unassingedWitnessSPK,
         scriptWitness = EmptyScriptWitness,
@@ -228,7 +200,6 @@ class InputInfoTest extends BitcoinSAsyncTest {
     assertThrows[UnsupportedOperationException] {
       InputInfo(
         outPoint = outPoint,
-        prevTransaction = creditingTx,
         output = TransactionOutput(CurrencyUnits.zero, spk),
         redeemScriptOpt = None,
         scriptWitnessOpt = None,

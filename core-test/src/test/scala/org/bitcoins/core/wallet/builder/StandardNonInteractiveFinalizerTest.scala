@@ -115,13 +115,13 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
-        creditingTx,
         output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
         conditionalPath = ConditionalPath.NoCondition,
         hashPreImages = Vector(privKey.publicKey)
       ),
+      prevTransaction = creditingTx,
       signer = privKey,
       hashType = HashType.sigHashAll
     )
@@ -149,13 +149,13 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
-        creditingTx,
         output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
         conditionalPath = ConditionalPath.NoCondition,
         hashPreImages = Vector(privKey.publicKey)
       ),
+      prevTransaction = creditingTx,
       signer = privKey,
       hashType = HashType.sigHashAll
     )
@@ -179,13 +179,13 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
       ScriptSignatureParams(
         UnassignedSegwitNativeInputInfo(
           outPoint = outPoint,
-          EmptyTransaction,
           amount = Bitcoins.one + CurrencyUnits.oneMBTC,
           scriptPubKey = P2WPKHWitnessSPKV0(pubKey),
           scriptWitness = P2WPKHWitnessV0(pubKey),
           conditionalPath = ConditionalPath.NoCondition,
           Vector(pubKey)
         ),
+        prevTransaction = EmptyTransaction,
         signers = Vector(privKey),
         hashType = HashType.sigHashAll
       )
