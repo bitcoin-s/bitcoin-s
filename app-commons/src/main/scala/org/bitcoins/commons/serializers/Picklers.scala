@@ -31,7 +31,7 @@ object Picklers {
     readwriter[String].bimap(_.hex, Sha256DigestBE.fromHex)
 
   implicit val doubleSha256DigestBEPickler: ReadWriter[DoubleSha256DigestBE] =
-    readwriter[String].bimap(_.hex, DoubleSha256DigestBE(_))
+    readwriter[String].bimap(_.hex, DoubleSha256DigestBE.fromHex)
 
   implicit val uInt32Pickler: ReadWriter[UInt32] =
     readwriter[Long].bimap(_.toLong, long => UInt32(long))
