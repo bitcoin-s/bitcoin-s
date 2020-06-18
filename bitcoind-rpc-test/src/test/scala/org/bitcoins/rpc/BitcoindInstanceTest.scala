@@ -1,4 +1,5 @@
 package org.bitcoins.rpc
+
 import java.io.{File, PrintWriter}
 import java.net.URI
 import java.nio.file.{Files, Path}
@@ -139,15 +140,16 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
       _ <- client.getNewAddress.flatMap(client.generateToAddress(101, _))
       balance <- client.getBalance
       _ <- BitcoindRpcTestUtil.stopServers(Vector(client))
-      _ <- client.getBalance
-        .map { balance =>
-          logger.error(s"Got unexpected balance: $balance")
-          fail("Was able to connect to bitcoind after shutting down")
-        }
-        .recover {
-          case _: StreamTcpException =>
-            ()
-        }
+      _ <-
+        client.getBalance
+          .map { balance =>
+            logger.error(s"Got unexpected balance: $balance")
+            fail("Was able to connect to bitcoind after shutting down")
+          }
+          .recover {
+            case _: StreamTcpException =>
+              ()
+          }
     } yield assert(balance > Bitcoins(0))
 
   }

@@ -104,10 +104,11 @@ class ChainSyncTest extends ChainDbUnitTest {
       val sync2F = for {
         _ <- assertion1F
         chainApiSync1 <- sync1F
-        chainApiSync2 <- ChainSync.sync(
-          chainHandler = chainApiSync1.asInstanceOf[ChainHandler],
-          getBlockHeaderFunc = getBlockHeaderFunc,
-          getBestBlockHashFunc = getBestBlockHashFunc)
+        chainApiSync2 <-
+          ChainSync.sync(chainHandler =
+                           chainApiSync1.asInstanceOf[ChainHandler],
+                         getBlockHeaderFunc = getBlockHeaderFunc,
+                         getBestBlockHashFunc = getBestBlockHashFunc)
         count <- chainApiSync2.getBlockCount()
         hashes <- generate1F
         bestHash <- chainApiSync2.getBestBlockHash()

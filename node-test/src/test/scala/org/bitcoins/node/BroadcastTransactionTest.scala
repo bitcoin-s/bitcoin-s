@@ -63,13 +63,14 @@ class BroadcastTransactionTest extends NodeUnitTest {
       _ <- NodeTestUtil.awaitSync(node, rpc)
 
       address <- addrF
-      tx <- wallet
-        .sendToAddress(address, sendAmount, None)
+      tx <-
+        wallet
+          .sendToAddress(address, sendAmount, None)
 
       bitcoindBalancePreBroadcast <- balanceF
       _ <- node.broadcastTransaction(tx)
-      _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
-                                         duration = 1.second)
+      _ <-
+        TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx), duration = 1.second)
       _ <- rpc.generateToAddress(blocks = 1, junkAddress)
       bitcoindBalancePostBroadcast <- rpc.getBalance
 

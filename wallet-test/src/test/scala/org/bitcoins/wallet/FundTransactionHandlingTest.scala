@@ -15,6 +15,7 @@ import org.scalatest.FutureOutcome
 class FundTransactionHandlingTest extends BitcoinSWalletTest {
 
   override type FixtureParam = WalletWithBitcoind
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withFundedWalletAndBitcoind(test, getBIP39PasswordOpt())
   }
@@ -174,9 +175,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
         addr <- wallet.getNewAddress(account2)
         _ <- bitcoind.generateToAddress(1, addr)
 
-        fundedTx <- wallet.fundRawTransaction(Vector(destination),
-                                              feeRate,
-                                              account2)
+        fundedTx <-
+          wallet.fundRawTransaction(Vector(destination), feeRate, account2)
       } yield fundedTx
 
       recoverToSucceededIf[RuntimeException] {

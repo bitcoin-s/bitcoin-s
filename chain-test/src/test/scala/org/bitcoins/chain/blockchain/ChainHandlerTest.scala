@@ -379,8 +379,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
           filterHash =
             DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
           prevHeaderHash = ChainUnitTest.genesisFilterHeaderDb.hashBE.flip)
-        newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
-                                                            blockHashBE)
+        newChainHandler <-
+          chainHandler.processFilterHeader(firstFilterHeader, blockHashBE)
         process <- newChainHandler.processFilter(firstFilter)
       } yield {
         process
@@ -399,11 +399,12 @@ class ChainHandlerTest extends ChainDbUnitTest {
                                              prevHeaderHash =
                                                DoubleSha256Digest.empty)
         val unknownBlockF = for {
-          realBlockHashBE <- chainHandler
-            .getHeadersAtHeight(0)
-            .map(_.head.hashBE)
-          newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
-                                                              blockHashBE)
+          realBlockHashBE <-
+            chainHandler
+              .getHeadersAtHeight(0)
+              .map(_.head.hashBE)
+          newChainHandler <-
+            chainHandler.processFilterHeader(firstFilterHeader, blockHashBE)
         } yield {
           assert(realBlockHashBE != blockHashBE)
           newChainHandler
@@ -415,10 +416,10 @@ class ChainHandlerTest extends ChainDbUnitTest {
   it must "create a filter checkpoint map" in { chainHandler: ChainHandler =>
     for {
       realBlockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
-      filterHashBE = DoubleSha256DigestBE.fromBytes(
-        ECPrivateKey.freshPrivateKey.bytes)
-      newChainHandler <- chainHandler.processCheckpoint(filterHashBE,
-                                                        realBlockHashBE)
+      filterHashBE =
+        DoubleSha256DigestBE.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
+      newChainHandler <-
+        chainHandler.processCheckpoint(filterHashBE, realBlockHashBE)
     } yield {
       assert(
         newChainHandler
@@ -432,9 +433,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
       for {
         bestBlock <- chainHandler.getBestBlockHeader()
         bestBlockHashBE = bestBlock.hashBE
-        rangeOpt <- chainHandler.nextHeaderBatchRange(
-          DoubleSha256DigestBE.empty,
-          1)
+        rangeOpt <-
+          chainHandler.nextHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
       } yield {
         assert(rangeOpt.nonEmpty)
         assert(rangeOpt.get._1 == 0)
@@ -447,9 +447,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
       for {
         bestBlock <- chainHandler.getBestBlockHeader()
         bestBlockHashBE = bestBlock.hashBE
-        rangeOpt <- chainHandler.nextFilterHeaderBatchRange(
-          DoubleSha256DigestBE.empty,
-          1)
+        rangeOpt <-
+          chainHandler.nextFilterHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
       } yield {
         assert(rangeOpt.nonEmpty)
         assert(rangeOpt.get._1 == 0)
@@ -499,8 +498,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
   it must "get the correct height from an epoch second" in {
     chainHandler: ChainHandler =>
       for {
-        height <- chainHandler.epochSecondToBlockHeight(
-          TimeUtil.currentEpochSecond)
+        height <-
+          chainHandler.epochSecondToBlockHeight(TimeUtil.currentEpochSecond)
       } yield {
         assert(height == 0)
       }

@@ -6,6 +6,7 @@ import org.scalatest.exceptions.TestFailedException
 import scala.concurrent.Future
 
 class ScalaTestUtilTest extends BitcoinSUnitTest {
+
   implicit val ec: scala.concurrent.ExecutionContext =
     scala.concurrent.ExecutionContext.global
 
@@ -15,11 +16,12 @@ class ScalaTestUtilTest extends BitcoinSUnitTest {
 
   def f = assert(false)
 
-  def futureFail = Future {
-    //sleep for awhile and then eventually fail
-    Thread.sleep(1000)
-    f
-  }
+  def futureFail =
+    Future {
+      //sleep for awhile and then eventually fail
+      Thread.sleep(1000)
+      f
+    }
 
   it must "evaluate a Vector[Future[Assertions]] correctly" in {
     val vec1: Vector[Future[Assertion]] =

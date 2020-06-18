@@ -59,6 +59,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   implicit val hdpathReads = new Reads[HDPath] {
+
     override def reads(json: JsValue): JsResult[HDPath] =
       json
         .validate[String]
@@ -69,6 +70,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   implicit val hdcoinReads = new Reads[HDCoinType] {
+
     override def reads(json: JsValue): JsResult[HDCoinType] =
       json.validate[String].map(_.toLowerCase).map {
         case "bitcoin" => HDCoinType.Bitcoin
@@ -77,6 +79,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   implicit val hdpurposeReads = new Reads[HDPurpose] {
+
     override def reads(json: JsValue): JsResult[HDPurpose] =
       json.validate[String].map {
         case "legacy"      => HDPurposes.Legacy
@@ -86,6 +89,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   implicit val hdchainType = new Reads[HDChainType] {
+
     override def reads(json: JsValue): JsResult[HDChainType] =
       json.validate[String].map(_.toLowerCase).map {
         case "change"   => HDChainType.Change
@@ -140,8 +144,8 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     ConfigFactory.parseString(confStr)
   }
 
-  private def getWallet(config: WalletAppConfig)(
-      implicit ec: ExecutionContext): Future[Wallet] = {
+  private def getWallet(config: WalletAppConfig)(implicit
+      ec: ExecutionContext): Future[Wallet] = {
     val bip39PasswordOpt = None
     val kmE = BIP39KeyManager.initializeWithEntropy(
       entropy = mnemonic.toEntropy,
@@ -269,9 +273,8 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       // here we generate addresses matching the ones found
       // in the accompanying test vector for each account
       // at the end we group them all together
-      accountsWithAddrsWithVecs <- getAccountsWithAddressesAndVectors(
-        wallet,
-        accountsWithVectors)
+      accountsWithAddrsWithVecs <-
+        getAccountsWithAddressesAndVectors(wallet, accountsWithVectors)
     } yield {
       // lastly we loop over all accounts, addresses and vectors
       // and verify that they are all the same

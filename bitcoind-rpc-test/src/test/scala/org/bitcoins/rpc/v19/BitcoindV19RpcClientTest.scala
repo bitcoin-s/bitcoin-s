@@ -1,4 +1,5 @@
 package org.bitcoins.rpc.v19
+
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.rpc.client.common.BitcoindVersion
@@ -9,11 +10,13 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 import scala.concurrent.Future
 
 class BitcoindV19RpcClientTest extends BitcoindRpcTest {
+
   lazy val clientF: Future[BitcoindV19RpcClient] = {
     val client = new BitcoindV19RpcClient(BitcoindRpcTestUtil.v19Instance())
     val clientIsStartedF = BitcoindRpcTestUtil.startServers(Vector(client))
     clientIsStartedF.map(_ => client)
   }
+
   lazy val clientPairF: Future[(BitcoindV19RpcClient, BitcoindV19RpcClient)] =
     BitcoindRpcTestUtil.createNodePairV19(clientAccum)
 

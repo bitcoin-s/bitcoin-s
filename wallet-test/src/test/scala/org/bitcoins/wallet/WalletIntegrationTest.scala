@@ -54,9 +54,10 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       // before processing TX, wallet should be completely empty
       _ <- wallet.listUtxos().map(utxos => assert(utxos.isEmpty))
       _ <- wallet.getBalance().map(confirmed => assert(confirmed == 0.bitcoin))
-      _ <- wallet
-        .getUnconfirmedBalance()
-        .map(unconfirmed => assert(unconfirmed == 0.bitcoin))
+      _ <-
+        wallet
+          .getUnconfirmedBalance()
+          .map(unconfirmed => assert(unconfirmed == 0.bitcoin))
 
       // after this, tx is unconfirmed in wallet
       _ <- wallet.processTransaction(tx, None)
@@ -65,12 +66,14 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       // it should not be confirmed
       utxosPostAdd <- wallet.listUtxos()
       _ = assert(utxosPostAdd.length == 1)
-      _ <- wallet
-        .getConfirmedBalance()
-        .map(confirmed => assert(confirmed == 0.bitcoin))
-      _ <- wallet
-        .getUnconfirmedBalance()
-        .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
+      _ <-
+        wallet
+          .getConfirmedBalance()
+          .map(confirmed => assert(confirmed == 0.bitcoin))
+      _ <-
+        wallet
+          .getUnconfirmedBalance()
+          .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
       incomingTx <- wallet.incomingTxDAO.findByTxId(tx.txIdBE)
       _ = assert(incomingTx.isDefined)
       _ = assert(incomingTx.get.incomingAmount == valueFromBitcoind)
@@ -80,23 +83,27 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
 
       // after this, tx should be confirmed
       _ <- wallet.processTransaction(tx, rawTx.blockhash)
-      _ <- wallet
-        .listUtxos()
-        .map { utxos =>
-          // we want to make sure no new utxos were added,
-          // i.e. that we only modified an existing one
-          assert(utxos.length == utxosPostAdd.length)
-        }
+      _ <-
+        wallet
+          .listUtxos()
+          .map { utxos =>
+            // we want to make sure no new utxos were added,
+            // i.e. that we only modified an existing one
+            assert(utxos.length == utxosPostAdd.length)
+          }
 
-      _ <- wallet
-        .getBalance()
-        .map(balance => assert(balance == valueFromBitcoind))
-      _ <- wallet
-        .getConfirmedBalance()
-        .map(confirmed => assert(confirmed == valueFromBitcoind))
-      _ <- wallet
-        .getUnconfirmedBalance()
-        .map(unconfirmed => assert(unconfirmed == 0.satoshis))
+      _ <-
+        wallet
+          .getBalance()
+          .map(balance => assert(balance == valueFromBitcoind))
+      _ <-
+        wallet
+          .getConfirmedBalance()
+          .map(confirmed => assert(confirmed == valueFromBitcoind))
+      _ <-
+        wallet
+          .getUnconfirmedBalance()
+          .map(unconfirmed => assert(unconfirmed == 0.satoshis))
 
       signedTx <- bitcoind.getNewAddress.flatMap {
         wallet.sendToAddress(_, valueToBitcoind, Some(feeRate))

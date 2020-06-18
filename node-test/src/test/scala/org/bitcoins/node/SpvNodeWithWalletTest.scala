@@ -98,9 +98,10 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
         _ <- spv.sync()
         _ <- NodeTestUtil.awaitSync(spv, rpc)
 
-        ourTxid <- rpc
-          .sendToAddress(address, amountFromBitcoind)
-          .map(processWalletTx)
+        ourTxid <-
+          rpc
+            .sendToAddress(address, amountFromBitcoind)
+            .map(processWalletTx)
 
         ourTx <- rpc.getTransaction(ourTxid)
         _ = assert(updatedBloom.isRelevant(ourTx.hex))

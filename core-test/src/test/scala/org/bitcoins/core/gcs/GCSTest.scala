@@ -176,7 +176,8 @@ class GCSTest extends BitcoinSUnitTest {
     val coded3 = bin"011"
     val coded4 = bin"1000"
     val coded5 = bin"1001"
-    val expectedCodedSet = coded0 ++ coded1 ++ coded2 ++ coded3 ++ coded4 ++ coded5
+    val expectedCodedSet =
+      coded0 ++ coded1 ++ coded2 ++ coded3 ++ coded4 ++ coded5
 
     assert(codedSet == expectedCodedSet)
 
@@ -192,16 +193,17 @@ class GCSTest extends BitcoinSUnitTest {
       Gen.choose(8, 32).map(UInt8(_))
     }
 
-    def genPM: Gen[(UInt8, UInt64)] = genP.flatMap { p =>
-      // If hash's quotient when divided by 2^p is too large, we hang converting to unary
-      val upperBound: Long = p.toInt * 1000
+    def genPM: Gen[(UInt8, UInt64)] =
+      genP.flatMap { p =>
+        // If hash's quotient when divided by 2^p is too large, we hang converting to unary
+        val upperBound: Long = p.toInt * 1000
 
-      val mGen = Gen
-        .chooseNum(0L, upperBound)
-        .map(UInt64(_))
+        val mGen = Gen
+          .chooseNum(0L, upperBound)
+          .map(UInt64(_))
 
-      mGen.map(m => (p, m))
-    }
+        mGen.map(m => (p, m))
+      }
 
     def genItems: Gen[Vector[ByteVector]] = {
       Gen.choose(1, 1000).flatMap { size =>

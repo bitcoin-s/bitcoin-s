@@ -15,8 +15,10 @@ import scodec.bits.ByteVector
   */
 class RawTransactionInputParserTest extends FlatSpec with MustMatchers {
   private val logger = BitcoinSLogger.logger
+
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
-  val rawTxInput = "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000" + "6f0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae" + "ffffffff"
+  val rawTxInput =
+    "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000" + "6f0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae" + "ffffffff"
   val encode = BytesUtil.encodeHex(_: ByteVector)
   "RawTransactionInputParser" must "parse a raw serialized transaction input" in {
     val txInput = RawTransactionInputParser.read(rawTxInput)
@@ -85,10 +87,11 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers {
 
   it must "parse this transaction input and its script signature" in {
     //txid b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
-    val rawTxInput = "cda741646fada7272b900719f7ac9d68d633d0e8aa9501eed3c90afbd323bd65" +
-      "010000006a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d" +
-      "158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612" +
-      "457b2774509bffffffff"
+    val rawTxInput =
+      "cda741646fada7272b900719f7ac9d68d633d0e8aa9501eed3c90afbd323bd65" +
+        "010000006a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d" +
+        "158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612" +
+        "457b2774509bffffffff"
 
     val input = RawTransactionInputParser.read(rawTxInput)
 
@@ -102,9 +105,10 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers {
   }
 
   it must "read and write an input with a large vout index in the outpoint" in {
-    val rawInput = "b32667dc69ce8030bffb7d7cf9a87c985da6552f71ac39363d043ff9d75d2304" +
-      "11d2346448473045022100f964" +
-      "9ac255ce97a132233f896a70babd1f4d8eaeaa4108165be97309817ad5bb02205bf70f31b4bb605cb9d1ce1a860d40bc92e2b5fca7be335edfea874570619d6da6ab6f7e"
+    val rawInput =
+      "b32667dc69ce8030bffb7d7cf9a87c985da6552f71ac39363d043ff9d75d2304" +
+        "11d2346448473045022100f964" +
+        "9ac255ce97a132233f896a70babd1f4d8eaeaa4108165be97309817ad5bb02205bf70f31b4bb605cb9d1ce1a860d40bc92e2b5fca7be335edfea874570619d6da6ab6f7e"
     val input = RawTransactionInputParser.read(rawInput)
     encode(RawTransactionInputParser.write(input)) must be(rawInput)
   }

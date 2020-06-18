@@ -12,9 +12,10 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
   */
 class RawGetBlocksMessageSerializerTest extends BitcoinSUnitTest {
 
-  val hex = "7111010002d39f608a7775b537729884d4e6633bb2105e55a16a14d31b0000000000000000" +
-    "5c3e6403d40837110a2e8afb602b1c01714bda7ce23bea0a0000000000000000" +
-    "0000000000000000000000000000000000000000000000000000000000000000"
+  val hex =
+    "7111010002d39f608a7775b537729884d4e6633bb2105e55a16a14d31b0000000000000000" +
+      "5c3e6403d40837110a2e8afb602b1c01714bda7ce23bea0a0000000000000000" +
+      "0000000000000000000000000000000000000000000000000000000000000000"
   "RawGetBlocksMessageSerializer" must "read a getblocks message from a hex string" in {
     val getBlocksMessage: GetBlocksMessage =
       RawGetBlocksMessageSerializer.read(hex)

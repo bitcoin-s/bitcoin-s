@@ -61,8 +61,10 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
     forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.satoshis) {
       (num1, num2) => (num1: Satoshis, num2: Satoshis) =>
         val result: Try[Int64] = Try(Int64(num1.toBigInt + num2.toBigInt))
-        if (result.isSuccess && result.get >= Int64(Satoshis.min.toLong) &&
-            result.get <= Int64(Satoshis.max.toLong))
+        if (
+          result.isSuccess && result.get >= Int64(Satoshis.min.toLong) &&
+          result.get <= Int64(Satoshis.max.toLong)
+        )
           assert(num1 + num2 == Satoshis(result.get))
         else assert(Try(num1 + num2).isFailure)
     }
@@ -78,8 +80,10 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
     forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.satoshis) {
       (num1: Satoshis, num2: Satoshis) =>
         val result: Try[Int64] = Try(Int64(num1.toBigInt - num2.toBigInt))
-        if (result.isSuccess && result.get >= Int64(Satoshis.min.toLong) &&
-            result.get <= Int64(Satoshis.max.toLong))
+        if (
+          result.isSuccess && result.get >= Int64(Satoshis.min.toLong) &&
+          result.get <= Int64(Satoshis.max.toLong)
+        )
           assert(num1 - num2 == Satoshis(result.get))
         else assert(Try(num1 - num2).isFailure)
     }
@@ -101,8 +105,10 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
     forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.satoshis) {
       (num1, num2) =>
         val result: Try[Int64] = Try(Int64(num1.toBigInt * num2.toBigInt))
-        if (result.isSuccess && result.get >= Int64(Satoshis.min.toLong) &&
-            result.get <= Int64(Satoshis.max.toLong))
+        if (
+          result.isSuccess && result.get >= Int64(Satoshis.min.toLong) &&
+          result.get <= Int64(Satoshis.max.toLong)
+        )
           num1 * num2 == Satoshis(result.get)
         else Try(num1 * num2).isFailure
     }
@@ -118,7 +124,9 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
       case (sat, int) =>
         val safeProduct = sat.multiplySafe(int)
         val underlyingProduct = sat.toBigInt * int
-        if (underlyingProduct < Satoshis.max.toBigInt && underlyingProduct > Satoshis.min.toBigInt) {
+        if (
+          underlyingProduct < Satoshis.max.toBigInt && underlyingProduct > Satoshis.min.toBigInt
+        ) {
           assert(safeProduct.isSuccess)
           assert(safeProduct.get.satoshis.toBigInt == underlyingProduct)
         } else {

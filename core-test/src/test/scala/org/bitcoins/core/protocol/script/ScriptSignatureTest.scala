@@ -36,7 +36,9 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
   }
 
   it must "derive the signature hash type from the signature" in {
-    HashType(ByteVector.fromByte(TestUtil.scriptSig.signatures.head.bytes.last)) must be(
+    HashType(
+      ByteVector.fromByte(
+        TestUtil.scriptSig.signatures.head.bytes.last)) must be(
       HashType.sigHashAll)
   }
 
@@ -84,7 +86,8 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
   it must "find the digital signature and hash type for a SIGHASH_SINGLE" in {
     TestUtil.p2shInputScriptSigHashSingle.signatures.head.hex must be(
       "3045022100dfcfafcea73d83e1c54d444a19fb30d17317f922c19e2ff92dcda65ad09cba24022001e7a805c5672c49b222c5f2f1e67bb01f87215fb69df184e7c16f66c1f87c2903")
-    HashType(TestUtil.p2shInputScriptSigHashSingle.signatures.head.bytes.last) must be(
+    HashType(
+      TestUtil.p2shInputScriptSigHashSingle.signatures.head.bytes.last) must be(
       HashType.sigHashSingle)
   }
 

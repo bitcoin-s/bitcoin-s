@@ -264,10 +264,11 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   }
 
   it must "parse BOLT11 example 7 (p2sh fallback addr)" in {
-    val expected = "lnbc20m1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypq" +
-      "hp58yjmdan79s6qqdhdzgynm4zwqd5d7xmw5fk98klysy043l2ahrqsfppj3a24vwu6r8ejrss3axul8rxl" +
-      "dph2q7z9kmrgvr7xlaqm47apw3d48zm203kzcq357a4ls9al2ea73r8jcceyjtya6fu5wzzpe50zrge6ulk" +
-      "4nvjcpxlekvmxl6qcs9j3tz0469gqsjurz5"
+    val expected =
+      "lnbc20m1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypq" +
+        "hp58yjmdan79s6qqdhdzgynm4zwqd5d7xmw5fk98klysy043l2ahrqsfppj3a24vwu6r8ejrss3axul8rxl" +
+        "dph2q7z9kmrgvr7xlaqm47apw3d48zm203kzcq357a4ls9al2ea73r8jcceyjtya6fu5wzzpe50zrge6ulk" +
+        "4nvjcpxlekvmxl6qcs9j3tz0469gqsjurz5"
 
     val fallbackAddr = LnTag.FallbackAddressTag(
       P2SHAddress.fromString("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX"))

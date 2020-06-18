@@ -14,6 +14,7 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 import scala.concurrent.Future
 
 class P2PRpcTest extends BitcoindRpcTest {
+
   lazy val clientF: Future[BitcoindRpcClient] =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
@@ -62,8 +63,8 @@ class P2PRpcTest extends BitcoindRpcTest {
     val loopBack = URI.create("http://127.0.0.1")
     for {
 
-      (client1, _) <- BitcoindRpcTestUtil.createNodePair(
-        clientAccum = clientAccum)
+      (client1, _) <-
+        BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
       _ <- client1.setBan(loopBack, SetBanCommand.Add)
 
       list <- client1.listBanned
@@ -105,8 +106,8 @@ class P2PRpcTest extends BitcoindRpcTest {
   it should "be able to clear banned subnets" in {
     for {
 
-      (client1, _) <- BitcoindRpcTestUtil.createNodePair(
-        clientAccum = clientAccum)
+      (client1, _) <-
+        BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
       _ <- client1.setBan(URI.create("http://127.0.0.1"), SetBanCommand.Add)
       _ <- client1.setBan(URI.create("http://127.0.0.2"), SetBanCommand.Add)
       list <- client1.listBanned
@@ -120,8 +121,9 @@ class P2PRpcTest extends BitcoindRpcTest {
 
   it should "be able to add and remove a node" in {
     for {
-      (freshClient, otherFreshClient) <- BitcoindRpcTestUtil
-        .createUnconnectedNodePair(clientAccum = clientAccum)
+      (freshClient, otherFreshClient) <-
+        BitcoindRpcTestUtil
+          .createUnconnectedNodePair(clientAccum = clientAccum)
       uri = otherFreshClient.getDaemon.uri
 
       _ <- freshClient.addNode(uri, AddNodeArgument.Add)
@@ -141,8 +143,9 @@ class P2PRpcTest extends BitcoindRpcTest {
 
   it should "be able to add and disconnect a node" in {
     for {
-      (freshClient, otherFreshClient) <- BitcoindRpcTestUtil
-        .createUnconnectedNodePair(clientAccum = clientAccum)
+      (freshClient, otherFreshClient) <-
+        BitcoindRpcTestUtil
+          .createUnconnectedNodePair(clientAccum = clientAccum)
       uri = otherFreshClient.getDaemon.uri
 
       _ <- freshClient.addNode(uri, AddNodeArgument.Add)
@@ -160,11 +163,12 @@ class P2PRpcTest extends BitcoindRpcTest {
 
   it should "be able to get the connection count" in {
     for {
-      (freshClient, otherFreshClient) <- BitcoindRpcTestUtil
-        .createUnconnectedNodePair(clientAccum = clientAccum)
+      (freshClient, otherFreshClient) <-
+        BitcoindRpcTestUtil
+          .createUnconnectedNodePair(clientAccum = clientAccum)
       connectionPre <- freshClient.getConnectionCount
-      _ <- freshClient.addNode(otherFreshClient.getDaemon.uri,
-                               AddNodeArgument.Add)
+      _ <-
+        freshClient.addNode(otherFreshClient.getDaemon.uri, AddNodeArgument.Add)
       _ <- BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
       connectionPost <- otherFreshClient.getConnectionCount
     } yield {
@@ -176,8 +180,8 @@ class P2PRpcTest extends BitcoindRpcTest {
   it should "be able to submit a new block" in {
     for {
 
-      (client1, client2) <- BitcoindRpcTestUtil.createUnconnectedNodePair(
-        clientAccum = clientAccum)
+      (client1, client2) <-
+        BitcoindRpcTestUtil.createUnconnectedNodePair(clientAccum = clientAccum)
       hash <- client2.getNewAddress.flatMap(client2.generateToAddress(1, _))
       block <- client2.getBlockRaw(hash.head)
       preCount1 <- client1.getBlockCount

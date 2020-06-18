@@ -1,4 +1,5 @@
 package org.bitcoins.core.crypto
+
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.HexStringSyntax
@@ -36,7 +37,9 @@ class BIP39SeedTest extends BitcoinSUnitTest {
   it must "reject seeds with too many bits of entropy" in {
     forAll(CryptoGenerators.entropy.bits256) { entropy =>
       val attempt = Try {
-        BIP39Seed.fromBytes((entropy ++ entropy).toByteVector ++ hex"c") // one byte too much
+        BIP39Seed.fromBytes(
+          (entropy ++ entropy).toByteVector ++ hex"c"
+        ) // one byte too much
       }
       assert(attempt.isFailure)
 

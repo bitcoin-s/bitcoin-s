@@ -12,7 +12,8 @@ class MultiSignatureScriptPubKeySpec
   property("Serialization symmetry") =
     Prop.forAll(ScriptGenerators.multiSigScriptPubKey) {
       case (multiSigScriptPubKey, _) =>
-        MultiSignatureScriptPubKey(multiSigScriptPubKey.hex) == multiSigScriptPubKey
+        MultiSignatureScriptPubKey(
+          multiSigScriptPubKey.hex) == multiSigScriptPubKey
 
     }
 }

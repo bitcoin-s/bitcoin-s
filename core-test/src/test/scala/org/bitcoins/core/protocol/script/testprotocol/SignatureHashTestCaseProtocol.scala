@@ -14,8 +14,10 @@ import spray.json._
   */
 object SignatureHashTestCaseProtocol extends DefaultJsonProtocol {
   private val logger = LoggerFactory.getLogger(this.getClass)
+
   implicit object SignatureTestCaseProtocol
       extends RootJsonFormat[SignatureHashTestCase] {
+
     override def read(value: JsValue): SignatureHashTestCase = {
       val jsArray: JsArray = value match {
         case array: JsArray => array

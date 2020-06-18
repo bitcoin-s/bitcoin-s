@@ -237,9 +237,10 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   it must "serialize the BIP143 p2sh(p2wsh) examples" in {
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#p2sh-p2wsh
 
-    val unsignedTx = "010000000136641869ca081e70f394c6948e8af409e18b619df2ed74aa106c1ca29787b96e0100000000ffffffff" +
-      "0200e9a435000000001976a914389ffce9cd9ae88dcc0631e88a821ffdbe9bfe2688acc0832f05000000001976a9147480a33f95068" +
-      "9af511e6e84c138dbbd3c3ee41588ac00000000"
+    val unsignedTx =
+      "010000000136641869ca081e70f394c6948e8af409e18b619df2ed74aa106c1ca29787b96e0100000000ffffffff" +
+        "0200e9a435000000001976a914389ffce9cd9ae88dcc0631e88a821ffdbe9bfe2688acc0832f05000000001976a9147480a33f95068" +
+        "9af511e6e84c138dbbd3c3ee41588ac00000000"
 
     val ubtx = BaseTransaction.fromHex(unsignedTx)
 

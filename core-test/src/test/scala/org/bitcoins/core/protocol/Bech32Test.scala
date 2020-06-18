@@ -14,6 +14,7 @@ import scodec.bits.ByteVector
 import scala.util.{Failure, Success}
 
 class Bech32Test extends BitcoinSUnitTest {
+
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 

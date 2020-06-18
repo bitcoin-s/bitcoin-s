@@ -55,8 +55,8 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
                                         sentAmount = Satoshis(3000),
                                         blockHashOpt = None)
 
-      updatedCoin <- wallet.spendingInfoDAO.findByScriptPubKey(
-        addr.scriptPubKey)
+      updatedCoin <-
+        wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
     } yield {
       assert(
         updatedCoin.forall(_.state == TxoState.PendingConfirmationsReceived))

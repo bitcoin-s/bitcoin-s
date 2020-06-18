@@ -29,7 +29,8 @@ class RawSerializerHelperTest extends BitcoinSUnitTest {
   }
 
   it must "serialize one element in a vector correctly" in {
-    val bytes = CompactSizeUInt(UInt64.one).bytes ++ EmptyTransactionOutput.bytes
+    val bytes =
+      CompactSizeUInt(UInt64.one).bytes ++ EmptyTransactionOutput.bytes
     val constructor: ByteVector => TransactionOutput =
       RawTransactionOutputParser.read(_)
 

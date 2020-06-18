@@ -1,4 +1,5 @@
 package org.bitcoins.core.number
+
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 

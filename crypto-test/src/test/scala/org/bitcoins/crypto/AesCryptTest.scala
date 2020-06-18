@@ -188,7 +188,6 @@ class AesCryptTest extends BitcoinSUnitTest {
     * iv = "f43b7f80624e7f01123ac272beb1ff7f"
     * assert len(bytes.fromhex(iv)) == IV_SIZE
     *
-    *
     * def pad(value):
     *     """Pads the given string with zero-bytes"""
     *     length = len(value)
@@ -204,7 +203,6 @@ class AesCryptTest extends BitcoinSUnitTest {
     *
     *     return value
     *
-    *
     * def encrypt(in_string, key, iv):
     *     """
     *     Takes in a plain string to encrypt, as well as
@@ -216,7 +214,6 @@ class AesCryptTest extends BitcoinSUnitTest {
     *     padded = pad(in_string)
     *     return aes.encrypt(padded)
     *
-
     * def decrypt(encrypted, key, iv):
     *     """
     *     Takes in a bytes object to decrypt, as well as
@@ -227,7 +224,6 @@ class AesCryptTest extends BitcoinSUnitTest {
     *     aes = AES.new(key, AES.MODE_CFB, IV=iv, segment_size=SEGMENT_SIZE)
     *     decrypted = aes.decrypt(encrypted)
     *     return unpad(decrypted)
-    *
     *
     * encrypted = encrypt(text, key, iv)
     * print(f"encrypted: {encrypted.hex()}")

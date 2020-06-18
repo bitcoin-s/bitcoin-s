@@ -178,8 +178,8 @@ class TransactionTest extends BitcoinSUnitTest {
       testCase <- testCases
       (outPoint, scriptPubKey, amountOpt) <- testCase.creditingTxsInfo
       tx = testCase.spendingTx
-      (input, inputIndex) = findInput(tx, outPoint).getOrElse(
-        (EmptyTransactionInput, 0))
+      (input, inputIndex) =
+        findInput(tx, outPoint).getOrElse((EmptyTransactionInput, 0))
     } yield {
       assert(
         outPoint.txId == input.previousOutput.txId,
@@ -264,8 +264,8 @@ class TransactionTest extends BitcoinSUnitTest {
       val txInputValidity: Seq[Boolean] = for {
         (outPoint, scriptPubKey, amountOpt) <- testCase.creditingTxsInfo
         tx = testCase.spendingTx
-        (input, inputIndex) = findInput(tx, outPoint).getOrElse(
-          (EmptyTransactionInput, 0))
+        (input, inputIndex) =
+          findInput(tx, outPoint).getOrElse((EmptyTransactionInput, 0))
       } yield {
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
@@ -290,11 +290,11 @@ class TransactionTest extends BitcoinSUnitTest {
                 case wit: WitnessScriptPubKey =>
                   tx match {
                     case btx: NonWitnessTransaction =>
-                      BaseTxSigComponent(
-                        transaction = btx,
-                        inputIndex = UInt32(inputIndex),
-                        output = TransactionOutput(amount, wit),
-                        flags = testCase.flags)
+                      BaseTxSigComponent(transaction = btx,
+                                         inputIndex = UInt32(inputIndex),
+                                         output =
+                                           TransactionOutput(amount, wit),
+                                         flags = testCase.flags)
                     case wtx: WitnessTransaction =>
                       WitnessTxSigComponentRaw(transaction = wtx,
                                                inputIndex = UInt32(inputIndex),
