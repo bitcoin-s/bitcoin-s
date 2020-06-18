@@ -579,16 +579,14 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   private def changeToWitnessUTXO(
       transactionOutput: TransactionOutput): InputPSBTMap = {
     val newElements = transactionOutput.scriptPubKey match {
-      case rs: WitnessScriptPubKey
-          if !rs.isInstanceOf[BIP143VulnerableScriptPubKey] =>
+      case rs: WitnessScriptPubKey if !rs.isInstanceOf[WitnessScriptPubKeyV0] =>
         filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
       case _: P2SHScriptPubKey =>
         if (redeemScriptOpt.isDefined) {
           val redeemScript = redeemScriptOpt.get.redeemScript
           if (
-            redeemScript
-              .isInstanceOf[WitnessScriptPubKey] && !redeemScript
-              .isInstanceOf[BIP143VulnerableScriptPubKey]
+            redeemScript.isInstanceOf[WitnessScriptPubKey] && !redeemScript
+              .isInstanceOf[WitnessScriptPubKeyV0]
           ) {
             filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
           } else {
@@ -597,7 +595,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         } else {
           elements
         }
-      case _: BIP143VulnerableScriptPubKey | _: P2PKHScriptPubKey |
+      case _: WitnessScriptPubKeyV0 | _: P2PKHScriptPubKey |
           _: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
           _: MultiSignatureScriptPubKey | EmptyScriptPubKey |
           _: LockTimeScriptPubKey | _: NonStandardScriptPubKey |

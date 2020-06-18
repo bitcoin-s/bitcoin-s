@@ -1113,8 +1113,6 @@ sealed trait WitnessScriptPubKey extends ScriptPubKey {
   def witnessVersion: WitnessVersion = WitnessVersion(asm.head)
 }
 
-sealed trait BIP143VulnerableScriptPubKey extends WitnessScriptPubKey
-
 object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
 
   /** Witness scripts must begin with one of these operations, see
@@ -1185,8 +1183,7 @@ object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
 
 /** Represents a
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program BIP141 Witness program]] */
-sealed abstract class WitnessScriptPubKeyV0
-    extends BIP143VulnerableScriptPubKey {
+sealed abstract class WitnessScriptPubKeyV0 extends WitnessScriptPubKey {
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
 }
 
