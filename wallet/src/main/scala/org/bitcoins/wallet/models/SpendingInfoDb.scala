@@ -8,6 +8,7 @@ import org.bitcoins.core.hd.{
 }
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
+  Transaction,
   TransactionOutPoint,
   TransactionOutput
 }
@@ -174,17 +175,21 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
     * a signable (and sensitive) real-world UTXO
     */
   def toUTXOInfo(
-      keyManager: BIP39KeyManager): ScriptSignatureParams[InputInfo] = {
+      keyManager: BIP39KeyManager,
+      prevTransaction: Transaction): ScriptSignatureParams[InputInfo] = {
 
     val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)
 
-    toUTXOInfo(sign = sign)
+    toUTXOInfo(sign = sign, prevTransaction)
   }
 
-  def toUTXOInfo(sign: Sign): ScriptSignatureParams[InputInfo] = {
+  def toUTXOInfo(
+      sign: Sign,
+      prevTransaction: Transaction): ScriptSignatureParams[InputInfo] = {
     ScriptSignatureParams(
       InputInfo(
         outPoint,
+        prevTransaction,
         output,
         redeemScriptOpt,
         scriptWitnessOpt,

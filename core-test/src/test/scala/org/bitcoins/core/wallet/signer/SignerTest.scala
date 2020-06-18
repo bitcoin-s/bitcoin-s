@@ -79,6 +79,7 @@ class SignerTest extends BitcoinSAsyncTest {
     val spendingInfo = ScriptSignatureParams(
       UnassignedSegwitNativeInputInfo(
         p2wpkh.outPoint,
+        p2wpkh.inputInfo.prevTransaction,
         p2wpkh.amount,
         p2wpkh.output.scriptPubKey.asInstanceOf[WitnessScriptPubKey],
         InputInfo.getScriptWitness(p2wpkh.inputInfo).get,

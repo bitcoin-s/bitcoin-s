@@ -567,6 +567,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       else HashType.sigHashAll
 
     val inputInfo = InputInfo(outPoint,
+                              txVec.head.transactionSpent,
                               output,
                               redeemScriptOpt,
                               scriptWitnessOpt,

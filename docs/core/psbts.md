@@ -122,6 +122,7 @@ val output = utxo0.outputs(outPoint.vout.toInt)
 val spendingInfoSingle = ECSignatureParams(
     InputInfo(outPoint = outPoint,
               output = output,
+              prevTransaction = utxo0,
               redeemScriptOpt = Some(redeemScript0),
               scriptWitnessOpt = None,
               conditionalPath = ConditionalPath.NoCondition),

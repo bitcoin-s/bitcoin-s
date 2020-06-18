@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
+  EmptyTransaction,
   TransactionConstants,
   TransactionInput,
   TransactionOutPoint,
@@ -114,6 +115,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
+        creditingTx,
         output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
@@ -147,6 +149,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
+        creditingTx,
         output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
@@ -176,6 +179,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
       ScriptSignatureParams(
         UnassignedSegwitNativeInputInfo(
           outPoint = outPoint,
+          EmptyTransaction,
           amount = Bitcoins.one + CurrencyUnits.oneMBTC,
           scriptPubKey = P2WPKHWitnessSPKV0(pubKey),
           scriptWitness = P2WPKHWitnessV0(pubKey),

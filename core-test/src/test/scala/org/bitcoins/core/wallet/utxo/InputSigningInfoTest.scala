@@ -2,13 +2,7 @@ package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WSHWitnessSPKV0,
-  P2WSHWitnessV0
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   TransactionConstants,
@@ -25,7 +19,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
 
   private val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sampleSome
 
-  it should "fail to build a tx if you have the wrong redeemscript" in {
+  it should "fail to build a tx if you have the wrong redeem script" in {
     val p2sh = P2SHScriptPubKey(spk)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
     val creditingTx = BaseTransaction(version =
@@ -36,6 +30,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
     val inputInfo = InputInfo(
       outPoint = outPoint,
+      creditingTx,
       output = creditingOutput,
       redeemScriptOpt = Some(EmptyScriptPubKey),
       scriptWitnessOpt = None,
@@ -71,6 +66,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
       ScriptSignatureParams(
         InputInfo(
           outPoint = outPoint,
+          creditingTx,
           output = creditingOutput,
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
@@ -86,6 +82,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
       ECSignatureParams(
         InputInfo(
           outPoint = outPoint,
+          creditingTx,
           output = creditingOutput,
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
@@ -111,6 +108,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
       TransactionOutPoint(txId = creditingTx.txId, vout = UInt32.zero)
     val inputInfo = InputInfo(
       outPoint = outPoint,
+      creditingTx,
       output = creditingOutput,
       redeemScriptOpt = None,
       scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
@@ -146,6 +144,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
       ScriptSignatureParams(
         InputInfo(
           outPoint = outPoint,
+          creditingTx,
           output = creditingOutput,
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
@@ -161,6 +160,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
       ECSignatureParams(
         InputInfo(
           outPoint = outPoint,
+          creditingTx,
           output = creditingOutput,
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),

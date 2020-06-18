@@ -19,13 +19,7 @@ import org.bitcoins.core.wallet.signer.{
   P2PKSigner,
   P2PKWithTimeoutSigner
 }
-import org.bitcoins.core.wallet.utxo.{
-  MultiSignatureInputInfo,
-  P2PKHInputInfo,
-  P2PKInputInfo,
-  P2PKWithTimeoutInputInfo,
-  ScriptSignatureParams
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPrivateKey,
@@ -601,10 +595,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         outputIndex)
       spendingInfo = ScriptSignatureParams(
         P2PKInputInfo(TransactionOutPoint(creditingTx.txIdBE, inputIndex),
+                      creditingTx,
                       creditingTx.outputs(outputIndex.toInt).value,
                       scriptPubKey),
         privateKey,
-        hashType)
+        hashType
+      )
       txSigComponentFuture = P2PKSigner.sign(spendingInfo, spendingTx, false)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
       //add the signature to the scriptSig instead of having an empty scriptSig
@@ -637,6 +633,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         outputIndex)
       spendingInfo = ScriptSignatureParams(
         P2PKHInputInfo(TransactionOutPoint(creditingTx.txIdBE, inputIndex),
+                       creditingTx,
                        creditingTx.outputs(outputIndex.toInt).value,
                        privateKey.publicKey),
         privateKey,
@@ -664,6 +661,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       val spendingInfo = ScriptSignatureParams(
         P2PKWithTimeoutInputInfo(
           TransactionOutPoint(creditingTx.txIdBE, inputIndex),
+          creditingTx,
           creditingTx.outputs(outputIndex.toInt).value,
           spk,
           isBeforeTimeout = true),
@@ -713,6 +711,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       spendingInfo = ScriptSignatureParams(
         MultiSignatureInputInfo(
           TransactionOutPoint(creditingTx.txIdBE, inputIndex),
+          creditingTx,
           creditingTx.outputs(outputIndex.toInt).value,
           multiSigScriptPubKey),
         privateKeys.toVector,

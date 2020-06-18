@@ -149,7 +149,7 @@ object TxUtil {
     */
   def addDummySigs(utx: Transaction, inputInfos: Vector[InputInfo])(implicit
       ec: ExecutionContext): Future[Transaction] = {
-    val dummyInputAndWitnnessFs = inputInfos.zipWithIndex.map {
+    val dummyInputAndWitnessFs = inputInfos.zipWithIndex.map {
       case (inputInfo, index) =>
         val mockSigners = inputInfo.pubKeys.take(inputInfo.requiredSigs).map {
           pubKey =>
@@ -176,7 +176,7 @@ object TxUtil {
           }
     }
 
-    Future.sequence(dummyInputAndWitnnessFs).map { inputsAndWitnesses =>
+    Future.sequence(dummyInputAndWitnessFs).map { inputsAndWitnesses =>
       val inputs = inputsAndWitnesses.map(_._1)
       val txWitnesses = inputsAndWitnesses.map(_._2)
       TransactionWitness.fromWitOpt(txWitnesses) match {

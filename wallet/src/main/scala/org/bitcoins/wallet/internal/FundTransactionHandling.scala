@@ -2,6 +2,7 @@ package org.bitcoins.wallet.internal
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.consensus.Consensus
+<<<<<<< HEAD
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransactionOutPoint,
   InputUtil,
@@ -9,6 +10,19 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput,
   TxUtil
 }
+||||||| merged common ancestors
+import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.transaction.{
+  EmptyTransactionOutPoint,
+  InputUtil,
+  Transaction,
+  TransactionOutput,
+  TxUtil
+}
+=======
+import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.transaction._
+>>>>>>> Rework signing logic to use full funding tx
 import org.bitcoins.core.wallet.builder.{
   RawTxBuilder,
   RawTxBuilderWithFinalizer,
@@ -18,13 +32,13 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto.Sign
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.wallet.WalletLogger
-import org.bitcoins.wallet.api.{AddressInfo, CoinSelector, WalletApi}
+import org.bitcoins.wallet.api.{AddressInfo, CoinSelector}
 import org.bitcoins.wallet.models.{AccountDb, SpendingInfoDb}
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future
 
-trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
+trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
@@ -104,7 +118,8 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
         else Future.successful(utxos)
     } yield selectedUtxos
 
-    val addrInfosWithUtxoF: Future[Vector[(SpendingInfoDb, AddressInfo)]] =
+    val addrInfosWithUtxoF: Future[
+      Vector[(SpendingInfoDb, Transaction, AddressInfo)]] =
       for {
         selectedUtxos <- selectedUtxosF
         _ = selectedUtxosF.failed.foreach(err =>
@@ -112,7 +127,14 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
         addrInfoOptF = selectedUtxos.map { utxo =>
           val addrInfoOptF = getAddressInfo(utxo)
           //.get should be safe here because of foreign key at the database level
-          addrInfoOptF.map(addrInfoOpt => (utxo, addrInfoOpt.get))
+        prevTxFs = selectedUtxos.map(utxo =>
+          transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
+        prevTxs <- Future.sequence(prevTxFs)
+        addrInfoOptF = selectedUtxos.zip(prevTxs).map {
+          case (utxo, prevTx) =>
+            val addrInfoOptF = getAddressInfo(utxo)
+            //.get should be safe here because of foreign key at the database level
+            addrInfoOptF.map(addrInfoOpt => (utxo, prevTx, addrInfoOpt.get))
         }
         vec <- Future.sequence(addrInfoOptF)
       } yield vec
@@ -122,12 +144,12 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
       change <- getNewChangeAddress(fromAccount)
       utxoSpendingInfos = {
         addrInfosWithUtxo.map {
-          case (utxo, addrInfo) =>
+          case (utxo, prevTx, addrInfo) =>
             keyManagerOpt match {
               case Some(km) =>
-                utxo.toUTXOInfo(keyManager = km)
+                utxo.toUTXOInfo(keyManager = km, prevTx)
               case None =>
-                utxo.toUTXOInfo(sign = Sign.dummySign(addrInfo.pubkey))
+                utxo.toUTXOInfo(sign = Sign.dummySign(addrInfo.pubkey), prevTx)
             }
 
         }

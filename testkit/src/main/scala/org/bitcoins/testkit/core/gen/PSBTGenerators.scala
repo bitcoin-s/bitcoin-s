@@ -1,15 +1,9 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  InputUtil,
-  Transaction,
-  TransactionOutput,
-  TxUtil
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
 import org.bitcoins.core.psbt.PSBT.SpendingInfoAndNonWitnessTxs
 import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
@@ -20,7 +14,7 @@ import org.bitcoins.core.wallet.builder.{
   StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
+import org.bitcoins.core.wallet.utxo._
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
@@ -179,11 +173,7 @@ object PSBTGenerators {
         creditingTxsInfo.find(_.outPoint == input.previousOutput)
       infoOpt match {
         case Some(info) =>
-          val tx = BaseTransaction(Int32.zero,
-                                   Vector.empty,
-                                   Vector.fill(5)(info.output),
-                                   UInt32.zero)
-          (info, Some(tx))
+          (info, Some(info.inputInfo.prevTransaction))
         case None =>
           throw new RuntimeException(
             "CreditingTxGen.inputsAndOutputs is being inconsistent")

@@ -90,7 +90,7 @@ builder += input
 val builderResult = builder.result()
 
 // this contains the information needed to analyze our input during finalization
-val inputInfo = P2PKHInputInfo(outPoint, amount, privKey.publicKey)
+val inputInfo = P2PKHInputInfo(outPoint, creditingTx, amount, privKey.publicKey)
 
 // this is how much we are going to pay as a fee to the network
 // for this example, we are going to pay 1 satoshi per byte

@@ -3,7 +3,14 @@ package org.bitcoins.core.wallet.builder
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
+  Transaction,
+  TransactionConstants,
+  TransactionOutPoint,
+  TransactionOutput,
+  _
+}
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinScriptUtil
@@ -41,6 +48,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
       ScriptSignatureParams(
         InputInfo(
           outPoint = outPoint,
+          creditingTx,
           output = creditingOutput,
           redeemScriptOpt = None,
           scriptWitnessOpt = None,
@@ -78,6 +86,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
+        creditingTx,
         output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
@@ -116,6 +125,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
+        creditingTx,
         output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
@@ -151,6 +161,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val cltvSpendingInfo = ScriptSignatureParams(
       LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
                                             UInt32.zero),
+                        EmptyTransaction,
                         Bitcoins.one,
                         cltvSPK,
                         ConditionalPath.NoCondition),
@@ -188,6 +199,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val cltvSpendingInfo = ScriptSignatureParams(
       LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
                                             UInt32.zero),
+                        EmptyTransaction,
                         Bitcoins.one,
                         cltvSPK,
                         ConditionalPath.NoCondition),
@@ -230,6 +242,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val cltvSpendingInfo1 = ScriptSignatureParams(
       LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
                                             UInt32.zero),
+                        EmptyTransaction,
                         Bitcoins.one,
                         cltvSPK1,
                         ConditionalPath.NoCondition),
@@ -240,6 +253,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val cltvSpendingInfo2 = ScriptSignatureParams(
       LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
                                             UInt32.one),
+                        EmptyTransaction,
                         Bitcoins.one,
                         cltvSPK2,
                         ConditionalPath.NoCondition),

@@ -763,12 +763,12 @@ object PSBT extends Factory[PSBT] {
   }
 
   /**
-    * Wraps a Vector of pairs of NewSpendingInfos and the Transactions whose outputs are spent.
+    * Wraps a Vector of pairs of ScriptSignatureParams and the Transactions whose outputs are spent.
     * Note that this Transaction is only necessary when the output is non-segwit.
     */
   case class SpendingInfoAndNonWitnessTxs(
       infoAndTxOpts: Vector[
-        (ScriptSignatureParams[InputInfo], Option[BaseTransaction])]) {
+        (ScriptSignatureParams[InputInfo], Option[Transaction])]) {
     val length: Int = infoAndTxOpts.length
 
     def matchesInputs(inputs: Seq[TransactionInput]): Boolean = {
@@ -782,7 +782,7 @@ object PSBT extends Factory[PSBT] {
     def map[T](
         func: (
             ScriptSignatureParams[InputInfo],
-            Option[BaseTransaction]) => T): Vector[T] = {
+            Option[Transaction]) => T): Vector[T] = {
       infoAndTxOpts.map { case (info, txOpt) => func(info, txOpt) }
     }
   }
@@ -841,6 +841,10 @@ object PSBT extends Factory[PSBT] {
     val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
 
     Future.sequence(inputMapFs).map { inputMaps =>
+      require(inputMaps.zip(unsignedTx.inputs).forall {
+        case (map, txIn) =>
+          map.nonWitnessOrUnknownUTXOOpt.get.transactionSpent.txId == txIn.previousOutput.txId
+      })
       PSBT(globalMap, inputMaps, outputMaps)
     }
   }
