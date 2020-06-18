@@ -1,4 +1,5 @@
 package org.bitcoins.testkit.core.gen.p2p
+
 import org.scalacheck.Gen
 import org.bitcoins.core.p2p.NetworkIpAddress
 import org.bitcoins.testkit.core.gen.NumberGenerator

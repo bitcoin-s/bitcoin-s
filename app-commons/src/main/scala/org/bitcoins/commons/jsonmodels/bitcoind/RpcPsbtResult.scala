@@ -34,7 +34,9 @@ final case class RpcPsbtInput(
     witnessScript: Option[RpcPsbtScript],
     bip32Derivs: Option[Vector[PsbtBIP32Deriv]],
     finalScriptSig: Option[RpcPsbtScript],
-    finalScriptwitness: Option[Vector[String]], // todo(torkelrogstad) needs example of what this looks like
+    finalScriptwitness: Option[
+      Vector[String]
+    ], // todo(torkelrogstad) needs example of what this looks like
     unknown: Option[Map[String, String]] // The unknown global fields
 ) extends RpcPsbtResult
 
@@ -77,12 +79,14 @@ final case class AnalyzePsbtResult(
     fee: Option[Bitcoins],
     next: String
 ) extends RpcPsbtResult
+
 final case class AnalyzePsbtInput(
     has_utxo: Boolean,
     is_final: Boolean,
     missing: Option[PsbtMissingData],
     next: Option[String]
 ) extends RpcPsbtResult
+
 final case class PsbtMissingData(
     pubkeys: Option[Vector[ECPublicKey]],
     signatures: Option[Vector[ECDigitalSignature]],

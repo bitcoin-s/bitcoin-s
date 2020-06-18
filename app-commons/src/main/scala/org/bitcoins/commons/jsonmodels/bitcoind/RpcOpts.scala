@@ -36,12 +36,15 @@ object RpcOpts {
   sealed abstract class FeeEstimationMode
 
   object FeeEstimationMode {
+
     case object Unset extends FeeEstimationMode {
       override def toString: String = "UNSET"
     }
+
     case object Ecnomical extends FeeEstimationMode {
       override def toString: String = "ECONOMICAL"
     }
+
     case object Conservative extends FeeEstimationMode {
       override def toString: String = "CONSERVATIVE"
     }
@@ -50,9 +53,11 @@ object RpcOpts {
   sealed abstract class SetBanCommand
 
   object SetBanCommand {
+
     case object Add extends SetBanCommand {
       override def toString: String = "add"
     }
+
     case object Remove extends SetBanCommand {
       override def toString: String = "remove"
     }
@@ -130,6 +135,7 @@ object RpcOpts {
   sealed trait WalletFlag
 
   object WalletFlag {
+
     case object AvoidReuse extends WalletFlag {
       override def toString: String = "avoid_reuse"
     }
@@ -138,6 +144,7 @@ object RpcOpts {
   sealed trait AddressType
 
   object AddressType {
+
     case object Legacy extends AddressType {
       override def toString: String = "legacy"
     }
@@ -154,9 +161,11 @@ object RpcOpts {
   sealed trait LabelPurpose
 
   object LabelPurpose {
+
     case object Send extends LabelPurpose {
       override def toString: String = "send"
     }
+
     case object Receive extends LabelPurpose {
       override def toString: String = "receive"
     }

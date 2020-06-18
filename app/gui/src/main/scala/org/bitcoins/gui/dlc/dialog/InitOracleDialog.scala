@@ -24,9 +24,10 @@ object InitOracleDialog {
 
     val fields =
       (0 until numOutcomes).map(_ =>
-        (new TextField(), new TextField() {
-          promptText = "Satoshis"
-        }))
+        (new TextField(),
+         new TextField() {
+           promptText = "Satoshis"
+         }))
 
     dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
 

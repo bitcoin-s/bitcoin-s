@@ -71,8 +71,8 @@ trait TxDAO[DbEntryType <: TxDB]
     findByTxId(txId.flip)
 }
 
-case class TransactionDAO()(
-    implicit val ec: ExecutionContext,
+case class TransactionDAO()(implicit
+    val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends TxDAO[TransactionDb] {
 

@@ -22,6 +22,7 @@ sealed abstract class NetworkMessage extends NetworkElement {
 }
 
 object NetworkMessage extends Factory[NetworkMessage] {
+
   private case class NetworkMessageImpl(
       header: NetworkHeader,
       payload: NetworkPayload)

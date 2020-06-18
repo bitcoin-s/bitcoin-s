@@ -26,16 +26,17 @@ abstract class SyncUtil extends BitcoinSLogger {
   }
 
   /** Creates a function that you can pass a hash to and it returns the block header */
-  def getBlockHeaderFunc(bitcoind: BitcoindRpcClient)(
-      implicit ec: ExecutionContext): DoubleSha256DigestBE => Future[
-    BlockHeader] = { hash: DoubleSha256DigestBE =>
-    bitcoind.getBlockHeader(hash).map(_.blockHeader)
+  def getBlockHeaderFunc(bitcoind: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): DoubleSha256DigestBE => Future[BlockHeader] = {
+    hash: DoubleSha256DigestBE =>
+      bitcoind.getBlockHeader(hash).map(_.blockHeader)
   }
 
   /** Creates a function that you can pass a block header to and it's return's it's [[GolombFilter]] */
-  def getFilterFunc(bitcoind: BitcoindV19RpcClient, filterType: FilterType)(
-      implicit ec: ExecutionContext): BlockHeader => Future[
-    FilterWithHeaderHash] = {
+  def getFilterFunc(
+      bitcoind: BitcoindV19RpcClient,
+      filterType: FilterType)(implicit
+      ec: ExecutionContext): BlockHeader => Future[FilterWithHeaderHash] = {
     case header: BlockHeader =>
       val prevFilterResultF =
         bitcoind.getBlockFilter(header.hashBE, filterType)
@@ -83,8 +84,8 @@ abstract class SyncUtil extends BitcoinSLogger {
     }
   }
 
-  def getNodeApi(bitcoindRpcClient: BitcoindRpcClient)(
-      implicit ec: ExecutionContext): NodeApi = {
+  def getNodeApi(bitcoindRpcClient: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): NodeApi = {
     new NodeApi {
 
       override def broadcastTransaction(
@@ -175,8 +176,8 @@ abstract class SyncUtil extends BitcoinSLogger {
     }
   }
 
-  def getNodeChainQueryApi(bitcoind: BitcoindRpcClient)(
-      implicit ec: ExecutionContext): NodeChainQueryApi = {
+  def getNodeChainQueryApi(bitcoind: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): NodeChainQueryApi = {
     val chainQuery = SyncUtil.getTestChainQueryApi(bitcoind)
     val nodeApi = SyncUtil.getNodeApi(bitcoind)
     NodeChainQueryApi(nodeApi, chainQuery)
@@ -184,8 +185,8 @@ abstract class SyncUtil extends BitcoinSLogger {
 
   def getNodeChainQueryApiWalletCallback(
       bitcoind: BitcoindRpcClient,
-      walletF: Future[Wallet])(
-      implicit ec: ExecutionContext): NodeChainQueryApi = {
+      walletF: Future[Wallet])(implicit
+      ec: ExecutionContext): NodeChainQueryApi = {
     val chainQuery = SyncUtil.getTestChainQueryApi(bitcoind)
     val nodeApi =
       SyncUtil.getNodeApiWalletCallback(bitcoind, walletF)

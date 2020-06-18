@@ -80,8 +80,8 @@ abstract class NodeTestUtil extends P2PLogger {
     )
   }
 
-  def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
-      implicit ref: ActorRefFactory,
+  def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(implicit
+      ref: ActorRefFactory,
       conf: NodeAppConfig): P2PClient = {
     P2PClient.apply(ref, peer, peerMsgReceiver)
   }
@@ -105,8 +105,8 @@ abstract class NodeTestUtil extends P2PLogger {
   }
 
   /** Checks if the given node and bitcoind is synced */
-  def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): Future[Boolean] = {
     val hashF = rpc.getBestBlockHash
     for {
       chainApi <- node.chainApiFromDb()
@@ -142,8 +142,8 @@ abstract class NodeTestUtil extends P2PLogger {
   /** Checks if the given light client and bitcoind
     * has the same number of blocks in their blockchains
     */
-  def isSameBlockCount(node: Node, rpc: BitcoindRpcClient)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  def isSameBlockCount(node: Node, rpc: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
       count <- node.chainApiFromDb().flatMap(_.getBlockCount)
@@ -152,8 +152,8 @@ abstract class NodeTestUtil extends P2PLogger {
   }
 
   /** Awaits sync between the given node and bitcoind client */
-  def awaitSync(node: Node, rpc: BitcoindRpcClient)(
-      implicit sys: ActorSystem): Future[Unit] = {
+  def awaitSync(node: Node, rpc: BitcoindRpcClient)(implicit
+      sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestHash(node, rpc),
@@ -180,8 +180,8 @@ abstract class NodeTestUtil extends P2PLogger {
   }
 
   /** The future doesn't complete until the nodes best hash is the given hash */
-  def awaitBestHash(hash: DoubleSha256DigestBE, node: Node)(
-      implicit system: ActorSystem): Future[Unit] = {
+  def awaitBestHash(hash: DoubleSha256DigestBE, node: Node)(implicit
+      system: ActorSystem): Future[Unit] = {
     import system.dispatcher
     def bestHashF: Future[DoubleSha256DigestBE] = {
       node.chainApiFromDb().flatMap(_.getBestBlockHash)

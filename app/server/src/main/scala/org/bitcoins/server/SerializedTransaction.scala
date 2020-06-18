@@ -154,27 +154,37 @@ object SerializedTransaction {
 
   implicit val byteVectorWrites: Writes[ByteVector] =
     Writes[ByteVector](bytes => JsString(bytes.toHex))
+
   implicit val ecDigitalSignatureWrites: Writes[ECDigitalSignature] =
     Writes[ECDigitalSignature](sig => JsString(sig.hex))
+
   implicit val ecPublicKeyWrites: Writes[ECPublicKey] =
     Writes[ECPublicKey](pubKey => JsString(pubKey.hex))
+
   implicit val scriptTokenWrites: Writes[ScriptToken] =
     Writes[ScriptToken](token => JsString(tokenToString(token)))
+
   implicit val doubleSha256DigestBEWrites: Writes[DoubleSha256DigestBE] =
     Writes[DoubleSha256DigestBE](hash => JsString(hash.hex))
+
   implicit val uInt32Writes: Writes[UInt32] =
     Writes[UInt32](num => JsNumber(num.toLong))
+
   implicit val int32Writes: Writes[Int32] =
     Writes[Int32](num => JsNumber(num.toLong))
+
   implicit val scriptPubKeyWrites: Writes[ScriptPubKey] =
     Writes[ScriptPubKey](spk => Json.toJson(spk.asm))
 
   implicit val serializedTransactionWitnessWrites: Writes[
     SerializedTransactionWitness] = Json.writes[SerializedTransactionWitness]
+
   implicit val serializedTransactionInputWrites: Writes[
     SerializedTransactionInput] = Json.writes[SerializedTransactionInput]
+
   implicit val serializedTransactionOutputWrites: Writes[
     SerializedTransactionOutput] = Json.writes[SerializedTransactionOutput]
+
   implicit val serializedTransactionWrites: Writes[SerializedTransaction] =
     Json.writes[SerializedTransaction]
 }

@@ -115,6 +115,7 @@ sealed abstract class LnInvoice {
 }
 
 object LnInvoice extends StringFactory[LnInvoice] with BitcoinSLogger {
+
   private case class LnInvoiceImpl(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,

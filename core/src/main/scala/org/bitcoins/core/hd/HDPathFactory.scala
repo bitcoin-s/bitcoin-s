@@ -15,10 +15,11 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path] {
   /**
     * Tries to generate a HD path from the given path segments
     */
-  def apply(children: Vector[BIP32Node]): Try[PathType] = Try {
-    val bip32 = BIP32Path(children)
-    fromString(bip32.toString)
-  }
+  def apply(children: Vector[BIP32Node]): Try[PathType] =
+    Try {
+      val bip32 = BIP32Path(children)
+      fromString(bip32.toString)
+    }
 
   /** Gets a HD path from the given HD address */
   def apply(address: HDAddress): PathType = {
@@ -93,7 +94,9 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path] {
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki#purpose BIP43]]
     */
   def PURPOSE: Int
-  protected lazy val hdPurpose: HDPurpose = HDPurposes.fromConstant(PURPOSE).get // todo
+
+  protected lazy val hdPurpose: HDPurpose =
+    HDPurposes.fromConstant(PURPOSE).get // todo
 
   lazy val purposeChild: BIP32Node = BIP32Node(PURPOSE, hardened = true)
 

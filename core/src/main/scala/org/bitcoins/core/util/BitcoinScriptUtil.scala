@@ -69,12 +69,11 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     */
   def filterPushOps(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
     //TODO: This does not remove the following script number after a OP_PUSHDATA
-    asm.filterNot(
-      op =>
-        op.isInstanceOf[BytesToPushOntoStack]
-          || op == OP_PUSHDATA1
-          || op == OP_PUSHDATA2
-          || op == OP_PUSHDATA4)
+    asm.filterNot(op =>
+      op.isInstanceOf[BytesToPushOntoStack]
+        || op == OP_PUSHDATA1
+        || op == OP_PUSHDATA2
+        || op == OP_PUSHDATA4)
   }
 
   /** Returns only the data ScriptTokens in a script that are pushed onto the stack */
@@ -104,10 +103,11 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L269-L271 interpreter.cpp#L269-L271]]
     * which is how Bitcoin Core handles this
     */
-  def countsTowardsScriptOpLimit(token: ScriptToken): Boolean = token match {
-    case scriptOp: ScriptOperation if scriptOp.opCode > OP_16.opCode => true
-    case _: ScriptToken                                              => false
-  }
+  def countsTowardsScriptOpLimit(token: ScriptToken): Boolean =
+    token match {
+      case scriptOp: ScriptOperation if scriptOp.opCode > OP_16.opCode => true
+      case _: ScriptToken                                              => false
+    }
 
   /**
     * Counts the amount of sigops in a script.
@@ -190,20 +190,21 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     */
   def isPushOnly(script: Seq[ScriptToken]): Boolean = {
     @tailrec
-    def loop(tokens: Seq[ScriptToken]): Boolean = tokens match {
-      case h +: t =>
-        h match {
-          case scriptOp: ScriptOperation =>
-            if (scriptOp.opCode < OP_16.opCode) {
-              loop(t)
-            } else {
-              false
-            }
+    def loop(tokens: Seq[ScriptToken]): Boolean =
+      tokens match {
+        case h +: t =>
+          h match {
+            case scriptOp: ScriptOperation =>
+              if (scriptOp.opCode < OP_16.opCode) {
+                loop(t)
+              } else {
+                false
+              }
 
-          case _: ScriptToken => loop(t)
-        }
-      case Nil => true
-    }
+            case _: ScriptToken => loop(t)
+          }
+        case Nil => true
+      }
     loop(script)
   }
 
@@ -246,8 +247,10 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     //push ops following an OP_PUSHDATA operation are interpreted as unsigned numbers
     val scriptTokenSize = UInt32(scriptToken.bytes.size)
     val bytes = scriptTokenSize.bytes
-    if (scriptToken
-          .isInstanceOf[ScriptNumberOperation] || scriptToken.bytes.size <= 0)
+    if (
+      scriptToken
+        .isInstanceOf[ScriptNumberOperation] || scriptToken.bytes.size <= 0
+    )
       Nil
     else if (scriptTokenSize <= UInt32(75))
       Seq(BytesToPushOntoStack(scriptToken.bytes.size))
@@ -326,8 +329,10 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     checkPubKeyEncoding(key, program.flags)
 
   def checkPubKeyEncoding(key: ECPublicKey, flags: Seq[ScriptFlag]): Boolean = {
-    if (ScriptFlagUtil.requireStrictEncoding(flags) &&
-        !isCompressedOrUncompressedPubKey(key)) false
+    if (
+      ScriptFlagUtil.requireStrictEncoding(flags) &&
+      !isCompressedOrUncompressedPubKey(key)
+    ) false
     else true
   }
 
@@ -377,11 +382,16 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       pubKey: ECPublicKey,
       sigVersion: SignatureVersion,
       flags: Seq[ScriptFlag]): Option[ScriptError] = {
-    if (ScriptFlagUtil.requireStrictEncoding(flags) &&
-        !BitcoinScriptUtil.isCompressedOrUncompressedPubKey(pubKey)) {
+    if (
+      ScriptFlagUtil.requireStrictEncoding(flags) &&
+      !BitcoinScriptUtil.isCompressedOrUncompressedPubKey(pubKey)
+    ) {
       Some(ScriptErrorPubKeyType)
-    } else if (ScriptFlagUtil.requireScriptVerifyWitnessPubKeyType(flags) &&
-               !BitcoinScriptUtil.isCompressedPubKey(pubKey) && sigVersion == SigVersionWitnessV0) {
+    } else if (
+      ScriptFlagUtil.requireScriptVerifyWitnessPubKeyType(flags) &&
+      !BitcoinScriptUtil.isCompressedPubKey(
+        pubKey) && sigVersion == SigVersionWitnessV0
+    ) {
       Some(ScriptErrorWitnessPubKeyType)
     } else None
   }
@@ -483,9 +493,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       val sigIndex = script.indexOf(ScriptConstant(signature.hex))
       logger.debug("SigIndex: " + sigIndex)
       //remove sig and it's corresponding BytesToPushOntoStack
-      val sigRemoved = script.slice(0, sigIndex - 1) ++ script.slice(
-        sigIndex + 1,
-        script.size)
+      val sigRemoved =
+        script.slice(0, sigIndex - 1) ++ script.slice(sigIndex + 1, script.size)
       logger.debug("sigRemoved: " + sigRemoved)
       sigRemoved
     } else script
@@ -525,13 +534,14 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   private def parseScriptEither(
       scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError]): Seq[
-    ScriptToken] = scriptEither match {
-    case Left((_, scriptPubKey)) =>
-      logger.debug(
-        "Script pubkey asm inside calculateForSigning: " + scriptPubKey.asm)
-      scriptPubKey.asm
-    case Right(_) => Nil //error
-  }
+    ScriptToken] =
+    scriptEither match {
+      case Left((_, scriptPubKey)) =>
+        logger.debug(
+          "Script pubkey asm inside calculateForSigning: " + scriptPubKey.asm)
+        scriptPubKey.asm
+      case Right(_) => Nil //error
+    }
 
   /**
     * Casts the given script token to a boolean value

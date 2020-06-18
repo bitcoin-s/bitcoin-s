@@ -128,7 +128,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     )
   }
 
-  implicit val transactionOutPointMapper: BaseColumnType[TransactionOutPoint] = {
+  implicit val transactionOutPointMapper: BaseColumnType[
+    TransactionOutPoint] = {
     MappedColumnType
       .base[TransactionOutPoint, String](_.hex, TransactionOutPoint(_))
   }
@@ -160,18 +161,24 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val hdPathMappper: BaseColumnType[HDPath] =
     MappedColumnType
-      .base[HDPath, String](_.toString, HDPath.fromString(_).get) // hm rethink .get?
+      .base[HDPath, String](_.toString,
+                            HDPath.fromString(_).get
+      ) // hm rethink .get?
 
   implicit val segwitPathMappper: BaseColumnType[SegWitHDPath] =
     MappedColumnType
-      .base[SegWitHDPath, String](_.toString, SegWitHDPath.fromString) // hm rethink .get?
+      .base[SegWitHDPath, String](_.toString,
+                                  SegWitHDPath.fromString
+      ) // hm rethink .get?
 
   implicit val hdChainTypeMapper: BaseColumnType[HDChainType] =
     MappedColumnType.base[HDChainType, Int](_.index, HDChainType.fromInt)
 
   implicit val hdPurposeMapper: BaseColumnType[HDPurpose] =
     MappedColumnType
-      .base[HDPurpose, Int](_.constant, HDPurposes.fromConstant(_).get) // hm rething .get
+      .base[HDPurpose, Int](_.constant,
+                            HDPurposes.fromConstant(_).get
+      ) // hm rething .get
 
   implicit val bitcoinAddressMapper: BaseColumnType[BitcoinAddress] =
     MappedColumnType

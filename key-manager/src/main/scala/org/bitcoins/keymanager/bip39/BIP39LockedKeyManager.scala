@@ -8,15 +8,14 @@ import org.bitcoins.keymanager.ReadMnemonicError.{
 }
 import org.bitcoins.keymanager._
 
-/** Represents a  */
+/** Represents a */
 object BIP39LockedKeyManager extends BitcoinSLogger {
 
   /**
     * Unlock the wallet by decrypting the [[EncryptedMnemonic]] seed
     * @param passphrase the password to decrypt the wallet
     * @param kmParams parameters needed to create the key manager
-    *
-    * */
+    */
   def unlock(
       passphrase: AesPassword,
       bip39PasswordOpt: Option[String],

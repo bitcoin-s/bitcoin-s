@@ -360,6 +360,7 @@ object AesCrypt {
 sealed trait AesDecryptionException extends Exception
 
 object AesException {
+
   case object BadPasswordException
       extends BadPaddingException("Bad password provided for decryption")
       with AesDecryptionException

@@ -39,20 +39,23 @@ object BtcHumanReadablePart {
     override def chars: String = "bcrt"
   }
 
-  def apply(str: String): Try[BtcHumanReadablePart] = str match {
-    case "bc"   => Success(bc)
-    case "tb"   => Success(tb)
-    case "bcrt" => Success(bcrt) // Bitcoin Core specific
-    case _ =>
-      Failure(
-        new IllegalArgumentException(s"Could not construct BTC HRP from $str"))
-  }
+  def apply(str: String): Try[BtcHumanReadablePart] =
+    str match {
+      case "bc"   => Success(bc)
+      case "tb"   => Success(tb)
+      case "bcrt" => Success(bcrt) // Bitcoin Core specific
+      case _ =>
+        Failure(
+          new IllegalArgumentException(
+            s"Could not construct BTC HRP from $str"))
+    }
 
-  def apply(network: NetworkParameters): BtcHumanReadablePart = network match {
-    case _: MainNet  => bc
-    case _: TestNet3 => tb
-    case _: RegTest  => bcrt
-  }
+  def apply(network: NetworkParameters): BtcHumanReadablePart =
+    network match {
+      case _: MainNet  => bc
+      case _: TestNet3 => tb
+      case _: RegTest  => bcrt
+    }
 
   def apply(hrp: Bech32HumanReadablePart): Try[BtcHumanReadablePart] =
     BtcHumanReadablePart(hrp.chars)

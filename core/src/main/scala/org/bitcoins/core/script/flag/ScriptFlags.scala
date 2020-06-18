@@ -101,13 +101,13 @@ case object ScriptVerifyCleanStack extends ScriptFlag {
   override def name = "CLEANSTACK"
 }
 
-/** See [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki]] for details.*/
+/** See [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki]] for details. */
 case object ScriptVerifyCheckLocktimeVerify extends ScriptFlag {
   override def flag = 1 << 9
   override def name = "CHECKLOCKTIMEVERIFY"
 }
 
-/** See https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki for details.*/
+/** See https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki for details. */
 case object ScriptVerifyCheckSequenceVerify extends ScriptFlag {
   override def flag = 1 << 10
   override def name = "CHECKSEQUENCEVERIFY"

@@ -189,10 +189,11 @@ object Rescan extends ServerJsonModels {
           throw Value.InvalidData(value, "Expected a Num or a Str")
       }
 
-    def parseBoolean(value: Value): Boolean = value match {
-      case Bool(bool) => bool
-      case _: Value   => throw Value.InvalidData(value, "Expected a Bool")
-    }
+    def parseBoolean(value: Value): Boolean =
+      value match {
+        case Bool(bool) => bool
+        case _: Value   => throw Value.InvalidData(value, "Expected a Bool")
+      }
 
     jsArr.arr.toList match {
       case batchSizeJs :: startJs :: endJs :: forceJs :: ignoreCreationTimeJs :: Nil =>
@@ -391,10 +392,11 @@ trait ServerJsonModels {
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 
-  def nullToOpt(value: Value): Option[Value] = value match {
-    case Null                      => None
-    case Arr(arr) if arr.isEmpty   => None
-    case Arr(arr) if arr.size == 1 => Some(arr.head)
-    case _: Value                  => Some(value)
-  }
+  def nullToOpt(value: Value): Option[Value] =
+    value match {
+      case Null                      => None
+      case Arr(arr) if arr.isEmpty   => None
+      case Arr(arr) if arr.size == 1 => Some(arr.head)
+      case _: Value                  => Some(value)
+    }
 }

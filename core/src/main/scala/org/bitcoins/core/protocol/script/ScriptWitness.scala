@@ -42,16 +42,18 @@ sealed abstract class ScriptWitnessV0 extends ScriptWitness {
 sealed abstract class P2WPKHWitnessV0 extends ScriptWitnessV0 {
   def pubKey: ECPublicKey = ECPublicKey(stack.head)
 
-  def signature: ECDigitalSignature = stack(1) match {
-    case ByteVector.empty  => EmptyDigitalSignature
-    case bytes: ByteVector => ECDigitalSignature(bytes)
-  }
+  def signature: ECDigitalSignature =
+    stack(1) match {
+      case ByteVector.empty  => EmptyDigitalSignature
+      case bytes: ByteVector => ECDigitalSignature(bytes)
+    }
 
   override def toString =
     s"P2WPKHWitnessV0(${stack.map(BytesUtil.encodeHex(_)).toString})"
 }
 
 object P2WPKHWitnessV0 {
+
   private case class P2WPKHWitnessV0Impl(stack: Seq[ByteVector])
       extends P2WPKHWitnessV0
 
@@ -88,6 +90,7 @@ object P2WPKHWitnessV0 {
   * Format: <redeem script> <scriptSig data1> <scriptSig data2> ... <scriptSig dataN>
   */
 sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
+
   lazy val redeemScript: RawScriptPubKey = {
     val cmpct = CompactSizeUInt.calc(stack.head)
     RawScriptPubKey.fromBytes(cmpct.bytes ++ stack.head)
@@ -108,6 +111,7 @@ sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
 }
 
 object P2WSHWitnessV0 {
+
   private case class P2WSHWitnessV0Impl(stack: Seq[ByteVector])
       extends P2WSHWitnessV0
 

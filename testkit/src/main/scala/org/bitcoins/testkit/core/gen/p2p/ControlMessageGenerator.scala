@@ -18,16 +18,17 @@ import scodec.bits.ByteVector
 object ControlMessageGenerator {
 
   /** Generates a valid P2P control message */
-  def controlMessage: Gen[ControlPayload] = Gen.oneOf(
-    addrMessage,
-    filterAddMessage,
-    filterLoadMessage,
-    feeFilterMessage,
-    pingMessage,
-    pongMessage,
-    rejectMessage,
-    versionMessage
-  )
+  def controlMessage: Gen[ControlPayload] =
+    Gen.oneOf(
+      addrMessage,
+      filterAddMessage,
+      filterLoadMessage,
+      feeFilterMessage,
+      pingMessage,
+      pongMessage,
+      rejectMessage,
+      versionMessage
+    )
 
   def feeFilterMessage: Gen[FeeFilterMessage] = {
     for {

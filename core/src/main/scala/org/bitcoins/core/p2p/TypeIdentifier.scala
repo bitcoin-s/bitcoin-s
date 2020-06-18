@@ -83,10 +83,11 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
 
   def apply(num: Long): TypeIdentifier = TypeIdentifier(UInt32(num))
 
-  def apply(uInt32: UInt32): TypeIdentifier = uInt32 match {
-    case UInt32.one                 => MsgTx
-    case _ if (uInt32 == UInt32(2)) => MsgBlock
-    case _ if (uInt32 == UInt32(3)) => MsgFilteredBlock
-    case x: UInt32                  => MsgUnassignedImpl(x)
-  }
+  def apply(uInt32: UInt32): TypeIdentifier =
+    uInt32 match {
+      case UInt32.one               => MsgTx
+      case _ if uInt32 == UInt32(2) => MsgBlock
+      case _ if uInt32 == UInt32(3) => MsgFilteredBlock
+      case x: UInt32                => MsgUnassignedImpl(x)
+    }
 }

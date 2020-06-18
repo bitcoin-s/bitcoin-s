@@ -11,8 +11,8 @@ trait SlickUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
   import profile.api._
 
   /** Creates rows in a database that are not auto incremented */
-  def createAllNoAutoInc(ts: Vector[T], database: SafeDatabase)(
-      implicit ec: ExecutionContext): Future[Vector[T]] = {
+  def createAllNoAutoInc(ts: Vector[T], database: SafeDatabase)(implicit
+      ec: ExecutionContext): Future[Vector[T]] = {
     val actions = (table ++= ts).andThen(DBIO.successful(ts)).transactionally
     val result = database.run(actions)
     result

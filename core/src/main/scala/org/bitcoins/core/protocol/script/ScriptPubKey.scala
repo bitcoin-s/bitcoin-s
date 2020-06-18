@@ -32,7 +32,7 @@ import scala.util.{Failure, Success, Try}
   */
 sealed abstract class ScriptPubKey extends Script
 
-/** Trait for all Non-SegWit ScriptPubKeys  */
+/** Trait for all Non-SegWit ScriptPubKeys */
 sealed trait NonWitnessScriptPubKey extends ScriptPubKey
 
 /** Trait for all raw, non-nested ScriptPubKeys (no P2SH)
@@ -71,10 +71,10 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
 
   def apply(hash: Sha256Hash160Digest): P2PKHScriptPubKey = {
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
-    val asm = Seq(OP_DUP, OP_HASH160) ++ pushOps ++ Seq(
-      ScriptConstant(hash.bytes),
-      OP_EQUALVERIFY,
-      OP_CHECKSIG)
+    val asm =
+      Seq(OP_DUP, OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes),
+                                                OP_EQUALVERIFY,
+                                                OP_CHECKSIG)
     P2PKHScriptPubKey(asm)
   }
 
@@ -141,7 +141,8 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
       asm(checkMultiSigIndex - 1) match {
         case x: ScriptNumber => x.toInt
         case c: ScriptConstant
-            if ScriptNumber(c.hex).toLong <= Consensus.maxPublicKeysPerMultiSig =>
+            if ScriptNumber(
+              c.hex).toLong <= Consensus.maxPublicKeysPerMultiSig =>
           ScriptNumber(c.hex).toInt
         case x =>
           throw new RuntimeException(
@@ -173,6 +174,7 @@ object MultiSignatureScriptPubKey
   private case class MultiSignatureScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends MultiSignatureScriptPubKey {
+
     override def toString =
       s"multi($requiredSigs,${publicKeys.map(_.hex).mkString(",")})"
   }
@@ -208,8 +210,9 @@ object MultiSignatureScriptPubKey
       pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
       constant = ScriptConstant(pubKey.bytes)
     } yield pushOps ++ Seq(constant)
-    val asm: Seq[ScriptToken] = required ++ pubKeysWithPushOps.flatten ++ possible ++ Seq(
-      OP_CHECKMULTISIG)
+    val asm: Seq[ScriptToken] =
+      required ++ pubKeysWithPushOps.flatten ++ possible ++ Seq(
+        OP_CHECKMULTISIG)
     MultiSignatureScriptPubKey(asm)
   }
 
@@ -224,8 +227,8 @@ object MultiSignatureScriptPubKey
 
   /** Determines if the given script tokens are a multisignature `scriptPubKey` */
   def isMultiSignatureScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
-    val containsMultiSigOp = asm.contains(OP_CHECKMULTISIG) || asm.contains(
-      OP_CHECKMULTISIGVERIFY)
+    val containsMultiSigOp =
+      asm.contains(OP_CHECKMULTISIG) || asm.contains(OP_CHECKMULTISIGVERIFY)
 
     if (asm.nonEmpty && containsMultiSigOp) {
       //we need either the first or second asm operation to indicate how many signatures are required
@@ -249,15 +252,15 @@ object MultiSignatureScriptPubKey
 
       (hasRequiredSignaturesTry, hasMaximumSignaturesTry) match {
         case (Success(hasRequiredSignatures), Success(hasMaximumSignatures)) =>
-          val isStandardOps = asm.forall(
-            op =>
-              op.isInstanceOf[ScriptConstant] || op
-                .isInstanceOf[BytesToPushOntoStack] || op
-                .isInstanceOf[ScriptNumber] || op == OP_CHECKMULTISIG ||
-                op == OP_CHECKMULTISIGVERIFY)
+          val isStandardOps = asm.forall(op =>
+            op.isInstanceOf[ScriptConstant] || op
+              .isInstanceOf[BytesToPushOntoStack] || op
+              .isInstanceOf[ScriptNumber] || op == OP_CHECKMULTISIG ||
+              op == OP_CHECKMULTISIGVERIFY)
 
-          val result = asm.nonEmpty && containsMultiSigOp && hasRequiredSignatures &&
-            hasMaximumSignatures && isStandardOps
+          val result =
+            asm.nonEmpty && containsMultiSigOp && hasRequiredSignatures &&
+              hasMaximumSignatures && isStandardOps
           result
         case (Success(_), Failure(_)) => false
         case (Failure(_), Success(_)) => false
@@ -274,13 +277,14 @@ object MultiSignatureScriptPubKey
     * public keys we can have in a
     * [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]]
     */
-  private def isValidPubKeyNumber(token: ScriptToken): Boolean = token match {
-    case constant: ScriptConstant =>
-      constant.isInstanceOf[ScriptNumber] ||
-        ScriptNumber(constant.bytes) <= ScriptNumber(
-          Consensus.maxPublicKeysPerMultiSig)
-    case _: ScriptToken => false
-  }
+  private def isValidPubKeyNumber(token: ScriptToken): Boolean =
+    token match {
+      case constant: ScriptConstant =>
+        constant.isInstanceOf[ScriptNumber] ||
+          ScriptNumber(constant.bytes) <= ScriptNumber(
+            Consensus.maxPublicKeysPerMultiSig)
+      case _: ScriptToken => false
+    }
 }
 
 /**
@@ -310,21 +314,22 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
 
   def apply(hash: Sha256Hash160Digest): P2SHScriptPubKey = {
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
-    val asm = Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes),
-                                                OP_EQUAL)
+    val asm =
+      Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUAL)
     P2SHScriptPubKey(asm)
   }
 
   /** Checks if the given asm matches the pattern for
     * [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]] */
-  def isP2SHScriptPubKey(asm: Seq[ScriptToken]): Boolean = asm match {
-    case Seq(OP_HASH160,
-             _: BytesToPushOntoStack,
-             _: ScriptConstant,
-             OP_EQUAL) =>
-      true
-    case _ => false
-  }
+  def isP2SHScriptPubKey(asm: Seq[ScriptToken]): Boolean =
+    asm match {
+      case Seq(OP_HASH160,
+               _: BytesToPushOntoStack,
+               _: ScriptConstant,
+               OP_EQUAL) =>
+        true
+      case _ => false
+    }
 
   def fromAsm(asm: Seq[ScriptToken]): P2SHScriptPubKey = {
     buildScript(asm.toVector,
@@ -373,10 +378,11 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
 
   /** Sees if the given asm matches the
     * [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey P2PKHScriptPubKey]] pattern */
-  def isP2PKScriptPubKey(asm: Seq[ScriptToken]): Boolean = asm match {
-    case Seq(_: BytesToPushOntoStack, _: ScriptConstant, OP_CHECKSIG) => true
-    case _                                                            => false
-  }
+  def isP2PKScriptPubKey(asm: Seq[ScriptToken]): Boolean =
+    asm match {
+      case Seq(_: BytesToPushOntoStack, _: ScriptConstant, OP_CHECKSIG) => true
+      case _                                                            => false
+    }
 
 }
 
@@ -470,8 +476,10 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
       false
     } else if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
       val tailTokens = asm.slice(4, asm.length)
-      if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens
-            .contains(OP_CHECKLOCKTIMEVERIFY)) return false
+      if (
+        P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens
+          .contains(OP_CHECKLOCKTIMEVERIFY)
+      ) return false
       asm.slice(0, 4) match {
         case Seq(_: BytesToPushOntoStack,
                  _: ScriptConstant,
@@ -482,8 +490,10 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
       }
     } else {
       val tailTokens = asm.slice(3, asm.length)
-      if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens
-            .contains(OP_CHECKLOCKTIMEVERIFY)) return false
+      if (
+        P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens
+          .contains(OP_CHECKLOCKTIMEVERIFY)
+      ) return false
       asm.slice(0, 3) match {
         case Seq(_: ScriptNumberOperation, OP_CHECKLOCKTIMEVERIFY, OP_DROP) =>
           validScriptAfterLockTime(tailTokens)
@@ -558,8 +568,10 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
   def isCSVScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
     if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
       val tailTokens = asm.slice(4, asm.length)
-      if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens
-            .contains(OP_CHECKSEQUENCEVERIFY)) return false
+      if (
+        P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens
+          .contains(OP_CHECKSEQUENCEVERIFY)
+      ) return false
       asm.slice(0, 4) match {
         case Seq(_: BytesToPushOntoStack,
                  _: ScriptConstant,
@@ -570,8 +582,10 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
       }
     } else {
       val tailTokens = asm.slice(3, asm.length)
-      if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens
-            .contains(OP_CHECKSEQUENCEVERIFY)) return false
+      if (
+        P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens
+          .contains(OP_CHECKSEQUENCEVERIFY)
+      ) return false
       asm.slice(0, 3) match {
         case Seq(_: ScriptNumberOperation, OP_CHECKSEQUENCEVERIFY, OP_DROP) =>
           CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
@@ -657,7 +671,9 @@ object ConditionalScriptPubKey {
         .foldLeft[Option[Vector[Boolean]]](Some(Vector(false))) {
           case (None, _) => // Invalid tree case, do no computation
             None
-          case (Some(Vector()), _) => // Case of additional asm after final OP_ENDIF
+          case (Some(Vector()),
+                _
+              ) => // Case of additional asm after final OP_ENDIF
             None
           case (Some(opElseFoundAtDepth), (OP_IF | OP_NOTIF, _)) =>
             // Increase depth by one with OP_ELSE yet to be found for this depth
@@ -721,9 +737,11 @@ sealed trait IfConditionalScriptPubKey extends ConditionalScriptPubKey {
 
 object NonStandardIfConditionalScriptPubKey
     extends ScriptFactory[IfConditionalScriptPubKey] {
+
   private case class NonStandardIfConditionalScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends IfConditionalScriptPubKey {
+
     override def toString: String =
       s"IfConditionalScriptPubKey($trueSPK, $falseSPK)"
   }
@@ -733,15 +751,17 @@ object NonStandardIfConditionalScriptPubKey
       asm = asm.toVector,
       constructor = NonStandardIfConditionalScriptPubKeyImpl.apply,
       invariant = isNonStandardIfConditionalScriptPubKey,
-      errorMsg = "Given asm was not a NonStandardIfConditionalScriptPubKey, got: " + asm
+      errorMsg =
+        "Given asm was not a NonStandardIfConditionalScriptPubKey, got: " + asm
     )
   }
 
   def apply(
       trueSPK: RawScriptPubKey,
       falseSPK: RawScriptPubKey): IfConditionalScriptPubKey = {
-    val asm = Vector(OP_IF) ++ trueSPK.asm ++ Vector(OP_ELSE) ++ falseSPK.asm ++ Vector(
-      OP_ENDIF)
+    val asm =
+      Vector(OP_IF) ++ trueSPK.asm ++ Vector(OP_ELSE) ++ falseSPK.asm ++ Vector(
+        OP_ENDIF)
 
     fromAsm(asm)
   }
@@ -787,9 +807,11 @@ sealed trait MultiSignatureWithTimeoutScriptPubKey
 
 object MultiSignatureWithTimeoutScriptPubKey
     extends ScriptFactory[MultiSignatureWithTimeoutScriptPubKey] {
+
   private case class MultiSignatureWithTimeoutScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends MultiSignatureWithTimeoutScriptPubKey {
+
     override def toString: String =
       s"MultiSignatureWithTimeoutScriptPubKey($trueSPK, $falseSPK)"
   }
@@ -808,8 +830,8 @@ object MultiSignatureWithTimeoutScriptPubKey
   def apply(
       multiSigSPK: MultiSignatureScriptPubKey,
       cltvSPK: CLTVScriptPubKey): MultiSignatureWithTimeoutScriptPubKey = {
-    val asm = Vector(OP_IF) ++ multiSigSPK.asm ++ Vector(OP_ELSE) ++ cltvSPK.asm ++ Vector(
-      OP_ENDIF)
+    val asm = Vector(OP_IF) ++ multiSigSPK.asm ++ Vector(
+      OP_ELSE) ++ cltvSPK.asm ++ Vector(OP_ENDIF)
 
     fromAsm(asm)
   }
@@ -822,7 +844,8 @@ object MultiSignatureWithTimeoutScriptPubKey
     lazy val validMultiSigWithCLTV = opElseIndexOpt match {
       case Some(opElseIndex) =>
         MultiSignatureScriptPubKey
-          .isMultiSignatureScriptPubKey(asm.slice(1, opElseIndex)) && CLTVScriptPubKey
+          .isMultiSignatureScriptPubKey(
+            asm.slice(1, opElseIndex)) && CLTVScriptPubKey
           .isCLTVScriptPubKey(asm.slice(opElseIndex + 1, asm.length - 1))
       case _ => false
     }
@@ -837,9 +860,11 @@ sealed trait NotIfConditionalScriptPubKey extends ConditionalScriptPubKey {
 
 object NonStandardNotIfConditionalScriptPubKey
     extends ScriptFactory[NotIfConditionalScriptPubKey] {
+
   private case class NonStandardNotIfConditionalScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends NotIfConditionalScriptPubKey {
+
     override def toString: String =
       s"NotIfConditionalScriptPubKey($falseSPK, $trueSPK)"
   }
@@ -856,8 +881,8 @@ object NonStandardNotIfConditionalScriptPubKey
   def apply(
       falseSPK: RawScriptPubKey,
       trueSPK: RawScriptPubKey): NotIfConditionalScriptPubKey = {
-    val asm = Vector(OP_NOTIF) ++ falseSPK.asm ++ Vector(OP_ELSE) ++ trueSPK.asm ++ Vector(
-      OP_ENDIF)
+    val asm = Vector(OP_NOTIF) ++ falseSPK.asm ++ Vector(
+      OP_ELSE) ++ trueSPK.asm ++ Vector(OP_ENDIF)
 
     fromAsm(asm)
   }
@@ -907,6 +932,7 @@ sealed trait P2PKWithTimeoutScriptPubKey extends RawScriptPubKey {
 
 object P2PKWithTimeoutScriptPubKey
     extends ScriptFactory[P2PKWithTimeoutScriptPubKey] {
+
   private case class P2PKWithTimeoutScriptPubKeyImpl(asm: Vector[ScriptToken])
       extends P2PKWithTimeoutScriptPubKey
 
@@ -965,7 +991,9 @@ object P2PKWithTimeoutScriptPubKey
 
         lockTimeTry match {
           case Success(lockTime) =>
-            asm == P2PKWithTimeoutScriptPubKey(pubKey, lockTime, timeoutPubKey).asm
+            asm == P2PKWithTimeoutScriptPubKey(pubKey,
+                                               lockTime,
+                                               timeoutPubKey).asm
           case Failure(_) => false
         }
       } else {
@@ -987,9 +1015,12 @@ object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
 
   def fromAsm(asm: Seq[ScriptToken]): NonStandardScriptPubKey = {
     //everything can be a NonStandardScriptPubkey, thus the trivially true function
-    buildScript(asm.toVector, NonStandardScriptPubKeyImpl.apply, { _ =>
-      true
-    }, "")
+    buildScript(asm.toVector,
+                NonStandardScriptPubKeyImpl.apply,
+                { _ =>
+                  true
+                },
+                "")
   }
 
   def apply(asm: Seq[ScriptToken]): NonStandardScriptPubKey = fromAsm(asm)
@@ -1003,33 +1034,37 @@ case object EmptyScriptPubKey extends RawScriptPubKey {
 object RawScriptPubKey extends ScriptFactory[RawScriptPubKey] {
   val empty: RawScriptPubKey = fromAsm(Nil)
 
-  def fromAsm(asm: Seq[ScriptToken]): RawScriptPubKey = asm match {
-    case Nil => EmptyScriptPubKey
-    case _ if P2PKWithTimeoutScriptPubKey.isP2PKWithTimeoutScriptPubKey(asm) =>
-      P2PKWithTimeoutScriptPubKey.fromAsm(asm)
-    case _
-        if MultiSignatureWithTimeoutScriptPubKey
-          .isMultiSignatureWithTimeoutScriptPubKey(asm) =>
-      MultiSignatureWithTimeoutScriptPubKey.fromAsm(asm)
-    case _
-        if NonStandardIfConditionalScriptPubKey
-          .isNonStandardIfConditionalScriptPubKey(asm) =>
-      NonStandardIfConditionalScriptPubKey.fromAsm(asm)
-    case _
-        if NonStandardNotIfConditionalScriptPubKey
-          .isNonStandardNotIfConditionalScriptPubKey(asm) =>
-      NonStandardNotIfConditionalScriptPubKey.fromAsm(asm)
-    case _ if P2PKHScriptPubKey.isP2PKHScriptPubKey(asm) =>
-      P2PKHScriptPubKey(asm)
-    case _ if P2PKScriptPubKey.isP2PKScriptPubKey(asm) => P2PKScriptPubKey(asm)
-    case _ if MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm) =>
-      MultiSignatureScriptPubKey(asm)
-    case _ if CLTVScriptPubKey.isCLTVScriptPubKey(asm) => CLTVScriptPubKey(asm)
-    case _ if CSVScriptPubKey.isCSVScriptPubKey(asm)   => CSVScriptPubKey(asm)
-    case _ if WitnessCommitment.isWitnessCommitment(asm) =>
-      WitnessCommitment(asm)
-    case _ => NonStandardScriptPubKey(asm)
-  }
+  def fromAsm(asm: Seq[ScriptToken]): RawScriptPubKey =
+    asm match {
+      case Nil => EmptyScriptPubKey
+      case _
+          if P2PKWithTimeoutScriptPubKey.isP2PKWithTimeoutScriptPubKey(asm) =>
+        P2PKWithTimeoutScriptPubKey.fromAsm(asm)
+      case _
+          if MultiSignatureWithTimeoutScriptPubKey
+            .isMultiSignatureWithTimeoutScriptPubKey(asm) =>
+        MultiSignatureWithTimeoutScriptPubKey.fromAsm(asm)
+      case _
+          if NonStandardIfConditionalScriptPubKey
+            .isNonStandardIfConditionalScriptPubKey(asm) =>
+        NonStandardIfConditionalScriptPubKey.fromAsm(asm)
+      case _
+          if NonStandardNotIfConditionalScriptPubKey
+            .isNonStandardNotIfConditionalScriptPubKey(asm) =>
+        NonStandardNotIfConditionalScriptPubKey.fromAsm(asm)
+      case _ if P2PKHScriptPubKey.isP2PKHScriptPubKey(asm) =>
+        P2PKHScriptPubKey(asm)
+      case _ if P2PKScriptPubKey.isP2PKScriptPubKey(asm) =>
+        P2PKScriptPubKey(asm)
+      case _ if MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm) =>
+        MultiSignatureScriptPubKey(asm)
+      case _ if CLTVScriptPubKey.isCLTVScriptPubKey(asm) =>
+        CLTVScriptPubKey(asm)
+      case _ if CSVScriptPubKey.isCSVScriptPubKey(asm) => CSVScriptPubKey(asm)
+      case _ if WitnessCommitment.isWitnessCommitment(asm) =>
+        WitnessCommitment(asm)
+      case _ => NonStandardScriptPubKey(asm)
+    }
 
   def apply(asm: Seq[ScriptToken]): RawScriptPubKey = fromAsm(asm)
 }
@@ -1056,9 +1091,11 @@ object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
   /** Creates a `scriptPubKey` from its asm representation */
   def fromAsm(asm: Seq[ScriptToken]): ScriptPubKey = {
     val nonWitnessScriptPubKey = NonWitnessScriptPubKey.fromAsm(asm)
-    if (nonWitnessScriptPubKey
-          .isInstanceOf[NonStandardScriptPubKey] && WitnessScriptPubKey
-          .isWitnessScriptPubKey(asm)) {
+    if (
+      nonWitnessScriptPubKey
+        .isInstanceOf[NonStandardScriptPubKey] && WitnessScriptPubKey
+        .isWitnessScriptPubKey(asm)
+    ) {
       WitnessScriptPubKey(asm)
     } else {
       nonWitnessScriptPubKey
@@ -1102,17 +1139,18 @@ object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
 
   def apply(asm: Seq[ScriptToken]): WitnessScriptPubKey = fromAsm(asm)
 
-  def fromAsm(asm: Seq[ScriptToken]): WitnessScriptPubKey = asm match {
-    case _ if P2WPKHWitnessSPKV0.isValid(asm) =>
-      P2WPKHWitnessSPKV0.fromAsm(asm)
-    case _ if P2WSHWitnessSPKV0.isValid(asm) =>
-      P2WSHWitnessSPKV0.fromAsm(asm)
-    case _ if WitnessScriptPubKey.isWitnessScriptPubKey(asm) =>
-      UnassignedWitnessScriptPubKey(asm)
-    case _ =>
-      throw new IllegalArgumentException(
-        "Given asm was not a WitnessScriptPubKey, got: " + asm)
-  }
+  def fromAsm(asm: Seq[ScriptToken]): WitnessScriptPubKey =
+    asm match {
+      case _ if P2WPKHWitnessSPKV0.isValid(asm) =>
+        P2WPKHWitnessSPKV0.fromAsm(asm)
+      case _ if P2WSHWitnessSPKV0.isValid(asm) =>
+        P2WSHWitnessSPKV0.fromAsm(asm)
+      case _ if WitnessScriptPubKey.isWitnessScriptPubKey(asm) =>
+        UnassignedWitnessScriptPubKey(asm)
+      case _ =>
+        throw new IllegalArgumentException(
+          "Given asm was not a WitnessScriptPubKey, got: " + asm)
+    }
 
   /**
     * Checks if the given asm is a valid
@@ -1338,7 +1376,8 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
       val asmBytes = BytesUtil.toByteVector(asm)
       val Seq(opReturn, pushOp, constant) = asm.take(3)
       opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
-      constant.hex.take(8) == commitmentHeader && asmBytes.size >= minCommitmentSize
+      constant.hex.take(
+        8) == commitmentHeader && asmBytes.size >= minCommitmentSize
     }
   }
 }

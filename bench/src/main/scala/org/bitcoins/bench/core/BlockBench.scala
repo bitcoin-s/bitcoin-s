@@ -13,7 +13,7 @@ object BlockBench extends App {
     val _ = block() // call-by-name
     val t1 = System.currentTimeMillis()
     val time = t1 - t0
-    logger.info("Elapsed time: " + (time) + "ms")
+    logger.info("Elapsed time: " + time + "ms")
     time
   }
 

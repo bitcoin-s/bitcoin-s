@@ -62,22 +62,29 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       script: Seq[ScriptToken],
       pubKey: ECPublicKey,
       signature: ECDigitalSignature,
-      flags: Seq[ScriptFlag] = Policy.standardFlags): TransactionSignatureCheckerResult = {
+      flags: Seq[ScriptFlag] =
+        Policy.standardFlags): TransactionSignatureCheckerResult = {
     logger.debug("Signature: " + signature)
     val pubKeyEncodedCorrectly = BitcoinScriptUtil.isValidPubKeyEncoding(
       pubKey,
       txSignatureComponent.sigVersion,
       flags)
-    if (ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil
-          .isValidSignatureEncoding(signature)) {
+    if (
+      ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil
+        .isValidSignatureEncoding(signature)
+    ) {
       logger.error("Signature was not stricly encoded der: " + signature.hex)
       SignatureValidationErrorNotStrictDerEncoding
-    } else if (ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil
-                 .isLowS(signature)) {
+    } else if (
+      ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil
+        .isLowS(signature)
+    ) {
       logger.error("Signature did not have a low s value")
       SignatureValidationErrorHighSValue
-    } else if (ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.nonEmpty &&
-               !HashType.isDefinedHashtypeSignature(signature)) {
+    } else if (
+      ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.nonEmpty &&
+      !HashType.isDefinedHashtypeSignature(signature)
+    ) {
       logger.error("signature: " + signature.hex)
       logger.error(
         "Hash type was not defined on the signature, got: " + signature.bytes.last)

@@ -62,13 +62,14 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
     * If you do not pass in a key manager, the transaction built by [[RawTxBuilder txbuilder]] will contain [[org.bitcoins.core.protocol.script.EmptyScriptSignature EmptyScriptSignature]]
     *
     * Currently utxos are funded with [[CoinSelector.accumulateLargest() accumulateLargest]] coin seleciton algorithm
-    * */
+    */
   private[wallet] def fundRawTransactionInternal(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
       keyManagerOpt: Option[BIP39KeyManager],
-      coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.AccumulateLargest,
+      coinSelectionAlgo: CoinSelectionAlgo =
+        CoinSelectionAlgo.AccumulateLargest,
       markAsReserved: Boolean = false): Future[(
       RawTxBuilderWithFinalizer[StandardNonInteractiveFinalizer],
       Vector[ScriptSignatureParams[InputInfo]])] = {
@@ -77,18 +78,18 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
 
       // Need to remove immature coinbase inputs
       coinbaseUtxos = utxos.filter(_.outPoint == EmptyTransactionOutPoint)
-      confFs = coinbaseUtxos.map(
-        utxo =>
-          chainQueryApi
-            .getNumberOfConfirmations(utxo.blockHash.get)
-            .map((utxo, _)))
+      confFs = coinbaseUtxos.map(utxo =>
+        chainQueryApi
+          .getNumberOfConfirmations(utxo.blockHash.get)
+          .map((utxo, _)))
       confs <- Future.sequence(confFs)
-      immatureCoinbases = confs
-        .filter {
-          case (_, confsOpt) =>
-            confsOpt.isDefined && confsOpt.get > Consensus.coinbaseMaturity
-        }
-        .map(_._1)
+      immatureCoinbases =
+        confs
+          .filter {
+            case (_, confsOpt) =>
+              confsOpt.isDefined && confsOpt.get > Consensus.coinbaseMaturity
+          }
+          .map(_._1)
     } yield utxos.diff(immatureCoinbases)
 
     val selectedUtxosF = for {
@@ -98,8 +99,9 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
                                         walletUtxos = walletUtxos,
                                         outputs = destinations,
                                         feeRate = feeRate)
-      selectedUtxos <- if (markAsReserved) markUTXOsAsReserved(utxos)
-      else Future.successful(utxos)
+      selectedUtxos <-
+        if (markAsReserved) markUTXOsAsReserved(utxos)
+        else Future.successful(utxos)
     } yield selectedUtxos
 
     val addrInfosWithUtxoF: Future[Vector[(SpendingInfoDb, AddressInfo)]] =
@@ -131,7 +133,7 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
         }
       }
     } yield {
-      logger.info({
+      logger.info {
         val utxosStr = utxoSpendingInfos
           .map { utxo =>
             import utxo.outPoint
@@ -139,7 +141,7 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
           }
           .mkString(", ")
         s"Spending UTXOs: $utxosStr"
-      })
+      }
 
       utxoSpendingInfos.zipWithIndex.foreach {
         case (utxo, index) =>
@@ -151,7 +153,8 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
 
       val lockTime = TxUtil.calcLockTime(utxoSpendingInfos).get
 
-      val txBuilder = RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
+      val txBuilder =
+        RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
 
       val finalizer = StandardNonInteractiveFinalizer(
         utxoSpendingInfos.map(_.inputInfo),

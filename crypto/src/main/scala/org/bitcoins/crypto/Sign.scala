@@ -17,7 +17,6 @@ import scala.concurrent.{Await, Future}
   *
   * If you have a hardware wallet, you will need to implement the protocol to send a message to the hardware device. The
   * type signature of the function you implement must be scodec.bits.ByteVector => Future[ECDigitalSignature]
-  *
   */
 trait Sign {
   def signFunction: ByteVector => Future[ECDigitalSignature]
@@ -33,6 +32,7 @@ trait Sign {
 }
 
 object Sign {
+
   private case class SignImpl(
       signFunction: ByteVector => Future[ECDigitalSignature],
       publicKey: ECPublicKey)
@@ -58,7 +58,8 @@ object Sign {
     */
   def dummySign(publicKey: ECPublicKey): Sign = {
     SignImpl({ _: ByteVector =>
-      Future.successful(EmptyDigitalSignature)
-    }, publicKey)
+               Future.successful(EmptyDigitalSignature)
+             },
+             publicKey)
   }
 }

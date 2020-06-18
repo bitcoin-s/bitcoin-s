@@ -29,6 +29,7 @@ case object OP_SIZE extends SpliceOperation {
 }
 
 object SpliceOperation extends ScriptOperationFactory[SpliceOperation] {
+
   override val operations =
     Vector(OP_CAT, OP_LEFT, OP_RIGHT, OP_SIZE, OP_SUBSTR)
 }

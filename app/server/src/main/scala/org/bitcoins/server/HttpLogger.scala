@@ -6,6 +6,7 @@ import org.slf4j.Logger
 /** Exposes access to the HTTP RPC server logger */
 private[bitcoins] trait HttpLogger {
   private var _logger: Logger = _
+
   protected[bitcoins] def logger(implicit config: LoggerConfig): Logger = {
     if (_logger == null) {
       _logger = HttpLoggerImpl(config).getLogger

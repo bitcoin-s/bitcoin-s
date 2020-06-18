@@ -27,7 +27,7 @@ trait ChainQueryApi {
                   s"Best block hash must have a height! blockhash=$hash")
     } yield heightOpt.get
 
-  /** Gets number of confirmations for the given block hash*/
+  /** Gets number of confirmations for the given block hash */
   def getNumberOfConfirmations(
       blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]]
 

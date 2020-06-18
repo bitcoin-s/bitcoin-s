@@ -24,8 +24,8 @@ abstract class ChainSync extends ChainVerificationLogger {
   def sync(
       chainHandler: ChainHandler,
       getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader],
-      getBestBlockHashFunc: () => Future[DoubleSha256DigestBE])(
-      implicit ec: ExecutionContext,
+      getBestBlockHashFunc: () => Future[DoubleSha256DigestBE])(implicit
+      ec: ExecutionContext,
       conf: ChainAppConfig): Future[ChainApi] = {
     val currentTipsF: Future[Vector[BlockHeaderDb]] = {
       chainHandler.blockHeaderDAO.chainTips
@@ -68,8 +68,8 @@ abstract class ChainSync extends ChainVerificationLogger {
       chainApi: ChainApi,
       tips: Vector[BlockHeaderDb],
       bestBlockHash: DoubleSha256DigestBE,
-      getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader])(
-      implicit ec: ExecutionContext,
+      getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader])(implicit
+      ec: ExecutionContext,
       conf: ChainAppConfig): Future[ChainApi] = {
     require(tips.nonEmpty, s"Cannot sync without the genesis block")
 

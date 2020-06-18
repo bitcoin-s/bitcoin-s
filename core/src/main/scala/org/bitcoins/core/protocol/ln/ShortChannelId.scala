@@ -27,9 +27,9 @@ case class ShortChannelId(u64: UInt64) extends NetworkElement {
     * }}}
     */
   def toHumanReadableString: String = {
-    val blockHeight = (u64 >> 40) & UInt64(0xFFFFFF)
-    val txIndex = (u64 >> 16) & UInt64(0xFFFFFF)
-    val outputIndex = u64 & UInt64(0xFFFF)
+    val blockHeight = (u64 >> 40) & UInt64(0xffffff)
+    val txIndex = (u64 >> 16) & UInt64(0xffffff)
+    val outputIndex = u64 & UInt64(0xffff)
     s"${blockHeight.toInt}x${txIndex.toInt}x${outputIndex.toInt}"
   }
 
@@ -57,7 +57,7 @@ object ShortChannelId extends Factory[ShortChannelId] {
                 "ShortChannelId: invalid output index")
 
         val u64 = UInt64(
-          ((blockHeight & 0xFFFFFFL) << 40) | ((txIndex & 0xFFFFFFL) << 16) | (outputIndex & 0xFFFFL))
+          ((blockHeight & 0xffffffL) << 40) | ((txIndex & 0xffffffL) << 16) | (outputIndex & 0xffffL))
         ShortChannelId(u64)
       case _: Array[String] => fromHex(str)
     }

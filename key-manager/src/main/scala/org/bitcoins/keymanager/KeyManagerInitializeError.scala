@@ -3,6 +3,7 @@ package org.bitcoins.keymanager
 sealed trait KeyManagerInitializeError extends Error
 
 object InitializeKeyManagerError {
+
   // todo add explanation of what good/bad entropy is
   final case object BadEntropy
       extends Error("Bad Entropy")

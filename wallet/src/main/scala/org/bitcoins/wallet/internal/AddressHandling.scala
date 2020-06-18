@@ -195,7 +195,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * be completed when the request is processed in the queue. If the queue
     * is full it throws an exception.
     * @throws IllegalStateException
-    * */
+    */
   private def getNewAddressHelper(
       account: AccountDb,
       chainType: HDChainType
@@ -204,8 +204,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
     addressRequestQueue.add((account, chainType, p))
     for {
       addressDb <- p.future
-      _ <- walletCallbacks.executeOnNewAddressGenerated(logger,
-                                                        addressDb.address)
+      _ <-
+        walletCallbacks.executeOnNewAddressGenerated(logger, addressDb.address)
     } yield {
       addressDb.address
     }
@@ -305,11 +305,12 @@ private[wallet] trait AddressHandling extends WalletLogger {
     for {
       account <- getDefaultAccountForType(addressType)
       addresses <- addressDAO.getUnusedAddresses(account.hdAccount)
-      address <- if (addresses.isEmpty) {
-        getNewAddress(account.hdAccount)
-      } else {
-        Future.successful(addresses.head.address)
-      }
+      address <-
+        if (addresses.isEmpty) {
+          getNewAddress(account.hdAccount)
+        } else {
+          Future.successful(addresses.head.address)
+        }
     } yield address
   }
 
@@ -318,11 +319,12 @@ private[wallet] trait AddressHandling extends WalletLogger {
     for {
       account <- getDefaultAccount()
       addresses <- addressDAO.getUnusedAddresses(account.hdAccount)
-      address <- if (addresses.isEmpty) {
-        getNewAddress(account.hdAccount)
-      } else {
-        Future.successful(addresses.head.address)
-      }
+      address <-
+        if (addresses.isEmpty) {
+          getNewAddress(account.hdAccount)
+        } else {
+          Future.successful(addresses.head.address)
+        }
     } yield address
   }
 
@@ -410,17 +412,19 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * seeing if things are in the queue. This is needed because otherwise
     * wallet address generation is not async safe.
     * @see https://github.com/bitcoin-s/bitcoin-s/issues/1009
-    * */
+    */
   private case object AddressQueueRunnable extends Runnable {
+
     override def run(): Unit = {
       while (!walletThread.isInterrupted) {
-        val (account, chainType, promise) = try {
-          addressRequestQueue.take()
-        } catch {
-          case _: java.lang.InterruptedException =>
-            return ()
-          case err: Throwable => throw err
-        }
+        val (account, chainType, promise) =
+          try {
+            addressRequestQueue.take()
+          } catch {
+            case _: java.lang.InterruptedException =>
+              return ()
+            case err: Throwable => throw err
+          }
         logger.debug(
           s"Processing $account $chainType in our address request queue")
 

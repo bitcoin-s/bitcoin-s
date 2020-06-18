@@ -97,7 +97,7 @@ case object ProtocolVersion60001 extends ProtocolVersion {
 
 /**
   * BIP35: Added mempool message.
-  *• Extended getdata message to allow download of memory pool transactions
+  * • Extended getdata message to allow download of memory pool transactions
   * Bitcoin Core 0.7.0 (Sep 2012)
   */
 case object ProtocolVersion60002 extends ProtocolVersion {
@@ -107,12 +107,12 @@ case object ProtocolVersion60002 extends ProtocolVersion {
 /**
   * Added notfound message.
   * BIP37:
-  *• Added filterload message.
-  *• Added filteradd message.
-  *• Added filterclear message.
-  *• Added merkleblock message.
-  *• Added relay field to version message
-  *• Added MSG_FILTERED_BLOCK inventory type to getdata message.
+  * • Added filterload message.
+  * • Added filteradd message.
+  * • Added filterclear message.
+  * • Added merkleblock message.
+  * • Added relay field to version message
+  * • Added MSG_FILTERED_BLOCK inventory type to getdata message.
   * Bitcoin Core 0.8.0 (Feb 2013)
   */
 case object ProtocolVersion70001 extends ProtocolVersion {

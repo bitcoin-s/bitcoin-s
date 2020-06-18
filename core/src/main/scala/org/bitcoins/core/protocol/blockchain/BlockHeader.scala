@@ -89,7 +89,6 @@ sealed trait BlockHeader extends NetworkElement {
     *
     * @see See the nBits format described below.
     * https://bitcoin.org/en/developer-reference#target-nbits
-    *
     */
   def nBits: UInt32
 

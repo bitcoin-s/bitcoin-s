@@ -7,13 +7,14 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 abstract class TestRpcUtil extends org.bitcoins.rpc.util.RpcUtil {
+
   override protected def retryUntilSatisfiedWithCounter(
       conditionF: () => Future[Boolean],
       duration: FiniteDuration,
       counter: Int,
       maxTries: Int,
-      stackTrace: Array[StackTraceElement])(
-      implicit system: ActorSystem): Future[Unit] = {
+      stackTrace: Array[StackTraceElement])(implicit
+      system: ActorSystem): Future[Unit] = {
     val retryF = super
       .retryUntilSatisfiedWithCounter(conditionF,
                                       duration,

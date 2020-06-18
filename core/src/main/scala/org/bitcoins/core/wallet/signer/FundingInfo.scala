@@ -29,6 +29,7 @@ sealed abstract class BitcoinFundingInfo extends FundingInfo {
 }
 
 object BitcoinFundingInfo {
+
   private case class BitcoinFundingInfoImpl(
       transaction: Transaction,
       utxos: Seq[InputSigningInfo[InputInfo]])

@@ -24,6 +24,7 @@ sealed trait Sha1Digest extends Any with HashDigest {
 }
 
 object Sha1Digest extends Factory[Sha1Digest] {
+
   private case class Sha1DigestImpl(bytes: ByteVector)
       extends AnyVal
       with Sha1Digest {
@@ -39,6 +40,7 @@ sealed trait Sha1DigestBE extends Any with HashDigest {
 }
 
 object Sha1DigestBE extends Factory[Sha1DigestBE] {
+
   private case class Sha1DigestBEImpl(bytes: ByteVector)
       extends AnyVal
       with Sha1DigestBE {
@@ -60,12 +62,14 @@ sealed trait Sha256Digest extends Any with HashDigest {
 }
 
 object Sha256Digest extends Factory[Sha256Digest] {
+
   private case class Sha256DigestImpl(bytes: ByteVector)
       extends AnyVal
       with Sha256Digest {
     override def toString = s"Sha256DigestImpl($hex)"
     // $COVERAGE-ON$
   }
+
   override def fromBytes(bytes: ByteVector): Sha256Digest = {
     require(bytes.length == 32,
             // $COVERAGE-OFF$
@@ -87,12 +91,14 @@ sealed trait Sha256DigestBE extends Any with HashDigest {
 }
 
 object Sha256DigestBE extends Factory[Sha256DigestBE] {
+
   private case class Sha256DigestBEImpl(bytes: ByteVector)
       extends AnyVal
       with Sha256DigestBE {
     override def toString = s"Sha256DigestBEImpl($hex)"
     // $COVERAGE-ON$
   }
+
   override def fromBytes(bytes: ByteVector): Sha256DigestBE = {
     require(bytes.length == 32,
             // $COVERAGE-OFF$
@@ -114,6 +120,7 @@ case class DoubleSha256Digest(bytes: ByteVector) extends HashDigest {
 }
 
 object DoubleSha256Digest extends Factory[DoubleSha256Digest] {
+
   override def fromBytes(bytes: ByteVector): DoubleSha256Digest = {
     // have to use new to avoid infinite loop
     new DoubleSha256Digest(bytes)
@@ -137,6 +144,7 @@ case class DoubleSha256DigestBE(bytes: ByteVector) extends HashDigest {
 }
 
 object DoubleSha256DigestBE extends Factory[DoubleSha256DigestBE] {
+
   override def fromBytes(bytes: ByteVector): DoubleSha256DigestBE =
     // have to use new to avoid infinite loop
     new DoubleSha256DigestBE(bytes)
@@ -152,12 +160,14 @@ sealed trait RipeMd160Digest extends Any with HashDigest {
 }
 
 object RipeMd160Digest extends Factory[RipeMd160Digest] {
+
   private case class RipeMd160DigestImpl(bytes: ByteVector)
       extends AnyVal
       with RipeMd160Digest {
     override def toString = s"RipeMd160DigestImpl($hex)"
     // $COVERAGE-ON$
   }
+
   override def fromBytes(bytes: ByteVector): RipeMd160Digest = {
     require(bytes.length == 20,
             // $COVERAGE-OFF$
@@ -174,12 +184,14 @@ sealed trait RipeMd160DigestBE extends Any with HashDigest {
 }
 
 object RipeMd160DigestBE extends Factory[RipeMd160DigestBE] {
+
   private case class RipeMd160DigestBEImpl(bytes: ByteVector)
       extends AnyVal
       with RipeMd160DigestBE {
     override def toString = s"RipeMd160DigestBEImpl($hex)"
     // $COVERAGE-ON$
   }
+
   override def fromBytes(bytes: ByteVector): RipeMd160DigestBE = {
     require(bytes.length == 20,
             // $COVERAGE-OFF$
@@ -192,17 +204,20 @@ object RipeMd160DigestBE extends Factory[RipeMd160DigestBE] {
   * Represents the result of RIPEMD160(SHA256())
   */
 sealed trait Sha256Hash160Digest extends Any with HashDigest {
+
   override def flip: Sha256Hash160DigestBE =
     Sha256Hash160DigestBE(bytes.reverse)
 }
 
 object Sha256Hash160Digest extends Factory[Sha256Hash160Digest] {
+
   private case class Sha256Hash160DigestImpl(bytes: ByteVector)
       extends AnyVal
       with Sha256Hash160Digest {
     override def toString = s"Sha256Hash160DigestImpl($hex)"
     // $COVERAGE-ON$
   }
+
   override def fromBytes(bytes: ByteVector): Sha256Hash160Digest = {
     require(bytes.length == 20,
             // $COVERAGE-OFF$
@@ -219,12 +234,14 @@ sealed trait Sha256Hash160DigestBE extends Any with HashDigest {
 }
 
 object Sha256Hash160DigestBE extends Factory[Sha256Hash160DigestBE] {
+
   private case class Sha256Hash160DigestBEImpl(bytes: ByteVector)
       extends AnyVal
       with Sha256Hash160DigestBE {
     override def toString = s"Sha256Hash160DigestBEImpl($hex)"
     // $COVERAGE-ON$
   }
+
   override def fromBytes(bytes: ByteVector): Sha256Hash160DigestBE = {
     require(bytes.length == 20,
             // $COVERAGE-OFF$

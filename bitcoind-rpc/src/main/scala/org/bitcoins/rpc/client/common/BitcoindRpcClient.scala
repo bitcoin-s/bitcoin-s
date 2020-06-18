@@ -31,8 +31,7 @@ import scala.concurrent.Future
   * This is a sealed abstract class, so you can pattern match easily
   * on the errors, and handle them as you see fit.
   */
-class BitcoindRpcClient(val instance: BitcoindInstance)(
-    implicit
+class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
     override val system: ActorSystem)
     extends Client
     with FeeRateApi
@@ -138,8 +137,8 @@ object BitcoindRpcClient {
     * advanced users, wher you need fine grained control
     * over the RPC client.
     */
-  def withActorSystem(instance: BitcoindInstance)(
-      implicit system: ActorSystem): BitcoindRpcClient =
+  def withActorSystem(instance: BitcoindInstance)(implicit
+      system: ActorSystem): BitcoindRpcClient =
     new BitcoindRpcClient(instance)
 
   /**
@@ -155,8 +154,8 @@ object BitcoindRpcClient {
   }
 
   /** Returns a bitcoind with the appropriated version you passed in, the bitcoind is NOT started. */
-  def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(
-      implicit system: ActorSystem): BitcoindRpcClient = {
+  def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(implicit
+      system: ActorSystem): BitcoindRpcClient = {
     val bitcoind = version match {
       case BitcoindVersion.V16 => BitcoindV16RpcClient.withActorSystem(instance)
       case BitcoindVersion.V17 => BitcoindV17RpcClient.withActorSystem(instance)

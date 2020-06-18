@@ -12,7 +12,9 @@ object CryptoContext {
 
   def default: CryptoContext = {
     val secpDisabled = System.getenv("DISABLE_SECP256K1")
-    if (secpDisabled != null && (secpDisabled.toLowerCase == "true" || secpDisabled == "1")) {
+    if (
+      secpDisabled != null && (secpDisabled.toLowerCase == "true" || secpDisabled == "1")
+    ) {
       BouncyCastle
     } else {
       if (Secp256k1Context.isEnabled) {

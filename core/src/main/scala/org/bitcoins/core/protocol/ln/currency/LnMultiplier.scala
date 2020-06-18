@@ -8,6 +8,7 @@ sealed abstract class LnMultiplier {
 }
 
 object LnMultiplier {
+
   case object Milli extends LnMultiplier {
     val multiplier: BigDecimal = BigDecimal(0.001)
   }

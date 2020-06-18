@@ -35,7 +35,7 @@ case object OP_VERIF extends ReservedOperation {
 }
 
 /**
-  * 	Transaction is invalid even when occuring in an unexecuted OP_IF branch
+  *  Transaction is invalid even when occuring in an unexecuted OP_IF branch
   */
 case object OP_VERNOTIF extends ReservedOperation {
   override val opCode: Int = 102
@@ -72,21 +72,27 @@ case object OP_NOP1 extends NOP {
 case object OP_NOP4 extends NOP {
   override val opCode: Int = 179
 }
+
 case object OP_NOP5 extends NOP {
   override val opCode: Int = 180
 }
+
 case object OP_NOP6 extends NOP {
   override val opCode: Int = 181
 }
+
 case object OP_NOP7 extends NOP {
   override val opCode: Int = 182
 }
+
 case object OP_NOP8 extends NOP {
   override val opCode: Int = 183
 }
+
 case object OP_NOP9 extends NOP {
   override val opCode: Int = 184
 }
+
 case object OP_NOP10 extends NOP {
   override val opCode: Int = 185
 }

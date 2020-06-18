@@ -14,6 +14,7 @@ sealed abstract class ExtKeyPubVersion extends ExtKeyVersion
   * for a list of registered HD version bytes
   */
 object ExtKeyVersion {
+
   private[bitcoins] val allPrivs: Vector[ExtKeyPrivVersion] = Vector(
     LegacyMainNetPriv,
     LegacyTestNet3Priv,
@@ -22,6 +23,7 @@ object ExtKeyVersion {
     NestedSegWitMainNetPriv,
     NestedSegWitTestNet3Priv
   )
+
   private[bitcoins] val allPubs: Seq[ExtKeyPubVersion] = Vector(
     LegacyMainNetPub,
     LegacyTestNet3Pub,

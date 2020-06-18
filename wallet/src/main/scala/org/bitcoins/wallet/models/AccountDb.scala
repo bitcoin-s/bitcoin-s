@@ -9,7 +9,7 @@ import org.bitcoins.keymanager.util.HDUtil
   * can be used to generate the account level xpub
   * m / purpose' / coin_type' / account'
   * @see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#path-levels
-  * */
+  */
 case class AccountDb(xpub: ExtPublicKey, hdAccount: HDAccount) {
   def xpubVersion: ExtKeyPubVersion = xpub.version
 

@@ -308,8 +308,8 @@ sealed abstract class CryptoGenerators {
       .map(ByteVector(_))
       .map(SipHashKey(_))
 
-  def genPMRand: Gen[(UInt8, UInt64, UInt64)] = NumberGenerator.genP.flatMap {
-    p =>
+  def genPMRand: Gen[(UInt8, UInt64, UInt64)] =
+    NumberGenerator.genP.flatMap { p =>
       // If hash's quotient when divided by 2^p is too large, we hang converting to unary
       val upperBound: Long = p.toInt * 1000 + 1
 
@@ -324,7 +324,7 @@ sealed abstract class CryptoGenerators {
 
         randGen.map(rand => (p, m, rand))
       }
-  }
+    }
 
 }
 

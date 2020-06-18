@@ -43,7 +43,9 @@ trait RawGetHeadersMessageSerializer
     def loop(
         remainingBytes: ByteVector,
         remainingHashes: Long,
-        accum: List[DoubleSha256Digest]): (List[DoubleSha256Digest], ByteVector) = {
+        accum: List[DoubleSha256Digest]): (
+        List[DoubleSha256Digest],
+        ByteVector) = {
       if (remainingHashes <= 0) (accum.reverse, remainingBytes)
       else {
         val hash = DoubleSha256Digest(remainingBytes.take(32))

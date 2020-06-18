@@ -49,8 +49,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     * checks that the redeem script is not too large for a push operation.
     */
   private[gen] def redeemScriptTooBig(redeemScript: ScriptPubKey): Boolean = {
-    redeemScript.compactSizeUInt.toInt + CompactSizeUInt(UInt64(
-      ScriptInterpreter.MAX_PUSH_SIZE)).bytes.length >= ScriptInterpreter.MAX_PUSH_SIZE
+    redeemScript.compactSizeUInt.toInt + CompactSizeUInt(
+      UInt64(
+        ScriptInterpreter.MAX_PUSH_SIZE)).bytes.length >= ScriptInterpreter.MAX_PUSH_SIZE
   }
 
   private def truncate[A, B, C](tuple: (A, B, C)): (A, B) = (tuple._1, tuple._2)
@@ -249,7 +250,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     }
   }
 
-  def nonConditionalCsvScriptPubKey: Gen[(CSVScriptPubKey, Seq[ECPrivateKey])] = {
+  def nonConditionalCsvScriptPubKey: Gen[
+    (CSVScriptPubKey, Seq[ECPrivateKey])] = {
     for {
       (scriptPubKey, privKeys) <- nonConditionalNonLocktimeRawScriptPubKey
       num <- NumberGenerator.timeLockScriptNumbers
@@ -260,30 +262,33 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def multiSigScriptPubKey: Gen[
     (MultiSignatureScriptPubKey, Seq[ECPrivateKey])] =
     for {
-      (privateKeys, requiredSigs) <- CryptoGenerators.privateKeySeqWithRequiredSigs
+      (privateKeys, requiredSigs) <-
+        CryptoGenerators.privateKeySeqWithRequiredSigs
       pubKeys = privateKeys.map(_.publicKey)
-      multiSignatureScriptPubKey = MultiSignatureScriptPubKey(requiredSigs,
-                                                              pubKeys)
+      multiSignatureScriptPubKey =
+        MultiSignatureScriptPubKey(requiredSigs, pubKeys)
     } yield (multiSignatureScriptPubKey, privateKeys.take(requiredSigs))
 
   def smallMultiSigScriptPubKey: Gen[
     (MultiSignatureScriptPubKey, Seq[ECPrivateKey])] =
     for {
-      (privateKeys, requiredSigs) <- CryptoGenerators.smallPrivateKeySeqWithRequiredSigs
+      (privateKeys, requiredSigs) <-
+        CryptoGenerators.smallPrivateKeySeqWithRequiredSigs
       pubKeys = privateKeys.map(_.publicKey)
-      multiSignatureScriptPubKey = MultiSignatureScriptPubKey(requiredSigs,
-                                                              pubKeys)
+      multiSignatureScriptPubKey =
+        MultiSignatureScriptPubKey(requiredSigs, pubKeys)
     } yield (multiSignatureScriptPubKey, privateKeys.take(requiredSigs))
 
   /** Generates a random P2SHScriptPubKey as well as it's corresponding private keys and redeem script */
   def p2shScriptPubKey: Gen[
     (P2SHScriptPubKey, Seq[ECPrivateKey], ScriptPubKey)] =
     for {
-      (randomScriptPubKey, privKeys) <- randomNonP2SHScriptPubKey
-        .suchThat {
-          case (spk, _) =>
-            !redeemScriptTooBig(spk)
-        }
+      (randomScriptPubKey, privKeys) <-
+        randomNonP2SHScriptPubKey
+          .suchThat {
+            case (spk, _) =>
+              !redeemScriptTooBig(spk)
+          }
       p2sh = P2SHScriptPubKey(randomScriptPubKey)
     } yield (p2sh, privKeys, randomScriptPubKey)
 
@@ -451,7 +456,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     )
   }
 
-  def nonWitnessScriptPubKey: Gen[(NonWitnessScriptPubKey, Seq[ECPrivateKey])] = {
+  def nonWitnessScriptPubKey: Gen[
+    (NonWitnessScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
       p2pkScriptPubKey.map(privKeyToSeq),
       p2pkhScriptPubKey.map(privKeyToSeq),
@@ -487,7 +493,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     )
   }
 
-  def nonConditionalRawScriptPubKey: Gen[(RawScriptPubKey, Seq[ECPrivateKey])] = {
+  def nonConditionalRawScriptPubKey: Gen[
+    (RawScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
       p2pkScriptPubKey.map(privKeyToSeq),
       p2pkhScriptPubKey.map(privKeyToSeq),
@@ -538,25 +545,26 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     * Note: Does NOT generate a correct/valid signature
     */
   private def pickCorrespondingScriptSignature(
-      scriptPubKey: ScriptPubKey): Gen[ScriptSignature] = scriptPubKey match {
-    case _: P2PKScriptPubKey            => p2pkScriptSignature
-    case _: P2PKHScriptPubKey           => p2pkhScriptSignature
-    case _: P2PKWithTimeoutScriptPubKey => p2pkWithTimeoutScriptSignature
-    case _: MultiSignatureScriptPubKey  => multiSignatureScriptSignature
-    case conditional: ConditionalScriptPubKey =>
-      pickCorrespondingScriptSignature(conditional.trueSPK)
-        .map(ConditionalScriptSignature(_, true))
-    case EmptyScriptPubKey   => emptyScriptSignature
-    case _: CLTVScriptPubKey => cltvScriptSignature
-    case _: CSVScriptPubKey  => csvScriptSignature
-    case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
-      emptyScriptSignature
-    case x @ (_: P2SHScriptPubKey | _: NonStandardScriptPubKey |
-        _: WitnessCommitment) =>
-      throw new IllegalArgumentException(
-        "Cannot pick for p2sh script pubkey, " +
-          "non standard script pubkey or witness commitment got: " + x)
-  }
+      scriptPubKey: ScriptPubKey): Gen[ScriptSignature] =
+    scriptPubKey match {
+      case _: P2PKScriptPubKey            => p2pkScriptSignature
+      case _: P2PKHScriptPubKey           => p2pkhScriptSignature
+      case _: P2PKWithTimeoutScriptPubKey => p2pkWithTimeoutScriptSignature
+      case _: MultiSignatureScriptPubKey  => multiSignatureScriptSignature
+      case conditional: ConditionalScriptPubKey =>
+        pickCorrespondingScriptSignature(conditional.trueSPK)
+          .map(ConditionalScriptSignature(_, true))
+      case EmptyScriptPubKey   => emptyScriptSignature
+      case _: CLTVScriptPubKey => cltvScriptSignature
+      case _: CSVScriptPubKey  => csvScriptSignature
+      case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
+        emptyScriptSignature
+      case x @ (_: P2SHScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment) =>
+        throw new IllegalArgumentException(
+          "Cannot pick for p2sh script pubkey, " +
+            "non standard script pubkey or witness commitment got: " + x)
+    }
 
   /**
     * Generates a signed `P2PKScriptSignature` that spends the
@@ -573,8 +581,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       hashType <- CryptoGenerators.hashType
       publicKey = privateKey.publicKey
       scriptPubKey = P2PKScriptPubKey(publicKey)
-      (creditingTx, outputIndex) = TransactionGenerators
-        .buildCreditingTransaction(scriptPubKey)
+      (creditingTx, outputIndex) =
+        TransactionGenerators
+          .buildCreditingTransaction(scriptPubKey)
       (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(
         creditingTx,
         EmptyScriptSignature,
@@ -588,8 +597,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       txSigComponentFuture = P2PKSigner.sign(spendingInfo, spendingTx, false)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
       //add the signature to the scriptSig instead of having an empty scriptSig
-      signedScriptSig = txSigComponent.scriptSignature
-        .asInstanceOf[P2PKScriptSignature]
+      signedScriptSig =
+        txSigComponent.scriptSignature
+          .asInstanceOf[P2PKScriptSignature]
     } yield (signedScriptSig, scriptPubKey, privateKey)
 
   /**
@@ -607,8 +617,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       hashType <- CryptoGenerators.hashType
       publicKey = privateKey.publicKey
       scriptPubKey = P2PKHScriptPubKey(publicKey)
-      (creditingTx, outputIndex) = TransactionGenerators
-        .buildCreditingTransaction(scriptPubKey)
+      (creditingTx, outputIndex) =
+        TransactionGenerators
+          .buildCreditingTransaction(scriptPubKey)
       (unsignedTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(
         creditingTx,
         EmptyScriptSignature,
@@ -622,8 +633,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       )
       txSigComponentFuture = P2PKHSigner.sign(spendingInfo, unsignedTx, false)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
-      signedScriptSig = txSigComponent.scriptSignature
-        .asInstanceOf[P2PKHScriptSignature]
+      signedScriptSig =
+        txSigComponent.scriptSignature
+          .asInstanceOf[P2PKHScriptSignature]
     } yield (signedScriptSig, scriptPubKey, privateKey)
 
   def signedP2PKWithTimeoutScriptSignature: Gen[
@@ -671,16 +683,18 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       MultiSignatureScriptPubKey,
       Seq[ECPrivateKey])] =
     for {
-      (privateKeysWithExtra, requiredSigs) <- CryptoGenerators.privateKeySeqWithRequiredSigs
+      (privateKeysWithExtra, requiredSigs) <-
+        CryptoGenerators.privateKeySeqWithRequiredSigs
       privateKeys = privateKeysWithExtra.take(requiredSigs)
       hashType <- CryptoGenerators.hashType
       publicKeys = privateKeys.map(_.publicKey)
-      multiSigScriptPubKey = MultiSignatureScriptPubKey(requiredSigs,
-                                                        publicKeys)
+      multiSigScriptPubKey =
+        MultiSignatureScriptPubKey(requiredSigs, publicKeys)
       emptyDigitalSignatures = privateKeys.map(_ => EmptyDigitalSignature)
       scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
-      (creditingTx, outputIndex) = TransactionGenerators
-        .buildCreditingTransaction(multiSigScriptPubKey)
+      (creditingTx, outputIndex) =
+        TransactionGenerators
+          .buildCreditingTransaction(multiSigScriptPubKey)
       (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(
         creditingTx,
         scriptSig,
@@ -693,12 +707,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         privateKeys.toVector,
         hashType
       )
-      txSigComponentFuture = MultiSigSigner.sign(spendingInfo,
-                                                 spendingTx,
-                                                 false)
+      txSigComponentFuture =
+        MultiSigSigner.sign(spendingInfo, spendingTx, false)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
-      signedScriptSig = txSigComponent.scriptSignature
-        .asInstanceOf[MultiSignatureScriptSignature]
+      signedScriptSig =
+        txSigComponent.scriptSignature
+          .asInstanceOf[MultiSignatureScriptSignature]
     } yield (signedScriptSig, multiSigScriptPubKey, privateKeys)
 
   def signedConditionalScriptSignature: Gen[(
@@ -918,9 +932,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       (cltv, privKeys) <- cltvScriptPubKey(defaultMaxDepth)
       txLockTime <- NumberGenerator.uInt32s
       sequence <- NumberGenerator.uInt32s
-      scriptSig <- signedCLTVScriptSignature(cltv.locktime,
-                                             txLockTime,
-                                             sequence)
+      scriptSig <-
+        signedCLTVScriptSignature(cltv.locktime, txLockTime, sequence)
     } yield scriptSig
 
   /** Generates a `LockTimeScriptSignature` and
@@ -984,7 +997,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         TransactionWitness,
         CurrencyUnit)] =
     for {
-      (witness, wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WPKHTransactionWitness
+      (witness, wtxSigComponent, privKeys) <-
+        WitnessGenerators.signedP2WPKHTransactionWitness
       p2shScriptPubKey = P2SHScriptPubKey(wtxSigComponent.scriptPubKey)
       p2shScriptSig = P2SHScriptSignature(
         wtxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
@@ -1002,7 +1016,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         TransactionWitness,
         CurrencyUnit)] =
     for {
-      (witness, wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHTransactionWitness
+      (witness, wtxSigComponent, privKeys) <-
+        WitnessGenerators.signedP2WSHTransactionWitness
       p2shScriptPubKey = P2SHScriptPubKey(wtxSigComponent.scriptPubKey)
       p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey)
     } yield (p2shScriptSig,
@@ -1033,7 +1048,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   /** Generates a random `ScriptSignature`, the
     * `ScriptPubKey` it is spending, and the
     * `ECPrivateKey` needed to spend it. */
-  def randomScriptSig: Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
+  def randomScriptSig: Gen[
+    (ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
     val witP2SHP2WPKH =
       signedP2SHP2WPKHScriptSignature.map(x => (x._1, x._2, x._3))
     val witP2SHP2WSH =

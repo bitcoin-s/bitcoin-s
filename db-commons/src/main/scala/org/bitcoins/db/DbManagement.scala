@@ -59,8 +59,8 @@ trait DbManagement extends BitcoinSLogger {
   /** Creates the given table */
   def createTable(
       table: TableQuery[_ <: Table[_]],
-      createIfNotExists: Boolean = true)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+      createIfNotExists: Boolean = true)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     val tableName = table.baseTableRow.tableName
     logger.debug(
       s"Creating table $tableName with DB config: ${appConfig.config} ")

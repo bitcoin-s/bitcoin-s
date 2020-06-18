@@ -12,6 +12,7 @@ sealed trait ZmqConfig {
 }
 
 object ZmqConfig extends BitcoinSLogger {
+
   private case class ZmqConfigImpl(
       hashBlock: Option[InetSocketAddress],
       rawBlock: Option[InetSocketAddress],

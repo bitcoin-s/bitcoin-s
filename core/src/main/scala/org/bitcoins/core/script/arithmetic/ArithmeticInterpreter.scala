@@ -110,9 +110,11 @@ sealed abstract class ArithmeticInterpreter {
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_BOOLOR),
             "Script top must be OP_BOOLOR")
-    performBinaryBooleanOperation(program, (x, y) => {
-      !ScriptNumberUtil.isZero(x) || !ScriptNumberUtil.isZero(y)
-    })
+    performBinaryBooleanOperation(
+      program,
+      (x, y) => {
+        !ScriptNumberUtil.isZero(x) || !ScriptNumberUtil.isZero(y)
+      })
   }
 
   /** Returns 1 if the numbers are equal, 0 otherwise. */
@@ -156,9 +158,10 @@ sealed abstract class ArithmeticInterpreter {
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_NUMNOTEQUAL),
             "Script top must be OP_NUMNOTEQUAL")
-    performBinaryBooleanOperation(program, (x, y) => {
-      x.toLong != y.toLong
-    })
+    performBinaryBooleanOperation(program,
+                                  (x, y) => {
+                                    x.toLong != y.toLong
+                                  })
   }
 
   /** Returns 1 if a is less than b, 0 otherwise. */
@@ -233,15 +236,18 @@ sealed abstract class ArithmeticInterpreter {
       val c = ScriptNumber(program.stack.head.bytes)
       val b = ScriptNumber(program.stack.tail.head.bytes)
       val a = ScriptNumber(program.stack.tail.tail.head.bytes)
-      if (ScriptFlagUtil.requireMinimalData(program.flags) && (!BitcoinScriptUtil
-            .isShortestEncoding(c) ||
-          !BitcoinScriptUtil.isShortestEncoding(b) || !BitcoinScriptUtil
-            .isShortestEncoding(a))) {
+      if (
+        ScriptFlagUtil.requireMinimalData(program.flags) && (!BitcoinScriptUtil
+          .isShortestEncoding(c) ||
+        !BitcoinScriptUtil.isShortestEncoding(b) || !BitcoinScriptUtil
+          .isShortestEncoding(a))
+      ) {
         logger.error(
           "The constant you gave us is not encoded in the shortest way possible")
         program.failExecution(ScriptErrorUnknownError)
-      } else if (isLargerThan4Bytes(c) || isLargerThan4Bytes(b) || isLargerThan4Bytes(
-                   a)) {
+      } else if (
+        isLargerThan4Bytes(c) || isLargerThan4Bytes(b) || isLargerThan4Bytes(a)
+      ) {
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
         logger.error(
@@ -282,8 +288,10 @@ sealed abstract class ArithmeticInterpreter {
           "We need one stack element for performing a unary arithmetic operation")
         program.failExecution(ScriptErrorInvalidStackOperation)
       case Some(s: ScriptNumber) =>
-        if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
-              .isShortestEncoding(s)) {
+        if (
+          ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
+            .isShortestEncoding(s)
+        ) {
           logger.error(
             "The number you gave us is not encoded in the shortest way possible")
           program.failExecution(ScriptErrorMinimalData)
@@ -299,8 +307,10 @@ sealed abstract class ArithmeticInterpreter {
                                        program.script.tail)
         }
       case Some(s: ScriptConstant) =>
-        if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
-              .isShortestEncoding(s)) {
+        if (
+          ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
+            .isShortestEncoding(s)
+        ) {
           logger.error(
             "The number you gave us is not encoded in the shortest way possible")
           program.failExecution(ScriptErrorUnknownError)
@@ -328,7 +338,9 @@ sealed abstract class ArithmeticInterpreter {
   @tailrec
   private def performBinaryArithmeticOperation(
       program: ExecutionInProgressScriptProgram,
-      op: (ScriptNumber, ScriptNumber) => ScriptNumber): StartedScriptProgram = {
+      op: (
+          ScriptNumber,
+          ScriptNumber) => ScriptNumber): StartedScriptProgram = {
     if (program.stack.size < 2) {
       logger.error(
         "We must have two elements to perform a binary arithmetic operation")
@@ -336,9 +348,12 @@ sealed abstract class ArithmeticInterpreter {
     } else {
       (program.stack.head, program.stack.tail.head) match {
         case (x: ScriptNumber, y: ScriptNumber) =>
-          if (ScriptFlagUtil.requireMinimalData(program.flags) && (!BitcoinScriptUtil
-                .isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(
-                y))) {
+          if (
+            ScriptFlagUtil.requireMinimalData(
+              program.flags) && (!BitcoinScriptUtil
+              .isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(
+              y))
+          ) {
             logger.error(
               "The constant you gave us is not encoded in the shortest way possible")
             program.failExecution(ScriptErrorUnknownError)
@@ -395,9 +410,11 @@ sealed abstract class ArithmeticInterpreter {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val (x, y) = parseTopTwoStackElementsAsScriptNumbers(program)
-      if (ScriptFlagUtil.requireMinimalData(program.flags) &&
-          (!BitcoinScriptUtil.isShortestEncoding(x) || !BitcoinScriptUtil
-            .isShortestEncoding(y))) {
+      if (
+        ScriptFlagUtil.requireMinimalData(program.flags) &&
+        (!BitcoinScriptUtil.isShortestEncoding(x) || !BitcoinScriptUtil
+          .isShortestEncoding(y))
+      ) {
         logger.error(
           "The constant you gave us is not encoded in the shortest way possible")
         program.failExecution(ScriptErrorUnknownError)
@@ -424,7 +441,9 @@ sealed abstract class ArithmeticInterpreter {
     */
   private def performComparisonOnTwoStackTopItems(
       program: ExecutionInProgressScriptProgram,
-      op: (ScriptNumber, ScriptNumber) => ScriptNumber): StartedScriptProgram = {
+      op: (
+          ScriptNumber,
+          ScriptNumber) => ScriptNumber): StartedScriptProgram = {
     performBinaryArithmeticOperation(program, op)
   }
 
@@ -434,7 +453,9 @@ sealed abstract class ArithmeticInterpreter {
     * @return the tuple with the first element being the first stack element, the second element in the tuple being the second stack element
     */
   private def parseTopTwoStackElementsAsScriptNumbers(
-      program: ExecutionInProgressScriptProgram): (ScriptNumber, ScriptNumber) = {
+      program: ExecutionInProgressScriptProgram): (
+      ScriptNumber,
+      ScriptNumber) = {
     (program.stack.head, program.stack.tail.head) match {
       case (x: ScriptNumber, y: ScriptNumber) => (x, y)
       case (x: ScriptConstant, y: ScriptNumber) =>

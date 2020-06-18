@@ -8,10 +8,12 @@ trait NodeConnectedWithBitcoind {
   def node: Node
   def bitcoind: BitcoindRpcClient
 }
+
 case class SpvNodeConnectedWithBitcoind(
     node: SpvNode,
     bitcoind: BitcoindRpcClient)
     extends NodeConnectedWithBitcoind
+
 case class NeutrinoNodeConnectedWithBitcoind(
     node: NeutrinoNode,
     bitcoind: BitcoindRpcClient)

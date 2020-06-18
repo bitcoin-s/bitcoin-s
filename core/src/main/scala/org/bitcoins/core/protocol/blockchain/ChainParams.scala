@@ -42,7 +42,7 @@ sealed abstract class ChainParams {
     * [[org.bitcoins.core.protocol.blockchain.MainNetChainParams  RegTestNetChainParams]].)
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0070.mediawiki  BIP70]]
-    * */
+    */
   def networkId: String
 
   /** The Genesis [[org.bitcoins.core.protocol.blockchain.Block Block]] in the blockchain. */
@@ -173,7 +173,7 @@ sealed abstract class ChainParams {
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L73 mainnet]]
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L190 testnet]]
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L285 regtest]]
-    * */
+    */
   def powTargetTimeSpan: Duration
 
   /**
@@ -187,7 +187,7 @@ sealed abstract class ChainParams {
 
   /** In bitcoin [[MainNetChainParams mainnet]], the network recalculates the difficulty for the network every 2016 blocks
     * [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L75 bitcoin core implementation]]
-    * */
+    */
   def difficultyChangeInterval: Int = {
     (powTargetTimeSpan.toSeconds / powTargetSpacing.toSeconds).toInt
   }
@@ -216,7 +216,7 @@ sealed abstract class BitcoinChainParams extends ChainParams {
 
   /**
     * @inheritdoc
-    * */
+    */
   override lazy val powTargetTimeSpan: Duration = {
     14.days
   }
@@ -328,7 +328,7 @@ object TestNetChainParams extends BitcoinChainParams {
 
   /** Minimum amount of chain work on the test network
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L211 testnet min chain work]]
-    * */
+    */
   override lazy val minimumChainWork: BigInteger = {
     val bytes =
       hex"00000000000000000000000000000000000000000000007dbe94253893cbd463"
@@ -355,12 +355,14 @@ object TestNetChainParams extends BitcoinChainParams {
 
 object RegTestNetChainParams extends BitcoinChainParams {
   override lazy val networkId = "regtest"
+
   override lazy val genesisBlock: Block =
     createGenesisBlock(UInt32(1296688602),
                        UInt32(2),
                        UInt32(0x207fffff),
                        Int32.one,
                        Satoshis(5000000000L))
+
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     TestNetChainParams.base58Prefixes
 
@@ -377,7 +379,7 @@ object RegTestNetChainParams extends BitcoinChainParams {
 
   /** Minimum amount of chain work on the test network
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L302 regtest min chain work]]
-    * */
+    */
   override lazy val minimumChainWork: BigInteger = {
     BigInteger.valueOf(0)
   }

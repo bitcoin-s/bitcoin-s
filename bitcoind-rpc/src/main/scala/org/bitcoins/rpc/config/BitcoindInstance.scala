@@ -63,6 +63,7 @@ sealed trait BitcoindInstance extends BitcoinSLogger {
 }
 
 object BitcoindInstance {
+
   private case class BitcoindInstanceImpl(
       network: NetworkParameters,
       uri: URI,

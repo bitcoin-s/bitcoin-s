@@ -67,8 +67,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
       startOpt: Option[BlockStamp] = None,
       endOpt: Option[BlockStamp] = None,
       batchSize: Int = 100,
-      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
-      implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
+      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(implicit
+      ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
     require(batchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
     if (scripts.isEmpty) {
@@ -116,14 +116,17 @@ private[wallet] trait RescanHandling extends WalletLogger {
       _ <- downloadAndProcessBlocks(blocks)
       externalGap <- calcAddressGap(HDChainType.External)
       changeGap <- calcAddressGap(HDChainType.Change)
-      res <- if (externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit) {
-        pruneUnusedAddresses()
-      } else {
-        logger.info(
-          s"Attempting rescan again with fresh pool of addresses as we had a " +
-            s"match within our address gap limit of ${walletConfig.addressGapLimit}")
-        doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
-      }
+      res <-
+        if (
+          externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
+        ) {
+          pruneUnusedAddresses()
+        } else {
+          logger.info(
+            s"Attempting rescan again with fresh pool of addresses as we had a " +
+              s"match within our address gap limit of ${walletConfig.addressGapLimit}")
+          doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
+        }
     } yield res
   }
 
@@ -133,10 +136,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
       _ <- addressDbs.foldLeft(FutureUtil.unit) { (prevF, addressDb) =>
         for {
           _ <- prevF
-          spendingInfoDbs <- spendingInfoDAO.findByScriptPubKey(
-            addressDb.scriptPubKey)
-          _ <- if (spendingInfoDbs.isEmpty) addressDAO.delete(addressDb)
-          else FutureUtil.unit
+          spendingInfoDbs <-
+            spendingInfoDAO.findByScriptPubKey(addressDb.scriptPubKey)
+          _ <-
+            if (spendingInfoDbs.isEmpty) addressDAO.delete(addressDb)
+            else FutureUtil.unit
         } yield ()
       }
     } yield ()
@@ -145,21 +149,22 @@ private[wallet] trait RescanHandling extends WalletLogger {
   private def calcAddressGap(chainType: HDChainType): Future[Int] = {
     for {
       addressDbs <- addressDAO.findAll()
-      addressGap <- addressDbs
-      //make sure all addressDb are of the correct chainType
-      //and they are sorted according to their index so we can
-      //calculate the gap accurately
-        .filter(_.path.chain.chainType == chainType)
-        .sortBy(_.path.address.index)
-        .foldLeft(Future.successful(0)) { (prevNF, addressDb) =>
-          for {
-            prevN <- prevNF
-            spendingInfoDbs <- spendingInfoDAO.findByScriptPubKey(
-              addressDb.scriptPubKey)
-          } yield {
-            if (spendingInfoDbs.isEmpty) prevN + 1 else 0
+      addressGap <-
+        addressDbs
+        //make sure all addressDb are of the correct chainType
+        //and they are sorted according to their index so we can
+        //calculate the gap accurately
+          .filter(_.path.chain.chainType == chainType)
+          .sortBy(_.path.address.index)
+          .foldLeft(Future.successful(0)) { (prevNF, addressDb) =>
+            for {
+              prevN <- prevNF
+              spendingInfoDbs <-
+                spendingInfoDAO.findByScriptPubKey(addressDb.scriptPubKey)
+            } yield {
+              if (spendingInfoDbs.isEmpty) prevN + 1 else 0
+            }
           }
-        }
     } yield {
       logger.debug(s"Address gap: $addressGap")
       addressGap
@@ -203,24 +208,26 @@ private[wallet] trait RescanHandling extends WalletLogger {
       account: HDAccount,
       count: Int): Future[Vector[ScriptPubKey]] = {
     for {
-      addresses <- 1
-        .to(count)
-        .foldLeft(Future.successful(Vector.empty[BitcoinAddress])) {
-          (prevFuture, _) =>
-            for {
-              prev <- prevFuture
-              address <- getNewAddress(account)
-            } yield prev :+ address
-        }
-      changeAddresses <- 1
-        .to(count)
-        .foldLeft(Future.successful(Vector.empty[BitcoinAddress])) {
-          (prevFuture, _) =>
-            for {
-              prev <- prevFuture
-              address <- getNewChangeAddress(account)
-            } yield prev :+ address
-        }
+      addresses <-
+        1
+          .to(count)
+          .foldLeft(Future.successful(Vector.empty[BitcoinAddress])) {
+            (prevFuture, _) =>
+              for {
+                prev <- prevFuture
+                address <- getNewAddress(account)
+              } yield prev :+ address
+          }
+      changeAddresses <-
+        1
+          .to(count)
+          .foldLeft(Future.successful(Vector.empty[BitcoinAddress])) {
+            (prevFuture, _) =>
+              for {
+                prev <- prevFuture
+                address <- getNewChangeAddress(account)
+              } yield prev :+ address
+          }
     } yield addresses.map(_.scriptPubKey) ++ changeAddresses.map(_.scriptPubKey)
   }
 

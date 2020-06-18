@@ -9,9 +9,10 @@ import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.util.{Failure, Success, Try}
 
-case class BitcoinerLiveFeeRateProvider(minutes: Int)(
-    implicit override val system: ActorSystem)
+case class BitcoinerLiveFeeRateProvider(minutes: Int)(implicit
+    override val system: ActorSystem)
     extends CachedHttpFeeRateProvider {
+
   private val bitcoinerLiveValidMinutes =
     Vector(30, 60, 120, 180, 360, 720, 1440)
   require(

@@ -35,6 +35,7 @@ sealed abstract class LnInvoiceSignature extends NetworkElement {
 }
 
 object LnInvoiceSignature extends Factory[LnInvoiceSignature] {
+
   private case class LnInvoiceSignatureImpl(
       recoverId: UInt8,
       signature: ECDigitalSignature)

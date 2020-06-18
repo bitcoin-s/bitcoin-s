@@ -24,10 +24,11 @@ sealed abstract class Address {
   /** The string representation of this address */
   def value: String
 
-  override def equals(obj: Any): Boolean = obj match {
-    case addr: Address => value == addr.value
-    case _: Any        => false
-  }
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case addr: Address => value == addr.value
+      case _: Any        => false
+    }
 
   /** Every address is derived from a [[HashDigest HashDigest]] in a
     * [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]] */
@@ -115,6 +116,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
 }
 
 object Bech32Address extends AddressFactory[Bech32Address] {
+
   private case class Bech32AddressImpl(
       hrp: BtcHumanReadablePart,
       data: Vector[UInt5])
@@ -216,6 +218,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
 }
 
 object P2PKHAddress extends AddressFactory[P2PKHAddress] {
+
   private case class P2PKHAddressImpl(
       hash: Sha256Hash160Digest,
       networkParameters: NetworkParameters)
@@ -291,6 +294,7 @@ object P2PKHAddress extends AddressFactory[P2PKHAddress] {
 }
 
 object P2SHAddress extends AddressFactory[P2SHAddress] {
+
   private case class P2SHAddressImpl(
       hash: Sha256Hash160Digest,
       networkParameters: NetworkParameters)

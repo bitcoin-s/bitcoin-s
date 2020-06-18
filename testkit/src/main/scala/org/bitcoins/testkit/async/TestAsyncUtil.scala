@@ -9,13 +9,14 @@ import scala.concurrent.duration.FiniteDuration
 abstract class TestAsyncUtil
     extends org.bitcoins.rpc.util.AsyncUtil
     with Serializable {
+
   override protected def retryUntilSatisfiedWithCounter(
       conditionF: () => Future[Boolean],
       duration: FiniteDuration,
       counter: Int,
       maxTries: Int,
-      stackTrace: Array[StackTraceElement])(
-      implicit system: ActorSystem): Future[Unit] = {
+      stackTrace: Array[StackTraceElement])(implicit
+      system: ActorSystem): Future[Unit] = {
     val retryF = super
       .retryUntilSatisfiedWithCounter(conditionF,
                                       duration,
@@ -36,8 +37,8 @@ object TestAsyncUtil extends TestAsyncUtil {
     * Additionally, we want to transform RpcRetryExceptions to TestFailedExceptions which
     * conveniently mention the line that called the TestAsyncUtil method.
     */
-  def transformRetryToTestFailure[T](fut: Future[T])(
-      implicit ec: ExecutionContext): Future[T] = {
+  def transformRetryToTestFailure[T](fut: Future[T])(implicit
+      ec: ExecutionContext): Future[T] = {
     def transformRetry(err: Throwable): Throwable = {
       if (err.isInstanceOf[RpcRetryException]) {
         val retryErr = err.asInstanceOf[RpcRetryException]
@@ -50,8 +51,10 @@ object TestAsyncUtil extends TestAsyncUtil {
         val line = stackElement.getLineNumber
         val pos = org.scalactic.source.Position(file, path, line)
         val newErr = new TestFailedException({ _: StackDepthException =>
-          Some(retryErr.message)
-        }, None, pos)
+                                               Some(retryErr.message)
+                                             },
+                                             None,
+                                             pos)
         newErr.setStackTrace(relevantStackTrace)
         newErr
       } else {
@@ -60,7 +63,8 @@ object TestAsyncUtil extends TestAsyncUtil {
     }
 
     fut.transform({ elem: T =>
-      elem
-    }, transformRetry)
+                    elem
+                  },
+                  transformRetry)
   }
 }

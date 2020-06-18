@@ -1,4 +1,5 @@
 package org.bitcoins.core.hd
+
 import scala.util.Try
 
 private[bitcoins] trait HDPath extends BIP32Path {
@@ -17,7 +18,7 @@ private[bitcoins] trait HDPath extends BIP32Path {
     * // second is now:
     * // first.type (with underlying type org.bitcoins.core.hd.SegWitHDPath)
     * }}}
-
+    *
     * {{{
     * def next: NextPath = ???
     *

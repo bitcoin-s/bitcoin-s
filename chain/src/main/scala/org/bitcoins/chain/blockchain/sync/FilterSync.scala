@@ -24,14 +24,14 @@ import scala.concurrent.{ExecutionContext, Future}
   * against another peer that as BIP157 specifies
   *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#client-operation]]
-  * */
+  */
 abstract class FilterSync extends ChainVerificationLogger {
 
   def syncFilters(
       chainApi: ChainApi,
       getFilterFunc: BlockHeader => Future[FilterWithHeaderHash],
-      batchSize: Int = 25)(
-      implicit ec: ExecutionContext,
+      batchSize: Int = 25)(implicit
+      ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[ChainApi] = {
 
     val ourBestFilterHeaderOptF = chainApi.getBestFilterHeader()
@@ -77,8 +77,8 @@ abstract class FilterSync extends ChainVerificationLogger {
       ourBestHeader: BlockHeaderDb,
       ourBestFilterHeader: CompactFilterHeaderDb,
       getFilterFunc: BlockHeader => Future[FilterWithHeaderHash],
-      batchSize: Int)(
-      implicit ec: ExecutionContext,
+      batchSize: Int)(implicit
+      ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[ChainApi] = {
     if (ourBestFilterHeader.blockHashBE == ourBestHeader.hashBE) {
       logger.info(
@@ -138,8 +138,8 @@ abstract class FilterSync extends ChainVerificationLogger {
       chainApi: ChainApi,
       missingHeaders: Vector[BlockHeaderDb],
       ourBestFilterHeader: CompactFilterHeaderDb,
-      getFilterFunc: BlockHeader => Future[FilterWithHeaderHash])(
-      implicit ec: ExecutionContext,
+      getFilterFunc: BlockHeader => Future[FilterWithHeaderHash])(implicit
+      ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[ChainApi] = {
     //now that we have headers that are missing filters, let's fetch the filters
 
@@ -185,9 +185,8 @@ abstract class FilterSync extends ChainVerificationLogger {
             Future.successful(chainApi)
           case Some(blockHeader) =>
             for {
-              headersChainApi <- chainApi.processFilterHeaders(
-                filterHeaders,
-                blockHeader.hashBE)
+              headersChainApi <-
+                chainApi.processFilterHeaders(filterHeaders, blockHeader.hashBE)
               filtersChainApi <- headersChainApi.processFilters(compactFilters)
             } yield filtersChainApi
         }
@@ -201,7 +200,7 @@ abstract class FilterSync extends ChainVerificationLogger {
     * and verifies that the filter header hash from an external
     * data source matches the hash of the header we generated internally.
     * If the hash does not match, someone is likely feeding you a bad header chain.
-    * */
+    */
   private def buildBlockFilterAggregated(
       filters: Vector[(BlockHeaderDb, FilterWithHeaderHash)],
       ourBestFilterHeader: CompactFilterHeaderDb): Vector[

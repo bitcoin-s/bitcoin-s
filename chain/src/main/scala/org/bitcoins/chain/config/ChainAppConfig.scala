@@ -25,6 +25,7 @@ case class ChainAppConfig(
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
   override protected[bitcoins] def moduleName: String = "chain"
   override protected[bitcoins] type ConfigType = ChainAppConfig
+
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): ChainAppConfig =
     ChainAppConfig(directory, useLogbackConf, configs: _*)
@@ -55,7 +56,7 @@ case class ChainAppConfig(
   /** Initializes our chain project if it is needed
     * This creates the necessary tables for the chain project
     * and inserts preliminary data like the genesis block header
-    * */
+    */
   override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
     val numMigrations = migrate()
 

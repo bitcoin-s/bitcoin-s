@@ -37,8 +37,8 @@ object RawTxSigner extends BitcoinSLogger {
   def sign(
       utx: Transaction,
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
-      expectedFeeRate: FeeUnit)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+      expectedFeeRate: FeeUnit)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     sign(utx, utxoInfos, expectedFeeRate, (_, _) => true)
   }
 
@@ -47,8 +47,8 @@ object RawTxSigner extends BitcoinSLogger {
       expectedFeeRate: FeeUnit,
       invariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction) => Boolean)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+          Transaction) => Boolean)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     sign(txWithInfo.finalizedTx, txWithInfo.infos, expectedFeeRate, invariants)
   }
 
@@ -58,8 +58,8 @@ object RawTxSigner extends BitcoinSLogger {
       expectedFeeRate: FeeUnit,
       invariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction) => Boolean)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+          Transaction) => Boolean)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     require(utxoInfos.length == utx.inputs.length,
             "Must provide exactly one UTXOSatisfyingInfo per input.")
     require(utxoInfos.distinct.length == utxoInfos.length,
@@ -69,8 +69,10 @@ object RawTxSigner extends BitcoinSLogger {
             "All UTXOSatisfyingInfos must correspond to an input.")
 
     val signedTxF =
-      if (utxoInfos.exists(
-            _.inputInfo.isInstanceOf[UnassignedSegwitNativeInputInfo])) {
+      if (
+        utxoInfos.exists(
+          _.inputInfo.isInstanceOf[UnassignedSegwitNativeInputInfo])
+      ) {
         Future.fromTry(TxBuilderError.NoSigner)
       } else {
         val builder = RawTxBuilder()
@@ -83,9 +85,11 @@ object RawTxSigner extends BitcoinSLogger {
           txSigCompF.map { txSigComp =>
             val scriptWitnessOpt = TxSigComponent.getScriptWitness(txSigComp)
 
-            if (scriptWitnessOpt.isEmpty && InputInfo
-                  .getScriptWitness(utxo.inputInfo)
-                  .isDefined) {
+            if (
+              scriptWitnessOpt.isEmpty && InputInfo
+                .getScriptWitness(utxo.inputInfo)
+                .isDefined
+            ) {
               println(utxo.inputInfo)
             }
 

@@ -51,7 +51,8 @@ sealed abstract class RawScriptWitnessParser
       else {
         val compactSizeUInt: CompactSizeUInt =
           CompactSizeUInt.calc(remainingStack.head)
-        val serialization: ByteVector = compactSizeUInt.bytes ++ remainingStack.head
+        val serialization: ByteVector =
+          compactSizeUInt.bytes ++ remainingStack.head
         loop(remainingStack.tail, serialization +: accum)
       }
     }

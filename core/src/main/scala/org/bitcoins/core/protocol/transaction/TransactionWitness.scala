@@ -63,7 +63,7 @@ sealed abstract class TransactionWitness
   * the inputs that do not spend a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 WitnessScriptPubKeyV0]]
   *
   * @see https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#specification
-  * */
+  */
 case class EmptyWitness(witnesses: Vector[EmptyScriptWitness.type])
     extends TransactionWitness
 
@@ -81,6 +81,7 @@ object EmptyWitness {
 }
 
 object TransactionWitness {
+
   private case class TransactionWitnessImpl(witnesses: Vector[ScriptWitness])
       extends TransactionWitness
 

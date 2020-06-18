@@ -10,8 +10,8 @@ trait AppConfigFactory[C <: AppConfig] {
 
   def fromDefaultDatadir(
       useLogbackConf: Boolean,
-      confs: Vector[Config] = Vector.empty)(
-      implicit ec: ExecutionContext): C = {
+      confs: Vector[Config] = Vector.empty)(implicit
+      ec: ExecutionContext): C = {
     fromDatadir(AppConfig.DEFAULT_BITCOIN_S_DATADIR, useLogbackConf, confs)
   }
 

@@ -19,6 +19,7 @@ object WalletGUI extends JFXApp {
     .currentThread()
     .setUncaughtExceptionHandler(
       new Thread.UncaughtExceptionHandler {
+
         override def uncaughtException(t: Thread, ex: Throwable): Unit = {
           ex.printStackTrace()
           val _ = new Alert(AlertType.Error) {
@@ -49,7 +50,8 @@ object WalletGUI extends JFXApp {
   private val resultArea = new TextArea {
     editable = false
     wrapText = true
-    text <== StringProperty("Your current balance is: ") + GlobalData.currentBalance + StringProperty(
+    text <== StringProperty(
+      "Your current balance is: ") + GlobalData.currentBalance + StringProperty(
       s"\n\n${(0 until 60).map(_ => "-").mkString("")}\n\n") + GlobalData.log
   }
 

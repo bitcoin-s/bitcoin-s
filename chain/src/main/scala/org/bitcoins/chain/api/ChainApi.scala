@@ -39,7 +39,7 @@ trait ChainApi extends ChainQueryApi {
   /** Gets a [[org.bitcoins.chain.models.BlockHeaderDb]] from the chain's database */
   def getHeader(hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]]
 
-  /**  Gets all [[org.bitcoins.chain.models.BlockHeaderDb]]s at a given height  */
+  /**  Gets all [[org.bitcoins.chain.models.BlockHeaderDb]]s at a given height */
   def getHeadersAtHeight(height: Int): Future[Vector[BlockHeaderDb]]
 
   /** Gets the number of blocks in the database */
@@ -124,7 +124,7 @@ trait ChainApi extends ChainQueryApi {
     * What this means in practice is the latest filter header we
     * have received from our peer.
     * Returns none if we have no filters in the database
-    * */
+    */
   def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]]
 
   /**

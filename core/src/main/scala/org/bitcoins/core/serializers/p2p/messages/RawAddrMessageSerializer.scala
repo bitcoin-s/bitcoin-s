@@ -24,9 +24,9 @@ trait RawAddrMessageSerializer extends RawBitcoinSerializer[AddrMessage] {
 
   override def write(addrMessage: AddrMessage): ByteVector = {
     addrMessage.ipCount.bytes ++
-      RawSerializerHelper.write(
-        ts = addrMessage.addresses,
-        serializer = RawNetworkIpAddressSerializer.write)
+      RawSerializerHelper.write(ts = addrMessage.addresses,
+                                serializer =
+                                  RawNetworkIpAddressSerializer.write)
   }
 
   /**

@@ -76,7 +76,9 @@ sealed abstract class RawMerkleBlockSerializer
     def loop(
         remainingHashes: Long,
         remainingBytes: ByteVector,
-        accum: List[DoubleSha256Digest]): (Seq[DoubleSha256Digest], ByteVector) = {
+        accum: List[DoubleSha256Digest]): (
+        Seq[DoubleSha256Digest],
+        ByteVector) = {
       if (remainingHashes <= 0) (accum.reverse, remainingBytes)
       else {
         val (hashBytes, newRemainingBytes) = remainingBytes.splitAt(32)

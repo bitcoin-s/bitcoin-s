@@ -37,9 +37,8 @@ trait MiningRpc { self: Client =>
       List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
   }
 
-  def getBlockTemplate(
-      request: Option[RpcOpts.BlockTemplateRequest] = None): Future[
-    GetBlockTemplateResult] = {
+  def getBlockTemplate(request: Option[RpcOpts.BlockTemplateRequest] =
+    None): Future[GetBlockTemplateResult] = {
     val params =
       if (request.isEmpty) {
         List.empty

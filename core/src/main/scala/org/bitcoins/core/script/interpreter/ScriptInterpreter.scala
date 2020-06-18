@@ -78,7 +78,9 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             s"scriptPubKeyExecutedProgram $scriptPubKeyExecutedProgram")
           if (scriptSigExecutedProgram.error.isDefined) {
             scriptSigExecutedProgram
-          } else if (scriptPubKeyExecutedProgram.error.isDefined || scriptPubKeyExecutedProgram.stackTopIsFalse) {
+          } else if (
+            scriptPubKeyExecutedProgram.error.isDefined || scriptPubKeyExecutedProgram.stackTopIsFalse
+          ) {
             scriptPubKeyExecutedProgram
           } else {
             scriptPubKey match {
@@ -111,8 +113,10 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     val flags = program.flags
     val p2shEnabled = ScriptFlagUtil.p2shEnabled(flags)
 
-    if (ScriptFlagUtil.requirePushOnly(flags)
-        && !BitcoinScriptUtil.isPushOnly(program.script)) {
+    if (
+      ScriptFlagUtil.requirePushOnly(flags)
+      && !BitcoinScriptUtil.isPushOnly(program.script)
+    ) {
       logger.error(
         "We can only have push operations inside of the script sig when the SIGPUSHONLY flag is set")
       Some(ScriptErrorSigPushOnly)
@@ -235,8 +239,11 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
       )
 
       /*ScriptProgram(p.txSignatureComponent, stack.tail,s.asm)*/
-      if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil
-            .isPushOnly(s.asm)) {
+      if (
+        ScriptFlagUtil.requirePushOnly(
+          p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil
+          .isPushOnly(s.asm)
+      ) {
         logger.error(
           "p2sh redeem script must be push only operations whe SIGPUSHONLY flag is set")
         p2shRedeemScriptProgram.failExecution(ScriptErrorSigPushOnly)
@@ -277,12 +284,16 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
             val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
 
-            val expectedScriptBytes = BytesUtil.toByteVector(pushOp) ++ redeemScriptBytes
+            val expectedScriptBytes =
+              BytesUtil.toByteVector(pushOp) ++ redeemScriptBytes
 
-            val isExpectedScriptBytes = scriptSig.asmBytes == expectedScriptBytes
-            if (segwitEnabled &&
-                wtxSigP2SH.witness.stack.size == 2 &&
-                isExpectedScriptBytes) {
+            val isExpectedScriptBytes =
+              scriptSig.asmBytes == expectedScriptBytes
+            if (
+              segwitEnabled &&
+              wtxSigP2SH.witness.stack.size == 2 &&
+              isExpectedScriptBytes
+            ) {
               executeSegWitScript(scriptPubKeyExecutedProgram, p2wpkh).get
             } else if (segwitEnabled) {
               scriptPubKeyExecutedProgram.failExecution(
@@ -295,9 +306,11 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
           case p2wsh: P2WSHWitnessSPKV0 =>
             val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
 
-            val expectedScriptBytes = BytesUtil.toByteVector(pushOp) ++ redeemScriptBytes
+            val expectedScriptBytes =
+              BytesUtil.toByteVector(pushOp) ++ redeemScriptBytes
 
-            val isExpectedScriptBytes = scriptSig.asmBytes == expectedScriptBytes
+            val isExpectedScriptBytes =
+              scriptSig.asmBytes == expectedScriptBytes
 
             if (segwitEnabled && isExpectedScriptBytes) {
               // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
@@ -306,7 +319,9 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
                 "redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
               //TODO: remove .get here
               executeSegWitScript(scriptPubKeyExecutedProgram, p2wsh).get
-            } else if (segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)) {
+            } else if (
+              segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)
+            ) {
               logger.error(
                 "Segwit was enabled, but p2sh redeem script was malleated")
               logger.error("ScriptSig bytes: " + scriptSig.hex)
@@ -430,13 +445,13 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             val newWTxSigComponent =
               rebuildWTxSigComponent(wTxSigComponent, scriptPubKey)
             val newProgram = newWTxSigComponent.map { comp =>
-              PreExecutionScriptProgram(
-                txSignatureComponent = comp,
-                stack = stack.toList,
-                script = scriptPubKey.asm.toList,
-                originalScript = scriptPubKey.asm.toList,
-                altStack = Nil,
-                flags = comp.flags)
+              PreExecutionScriptProgram(txSignatureComponent = comp,
+                                        stack = stack.toList,
+                                        script = scriptPubKey.asm.toList,
+                                        originalScript =
+                                          scriptPubKey.asm.toList,
+                                        altStack = Nil,
+                                        flags = comp.flags)
             }
             val evaluated = newProgram.map(executeProgram)
             evaluated.map(e => postSegWitProgramChecks(e))
@@ -970,9 +985,10 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             case newProgram @ (_: ExecutionInProgressScriptProgram |
                 _: PreExecutionScriptProgram) =>
               val programOrError = newProgram
-              val newOpCount = calcOpCount(opCount, OP_CHECKMULTISIG) + BitcoinScriptUtil
-                .numPossibleSignaturesOnStack(program)
-                .toInt
+              val newOpCount =
+                calcOpCount(opCount, OP_CHECKMULTISIG) + BitcoinScriptUtil
+                  .numPossibleSignaturesOnStack(program)
+                  .toInt
               (programOrError, newOpCount)
 
           }
@@ -984,9 +1000,10 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             case newProgram @ (_: ExecutionInProgressScriptProgram |
                 _: PreExecutionScriptProgram) =>
               val programOrError = newProgram
-              val newOpCount = calcOpCount(opCount, OP_CHECKMULTISIGVERIFY) + BitcoinScriptUtil
-                .numPossibleSignaturesOnStack(program)
-                .toInt
+              val newOpCount =
+                calcOpCount(opCount, OP_CHECKMULTISIGVERIFY) + BitcoinScriptUtil
+                  .numPossibleSignaturesOnStack(program)
+                  .toInt
               (programOrError, newOpCount)
 
           }

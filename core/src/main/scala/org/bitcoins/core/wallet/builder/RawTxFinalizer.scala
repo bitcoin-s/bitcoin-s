@@ -33,8 +33,8 @@ import scala.util.{Success, Try}
 trait RawTxFinalizer {
 
   /** Constructs a finalized (unsigned) transaction */
-  def buildTx(txBuilderResult: RawTxBuilderResult)(
-      implicit ec: ExecutionContext): Future[Transaction]
+  def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction]
 
   /** The result of buildTx is converted into a RawTxBuilderResult
     * by taking that transactions inputs (in order), outputs (in order),
@@ -43,17 +43,17 @@ trait RawTxFinalizer {
     */
   def andThen(other: RawTxFinalizer): RawTxFinalizer = {
     // this.buildTx above gets shadowed below, so this allows us to call it
-    def thisBuildTx(txBuilderResult: RawTxBuilderResult)(
-        implicit ec: ExecutionContext): Future[Transaction] =
+    def thisBuildTx(txBuilderResult: RawTxBuilderResult)(implicit
+        ec: ExecutionContext): Future[Transaction] =
       this.buildTx(txBuilderResult)
 
     new RawTxFinalizer {
-      override def buildTx(txBuilderResult: RawTxBuilderResult)(
-          implicit ec: ExecutionContext): Future[Transaction] = {
+      override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+          ec: ExecutionContext): Future[Transaction] = {
         for {
           firstFinalizedTx <- thisBuildTx(txBuilderResult)
-          composedFinalizedTx <- other.buildTx(
-            RawTxBuilderResult.fromTransaction(firstFinalizedTx))
+          composedFinalizedTx <-
+            other.buildTx(RawTxBuilderResult.fromTransaction(firstFinalizedTx))
         } yield composedFinalizedTx
       }
     }
@@ -62,8 +62,9 @@ trait RawTxFinalizer {
 
 /** A trivial finalizer that does no processing */
 case object RawFinalizer extends RawTxFinalizer {
-  override def buildTx(txBuilderResult: RawTxBuilderResult)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     Future.successful(txBuilderResult.toBaseTransaction)
   }
 }
@@ -72,8 +73,9 @@ case object RawFinalizer extends RawTxFinalizer {
   * threshold and does nothing else
   */
 case object FilterDustFinalizer extends RawTxFinalizer {
-  override def buildTx(txBuilderResult: RawTxBuilderResult)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     val filteredOutputs =
       txBuilderResult.outputs.filter(_.value >= Policy.dustThreshold)
     Future.successful(
@@ -90,8 +92,9 @@ case class SanityCheckFinalizer(
     expectedFeeRate: FeeUnit,
     changeSPKs: Vector[ScriptPubKey] = Vector.empty)
     extends RawTxFinalizer {
-  override def buildTx(txBuilderResult: RawTxBuilderResult)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     val tx = txBuilderResult.toBaseTransaction
 
     val passInOutChecksT =
@@ -154,8 +157,9 @@ case class ChangeFinalizer(
     feeRate: FeeUnit,
     changeSPK: ScriptPubKey)
     extends RawTxFinalizer {
-  override def buildTx(txBuilderResult: RawTxBuilderResult)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     val outputsWithDummyChange =
       txBuilderResult.outputs :+ TransactionOutput(Satoshis.zero, changeSPK)
 
@@ -198,8 +202,9 @@ case class ChangeFinalizer(
   */
 case class AddWitnessDataFinalizer(inputInfos: Vector[InputInfo])
     extends RawTxFinalizer {
-  override def buildTx(txBuilderResult: RawTxBuilderResult)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     val witnesses = inputInfos.map(InputInfo.getScriptWitness)
     TransactionWitness.fromWitOpt(witnesses) match {
       case _: EmptyWitness =>
@@ -224,8 +229,9 @@ case class StandardNonInteractiveFinalizer(
     feeRate: FeeUnit,
     changeSPK: ScriptPubKey)
     extends RawTxFinalizer {
-  override def buildTx(txBuilderResult: RawTxBuilderResult)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     val addChange = ChangeFinalizer(inputInfos, feeRate, changeSPK)
 
     val sanityCheck = SanityCheckFinalizer(
@@ -266,8 +272,8 @@ object StandardNonInteractiveFinalizer {
       outputs: Seq[TransactionOutput],
       utxos: Seq[InputSigningInfo[InputInfo]],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+      changeSPK: ScriptPubKey)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     val builderF = Future(txBuilderFrom(outputs, utxos, feeRate, changeSPK))
 
     builderF.flatMap(_.buildTx())
@@ -278,8 +284,9 @@ case class SubtractFeeFromOutputsFinalizer(
     inputInfos: Vector[InputInfo],
     feeRate: FeeUnit)
     extends RawTxFinalizer {
-  override def buildTx(txBuilderResult: RawTxBuilderResult)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     val RawTxBuilderResult(version, inputs, outputs, lockTime) = txBuilderResult
 
     val witnesses = inputInfos.map(InputInfo.getScriptWitness)

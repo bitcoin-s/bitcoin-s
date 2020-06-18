@@ -30,8 +30,7 @@ import scala.util.Try
   *                   in the Bitcoin Core wallet or a manually provided private key.
   *                   These RPC calls are now separated out into two distinct calls.
   */
-class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
-    implicit
+class BitcoindV17RpcClient(override val instance: BitcoindInstance)(implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
     with V17LabelRpc
@@ -61,7 +60,8 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
     */
   def signRawTransactionWithWallet(
       transaction: Transaction,
-      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty,
+      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] =
+        Vector.empty,
       sigHash: HashType = HashType.sigHashAll
   ): Future[SignRawTransactionResult] =
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet",
@@ -78,7 +78,8 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
   def signRawTransactionWithKey(
       transaction: Transaction,
       keys: Vector[ECPrivateKey],
-      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty,
+      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] =
+        Vector.empty,
       sigHash: HashType = HashType.sigHashAll
   ): Future[SignRawTransactionResult] =
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithkey",
@@ -119,8 +120,8 @@ object BitcoindV17RpcClient {
     * advanced users, wher you need fine grained control
     * over the RPC client.
     */
-  def withActorSystem(instance: BitcoindInstance)(
-      implicit system: ActorSystem): BitcoindV17RpcClient =
+  def withActorSystem(instance: BitcoindInstance)(implicit
+      system: ActorSystem): BitcoindV17RpcClient =
     new BitcoindV17RpcClient(instance)
 
   def fromUnknownVersion(

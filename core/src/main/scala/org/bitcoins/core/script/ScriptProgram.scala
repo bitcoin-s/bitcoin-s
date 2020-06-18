@@ -355,6 +355,7 @@ case class ExecutedScriptProgram(
     flags: Seq[ScriptFlag],
     error: Option[ScriptError])
     extends StartedScriptProgram {
+
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
     this.copy(error = Some(error))
   }
