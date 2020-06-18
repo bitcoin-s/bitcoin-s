@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.api
+package org.bitcoins.server
 
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.{
