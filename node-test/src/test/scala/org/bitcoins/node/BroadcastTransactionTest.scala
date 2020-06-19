@@ -74,13 +74,14 @@ class BroadcastTransactionTest extends NodeUnitTest {
           .awaitConditionF(() => hasSeenTx(tx),
                            duration = 1.second,
                            maxTries = 25)
-          .recoverWith { _ =>
-            for {
-              _ <- node.broadcastTransaction(tx)
-              _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
-                                                 duration = 1.second,
-                                                 maxTries = 25)
-            } yield ()
+          .recoverWith {
+            case _: Throwable =>
+              for {
+                _ <- node.broadcastTransaction(tx)
+                _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
+                                                   duration = 1.second,
+                                                   maxTries = 25)
+              } yield ()
           }
       _ <- rpc.generateToAddress(blocks = 1, junkAddress)
       bitcoindBalancePostBroadcast <- rpc.getBalance
