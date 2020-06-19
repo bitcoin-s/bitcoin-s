@@ -108,9 +108,10 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
           // .gets should be safe here because of foreign key at the database level
           for {
             addrInfo <- getAddressInfo(utxo).map(_.get)
-            prevTx <- transactionDAO
-              .findByOutPoint(utxo.outPoint)
-              .map(_.get.transaction)
+            prevTx <-
+              transactionDAO
+                .findByOutPoint(utxo.outPoint)
+                .map(_.get.transaction)
           } yield (utxo, prevTx, addrInfo)
         }
         vec <- Future.sequence(addrInfoOptF)
