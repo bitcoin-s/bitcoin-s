@@ -5,7 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
-import org.bitcoins.core.psbt.PSBT.SpendingInfoAndNonWitnessTxs
+import org.bitcoins.core.psbt.PSBT.SpendingInfoAndPrevTransactionTxs
 import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.wallet.builder.{
@@ -167,7 +167,8 @@ object PSBTGenerators {
   def spendingInfoAndNonWitnessTxsFromSpendingInfos(
       unsignedTx: Transaction,
       creditingTxsInfo: Vector[
-        ScriptSignatureParams[InputInfo]]): SpendingInfoAndNonWitnessTxs = {
+        ScriptSignatureParams[
+          InputInfo]]): SpendingInfoAndPrevTransactionTxs = {
     val elements = unsignedTx.inputs.toVector.map { input =>
       val infoOpt =
         creditingTxsInfo.find(_.outPoint == input.previousOutput)
@@ -180,7 +181,7 @@ object PSBTGenerators {
       }
     }
 
-    SpendingInfoAndNonWitnessTxs(elements)
+    SpendingInfoAndPrevTransactionTxs(elements)
   }
 
   def psbtAndBuilderFromInputs(

@@ -776,7 +776,7 @@ object PSBT extends Factory[PSBT] {
     * Wraps a Vector of pairs of ScriptSignatureParams and the Transactions whose outputs are spent.
     * Note that this Transaction is only necessary when the output if it is pre-segwitV1.
     */
-  case class SpendingInfoAndNonWitnessTxs(
+  case class SpendingInfoAndPrevTransactionTxs(
       infoAndTxOpts: Vector[
         (ScriptSignatureParams[InputInfo], Option[Transaction])]) {
     val length: Int = infoAndTxOpts.length
@@ -802,7 +802,7 @@ object PSBT extends Factory[PSBT] {
     */
   def fromUnsignedTxAndInputs(
       unsignedTx: Transaction,
-      spendingInfoAndNonWitnessTxs: SpendingInfoAndNonWitnessTxs)(implicit
+      spendingInfoAndNonWitnessTxs: SpendingInfoAndPrevTransactionTxs)(implicit
       ec: ExecutionContext): Future[PSBT] = {
     fromUnsignedTxAndInputs(unsignedTx,
                             spendingInfoAndNonWitnessTxs,
@@ -814,7 +814,7 @@ object PSBT extends Factory[PSBT] {
     */
   def finalizedFromUnsignedTxAndInputs(
       unsignedTx: Transaction,
-      spendingInfoAndNonWitnessTxs: SpendingInfoAndNonWitnessTxs)(implicit
+      spendingInfoAndNonWitnessTxs: SpendingInfoAndPrevTransactionTxs)(implicit
       ec: ExecutionContext): Future[PSBT] = {
     fromUnsignedTxAndInputs(unsignedTx,
                             spendingInfoAndNonWitnessTxs,
@@ -823,7 +823,7 @@ object PSBT extends Factory[PSBT] {
 
   private def fromUnsignedTxAndInputs(
       unsignedTx: Transaction,
-      spendingInfoAndNonWitnessTxs: SpendingInfoAndNonWitnessTxs,
+      spendingInfoAndNonWitnessTxs: SpendingInfoAndPrevTransactionTxs,
       finalized: Boolean)(implicit ec: ExecutionContext): Future[PSBT] = {
     require(spendingInfoAndNonWitnessTxs.length == unsignedTx.inputs.length,
             "Must have a NewSpendingInfo for every input")
