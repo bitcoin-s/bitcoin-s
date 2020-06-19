@@ -24,6 +24,8 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
     safeDatabase.runVec(actions)
   }
 
+  // FIXME: This is a temporary fix for https://github.com/bitcoin-s/bitcoin-s/issues/1586
+  // This is an inefficient solution that does each update individually
   override def updateAll(ts: Vector[T]): Future[Vector[T]] = {
     FutureUtil.foldLeftAsync(Vector.empty[T], ts) { (accum, t) =>
       super.updateAll(Vector(t)).map(accum ++ _)
