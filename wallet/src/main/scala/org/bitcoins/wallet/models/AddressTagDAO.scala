@@ -16,9 +16,9 @@ import slick.lifted.{ForeignKeyQuery, ProvenShape}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class AddressTagDAO()(implicit
-    ec: ExecutionContext,
-    config: WalletAppConfig
-) extends CRUD[AddressTagDb, BitcoinAddress]
+    val ec: ExecutionContext,
+    override val appConfig: WalletAppConfig)
+    extends CRUD[AddressTagDb, BitcoinAddress]
     with SlickUtil[AddressTagDb, BitcoinAddress] {
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)

@@ -83,10 +83,12 @@ object WalletTestUtil {
       first: CurrencyUnit,
       second: CurrencyUnit,
       delta: CurrencyUnit = 300.sats): Boolean = {
-    Math.abs(first.satoshis.toLong - second.satoshis.toLong) < delta.satoshis.toLong
+    Math.abs(
+      first.satoshis.toLong - second.satoshis.toLong) < delta.satoshis.toLong
   }
 
-  val defaultHdAccount = HDAccount(HDCoin(HDPurposes.SegWit, hdCoinType), 0)
+  val defaultHdAccount: HDAccount =
+    HDAccount(HDCoin(HDPurposes.SegWit, hdCoinType), 0)
 
   def getHdAccount1(walletAppConfig: WalletAppConfig): HDAccount = {
     val purpose = walletAppConfig.defaultAccountKind

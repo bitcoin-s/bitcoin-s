@@ -24,8 +24,9 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
     withFundedWalletAndBitcoind(test, getBIP39PasswordOpt())
   }
 
-  val destination = TransactionOutput(Bitcoins(0.5), TestUtil.p2pkhScriptPubKey)
-  val feeRate = SatoshisPerVirtualByte.one
+  val destination: TransactionOutput =
+    TransactionOutput(Bitcoins(0.5), TestUtil.p2pkhScriptPubKey)
+  val feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte.one
 
   it must "fund a simple raw transaction that requires one utxo" in {
     fundedWallet: WalletWithBitcoind =>
@@ -214,7 +215,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       account <- wallet.getDefaultAccount()
 
       taggedAddr <- wallet.getNewAddress(Vector(tag))
-      _ <- wallet.sendToAddress(taggedAddr, destination.value * 2, None)
+      _ <-
+        wallet.sendToAddress(taggedAddr, destination.value * 2, Some(feeRate))
       taggedBalance <- wallet.getBalance(tag)
       _ = assert(taggedBalance == destination.value * 2)
 
