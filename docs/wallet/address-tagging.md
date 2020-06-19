@@ -13,7 +13,7 @@ import org.bitcoins.wallet.models.AccountDb
 import org.bitcoins.wallet._
 
 val ExampleAddressTag = UnknownAddressTag("name", "tagType")
-val exampleAddress = BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").get
+val exampleAddress = BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
 val account: AccountDb = null
 val destinations = Vector(TransactionOutput(Satoshis.one, exampleAddress.scriptPubKey))
 case object wallet {
