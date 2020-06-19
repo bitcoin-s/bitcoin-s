@@ -44,14 +44,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload1 = MerkleBlockMessage(merkleBlock)
         payload2 = TransactionMessage(tx)
 
-        callback: OnMerkleBlockReceived = (
-            merkle: MerkleBlock,
-            txs: Vector[Transaction]) => {
-          Future {
-            resultP.success((merkle, txs))
-            ()
+        callback: OnMerkleBlockReceived =
+          (merkle: MerkleBlock, txs: Vector[Transaction]) => {
+            Future {
+              resultP.success((merkle, txs))
+              ()
+            }
           }
-        }
 
         callbacks = NodeCallbacks.onMerkleBlockReceived(callback)
 
@@ -133,18 +132,16 @@ class DataMessageHandlerTest extends NodeUnitTest {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
 
-        payload = CompactFilterMessage(FilterType.Basic,
-                                       hash.flip,
-                                       filter.filter.bytes)
+        payload =
+          CompactFilterMessage(FilterType.Basic, hash.flip, filter.filter.bytes)
 
-        callback: OnCompactFiltersReceived = (filters: Vector[(
-            DoubleSha256Digest,
-            GolombFilter)]) => {
-          Future {
-            resultP.success(filters)
-            ()
+        callback: OnCompactFiltersReceived =
+          (filters: Vector[(DoubleSha256Digest, GolombFilter)]) => {
+            Future {
+              resultP.success(filters)
+              ()
+            }
           }
-        }
 
         callbacks = NodeCallbacks.onCompactFilterReceived(callback)
 
