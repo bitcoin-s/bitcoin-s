@@ -9,15 +9,12 @@ import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPrivateKey,
   EmptyDigitalSignature
 }
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TransactionTestUtil}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
 
 import scala.concurrent.Future

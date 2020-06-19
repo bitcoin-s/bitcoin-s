@@ -1,13 +1,12 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import scala.concurrent.duration._
-import scala.concurrent._
-import org.scalatest.compatible.Assertion
-import org.scalatest.AsyncFlatSpec
 import akka.actor.ActorSystem
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.scalatest.compatible.Assertion
 
-class FutureUtilTest extends AsyncFlatSpec with BitcoinSLogger {
+import scala.concurrent._
+
+class FutureUtilTest extends BitcoinSAsyncTest with BitcoinSLogger {
   it must "execute futures sequentially in the correct order" in {
 
     val actorSystem = ActorSystem()

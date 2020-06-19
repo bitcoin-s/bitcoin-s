@@ -15,15 +15,16 @@ import org.bitcoins.core.script.result.{
 }
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
-import org.bitcoins.testkit.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
+
+import scala.concurrent.Future
 
 /**
   * Created by chris on 1/6/16.
   */
-class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
-  private def logger = BitcoinSLogger.logger
-  val COI = ControlOperationsInterpreter
+class ControlOperationsInterpreterTest extends BitcoinSAsyncTest {
+
+  val COI: ControlOperationsInterpreter = ControlOperationsInterpreter
   "ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {
     val stack = List(OP_TRUE)
     val script = List(OP_VERIFY)
@@ -44,6 +45,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
       TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
                                                                    script)
     val result = COI.opVerify(program)
+    result.stackTopIsTrue must be(true)
   }
 
   it must "have OP_VERIFY evaluate to false with '0' on the stack" in {
@@ -70,13 +72,15 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
   }
 
   it must "fail for verify when there is nothing on the script stack" in {
-    intercept[IllegalArgumentException] {
-      val stack = List(ScriptConstant("1"))
-      val script = List()
-      val program =
-        TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                     script)
-      val result = COI.opVerify(program)
+    recoverToSucceededIf[IllegalArgumentException] {
+      Future {
+        val stack = List(ScriptConstant("1"))
+        val script = List()
+        val program =
+          TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                       script)
+        COI.opVerify(program)
+      }
     }
   }
 

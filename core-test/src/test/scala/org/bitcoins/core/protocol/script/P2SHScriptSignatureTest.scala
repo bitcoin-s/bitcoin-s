@@ -7,14 +7,12 @@ import org.bitcoins.core.script.constant.{
 }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.testkit.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 
 /**
   * Created by chris on 3/8/16.
   */
-class P2SHScriptSignatureTest extends FlatSpec with MustMatchers {
-  private def logger = BitcoinSLogger.logger
+class P2SHScriptSignatureTest extends BitcoinSAsyncTest {
 
   "P2SHScriptSignature" must "find the public keys embedded inside of the redeemScript" in {
     val rawP2SHScriptSig = TestUtil.rawP2shInputScript2Of2
