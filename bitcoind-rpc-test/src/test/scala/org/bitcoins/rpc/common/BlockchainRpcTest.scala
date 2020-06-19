@@ -103,10 +103,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
       count1 <- client.getBlockCount
       count2 <- otherClient.getBlockCount
 
-      _ <-
-        client.getNewAddress.flatMap(
-          client.generateToAddress(2, _)
-        ) // Ensure client and otherClient have the same blockchain
+      _ <- client.getNewAddress.flatMap(
+        client.generateToAddress(2, _)
+      ) // Ensure client and otherClient have the same blockchain
     } yield {
       assert(mostRecentBlock.tx.contains(txid))
       assert(mempool.contains(txid))

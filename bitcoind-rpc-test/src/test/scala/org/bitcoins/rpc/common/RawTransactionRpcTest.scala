@@ -128,10 +128,9 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
         BitcoindRpcTestUtil.createRawCoinbaseTransaction(client, otherClient)
       signedTransaction <- BitcoindRpcTestUtil.signRawTransaction(client, rawTx)
 
-      _ <-
-        client.getNewAddress.flatMap(
-          client.generateToAddress(100, _)
-        ) // Can't spend coinbase until depth 100
+      _ <- client.getNewAddress.flatMap(
+        client.generateToAddress(100, _)
+      ) // Can't spend coinbase until depth 100
 
       _ <- client.sendRawTransaction(signedTransaction.hex, maxfeerate = 0)
     } yield succeed
