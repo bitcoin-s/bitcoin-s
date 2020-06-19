@@ -81,9 +81,10 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
       updated <- spendingInfoDAO.update(
         utxo.copy(state = TxoState.PendingConfirmationsReceived))
       unspent <- spendingInfoDAO.findAllUnspent()
-      updated <- spendingInfoDAO.updateTxoState(
-        outputs = unspent.map(_.output),
-        state = TxoState.PendingConfirmationsSpent)
+      updated <-
+        spendingInfoDAO.updateTxoState(outputs = unspent.map(_.output),
+                                       state =
+                                         TxoState.PendingConfirmationsSpent)
       unspentPostUpdate <- spendingInfoDAO.findAllUnspent()
     } yield {
       assert(unspent.nonEmpty)

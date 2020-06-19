@@ -32,12 +32,13 @@ sealed trait PSBTGlobalKeyId extends PSBTKeyId {
 
 object PSBTGlobalKeyId extends PSBTKeyIdFactory[PSBTGlobalKeyId] {
 
-  override def fromByte(byte: Byte): PSBTGlobalKeyId = byte match {
-    case UnsignedTransactionKeyId.byte => UnsignedTransactionKeyId
-    case XPubKeyKeyId.byte             => XPubKeyKeyId
-    case VersionKeyId.byte             => VersionKeyId
-    case _: Byte                       => UnknownKeyId
-  }
+  override def fromByte(byte: Byte): PSBTGlobalKeyId =
+    byte match {
+      case UnsignedTransactionKeyId.byte => UnsignedTransactionKeyId
+      case XPubKeyKeyId.byte             => XPubKeyKeyId
+      case VersionKeyId.byte             => VersionKeyId
+      case _: Byte                       => UnknownKeyId
+    }
 
   override def unknownKey: PSBTGlobalKeyId = UnknownKeyId
 
@@ -52,7 +53,7 @@ object PSBTGlobalKeyId extends PSBTKeyIdFactory[PSBTGlobalKeyId] {
   }
 
   final case object VersionKeyId extends PSBTGlobalKeyId {
-    override val byte: Byte = 0xFB.byteValue
+    override val byte: Byte = 0xfb.byteValue
     type RecordType = GlobalPSBTRecord.Version
   }
 
@@ -70,20 +71,21 @@ object PSBTInputKeyId extends PSBTKeyIdFactory[PSBTInputKeyId] {
 
   override def unknownKey: PSBTInputKeyId = UnknownKeyId
 
-  override def fromByte(byte: Byte): PSBTInputKeyId = byte match {
-    case NonWitnessUTXOKeyId.byte            => NonWitnessUTXOKeyId
-    case WitnessUTXOKeyId.byte               => WitnessUTXOKeyId
-    case PartialSignatureKeyId.byte          => PartialSignatureKeyId
-    case SigHashTypeKeyId.byte               => SigHashTypeKeyId
-    case RedeemScriptKeyId.byte              => RedeemScriptKeyId
-    case WitnessScriptKeyId.byte             => WitnessScriptKeyId
-    case BIP32DerivationPathKeyId.byte       => BIP32DerivationPathKeyId
-    case FinalizedScriptSigKeyId.byte        => FinalizedScriptSigKeyId
-    case FinalizedScriptWitnessKeyId.byte    => FinalizedScriptWitnessKeyId
-    case ProofOfReservesCommitmentKeyId.byte => ProofOfReservesCommitmentKeyId
-    case _: Byte                             => UnknownKeyId
+  override def fromByte(byte: Byte): PSBTInputKeyId =
+    byte match {
+      case NonWitnessUTXOKeyId.byte            => NonWitnessUTXOKeyId
+      case WitnessUTXOKeyId.byte               => WitnessUTXOKeyId
+      case PartialSignatureKeyId.byte          => PartialSignatureKeyId
+      case SigHashTypeKeyId.byte               => SigHashTypeKeyId
+      case RedeemScriptKeyId.byte              => RedeemScriptKeyId
+      case WitnessScriptKeyId.byte             => WitnessScriptKeyId
+      case BIP32DerivationPathKeyId.byte       => BIP32DerivationPathKeyId
+      case FinalizedScriptSigKeyId.byte        => FinalizedScriptSigKeyId
+      case FinalizedScriptWitnessKeyId.byte    => FinalizedScriptWitnessKeyId
+      case ProofOfReservesCommitmentKeyId.byte => ProofOfReservesCommitmentKeyId
+      case _: Byte                             => UnknownKeyId
 
-  }
+    }
 
   final case object NonWitnessUTXOKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x00.byteValue
@@ -149,12 +151,13 @@ object PSBTOutputKeyId extends PSBTKeyIdFactory[PSBTOutputKeyId] {
 
   override def unknownKey: PSBTOutputKeyId = UnknownKeyId
 
-  override def fromByte(byte: Byte): PSBTOutputKeyId = byte match {
-    case RedeemScriptKeyId.byte        => RedeemScriptKeyId
-    case WitnessScriptKeyId.byte       => WitnessScriptKeyId
-    case BIP32DerivationPathKeyId.byte => BIP32DerivationPathKeyId
-    case _: Byte                       => UnknownKeyId
-  }
+  override def fromByte(byte: Byte): PSBTOutputKeyId =
+    byte match {
+      case RedeemScriptKeyId.byte        => RedeemScriptKeyId
+      case WitnessScriptKeyId.byte       => WitnessScriptKeyId
+      case BIP32DerivationPathKeyId.byte => BIP32DerivationPathKeyId
+      case _: Byte                       => UnknownKeyId
+    }
 
   final case object RedeemScriptKeyId extends PSBTOutputKeyId {
     override val byte: Byte = 0x00.byteValue

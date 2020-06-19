@@ -169,9 +169,10 @@ object TestUtil {
   def transaction = Transaction(rawTransaction)
 
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
-  val rawTxInput = "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000" +
-    "6f0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae" +
-    "ffffffff"
+  val rawTxInput =
+    "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000" +
+      "6f0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae" +
+      "ffffffff"
   def txInput: TransactionInput = RawTransactionInputParser.read(rawTxInput)
 
   //simple raw transaction with only one input and two outputs
@@ -183,11 +184,12 @@ object TestUtil {
   //parent to the 'simpleRawTransaction' val in this file. It is referenced by the input,
   //which needs to have access to this tx to view the scriptPubKey
   //txid b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
-  val parentSimpleRawTransaction = "0100000001cda741646fada7272b900719f7ac9d68d633d0e8aa9501eed3c90afbd323bd65" +
-    "010000006a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d" +
-    "158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612" +
-    "457b2774509bffffffff026c405d05000000001976a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac809698000000000" +
-    "017a914af575bd77c5ce7eba3bd9ce6f89774713ae62c798700000000"
+  val parentSimpleRawTransaction =
+    "0100000001cda741646fada7272b900719f7ac9d68d633d0e8aa9501eed3c90afbd323bd65" +
+      "010000006a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d" +
+      "158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612" +
+      "457b2774509bffffffff026c405d05000000001976a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac809698000000000" +
+      "017a914af575bd77c5ce7eba3bd9ce6f89774713ae62c798700000000"
   def parentSimpleTransaction = Transaction(parentSimpleRawTransaction)
 
   //scriptPubKey taken from https://bitcoin.org/en/developer-reference#raw-transaction-format
@@ -218,12 +220,13 @@ object TestUtil {
     PreExecutionScriptProgram(t)
   }
 
-  def testProgramPreExecution = testProgram match {
-    case p: PreExecutionScriptProgram => p
-    case _ =>
-      throw new RuntimeException(
-        "this must be a script program that is pre execution")
-  }
+  def testProgramPreExecution =
+    testProgram match {
+      case p: PreExecutionScriptProgram => p
+      case _ =>
+        throw new RuntimeException(
+          "this must be a script program that is pre execution")
+    }
 
   def testProgramExecutionInProgress =
     testProgramPreExecution.toExecutionInProgress

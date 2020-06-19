@@ -158,27 +158,30 @@ object CliReaders {
     override def arity: Int = 1
 
     // this will be a JSON string
-    override def reads: String => DLCOffer = str => {
-      DLCOffer.fromJson(ujson.read(str))
-    }
+    override def reads: String => DLCOffer =
+      str => {
+        DLCOffer.fromJson(ujson.read(str))
+      }
   }
 
   implicit val dlcAcceptReads: Read[DLCAccept] = new Read[DLCAccept] {
     override def arity: Int = 1
 
     // this will be a JSON string
-    override def reads: String => DLCAccept = str => {
-      DLCAccept.fromJson(ujson.read(str))
-    }
+    override def reads: String => DLCAccept =
+      str => {
+        DLCAccept.fromJson(ujson.read(str))
+      }
   }
 
   implicit val dlcSignReads: Read[DLCSign] = new Read[DLCSign] {
     override def arity: Int = 1
 
     // this will be a JSON string
-    override def reads: String => DLCSign = str => {
-      DLCSign.fromJson(ujson.read(str))
-    }
+    override def reads: String => DLCSign =
+      str => {
+        DLCSign.fromJson(ujson.read(str))
+      }
   }
 
   implicit val dlcMutualCloseSigReads: Read[DLCMutualCloseSig] =

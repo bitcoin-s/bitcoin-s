@@ -11,6 +11,7 @@ case class FundingSignatures(
     sigs: Map[TransactionOutPoint, Vector[PartialSignature]])
     extends MapWrapper[TransactionOutPoint, Vector[PartialSignature]]
     with DLCSignatures {
+
   override protected def wrapped: Map[
     TransactionOutPoint,
     Vector[PartialSignature]] = sigs

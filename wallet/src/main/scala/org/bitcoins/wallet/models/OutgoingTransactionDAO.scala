@@ -8,8 +8,8 @@ import slick.lifted.{PrimaryKey, ProvenShape}
 
 import scala.concurrent.ExecutionContext
 
-case class OutgoingTransactionDAO()(
-    implicit val ec: ExecutionContext,
+case class OutgoingTransactionDAO()(implicit
+    val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends TxDAO[OutgoingTransactionDb] {
 
@@ -71,7 +71,12 @@ case class OutgoingTransactionDAO()(
          tx.feeRate))
 
     def * : ProvenShape[OutgoingTransactionDb] =
-      (txIdBE, inputAmount, sentAmount, actualFee, expectedFee, feeRate) <> (fromTuple, toTuple)
+      (txIdBE,
+       inputAmount,
+       sentAmount,
+       actualFee,
+       expectedFee,
+       feeRate) <> (fromTuple, toTuple)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_out_tx", sourceColumns = txIdBE)

@@ -51,7 +51,8 @@ trait RawVersionMessageSerializer
 
     val userAgent = userAgentBytes.toArray.map(_.toChar).mkString
 
-    val startHeightStartIndex = (userAgentBytesStartIndex + userAgentSize.num.toInt)
+    val startHeightStartIndex =
+      userAgentBytesStartIndex + userAgentSize.num.toInt
 
     val startHeight = Int32(
       bytes.slice(startHeightStartIndex, startHeightStartIndex + 4).reverse)

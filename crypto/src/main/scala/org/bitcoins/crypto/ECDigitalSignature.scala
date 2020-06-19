@@ -102,6 +102,7 @@ case object DummyECDigitalSignature extends ECDigitalSignature {
 }
 
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
+
   private case class ECDigitalSignatureImpl(bytes: ByteVector)
       extends ECDigitalSignature
 

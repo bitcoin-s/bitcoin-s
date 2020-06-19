@@ -62,8 +62,8 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   def withSpvNodeConnectedToBitcoind(
       test: OneArgAsyncTest,
-      versionOpt: Option[BitcoindVersion] = None)(
-      implicit system: ActorSystem,
+      versionOpt: Option[BitcoindVersion] = None)(implicit
+      system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[SpvNodeConnectedWithBitcoind] = {
       () =>
@@ -86,8 +86,8 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   def withNeutrinoNodeConnectedToBitcoind(
       test: OneArgAsyncTest,
-      versionOpt: Option[BitcoindVersion] = None)(
-      implicit system: ActorSystem,
+      versionOpt: Option[BitcoindVersion] = None)(implicit
+      system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
       NeutrinoNodeConnectedWithBitcoind] = { () =>
@@ -110,20 +110,19 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
   def withSpvNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
       callbacks: NodeCallbacks,
-      bip39PasswordOpt: Option[String])(
-      implicit system: ActorSystem,
+      bip39PasswordOpt: Option[String])(implicit
+      system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
 
     makeDependentFixture(
-      build =
-        () =>
-          NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks = callbacks,
-                                                         bip39PasswordOpt =
-                                                           bip39PasswordOpt,
-                                                         versionOpt =
-                                                           Option(V18))(
-            system, // Force V18 because Spv is disabled on versions after
-            appConfig),
+      build = () =>
+        NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks = callbacks,
+                                                       bip39PasswordOpt =
+                                                         bip39PasswordOpt,
+                                                       versionOpt =
+                                                         Option(V18))(
+          system, // Force V18 because Spv is disabled on versions after
+          appConfig),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
         _: NodeFundedWalletBitcoind)(system, appConfig)
     )(test)
@@ -133,8 +132,8 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
       test: OneArgAsyncTest,
       callbacks: NodeCallbacks,
       bip39PasswordOpt: Option[String],
-      versionOpt: Option[BitcoindVersion] = None)(
-      implicit system: ActorSystem,
+      versionOpt: Option[BitcoindVersion] = None)(implicit
+      system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
 
     makeDependentFixture(
@@ -150,8 +149,8 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
   }
 
   /** Helper method to generate blocks every interval */
-  def genBlockInterval(bitcoind: BitcoindRpcClient)(
-      implicit system: ActorSystem): Unit = {
+  def genBlockInterval(bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem): Unit = {
 
     var counter = 0
     val desiredBlocks = 5
@@ -176,8 +175,8 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
 object NodeUnitTest extends P2PLogger {
 
-  def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(
-      implicit appConfig: BitcoinSAppConfig,
+  def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(implicit
+      appConfig: BitcoinSAppConfig,
       system: ActorSystem): Future[PeerMessageReceiver] = {
     val receiver =
       PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
@@ -187,8 +186,8 @@ object NodeUnitTest extends P2PLogger {
     Future.successful(receiver)
   }
 
-  def buildPeerHandler(peer: Peer)(
-      implicit nodeAppConfig: NodeAppConfig,
+  def buildPeerHandler(peer: Peer)(implicit
+      nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
       system: ActorSystem): Future[PeerHandler] = {
     import system.dispatcher
@@ -208,8 +207,8 @@ object NodeUnitTest extends P2PLogger {
 
   }
 
-  def destroyNode(node: Node)(
-      implicit config: BitcoinSAppConfig,
+  def destroyNode(node: Node)(implicit
+      config: BitcoinSAppConfig,
       ec: ExecutionContext): Future[Unit] = {
     node
       .stop()
@@ -217,8 +216,8 @@ object NodeUnitTest extends P2PLogger {
   }
 
   def destroyNodeConnectedWithBitcoind(
-      nodeConnectedWithBitcoind: NodeConnectedWithBitcoind)(
-      implicit system: ActorSystem,
+      nodeConnectedWithBitcoind: NodeConnectedWithBitcoind)(implicit
+      system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
     logger(appConfig.nodeConf)
       .debug(s"Beggining tear down of node connected with bitcoind")
@@ -241,8 +240,8 @@ object NodeUnitTest extends P2PLogger {
   def createSpvNodeFundedWalletBitcoind(
       callbacks: NodeCallbacks,
       bip39PasswordOpt: Option[String],
-      versionOpt: Option[BitcoindVersion] = None)(
-      implicit system: ActorSystem,
+      versionOpt: Option[BitcoindVersion] = None)(implicit
+      system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[SpvNodeFundedWalletBitcoind] = {
     import system.dispatcher
     require(appConfig.isSPVEnabled && !appConfig.isNeutrinoEnabled)
@@ -266,9 +265,10 @@ object NodeUnitTest extends P2PLogger {
   def createNeutrinoNodeFundedWalletBitcoind(
       callbacks: NodeCallbacks,
       bip39PasswordOpt: Option[String],
-      versionOpt: Option[BitcoindVersion])(
-      implicit system: ActorSystem,
-      appConfig: BitcoinSAppConfig): Future[NeutrinoNodeFundedWalletBitcoind] = {
+      versionOpt: Option[BitcoindVersion])(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): Future[
+    NeutrinoNodeFundedWalletBitcoind] = {
     import system.dispatcher
     require(appConfig.isNeutrinoEnabled && !appConfig.isSPVEnabled)
     for {
@@ -288,8 +288,8 @@ object NodeUnitTest extends P2PLogger {
   }
 
   def destroyNodeFundedWalletBitcoind(
-      fundedWalletBitcoind: NodeFundedWalletBitcoind)(
-      implicit system: ActorSystem,
+      fundedWalletBitcoind: NodeFundedWalletBitcoind)(implicit
+      system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
     import system.dispatcher
     val walletWithBitcoind = {
@@ -308,8 +308,8 @@ object NodeUnitTest extends P2PLogger {
 
   }
 
-  def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(
-      implicit nodeAppConfig: NodeAppConfig,
+  def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(implicit
+      nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
       system: ActorSystem): Future[PeerMessageReceiver] = {
     val receiver =
@@ -333,7 +333,8 @@ object NodeUnitTest extends P2PLogger {
   /** Creates a spv node peered with the given bitcoind client, this method
     * also calls [[org.bitcoins.node.Node.start() start]] to start the node */
   def createSpvNode(bitcoind: BitcoindRpcClient, callbacks: NodeCallbacks)(
-      implicit system: ActorSystem,
+      implicit
+      system: ActorSystem,
       chainAppConfig: ChainAppConfig,
       nodeAppConfig: NodeAppConfig): Future[SpvNode] = {
     import system.dispatcher
@@ -363,7 +364,8 @@ object NodeUnitTest extends P2PLogger {
   /** Creates a Neutrino node peered with the given bitcoind client, this method
     * also calls [[org.bitcoins.node.Node.start() start]] to start the node */
   def createNeutrinoNode(bitcoind: BitcoindRpcClient, callbacks: NodeCallbacks)(
-      implicit system: ActorSystem,
+      implicit
+      system: ActorSystem,
       chainAppConfig: ChainAppConfig,
       nodeAppConfig: NodeAppConfig): Future[NeutrinoNode] = {
     import system.dispatcher

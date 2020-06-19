@@ -20,8 +20,8 @@ import slick.lifted.ProvenShape
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class SpendingInfoDAO()(
-    implicit val ec: ExecutionContext,
+case class SpendingInfoDAO()(implicit
+    val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends CRUDAutoInc[SpendingInfoDb] {
   import profile.api._
@@ -32,7 +32,8 @@ case class SpendingInfoDAO()(
   override val table: profile.api.TableQuery[SpendingInfoTable] =
     profile.api.TableQuery[SpendingInfoTable]
 
-  private lazy val addrTable: profile.api.TableQuery[AddressDAO#AddressTable] = {
+  private lazy val addrTable: profile.api.TableQuery[
+    AddressDAO#AddressTable] = {
     AddressDAO()(ec, appConfig).table
   }
 
@@ -128,10 +129,9 @@ case class SpendingInfoDAO()(
   private def filterUtxosByAccount(
       utxos: Vector[SpendingInfoDb],
       hdAccount: HDAccount): Vector[SpendingInfoDb] = {
-    utxos.filter(
-      utxo =>
-        HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
-                                account = hdAccount))
+    utxos.filter(utxo =>
+      HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
+                              account = hdAccount))
   }
 
   /** Finds all utxos for a given account */

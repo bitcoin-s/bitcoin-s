@@ -52,11 +52,12 @@ object LnParams {
     override val invoicePrefix: String = "lnbcrt"
   }
 
-  def fromNetworkParameters(np: NetworkParameters): LnParams = np match {
-    case MainNet  => LnBitcoinMainNet
-    case TestNet3 => LnBitcoinTestNet
-    case RegTest  => LnBitcoinRegTest
-  }
+  def fromNetworkParameters(np: NetworkParameters): LnParams =
+    np match {
+      case MainNet  => LnBitcoinMainNet
+      case TestNet3 => LnBitcoinTestNet
+      case RegTest  => LnBitcoinRegTest
+    }
 
   private val allNetworks: Vector[LnParams] =
     Vector(LnBitcoinMainNet, LnBitcoinTestNet, LnBitcoinRegTest)

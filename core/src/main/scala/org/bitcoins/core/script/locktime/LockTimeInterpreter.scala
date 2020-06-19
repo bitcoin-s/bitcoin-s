@@ -52,19 +52,19 @@ sealed abstract class LockTimeInterpreter {
       program.failExecution(ScriptErrorUnsatisfiedLocktime)
     } else {
       program.stack.head match {
-        case s: ScriptNumber if (s < ScriptNumber.zero) =>
+        case s: ScriptNumber if s < ScriptNumber.zero =>
           logger.error(
             "OP_CHECKLOCKTIMEVERIFY marks tx as invalid if the stack top is negative")
           program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
-            if (s >= ScriptNumber(500000000) && transaction.lockTime < UInt32(
-              500000000)) =>
+            if s >= ScriptNumber(500000000) && transaction.lockTime < UInt32(
+              500000000) =>
           logger.error(
             "OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top >= 500000000 & tx locktime < 500000000")
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber
-            if (s < ScriptNumber(500000000) && transaction.lockTime >= UInt32(
-              500000000)) =>
+            if s < ScriptNumber(500000000) && transaction.lockTime >= UInt32(
+              500000000) =>
           logger.error(
             "OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top < 500000000 & tx locktime >= 500000000")
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
@@ -110,17 +110,19 @@ sealed abstract class LockTimeInterpreter {
         case ScriptNumber.negativeOne =>
           program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
-            if (ScriptFlagUtil.requireMinimalData(program.flags) && !s.isShortestEncoding) =>
+            if ScriptFlagUtil.requireMinimalData(
+              program.flags) && !s.isShortestEncoding =>
           logger.error(
             "Sequence number is not encoded in the shortest way possible")
           program.failExecution(ScriptErrorUnknownError)
-        case s: ScriptNumber if (!isLockTimeBitOff(s)) =>
+        case s: ScriptNumber if !isLockTimeBitOff(s) =>
           //see BIP68 for semantic of locktimeDisableFlag
           logger.info(
             "Locktime disable flag was set so OP_CHECKSEQUENCEVERIFY is treated as a NOP")
           program.updateScript(program.script.tail)
         case s: ScriptNumber
-            if (isLockTimeBitOff(s) && program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion) =>
+            if isLockTimeBitOff(
+              s) && program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion =>
           logger.error(
             "OP_CSV fails if locktime bit is not set and the tx version < 2")
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
@@ -170,7 +172,9 @@ sealed abstract class LockTimeInterpreter {
 
     // Fail if the transaction's version number is not set high
     // enough to trigger BIP 68 rules.
-    if (program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion) {
+    if (
+      program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion
+    ) {
       logger.error(
         "OP_CSV fails the script if the transaction's version is less than 2.")
       return false
@@ -200,9 +204,11 @@ sealed abstract class LockTimeInterpreter {
     // We want to compare apples to apples, so fail the script
     // unless the type of nSequenceMasked being tested is the same as
     // the nSequenceMasked in the transaction.
-    if (!(isCSVLockByBlockHeight(nSequence, txToSequence) || isCSVLockByRelativeLockTime(
-          nSequence,
-          txToSequence))) {
+    if (
+      !(isCSVLockByBlockHeight(
+        nSequence,
+        txToSequence) || isCSVLockByRelativeLockTime(nSequence, txToSequence))
+    ) {
       logger.error(
         "The txSequence and nSequence (OP_CSV value) are not of the same type (timestamp/block-height).")
       return false
@@ -261,8 +267,8 @@ sealed abstract class LockTimeInterpreter {
 
   /** Masks the given [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] according to BIP112 */
   def maskScriptNumber(scriptNumber: ScriptNumber): ScriptNumber = {
-    val nSequenceMasked: ScriptNumber = scriptNumber & Int64(
-      TransactionConstants.fullSequenceLockTimeMask.toLong)
+    val nSequenceMasked: ScriptNumber =
+      scriptNumber & Int64(TransactionConstants.fullSequenceLockTimeMask.toLong)
     nSequenceMasked
   }
 
@@ -291,10 +297,12 @@ sealed abstract class LockTimeInterpreter {
     val transaction = program.txSignatureComponent.transaction
     val input =
       transaction.inputs(program.txSignatureComponent.inputIndex.toInt)
-    if (!((transaction.lockTime < TransactionConstants.locktimeThreshold &&
-          locktime.toLong < TransactionConstants.locktimeThreshold.toLong) ||
-          (transaction.lockTime >= TransactionConstants.locktimeThreshold &&
-            locktime.toLong >= TransactionConstants.locktimeThreshold.toLong)))
+    if (
+      !((transaction.lockTime < TransactionConstants.locktimeThreshold &&
+        locktime.toLong < TransactionConstants.locktimeThreshold.toLong) ||
+        (transaction.lockTime >= TransactionConstants.locktimeThreshold &&
+          locktime.toLong >= TransactionConstants.locktimeThreshold.toLong))
+    )
       return false
 
     // Now that we know we're comparing apples-to-apples, the

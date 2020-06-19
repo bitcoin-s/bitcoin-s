@@ -20,6 +20,7 @@ class PeerMessageHandlerTest extends NodeUnitTest {
     BitcoinSTestAppConfig.getSpvTestConfig()
 
   override type FixtureParam = Unit
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     test(())
   }

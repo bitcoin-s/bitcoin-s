@@ -95,6 +95,7 @@ object SatoshisPerVirtualByte {
   * [[https://github.com/bitcoin/bitcoin/blob/5961b23898ee7c0af2626c46d5d70e80136578d3/src/consensus/validation.h#L96]]
   */
 case class SatoshisPerKW(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
+
   override def calc(tx: Transaction): CurrencyUnit =
     Satoshis((tx.weight * toLong / 1000))
 }

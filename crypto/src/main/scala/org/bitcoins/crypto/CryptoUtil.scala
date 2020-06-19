@@ -14,7 +14,7 @@ import scodec.bits.{BitVector, ByteVector}
   */
 trait CryptoUtil {
 
-  /** Does the following computation: RIPEMD160(SHA256(hex)).*/
+  /** Does the following computation: RIPEMD160(SHA256(hex)). */
   def sha256Hash160(bytes: ByteVector): Sha256Hash160Digest = {
     val hash = ripeMd160(sha256(bytes).bytes).bytes
     Sha256Hash160Digest(hash)
@@ -109,7 +109,6 @@ trait CryptoUtil {
   }
 
   /**
-    *
     * @param x x coordinate
     * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
     *         p1.y is even, p2.y is odd

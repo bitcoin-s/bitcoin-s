@@ -73,8 +73,8 @@ class BitcoinPowTest extends ChainDbUnitTest {
             for {
               blockchain <- blockchainF
               nextTip <- nextBlockF
-              nextNBits = Pow.getNetworkWorkRequired(nextTip.blockHeader,
-                                                     blockchain)
+              nextNBits =
+                Pow.getNetworkWorkRequired(nextTip.blockHeader, blockchain)
             } yield assert(nextNBits == nextTip.nBits)
           }
       val seqF = Future.sequence(assertionFs)

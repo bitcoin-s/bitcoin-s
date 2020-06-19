@@ -250,11 +250,12 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     for {
       updatedMempoolUtxos <- spendingInfoDAO.updateAll(mempoolUtxos)
       // update the confirmed ones
-      updatedBlockUtxos <- FutureUtil
-        .sequentially(utxosInBlocks.toVector) {
-          case (hash, utxos) =>
-            updateUtxoConfirmedStates(utxos, hash)
-        }
+      updatedBlockUtxos <-
+        FutureUtil
+          .sequentially(utxosInBlocks.toVector) {
+            case (hash, utxos) =>
+              updateUtxoConfirmedStates(utxos, hash)
+          }
       updated = updatedMempoolUtxos ++ updatedBlockUtxos.flatten
       _ <- walletCallbacks.executeOnReservedUtxos(logger, updated)
     } yield updated

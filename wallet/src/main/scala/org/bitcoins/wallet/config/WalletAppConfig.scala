@@ -36,6 +36,7 @@ case class WalletAppConfig(
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList
   override protected[bitcoins] def moduleName: String = "wallet"
   override protected[bitcoins] type ConfigType = WalletAppConfig
+
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): WalletAppConfig =
     WalletAppConfig(directory, useLogbackConf, configs: _*)
@@ -154,8 +155,8 @@ case class WalletAppConfig(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
-      bip39PasswordOpt: Option[String])(
-      implicit ec: ExecutionContext): Future[WalletApi] = {
+      bip39PasswordOpt: Option[String])(implicit
+      ec: ExecutionContext): Future[WalletApi] = {
     WalletAppConfig.createWallet(nodeApi = nodeApi,
                                  chainQueryApi = chainQueryApi,
                                  feeRateApi = feeRateApi,
@@ -181,8 +182,8 @@ object WalletAppConfig
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
-      bip39PasswordOpt: Option[String])(
-      implicit walletConf: WalletAppConfig,
+      bip39PasswordOpt: Option[String])(implicit
+      walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[WalletApi] = {
     walletConf.hasWallet().flatMap { walletExists =>
       if (walletExists) {

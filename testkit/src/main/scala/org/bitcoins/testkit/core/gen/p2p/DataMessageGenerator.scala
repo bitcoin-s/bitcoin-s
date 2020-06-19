@@ -12,23 +12,24 @@ import org.scalacheck.Gen
 
 /**
   * Responsible for generating random data message
-
+  *
   * @see [[https://bitcoin.org/en/developer-reference#data-messages]]
   */
 trait DataMessageGenerator {
 
   /** Generates a valid P2P data message */
-  def dataMessage: Gen[DataPayload] = Gen.oneOf(
-    blockMessage,
-    getBlocksMessage,
-    getDataMessages,
-    getHeaderMessages,
-    headersMessage,
-    inventoryMessages,
-    merkleBlockMessage,
-    notFoundMessage,
-    transactionMessage
-  )
+  def dataMessage: Gen[DataPayload] =
+    Gen.oneOf(
+      blockMessage,
+      getBlocksMessage,
+      getDataMessages,
+      getHeaderMessages,
+      headersMessage,
+      inventoryMessages,
+      merkleBlockMessage,
+      notFoundMessage,
+      transactionMessage
+    )
 
   def blockMessage: Gen[BlockMessage] = {
     for {
@@ -39,9 +40,10 @@ trait DataMessageGenerator {
   def getBlocksMessage: Gen[GetBlocksMessage] = {
     for {
       protocol <- ControlMessageGenerator.protocolVersion
-      hashes <- Gen
-        .nonEmptyListOf(CryptoGenerators.doubleSha256Digest)
-        .suchThat(_.length <= 500)
+      hashes <-
+        Gen
+          .nonEmptyListOf(CryptoGenerators.doubleSha256Digest)
+          .suchThat(_.length <= 500)
       stopHash <- CryptoGenerators.doubleSha256Digest
     } yield GetBlocksMessage(protocol, hashes, stopHash)
   }
@@ -72,9 +74,10 @@ trait DataMessageGenerator {
     for {
       randomNum <- Gen.choose(1, 10)
       //we have a maximum of 2000 block headers in a HeadersMessage
-      blockHeaders <- Gen
-        .listOfN(randomNum, BlockchainElementsGenerator.blockHeader)
-        .suchThat(_.size <= 10)
+      blockHeaders <-
+        Gen
+          .listOfN(randomNum, BlockchainElementsGenerator.blockHeader)
+          .suchThat(_.size <= 10)
     } yield HeadersMessage(blockHeaders.toVector)
 
   /**
@@ -133,7 +136,7 @@ trait DataMessageGenerator {
 
   /** Generates a [[org.bitcoins.core.p2p.TransactionMessage]]
     * @see [[https://bitcoin.org/en/developer-reference#tx]]
-    * */
+    */
   def transactionMessage: Gen[TransactionMessage] =
     for {
       tx <- TransactionGenerators.transaction

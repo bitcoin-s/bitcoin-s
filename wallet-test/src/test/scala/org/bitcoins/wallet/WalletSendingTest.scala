@@ -112,9 +112,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
     }
 
     for {
-      tx <- wallet.sendToOutputs(expectedOutputs,
-                                 feeRateOpt,
-                                 reserveUtxos = false)
+      tx <-
+        wallet.sendToOutputs(expectedOutputs, feeRateOpt, reserveUtxos = false)
     } yield {
       assert(expectedOutputs.diff(tx.outputs).isEmpty)
     }

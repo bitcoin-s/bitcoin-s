@@ -130,6 +130,7 @@ case class ReceivedPayment(
 )
 
 object ReceivedPayment {
+
   case class Part(
       amount: MilliSatoshis,
       fromChannelId: FundedChannelId,
@@ -156,6 +157,7 @@ case class SentPayment(
 )
 
 object SentPayment {
+
   case class Part(
       id: PaymentId,
       amount: MilliSatoshis,
@@ -185,6 +187,7 @@ case class ChannelResult(
     feeBaseMsat: Option[MilliSatoshis],
     feeProportionalMillionths: Option[FeeProportionalMillionths],
     data: JsObject) {
+
   lazy val shortChannelId: Option[ShortChannelId] =
     (data \ "shortChannelId").validate[ShortChannelId].asOpt
 }
@@ -224,12 +227,13 @@ object PaymentType {
   case object SwapIn extends PaymentType
   case object SwapOut extends PaymentType
 
-  def fromString(str: String): PaymentType = str match {
-    case "Standard" => Standard
-    case "SwapIn"   => SwapIn
-    case "SwapOut"  => SwapOut
-    case _          => throw new RuntimeException(s"Unknown payment type `$str`")
-  }
+  def fromString(str: String): PaymentType =
+    str match {
+      case "Standard" => Standard
+      case "SwapIn"   => SwapIn
+      case "SwapOut"  => SwapOut
+      case _          => throw new RuntimeException(s"Unknown payment type `$str`")
+    }
 
 }
 
@@ -260,7 +264,9 @@ object IncomingPaymentStatus {
 
   case object Expired extends IncomingPaymentStatus
 
-  case class Received(amount: MilliSatoshis, receivedAt: Instant //milliseconds
+  case class Received(
+      amount: MilliSatoshis,
+      receivedAt: Instant //milliseconds
   ) extends IncomingPaymentStatus
 
 }
@@ -291,6 +297,7 @@ object PaymentFailure {
   case object Remote extends Type
   case object UnreadableRemote extends Type
 }
+
 case class Hop(
     nodeId: NodeId,
     nextNodeId: NodeId,
@@ -315,12 +322,14 @@ object WebSocketEvent {
   ) extends WebSocketEvent
 
   object PaymentReceived {
+
     case class Part(
         amount: MilliSatoshis,
         fromChannelId: FundedChannelId,
         timestamp: Instant // milliseconds
     )
   }
+
   case class PaymentFailed(
       id: PaymentId,
       paymentHash: Sha256Digest,
@@ -336,6 +345,7 @@ object WebSocketEvent {
   ) extends WebSocketEvent
 
   object PaymentSent {
+
     case class Part(
         id: PaymentId,
         amount: MilliSatoshis,

@@ -9,8 +9,10 @@ import org.scalacheck.{Gen, Prop, Properties}
 import scala.util.Success
 
 class ExtKeySpec extends BitcoinSUnitTest {
+
   private val nonHardened: Gen[UInt32] =
     Gen.choose(0L, ((1L << 31) - 1)).map(UInt32(_))
+
   private val hardened: Gen[UInt32] =
     Gen.choose(1L << 31, (1L << 32) - 1).map(UInt32(_))
 

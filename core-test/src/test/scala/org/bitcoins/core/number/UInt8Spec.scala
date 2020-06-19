@@ -25,7 +25,7 @@ class UInt8Spec extends Properties("UInt8Spec") {
     Prop.forAllNoShrink(NumberGenerator.uInt8, Gen.choose(0, 8)) {
       case (u8: UInt8, shift: Int) =>
         val r = Try(u8 << shift)
-        val expected = (u8.toLong << shift) & 0xFFL
+        val expected = (u8.toLong << shift) & 0xffL
         if (expected <= UInt8.max.toLong) {
           r.get == UInt8(expected.toShort)
         } else {
@@ -37,7 +37,7 @@ class UInt8Spec extends Properties("UInt8Spec") {
   property(">>") = {
     Prop.forAllNoShrink(NumberGenerator.uInt8, Gen.choose(0, 100)) {
       case (u8: UInt8, shift: Int) =>
-        val r = (u8 >> shift)
+        val r = u8 >> shift
         val expected =
           if (shift > 31) UInt8.zero else UInt8((u8.toLong >> shift).toShort)
         if (r != expected) {

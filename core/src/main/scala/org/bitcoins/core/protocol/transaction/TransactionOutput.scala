@@ -16,7 +16,8 @@ case class TransactionOutput(value: CurrencyUnit, scriptPubKey: ScriptPubKey)
 }
 
 final object EmptyTransactionOutput
-    extends TransactionOutput(CurrencyUnits.negativeSatoshi, ScriptPubKey.empty) {
+    extends TransactionOutput(CurrencyUnits.negativeSatoshi,
+                              ScriptPubKey.empty) {
   override def toString(): String = "EmptyTransactionOutput"
 }
 

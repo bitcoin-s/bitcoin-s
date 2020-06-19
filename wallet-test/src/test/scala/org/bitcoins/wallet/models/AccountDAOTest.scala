@@ -19,8 +19,8 @@ class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
           AccountDb(xpub, account)
         accountDAO.create(accountDb)
       }
-      found <- accountDAO.read(
-        (created.hdAccount.coin, created.hdAccount.index))
+      found <-
+        accountDAO.read((created.hdAccount.coin, created.hdAccount.index))
     } yield assert(found.contains(created))
   }
 

@@ -20,9 +20,11 @@ object LnTagPrefix {
   case object PaymentHash extends LnTagPrefix {
     override val value: Char = 'p'
   }
+
   case object Secret extends LnTagPrefix {
     override val value: Char = 's'
   }
+
   case object Description extends LnTagPrefix {
     override val value: Char = 'd'
   }

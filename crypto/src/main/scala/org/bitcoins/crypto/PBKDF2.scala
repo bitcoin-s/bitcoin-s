@@ -19,6 +19,7 @@ object PBKDF2 {
     * [[https://stackoverflow.com/questions/19348501/pbkdf2withhmacsha512-vs-pbkdf2withhmacsha1 this SO question]].
     */
   private val PSEUDO_RANDOM_FUNCTION = "PBKDF2WithHmacSHA512"
+
   private val secretKeyFactory =
     SecretKeyFactory.getInstance(PSEUDO_RANDOM_FUNCTION)
 

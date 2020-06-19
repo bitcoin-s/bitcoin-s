@@ -61,8 +61,10 @@ object TxSigComponent {
         }
       case _: P2SHScriptPubKey =>
         val p2shScriptSig = scriptSig.asInstanceOf[P2SHScriptSignature]
-        if (WitnessScriptPubKey.isWitnessScriptPubKey(
-              p2shScriptSig.redeemScript.asm)) {
+        if (
+          WitnessScriptPubKey.isWitnessScriptPubKey(
+            p2shScriptSig.redeemScript.asm)
+        ) {
           transaction match {
             case _: NonWitnessTransaction =>
               throw new IllegalArgumentException(
@@ -147,6 +149,7 @@ sealed trait WitnessTxSigComponent extends TxSigComponent {
   * against a [[org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0 P2WPKHWitnessSPKV0]] or a
   * [[org.bitcoins.core.protocol.script.P2WSHWitnessSPKV0 P2WSHWitnessSPKV0]] */
 sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
+
   override def scriptPubKey: WitnessScriptPubKey =
     output.scriptPubKey.asInstanceOf[WitnessScriptPubKey]
 
@@ -160,6 +163,7 @@ sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
 sealed abstract class WitnessTxSigComponentP2SH
     extends P2SHTxSigComponent
     with WitnessTxSigComponent {
+
   override def scriptPubKey: P2SHScriptPubKey =
     output.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
@@ -185,10 +189,11 @@ sealed abstract class WitnessTxSigComponentP2SH
 
     }
 
-  override def witnessVersion: WitnessVersion = witnessScriptPubKey match {
-    case Success(w)   => w.witnessVersion
-    case Failure(err) => throw err
-  }
+  override def witnessVersion: WitnessVersion =
+    witnessScriptPubKey match {
+      case Success(w)   => w.witnessVersion
+      case Failure(err) => throw err
+    }
 
   override def amount: CurrencyUnit = output.value
 

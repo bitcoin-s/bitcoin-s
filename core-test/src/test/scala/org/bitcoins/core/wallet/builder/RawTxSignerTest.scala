@@ -20,6 +20,7 @@ import org.bitcoins.testkit.core.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class RawTxSignerTest extends BitcoinSAsyncTest {
+
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 

@@ -180,6 +180,7 @@ case object ScriptErrorCount extends ScriptError {
 case object ScriptErrorMinimalIf extends ScriptError {
   override def description = "MINIMALIF"
 }
+
 //SCRIPT_ERR_SIG_NULLFAIL
 case object ScriptErrorSigNullFail extends ScriptError {
   override def description = "NULLFAIL"
@@ -210,6 +211,7 @@ case object ScriptErrorWitnessProgramMisMatch extends ScriptError {
 case object ScriptErrorWitnessMalleated extends ScriptError {
   override def description = "WITNESS_MALLEATED"
 }
+
 //SCRIPT_ERR_WITNESS_MALLEATED_P2SH
 case object ScriptErrorWitnessMalleatedP2SH extends ScriptError {
   override def description = "WITNESS_MALLEATED_P2SH"

@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import org.bitcoins.rpc.BitcoindException.MiscError
 
 class NodeRpcTest extends BitcoindRpcTest {
+
   lazy val clientF: Future[BitcoindRpcClient] =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 

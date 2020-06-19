@@ -33,13 +33,15 @@ class WitnessScriptPubKeySpec extends Properties("WitnessScriptPubKeySpec") {
   property("unassignedWitnessScriptPubKey serialization symmetry") =
     Prop.forAll(ScriptGenerators.unassignedWitnessScriptPubKey) {
       case (unassignedWitScriptPubKey, _) =>
-        UnassignedWitnessScriptPubKey(unassignedWitScriptPubKey.hex) == unassignedWitScriptPubKey
+        UnassignedWitnessScriptPubKey(
+          unassignedWitScriptPubKey.hex) == unassignedWitScriptPubKey
     }
 
   property("unassignedWitnessScriptPubKey fromAsm symmetry") =
     Prop.forAll(ScriptGenerators.unassignedWitnessScriptPubKey) {
       case (unassignedWitScriptPubKey, _) =>
-        UnassignedWitnessScriptPubKey.fromAsm(unassignedWitScriptPubKey.asm) == unassignedWitScriptPubKey
+        UnassignedWitnessScriptPubKey.fromAsm(
+          unassignedWitScriptPubKey.asm) == unassignedWitScriptPubKey
     }
 
   property("witnessScriptPubKey fromAsm symmetry") = {

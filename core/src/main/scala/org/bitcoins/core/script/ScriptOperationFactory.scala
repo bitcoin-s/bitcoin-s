@@ -63,6 +63,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
       None
     }
   }
+
   private lazy val scriptOpMap: Map[Byte, ScriptOperation] = {
     operations.map(o => (o.toByte, o)).toMap
   }

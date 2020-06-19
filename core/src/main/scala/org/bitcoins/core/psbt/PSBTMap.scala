@@ -64,7 +64,8 @@ object PSBTMap {
 }
 
 sealed trait PSBTMapFactory[
-    RecordType <: PSBTRecord, MapType <: PSBTMap[RecordType]]
+    RecordType <: PSBTRecord,
+    MapType <: PSBTMap[RecordType]]
     extends Factory[MapType] {
   def recordFactory: Factory[RecordType]
 
@@ -152,6 +153,7 @@ case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord])
 object GlobalPSBTMap extends PSBTMapFactory[GlobalPSBTRecord, GlobalPSBTMap] {
 
   override def recordFactory: Factory[GlobalPSBTRecord] = GlobalPSBTRecord
+
   override def constructMap(elements: Vector[GlobalPSBTRecord]): GlobalPSBTMap =
     GlobalPSBTMap(elements)
 }
@@ -255,8 +257,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     def wipeAndAdd(
         scriptSig: ScriptSignature,
         witnessOpt: Option[ScriptWitness] = None): InputPSBTMap = {
-      val utxos = getRecords(WitnessUTXOKeyId) ++ getRecords(
-        NonWitnessUTXOKeyId)
+      val utxos =
+        getRecords(WitnessUTXOKeyId) ++ getRecords(NonWitnessUTXOKeyId)
       val unknowns =
         elements.filter(_.isInstanceOf[InputPSBTRecord.Unknown])
 
@@ -505,8 +507,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   def toUTXOSatisfyingInfoUsingSigners(
       txIn: TransactionInput,
       signers: Vector[Sign],
-      conditionalPath: ConditionalPath = ConditionalPath.NoCondition): ScriptSignatureParams[
-    InputInfo] = {
+      conditionalPath: ConditionalPath =
+        ConditionalPath.NoCondition): ScriptSignatureParams[InputInfo] = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
 
     val infoSingle =
@@ -522,8 +524,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   def toUTXOSigningInfo(
       txIn: TransactionInput,
       signer: Sign,
-      conditionalPath: ConditionalPath = ConditionalPath.NoCondition): ECSignatureParams[
-    InputInfo] = {
+      conditionalPath: ConditionalPath =
+        ConditionalPath.NoCondition): ECSignatureParams[InputInfo] = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
     val outPoint = txIn.previousOutput
 
@@ -549,9 +551,11 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     val scriptWitnessOpt =
       if (scriptWitnessVec.size == 1) {
         Some(P2WSHWitnessV0(scriptWitnessVec.head.witnessScript))
-      } else if (output.scriptPubKey
-                   .isInstanceOf[P2WPKHWitnessSPKV0] || redeemScriptOpt.exists(
-                   _.isInstanceOf[P2WPKHWitnessSPKV0])) {
+      } else if (
+        output.scriptPubKey
+          .isInstanceOf[P2WPKHWitnessSPKV0] || redeemScriptOpt.exists(
+          _.isInstanceOf[P2WPKHWitnessSPKV0])
+      ) {
         Some(P2WPKHWitnessV0(signer.publicKey))
       } else {
         None
@@ -578,8 +582,10 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       case _: WitnessScriptPubKey =>
         filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
       case _: P2SHScriptPubKey =>
-        if (redeemScriptOpt.isDefined && redeemScriptOpt.get.redeemScript
-              .isInstanceOf[WitnessScriptPubKey]) {
+        if (
+          redeemScriptOpt.isDefined && redeemScriptOpt.get.redeemScript
+            .isInstanceOf[WitnessScriptPubKey]
+        ) {
           filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
         } else {
           elements
@@ -636,8 +642,8 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
   def finalizedFromNewSpendingInfo(
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
-      nonWitnessTxOpt: Option[Transaction])(
-      implicit ec: ExecutionContext): Future[InputPSBTMap] = {
+      nonWitnessTxOpt: Option[Transaction])(implicit
+      ec: ExecutionContext): Future[InputPSBTMap] = {
     val sigComponentF = BitcoinSigner
       .sign(spendingInfo, unsignedTx, isDummySignature = false)
 
@@ -680,8 +686,8 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
   def fromUTXOInfo(
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
-      nonWitnessTxOpt: Option[Transaction])(
-      implicit ec: ExecutionContext): Future[InputPSBTMap] = {
+      nonWitnessTxOpt: Option[Transaction])(implicit
+      ec: ExecutionContext): Future[InputPSBTMap] = {
     val sigsF = spendingInfo.toSingles.map { spendingInfoSingle =>
       BitcoinSigner.signSingle(spendingInfoSingle,
                                unsignedTx,
@@ -737,6 +743,7 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
     InputPSBTMap(elements)
   override def recordFactory: Factory[InputPSBTRecord] = InputPSBTRecord
 }
+
 case class OutputPSBTMap(elements: Vector[OutputPSBTRecord])
     extends SeqWrapper[OutputPSBTRecord]
     with PSBTMap[OutputPSBTRecord] {
@@ -778,6 +785,7 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord])
 
 object OutputPSBTMap extends PSBTMapFactory[OutputPSBTRecord, OutputPSBTMap] {
   override def recordFactory: Factory[OutputPSBTRecord] = OutputPSBTRecord
+
   override def constructMap(elements: Vector[OutputPSBTRecord]): OutputPSBTMap =
     OutputPSBTMap(elements)
 }

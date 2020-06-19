@@ -11,8 +11,8 @@ object FutureUtil {
     * @param fun A function that transforms each element into a future
     * @return The processed elements
     */
-  def sequentially[T, U](items: Seq[T])(fun: T => Future[U])(
-      implicit ec: ExecutionContext): Future[List[U]] = {
+  def sequentially[T, U](items: Seq[T])(fun: T => Future[U])(implicit
+      ec: ExecutionContext): Future[List[U]] = {
     val init = Future.successful(List.empty[U])
     items.foldLeft(init) { (f, item) =>
       f.flatMap { x =>
@@ -44,7 +44,7 @@ object FutureUtil {
 
   /** Takes elements, groups them into batches of 'batchSize' and then calls f on them.
     * The next batch does not start executing until the first batch is finished
-    * */
+    */
   def batchExecute[T, U](
       elements: Vector[T],
       f: Vector[T] => Future[U],

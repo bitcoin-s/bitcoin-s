@@ -16,6 +16,7 @@ import org.bitcoins.wallet.models.{SegwitV0SpendingInfo, SpendingInfoDb}
 import org.scalatest.FutureOutcome
 
 class CoinSelectorTest extends BitcoinSWalletTest {
+
   case class CoinSelectionFixture(
       output: TransactionOutput,
       feeRate: FeeUnit,
@@ -94,9 +95,12 @@ class CoinSelectorTest extends BitcoinSWalletTest {
   }
 
   it must "correctly approximate transaction input size" in { fixture =>
-    val expected1 = 32 + 4 + 1 + 4 + fixture.utxo1.scriptWitnessOpt.get.bytes.length
-    val expected2 = 32 + 4 + 1 + 4 + fixture.utxo2.scriptWitnessOpt.get.bytes.length
-    val expected3 = 32 + 4 + 1 + 4 + fixture.utxo3.scriptWitnessOpt.get.bytes.length
+    val expected1 =
+      32 + 4 + 1 + 4 + fixture.utxo1.scriptWitnessOpt.get.bytes.length
+    val expected2 =
+      32 + 4 + 1 + 4 + fixture.utxo2.scriptWitnessOpt.get.bytes.length
+    val expected3 =
+      32 + 4 + 1 + 4 + fixture.utxo3.scriptWitnessOpt.get.bytes.length
 
     assert(CoinSelector.approximateUtxoSize(fixture.utxo1) == expected1)
     assert(CoinSelector.approximateUtxoSize(fixture.utxo2) == expected2)

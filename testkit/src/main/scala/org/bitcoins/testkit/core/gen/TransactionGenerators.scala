@@ -206,9 +206,10 @@ object TransactionGenerators extends BitcoinSLogger {
       //revert to using the `BaseTransaction` serialization format
       //notice we use the old serialization format if all witnesses are empty
       //https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281
-      witness <- WitnessGenerators
-        .transactionWitness(is.size)
-        .suchThat(_.witnesses.exists(_ != EmptyScriptWitness))
+      witness <-
+        WitnessGenerators
+          .transactionWitness(is.size)
+          .suchThat(_.witnesses.exists(_ != EmptyScriptWitness))
     } yield WitnessTransaction(version, is, outputs, lockTime, witness)
   }
 
@@ -235,12 +236,12 @@ object TransactionGenerators extends BitcoinSLogger {
     */
   def signedP2PKTransaction: Gen[(BaseTxSigComponent, ECPrivateKey)] =
     for {
-      (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators
-        .signedP2PKScriptSignature
+      (signedScriptSig, scriptPubKey, privateKey) <-
+        ScriptGenerators
+          .signedP2PKScriptSignature
       (creditingTx, outputIndex) = buildCreditingTransaction(scriptPubKey)
-      (signedTx, inputIndex) = buildSpendingTransaction(creditingTx,
-                                                        signedScriptSig,
-                                                        outputIndex)
+      (signedTx, inputIndex) =
+        buildSpendingTransaction(creditingTx, signedScriptSig, outputIndex)
       output = creditingTx.outputs(outputIndex.toInt)
       signedTxSignatureComponent = BaseTxSigComponent(
         signedTx,
@@ -257,12 +258,12 @@ object TransactionGenerators extends BitcoinSLogger {
     */
   def signedP2PKHTransaction: Gen[(BaseTxSigComponent, ECPrivateKey)] =
     for {
-      (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators
-        .signedP2PKHScriptSignature
+      (signedScriptSig, scriptPubKey, privateKey) <-
+        ScriptGenerators
+          .signedP2PKHScriptSignature
       (creditingTx, outputIndex) = buildCreditingTransaction(scriptPubKey)
-      (signedTx, inputIndex) = buildSpendingTransaction(creditingTx,
-                                                        signedScriptSig,
-                                                        outputIndex)
+      (signedTx, inputIndex) =
+        buildSpendingTransaction(creditingTx, signedScriptSig, outputIndex)
       output = creditingTx.outputs(outputIndex.toInt)
       signedTxSignatureComponent = BaseTxSigComponent(
         signedTx,
@@ -279,12 +280,12 @@ object TransactionGenerators extends BitcoinSLogger {
     */
   def signedMultiSigTransaction: Gen[(BaseTxSigComponent, Seq[ECPrivateKey])] =
     for {
-      (signedScriptSig, scriptPubKey, privateKeys) <- ScriptGenerators
-        .signedMultiSignatureScriptSignature
+      (signedScriptSig, scriptPubKey, privateKeys) <-
+        ScriptGenerators
+          .signedMultiSignatureScriptSignature
       (creditingTx, outputIndex) = buildCreditingTransaction(scriptPubKey)
-      (signedTx, inputIndex) = buildSpendingTransaction(creditingTx,
-                                                        signedScriptSig,
-                                                        outputIndex)
+      (signedTx, inputIndex) =
+        buildSpendingTransaction(creditingTx, signedScriptSig, outputIndex)
       output = creditingTx.outputs(outputIndex.toInt)
       signedTxSignatureComponent = BaseTxSigComponent(
         signedTx,
@@ -300,13 +301,13 @@ object TransactionGenerators extends BitcoinSLogger {
     */
   def signedP2SHTransaction: Gen[(BaseTxSigComponent, Seq[ECPrivateKey])] =
     for {
-      (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators
-        .signedP2SHScriptSignature
+      (signedScriptSig, scriptPubKey, privateKey) <-
+        ScriptGenerators
+          .signedP2SHScriptSignature
       (creditingTx, outputIndex) = buildCreditingTransaction(
         signedScriptSig.redeemScript)
-      (signedTx, inputIndex) = buildSpendingTransaction(creditingTx,
-                                                        signedScriptSig,
-                                                        outputIndex)
+      (signedTx, inputIndex) =
+        buildSpendingTransaction(creditingTx, signedScriptSig, outputIndex)
       output = TransactionOutput(creditingTx.outputs(outputIndex.toInt).value,
                                  scriptPubKey)
       signedTxSignatureComponent = BaseTxSigComponent(
@@ -335,8 +336,9 @@ object TransactionGenerators extends BitcoinSLogger {
     for {
       (cltvLockTime, txLockTime) <- unspendableCLTVValues
       sequence <- NumberGenerator.uInt32s.suchThat(n => n < UInt32.max)
-      (scriptSig, scriptPubKey, privKeys) <- ScriptGenerators
-        .signedCLTVScriptSignature(cltvLockTime, txLockTime, sequence)
+      (scriptSig, scriptPubKey, privKeys) <-
+        ScriptGenerators
+          .signedCLTVScriptSignature(cltvLockTime, txLockTime, sequence)
       unspendable = lockTimeTxHelper(scriptSig,
                                      scriptPubKey,
                                      privKeys,
@@ -354,8 +356,9 @@ object TransactionGenerators extends BitcoinSLogger {
     for {
       (cltvLockTime, txLockTime) <- spendableCLTVValues
       sequence <- NumberGenerator.uInt32s.suchThat(n => n < UInt32.max)
-      (scriptSig, scriptPubKey, privKeys) <- ScriptGenerators
-        .signedCLTVScriptSignature(cltvLockTime, txLockTime, sequence)
+      (scriptSig, scriptPubKey, privKeys) <-
+        ScriptGenerators
+          .signedCLTVScriptSignature(cltvLockTime, txLockTime, sequence)
       spendable = lockTimeTxHelper(scriptSig,
                                    scriptPubKey,
                                    privKeys,
@@ -386,8 +389,9 @@ object TransactionGenerators extends BitcoinSLogger {
       csvScriptNum: ScriptNumber,
       sequence: UInt32): Gen[(BaseTxSigComponent, Seq[ECPrivateKey])] =
     for {
-      (signedScriptSig, csvScriptPubKey, privateKeys) <- ScriptGenerators
-        .signedCSVScriptSignature(csvScriptNum, sequence)
+      (signedScriptSig, csvScriptPubKey, privateKeys) <-
+        ScriptGenerators
+          .signedCSVScriptSignature(csvScriptNum, sequence)
     } yield lockTimeTxHelper(signedScriptSig,
                              csvScriptPubKey,
                              privateKeys,
@@ -398,7 +402,8 @@ object TransactionGenerators extends BitcoinSLogger {
     * it's inputs signed correctly */
   def signedP2WPKHTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] =
     for {
-      (_, wBaseTxSigComponent, privKeys) <- WitnessGenerators.signedP2WPKHTransactionWitness
+      (_, wBaseTxSigComponent, privKeys) <-
+        WitnessGenerators.signedP2WPKHTransactionWitness
     } yield (wBaseTxSigComponent, privKeys)
 
   /** Generates a [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] that has an input
@@ -406,7 +411,8 @@ object TransactionGenerators extends BitcoinSLogger {
   def signedP2WSHP2PKTransaction: Gen[
     (WitnessTxSigComponentRaw, Seq[ECPrivateKey])] =
     for {
-      (_, wBaseTxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHP2PKTransactionWitness
+      (_, wBaseTxSigComponent, privKeys) <-
+        WitnessGenerators.signedP2WSHP2PKTransactionWitness
     } yield (wBaseTxSigComponent, privKeys)
 
   /** Generates a [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] that has an
@@ -414,24 +420,26 @@ object TransactionGenerators extends BitcoinSLogger {
   def signedP2WSHP2PKHTransaction: Gen[
     (WitnessTxSigComponentRaw, Seq[ECPrivateKey])] =
     for {
-      (_, wBaseTxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHP2PKHTransactionWitness
+      (_, wBaseTxSigComponent, privKeys) <-
+        WitnessGenerators.signedP2WSHP2PKHTransactionWitness
     } yield (wBaseTxSigComponent, privKeys)
 
   def signedP2WSHMultiSigTransaction: Gen[
     (WitnessTxSigComponentRaw, Seq[ECPrivateKey])] =
     for {
-      (_, wBaseTxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHMultiSigTransactionWitness
+      (_, wBaseTxSigComponent, privKeys) <-
+        WitnessGenerators.signedP2WSHMultiSigTransactionWitness
     } yield (wBaseTxSigComponent, privKeys)
 
   /** Creates a signed P2SH(P2WPKH) transaction */
   def signedP2SHP2WPKHTransaction: Gen[
     (WitnessTxSigComponent, Seq[ECPrivateKey])] =
     for {
-      (signedScriptSig, scriptPubKey, privKeys, witness, amount) <- ScriptGenerators
-        .signedP2SHP2WPKHScriptSignature
-      (creditingTx, outputIndex) = buildCreditingTransaction(
-        signedScriptSig.redeemScript,
-        amount)
+      (signedScriptSig, scriptPubKey, privKeys, witness, amount) <-
+        ScriptGenerators
+          .signedP2SHP2WPKHScriptSignature
+      (creditingTx, outputIndex) =
+        buildCreditingTransaction(signedScriptSig.redeemScript, amount)
       (signedTx, inputIndex) = buildSpendingTransaction(
         TransactionConstants.validLockVersion,
         creditingTx,
@@ -458,16 +466,18 @@ object TransactionGenerators extends BitcoinSLogger {
   def signedP2SHP2WSHTransaction: Gen[
     (WitnessTxSigComponent, Seq[ECPrivateKey])] =
     for {
-      (witness, wBaseTxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHTransactionWitness
+      (witness, wBaseTxSigComponent, privKeys) <-
+        WitnessGenerators.signedP2WSHTransactionWitness
       p2shScriptPubKey = P2SHScriptPubKey(wBaseTxSigComponent.scriptPubKey)
       p2shScriptSig = P2SHScriptSignature(
         wBaseTxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
       (creditingTx, outputIndex) = buildCreditingTransaction(
         p2shScriptSig.redeemScript,
         wBaseTxSigComponent.amount)
-      sequence = wBaseTxSigComponent.transaction
-        .inputs(wBaseTxSigComponent.inputIndex.toInt)
-        .sequence
+      sequence =
+        wBaseTxSigComponent.transaction
+          .inputs(wBaseTxSigComponent.inputIndex.toInt)
+          .sequence
       locktime = wBaseTxSigComponent.transaction.lockTime
       (signedTx, inputIndex) = buildSpendingTransaction(
         TransactionConstants.validLockVersion,
@@ -734,12 +744,13 @@ object TransactionGenerators extends BitcoinSLogger {
   private def lockByBlockHeightBitSet: UInt32 = UInt32("ffbfffff")
 
   /** Generates a [[org.bitcoins.core.number.UInt32 UInt32]] s.t. the block height bit is set according to BIP68 */
-  private def sequenceForBlockHeight: Gen[UInt32] = validCSVSequence.map { n =>
-    val result: UInt32 = n & lockByBlockHeightBitSet
-    require(LockTimeInterpreter.isCSVLockByBlockHeight(result),
-            "Block height locktime bit was not set: " + result)
-    result
-  }
+  private def sequenceForBlockHeight: Gen[UInt32] =
+    validCSVSequence.map { n =>
+      val result: UInt32 = n & lockByBlockHeightBitSet
+      require(LockTimeInterpreter.isCSVLockByBlockHeight(result),
+              "Block height locktime bit was not set: " + result)
+      result
+    }
 
   /** Generates a [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] and
     * [[org.bitcoins.core.number.UInt32 UInt32]] s.t. the pair can be spent by an OP_CSV operation */
@@ -758,13 +769,13 @@ object TransactionGenerators extends BitcoinSLogger {
   }
 
   /** Generates a [[org.bitcoins.core.number.UInt32 UInt32]] with the locktime bit set according to BIP68 */
-  private def sequenceForRelativeLockTime: Gen[UInt32] = validCSVSequence.map {
-    n =>
+  private def sequenceForRelativeLockTime: Gen[UInt32] =
+    validCSVSequence.map { n =>
       val result = n | TransactionConstants.sequenceLockTimeTypeFlag
       require(LockTimeInterpreter.isCSVLockByRelativeLockTime(result),
               "Relative locktime bit was not set: " + result)
       result
-  }
+    }
 
   /** Generates a valid [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] and
     * [[org.bitcoins.core.number.UInt32 UInt32]] s.t. the pair will evaluate to true by a OP_CSV operation */
@@ -785,13 +796,14 @@ object TransactionGenerators extends BitcoinSLogger {
 
   /** Generates a [[org.bitcoins.core.number.UInt32 UInt32]] s.t. the locktime enabled flag is set.
     * See [[https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki BIP68]] for more info */
-  private def validCSVSequence: Gen[UInt32] = NumberGenerator.uInt32s.map { n =>
-    //makes sure the 1 << 31 is TURNED OFF,
-    //need this to generate spendable CSV values without discarding a bunch of test cases
-    val result = n & UInt32(0x7FFFFFFF)
-    require(LockTimeInterpreter.isLockTimeBitOff(ScriptNumber(result.toLong)))
-    result
-  }
+  private def validCSVSequence: Gen[UInt32] =
+    NumberGenerator.uInt32s.map { n =>
+      //makes sure the 1 << 31 is TURNED OFF,
+      //need this to generate spendable CSV values without discarding a bunch of test cases
+      val result = n & UInt32(0x7fffffff)
+      require(LockTimeInterpreter.isLockTimeBitOff(ScriptNumber(result.toLong)))
+      result
+    }
 
   /**
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that
@@ -801,9 +813,10 @@ object TransactionGenerators extends BitcoinSLogger {
   def unspendableCSVValues: Gen[(ScriptNumber, UInt32)] =
     (for {
       sequence <- NumberGenerator.uInt32s
-      csvScriptNum <- NumberGenerator.uInt32s
-        .map(x => ScriptNumber(x.toLong))
-        .suchThat(x => LockTimeInterpreter.isLockTimeBitOff(x))
+      csvScriptNum <-
+        NumberGenerator.uInt32s
+          .map(x => ScriptNumber(x.toLong))
+          .suchThat(x => LockTimeInterpreter.isLockTimeBitOff(x))
     } yield (csvScriptNum, sequence)).suchThat(x => !csvLockTimesOfSameType(x))
 
   /** generates a [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] and

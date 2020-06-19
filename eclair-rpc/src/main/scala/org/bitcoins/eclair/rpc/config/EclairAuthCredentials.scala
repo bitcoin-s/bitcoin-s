@@ -50,6 +50,7 @@ sealed trait EclairAuthCredentials {
   * [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
   */
 object EclairAuthCredentials {
+
   private case class AuthCredentialsImpl(
       password: String,
       bitcoinAuthOpt: Option[BitcoindAuthCredentials],

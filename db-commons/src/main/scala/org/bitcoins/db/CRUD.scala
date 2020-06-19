@@ -15,8 +15,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * You are responsible for the create function. You also need to specify
   * the table and the database you are connecting to.
   */
-abstract class CRUD[T, PrimaryKeyType](
-    implicit private val ec: ExecutionContext,
+abstract class CRUD[T, PrimaryKeyType](implicit
+    private val ec: ExecutionContext,
     override val appConfig: AppConfig)
     extends JdbcProfileComponent[AppConfig] {
 
@@ -177,7 +177,9 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
 
   /** Logs the given action and error, if we are not on mainnet */
   private def logAndThrowError(
-      action: DBIOAction[_, NoStream, _]): PartialFunction[Throwable, Nothing] = {
+      action: DBIOAction[_, NoStream, _]): PartialFunction[
+    Throwable,
+    Nothing] = {
     case err: SQLException =>
       logger.error(
         s"Error when executing query ${action.getDumpInfo.getNamePlusMainInfo}")
@@ -186,8 +188,8 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
   }
 
   /** Runs the given DB action */
-  def run[R](action: DBIOAction[R, NoStream, _])(
-      implicit ec: ExecutionContext): Future[R] = {
+  def run[R](action: DBIOAction[R, NoStream, _])(implicit
+      ec: ExecutionContext): Future[R] = {
     val result =
       if (sqlite) database.run[R](foreignKeysPragma >> action)
       else database.run[R](action)
@@ -198,8 +200,8 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
     * Runs the given DB sequence-returning DB action
     * and converts the result to a vector
     */
-  def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(
-      implicit ec: ExecutionContext): Future[Vector[R]] = {
+  def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(implicit
+      ec: ExecutionContext): Future[Vector[R]] = {
     val result =
       if (sqlite) database.run[Seq[R]](foreignKeysPragma >> action)
       else database.run[Seq[R]](action)

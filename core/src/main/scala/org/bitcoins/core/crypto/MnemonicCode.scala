@@ -28,9 +28,10 @@ sealed abstract class MnemonicCode
   )
 
   require({
-    val entropy = toEntropyWithChecksum
-    isEntropyWithChecksumValid(entropy)
-  }, "Entropy checksum is not valid!")
+            val entropy = toEntropyWithChecksum
+            isEntropyWithChecksumValid(entropy)
+          },
+          "Entropy checksum is not valid!")
 
   /**
     * Checks that the provided entropy has a valid checksum

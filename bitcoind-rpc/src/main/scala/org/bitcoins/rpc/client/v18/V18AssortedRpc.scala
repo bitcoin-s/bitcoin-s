@@ -1,4 +1,5 @@
 package org.bitcoins.rpc.client.v18
+
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetNodeAddressesResult,
   GetRpcInfoResult,

@@ -90,6 +90,7 @@ case class UnassignedWitness(version: ScriptNumberOperation)
     WitnessScriptPubKey.unassignedWitVersions.contains(version),
     "Cannot created an unassigend witness version from one that is assigned already, got: " + version
   )
+
   override def rebuild(
       scriptWitness: ScriptWitness,
       witnessProgram: Seq[ScriptToken]): Either[
@@ -112,12 +113,14 @@ object WitnessVersion {
           "OP_1NEGATE is not a valid witness version")
     }
 
-  def apply(token: ScriptToken): WitnessVersion = token match {
-    case scriptNumberOp: ScriptNumberOperation => WitnessVersion(scriptNumberOp)
-    case _: ScriptConstant | _: ScriptNumber | _: ScriptOperation =>
-      throw new IllegalArgumentException(
-        "We can only have witness version that is a script number operation, i.e OP_0 through OP_16")
-  }
+  def apply(token: ScriptToken): WitnessVersion =
+    token match {
+      case scriptNumberOp: ScriptNumberOperation =>
+        WitnessVersion(scriptNumberOp)
+      case _: ScriptConstant | _: ScriptNumber | _: ScriptOperation =>
+        throw new IllegalArgumentException(
+          "We can only have witness version that is a script number operation, i.e OP_0 through OP_16")
+    }
 
   def apply(int: Int): Option[WitnessVersion] =
     ScriptNumberOperation.fromNumber(int).map(WitnessVersion(_))

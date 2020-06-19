@@ -190,8 +190,9 @@ object CurrencyUnits extends Numeric[CurrencyUnit] {
   override val zero: CurrencyUnit = Satoshis.zero
   val negativeSatoshi = Satoshis(-1)
 
-  def toSatoshis(unit: CurrencyUnit): Satoshis = unit match {
-    case b: Bitcoins => b.satoshis
-    case x: Satoshis => x
-  }
+  def toSatoshis(unit: CurrencyUnit): Satoshis =
+    unit match {
+      case b: Bitcoins => b.satoshis
+      case x: Satoshis => x
+    }
 }

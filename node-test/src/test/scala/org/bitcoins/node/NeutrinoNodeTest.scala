@@ -59,7 +59,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
 
   behavior of "NeutrinoNode"
 
-  it must "receive notification that a block occurred on the p2p network" taggedAs (UsesExperimentalBitcoind) in {
+  it must "receive notification that a block occurred on the p2p network" taggedAs UsesExperimentalBitcoind in {
     nodeConnectedWithBitcoind: NeutrinoNodeFundedWalletBitcoind =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoindRpc
@@ -87,7 +87,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
       }
   }
 
-  it must "stay in sync with a bitcoind instance" taggedAs (UsesExperimentalBitcoind) in {
+  it must "stay in sync with a bitcoind instance" taggedAs UsesExperimentalBitcoind in {
     nodeConnectedWithBitcoind: NeutrinoNodeFundedWalletBitcoind =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoindRpc
@@ -124,25 +124,31 @@ class NeutrinoNodeTest extends NodeUnitTest {
         val ExpectedCount = 113
 
         def hasBlocksF =
-          RpcUtil.retryUntilSatisfiedF(conditionF = () => {
-            node
-              .chainApiFromDb()
-              .flatMap(_.getBlockCount.map(_ == ExpectedCount))
-          }, duration = 1000.millis)
+          RpcUtil.retryUntilSatisfiedF(
+            conditionF = () => {
+              node
+                .chainApiFromDb()
+                .flatMap(_.getBlockCount.map(_ == ExpectedCount))
+            },
+            duration = 1000.millis)
 
         def hasFilterHeadersF =
-          RpcUtil.retryUntilSatisfiedF(conditionF = () => {
-            node
-              .chainApiFromDb()
-              .flatMap(_.getFilterHeaderCount.map(_ == ExpectedCount))
-          }, duration = 1000.millis)
+          RpcUtil.retryUntilSatisfiedF(
+            conditionF = () => {
+              node
+                .chainApiFromDb()
+                .flatMap(_.getFilterHeaderCount.map(_ == ExpectedCount))
+            },
+            duration = 1000.millis)
 
         def hasFiltersF =
-          RpcUtil.retryUntilSatisfiedF(conditionF = () => {
-            node
-              .chainApiFromDb()
-              .flatMap(_.getFilterCount.map(_ == ExpectedCount))
-          }, duration = 1000.millis)
+          RpcUtil.retryUntilSatisfiedF(
+            conditionF = () => {
+              node
+                .chainApiFromDb()
+                .flatMap(_.getFilterCount.map(_ == ExpectedCount))
+            },
+            duration = 1000.millis)
 
         for {
           _ <- hasBlocksF

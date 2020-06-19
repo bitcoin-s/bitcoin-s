@@ -45,10 +45,11 @@ object HashType extends Factory[HashType] {
   }
 
   /** Returns a hashtype's default byte value */
-  def byte(hashType: HashType): Byte = hashType match {
-    case _: SIGHASH_ALL => sigHashAllByte
-    case h: HashType    => h.byte
-  }
+  def byte(hashType: HashType): Byte =
+    hashType match {
+      case _: SIGHASH_ALL => sigHashAllByte
+      case h: HashType    => h.byte
+    }
 
   def isSigHashAllOne(num: Int32): Boolean = (num & Int32(0x1f)) == Int32(1)
 
@@ -72,12 +73,14 @@ object HashType extends Factory[HashType] {
   }
 
   def isSigHashAll(num: Int32): Boolean = {
-    if (!(isSigHashNone(num) ||
-          isSigHashSingle(num) ||
-          isSigHashAnyoneCanPay(num) ||
-          isSigHashAllAnyoneCanPay(num) ||
-          isSigHashSingleAnyoneCanPay(num) ||
-          isSigHashNoneAnyoneCanPay(num))) true
+    if (
+      !(isSigHashNone(num) ||
+        isSigHashSingle(num) ||
+        isSigHashAnyoneCanPay(num) ||
+        isSigHashAllAnyoneCanPay(num) ||
+        isSigHashSingleAnyoneCanPay(num) ||
+        isSigHashNoneAnyoneCanPay(num))
+    ) true
     else false
   }
 
@@ -88,12 +91,13 @@ object HashType extends Factory[HashType] {
   }
 
   /** Checks if the given hash type has the ANYONECANPAY bit set */
-  def isAnyoneCanPay(hashType: HashType): Boolean = hashType match {
-    case _: SIGHASH_ANYONECANPAY | _: SIGHASH_ALL_ANYONECANPAY |
-        _: SIGHASH_SINGLE_ANYONECANPAY | _: SIGHASH_NONE_ANYONECANPAY =>
-      true
-    case _: SIGHASH_ALL | _: SIGHASH_SINGLE | _: SIGHASH_NONE => false
-  }
+  def isAnyoneCanPay(hashType: HashType): Boolean =
+    hashType match {
+      case _: SIGHASH_ANYONECANPAY | _: SIGHASH_ALL_ANYONECANPAY |
+          _: SIGHASH_SINGLE_ANYONECANPAY | _: SIGHASH_NONE_ANYONECANPAY =>
+        true
+      case _: SIGHASH_ALL | _: SIGHASH_SINGLE | _: SIGHASH_NONE => false
+    }
 
   lazy val hashTypes = Seq(sigHashAll,
                            sigHashNone,
@@ -155,7 +159,7 @@ object HashType extends Factory[HashType] {
   val sigHashAllAnyoneCanPayByte =
     (HashType.sigHashAllByte | HashType.sigHashAnyoneCanPayByte).toByte
 
-  val sigHashAllAnyoneCanPayNum = (Int32(sigHashAllByte) | sigHashAnyoneCanPayNum)
+  val sigHashAllAnyoneCanPayNum = Int32(sigHashAllByte) | sigHashAnyoneCanPayNum
 
   val sigHashAllAnyoneCanPay = SIGHASH_ALL_ANYONECANPAY(
     sigHashAllAnyoneCanPayNum)
@@ -163,7 +167,8 @@ object HashType extends Factory[HashType] {
   val sigHashNoneAnyoneCanPayByte =
     (HashType.sigHashNoneByte | HashType.sigHashAnyoneCanPayByte).toByte
 
-  val sigHashNoneAnyoneCanPayNum = (Int32(sigHashNoneByte) | sigHashAnyoneCanPayNum)
+  val sigHashNoneAnyoneCanPayNum =
+    Int32(sigHashNoneByte) | sigHashAnyoneCanPayNum
 
   val sigHashNoneAnyoneCanPay = SIGHASH_NONE_ANYONECANPAY(
     sigHashNoneAnyoneCanPayNum)
@@ -171,7 +176,8 @@ object HashType extends Factory[HashType] {
   val sigHashSingleAnyoneCanPayByte =
     (HashType.sigHashSingleByte | HashType.sigHashAnyoneCanPayByte).toByte
 
-  val sigHashSingleAnyoneCanPayNum = (Int32(sigHashSingleByte) | sigHashAnyoneCanPayNum)
+  val sigHashSingleAnyoneCanPayNum =
+    Int32(sigHashSingleByte) | sigHashAnyoneCanPayNum
 
   val sigHashSingleAnyoneCanPay = SIGHASH_SINGLE_ANYONECANPAY(
     sigHashSingleAnyoneCanPayNum)

@@ -8,6 +8,7 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 import scala.concurrent.Future
 
 class UTXORpcTest extends BitcoindRpcTest {
+
   lazy val clientF: Future[BitcoindRpcClient] =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 

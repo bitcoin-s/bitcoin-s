@@ -39,6 +39,7 @@ case object OP_XOR extends BitwiseOperation {
 }
 
 object BitwiseOperation extends ScriptOperationFactory[BitwiseOperation] {
+
   override val operations =
     Vector(OP_EQUAL, OP_EQUALVERIFY, OP_INVERT, OP_AND, OP_OR, OP_XOR)
 }

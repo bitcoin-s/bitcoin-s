@@ -8,8 +8,8 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class CompactFilterDAO()(
-    implicit ec: ExecutionContext,
+case class CompactFilterDAO()(implicit
+    ec: ExecutionContext,
     override val appConfig: ChainAppConfig)
     extends CRUD[CompactFilterDb, DoubleSha256DigestBE]
     with SlickUtil[CompactFilterDb, DoubleSha256DigestBE] {
@@ -20,6 +20,7 @@ case class CompactFilterDAO()(
     filterTypeMapper
   }
   import profile.api._
+
   implicit private val bigIntMapper: BaseColumnType[BigInt] =
     if (appConfig.driverName == "postgresql") {
       mappers.bigIntPostgresMapper
@@ -45,7 +46,11 @@ case class CompactFilterDAO()(
     def hashIndex = index("cfilters_hash_index", hash)
 
     override def * = {
-      (hash, filterType, bytes, height, blockHash) <> (CompactFilterDb.tupled, CompactFilterDb.unapply)
+      (hash,
+       filterType,
+       bytes,
+       height,
+       blockHash) <> (CompactFilterDb.tupled, CompactFilterDb.unapply)
     }
   }
 

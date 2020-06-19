@@ -66,23 +66,28 @@ sealed abstract class Transaction extends NetworkElement {
     * Base transaction size is the size of the transaction serialised with the witness data stripped
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
     */
-  def baseSize: Long = this match {
-    case btx: NonWitnessTransaction => btx.byteSize
-    case wtx: WitnessTransaction =>
-      BaseTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime).baseSize
-  }
+  def baseSize: Long =
+    this match {
+      case btx: NonWitnessTransaction => btx.byteSize
+      case wtx: WitnessTransaction =>
+        BaseTransaction(wtx.version,
+                        wtx.inputs,
+                        wtx.outputs,
+                        wtx.lockTime).baseSize
+    }
 
   def totalSize: Long = bytes.size
 
   /** Determines if this transaction is a coinbase transaction. */
-  def isCoinbase: Boolean = inputs.size match {
-    case 1 =>
-      inputs.head match {
-        case _: CoinbaseInput    => true
-        case _: TransactionInput => false
-      }
-    case _: Int => false
-  }
+  def isCoinbase: Boolean =
+    inputs.size match {
+      case 1 =>
+        inputs.head match {
+          case _: CoinbaseInput    => true
+          case _: TransactionInput => false
+        }
+      case _: Int => false
+    }
 
   /** Updates the input at the given index and returns the new transaction with that input updated */
   def updateInput(idx: Int, i: TransactionInput): Transaction = {
@@ -106,7 +111,10 @@ object Transaction extends Factory[Transaction] {
   override def fromBytes(bytes: ByteVector): Transaction = {
     //see BIP141 for marker/flag bytes
     //https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id
-    if (bytes(4) == WitnessTransaction.marker && bytes(5) == WitnessTransaction.flag) {
+    if (
+      bytes(4) == WitnessTransaction.marker && bytes(
+        5) == WitnessTransaction.flag
+    ) {
       //this throw/catch is _still_ necessary for the case where we have unsigned base transactions
       //with zero inputs and 1 output which is serialized as "0001" at bytes 4 and 5.
       //these transactions will not have a script witness associated with them making them invalid
@@ -145,6 +153,7 @@ case class BaseTransaction(
     extends NonWitnessTransaction
 
 object BaseTransaction extends Factory[BaseTransaction] {
+
   override def fromBytes(bytes: ByteVector): BaseTransaction = {
     val versionBytes = bytes.take(4)
     val version = Int32(versionBytes.reverse)
@@ -281,21 +290,22 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
     WitnessTransaction(version, inputs, outputs, lockTime, witness)
   }
 
-  def toWitnessTx(tx: Transaction): WitnessTransaction = tx match {
-    case btx: NonWitnessTransaction =>
-      WitnessTransaction(btx.version,
-                         btx.inputs,
-                         btx.outputs,
-                         btx.lockTime,
-                         EmptyWitness.fromInputs(btx.inputs))
-    case wtx: WitnessTransaction => wtx
-  }
+  def toWitnessTx(tx: Transaction): WitnessTransaction =
+    tx match {
+      case btx: NonWitnessTransaction =>
+        WitnessTransaction(btx.version,
+                           btx.inputs,
+                           btx.outputs,
+                           btx.lockTime,
+                           EmptyWitness.fromInputs(btx.inputs))
+      case wtx: WitnessTransaction => wtx
+    }
 
   val marker: Byte = 0.toByte
   val flag: Byte = 1.toByte
 
   /** These bytes -- at index 4 & 5 in a witness transaction -- are used to indicate a witness tx
     * @see BIP141 https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id
-    * */
+    */
   val witBytes: ByteVector = ByteVector(marker, flag)
 }

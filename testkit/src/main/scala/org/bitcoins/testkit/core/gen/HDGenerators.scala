@@ -155,7 +155,6 @@ object HDGenerators {
     *     case (short. long) => short.diff(long).isDefined
     * }
     * }}}
-    *
     */
   def diffableHDPaths: Gen[(BIP32Path, BIP32Path)] = {
     for {

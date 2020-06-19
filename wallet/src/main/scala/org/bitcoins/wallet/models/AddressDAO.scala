@@ -27,8 +27,8 @@ import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class AddressDAO()(
-    implicit ec: ExecutionContext,
+case class AddressDAO()(implicit
+    ec: ExecutionContext,
     config: WalletAppConfig
 ) extends CRUD[AddressDb, BitcoinAddress]
     with SlickUtil[AddressDb, BitcoinAddress] {
@@ -38,6 +38,7 @@ case class AddressDAO()(
 
   override val table: profile.api.TableQuery[AddressTable] =
     TableQuery[AddressTable]
+
   private lazy val spendingInfoTable: profile.api.TableQuery[
     SpendingInfoDAO#SpendingInfoTable] = {
     SpendingInfoDAO().table
@@ -209,18 +210,17 @@ case class AddressDAO()(
         ScriptType)
 
     private val fromTuple: AddressTuple => AddressDb = {
-      case (
-          purpose,
-          accountIndex,
-          accountCoin,
-          accountChain,
-          address,
-          scriptWitnessOpt,
-          scriptPubKey,
-          addressIndex,
-          pubKey,
-          hashedPubKey,
-          scriptType @ _ // what should we do about this? scriptType is inferrable from purpose
+      case (purpose,
+            accountIndex,
+            accountCoin,
+            accountChain,
+            address,
+            scriptWitnessOpt,
+            scriptPubKey,
+            addressIndex,
+            pubKey,
+            hashedPubKey,
+            scriptType @ _ // what should we do about this? scriptType is inferrable from purpose
           ) =>
         (purpose, address, scriptWitnessOpt) match {
           case (HDPurposes.SegWit,

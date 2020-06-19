@@ -4,6 +4,7 @@ import scodec.bits._
 import scala.annotation.tailrec
 
 package object core {
+
   implicit val byteVectorOrdering: Ordering[ByteVector] =
     new Ordering[ByteVector] {
 

@@ -55,7 +55,8 @@ class RawCompactFilterCheckPointMessageSerializerTest extends BitcoinSUnitTest {
       biggerBytes.size == 1 + // type size
         32 + // stop  hash size
         3 + // num filter headers size
-        20000 * 32) // filter headers size
+        20000 * 32
+    ) // filter headers size
 
     val parsedBiggerMessage =
       CompactFilterCheckPointMessage.fromBytes(biggerBytes)

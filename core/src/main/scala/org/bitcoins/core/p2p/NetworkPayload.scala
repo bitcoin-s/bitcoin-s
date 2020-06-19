@@ -213,6 +213,7 @@ trait GetHeadersMessage extends DataPayload {
 }
 
 object GetHeadersMessage extends Factory[GetHeadersMessage] {
+
   private case class GetHeadersMessageImpl(
       version: ProtocolVersion,
       hashCount: CompactSizeUInt,
@@ -358,6 +359,7 @@ object InventoryMessage extends Factory[InventoryMessage] {
       inventoryCount: CompactSizeUInt,
       inventories: Seq[Inventory])
       extends InventoryMessage
+
   override def fromBytes(bytes: ByteVector): InventoryMessage =
     RawInventoryMessageSerializer.read(bytes)
 
@@ -609,6 +611,7 @@ object FilterAddMessage extends Factory[FilterAddMessage] {
       elementSize: CompactSizeUInt,
       element: ByteVector)
       extends FilterAddMessage
+
   override def fromBytes(bytes: ByteVector): FilterAddMessage =
     RawFilterAddMessageSerializer.read(bytes)
 
@@ -657,6 +660,7 @@ trait FilterLoadMessage extends ControlPayload {
   * @see [[https://bitcoin.org/en/developer-reference#filterload]]
   */
 object FilterLoadMessage extends Factory[FilterLoadMessage] {
+
   private case class FilterLoadMessageImpl(bloomFilter: BloomFilter)
       extends FilterLoadMessage {
     require(
@@ -734,6 +738,7 @@ trait PingMessage extends ControlPayload {
 
 object PingMessage extends Factory[PingMessage] {
   private case class PingMessageImpl(nonce: UInt64) extends PingMessage
+
   override def fromBytes(bytes: ByteVector): PingMessage = {
     val pingMsg = RawPingMessageSerializer.read(bytes)
     pingMsg
@@ -824,6 +829,7 @@ trait RejectMessage extends ControlPayload {
   * @see [[https://bitcoin.org/en/developer-reference#reject]]
   */
 object RejectMessage extends Factory[RejectMessage] {
+
   private case class RejectMessageImpl(
       messageSize: CompactSizeUInt,
       message: String,
@@ -961,7 +967,8 @@ object GetCompactFilterHeadersMessage
   def apply(
       startHeight: Int,
       stopHash: DoubleSha256Digest,
-      filterType: FilterType = FilterType.Basic): GetCompactFilterHeadersMessage = {
+      filterType: FilterType =
+        FilterType.Basic): GetCompactFilterHeadersMessage = {
     new GetCompactFilterHeadersMessage(filterType,
                                        UInt32(startHeight),
                                        stopHash)
@@ -1321,7 +1328,6 @@ object NetworkPayload {
     * required by the network header specification.
     *
     * @see [[https://bitcoin.org/en/developer-reference#message-headers]]
-    *
     */
   val readers: Map[String, ByteVector => NetworkPayload] = Map(
     blockCommandName -> RawBlockMessageSerializer.read,

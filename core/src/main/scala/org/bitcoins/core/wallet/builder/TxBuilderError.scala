@@ -96,7 +96,7 @@ object TxBuilderError {
     new IllegalArgumentException("We cannot nested witness SPKs"))
 
   /** We cannot have a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]]
-    * nested inside of another spk   */
+    * nested inside of another spk */
   val NestedP2SHSPK = Failure(
     new IllegalArgumentException("We cannot sign nested P2SHScriptPubKeys"))
 

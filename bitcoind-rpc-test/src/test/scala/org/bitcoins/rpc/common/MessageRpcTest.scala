@@ -24,10 +24,11 @@ class MessageRpcTest extends BitcoindRpcTest {
     for {
       client <- clientF
       address <- client.getNewAddress(addressType = AddressType.Legacy)
-      signature <- client.signMessage(address.asInstanceOf[P2PKHAddress],
-                                      message)
-      validity <- client
-        .verifyMessage(address.asInstanceOf[P2PKHAddress], signature, message)
+      signature <-
+        client.signMessage(address.asInstanceOf[P2PKHAddress], message)
+      validity <-
+        client
+          .verifyMessage(address.asInstanceOf[P2PKHAddress], signature, message)
     } yield assert(validity)
   }
 

@@ -61,6 +61,7 @@ case class FieldElement(bytes: ByteVector) extends NetworkElement {
 }
 
 object FieldElement extends Factory[FieldElement] {
+
   override def fromBytes(bytes: ByteVector): FieldElement = {
     if (bytes.length < 32) {
       new FieldElement(bytes.padLeft(32))

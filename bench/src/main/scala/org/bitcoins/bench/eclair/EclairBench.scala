@@ -59,14 +59,15 @@ object EclairBench extends App with EclairRpcTestUtil {
     private var count = 0
     private var percentage = 0
 
-    def inc(): Unit = synchronized {
-      count += 1
-      val newPercentage = count * 100 / (NetworkSize * PaymentCount)
-      if (newPercentage % 10 == 0 && newPercentage != percentage) {
-        percentage = newPercentage
-        print(s"$percentage% ")
+    def inc(): Unit =
+      synchronized {
+        count += 1
+        val newPercentage = count * 100 / (NetworkSize * PaymentCount)
+        if (newPercentage % 10 == 0 && newPercentage != percentage) {
+          percentage = newPercentage
+          print(s"$percentage% ")
+        }
       }
-    }
   }
 
   def sendPayments(
@@ -80,8 +81,9 @@ object EclairBench extends App with EclairRpcTestUtil {
           (accF, _) =>
             for {
               acc <- accF
-              invoice <- network.testEclairNode
-                .createInvoice("test " + System.currentTimeMillis(), amount)
+              invoice <-
+                network.testEclairNode
+                  .createInvoice("test " + System.currentTimeMillis(), amount)
               paymentHash = invoice.lnTags.paymentHash.hash
               _ = logPaymentHash(paymentHash)
               p = promises.get(paymentHash)
@@ -113,12 +115,13 @@ object EclairBench extends App with EclairRpcTestUtil {
         condition = paymentLog.size() == NetworkSize * PaymentCount,
         duration = 1.second,
         maxTries = 100)
-      _ <- TestAsyncUtil
-        .retryUntilSatisfied(
-          condition = EclairBenchUtil.paymentLogValues().forall(_.completed),
-          duration = 1.second,
-          maxTries = 100)
-        .recover { case ex: Throwable => ex.printStackTrace() }
+      _ <-
+        TestAsyncUtil
+          .retryUntilSatisfied(
+            condition = EclairBenchUtil.paymentLogValues().forall(_.completed),
+            duration = 1.second,
+            maxTries = 100)
+          .recover { case ex: Throwable => ex.printStackTrace() }
       _ = println("\nDone!")
     } yield {
       EclairBenchUtil.paymentLogValues().sortBy(_.paymentSentAt)

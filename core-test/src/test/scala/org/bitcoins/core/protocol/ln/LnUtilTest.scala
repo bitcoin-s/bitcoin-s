@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class LnUtilTest extends BitcoinSUnitTest {
+
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 

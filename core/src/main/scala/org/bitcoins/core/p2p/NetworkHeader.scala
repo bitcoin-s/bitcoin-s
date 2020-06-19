@@ -11,9 +11,9 @@ import scodec.bits.ByteVector
   * @see https://bitcoin.org/en/developer-reference#message-headers
   *
   * @param network Each network has magic bytes indicating the originating network;
-                   used to seek to next message when stream state is unknown.
+  *                   used to seek to next message when stream state is unknown.
   * @param commandName ASCII string which identifies what message type is contained in the payload.
-                       Followed by nulls (0x00) to pad out byte count; for example: version\0\0\0\0\0.
+  *                       Followed by nulls (0x00) to pad out byte count; for example: version\0\0\0\0\0.
   * @param payloadSize Number of bytes in payload. The current maximum number of bytes (MAX_SIZE) allowed in the payload
   *                    by Bitcoin Core is 32 MiB—messages with a payload size larger than this will be dropped or rejected.
   * @param checksum Added in protocol version 209.

@@ -8,6 +8,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 object Core extends CoreApi {
+
   override def combinePSBTs(psbts: Seq[PSBT]): Future[PSBT] = {
     if (psbts.isEmpty) {
       Future.failed(new IllegalArgumentException("No PSBTs given"))

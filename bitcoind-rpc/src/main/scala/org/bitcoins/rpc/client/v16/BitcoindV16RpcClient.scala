@@ -23,8 +23,7 @@ import scala.util.Try
   *
   * @see [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient Scaladocs]]
   */
-class BitcoindV16RpcClient(override val instance: BitcoindInstance)(
-    implicit
+class BitcoindV16RpcClient(override val instance: BitcoindInstance)(implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
     with V16AccountRpc
@@ -109,8 +108,8 @@ object BitcoindV16RpcClient {
     * advanced users, wher you need fine grained control
     * over the RPC client.
     */
-  def withActorSystem(instance: BitcoindInstance)(
-      implicit system: ActorSystem): BitcoindV16RpcClient =
+  def withActorSystem(instance: BitcoindInstance)(implicit
+      system: ActorSystem): BitcoindV16RpcClient =
     new BitcoindV16RpcClient(instance)
 
   def fromUnknownVersion(

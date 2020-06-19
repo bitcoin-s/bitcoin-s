@@ -74,7 +74,6 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
   def toLong(hex: String): Long = toLong(BytesUtil.decodeHex(hex))
 
   /**
-    *
     * Converts a sequence uint8 `from` base to `to` base
     * @param pad
     * @param f
@@ -114,7 +113,7 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
 
       if (pad) {
         if (bits > UInt32.zero) {
-          val r: Long = ((acc << (to - bits) & maxv)).toLong
+          val r: Long = (acc << (to - bits) & maxv).toLong
           ret.+=(f(UInt8(r.toShort)))
         }
       } else if (bits >= from || ((acc << (to - bits)) & maxv) != UInt8.zero) {
@@ -151,10 +150,13 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
       pad: Boolean = false): Vector[UInt8] = {
     val u8s = u5s.map(_.toUInt8)
     val u8sTry =
-      NumberUtil.convert[UInt8](u8s, UInt32(5), UInt32(8), pad = pad, {
-        u8: UInt8 =>
-          u8
-      })
+      NumberUtil.convert[UInt8](u8s,
+                                UInt32(5),
+                                UInt32(8),
+                                pad = pad,
+                                { u8: UInt8 =>
+                                  u8
+                                })
     //should always be able to convert from uint5 => uint8
     u8sTry.get
   }
@@ -222,7 +224,7 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
 
       nWordNotZero && ((nSize > 34) ||
       (nWord > UInt8.max.toBigInt && nSize > 33) ||
-      (nWord > UInt32(0xFFFFL).toBigInt && nSize > 32))
+      (nWord > UInt32(0xffffL).toBigInt && nSize > 32))
     }
 
     BlockHeader.TargetDifficultyHelper(result.abs(), isNegative, isOverflow)
@@ -280,14 +282,14 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     }
 
     //~0x007fffff = 0xff800000
-    require((compact & UInt32(0xFF800000L)) == UInt32.zero,
+    require((compact & UInt32(0xff800000L)) == UInt32.zero,
             s"Exponent/sign bit must not be set yet in compact encoding")
     require(size < 256, "Size of compact encoding can't be more than 2^256")
 
     compact = compact | UInt32(size << 24)
 
     compact = {
-      if (isNegative && ((compact & UInt32(0x007FFFFFL)) != UInt32.zero)) {
+      if (isNegative && ((compact & UInt32(0x007fffffL)) != UInt32.zero)) {
         compact | negativeFlag
       } else {
         compact | UInt32.zero

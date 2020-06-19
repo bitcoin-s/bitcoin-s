@@ -19,12 +19,10 @@ object HttpFeeRateProvider {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
     Http()
       .singleRequest(HttpRequest(uri = uri))
-      .flatMap(
-        response =>
-          response.entity.dataBytes
-            .runFold(ByteString.empty)(_ ++ _)
-            .map(payload => payload.decodeString(ByteString.UTF_8))
-      )
+      .flatMap(response =>
+        response.entity.dataBytes
+          .runFold(ByteString.empty)(_ ++ _)
+          .map(payload => payload.decodeString(ByteString.UTF_8)))
   }
 }
 

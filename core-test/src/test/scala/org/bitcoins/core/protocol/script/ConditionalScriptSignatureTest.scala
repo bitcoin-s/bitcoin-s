@@ -27,7 +27,8 @@ class ConditionalScriptSignatureTest extends BitcoinSUnitTest {
     forAll(ScriptGenerators.conditionalScriptSignature) {
       conditionalScriptSignature =>
         assert(
-          ConditionalScriptSignature(conditionalScriptSignature.bytes) == conditionalScriptSignature)
+          ConditionalScriptSignature(
+            conditionalScriptSignature.bytes) == conditionalScriptSignature)
     }
   }
 

@@ -7,23 +7,26 @@ import scala.annotation.tailrec
   */
 trait BinaryTree[+T] {
 
-  def value: Option[T] = this match {
-    case n: Node[T] => Some(n.v)
-    case l: Leaf[T] => Some(l.v)
-    case Empty      => None
-  }
+  def value: Option[T] =
+    this match {
+      case n: Node[T] => Some(n.v)
+      case l: Leaf[T] => Some(l.v)
+      case Empty      => None
+    }
 
-  def left: Option[BinaryTree[T]] = this match {
-    case n: Node[T] => Some(n.l)
-    case _: Leaf[T] => None
-    case Empty      => None
-  }
+  def left: Option[BinaryTree[T]] =
+    this match {
+      case n: Node[T] => Some(n.l)
+      case _: Leaf[T] => None
+      case Empty      => None
+    }
 
-  def right: Option[BinaryTree[T]] = this match {
-    case n: Node[T] => Some(n.r)
-    case _: Leaf[T] => None
-    case Empty      => None
-  }
+  def right: Option[BinaryTree[T]] =
+    this match {
+      case n: Node[T] => Some(n.r)
+      case _: Leaf[T] => None
+      case Empty      => None
+    }
 
   /**
     * Creates a sequence with only the leaf values
@@ -34,22 +37,23 @@ trait BinaryTree[+T] {
     def loop(
         tree: BinaryTree[T],
         accum: List[T],
-        remainder: List[BinaryTree[T]]): Seq[T] = tree match {
-      case Leaf(x) =>
-        if (remainder.isEmpty) x :: accum
-        else loop(remainder.head, x :: accum, remainder.tail)
-      case Empty =>
-        if (remainder.isEmpty) accum
-        else loop(remainder.head, accum, remainder.tail)
-      case Node(_, l, r) => loop(l, accum, r :: remainder)
-    }
+        remainder: List[BinaryTree[T]]): Seq[T] =
+      tree match {
+        case Leaf(x) =>
+          if (remainder.isEmpty) x :: accum
+          else loop(remainder.head, x :: accum, remainder.tail)
+        case Empty =>
+          if (remainder.isEmpty) accum
+          else loop(remainder.head, accum, remainder.tail)
+        case Node(_, l, r) => loop(l, accum, r :: remainder)
+      }
     loop(this, List(), List()).reverse
   }
 
   /** A function to find the first occurrence of a predicate inside a
     * [[org.bitcoins.core.util.BinaryTree BinaryTree]]. */
-  def findFirstDFS[T](t: T)(f: T => Boolean = (x: T) => x == t)(
-      implicit tree: BinaryTree[T] = this): Option[BinaryTree[T]] = {
+  def findFirstDFS[T](t: T)(f: T => Boolean = (x: T) => x == t)(implicit
+      tree: BinaryTree[T] = this): Option[BinaryTree[T]] = {
     @tailrec
     def loop(
         subTree: BinaryTree[T],
@@ -70,8 +74,8 @@ trait BinaryTree[+T] {
   }
 
   /** Checks if the [[org.bitcoins.core.util.BinaryTree BinaryTree]] contains a certain element. */
-  def contains[T](t: T)(f: T => Boolean = (x: T) => x == t)(
-      implicit tree: BinaryTree[T] = this): Boolean =
+  def contains[T](t: T)(f: T => Boolean = (x: T) => x == t)(implicit
+      tree: BinaryTree[T] = this): Boolean =
     findFirstDFS(t)(f)(tree).isDefined
 
   def count[T](t: T): Int = toSeq.count(_ == t)
@@ -90,17 +94,18 @@ trait BinaryTree[+T] {
     * If it cannot insert it because the branches are not empty,
     * it throws a [[scala.RuntimeException RuntimeException]].
     */
-  def insert[T](subTree: BinaryTree[T])(
-      implicit parentTree: BinaryTree[T]): BinaryTree[T] = parentTree match {
-    case n: Node[T] =>
-      if (n.l == Empty) Node[T](n.v, subTree, n.r)
-      else if (n.r == Empty) Node[T](n.v, n.l, subTree)
-      else
-        throw new RuntimeException(
-          "There was no empty branch to insert the new t: " + subTree + "inside of tree: " + parentTree)
-    case l: Leaf[T] => Node(l.v, subTree, Empty)
-    case Empty      => subTree
-  }
+  def insert[T](subTree: BinaryTree[T])(implicit
+      parentTree: BinaryTree[T]): BinaryTree[T] =
+    parentTree match {
+      case n: Node[T] =>
+        if (n.l == Empty) Node[T](n.v, subTree, n.r)
+        else if (n.r == Empty) Node[T](n.v, n.l, subTree)
+        else
+          throw new RuntimeException(
+            "There was no empty branch to insert the new t: " + subTree + "inside of tree: " + parentTree)
+      case l: Leaf[T] => Node(l.v, subTree, Empty)
+      case Empty      => subTree
+    }
 
   /** Removes the subTree from the parentTree. */
   def remove[T](subTree: BinaryTree[T])(
@@ -136,16 +141,17 @@ trait BinaryTree[+T] {
     def loop(
         tree: BinaryTree[T],
         accum: List[T],
-        remainder: List[BinaryTree[T]]): List[T] = tree match {
-      case Leaf(x) =>
-        if (remainder.isEmpty) accum ++ List(x)
-        else loop(remainder.head, accum ++ List(x), remainder.tail)
-      case Empty =>
-        if (remainder.isEmpty) accum
-        else loop(remainder.head, accum, remainder.tail)
-      case Node(v, l, r) =>
-        loop(l, accum ++ List(v), r :: remainder)
-    }
+        remainder: List[BinaryTree[T]]): List[T] =
+      tree match {
+        case Leaf(x) =>
+          if (remainder.isEmpty) accum ++ List(x)
+          else loop(remainder.head, accum ++ List(x), remainder.tail)
+        case Empty =>
+          if (remainder.isEmpty) accum
+          else loop(remainder.head, accum, remainder.tail)
+        case Node(v, l, r) =>
+          loop(l, accum ++ List(v), r :: remainder)
+      }
     loop(this, Nil, Nil)
   }
 

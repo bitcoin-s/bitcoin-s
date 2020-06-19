@@ -105,12 +105,13 @@ object CoinSelector extends CoinSelector {
       coinSelectionAlgo: CoinSelectionAlgo,
       walletUtxos: Vector[SpendingInfoDb],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[SpendingInfoDb] = coinSelectionAlgo match {
-    case AccumulateLargest =>
-      accumulateLargest(walletUtxos, outputs, feeRate)
-    case AccumulateSmallestViable =>
-      accumulateSmallestViable(walletUtxos, outputs, feeRate)
-    case StandardAccumulate =>
-      accumulate(walletUtxos, outputs, feeRate)
-  }
+      feeRate: FeeUnit): Vector[SpendingInfoDb] =
+    coinSelectionAlgo match {
+      case AccumulateLargest =>
+        accumulateLargest(walletUtxos, outputs, feeRate)
+      case AccumulateSmallestViable =>
+        accumulateSmallestViable(walletUtxos, outputs, feeRate)
+      case StandardAccumulate =>
+        accumulate(walletUtxos, outputs, feeRate)
+    }
 }

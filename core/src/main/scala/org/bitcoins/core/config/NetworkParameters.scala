@@ -176,32 +176,35 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
   val p2shNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2shNetworkByte)
 
   /** Uses the notation used in `bitcoin.conf` */
-  override def fromString(string: String): BitcoinNetwork = string match {
-    case "mainnet"  => MainNet
-    case "main"     => MainNet
-    case "testnet3" => TestNet3
-    case "testnet"  => TestNet3
-    case "test"     => TestNet3
-    case "regtest"  => RegTest
-    case _: String =>
-      throw new IllegalArgumentException(s"Invalid network $string")
-  }
+  override def fromString(string: String): BitcoinNetwork =
+    string match {
+      case "mainnet"  => MainNet
+      case "main"     => MainNet
+      case "testnet3" => TestNet3
+      case "testnet"  => TestNet3
+      case "test"     => TestNet3
+      case "regtest"  => RegTest
+      case _: String =>
+        throw new IllegalArgumentException(s"Invalid network $string")
+    }
 
   /** Map of magic network bytes to the corresponding network */
-  def magicToNetwork: Map[ByteVector, NetworkParameters] = Map(
-    MainNet.magicBytes -> MainNet,
-    TestNet3.magicBytes -> TestNet3,
-    RegTest.magicBytes -> RegTest
-  )
+  def magicToNetwork: Map[ByteVector, NetworkParameters] =
+    Map(
+      MainNet.magicBytes -> MainNet,
+      TestNet3.magicBytes -> TestNet3,
+      RegTest.magicBytes -> RegTest
+    )
 
-  def bytesToNetwork: Map[ByteVector, NetworkParameters] = Map(
-    MainNet.p2shNetworkByte -> MainNet,
-    MainNet.p2pkhNetworkByte -> MainNet,
-    MainNet.privateKey -> MainNet,
-    TestNet3.p2pkhNetworkByte -> TestNet3,
-    TestNet3.p2shNetworkByte -> TestNet3,
-    TestNet3.privateKey -> TestNet3
+  def bytesToNetwork: Map[ByteVector, NetworkParameters] =
+    Map(
+      MainNet.p2shNetworkByte -> MainNet,
+      MainNet.p2pkhNetworkByte -> MainNet,
+      MainNet.privateKey -> MainNet,
+      TestNet3.p2pkhNetworkByte -> TestNet3,
+      TestNet3.p2shNetworkByte -> TestNet3,
+      TestNet3.privateKey -> TestNet3
 
-    //ommitting regtest as it has the same network bytes as testnet3
-  )
+      //ommitting regtest as it has the same network bytes as testnet3
+    )
 }

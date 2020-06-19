@@ -53,22 +53,20 @@ object TransactionDb {
   def fromTransaction(tx: Transaction): TransactionDb = {
     val (unsignedTx, wTxIdBEOpt) = tx match {
       case btx: NonWitnessTransaction =>
-        val unsignedInputs = btx.inputs.map(
-          input =>
-            TransactionInput(input.previousOutput,
-                             EmptyScriptSignature,
-                             input.sequence))
+        val unsignedInputs = btx.inputs.map(input =>
+          TransactionInput(input.previousOutput,
+                           EmptyScriptSignature,
+                           input.sequence))
         (BaseTransaction(btx.version,
                          unsignedInputs,
                          btx.outputs,
                          btx.lockTime),
          None)
       case wtx: WitnessTransaction =>
-        val unsignedInputs = wtx.inputs.map(
-          input =>
-            TransactionInput(input.previousOutput,
-                             EmptyScriptSignature,
-                             input.sequence))
+        val unsignedInputs = wtx.inputs.map(input =>
+          TransactionInput(input.previousOutput,
+                           EmptyScriptSignature,
+                           input.sequence))
         val uwtx = WitnessTransaction(wtx.version,
                                       unsignedInputs,
                                       wtx.outputs,

@@ -133,14 +133,14 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
     assert(conf.zmqpubhashtx.isDefined)
     assert(conf.zmqpubrawblock.isDefined)
     assert(conf.zmqpubrawtx.isDefined)
-    assert({
+    assert {
       conf.rpcUri // cal by name
       true
-    })
+    }
 
-    assert({
+    assert {
       conf.uri // cal by name
       true
-    })
+    }
   }
 }

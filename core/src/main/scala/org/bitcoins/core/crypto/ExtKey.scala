@@ -61,11 +61,12 @@ sealed abstract class ExtKey extends NetworkElement {
   /**
     * Derives the child pubkey at the specified index
     */
-  def deriveChildPubKey(idx: UInt32): Try[ExtPublicKey] = this match {
-    case priv: ExtPrivateKey =>
-      Success(priv.deriveChildPrivKey(idx).extPublicKey)
-    case pub: ExtPublicKey => pub.deriveChildPubKey(idx)
-  }
+  def deriveChildPubKey(idx: UInt32): Try[ExtPublicKey] =
+    this match {
+      case priv: ExtPrivateKey =>
+        Success(priv.deriveChildPrivKey(idx).extPublicKey)
+      case pub: ExtPublicKey => pub.deriveChildPubKey(idx)
+    }
 
   /**
     * Derives the child pubkey at the specified index
@@ -108,14 +109,15 @@ sealed abstract class ExtKey extends NetworkElement {
 
   }
 
-  override def bytes: ByteVector = key match {
-    case priv: ECPrivateKey =>
-      version.bytes ++ depth.bytes ++ fingerprint ++
-        childNum.bytes ++ chainCode.bytes ++ ByteVector.low(1) ++ priv.bytes
-    case pub: ECPublicKey =>
-      version.bytes ++ depth.bytes ++ fingerprint ++
-        childNum.bytes ++ chainCode.bytes ++ pub.bytes
-  }
+  override def bytes: ByteVector =
+    key match {
+      case priv: ECPrivateKey =>
+        version.bytes ++ depth.bytes ++ fingerprint ++
+          childNum.bytes ++ chainCode.bytes ++ ByteVector.low(1) ++ priv.bytes
+      case pub: ECPublicKey =>
+        version.bytes ++ depth.bytes ++ fingerprint ++
+          childNum.bytes ++ chainCode.bytes ++ pub.bytes
+    }
 
   override def toString: String = {
     ExtKey.toString(this)
@@ -261,6 +263,7 @@ sealed abstract class ExtPrivateKey
 }
 
 object ExtPrivateKey extends Factory[ExtPrivateKey] {
+
   private case class ExtPrivateKeyImpl(
       version: ExtKeyPrivVersion,
       depth: UInt8,
@@ -359,8 +362,8 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
                              chaincode,
                              masterPrivKey)
 
-    path.foldLeft(root)(
-      (accum, curr) => accum.deriveChildPrivKey(curr.toUInt32))
+    path.foldLeft(root)((accum, curr) =>
+      accum.deriveChildPrivKey(curr.toUInt32))
   }
 
   /** Generates a extended private key from the provided seed and version */
@@ -410,6 +413,7 @@ sealed abstract class ExtPublicKey extends ExtKey {
 }
 
 object ExtPublicKey extends Factory[ExtPublicKey] {
+
   private case class ExtPublicKeyImpl(
       version: ExtKeyPubVersion,
       depth: UInt8,

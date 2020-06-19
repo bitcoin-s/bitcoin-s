@@ -80,26 +80,27 @@ sealed abstract class Bech32 {
         remaining: List[Char],
         accum: List[Char],
         isLower: Boolean,
-        isUpper: Boolean): Try[Seq[Char]] = remaining match {
-      case h :: t =>
-        if (!isInHrpRange(h)) {
-          Failure(
-            new IllegalArgumentException(
-              "Invalid character range for hrp, got: " + hrp))
-        } else if (isLower && isUpper) {
-          Failure(
-            new IllegalArgumentException("HRP had mixed case, got: " + hrp))
-        } else {
-          loop(t, h +: accum, h.isLower || isLower, h.isUpper || isUpper)
-        }
-      case Nil =>
-        if (isLower && isUpper) {
-          Failure(
-            new IllegalArgumentException("HRP had mixed case, got: " + hrp))
-        } else {
-          Success(accum.reverse)
-        }
-    }
+        isUpper: Boolean): Try[Seq[Char]] =
+      remaining match {
+        case h :: t =>
+          if (!isInHrpRange(h)) {
+            Failure(
+              new IllegalArgumentException(
+                "Invalid character range for hrp, got: " + hrp))
+          } else if (isLower && isUpper) {
+            Failure(
+              new IllegalArgumentException("HRP had mixed case, got: " + hrp))
+          } else {
+            loop(t, h +: accum, h.isLower || isLower, h.isUpper || isUpper)
+          }
+        case Nil =>
+          if (isLower && isUpper) {
+            Failure(
+              new IllegalArgumentException("HRP had mixed case, got: " + hrp))
+          } else {
+            Success(accum.reverse)
+          }
+      }
 
     val hrpT =
       loop(hrp.toCharArray.toList, Nil, isLower = false, isUpper = false)
@@ -128,28 +129,29 @@ sealed abstract class Bech32 {
         remaining: List[Char],
         accum: Vector[UInt5],
         hasUpper: Boolean,
-        hasLower: Boolean): Try[Vector[UInt5]] = remaining match {
-      case Nil => Success(accum.reverse)
-      case h :: t =>
-        if (!Bech32.charset.contains(h.toLower)) {
-          Failure(
-            new IllegalArgumentException(
-              "Invalid character in data of bech32 address, got: " + h))
-        } else {
-          if ((h.isUpper && hasLower) || (h.isLower && hasUpper)) {
+        hasLower: Boolean): Try[Vector[UInt5]] =
+      remaining match {
+        case Nil => Success(accum.reverse)
+        case h :: t =>
+          if (!Bech32.charset.contains(h.toLower)) {
             Failure(
               new IllegalArgumentException(
-                "Cannot have mixed case for bech32 address"))
+                "Invalid character in data of bech32 address, got: " + h))
           } else {
-            val byte = Bech32.charset.indexOf(h.toLower).toByte
+            if ((h.isUpper && hasLower) || (h.isLower && hasUpper)) {
+              Failure(
+                new IllegalArgumentException(
+                  "Cannot have mixed case for bech32 address"))
+            } else {
+              val byte = Bech32.charset.indexOf(h.toLower).toByte
 
-            loop(remaining = t,
-                 accum = UInt5.fromByte(byte) +: accum,
-                 hasUpper = h.isUpper || hasUpper,
-                 hasLower = h.isLower || hasLower)
+              loop(remaining = t,
+                   accum = UInt5.fromByte(byte) +: accum,
+                   hasUpper = h.isUpper || hasUpper,
+                   hasLower = h.isLower || hasLower)
+            }
           }
-        }
-    }
+      }
     val payload: Try[Vector[UInt5]] = loop(data.toCharArray.toList,
                                            Vector.empty,
                                            hasUpper = false,

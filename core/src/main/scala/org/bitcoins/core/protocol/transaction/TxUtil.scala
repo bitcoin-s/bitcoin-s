@@ -58,12 +58,16 @@ object TxUtil {
           case Some(currentLockTime) =>
             val lockTimeThreshold = TransactionConstants.locktimeThreshold
             if (currentLockTime < lockTime) {
-              if (currentLockTime < lockTimeThreshold && lockTime >= lockTimeThreshold) {
+              if (
+                currentLockTime < lockTimeThreshold && lockTime >= lockTimeThreshold
+              ) {
                 //means that we spend two different locktime types, one of the outputs spends a
                 //OP_CLTV script by block height, the other spends one by time stamp
                 TxBuilderError.IncompatibleLockTimes
               } else Success(lockTime)
-            } else if (currentLockTime >= lockTimeThreshold && lockTime < lockTimeThreshold) {
+            } else if (
+              currentLockTime >= lockTimeThreshold && lockTime < lockTimeThreshold
+            ) {
               //means that we spend two different locktime types, one of the outputs spends a
               //OP_CLTV script by block height, the other spends one by time stamp
               TxBuilderError.IncompatibleLockTimes
@@ -143,8 +147,8 @@ object TxUtil {
     * Note that the resulting dummy-signed Transaction will have populated
     * (dummy) witness data when applicable.
     */
-  def addDummySigs(utx: Transaction, inputInfos: Vector[InputInfo])(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+  def addDummySigs(utx: Transaction, inputInfos: Vector[InputInfo])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     val dummyInputAndWitnnessFs = inputInfos.zipWithIndex.map {
       case (inputInfo, index) =>
         val mockSigners = inputInfo.pubKeys.take(inputInfo.requiredSigs).map {

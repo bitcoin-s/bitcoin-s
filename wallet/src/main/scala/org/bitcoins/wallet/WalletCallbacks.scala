@@ -30,13 +30,13 @@ trait WalletCallbacks {
 
   def +(other: WalletCallbacks): WalletCallbacks
 
-  def executeOnTransactionProcessed(logger: Logger, tx: Transaction)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def executeOnTransactionProcessed(logger: Logger, tx: Transaction)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     onTransactionProcessed.execute(logger, tx)
   }
 
-  def executeOnTransactionBroadcast(logger: Logger, tx: Transaction)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def executeOnTransactionBroadcast(logger: Logger, tx: Transaction)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     onTransactionBroadcast.execute(logger, tx)
   }
 
@@ -75,12 +75,17 @@ object WalletCallbacks {
         BitcoinAddress,
         OnNewAddressGenerated]
   ) extends WalletCallbacks {
-    override def +(other: WalletCallbacks): WalletCallbacks = copy(
-      onTransactionProcessed = onTransactionProcessed ++ other.onTransactionProcessed,
-      onTransactionBroadcast = onTransactionBroadcast ++ other.onTransactionBroadcast,
-      onReservedUtxos = onReservedUtxos ++ other.onReservedUtxos,
-      onNewAddressGenerated = onNewAddressGenerated ++ other.onNewAddressGenerated
-    )
+
+    override def +(other: WalletCallbacks): WalletCallbacks =
+      copy(
+        onTransactionProcessed =
+          onTransactionProcessed ++ other.onTransactionProcessed,
+        onTransactionBroadcast =
+          onTransactionBroadcast ++ other.onTransactionBroadcast,
+        onReservedUtxos = onReservedUtxos ++ other.onReservedUtxos,
+        onNewAddressGenerated =
+          onNewAddressGenerated ++ other.onNewAddressGenerated
+      )
   }
 
   /** Constructs a set of callbacks that only acts on processed transaction */

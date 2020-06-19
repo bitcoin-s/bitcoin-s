@@ -37,6 +37,7 @@ case class FundedChannelId(bytes: ByteVector) extends ChannelId {
 }
 
 object FundedChannelId extends Factory[FundedChannelId] {
+
   override def fromBytes(bytes: ByteVector): FundedChannelId = {
     new FundedChannelId(bytes)
   }

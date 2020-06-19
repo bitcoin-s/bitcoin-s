@@ -67,8 +67,8 @@ sealed abstract class ECPrivateKey
 
   def sign(hash: HashDigest): ECDigitalSignature = sign(hash.bytes)
 
-  def signFuture(hash: HashDigest)(
-      implicit ec: ExecutionContext): Future[ECDigitalSignature] =
+  def signFuture(hash: HashDigest)(implicit
+      ec: ExecutionContext): Future[ECDigitalSignature] =
     Future(sign(hash))
 
   def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
@@ -228,8 +228,8 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     }
   }
 
-  def apply(bytes: ByteVector, isCompressed: Boolean)(
-      implicit ec: ExecutionContext): ECPrivateKey = {
+  def apply(bytes: ByteVector, isCompressed: Boolean)(implicit
+      ec: ExecutionContext): ECPrivateKey = {
     ECPrivateKeyImpl(bytes, isCompressed, ec)
   }
 
@@ -444,6 +444,7 @@ object ECPublicKey extends Factory[ECPublicKey] {
     //Eventually we would like this to be CPubKey::IsFullyValid() but since we are remaining backwards compatible
     //we cannot do this. If there ever is a hard fork this would be a good thing to add.
   }
+
   override def fromBytes(bytes: ByteVector): ECPublicKey = {
     ECPublicKeyImpl(bytes, Implicits.global)
   }

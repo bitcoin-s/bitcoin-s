@@ -128,14 +128,13 @@ class SignerTest extends BitcoinSAsyncTest {
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
 
         for {
-          unsignedTx <- StandardNonInteractiveFinalizer.txFrom(
-            destinations,
-            creditingTxsInfos,
-            fee,
-            changeSPK)
-          signedTx <- RawTxSigner.sign(unsignedTx,
-                                       creditingTxsInfos.toVector,
-                                       fee)
+          unsignedTx <-
+            StandardNonInteractiveFinalizer.txFrom(destinations,
+                                                   creditingTxsInfos,
+                                                   fee,
+                                                   changeSPK)
+          signedTx <-
+            RawTxSigner.sign(unsignedTx, creditingTxsInfos.toVector, fee)
 
           singleSigs: Vector[Vector[ECDigitalSignature]] <- {
             val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
@@ -264,11 +263,11 @@ class SignerTest extends BitcoinSAsyncTest {
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
         for {
-          unsignedTx <- StandardNonInteractiveFinalizer.txFrom(
-            destinations,
-            creditingTxsInfos,
-            fee,
-            changeSPK)
+          unsignedTx <-
+            StandardNonInteractiveFinalizer.txFrom(destinations,
+                                                   creditingTxsInfos,
+                                                   fee,
+                                                   changeSPK)
 
           singleSigs: Vector[Vector[PartialSignature]] <- {
             val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =

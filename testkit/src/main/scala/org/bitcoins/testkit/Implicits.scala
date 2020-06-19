@@ -38,17 +38,18 @@ object Implicits {
   implicit class AssertionSeqOps(private val assertions: Seq[Assertion]) {
 
     /** Flattens a sequence of assertions into only one */
-    def toAssertion: Assertion = assertions match {
-      case Seq() =>
-        throw new TestFailedException(
-          message = "Cannot turn an empty list into an assertion!",
-          failedCodeStackDepth = 0)
-      // this should force all collection kinds to
-      // evaluate all their members, throwing when
-      // evaluating a bad one
-      case nonEmpty =>
-        nonEmpty.foreach(_ => ())
-        nonEmpty.last
-    }
+    def toAssertion: Assertion =
+      assertions match {
+        case Seq() =>
+          throw new TestFailedException(
+            message = "Cannot turn an empty list into an assertion!",
+            failedCodeStackDepth = 0)
+        // this should force all collection kinds to
+        // evaluate all their members, throwing when
+        // evaluating a bad one
+        case nonEmpty =>
+          nonEmpty.foreach(_ => ())
+          nonEmpty.last
+      }
   }
 }

@@ -38,12 +38,14 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
 }
 
 object CompactSizeUInt extends Factory[CompactSizeUInt] {
+
   private case class CompactSizeUIntImpl(
       num: UInt64,
       override val byteSize: Long)
       extends CompactSizeUInt
 
   val zero: CompactSizeUInt = CompactSizeUInt(UInt64.zero)
+
   override def fromBytes(bytes: ByteVector): CompactSizeUInt = {
     parseCompactSizeUInt(bytes)
   }
@@ -143,7 +145,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
       CompactSizeUInt(UInt64(script.bytes.size), 1)
     } else if (script.bytes.size <= 0xffff) {
       CompactSizeUInt(UInt64(script.bytes.size), 3)
-    } else if (script.bytes.size <= 0xFFFFFFFFL) {
+    } else if (script.bytes.size <= 0xffffffffL) {
       CompactSizeUInt(UInt64(script.bytes.size), 5)
     } else CompactSizeUInt(UInt64(script.bytes.size), 9)
   }

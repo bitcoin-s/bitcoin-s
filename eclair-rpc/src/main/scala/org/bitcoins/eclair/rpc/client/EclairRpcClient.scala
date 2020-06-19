@@ -48,8 +48,9 @@ import scala.util.{Failure, Properties, Success}
   * @param binary Path to Eclair Jar. If not present, reads
   *               environment variable `ECLAIR_PATH`
   */
-class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)(
-    implicit system: ActorSystem)
+class EclairRpcClient(
+    val instance: EclairInstance,
+    binary: Option[File] = None)(implicit system: ActorSystem)
     extends EclairApi
     with StartStop[EclairRpcClient] {
 
@@ -217,14 +218,14 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       openTimeout: Option[FiniteDuration]): Future[FundedChannelId] = {
     val fundingSatoshis = funding.satoshis.toBigDecimal.toString
 
-    val params: Seq[(String, String)] = Seq(
-      "nodeId" -> nodeId.toString,
-      "fundingSatoshis" -> fundingSatoshis) ++ Seq(
-      pushMsat.map(x => "pushMsat" -> x.toBigDecimal.toString),
-      feerateSatPerByte.map(x => "feerateSatPerByte" -> x.toLong.toString),
-      channelFlags.map(x => "channelFlags" -> x.toString),
-      openTimeout.map(x => "openTimeoutSeconds" -> x.toSeconds.toString)
-    ).flatten
+    val params: Seq[(String, String)] =
+      Seq("nodeId" -> nodeId.toString,
+          "fundingSatoshis" -> fundingSatoshis) ++ Seq(
+        pushMsat.map(x => "pushMsat" -> x.toBigDecimal.toString),
+        feerateSatPerByte.map(x => "feerateSatPerByte" -> x.toLong.toString),
+        channelFlags.map(x => "channelFlags" -> x.toString),
+        openTimeout.map(x => "openTimeoutSeconds" -> x.toSeconds.toString)
+      ).flatten
 
     //this is unfortunately returned in this format
     //created channel 30bdf849eb9f72c9b41a09e38a6d83138c2edf332cb116dd7cf0f0dfb66be395
@@ -592,8 +593,8 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       Seq(from.map(x => "from" -> x.getEpochSecond.toString),
           to.map(x => "to" -> x.getEpochSecond.toString)).flatten: _*)
     resF.flatMap(xs =>
-      Future.sequence(xs.map(x =>
-        Future.fromTry(LnInvoice.fromStringT(x.serialized)))))
+      Future.sequence(
+        xs.map(x => Future.fromTry(LnInvoice.fromStringT(x.serialized)))))
   }
 
   override def usableBalances(): Future[Vector[UsableBalancesResult]] = {
@@ -609,8 +610,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
   }
 
   private def eclairCall[T](command: String, parameters: (String, String)*)(
-      implicit
-      reader: Reads[T]): Future[T] = {
+      implicit reader: Reads[T]): Future[T] = {
     val request = buildRequest(getDaemon, command, parameters: _*)
 
     logger.trace(s"eclair rpc call ${request}")
@@ -783,7 +783,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
   /** Returns a Future EclairRpcClient if able to shut down
     * Eclair instance, inherits from the StartStop trait
     * @return A future EclairRpcClient that is stopped
-    * */
+    */
   def stop(): Future[EclairRpcClient] = {
     val _ = process.map(_.destroy()) match {
       case None    => false

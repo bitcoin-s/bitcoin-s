@@ -135,7 +135,7 @@ sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   override def apply: A => UInt32 = UInt32(_)
   override def hex: String = BytesUtil.encodeHex(toLong).slice(8, 16)
 
-  override def andMask = 0xFFFFFFFFL
+  override def andMask = 0xffffffffL
 }
 
 /**
@@ -144,7 +144,7 @@ sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
 sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
   override val hex: String = encodeHex(underlying)
   override def apply: A => UInt64 = UInt64(_)
-  override def andMask = 0xFFFFFFFFFFFFFFFFL
+  override def andMask = 0xffffffffffffffffL
 
   /**
     * Converts a [[BigInt]] to a 8 byte hex representation.
@@ -180,7 +180,7 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
   */
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
-  override def andMask = 0xFFFFFFFFFFFFFFFFL
+  override def andMask = 0xffffffffffffffffL
   override val hex: String = BytesUtil.encodeHex(toLong)
 }
 
@@ -213,6 +213,7 @@ object UInt5
     extends Factory[UInt5]
     with NumberObject[UInt5]
     with Bounded[UInt5] {
+
   private case class UInt5Impl(underlying: BigInt) extends UInt5 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
@@ -264,6 +265,7 @@ object UInt8
     extends Factory[UInt8]
     with NumberObject[UInt8]
     with Bounded[UInt8] {
+
   private case class UInt8Impl(underlying: BigInt) extends UInt8 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
@@ -312,6 +314,7 @@ object UInt32
     extends Factory[UInt32]
     with NumberObject[UInt32]
     with Bounded[UInt32] {
+
   private case class UInt32Impl(underlying: BigInt) extends UInt32 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
@@ -362,6 +365,7 @@ object UInt64
     extends Factory[UInt64]
     with NumberObject[UInt64]
     with Bounded[UInt64] {
+
   private case class UInt64Impl(underlying: BigInt) extends UInt64 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
@@ -411,6 +415,7 @@ object Int32
     extends Factory[Int32]
     with NumberObject[Int32]
     with Bounded[Int32] {
+
   private case class Int32Impl(underlying: BigInt) extends Int32 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
@@ -457,6 +462,7 @@ object Int64
     extends Factory[Int64]
     with NumberObject[Int64]
     with Bounded[Int64] {
+
   private case class Int64Impl(underlying: BigInt) extends Int64 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")

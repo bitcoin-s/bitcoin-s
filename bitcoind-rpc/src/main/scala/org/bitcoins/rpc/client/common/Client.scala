@@ -68,13 +68,16 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
     * so that the implicit network val is accessible
     */
   implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
+
     override def writes(o: ECPrivateKey): JsValue =
       JsString(ECPrivateKeyUtil.toWIF(o, network))
   }
 
   implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
+
   implicit val importMultiAddressWrites: Writes[RpcOpts.ImportMultiAddress] =
     Json.writes[RpcOpts.ImportMultiAddress]
+
   implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] =
     Json.writes[RpcOpts.ImportMultiRequest]
   private val resultKey: String = "result"
@@ -240,9 +243,7 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
   protected def bitcoindCall[T](
       command: String,
       parameters: List[JsValue] = List.empty,
-      printError: Boolean = true)(
-      implicit
-      reader: Reads[T]): Future[T] = {
+      printError: Boolean = true)(implicit reader: Reads[T]): Future[T] = {
 
     val request = buildRequest(instance, command, JsArray(parameters))
     val responseF = sendRequest(request)
@@ -280,7 +281,8 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
     val jsObject = JsObject(m)
 
     // Would toString work?
-    val uri = "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
+    val uri =
+      "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
     val username = instance.authCredentials.username
     val password = instance.authCredentials.password
     HttpRequest(

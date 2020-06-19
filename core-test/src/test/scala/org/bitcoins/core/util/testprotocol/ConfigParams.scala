@@ -22,7 +22,9 @@ object ConfigParamsProtocol extends DefaultJsonProtocol {
   val isCompressedKey = "isCompressed"
   val isPrivKeyKey = "isPrivkey"
   val isTestNetKey = "isTestnet"
+
   implicit object ConfigParamsFormatter extends RootJsonFormat[ConfigParams] {
+
     override def read(value: JsValue): ConfigParams = {
       val obj = value.asJsObject
       val addrTypeOrPrivKey: Either[String, Boolean] = parseAddrTypeOrPrivKey(

@@ -43,11 +43,12 @@ abstract class MerkleGenerator {
     * false negatives.
     * @return
     */
-  def merkleBlockCreatedWithBloomFilter: Gen[(
-      MerkleBlock,
-      Block,
-      scala.collection.Seq[DoubleSha256Digest],
-      BloomFilter)] =
+  def merkleBlockCreatedWithBloomFilter: Gen[
+    (
+        MerkleBlock,
+        Block,
+        scala.collection.Seq[DoubleSha256Digest],
+        BloomFilter)] =
     for {
       block <- BlockchainElementsGenerator.block
       //choose some random txs in the block to put in the bloom filter

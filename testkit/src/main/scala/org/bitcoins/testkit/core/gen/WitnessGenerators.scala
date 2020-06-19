@@ -91,8 +91,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
                                            unsignedScriptWitness,
                                            None)
       createdSig = TransactionSignatureCreator.createSig(u, privKeys, hashType)
-      signedScriptWitness = P2WSHWitnessV0(scriptPubKey,
-                                           P2PKScriptSignature(createdSig))
+      signedScriptWitness =
+        P2WSHWitnessV0(scriptPubKey, P2PKScriptSignature(createdSig))
       oldTx = u.transaction
       txWitness = TransactionWitness(
         oldTx.witness.witnesses
@@ -102,10 +102,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
                                oldTx.outputs,
                                oldTx.lockTime,
                                txWitness)
-      signedWtxSigComponent = WitnessTxSigComponentRaw(wtx,
-                                                       u.inputIndex,
-                                                       u.output,
-                                                       u.flags)
+      signedWtxSigComponent =
+        WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
     } yield (txWitness, signedWtxSigComponent, Seq(privKeys))
 
   def signedP2WSHP2PKHTransactionWitness: Gen[
@@ -133,10 +131,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
                                oldTx.outputs,
                                oldTx.lockTime,
                                txWitness)
-      signedWtxSigComponent = WitnessTxSigComponentRaw(wtx,
-                                                       u.inputIndex,
-                                                       u.output,
-                                                       u.flags)
+      signedWtxSigComponent =
+        WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
     } yield (txWitness, signedWtxSigComponent, Seq(privKey))
 
   def signedP2WSHMultiSigTransactionWitness: Gen[
@@ -151,10 +147,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
                                            amount,
                                            unsignedScriptWitness,
                                            None)
-      signedScriptSig = multiSigScriptSigGenHelper(privKeys,
-                                                   scriptPubKey,
-                                                   u,
-                                                   hashType)
+      signedScriptSig =
+        multiSigScriptSigGenHelper(privKeys, scriptPubKey, u, hashType)
       signedScriptWitness = P2WSHWitnessV0(scriptPubKey, signedScriptSig)
       oldTx = u.transaction
       txWitness = TransactionWitness(
@@ -165,10 +159,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
                                oldTx.outputs,
                                oldTx.lockTime,
                                txWitness)
-      signedWtxSigComponent = WitnessTxSigComponentRaw(wtx,
-                                                       u.inputIndex,
-                                                       u.output,
-                                                       u.flags)
+      signedWtxSigComponent =
+        WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
     } yield (txWitness, signedWtxSigComponent, privKeys)
 
   /**

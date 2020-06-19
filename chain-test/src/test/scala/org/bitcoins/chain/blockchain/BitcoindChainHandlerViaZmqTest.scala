@@ -24,8 +24,9 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
       val chainHandler = bitcoindChainHandler.chainHandler
 
       for {
-        _ <- chainHandler.getBlockCount
-          .map(count => assert(count == 0))
+        _ <-
+          chainHandler.getBlockCount
+            .map(count => assert(count == 0))
         address <- bitcoind.getNewAddress
         hash +: _ <- bitcoind.generateToAddress(1, address)
         _ <- {
@@ -33,9 +34,8 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
           //can't monitor processing flow for zmq
           //so we just need to await until we
           //have fully processed the header
-          RpcUtil.awaitConditionF(
-            () => chainHandler.getHeader(hash).map(_.isDefined)
-          )
+          RpcUtil.awaitConditionF(() =>
+            chainHandler.getHeader(hash).map(_.isDefined))
         }
 
         header <- chainHandler.getHeader(hash)

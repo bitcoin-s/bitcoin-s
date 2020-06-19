@@ -23,9 +23,9 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     * [[org.bitcoins.chain.models.BlockHeaderDb BlockHeaderDb]]. What this really means is that a height is
     * assigned to a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] after all these
     * validation checks occur
-    * */
-  def checkNewTip(newPotentialTip: BlockHeader, blockchain: Blockchain)(
-      implicit conf: ChainAppConfig): TipUpdateResult = {
+    */
+  def checkNewTip(newPotentialTip: BlockHeader, blockchain: Blockchain)(implicit
+      conf: ChainAppConfig): TipUpdateResult = {
     val header = newPotentialTip
     val currentTip = blockchain.tip
     logger.trace(
@@ -80,7 +80,7 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     *
     * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L74 pow.cpp]]
     *      in Bitcoin Core
-    * */
+    */
   def isBadNonce(header: BlockHeader): Boolean = {
     //convert hash into a big integer
     val headerWork = BigInt(1, header.hashBE.bytes.toArray)

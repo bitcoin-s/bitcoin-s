@@ -21,6 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * once a merkle block has received all its transactions.
   */
 private[peer] object MerkleBuffers extends P2PLogger {
+
   private type MerkleBlocksWithTransactions =
     mutable.Map[MerkleBlock, mutable.Builder[Transaction, Vector[Transaction]]]
 
@@ -58,8 +59,8 @@ private[peer] object MerkleBuffers extends P2PLogger {
     * @return If the transaction matches a merkle block, returns true.
     *         Otherwise, false.
     */
-  def putTx(tx: Transaction, callbacks: NodeCallbacks)(
-      implicit ec: ExecutionContext,
+  def putTx(tx: Transaction, callbacks: NodeCallbacks)(implicit
+      ec: ExecutionContext,
       config: NodeAppConfig): Future[Boolean] = {
     val blocksInBuffer = underlyingMap.keys.toList
     logger.trace(s"Looking for transaction=${tx.txIdBE} in merkleblock buffer")
@@ -85,8 +86,8 @@ private[peer] object MerkleBuffers extends P2PLogger {
   private def handleMerkleMatch(
       transaction: Transaction,
       merkleBlock: MerkleBlock,
-      callbacks: NodeCallbacks)(
-      implicit ec: ExecutionContext,
+      callbacks: NodeCallbacks)(implicit
+      ec: ExecutionContext,
       config: NodeAppConfig): Future[Boolean] = {
     val merkleBlockMatches = merkleBlock.partialMerkleTree.extractMatches
     val merkleHash = merkleBlock.blockHeader.hashBE

@@ -44,7 +44,7 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
   /** Maximum height of the `tree` */
   private def maxHeight = PartialMerkleTree.calcMaxHeight(numTransactions)
 
-  /** The actual tree used to represent this partial merkle tree*/
+  /** The actual tree used to represent this partial merkle tree */
   def tree: BinaryTree[DoubleSha256Digest]
 
   /** A sequence representing if this node is the parent of another node that matched a txid */
@@ -80,10 +80,12 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
                 (2 * pos),
                 accumMatches)
               //check to see if we have a right subtree
-              if (PartialMerkleTree.existsRightSubTree(pos,
-                                                       numTransactions,
-                                                       maxHeight,
-                                                       height)) {
+              if (
+                PartialMerkleTree.existsRightSubTree(pos,
+                                                     numTransactions,
+                                                     maxHeight,
+                                                     height)
+              ) {
                 val (rightTreeMatches, rightRemainingBits) =
                   loop(n.r,
                        leftRemainingBits,
@@ -135,6 +137,7 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
 }
 
 object PartialMerkleTree {
+
   private case class PartialMerkleTreeImpl(
       tree: BinaryTree[DoubleSha256Digest],
       transactionCount: UInt32,

@@ -20,9 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 
 /** This is a base trait in bitcoin-s for async tests
-  *
-  *
-  * */
+  */
 trait BaseAsyncTest
     extends BeforeAndAfter
     with BeforeAndAfterAll
@@ -239,12 +237,11 @@ trait BaseAsyncTest
   * to be able to use that fixture
   *
   * This test trait should be used for async tests that do NOT use a fixture.
-  * */
+  */
 trait BitcoinSAsyncTest extends AsyncFlatSpec with BaseAsyncTest
 
 /** A trait that uses [[FixtureAsyncFlatSpec AsyncFlatSpec]] to execute tests
   * This is different than [[BitcoinSAsyncTest BitcoinSAsyncTest]] as you can use a fixture
   * with this test suite.
-  *
-  * */
+  */
 trait BitcoinSAsyncFixtureTest extends FixtureAsyncFlatSpec with BaseAsyncTest

@@ -126,9 +126,10 @@ object AddressDbHelper {
   def getAddress(
       pub: ECPublicKey,
       path: HDPath,
-      np: NetworkParameters): AddressDb = path match {
-    case legacy: LegacyHDPath       => getLegacyAddress(pub, legacy, np)
-    case nested: NestedSegWitHDPath => getNestedSegwitAddress(pub, nested, np)
-    case segwit: SegWitHDPath       => getSegwitAddress(pub, segwit, np)
-  }
+      np: NetworkParameters): AddressDb =
+    path match {
+      case legacy: LegacyHDPath       => getLegacyAddress(pub, legacy, np)
+      case nested: NestedSegWitHDPath => getNestedSegwitAddress(pub, nested, np)
+      case segwit: SegWitHDPath       => getSegwitAddress(pub, segwit, np)
+    }
 }

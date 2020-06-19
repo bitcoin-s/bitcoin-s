@@ -44,7 +44,7 @@ case object OP_DROP extends StackOperation {
 }
 
 /**
-  * 	Duplicates the top stack item.
+  *  Duplicates the top stack item.
   */
 case object OP_DUP extends StackOperation {
   override val opCode: Int = 118
@@ -58,7 +58,7 @@ case object OP_NIP extends StackOperation {
 }
 
 /**
-  * 	Copies the second-to-top stack item to the top.
+  *  Copies the second-to-top stack item to the top.
   */
 case object OP_OVER extends StackOperation {
   override val opCode: Int = 120
@@ -86,7 +86,7 @@ case object OP_ROT extends StackOperation {
 }
 
 /**
-  * 	The top two items on the stack are swapped.
+  *  The top two items on the stack are swapped.
   */
 case object OP_SWAP extends StackOperation {
   override val opCode: Int = 124
@@ -100,7 +100,7 @@ case object OP_TUCK extends StackOperation {
 }
 
 /**
-  * 	Removes the top two stack items.
+  *  Removes the top two stack items.
   */
 case object OP_2DROP extends StackOperation {
   override val opCode: Int = 109
@@ -135,13 +135,14 @@ case object OP_2ROT extends StackOperation {
 }
 
 /**
-  * 	Swaps the top two pairs of items.
+  *  Swaps the top two pairs of items.
   */
 case object OP_2SWAP extends StackOperation {
   override val opCode: Int = 114
 }
 
 object StackOperation extends ScriptOperationFactory[StackOperation] {
+
   override val operations =
     Vector(
       OP_DUP,

@@ -8,10 +8,10 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 class BytesToPushOntoStackFactoryTest extends BitcoinSUnitTest {
 
   "ScriptNumberFactory" must "represent the number 1" in {
-    BytesToPushOntoStack.operations.exists(_ == BytesToPushOntoStack(1)) must be(
-      true)
-    BytesToPushOntoStack.operations.exists(_ == BytesToPushOntoStack(75)) must be(
-      true)
+    BytesToPushOntoStack.operations.exists(
+      _ == BytesToPushOntoStack(1)) must be(true)
+    BytesToPushOntoStack.operations.exists(
+      _ == BytesToPushOntoStack(75)) must be(true)
   }
 
   it must "find the number two" in {
@@ -30,8 +30,8 @@ class BytesToPushOntoStackFactoryTest extends BitcoinSUnitTest {
 
   it must "not allow creation of the script number -2" in {
     intercept[IllegalArgumentException] {
-      BytesToPushOntoStack.operations.exists(_ == BytesToPushOntoStack(-2)) must be(
-        false)
+      BytesToPushOntoStack.operations.exists(
+        _ == BytesToPushOntoStack(-2)) must be(false)
     }
   }
 

@@ -191,7 +191,6 @@ trait WalletRpc { self: Client =>
   }
 
   /**
-    *
     * @param blank Not available to versions before v19
     * @param passphrase Not available to versions before v19
     * @return

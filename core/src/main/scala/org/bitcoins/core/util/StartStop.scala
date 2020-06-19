@@ -1,4 +1,5 @@
 package org.bitcoins.core.util
+
 import scala.concurrent.Future
 
 /**

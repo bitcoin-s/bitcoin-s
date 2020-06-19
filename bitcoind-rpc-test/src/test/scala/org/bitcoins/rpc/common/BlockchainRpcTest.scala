@@ -93,8 +93,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       address <- otherClient.getNewAddress(addressType = AddressType.P2SHSegwit)
-      txid <- BitcoindRpcTestUtil
-        .fundMemPoolTransaction(client, address, Bitcoins(1))
+      txid <-
+        BitcoindRpcTestUtil
+          .fundMemPoolTransaction(client, address, Bitcoins(1))
       blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       mostRecentBlock <- client.getBlock(blocks.head)
       _ <- client.invalidateBlock(blocks.head)
@@ -102,7 +103,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
       count1 <- client.getBlockCount
       count2 <- otherClient.getBlockCount
 
-      _ <- client.getNewAddress.flatMap(client.generateToAddress(2, _)) // Ensure client and otherClient have the same blockchain
+      _ <- client.getNewAddress.flatMap(
+        client.generateToAddress(2, _)
+      ) // Ensure client and otherClient have the same blockchain
     } yield {
       assert(mostRecentBlock.tx.contains(txid))
       assert(mempool.contains(txid))
@@ -125,13 +128,13 @@ class BlockchainRpcTest extends BitcoindRpcTest {
 
   it should "be able to mark a block as precious" in {
     for {
-      (freshClient, otherFreshClient) <- BitcoindRpcTestUtil.createNodePair(
-        clientAccum)
+      (freshClient, otherFreshClient) <-
+        BitcoindRpcTestUtil.createNodePair(clientAccum)
       _ <- freshClient.disconnectNode(otherFreshClient.getDaemon.uri)
       _ <- BitcoindRpcTestUtil.awaitDisconnected(freshClient, otherFreshClient)
 
-      blocks1 <- freshClient.getNewAddress.flatMap(
-        freshClient.generateToAddress(1, _))
+      blocks1 <-
+        freshClient.getNewAddress.flatMap(freshClient.generateToAddress(1, _))
       blocks2 <- otherFreshClient.getNewAddress.flatMap(
         otherFreshClient.generateToAddress(1, _))
 
@@ -140,8 +143,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
       bestHash2 <- otherFreshClient.getBestBlockHash
       _ = assert(bestHash2 == blocks2.head)
 
-      _ <- freshClient
-        .addNode(otherFreshClient.getDaemon.uri, AddNodeArgument.OneTry)
+      _ <-
+        freshClient
+          .addNode(otherFreshClient.getDaemon.uri, AddNodeArgument.OneTry)
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
         BitcoindRpcTestUtil.hasSeenBlock(otherFreshClient, bestHash1))
 

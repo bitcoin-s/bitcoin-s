@@ -147,11 +147,14 @@ sealed abstract class StackInterpreter {
     require(program.script.headOption.contains(OP_PICK),
             "Top of script stack must be OP_PICK")
     executeOpWithStackTopAsNumberArg(
-      program, { number: ScriptNumber =>
+      program,
+      { number: ScriptNumber =>
         //check if n is within the bound of the script
         if (program.stack.size < 2)
           program.failExecution(ScriptErrorInvalidStackOperation)
-        else if (number.toLong >= 0 && number.toLong < program.stack.tail.size) {
+        else if (
+          number.toLong >= 0 && number.toLong < program.stack.tail.size
+        ) {
           val newStackTop = program.stack.tail(number.toInt)
           program.updateStackAndScript(newStackTop :: program.stack.tail,
                                        program.script.tail)
@@ -174,7 +177,9 @@ sealed abstract class StackInterpreter {
       (number: ScriptNumber) =>
         if (program.stack.size < 2)
           program.failExecution(ScriptErrorInvalidStackOperation)
-        else if (number.toLong >= 0 && number.toLong < program.stack.tail.size) {
+        else if (
+          number.toLong >= 0 && number.toLong < program.stack.tail.size
+        ) {
           val newStackTop = program.stack.tail(number.toInt)
           //removes the old instance of the stack top, appends the new index to the head
           val newStack = newStackTop :: program.stack.tail
@@ -242,7 +247,8 @@ sealed abstract class StackInterpreter {
     require(program.script.headOption.contains(OP_SWAP),
             "Top of script stack must be OP_SWAP")
     if (program.stack.size > 1) {
-      val newStack = program.stack.tail.head :: program.stack.head :: program.stack.tail.tail
+      val newStack =
+        program.stack.tail.head :: program.stack.head :: program.stack.tail.tail
       program.updateStackAndScript(newStack, program.script.tail)
     } else {
       logger.error("Stack must have at least 2 items on it for OP_SWAP")

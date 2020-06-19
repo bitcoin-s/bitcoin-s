@@ -77,7 +77,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     )
   }
 
-  it must "receive information about received payments" taggedAs (UsesExperimentalBitcoind) in {
+  it must "receive information about received payments" taggedAs UsesExperimentalBitcoind in {
     param =>
       val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
@@ -104,7 +104,8 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       val condition1 = () => {
         condition(
           expectedConfirmedAmount = 0.sats,
-          expectedUnconfirmedAmount = BitcoinSWalletTest.expectedDefaultAmt - TestAmount - TestFees,
+          expectedUnconfirmedAmount =
+            BitcoinSWalletTest.expectedDefaultAmt - TestAmount - TestFees,
           expectedUtxos = 3,
           expectedAddresses = 7
         )
@@ -112,7 +113,8 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       val condition2 = { () =>
         condition(
           expectedConfirmedAmount = 0.sats,
-          expectedUnconfirmedAmount = BitcoinSWalletTest.expectedDefaultAmt - TestFees,
+          expectedUnconfirmedAmount =
+            BitcoinSWalletTest.expectedDefaultAmt - TestFees,
           expectedUtxos = 4,
           expectedAddresses = 8
         )
@@ -127,8 +129,9 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         addr <- bitcoind.getNewAddress
         _ <- wallet.sendToAddress(addr, TestAmount, Some(FeeRate))
 
-        _ <- bitcoind.getNewAddress
-          .flatMap(bitcoind.generateToAddress(1, _))
+        _ <-
+          bitcoind.getNewAddress
+            .flatMap(bitcoind.generateToAddress(1, _))
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
@@ -136,11 +139,13 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
         // receive
         address <- wallet.getNewAddress()
-        _ <- bitcoind
-          .sendToAddress(address, TestAmount)
+        _ <-
+          bitcoind
+            .sendToAddress(address, TestAmount)
 
-        _ <- bitcoind.getNewAddress
-          .flatMap(bitcoind.generateToAddress(1, _))
+        _ <-
+          bitcoind.getNewAddress
+            .flatMap(bitcoind.generateToAddress(1, _))
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
@@ -148,7 +153,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       } yield succeed
   }
 
-  it must "rescan and receive information about received payments" taggedAs (UsesExperimentalBitcoind) in {
+  it must "rescan and receive information about received payments" taggedAs UsesExperimentalBitcoind in {
     param =>
       val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
@@ -179,8 +184,9 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
         address <- wallet.getNewAddress()
-        _ <- bitcoind
-          .sendToAddress(address, TestAmount)
+        _ <-
+          bitcoind
+            .sendToAddress(address, TestAmount)
 
         addresses <- wallet.listAddresses()
         utxos <- wallet.listUtxos()
@@ -194,8 +200,9 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ = assert(addresses.isEmpty)
         _ = assert(utxos.isEmpty)
 
-        _ <- bitcoind.getNewAddress
-          .flatMap(bitcoind.generateToAddress(1, _))
+        _ <-
+          bitcoind.getNewAddress
+            .flatMap(bitcoind.generateToAddress(1, _))
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
