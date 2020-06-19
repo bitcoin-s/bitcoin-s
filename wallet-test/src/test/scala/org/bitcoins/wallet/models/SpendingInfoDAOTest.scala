@@ -8,11 +8,33 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
-import org.bitcoins.testkit.fixtures.WalletDAOFixture
+import org.bitcoins.testkit.fixtures.{WalletDAOFixture, WalletDAOs}
+import org.bitcoins.testkit.wallet.WalletTestUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 
 class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   behavior of "SpendingInfoDAO"
+
+  it must "be able to update multiple utxos" in { daos =>
+    val WalletDAOs(_, addressDAO, spendingInfoDAO, _, _, _) = daos
+
+    for {
+      account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
+      addr <- addressDAO.create(getAddressDb(account))
+
+      u1 = sampleLegacyUTXO(addr.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, u1)
+      utxo1 <- daos.utxoDAO.create(u1)
+
+      u2 = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, u2)
+      utxo2 <- daos.utxoDAO.create(u2)
+
+      utxos = Vector(utxo1, utxo2)
+      changed = utxos.map(_.copyWithState(TxoState.DoesNotExist))
+      updated <- spendingInfoDAO.updateAll(changed)
+    } yield assert(updated == changed)
+  }
 
   it should "insert a segwit UTXO and read it" in { daos =>
     val utxoDAO = daos.utxoDAO
