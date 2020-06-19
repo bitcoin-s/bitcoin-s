@@ -14,8 +14,8 @@ import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
@@ -193,21 +193,22 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
     )(test)
   }
 
-  def withSpvNodeConnectedToBitcoindV19(test: OneArgAsyncTest)(
-      implicit system: ActorSystem,
+  def withSpvNodeConnectedToBitcoindV19(test: OneArgAsyncTest)(implicit
+      system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[SpvNodeConnectedWithBitcoindV19] = {
-      () =>
-        require(appConfig.isSPVEnabled && !appConfig.isNeutrinoEnabled)
-        for {
-          bitcoind <- BitcoinSFixture
+    val nodeWithBitcoindBuilder: () => Future[
+      SpvNodeConnectedWithBitcoindV19] = { () =>
+      require(appConfig.isSPVEnabled && !appConfig.isNeutrinoEnabled)
+      for {
+        bitcoind <-
+          BitcoinSFixture
             .createBitcoindWithFunds(Some(V19))
             .map(_.asInstanceOf[BitcoindV19RpcClient])
-          node <- NodeUnitTest.createSpvNode(bitcoind, NodeCallbacks.empty)(
-            system,
-            appConfig.chainConf,
-            appConfig.nodeConf)
-        } yield SpvNodeConnectedWithBitcoindV19(node, bitcoind)
+        node <- NodeUnitTest.createSpvNode(bitcoind, NodeCallbacks.empty)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
+      } yield SpvNodeConnectedWithBitcoindV19(node, bitcoind)
     }
 
     makeDependentFixture(
