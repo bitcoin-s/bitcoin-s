@@ -248,16 +248,27 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
   /** Detects if the given script token is a redeem script */
   def isRedeemScript(token: ScriptToken): Boolean = {
     val redeemScript: ScriptPubKey = parseRedeemScript(token)
-    redeemScript match {
-      case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
-          _: P2SHScriptPubKey | _: P2PKScriptPubKey |
-          _: P2PKWithTimeoutScriptPubKey | _: ConditionalScriptPubKey |
-          _: CLTVScriptPubKey | _: CSVScriptPubKey | _: WitnessScriptPubKeyV0 |
-          _: UnassignedWitnessScriptPubKey =>
-        true
-      case _: NonStandardScriptPubKey | _: WitnessCommitment => false
-      case EmptyScriptPubKey                                 => false
+
+    def isStandardNonP2SH(spk: ScriptPubKey): Boolean = {
+      spk match {
+        case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
+            _: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
+            _: WitnessScriptPubKeyV0 =>
+          true
+        case conditional: ConditionalScriptPubKey =>
+          isStandardNonP2SH(conditional.firstSPK) && isStandardNonP2SH(
+            conditional.secondSPK)
+        case locktime: LockTimeScriptPubKey =>
+          Try(locktime.locktime).isSuccess &&
+            isStandardNonP2SH(locktime.nestedScriptPubKey)
+        case _: NonStandardScriptPubKey | _: WitnessCommitment |
+            _: P2SHScriptPubKey | EmptyScriptPubKey |
+            _: UnassignedWitnessScriptPubKey =>
+          false
+      }
     }
+
+    isStandardNonP2SH(redeemScript)
   }
 
   /** Parses a redeem script from the given script token */
