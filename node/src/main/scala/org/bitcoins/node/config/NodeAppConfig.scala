@@ -74,6 +74,9 @@ case class NodeAppConfig(
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
   }
 
+  /** Starts the associated application */
+  override def start(): Unit = ()
+
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
   def createNode(peer: Peer)(
       chainConf: ChainAppConfig,

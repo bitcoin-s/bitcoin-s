@@ -124,6 +124,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def start(): Future[Node] = {
     logger.info("Starting node")
     val start = System.currentTimeMillis()
+    nodeAppConfig.start()
+
     for {
       _ <- nodeAppConfig.initialize()
       // get chainApi so we don't need to call chainApiFromDb on every call

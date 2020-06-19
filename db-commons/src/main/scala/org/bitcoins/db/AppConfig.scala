@@ -41,6 +41,9 @@ abstract class AppConfig extends LoggerConfig {
     */
   def initialize()(implicit ec: ExecutionContext): Future[Unit]
 
+  /** Starts the associated application */
+  def start(): Unit
+
   /** Releases the thread pool associated with this AppConfig's DB */
   def stop(): Unit = {
     slickDbConfig.db.close()

@@ -95,6 +95,9 @@ case class ChainAppConfig(
 
   lazy val filterBatchSize: Int =
     config.getInt(s"${moduleName}.neutrino.filter-batch-size")
+
+  /** Starts the associated application */
+  override def start(): Unit = ()
 }
 
 object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {
