@@ -136,7 +136,8 @@ sealed abstract class CryptoInterpreter {
     require(program.script.headOption.contains(OP_CODESEPARATOR),
             "Script top must be OP_CODESEPARATOR")
 
-    val indexOfOpCodeSeparator = program.originalScript.size - program.script.size
+    val indexOfOpCodeSeparator =
+      program.originalScript.size - program.script.size
 
     program
       .updateScript(program.script.tail)
@@ -171,7 +172,10 @@ sealed abstract class CryptoInterpreter {
         logger.error(
           "We cannot have the number of pubkeys in the script be negative")
         program.failExecution(ScriptErrorPubKeyCount)
-      } else if (ScriptFlagUtil.requireMinimalData(flags) && !nPossibleSignatures.isShortestEncoding) {
+      } else if (
+        ScriptFlagUtil.requireMinimalData(
+          flags) && !nPossibleSignatures.isShortestEncoding
+      ) {
         logger.error(
           "The required signatures and the possible signatures must be encoded as the shortest number possible")
         program.failExecution(ScriptErrorUnknownError)
@@ -182,7 +186,10 @@ sealed abstract class CryptoInterpreter {
         val mRequiredSignatures: ScriptNumber =
           BitcoinScriptUtil.numRequiredSignaturesOnStack(program)
 
-        if (ScriptFlagUtil.requireMinimalData(flags) && !mRequiredSignatures.isShortestEncoding) {
+        if (
+          ScriptFlagUtil.requireMinimalData(
+            flags) && !mRequiredSignatures.isShortestEncoding
+        ) {
           logger.error(
             "The required signatures val must be the shortest encoding as possible")
           return program.failExecution(ScriptErrorUnknownError)
@@ -231,8 +238,10 @@ sealed abstract class CryptoInterpreter {
           //this is because of a bug in bitcoin core for the implementation of OP_CHECKMULTISIG
           //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L966
           program.failExecution(ScriptErrorInvalidStackOperation)
-        } else if (ScriptFlagUtil.requireNullDummy(flags) &&
-                   (stackWithoutPubKeysAndSignatures.nonEmpty && stackWithoutPubKeysAndSignatures.head.bytes.nonEmpty)) {
+        } else if (
+          ScriptFlagUtil.requireNullDummy(flags) &&
+          (stackWithoutPubKeysAndSignatures.nonEmpty && stackWithoutPubKeysAndSignatures.head.bytes.nonEmpty)
+        ) {
           logger.error(
             "Script flag null dummy was set however the first element in the script signature was not an OP_0, stackWithoutPubKeysAndSignatures: " + stackWithoutPubKeysAndSignatures)
           program.failExecution(ScriptErrorSigNullDummy)
@@ -309,37 +318,40 @@ sealed abstract class CryptoInterpreter {
   private def handleSignatureValidation(
       program: ExecutionInProgressScriptProgram,
       result: TransactionSignatureCheckerResult,
-      restOfStack: Seq[ScriptToken]): StartedScriptProgram = result match {
-    case SignatureValidationSuccess =>
-      //means that all of the signatures were correctly encoded and
-      //that all of the signatures were valid signatures for the given
-      //public keys
-      program.updateStackAndScript(OP_TRUE +: restOfStack, program.script.tail)
-    case SignatureValidationErrorNotStrictDerEncoding =>
-      //this means the script fails immediately
-      //set the valid flag to false on the script
-      //see BIP66 for more information on this
-      //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
-      program.failExecution(ScriptErrorSigDer)
-    case SignatureValidationErrorIncorrectSignatures =>
-      //this means that signature verification failed, however all signatures were encoded correctly
-      //just push a OP_FALSE onto the stack
-      program.updateStackAndScript(OP_FALSE +: restOfStack, program.script.tail)
-    case SignatureValidationErrorSignatureCount =>
-      //means that we did not have enough signatures for OP_CHECKMULTISIG
-      program.failExecution(ScriptErrorInvalidStackOperation)
-    case SignatureValidationErrorPubKeyEncoding =>
-      //means that a public key was not encoded correctly
-      program.failExecution(ScriptErrorPubKeyType)
-    case SignatureValidationErrorHighSValue =>
-      program.failExecution(ScriptErrorSigHighS)
-    case SignatureValidationErrorHashType =>
-      program.failExecution(ScriptErrorSigHashType)
-    case SignatureValidationErrorWitnessPubKeyType =>
-      program.failExecution(ScriptErrorWitnessPubKeyType)
-    case SignatureValidationErrorNullFail =>
-      program.failExecution(ScriptErrorSigNullFail)
-  }
+      restOfStack: Seq[ScriptToken]): StartedScriptProgram =
+    result match {
+      case SignatureValidationSuccess =>
+        //means that all of the signatures were correctly encoded and
+        //that all of the signatures were valid signatures for the given
+        //public keys
+        program.updateStackAndScript(OP_TRUE +: restOfStack,
+                                     program.script.tail)
+      case SignatureValidationErrorNotStrictDerEncoding =>
+        //this means the script fails immediately
+        //set the valid flag to false on the script
+        //see BIP66 for more information on this
+        //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
+        program.failExecution(ScriptErrorSigDer)
+      case SignatureValidationErrorIncorrectSignatures =>
+        //this means that signature verification failed, however all signatures were encoded correctly
+        //just push a OP_FALSE onto the stack
+        program.updateStackAndScript(OP_FALSE +: restOfStack,
+                                     program.script.tail)
+      case SignatureValidationErrorSignatureCount =>
+        //means that we did not have enough signatures for OP_CHECKMULTISIG
+        program.failExecution(ScriptErrorInvalidStackOperation)
+      case SignatureValidationErrorPubKeyEncoding =>
+        //means that a public key was not encoded correctly
+        program.failExecution(ScriptErrorPubKeyType)
+      case SignatureValidationErrorHighSValue =>
+        program.failExecution(ScriptErrorSigHighS)
+      case SignatureValidationErrorHashType =>
+        program.failExecution(ScriptErrorSigHashType)
+      case SignatureValidationErrorWitnessPubKeyType =>
+        program.failExecution(ScriptErrorWitnessPubKeyType)
+      case SignatureValidationErrorNullFail =>
+        program.failExecution(ScriptErrorSigNullFail)
+    }
 }
 
 object CryptoInterpreter extends CryptoInterpreter

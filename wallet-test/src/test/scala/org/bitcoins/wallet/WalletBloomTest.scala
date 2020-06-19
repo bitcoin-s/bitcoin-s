@@ -26,7 +26,7 @@ class WalletBloomTest extends BitcoinSWalletTest {
         bloom <- wallet.getBloomFilter()
         pubkeys <- wallet.listPubkeys()
       } yield {
-        pubkeys.map { (pub) =>
+        pubkeys.map { pub =>
           assert(bloom.contains(pub))
         }.toAssertion
       }
@@ -42,7 +42,7 @@ class WalletBloomTest extends BitcoinSWalletTest {
 
         bloom <- wallet.getBloomFilter()
       } yield {
-        outpoints.map { (out) =>
+        outpoints.map { out =>
           assert(bloom.contains(out))
         }.toAssertion
       }

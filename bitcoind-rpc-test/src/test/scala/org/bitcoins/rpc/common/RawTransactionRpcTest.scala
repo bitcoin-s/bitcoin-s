@@ -20,6 +20,7 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 import scala.concurrent.Future
 
 class RawTransactionRpcTest extends BitcoindRpcTest {
+
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
     BitcoindRpcTestUtil.createNodePairV17(clientAccum = clientAccum)
 
@@ -29,12 +30,14 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       address <- otherClient.getNewAddress
-      transactionWithoutFunds <- client
-        .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
+      transactionWithoutFunds <-
+        client
+          .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
       transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
       transaction = transactionResult.hex
-      inputTransaction <- client
-        .getRawTransaction(transaction.inputs.head.previousOutput.txId.flip)
+      inputTransaction <-
+        client
+          .getRawTransaction(transaction.inputs.head.previousOutput.txId.flip)
     } yield {
       assert(transaction.inputs.length == 1)
 
@@ -55,8 +58,9 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   it should "be able to decode a raw transaction" in {
     for {
       (client, otherClient) <- clientsF
-      transaction <- BitcoindRpcTestUtil
-        .createRawCoinbaseTransaction(client, otherClient)
+      transaction <-
+        BitcoindRpcTestUtil
+          .createRawCoinbaseTransaction(client, otherClient)
       rpcTransaction <- client.decodeRawTransaction(transaction)
     } yield {
       assert(rpcTransaction.txid == transaction.txIdBE)
@@ -120,11 +124,13 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   it should "be able to send a raw transaction to the mem pool" in {
     for {
       (client, otherClient) <- clientsF
-      rawTx <- BitcoindRpcTestUtil.createRawCoinbaseTransaction(client,
-                                                                otherClient)
+      rawTx <-
+        BitcoindRpcTestUtil.createRawCoinbaseTransaction(client, otherClient)
       signedTransaction <- BitcoindRpcTestUtil.signRawTransaction(client, rawTx)
 
-      _ <- client.getNewAddress.flatMap(client.generateToAddress(100, _)) // Can't spend coinbase until depth 100
+      _ <- client.getNewAddress.flatMap(
+        client.generateToAddress(100, _)
+      ) // Can't spend coinbase until depth 100
 
       _ <- client.sendRawTransaction(signedTransaction.hex, maxfeerate = 0)
     } yield succeed
@@ -135,19 +141,22 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       (client, server) <- clientsF
       address <- client.getNewAddress
       pubkey <- BitcoindRpcTestUtil.getPubkey(client, address)
-      multisig <- client
-        .addMultiSigAddress(1, Vector(Left(pubkey.get)))
-      txid <- BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client,
-                                   server,
-                                   multisig.address,
-                                   Bitcoins(1.2))
+      multisig <-
+        client
+          .addMultiSigAddress(1, Vector(Left(pubkey.get)))
+      txid <-
+        BitcoindRpcTestUtil
+          .fundBlockChainTransaction(client,
+                                     server,
+                                     multisig.address,
+                                     Bitcoins(1.2))
       rawTx <- client.getTransaction(txid)
 
       tx <- client.decodeRawTransaction(rawTx.hex)
-      output = tx.vout
-        .find(output => output.value == Bitcoins(1.2))
-        .get
+      output =
+        tx.vout
+          .find(output => output.value == Bitcoins(1.2))
+          .get
 
       newAddress <- client.getNewAddress
       rawCreatedTx <- {
@@ -197,9 +206,10 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       rawTx <- client.getTransaction(txid)
       tx <- client.decodeRawTransaction(rawTx.hex)
 
-      output = tx.vout
-        .find(output => output.value == Bitcoins(1.2))
-        .get
+      output =
+        tx.vout
+          .find(output => output.value == Bitcoins(1.2))
+          .get
 
       address3 <- client.getNewAddress
 
@@ -216,20 +226,19 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
         val scriptPubKey =
           ScriptPubKey.fromAsmHex(output.scriptPubKey.hex)
         val utxoDep =
-          RpcOpts.SignRawTransactionOutputParameter(
-            txid,
-            output.n,
-            scriptPubKey,
-            Some(multisig.redeemScript),
-            amount = Some(Bitcoins(1.2)))
+          RpcOpts.SignRawTransactionOutputParameter(txid,
+                                                    output.n,
+                                                    scriptPubKey,
+                                                    Some(multisig.redeemScript),
+                                                    amount =
+                                                      Some(Bitcoins(1.2)))
         Vector(utxoDep)
       }
 
       partialTx1 <- BitcoindRpcTestUtil.signRawTransaction(client, ctx, txOpts)
 
-      partialTx2 <- BitcoindRpcTestUtil.signRawTransaction(otherClient,
-                                                           ctx,
-                                                           txOpts)
+      partialTx2 <-
+        BitcoindRpcTestUtil.signRawTransaction(otherClient, ctx, txOpts)
 
       combinedTx <- {
         val txs = Vector(partialTx1.hex, partialTx2.hex)

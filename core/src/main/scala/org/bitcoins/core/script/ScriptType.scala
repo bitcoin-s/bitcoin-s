@@ -9,17 +9,19 @@ package org.bitcoins.core.script
   */
 sealed abstract class ScriptType {
   import org.bitcoins.core.script.ScriptType._
-  override def toString: String = this match {
-    case NONSTANDARD           => "nonstandard"
-    case PUBKEY                => "pubkey"
-    case PUBKEYHASH            => "pubkeyhash"
-    case SCRIPTHASH            => "scripthash"
-    case MULTISIG              => "multisig"
-    case NULLDATA              => "nulldata"
-    case WITNESS_V0_KEYHASH    => "witness_v0_keyhash"
-    case WITNESS_V0_SCRIPTHASH => "witness_v0_scripthash"
-    case WITNESS_UNKNOWN       => "witness_unknown"
-  }
+
+  override def toString: String =
+    this match {
+      case NONSTANDARD           => "nonstandard"
+      case PUBKEY                => "pubkey"
+      case PUBKEYHASH            => "pubkeyhash"
+      case SCRIPTHASH            => "scripthash"
+      case MULTISIG              => "multisig"
+      case NULLDATA              => "nulldata"
+      case WITNESS_V0_KEYHASH    => "witness_v0_keyhash"
+      case WITNESS_V0_SCRIPTHASH => "witness_v0_scripthash"
+      case WITNESS_UNKNOWN       => "witness_unknown"
+    }
 }
 
 /**
@@ -30,6 +32,7 @@ sealed abstract class ScriptType {
   *     from Bitcoin Core
   */
 object ScriptType {
+
   private[script] val all: Seq[ScriptType] = Vector(NONSTANDARD,
                                                     PUBKEY,
                                                     PUBKEYHASH,

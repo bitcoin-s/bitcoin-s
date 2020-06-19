@@ -166,5 +166,5 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
         assert(bouncyCastleSigPoint == secpSigPoint)
     }
   }
- */
+   */
 }

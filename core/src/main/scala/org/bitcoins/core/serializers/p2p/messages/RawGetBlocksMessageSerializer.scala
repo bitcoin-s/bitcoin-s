@@ -45,7 +45,9 @@ trait RawGetBlocksMessageSerializer
     */
   private def parseBlockHeaders(
       bytes: ByteVector,
-      compactSizeUInt: CompactSizeUInt): (List[DoubleSha256Digest], ByteVector) = {
+      compactSizeUInt: CompactSizeUInt): (
+      List[DoubleSha256Digest],
+      ByteVector) = {
     @tailrec
     def loop(
         remainingHeaders: Long,

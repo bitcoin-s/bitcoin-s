@@ -11,8 +11,8 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import scodec.bits.ByteVector
 
-final case class BroadcastAbleTransactionDAO()(
-    implicit override val appConfig: NodeAppConfig,
+final case class BroadcastAbleTransactionDAO()(implicit
+    override val appConfig: NodeAppConfig,
     val ec: ExecutionContext)
     extends CRUDAutoInc[BroadcastAbleTransaction] {
 
@@ -35,7 +35,8 @@ final case class BroadcastAbleTransactionDAO()(
 
   /** Table over TXs we can broadcast over the P2P network */
   class BroadcastAbleTransactionTable(tag: Tag)
-      extends TableAutoInc[BroadcastAbleTransaction](tag, "broadcast_elements") {
+      extends TableAutoInc[BroadcastAbleTransaction](tag,
+                                                     "broadcast_elements") {
     private type Tuple = (DoubleSha256DigestBE, ByteVector, Option[Long])
 
     private val fromTuple: (Tuple => BroadcastAbleTransaction) = {

@@ -12,7 +12,8 @@ class MultiSignatureScriptSignatureSpec
   property("Serialization symmetry") =
     Prop.forAll(ScriptGenerators.multiSignatureScriptSignature) {
       multiSigScriptSig =>
-        MultiSignatureScriptSignature(multiSigScriptSig.hex) == multiSigScriptSig
+        MultiSignatureScriptSignature(
+          multiSigScriptSig.hex) == multiSigScriptSig
 
     }
 }

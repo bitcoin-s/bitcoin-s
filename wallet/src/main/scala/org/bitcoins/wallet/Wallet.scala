@@ -55,8 +55,10 @@ abstract class Wallet
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
   private[wallet] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
   private[wallet] val transactionDAO: TransactionDAO = TransactionDAO()
+
   private[wallet] val incomingTxDAO: IncomingTransactionDAO =
     IncomingTransactionDAO()
+
   private[wallet] val outgoingTxDAO: OutgoingTransactionDAO =
     OutgoingTransactionDAO()
 
@@ -112,8 +114,10 @@ abstract class Wallet
     * TXOs in the wallet, filtered by the given predicate */
   private def filterThenSum(
       predicate: SpendingInfoDb => Boolean): Future[CurrencyUnit] = {
-    for (utxos <- spendingInfoDAO.findAllUnspentForAccount(
-           walletConfig.defaultAccount))
+    for (
+      utxos <-
+        spendingInfoDAO.findAllUnspentForAccount(walletConfig.defaultAccount)
+    )
       yield {
         val filtered = utxos
           .filter(predicate)
@@ -177,11 +181,11 @@ abstract class Wallet
     unspentInAccountF.map(_.foldLeft(CurrencyUnits.zero)(_ + _.output.value))
   }
 
-  /** Enumerates all the TX outpoints in the wallet  */
+  /** Enumerates all the TX outpoints in the wallet */
   protected[wallet] def listOutpoints(): Future[Vector[TransactionOutPoint]] =
     spendingInfoDAO.findAllOutpoints()
 
-  /** Gets the size of the bloom filter for this wallet  */
+  /** Gets the size of the bloom filter for this wallet */
   private def getBloomFilterSize(
       pubkeys: Seq[ECPublicKey],
       outpoints: Seq[TransactionOutPoint]): Int = {
@@ -352,8 +356,8 @@ abstract class Wallet
       } else ByteVector(message.getBytes)
     }
 
-    val asm = Seq(OP_RETURN) ++ BitcoinScriptUtil.calculatePushOp(messageToUse) :+ ScriptConstant(
-      messageToUse)
+    val asm = Seq(OP_RETURN) ++ BitcoinScriptUtil.calculatePushOp(
+      messageToUse) :+ ScriptConstant(messageToUse)
 
     val scriptPubKey = ScriptPubKey(asm)
 
@@ -439,8 +443,8 @@ object Wallet extends WalletLogger {
       override val chainQueryApi: ChainQueryApi,
       override val feeRateApi: FeeRateApi,
       override val creationTime: Instant
-  )(
-      implicit override val walletConfig: WalletAppConfig,
+  )(implicit
+      override val walletConfig: WalletAppConfig,
       override val ec: ExecutionContext
   ) extends Wallet
 
@@ -449,15 +453,16 @@ object Wallet extends WalletLogger {
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
-      creationTime: Instant)(
-      implicit config: WalletAppConfig,
+      creationTime: Instant)(implicit
+      config: WalletAppConfig,
       ec: ExecutionContext): Wallet = {
     WalletImpl(keyManager, nodeApi, chainQueryApi, feeRateApi, creationTime)
   }
 
   /** Creates the level 0 account for the given HD purpose, if the root account exists do nothing */
   private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
-      implicit walletAppConfig: WalletAppConfig,
+      implicit
+      walletAppConfig: WalletAppConfig,
       ec: ExecutionContext): Future[AccountDb] = {
     val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
     val coin =
@@ -478,8 +483,9 @@ object Wallet extends WalletLogger {
     accountOptF.flatMap {
       case Some(account) =>
         if (account.xpub != xpub) {
-          val errorMsg = s"Divergent xpubs for account=${account}. Existing database xpub=${account.xpub}, new xpub=${xpub}. " +
-            s"It is possible we have a different key manager being used than expected, keymanager=${keyManager}"
+          val errorMsg =
+            s"Divergent xpubs for account=${account}. Existing database xpub=${account.xpub}, new xpub=${xpub}. " +
+              s"It is possible we have a different key manager being used than expected, keymanager=${keyManager}"
           Future.failed(new RuntimeException(errorMsg))
         } else {
           logger.debug(
@@ -497,8 +503,8 @@ object Wallet extends WalletLogger {
 
   }
 
-  def initialize(wallet: Wallet, bip39PasswordOpt: Option[String])(
-      implicit walletAppConfig: WalletAppConfig,
+  def initialize(wallet: Wallet, bip39PasswordOpt: Option[String])(implicit
+      walletAppConfig: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later

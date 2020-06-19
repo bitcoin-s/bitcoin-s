@@ -97,6 +97,7 @@ object WalletTestUtil {
 
   private def randomTXID = CryptoGenerators.doubleSha256Digest.sampleSome.flip
   private def randomVout = NumberGenerator.uInt32s.sampleSome
+
   private def randomBlockHash =
     CryptoGenerators.doubleSha256Digest.sampleSome.flip
 
@@ -218,8 +219,8 @@ object WalletTestUtil {
   }
 
   /** Inserts an account, address and finally a UTXO */
-  def insertLegacyUTXO(daos: WalletDAOs)(
-      implicit ec: ExecutionContext): Future[LegacySpendingInfo] = {
+  def insertLegacyUTXO(daos: WalletDAOs)(implicit
+      ec: ExecutionContext): Future[LegacySpendingInfo] = {
     for {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- daos.addressDAO.create(getAddressDb(account))
@@ -230,8 +231,8 @@ object WalletTestUtil {
   }
 
   /** Inserts an account, address and finally a UTXO */
-  def insertSegWitUTXO(daos: WalletDAOs)(
-      implicit ec: ExecutionContext): Future[SegwitV0SpendingInfo] = {
+  def insertSegWitUTXO(daos: WalletDAOs)(implicit
+      ec: ExecutionContext): Future[SegwitV0SpendingInfo] = {
     for {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- daos.addressDAO.create(getAddressDb(account))
@@ -242,8 +243,8 @@ object WalletTestUtil {
   }
 
   /** Inserts an account, address and finally a UTXO */
-  def insertNestedSegWitUTXO(daos: WalletDAOs)(
-      implicit ec: ExecutionContext): Future[NestedSegwitV0SpendingInfo] = {
+  def insertNestedSegWitUTXO(daos: WalletDAOs)(implicit
+      ec: ExecutionContext): Future[NestedSegwitV0SpendingInfo] = {
     for {
       account <- daos.accountDAO.create(WalletTestUtil.nestedSegWitAccountDb)
       addr <- daos.addressDAO.create(getNestedSegwitAddressDb(account))

@@ -602,15 +602,15 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(rootXpriv == expectedRootXpriv)
 
     /*
-   * Yet to implement from the BIP:
-   * // Address derivation
-   * keyhash = HASH160(account0recvPublickKeyHex) = 0x38971f73930f6c141d977ac4fd4a727c854935b3
-   * scriptSig = <0 <keyhash>> = 0x001438971f73930f6c141d977ac4fd4a727c854935b3
-   * addressBytes = HASH160(scriptSig) = 0x336caa13e08b96080a32b5d818d59b4ab3b36742
-   *
-   * // addressBytes base58check encoded for testnet
-   * address = base58check(prefix | addressBytes) = 2Mww8dCYPUpKHofjgcXcBCEGmniw9CoaiD2 (testnet)
-   */
+     * Yet to implement from the BIP:
+     * // Address derivation
+     * keyhash = HASH160(account0recvPublickKeyHex) = 0x38971f73930f6c141d977ac4fd4a727c854935b3
+     * scriptSig = <0 <keyhash>> = 0x001438971f73930f6c141d977ac4fd4a727c854935b3
+     * addressBytes = HASH160(scriptSig) = 0x336caa13e08b96080a32b5d818d59b4ab3b36742
+     *
+     * // addressBytes base58check encoded for testnet
+     * address = base58check(prefix | addressBytes) = 2Mww8dCYPUpKHofjgcXcBCEGmniw9CoaiD2 (testnet)
+     */
 
   }
 

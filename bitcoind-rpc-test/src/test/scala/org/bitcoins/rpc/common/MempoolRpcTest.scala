@@ -20,6 +20,7 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 import scala.concurrent.Future
 
 class MempoolRpcTest extends BitcoindRpcTest {
+
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
     BitcoindRpcTestUtil.createNodePairV18(clientAccum = clientAccum)
 
@@ -58,8 +59,8 @@ class MempoolRpcTest extends BitcoindRpcTest {
   it should "be able to find a transaction sent to the mem pool" in {
     for {
       (client, otherClient) <- clientsF
-      transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client,
-                                                                 otherClient)
+      transaction <-
+        BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
       mempool <- client.getRawMemPool
     } yield {
       assert(mempool.length == 1)
@@ -70,8 +71,8 @@ class MempoolRpcTest extends BitcoindRpcTest {
   it should "be able to find a verbose transaction in the mem pool" in {
     for {
       (client, otherClient) <- clientsF
-      transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client,
-                                                                 otherClient)
+      transaction <-
+        BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
       mempool <- client.getRawMemPoolWithTransactions
     } yield {
       val txid = mempool.keySet.head
@@ -83,8 +84,8 @@ class MempoolRpcTest extends BitcoindRpcTest {
   it should "be able to find a mem pool entry" in {
     for {
       (client, otherClient) <- clientsF
-      transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client,
-                                                                 otherClient)
+      transaction <-
+        BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
       _ <- client.getMemPoolEntry(transaction.txid)
     } yield succeed
   }
@@ -116,8 +117,9 @@ class MempoolRpcTest extends BitcoindRpcTest {
       (client, otherClient) <- clientsF
       _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       info <- client.getMemPoolInfo
-      _ <- BitcoindRpcTestUtil
-        .sendCoinbaseTransaction(client, otherClient)
+      _ <-
+        BitcoindRpcTestUtil
+          .sendCoinbaseTransaction(client, otherClient)
       newInfo <- client.getMemPoolInfo
     } yield {
       assert(info.size == 0)
@@ -129,8 +131,9 @@ class MempoolRpcTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       address <- otherClient.getNewAddress
-      txid <- BitcoindRpcTestUtil
-        .fundMemPoolTransaction(client, address, Bitcoins(3.2))
+      txid <-
+        BitcoindRpcTestUtil
+          .fundMemPoolTransaction(client, address, Bitcoins(3.2))
       entry <- client.getMemPoolEntry(txid)
       tt <- client.prioritiseTransaction(txid, Bitcoins(1).satoshis)
       newEntry <- client.getMemPoolEntry(txid)

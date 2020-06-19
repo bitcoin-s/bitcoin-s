@@ -123,13 +123,15 @@ class PSBTTest extends BitcoinSAsyncTest {
   }
 
   it must "add Redeem Scripts to outputs" in {
-    forAllAsync(PSBTGenerators.psbtWithBuilderAndP2SHOutputs(finalized = false)) {
+    forAllAsync(
+      PSBTGenerators.psbtWithBuilderAndP2SHOutputs(finalized = false)) {
       psbtWithBuilderF =>
         psbtWithBuilderF.flatMap {
           case (psbtEmptyOutputs, _, redeemScripts) =>
-            val psbtWithOutputs = redeemScripts.zipWithIndex.foldLeft(
-              psbtEmptyOutputs)((psbt, spk) =>
-              psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
+            val psbtWithOutputs =
+              redeemScripts.zipWithIndex.foldLeft(psbtEmptyOutputs)(
+                (psbt, spk) =>
+                  psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
 
             val allOutputsValid =
               psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
@@ -147,9 +149,10 @@ class PSBTTest extends BitcoinSAsyncTest {
       psbtWithBuilderF =>
         psbtWithBuilderF.flatMap {
           case (psbtEmptyOutputs, _, redeemScripts) =>
-            val psbtWithOutputs = redeemScripts.zipWithIndex.foldLeft(
-              psbtEmptyOutputs)((psbt, spk) =>
-              psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
+            val psbtWithOutputs =
+              redeemScripts.zipWithIndex.foldLeft(psbtEmptyOutputs)(
+                (psbt, spk) =>
+                  psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
 
             val allOutputsValid =
               psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
@@ -173,18 +176,20 @@ class PSBTTest extends BitcoinSAsyncTest {
         val maxFee = crediting - spending
         val fee = GenUtil.sample(CurrencyUnitGenerator.feeUnit(maxFee))
         for {
-          (psbt, _, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
-            finalized = false,
-            creditingTxsInfo = creditingTxsInfo,
-            destinations = destinations,
-            changeSPK = changeSPK,
-            fee = fee)
-          (expected, _, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
-            finalized = true,
-            creditingTxsInfo = creditingTxsInfo,
-            destinations = destinations,
-            changeSPK = changeSPK,
-            fee = fee)
+          (psbt, _, _) <-
+            PSBTGenerators.psbtAndBuilderFromInputs(finalized = false,
+                                                    creditingTxsInfo =
+                                                      creditingTxsInfo,
+                                                    destinations = destinations,
+                                                    changeSPK = changeSPK,
+                                                    fee = fee)
+          (expected, _, _) <-
+            PSBTGenerators.psbtAndBuilderFromInputs(finalized = true,
+                                                    creditingTxsInfo =
+                                                      creditingTxsInfo,
+                                                    destinations = destinations,
+                                                    changeSPK = changeSPK,
+                                                    fee = fee)
         } yield {
           val finalizedPsbtOpt = psbt.finalizePSBT
           assert(finalizedPsbtOpt.isSuccess, psbt.hex)

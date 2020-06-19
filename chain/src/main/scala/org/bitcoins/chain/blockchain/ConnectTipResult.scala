@@ -12,8 +12,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
   * 1. Extend the chain
   * 2. Reorg the chain
   * 3. Fail to connect to anything in the chain
-  *
-  * */
+  */
 sealed trait ConnectTipResult {
   def tipUpdateResult: TipUpdateResult
 

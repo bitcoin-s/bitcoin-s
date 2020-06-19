@@ -34,13 +34,13 @@ trait NodeCallbacks {
 
   def +(other: NodeCallbacks): NodeCallbacks
 
-  def executeOnTxReceivedCallbacks(logger: Logger, tx: Transaction)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def executeOnTxReceivedCallbacks(logger: Logger, tx: Transaction)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     onTxReceived.execute(logger, tx)
   }
 
-  def executeOnBlockReceivedCallbacks(logger: Logger, block: Block)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def executeOnBlockReceivedCallbacks(logger: Logger, block: Block)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     onBlockReceived.execute(logger, block)
   }
 
@@ -53,15 +53,15 @@ trait NodeCallbacks {
 
   def executeOnCompactFiltersReceivedCallbacks(
       logger: Logger,
-      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)])(
-      implicit ec: ExecutionContext): Future[Unit] = {
+      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)])(implicit
+      ec: ExecutionContext): Future[Unit] = {
     onCompactFiltersReceived.execute(logger, blockFilters)
   }
 
   def executeOnBlockHeadersReceivedCallbacks(
       logger: Logger,
-      headers: Vector[BlockHeader])(
-      implicit ec: ExecutionContext): Future[Unit] = {
+      headers: Vector[BlockHeader])(implicit
+      ec: ExecutionContext): Future[Unit] = {
     onBlockHeadersReceived.execute(logger, headers)
   }
 }
@@ -101,11 +101,14 @@ object NodeCallbacks {
 
     override def +(other: NodeCallbacks): NodeCallbacks =
       copy(
-        onCompactFiltersReceived = onCompactFiltersReceived ++ other.onCompactFiltersReceived,
+        onCompactFiltersReceived =
+          onCompactFiltersReceived ++ other.onCompactFiltersReceived,
         onTxReceived = onTxReceived ++ other.onTxReceived,
         onBlockReceived = onBlockReceived ++ other.onBlockReceived,
-        onMerkleBlockReceived = onMerkleBlockReceived ++ other.onMerkleBlockReceived,
-        onBlockHeadersReceived = onBlockHeadersReceived ++ other.onBlockHeadersReceived
+        onMerkleBlockReceived =
+          onMerkleBlockReceived ++ other.onMerkleBlockReceived,
+        onBlockHeadersReceived =
+          onBlockHeadersReceived ++ other.onBlockHeadersReceived
       )
   }
 
@@ -142,7 +145,8 @@ object NodeCallbacks {
       onTxReceived: Vector[OnTxReceived] = Vector.empty,
       onBlockReceived: Vector[OnBlockReceived] = Vector.empty,
       onMerkleBlockReceived: Vector[OnMerkleBlockReceived] = Vector.empty,
-      onBlockHeadersReceived: Vector[OnBlockHeadersReceived] = Vector.empty): NodeCallbacks = {
+      onBlockHeadersReceived: Vector[OnBlockHeadersReceived] =
+        Vector.empty): NodeCallbacks = {
     NodeCallbacksImpl(
       onCompactFiltersReceived =
         CallbackHandler[Vector[(DoubleSha256Digest, GolombFilter)],

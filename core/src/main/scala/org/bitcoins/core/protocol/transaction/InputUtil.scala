@@ -38,7 +38,8 @@ object InputUtil {
     */
   private def solveSequenceForCSV(scriptNum: ScriptNumber): UInt32 =
     if (LockTimeInterpreter.isCSVLockByBlockHeight(scriptNum)) {
-      val blocksPassed = scriptNum.toLong & TransactionConstants.sequenceLockTimeMask.toLong
+      val blocksPassed =
+        scriptNum.toLong & TransactionConstants.sequenceLockTimeMask.toLong
       UInt32(blocksPassed)
     } else {
       val n = scriptNum.toLong

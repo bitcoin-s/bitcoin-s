@@ -123,43 +123,49 @@ class ChainParamsTest extends BitcoinSUnitTest {
   it must "have the correct base58 prefix for MainNet" in {
     import Base58Type._
     //correct answers taken from https://en.bitcoin.it/wiki/List_of_address_prefixes
-    BytesUtil.encodeHex(MainNetChainParams.base58Prefixes(PubKeyAddress)) must be(
-      "00")
-    BytesUtil.encodeHex(MainNetChainParams.base58Prefixes(ScriptAddress)) must be(
-      "05")
+    BytesUtil.encodeHex(
+      MainNetChainParams.base58Prefixes(PubKeyAddress)) must be("00")
+    BytesUtil.encodeHex(
+      MainNetChainParams.base58Prefixes(ScriptAddress)) must be("05")
     BytesUtil.encodeHex(MainNetChainParams.base58Prefixes(SecretKey)) must be(
       "80")
-    BytesUtil.encodeHex(MainNetChainParams.base58Prefixes(ExtPublicKey)) must be(
+    BytesUtil.encodeHex(
+      MainNetChainParams.base58Prefixes(ExtPublicKey)) must be(
       "0488B21E".toLowerCase)
-    BytesUtil.encodeHex(MainNetChainParams.base58Prefixes(ExtSecretKey)) must be(
+    BytesUtil.encodeHex(
+      MainNetChainParams.base58Prefixes(ExtSecretKey)) must be(
       "0488ADE4".toLowerCase)
   }
 
   it must "have the correct base58 prefix for TestNet" in {
     import Base58Type._
-    BytesUtil.encodeHex(TestNetChainParams.base58Prefixes(PubKeyAddress)) must be(
-      "6f")
-    BytesUtil.encodeHex(TestNetChainParams.base58Prefixes(ScriptAddress)) must be(
-      "c4")
+    BytesUtil.encodeHex(
+      TestNetChainParams.base58Prefixes(PubKeyAddress)) must be("6f")
+    BytesUtil.encodeHex(
+      TestNetChainParams.base58Prefixes(ScriptAddress)) must be("c4")
     BytesUtil.encodeHex(TestNetChainParams.base58Prefixes(SecretKey)) must be(
       "ef")
-    BytesUtil.encodeHex(TestNetChainParams.base58Prefixes(ExtPublicKey)) must be(
+    BytesUtil.encodeHex(
+      TestNetChainParams.base58Prefixes(ExtPublicKey)) must be(
       "043587CF".toLowerCase)
-    BytesUtil.encodeHex(TestNetChainParams.base58Prefixes(ExtSecretKey)) must be(
+    BytesUtil.encodeHex(
+      TestNetChainParams.base58Prefixes(ExtSecretKey)) must be(
       "04358394".toLowerCase)
   }
 
   it must "have the correct base58 prefix for RegTest" in {
     import Base58Type._
-    BytesUtil.encodeHex(RegTestNetChainParams.base58Prefixes(PubKeyAddress)) must be(
-      "6f")
-    BytesUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ScriptAddress)) must be(
-      "c4")
-    BytesUtil.encodeHex(RegTestNetChainParams.base58Prefixes(SecretKey)) must be(
-      "ef")
-    BytesUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ExtPublicKey)) must be(
+    BytesUtil.encodeHex(
+      RegTestNetChainParams.base58Prefixes(PubKeyAddress)) must be("6f")
+    BytesUtil.encodeHex(
+      RegTestNetChainParams.base58Prefixes(ScriptAddress)) must be("c4")
+    BytesUtil.encodeHex(
+      RegTestNetChainParams.base58Prefixes(SecretKey)) must be("ef")
+    BytesUtil.encodeHex(
+      RegTestNetChainParams.base58Prefixes(ExtPublicKey)) must be(
       "043587CF".toLowerCase)
-    BytesUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ExtSecretKey)) must be(
+    BytesUtil.encodeHex(
+      RegTestNetChainParams.base58Prefixes(ExtSecretKey)) must be(
       "04358394".toLowerCase)
   }
 

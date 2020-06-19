@@ -25,8 +25,10 @@ trait V19BlockFilterRpc {
   private case class TempBlockFilterResult(
       filter: String,
       header: DoubleSha256DigestBE)
-  implicit private val tempBlockFilterResultReads: Reads[
-    TempBlockFilterResult] = Json.reads[TempBlockFilterResult]
+
+  implicit
+  private val tempBlockFilterResultReads: Reads[TempBlockFilterResult] =
+    Json.reads[TempBlockFilterResult]
 
   def getBlockFilter(
       blockhash: DoubleSha256DigestBE,

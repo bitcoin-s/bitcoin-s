@@ -67,15 +67,15 @@ object BitcoinSAppConfig {
   /** Constructs an app configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*)(
-      implicit ec: ExecutionContext): BitcoinSAppConfig =
+  def fromDefaultDatadir(confs: Config*)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig =
     BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 
   import scala.language.implicitConversions
 
   /** Converts the given implicit config to a wallet config */
-  implicit def implicitToWalletConf(
-      implicit conf: BitcoinSAppConfig): WalletAppConfig =
+  implicit def implicitToWalletConf(implicit
+      conf: BitcoinSAppConfig): WalletAppConfig =
     conf.walletConf
 
   /** Converts the given config to a wallet config */
@@ -83,8 +83,8 @@ object BitcoinSAppConfig {
     conf.walletConf
 
   /** Converts the given implicit config to a chain config */
-  implicit def implicitToChainConf(
-      implicit conf: BitcoinSAppConfig): ChainAppConfig =
+  implicit def implicitToChainConf(implicit
+      conf: BitcoinSAppConfig): ChainAppConfig =
     conf.chainConf
 
   /** Converts the given config to a chain config */
@@ -92,8 +92,8 @@ object BitcoinSAppConfig {
     conf.chainConf
 
   /** Converts the given implicit config to a node config */
-  implicit def implicitToNodeConf(
-      implicit conf: BitcoinSAppConfig): NodeAppConfig =
+  implicit def implicitToNodeConf(implicit
+      conf: BitcoinSAppConfig): NodeAppConfig =
     conf.nodeConf
 
   /** Converts the given config to a node config */

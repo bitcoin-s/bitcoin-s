@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 private[bitcoins] trait AppLoggers {
 
   sealed private[bitcoins] trait LoggerKind
+
   protected[bitcoins] object LoggerKind {
     case object P2P extends LoggerKind
     case object ChainVerification extends LoggerKind

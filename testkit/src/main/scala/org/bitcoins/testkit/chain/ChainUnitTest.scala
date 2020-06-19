@@ -92,14 +92,15 @@ trait ChainUnitTest
     def inFixtured(
         partialTestFun: PartialFunction[
           FixtureParam,
-          Future[compatible.Assertion]])(
-        implicit pos: org.scalactic.source.Position): Unit = {
+          Future[compatible.Assertion]])(implicit
+        pos: org.scalactic.source.Position): Unit = {
       val testFun: FixtureParam => Future[compatible.Assertion] = {
         fixture: FixtureParam =>
-          partialTestFun.applyOrElse[FixtureParam, Future[Assertion]](fixture, {
-            _: FixtureParam =>
+          partialTestFun.applyOrElse[FixtureParam, Future[Assertion]](
+            fixture,
+            { _: FixtureParam =>
               Future(fail("Incorrect tag/fixture for this test"))
-          })
+            })
       }
 
       itVerbStringTaggedAs.in(testFun)(pos)
@@ -121,14 +122,15 @@ trait ChainUnitTest
     def inFixtured(
         partialTestFun: PartialFunction[
           FixtureParam,
-          Future[compatible.Assertion]])(
-        implicit pos: org.scalactic.source.Position): Unit = {
+          Future[compatible.Assertion]])(implicit
+        pos: org.scalactic.source.Position): Unit = {
       val testFun: FixtureParam => Future[compatible.Assertion] = {
         fixture: FixtureParam =>
-          partialTestFun.applyOrElse[FixtureParam, Future[Assertion]](fixture, {
-            _: FixtureParam =>
+          partialTestFun.applyOrElse[FixtureParam, Future[Assertion]](
+            fixture,
+            { _: FixtureParam =>
               Future(fail("Incorrect tag/fixture for this test"))
-          })
+            })
       }
 
       itVerbString.in(testFun)(pos)
@@ -254,8 +256,8 @@ trait ChainUnitTest
     * @param system
     * @return
     */
-  def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(
-      implicit system: ActorSystem): FutureOutcome = {
+  def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(implicit
+      system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaZmq] =
       composeBuildersAndWrap(builder = () => BitcoinSFixture.createBitcoind(),
                              dependentBuilder =
@@ -265,8 +267,8 @@ trait ChainUnitTest
     makeDependentFixture(builder, destroyBitcoindChainHandlerViaZmq)(test)
   }
 
-  def withBitcoindChainHandlerViaRpc(test: OneArgAsyncTest)(
-      implicit system: ActorSystem): FutureOutcome = {
+  def withBitcoindChainHandlerViaRpc(test: OneArgAsyncTest)(implicit
+      system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaRpc] = { () =>
       BitcoinSFixture
         .createBitcoind()
@@ -277,8 +279,8 @@ trait ChainUnitTest
       test)
   }
 
-  def withBitcoindV19ChainHandlerViaRpc(test: OneArgAsyncTest)(
-      implicit system: ActorSystem): FutureOutcome = {
+  def withBitcoindV19ChainHandlerViaRpc(test: OneArgAsyncTest)(implicit
+      system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindV19ChainHandler] = { () =>
       ChainUnitTest.createBitcoindV19ChainHandler()
     }
@@ -302,8 +304,8 @@ object ChainUnitTest extends ChainVerificationLogger {
   val genesisFilterHeaderDb: CompactFilterHeaderDb =
     ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb
 
-  def createChainHandler()(
-      implicit ec: ExecutionContext,
+  def createChainHandler()(implicit
+      ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[ChainHandler] = {
     val handlerWithGenesisHeaderF =
       ChainUnitTest.setupHeaderTableWithGenesisHeader()
@@ -312,8 +314,8 @@ object ChainUnitTest extends ChainVerificationLogger {
     chainHandlerF
   }
 
-  def createBlockHeaderDAO()(
-      implicit ec: ExecutionContext,
+  def createBlockHeaderDAO()(implicit
+      ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[BlockHeaderDAO] = {
     val handlerWithGenesisHeaderF =
       ChainUnitTest.setupHeaderTableWithGenesisHeader()
@@ -322,35 +324,35 @@ object ChainUnitTest extends ChainVerificationLogger {
     chainHandlerF.map(_.blockHeaderDAO)
   }
 
-  def createFilterHeaderDAO()(
-      implicit appConfig: ChainAppConfig,
+  def createFilterHeaderDAO()(implicit
+      appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[CompactFilterHeaderDAO] = {
     appConfig.migrate()
     Future.successful(CompactFilterHeaderDAO())
   }
 
-  def createPopulatedFilterHeaderDAO()(
-      implicit appConfig: ChainAppConfig,
+  def createPopulatedFilterHeaderDAO()(implicit
+      appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[CompactFilterHeaderDAO] = {
     createFilterHeaderDAO()
   }
 
-  def createFilterDAO()(
-      implicit appConfig: ChainAppConfig,
+  def createFilterDAO()(implicit
+      appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[CompactFilterDAO] = {
     appConfig.migrate()
     Future.successful(CompactFilterDAO())
   }
 
-  def createPopulatedFilterDAO()(
-      implicit appConfig: ChainAppConfig,
+  def createPopulatedFilterDAO()(implicit
+      appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[CompactFilterDAO] = {
     createFilterDAO()
   }
 
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
-  def createPopulatedBlockHeaderDAO()(
-      implicit appConfig: ChainAppConfig,
+  def createPopulatedBlockHeaderDAO()(implicit
+      appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[BlockHeaderDAO] = {
     // The height of the first block in the json file
     val OFFSET: Int = FIRST_BLOCK_HEIGHT
@@ -426,8 +428,8 @@ object ChainUnitTest extends ChainVerificationLogger {
     }
   }
 
-  def createChainApiWithBitcoindRpc(bitcoind: BitcoindRpcClient)(
-      implicit ec: ExecutionContext,
+  def createChainApiWithBitcoindRpc(bitcoind: BitcoindRpcClient)(implicit
+      ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[BitcoindChainHandlerViaRpc] = {
     val handlerWithGenesisHeaderF =
       ChainUnitTest.setupHeaderTableWithGenesisHeader()
@@ -440,8 +442,8 @@ object ChainUnitTest extends ChainVerificationLogger {
   }
 
   def destroyBitcoindChainApiViaRpc(
-      bitcoindChainHandler: BitcoindChainHandlerViaRpc)(
-      implicit system: ActorSystem,
+      bitcoindChainHandler: BitcoindChainHandlerViaRpc)(implicit
+      system: ActorSystem,
       chainAppConfig: ChainAppConfig): Future[Unit] = {
     import system.dispatcher
     val stopBitcoindF =
@@ -450,8 +452,8 @@ object ChainUnitTest extends ChainVerificationLogger {
     stopBitcoindF.flatMap(_ => dropTableF)
   }
 
-  def createBitcoindV19ChainHandler()(
-      implicit system: ActorSystem,
+  def createBitcoindV19ChainHandler()(implicit
+      system: ActorSystem,
       chainAppConfig: ChainAppConfig): Future[BitcoindV19ChainHandler] = {
     import system.dispatcher
     val bitcoindV = BitcoindVersion.V19
@@ -466,34 +468,35 @@ object ChainUnitTest extends ChainVerificationLogger {
   }
 
   def destroyBitcoindV19ChainApi(
-      bitcoindV19ChainHandler: BitcoindV19ChainHandler)(
-      implicit system: ActorSystem,
+      bitcoindV19ChainHandler: BitcoindV19ChainHandler)(implicit
+      system: ActorSystem,
       chainAppConfig: ChainAppConfig): Future[Unit] = {
     val b = BitcoindChainHandlerViaRpc(bitcoindV19ChainHandler.bitcoind,
                                        bitcoindV19ChainHandler.chainHandler)
     destroyBitcoindChainApiViaRpc(b)
   }
 
-  def destroyBitcoind(bitcoind: BitcoindRpcClient)(
-      implicit system: ActorSystem): Future[Unit] = {
+  def destroyBitcoind(bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem): Future[Unit] = {
     BitcoindRpcTestUtil.stopServer(bitcoind)
   }
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
-  private def setupHeaderTable()(
-      implicit appConfig: ChainAppConfig): Future[Unit] = {
+  private def setupHeaderTable()(implicit
+      appConfig: ChainAppConfig): Future[Unit] = {
     appConfig.createHeaderTable(createIfNotExists = true)
   }
 
-  def setupAllTables()(
-      implicit appConfig: ChainAppConfig,
-      ec: ExecutionContext): Future[Unit] = Future {
-    appConfig.migrate()
-    ()
-  }
+  def setupAllTables()(implicit
+      appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[Unit] =
+    Future {
+      appConfig.migrate()
+      ()
+    }
 
-  def destroyAllTables()(
-      implicit appConfig: ChainAppConfig,
+  def destroyAllTables()(implicit
+      appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[Unit] =
     for {
       _ <- appConfig.dropTable("flyway_schema_history")
@@ -501,8 +504,8 @@ object ChainUnitTest extends ChainVerificationLogger {
     } yield ()
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
-  def setupHeaderTableWithGenesisHeader()(
-      implicit ec: ExecutionContext,
+  def setupHeaderTableWithGenesisHeader()(implicit
+      ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[(ChainHandler, BlockHeaderDb)] = {
     val tableSetupF = setupAllTables()
 
@@ -522,8 +525,8 @@ object ChainUnitTest extends ChainVerificationLogger {
     } yield (chainHandler, genHeader)
   }
 
-  def makeChainHandler()(
-      implicit appConfig: ChainAppConfig,
+  def makeChainHandler()(implicit
+      appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[ChainHandler] = {
     lazy val blockHeaderDAO = BlockHeaderDAO()
     lazy val filterHeaderDAO = CompactFilterHeaderDAO()
@@ -537,7 +540,8 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   /** Syncs the given chain handler to the given bitcoind */
   def syncFromBitcoind(bitcoind: BitcoindRpcClient, chainHandler: ChainHandler)(
-      implicit ec: ExecutionContext,
+      implicit
+      ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[ChainApi] = {
     //sync headers
     //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions

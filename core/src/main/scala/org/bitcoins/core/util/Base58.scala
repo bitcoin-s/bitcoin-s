@@ -42,16 +42,17 @@ sealed abstract class Base58 {
   def encode(bytes: ByteVector): String = {
     val ones: String = bytes.toSeq.takeWhile(_ == 0).map(_ => '1').mkString
     @tailrec
-    def loop(current: BigInt, str: String): String = current match {
-      case _ if current == BigInt(0) =>
-        ones + str.reverse
-      case _: BigInt =>
-        val quotient: BigInt = current / BigInt(58L)
-        val remainder: BigInt = current.mod(58L)
-        val char = base58Characters.charAt(remainder.toInt).toString
-        val accum = str + char
-        loop(quotient, accum)
-    }
+    def loop(current: BigInt, str: String): String =
+      current match {
+        case _ if current == BigInt(0) =>
+          ones + str.reverse
+        case _: BigInt =>
+          val quotient: BigInt = current / BigInt(58L)
+          val remainder: BigInt = current.mod(58L)
+          val char = base58Characters.charAt(remainder.toInt).toString
+          val accum = str + char
+          loop(quotient, accum)
+      }
     if (bytes.isEmpty) ""
     else {
       val big: BigInt = BigInt(1, bytes.toArray)
@@ -84,10 +85,11 @@ sealed abstract class Base58 {
   }
 
   /** Determines if a string is a valid [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] string. */
-  def isValid(base58: String): Boolean = validityChecks(base58) match {
-    case Success(bool) => bool
-    case Failure(_)    => false
-  }
+  def isValid(base58: String): Boolean =
+    validityChecks(base58) match {
+      case Success(bool) => bool
+      case Failure(_)    => false
+    }
 
   /**
     * Checks a private key that begins with a symbol corresponding that private key to a compressed public key ('K', 'L', 'c').
@@ -130,19 +132,20 @@ sealed abstract class Base58 {
     * If the string is a private key: it must have a valid private key prefix byte and must have a byte size of 32.
     * If the string is a private key corresponding to a compressed public key, the 5th-to-last byte must be 0x01.
     */
-  private def validityChecks(base58: String): Try[Boolean] = Try {
-    val decoded = decode(base58)
-    val firstByte = decoded.head
-    val compressedPubKey = List('K', 'L', 'c').contains(base58.head)
-    if (base58.contains(List('0', 'O', 'l', 'I'))) false
-    else if (compressedPubKey) checkCompressedPubKeyValidity(base58)
-    else if (isValidAddressPreFixByte(firstByte))
-      base58.length >= 26 && base58.length <= 35
-    else if (isValidSecretKeyPreFixByte(firstByte)) {
-      val byteSize = ECPrivateKeyUtil.fromWIFToPrivateKey(base58).bytes.size
-      byteSize == 32
-    } else false
-  }
+  private def validityChecks(base58: String): Try[Boolean] =
+    Try {
+      val decoded = decode(base58)
+      val firstByte = decoded.head
+      val compressedPubKey = List('K', 'L', 'c').contains(base58.head)
+      if (base58.contains(List('0', 'O', 'l', 'I'))) false
+      else if (compressedPubKey) checkCompressedPubKeyValidity(base58)
+      else if (isValidAddressPreFixByte(firstByte))
+        base58.length >= 26 && base58.length <= 35
+      else if (isValidSecretKeyPreFixByte(firstByte)) {
+        val byteSize = ECPrivateKeyUtil.fromWIFToPrivateKey(base58).bytes.size
+        byteSize == 32
+      } else false
+    }
 }
 
 object Base58 extends Base58

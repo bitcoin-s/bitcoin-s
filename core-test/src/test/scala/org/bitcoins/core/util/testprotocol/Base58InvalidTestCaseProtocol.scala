@@ -8,8 +8,10 @@ import scala.annotation.tailrec
   * Created by tom on 6/20/16.
   */
 object Base58InvalidTestCaseProtocol extends DefaultJsonProtocol {
+
   implicit object Base58InvalidTestCaseFormatter
       extends RootJsonFormat[Seq[Base58InvalidTestCase]] {
+
     override def read(value: JsValue): Seq[Base58InvalidTestCase] = {
       val jsArray: JsArray = value match {
         case array: JsArray => array

@@ -80,41 +80,43 @@ case class P2PClientActor(
     */
   private def awaitNetworkRequest(
       peer: ActorRef,
-      unalignedBytes: ByteVector): Receive = LoggingReceive {
-    case message: NetworkMessage =>
-      sendNetworkMessage(message, peer)
-    case payload: NetworkPayload =>
-      val networkMsg = NetworkMessage(network, payload)
-      self.forward(networkMsg)
-    case message: Tcp.Message =>
-      val newUnalignedBytes =
-        handleTcpMessage(message, Some(peer), unalignedBytes)
-      context.become(awaitNetworkRequest(peer, newUnalignedBytes))
-    case metaMsg: P2PClient.MetaMsg =>
-      sender ! handleMetaMsg(metaMsg)
-  }
+      unalignedBytes: ByteVector): Receive =
+    LoggingReceive {
+      case message: NetworkMessage =>
+        sendNetworkMessage(message, peer)
+      case payload: NetworkPayload =>
+        val networkMsg = NetworkMessage(network, payload)
+        self.forward(networkMsg)
+      case message: Tcp.Message =>
+        val newUnalignedBytes =
+          handleTcpMessage(message, Some(peer), unalignedBytes)
+        context.become(awaitNetworkRequest(peer, newUnalignedBytes))
+      case metaMsg: P2PClient.MetaMsg =>
+        sender ! handleMetaMsg(metaMsg)
+    }
 
   /** This context is responsible for initializing a tcp connection with a peer on the bitcoin p2p network */
-  def receive: Receive = LoggingReceive {
-    case cmd: Tcp.Command =>
-      //we only accept a Tcp.Connect/Tcp.Connected
-      //message to the default receive on this actor
-      //after receiving Tcp.Connected we switch to the
-      //'awaitNetworkRequest' context. This is the main
-      //execution loop for the Client actor
-      handleCommand(cmd, peerOpt = None)
+  def receive: Receive =
+    LoggingReceive {
+      case cmd: Tcp.Command =>
+        //we only accept a Tcp.Connect/Tcp.Connected
+        //message to the default receive on this actor
+        //after receiving Tcp.Connected we switch to the
+        //'awaitNetworkRequest' context. This is the main
+        //execution loop for the Client actor
+        handleCommand(cmd, peerOpt = None)
 
-    case connected: Tcp.Connected =>
-      val _ = handleEvent(connected, unalignedBytes = ByteVector.empty)
-    case msg: NetworkMessage =>
-      self.forward(msg.payload)
-    case payload: NetworkPayload =>
-      logger.error(
-        s"Cannot send a message to our peer when we are not connected! payload=${payload} peer=${peer}")
+      case connected: Tcp.Connected =>
+        val _ = handleEvent(connected, unalignedBytes = ByteVector.empty)
+      case msg: NetworkMessage =>
+        self.forward(msg.payload)
+      case payload: NetworkPayload =>
+        logger.error(
+          s"Cannot send a message to our peer when we are not connected! payload=${payload} peer=${peer}")
 
-    case metaMsg: P2PClient.MetaMsg =>
-      sender ! handleMetaMsg(metaMsg)
-  }
+      case metaMsg: P2PClient.MetaMsg =>
+        sender ! handleMetaMsg(metaMsg)
+    }
 
   /**
     * Handles boiler plate [[Tcp.Message]] types.
@@ -180,12 +182,12 @@ case class P2PClientActor(
         val byteVec = ByteVector(byteString.toArray)
         logger.debug(s"Received ${byteVec.length} TCP bytes")
         logger.trace(s"Received TCP bytes: ${byteVec.toHex}")
-        logger.trace({
+        logger.trace {
           val post =
             if (unalignedBytes.isEmpty) "None"
             else unalignedBytes.toHex
           s"Unaligned bytes: $post"
-        })
+        }
 
         //we need to aggregate our previous 'unalignedBytes' with the new message
         //we just received from our peer to hopefully be able to parse full messages
@@ -194,12 +196,12 @@ case class P2PClientActor(
         val (messages, newUnalignedBytes) =
           P2PClient.parseIndividualMessages(bytes)
 
-        logger.debug({
+        logger.debug {
           val length = messages.length
           val suffix = if (length == 0) "" else s": ${messages.mkString(", ")}"
 
           s"Parsed $length message(s) from bytes$suffix"
-        })
+        }
         logger.debug(s"Unaligned bytes after this: ${newUnalignedBytes.length}")
         if (newUnalignedBytes.nonEmpty) {
           logger.trace(s"Unaligned bytes: ${newUnalignedBytes.toHex}")
@@ -274,8 +276,8 @@ case class P2PClientActor(
 case class P2PClient(actor: ActorRef, peer: Peer) extends P2PLogger {
   import akka.pattern.ask
 
-  def isConnected()(
-      implicit timeout: Timeout,
+  def isConnected()(implicit
+      timeout: Timeout,
       ec: ExecutionContext): Future[Boolean] = {
     val isConnectedF = actor.ask(P2PClient.IsConnected).mapTo[Boolean]
     isConnectedF.recoverWith {
@@ -283,8 +285,8 @@ case class P2PClient(actor: ActorRef, peer: Peer) extends P2PLogger {
     }
   }
 
-  def isInitialized()(
-      implicit timeout: Timeout,
+  def isInitialized()(implicit
+      timeout: Timeout,
       ec: ExecutionContext): Future[Boolean] = {
     val isInitF = actor.ask(P2PClient.IsInitialized).mapTo[Boolean]
     isInitF.recoverWith {
@@ -292,8 +294,8 @@ case class P2PClient(actor: ActorRef, peer: Peer) extends P2PLogger {
     }
   }
 
-  def isDisconnected()(
-      implicit timeout: Timeout,
+  def isDisconnected()(implicit
+      timeout: Timeout,
       ec: ExecutionContext): Future[Boolean] = {
     val isDisconnect: Future[Boolean] =
       actor.ask(P2PClient.IsDisconnected).mapTo[Boolean]
@@ -310,7 +312,7 @@ object P2PClient extends P2PLogger {
 
   /** A message hierarchy that canbe sent to [[P2PClientActor P2P Client Actor]]
     * to query about meta information of a peer
-    * */
+    */
   sealed trait MetaMsg
 
   /** A message that can be sent to [[P2PClient p2p client]] that returns true
@@ -325,16 +327,16 @@ object P2PClient extends P2PLogger {
     * if the peer is disconnected, false otherwise */
   final case object IsDisconnected extends MetaMsg
 
-  def props(peer: Peer, peerMsgHandlerReceiver: PeerMessageReceiver)(
-      implicit config: NodeAppConfig
+  def props(peer: Peer, peerMsgHandlerReceiver: PeerMessageReceiver)(implicit
+      config: NodeAppConfig
   ): Props =
     Props(classOf[P2PClientActor], peer, peerMsgHandlerReceiver, config)
 
   def apply(
       context: ActorRefFactory,
       peer: Peer,
-      peerMessageReceiver: PeerMessageReceiver)(
-      implicit config: NodeAppConfig): P2PClient = {
+      peerMessageReceiver: PeerMessageReceiver)(implicit
+      config: NodeAppConfig): P2PClient = {
     val actorRef = context.actorOf(
       props = props(peer = peer, peerMsgHandlerReceiver = peerMessageReceiver),
       name = BitcoinSNodeUtil.createActorName(getClass))
@@ -349,8 +351,8 @@ object P2PClient extends P2PLogger {
     * @param bytes the bytes that need to be parsed into individual messages
     * @return the parsed [[NetworkMessage]]'s and the unaligned bytes that did not parse to a message
     */
-  private[bitcoins] def parseIndividualMessages(bytes: ByteVector)(
-      implicit conf: NodeAppConfig): (List[NetworkMessage], ByteVector) = {
+  private[bitcoins] def parseIndividualMessages(bytes: ByteVector)(implicit
+      conf: NodeAppConfig): (List[NetworkMessage], ByteVector) = {
     @tailrec
     def loop(
         remainingBytes: ByteVector,

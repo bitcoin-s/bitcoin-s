@@ -51,7 +51,7 @@ object HDAccount {
     * We want to just check the first 4 elements of the path
     * and see if they are the same, which indicates we are in
     * the same account
-    * */
+    */
   def isSameAccount(path: Vector[BIP32Node], account: HDAccount): Boolean = {
     if (account.path.length > path.length) {
       false

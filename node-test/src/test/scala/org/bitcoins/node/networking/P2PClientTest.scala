@@ -180,9 +180,9 @@ class P2PClientTest extends BitcoindRpcTest {
       val isDisconnectedF = for {
         p2pClient <- p2pClientF
         _ = p2pClient.actor ! Tcp.Abort
-        isDisconnected <- TestAsyncUtil.retryUntilSatisfiedF(
-          p2pClient.isDisconnected,
-          duration = 1.seconds)
+        isDisconnected <-
+          TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isDisconnected,
+                                             duration = 1.seconds)
       } yield isDisconnected
 
       isDisconnectedF.map { _ =>

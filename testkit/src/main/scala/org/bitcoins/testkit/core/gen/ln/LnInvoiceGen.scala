@@ -168,7 +168,7 @@ sealed abstract class LnInvoiceGen {
 
   /** Generated a tagged fields with an explicit
     * [[org.bitcoins.core.protocol.ln.LnTag.NodeIdTag LnTag.NodeIdTag]]
-    * */
+    */
   def taggedFields(nodeIdOpt: Option[NodeId]): Gen[LnTaggedFields] = {
     Gen.oneOf(allTags(nodeIdOpt), mandatoryTags, optionalTags(nodeIdOpt))
   }

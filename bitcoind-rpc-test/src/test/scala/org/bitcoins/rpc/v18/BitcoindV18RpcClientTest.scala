@@ -1,4 +1,5 @@
 package org.bitcoins.rpc.v18
+
 import org.bitcoins.chain.models.BlockHeaderDbHelper
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
@@ -11,11 +12,13 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 import scala.concurrent.Future
 
 class BitcoindV18RpcClientTest extends BitcoindRpcTest {
+
   lazy val clientF: Future[BitcoindV18RpcClient] = {
     val client = new BitcoindV18RpcClient(BitcoindRpcTestUtil.v18Instance())
     val clientIsStartedF = BitcoindRpcTestUtil.startServers(Vector(client))
     clientIsStartedF.map(_ => client)
   }
+
   lazy val clientPairF: Future[(BitcoindV18RpcClient, BitcoindV18RpcClient)] =
     BitcoindRpcTestUtil.createNodePairV18(clientAccum)
 
@@ -87,8 +90,8 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
   it should "get node addresses given a count" ignore {
     for {
       (freshClient, otherFreshClient) <- clientPairF
-      freshclientnode <- freshClient.addNode(freshClient.getDaemon.uri,
-                                             AddNodeArgument.Add)
+      freshclientnode <-
+        freshClient.addNode(freshClient.getDaemon.uri, AddNodeArgument.Add)
       nodeaddress <- freshClient.getNodeAddresses(1)
     } yield {
       assert(nodeaddress.head.address == otherFreshClient.instance.uri)

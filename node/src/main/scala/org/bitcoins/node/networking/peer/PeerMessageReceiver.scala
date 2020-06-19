@@ -36,8 +36,8 @@ class PeerMessageReceiver(
     val state: PeerMessageReceiverState,
     peer: Peer,
     callbacks: NodeCallbacks
-)(
-    implicit ref: ActorRefFactory,
+)(implicit
+    ref: ActorRefFactory,
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig)
     extends P2PLogger {
@@ -244,8 +244,8 @@ object PeerMessageReceiver {
       state: PeerMessageReceiverState,
       chainApi: ChainApi,
       peer: Peer,
-      callbacks: NodeCallbacks)(
-      implicit ref: ActorRefFactory,
+      callbacks: NodeCallbacks)(implicit
+      ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
   ): PeerMessageReceiver = {
@@ -262,8 +262,8 @@ object PeerMessageReceiver {
     * to be connected to a peer. This can be given to [[org.bitcoins.node.networking.P2PClient.props() P2PClient]]
     * to connect to a peer on the network
     */
-  def preConnection(peer: Peer, callbacks: NodeCallbacks)(
-      implicit ref: ActorRefFactory,
+  def preConnection(peer: Peer, callbacks: NodeCallbacks)(implicit
+      ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
   ): Future[PeerMessageReceiver] = {
@@ -284,7 +284,8 @@ object PeerMessageReceiver {
   }
 
   def newReceiver(chainApi: ChainApi, peer: Peer, callbacks: NodeCallbacks)(
-      implicit nodeAppConfig: NodeAppConfig,
+      implicit
+      nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
       ref: ActorRefFactory): PeerMessageReceiver = {
     PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),

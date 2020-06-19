@@ -27,6 +27,7 @@ case class NodeAppConfig(
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
   override protected[bitcoins] def moduleName: String = "node"
   override protected[bitcoins] type ConfigType = NodeAppConfig
+
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): NodeAppConfig =
     NodeAppConfig(directory, useLogbackConf, configs: _*)
@@ -93,8 +94,8 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
     NodeAppConfig(datadir, useLogbackConf, confs: _*)
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(
-      implicit nodeConf: NodeAppConfig,
+  def createNode(peer: Peer)(implicit
+      nodeConf: NodeAppConfig,
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
     if (nodeConf.isSPVEnabled) {

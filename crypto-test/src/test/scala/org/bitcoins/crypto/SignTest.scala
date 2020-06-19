@@ -13,6 +13,7 @@ class SignTest extends BitcoinSUnitTest {
   //so just use it for testing purposes
   val signTestImpl = new Sign {
     private val key = ECPrivateKey.freshPrivateKey
+
     override def signFunction: ByteVector => Future[ECDigitalSignature] = {
       key.signFunction
     }

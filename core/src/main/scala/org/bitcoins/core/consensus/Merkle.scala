@@ -56,21 +56,22 @@ trait Merkle extends BitcoinSLogger {
   @tailrec
   final def build(
       subTrees: Seq[MerkleTree],
-      accum: Seq[MerkleTree]): MerkleTree = subTrees match {
-    case Nil =>
-      if (accum.size == 1) accum.head
-      else if (accum.isEmpty)
-        throw new IllegalArgumentException(
-          "Should never have sub tree size of zero, this implies there was zero hashes given")
-      else build(accum.reverse, Nil)
-    case h +: h1 +: t =>
-      val newTree = computeTree(h, h1)
-      build(t, newTree +: accum)
-    case h +: t =>
-      //means that we have an odd amount of txids, this means we duplicate the last hash in the tree
-      val newTree = computeTree(h, h)
-      build(t, newTree +: accum)
-  }
+      accum: Seq[MerkleTree]): MerkleTree =
+    subTrees match {
+      case Nil =>
+        if (accum.size == 1) accum.head
+        else if (accum.isEmpty)
+          throw new IllegalArgumentException(
+            "Should never have sub tree size of zero, this implies there was zero hashes given")
+        else build(accum.reverse, Nil)
+      case h +: h1 +: t =>
+        val newTree = computeTree(h, h1)
+        build(t, newTree +: accum)
+      case h +: t =>
+        //means that we have an odd amount of txids, this means we duplicate the last hash in the tree
+        val newTree = computeTree(h, h)
+        build(t, newTree +: accum)
+    }
 
   /** Builds a merkle tree from a sequence of hashes */
   def build(hashes: Seq[DoubleSha256Digest]): MerkleTree = {

@@ -32,7 +32,6 @@ import scala.annotation.tailrec
   * {{{
   *   headers.map(h => println(h))
   * }}}
-  *
   */
 private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
 
@@ -100,8 +99,8 @@ private[blockchain] trait BaseBlockChainCompObject
     * @param header the block header to connect to our chain
     * @param blockchain the blockchain we are attempting to connect to
     */
-  def connectTip(header: BlockHeader, blockchain: Blockchain)(
-      implicit conf: ChainAppConfig): ConnectTipResult = {
+  def connectTip(header: BlockHeader, blockchain: Blockchain)(implicit
+      conf: ChainAppConfig): ConnectTipResult = {
     logger.debug(
       s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain")
 
@@ -156,12 +155,11 @@ private[blockchain] trait BaseBlockChainCompObject
   /** Iterates through each given blockchains attempting to connect the given headers to that chain
     *
     * @return The final updates for each chain
-    *
-    * */
+    */
   def connectHeadersToChains(
       headers: Vector[BlockHeader],
-      blockchains: Vector[Blockchain])(
-      implicit chainAppConfig: ChainAppConfig): Vector[BlockchainUpdate] = {
+      blockchains: Vector[Blockchain])(implicit
+      chainAppConfig: ChainAppConfig): Vector[BlockchainUpdate] = {
     logger.debug(
       s"Attempting to connect ${headers.length} headers to ${blockchains.length} blockchains")
 
@@ -184,7 +182,7 @@ private[blockchain] trait BaseBlockChainCompObject
     * 1. Extends the current chain by one block
     * 2. Causes a re-org, which returns the old best tip and the new competing chain
     * 3. Fails to connect tip, in which case it returns the old best chain
-    * */
+    */
   private def parseConnectTipResult(
       connectTipResult: ConnectTipResult,
       lastUpdate: BlockchainUpdate): Vector[BlockchainUpdate] = {
@@ -236,13 +234,13 @@ private[blockchain] trait BaseBlockChainCompObject
 
   /** Walks backwards from the current header searching through ancestors if [[current.previousBlockHashBE]] is in [[ancestors]]
     * This does not validate other things such as POW.
-    * */
+    */
   @tailrec
   final def connectWalkBackwards(
       current: BlockHeaderDb,
       ancestors: Vector[BlockHeaderDb],
-      accum: Vector[BlockHeaderDb] = Vector.empty)(
-      implicit chainAppConfig: ChainAppConfig): Vector[BlockHeaderDb] = {
+      accum: Vector[BlockHeaderDb] = Vector.empty)(implicit
+      chainAppConfig: ChainAppConfig): Vector[BlockHeaderDb] = {
     val prevHeaderOpt = ancestors.find(_.hashBE == current.previousBlockHashBE)
     prevHeaderOpt match {
       case Some(h) =>
@@ -257,11 +255,11 @@ private[blockchain] trait BaseBlockChainCompObject
 
   /** Walks backwards from a child header reconstructing a blockchain
     * This validates things like POW, difficulty change etc.
-    * */
+    */
   def reconstructFromHeaders(
       childHeader: BlockHeaderDb,
-      ancestors: Vector[BlockHeaderDb])(
-      implicit chainAppConfig: ChainAppConfig): Vector[Blockchain] = {
+      ancestors: Vector[BlockHeaderDb])(implicit
+      chainAppConfig: ChainAppConfig): Vector[Blockchain] = {
     //now all hashes are connected correctly forming a
     //valid blockchain in term of hashes connected to each other
     val orderedHeaders = connectWalkBackwards(current = childHeader,

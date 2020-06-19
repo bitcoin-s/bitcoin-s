@@ -91,7 +91,8 @@ trait BlockchainRpc { self: Client =>
 
   private def getChainTxStats(
       blocks: Option[Int],
-      blockHash: Option[DoubleSha256DigestBE]): Future[GetChainTxStatsResult] = {
+      blockHash: Option[DoubleSha256DigestBE]): Future[
+    GetChainTxStatsResult] = {
     val params =
       if (blocks.isEmpty) {
         List.empty

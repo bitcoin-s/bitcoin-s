@@ -187,7 +187,7 @@ trait EclairApi {
     *
     * @param lnInvoice the invoice to monitor
     * @param maxAttempts the number of attempts we ping eclair until we fail the returned future. Pinging occurrs every 1 second
-    * */
+    */
   def monitorInvoice(
       lnInvoice: LnInvoice,
       interval: FiniteDuration,
@@ -232,7 +232,6 @@ trait EclairApi {
     * @param paymentId the payment id returnned by [[org.bitcoins.eclair.rpc.api.EclairApi.payInvoice payInvoice]]
     * @param interval the ping interval
     * @param maxAttempts the maximum number of pings
-    *
     */
   def monitorSentPayment(
       paymentId: PaymentId,

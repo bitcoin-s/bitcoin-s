@@ -1,4 +1,5 @@
 package org.bitcoins.rpc.v17
+
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   FinalizedPsbt,
   NonFinalizedPsbt
@@ -18,6 +19,7 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 import scala.concurrent.Future
 
 class PsbtRpcTest extends BitcoindRpcTest {
+
   lazy val clientsF: Future[
     (BitcoindV17RpcClient, BitcoindV17RpcClient, BitcoindV17RpcClient)] = {
     BitcoindRpcTestUtil.createNodeTripleV17(clientAccum)
@@ -47,8 +49,8 @@ class PsbtRpcTest extends BitcoindRpcTest {
     for {
       (client, _, _) <- clientsF
       address <- client.getNewAddress
-      rawTx <- client.createRawTransaction(Vector.empty,
-                                           Map(address -> Bitcoins.one))
+      rawTx <-
+        client.createRawTransaction(Vector.empty, Map(address -> Bitcoins.one))
       fundedRawTx <- client.fundRawTransaction(rawTx)
       psbt <- client.convertToPsbt(fundedRawTx.hex)
       processedPsbt <- client.walletProcessPsbt(psbt)
@@ -70,9 +72,9 @@ class PsbtRpcTest extends BitcoindRpcTest {
                                                             Bitcoins.one)
       vout <- BitcoindRpcTestUtil.findOutput(client, txid, Bitcoins.one)
       newAddr <- client.getNewAddress
-      psbt <- client.createPsbt(
-        Vector(TransactionInput.fromTxidAndVout(txid, vout)),
-        Map(newAddr -> Bitcoins(0.5)))
+      psbt <-
+        client.createPsbt(Vector(TransactionInput.fromTxidAndVout(txid, vout)),
+                          Map(newAddr -> Bitcoins(0.5)))
       processed <- client.walletProcessPsbt(psbt)
       finalized <- client.finalizePsbt(processed.psbt)
     } yield finalized match {
@@ -89,8 +91,8 @@ class PsbtRpcTest extends BitcoindRpcTest {
       clientAddr <- client.getNewAddress
       otherClientAddr <- otherClient.getNewAddress
       clientTxid <- thirdClient.sendToAddress(clientAddr, Bitcoins.one)
-      otherClientTxid <- thirdClient.sendToAddress(otherClientAddr,
-                                                   Bitcoins.one)
+      otherClientTxid <-
+        thirdClient.sendToAddress(otherClientAddr, Bitcoins.one)
 
       _ <- BitcoindRpcTestUtil.generateAndSync(
         Vector(thirdClient, client, otherClient))
@@ -98,9 +100,8 @@ class PsbtRpcTest extends BitcoindRpcTest {
       rawClientTx <- client.getRawTransaction(clientTxid)
       _ = assert(rawClientTx.confirmations.exists(_ > 0))
 
-      clientVout <- BitcoindRpcTestUtil.findOutput(client,
-                                                   clientTxid,
-                                                   Bitcoins.one)
+      clientVout <-
+        BitcoindRpcTestUtil.findOutput(client, clientTxid, Bitcoins.one)
       otherClientVout <- BitcoindRpcTestUtil.findOutput(otherClient,
                                                         otherClientTxid,
                                                         Bitcoins.one)
@@ -120,9 +121,10 @@ class PsbtRpcTest extends BitcoindRpcTest {
       // Update psbts, should only have data for one input and not the other
       clientProcessedPsbt <- client.walletProcessPsbt(psbt).map(_.psbt)
 
-      otherClientProcessedPsbt <- otherClient
-        .walletProcessPsbt(psbt)
-        .map(_.psbt)
+      otherClientProcessedPsbt <-
+        otherClient
+          .walletProcessPsbt(psbt)
+          .map(_.psbt)
 
       // Combine and finalize the psbts
       combined <- thirdClient.combinePsbt(

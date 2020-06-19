@@ -24,6 +24,7 @@ import scala.concurrent.duration.DurationInt
 import scala.util.Properties
 
 class BitcoindV16RpcClientTest extends BitcoindRpcTest {
+
   lazy val clientsF: Future[(BitcoindV16RpcClient, BitcoindV16RpcClient)] =
     BitcoindRpcTestUtil.createNodePairV16(clientAccum)
 
@@ -55,8 +56,8 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
       (client, otherClient) <- clientsF
       addr <- client.getNewAddress
       _ <- otherClient.sendToAddress(addr, Bitcoins.one)
-      _ <- otherClient.getNewAddress.flatMap(
-        otherClient.generateToAddress(6, _))
+      _ <-
+        otherClient.getNewAddress.flatMap(otherClient.generateToAddress(6, _))
       peers <- client.getPeerInfo
       _ = assert(peers.exists(_.networkInfo.addr == otherClient.getDaemon.uri))
 
@@ -64,10 +65,11 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
       _ <- AsyncUtil.retryUntilSatisfiedF(
         () => BitcoindRpcTestUtil.hasSeenBlock(client, recentBlock),
         1.second)
-      (utxoTxid, utxoVout) <- client.listUnspent
-        .map(_.filter(_.address.contains(addr)))
-        .map(_.head)
-        .map(utxo => (utxo.txid, utxo.vout))
+      (utxoTxid, utxoVout) <-
+        client.listUnspent
+          .map(_.filter(_.address.contains(addr)))
+          .map(_.head)
+          .map(utxo => (utxo.txid, utxo.vout))
       newAddress <- client.getNewAddress
       rawTx <- {
         val outPoint = TransactionOutPoint(utxoTxid.flip, UInt32(utxoVout))

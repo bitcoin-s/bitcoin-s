@@ -59,7 +59,8 @@ class RawBlockHeaderSerializerTest extends BitcoinSUnitTest {
     val timeStamp2 = "24d95a54"
     val nBits2 = "30c31b18"
     val nonce2 = "fe9f0864"
-    val hex2 = version2 + prevBlockHash2 + merkleRoot2 + timeStamp2 + nBits2 + nonce2
+    val hex2 =
+      version2 + prevBlockHash2 + merkleRoot2 + timeStamp2 + nBits2 + nonce2
     val hash =
       "2837af674e81436b09e0c937e94d96fe32e5c872391ba1090000000000000000"
     val blockHeader = RawBlockHeaderSerializer.read(hex2)

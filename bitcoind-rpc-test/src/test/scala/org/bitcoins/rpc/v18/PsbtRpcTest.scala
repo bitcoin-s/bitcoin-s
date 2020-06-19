@@ -1,4 +1,5 @@
 package org.bitcoins.rpc.v18
+
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -6,8 +7,8 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
 
-/**Tests for PSBT for RPC calls specific to V18 new PSBT calls
-  *@see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
+/** Tests for PSBT for RPC calls specific to V18 new PSBT calls
+  * @see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
   */
 class PsbtRpcTest extends BitcoindRpcTest {
 

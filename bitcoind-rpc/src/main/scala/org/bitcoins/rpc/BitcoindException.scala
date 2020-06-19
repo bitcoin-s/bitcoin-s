@@ -1,4 +1,5 @@
 package org.bitcoins.rpc
+
 import play.api.libs.json.Reads
 import play.api.libs.json.{JsResult, JsValue}
 import play.api.libs.json.JsError
@@ -102,12 +103,13 @@ object BitcoindException {
       extends BitcoindException(message) {
     val code: Int = -32603
   }
+
   final case class ParseError(private val message: String)
       extends BitcoindException(message) {
     val code: Int = -32700
   }
 
-  /** `std::exception` thrown in command handling*/
+  /** `std::exception` thrown in command handling */
   final case class MiscError(private val message: String)
       extends BitcoindException(message) {
     val code: Int = -1
@@ -125,7 +127,7 @@ object BitcoindException {
     val code: Int = -5
   }
 
-  /**  Ran out of memory during operation*/
+  /**  Ran out of memory during operation */
   final case class OutOfMemory(private val message: String)
       extends BitcoindException(message) {
     val code: Int = -7

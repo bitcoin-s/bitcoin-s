@@ -129,8 +129,8 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
 
     val records = psbt.globalMap.filterRecords(XPubKeyKeyId)
     assert(!records.exists(_.key.head == XPubKeyKeyId.byte))
-    assert(
-      GlobalPSBTMap(records).bytes == hex"01009d0100000002710ea76ab45c5cb6438e607e59cc037626981805ae9e0dfd9089012abb0be5350100000000ffffffff190994d6a8b3c8c82ccbcfb2fba4106aa06639b872a8d447465c0d42588d6d670000000000ffffffff0200e1f505000000001976a914b6bc2c0ee5655a843d79afedd0ccc3f7dd64340988ac605af405000000001600141188ef8e4ce0449eaac8fb141cbf5a1176e6a0880000000000")
+    assert(GlobalPSBTMap(
+      records).bytes == hex"01009d0100000002710ea76ab45c5cb6438e607e59cc037626981805ae9e0dfd9089012abb0be5350100000000ffffffff190994d6a8b3c8c82ccbcfb2fba4106aa06639b872a8d447465c0d42588d6d670000000000ffffffff0200e1f505000000001976a914b6bc2c0ee5655a843d79afedd0ccc3f7dd64340988ac605af405000000001600141188ef8e4ce0449eaac8fb141cbf5a1176e6a0880000000000")
   }
 
   it must "successfully combine two PSBTs" in {

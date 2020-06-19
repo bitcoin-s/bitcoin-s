@@ -217,12 +217,16 @@ case class BitcoindConfig(
 
   lazy val username: Option[String] = getValue("rpcuser")
   lazy val password: Option[String] = getValue("rpcpassword")
+
   lazy val zmqpubrawblock: Option[InetSocketAddress] =
     getValue("zmqpubrawblock").map(toInetSocketAddress)
+
   lazy val zmqpubrawtx: Option[InetSocketAddress] =
     getValue("zmqpubrawtx").map(toInetSocketAddress)
+
   lazy val zmqpubhashblock: Option[InetSocketAddress] =
     getValue("zmqpubhashblock").map(toInetSocketAddress)
+
   lazy val zmqpubhashtx: Option[InetSocketAddress] =
     getValue("zmqpubhashtx").map(toInetSocketAddress)
 

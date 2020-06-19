@@ -27,9 +27,11 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
     * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
     */
   def fromString(str: String): Vector[ScriptToken] = {
-    if (str.size > 1 && str.substring(0, 2) == "0x" && str
-          .split(" ")
-          .size == 1) {
+    if (
+      str.size > 1 && str.substring(0, 2) == "0x" && str
+        .split(" ")
+        .size == 1
+    ) {
       //parse this as a byte array that is led with a 0x for example
       //0x4e03000000ffff
       val hex = str.substring(2, str.size)
@@ -53,7 +55,7 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
       operations match {
         //for parsing strings like 'Az', need to remove single quotes
         //example: [[https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L24]]
-        case h +: t if (h.size > 0 && h.head == '\'' && h.last == '\'') =>
+        case h +: t if h.size > 0 && h.head == '\'' && h.last == '\'' =>
           val strippedQuotes = h.replace("\'", "")
           if (strippedQuotes.size == 0) {
             loop(t, OP_0.bytes ++ accum)
@@ -86,19 +88,19 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
             loop(t, aggregation)
           }
         //if we see a byte constant in the form of "0x09adb"
-        case h +: t if (h.size > 1 && h.substring(0, 2) == "0x") =>
+        case h +: t if h.size > 1 && h.substring(0, 2) == "0x" =>
           loop(t,
                BytesUtil
                  .decodeHex(h.substring(2, h.size).toLowerCase)
                  .reverse ++ accum)
         //skip the empty string
-        case h +: t if (h == "")  => loop(t, accum)
-        case h +: t if (h == "0") => loop(t, OP_0.bytes ++ accum)
+        case h +: t if h == ""  => loop(t, accum)
+        case h +: t if h == "0" => loop(t, OP_0.bytes ++ accum)
 
-        case h +: t if (ScriptOperation.fromString(h).isDefined) =>
+        case h +: t if ScriptOperation.fromString(h).isDefined =>
           val op = ScriptOperation.fromString(h).get
           loop(t, op.bytes ++ accum)
-        case h +: t if (tryParsingLong(h)) =>
+        case h +: t if tryParsingLong(h) =>
           val hexLong =
             BytesUtil.flipEndianness(ScriptNumberUtil.longToHex(h.toLong))
           val bytesToPushOntoStack = BytesToPushOntoStack(hexLong.size / 2)
@@ -110,10 +112,11 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
         case h +: t =>
           //find the size of the string in bytes
           val bytesToPushOntoStack = BytesToPushOntoStack(h.size / 2)
-          loop(
-            t,
-            BytesUtil
-              .decodeHex(BytesUtil.flipEndianness(h)) ++ bytesToPushOntoStack.bytes ++ accum)
+          loop(t,
+               BytesUtil
+                 .decodeHex(
+                   BytesUtil.flipEndianness(
+                     h)) ++ bytesToPushOntoStack.bytes ++ accum)
         case Vector() => accum
       }
     }
@@ -188,19 +191,18 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
     */
   def parseBytesFromString(s: String): Vector[ScriptConstant] = {
     //logger.debug("Parsing bytes from string " + s)
-    val scriptConstants = (raw"\b0x([0-9a-f]+)\b".r
+    val scriptConstants = raw"\b0x([0-9a-f]+)\b".r
       .findAllMatchIn(s.toLowerCase)
-      .map(
-        g =>
-          // 1 hex = 4 bits therefore 16 hex characters * 4 bits = 64
-          // if it is not smaller than 16 hex characters it cannot
-          //fit inside of a scala long
-          //therefore store it as a script constant
-          if (g.group(1).size <= 16) {
-            ScriptNumber(g.group(1))
-          } else {
-            ScriptConstant(g.group(1))
-          }))
+      .map(g =>
+        // 1 hex = 4 bits therefore 16 hex characters * 4 bits = 64
+        // if it is not smaller than 16 hex characters it cannot
+        //fit inside of a scala long
+        //therefore store it as a script constant
+        if (g.group(1).size <= 16) {
+          ScriptNumber(g.group(1))
+        } else {
+          ScriptConstant(g.group(1))
+        })
     scriptConstants.toVector
   }
 

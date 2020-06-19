@@ -81,7 +81,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
+        responseAs[
+          String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
       }
 
       val joinRoute =
@@ -91,7 +92,8 @@ class RoutesSpec
 
       Get() ~> joinRoute ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
+        responseAs[
+          String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
       }
     }
 
@@ -107,7 +109,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
+        responseAs[
+          String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
 
       }
     }
@@ -124,7 +127,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual s"""{"result":"${expected.hex}","error":null}"""
+        responseAs[
+          String] shouldEqual s"""{"result":"${expected.hex}","error":null}"""
 
       }
     }
@@ -141,7 +145,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
+        responseAs[
+          String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
 
       }
     }
@@ -213,7 +218,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
+        responseAs[
+          String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
       }
     }
 
@@ -227,7 +233,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"5000000000 sats","error":null}"""
+        responseAs[
+          String] shouldEqual """{"result":"5000000000 sats","error":null}"""
       }
     }
 
@@ -242,7 +249,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
+        responseAs[
+          String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
       }
     }
 
@@ -257,7 +265,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"5000000000 sats","error":null}"""
+        responseAs[
+          String] shouldEqual """{"result":"5000000000 sats","error":null}"""
       }
     }
 
@@ -272,7 +281,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
+        responseAs[
+          String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
       }
     }
 
@@ -287,7 +297,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"5000000000 sats","error":null}"""
+        responseAs[
+          String] shouldEqual """{"result":"5000000000 sats","error":null}"""
       }
     }
 
@@ -475,7 +486,8 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual s"""{"result":"${tx.txIdBE.hex}","error":null}"""
+        responseAs[
+          String] shouldEqual s"""{"result":"${tx.txIdBE.hex}","error":null}"""
       }
     }
 

@@ -55,7 +55,8 @@ class RawCompactFilterMessageSerializerTest extends BitcoinSUnitTest {
       biggerBytes.size == 1 + // type size
         32 + // block hash size
         5 + // num bytes size
-        100000) // filter bytes size
+        100000
+    ) // filter bytes size
 
     val parsedBiggerMessage = CompactFilterMessage.fromBytes(biggerBytes)
 

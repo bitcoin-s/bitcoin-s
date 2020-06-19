@@ -16,11 +16,12 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
   def pgUrl(dbname: String): Option[String] =
     pg.map(_.getJdbcUrl("postgres", dbname))
 
-  def pgUrl(project: ProjectType): Option[String] = project match {
-    case ProjectType.Wallet => pgUrl("walletdb")
-    case ProjectType.Node   => pgUrl("nodedb")
-    case ProjectType.Chain  => pgUrl("chaindb")
-  }
+  def pgUrl(project: ProjectType): Option[String] =
+    project match {
+      case ProjectType.Wallet => pgUrl("walletdb")
+      case ProjectType.Node   => pgUrl("nodedb")
+      case ProjectType.Chain  => pgUrl("chaindb")
+    }
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -38,15 +39,16 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
     ()
   }
 
-  def executePgSql(sql: String): Unit = pg.foreach { pg =>
-    val conn = pg.getPostgresDatabase.getConnection
-    try {
-      val st = conn.createStatement()
+  def executePgSql(sql: String): Unit =
+    pg.foreach { pg =>
+      val conn = pg.getPostgresDatabase.getConnection
       try {
-        st.execute(sql)
-      } finally st.close()
+        val st = conn.createStatement()
+        try {
+          st.execute(sql)
+        } finally st.close()
 
-    } finally conn.close()
-  }
+      } finally conn.close()
+    }
 
 }

@@ -12,6 +12,7 @@ sealed abstract class ZMQNotification {
 case object HashTx extends ZMQNotification {
   override val topic = "hashtx"
 }
+
 case object RawTx extends ZMQNotification {
   override val topic = "rawtx"
 }
@@ -26,11 +27,12 @@ case object RawBlock extends ZMQNotification {
 
 object ZMQNotification {
 
-  def fromString(str: String): Option[ZMQNotification] = str match {
-    case HashTx.topic    => Some(HashTx)
-    case RawTx.topic     => Some(RawTx)
-    case HashBlock.topic => Some(HashBlock)
-    case RawBlock.topic  => Some(RawBlock)
-    case _               => None
-  }
+  def fromString(str: String): Option[ZMQNotification] =
+    str match {
+      case HashTx.topic    => Some(HashTx)
+      case RawTx.topic     => Some(RawTx)
+      case HashBlock.topic => Some(HashBlock)
+      case RawBlock.topic  => Some(RawBlock)
+      case _               => None
+    }
 }

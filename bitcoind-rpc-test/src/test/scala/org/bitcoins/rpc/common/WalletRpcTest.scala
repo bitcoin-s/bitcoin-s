@@ -25,6 +25,7 @@ import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
 class WalletRpcTest extends BitcoindRpcTest {
+
   lazy val clientsF: Future[
     (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] =
     BitcoindRpcTestUtil.createNodeTripleV19(clientAccum = clientAccum)
@@ -256,10 +257,9 @@ class WalletRpcTest extends BitcoindRpcTest {
       } yield {
         val outs = rawTx.outputs.filterNot(_.value == amount)
         val changeAddresses = outs
-          .map(
-            out =>
-              (BitcoinAddress.fromScriptPubKey(out.scriptPubKey, networkParam),
-               out.value))
+          .map(out =>
+            (BitcoinAddress.fromScriptPubKey(out.scriptPubKey, networkParam),
+             out.value))
         assert(changeAddresses.size == 1)
         assert(changeAddresses.head._1 != address)
         (changeAddresses.head._1, changeAddresses.head._2)
@@ -277,9 +277,8 @@ class WalletRpcTest extends BitcoindRpcTest {
                                                             address,
                                                             amount)
 
-      (changeAddress, changeAmount) <- getChangeAddressAndAmount(client,
-                                                                 address,
-                                                                 txid)
+      (changeAddress, changeAmount) <-
+        getChangeAddressAndAmount(client, address, txid)
 
       groupingsAfter <- client.listAddressGroupings
     } yield {
@@ -327,8 +326,9 @@ class WalletRpcTest extends BitcoindRpcTest {
       (client, otherClient, _) <- clientsF
       address1 <- otherClient.getNewAddress
       address2 <- otherClient.getNewAddress
-      txid <- client
-        .sendMany(Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)))
+      txid <-
+        client
+          .sendMany(Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)))
       transaction <- client.getTransaction(txid)
     } yield {
       assert(transaction.amount == Bitcoins(-3))
@@ -341,8 +341,12 @@ class WalletRpcTest extends BitcoindRpcTest {
     for {
       (client, otherClient, _) <- clientsF
       address <- otherClient.getNewAddress
-      txid <- BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, otherClient, address, Bitcoins(1.5))
+      txid <-
+        BitcoindRpcTestUtil
+          .fundBlockChainTransaction(client,
+                                     otherClient,
+                                     address,
+                                     Bitcoins(1.5))
       receivedList <- otherClient.listReceivedByAddress()
     } yield {
       val entryList =
@@ -410,8 +414,9 @@ class WalletRpcTest extends BitcoindRpcTest {
       (client, _, _) <- clientsF
       _ <- client.importPrivKey(ecPrivateKey, rescan = false)
       key <- client.dumpPrivKey(address)
-      result <- client
-        .dumpWallet(client.getDaemon.datadir + "/wallet_dump.dat")
+      result <-
+        client
+          .dumpWallet(client.getDaemon.datadir + "/wallet_dump.dat")
     } yield {
       assert(key == ecPrivateKey)
       val reader = new Scanner(result.filename)
@@ -442,19 +447,21 @@ class WalletRpcTest extends BitcoindRpcTest {
 
     for {
       (client, _, _) <- clientsF
-      firstResult <- client
-        .createMultiSig(2, Vector(privKey1.publicKey, privKey2.publicKey))
+      firstResult <-
+        client
+          .createMultiSig(2, Vector(privKey1.publicKey, privKey2.publicKey))
       address2 = firstResult.address
 
-      secondResult <- client
-        .importMulti(
-          Vector(
-            RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address1),
-                                       UInt32(0)),
-            RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address2),
-                                       UInt32(0))),
-          rescan = false
-        )
+      secondResult <-
+        client
+          .importMulti(
+            Vector(
+              RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address1),
+                                         UInt32(0)),
+              RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address2),
+                                         UInt32(0))),
+            rescan = false
+          )
     } yield {
       assert(secondResult.length == 2)
       assert(secondResult(0).success)

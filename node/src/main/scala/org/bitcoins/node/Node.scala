@@ -32,7 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 /**
-  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
+  *  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
 trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
@@ -65,9 +65,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   /** This is constructing a chain api from disk every time we call this method
     * This involves database calls which can be slow and expensive to construct
     * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
-    * */
-  def chainApiFromDb()(
-      implicit executionContext: ExecutionContext): Future[ChainHandler] = {
+    */
+  def chainApiFromDb()(implicit
+      executionContext: ExecutionContext): Future[ChainHandler] = {
     ChainHandler.fromDatabase(BlockHeaderDAO(),
                               CompactFilterHeaderDAO(),
                               CompactFilterDAO())
@@ -76,7 +76,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   /** Unlike our chain api, this is cached inside our node
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
     * the [[org.bitcoins.chain.api.ChainApi chain api]] is updated inside of the p2p client
-    * */
+    */
   lazy val clientF: Future[P2PClient] = {
     for {
       chainApi <- chainApiFromDb()
@@ -193,9 +193,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     for {
       chainApi <- chainApiFromDb()
       hash <- chainApi.getBestBlockHash()
-      header <- chainApi
-        .getHeader(hash)
-        .map(_.get) // .get is safe since this is an internal call
+      header <-
+        chainApi
+          .getHeader(hash)
+          .map(_.get) // .get is safe since this is an internal call
 
     } yield {
       peerMsgSenderF.map(_.sendGetHeadersMessage(hash.flip))
@@ -240,7 +241,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
     chainApiFromDb().flatMap(_.getBestBlockHash())
 
-  /** Gets number of confirmations for the given block hash*/
+  /** Gets number of confirmations for the given block hash */
   def getNumberOfConfirmations(
       blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
     chainApiFromDb().flatMap(_.getNumberOfConfirmations(blockHashOpt))

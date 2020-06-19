@@ -45,6 +45,7 @@ import scala.concurrent.duration.{DurationInt, _}
 class EclairRpcClientTest extends BitcoinSAsyncTest {
 
   private val dirExists = Files.exists(EclairRpcTestUtil.binaryDirectory)
+
   private val hasContents = dirExists && Files
     .list(EclairRpcTestUtil.binaryDirectory)
     .toArray()
@@ -236,10 +237,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           invoice <- otherClient.createInvoice("abc", 50.msats)
           info <- otherClient.getInfo
           _ = assert(info.nodeId == invoice.nodeId)
-          paymentResult <- client.payAndMonitorInvoice(invoice,
-                                                       Some("ext_id"),
-                                                       3.second,
-                                                       60)
+          paymentResult <-
+            client.payAndMonitorInvoice(invoice, Some("ext_id"), 3.second, 60)
         } yield {
           assert(paymentResult.amount == 50.msats)
           assert(paymentResult.externalId.contains("ext_id"))
@@ -281,7 +280,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       assert(invoice.network == LnBitcoinRegTest)
       assert(invoice.amount.isEmpty)
       assert(invoice.isValidSignature)
-      assert(invoice.timestamp > UInt64(1561063731)) // this is when I wrote this code
+      assert(
+        invoice.timestamp > UInt64(1561063731)
+      ) // this is when I wrote this code
       assert(invoice.timestamp <= UInt64(System.currentTimeMillis() / 1000))
     }
   }
@@ -300,7 +301,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       assert(invoice.network == LnBitcoinRegTest)
       assert(invoice.amount == Some(123450.pBTC))
       assert(invoice.isValidSignature)
-      assert(invoice.timestamp > UInt64(1561063731)) // this is when I wrote this code
+      assert(
+        invoice.timestamp > UInt64(1561063731)
+      ) // this is when I wrote this code
       assert(invoice.timestamp <= UInt64(System.currentTimeMillis() / 1000))
     }
   }
@@ -321,7 +324,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       assert(invoice.network == LnBitcoinRegTest)
       assert(invoice.amount == Some(123450.pBTC))
       assert(invoice.isValidSignature)
-      assert(invoice.timestamp > UInt64(1561063731)) // this is when I wrote this code
+      assert(
+        invoice.timestamp > UInt64(1561063731)
+      ) // this is when I wrote this code
       assert(invoice.timestamp <= UInt64(System.currentTimeMillis() / 1000))
     }
   }
@@ -346,7 +351,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       assert(invoice.network == LnBitcoinRegTest)
       assert(invoice.amount == Some(123450.pBTC))
       assert(invoice.isValidSignature)
-      assert(invoice.timestamp > UInt64(1561063731)) // this is when I wrote this code
+      assert(
+        invoice.timestamp > UInt64(1561063731)
+      ) // this is when I wrote this code
       assert(invoice.timestamp <= UInt64(System.currentTimeMillis() / 1000))
     }
   }
@@ -374,7 +381,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       assert(invoice.network == LnBitcoinRegTest)
       assert(invoice.amount == Some(123450.pBTC))
       assert(invoice.isValidSignature)
-      assert(invoice.timestamp > UInt64(1561063731)) // this is when I wrote this code
+      assert(
+        invoice.timestamp > UInt64(1561063731)
+      ) // this is when I wrote this code
       assert(invoice.timestamp <= UInt64(System.currentTimeMillis() / 1000))
     }
   }
@@ -393,10 +402,11 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                                               duration = 1.second,
                                               maxTries = 60)
       _ = EclairRpcTestUtil.shutdown(eclair)
-      _ <- TestAsyncUtil.retryUntilSatisfiedF(
-        conditionF = () => eclair.isStarted().map(!_),
-        duration = 1.second,
-        maxTries = 60)
+      _ <-
+        TestAsyncUtil.retryUntilSatisfiedF(conditionF =
+                                             () => eclair.isStarted().map(!_),
+                                           duration = 1.second,
+                                           maxTries = 60)
     } yield succeed
   }
   it should "be able to open and close a channel" in {
@@ -554,10 +564,12 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                                          recipientAmountMsat = None,
                                          parentId = None,
                                          externalId = Some("ext_id"))
-            _ <- EclairRpcTestUtil
-              .awaitUntilIncomingPaymentStatus[IncomingPaymentStatus.Received](
-                otherClient,
-                invoice.lnTags.paymentHash.hash)
+            _ <-
+              EclairRpcTestUtil
+                .awaitUntilIncomingPaymentStatus[
+                  IncomingPaymentStatus.Received](
+                  otherClient,
+                  invoice.lnTags.paymentHash.hash)
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client,
                                                               result.parentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
@@ -588,8 +600,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
           for {
-            channelId <- EclairRpcTestUtil.openAndConfirmChannel(clientF,
-                                                                 otherClientF)
+            channelId <-
+              EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
             otherClientNodeId <- otherClient.getInfo.map(_.nodeId)
             channels <- client.channels(otherClientNodeId)
             // without this we've been getting "route not found"
@@ -598,11 +610,11 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                        "Nodes did not have open channel!")
             preimage = PaymentPreimage.random
             wsEventP = Promise[WebSocketEvent]
-            _ <- client.connectToWebSocket({ event =>
+            _ <- client.connectToWebSocket { event =>
               if (!wsEventP.isCompleted) {
                 wsEventP.success(event)
               }
-            })
+            }
             invoice <- otherClient.createInvoice("foo", amt, preimage)
             paymentId <- client.sendToNode(otherClientNodeId,
                                            amt,
@@ -650,8 +662,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
           for {
-            channelId <- EclairRpcTestUtil.openAndConfirmChannel(clientF,
-                                                                 otherClientF)
+            channelId <-
+              EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
             preimage = PaymentPreimage.random
             invoice <- otherClient.createInvoice("test", amt, preimage)
             paymentId <- client.payInvoice(invoice)
@@ -659,8 +671,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             received <- otherClient.getReceivedInfo(invoice)
             _ <- client.close(channelId)
-            _ <- EclairRpcTestUtil.awaitUntilChannelClosing(otherClient,
-                                                            channelId)
+            _ <-
+              EclairRpcTestUtil.awaitUntilChannelClosing(otherClient, channelId)
             channel <- otherClient.channel(channelId)
             bitcoind <- bitcoindRpcClientF
             address <- bitcoind.getNewAddress
@@ -698,8 +710,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
           for {
-            channelId <- EclairRpcTestUtil.openAndConfirmChannel(clientF,
-                                                                 otherClientF)
+            channelId <-
+              EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
             invoice <- otherClient.createInvoice("no amount")
             paymentId <- client.payInvoice(invoice, amt)
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
@@ -846,8 +858,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         bitcoind <- bitcoindRpcClientF
         _ <- EclairRpcTestUtil.awaitEclairInSync(otherClient, bitcoind)
         _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
-        invoice: LnInvoice <- otherClient.createInvoice("monitor an invoice",
-                                                        amt)
+        invoice: LnInvoice <-
+          otherClient.createInvoice("monitor an invoice", amt)
         _ <- client.payInvoice(invoice)
         received <- otherClient.monitorInvoice(invoice,
                                                interval = 1.seconds,
@@ -942,11 +954,12 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       (firstFreshClient: EclairRpcClient, secondFreshClient: EclairRpcClient) =>
         for {
           nodeId <- secondFreshClient.getInfo.map(_.nodeId)
-          ourOpenChannels <- firstFreshClient
-            .channels(nodeId)
-            .map(_.collect {
-              case open: OpenChannelInfo => open
-            })
+          ourOpenChannels <-
+            firstFreshClient
+              .channels(nodeId)
+              .map(_.collect {
+                case open: OpenChannelInfo => open
+              })
 
           ourChannelUpdates <- firstFreshClient.allUpdates(nodeId)
         } yield {
@@ -1017,8 +1030,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
   it should "update the relay fee of a channel with short channel id" in {
     val channelAndFeeF = for {
-      channelId <- EclairRpcTestUtil.openAndConfirmChannel(clientF,
-                                                           otherClientF)
+      channelId <-
+        EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
       client <- clientF
       channel <- client.channel(channelId)
     } yield {

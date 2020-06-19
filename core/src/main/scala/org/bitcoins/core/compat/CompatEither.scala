@@ -20,10 +20,11 @@ sealed private[bitcoins] trait CompatEither[+A, +B] {
     *  Left(12).map(x => "flower")  // Result: Left(12)
     *  }}}
     */
-  def map[B1](f: B => B1): CompatEither[A, B1] = underlying match {
-    case Right(b) => CompatRight(f(b))
-    case _        => this.asInstanceOf[CompatEither[A, B1]]
-  }
+  def map[B1](f: B => B1): CompatEither[A, B1] =
+    underlying match {
+      case Right(b) => CompatRight(f(b))
+      case _        => this.asInstanceOf[CompatEither[A, B1]]
+    }
 
   /** Binds the given function across `Right`.
     *
@@ -40,10 +41,11 @@ sealed private[bitcoins] trait CompatEither[+A, +B] {
       case Left(l) => CompatLeft(l)
     }
 
-  def toTry(implicit ev: A <:< Throwable): Try[B] = underlying match {
-    case Right(b) => Success(b)
-    case Left(a)  => Failure(a)
-  }
+  def toTry(implicit ev: A <:< Throwable): Try[B] =
+    underlying match {
+      case Right(b) => Success(b)
+      case Left(a)  => Failure(a)
+    }
 
   /** Applies `fa` if this is a `Left` or `fb` if this is a `Right`.
     *
@@ -59,19 +61,21 @@ sealed private[bitcoins] trait CompatEither[+A, +B] {
     *  @param fb the function to apply if this is a `Right`
     *  @return the results of applying the function
     */
-  def fold[C](fa: A => C, fb: B => C): C = underlying match {
-    case Right(b) => fb(b)
-    case Left(a)  => fa(a)
-  }
+  def fold[C](fa: A => C, fb: B => C): C =
+    underlying match {
+      case Right(b) => fb(b)
+      case Left(a)  => fa(a)
+    }
 }
 
 object CompatEither {
 
   /** Converts the given `scala.util.Either` to a `CompatEither` */
-  def apply[A, B](either: Either[A, B]): CompatEither[A, B] = either match {
-    case Left(value)  => CompatLeft(value)
-    case Right(value) => CompatRight(value)
-  }
+  def apply[A, B](either: Either[A, B]): CompatEither[A, B] =
+    either match {
+      case Left(value)  => CompatLeft(value)
+      case Right(value) => CompatRight(value)
+    }
 
 }
 

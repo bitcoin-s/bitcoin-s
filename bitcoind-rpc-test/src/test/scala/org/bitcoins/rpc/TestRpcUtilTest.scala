@@ -18,10 +18,11 @@ class TestRpcUtilTest extends BitcoindRpcTest {
   private lazy val clientsF =
     BitcoindRpcTestUtil.createNodeTriple(clientAccum = clientAccum)
 
-  private def trueLater(delay: Int = 1000): Future[Boolean] = Future {
-    Thread.sleep(delay)
-    true
-  }
+  private def trueLater(delay: Int = 1000): Future[Boolean] =
+    Future {
+      Thread.sleep(delay)
+      true
+    }
 
   private def boolLaterDoneAnd(
       bool: Boolean,
@@ -47,9 +48,9 @@ class TestRpcUtilTest extends BitcoindRpcTest {
 
   it should "fail if condition is false" in {
     recoverToSucceededIf[RpcRetryException] {
-      AsyncUtil.retryUntilSatisfiedF(
-        conditionF = () => Future.successful(false),
-        duration = 0.millis)
+      AsyncUtil.retryUntilSatisfiedF(conditionF =
+                                       () => Future.successful(false),
+                                     duration = 0.millis)
     }
   }
 

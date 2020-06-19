@@ -5,6 +5,7 @@ import org.slf4j.Logger
 /** Exposes access to the database interaction logger */
 private[bitcoins] trait DatabaseLogger {
   private var _logger: Logger = _
+
   protected[bitcoins] def logger(implicit config: LoggerConfig): Logger = {
     if (_logger == null) {
       _logger = DatabaseLoggerImpl(config).getLogger

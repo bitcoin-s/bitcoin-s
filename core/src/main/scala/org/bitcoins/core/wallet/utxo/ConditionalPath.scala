@@ -21,6 +21,7 @@ sealed trait Conditional extends ConditionalPath {
 }
 
 object ConditionalPath {
+
   case object NoCondition extends ConditionalPath {
     override val headOption: Option[Boolean] = None
   }
@@ -28,6 +29,7 @@ object ConditionalPath {
   case class ConditionTrue(nextCondition: ConditionalPath) extends Conditional {
     override val condition: Boolean = true
   }
+
   case class ConditionFalse(nextCondition: ConditionalPath)
       extends Conditional {
     override val condition: Boolean = false

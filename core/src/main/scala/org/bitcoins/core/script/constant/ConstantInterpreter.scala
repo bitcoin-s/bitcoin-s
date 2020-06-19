@@ -90,8 +90,10 @@ sealed abstract class ConstantInterpreter {
     if (bytesNeeded == 0)
       program.updateStackAndScript(ScriptNumber.zero :: program.stack,
                                    newScript)
-    else if (ScriptFlagUtil.requireMinimalData(program.flags) && bytesNeeded == 1 &&
-             constant.isInstanceOf[ScriptNumber] && constant.toLong <= 16) {
+    else if (
+      ScriptFlagUtil.requireMinimalData(program.flags) && bytesNeeded == 1 &&
+      constant.isInstanceOf[ScriptNumber] && constant.toLong <= 16
+    ) {
       logger.error(
         "We can push this constant onto the stack with OP_0 - OP_16 instead of using a script constant")
       program.failExecution(ScriptErrorMinimalData)
@@ -103,8 +105,10 @@ sealed abstract class ConstantInterpreter {
           .map(_.bytes.size)
           .sum)
       program.failExecution(ScriptErrorBadOpCode)
-    } else if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
-                 .isMinimalPush(program.script.head, constant)) {
+    } else if (
+      ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
+        .isMinimalPush(program.script.head, constant)
+    ) {
       logger.debug("Pushing operation: " + program.script.head)
       logger.debug("Constant parsed: " + constant)
       logger.debug("Constant size: " + constant.bytes.size)
@@ -134,8 +138,11 @@ sealed abstract class ConstantInterpreter {
       case token: ScriptConstant if token.bytes.toSeq.forall(_ == 0.toByte) =>
         emptyPush()
       case _: ScriptToken =>
-        if (ScriptFlagUtil.requireMinimalData(program.flags) && program.script.size > 2 && !BitcoinScriptUtil
-              .isMinimalPush(program.script.head, program.script(2))) {
+        if (
+          ScriptFlagUtil.requireMinimalData(
+            program.flags) && program.script.size > 2 && !BitcoinScriptUtil
+            .isMinimalPush(program.script.head, program.script(2))
+        ) {
           logger.error(
             s"Non-minimal push where minimal push was required: $program")
           program.failExecution(ScriptErrorMinimalData)
@@ -146,18 +153,19 @@ sealed abstract class ConstantInterpreter {
   }
 
   /** Parses the bytes needed for a push op (for instance OP_PUSHDATA1). */
-  private def bytesNeededForPushOp(token: ScriptToken): Long = token match {
-    case scriptNumber: BytesToPushOntoStack => scriptNumber.opCode
-    case scriptNumOp: ScriptNumberOperation => scriptNumOp.opCode
-    case scriptNumber: ScriptNumber         => scriptNumber.toLong
-    case scriptConstant: ScriptConstant =>
-      val constantFlippedEndianness =
-        BytesUtil.flipEndianness(scriptConstant.hex)
-      java.lang.Long.parseLong(constantFlippedEndianness, 16)
-    case _ =>
-      throw new IllegalArgumentException(
-        "Token must be BytesToPushOntoStack to push a number of bytes onto the stack")
-  }
+  private def bytesNeededForPushOp(token: ScriptToken): Long =
+    token match {
+      case scriptNumber: BytesToPushOntoStack => scriptNumber.opCode
+      case scriptNumOp: ScriptNumberOperation => scriptNumOp.opCode
+      case scriptNumber: ScriptNumber         => scriptNumber.toLong
+      case scriptConstant: ScriptConstant =>
+        val constantFlippedEndianness =
+          BytesUtil.flipEndianness(scriptConstant.hex)
+        java.lang.Long.parseLong(constantFlippedEndianness, 16)
+      case _ =>
+        throw new IllegalArgumentException(
+          "Token must be BytesToPushOntoStack to push a number of bytes onto the stack")
+    }
 }
 
 object ConstantInterpreter extends ConstantInterpreter

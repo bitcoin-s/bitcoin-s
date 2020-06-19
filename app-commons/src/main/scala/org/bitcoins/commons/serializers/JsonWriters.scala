@@ -21,18 +21,21 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 
 object JsonWriters {
+
   implicit object HashTypeWrites extends Writes[HashType] {
-    override def writes(hash: HashType): JsValue = hash match {
-      case _: SIGHASH_ALL                 => JsString("ALL")
-      case _: SIGHASH_NONE                => JsString("NONE")
-      case _: SIGHASH_SINGLE              => JsString("SINGLE")
-      case _: SIGHASH_ALL_ANYONECANPAY    => JsString("ALL|ANYONECANPAY")
-      case _: SIGHASH_NONE_ANYONECANPAY   => JsString("NONE|ANYONECANPAY")
-      case _: SIGHASH_SINGLE_ANYONECANPAY => JsString("SINGLE|ANYONECANPAY")
-      case _: SIGHASH_ANYONECANPAY =>
-        throw new IllegalArgumentException(
-          "SIGHHASH_ANYONECANPAY is not supported by the bitcoind RPC interface")
-    }
+
+    override def writes(hash: HashType): JsValue =
+      hash match {
+        case _: SIGHASH_ALL                 => JsString("ALL")
+        case _: SIGHASH_NONE                => JsString("NONE")
+        case _: SIGHASH_SINGLE              => JsString("SINGLE")
+        case _: SIGHASH_ALL_ANYONECANPAY    => JsString("ALL|ANYONECANPAY")
+        case _: SIGHASH_NONE_ANYONECANPAY   => JsString("NONE|ANYONECANPAY")
+        case _: SIGHASH_SINGLE_ANYONECANPAY => JsString("SINGLE|ANYONECANPAY")
+        case _: SIGHASH_ANYONECANPAY =>
+          throw new IllegalArgumentException(
+            "SIGHHASH_ANYONECANPAY is not supported by the bitcoind RPC interface")
+      }
   }
 
   implicit object BitcoinsWrites extends Writes[Bitcoins] {
@@ -53,17 +56,20 @@ object JsonWriters {
   }
 
   implicit object ScriptPubKeyWrites extends Writes[ScriptPubKey] {
+
     override def writes(o: ScriptPubKey): JsValue =
       JsString(BytesUtil.encodeHex(o.asmBytes))
   }
 
   implicit object WitnessScriptPubKeyWrites
       extends Writes[WitnessScriptPubKey] {
+
     override def writes(o: WitnessScriptPubKey): JsValue =
       ScriptPubKeyWrites.writes(o)
   }
 
   implicit object TransactionInputWrites extends Writes[TransactionInput] {
+
     override def writes(o: TransactionInput): JsValue =
       JsObject(
         Seq(("txid", JsString(o.previousOutput.txIdBE.hex)),
@@ -79,10 +85,10 @@ object JsonWriters {
     override def writes(o: Transaction): JsValue = JsString(o.hex)
   }
 
-  implicit def mapWrites[K, V](keyString: K => String)(
-      implicit
+  implicit def mapWrites[K, V](keyString: K => String)(implicit
       vWrites: Writes[V]): Writes[Map[K, V]] =
     new Writes[Map[K, V]] {
+
       override def writes(o: Map[K, V]): JsValue =
         Json.toJson(o.map { case (k, v) => (keyString(k), v) })
     }
@@ -97,6 +103,7 @@ object JsonWriters {
 
   implicit object WalletCreateFundedPsbtOptionsWrites
       extends Writes[WalletCreateFundedPsbtOptions] {
+
     override def writes(opts: WalletCreateFundedPsbtOptions): JsValue = {
       val jsOpts: mutable.Map[String, JsValue] = mutable.Map(
         "includeWatching" -> JsBoolean(opts.includeWatching),
@@ -105,8 +112,8 @@ object JsonWriters {
         "estimate_mode" -> JsString(opts.estimateMode.toString)
       )
 
-      def addToMapIfDefined[T](key: String, opt: Option[T])(
-          implicit writes: Writes[T]): Unit =
+      def addToMapIfDefined[T](key: String, opt: Option[T])(implicit
+          writes: Writes[T]): Unit =
         opt.foreach(o => jsOpts += (key -> Json.toJson(o)))
 
       addToMapIfDefined("changeAddress", opts.changeAddress)

@@ -145,8 +145,8 @@ case class PSBT(
       inputIndex: Int,
       signer: Sign,
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
-      isDummySignature: Boolean = false)(
-      implicit ec: ExecutionContext): Future[PSBT] = {
+      isDummySignature: Boolean = false)(implicit
+      ec: ExecutionContext): Future[PSBT] = {
     BitcoinSigner.sign(psbt = this,
                        inputIndex = inputIndex,
                        signer = signer,
@@ -165,8 +165,8 @@ case class PSBT(
   def getSpendingInfoUsingSigners(
       index: Int,
       signers: Vector[Sign],
-      conditionalPath: ConditionalPath = ConditionalPath.NoCondition): ScriptSignatureParams[
-    InputInfo] = {
+      conditionalPath: ConditionalPath =
+        ConditionalPath.NoCondition): ScriptSignatureParams[InputInfo] = {
     require(index >= 0 && index < inputMaps.size,
             s"Index must be within 0 and the number of inputs, got: $index")
     inputMaps(index)
@@ -199,14 +199,16 @@ case class PSBT(
         val outIsWitnessScript =
           WitnessScriptPubKey.isWitnessScriptPubKey(out.scriptPubKey.asm)
         val hasWitScript = inputMap.witnessScriptOpt.isDefined
-        val hasWitRedeemScript = inputMap.redeemScriptOpt.isDefined && WitnessScriptPubKey
-          .isWitnessScriptPubKey(inputMap.redeemScriptOpt.get.redeemScript.asm)
+        val hasWitRedeemScript =
+          inputMap.redeemScriptOpt.isDefined && WitnessScriptPubKey
+            .isWitnessScriptPubKey(
+              inputMap.redeemScriptOpt.get.redeemScript.asm)
 
         if (outIsWitnessScript || hasWitScript || hasWitRedeemScript) {
           inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(out)
         } else {
-          inputMap.filterRecords(NonWitnessUTXOKeyId) :+ NonWitnessOrUnknownUTXO(
-            tx)
+          inputMap.filterRecords(
+            NonWitnessUTXOKeyId) :+ NonWitnessOrUnknownUTXO(tx)
         }
       } else {
         throw new IllegalArgumentException(
@@ -236,8 +238,8 @@ case class PSBT(
     require(!inputMap.isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
-    val elements = inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(
-      output)
+    val elements =
+      inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(output)
     val newInputMaps = inputMaps.updated(index, InputPSBTMap(elements))
 
     PSBT(globalMap, newInputMaps, outputMaps)
@@ -504,8 +506,8 @@ case class PSBT(
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
-    val newElements = inputMaps(index).filterRecords(SigHashTypeKeyId) :+ SigHashType(
-      hashType)
+    val newElements =
+      inputMaps(index).filterRecords(SigHashTypeKeyId) :+ SigHashType(hashType)
 
     val newInputMaps =
       inputMaps.updated(index, InputPSBTMap(newElements))
@@ -666,16 +668,18 @@ case class PSBT(
           TransactionInput(input.previousOutput, scriptSig, input.sequence)
       }
 
-      if (inputMaps
-            .flatMap(_.elements)
-            .exists(_.isInstanceOf[FinalizedScriptWitness])) {
+      if (
+        inputMaps
+          .flatMap(_.elements)
+          .exists(_.isInstanceOf[FinalizedScriptWitness])
+      ) {
         val witness = inputMaps.zipWithIndex.foldLeft[TransactionWitness](
           EmptyWitness.fromInputs(transaction.inputs)) {
           case (witness, (inputMap, index)) =>
             inputMap.finalizedScriptWitnessOpt match {
               case None => witness
               case Some(
-                  InputPSBTRecord.FinalizedScriptWitness(scriptWitness)) =>
+                    InputPSBTRecord.FinalizedScriptWitness(scriptWitness)) =>
                 TransactionWitness(
                   witness.updated(index, scriptWitness).toVector)
             }
@@ -828,9 +832,10 @@ object PSBT extends Factory[PSBT] {
         }
     }
 
-    def map[T](func: (
-        ScriptSignatureParams[InputInfo],
-        Option[BaseTransaction]) => T): Vector[T] = {
+    def map[T](
+        func: (
+            ScriptSignatureParams[InputInfo],
+            Option[BaseTransaction]) => T): Vector[T] = {
       infoAndTxOpts.map { case (info, txOpt) => func(info, txOpt) }
     }
   }
@@ -840,8 +845,8 @@ object PSBT extends Factory[PSBT] {
     */
   def fromUnsignedTxAndInputs(
       unsignedTx: Transaction,
-      spendingInfoAndNonWitnessTxs: SpendingInfoAndNonWitnessTxs)(
-      implicit ec: ExecutionContext): Future[PSBT] = {
+      spendingInfoAndNonWitnessTxs: SpendingInfoAndNonWitnessTxs)(implicit
+      ec: ExecutionContext): Future[PSBT] = {
     fromUnsignedTxAndInputs(unsignedTx,
                             spendingInfoAndNonWitnessTxs,
                             finalized = false)
@@ -852,8 +857,8 @@ object PSBT extends Factory[PSBT] {
     */
   def finalizedFromUnsignedTxAndInputs(
       unsignedTx: Transaction,
-      spendingInfoAndNonWitnessTxs: SpendingInfoAndNonWitnessTxs)(
-      implicit ec: ExecutionContext): Future[PSBT] = {
+      spendingInfoAndNonWitnessTxs: SpendingInfoAndNonWitnessTxs)(implicit
+      ec: ExecutionContext): Future[PSBT] = {
     fromUnsignedTxAndInputs(unsignedTx,
                             spendingInfoAndNonWitnessTxs,
                             finalized = true)

@@ -85,13 +85,14 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
     */
   def composeBuilders[T, U](
       builder: () => Future[T],
-      dependentBuilder: T => Future[U]): () => Future[(T, U)] = () => {
-    builder().flatMap { first =>
-      dependentBuilder(first).map { second =>
-        (first, second)
+      dependentBuilder: T => Future[U]): () => Future[(T, U)] =
+    () => {
+      builder().flatMap { first =>
+        dependentBuilder(first).map { second =>
+          (first, second)
+        }
       }
     }
-  }
 
   /**
     * Given two fixture building methods (one dependent on the other) and a wrapper
@@ -108,14 +109,14 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
   def composeBuildersAndWrap[T, U, C](
       builder: () => Future[T],
       dependentBuilder: T => Future[U],
-      wrap: (T, U) => C): () => Future[C] = () => {
-    composeBuilders(builder, dependentBuilder)().map {
-      case (first, second) => wrap(first, second)
+      wrap: (T, U) => C): () => Future[C] =
+    () => {
+      composeBuilders(builder, dependentBuilder)().map {
+        case (first, second) => wrap(first, second)
+      }
     }
-  }
 
   /**
-    *
     * Given two fixture building methods (one dependent on the other) and
     * a function that processes the result of the builders returning a Future,
     * returns a single fixture building method where the fixture is wrapper.
@@ -127,11 +128,12 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
       builder: () => Future[T],
       dependentBuilder: T => Future[U],
       processResult: (T, U) => Future[C]
-  ): () => Future[C] = () => {
-    composeBuilders(builder, dependentBuilder)().flatMap {
-      case (first, second) => processResult(first, second)
+  ): () => Future[C] =
+    () => {
+      composeBuilders(builder, dependentBuilder)().flatMap {
+        case (first, second) => processResult(first, second)
+      }
     }
-  }
 
 }
 
@@ -148,8 +150,8 @@ object BitcoinSFixture {
   }
 
   /** Creates a new bitcoind instance */
-  def createBitcoind(versionOpt: Option[BitcoindVersion] = None)(
-      implicit system: ActorSystem): Future[BitcoindRpcClient] = {
+  def createBitcoind(versionOpt: Option[BitcoindVersion] = None)(implicit
+      system: ActorSystem): Future[BitcoindRpcClient] = {
     val instance = BitcoindRpcTestUtil.instance(versionOpt = versionOpt)
     val bitcoind = versionOpt match {
       case Some(v) => BitcoindRpcClient.fromVersion(v, instance)

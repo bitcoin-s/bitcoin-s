@@ -57,8 +57,8 @@ sealed abstract class TransactionSignatureCreator {
   def createSig(
       component: TxSigComponent,
       sign: ByteVector => Future[ECDigitalSignature],
-      hashType: HashType)(
-      implicit ec: ExecutionContext): Future[ECDigitalSignature] = {
+      hashType: HashType)(implicit
+      ec: ExecutionContext): Future[ECDigitalSignature] = {
     val hash =
       TransactionSignatureSerializer.hashForSignature(component, hashType)
     val signature = sign(hash.bytes)

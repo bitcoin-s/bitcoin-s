@@ -110,13 +110,14 @@ object Main extends App with BitcoinSLogger {
     val syncedNodeF = for {
       node <- nodeWithCallbacksF
       _ <- node.start()
-      _ = if (nodeConf.isSPVEnabled) {
-        logger.info(s"Starting SPV node sync")
-      } else if (nodeConf.isNeutrinoEnabled) {
-        logger.info(s"Starting neutrino node sync")
-      } else {
-        logger.info(s"Starting unknown type of node sync")
-      }
+      _ =
+        if (nodeConf.isSPVEnabled) {
+          logger.info(s"Starting SPV node sync")
+        } else if (nodeConf.isNeutrinoEnabled) {
+          logger.info(s"Starting neutrino node sync")
+        } else {
+          logger.info(s"Starting unknown type of node sync")
+        }
       _ <- node.sync()
     } yield node
 
@@ -158,8 +159,8 @@ object Main extends App with BitcoinSLogger {
   //start everything!
   runMain()
 
-  private def createCallbacks(wallet: WalletApi)(
-      implicit nodeConf: NodeAppConfig,
+  private def createCallbacks(wallet: WalletApi)(implicit
+      nodeConf: NodeAppConfig,
       ec: ExecutionContext): Future[NodeCallbacks] = {
     lazy val onTx: OnTxReceived = { tx =>
       wallet.processTransaction(tx, blockHash = None).map(_ => ())
@@ -194,7 +195,8 @@ object Main extends App with BitcoinSLogger {
   }
 
   private def addCallbacksAndBloomFilterToNode(node: Node, wallet: WalletApi)(
-      implicit nodeAppConfig: NodeAppConfig,
+      implicit
+      nodeAppConfig: NodeAppConfig,
       ec: ExecutionContext): Future[Node] = {
     for {
       nodeWithBloomFilter <- node match {
@@ -213,28 +215,29 @@ object Main extends App with BitcoinSLogger {
   }
 
   /** This is needed for migrations V2/V3 on the chain project to re-calculate the total work for the chain */
-  private def runChainWorkCalc()(
-      implicit chainAppConfig: ChainAppConfig,
+  private def runChainWorkCalc()(implicit
+      chainAppConfig: ChainAppConfig,
       ec: ExecutionContext): Future[ChainApi] = {
     for {
       chainApi <- ChainHandler.fromDatabase(blockHeaderDAO = BlockHeaderDAO(),
                                             CompactFilterHeaderDAO(),
                                             CompactFilterDAO())
       isMissingChainWork <- chainApi.isMissingChainWork
-      chainApiWithWork <- if (isMissingChainWork) {
-        chainApi.recalculateChainWork
-      } else {
-        logger.info(s"Chain work already calculated")
-        Future.successful(chainApi)
-      }
+      chainApiWithWork <-
+        if (isMissingChainWork) {
+          chainApi.recalculateChainWork
+        } else {
+          logger.info(s"Chain work already calculated")
+          Future.successful(chainApi)
+        }
     } yield chainApiWithWork
   }
 
   private def startHttpServer(
       node: Node,
       wallet: WalletApi,
-      rpcPortOpt: Option[Int])(
-      implicit system: ActorSystem,
+      rpcPortOpt: Option[Int])(implicit
+      system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
     import system.dispatcher
     implicit val nodeConf: NodeAppConfig = conf.nodeConf

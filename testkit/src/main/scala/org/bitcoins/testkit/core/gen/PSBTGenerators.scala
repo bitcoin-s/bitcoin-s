@@ -38,9 +38,11 @@ object PSBTGenerators {
       // Do a bunch of loops to guarantee that it is not a taken KeyId
       @tailrec
       def loop(bytes: ByteVector): ByteVector = {
-        if (PSBTGlobalKeyId.fromBytes(bytes) != PSBTGlobalKeyId.UnknownKeyId ||
-            PSBTInputKeyId.fromBytes(bytes) != PSBTInputKeyId.UnknownKeyId ||
-            PSBTOutputKeyId.fromBytes(bytes) != PSBTOutputKeyId.UnknownKeyId) {
+        if (
+          PSBTGlobalKeyId.fromBytes(bytes) != PSBTGlobalKeyId.UnknownKeyId ||
+          PSBTInputKeyId.fromBytes(bytes) != PSBTInputKeyId.UnknownKeyId ||
+          PSBTOutputKeyId.fromBytes(bytes) != PSBTOutputKeyId.UnknownKeyId
+        ) {
           loop(bytes.tail)
         } else {
           bytes
@@ -134,8 +136,8 @@ object PSBTGenerators {
     }
   }
 
-  def psbtWithUnknownVersion(
-      implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
+  def psbtWithUnknownVersion(implicit
+      ec: ExecutionContext): Gen[Future[PSBT]] = {
     for {
       psbtF <- psbtWithUnknowns
       versionNumber <- Gen.choose(min = PSBT.knownVersions.last.toLong,
@@ -170,7 +172,8 @@ object PSBTGenerators {
 
   def spendingInfoAndNonWitnessTxsFromSpendingInfos(
       unsignedTx: Transaction,
-      creditingTxsInfo: Vector[ScriptSignatureParams[InputInfo]]): SpendingInfoAndNonWitnessTxs = {
+      creditingTxsInfo: Vector[
+        ScriptSignatureParams[InputInfo]]): SpendingInfoAndNonWitnessTxs = {
     val elements = unsignedTx.inputs.toVector.map { input =>
       val infoOpt =
         creditingTxsInfo.find(_.outPoint == input.previousOutput)
@@ -195,13 +198,14 @@ object PSBTGenerators {
       creditingTxsInfo: Seq[ScriptSignatureParams[InputInfo]],
       destinations: Seq[TransactionOutput],
       changeSPK: ScriptPubKey,
-      fee: FeeUnit)(implicit ec: ExecutionContext): Future[
-    (PSBT, FinalizedTxWithSigningInfo, FeeUnit)] = {
+      fee: FeeUnit)(implicit
+  ec: ExecutionContext): Future[(PSBT, FinalizedTxWithSigningInfo, FeeUnit)] = {
     val lockTime = TxUtil.calcLockTime(creditingTxsInfo).get
     val inputs =
       InputUtil.calcSequenceForInputs(creditingTxsInfo)
 
-    val builder = RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
+    val builder =
+      RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
     val finalizer = StandardNonInteractiveFinalizer(
       creditingTxsInfo.toVector.map(_.inputInfo),
       fee,
@@ -251,12 +255,12 @@ object PSBTGenerators {
   def psbtWithBuilderAndP2SHOutputs(
       finalized: Boolean,
       outputGen: CurrencyUnit => Gen[Seq[(TransactionOutput, ScriptPubKey)]] =
-        TransactionGenerators.smallP2SHOutputs)(
-      implicit ec: ExecutionContext): Gen[
+        TransactionGenerators.smallP2SHOutputs)(implicit
+      ec: ExecutionContext): Gen[
     Future[(PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])]] = {
     for {
-      (creditingTxsInfo, outputs) <- CreditingTxGen.inputsAndP2SHOutputs(
-        destinationGenerator = outputGen)
+      (creditingTxsInfo, outputs) <-
+        CreditingTxGen.inputsAndP2SHOutputs(destinationGenerator = outputGen)
       changeSPK <- ScriptGenerators.scriptPubKey
       maxFee = {
         val destinations = outputs.map(_._1)
@@ -277,8 +281,8 @@ object PSBTGenerators {
     }
   }
 
-  def psbtWithBuilderAndP2WSHOutputs(finalized: Boolean)(
-      implicit ec: ExecutionContext): Gen[
+  def psbtWithBuilderAndP2WSHOutputs(finalized: Boolean)(implicit
+      ec: ExecutionContext): Gen[
     Future[(PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])]] =
     psbtWithBuilderAndP2SHOutputs(finalized,
                                   TransactionGenerators.smallP2WSHOutputs)
@@ -298,7 +302,8 @@ object PSBTGenerators {
   }
 
   def pruneGlobal(globalMap: GlobalPSBTMap): GlobalPSBTMap = {
-    val newGlobalElements = pruneVec(globalMap.elements) :+ globalMap.unsignedTransaction
+    val newGlobalElements =
+      pruneVec(globalMap.elements) :+ globalMap.unsignedTransaction
     GlobalPSBTMap(newGlobalElements.distinct)
   }
 

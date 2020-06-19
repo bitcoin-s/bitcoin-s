@@ -38,8 +38,8 @@ object DLCMessage {
       .flip
   }
 
-  private def getValue(key: String)(
-      implicit obj: mutable.LinkedHashMap[String, Value]): Value = {
+  private def getValue(key: String)(implicit
+      obj: mutable.LinkedHashMap[String, Value]): Value = {
     val index = obj.keys.toList.indexOf(key)
     obj.values(index)
   }
@@ -141,17 +141,15 @@ object DLCMessage {
     override def toJson: Value = {
       val contractInfosJson =
         contractInfo
-          .map(
-            info =>
-              mutable.LinkedHashMap("sha256" -> Str(info._1.hex),
-                                    "sats" -> Num(info._2.toLong.toDouble)))
+          .map(info =>
+            mutable.LinkedHashMap("sha256" -> Str(info._1.hex),
+                                  "sats" -> Num(info._2.toLong.toDouble)))
 
       val fundingInputsJson =
         fundingInputs
-          .map(
-            input =>
-              mutable.LinkedHashMap("outpoint" -> Str(input.outPoint.hex),
-                                    "output" -> Str(input.output.hex)))
+          .map(input =>
+            mutable.LinkedHashMap("outpoint" -> Str(input.outPoint.hex),
+                                  "output" -> Str(input.output.hex)))
 
       val timeoutsJson =
         mutable.LinkedHashMap(
@@ -305,10 +303,9 @@ object DLCMessage {
 
     def toJson: Value = {
       val fundingInputsJson =
-        fundingInputs.map(
-          input =>
-            mutable.LinkedHashMap("outpoint" -> Str(input.outPoint.hex),
-                                  "output" -> Str(input.output.hex)))
+        fundingInputs.map(input =>
+          mutable.LinkedHashMap("outpoint" -> Str(input.outPoint.hex),
+                                "output" -> Str(input.output.hex)))
 
       val outcomeSigsJson =
         cetSigs.outcomeSigs.map {
@@ -439,10 +436,9 @@ object DLCMessage {
 
     def toJson: Value = {
 
-      val fundingSigsMap = fundingSigs.map(
-        outPointAndSig =>
-          (outPointAndSig._1.hex,
-           Arr.from(outPointAndSig._2.map(sig => Str(sig.hex)))))
+      val fundingSigsMap = fundingSigs.map(outPointAndSig =>
+        (outPointAndSig._1.hex,
+         Arr.from(outPointAndSig._2.map(sig => Str(sig.hex)))))
 
       val fundingSigsJson = fundingSigsMap
         .foldLeft(mutable.LinkedHashMap.newBuilder[String, Value])(
@@ -531,6 +527,7 @@ object DLCMessage {
       oracleSig: SchnorrDigitalSignature,
       mutualSig: PartialSignature)
       extends DLCMessage {
+
     override def toJson: Value = {
       Obj(
         mutable.LinkedHashMap[String, Value](

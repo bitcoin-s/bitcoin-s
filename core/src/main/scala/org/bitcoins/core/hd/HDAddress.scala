@@ -18,16 +18,18 @@ sealed abstract class HDAddress extends BIP32Path {
   def chain: HDChain
   def index: Int
 
-  def toPath: HDPath = purpose match {
-    case HDPurposes.Legacy       => LegacyHDPath(this)
-    case HDPurposes.SegWit       => SegWitHDPath(this)
-    case HDPurposes.NestedSegWit => NestedSegWitHDPath(this)
-    case unknown: HDPurpose =>
-      throw new IllegalArgumentException(s"Unknown HD purpose $unknown")
-  }
+  def toPath: HDPath =
+    purpose match {
+      case HDPurposes.Legacy       => LegacyHDPath(this)
+      case HDPurposes.SegWit       => SegWitHDPath(this)
+      case HDPurposes.NestedSegWit => NestedSegWitHDPath(this)
+      case unknown: HDPurpose =>
+        throw new IllegalArgumentException(s"Unknown HD purpose $unknown")
+    }
 }
 
 object HDAddress {
+
   private case class HDAddressImpl(
       coin: HDCoin,
       account: HDAccount,

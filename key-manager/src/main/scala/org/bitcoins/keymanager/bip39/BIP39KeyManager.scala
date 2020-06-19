@@ -29,6 +29,7 @@ case class BIP39KeyManager(
     creationTime: Instant)
     extends KeyManager
     with KeyManagerLogger {
+
   private val seed = bip39PasswordOpt match {
     case Some(pw) =>
       BIP39Seed.fromMnemonic(mnemonic = mnemonic, password = pw)
@@ -132,7 +133,8 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
         logger.info(
           s"Seed file already exists, attempting to initialize form existing seed file=$seedPath.")
 
-        WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, badPassphrase) match {
+        WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath,
+                                              badPassphrase) match {
           case Right(mnemonic) =>
             CompatRight(
               BIP39KeyManager(mnemonic = mnemonic.mnemonicCode,

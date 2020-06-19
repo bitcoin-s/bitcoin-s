@@ -80,7 +80,8 @@ class CompactSizeUIntTest extends BitcoinSUnitTest {
   }
 
   it must "parse a variable length integer the same from a tx input and a script sig" in {
-    CompactSizeUInt.parseCompactSizeUInt(TestUtil.txInput.scriptSignature.bytes) must be(
+    CompactSizeUInt.parseCompactSizeUInt(
+      TestUtil.txInput.scriptSignature.bytes) must be(
       TestUtil.txInput.scriptSignature.compactSizeUInt)
   }
 

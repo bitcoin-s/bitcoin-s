@@ -32,13 +32,16 @@ object BlockStamp extends StringFactory[BlockStamp] {
   case class BlockHash(hash: DoubleSha256DigestBE) extends BlockStamp {
     override def mkString: String = hash.hex
   }
+
   case class BlockHeight(height: Int) extends BlockTimeStamp {
     require(height >= 0, "block height must be a positive number")
     override def mkString: String = height.toString
     override def toUInt32: UInt32 = UInt32(height)
     override def toScriptNumber: ScriptNumber = ScriptNumber(height)
   }
+
   case class BlockTime(time: UInt32) extends BlockTimeStamp {
+
     override def mkString: String = {
       val instant = Instant.ofEpochSecond(time.toLong)
       DateTimeFormatter.ISO_INSTANT.format(instant)

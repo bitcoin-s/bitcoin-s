@@ -76,9 +76,9 @@ sealed abstract class CreditingTxGen {
         !ScriptGenerators.redeemScriptTooBig(output.output.scriptPubKey))
       .suchThat {
         case ScriptSignatureParams(
-            P2SHNestedSegwitV0InputInfo(_, _, witness, _, _),
-            _,
-            _) =>
+              P2SHNestedSegwitV0InputInfo(_, _, witness, _, _),
+              _,
+              _) =>
           witness.stack.exists(_.length > ScriptInterpreter.MAX_PUSH_SIZE)
         case _ => true
       }
@@ -311,8 +311,8 @@ sealed abstract class CreditingTxGen {
   def nestedOutputs: Gen[Seq[ScriptSignatureParams[InputInfo]]] =
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, nestedOutput))
 
-  def random: Gen[ScriptSignatureParams[InputInfo]] = nonEmptyOutputs.flatMap {
-    outputs =>
+  def random: Gen[ScriptSignatureParams[InputInfo]] =
+    nonEmptyOutputs.flatMap { outputs =>
       Gen.choose(0, outputs.size - 1).flatMap { outputIndex: Int =>
         ScriptGenerators.scriptPubKey.flatMap {
           case (spk, keys) =>
@@ -344,7 +344,7 @@ sealed abstract class CreditingTxGen {
             }
         }
       }
-  }
+    }
 
   def randoms: Gen[Seq[ScriptSignatureParams[InputInfo]]] =
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, random))

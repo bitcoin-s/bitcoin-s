@@ -55,6 +55,7 @@ case object OP_RETURN extends ControlOperations {
 }
 
 object ControlOperations extends ScriptOperationFactory[ControlOperations] {
+
   override val operations =
     Vector(OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF, OP_RETURN, OP_VERIFY)
 }

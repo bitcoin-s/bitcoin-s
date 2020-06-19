@@ -30,7 +30,9 @@ sealed abstract class Pow {
           // Special difficulty rule for testnet:
           // If the new block's timestamp is more than 2* 10 minutes
           // then allow mining of a min-difficulty block.
-          if (newPotentialTip.time.toLong > tip.blockHeader.time.toLong + chainParams.powTargetSpacing.toSeconds * 2) {
+          if (
+            newPotentialTip.time.toLong > tip.blockHeader.time.toLong + chainParams.powTargetSpacing.toSeconds * 2
+          ) {
             chainParams.compressedPowLimit
           } else {
             // Return the last non-special-min-difficulty-rules-block
@@ -58,7 +60,8 @@ sealed abstract class Pow {
           tip.blockHeader.nBits
         }
       } else {
-        val firstHeight: Int = currentHeight - (chainParams.difficultyChangeInterval - 1)
+        val firstHeight: Int =
+          currentHeight - (chainParams.difficultyChangeInterval - 1)
 
         require(firstHeight >= 0,
                 s"We must have our first height be postive, got=${firstHeight}")

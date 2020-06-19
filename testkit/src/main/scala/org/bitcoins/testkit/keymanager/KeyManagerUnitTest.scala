@@ -11,7 +11,8 @@ trait KeyManagerUnitTest extends BitcoinSUnitTest {
   def withInitializedKeyManager(
       kmParams: KeyManagerParams = KeyManagerTestUtil.createKeyManagerParams(),
       entropy: BitVector = MnemonicCode.getEntropy256Bits,
-      bip39PasswordOpt: Option[String] = KeyManagerTestUtil.bip39PasswordOpt): BIP39KeyManager = {
+      bip39PasswordOpt: Option[String] =
+        KeyManagerTestUtil.bip39PasswordOpt): BIP39KeyManager = {
     val kmResult = BIP39KeyManager.initializeWithEntropy(
       entropy = entropy,
       bip39PasswordOpt = bip39PasswordOpt,

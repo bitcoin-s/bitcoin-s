@@ -109,8 +109,8 @@ object Server {
   }
 
   /** Creates a HTTP response with the given body as a JSON response */
-  def httpSuccess[T](body: T)(
-      implicit writer: up.Writer[T]): HttpEntity.Strict = {
+  def httpSuccess[T](body: T)(implicit
+      writer: up.Writer[T]): HttpEntity.Strict = {
     val response = Response(result = Some(up.writeJs(body)))
     HttpEntity(
       ContentTypes.`application/json`,

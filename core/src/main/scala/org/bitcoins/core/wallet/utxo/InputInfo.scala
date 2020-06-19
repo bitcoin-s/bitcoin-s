@@ -253,6 +253,7 @@ object RawInputInfo {
 case class EmptyInputInfo(outPoint: TransactionOutPoint, amount: CurrencyUnit)
     extends RawInputInfo {
   override def scriptPubKey: EmptyScriptPubKey.type = EmptyScriptPubKey
+
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoCondition
   override def pubKeys: Vector[ECPublicKey] = Vector.empty
@@ -264,6 +265,7 @@ case class P2PKInputInfo(
     amount: CurrencyUnit,
     scriptPubKey: P2PKScriptPubKey)
     extends RawInputInfo {
+
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoCondition
 
@@ -293,6 +295,7 @@ case class P2PKWithTimeoutInputInfo(
     scriptPubKey: P2PKWithTimeoutScriptPubKey,
     isBeforeTimeout: Boolean)
     extends RawInputInfo {
+
   override def conditionalPath: ConditionalPath = {
     if (isBeforeTimeout) {
       ConditionalPath.nonNestedTrue
@@ -312,6 +315,7 @@ case class MultiSignatureInputInfo(
     amount: CurrencyUnit,
     scriptPubKey: MultiSignatureScriptPubKey)
     extends RawInputInfo {
+
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoCondition
 
@@ -327,6 +331,7 @@ case class ConditionalInputInfo(
     conditionalPath: ConditionalPath,
     hashPreImages: Vector[NetworkElement] = Vector.empty)
     extends RawInputInfo {
+
   lazy val (condition: Boolean, nextConditionalPath: ConditionalPath) =
     conditionalPath match {
       case ConditionalPath.ConditionTrue(nextCondition) =>
@@ -387,7 +392,8 @@ object SegwitV0NativeInputInfo {
       amount: CurrencyUnit,
       scriptWitness: ScriptWitnessV0,
       conditionalPath: ConditionalPath,
-      hashPreImages: Vector[NetworkElement] = Vector.empty): SegwitV0NativeInputInfo = {
+      hashPreImages: Vector[NetworkElement] =
+        Vector.empty): SegwitV0NativeInputInfo = {
     scriptWitness match {
       case p2wpkh: P2WPKHWitnessV0 =>
         P2WPKHV0InputInfo(outPoint, amount, p2wpkh.pubKey)
@@ -425,6 +431,7 @@ case class P2WSHV0InputInfo(
     conditionalPath: ConditionalPath,
     hashPreImages: Vector[NetworkElement] = Vector.empty)
     extends SegwitV0NativeInputInfo {
+
   override def scriptPubKey: P2WSHWitnessSPKV0 =
     P2WSHWitnessSPKV0(scriptWitness.redeemScript)
 
@@ -485,10 +492,11 @@ case class P2SHNestedSegwitV0InputInfo(
     hashPreImages: Vector[NetworkElement] = Vector.empty)
     extends P2SHInputInfo {
 
-  override def redeemScript: WitnessScriptPubKeyV0 = scriptWitness match {
-    case p2wpkh: P2WPKHWitnessV0 => P2WPKHWitnessSPKV0(p2wpkh.pubKey)
-    case p2wsh: P2WSHWitnessV0   => P2WSHWitnessSPKV0(p2wsh.redeemScript)
-  }
+  override def redeemScript: WitnessScriptPubKeyV0 =
+    scriptWitness match {
+      case p2wpkh: P2WPKHWitnessV0 => P2WPKHWitnessSPKV0(p2wpkh.pubKey)
+      case p2wsh: P2WSHWitnessV0   => P2WSHWitnessSPKV0(p2wsh.redeemScript)
+    }
 
   override val nestedInputInfo: SegwitV0NativeInputInfo =
     SegwitV0NativeInputInfo(outPoint,

@@ -31,6 +31,7 @@ sealed trait EclairInstance {
   * [[org.bitcoins.eclair.rpc.config.EclairInstance EclairInstance]]
   */
 object EclairInstance {
+
   private case class EclairInstanceImpl(
       network: NetworkParameters,
       uri: URI,

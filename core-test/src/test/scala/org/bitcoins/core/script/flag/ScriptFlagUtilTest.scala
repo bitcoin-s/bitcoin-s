@@ -10,8 +10,8 @@ class ScriptFlagUtilTest extends BitcoinSUnitTest {
   "ScriptFlagUtil" must "check if strict der encoding check is required" in {
     ScriptFlagUtil.requiresStrictDerEncoding(Seq(ScriptVerifyDerSig)) must be(
       true)
-    ScriptFlagUtil.requiresStrictDerEncoding(Seq(ScriptVerifyStrictEnc)) must be(
-      true)
+    ScriptFlagUtil.requiresStrictDerEncoding(
+      Seq(ScriptVerifyStrictEnc)) must be(true)
   }
 
   it must "return false if strict der encoding check is not required" in {

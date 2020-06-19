@@ -3,8 +3,8 @@ package org.bitcoins.db
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 
-abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](
-    implicit ec: ExecutionContext,
+abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
+    ec: ExecutionContext,
     override val appConfig: AppConfig)
     extends CRUD[T, Long]()(ec, appConfig)
     with TableAutoIncComponent[T] {

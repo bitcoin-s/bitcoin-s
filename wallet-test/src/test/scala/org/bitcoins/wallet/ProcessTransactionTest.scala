@@ -41,9 +41,10 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
     wallet =>
       for {
         address <- wallet.getNewAddress()
-        tx = TransactionGenerators
-          .transactionTo(address.scriptPubKey)
-          .sampleSome
+        tx =
+          TransactionGenerators
+            .transactionTo(address.scriptPubKey)
+            .sampleSome
 
         _ <- wallet.processTransaction(tx, None)
         oldConfirmed <- wallet.getConfirmedBalance()
@@ -77,9 +78,10 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
     wallet =>
       for {
         address <- wallet.getNewAddress()
-        tx = TransactionGenerators
-          .transactionTo(address.scriptPubKey)
-          .sampleSome
+        tx =
+          TransactionGenerators
+            .transactionTo(address.scriptPubKey)
+            .sampleSome
 
         _ <- wallet.processTransaction(tx, None)
         oldConfirmed <- wallet.getConfirmedBalance()

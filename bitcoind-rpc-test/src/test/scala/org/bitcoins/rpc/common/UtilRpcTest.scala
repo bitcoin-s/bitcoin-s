@@ -11,6 +11,7 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 import scala.concurrent.Future
 
 class UtilRpcTest extends BitcoindRpcTest {
+
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
     BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
 
@@ -30,10 +31,11 @@ class UtilRpcTest extends BitcoindRpcTest {
     for {
       (client, _) <- clientsF
       address <- client.getNewAddress(addressType = AddressType.Legacy)
-      multisig <- client
-        .addMultiSigAddress(
-          2,
-          Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
+      multisig <-
+        client
+          .addMultiSigAddress(
+            2,
+            Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
       decoded <- client.decodeScript(multisig.redeemScript)
     } yield {
       assert(decoded.reqSigs.contains(2))

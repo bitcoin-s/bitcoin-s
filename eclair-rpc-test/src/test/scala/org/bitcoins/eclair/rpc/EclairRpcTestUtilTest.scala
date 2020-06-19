@@ -1,4 +1,5 @@
 package org.bitcoins.eclair.rpc
+
 import akka.actor.ActorSystem
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil

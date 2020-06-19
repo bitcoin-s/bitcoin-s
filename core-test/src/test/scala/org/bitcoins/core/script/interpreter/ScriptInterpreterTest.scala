@@ -45,14 +45,15 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
     val testCases: Seq[CoreTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases
-      (creditingTx, outputIndex) = TransactionTestUtil
-        .buildCreditingTransaction(testCase.scriptPubKey,
-                                   testCase.witness.map(_._2))
-      (tx, inputIndex) = TransactionTestUtil.buildSpendingTransaction(
-        creditingTx,
-        testCase.scriptSig,
-        outputIndex,
-        testCase.witness)
+      (creditingTx, outputIndex) =
+        TransactionTestUtil
+          .buildCreditingTransaction(testCase.scriptPubKey,
+                                     testCase.witness.map(_._2))
+      (tx, inputIndex) =
+        TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                     testCase.scriptSig,
+                                                     outputIndex,
+                                                     testCase.witness)
     } yield {
       val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
       val flags = ScriptFlagFactory.fromList(testCase.flags)

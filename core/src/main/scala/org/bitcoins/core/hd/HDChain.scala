@@ -6,6 +6,7 @@ package org.bitcoins.core.hd
   * change chain
   */
 sealed abstract class HDChain extends BIP32Path {
+
   override val path: Vector[BIP32Node] = {
     account.path :+ BIP32Node(toInt, hardened = false)
   }

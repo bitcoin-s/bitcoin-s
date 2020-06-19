@@ -27,8 +27,8 @@ sealed abstract class SignerUtils {
       sigComponent: TxSigComponent,
       sign: ByteVector => Future[ECDigitalSignature],
       hashType: HashType,
-      isDummySignature: Boolean)(
-      implicit ec: ExecutionContext): Future[ECDigitalSignature] = {
+      isDummySignature: Boolean)(implicit
+      ec: ExecutionContext): Future[ECDigitalSignature] = {
     if (isDummySignature) {
       Future.successful(DummyECDigitalSignature)
     } else {
@@ -39,8 +39,8 @@ sealed abstract class SignerUtils {
   def signSingle(
       spendingInfo: ECSignatureParams[InputInfo],
       unsignedTx: Transaction,
-      isDummySignature: Boolean)(
-      implicit ec: ExecutionContext): Future[PartialSignature] = {
+      isDummySignature: Boolean)(implicit
+      ec: ExecutionContext): Future[PartialSignature] = {
     val signatureF = doSign(
       sigComponent = sigComponent(spendingInfo, unsignedTx),
       sign = spendingInfo.signer.signFunction,
@@ -57,7 +57,11 @@ sealed abstract class SignerUtils {
 
   protected def relevantInfo(
       spendingInfo: InputSigningInfo[InputInfo],
-      unsignedTx: Transaction): (Seq[Sign], TransactionOutput, UInt32, HashType) = {
+      unsignedTx: Transaction): (
+      Seq[Sign],
+      TransactionOutput,
+      UInt32,
+      HashType) = {
     (spendingInfo.signers,
      spendingInfo.output,
      inputIndex(spendingInfo, unsignedTx),
@@ -136,8 +140,8 @@ sealed abstract class Signer[-InputType <: InputInfo] extends SignerUtils {
   def sign(
       spendingInfo: ScriptSignatureParams[InputType],
       unsignedTx: Transaction,
-      isDummySignature: Boolean)(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+      isDummySignature: Boolean)(implicit
+      ec: ExecutionContext): Future[TxSigComponent] = {
     sign(
       spendingInfo,
       unsignedTx,
@@ -158,8 +162,8 @@ sealed abstract class Signer[-InputType <: InputInfo] extends SignerUtils {
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: ScriptSignatureParams[InputType])(
-      implicit ec: ExecutionContext): Future[TxSigComponent]
+      spendingInfoToSatisfy: ScriptSignatureParams[InputType])(implicit
+      ec: ExecutionContext): Future[TxSigComponent]
 
   /** Creates a BaseTxSigComponent by replacing the unsignedTx input at inputIndex
     * with a signed one using the given ScriptSignature
@@ -168,8 +172,8 @@ sealed abstract class Signer[-InputType <: InputInfo] extends SignerUtils {
       unsignedTx: Transaction,
       inputIndex: Int,
       output: TransactionOutput,
-      scriptSignatureF: Future[ScriptSignature])(
-      implicit ec: ExecutionContext): Future[BaseTxSigComponent] = {
+      scriptSignatureF: Future[ScriptSignature])(implicit
+      ec: ExecutionContext): Future[BaseTxSigComponent] = {
     val unsignedInput = unsignedTx.inputs(inputIndex)
 
     scriptSignatureF.map { signature =>
@@ -198,8 +202,8 @@ object BitcoinSigner extends SignerUtils {
   def sign(
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
-      isDummySignature: Boolean)(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+      isDummySignature: Boolean)(implicit
+      ec: ExecutionContext): Future[TxSigComponent] = {
     sign(spendingInfo, unsignedTx, isDummySignature, spendingInfo)
   }
 
@@ -207,8 +211,8 @@ object BitcoinSigner extends SignerUtils {
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: ScriptSignatureParams[InputInfo])(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+      spendingInfoToSatisfy: ScriptSignatureParams[InputInfo])(implicit
+      ec: ExecutionContext): Future[TxSigComponent] = {
     def spendingFrom[Info <: InputInfo](
         inputInfo: Info): ScriptSignatureParams[Info] = {
       spendingInfoToSatisfy.copy(inputInfo = inputInfo)
@@ -285,13 +289,15 @@ object BitcoinSigner extends SignerUtils {
       inputIndex: Int,
       signer: Sign,
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
-      isDummySignature: Boolean = false)(
-      implicit ec: ExecutionContext): Future[PSBT] = {
+      isDummySignature: Boolean = false)(implicit
+      ec: ExecutionContext): Future[PSBT] = {
     // if already signed by this signer
-    if (psbt
-          .inputMaps(inputIndex)
-          .partialSignatures
-          .exists(_.pubKey == signer.publicKey)) {
+    if (
+      psbt
+        .inputMaps(inputIndex)
+        .partialSignatures
+        .exists(_.pubKey == signer.publicKey)
+    ) {
       Future.failed(
         new IllegalArgumentException(
           "Input has already been signed with this key"))
@@ -359,8 +365,8 @@ sealed abstract class RawSingleKeyBitcoinSigner[-InputType <: RawInputInfo]
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: ScriptSignatureParams[InputType])(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+      spendingInfoToSatisfy: ScriptSignatureParams[InputType])(implicit
+      ec: ExecutionContext): Future[TxSigComponent] = {
     val (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
 
@@ -387,8 +393,8 @@ sealed abstract class EmptySigner extends Signer[EmptyInputInfo] {
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: ScriptSignatureParams[EmptyInputInfo])(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+      spendingInfoToSatisfy: ScriptSignatureParams[EmptyInputInfo])(implicit
+      ec: ExecutionContext): Future[TxSigComponent] = {
     val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
     val satisfyEmptyScriptSig =
@@ -437,7 +443,8 @@ sealed abstract class P2PKWithTimeoutSigner
   override def keyAndSigToScriptSig(
       key: ECPublicKey,
       sig: ECDigitalSignature,
-      spendingInfo: InputSigningInfo[P2PKWithTimeoutInputInfo]): ScriptSignature = {
+      spendingInfo: InputSigningInfo[
+        P2PKWithTimeoutInputInfo]): ScriptSignature = {
     P2PKWithTimeoutScriptSignature(spendingInfo.inputInfo.isBeforeTimeout, sig)
   }
 }
@@ -476,12 +483,13 @@ object MultiSigSigner extends MultiSigSigner
 
 /** Used to sign a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey]] */
 sealed abstract class P2SHSigner extends Signer[P2SHInputInfo] {
+
   override def sign(
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: ScriptSignatureParams[P2SHInputInfo])(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+      spendingInfoToSatisfy: ScriptSignatureParams[P2SHInputInfo])(implicit
+      ec: ExecutionContext): Future[TxSigComponent] = {
     if (spendingInfoToSatisfy != spendingInfo) {
       Future.fromTry(TxBuilderError.WrongSigner)
     } else {
@@ -547,8 +555,8 @@ sealed abstract class P2WPKHSigner extends Signer[P2WPKHV0InputInfo] {
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: ScriptSignatureParams[P2WPKHV0InputInfo])(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+      spendingInfoToSatisfy: ScriptSignatureParams[P2WPKHV0InputInfo])(implicit
+      ec: ExecutionContext): Future[TxSigComponent] = {
     if (spendingInfoToSatisfy != spendingInfo) {
       Future.fromTry(TxBuilderError.WrongSigner)
     } else {
@@ -619,8 +627,8 @@ sealed abstract class P2WSHSigner extends Signer[P2WSHV0InputInfo] {
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: ScriptSignatureParams[P2WSHV0InputInfo])(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+      spendingInfoToSatisfy: ScriptSignatureParams[P2WSHV0InputInfo])(implicit
+      ec: ExecutionContext): Future[TxSigComponent] = {
     if (spendingInfoToSatisfy != spendingInfo) {
       Future.fromTry(TxBuilderError.WrongSigner)
     } else {
@@ -666,8 +674,8 @@ sealed abstract class LockTimeSigner extends Signer[LockTimeInputInfo] {
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: ScriptSignatureParams[LockTimeInputInfo])(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+      spendingInfoToSatisfy: ScriptSignatureParams[LockTimeInputInfo])(implicit
+      ec: ExecutionContext): Future[TxSigComponent] = {
     val nestedSpendingInfo = spendingInfoToSatisfy.copy(
       inputInfo = spendingInfoToSatisfy.inputInfo.nestedInputInfo)
 

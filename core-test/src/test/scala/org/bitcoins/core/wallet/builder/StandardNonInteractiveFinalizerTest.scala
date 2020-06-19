@@ -36,6 +36,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
 
   private val outPoint =
     TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero)
+
   private val input =
     TransactionInput(outPoint, EmptyScriptSignature, UInt32.zero)
   private val output = TransactionOutput(Bitcoins.one, EmptyScriptPubKey)

@@ -14,8 +14,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * to [[org.bitcoins.core.protocol.blockchain.BlockHeader]]s in
   * our chain project
   */
-case class BlockHeaderDAO()(
-    implicit ec: ExecutionContext,
+case class BlockHeaderDAO()(implicit
+    ec: ExecutionContext,
     override val appConfig: ChainAppConfig)
     extends CRUD[BlockHeaderDb, DoubleSha256DigestBE]
     with SlickUtil[BlockHeaderDb, DoubleSha256DigestBE] {
@@ -165,7 +165,7 @@ case class BlockHeaderDAO()(
 
   /** Gets ancestor block headers starting with the given block hash (inclusive)
     * These headers are guaranteed to be in order and a valid chain.
-    * */
+    */
   def getNAncestors(
       childHash: DoubleSha256DigestBE,
       n: Int): Future[Vector[BlockHeaderDb]] = {
@@ -314,8 +314,8 @@ case class BlockHeaderDAO()(
     * @param ec
     * @return
     */
-  def getBlockchains()(
-      implicit ec: ExecutionContext): Future[Vector[Blockchain]] = {
+  def getBlockchains()(implicit
+      ec: ExecutionContext): Future[Vector[Blockchain]] = {
     val chainTipsF = chainTips
     chainTipsF.flatMap { tips =>
       val nestedFuture: Vector[Future[Blockchain]] = tips.map { tip =>
@@ -326,8 +326,8 @@ case class BlockHeaderDAO()(
   }
 
   /** Retrieves a blockchain with the best tip being the given header */
-  def getBlockchainFrom(header: BlockHeaderDb)(
-      implicit ec: ExecutionContext): Future[Blockchain] = {
+  def getBlockchainFrom(header: BlockHeaderDb)(implicit
+      ec: ExecutionContext): Future[Blockchain] = {
     val diffInterval = appConfig.chain.difficultyChangeInterval
     val height = Math.max(0, header.height - diffInterval)
     val headersF = getBetweenHeights(from = height, to = header.height)
@@ -335,15 +335,15 @@ case class BlockHeaderDAO()(
   }
 
   /** Retrieves a full blockchain with the best tip being the given header */
-  def getFullBlockchainFrom(header: BlockHeaderDb)(
-      implicit ec: ExecutionContext): Future[Blockchain] = {
+  def getFullBlockchainFrom(header: BlockHeaderDb)(implicit
+      ec: ExecutionContext): Future[Blockchain] = {
     val headersF = getBetweenHeights(from = 0, to = header.height)
     headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
   }
 
   /** Finds a [[org.bitcoins.chain.models.BlockHeaderDb block header]] that satisfies the given predicate, else returns None */
-  def find(f: BlockHeaderDb => Boolean)(
-      implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
+  def find(f: BlockHeaderDb => Boolean)(implicit
+      ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
     val chainsF = getBlockchains()
     chainsF.map { chains =>
       val headersOpt: Vector[Option[BlockHeaderDb]] =

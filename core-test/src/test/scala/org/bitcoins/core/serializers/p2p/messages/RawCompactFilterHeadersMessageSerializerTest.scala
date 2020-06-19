@@ -64,7 +64,8 @@ class RawCompactFilterHeadersMessageSerializerTest extends BitcoinSUnitTest {
         32 + // stop hash size
         32 + // previous filter header size
         3 + // num filters size
-        2000 * 32) // filter hashes size
+        2000 * 32
+    ) // filter hashes size
 
     val parsedBiggerMessage = CompactFilterHeadersMessage.fromBytes(biggerBytes)
 

@@ -158,7 +158,8 @@ class NumberUtilTest extends BitcoinSUnitTest {
 
     NumberUtil.targetCompression(expanded10) must be(UInt32.fromHex("01120000"))
 
-    NumberUtil.targetCompression(bigInt = BigInt(0x80), isNegative = false) must be(
+    NumberUtil.targetCompression(bigInt = BigInt(0x80),
+                                 isNegative = false) must be(
       UInt32.fromHex("02008000"))
     val expanded11 = NumberUtil.targetExpansion(UInt32.fromHex("01fedcba"))
 
@@ -166,7 +167,8 @@ class NumberUtilTest extends BitcoinSUnitTest {
     expanded11.isNegative must be(true)
     NumberUtil.targetCompression(expanded11) must be(UInt32.fromHex("01fe0000"))
 
-    NumberUtil.targetCompression(bigInt = BigInt(0x80), isNegative = false) must be(
+    NumberUtil.targetCompression(bigInt = BigInt(0x80),
+                                 isNegative = false) must be(
       UInt32.fromHex("02008000"))
 
     val expanded12 = NumberUtil.targetExpansion(UInt32.fromHex("02123456"))

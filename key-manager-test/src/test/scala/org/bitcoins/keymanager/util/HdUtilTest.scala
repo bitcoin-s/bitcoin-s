@@ -30,9 +30,11 @@ class HdUtilTest extends KeyManagerUnitTest {
     assert(
       HDUtil.getXpubVersion(HDPurposes.SegWit, TestNet3) == SegWitTestNet3Pub)
     assert(
-      HDUtil.getXpubVersion(HDPurposes.NestedSegWit, MainNet) == NestedSegWitMainNetPub)
+      HDUtil.getXpubVersion(HDPurposes.NestedSegWit,
+                            MainNet) == NestedSegWitMainNetPub)
     assert(
-      HDUtil.getXpubVersion(HDPurposes.NestedSegWit, TestNet3) == NestedSegWitTestNet3Pub)
+      HDUtil.getXpubVersion(HDPurposes.NestedSegWit,
+                            TestNet3) == NestedSegWitTestNet3Pub)
 
     assertThrows[IllegalArgumentException] {
       HDUtil.getXpubVersion(HDPurpose(1), TestNet3)
@@ -49,9 +51,11 @@ class HdUtilTest extends KeyManagerUnitTest {
     assert(
       HDUtil.getXprivVersion(HDPurposes.SegWit, TestNet3) == SegWitTestNet3Priv)
     assert(
-      HDUtil.getXprivVersion(HDPurposes.NestedSegWit, MainNet) == NestedSegWitMainNetPriv)
+      HDUtil.getXprivVersion(HDPurposes.NestedSegWit,
+                             MainNet) == NestedSegWitMainNetPriv)
     assert(
-      HDUtil.getXprivVersion(HDPurposes.NestedSegWit, TestNet3) == NestedSegWitTestNet3Priv)
+      HDUtil.getXprivVersion(HDPurposes.NestedSegWit,
+                             TestNet3) == NestedSegWitTestNet3Priv)
 
     assertThrows[IllegalArgumentException] {
       HDUtil.getXprivVersion(HDPurpose(1), MainNet)
@@ -72,9 +76,11 @@ class HdUtilTest extends KeyManagerUnitTest {
     assert(
       HDUtil.getMatchingExtKeyVersion(SegWitTestNet3Pub) == SegWitTestNet3Priv)
     assert(
-      HDUtil.getMatchingExtKeyVersion(NestedSegWitMainNetPub) == NestedSegWitMainNetPriv)
+      HDUtil.getMatchingExtKeyVersion(
+        NestedSegWitMainNetPub) == NestedSegWitMainNetPriv)
     assert(
-      HDUtil.getMatchingExtKeyVersion(NestedSegWitTestNet3Pub) == NestedSegWitTestNet3Priv)
+      HDUtil.getMatchingExtKeyVersion(
+        NestedSegWitTestNet3Pub) == NestedSegWitTestNet3Priv)
   }
 
   it must "find the corresponding pub version for a privkey" in {
@@ -87,9 +93,11 @@ class HdUtilTest extends KeyManagerUnitTest {
     assert(
       HDUtil.getMatchingExtKeyVersion(SegWitTestNet3Priv) == SegWitTestNet3Pub)
     assert(
-      HDUtil.getMatchingExtKeyVersion(NestedSegWitMainNetPriv) == NestedSegWitMainNetPub)
+      HDUtil.getMatchingExtKeyVersion(
+        NestedSegWitMainNetPriv) == NestedSegWitMainNetPub)
     assert(
-      HDUtil.getMatchingExtKeyVersion(NestedSegWitTestNet3Priv) == NestedSegWitTestNet3Pub)
+      HDUtil.getMatchingExtKeyVersion(
+        NestedSegWitTestNet3Priv) == NestedSegWitTestNet3Pub)
   }
 
   it must "get the right coin type" in {

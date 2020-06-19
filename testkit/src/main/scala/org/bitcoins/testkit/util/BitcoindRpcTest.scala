@@ -11,6 +11,7 @@ import scala.collection.mutable
 abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
 
   private val dirExists = Files.exists(BitcoindRpcTestUtil.binaryDirectory)
+
   private val hasContents = dirExists && Files
     .list(BitcoindRpcTestUtil.binaryDirectory)
     .toArray()

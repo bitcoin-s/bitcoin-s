@@ -10,10 +10,11 @@ class RawSerializerHelperSpec extends Properties("RawSerializerHelperSpec") {
   property("serialization symmetry of txs") = {
     Prop.forAll(TransactionGenerators.smallOutputs) {
       txs: Seq[TransactionOutput] =>
-        val serialized = RawSerializerHelper.writeCmpctSizeUInt(txs, {
-          tx: TransactionOutput =>
-            tx.bytes
-        })
+        val serialized =
+          RawSerializerHelper.writeCmpctSizeUInt(txs,
+                                                 { tx: TransactionOutput =>
+                                                   tx.bytes
+                                                 })
         val (deserialized, remaining) = RawSerializerHelper
           .parseCmpctSizeUIntSeq(serialized, TransactionOutput(_: ByteVector))
         deserialized == txs && remaining == ByteVector.empty

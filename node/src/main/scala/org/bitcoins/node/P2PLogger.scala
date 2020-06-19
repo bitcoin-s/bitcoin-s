@@ -6,6 +6,7 @@ import org.slf4j.Logger
 /** Exposes access to the P2P submodule logger */
 private[bitcoins] trait P2PLogger {
   private var _logger: Logger = _
+
   protected def logger(implicit config: LoggerConfig): Logger = {
     if (_logger == null) {
       _logger = P2PLoggerImpl(config).getLogger

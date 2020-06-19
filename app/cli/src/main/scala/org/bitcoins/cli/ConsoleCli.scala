@@ -70,14 +70,13 @@ object ConsoleCli {
             }))),
       note(sys.props("line.separator") + "=== Wallet ==="),
       cmd("rescan")
-        .action(
-          (_, conf) =>
-            conf.copy(
-              command = Rescan(addressBatchSize = Option.empty,
-                               startBlock = Option.empty,
-                               endBlock = Option.empty,
-                               force = false,
-                               ignoreCreationTime = false)))
+        .action((_, conf) =>
+          conf.copy(
+            command = Rescan(addressBatchSize = Option.empty,
+                             startBlock = Option.empty,
+                             endBlock = Option.empty,
+                             force = false,
+                             ignoreCreationTime = false)))
         .text(s"Rescan for wallet UTXOs")
         .children(
           opt[Unit]("force")
@@ -135,16 +134,15 @@ object ConsoleCli {
         .text("Checks if the wallet contains any data"),
       cmd("createdlcoffer")
         .hidden()
-        .action(
-          (_, conf) =>
-            conf.copy(
-              command = CreateDLCOffer(OracleInfo.dummy,
-                                       ContractInfo.empty,
-                                       Satoshis.zero,
-                                       None,
-                                       UInt32.zero,
-                                       UInt32.zero,
-                                       escaped = false)))
+        .action((_, conf) =>
+          conf.copy(
+            command = CreateDLCOffer(OracleInfo.dummy,
+                                     ContractInfo.empty,
+                                     Satoshis.zero,
+                                     None,
+                                     UInt32.zero,
+                                     UInt32.zero,
+                                     escaped = false)))
         .text("Creates a DLC offer that another party can accept")
         .children(
           opt[OracleInfo]("oracleInfo")
@@ -226,8 +224,8 @@ object ConsoleCli {
         ),
       cmd("signdlc")
         .hidden()
-        .action(
-          (_, conf) => conf.copy(command = SignDLC(null, escaped = false)))
+        .action((_, conf) =>
+          conf.copy(command = SignDLC(null, escaped = false)))
         .text("Signs a DLC")
         .children(
           opt[DLCAccept]("accept").required
@@ -364,12 +362,11 @@ object ConsoleCli {
         ),
       cmd("executedlcremoteunilateralclose")
         .hidden()
-        .action(
-          (_, conf) =>
-            conf.copy(
-              command = ExecuteDLCRemoteUnilateralClose(null,
-                                                        EmptyTransaction,
-                                                        noBroadcast = false)))
+        .action((_, conf) =>
+          conf.copy(
+            command = ExecuteDLCRemoteUnilateralClose(null,
+                                                      EmptyTransaction,
+                                                      noBroadcast = false)))
         .text("Executes a unilateral close for the DLC with the given eventId")
         .children(
           opt[Sha256DigestBE]("eventid").required
@@ -1045,12 +1042,13 @@ object ConsoleCli {
         sttp
           .post(uri"http://$host:${config.rpcPort}/")
           .contentType("application/json")
-          .body({
+          .body {
             val uuid = java.util.UUID.randomUUID.toString
-            val paramsWithID: Map[String, ujson.Value] = requestParam.toJsonMap + ("id" -> up
-              .writeJs(uuid))
+            val paramsWithID: Map[String, ujson.Value] =
+              requestParam.toJsonMap + ("id" -> up
+                .writeJs(uuid))
             up.write(paramsWithID)
-          })
+          }
       debug(s"HTTP request: $request")
       val response = request.send()
 
@@ -1079,12 +1077,13 @@ object ConsoleCli {
 
       /** Converts a `ujson.Value` to String, making an
         * effort to avoid preceding and trailing `"`s */
-      def jsValueToString(value: ujson.Value) = value match {
-        case Str(string)             => string
-        case Num(num) if num.isWhole => num.toLong.toString
-        case Num(num)                => num.toString
-        case rest: ujson.Value       => rest.toString()
-      }
+      def jsValueToString(value: ujson.Value) =
+        value match {
+          case Str(string)             => string
+          case Num(num) if num.isWhole => num.toLong.toString
+          case Num(num)                => num.toString
+          case rest: ujson.Value       => rest.toString()
+        }
 
       (getKey("result"), getKey("error")) match {
         case (Some(result), None) =>
@@ -1220,18 +1219,21 @@ object CliCommand {
       noBroadcast: Boolean)
       extends CliCommand
       with Broadcastable
+
   case class SendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       destination: BitcoinAddress,
       amount: Bitcoins,
       feeRateOpt: Option[SatoshisPerVirtualByte])
       extends CliCommand
+
   case class SendWithAlgo(
       destination: BitcoinAddress,
       amount: Bitcoins,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       algo: CoinSelectionAlgo)
       extends CliCommand
+
   case class OpReturnCommit(
       message: String,
       hashMessage: Boolean,
@@ -1262,6 +1264,7 @@ object CliCommand {
   case object GetFilterCount extends CliCommand
   case object GetFilterHeaderCount extends CliCommand
   case class DecodeRawTransaction(transaction: Transaction) extends CliCommand
+
   case class Rescan(
       addressBatchSize: Option[Int],
       startBlock: Option[BlockStamp],

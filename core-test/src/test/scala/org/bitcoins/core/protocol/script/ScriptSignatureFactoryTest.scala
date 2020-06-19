@@ -11,8 +11,9 @@ import scodec.bits.ByteVector
 class ScriptSignatureFactoryTest extends BitcoinSUnitTest {
 
   "ScriptSignatureFactory" must "give the exact same result whether parsing bytes or parsing hex" in {
-    val signatureHex = "30450221008949f0cb400094ad2b5eb399d59d01c14d73d8fe6e96df1a7150deb388ab8935022079656090d7" +
-      "f6bac4c9a94e0aad311a4268e082a725f8aeae0573fb12ff866a5f01"
+    val signatureHex =
+      "30450221008949f0cb400094ad2b5eb399d59d01c14d73d8fe6e96df1a7150deb388ab8935022079656090d7" +
+        "f6bac4c9a94e0aad311a4268e082a725f8aeae0573fb12ff866a5f01"
     val signatureBytes: ByteVector = BytesUtil.decodeHex(signatureHex)
 
     val scriptSigFromHex = ScriptSignature(signatureHex)

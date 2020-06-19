@@ -11,6 +11,7 @@ class SettingsPane {
     text = "Dark Theme"
     selected = GlobalData.darkThemeEnabled
     onAction = new EventHandler[ActionEvent] {
+
       override def handle(event: ActionEvent): Unit = {
         if (!selected.value) {
           Themes.DarkTheme.undoTheme

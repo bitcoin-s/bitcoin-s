@@ -12,8 +12,8 @@ case class FinalizedTxWithSigningInfo(
     finalizedTx: Transaction,
     infos: Vector[ScriptSignatureParams[InputInfo]]) {
 
-  def sign(expectedFeeRate: FeeUnit)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+  def sign(expectedFeeRate: FeeUnit)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     RawTxSigner.sign(this, expectedFeeRate)
   }
 
@@ -21,8 +21,8 @@ case class FinalizedTxWithSigningInfo(
       expectedFeeRate: FeeUnit,
       invariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction) => Boolean)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+          Transaction) => Boolean)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     RawTxSigner.sign(this, expectedFeeRate, invariants)
   }
 }

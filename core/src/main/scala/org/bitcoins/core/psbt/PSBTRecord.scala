@@ -65,6 +65,7 @@ sealed trait GlobalPSBTRecord extends PSBTRecord {
 
 object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
   import org.bitcoins.core.psbt.PSBTGlobalKeyId._
+
   case class UnsignedTransaction(transaction: NonWitnessTransaction)
       extends GlobalPSBTRecord {
     require(
@@ -91,6 +92,7 @@ object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
 
     override type KeyId = XPubKeyKeyId.type
     override val key: ByteVector = ByteVector(XPubKeyKeyId.byte) ++ xpub.bytes
+
     override val value: ByteVector = derivationPath
       .foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }
@@ -145,6 +147,7 @@ sealed trait InputPSBTRecord extends PSBTRecord {
 
 object InputPSBTRecord extends Factory[InputPSBTRecord] {
   import org.bitcoins.core.psbt.PSBTInputKeyId._
+
   case class NonWitnessOrUnknownUTXO(transactionSpent: Transaction)
       extends InputPSBTRecord {
     override type KeyId = NonWitnessUTXOKeyId.type
@@ -167,7 +170,9 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
             s"pubKey must be 33 bytes, got: ${pubKey.byteSize}")
 
     override type KeyId = PartialSignatureKeyId.type
-    override val key: ByteVector = ByteVector(PartialSignatureKeyId.byte) ++ pubKey.bytes
+
+    override val key: ByteVector =
+      ByteVector(PartialSignatureKeyId.byte) ++ pubKey.bytes
     override val value: ByteVector = signature.bytes
   }
 
@@ -238,7 +243,10 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
             s"pubKey must be 33 bytes, got: ${pubKey.byteSize}")
 
     override type KeyId = BIP32DerivationPathKeyId.type
-    override val key: ByteVector = ByteVector(BIP32DerivationPathKeyId.byte) ++ pubKey.bytes
+
+    override val key: ByteVector =
+      ByteVector(BIP32DerivationPathKeyId.byte) ++ pubKey.bytes
+
     override val value: ByteVector =
       path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }
@@ -260,6 +268,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   case class ProofOfReservesCommitment(porCommitment: ByteVector)
       extends InputPSBTRecord {
     override type KeyId = ProofOfReservesCommitmentKeyId.type
+
     override val key: ByteVector = ByteVector(
       ProofOfReservesCommitmentKeyId.byte)
     override val value: ByteVector = porCommitment
@@ -360,7 +369,10 @@ object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
             s"pubKey must be 33 bytes, got: ${pubKey.byteSize}")
 
     override type KeyId = BIP32DerivationPathKeyId.type
-    override val key: ByteVector = ByteVector(BIP32DerivationPathKeyId.byte) ++ pubKey.bytes
+
+    override val key: ByteVector =
+      ByteVector(BIP32DerivationPathKeyId.byte) ++ pubKey.bytes
+
     override val value: ByteVector =
       path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }

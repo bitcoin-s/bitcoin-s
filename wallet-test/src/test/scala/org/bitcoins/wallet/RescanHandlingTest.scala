@@ -19,6 +19,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
     BitcoinSTestAppConfig.getNeutrinoTestConfig()
 
   override type FixtureParam = WalletWithBitcoind
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withFundedWalletAndBitcoindV19(test, getBIP39PasswordOpt())
   }
@@ -80,9 +81,9 @@ class RescanHandlingTest extends BitcoinSWalletTest {
 
       val rescanF = for {
         initBalance <- initBalanceF
-        _ = assert(
-          initBalance > CurrencyUnits.zero,
-          s"Cannot run rescan test if our init wallet balance is zero!")
+        _ =
+          assert(initBalance > CurrencyUnits.zero,
+                 s"Cannot run rescan test if our init wallet balance is zero!")
         _ <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
@@ -108,8 +109,8 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         txid <- bitcoind.sendToAddress(addr, amt)
         tx <- bitcoind.getRawTransactionRaw(txid)
         bitcoindAddr <- bitcoindAddrF
-        blockHashes <- bitcoind.generateToAddress(blocks = numBlocks,
-                                                  address = bitcoindAddr)
+        blockHashes <-
+          bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
         newTxWallet <- wallet.processTransaction(transaction = tx,
                                                  blockHashOpt =
                                                    blockHashes.headOption)
@@ -156,8 +157,8 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         txid <- bitcoind.sendToAddress(addr, amt)
         tx <- bitcoind.getRawTransactionRaw(txid)
         bitcoindAddr <- bitcoindAddrF
-        blockHashes <- bitcoind.generateToAddress(blocks = numBlocks,
-                                                  address = bitcoindAddr)
+        blockHashes <-
+          bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
         newTxWallet <- wallet.processTransaction(transaction = tx,
                                                  blockHashOpt =
                                                    blockHashes.headOption)
@@ -203,9 +204,9 @@ class RescanHandlingTest extends BitcoinSWalletTest {
       //ok now that we have the height of the oldest utxo, let's rescan up to then
       val rescanF = for {
         initBalance <- initBalanceF
-        _ = assert(
-          initBalance > CurrencyUnits.zero,
-          s"Cannot run rescan test if our init wallet balance is zero!")
+        _ =
+          assert(initBalance > CurrencyUnits.zero,
+                 s"Cannot run rescan test if our init wallet balance is zero!")
         oldestUtxoHeight <- oldestHeightF
         end = Some(BlockStamp.BlockHeight(oldestUtxoHeight - 1))
         _ <- wallet.rescanNeutrinoWallet(startOpt = BlockStamp.height0Opt,

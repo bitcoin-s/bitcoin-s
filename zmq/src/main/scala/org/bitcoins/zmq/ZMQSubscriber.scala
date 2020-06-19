@@ -34,6 +34,7 @@ class ZMQSubscriber(
   private val uri = socket.getHostString + ":" + socket.getPort
 
   private case object SubscriberRunnable extends Runnable {
+
     override def run(): Unit = {
       logger.info(s"ZmqSubscriber connecting to uri=${uri}")
       subscriber.setLinger(2000)

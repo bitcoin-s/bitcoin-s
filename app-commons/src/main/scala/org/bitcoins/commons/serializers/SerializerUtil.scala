@@ -5,18 +5,19 @@ import play.api.libs.json._
 sealed abstract class SerializerUtil {
 
   def processJsNumberBigInt[T](numFunc: BigInt => T)(
-      json: JsValue): JsResult[T] = json match {
-    case JsNumber(nDecimal) =>
-      val nOpt = nDecimal.toBigIntExact
-      nOpt match {
-        case Some(t) => JsSuccess(numFunc(t))
-        case None =>
-          JsError(s"Could not parsed expected t from given string $nDecimal")
-      }
-    case err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
-        _: JsObject) =>
-      buildJsErrorMsg("jsnumber", err)
-  }
+      json: JsValue): JsResult[T] =
+    json match {
+      case JsNumber(nDecimal) =>
+        val nOpt = nDecimal.toBigIntExact
+        nOpt match {
+          case Some(t) => JsSuccess(numFunc(t))
+          case None =>
+            JsError(s"Could not parsed expected t from given string $nDecimal")
+        }
+      case err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
+          _: JsObject) =>
+        buildJsErrorMsg("jsnumber", err)
+    }
 
   def buildJsErrorMsg(expected: String, err: JsValue): JsError = {
     JsError(s"error.expected.$expected, got ${Json.toJson(err).toString()}")

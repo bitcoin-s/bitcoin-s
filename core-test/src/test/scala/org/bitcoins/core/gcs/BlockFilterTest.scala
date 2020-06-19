@@ -55,13 +55,15 @@ class BlockFilterTest extends BitcoinSUnitTest {
         scriptArray <- array(3).validate[JsArray]
         scripts = parseScripts(scriptArray)
 
-        prevHeader <- array(4)
-          .validate[String]
-          .map(DoubleSha256DigestBE.fromHex)
+        prevHeader <-
+          array(4)
+            .validate[String]
+            .map(DoubleSha256DigestBE.fromHex)
 
-        filter <- array(5)
-          .validate[String]
-          .map(BlockFilter.fromHex(_, blockHash.flip))
+        filter <-
+          array(5)
+            .validate[String]
+            .map(BlockFilter.fromHex(_, blockHash.flip))
 
         header <- array(6).validate[String].map(DoubleSha256DigestBE.fromHex)
 

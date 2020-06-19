@@ -19,8 +19,8 @@ object BitcoinSTestAppConfig {
     * 1) Data directory is set to user temp directory
     * 2) Logging is turned down to WARN
     */
-  def getSpvTestConfig(config: Config*)(
-      implicit ec: ExecutionContext): BitcoinSAppConfig = {
+  def getSpvTestConfig(config: Config*)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
         |bitcoin-s {
@@ -46,14 +46,14 @@ object BitcoinSTestAppConfig {
       """.stripMargin
     }
 
-    BitcoinSAppConfig(tmpDir(),
-                      (overrideConf +: configWithEmbeddedDb(
-                        project = None,
-                        pgUrl) +: config): _*)
+    BitcoinSAppConfig(
+      tmpDir(),
+      (overrideConf +: configWithEmbeddedDb(project = None,
+                                            pgUrl) +: config): _*)
   }
 
-  def getNeutrinoTestConfig(config: Config*)(
-      implicit ec: ExecutionContext): BitcoinSAppConfig = {
+  def getNeutrinoTestConfig(config: Config*)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
         |bitcoin-s {
@@ -78,10 +78,10 @@ object BitcoinSTestAppConfig {
         |}
       """.stripMargin
     }
-    BitcoinSAppConfig(tmpDir(),
-                      (overrideConf +: configWithEmbeddedDb(
-                        project = None,
-                        pgUrl) +: config): _*)
+    BitcoinSAppConfig(
+      tmpDir(),
+      (overrideConf +: configWithEmbeddedDb(project = None,
+                                            pgUrl) +: config): _*)
   }
 
   sealed trait ProjectType
@@ -108,7 +108,7 @@ object BitcoinSTestAppConfig {
       s""" $name.profile = "slick.jdbc.PostgresProfile$$"
          | $name.db {
          |   url = "${pgUrl(project).getOrElse(
-           throw new RuntimeException(s"Cannot get db url for $project"))}"
+        throw new RuntimeException(s"Cannot get db url for $project"))}"
          |   driver = "org.postgresql.Driver"
          |   username = "postgres"
          |   password = ""

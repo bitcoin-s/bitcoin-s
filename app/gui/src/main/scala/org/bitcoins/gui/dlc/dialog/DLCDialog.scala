@@ -12,8 +12,11 @@ import scalafx.stage.Window
 abstract class DLCDialog[T <: CliCommand](
     dialogTitle: String,
     header: String,
-    fields: Vector[(String, TextInputControl)], // Vector instead of Map to keep order
+    fields: Vector[
+      (String, TextInputControl)
+    ], // Vector instead of Map to keep order
     optionalFields: Vector[String] = Vector.empty) {
+
   private def readCachedValue(key: String, value: String): Unit = {
     fields
       .find(_._1 == key)
@@ -131,9 +134,10 @@ object DLCDialog {
   def constructOfferFields(): Vector[(String, TextField)] =
     allOfferFields.map {
       case (label, hint) =>
-        (label, new TextField() {
-          promptText = hint
-        })
+        (label,
+         new TextField() {
+           promptText = hint
+         })
     }.toVector
 
   val dlcOfferStr = "DLC Offer"

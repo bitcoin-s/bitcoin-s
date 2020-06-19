@@ -8,6 +8,7 @@ case class OutputReference(
     outPoint: TransactionOutPoint,
     output: TransactionOutput)
     extends NetworkElement {
+
   override def bytes: ByteVector = {
     outPoint.bytes ++ output.bytes
   }
@@ -19,6 +20,7 @@ object EmptyOutputReference
 }
 
 object OutputReference extends Factory[OutputReference] {
+
   override def fromBytes(bytes: ByteVector): OutputReference = {
     val (outPointBytes, outputBytes) = bytes.splitAt(36)
     val outPoint = TransactionOutPoint(outPointBytes)

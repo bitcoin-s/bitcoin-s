@@ -196,8 +196,7 @@ object WalletStorage {
   }
 }
 
-sealed trait ReadMnemonicError { self: Error =>
-}
+sealed trait ReadMnemonicError { self: Error => }
 
 object ReadMnemonicError {
 

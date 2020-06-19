@@ -24,6 +24,7 @@ object GetAddresses extends App {
   import scala.language.implicitConversions
   implicit def string2Json(str: String): JsString = JsString(str)
   implicit def int2Json(int: Int): JsNumber = JsNumber(int)
+
   implicit def seq2Json[T](xs: Seq[T])(implicit conv: T => JsValue): JsArray =
     JsArray(xs.map(conv))
 

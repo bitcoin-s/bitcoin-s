@@ -35,24 +35,26 @@ object PaymentLog {
 
     def completed: Boolean = event.isDefined
 
-    def completedAt: Long = event match {
-      case None => 0
-      case Some(e) =>
-        e match {
-          case PaymentReceived(_, parts) =>
-            parts.maxBy(_.timestamp).timestamp.toEpochMilli
-          case PaymentFailed(_, _, _, timestamp) => timestamp.toEpochMilli
-          case _: WebSocketEvent =>
-            throw new RuntimeException("Can't extract a timestamp")
-        }
-    }
+    def completedAt: Long =
+      event match {
+        case None => 0
+        case Some(e) =>
+          e match {
+            case PaymentReceived(_, parts) =>
+              parts.maxBy(_.timestamp).timestamp.toEpochMilli
+            case PaymentFailed(_, _, _, timestamp) => timestamp.toEpochMilli
+            case _: WebSocketEvent =>
+              throw new RuntimeException("Can't extract a timestamp")
+          }
+      }
 
     def toCSV: String =
       s"""${paymentHash
         .map(_.hex)
         .getOrElse("")},${id.map(_.toString).getOrElse("")},${event
         .map(_.getClass.getName.split('$').last)
-        .getOrElse("")},$paymentSentAt,$paymentIdReceivedAt,$eventReceivedAt,${paymentIdReceivedAt - paymentSentAt},${eventReceivedAt - paymentIdReceivedAt}"""
+        .getOrElse(
+          "")},$paymentSentAt,$paymentIdReceivedAt,$eventReceivedAt,${paymentIdReceivedAt - paymentSentAt},${eventReceivedAt - paymentIdReceivedAt}"""
   }
 
   object PaymentLogEntry {

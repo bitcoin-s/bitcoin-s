@@ -11,25 +11,32 @@ import org.bitcoins.core.protocol.blockchain.{
 import org.bitcoins.crypto.DoubleSha256Digest
 
 sealed abstract class ChainTestUtil {
+
   lazy val regTestChainParams: RegTestNetChainParams.type =
     RegTestNetChainParams
+
   lazy val regTestHeader: BlockHeader =
     regTestChainParams.genesisBlock.blockHeader
+
   lazy val regTestGenesisHeaderDb: BlockHeaderDb = {
     BlockHeaderDbHelper.fromBlockHeader(height = 0,
                                         chainWork =
                                           Pow.getBlockProof(regTestHeader),
                                         bh = regTestHeader)
   }
+
   lazy val regTestGenesisHeaderCompactFilter: GolombFilter =
     BlockFilter.apply(regTestChainParams.genesisBlock, Vector.empty)
+
   lazy val regTestGenesisHeaderCompactFilterDb: CompactFilterDb =
     CompactFilterDbHelper.fromGolombFilter(regTestGenesisHeaderCompactFilter,
                                            regTestHeader.hashBE,
                                            0)
+
   lazy val regTestGenesisHeaderCompactFilterHeader: FilterHeader = FilterHeader(
     regTestGenesisHeaderCompactFilter.hash,
     DoubleSha256Digest.empty)
+
   lazy val regTestGenesisHeaderCompactFilterHeaderDb: CompactFilterHeaderDb =
     CompactFilterHeaderDbHelper.fromFilterHeader(
       regTestGenesisHeaderCompactFilterHeader,
@@ -75,8 +82,8 @@ sealed abstract class ChainTestUtil {
       "000000202164d8c4e5246ab003fdebe36c697b9418aa454ec4190d00000000000000000059134ad5aaad38a0e75946c7d4cb09b3ad45b459070195dd564cde193cf0ef29c33e855c505b2e17f61af734")
 
     lazy val blockHeaderDb566495 = {
-      val chainWork = blockHeaderDb566494.chainWork + Pow.getBlockProof(
-        blockHeader566495)
+      val chainWork =
+        blockHeaderDb566494.chainWork + Pow.getBlockProof(blockHeader566495)
       BlockHeaderDbHelper.fromBlockHeader(566495, chainWork, blockHeader566495)
     }
 
@@ -85,8 +92,8 @@ sealed abstract class ChainTestUtil {
       "000000201b61e8961710991a47ff8187d946d93e4fb33569c09622000000000000000000d0098658f53531e6e67fc9448986b5a8f994da42d746079eabe10f55e561e243103f855c17612e1735c4afdb")
 
     lazy val blockHeaderDb566496 = {
-      val chainWork = blockHeaderDb566495.chainWork + Pow.getBlockProof(
-        blockHeader566496)
+      val chainWork =
+        blockHeaderDb566495.chainWork + Pow.getBlockProof(blockHeader566496)
       BlockHeaderDbHelper.fromBlockHeader(566496, chainWork, blockHeader566496)
     }
   }

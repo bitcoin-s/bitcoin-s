@@ -21,12 +21,13 @@ object FilterType extends Factory[FilterType] {
 
   val knownFilterTypeCodes: Map[Short, FilterType] = Map(0.toShort -> Basic)
 
-  def fromBytes(bytes: ByteVector): FilterType = bytes match {
-    case Basic.bytes => Basic
-    case other: ByteVector =>
-      throw new IllegalArgumentException(
-        s"'${other.toHex}' is not a known filter type")
-  }
+  def fromBytes(bytes: ByteVector): FilterType =
+    bytes match {
+      case Basic.bytes => Basic
+      case other: ByteVector =>
+        throw new IllegalArgumentException(
+          s"'${other.toHex}' is not a known filter type")
+    }
 
   /** Currently the only defined filter type */
   final case object Basic extends FilterType {
@@ -44,10 +45,11 @@ object FilterType extends Factory[FilterType] {
           s"Unknown filter type: ${filterType}")
     }
 
-  def byCode(code: Short): FilterType = knownFilterTypeCodes.get(code) match {
-    case Some(filterType) => filterType
-    case None =>
-      throw new IllegalArgumentException(s"Unknown filter type code: ${code}")
-  }
+  def byCode(code: Short): FilterType =
+    knownFilterTypeCodes.get(code) match {
+      case Some(filterType) => filterType
+      case None =>
+        throw new IllegalArgumentException(s"Unknown filter type code: ${code}")
+    }
 
 }

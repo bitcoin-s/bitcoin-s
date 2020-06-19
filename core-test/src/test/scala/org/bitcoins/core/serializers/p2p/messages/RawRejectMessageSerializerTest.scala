@@ -11,8 +11,9 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 class RawRejectMessageSerializerTest extends BitcoinSUnitTest {
 
   //https://bitcoin.org/en/developer-reference#reject
-  val hex = "02" + "7478" + "12" + "15" + "6261642d74786e732d696e707574732d7370656e74" +
-    "394715fcab51093be7bfca5a31005972947baf86a31017939575fb2354222821"
+  val hex =
+    "02" + "7478" + "12" + "15" + "6261642d74786e732d696e707574732d7370656e74" +
+      "394715fcab51093be7bfca5a31005972947baf86a31017939575fb2354222821"
 
   "RawRejectMessageSerializer" must "read in a reject message example" in {
     val rejectMsg = RawRejectMessageSerializer.read(hex)

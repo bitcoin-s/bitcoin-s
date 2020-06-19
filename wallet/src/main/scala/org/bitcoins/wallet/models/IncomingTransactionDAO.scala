@@ -7,11 +7,12 @@ import slick.lifted.{PrimaryKey, ProvenShape}
 
 import scala.concurrent.ExecutionContext
 
-case class IncomingTransactionDAO()(
-    implicit val ec: ExecutionContext,
+case class IncomingTransactionDAO()(implicit
+    val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends TxDAO[IncomingTransactionDb] {
   import profile.api._
+
   override val table: profile.api.TableQuery[IncomingTransactionTable] = {
     TableQuery[IncomingTransactionTable]
   }

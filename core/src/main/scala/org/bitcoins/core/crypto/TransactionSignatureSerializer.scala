@@ -64,10 +64,9 @@ sealed abstract class TransactionSignatureSerializer {
           input.sequence)
 
         //make sure all scriptSigs have empty asm
-        inputSigsRemoved.map(
-          input =>
-            require(input.scriptSignature.asm.isEmpty,
-                    "Input asm was not empty " + input.scriptSignature.asm))
+        inputSigsRemoved.map(input =>
+          require(input.scriptSignature.asm.isEmpty,
+                  "Input asm was not empty " + input.scriptSignature.asm))
 
         // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
         // is a legacy holdover from a previous, broken design of executing scripts that shipped in Bitcoin 0.1.
@@ -191,8 +190,10 @@ sealed abstract class TransactionSignatureSerializer {
             val outputs = spendingTransaction.outputs
             val bytes = BytesUtil.toByteVector(outputs)
             CryptoUtil.doubleSHA256(bytes).bytes
-          } else if (HashType.isSigHashSingle(hashType.num) &&
-                     inputIndex < UInt32(spendingTransaction.outputs.size)) {
+          } else if (
+            HashType.isSigHashSingle(hashType.num) &&
+            inputIndex < UInt32(spendingTransaction.outputs.size)
+          ) {
             val output = spendingTransaction.outputs(inputIndexInt)
             val bytes = CryptoUtil
               .doubleSHA256(RawTransactionOutputParser.write(output))
@@ -203,10 +204,11 @@ sealed abstract class TransactionSignatureSerializer {
         val scriptBytes = BytesUtil.toByteVector(script)
 
         val i = spendingTransaction.inputs(inputIndexInt)
-        val serializationForSig: ByteVector = spendingTransaction.version.bytes.reverse ++ outPointHash ++ sequenceHash ++
-          i.previousOutput.bytes ++ CompactSizeUInt.calc(scriptBytes).bytes ++
-          scriptBytes ++ amount.bytes ++ i.sequence.bytes.reverse ++
-          outputHash ++ spendingTransaction.lockTime.bytes.reverse ++ hashType.num.bytes.reverse
+        val serializationForSig: ByteVector =
+          spendingTransaction.version.bytes.reverse ++ outPointHash ++ sequenceHash ++
+            i.previousOutput.bytes ++ CompactSizeUInt.calc(scriptBytes).bytes ++
+            scriptBytes ++ amount.bytes ++ i.sequence.bytes.reverse ++
+            outputHash ++ spendingTransaction.lockTime.bytes.reverse ++ hashType.num.bytes.reverse
         logger.debug(
           "Serialization for signature for WitnessV0Sig: " + BytesUtil
             .encodeHex(serializationForSig))
@@ -224,15 +226,19 @@ sealed abstract class TransactionSignatureSerializer {
       hashType: HashType): DoubleSha256Digest = {
     val spendingTransaction = txSigComponent.transaction
     val inputIndex = txSigComponent.inputIndex
-    if (inputIndex >= UInt32(spendingTransaction.inputs.size) &&
-        txSigComponent.sigVersion != SigVersionWitnessV0) {
+    if (
+      inputIndex >= UInt32(spendingTransaction.inputs.size) &&
+      txSigComponent.sigVersion != SigVersionWitnessV0
+    ) {
       logger.warn(
         "Our inputIndex is out of the range of the inputs in the spending transaction")
       errorHash
-    } else if ((hashType.isInstanceOf[SIGHASH_SINGLE] || hashType
-                 .isInstanceOf[SIGHASH_SINGLE_ANYONECANPAY]) &&
-               inputIndex >= UInt32(spendingTransaction.outputs.size) &&
-               txSigComponent.sigVersion != SigVersionWitnessV0) {
+    } else if (
+      (hashType.isInstanceOf[SIGHASH_SINGLE] || hashType
+        .isInstanceOf[SIGHASH_SINGLE_ANYONECANPAY]) &&
+      inputIndex >= UInt32(spendingTransaction.outputs.size) &&
+      txSigComponent.sigVersion != SigVersionWitnessV0
+    ) {
       logger.warn(
         "When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
       errorHash

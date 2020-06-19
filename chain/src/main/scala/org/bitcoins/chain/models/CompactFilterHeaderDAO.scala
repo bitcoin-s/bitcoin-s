@@ -6,14 +6,15 @@ import org.bitcoins.db.{CRUD, SlickUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class CompactFilterHeaderDAO()(
-    implicit ec: ExecutionContext,
+case class CompactFilterHeaderDAO()(implicit
+    ec: ExecutionContext,
     override val appConfig: ChainAppConfig)
     extends CRUD[CompactFilterHeaderDb, DoubleSha256DigestBE]
     with SlickUtil[CompactFilterHeaderDb, DoubleSha256DigestBE] {
   import profile.api._
   val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers.doubleSha256DigestBEMapper
+
   implicit private val bigIntMapper: BaseColumnType[BigInt] =
     if (appConfig.driverName == "postgresql") {
       mappers.bigIntPostgresMapper
@@ -40,7 +41,11 @@ case class CompactFilterHeaderDAO()(
     def blockHashIndex = index("cfheaders_block_hash_index", blockHash)
 
     override def * = {
-      (hash, filterHash, previousFilterHeader, blockHash, height) <> (CompactFilterHeaderDb.tupled, CompactFilterHeaderDb.unapply)
+      (hash,
+       filterHash,
+       previousFilterHeader,
+       blockHash,
+       height) <> (CompactFilterHeaderDb.tupled, CompactFilterHeaderDb.unapply)
     }
   }
 

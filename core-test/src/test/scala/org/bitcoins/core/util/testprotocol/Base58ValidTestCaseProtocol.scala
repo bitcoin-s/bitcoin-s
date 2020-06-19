@@ -9,8 +9,10 @@ import spray.json._
   */
 object Base58ValidTestCaseProtocol extends DefaultJsonProtocol {
   import ConfigParamsProtocol._
+
   implicit object Base58ValidTestCaseFormatter
       extends RootJsonFormat[Base58ValidTestCase] {
+
     override def read(value: JsValue): Base58ValidTestCase = {
       val jsArray: JsArray = value match {
         case array: JsArray => array
@@ -30,12 +32,13 @@ object Base58ValidTestCaseProtocol extends DefaultJsonProtocol {
 
       def isHashOrPrivKey(elements: Vector[JsValue]): Either[
         Sha256Hash160Digest,
-        ECPrivateKey] = configParams.addrTypeOrIsCompressed match {
-        case a if a.isLeft =>
-          Left(Sha256Hash160Digest(elements(1).convertTo[String]))
-        case b if b.isRight =>
-          Right(ECPrivateKey(elements(1).convertTo[String]))
-      }
+        ECPrivateKey] =
+        configParams.addrTypeOrIsCompressed match {
+          case a if a.isLeft =>
+            Left(Sha256Hash160Digest(elements(1).convertTo[String]))
+          case b if b.isRight =>
+            Right(ECPrivateKey(elements(1).convertTo[String]))
+        }
       Base58ValidTestCaseImpl(addressOrPrivateKey(elements),
                               isHashOrPrivKey(elements),
                               configParams)

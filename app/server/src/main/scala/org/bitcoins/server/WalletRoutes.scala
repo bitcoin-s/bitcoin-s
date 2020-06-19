@@ -11,8 +11,8 @@ import org.bitcoins.wallet.api.WalletApi
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: WalletApi, node: Node)(
-    implicit system: ActorSystem)
+case class WalletRoutes(wallet: WalletApi, node: Node)(implicit
+    system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
@@ -92,7 +92,7 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-            SendToAddress(address, bitcoins, satoshisPerVirtualByteOpt)) =>
+              SendToAddress(address, bitcoins, satoshisPerVirtualByteOpt)) =>
           complete {
             for {
               tx <- wallet.sendToAddress(address,
@@ -110,10 +110,10 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-            SendFromOutpoints(outPoints,
-                              address,
-                              bitcoins,
-                              satoshisPerVirtualByteOpt)) =>
+              SendFromOutpoints(outPoints,
+                                address,
+                                bitcoins,
+                                satoshisPerVirtualByteOpt)) =>
           complete {
             for {
               tx <- wallet.sendFromOutPoints(outPoints,
@@ -130,7 +130,10 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-            SendWithAlgo(address, bitcoins, satoshisPerVirtualByteOpt, algo)) =>
+              SendWithAlgo(address,
+                           bitcoins,
+                           satoshisPerVirtualByteOpt,
+                           algo)) =>
           complete {
             for {
               tx <- wallet.sendWithAlgo(address,
@@ -147,7 +150,9 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-            OpReturnCommit(message, hashMessage, satoshisPerVirtualByteOpt)) =>
+              OpReturnCommit(message,
+                             hashMessage,
+                             satoshisPerVirtualByteOpt)) =>
           complete {
             for {
               tx <- wallet.makeOpReturnCommitment(message,
@@ -165,29 +170,31 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-            Rescan(batchSize,
-                   startBlock,
-                   endBlock,
-                   force,
-                   ignoreCreationTime)) =>
+              Rescan(batchSize,
+                     startBlock,
+                     endBlock,
+                     force,
+                     ignoreCreationTime)) =>
           complete {
             val res = for {
               empty <- wallet.isEmpty()
-              msg <- if (force || empty) {
-                wallet
-                  .rescanNeutrinoWallet(startOpt = startBlock,
-                                        endOpt = endBlock,
-                                        addressBatchSize = batchSize.getOrElse(
-                                          wallet.discoveryBatchSize),
-                                        useCreationTime = !ignoreCreationTime)
-                  .map(_ => "scheduled")
-              } else {
-                Future.successful(
-                  "DANGER! The wallet is not empty, however the rescan " +
-                    "process destroys all existing records and creates new ones. " +
-                    "Use force option if you really want to proceed. " +
-                    "Don't forget to backup the wallet database.")
-              }
+              msg <-
+                if (force || empty) {
+                  wallet
+                    .rescanNeutrinoWallet(
+                      startOpt = startBlock,
+                      endOpt = endBlock,
+                      addressBatchSize =
+                        batchSize.getOrElse(wallet.discoveryBatchSize),
+                      useCreationTime = !ignoreCreationTime)
+                    .map(_ => "scheduled")
+                } else {
+                  Future.successful(
+                    "DANGER! The wallet is not empty, however the rescan " +
+                      "process destroys all existing records and creates new ones. " +
+                      "Use force option if you really want to proceed. " +
+                      "Don't forget to backup the wallet database.")
+                }
             } yield msg
             res.map(msg => Server.httpSuccess(msg))
           }

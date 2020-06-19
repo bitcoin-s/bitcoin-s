@@ -110,9 +110,10 @@ trait WalletApi extends WalletLogger {
     for {
       utxos <- utxosF
       addresses <- addressesF
-      scriptPubKeys = utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
-        .map(_.scriptPubKey)
-        .toSet
+      scriptPubKeys =
+        utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
+          .map(_.scriptPubKey)
+          .toSet
       _ <- FutureUtil.sequentially(blockFilters) {
         case (blockHash, blockFilter) =>
           val matcher = SimpleFilterMatcher(blockFilter)
@@ -167,7 +168,7 @@ trait WalletApi extends WalletLogger {
 
   /** Lists unspent transaction outputs in the wallet
     * @return Vector[SpendingInfoDb]
-    * */
+    */
   def listUtxos(): Future[Vector[SpendingInfoDb]]
 
   def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]]
@@ -316,7 +317,7 @@ trait WalletApi extends WalletLogger {
 
   /** Fetches the default account for the given address/account kind
     * @param addressType
-    * */
+    */
   protected[wallet] def getDefaultAccountForType(
       addressType: AddressType): Future[AccountDb]
 
@@ -350,7 +351,7 @@ trait WalletApi extends WalletLogger {
   /** Lists all wallet accounts with the given type
     * @param purpose
     * @return [[Future[Vector[AccountDb]]
-    * */
+    */
   def listAccounts(purpose: HDPurpose): Future[Vector[AccountDb]] =
     listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
 
@@ -376,8 +377,8 @@ trait WalletApi extends WalletLogger {
       startOpt: Option[BlockStamp] = None,
       endOpt: Option[BlockStamp] = None,
       batchSize: Int = 100,
-      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
-      implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]]
+      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(implicit
+      ec: ExecutionContext): Future[Vector[BlockMatchingResponse]]
 
   /**
     * Recreates the account using BIP-157 approach
@@ -512,7 +513,6 @@ trait WalletApi extends WalletLogger {
   }
 
   /**
-    *
     * Sends money from the specified account
     *
     * todo: add error handling to signature
@@ -524,7 +524,6 @@ trait WalletApi extends WalletLogger {
       fromAccount: AccountDb): Future[Transaction]
 
   /**
-    *
     * Sends money from the specified account
     *
     * todo: add error handling to signature
@@ -557,7 +556,6 @@ trait WalletApi extends WalletLogger {
   }
 
   /**
-    *
     * Sends money from the specified account
     *
     * todo: add error handling to signature
@@ -595,7 +593,6 @@ trait WalletApi extends WalletLogger {
   }
 
   /**
-    *
     * Sends money from the specified account
     *
     * todo: add error handling to signature
@@ -620,11 +617,8 @@ trait WalletApi extends WalletLogger {
       reserveUtxos: Boolean): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendToAddresses(addresses,
-                            amounts,
-                            feeRate,
-                            fromAccount,
-                            reserveUtxos)
+      tx <-
+        sendToAddresses(addresses, amounts, feeRate, fromAccount, reserveUtxos)
     } yield tx
   }
 
@@ -640,11 +634,8 @@ trait WalletApi extends WalletLogger {
       reserveUtxos: Boolean): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
-      tx <- sendToAddresses(addresses,
-                            amounts,
-                            feeRateOpt,
-                            account,
-                            reserveUtxos)
+      tx <-
+        sendToAddresses(addresses, amounts, feeRateOpt, account, reserveUtxos)
     } yield tx
   }
 
@@ -691,6 +682,7 @@ trait WalletApi extends WalletLogger {
 }
 
 object WalletApi {
+
   case class BlockMatchingResponse(
       blockHash: DoubleSha256DigestBE,
       blockHeight: Int)
