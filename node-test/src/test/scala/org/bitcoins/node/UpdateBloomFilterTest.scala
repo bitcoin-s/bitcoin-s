@@ -1,11 +1,9 @@
 package org.bitcoins.node
 
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.NodeUnitTest
-import org.bitcoins.testkit.node.SpvNodeFundedWalletBitcoind
+import org.bitcoins.testkit.node.{NodeUnitTest, SpvNodeFundedWalletBitcoind}
 import org.scalatest.{BeforeAndAfter, FutureOutcome}
 
 class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
@@ -19,9 +17,6 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withSpvNodeFundedWalletBitcoind(test, NodeCallbacks.empty, None)
   }
-
-  private val junkAddress: BitcoinAddress =
-    BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
 
   it must "update the bloom filter with a TX" in { param =>
     val SpvNodeFundedWalletBitcoind(spv, wallet, rpc, _) = param
