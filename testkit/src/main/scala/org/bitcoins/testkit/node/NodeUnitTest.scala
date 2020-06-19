@@ -331,7 +331,8 @@ object NodeUnitTest extends P2PLogger {
   }
 
   /** Creates a spv node peered with the given bitcoind client, this method
-    * also calls [[org.bitcoins.node.Node.start() start]] to start the node */
+    * also calls [[org.bitcoins.node.Node.start() start]] to start the node
+    */
   def createSpvNode(bitcoind: BitcoindRpcClient, callbacks: NodeCallbacks)(
       implicit
       system: ActorSystem,
@@ -362,7 +363,8 @@ object NodeUnitTest extends P2PLogger {
   }
 
   /** Creates a Neutrino node peered with the given bitcoind client, this method
-    * also calls [[org.bitcoins.node.Node.start() start]] to start the node */
+    * also calls [[org.bitcoins.node.Node.start() start]] to start the node
+    */
   def createNeutrinoNode(bitcoind: BitcoindRpcClient, callbacks: NodeCallbacks)(
       implicit
       system: ActorSystem,

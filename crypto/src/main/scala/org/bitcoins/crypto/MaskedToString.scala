@@ -1,7 +1,8 @@
 package org.bitcoins.crypto
 
 /** Meant to provide a simple trait that
-  * masks the default to string for sensitive classes */
+  * masks the default to string for sensitive classes
+  */
 trait MaskedToString {
 
   final override def toString: String = {

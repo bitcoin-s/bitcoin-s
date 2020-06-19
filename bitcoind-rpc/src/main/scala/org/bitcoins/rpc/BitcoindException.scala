@@ -127,7 +127,7 @@ object BitcoindException {
     val code: Int = -5
   }
 
-  /**  Ran out of memory during operation */
+  /** Ran out of memory during operation */
   final case class OutOfMemory(private val message: String)
       extends BitcoindException(message) {
     val code: Int = -7
@@ -181,7 +181,7 @@ object BitcoindException {
     val code: Int = -32
   }
 
-  /**  Server is in safe mode, and command is not allowed in safe mode */
+  /** Server is in safe mode, and command is not allowed in safe mode */
   final case class ForbiddenBySafeMode(private val message: String)
       extends BitcoindException(message) {
     val code: Int = -2
@@ -300,7 +300,7 @@ object BitcoindWalletException {
     val code: Int = -17
   }
 
-  /**  Invalid wallet specified */
+  /** Invalid wallet specified */
   final case class NotFound(private val message: String)
       extends BitcoindWalletException(message) {
     val code: Int = -18

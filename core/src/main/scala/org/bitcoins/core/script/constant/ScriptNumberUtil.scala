@@ -164,7 +164,8 @@ trait ScriptNumberUtil {
   /** Checks if the two given [[ScriptNumber numbers]] are equivalent to zero
     * in Script. Unfortunatey Script is one's complement which means we have
     * things like negative zero, and also there isn't an enforcement of a
-    * minimal representation of zero, which means 0x00 = 0x0000 = 0x0000000.. == OP_0 */
+    * minimal representation of zero, which means 0x00 = 0x0000 = 0x0000000.. == OP_0
+    */
   def isZero(x: ScriptNumber): Boolean = {
     val xIsFalse = x == ScriptNumber.zero || x == OP_0
     val isNegZero = x == ScriptNumber.negativeZero

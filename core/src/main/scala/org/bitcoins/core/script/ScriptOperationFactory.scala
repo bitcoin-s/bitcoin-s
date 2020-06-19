@@ -78,7 +78,8 @@ object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
     * There is an optimization here by moving popular opcodes
     * to the front of the vector so when we iterate through it,
     * we are more likely to find the op code we are looking for
-    * sooner */
+    * sooner
+    */
   final override val operations: Vector[ScriptOperation] = {
     StackPushOperationFactory.pushDataOperations ++
       StackOperation.operations ++

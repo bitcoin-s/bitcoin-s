@@ -119,7 +119,8 @@ case class SpendingInfoDAO()(implicit
   }
 
   /** Enumerates all unspent TX outputs in the wallet with the state
-    * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.ConfirmedReceived]] */
+    * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.ConfirmedReceived]]
+    */
   def findAllUnspent(): Future[Vector[SpendingInfoDb]] = {
     val query = table.filter(_.state.inSet(TxoState.receivedStates))
 
@@ -148,7 +149,8 @@ case class SpendingInfoDAO()(implicit
   }
 
   /** Enumerates all TX outputs in the wallet with the state
-    * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.PendingConfirmationsSpent]] */
+    * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.PendingConfirmationsSpent]]
+    */
   def findAllPendingConfirmation: Future[Vector[SpendingInfoDb]] = {
     val query = table.filter(_.state.inSet(TxoState.pendingConfStates))
 

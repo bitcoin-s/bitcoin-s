@@ -9,7 +9,8 @@ import org.bitcoins.wallet.Wallet
   * 1. a funded bitcoind wallet
   * 2. a funded bitcoin-s wallet
   * 3. a chain handler with the appropriate tables created
-  * 4. a spv node that is connected to the bitcoin instance -- but not started! */
+  * 4. a spv node that is connected to the bitcoin instance -- but not started!
+  */
 trait NodeFundedWalletBitcoind {
   def node: Node
   def wallet: Wallet

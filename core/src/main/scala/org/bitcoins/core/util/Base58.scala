@@ -20,7 +20,8 @@ sealed abstract class Base58 {
   val base58Pairs: Map[Char, Int] = base58Characters.zipWithIndex.toMap
 
   /** Verifies a given [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]
-    * string against its checksum (last 4 decoded bytes). */
+    * string against its checksum (last 4 decoded bytes).
+    */
   def decodeCheck(input: String): Try[ByteVector] = {
     val decodedTry: Try[ByteVector] = Try(decode(input))
     decodedTry.flatMap { decoded =>
@@ -67,7 +68,8 @@ sealed abstract class Base58 {
   }
 
   /** Encodes a [[scala.Byte Byte]] to its
-    * [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] representation. */
+    * [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] representation.
+    */
   def encode(byte: Byte): String = encode(ByteVector.fromByte(byte))
 
   /**

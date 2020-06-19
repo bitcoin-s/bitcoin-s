@@ -73,7 +73,8 @@ sealed abstract class Bech32 {
 
   /** Checks if the possible human readable part follows
     * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
-    * rules */
+    * rules
+    */
   def checkHrpValidity(hrp: String): Try[Bech32HumanReadablePart] = {
     @tailrec
     def loop(

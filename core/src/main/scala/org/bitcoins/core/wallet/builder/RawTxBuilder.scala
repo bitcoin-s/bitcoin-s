@@ -59,7 +59,8 @@ case class RawTxBuilder() {
   }
 
   /** Returns a RawTxBuilderWithFinalizer where building can continue
-    * and where buildTx can be called once building is completed. */
+    * and where buildTx can be called once building is completed.
+    */
   def setFinalizer[F <: RawTxFinalizer](
       finalizer: F): RawTxBuilderWithFinalizer[F] = {
     RawTxBuilderWithFinalizer(this, finalizer)
@@ -74,7 +75,8 @@ case class RawTxBuilder() {
   }
 
   /** Adds a TransactionInput to be the next input. No ScriptSignature is required
-    * and any given ScriptSignature will be ignored (we recommend EmptyScriptSignature). */
+    * and any given ScriptSignature will be ignored (we recommend EmptyScriptSignature).
+    */
   def addInput(input: TransactionInput): this.type = {
     inputsBuilder += input
     this

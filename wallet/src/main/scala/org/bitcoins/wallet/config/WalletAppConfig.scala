@@ -116,7 +116,8 @@ case class WalletAppConfig(
     KeyManagerParams(seedPath, defaultAccountKind, network)
 
   /** How much elements we can have in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
-    * before we throw an exception */
+    * before we throw an exception
+    */
   def addressQueueSize: Int = {
     if (config.hasPath("wallet.addressQueueSize")) {
       config.getInt("wallet.addressQueueSize")
@@ -126,7 +127,8 @@ case class WalletAppConfig(
   }
 
   /** How long we wait while generating an address in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
-    * before we timeout */
+    * before we timeout
+    */
   def addressQueueTimeout: scala.concurrent.duration.Duration = {
     if (config.hasPath("wallet.addressQueueTimeout")) {
       val javaDuration = config.getDuration("wallet.addressQueueTimeout")
@@ -139,7 +141,8 @@ case class WalletAppConfig(
   /** Checks if the following exist
     *  1. A wallet exists
     *  2. seed exists
-    *  3. The account exists */
+    *  3. The account exists
+    */
   def hasWallet()(implicit ec: ExecutionContext): Future[Boolean] = {
     val walletDB = dbPath.resolve(dbName)
     val hdCoin = defaultAccount.coin

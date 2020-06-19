@@ -938,7 +938,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   /** Generates a `LockTimeScriptSignature` and
     * `LockTimeScriptPubKey` pair that are valid when
-    * run through the interpreter */
+    * run through the interpreter
+    */
   def signedLockTimeScriptSignature: Gen[
     (LockTimeScriptSignature, LockTimeScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(signedCSVScriptSignature, signedCLTVScriptSignature)
@@ -1047,7 +1048,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   /** Generates a random `ScriptSignature`, the
     * `ScriptPubKey` it is spending, and the
-    * `ECPrivateKey` needed to spend it. */
+    * `ECPrivateKey` needed to spend it.
+    */
   def randomScriptSig: Gen[
     (ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
     val witP2SHP2WPKH =

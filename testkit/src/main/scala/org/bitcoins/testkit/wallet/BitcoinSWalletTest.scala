@@ -157,7 +157,8 @@ trait BitcoinSWalletTest
 
   /** Creates a wallet that is funded with some bitcoin, this wallet is NOT
     * peered with a bitcoind so the funds in the wallet are not tied to an
-    * underlying blockchain */
+    * underlying blockchain
+    */
   def withFundedWallet(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String]): FutureOutcome = {
@@ -442,7 +443,8 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   /** Creates a default wallet with bitcoind where the [[ChainQueryApi]] fed to the wallet
-    * is implemented by bitcoind */
+    * is implemented by bitcoind
+    */
   def createWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
       bip39PasswordOpt: Option[String],

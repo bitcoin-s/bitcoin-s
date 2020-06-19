@@ -281,7 +281,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
   }
 
   /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
-    * It's needed to limit number of threads required to run the matching */
+    * It's needed to limit number of threads required to run the matching
+    */
   private def calcGroupSize(vectorSize: Int, parallelismLevel: Int): Int = {
     if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
       vectorSize / parallelismLevel + 1

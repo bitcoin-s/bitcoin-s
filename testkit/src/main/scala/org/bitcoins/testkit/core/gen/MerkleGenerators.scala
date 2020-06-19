@@ -16,7 +16,8 @@ import org.scalacheck.Gen
 abstract class MerkleGenerator {
 
   /** Generates a merkle block with the given txs matched inside the
-    * [[org.bitcoins.core.protocol.blockchain.PartialMerkleTree PartialMerkleTree]] */
+    * [[org.bitcoins.core.protocol.blockchain.PartialMerkleTree PartialMerkleTree]]
+    */
   def merkleBlockWithInsertedTxIds(txs: Seq[Transaction]): Gen[
     (MerkleBlock, Block, Seq[DoubleSha256Digest])] =
     for {

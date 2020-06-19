@@ -86,7 +86,7 @@ case object OP_LESSTHANOREQUAL extends ArithmeticOperation {
   override val opCode: Int = 161
 }
 
-/**  Returns 1 if a is greater than or equal to b, 0 otherwise. */
+/** Returns 1 if a is greater than or equal to b, 0 otherwise. */
 case object OP_GREATERTHANOREQUAL extends ArithmeticOperation {
   override val opCode: Int = 162
 }

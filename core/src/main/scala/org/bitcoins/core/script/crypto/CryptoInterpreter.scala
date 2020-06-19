@@ -103,7 +103,8 @@ sealed abstract class CryptoInterpreter {
   }
 
   /** Runs [[org.bitcoins.core.script.crypto.OP_CHECKSIG OP_CHECKSIG]] with an
-    * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterwards. */
+    * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterwards.
+    */
   def opCheckSigVerify(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_CHECKSIGVERIFY),
@@ -268,7 +269,8 @@ sealed abstract class CryptoInterpreter {
 
   /** Runs
     * [[org.bitcoins.core.script.crypto.OP_CHECKMULTISIG OP_CHECKMULTISIG]] with an
-    * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterwards */
+    * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterwards
+    */
   def opCheckMultiSigVerify(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_CHECKMULTISIGVERIFY),

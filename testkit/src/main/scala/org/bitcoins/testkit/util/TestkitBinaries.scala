@@ -7,7 +7,8 @@ import scala.util.Properties
 object TestkitBinaries {
 
   /** The base directory where binaries needed in tests
-    * are located. */
+    * are located.
+    */
   lazy val baseBinaryDirectory: Path = {
     val home = Paths.get(Properties.userHome, ".bitcoin-s", "binaries")
     home
