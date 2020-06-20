@@ -3,14 +3,14 @@ package org.bitcoins.zmq
 import java.net.InetSocketAddress
 
 import org.bitcoins.core.util.BytesUtil
-import org.scalatest.{AsyncFlatSpec, MustMatchers}
+import org.scalatest.flatspec.AsyncFlatSpec
 import org.slf4j.LoggerFactory
 import org.zeromq.{ZFrame, ZMQ, ZMsg}
 import scodec.bits.ByteVector
 
 import scala.concurrent.Promise
 
-class ZMQSubscriberTest extends AsyncFlatSpec with MustMatchers {
+class ZMQSubscriberTest extends AsyncFlatSpec {
   private val logger = LoggerFactory.getLogger(this.getClass().toString)
 
   behavior of "ZMQSubscriber"

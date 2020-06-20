@@ -6,7 +6,6 @@ import org.bitcoins.core.number.Int32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCase
 import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
   NonWitnessTransaction,
   Transaction,
   TransactionOutput,
@@ -16,8 +15,7 @@ import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
 import org.bitcoins.crypto.{DoubleSha256Digest, ECDigitalSignature}
-import org.bitcoins.testkit.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 import scodec.bits.ByteVector
 import spray.json._
 
@@ -26,8 +24,7 @@ import scala.io.Source
 /**
   * Created by chris on 2/17/16.
   */
-class ScriptSignatureTest extends FlatSpec with MustMatchers {
-  private val logger = BitcoinSLogger.logger
+class ScriptSignatureTest extends BitcoinSAsyncTest {
 
   "ScriptSignature" must "find the digital signature for the transaction inside of a p2pkh script signature" in {
     val scriptSig = ScriptSignature(TestUtil.rawScriptSig)
@@ -145,7 +142,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     val testCases: Seq[SignatureHashTestCase] =
       lines.parseJson.convertTo[Seq[SignatureHashTestCase]]
 
-    for {
+    val allTests = for {
       testCase <- testCases
     } yield {
       Transaction(testCase.transaction.hex) must be(testCase.transaction)
@@ -166,8 +163,9 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
         TransactionSignatureSerializer.hashForSignature(txSigComponent,
                                                         testCase.hashType)
       val flipHash = BytesUtil.flipEndianness(testCase.hash.hex)
-      hashForSig must be(DoubleSha256Digest(flipHash))
+      hashForSig == DoubleSha256Digest(flipHash)
     }
+    assert(allTests.forall(x => x))
   }
 
 }

@@ -1,9 +1,9 @@
 package org.bitcoins.eclair.network
 
 import org.bitcoins.eclair.rpc.network.NodeUri
-import org.scalatest.FlatSpec
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
-class NodeUriTest extends FlatSpec {
+class NodeUriTest extends BitcoinSAsyncTest {
 
   behavior of "NodeUri"
 
