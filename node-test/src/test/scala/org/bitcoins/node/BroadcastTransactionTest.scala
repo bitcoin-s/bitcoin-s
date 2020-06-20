@@ -32,9 +32,6 @@ class BroadcastTransactionTest extends NodeUnitTest {
 
   private val sendAmount = 1.bitcoin
 
-  private val junkAddress: BitcoinAddress =
-    BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
-
   it must "broadcast a transaction" in { param =>
     val SpvNodeFundedWalletBitcoind(node, wallet, rpc, _) = param
 

@@ -5,7 +5,18 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models.{
+  BlockHeaderDb,
+  CompactFilterDb,
+  CompactFilterHeaderDb
+}
+import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
@@ -16,8 +27,9 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiverState,
   PeerMessageSender
 }
-import org.bitcoins.rpc.client.common.BitcoindVersion.V18
+import org.bitcoins.rpc.client.common.BitcoindVersion.{V18, V19}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.EmbeddedPg
@@ -27,7 +39,8 @@ import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.node.fixture.{
   NeutrinoNodeConnectedWithBitcoind,
   NodeConnectedWithBitcoind,
-  SpvNodeConnectedWithBitcoind
+  SpvNodeConnectedWithBitcoind,
+  SpvNodeConnectedWithBitcoindV19
 }
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
@@ -60,6 +73,102 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   lazy val bitcoindPeerF = startedBitcoindF.map(NodeTestUtil.getBitcoindPeer)
 
+  lazy val junkAddress: BitcoinAddress =
+    BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
+
+  val genesisChainApi: ChainApi = new ChainApi {
+
+    override def processHeaders(
+        headers: Vector[BlockHeader]): Future[ChainApi] =
+      Future.successful(this)
+
+    override def getHeader(
+        hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] =
+      Future.successful(None)
+
+    override def getHeadersAtHeight(
+        height: Int): Future[Vector[BlockHeaderDb]] =
+      Future.successful(Vector.empty)
+
+    override def getBlockCount(): Future[Int] = Future.successful(0)
+
+    override def getBestBlockHeader(): Future[BlockHeaderDb] =
+      Future.successful(ChainUnitTest.genesisHeaderDb)
+
+    override def processFilterHeaders(
+        filterHeaders: Vector[FilterHeader],
+        stopHash: DoubleSha256DigestBE): Future[ChainApi] =
+      Future.successful(this)
+
+    override def nextHeaderBatchRange(
+        stopHash: DoubleSha256DigestBE,
+        batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] =
+      Future.successful(None)
+
+    override def nextFilterHeaderBatchRange(
+        stopHash: DoubleSha256DigestBE,
+        batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] =
+      Future.successful(None)
+
+    override def processFilters(
+        message: Vector[CompactFilterMessage]): Future[ChainApi] =
+      Future.successful(this)
+
+    override def processCheckpoints(
+        checkpoints: Vector[DoubleSha256DigestBE],
+        blockHash: DoubleSha256DigestBE): Future[ChainApi] =
+      Future.successful(this)
+
+    override def getFilterHeaderCount(): Future[Int] = Future.successful(0)
+
+    override def getFilterHeadersAtHeight(
+        height: Int): Future[Vector[CompactFilterHeaderDb]] =
+      Future.successful(Vector.empty)
+
+    override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] =
+      Future.successful(None)
+
+    override def getFilterHeader(blockHash: DoubleSha256DigestBE): Future[
+      Option[CompactFilterHeaderDb]] = Future.successful(None)
+
+    override def getFilter(
+        hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] =
+      Future.successful(None)
+
+    override def getFilterCount(): Future[Int] = Future.successful(0)
+
+    override def getFiltersAtHeight(
+        height: Int): Future[Vector[CompactFilterDb]] =
+      Future.successful(Vector.empty)
+
+    override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
+      Future.successful(0)
+
+    override def getHeadersBetween(
+        from: BlockHeaderDb,
+        to: BlockHeaderDb): Future[Vector[BlockHeaderDb]] =
+      Future.successful(Vector.empty)
+
+    override def getBlockHeight(
+        blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
+      Future.successful(None)
+
+    override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
+      Future.successful(DoubleSha256DigestBE.empty)
+
+    override def getNumberOfConfirmations(
+        blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
+      Future.successful(None)
+
+    override def getFiltersBetweenHeights(
+        startHeight: Int,
+        endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] =
+      Future.successful(Vector.empty)
+
+    override def epochSecondToBlockHeight(time: Long): Future[Int] =
+      Future.successful(0)
+  }
+
   def withSpvNodeConnectedToBitcoind(
       test: OneArgAsyncTest,
       versionOpt: Option[BitcoindVersion] = None)(implicit
@@ -75,6 +184,31 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
             appConfig.chainConf,
             appConfig.nodeConf)
         } yield SpvNodeConnectedWithBitcoind(node, bitcoind)
+    }
+
+    makeDependentFixture(
+      build = nodeWithBitcoindBuilder,
+      destroy = NodeUnitTest.destroyNodeConnectedWithBitcoind(
+        _: NodeConnectedWithBitcoind)(system, appConfig)
+    )(test)
+  }
+
+  def withSpvNodeConnectedToBitcoindV19(test: OneArgAsyncTest)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
+    val nodeWithBitcoindBuilder: () => Future[
+      SpvNodeConnectedWithBitcoindV19] = { () =>
+      require(appConfig.isSPVEnabled && !appConfig.isNeutrinoEnabled)
+      for {
+        bitcoind <-
+          BitcoinSFixture
+            .createBitcoindWithFunds(Some(V19))
+            .map(_.asInstanceOf[BitcoindV19RpcClient])
+        node <- NodeUnitTest.createSpvNode(bitcoind, NodeCallbacks.empty)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
+      } yield SpvNodeConnectedWithBitcoindV19(node, bitcoind)
     }
 
     makeDependentFixture(
