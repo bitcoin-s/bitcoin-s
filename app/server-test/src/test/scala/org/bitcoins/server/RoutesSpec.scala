@@ -33,18 +33,14 @@ import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockWalletApi
 import org.bitcoins.wallet.models._
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
 import scodec.bits.ByteVector
 import ujson.Value.InvalidData
 import ujson._
 
 import scala.concurrent.Future
 
-class RoutesSpec
-    extends WordSpec
-    with Matchers
-    with ScalatestRouteTest
-    with MockFactory {
+class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   // the genesis address
   val testAddressStr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
@@ -80,9 +76,9 @@ class RoutesSpec
                         Arr(Arr(Str(psbt1.base64), Str(psbt2.base64)))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
+        contentType == `application/json`
         responseAs[
-          String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
+          String] == s"""{"result":"${expected.base64}","error":null}"""
       }
 
       val joinRoute =
@@ -91,9 +87,9 @@ class RoutesSpec
                         Arr(Arr(Str(psbt1.base64), Str(psbt2.base64)))))
 
       Get() ~> joinRoute ~> check {
-        contentType shouldEqual `application/json`
+        contentType == `application/json`
         responseAs[
-          String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
+          String] == s"""{"result":"${expected.base64}","error":null}"""
       }
     }
 
@@ -108,9 +104,9 @@ class RoutesSpec
           ServerCommand("finalizepsbt", Arr(Str(psbt.hex))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
+        contentType == `application/json`
         responseAs[
-          String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
+          String] == s"""{"result":"${expected.base64}","error":null}"""
 
       }
     }
@@ -126,9 +122,8 @@ class RoutesSpec
           ServerCommand("extractfrompsbt", Arr(Str(psbt.hex))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[
-          String] shouldEqual s"""{"result":"${expected.hex}","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == s"""{"result":"${expected.hex}","error":null}"""
 
       }
     }
@@ -144,9 +139,9 @@ class RoutesSpec
           ServerCommand("converttopsbt", Arr(Str(tx.hex))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
+        contentType == `application/json`
         responseAs[
-          String] shouldEqual s"""{"result":"${expected.base64}","error":null}"""
+          String] == s"""{"result":"${expected.base64}","error":null}"""
 
       }
     }
@@ -160,8 +155,8 @@ class RoutesSpec
         chainRoutes.handleCommand(ServerCommand("getblockcount", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":1234567890,"error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":1234567890,"error":null}"""
       }
     }
 
@@ -174,8 +169,8 @@ class RoutesSpec
         chainRoutes.handleCommand(ServerCommand("getfiltercount", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":1234567890,"error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":1234567890,"error":null}"""
       }
     }
 
@@ -188,8 +183,8 @@ class RoutesSpec
         chainRoutes.handleCommand(ServerCommand("getfilterheadercount", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":1234567890,"error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":1234567890,"error":null}"""
       }
     }
 
@@ -202,8 +197,8 @@ class RoutesSpec
         chainRoutes.handleCommand(ServerCommand("getbestblockhash", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
       }
     }
 
@@ -217,9 +212,8 @@ class RoutesSpec
           ServerCommand("getbalance", Arr(Bool(false))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[
-          String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"50.00000000 BTC","error":null}"""
       }
     }
 
@@ -232,9 +226,8 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("getbalance", Arr(Bool(true))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[
-          String] shouldEqual """{"result":"5000000000 sats","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"5000000000 sats","error":null}"""
       }
     }
 
@@ -248,9 +241,8 @@ class RoutesSpec
           ServerCommand("getconfirmedbalance", Arr(Bool(false))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[
-          String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"50.00000000 BTC","error":null}"""
       }
     }
 
@@ -264,9 +256,8 @@ class RoutesSpec
           ServerCommand("getconfirmedbalance", Arr(Bool(true))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[
-          String] shouldEqual """{"result":"5000000000 sats","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"5000000000 sats","error":null}"""
       }
     }
 
@@ -280,9 +271,8 @@ class RoutesSpec
           ServerCommand("getunconfirmedbalance", Arr(Bool(false))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[
-          String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"50.00000000 BTC","error":null}"""
       }
     }
 
@@ -296,9 +286,8 @@ class RoutesSpec
           ServerCommand("getunconfirmedbalance", Arr(Bool(true))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[
-          String] shouldEqual """{"result":"5000000000 sats","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"5000000000 sats","error":null}"""
       }
     }
 
@@ -311,8 +300,8 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("isempty", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":true,"error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":true,"error":null}"""
       }
     }
 
@@ -336,8 +325,8 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("getutxos", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000ffffffff -1 sats\n","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000ffffffff -1 sats\n","error":null}"""
       }
     }
 
@@ -358,8 +347,8 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("getaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":["""" + testAddressStr + """"],"error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}"""
       }
     }
 
@@ -380,8 +369,8 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("getspentaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":["""" + testAddressStr + """"],"error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}"""
       }
     }
 
@@ -404,8 +393,8 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("getfundedaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual
+        contentType == `application/json`
+        responseAs[String] ==
           s"""{"result":["$testAddressStr ${Satoshis.zero}"],"error":null}""".stripMargin
       }
     }
@@ -427,8 +416,8 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("getunusedaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":["""" + testAddressStr + """"],"error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}"""
       }
     }
 
@@ -451,8 +440,9 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("getaccounts", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":["""" + xpub.toString + """"],"error":null}"""
+        contentType == `application/json`
+        responseAs[
+          String] == """{"result":["""" + xpub.toString + """"],"error":null}"""
       }
     }
 
@@ -465,8 +455,9 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("getnewaddress", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"""" + testAddressStr + """","error":null}"""
+        contentType == `application/json`
+        responseAs[
+          String] == """{"result":"""" + testAddressStr + """","error":null}"""
       }
     }
 
@@ -485,9 +476,8 @@ class RoutesSpec
           ServerCommand("sendrawtransaction", Arr(Str(tx.hex))))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[
-          String] shouldEqual s"""{"result":"${tx.txIdBE.hex}","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == s"""{"result":"${tx.txIdBE.hex}","error":null}"""
       }
     }
 
@@ -509,8 +499,8 @@ class RoutesSpec
                       Arr(Str(testAddressStr), Num(100), Num(4))))
 
       Post() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
       }
 
       // negative cases
@@ -519,7 +509,7 @@ class RoutesSpec
         ServerCommand("sendtoaddress", Arr(Null, Null, Null)))
 
       Post() ~> route1 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData(Null, "Expected ujson.Str")))
       }
@@ -528,7 +518,7 @@ class RoutesSpec
         ServerCommand("sendtoaddress", Arr("Null", Null, Null)))
 
       Post() ~> route2 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData("Null", "Expected a valid address")))
       }
@@ -537,7 +527,7 @@ class RoutesSpec
         ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Null, Null)))
 
       Post() ~> route3 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData(Null, "Expected ujson.Num")))
       }
@@ -547,7 +537,7 @@ class RoutesSpec
                       Arr(Str(testAddressStr), Str("abc"), Null)))
 
       Post() ~> route4 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData("abc", "Expected ujson.Num")))
       }
@@ -578,8 +568,8 @@ class RoutesSpec
                       Arr(Arr(), Str(testAddressStr), Num(100), Num(4))))
 
       Post() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
       }
 
       // negative cases
@@ -588,7 +578,7 @@ class RoutesSpec
         ServerCommand("sendfromoutpoints", Arr(Arr(), Null, Null, Null)))
 
       Post() ~> route1 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData(Null, "Expected ujson.Str")))
       }
@@ -597,7 +587,7 @@ class RoutesSpec
         ServerCommand("sendfromoutpoints", Arr(Arr(), "Null", Null, Null)))
 
       Post() ~> route2 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData("Null", "Expected a valid address")))
       }
@@ -607,7 +597,7 @@ class RoutesSpec
                       Arr(Arr(), Str(testAddressStr), Null, Null)))
 
       Post() ~> route3 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData(Null, "Expected ujson.Num")))
       }
@@ -617,7 +607,7 @@ class RoutesSpec
                       Arr(Arr(), Str(testAddressStr), Str("abc"), Null)))
 
       Post() ~> route4 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData("abc", "Expected ujson.Num")))
       }
@@ -627,7 +617,7 @@ class RoutesSpec
                       Arr(Null, Str(testAddressStr), Num(100), Num(4))))
 
       Post() ~> route5 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData(Null, "Expected ujson.Arr")))
       }
@@ -660,8 +650,8 @@ class RoutesSpec
                           Str("AccumulateSmallestViable"))))
 
       Post() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
       }
 
       // negative cases
@@ -670,7 +660,7 @@ class RoutesSpec
         ServerCommand("sendwithalgo", Arr(Null, Null, Null, Null)))
 
       Post() ~> route1 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData(Null, "Expected ujson.Str")))
       }
@@ -679,7 +669,7 @@ class RoutesSpec
         ServerCommand("sendwithalgo", Arr("Null", Null, Null, Null)))
 
       Post() ~> route2 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData("Null", "Expected a valid address")))
       }
@@ -689,7 +679,7 @@ class RoutesSpec
                       Arr(Str(testAddressStr), Null, Null, Null)))
 
       Post() ~> route3 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData(Null, "Expected ujson.Num")))
       }
@@ -699,7 +689,7 @@ class RoutesSpec
                       Arr(Str(testAddressStr), Str("abc"), Null, Null)))
 
       Post() ~> route4 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData("abc", "Expected ujson.Num")))
       }
@@ -709,7 +699,7 @@ class RoutesSpec
                       Arr(Str(testAddressStr), Num(100), Num(4), Null)))
 
       Post() ~> route5 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData(Null, "Expected ujson.Str")))
       }
@@ -733,8 +723,8 @@ class RoutesSpec
         ServerCommand("opreturncommit", Arr(message, Bool(false), Num(4))))
 
       Post() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
       }
     }
 
@@ -743,8 +733,9 @@ class RoutesSpec
         nodeRoutes.handleCommand(ServerCommand("getpeers", Arr()))
 
       Get() ~> route ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"TODO implement getpeers","error":null}"""
+        contentType == `application/json`
+        responseAs[
+          String] == """{"result":"TODO implement getpeers","error":null}"""
       }
     }
 
@@ -771,8 +762,8 @@ class RoutesSpec
           ServerCommand("rescan", Arr(Arr(), Null, Null, true, true)))
 
       Post() ~> route1 ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"scheduled","error":null}"""
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
@@ -798,8 +789,8 @@ class RoutesSpec
             Arr(Arr(), Str("2018-10-27T12:34:56Z"), Null, true, true)))
 
       Post() ~> route2 ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"scheduled","error":null}"""
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
@@ -820,8 +811,8 @@ class RoutesSpec
             Arr(Null, Null, Str(DoubleSha256DigestBE.empty.hex), true, true)))
 
       Post() ~> route3 ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"scheduled","error":null}"""
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
@@ -841,8 +832,8 @@ class RoutesSpec
                         Arr(Arr(), Str("12345"), Num(67890), true, true)))
 
       Post() ~> route4 ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"scheduled","error":null}"""
       }
 
       // negative cases
@@ -853,9 +844,8 @@ class RoutesSpec
                         Arr(Null, Str("abcd"), Str("efgh"), true, true)))
 
       Post() ~> route5 ~> check {
-        rejection shouldEqual ValidationRejection(
-          "failure",
-          Some(InvalidBlockStamp("abcd")))
+        rejection == ValidationRejection("failure",
+                                         Some(InvalidBlockStamp("abcd")))
       }
 
       val route6 =
@@ -865,7 +855,7 @@ class RoutesSpec
             Arr(Arr(55), Null, Str("2018-10-27T12:34:56"), true, true)))
 
       Post() ~> route6 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidBlockStamp("2018-10-27T12:34:56")))
       }
@@ -875,7 +865,7 @@ class RoutesSpec
           ServerCommand("rescan", Arr(Null, Num(-1), Null, true, false)))
 
       Post() ~> route7 ~> check {
-        rejection shouldEqual ValidationRejection(
+        rejection == ValidationRejection(
           "failure",
           Some(InvalidData(Num(-1), "Expected a positive integer")))
       }
@@ -897,8 +887,8 @@ class RoutesSpec
                         Arr(Arr(55), Arr(), Arr(), Bool(true), Bool(true))))
 
       Post() ~> route8 ~> check {
-        contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
+        contentType == `application/json`
+        responseAs[String] == """{"result":"scheduled","error":null}"""
       }
     }
 

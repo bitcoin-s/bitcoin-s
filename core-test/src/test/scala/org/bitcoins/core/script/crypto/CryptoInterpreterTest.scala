@@ -7,23 +7,17 @@ import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.flag.{
-  ScriptFlagFactory,
-  ScriptVerifyDerSig,
-  ScriptVerifyNullDummy
-}
+import org.bitcoins.core.script.flag.{ScriptVerifyDerSig, ScriptVerifyNullDummy}
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, ScriptProgramTestUtil}
-import org.bitcoins.testkit.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 
 import scala.util.Try
 
 /**
   * Created by chris on 1/6/16.
   */
-class CryptoInterpreterTest extends FlatSpec with MustMatchers {
-  private def logger = BitcoinSLogger.logger
+class CryptoInterpreterTest extends BitcoinSAsyncTest {
 
   val stack = List(ScriptConstant(
     "02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231".toLowerCase))

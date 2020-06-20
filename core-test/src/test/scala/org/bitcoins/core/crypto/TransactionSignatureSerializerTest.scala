@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
-import org.bitcoins.core.number.{Int32, Int64, UInt32}
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -9,15 +9,14 @@ import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import scala.util.Try
 
 /**
   * Created by chris on 2/19/16.
   */
-class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
-  private def logger = BitcoinSLogger.logger
+class TransactionSignatureSerializerTest extends BitcoinSAsyncTest {
 
   "TransactionSignatureSerializer" must "correctly serialize an input that is being checked where another input in the same tx is using SIGHASH_ANYONECANPAY" in {
     //this is from a test case inside of tx_valid.json
