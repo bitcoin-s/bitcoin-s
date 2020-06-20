@@ -46,6 +46,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
 
   val zero: CompactSizeUInt = CompactSizeUInt(UInt64.zero)
 
+  lazy val one: CompactSizeUInt = CompactSizeUInt(UInt64.one)
+
   override def fromBytes(bytes: ByteVector): CompactSizeUInt = {
     parseCompactSizeUInt(bytes)
   }
