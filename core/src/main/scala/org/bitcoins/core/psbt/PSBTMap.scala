@@ -568,7 +568,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   private def changeToWitnessUTXO(
       transactionOutput: TransactionOutput): InputPSBTMap = {
     val newElements = transactionOutput.scriptPubKey match {
-      case rs: WitnessScriptPubKey =>
+      case _: WitnessScriptPubKey =>
         filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
       case _: P2SHScriptPubKey =>
         if (redeemScriptOpt.isDefined) {

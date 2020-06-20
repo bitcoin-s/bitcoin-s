@@ -274,9 +274,10 @@ abstract class Wallet
       prevTxFs = utxoDbs.map(utxo =>
         transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
       prevTxs <- Future.sequence(prevTxFs)
-      utxos = utxoDbs
-        .zip(prevTxs)
-        .map(info => info._1.toUTXOInfo(keyManager, info._2))
+      utxos =
+        utxoDbs
+          .zip(prevTxs)
+          .map(info => info._1.toUTXOInfo(keyManager, info._2))
 
       changeAddr <- getNewChangeAddress(fromAccount.hdAccount)
 
