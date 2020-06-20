@@ -97,7 +97,7 @@ case class ChainAppConfig(
     config.getInt(s"${moduleName}.neutrino.filter-batch-size")
 
   /** Starts the associated application */
-  override def start(): Unit = ()
+  override def start(): Future[Unit] = FutureUtil.unit
 }
 
 object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {

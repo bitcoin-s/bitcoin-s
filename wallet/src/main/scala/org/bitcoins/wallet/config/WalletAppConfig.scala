@@ -164,7 +164,7 @@ case class WalletAppConfig(
   }
 
   /** Starts the associated application */
-  override def start(): Unit = ()
+  override def start(): Future[Unit] = FutureUtil.unit
 }
 
 object WalletAppConfig

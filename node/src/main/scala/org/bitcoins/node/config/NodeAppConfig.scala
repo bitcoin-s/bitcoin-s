@@ -75,7 +75,7 @@ case class NodeAppConfig(
   }
 
   /** Starts the associated application */
-  override def start(): Unit = ()
+  override def start(): Future[Unit] = FutureUtil.unit
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
   def createNode(peer: Peer)(

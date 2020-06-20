@@ -35,6 +35,7 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
   override def afterAll(): Unit = {
     super.afterAll()
     walletConfig.stop()
+    ()
   }
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
