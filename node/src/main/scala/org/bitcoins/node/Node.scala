@@ -124,7 +124,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def start(): Future[Node] = {
     logger.info("Starting node")
     val start = System.currentTimeMillis()
+
     for {
+      _ <- nodeAppConfig.start()
       _ <- nodeAppConfig.initialize()
       // get chainApi so we don't need to call chainApiFromDb on every call
       chainApi <- chainApiFromDb
@@ -160,6 +162,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def stop(): Future[Node] = {
     logger.info(s"Stopping node")
     val disconnectF = for {
+      _ <- nodeAppConfig.stop()
       p <- peerMsgSenderF
       disconnect <- p.disconnect()
     } yield disconnect
