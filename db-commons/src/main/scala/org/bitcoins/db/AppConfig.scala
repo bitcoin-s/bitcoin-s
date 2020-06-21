@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.blockchain.{
   RegTestNetChainParams,
   TestNetChainParams
 }
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, StartStop}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -26,7 +26,7 @@ import scala.util.{Failure, Properties, Success, Try}
   * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
   *      for more information.
   */
-abstract class AppConfig extends LoggerConfig {
+abstract class AppConfig extends LoggerConfig with StartStop[Unit] {
 
   private val logger = BitcoinSLogger.logger
 
@@ -41,9 +41,12 @@ abstract class AppConfig extends LoggerConfig {
     */
   def initialize()(implicit ec: ExecutionContext): Future[Unit]
 
+  /** Starts the associated application */
+  override def start(): Future[Unit]
+
   /** Releases the thread pool associated with this AppConfig's DB */
-  def stop(): Unit = {
-    slickDbConfig.db.close()
+  override def stop(): Future[Unit] = {
+    Future.successful(slickDbConfig.db.close())
   }
 
   /** Sub members of AppConfig should override this type with

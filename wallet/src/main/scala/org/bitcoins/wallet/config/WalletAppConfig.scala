@@ -162,6 +162,9 @@ case class WalletAppConfig(
                                  feeRateApi = feeRateApi,
                                  bip39PasswordOpt = bip39PasswordOpt)(this, ec)
   }
+
+  /** Starts the associated application */
+  override def start(): Future[Unit] = FutureUtil.unit
 }
 
 object WalletAppConfig
