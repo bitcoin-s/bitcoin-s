@@ -41,16 +41,16 @@ trait WalletDbManagement extends DbManagement {
     OutgoingTransactionDAO()(ec, appConfig).table
   }
 
+  // Ordering matters here, tables with a foreign key should be listed after
+  // the table that key references
   override lazy val allTables: List[TableQuery[Table[_]]] = {
-    List(
-      accountTable,
-      addressTable,
-      addressTagTable,
-      utxoTable,
-      txTable,
-      incomingTxTable,
-      outgoingTxTable
-    )
+    List(accountTable,
+         addressTable,
+         addressTagTable,
+         txTable,
+         incomingTxTable,
+         utxoTable,
+         outgoingTxTable)
   }
 
 }

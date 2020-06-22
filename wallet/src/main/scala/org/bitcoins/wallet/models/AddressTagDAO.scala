@@ -108,9 +108,9 @@ case class AddressTagDAO()(implicit
 
     def address: Rep[BitcoinAddress] = column[BitcoinAddress]("address")
 
-    def tagName: Rep[AddressTagName] = column[AddressTagName]("tagName")
+    def tagName: Rep[AddressTagName] = column[AddressTagName]("tag_name")
 
-    def tagType: Rep[AddressTagType] = column[AddressTagType]("tagType")
+    def tagType: Rep[AddressTagType] = column[AddressTagType]("tag_type")
 
     private type AddressTagTuple =
       (BitcoinAddress, AddressTagName, AddressTagType)
