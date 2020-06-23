@@ -11,5 +11,5 @@ object EnvUtil {
 
   lazy val isWindows: Boolean = osName.startsWith("Windows")
 
-  lazy val isCI: Boolean = Properties.envOrNone("CI").contains("1")
+  lazy val isCI: Boolean = Properties.envOrNone("CI").contains("true")
 }

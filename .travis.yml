@@ -89,7 +89,6 @@ jobs:
       os: osx
       name: "macOS wallet and node tests"
       env:
-        - CI="1"
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
       scala: 2.13.2
 
