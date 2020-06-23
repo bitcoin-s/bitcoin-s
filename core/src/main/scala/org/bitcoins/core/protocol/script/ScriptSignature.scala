@@ -248,16 +248,32 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
   /** Detects if the given script token is a redeem script */
   def isRedeemScript(token: ScriptToken): Boolean = {
     val redeemScript: ScriptPubKey = parseRedeemScript(token)
-    redeemScript match {
-      case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
-          _: P2SHScriptPubKey | _: P2PKScriptPubKey |
-          _: P2PKWithTimeoutScriptPubKey | _: ConditionalScriptPubKey |
-          _: CLTVScriptPubKey | _: CSVScriptPubKey | _: WitnessScriptPubKeyV0 |
-          _: UnassignedWitnessScriptPubKey =>
-        true
-      case _: NonStandardScriptPubKey | _: WitnessCommitment => false
-      case EmptyScriptPubKey                                 => false
+
+    def isStandardNonP2SH(
+        spk: ScriptPubKey,
+        isRecursiveCall: Boolean): Boolean = {
+      spk match {
+        case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
+            _: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
+            _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
+          true
+        case EmptyScriptPubKey => isRecursiveCall // Fine if nested
+        case conditional: ConditionalScriptPubKey =>
+          isStandardNonP2SH(conditional.firstSPK,
+                            isRecursiveCall = true) && isStandardNonP2SH(
+            conditional.secondSPK,
+            isRecursiveCall = true)
+        case locktime: LockTimeScriptPubKey =>
+          Try(locktime.locktime).isSuccess &&
+            isStandardNonP2SH(locktime.nestedScriptPubKey,
+                              isRecursiveCall = true)
+        case _: NonStandardScriptPubKey | _: WitnessCommitment |
+            _: P2SHScriptPubKey =>
+          false
+      }
     }
+
+    isStandardNonP2SH(redeemScript, isRecursiveCall = false)
   }
 
   /** Parses a redeem script from the given script token */
