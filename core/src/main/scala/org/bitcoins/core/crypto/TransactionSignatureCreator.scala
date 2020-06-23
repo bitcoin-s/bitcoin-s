@@ -1,6 +1,8 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 import org.bitcoins.crypto.{DERSignatureUtil, ECDigitalSignature, ECPrivateKey}
 import scodec.bits.ByteVector
 
@@ -54,6 +56,7 @@ sealed abstract class TransactionSignatureCreator {
   }
 
   /** This is the same as createSig above, except the 'sign' function returns a Future[ECDigitalSignature] */
+  @deprecated("use an InputSigningInfo[InputInfo] instead", since = "6/23/2020")
   def createSig(
       component: TxSigComponent,
       sign: ByteVector => Future[ECDigitalSignature],
@@ -62,7 +65,76 @@ sealed abstract class TransactionSignatureCreator {
     val hash =
       TransactionSignatureSerializer.hashForSignature(component, hashType)
     val signature = sign(hash.bytes)
+    // append 1 byte hash type onto the end
+    val sig = signature.map(s =>
+      ECDigitalSignature(s.bytes ++ ByteVector.fromByte(hashType.byte)))
+    sig.map { s =>
+      require(
+        s.isStrictEncoded,
+        "We did not create a signature that is strictly encoded, got: " + sig)
+      require(DERSignatureUtil.isLowS(s), "Sig does not have a low s value")
+      s
+    }
+  }
+
+  /**
+    * Creates a signature from a tx signature component
+    *
+    * @param privateKey the private key which we are signing the hash with
+    * @param hashType the procedure to use for hashing to transaction
+    * @return
+    */
+  def createSig(
+      spendingTransaction: Transaction,
+      signingInfo: InputSigningInfo[InputInfo],
+      privateKey: ECPrivateKey,
+      hashType: HashType): ECDigitalSignature = {
+    val sign: ByteVector => ECDigitalSignature = privateKey.sign(_: ByteVector)
+    createSig(spendingTransaction, signingInfo, sign, hashType)
+  }
+
+  /**
+    * This is intended to be a low level hardware wallet API.
+    * At a fundamental level, a hardware wallet expects a scodec.bits.ByteVector as input, and returns an [[ECDigitalSignature]]
+    * if it is able to sign the scodec.bits.ByteVector's correctly.
+    * @param sign - the implementation of the hardware wallet protocol to sign the scodec.bits.ByteVector w/ the given public key
+    * @param hashType - the hash type to be appended on the digital signature when the hardware wallet is done being signed
+    * @return the digital signature returned by the hardware wallet
+    */
+  def createSig(
+      spendingTransaction: Transaction,
+      signingInfo: InputSigningInfo[InputInfo],
+      sign: ByteVector => ECDigitalSignature,
+      hashType: HashType): ECDigitalSignature = {
+    val hash = TransactionSignatureSerializer.hashForSignature(
+      spendingTransaction,
+      signingInfo,
+      hashType)
+
+    val signature = sign(hash.bytes)
     //append 1 byte hash type onto the end
+    val sig = ECDigitalSignature(
+      signature.bytes ++ ByteVector.fromByte(hashType.byte))
+    require(
+      sig.isStrictEncoded,
+      "We did not create a signature that is strictly encoded, got: " + sig)
+    require(DERSignatureUtil.isLowS(sig), "Sig does not have a low s value")
+    sig
+  }
+
+  /** This is the same as createSig above, except the 'sign' function returns a Future[ECDigitalSignature] */
+  def createSig(
+      spendingTransaction: Transaction,
+      signingInfo: InputSigningInfo[InputInfo],
+      sign: ByteVector => Future[ECDigitalSignature],
+      hashType: HashType)(implicit
+      ec: ExecutionContext): Future[ECDigitalSignature] = {
+    val hash =
+      TransactionSignatureSerializer.hashForSignature(spendingTransaction,
+                                                      signingInfo,
+                                                      hashType)
+    val signature = sign(hash.bytes)
+    // append 1 byte hash type onto the end
     val sig = signature.map(s =>
       ECDigitalSignature(s.bytes ++ ByteVector.fromByte(hashType.byte)))
     sig.map { s =>

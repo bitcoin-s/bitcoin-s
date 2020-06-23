@@ -59,6 +59,27 @@ sealed abstract class CreditingTxGen {
               conditionalOutput)
   }
 
+  def nonWitOutput: Gen[ScriptSignatureParams[InputInfo]] = {
+    Gen.oneOf(p2pkOutput,
+              p2pkhOutput,
+              p2pkWithTimeoutOutput,
+              multiSigOutput,
+              cltvOutput,
+              csvOutput,
+              multiSignatureWithTimeoutOutput,
+              conditionalOutput)
+  }
+
+  def nonWitOutputs: Gen[Seq[ScriptSignatureParams[InputInfo]]] =
+    Gen.choose(min, max).flatMap(n => Gen.listOfN(n, nonWitOutput))
+
+  def witOutput: Gen[ScriptSignatureParams[InputInfo]] = {
+    Gen.oneOf(p2wpkhOutput, p2wshOutput)
+  }
+
+  def witOutputs: Gen[Seq[ScriptSignatureParams[InputInfo]]] =
+    Gen.choose(min, max).flatMap(n => Gen.listOfN(n, witOutput))
+
   /** Only for use in constructing P2SH outputs */
   private def nonP2SHOutput: Gen[ScriptSignatureParams[InputInfo]] = {
     Gen

@@ -2,9 +2,11 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.flag.ScriptFlag
+import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 
 import scala.util.{Failure, Success, Try}
 
@@ -43,6 +45,65 @@ sealed abstract class TxSigComponent {
 }
 
 object TxSigComponent {
+
+  private def inputIndex(
+      spendingInfo: InputSigningInfo[InputInfo],
+      tx: Transaction): UInt32 = {
+    tx.inputs.zipWithIndex
+      .find(_._1.previousOutput == spendingInfo.outPoint) match {
+      case Some((_, index)) => UInt32(index)
+      case None =>
+        throw new IllegalArgumentException(
+          "Transaction did not contain expected input.")
+    }
+  }
+
+  def apply(
+      spendingInfo: InputSigningInfo[InputInfo],
+      unsignedTx: Transaction,
+      flags: Seq[ScriptFlag] = Policy.standardFlags): TxSigComponent = {
+    val index = inputIndex(spendingInfo, unsignedTx)
+
+    spendingInfo.output.scriptPubKey match {
+      case _: WitnessScriptPubKey =>
+        val wtx = {
+          val noWitnessWtx = WitnessTransaction.toWitnessTx(unsignedTx)
+          InputInfo.getScriptWitness(spendingInfo.inputInfo) match {
+            case None =>
+              noWitnessWtx
+            case Some(scriptWitness) =>
+              noWitnessWtx.updateWitness(index.toInt, scriptWitness)
+          }
+        }
+
+        WitnessTxSigComponent(wtx, index, spendingInfo.output, flags)
+      case _: P2SHScriptPubKey =>
+        val emptyInput = unsignedTx.inputs(index.toInt)
+        val redeemScript = InputInfo.getRedeemScript(spendingInfo.inputInfo).get
+        val newInput = TransactionInput(
+          emptyInput.previousOutput,
+          P2SHScriptSignature(EmptyScriptSignature, redeemScript),
+          emptyInput.sequence)
+        val updatedTx = unsignedTx.updateInput(index.toInt, newInput)
+        redeemScript match {
+          case _: WitnessScriptPubKey =>
+            val wtx = WitnessTransaction.toWitnessTx(updatedTx)
+            val updatedWtx =
+              wtx.updateWitness(
+                index.toInt,
+                InputInfo.getScriptWitness(spendingInfo.inputInfo).get)
+
+            WitnessTxSigComponentP2SH(updatedWtx,
+                                      index,
+                                      spendingInfo.output,
+                                      flags)
+          case _: ScriptPubKey =>
+            P2SHTxSigComponent(updatedTx, index, spendingInfo.output, flags)
+        }
+      case _: ScriptPubKey =>
+        BaseTxSigComponent(unsignedTx, index, spendingInfo.output, flags)
+    }
+  }
 
   def apply(
       transaction: Transaction,

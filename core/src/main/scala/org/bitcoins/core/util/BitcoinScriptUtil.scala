@@ -34,7 +34,12 @@ import org.bitcoins.core.script.{
   PreExecutionScriptProgram
 }
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
+import org.bitcoins.core.wallet.utxo.{
+  InputInfo,
+  InputSigningInfo,
+  P2SHInputInfo,
+  ScriptSignatureParams
+}
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import scodec.bits.ByteVector
 
@@ -478,6 +483,54 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           EmptyScriptPubKey =>
         script
     }
+
+  def calculateScriptForSigning(
+      spendingTransaction: Transaction,
+      signingInfo: InputSigningInfo[InputInfo],
+      script: Seq[ScriptToken]): Seq[ScriptToken] = {
+    // .get should be safe
+    val (_, idx) = spendingTransaction.inputs.zipWithIndex
+      .find(_._1.previousOutput == signingInfo.outPoint)
+      .get
+
+    signingInfo.output.scriptPubKey match {
+      case _: P2SHScriptPubKey =>
+        val p2sh = signingInfo.inputInfo.asInstanceOf[P2SHInputInfo]
+
+        p2sh.redeemScript match {
+          case p2wpkh: P2WPKHWitnessSPKV0 =>
+            //we treat p2sh(p2wpkh) differently for script signing than other spks
+            //Please note that for a P2SH-P2WPKH, the scriptCode is always 26 bytes including the leading size byte,
+            // as 0x1976a914{20-byte keyhash}88ac, NOT the redeemScript nor scriptPubKey
+            //https://bitcoincore.org/en/segwit_wallet_dev/#signature-generation-and-verification-for-p2sh-p2wpkh
+
+            P2PKHScriptPubKey(p2wpkh.pubKeyHash).asm
+
+          case _: P2WSHWitnessSPKV0 =>
+            val wtx =
+              spendingTransaction.asInstanceOf[WitnessTransaction]
+
+            val p2wshRedeem =
+              ScriptPubKey.fromAsmBytes(wtx.witness.witnesses(idx).stack.head)
+            p2wshRedeem.asm
+          case script: ScriptPubKey =>
+            script.asm
+        }
+
+      case w: WitnessScriptPubKey =>
+        val wtx = spendingTransaction.asInstanceOf[WitnessTransaction]
+        val scriptEither =
+          w.witnessVersion.rebuild(wtx.witness.witnesses(idx), w.witnessProgram)
+        parseScriptEither(scriptEither)
+
+      case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
+          _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
+          _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+          _: CLTVScriptPubKey | _: CSVScriptPubKey | _: WitnessCommitment |
+          EmptyScriptPubKey =>
+        script
+    }
+  }
 
   /** Removes the given [[ECDigitalSignature ECDigitalSignature]] from the list of
     * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] if it exists. */

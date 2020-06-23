@@ -1,6 +1,11 @@
 package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.protocol.script.{
+  SigVersionBase,
+  SigVersionWitnessV0,
+  SignatureVersion
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.Sign
@@ -38,6 +43,15 @@ sealed trait InputSigningInfo[+InputType <: InputInfo] {
   def output: TransactionOutput = inputInfo.output
   def outPoint: TransactionOutPoint = inputInfo.outPoint
   def conditionalPath: ConditionalPath = inputInfo.conditionalPath
+
+  def sigVersion: SignatureVersion =
+    inputInfo match {
+      case _: SegwitV0NativeInputInfo | _: UnassignedSegwitNativeInputInfo |
+          _: P2SHNestedSegwitV0InputInfo =>
+        SigVersionWitnessV0
+      case _: P2SHNonSegwitInputInfo | _: RawInputInfo =>
+        SigVersionBase
+    }
 }
 
 /** Stores the information needed to generate a ScriptSignature for a specific

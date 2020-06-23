@@ -3,34 +3,14 @@ package org.bitcoins.core.protocol.transaction
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  CLTVScriptPubKey,
-  CSVScriptPubKey,
-  EmptyScriptSignature,
-  EmptyScriptWitness,
-  ScriptWitnessV0
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.builder.RawTxSigner.logger
 import org.bitcoins.core.wallet.builder.TxBuilderError
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSigner
-import org.bitcoins.core.wallet.utxo.{
-  ConditionalInputInfo,
-  EmptyInputInfo,
-  InputInfo,
-  InputSigningInfo,
-  LockTimeInputInfo,
-  MultiSignatureInputInfo,
-  P2PKHInputInfo,
-  P2PKInputInfo,
-  P2PKWithTimeoutInputInfo,
-  P2SHInputInfo,
-  P2WPKHV0InputInfo,
-  P2WSHV0InputInfo,
-  UnassignedSegwitNativeInputInfo
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{DummyECDigitalSignature, Sign}
 
 import scala.annotation.tailrec
@@ -322,6 +302,28 @@ object TxUtil {
       TxBuilderError.LowFee
     } else {
       Success(())
+    }
+  }
+
+  def addWitnessData(
+      tx: Transaction,
+      signingInfo: InputSigningInfo[InputInfo]): WitnessTransaction = {
+    val noWitnessWtx = WitnessTransaction.toWitnessTx(tx)
+
+    val indexOpt = tx.inputs.zipWithIndex
+      .find(_._1.previousOutput == signingInfo.outPoint)
+      .map(_._2)
+
+    val scriptWitnessOpt = InputInfo.getScriptWitness(signingInfo.inputInfo)
+
+    (scriptWitnessOpt, indexOpt) match {
+      case (_, None) =>
+        throw new IllegalArgumentException(
+          s"Input is not contained in tx, got $signingInfo")
+      case (None, Some(_)) =>
+        noWitnessWtx
+      case (Some(scriptWitness), Some(index)) =>
+        noWitnessWtx.updateWitness(index, scriptWitness)
     }
   }
 }

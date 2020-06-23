@@ -2,6 +2,7 @@ package org.bitcoins.core.wallet.signer
 
 import org.bitcoins.core.crypto.{
   BaseTxSigComponent,
+  TxSigComponent,
   WitnessTxSigComponentP2SH,
   WitnessTxSigComponentRaw
 }
@@ -151,6 +152,46 @@ class SignerTest extends BitcoinSAsyncTest {
 
           succeed
         }
+    }
+  }
+
+  it should "have old and new createSig functions agree" in {
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
+                ScriptGenerators.scriptPubKey) {
+      case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
+        val fee = SatoshisPerVirtualByte(Satoshis(100))
+
+        StandardNonInteractiveFinalizer
+          .txFrom(outputs = destinations,
+                  utxos = creditingTxsInfo,
+                  feeRate = fee,
+                  changeSPK = changeSPK)
+          .flatMap { spendingTx =>
+            val assertFs = creditingTxsInfo.flatMap { signInfo =>
+              signInfo.signers.map { signer =>
+                val txSignatureComponent =
+                  TxSigComponent(signInfo, spendingTx)
+
+                for {
+                  oldSig <- BitcoinSigner.doSign(txSignatureComponent,
+                                                 signer.signFunction,
+                                                 signInfo.hashType,
+                                                 isDummySignature = false)
+                  newSig <- BitcoinSigner.doSign(spendingTx,
+                                                 signInfo,
+                                                 signer.signFunction,
+                                                 signInfo.hashType,
+                                                 isDummySignature = false)
+                } yield {
+                  (oldSig.r == newSig.r) &&
+                  (oldSig.s == newSig.s) &&
+                  (oldSig.hex == newSig.hex)
+                }
+              }
+            }
+            Future.sequence(assertFs)
+          }
+          .map(x => assert(x.forall(_ == true)))
     }
   }
 
