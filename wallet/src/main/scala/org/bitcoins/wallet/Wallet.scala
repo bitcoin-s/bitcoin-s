@@ -88,12 +88,20 @@ abstract class Wallet
     } yield hasTxs
   }
 
-  for {
-    utxos <- utxosWithMissingTx
-    blockHashes = utxos.flatMap(_.blockHash.map(_.flip))
-    // Download the block the tx is from so we process the block and subsequent txs
-    _ <- nodeApi.downloadBlocks(blockHashes.distinct)
-  } yield ()
+  protected def downloadMissingUtxos: Future[Unit] =
+    for {
+      utxos <- utxosWithMissingTx
+      blockHashes = utxos.flatMap(_.blockHash.map(_.flip))
+      // Download the block the tx is from so we process the block and subsequent txs
+      _ <- nodeApi.downloadBlocks(blockHashes.distinct)
+    } yield ()
+
+  override def start(): Future[Unit] = {
+    for {
+      _ <- walletConfig.start()
+      _ <- downloadMissingUtxos
+    } yield ()
+  }
 
   override def stop(): Unit = {
     walletConfig.stop()
