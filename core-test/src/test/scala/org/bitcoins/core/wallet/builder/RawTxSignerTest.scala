@@ -3,14 +3,7 @@ package org.bitcoins.core.wallet.builder
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  Transaction,
-  TransactionConstants,
-  TransactionOutPoint,
-  TransactionOutput,
-  _
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinScriptUtil

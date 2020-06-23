@@ -59,7 +59,7 @@ sealed abstract class CreditingTxGen {
               conditionalOutput)
   }
 
-  def nonWitOutput: Gen[ScriptSignatureParams[InputInfo]] = {
+  def rawOutput: Gen[ScriptSignatureParams[InputInfo]] = {
     Gen.oneOf(p2pkOutput,
               p2pkhOutput,
               p2pkWithTimeoutOutput,
@@ -70,8 +70,8 @@ sealed abstract class CreditingTxGen {
               conditionalOutput)
   }
 
-  def nonWitOutputs: Gen[Seq[ScriptSignatureParams[InputInfo]]] =
-    Gen.choose(min, max).flatMap(n => Gen.listOfN(n, nonWitOutput))
+  def rawOutputs: Gen[Seq[ScriptSignatureParams[InputInfo]]] =
+    Gen.choose(min, max).flatMap(n => Gen.listOfN(n, rawOutput))
 
   def witOutput: Gen[ScriptSignatureParams[InputInfo]] = {
     Gen.oneOf(p2wpkhOutput, p2wshOutput)

@@ -131,7 +131,7 @@ class TransactionSignatureCreatorTest extends BitcoinSAsyncTest {
             val assertFs = creditingTxsInfo.flatMap { signInfo =>
               signInfo.signers.map { signer =>
                 val txSignatureComponent =
-                  TxSigComponent(signInfo, spendingTx)
+                  TxSigComponent(signInfo.inputInfo, spendingTx)
 
                 for {
                   oldSig <-

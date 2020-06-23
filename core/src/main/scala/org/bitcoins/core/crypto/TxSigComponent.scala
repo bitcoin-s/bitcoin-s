@@ -6,7 +6,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.flag.ScriptFlag
-import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
+import org.bitcoins.core.wallet.utxo.InputInfo
 
 import scala.util.{Failure, Success, Try}
 
@@ -46,11 +46,9 @@ sealed abstract class TxSigComponent {
 
 object TxSigComponent {
 
-  private def inputIndex(
-      spendingInfo: InputSigningInfo[InputInfo],
-      tx: Transaction): UInt32 = {
+  private def inputIndex(inputInfo: InputInfo, tx: Transaction): UInt32 = {
     tx.inputs.zipWithIndex
-      .find(_._1.previousOutput == spendingInfo.outPoint) match {
+      .find(_._1.previousOutput == inputInfo.outPoint) match {
       case Some((_, index)) => UInt32(index)
       case None =>
         throw new IllegalArgumentException(
@@ -59,16 +57,16 @@ object TxSigComponent {
   }
 
   def apply(
-      spendingInfo: InputSigningInfo[InputInfo],
+      inputInfo: InputInfo,
       unsignedTx: Transaction,
       flags: Seq[ScriptFlag] = Policy.standardFlags): TxSigComponent = {
-    val index = inputIndex(spendingInfo, unsignedTx)
+    val index = inputIndex(inputInfo, unsignedTx)
 
-    spendingInfo.output.scriptPubKey match {
+    inputInfo.output.scriptPubKey match {
       case _: WitnessScriptPubKey =>
         val wtx = {
           val noWitnessWtx = WitnessTransaction.toWitnessTx(unsignedTx)
-          InputInfo.getScriptWitness(spendingInfo.inputInfo) match {
+          InputInfo.getScriptWitness(inputInfo) match {
             case None =>
               noWitnessWtx
             case Some(scriptWitness) =>
@@ -76,10 +74,10 @@ object TxSigComponent {
           }
         }
 
-        WitnessTxSigComponent(wtx, index, spendingInfo.output, flags)
+        WitnessTxSigComponent(wtx, index, inputInfo.output, flags)
       case _: P2SHScriptPubKey =>
         val emptyInput = unsignedTx.inputs(index.toInt)
-        val redeemScript = InputInfo.getRedeemScript(spendingInfo.inputInfo).get
+        val redeemScript = InputInfo.getRedeemScript(inputInfo).get
         val newInput = TransactionInput(
           emptyInput.previousOutput,
           P2SHScriptSignature(EmptyScriptSignature, redeemScript),
@@ -89,19 +87,18 @@ object TxSigComponent {
           case _: WitnessScriptPubKey =>
             val wtx = WitnessTransaction.toWitnessTx(updatedTx)
             val updatedWtx =
-              wtx.updateWitness(
-                index.toInt,
-                InputInfo.getScriptWitness(spendingInfo.inputInfo).get)
+              wtx.updateWitness(index.toInt,
+                                InputInfo.getScriptWitness(inputInfo).get)
 
             WitnessTxSigComponentP2SH(updatedWtx,
                                       index,
-                                      spendingInfo.output,
+                                      inputInfo.output,
                                       flags)
           case _: ScriptPubKey =>
-            P2SHTxSigComponent(updatedTx, index, spendingInfo.output, flags)
+            P2SHTxSigComponent(updatedTx, index, inputInfo.output, flags)
         }
       case _: ScriptPubKey =>
-        BaseTxSigComponent(unsignedTx, index, spendingInfo.output, flags)
+        BaseTxSigComponent(unsignedTx, index, inputInfo.output, flags)
     }
   }
 

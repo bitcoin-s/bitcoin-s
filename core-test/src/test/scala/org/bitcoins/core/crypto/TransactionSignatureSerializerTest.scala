@@ -421,7 +421,7 @@ class TransactionSignatureSerializerTest extends BitcoinSAsyncTest {
             creditingTxsInfo.flatMap { signInfo =>
               signInfo.signers.map { _ =>
                 val txSigComponent =
-                  TxSigComponent(signInfo, spendingTx)
+                  TxSigComponent(signInfo.inputInfo, spendingTx)
 
                 val oldBytes =
                   TransactionSignatureSerializer.serializeForSignature(
@@ -457,7 +457,7 @@ class TransactionSignatureSerializerTest extends BitcoinSAsyncTest {
             creditingTxsInfo.flatMap { signInfo =>
               signInfo.signers.map { _ =>
                 val txSigComponent =
-                  TxSigComponent(signInfo, spendingTx)
+                  TxSigComponent(signInfo.inputInfo, spendingTx)
 
                 val oldHash =
                   TransactionSignatureSerializer.hashForSignature(
@@ -498,7 +498,7 @@ class TransactionSignatureSerializerTest extends BitcoinSAsyncTest {
             creditingTxsInfo.flatMap { signInfo =>
               signInfo.signers.map { _ =>
                 val txSigComponent =
-                  TxSigComponent(signInfo, spendingTx)
+                  TxSigComponent(signInfo.inputInfo, spendingTx)
 
                 val oldScript =
                   BitcoinScriptUtil.calculateScriptForSigning(
