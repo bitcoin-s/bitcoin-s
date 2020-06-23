@@ -58,7 +58,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
                                           dbConfig(ProjectType.Wallet))
     val walletDbManagement = createWalletDbManagement(walletAppConfig)
     val result = walletDbManagement.migrate()
-    val expected = if (walletAppConfig.driverName == "postgresql") 1 else 6
+    val expected = if (walletAppConfig.driverName == "postgresql") 3 else 6
     assert(result == expected)
   }
 
