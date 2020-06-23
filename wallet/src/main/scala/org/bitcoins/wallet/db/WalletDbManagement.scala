@@ -61,9 +61,9 @@ trait WalletDbManagement extends DbManagement {
     List(
       accountTable,
       addressTable,
-      utxoTable,
       txTable,
       incomingTxTable,
+      utxoTable,
       outgoingTxTable,
       dlcTable,
       dlcOfferTable,
