@@ -539,6 +539,17 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     )
   }
 
+  def rawScriptSignature: Gen[ScriptSignature] = {
+    Gen.oneOf(
+      p2pkScriptSignature,
+      p2pkhScriptSignature,
+      p2pkWithTimeoutScriptSignature,
+      multiSignatureScriptSignature,
+      emptyScriptSignature,
+      conditionalScriptSignature
+    )
+  }
+
   /**
     * Generates a `ScriptSignature` corresponding to the type of
     * `ScriptPubKey` given.
