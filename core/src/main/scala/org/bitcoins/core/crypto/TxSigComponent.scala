@@ -68,12 +68,18 @@ object TxSigComponent {
       flags: Seq[ScriptFlag]): TxSigComponent = {
     val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
     val wtx = {
-      val noWitnessWtx = WitnessTransaction.toWitnessTx(unsignedTx)
-      InputInfo.getScriptWitness(inputInfo) match {
-        case None =>
-          noWitnessWtx
-        case Some(scriptWitness) =>
-          noWitnessWtx.updateWitness(idx, scriptWitness)
+      val unsignedWtx = WitnessTransaction.toWitnessTx(unsignedTx)
+      unsignedWtx.witness.witnesses(idx) match {
+        // Only set the witness if we don't already have one
+        case EmptyScriptWitness =>
+          InputInfo.getScriptWitness(inputInfo) match {
+            case None =>
+              unsignedWtx
+            case Some(scriptWitness) =>
+              unsignedWtx.updateWitness(idx, scriptWitness)
+          }
+        case _: ScriptWitnessV0 =>
+          unsignedWtx
       }
     }
 
@@ -134,16 +140,7 @@ object TxSigComponent {
       unsignedTx: Transaction,
       flags: Seq[ScriptFlag]): TxSigComponent = {
     val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
-
-    val emptyInput = unsignedTx.inputs(idx)
-    val redeemScript = InputInfo.getRedeemScript(inputInfo).get
-    val newInput = TransactionInput(
-      emptyInput.previousOutput,
-      P2SHScriptSignature(EmptyScriptSignature, redeemScript),
-      emptyInput.sequence)
-    val updatedTx = unsignedTx.updateInput(idx, newInput)
-
-    P2SHTxSigComponent(updatedTx, UInt32(idx), inputInfo.output, flags)
+    P2SHTxSigComponent(unsignedTx, UInt32(idx), inputInfo.output, flags)
   }
 
   def fromRawInput(
