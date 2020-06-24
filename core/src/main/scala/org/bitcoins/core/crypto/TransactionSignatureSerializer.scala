@@ -255,7 +255,7 @@ sealed abstract class TransactionSignatureSerializer {
   }
 
   /**
-    * Implements the signature serialization algorithim that Satoshi Nakamoto originally created
+    * Implements the signature serialization algorithm that Satoshi Nakamoto originally created
     * and the new signature serialization algorithm as specified by
     * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki BIP143]].
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
@@ -264,10 +264,12 @@ sealed abstract class TransactionSignatureSerializer {
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
       hashType: HashType): ByteVector = {
-    val idx = spendingTransaction.inputs.zipWithIndex
-      .find(_._1.previousOutput == signingInfo.outPoint)
-      .get
-      ._2
+    val idx = TxUtil.inputIndex(signingInfo.inputInfo, spendingTransaction)
+
+    require(
+      signingInfo.prevTransaction != EmptyTransaction,
+      "prevTransaction can only be an EmptyTransaction when dummy signing")
+
     val inputIndex = UInt32(idx)
     val output = signingInfo.output
     val script = BitcoinScriptUtil.calculateScriptForSigning(
@@ -298,7 +300,7 @@ sealed abstract class TransactionSignatureSerializer {
 
         // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
         // is a legacy holdover from a previous, broken design of executing scripts that shipped in Bitcoin 0.1.
-        // It was seriously flawed and would have let anyone take anyone elses money. Later versions switched to
+        // It was seriously flawed and would have let anyone take anyone else's money. Later versions switched to
         // the design we use today where scripts are executed independently but share a stack. This left the
         // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
         // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
@@ -454,9 +456,8 @@ sealed abstract class TransactionSignatureSerializer {
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
       hashType: HashType): DoubleSha256Digest = {
-    val inputIndexOpt = spendingTransaction.inputs.zipWithIndex
-      .find(_._1.previousOutput == signingInfo.outPoint)
-      .map(_._2)
+    val inputIndexOpt =
+      TxUtil.inputIndexOpt(signingInfo.inputInfo, spendingTransaction)
 
     if (inputIndexOpt.isEmpty) {
       logger.warn("Our input is not contained in the spending transaction")

@@ -151,13 +151,19 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
       CLTVScriptPubKey(ScriptNumber(lockTime),
                        P2PKScriptPubKey(fundingPrivKey.publicKey))
 
+    val creditingTx = BaseTransaction(
+      version = TransactionConstants.validLockVersion,
+      inputs = Nil,
+      outputs = Vector(TransactionOutput(Bitcoins.one, cltvSPK)),
+      lockTime = TransactionConstants.lockTime
+    )
+
     val cltvSpendingInfo = ScriptSignatureParams(
-      LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
-                                            UInt32.zero),
+      LockTimeInputInfo(TransactionOutPoint(creditingTx.txId, UInt32.zero),
                         Bitcoins.one,
                         cltvSPK,
                         ConditionalPath.NoCondition),
-      prevTransaction = EmptyTransaction,
+      prevTransaction = creditingTx,
       signers = Vector(fundingPrivKey),
       hashType = HashType.sigHashAll
     )
@@ -189,13 +195,19 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
       CLTVScriptPubKey(ScriptNumber(lockTime),
                        P2PKScriptPubKey(fundingPrivKey.publicKey))
 
+    val creditingTx = BaseTransaction(
+      version = TransactionConstants.validLockVersion,
+      inputs = Nil,
+      outputs = Vector(TransactionOutput(Bitcoins.one, cltvSPK)),
+      lockTime = TransactionConstants.lockTime
+    )
+
     val cltvSpendingInfo = ScriptSignatureParams(
-      LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
-                                            UInt32.zero),
+      LockTimeInputInfo(TransactionOutPoint(creditingTx.txId, UInt32.zero),
                         Bitcoins.one,
                         cltvSPK,
                         ConditionalPath.NoCondition),
-      prevTransaction = EmptyTransaction,
+      prevTransaction = creditingTx,
       signers = Vector(fundingPrivKey),
       hashType = HashType.sigHashAll
     )

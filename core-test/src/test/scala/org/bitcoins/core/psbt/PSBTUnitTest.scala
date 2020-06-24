@@ -275,18 +275,21 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
     assert(spendingInfo.signers == dummySigners)
     assert(spendingInfo.hashType == HashType.sigHashAll)
     assert(InputInfo.getRedeemScript(spendingInfo.inputInfo).isDefined)
+
+    val expectedRedeemScript = MultiSignatureScriptPubKey(
+      2,
+      Vector(
+        ECPublicKey(
+          "029583bf39ae0a609747ad199addd634fa6108559d6c5cd39b4c2183f1ab96e07f"),
+        ECPublicKey(
+          "02dab61ff49a14db6a7d02b0cd1fbb78fc4b18312b5b4e54dae4dba2fbfef536d7")
+      )
+    )
+
     assert(
       InputInfo
         .getRedeemScript(spendingInfo.inputInfo)
-        .get == MultiSignatureScriptPubKey(
-        2,
-        Vector(
-          ECPublicKey(
-            "029583bf39ae0a609747ad199addd634fa6108559d6c5cd39b4c2183f1ab96e07f"),
-          ECPublicKey(
-            "02dab61ff49a14db6a7d02b0cd1fbb78fc4b18312b5b4e54dae4dba2fbfef536d7")
-        )
-      ))
+        .get == expectedRedeemScript)
     assert(InputInfo.getScriptWitness(spendingInfo.inputInfo).isEmpty)
     assert(spendingInfo.conditionalPath == ConditionalPath.NoCondition)
   }

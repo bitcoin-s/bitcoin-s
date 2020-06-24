@@ -6,7 +6,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.flag.ScriptFlag
-import org.bitcoins.core.wallet.utxo.InputInfo
+import org.bitcoins.core.wallet.utxo._
 
 import scala.util.{Failure, Success, Try}
 
@@ -46,60 +46,112 @@ sealed abstract class TxSigComponent {
 
 object TxSigComponent {
 
-  private def inputIndex(inputInfo: InputInfo, tx: Transaction): UInt32 = {
-    tx.inputs.zipWithIndex
-      .find(_._1.previousOutput == inputInfo.outPoint) match {
-      case Some((_, index)) => UInt32(index)
-      case None =>
-        throw new IllegalArgumentException(
-          "Transaction did not contain expected input.")
-    }
-  }
-
   def apply(
       inputInfo: InputInfo,
       unsignedTx: Transaction,
       flags: Seq[ScriptFlag] = Policy.standardFlags): TxSigComponent = {
-    val index = inputIndex(inputInfo, unsignedTx)
-
-    inputInfo.output.scriptPubKey match {
-      case _: WitnessScriptPubKey =>
-        val wtx = {
-          val noWitnessWtx = WitnessTransaction.toWitnessTx(unsignedTx)
-          InputInfo.getScriptWitness(inputInfo) match {
-            case None =>
-              noWitnessWtx
-            case Some(scriptWitness) =>
-              noWitnessWtx.updateWitness(index.toInt, scriptWitness)
-          }
-        }
-
-        WitnessTxSigComponent(wtx, index, inputInfo.output, flags)
-      case _: P2SHScriptPubKey =>
-        val emptyInput = unsignedTx.inputs(index.toInt)
-        val redeemScript = InputInfo.getRedeemScript(inputInfo).get
-        val newInput = TransactionInput(
-          emptyInput.previousOutput,
-          P2SHScriptSignature(EmptyScriptSignature, redeemScript),
-          emptyInput.sequence)
-        val updatedTx = unsignedTx.updateInput(index.toInt, newInput)
-        redeemScript match {
-          case _: WitnessScriptPubKey =>
-            val wtx = WitnessTransaction.toWitnessTx(updatedTx)
-            val updatedWtx =
-              wtx.updateWitness(index.toInt,
-                                InputInfo.getScriptWitness(inputInfo).get)
-
-            WitnessTxSigComponentP2SH(updatedWtx,
-                                      index,
-                                      inputInfo.output,
-                                      flags)
-          case _: ScriptPubKey =>
-            P2SHTxSigComponent(updatedTx, index, inputInfo.output, flags)
-        }
-      case _: ScriptPubKey =>
-        BaseTxSigComponent(unsignedTx, index, inputInfo.output, flags)
+    inputInfo match {
+      case segwit: SegwitV0NativeInputInfo =>
+        fromWitnessInput(segwit, unsignedTx, flags)
+      case unassigned: UnassignedSegwitNativeInputInfo =>
+        fromWitnessInput(unassigned, unsignedTx, flags)
+      case p2sh: P2SHInputInfo =>
+        fromP2SHInput(p2sh, unsignedTx, flags)
+      case raw: RawInputInfo =>
+        fromRawInput(raw, unsignedTx, flags)
     }
+  }
+
+  def fromWitnessInput(
+      inputInfo: SegwitV0NativeInputInfo,
+      unsignedTx: Transaction,
+      flags: Seq[ScriptFlag]): TxSigComponent = {
+    val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
+    val wtx = {
+      val noWitnessWtx = WitnessTransaction.toWitnessTx(unsignedTx)
+      InputInfo.getScriptWitness(inputInfo) match {
+        case None =>
+          noWitnessWtx
+        case Some(scriptWitness) =>
+          noWitnessWtx.updateWitness(idx, scriptWitness)
+      }
+    }
+
+    WitnessTxSigComponent(wtx, UInt32(idx), inputInfo.output, flags)
+  }
+
+  def fromWitnessInput(
+      inputInfo: UnassignedSegwitNativeInputInfo,
+      unsignedTx: Transaction,
+      flags: Seq[ScriptFlag]): TxSigComponent = {
+    val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
+    val wtx = {
+      val noWitnessWtx = WitnessTransaction.toWitnessTx(unsignedTx)
+      InputInfo.getScriptWitness(inputInfo) match {
+        case None =>
+          noWitnessWtx
+        case Some(scriptWitness) =>
+          noWitnessWtx.updateWitness(idx, scriptWitness)
+      }
+    }
+
+    WitnessTxSigComponent(wtx, UInt32(idx), inputInfo.output, flags)
+  }
+
+  def fromWitnessInput(
+      inputInfo: P2SHNestedSegwitV0InputInfo,
+      unsignedTx: Transaction,
+      flags: Seq[ScriptFlag] = Policy.standardFlags): TxSigComponent = {
+    val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
+    val emptyInput = unsignedTx.inputs(idx)
+    val newInput = TransactionInput(
+      emptyInput.previousOutput,
+      P2SHScriptSignature(EmptyScriptSignature, inputInfo.redeemScript),
+      emptyInput.sequence)
+    val updatedTx = unsignedTx.updateInput(idx, newInput)
+
+    val wtx = WitnessTransaction.toWitnessTx(updatedTx)
+    val updatedWtx =
+      wtx.updateWitness(idx, InputInfo.getScriptWitness(inputInfo).get)
+
+    WitnessTxSigComponentP2SH(updatedWtx, UInt32(idx), inputInfo.output, flags)
+  }
+
+  def fromP2SHInput(
+      inputInfo: P2SHInputInfo,
+      unsignedTx: Transaction,
+      flags: Seq[ScriptFlag]): TxSigComponent = {
+    inputInfo match {
+      case nonSegwit: P2SHNonSegwitInputInfo =>
+        fromP2SHInput(nonSegwit, unsignedTx, flags)
+      case segwit: P2SHNestedSegwitV0InputInfo =>
+        fromWitnessInput(segwit, unsignedTx, flags)
+    }
+  }
+
+  def fromP2SHInput(
+      inputInfo: P2SHNonSegwitInputInfo,
+      unsignedTx: Transaction,
+      flags: Seq[ScriptFlag]): TxSigComponent = {
+    val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
+
+    val emptyInput = unsignedTx.inputs(idx)
+    val redeemScript = InputInfo.getRedeemScript(inputInfo).get
+    val newInput = TransactionInput(
+      emptyInput.previousOutput,
+      P2SHScriptSignature(EmptyScriptSignature, redeemScript),
+      emptyInput.sequence)
+    val updatedTx = unsignedTx.updateInput(idx, newInput)
+
+    P2SHTxSigComponent(updatedTx, UInt32(idx), inputInfo.output, flags)
+  }
+
+  def fromRawInput(
+      inputInfo: RawInputInfo,
+      unsignedTx: Transaction,
+      flags: Seq[ScriptFlag] = Policy.standardFlags): TxSigComponent = {
+    val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
+    BaseTxSigComponent(unsignedTx, UInt32(idx), inputInfo.output, flags)
   }
 
   def apply(

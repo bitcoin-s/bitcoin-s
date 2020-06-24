@@ -571,6 +571,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       case _: P2SHScriptPubKey =>
         if (redeemScriptOpt.isDefined) {
           val redeemScript = redeemScriptOpt.get.redeemScript
+          // SegwitV0 has a vulnerability where we need the full funding tx to be safe
+          // future versions of segwit should be considered safe however
           if (
             redeemScript.isInstanceOf[WitnessScriptPubKey] && !redeemScript
               .isInstanceOf[WitnessScriptPubKeyV0]

@@ -412,33 +412,35 @@ class TransactionSignatureSerializerTest extends BitcoinSAsyncTest {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
-        StandardNonInteractiveFinalizer
+        val unsignedTxF = StandardNonInteractiveFinalizer
           .txFrom(outputs = destinations,
                   utxos = creditingTxsInfo,
                   feeRate = fee,
                   changeSPK = changeSPK)
-          .map { spendingTx =>
-            creditingTxsInfo.flatMap { signInfo =>
-              signInfo.signers.map { _ =>
-                val txSigComponent =
-                  TxSigComponent(signInfo.inputInfo, spendingTx)
 
-                val oldBytes =
-                  TransactionSignatureSerializer.serializeForSignature(
-                    txSigComponent,
-                    signInfo.hashType)
+        val correctScriptsF = unsignedTxF.map { spendingTx =>
+          creditingTxsInfo.flatMap { signInfo =>
+            signInfo.signers.map { _ =>
+              val txSigComponent =
+                TxSigComponent(signInfo.inputInfo, spendingTx)
 
-                val newBytes =
-                  TransactionSignatureSerializer.serializeForSignature(
-                    spendingTx,
-                    signInfo,
-                    signInfo.hashType)
+              val oldBytes =
+                TransactionSignatureSerializer.serializeForSignature(
+                  txSigComponent,
+                  signInfo.hashType)
 
-                oldBytes == newBytes
-              }
+              val newBytes =
+                TransactionSignatureSerializer.serializeForSignature(
+                  spendingTx,
+                  signInfo,
+                  signInfo.hashType)
+
+              oldBytes == newBytes
             }
           }
-          .map(x => assert(x.forall(_ == true)))
+        }
+
+        correctScriptsF.map(x => assert(x.forall(_ == true)))
     }
   }
 
@@ -448,38 +450,40 @@ class TransactionSignatureSerializerTest extends BitcoinSAsyncTest {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
-        StandardNonInteractiveFinalizer
+        val unsignedTxF = StandardNonInteractiveFinalizer
           .txFrom(outputs = destinations,
                   utxos = creditingTxsInfo,
                   feeRate = fee,
                   changeSPK = changeSPK)
-          .map { spendingTx =>
-            creditingTxsInfo.flatMap { signInfo =>
-              signInfo.signers.map { _ =>
-                val txSigComponent =
-                  TxSigComponent(signInfo.inputInfo, spendingTx)
 
-                val oldHash =
-                  TransactionSignatureSerializer.hashForSignature(
-                    txSigComponent,
-                    signInfo.hashType)
+        val correctHashesF = unsignedTxF.map { spendingTx =>
+          creditingTxsInfo.flatMap { signInfo =>
+            signInfo.signers.map { _ =>
+              val txSigComponent =
+                TxSigComponent(signInfo.inputInfo, spendingTx)
 
-                val newHash =
-                  TransactionSignatureSerializer.hashForSignature(
-                    spendingTx,
-                    signInfo,
-                    signInfo.hashType)
+              val oldHash =
+                TransactionSignatureSerializer.hashForSignature(
+                  txSigComponent,
+                  signInfo.hashType)
 
-                if (oldHash != newHash) {
-                  println(oldHash.hex)
-                  println(newHash.hex)
-                }
+              val newHash =
+                TransactionSignatureSerializer.hashForSignature(
+                  spendingTx,
+                  signInfo,
+                  signInfo.hashType)
 
-                oldHash == newHash
+              if (oldHash != newHash) {
+                println(oldHash.hex)
+                println(newHash.hex)
               }
+
+              oldHash == newHash
             }
           }
-          .map(x => assert(x.forall(_ == true)))
+        }
+
+        correctHashesF.map(x => assert(x.forall(_ == true)))
     }
   }
 
@@ -489,33 +493,35 @@ class TransactionSignatureSerializerTest extends BitcoinSAsyncTest {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
-        StandardNonInteractiveFinalizer
+        val unsignedTxF = StandardNonInteractiveFinalizer
           .txFrom(outputs = destinations,
                   utxos = creditingTxsInfo,
                   feeRate = fee,
                   changeSPK = changeSPK)
-          .map { spendingTx =>
-            creditingTxsInfo.flatMap { signInfo =>
-              signInfo.signers.map { _ =>
-                val txSigComponent =
-                  TxSigComponent(signInfo.inputInfo, spendingTx)
 
-                val oldScript =
-                  BitcoinScriptUtil.calculateScriptForSigning(
-                    txSigComponent,
-                    txSigComponent.output.scriptPubKey.asm)
+        val correctScriptsF = unsignedTxF.map { spendingTx =>
+          creditingTxsInfo.flatMap { signInfo =>
+            signInfo.signers.map { _ =>
+              val txSigComponent =
+                TxSigComponent(signInfo.inputInfo, spendingTx)
 
-                val newScript =
-                  BitcoinScriptUtil.calculateScriptForSigning(
-                    spendingTx,
-                    signInfo,
-                    signInfo.output.scriptPubKey.asm)
+              val oldScript =
+                BitcoinScriptUtil.calculateScriptForSigning(
+                  txSigComponent,
+                  txSigComponent.output.scriptPubKey.asm)
 
-                oldScript == newScript
-              }
+              val newScript =
+                BitcoinScriptUtil.calculateScriptForSigning(
+                  spendingTx,
+                  signInfo,
+                  signInfo.output.scriptPubKey.asm)
+
+              oldScript == newScript
             }
           }
-          .map(x => assert(x.forall(_ == true)))
+        }
+
+        correctScriptsF.map(x => assert(x.forall(_ == true)))
     }
   }
 }

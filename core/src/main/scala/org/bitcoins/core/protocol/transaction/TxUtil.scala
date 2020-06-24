@@ -264,9 +264,10 @@ object TxUtil {
 
   /**
     * Checks if the fee is within a 'valid' range
+    *
     * @param estimatedFee the estimated amount of fee we should pay
-    * @param actualFee the actual amount of fee the transaction pays
-    * @param feeRate the fee rate in satoshis/vbyte we paid per byte on this tx
+    * @param actualFee    the actual amount of fee the transaction pays
+    * @param feeRate      the fee rate in satoshis/vbyte we paid per byte on this tx
     * @return
     */
   def isValidFeeRange(
@@ -305,6 +306,7 @@ object TxUtil {
     }
   }
 
+  /** Adds the signingInfo's scriptWitness from the transaction, if it has one */
   def addWitnessData(
       tx: Transaction,
       signingInfo: InputSigningInfo[InputInfo]): WitnessTransaction = {
@@ -325,5 +327,22 @@ object TxUtil {
       case (Some(scriptWitness), Some(index)) =>
         noWitnessWtx.updateWitness(index, scriptWitness)
     }
+  }
+
+  /** Returns the index of the InputInfo in the transaction */
+  def inputIndex(inputInfo: InputInfo, tx: Transaction): Int = {
+    inputIndexOpt(inputInfo, tx) match {
+      case Some(index) => index
+      case None =>
+        throw new IllegalArgumentException(
+          s"The transaction did not contain the expected outPoint (${inputInfo.outPoint}), got $tx")
+    }
+  }
+
+  /** Returns the index of the InputInfo in the transaction */
+  def inputIndexOpt(inputInfo: InputInfo, tx: Transaction): Option[Int] = {
+    tx.inputs.zipWithIndex
+      .find(_._1.previousOutput == inputInfo.outPoint)
+      .map(_._2)
   }
 }
