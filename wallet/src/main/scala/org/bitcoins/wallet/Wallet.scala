@@ -100,12 +100,17 @@ abstract class Wallet
     for {
       _ <- walletConfig.start()
       _ <- downloadMissingUtxos
-    } yield ()
+    } yield {
+      startWalletThread()
+    }
   }
 
   override def stop(): Unit = {
-    walletConfig.stop()
-    stopWalletThread()
+    for {
+      _ <- walletConfig.stop()
+    } yield {
+      stopWalletThread()
+    }
   }
 
   override def broadcastTransaction(transaction: Transaction): Future[Unit] =
