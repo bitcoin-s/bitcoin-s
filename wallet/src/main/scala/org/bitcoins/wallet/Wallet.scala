@@ -111,6 +111,7 @@ abstract class Wallet
     } yield {
       stopWalletThread()
     }
+    ()
   }
 
   override def broadcastTransaction(transaction: Transaction): Future[Unit] =
