@@ -1,7 +1,11 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.serializers.script.RawScriptWitnessParser
+import org.bitcoins.core.script.constant.{OP_0, ScriptNumberOperation}
+import org.bitcoins.core.serializers.script.{
+  RawScriptWitnessParser,
+  ScriptParser
+}
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{
   ECDigitalSignature,
@@ -104,6 +108,21 @@ sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
       bytes.length >= 67 && bytes.length <= 73)
 
     relevantStack.map(ECDigitalSignature.fromBytes)
+  }
+
+  // Note that this is not guaranteed to work for non-standard script signatures
+  lazy val scriptSignature: ScriptSignature = {
+    val asm = stack.toVector.tail.reverse.flatMap { bytes =>
+      if (bytes.isEmpty) {
+        Vector(OP_0)
+      } else if (bytes.length == 1 && bytes.head <= 16 && bytes.head >= -1) {
+        ScriptNumberOperation.fromNumber(bytes.head.toLong).toVector
+      } else {
+        ScriptParser.fromBytes(CompactSizeUInt.calc(bytes).bytes ++ bytes)
+      }
+    }
+
+    ScriptSignature.fromAsm(asm)
   }
 
   override def toString =
