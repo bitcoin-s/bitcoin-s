@@ -87,7 +87,8 @@ case class DLCCETSignatureDAO()(implicit
       (eventId, outcomeHash, signature) <> (fromTuple, toTuple)
 
     def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_dlc", sourceColumns = (eventId, outcomeHash))
+      primaryKey(name = "pk_dlc_cet_sigs",
+                 sourceColumns = (eventId, outcomeHash))
 
     def fk: ForeignKeyQuery[_, DLCDb] =
       foreignKey("fk_eventId",

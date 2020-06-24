@@ -122,7 +122,7 @@ case class DLCAcceptDAO()(implicit
        changeAddress) <> (fromTuple, toTuple)
 
     def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_dlc", sourceColumns = eventId)
+      primaryKey(name = "pk_dlc_accept", sourceColumns = eventId)
 
     def fk: ForeignKeyQuery[_, DLCDb] =
       foreignKey("fk_eventId",
