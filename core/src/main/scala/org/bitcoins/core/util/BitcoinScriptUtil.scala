@@ -34,12 +34,7 @@ import org.bitcoins.core.script.{
   PreExecutionScriptProgram
 }
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.wallet.utxo.{
-  InputInfo,
-  InputSigningInfo,
-  P2SHInputInfo,
-  ScriptSignatureParams
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import scodec.bits.ByteVector
 
@@ -727,95 +722,25 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       inputMap: InputPSBTMap,
       index: Int,
       flags: Seq[ScriptFlag] = Policy.standardFlags): Try[Transaction] = {
-    val wUtxoOpt = inputMap.witnessUTXOOpt
-    val utxoOpt = inputMap.nonWitnessOrUnknownUTXOOpt
 
-    (wUtxoOpt, tx) match {
-      case (Some(wUtxo), wtx: WitnessTransaction) =>
-        val output = wUtxo.witnessUTXO
-        val txSigComponent =
-          WitnessTxSigComponent(wtx, UInt32(index), output, flags)
-        val inputResult =
-          ScriptInterpreter.run(PreExecutionScriptProgram(txSigComponent))
+    val txIn = tx.inputs(index)
 
-        if (inputResult == ScriptOk) {
-          Success(tx)
-        } else {
-          Failure(
-            new RuntimeException(s"Input $index was invalid: $inputResult"))
-        }
-      case (Some(_), _: NonWitnessTransaction) =>
-        Failure(new RuntimeException(
-          s"Extracted program is not witness transaction, but input $index has WitnessUTXO record"))
-      case (None, _: NonWitnessTransaction) =>
-        utxoOpt match {
-          case Some(utxo) =>
-            val input = tx.inputs(index)
-            val output =
-              utxo.transactionSpent.outputs(input.previousOutput.vout.toInt)
-            val txSigComponent =
-              BaseTxSigComponent(tx, UInt32(index), output, flags)
-            val inputResult =
-              ScriptInterpreter.run(PreExecutionScriptProgram(txSigComponent))
-            if (inputResult == ScriptOk) {
-              Success(tx)
-            } else {
-              Failure(
-                new RuntimeException(s"Input $index was invalid: $inputResult"))
-            }
-          case None =>
-            logger.info(
-              s"No UTXO record was provided for input $index, hence no validation was done for this input")
+    val (preImages, condPath) =
+      InputInfo.getHashPreImagesAndConditionalPath(tx, index)
 
-            Success(tx)
-        }
-      case (None, wtx: WitnessTransaction) =>
-        utxoOpt match {
-          case Some(utxo) =>
-            val input = tx.inputs(index)
-            val output =
-              utxo.transactionSpent.outputs(input.previousOutput.vout.toInt)
+    val inputInfo = inputMap.toInputInfo(txIn,
+                                         conditionalPath = condPath,
+                                         preImages = preImages)
 
-            val txSigComponent = output.scriptPubKey match {
-              case _: WitnessScriptPubKey =>
-                WitnessTxSigComponent(wtx, UInt32(index), output, flags)
-              case _: P2SHScriptPubKey =>
-                (inputMap.finalizedScriptWitnessOpt,
-                 inputMap.finalizedScriptSigOpt) match {
-                  case (Some(_), _) =>
-                    WitnessTxSigComponent(wtx, UInt32(index), output, flags)
-                  case (None, Some(finalizedScriptSig)) =>
-                    finalizedScriptSig.scriptSig match {
-                      case p2sh: P2SHScriptSignature
-                          if p2sh.redeemScript
-                            .isInstanceOf[WitnessScriptPubKey] =>
-                        WitnessTxSigComponent(wtx, UInt32(index), output, flags)
-                      case _: ScriptSignature =>
-                        BaseTxSigComponent(wtx, UInt32(index), output, flags)
-                    }
+    val txSigComponent = TxSigComponent(inputInfo, tx, flags)
 
-                  case (None, None) =>
-                    BaseTxSigComponent(wtx, UInt32(index), output, flags)
-                }
-              case _: NonWitnessScriptPubKey =>
-                BaseTxSigComponent(wtx, UInt32(index), output, flags)
-            }
+    val inputResult =
+      ScriptInterpreter.run(PreExecutionScriptProgram(txSigComponent))
 
-            val inputResult =
-              ScriptInterpreter.run(PreExecutionScriptProgram(txSigComponent))
-
-            if (inputResult == ScriptOk) {
-              Success(tx)
-            } else {
-              Failure(
-                new RuntimeException(s"Input $index was invalid: $inputResult"))
-            }
-          case None =>
-            logger.info(
-              s"No UTXO record was provided for input $index, hence no validation was done for this input")
-
-            Success(tx)
-        }
+    if (inputResult == ScriptOk) {
+      Success(tx)
+    } else {
+      Failure(new RuntimeException(s"Input $index was invalid: $inputResult"))
     }
   }
 }

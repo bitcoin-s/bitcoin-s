@@ -140,7 +140,26 @@ object TxSigComponent {
       unsignedTx: Transaction,
       flags: Seq[ScriptFlag]): TxSigComponent = {
     val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
-    P2SHTxSigComponent(unsignedTx, UInt32(idx), inputInfo.output, flags)
+
+    val updatedTx = unsignedTx.inputs(idx).scriptSignature match {
+      case EmptyScriptSignature =>
+        val emptyInput = unsignedTx.inputs(idx)
+        val newInput = TransactionInput(
+          emptyInput.previousOutput,
+          P2SHScriptSignature(EmptyScriptSignature, inputInfo.redeemScript),
+          emptyInput.sequence)
+        unsignedTx.updateInput(idx, newInput)
+      case _: P2SHScriptSignature =>
+        unsignedTx
+      case invalid @ (_: CLTVScriptSignature | _: CSVScriptSignature |
+          _: ConditionalScriptSignature | _: MultiSignatureScriptSignature |
+          _: NonStandardScriptSignature | _: P2PKHScriptSignature |
+          _: P2PKScriptSignature | TrivialTrueScriptSignature) =>
+        throw new IllegalArgumentException(
+          s"Unexpected script sig with P2SHNonSegwitInputInfo, got $invalid")
+    }
+
+    P2SHTxSigComponent(updatedTx, UInt32(idx), inputInfo.output, flags)
   }
 
   def fromRawInput(

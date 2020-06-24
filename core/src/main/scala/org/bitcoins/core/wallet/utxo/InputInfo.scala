@@ -6,6 +6,8 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.{ECPublicKey, NetworkElement, Sign}
 
+import scala.annotation.tailrec
+
 /** An InputInfo contains all information other than private keys about
   * a particular spending condition in a UTXO.
   *
@@ -110,6 +112,53 @@ object InputInfo {
     }
   }
 
+  /**
+    * Returns the needed hash pre-images and conditional path that was used to spend the input
+    * at inputIndex, this is calculated through the ScriptSignature and ScriptWitness
+    */
+  def getHashPreImagesAndConditionalPath(
+      signedTransaction: Transaction,
+      inputIndex: Int): (Vector[NetworkElement], ConditionalPath) = {
+
+    val txIn = signedTransaction.inputs(inputIndex)
+
+    @tailrec
+    def getPreImagesAndCondPath(
+        scriptSignature: ScriptSignature,
+        prevCond: ConditionalPath = ConditionalPath.NoCondition): (
+        Vector[NetworkElement],
+        ConditionalPath) = {
+      scriptSignature match {
+        case p2pkh: P2PKHScriptSignature =>
+          (Vector(p2pkh.publicKey), prevCond)
+        case cond: ConditionalScriptSignature =>
+          val path = ConditionalPath.toVector(prevCond) :+ cond.isTrue
+          getPreImagesAndCondPath(cond.nestedScriptSig,
+                                  ConditionalPath.fromBranch(path))
+        case p2sh: P2SHScriptSignature =>
+          getPreImagesAndCondPath(p2sh.scriptSignatureNoRedeemScript, prevCond)
+        case _: ScriptSignature =>
+          (Vector.empty, prevCond)
+      }
+    }
+
+    signedTransaction match {
+      case EmptyTransaction =>
+        (Vector.empty, ConditionalPath.NoCondition)
+      case _: BaseTransaction =>
+        getPreImagesAndCondPath(txIn.scriptSignature)
+      case wtx: WitnessTransaction =>
+        wtx.witness.witnesses(inputIndex) match {
+          case p2wpkh: P2WPKHWitnessV0 =>
+            (Vector(p2wpkh.pubKey), ConditionalPath.NoCondition)
+          case p2wsh: P2WSHWitnessV0 =>
+            getPreImagesAndCondPath(p2wsh.scriptSignature)
+          case EmptyScriptWitness =>
+            getPreImagesAndCondPath(txIn.scriptSignature)
+        }
+    }
+  }
+
   def apply(
       outPoint: TransactionOutPoint,
       output: TransactionOutput,
@@ -207,7 +256,7 @@ object RawInputInfo {
         } match {
           case None =>
             throw new IllegalArgumentException(
-              "P2PKH pre-image must be specified for P2PKH ScriptPubKey")
+              s"P2PKH pre-image must be specified for P2PKH ScriptPubKey, got $hashPreImages")
           case Some(p2pkhPreImage) =>
             require(
               P2PKHScriptPubKey(p2pkhPreImage) == p2pkh,

@@ -140,8 +140,8 @@ case class WalletAppConfig(
     *  1. A seed exists
     *  2. wallet exists
     *  3. The account exists */
-  private def hasWallet()(
-      implicit walletConf: WalletAppConfig,
+  private def hasWallet()(implicit
+      walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Boolean] = {
     if (walletConf.seedExists()) {
       val hdCoin = walletConf.defaultAccount.coin

@@ -510,12 +510,19 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     )
   }
 
-  def toUTXOSigningInfo(
+  def toInputInfo(
       txIn: TransactionInput,
-      signer: Sign,
-      conditionalPath: ConditionalPath =
-        ConditionalPath.NoCondition): ECSignatureParams[InputInfo] = {
-    require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
+      conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
+      preImages: Vector[NetworkElement] = Vector.empty): InputInfo = {
+    if (isFinalized)
+      toInputInfoFinalized(txIn, conditionalPath, preImages)
+    else toInputInfoNonFinalized(txIn, conditionalPath, preImages)
+  }
+
+  def toInputInfoFinalized(
+      txIn: TransactionInput,
+      conditionalPath: ConditionalPath,
+      preImages: Vector[NetworkElement]): InputInfo = {
     val outPoint = txIn.previousOutput
 
     val witVec = getRecords(WitnessUTXOKeyId)
@@ -528,13 +535,54 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       tx.outputs(txIn.previousOutput.vout.toInt)
     } else {
       throw new UnsupportedOperationException(
-        "Not enough information in the InputPSBTMap to get a valid NewSpendingInfo")
+        "Not enough information in the InputPSBTMap to get a valid InputInfo")
     }
 
-    val redeemScriptVec = getRecords(RedeemScriptKeyId)
-    val redeemScriptOpt =
-      if (redeemScriptVec.size == 1) Some(redeemScriptVec.head.redeemScript)
-      else None
+    val redeemScriptOpt = finalizedScriptSigOpt match {
+      case Some(scriptSig) =>
+        scriptSig.scriptSig match {
+          case p2sh: P2SHScriptSignature =>
+            Some(p2sh.redeemScript)
+          case TrivialTrueScriptSignature | EmptyScriptSignature |
+              _: CLTVScriptSignature | _: CSVScriptSignature |
+              _: ConditionalScriptSignature | _: MultiSignatureScriptSignature |
+              _: NonStandardScriptSignature | _: P2PKHScriptSignature |
+              _: P2PKScriptSignature =>
+            None
+        }
+      case None => None
+    }
+
+    val scriptWitnessOpt = finalizedScriptWitnessOpt.map(_.scriptWitness)
+
+    InputInfo(outPoint,
+              output,
+              redeemScriptOpt,
+              scriptWitnessOpt,
+              conditionalPath,
+              preImages)
+  }
+
+  private def toInputInfoNonFinalized(
+      txIn: TransactionInput,
+      conditionalPath: ConditionalPath,
+      preImages: Vector[NetworkElement]): InputInfo = {
+    val outPoint = txIn.previousOutput
+
+    val witVec = getRecords(WitnessUTXOKeyId)
+    val txVec = getRecords(NonWitnessUTXOKeyId)
+
+    val output = if (witVec.size == 1) {
+      witVec.head.witnessUTXO
+    } else if (txVec.size == 1) {
+      val tx = txVec.head.transactionSpent
+      tx.outputs(txIn.previousOutput.vout.toInt)
+    } else {
+      throw new UnsupportedOperationException(
+        "Not enough information in the InputPSBTMap to get a valid InputInfo")
+    }
+
+    val redeemScriptOpt = this.redeemScriptOpt.map(_.redeemScript)
 
     val scriptWitnessVec = getRecords(WitnessScriptKeyId)
     val scriptWitnessOpt =
@@ -545,22 +593,35 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
           .isInstanceOf[P2WPKHWitnessSPKV0] || redeemScriptOpt.exists(
           _.isInstanceOf[P2WPKHWitnessSPKV0])
       ) {
-        Some(P2WPKHWitnessV0(signer.publicKey))
+        require(preImages.size == 1 && preImages.head.isInstanceOf[ECPublicKey],
+                "P2WPKHWitnessV0 must have it's public key as a pre-image")
+        Some(P2WPKHWitnessV0(preImages.head.asInstanceOf[ECPublicKey]))
       } else {
         None
       }
+
+    InputInfo(outPoint,
+              output,
+              redeemScriptOpt,
+              scriptWitnessOpt,
+              conditionalPath,
+              preImages)
+  }
+
+  def toUTXOSigningInfo(
+      txIn: TransactionInput,
+      signer: Sign,
+      conditionalPath: ConditionalPath =
+        ConditionalPath.NoCondition): ECSignatureParams[InputInfo] = {
+    require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
+    val txVec = getRecords(NonWitnessUTXOKeyId)
 
     val hashTypeVec = getRecords(SigHashTypeKeyId)
     val hashType =
       if (hashTypeVec.size == 1) hashTypeVec.head.hashType
       else HashType.sigHashAll
 
-    val inputInfo = InputInfo(outPoint,
-                              output,
-                              redeemScriptOpt,
-                              scriptWitnessOpt,
-                              conditionalPath,
-                              Vector(signer.publicKey))
+    val inputInfo = toInputInfo(txIn, conditionalPath, Vector(signer.publicKey))
 
     ECSignatureParams(inputInfo, txVec.head.transactionSpent, signer, hashType)
   }
