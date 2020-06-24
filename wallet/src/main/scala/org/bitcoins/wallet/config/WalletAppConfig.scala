@@ -137,14 +137,20 @@ case class WalletAppConfig(
   }
 
   /** Checks if the following exist
-    *  1. A wallet exists
-    *  2. seed exists
+    *  1. A seed exists
+    *  2. wallet exists
     *  3. The account exists */
-  def hasWallet()(implicit ec: ExecutionContext): Future[Boolean] = {
-    val walletDB = dbPath.resolve(dbName)
-    val hdCoin = defaultAccount.coin
-    if (Files.exists(walletDB) && seedExists()) {
-      AccountDAO()(ec, this).read((hdCoin, 0)).map(_.isDefined)
+  private def hasWallet()(
+      implicit walletConf: WalletAppConfig,
+      ec: ExecutionContext): Future[Boolean] = {
+    if (walletConf.seedExists()) {
+      val hdCoin = walletConf.defaultAccount.coin
+      val walletDB = walletConf.dbPath resolve walletConf.dbName
+      if (walletConf.driverName == "postgresql" || Files.exists(walletDB)) {
+        AccountDAO().read((hdCoin, 0)).map(_.isDefined)
+      } else {
+        Future.successful(false)
+      }
     } else {
       Future.successful(false)
     }
