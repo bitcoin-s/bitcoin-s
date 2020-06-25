@@ -9,15 +9,14 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
 import org.scalatest._
-import org.scalatest.flatspec.FixtureAsyncFlatSpec
-import org.scalatest.flatspec.AsyncFlatSpec
-import org.scalatest.matchers.must.Matchers
 import org.scalatest.concurrent.AsyncTimeLimitedTests
+import org.scalatest.flatspec.{AsyncFlatSpec, FixtureAsyncFlatSpec}
+import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.Span
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 /** This is a base trait in bitcoin-s for async tests
   */
@@ -96,8 +95,18 @@ trait BaseAsyncTest
       testRunFs: scala.collection.mutable.Builder[
         Future[Assertion],
         Vector[Future[Assertion]]]): Future[Assertion] = {
+
+    val result =
+      try {
+        testRunFs.result()
+      } catch {
+        case _: NullPointerException =>
+          // if it fails hopefully it works the second time
+          testRunFs.result()
+      }
+
     val testRunsF: Future[Vector[Assertion]] =
-      Future.sequence(testRunFs.result())
+      Future.sequence(result)
 
     testRunsF.map(_.reduce((_, testRun) => testRun))
   }
