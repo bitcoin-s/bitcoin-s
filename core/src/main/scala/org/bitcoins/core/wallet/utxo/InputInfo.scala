@@ -2,13 +2,11 @@ package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{
-  OutputReference,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.{ECPublicKey, NetworkElement, Sign}
+
+import scala.annotation.tailrec
 
 /** An InputInfo contains all information other than private keys about
   * a particular spending condition in a UTXO.
@@ -39,15 +37,17 @@ sealed trait InputInfo {
   def requiredSigs: Int
 
   def toSpendingInfo(
+      prevTransaction: Transaction,
       signers: Vector[Sign],
       hashType: HashType): ScriptSignatureParams[InputInfo] = {
-    ScriptSignatureParams(this, signers, hashType)
+    ScriptSignatureParams(this, prevTransaction, signers, hashType)
   }
 
   def toSpendingInfo(
+      prevTransaction: Transaction,
       signer: Sign,
       hashType: HashType): ECSignatureParams[InputInfo] = {
-    ECSignatureParams(this, signer, hashType)
+    ECSignatureParams(this, prevTransaction, signer, hashType)
   }
 
   def genericWithSignFrom(
@@ -110,6 +110,57 @@ object InputInfo {
     getHashPreImages(inputInfo).collectFirst {
       case pubKey: ECPublicKey => pubKey
     }
+  }
+
+  /**
+    * Returns the needed hash pre-images and conditional path that was used to spend the input
+    * at inputIndex, this is calculated through the ScriptSignature and ScriptWitness
+    */
+  def getHashPreImagesAndConditionalPath(
+      signedTransaction: Transaction,
+      inputIndex: Int): (Vector[NetworkElement], ConditionalPath) = {
+
+    val txIn = signedTransaction.inputs(inputIndex)
+
+    @tailrec
+    def getPreImagesAndCondPath(
+        scriptSignature: ScriptSignature,
+        conditionalPath: Vector[Boolean] = Vector.empty): (
+        Vector[NetworkElement],
+        Vector[Boolean]) = {
+      scriptSignature match {
+        case p2pkh: P2PKHScriptSignature =>
+          (Vector(p2pkh.publicKey), conditionalPath)
+        case cond: ConditionalScriptSignature =>
+          val path = conditionalPath :+ cond.isTrue
+          getPreImagesAndCondPath(cond.nestedScriptSig, path)
+        case p2sh: P2SHScriptSignature =>
+          getPreImagesAndCondPath(p2sh.scriptSignatureNoRedeemScript,
+                                  conditionalPath)
+        case _: ScriptSignature =>
+          (Vector.empty, conditionalPath)
+      }
+    }
+
+    val (preImages, conditionsVec) = signedTransaction match {
+      case EmptyTransaction =>
+        (Vector.empty, Vector.empty)
+      case _: BaseTransaction =>
+        getPreImagesAndCondPath(txIn.scriptSignature)
+      case wtx: WitnessTransaction =>
+        wtx.witness.witnesses(inputIndex) match {
+          case p2wpkh: P2WPKHWitnessV0 =>
+            (Vector(p2wpkh.pubKey), Vector.empty)
+          case p2wsh: P2WSHWitnessV0 =>
+            getPreImagesAndCondPath(p2wsh.scriptSignature)
+          case EmptyScriptWitness =>
+            getPreImagesAndCondPath(txIn.scriptSignature)
+        }
+    }
+
+    val conditionalPath = ConditionalPath.fromBranch(conditionsVec)
+
+    (preImages, conditionalPath)
   }
 
   def apply(
@@ -201,14 +252,15 @@ object RawInputInfo {
       conditionalPath: ConditionalPath,
       hashPreImages: Vector[NetworkElement] = Vector.empty): RawInputInfo = {
     scriptPubKey match {
-      case p2pk: P2PKScriptPubKey => P2PKInputInfo(outPoint, amount, p2pk)
+      case p2pk: P2PKScriptPubKey =>
+        P2PKInputInfo(outPoint, amount, p2pk)
       case p2pkh: P2PKHScriptPubKey =>
         hashPreImages.collectFirst {
           case pubKey: ECPublicKey => pubKey
         } match {
           case None =>
             throw new IllegalArgumentException(
-              "P2PKH pre-image must be specified for P2PKH ScriptPubKey")
+              s"P2PKH pre-image must be specified for P2PKH ScriptPubKey, got $hashPreImages")
           case Some(p2pkhPreImage) =>
             require(
               P2PKHScriptPubKey(p2pkhPreImage) == p2pkh,

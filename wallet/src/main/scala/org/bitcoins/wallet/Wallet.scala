@@ -305,7 +305,13 @@ abstract class Wallet
       _ = require(diff.isEmpty,
                   s"Not all OutPoints belong to this wallet, diff $diff")
 
-      utxos = utxoDbs.map(_.toUTXOInfo(keyManager))
+      prevTxFs = utxoDbs.map(utxo =>
+        transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
+      prevTxs <- Future.sequence(prevTxFs)
+      utxos =
+        utxoDbs
+          .zip(prevTxs)
+          .map(info => info._1.toUTXOInfo(keyManager, info._2))
 
       changeAddr <- getNewChangeAddress(fromAccount.hdAccount)
 

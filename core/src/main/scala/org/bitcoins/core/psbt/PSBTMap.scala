@@ -3,24 +3,12 @@ package org.bitcoins.core.psbt
 import org.bitcoins.core.byteVectorOrdering
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{
-  NonWitnessTransaction,
-  Transaction,
-  TransactionInput,
-  TransactionOutput,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  Factory,
-  NetworkElement,
-  Sha256Hash160Digest,
-  Sign
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -516,17 +504,25 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 
     ScriptSignatureParams(
       infoSingle.inputInfo,
+      infoSingle.prevTransaction,
       signers,
       infoSingle.hashType
     )
   }
 
-  def toUTXOSigningInfo(
+  def toInputInfo(
       txIn: TransactionInput,
-      signer: Sign,
-      conditionalPath: ConditionalPath =
-        ConditionalPath.NoCondition): ECSignatureParams[InputInfo] = {
-    require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
+      conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
+      preImages: Vector[NetworkElement] = Vector.empty): InputInfo = {
+    if (isFinalized)
+      toInputInfoFinalized(txIn, conditionalPath, preImages)
+    else toInputInfoNonFinalized(txIn, conditionalPath, preImages)
+  }
+
+  def toInputInfoFinalized(
+      txIn: TransactionInput,
+      conditionalPath: ConditionalPath,
+      preImages: Vector[NetworkElement]): InputInfo = {
     val outPoint = txIn.previousOutput
 
     val witVec = getRecords(WitnessUTXOKeyId)
@@ -539,13 +535,54 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       tx.outputs(txIn.previousOutput.vout.toInt)
     } else {
       throw new UnsupportedOperationException(
-        "Not enough information in the InputPSBTMap to get a valid NewSpendingInfo")
+        "Not enough information in the InputPSBTMap to get a valid InputInfo")
     }
 
-    val redeemScriptVec = getRecords(RedeemScriptKeyId)
-    val redeemScriptOpt =
-      if (redeemScriptVec.size == 1) Some(redeemScriptVec.head.redeemScript)
-      else None
+    val redeemScriptOpt = finalizedScriptSigOpt match {
+      case Some(scriptSig) =>
+        scriptSig.scriptSig match {
+          case p2sh: P2SHScriptSignature =>
+            Some(p2sh.redeemScript)
+          case TrivialTrueScriptSignature | EmptyScriptSignature |
+              _: CLTVScriptSignature | _: CSVScriptSignature |
+              _: ConditionalScriptSignature | _: MultiSignatureScriptSignature |
+              _: NonStandardScriptSignature | _: P2PKHScriptSignature |
+              _: P2PKScriptSignature =>
+            None
+        }
+      case None => None
+    }
+
+    val scriptWitnessOpt = finalizedScriptWitnessOpt.map(_.scriptWitness)
+
+    InputInfo(outPoint,
+              output,
+              redeemScriptOpt,
+              scriptWitnessOpt,
+              conditionalPath,
+              preImages)
+  }
+
+  private def toInputInfoNonFinalized(
+      txIn: TransactionInput,
+      conditionalPath: ConditionalPath,
+      preImages: Vector[NetworkElement]): InputInfo = {
+    val outPoint = txIn.previousOutput
+
+    val witVec = getRecords(WitnessUTXOKeyId)
+    val txVec = getRecords(NonWitnessUTXOKeyId)
+
+    val output = if (witVec.size == 1) {
+      witVec.head.witnessUTXO
+    } else if (txVec.size == 1) {
+      val tx = txVec.head.transactionSpent
+      tx.outputs(txIn.previousOutput.vout.toInt)
+    } else {
+      throw new RuntimeException(
+        "Not enough information in the InputPSBTMap to get a valid InputInfo")
+    }
+
+    val redeemScriptOpt = this.redeemScriptOpt.map(_.redeemScript)
 
     val scriptWitnessVec = getRecords(WitnessScriptKeyId)
     val scriptWitnessOpt =
@@ -556,52 +593,80 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
           .isInstanceOf[P2WPKHWitnessSPKV0] || redeemScriptOpt.exists(
           _.isInstanceOf[P2WPKHWitnessSPKV0])
       ) {
-        Some(P2WPKHWitnessV0(signer.publicKey))
+        require(preImages.size == 1,
+                "P2WPKHWitnessV0 must have it's public key as a pre-image")
+
+        preImages.head match {
+          case pubKey: ECPublicKey =>
+            Some(P2WPKHWitnessV0(pubKey))
+          case _: NetworkElement =>
+            throw new IllegalArgumentException(
+              "P2WPKHWitnessV0 must have it's public key as a pre-image")
+        }
       } else {
         None
       }
+
+    InputInfo(outPoint,
+              output,
+              redeemScriptOpt,
+              scriptWitnessOpt,
+              conditionalPath,
+              preImages)
+  }
+
+  def toUTXOSigningInfo(
+      txIn: TransactionInput,
+      signer: Sign,
+      conditionalPath: ConditionalPath =
+        ConditionalPath.NoCondition): ECSignatureParams[InputInfo] = {
+    require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
+    val txVec = getRecords(NonWitnessUTXOKeyId)
 
     val hashTypeVec = getRecords(SigHashTypeKeyId)
     val hashType =
       if (hashTypeVec.size == 1) hashTypeVec.head.hashType
       else HashType.sigHashAll
 
-    val inputInfo = InputInfo(outPoint,
-                              output,
-                              redeemScriptOpt,
-                              scriptWitnessOpt,
-                              conditionalPath,
-                              Vector(signer.publicKey))
+    val inputInfo = toInputInfo(txIn, conditionalPath, Vector(signer.publicKey))
 
-    ECSignatureParams(inputInfo, signer, hashType)
+    ECSignatureParams(inputInfo, txVec.head.transactionSpent, signer, hashType)
   }
 
   private def changeToWitnessUTXO(
       transactionOutput: TransactionOutput): InputPSBTMap = {
     val newElements = transactionOutput.scriptPubKey match {
-      case _: WitnessScriptPubKey =>
-        filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
       case _: P2SHScriptPubKey =>
-        if (
-          redeemScriptOpt.isDefined && redeemScriptOpt.get.redeemScript
-            .isInstanceOf[WitnessScriptPubKey]
-        ) {
-          filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
+        if (redeemScriptOpt.isDefined) {
+          val redeemScript = redeemScriptOpt.get.redeemScript
+          // SegwitV0 has a vulnerability where we need the full funding tx to be safe
+          // future versions of segwit should be considered safe however
+          if (
+            redeemScript.isInstanceOf[WitnessScriptPubKey] && !redeemScript
+              .isInstanceOf[WitnessScriptPubKeyV0]
+          ) {
+            filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
+          } else {
+            elements
+          }
         } else {
           elements
         }
-      case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
-          _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
-          EmptyScriptPubKey | _: LockTimeScriptPubKey |
-          _: NonStandardScriptPubKey | _: WitnessCommitment |
-          _: ConditionalScriptPubKey =>
+      case _: WitnessScriptPubKeyV0 | _: P2PKHScriptPubKey |
+          _: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
+          _: MultiSignatureScriptPubKey | EmptyScriptPubKey |
+          _: LockTimeScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment | _: ConditionalScriptPubKey =>
         elements
+      case _: WitnessScriptPubKey =>
+        filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
     }
 
     InputPSBTMap(newElements)
   }
 
   /**
+    * After a discovered vulnerability in BIP-143, this is no longer safe for SegwitV0
     * Check if this satisfies criteria for witness. If it does, delete the NonWitnessOrUnknownUTXO field
     * This is useful for following reasons.
     * 1. Compresses the size of the data
@@ -639,25 +704,20 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
     * the corresponding PSBT's unsigned transaction, and if this is
     * a non-witness spend, the transaction being spent
     */
-  def finalizedFromNewSpendingInfo(
+  def finalizedFromSpendingInfo(
       spendingInfo: ScriptSignatureParams[InputInfo],
-      unsignedTx: Transaction,
-      nonWitnessTxOpt: Option[Transaction])(implicit
+      unsignedTx: Transaction)(implicit
       ec: ExecutionContext): Future[InputPSBTMap] = {
     val sigComponentF = BitcoinSigner
       .sign(spendingInfo, unsignedTx, isDummySignature = false)
 
     sigComponentF.map { sigComponent =>
       val utxos = spendingInfo.inputInfo match {
-        case _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
+        case _: UnassignedSegwitNativeInputInfo =>
           Vector(WitnessUTXO(spendingInfo.output))
         case _: RawInputInfo | _: P2SHNonSegwitInputInfo |
-            _: UnassignedSegwitNativeInputInfo =>
-          nonWitnessTxOpt match {
-            case None => Vector.empty
-            case Some(nonWitnessTx) =>
-              Vector(NonWitnessOrUnknownUTXO(nonWitnessTx))
-          }
+            _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
+          Vector(NonWitnessOrUnknownUTXO(spendingInfo.prevTransaction))
       }
 
       val scriptSig =
@@ -685,8 +745,7 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
     */
   def fromUTXOInfo(
       spendingInfo: ScriptSignatureParams[InputInfo],
-      unsignedTx: Transaction,
-      nonWitnessTxOpt: Option[Transaction])(implicit
+      unsignedTx: Transaction)(implicit
       ec: ExecutionContext): Future[InputPSBTMap] = {
     val sigsF = spendingInfo.toSingles.map { spendingInfoSingle =>
       BitcoinSigner.signSingle(spendingInfoSingle,
@@ -700,15 +759,11 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
       val builder = Vector.newBuilder[InputPSBTRecord]
 
       spendingInfo.inputInfo match {
-        case _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
+        case _: UnassignedSegwitNativeInputInfo =>
           builder.+=(WitnessUTXO(spendingInfo.output))
         case _: RawInputInfo | _: P2SHNonSegwitInputInfo |
-            _: UnassignedSegwitNativeInputInfo =>
-          nonWitnessTxOpt match {
-            case None => ()
-            case Some(nonWitnessTx) =>
-              builder.+=(NonWitnessOrUnknownUTXO(nonWitnessTx))
-          }
+            _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
+          builder.+=(NonWitnessOrUnknownUTXO(spendingInfo.prevTransaction))
       }
 
       builder.++=(sigs)

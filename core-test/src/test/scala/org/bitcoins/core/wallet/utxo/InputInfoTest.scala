@@ -3,13 +3,7 @@ package org.bitcoins.core.wallet.utxo
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  TransactionConstants,
-  TransactionOutPoint,
-  TransactionOutput
-}
-import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkit.core.gen.{
   GenUtil,
@@ -161,7 +155,7 @@ class InputInfoTest extends BitcoinSAsyncTest {
     }
   }
 
-  it should "successfully return UnassingedSegwitNativeUTXOSpendingInfoFull" in {
+  it should "successfully return UnassignedSegwitNativeUTXOSpendingInfoFull" in {
     val unassingedWitnessSPK = UnassignedWitnessScriptPubKey.fromAsm(
       P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey).asm)
 

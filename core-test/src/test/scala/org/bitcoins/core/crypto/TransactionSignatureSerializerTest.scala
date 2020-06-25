@@ -8,7 +8,10 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
+import org.bitcoins.core.wallet.builder.StandardNonInteractiveFinalizer
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.testkit.core.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import scala.util.Try
@@ -401,5 +404,124 @@ class TransactionSignatureSerializerTest extends BitcoinSAsyncTest {
     Try(SIGHASH_ALL_ANYONECANPAY(z)).isFailure must be(true)
     Try(SIGHASH_NONE_ANYONECANPAY(z)).isFailure must be(true)
     Try(SIGHASH_SINGLE_ANYONECANPAY(z)).isFailure must be(true)
+  }
+
+  it should "have old and new serializeForSignature functions agree" in {
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
+                ScriptGenerators.scriptPubKey) {
+      case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
+        val fee = SatoshisPerVirtualByte(Satoshis(100))
+
+        val unsignedTxF = StandardNonInteractiveFinalizer
+          .txFrom(outputs = destinations,
+                  utxos = creditingTxsInfo,
+                  feeRate = fee,
+                  changeSPK = changeSPK)
+
+        val correctScriptsF = unsignedTxF.map { spendingTx =>
+          creditingTxsInfo.flatMap { signInfo =>
+            signInfo.signers.map { _ =>
+              val txSigComponent =
+                TxSigComponent(signInfo.inputInfo, spendingTx)
+
+              val oldBytes =
+                TransactionSignatureSerializer.serializeForSignature(
+                  txSigComponent,
+                  signInfo.hashType)
+
+              val newBytes =
+                TransactionSignatureSerializer.serializeForSignature(
+                  spendingTx,
+                  signInfo,
+                  signInfo.hashType)
+
+              oldBytes == newBytes
+            }
+          }
+        }
+
+        correctScriptsF.map(x => assert(x.forall(_ == true)))
+    }
+  }
+
+  it should "have old and new hashForSignature functions agree" in {
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
+                ScriptGenerators.scriptPubKey) {
+      case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
+        val fee = SatoshisPerVirtualByte(Satoshis(100))
+
+        val unsignedTxF = StandardNonInteractiveFinalizer
+          .txFrom(outputs = destinations,
+                  utxos = creditingTxsInfo,
+                  feeRate = fee,
+                  changeSPK = changeSPK)
+
+        val correctHashesF = unsignedTxF.map { spendingTx =>
+          creditingTxsInfo.flatMap { signInfo =>
+            signInfo.signers.map { _ =>
+              val txSigComponent =
+                TxSigComponent(signInfo.inputInfo, spendingTx)
+
+              val oldHash =
+                TransactionSignatureSerializer.hashForSignature(
+                  txSigComponent,
+                  signInfo.hashType)
+
+              val newHash =
+                TransactionSignatureSerializer.hashForSignature(
+                  spendingTx,
+                  signInfo,
+                  signInfo.hashType)
+
+              if (oldHash != newHash) {
+                println(oldHash.hex)
+                println(newHash.hex)
+              }
+
+              oldHash == newHash
+            }
+          }
+        }
+
+        correctHashesF.map(x => assert(x.forall(_ == true)))
+    }
+  }
+
+  it should "have old and new calculateScriptForSigning functions agree" in {
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
+                ScriptGenerators.scriptPubKey) {
+      case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
+        val fee = SatoshisPerVirtualByte(Satoshis(100))
+
+        val unsignedTxF = StandardNonInteractiveFinalizer
+          .txFrom(outputs = destinations,
+                  utxos = creditingTxsInfo,
+                  feeRate = fee,
+                  changeSPK = changeSPK)
+
+        val correctScriptsF = unsignedTxF.map { spendingTx =>
+          creditingTxsInfo.flatMap { signInfo =>
+            signInfo.signers.map { _ =>
+              val txSigComponent =
+                TxSigComponent(signInfo.inputInfo, spendingTx)
+
+              val oldScript =
+                BitcoinScriptUtil.calculateScriptForSigning(
+                  txSigComponent,
+                  txSigComponent.output.scriptPubKey.asm)
+
+              val newScript =
+                BitcoinScriptUtil.calculateScriptForSigning(
+                  spendingTx,
+                  signInfo,
+                  signInfo.output.scriptPubKey.asm)
+
+              oldScript == newScript
+            }
+          }
+        }
+
+        correctScriptsF.map(x => assert(x.forall(_ == true)))
+    }
   }
 }

@@ -3,34 +3,14 @@ package org.bitcoins.core.protocol.transaction
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  CLTVScriptPubKey,
-  CSVScriptPubKey,
-  EmptyScriptSignature,
-  EmptyScriptWitness,
-  ScriptWitnessV0
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.builder.RawTxSigner.logger
 import org.bitcoins.core.wallet.builder.TxBuilderError
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSigner
-import org.bitcoins.core.wallet.utxo.{
-  ConditionalInputInfo,
-  EmptyInputInfo,
-  InputInfo,
-  InputSigningInfo,
-  LockTimeInputInfo,
-  MultiSignatureInputInfo,
-  P2PKHInputInfo,
-  P2PKInputInfo,
-  P2PKWithTimeoutInputInfo,
-  P2SHInputInfo,
-  P2WPKHV0InputInfo,
-  P2WSHV0InputInfo,
-  UnassignedSegwitNativeInputInfo
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{DummyECDigitalSignature, Sign}
 
 import scala.annotation.tailrec
@@ -149,7 +129,7 @@ object TxUtil {
     */
   def addDummySigs(utx: Transaction, inputInfos: Vector[InputInfo])(implicit
       ec: ExecutionContext): Future[Transaction] = {
-    val dummyInputAndWitnnessFs = inputInfos.zipWithIndex.map {
+    val dummyInputAndWitnessFs = inputInfos.zipWithIndex.map {
       case (inputInfo, index) =>
         val mockSigners = inputInfo.pubKeys.take(inputInfo.requiredSigs).map {
           pubKey =>
@@ -157,7 +137,9 @@ object TxUtil {
         }
 
         val mockSpendingInfo =
-          inputInfo.toSpendingInfo(mockSigners, HashType.sigHashAll)
+          inputInfo.toSpendingInfo(EmptyTransaction,
+                                   mockSigners,
+                                   HashType.sigHashAll)
 
         BitcoinSigner
           .sign(mockSpendingInfo, utx, isDummySignature = true)
@@ -176,7 +158,7 @@ object TxUtil {
           }
     }
 
-    Future.sequence(dummyInputAndWitnnessFs).map { inputsAndWitnesses =>
+    Future.sequence(dummyInputAndWitnessFs).map { inputsAndWitnesses =>
       val inputs = inputsAndWitnesses.map(_._1)
       val txWitnesses = inputsAndWitnesses.map(_._2)
       TransactionWitness.fromWitOpt(txWitnesses) match {
@@ -282,9 +264,10 @@ object TxUtil {
 
   /**
     * Checks if the fee is within a 'valid' range
+    *
     * @param estimatedFee the estimated amount of fee we should pay
-    * @param actualFee the actual amount of fee the transaction pays
-    * @param feeRate the fee rate in satoshis/vbyte we paid per byte on this tx
+    * @param actualFee    the actual amount of fee the transaction pays
+    * @param feeRate      the fee rate in satoshis/vbyte we paid per byte on this tx
     * @return
     */
   def isValidFeeRange(
@@ -321,5 +304,45 @@ object TxUtil {
     } else {
       Success(())
     }
+  }
+
+  /** Adds the signingInfo's scriptWitness from the transaction, if it has one */
+  def addWitnessData(
+      tx: Transaction,
+      signingInfo: InputSigningInfo[InputInfo]): WitnessTransaction = {
+    val noWitnessWtx = WitnessTransaction.toWitnessTx(tx)
+
+    val indexOpt = tx.inputs.zipWithIndex
+      .find(_._1.previousOutput == signingInfo.outPoint)
+      .map(_._2)
+
+    val scriptWitnessOpt = InputInfo.getScriptWitness(signingInfo.inputInfo)
+
+    (scriptWitnessOpt, indexOpt) match {
+      case (_, None) =>
+        throw new IllegalArgumentException(
+          s"Input is not contained in tx, got $signingInfo")
+      case (None, Some(_)) =>
+        noWitnessWtx
+      case (Some(scriptWitness), Some(index)) =>
+        noWitnessWtx.updateWitness(index, scriptWitness)
+    }
+  }
+
+  /** Returns the index of the InputInfo in the transaction */
+  def inputIndex(inputInfo: InputInfo, tx: Transaction): Int = {
+    inputIndexOpt(inputInfo, tx) match {
+      case Some(index) => index
+      case None =>
+        throw new IllegalArgumentException(
+          s"The transaction did not contain the expected outPoint (${inputInfo.outPoint}), got $tx")
+    }
+  }
+
+  /** Returns the index of the InputInfo in the transaction */
+  def inputIndexOpt(inputInfo: InputInfo, tx: Transaction): Option[Int] = {
+    tx.inputs.zipWithIndex
+      .find(_._1.previousOutput == inputInfo.outPoint)
+      .map(_._2)
   }
 }

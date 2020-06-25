@@ -2,7 +2,7 @@ package org.bitcoins.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config._
@@ -50,6 +50,11 @@ trait TxDAO[DbEntryType <: TxDB]
   override def findAll(
       txs: Vector[DbEntryType]): Query[DbTable, DbEntryType, Seq] =
     findByPrimaryKeys(txs.map(_.txIdBE))
+
+  def findByOutPoint(
+      outPoint: TransactionOutPoint): Future[Option[DbEntryType]] = {
+    findByTxId(outPoint.txId)
+  }
 
   def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[DbEntryType]] = {
     val q = table

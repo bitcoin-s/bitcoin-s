@@ -14,13 +14,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.crypto.{
-  DummyECDigitalSignature,
-  ECDigitalSignature,
-  ECPublicKey,
-  Factory,
-  NetworkElement
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 sealed trait PSBTRecord extends NetworkElement {
@@ -157,6 +151,11 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
 
   case class WitnessUTXO(witnessUTXO: TransactionOutput)
       extends InputPSBTRecord {
+    require(
+      !witnessUTXO.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV0],
+      "This UTXO is vulnerable to the BIP143 vulnerability, use NonWitnessOrUnknownUTXO instead"
+    )
+
     override type KeyId = WitnessUTXOKeyId.type
     override val key: ByteVector = ByteVector(WitnessUTXOKeyId.byte)
     override val value: ByteVector = witnessUTXO.bytes

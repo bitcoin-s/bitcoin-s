@@ -47,8 +47,9 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
           conditionalPath = ConditionalPath.NoCondition,
           hashPreImages = Vector(privKey.publicKey)
         ),
-        privKey,
-        HashType.sigHashAll
+        prevTransaction = creditingTx,
+        signer = privKey,
+        hashType = HashType.sigHashAll
       )
     val utxos = Vector(utxo)
     val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(1))
@@ -84,8 +85,9 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
         conditionalPath = ConditionalPath.NoCondition,
         hashPreImages = Vector(privKey.publicKey)
       ),
-      privKey,
-      HashType.sigHashAll
+      prevTransaction = creditingTx,
+      signer = privKey,
+      hashType = HashType.sigHashAll
     )
     val utxos = Vector(utxo)
 
@@ -122,6 +124,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
         conditionalPath = ConditionalPath.NoCondition,
         hashPreImages = Vector(privKey.publicKey)
       ),
+      prevTransaction = creditingTx,
       signer = privKey,
       hashType = HashType.sigHashAll
     )
@@ -148,14 +151,21 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
       CLTVScriptPubKey(ScriptNumber(lockTime),
                        P2PKScriptPubKey(fundingPrivKey.publicKey))
 
+    val creditingTx = BaseTransaction(
+      version = TransactionConstants.validLockVersion,
+      inputs = Nil,
+      outputs = Vector(TransactionOutput(Bitcoins.one, cltvSPK)),
+      lockTime = TransactionConstants.lockTime
+    )
+
     val cltvSpendingInfo = ScriptSignatureParams(
-      LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
-                                            UInt32.zero),
+      LockTimeInputInfo(TransactionOutPoint(creditingTx.txId, UInt32.zero),
                         Bitcoins.one,
                         cltvSPK,
                         ConditionalPath.NoCondition),
-      Vector(fundingPrivKey),
-      HashType.sigHashAll
+      prevTransaction = creditingTx,
+      signers = Vector(fundingPrivKey),
+      hashType = HashType.sigHashAll
     )
 
     val utxos = Vector(cltvSpendingInfo)
@@ -185,14 +195,21 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
       CLTVScriptPubKey(ScriptNumber(lockTime),
                        P2PKScriptPubKey(fundingPrivKey.publicKey))
 
+    val creditingTx = BaseTransaction(
+      version = TransactionConstants.validLockVersion,
+      inputs = Nil,
+      outputs = Vector(TransactionOutput(Bitcoins.one, cltvSPK)),
+      lockTime = TransactionConstants.lockTime
+    )
+
     val cltvSpendingInfo = ScriptSignatureParams(
-      LockTimeInputInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
-                                            UInt32.zero),
+      LockTimeInputInfo(TransactionOutPoint(creditingTx.txId, UInt32.zero),
                         Bitcoins.one,
                         cltvSPK,
                         ConditionalPath.NoCondition),
-      Vector(fundingPrivKey),
-      HashType.sigHashAll
+      prevTransaction = creditingTx,
+      signers = Vector(fundingPrivKey),
+      hashType = HashType.sigHashAll
     )
 
     val utxos = Vector(cltvSpendingInfo)
@@ -233,8 +250,9 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
                         Bitcoins.one,
                         cltvSPK1,
                         ConditionalPath.NoCondition),
-      Vector(fundingPrivKey1),
-      HashType.sigHashAll
+      prevTransaction = EmptyTransaction,
+      signers = Vector(fundingPrivKey1),
+      hashType = HashType.sigHashAll
     )
 
     val cltvSpendingInfo2 = ScriptSignatureParams(
@@ -243,8 +261,9 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
                         Bitcoins.one,
                         cltvSPK2,
                         ConditionalPath.NoCondition),
-      Vector(fundingPrivKey2),
-      HashType.sigHashAll
+      prevTransaction = EmptyTransaction,
+      signers = Vector(fundingPrivKey2),
+      hashType = HashType.sigHashAll
     )
 
     val utxos = Vector(cltvSpendingInfo1, cltvSpendingInfo2)

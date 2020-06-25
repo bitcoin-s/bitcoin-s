@@ -19,13 +19,7 @@ import org.bitcoins.core.wallet.signer.{
   P2PKSigner,
   P2PKWithTimeoutSigner
 }
-import org.bitcoins.core.wallet.utxo.{
-  MultiSignatureInputInfo,
-  P2PKHInputInfo,
-  P2PKInputInfo,
-  P2PKWithTimeoutInputInfo,
-  ScriptSignatureParams
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPrivateKey,
@@ -603,8 +597,10 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         P2PKInputInfo(TransactionOutPoint(creditingTx.txIdBE, inputIndex),
                       creditingTx.outputs(outputIndex.toInt).value,
                       scriptPubKey),
+        creditingTx,
         privateKey,
-        hashType)
+        hashType
+      )
       txSigComponentFuture = P2PKSigner.sign(spendingInfo, spendingTx, false)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
       //add the signature to the scriptSig instead of having an empty scriptSig
@@ -639,6 +635,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         P2PKHInputInfo(TransactionOutPoint(creditingTx.txIdBE, inputIndex),
                        creditingTx.outputs(outputIndex.toInt).value,
                        privateKey.publicKey),
+        creditingTx,
         privateKey,
         hashType
       )
@@ -667,6 +664,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
           creditingTx.outputs(outputIndex.toInt).value,
           spk,
           isBeforeTimeout = true),
+        creditingTx,
         privKey,
         hashType
       )
@@ -715,6 +713,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
           TransactionOutPoint(creditingTx.txIdBE, inputIndex),
           creditingTx.outputs(outputIndex.toInt).value,
           multiSigScriptPubKey),
+        creditingTx,
         privateKeys.toVector,
         hashType
       )

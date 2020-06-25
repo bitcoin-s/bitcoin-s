@@ -1,17 +1,10 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  InputUtil,
-  Transaction,
-  TransactionOutput,
-  TxUtil
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
-import org.bitcoins.core.psbt.PSBT.SpendingInfoAndNonWitnessTxs
 import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.wallet.builder.{
@@ -20,7 +13,7 @@ import org.bitcoins.core.wallet.builder.{
   StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
+import org.bitcoins.core.wallet.utxo._
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
@@ -170,27 +163,20 @@ object PSBTGenerators {
     }
   }
 
-  def spendingInfoAndNonWitnessTxsFromSpendingInfos(
+  def orderSpendingInfos(
       unsignedTx: Transaction,
-      creditingTxsInfo: Vector[
-        ScriptSignatureParams[InputInfo]]): SpendingInfoAndNonWitnessTxs = {
-    val elements = unsignedTx.inputs.toVector.map { input =>
+      creditingTxsInfo: Vector[ScriptSignatureParams[InputInfo]]): Vector[
+    ScriptSignatureParams[InputInfo]] = {
+    unsignedTx.inputs.toVector.map { input =>
       val infoOpt =
         creditingTxsInfo.find(_.outPoint == input.previousOutput)
       infoOpt match {
-        case Some(info) =>
-          val tx = BaseTransaction(Int32.zero,
-                                   Vector.empty,
-                                   Vector.fill(5)(info.output),
-                                   UInt32.zero)
-          (info, Some(tx))
+        case Some(info) => info
         case None =>
           throw new RuntimeException(
             "CreditingTxGen.inputsAndOutputs is being inconsistent")
       }
     }
-
-    SpendingInfoAndNonWitnessTxs(elements)
   }
 
   def psbtAndBuilderFromInputs(
@@ -215,9 +201,7 @@ object PSBTGenerators {
     for {
       unsignedTx <- builder.setFinalizer(finalizer).buildTx()
 
-      orderedTxInfos = spendingInfoAndNonWitnessTxsFromSpendingInfos(
-        unsignedTx,
-        creditingTxsInfo.toVector)
+      orderedTxInfos = orderSpendingInfos(unsignedTx, creditingTxsInfo.toVector)
 
       psbt <- {
         if (finalized) {

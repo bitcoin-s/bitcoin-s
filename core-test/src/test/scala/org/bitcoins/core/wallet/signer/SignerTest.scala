@@ -2,39 +2,15 @@ package org.bitcoins.core.wallet.signer
 
 import org.bitcoins.core.crypto.{
   BaseTxSigComponent,
+  TxSigComponent,
   WitnessTxSigComponentP2SH,
   WitnessTxSigComponentRaw
 }
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  CLTVScriptPubKey,
-  CSVScriptPubKey,
-  ConditionalScriptPubKey,
-  EmptyScriptPubKey,
-  EmptyScriptWitness,
-  MultiSignatureScriptPubKey,
-  NonStandardScriptPubKey,
-  P2PKHScriptPubKey,
-  P2PKScriptPubKey,
-  P2PKWithTimeoutScriptPubKey,
-  P2SHScriptPubKey,
-  P2SHScriptSignature,
-  P2WPKHWitnessV0,
-  P2WSHWitnessV0,
-  UnassignedWitnessScriptPubKey,
-  WitnessCommitment,
-  WitnessScriptPubKey,
-  WitnessScriptPubKeyV0
-}
-import org.bitcoins.core.protocol.transaction.{
-  EmptyWitness,
-  Transaction,
-  TransactionInput,
-  TransactionOutput,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.PreExecutionScriptProgram
@@ -44,15 +20,7 @@ import org.bitcoins.core.wallet.builder.{
   StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.{
-  ECSignatureParams,
-  InputInfo,
-  InputSigningInfo,
-  P2WPKHV0InputInfo,
-  P2WSHV0InputInfo,
-  ScriptSignatureParams,
-  UnassignedSegwitNativeInputInfo
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.ECDigitalSignature
 import org.bitcoins.testkit.core.gen.{
   CreditingTxGen,
@@ -85,6 +53,7 @@ class SignerTest extends BitcoinSAsyncTest {
         p2wpkh.conditionalPath,
         p2wpkh.signers.map(_.publicKey)
       ),
+      p2wpkh.prevTransaction,
       p2wpkh.signers,
       p2wpkh.hashType
     )
@@ -183,6 +152,49 @@ class SignerTest extends BitcoinSAsyncTest {
 
           succeed
         }
+    }
+  }
+
+  it should "have old and new doSign functions agree" in {
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
+                ScriptGenerators.scriptPubKey) {
+      case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
+        val fee = SatoshisPerVirtualByte(Satoshis(100))
+
+        val unsignedTxF = StandardNonInteractiveFinalizer
+          .txFrom(outputs = destinations,
+                  utxos = creditingTxsInfo,
+                  feeRate = fee,
+                  changeSPK = changeSPK)
+
+        val correctSigsF = unsignedTxF.flatMap { spendingTx =>
+          val assertFs = creditingTxsInfo.flatMap { signInfo =>
+            signInfo.signers.map { signer =>
+              val txSignatureComponent =
+                TxSigComponent(signInfo.inputInfo, spendingTx)
+
+              for {
+                oldSig <- BitcoinSigner.doSign(txSignatureComponent,
+                                               signer.signFunction,
+                                               signInfo.hashType,
+                                               isDummySignature = false)
+                newSig <- BitcoinSigner.doSign(spendingTx,
+                                               signInfo,
+                                               signer.signFunction,
+                                               signInfo.hashType,
+                                               isDummySignature = false)
+              } yield {
+                (oldSig.r == newSig.r) &&
+                (oldSig.s == newSig.s) &&
+                (oldSig.hex == newSig.hex)
+              }
+            }
+          }
+
+          Future.sequence(assertFs)
+        }
+
+        correctSigsF.map(x => assert(x.forall(_ == true)))
     }
   }
 
@@ -298,7 +310,7 @@ class SignerTest extends BitcoinSAsyncTest {
               (psbt, spendInfo) =>
                 val idx = inputIndex(spendInfo, unsignedTx)
                 psbt
-                  .addWitnessUTXOToInput(spendInfo.output, idx)
+                  .addUTXOToInput(spendInfo.prevTransaction, idx)
                   .addScriptWitnessToInput(
                     InputInfo.getScriptWitness(spendInfo.inputInfo).get,
                     idx)
