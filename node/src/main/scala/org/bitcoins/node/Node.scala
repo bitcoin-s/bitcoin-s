@@ -210,9 +210,16 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   /** Broadcasts the given transaction over the P2P network */
   override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
-    val broadcastTx = BroadcastAbleTransaction(transaction)
 
-    txDAO.upsert(broadcastTx).onComplete {
+    val addToDbF = for {
+      broadcastTxOpt <- txDAO.findByHash(transaction.txId)
+      txDb <- broadcastTxOpt match {
+        case Some(btx) => Future.successful(btx)
+        case None      => txDAO.create(BroadcastAbleTransaction(transaction))
+      }
+    } yield txDb
+
+    addToDbF.onComplete {
       case Failure(exception) =>
         logger.error(s"Error when writing broadcastable TX to DB", exception)
       case Success(written) =>
