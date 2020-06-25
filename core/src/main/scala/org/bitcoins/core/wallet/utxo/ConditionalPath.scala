@@ -1,5 +1,7 @@
 package org.bitcoins.core.wallet.utxo
 
+import scala.annotation.tailrec
+
 /** Represents the spending branch being taken in a ScriptPubKey's execution
   *
   * If you over-specify a path, such as giving a condition where none is needed,
@@ -37,6 +39,25 @@ object ConditionalPath {
 
   val nonNestedTrue: ConditionalPath = ConditionTrue(NoCondition)
   val nonNestedFalse: ConditionalPath = ConditionFalse(NoCondition)
+
+  def toVector(conditionalPath: ConditionalPath): Vector[Boolean] = {
+
+    @tailrec
+    def loop(
+        current: ConditionalPath,
+        accum: Vector[Boolean]): Vector[Boolean] = {
+      current match {
+        case cond: ConditionTrue =>
+          loop(cond.nextCondition, accum :+ true)
+        case cond: ConditionFalse =>
+          loop(cond.nextCondition, accum :+ false)
+        case NoCondition =>
+          accum
+      }
+    }
+
+    loop(conditionalPath, Vector.empty)
+  }
 
   def fromBranch(branch: Vector[Boolean]): ConditionalPath = {
     if (branch.isEmpty) {

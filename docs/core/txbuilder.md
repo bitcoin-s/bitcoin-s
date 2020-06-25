@@ -112,6 +112,7 @@ val unsignedTxF: Future[Transaction] = finalizer.buildTx(builderResult)
 // this contains all the information we need to
 // validly sign the UTXO above
 val utxoInfo = ScriptSignatureParams(inputInfo = inputInfo,
+                                     prevTransaction = creditingTx,
                                      signers = Vector(privKey),
                                      hashType =
                                          HashType.sigHashAll)

@@ -12,12 +12,8 @@ import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
   _
 }
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutput,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.psbt.InputPSBTMap
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{
   OP_CHECKMULTISIG,
@@ -30,19 +26,20 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.{
   ScriptError,
   ScriptErrorPubKeyType,
-  ScriptErrorWitnessPubKeyType
+  ScriptErrorWitnessPubKeyType,
+  ScriptOk
 }
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   PreExecutionScriptProgram
 }
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by chris on 3/2/16.
@@ -482,6 +479,52 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         script
     }
 
+  def calculateScriptForSigning(
+      spendingTransaction: Transaction,
+      signingInfo: InputSigningInfo[InputInfo],
+      script: Seq[ScriptToken]): Seq[ScriptToken] = {
+
+    val idx = TxUtil.inputIndex(signingInfo.inputInfo, spendingTransaction)
+
+    signingInfo.output.scriptPubKey match {
+      case _: P2SHScriptPubKey =>
+        val p2sh = signingInfo.inputInfo.asInstanceOf[P2SHInputInfo]
+
+        p2sh.redeemScript match {
+          case p2wpkh: P2WPKHWitnessSPKV0 =>
+            //we treat p2sh(p2wpkh) differently for script signing than other spks
+            //Please note that for a P2SH-P2WPKH, the scriptCode is always 26 bytes including the leading size byte,
+            // as 0x1976a914{20-byte keyhash}88ac, NOT the redeemScript nor scriptPubKey
+            //https://bitcoincore.org/en/segwit_wallet_dev/#signature-generation-and-verification-for-p2sh-p2wpkh
+
+            P2PKHScriptPubKey(p2wpkh.pubKeyHash).asm
+
+          case _: P2WSHWitnessSPKV0 =>
+            val wtx =
+              spendingTransaction.asInstanceOf[WitnessTransaction]
+
+            val p2wshRedeem =
+              ScriptPubKey.fromAsmBytes(wtx.witness.witnesses(idx).stack.head)
+            p2wshRedeem.asm
+          case script: ScriptPubKey =>
+            script.asm
+        }
+
+      case w: WitnessScriptPubKey =>
+        val wtx = spendingTransaction.asInstanceOf[WitnessTransaction]
+        val scriptEither =
+          w.witnessVersion.rebuild(wtx.witness.witnesses(idx), w.witnessProgram)
+        parseScriptEither(scriptEither)
+
+      case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
+          _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
+          _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+          _: CLTVScriptPubKey | _: CSVScriptPubKey | _: WitnessCommitment |
+          EmptyScriptPubKey =>
+        script
+    }
+  }
+
   /** Removes the given [[ECDigitalSignature ECDigitalSignature]] from the list of
     * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] if it exists. */
   def removeSignatureFromScript(
@@ -670,6 +713,33 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         PreExecutionScriptProgram(txSigComponent)
     }
     ScriptInterpreter.runAllVerify(programs)
+  }
+
+  def verifyPSBTInputScript(
+      tx: Transaction,
+      inputMap: InputPSBTMap,
+      index: Int,
+      flags: Seq[ScriptFlag] = Policy.standardFlags): Try[Transaction] = {
+
+    val txIn = tx.inputs(index)
+
+    val (preImages, condPath) =
+      InputInfo.getHashPreImagesAndConditionalPath(tx, index)
+
+    val inputInfo = inputMap.toInputInfo(txIn,
+                                         conditionalPath = condPath,
+                                         preImages = preImages)
+
+    val txSigComponent = TxSigComponent(inputInfo, tx, flags)
+
+    val inputResult =
+      ScriptInterpreter.run(PreExecutionScriptProgram(txSigComponent))
+
+    if (inputResult == ScriptOk) {
+      Success(tx)
+    } else {
+      Failure(new RuntimeException(s"Input $index was invalid: $inputResult"))
+    }
   }
 }
 

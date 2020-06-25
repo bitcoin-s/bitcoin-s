@@ -2,20 +2,10 @@ package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WSHWitnessSPKV0,
-  P2WSHWitnessV0
-}
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  TransactionConstants,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.ScriptGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
@@ -25,7 +15,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
 
   private val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sampleSome
 
-  it should "fail to build a tx if you have the wrong redeemscript" in {
+  it should "fail to build a tx if you have the wrong redeem script" in {
     val p2sh = P2SHScriptPubKey(spk)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
     val creditingTx = BaseTransaction(version =
@@ -45,6 +35,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     assertThrows[RuntimeException] {
       ScriptSignatureParams(
         inputInfo = inputInfo,
+        prevTransaction = creditingTx,
         signer = privKey,
         hashType = HashType.sigHashAll
       )
@@ -53,6 +44,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     assertThrows[RuntimeException] {
       ECSignatureParams(
         inputInfo = inputInfo,
+        prevTransaction = creditingTx,
         signer = privKey,
         hashType = HashType.sigHashAll
       )
@@ -77,6 +69,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           conditionalPath = ConditionalPath.NoCondition,
           hashPreImages = Vector(privKey.publicKey)
         ),
+        prevTransaction = creditingTx,
         privKey,
         HashType.sigHashAll
       )
@@ -92,6 +85,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           conditionalPath = ConditionalPath.NoCondition,
           hashPreImages = Vector(privKey.publicKey)
         ),
+        prevTransaction = creditingTx,
         privKey,
         HashType.sigHashAll
       )
@@ -120,6 +114,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     assertThrows[IllegalArgumentException] {
       ScriptSignatureParams(
         inputInfo = inputInfo,
+        prevTransaction = creditingTx,
         signer = privKey,
         hashType = HashType.sigHashAll
       )
@@ -128,6 +123,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     assertThrows[IllegalArgumentException] {
       ECSignatureParams(
         inputInfo = inputInfo,
+        prevTransaction = creditingTx,
         signer = privKey,
         hashType = HashType.sigHashAll
       )
@@ -152,6 +148,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           conditionalPath = ConditionalPath.NoCondition,
           hashPreImages = Vector(privKey.publicKey)
         ),
+        prevTransaction = creditingTx,
         privKey,
         HashType.sigHashAll
       )
@@ -167,6 +164,92 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           conditionalPath = ConditionalPath.NoCondition,
           hashPreImages = Vector(privKey.publicKey)
         ),
+        prevTransaction = creditingTx,
+        privKey,
+        HashType.sigHashAll
+      )
+    }
+  }
+
+  it should "fail to sign if the prevTransaction does not match the outPoint" in {
+    val p2wpkh = P2WPKHWitnessSPKV0(privKey.publicKey)
+    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
+    val creditingTx = BaseTransaction(TransactionConstants.validLockVersion,
+                                      Nil,
+                                      Vector(creditingOutput),
+                                      TransactionConstants.lockTime)
+    val outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero)
+
+    assertThrows[IllegalArgumentException] {
+      ScriptSignatureParams(
+        InputInfo(
+          outPoint = outPoint,
+          output = creditingOutput,
+          redeemScriptOpt = None,
+          scriptWitnessOpt = Some(P2WPKHWitnessV0(privKey.publicKey)),
+          conditionalPath = ConditionalPath.NoCondition,
+          hashPreImages = Vector(privKey.publicKey)
+        ),
+        prevTransaction = creditingTx,
+        privKey,
+        HashType.sigHashAll
+      )
+    }
+
+    assertThrows[IllegalArgumentException] {
+      ECSignatureParams(
+        InputInfo(
+          outPoint = outPoint,
+          output = creditingOutput,
+          redeemScriptOpt = None,
+          scriptWitnessOpt = Some(P2WPKHWitnessV0(privKey.publicKey)),
+          conditionalPath = ConditionalPath.NoCondition,
+          hashPreImages = Vector(privKey.publicKey)
+        ),
+        prevTransaction = creditingTx,
+        privKey,
+        HashType.sigHashAll
+      )
+    }
+  }
+
+  it should "fail to sign if the prevTransaction's output does not match the amount" in {
+    val p2wpkh = P2WPKHWitnessSPKV0(privKey.publicKey)
+    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
+    val creditingTx =
+      BaseTransaction(TransactionConstants.validLockVersion,
+                      Nil,
+                      Vector(TransactionOutput(CurrencyUnits.oneBTC, p2wpkh)),
+                      TransactionConstants.lockTime)
+    val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
+
+    assertThrows[IllegalArgumentException] {
+      ScriptSignatureParams(
+        InputInfo(
+          outPoint = outPoint,
+          output = creditingOutput,
+          redeemScriptOpt = None,
+          scriptWitnessOpt = Some(P2WPKHWitnessV0(privKey.publicKey)),
+          conditionalPath = ConditionalPath.NoCondition,
+          hashPreImages = Vector(privKey.publicKey)
+        ),
+        prevTransaction = creditingTx,
+        privKey,
+        HashType.sigHashAll
+      )
+    }
+
+    assertThrows[IllegalArgumentException] {
+      ECSignatureParams(
+        InputInfo(
+          outPoint = outPoint,
+          output = creditingOutput,
+          redeemScriptOpt = None,
+          scriptWitnessOpt = Some(P2WPKHWitnessV0(privKey.publicKey)),
+          conditionalPath = ConditionalPath.NoCondition,
+          hashPreImages = Vector(privKey.publicKey)
+        ),
+        prevTransaction = creditingTx,
         privKey,
         HashType.sigHashAll
       )

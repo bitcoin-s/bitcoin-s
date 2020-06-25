@@ -149,7 +149,9 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
   /** The redeemScript represents the conditions that must be satisfied to spend the output */
   def redeemScript: ScriptPubKey = {
     val scriptSig = scriptSignatureNoRedeemScript
-    if (
+    if (asm.isEmpty) {
+      EmptyScriptPubKey
+    } else if (
       scriptSig == EmptyScriptSignature &&
       WitnessScriptPubKey.isWitnessScriptPubKey(asm.tail)
     ) {

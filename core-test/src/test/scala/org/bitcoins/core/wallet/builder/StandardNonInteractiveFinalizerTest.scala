@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
+  EmptyTransaction,
   TransactionConstants,
   TransactionInput,
   TransactionOutPoint,
@@ -120,6 +121,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
         conditionalPath = ConditionalPath.NoCondition,
         hashPreImages = Vector(privKey.publicKey)
       ),
+      prevTransaction = creditingTx,
       signer = privKey,
       hashType = HashType.sigHashAll
     )
@@ -153,6 +155,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
         conditionalPath = ConditionalPath.NoCondition,
         hashPreImages = Vector(privKey.publicKey)
       ),
+      prevTransaction = creditingTx,
       signer = privKey,
       hashType = HashType.sigHashAll
     )
@@ -182,6 +185,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
           conditionalPath = ConditionalPath.NoCondition,
           Vector(pubKey)
         ),
+        prevTransaction = EmptyTransaction,
         signers = Vector(privKey),
         hashType = HashType.sigHashAll
       )

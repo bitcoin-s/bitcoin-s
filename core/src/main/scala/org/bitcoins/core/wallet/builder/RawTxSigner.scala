@@ -85,14 +85,6 @@ object RawTxSigner extends BitcoinSLogger {
           txSigCompF.map { txSigComp =>
             val scriptWitnessOpt = TxSigComponent.getScriptWitness(txSigComp)
 
-            if (
-              scriptWitnessOpt.isEmpty && InputInfo
-                .getScriptWitness(utxo.inputInfo)
-                .isDefined
-            ) {
-              println(utxo.inputInfo)
-            }
-
             (txSigComp.input, scriptWitnessOpt)
           }
         }

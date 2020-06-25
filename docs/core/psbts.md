@@ -125,6 +125,7 @@ val spendingInfoSingle = ECSignatureParams(
               redeemScriptOpt = Some(redeemScript0),
               scriptWitnessOpt = None,
               conditionalPath = ConditionalPath.NoCondition),
+    prevTransaction = utxo0,
     signer = privKey0,
     hashType = HashType.sigHashAll
   )

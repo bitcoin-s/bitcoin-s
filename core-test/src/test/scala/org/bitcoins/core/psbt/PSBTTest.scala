@@ -59,14 +59,12 @@ class PSBTTest extends BitcoinSAsyncTest {
       case (fullPsbt, utxos, _) =>
         val emptyPsbt = PSBT.fromUnsignedTx(fullPsbt.transaction)
 
-        val infoAndTxs = PSBTGenerators
-          .spendingInfoAndNonWitnessTxsFromSpendingInfos(fullPsbt.transaction,
-                                                         utxos.toVector)
-          .infoAndTxOpts
+        val infoAndTxs = PSBTGenerators.orderSpendingInfos(fullPsbt.transaction,
+                                                           utxos.toVector)
         val updatedPSBT = infoAndTxs.zipWithIndex.foldLeft(emptyPsbt) {
-          case (psbt, ((utxo, txOpt), index)) =>
+          case (psbt, (utxo, index)) =>
             val partUpdatedPsbt = psbt
-              .addUTXOToInput(txOpt.get, index)
+              .addUTXOToInput(utxo.prevTransaction, index)
               .addSigHashTypeToInput(utxo.hashType, index)
 
             (InputInfo.getRedeemScript(utxo.inputInfo),
@@ -114,7 +112,8 @@ class PSBTTest extends BitcoinSAsyncTest {
             val finalizedPsbtT = signedPSBT.finalizePSBT
             finalizedPsbtT match {
               case Success(finalizedPsbt) =>
-                assert(finalizedPsbt.extractTransactionAndValidate.isSuccess)
+                val txT = finalizedPsbt.extractTransactionAndValidate
+                assert(txT.isSuccess, txT.failed)
               case Failure(exception) => fail(exception)
             }
           }
@@ -169,7 +168,7 @@ class PSBTTest extends BitcoinSAsyncTest {
     forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
-      case ((creditingTxsInfo, destinations), (changeSPK, _), network) =>
+      case ((creditingTxsInfo, destinations), (changeSPK, _), _) =>
         val crediting =
           creditingTxsInfo.foldLeft(0L)(_ + _.amount.satoshis.toLong)
         val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)

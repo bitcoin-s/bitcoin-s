@@ -23,6 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 sealed abstract class SignerUtils {
 
+  @deprecated("use an InputSigningInfo[InputInfo] instead", since = "6/23/2020")
   def doSign(
       sigComponent: TxSigComponent,
       sign: ByteVector => Future[ECDigitalSignature],
@@ -36,13 +37,40 @@ sealed abstract class SignerUtils {
     }
   }
 
+  def doSign(
+      unsignedTx: Transaction,
+      signingInfo: InputSigningInfo[InputInfo],
+      sign: ByteVector => Future[ECDigitalSignature],
+      hashType: HashType,
+      isDummySignature: Boolean)(implicit
+      ec: ExecutionContext): Future[ECDigitalSignature] = {
+    if (isDummySignature) {
+      Future.successful(DummyECDigitalSignature)
+    } else {
+      TransactionSignatureCreator.createSig(unsignedTx,
+                                            signingInfo,
+                                            sign,
+                                            hashType)
+    }
+  }
+
   def signSingle(
       spendingInfo: ECSignatureParams[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean)(implicit
       ec: ExecutionContext): Future[PartialSignature] = {
+
+    val tx = spendingInfo.inputInfo match {
+      case _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo |
+          _: UnassignedSegwitNativeInputInfo =>
+        TxUtil.addWitnessData(unsignedTx, spendingInfo)
+      case _: RawInputInfo | _: P2SHNonSegwitInputInfo =>
+        unsignedTx
+    }
+
     val signatureF = doSign(
-      sigComponent = sigComponent(spendingInfo, unsignedTx),
+      unsignedTx = tx,
+      signingInfo = spendingInfo,
       sign = spendingInfo.signer.signFunction,
       hashType = spendingInfo.hashType,
       isDummySignature = isDummySignature
@@ -77,52 +105,6 @@ sealed abstract class SignerUtils {
       case None =>
         throw new IllegalArgumentException(
           "Transaction did not contain expected input.")
-    }
-  }
-
-  protected def sigComponent(
-      spendingInfo: InputSigningInfo[InputInfo],
-      unsignedTx: Transaction): TxSigComponent = {
-    val index = inputIndex(spendingInfo, unsignedTx)
-
-    spendingInfo.output.scriptPubKey match {
-      case _: WitnessScriptPubKey =>
-        val wtx = {
-          val noWitnessWtx = WitnessTransaction.toWitnessTx(unsignedTx)
-          InputInfo.getScriptWitness(spendingInfo.inputInfo) match {
-            case None =>
-              noWitnessWtx
-            case Some(scriptWitness) =>
-              noWitnessWtx.updateWitness(index.toInt, scriptWitness)
-          }
-        }
-
-        WitnessTxSigComponent(wtx, index, spendingInfo.output, flags)
-      case _: P2SHScriptPubKey =>
-        val emptyInput = unsignedTx.inputs(index.toInt)
-        val redeemScript = InputInfo.getRedeemScript(spendingInfo.inputInfo).get
-        val newInput = TransactionInput(
-          emptyInput.previousOutput,
-          P2SHScriptSignature(EmptyScriptSignature, redeemScript),
-          emptyInput.sequence)
-        val updatedTx = unsignedTx.updateInput(index.toInt, newInput)
-        redeemScript match {
-          case _: WitnessScriptPubKey =>
-            val wtx = WitnessTransaction.toWitnessTx(updatedTx)
-            val updatedWtx =
-              wtx.updateWitness(
-                index.toInt,
-                InputInfo.getScriptWitness(spendingInfo.inputInfo).get)
-
-            WitnessTxSigComponentP2SH(updatedWtx,
-                                      index,
-                                      spendingInfo.output,
-                                      flags)
-          case _: ScriptPubKey =>
-            P2SHTxSigComponent(updatedTx, index, spendingInfo.output, flags)
-        }
-      case _: ScriptPubKey =>
-        BaseTxSigComponent(unsignedTx, index, spendingInfo.output, flags)
     }
   }
 }
@@ -590,13 +572,12 @@ sealed abstract class P2WPKHSigner extends Signer[P2WPKHV0InputInfo] {
           witSPK.flatMap { w =>
             val witOutput = TransactionOutput(output.value, w)
 
-            val wtxComp = WitnessTxSigComponentRaw(unsignedWtx,
-                                                   inputIndex,
-                                                   witOutput,
-                                                   flags)
-
             val signature =
-              doSign(wtxComp, signer.signFunction, hashType, isDummySignature)
+              doSign(unsignedTx,
+                     spendingInfo,
+                     signer.signFunction,
+                     hashType,
+                     isDummySignature)
 
             signature.map { sig =>
               val scriptWitness = P2WPKHWitnessV0(pubKey, sig)
