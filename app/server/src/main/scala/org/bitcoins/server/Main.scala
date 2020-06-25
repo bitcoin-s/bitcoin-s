@@ -97,6 +97,7 @@ object Main extends App with BitcoinSLogger {
                                         chainApi,
                                         BitcoinerLiveFeeRateProvider(60),
                                         bip39PasswordOpt)
+      _ <- wallet.start()
     } yield wallet
 
     //add callbacks to our unitialized node
