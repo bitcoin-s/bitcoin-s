@@ -58,6 +58,8 @@ trait WalletApi extends WalletLogger {
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
+  def start(): Future[Unit]
+
   def stop(): Unit
 
   /**

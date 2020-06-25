@@ -13,7 +13,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinScriptUtil, Mutable}
+import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, Mutable}
 import org.bitcoins.core.wallet.builder.{
   RawTxBuilderWithFinalizer,
   RawTxSigner,
@@ -75,9 +75,43 @@ abstract class Wallet
     this
   }
 
+  private def utxosWithMissingTx: Future[Vector[SpendingInfoDb]] = {
+    for {
+      utxos <- spendingInfoDAO.findAllUnspent()
+      hasTxs <- FutureUtil.foldLeftAsync(Vector.empty[SpendingInfoDb], utxos) {
+        (accum, utxo) =>
+          // If we don't have tx in our transactionDAO, add it to the list
+          transactionDAO
+            .read(utxo.txid)
+            .map(txOpt => if (txOpt.isEmpty) accum :+ utxo else accum)
+      }
+    } yield hasTxs
+  }
+
+  protected def downloadMissingUtxos: Future[Unit] =
+    for {
+      utxos <- utxosWithMissingTx
+      blockHashes = utxos.flatMap(_.blockHash.map(_.flip))
+      // Download the block the tx is from so we process the block and subsequent txs
+      _ <- nodeApi.downloadBlocks(blockHashes.distinct)
+    } yield ()
+
+  override def start(): Future[Unit] = {
+    for {
+      _ <- walletConfig.start()
+      _ <- downloadMissingUtxos
+    } yield {
+      startWalletThread()
+    }
+  }
+
   override def stop(): Unit = {
-    walletConfig.stop()
-    stopWalletThread()
+    for {
+      _ <- walletConfig.stop()
+    } yield {
+      stopWalletThread()
+    }
+    ()
   }
 
   override def broadcastTransaction(transaction: Transaction): Future[Unit] =
