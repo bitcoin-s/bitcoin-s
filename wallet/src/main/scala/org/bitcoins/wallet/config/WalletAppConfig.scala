@@ -14,10 +14,10 @@ import org.bitcoins.keymanager.{
   KeyManagerParams,
   WalletStorage
 }
-import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.bitcoins.wallet.api.WalletApi
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -140,8 +140,8 @@ case class WalletAppConfig(
     *  1. A seed exists
     *  2. wallet exists
     *  3. The account exists */
-  private def hasWallet()(
-      implicit walletConf: WalletAppConfig,
+  private def hasWallet()(implicit
+      walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Boolean] = {
     if (walletConf.seedExists()) {
       val hdCoin = walletConf.defaultAccount.coin
