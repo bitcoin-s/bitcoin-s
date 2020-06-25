@@ -17,13 +17,19 @@ class CallbackTest extends BitcoinSAsyncTest {
 
     val f1: Callback[Unit] = _ => {
       Thread.sleep(testTimeout.toMillis)
-      promise.complete(fail("2nd callback did not start before timeout"))
+      if (!promise.isCompleted) {
+        promise.complete(fail("2nd callback did not start before timeout"))
+      }
       FutureUtil.unit
     }
+
     val f2: Callback[Unit] = _ => {
-      promise.complete(Success(succeed))
+      if (!promise.isCompleted) {
+        promise.complete(Success(succeed))
+      }
       FutureUtil.unit
     }
+
     val handler =
       CallbackHandler[Unit, Callback[Unit]](name = "name", Vector(f1, f2))
 
