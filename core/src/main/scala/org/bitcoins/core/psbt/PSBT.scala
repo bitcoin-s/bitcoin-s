@@ -772,38 +772,13 @@ object PSBT extends Factory[PSBT] {
     PSBT(globalMap, inputMaps, outputMaps)
   }
 
-  /**
-    * Wraps a Vector of pairs of ScriptSignatureParams and the Transactions whose outputs are spent.
-    * Note that this Transaction is only necessary when the output if it is pre-segwitV1.
-    */
-  case class SpendingInfoAndPrevTxs(
-      infoAndTxOpts: Vector[
-        (ScriptSignatureParams[InputInfo], Option[Transaction])]) {
-    val length: Int = infoAndTxOpts.length
-
-    def matchesInputs(inputs: Seq[TransactionInput]): Boolean = {
-      infoAndTxOpts
-        .zip(inputs)
-        .forall {
-          case ((info, _), input) => info.outPoint == input.previousOutput
-        }
-    }
-
-    def map[T](
-        func: (
-            ScriptSignatureParams[InputInfo],
-            Option[Transaction]) => T): Vector[T] = {
-      infoAndTxOpts.map { case (info, txOpt) => func(info, txOpt) }
-    }
-  }
-
   /** Constructs a full (ready to be finalized) but unfinalized PSBT from an
     * unsigned transaction and a SpendingInfoAndNonWitnessTxs
     */
   def fromUnsignedTxAndInputs(
       unsignedTx: Transaction,
-      spendingInfoAndNonWitnessTxs: SpendingInfoAndPrevTxs)(implicit
-      ec: ExecutionContext): Future[PSBT] = {
+      spendingInfoAndNonWitnessTxs: Vector[ScriptSignatureParams[InputInfo]])(
+      implicit ec: ExecutionContext): Future[PSBT] = {
     fromUnsignedTxAndInputs(unsignedTx,
                             spendingInfoAndNonWitnessTxs,
                             finalized = false)
@@ -814,22 +789,22 @@ object PSBT extends Factory[PSBT] {
     */
   def finalizedFromUnsignedTxAndInputs(
       unsignedTx: Transaction,
-      spendingInfoAndNonWitnessTxs: SpendingInfoAndPrevTxs)(implicit
+      spendingInfos: Vector[ScriptSignatureParams[InputInfo]])(implicit
       ec: ExecutionContext): Future[PSBT] = {
-    fromUnsignedTxAndInputs(unsignedTx,
-                            spendingInfoAndNonWitnessTxs,
-                            finalized = true)
+    fromUnsignedTxAndInputs(unsignedTx, spendingInfos, finalized = true)
   }
 
   private def fromUnsignedTxAndInputs(
       unsignedTx: Transaction,
-      spendingInfoAndNonWitnessTxs: SpendingInfoAndPrevTxs,
+      spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
       finalized: Boolean)(implicit ec: ExecutionContext): Future[PSBT] = {
-    require(spendingInfoAndNonWitnessTxs.length == unsignedTx.inputs.length,
-            "Must have a NewSpendingInfo for every input")
+    require(spendingInfos.length == unsignedTx.inputs.length,
+            "Must have a SpendingInfo for every input")
     require(
-      spendingInfoAndNonWitnessTxs.matchesInputs(unsignedTx.inputs),
-      "NewSpendingInfos must correspond to transaction inputs"
+      spendingInfos.zip(unsignedTx.inputs).forall {
+        case (info, input) => info.outPoint == input.previousOutput
+      },
+      "SpendingInfos must correspond to transaction inputs"
     )
     val emptySigTx = TxUtil.emptyAllScriptSigs(unsignedTx)
     val btx = emptySigTx match {
@@ -840,13 +815,12 @@ object PSBT extends Factory[PSBT] {
 
     val globalMap = GlobalPSBTMap(
       Vector(GlobalPSBTRecord.UnsignedTransaction(btx)))
-    val inputMapFs = spendingInfoAndNonWitnessTxs.map {
-      case (info, txOpt) =>
-        if (finalized) {
-          InputPSBTMap.finalizedFromNewSpendingInfo(info, unsignedTx, txOpt)
-        } else {
-          InputPSBTMap.fromUTXOInfo(info, unsignedTx, txOpt)
-        }
+    val inputMapFs = spendingInfos.map { info =>
+      if (finalized) {
+        InputPSBTMap.finalizedFromSpendingInfo(info, unsignedTx)
+      } else {
+        InputPSBTMap.fromUTXOInfo(info, unsignedTx)
+      }
     }
     val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
 

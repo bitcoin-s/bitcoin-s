@@ -5,7 +5,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
-import org.bitcoins.core.psbt.PSBT.SpendingInfoAndPrevTxs
 import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.wallet.builder.{
@@ -164,23 +163,20 @@ object PSBTGenerators {
     }
   }
 
-  def spendingInfoAndNonWitnessTxsFromSpendingInfos(
+  def orderSpendingInfos(
       unsignedTx: Transaction,
-      creditingTxsInfo: Vector[
-        ScriptSignatureParams[InputInfo]]): SpendingInfoAndPrevTxs = {
-    val elements = unsignedTx.inputs.toVector.map { input =>
+      creditingTxsInfo: Vector[ScriptSignatureParams[InputInfo]]): Vector[
+    ScriptSignatureParams[InputInfo]] = {
+    unsignedTx.inputs.toVector.map { input =>
       val infoOpt =
         creditingTxsInfo.find(_.outPoint == input.previousOutput)
       infoOpt match {
-        case Some(info) =>
-          (info, Some(info.prevTransaction))
+        case Some(info) => info
         case None =>
           throw new RuntimeException(
             "CreditingTxGen.inputsAndOutputs is being inconsistent")
       }
     }
-
-    SpendingInfoAndPrevTxs(elements)
   }
 
   def psbtAndBuilderFromInputs(
@@ -205,9 +201,7 @@ object PSBTGenerators {
     for {
       unsignedTx <- builder.setFinalizer(finalizer).buildTx()
 
-      orderedTxInfos = spendingInfoAndNonWitnessTxsFromSpendingInfos(
-        unsignedTx,
-        creditingTxsInfo.toVector)
+      orderedTxInfos = orderSpendingInfos(unsignedTx, creditingTxsInfo.toVector)
 
       psbt <- {
         if (finalized) {

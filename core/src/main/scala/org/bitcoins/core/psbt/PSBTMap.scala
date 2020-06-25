@@ -578,7 +578,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       val tx = txVec.head.transactionSpent
       tx.outputs(txIn.previousOutput.vout.toInt)
     } else {
-      throw new UnsupportedOperationException(
+      throw new RuntimeException(
         "Not enough information in the InputPSBTMap to get a valid InputInfo")
     }
 
@@ -593,9 +593,16 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
           .isInstanceOf[P2WPKHWitnessSPKV0] || redeemScriptOpt.exists(
           _.isInstanceOf[P2WPKHWitnessSPKV0])
       ) {
-        require(preImages.size == 1 && preImages.head.isInstanceOf[ECPublicKey],
+        require(preImages.size == 1,
                 "P2WPKHWitnessV0 must have it's public key as a pre-image")
-        Some(P2WPKHWitnessV0(preImages.head.asInstanceOf[ECPublicKey]))
+
+        preImages.head match {
+          case pubKey: ECPublicKey =>
+            Some(P2WPKHWitnessV0(pubKey))
+          case _: NetworkElement =>
+            throw new IllegalArgumentException(
+              "P2WPKHWitnessV0 must have it's public key as a pre-image")
+        }
       } else {
         None
       }
@@ -697,10 +704,9 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
     * the corresponding PSBT's unsigned transaction, and if this is
     * a non-witness spend, the transaction being spent
     */
-  def finalizedFromNewSpendingInfo(
+  def finalizedFromSpendingInfo(
       spendingInfo: ScriptSignatureParams[InputInfo],
-      unsignedTx: Transaction,
-      nonWitnessTxOpt: Option[Transaction])(implicit
+      unsignedTx: Transaction)(implicit
       ec: ExecutionContext): Future[InputPSBTMap] = {
     val sigComponentF = BitcoinSigner
       .sign(spendingInfo, unsignedTx, isDummySignature = false)
@@ -711,11 +717,7 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
           Vector(WitnessUTXO(spendingInfo.output))
         case _: RawInputInfo | _: P2SHNonSegwitInputInfo |
             _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
-          nonWitnessTxOpt match {
-            case None => Vector.empty
-            case Some(nonWitnessTx) =>
-              Vector(NonWitnessOrUnknownUTXO(nonWitnessTx))
-          }
+          Vector(NonWitnessOrUnknownUTXO(spendingInfo.prevTransaction))
       }
 
       val scriptSig =
@@ -743,8 +745,7 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
     */
   def fromUTXOInfo(
       spendingInfo: ScriptSignatureParams[InputInfo],
-      unsignedTx: Transaction,
-      nonWitnessTxOpt: Option[Transaction])(implicit
+      unsignedTx: Transaction)(implicit
       ec: ExecutionContext): Future[InputPSBTMap] = {
     val sigsF = spendingInfo.toSingles.map { spendingInfoSingle =>
       BitcoinSigner.signSingle(spendingInfoSingle,
@@ -762,11 +763,7 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
           builder.+=(WitnessUTXO(spendingInfo.output))
         case _: RawInputInfo | _: P2SHNonSegwitInputInfo |
             _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
-          nonWitnessTxOpt match {
-            case None => ()
-            case Some(nonWitnessTx) =>
-              builder.+=(NonWitnessOrUnknownUTXO(nonWitnessTx))
-          }
+          builder.+=(NonWitnessOrUnknownUTXO(spendingInfo.prevTransaction))
       }
 
       builder.++=(sigs)

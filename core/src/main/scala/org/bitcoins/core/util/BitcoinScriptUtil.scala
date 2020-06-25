@@ -483,10 +483,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
-    // .get should be safe
-    val (_, idx) = spendingTransaction.inputs.zipWithIndex
-      .find(_._1.previousOutput == signingInfo.outPoint)
-      .get
+
+    val idx = TxUtil.inputIndex(signingInfo.inputInfo, spendingTransaction)
 
     signingInfo.output.scriptPubKey match {
       case _: P2SHScriptPubKey =>

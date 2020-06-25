@@ -125,38 +125,42 @@ object InputInfo {
     @tailrec
     def getPreImagesAndCondPath(
         scriptSignature: ScriptSignature,
-        prevCond: ConditionalPath = ConditionalPath.NoCondition): (
+        conditionalPath: Vector[Boolean] = Vector.empty): (
         Vector[NetworkElement],
-        ConditionalPath) = {
+        Vector[Boolean]) = {
       scriptSignature match {
         case p2pkh: P2PKHScriptSignature =>
-          (Vector(p2pkh.publicKey), prevCond)
+          (Vector(p2pkh.publicKey), conditionalPath)
         case cond: ConditionalScriptSignature =>
-          val path = ConditionalPath.toVector(prevCond) :+ cond.isTrue
-          getPreImagesAndCondPath(cond.nestedScriptSig,
-                                  ConditionalPath.fromBranch(path))
+          val path = conditionalPath :+ cond.isTrue
+          getPreImagesAndCondPath(cond.nestedScriptSig, path)
         case p2sh: P2SHScriptSignature =>
-          getPreImagesAndCondPath(p2sh.scriptSignatureNoRedeemScript, prevCond)
+          getPreImagesAndCondPath(p2sh.scriptSignatureNoRedeemScript,
+                                  conditionalPath)
         case _: ScriptSignature =>
-          (Vector.empty, prevCond)
+          (Vector.empty, conditionalPath)
       }
     }
 
-    signedTransaction match {
+    val (preImages, conditionsVec) = signedTransaction match {
       case EmptyTransaction =>
-        (Vector.empty, ConditionalPath.NoCondition)
+        (Vector.empty, Vector.empty)
       case _: BaseTransaction =>
         getPreImagesAndCondPath(txIn.scriptSignature)
       case wtx: WitnessTransaction =>
         wtx.witness.witnesses(inputIndex) match {
           case p2wpkh: P2WPKHWitnessV0 =>
-            (Vector(p2wpkh.pubKey), ConditionalPath.NoCondition)
+            (Vector(p2wpkh.pubKey), Vector.empty)
           case p2wsh: P2WSHWitnessV0 =>
             getPreImagesAndCondPath(p2wsh.scriptSignature)
           case EmptyScriptWitness =>
             getPreImagesAndCondPath(txIn.scriptSignature)
         }
     }
+
+    val conditionalPath = ConditionalPath.fromBranch(conditionsVec)
+
+    (preImages, conditionalPath)
   }
 
   def apply(

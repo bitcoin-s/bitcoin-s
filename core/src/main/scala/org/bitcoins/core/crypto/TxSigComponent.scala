@@ -62,26 +62,32 @@ object TxSigComponent {
     }
   }
 
+  private def setTransactionWitness(
+      inputInfo: InputInfo,
+      unsignedTx: Transaction): WitnessTransaction = {
+    val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
+    val unsignedWtx = WitnessTransaction.toWitnessTx(unsignedTx)
+
+    unsignedWtx.witness.witnesses(idx) match {
+      // Only set the witness if we don't already have one
+      case EmptyScriptWitness =>
+        InputInfo.getScriptWitness(inputInfo) match {
+          case None =>
+            unsignedWtx
+          case Some(scriptWitness) =>
+            unsignedWtx.updateWitness(idx, scriptWitness)
+        }
+      case _: ScriptWitnessV0 =>
+        unsignedWtx
+    }
+  }
+
   def fromWitnessInput(
       inputInfo: SegwitV0NativeInputInfo,
       unsignedTx: Transaction,
       flags: Seq[ScriptFlag]): TxSigComponent = {
     val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
-    val wtx = {
-      val unsignedWtx = WitnessTransaction.toWitnessTx(unsignedTx)
-      unsignedWtx.witness.witnesses(idx) match {
-        // Only set the witness if we don't already have one
-        case EmptyScriptWitness =>
-          InputInfo.getScriptWitness(inputInfo) match {
-            case None =>
-              unsignedWtx
-            case Some(scriptWitness) =>
-              unsignedWtx.updateWitness(idx, scriptWitness)
-          }
-        case _: ScriptWitnessV0 =>
-          unsignedWtx
-      }
-    }
+    val wtx = setTransactionWitness(inputInfo, unsignedTx)
 
     WitnessTxSigComponent(wtx, UInt32(idx), inputInfo.output, flags)
   }
@@ -91,15 +97,7 @@ object TxSigComponent {
       unsignedTx: Transaction,
       flags: Seq[ScriptFlag]): TxSigComponent = {
     val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
-    val wtx = {
-      val noWitnessWtx = WitnessTransaction.toWitnessTx(unsignedTx)
-      InputInfo.getScriptWitness(inputInfo) match {
-        case None =>
-          noWitnessWtx
-        case Some(scriptWitness) =>
-          noWitnessWtx.updateWitness(idx, scriptWitness)
-      }
-    }
+    val wtx = setTransactionWitness(inputInfo, unsignedTx)
 
     WitnessTxSigComponent(wtx, UInt32(idx), inputInfo.output, flags)
   }

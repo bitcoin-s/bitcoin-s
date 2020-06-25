@@ -59,14 +59,12 @@ class PSBTTest extends BitcoinSAsyncTest {
       case (fullPsbt, utxos, _) =>
         val emptyPsbt = PSBT.fromUnsignedTx(fullPsbt.transaction)
 
-        val infoAndTxs = PSBTGenerators
-          .spendingInfoAndNonWitnessTxsFromSpendingInfos(fullPsbt.transaction,
-                                                         utxos.toVector)
-          .infoAndTxOpts
+        val infoAndTxs = PSBTGenerators.orderSpendingInfos(fullPsbt.transaction,
+                                                           utxos.toVector)
         val updatedPSBT = infoAndTxs.zipWithIndex.foldLeft(emptyPsbt) {
-          case (psbt, ((utxo, txOpt), index)) =>
+          case (psbt, (utxo, index)) =>
             val partUpdatedPsbt = psbt
-              .addUTXOToInput(txOpt.get, index)
+              .addUTXOToInput(utxo.prevTransaction, index)
               .addSigHashTypeToInput(utxo.hashType, index)
 
             (InputInfo.getRedeemScript(utxo.inputInfo),

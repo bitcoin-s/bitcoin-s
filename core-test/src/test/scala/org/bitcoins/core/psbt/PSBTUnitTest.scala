@@ -297,7 +297,7 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
   it must "fail to create a valid UTXOSpendingInfo from a PSBTInputMap with insufficient data" in {
     val psbt1 = PSBT(
       "70736274ff01003f0200000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000ffffffff010000000000000000036a010000000000000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f0000")
-    assertThrows[UnsupportedOperationException](
+    assertThrows[RuntimeException](
       psbt1.getSpendingInfoUsingSigners(index = 0, getDummySigners(size = 1)))
   }
 
