@@ -1,6 +1,5 @@
 package org.bitcoins.core.api
 
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalatest.Assertion
 
@@ -21,14 +20,14 @@ class CallbackTest extends BitcoinSAsyncTest {
           promise.complete(fail("2nd callback did not start before timeout"))
         }
       }
-      FutureUtil.unit
+      promise.future.map(_ => ())
     }
 
     val f2: Callback[Unit] = _ => {
       if (!promise.isCompleted) {
         promise.complete(Success(succeed))
       }
-      FutureUtil.unit
+      promise.future.map(_ => ())
     }
 
     val handler =
