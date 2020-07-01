@@ -12,7 +12,7 @@
         "title": "CLI"
       },
       "applications/configuration": {
-        "title": "Application configuration"
+        "title": "Application Configuration"
       },
       "applications/dlc": {
         "title": "Executing A DLC with Bitcoin-S"
@@ -24,7 +24,7 @@
         "title": "GUI"
       },
       "applications/node": {
-        "title": "Light client"
+        "title": "Light Client"
       },
       "applications/server": {
         "title": "Application Server"
@@ -58,6 +58,9 @@
       },
       "core/hd-keys": {
         "title": "HD Key Generation"
+      },
+      "core/lightning-network": {
+        "title": "Lightning Network Data Types"
       },
       "core/psbts": {
         "title": "Partially Signed Bitcoin Transactions"
@@ -110,6 +113,9 @@
       "testkit/testkit": {
         "title": "Testkit"
       },
+      "wallet/address-tagging": {
+        "title": "Address and UTXO tagging"
+      },
       "wallet/chain-query-api": {
         "title": "Chain Query API"
       },
@@ -118,6 +124,9 @@
       },
       "wallet/node-api": {
         "title": "Node API"
+      },
+      "wallet/wallet-callbacks": {
+        "title": "Wallet Callbacks"
       },
       "wallet/wallet-get-address": {
         "title": "Wallet Get Address APIs"
