@@ -43,10 +43,13 @@ case class PSBT(
   import org.bitcoins.core.psbt.InputPSBTRecord._
   import org.bitcoins.core.psbt.PSBTInputKeyId._
 
-  // Need to define these so when we compare the PSBTs
+  // Need to define this so when we compare the PSBTs
   // the map lexicographical ordering is enforced
-  def ==(p: PSBT): Boolean = this.bytes == p.bytes
-  def !=(p: PSBT): Boolean = !(this == p)
+  override def equals(other: Any): Boolean =
+    other match {
+      case p: PSBT => this.bytes == p.bytes
+      case _       => other.equals(this)
+    }
 
   private val inputBytes: ByteVector =
     inputMaps.foldLeft(ByteVector.empty)(_ ++ _.bytes)
