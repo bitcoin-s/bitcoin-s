@@ -15,13 +15,6 @@ case class CompactFilterHeaderDAO()(implicit
   val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers.doubleSha256DigestBEMapper
 
-  implicit private val bigIntMapper: BaseColumnType[BigInt] =
-    if (appConfig.driverName == "postgresql") {
-      mappers.bigIntPostgresMapper
-    } else {
-      mappers.bigIntMapper
-    }
-
   class CompactFilterHeaderTable(tag: Tag)
       extends Table[CompactFilterHeaderDb](tag, "cfheaders") {
 
@@ -51,11 +44,6 @@ case class CompactFilterHeaderDAO()(implicit
 
   override val table: profile.api.TableQuery[CompactFilterHeaderTable] = {
     TableQuery[CompactFilterHeaderTable]
-  }
-
-  private lazy val blockHeaderTable: profile.api.TableQuery[
-    BlockHeaderDAO#BlockHeaderTable] = {
-    BlockHeaderDAO().table
   }
 
   override def createAll(filterHeaders: Vector[CompactFilterHeaderDb]): Future[
@@ -123,24 +111,10 @@ case class CompactFilterHeaderDAO()(implicit
   }
 
   def getBestFilterHeader: Future[Option[CompactFilterHeaderDb]] = {
-    val join = table join blockHeaderTable on (_.blockHash === _.hash)
-    val query = join.groupBy(_._1).map {
-      case (filter, headers) =>
-        filter -> headers.map(_._2.chainWork).max
-    }
-    val headersWithWorkF: Future[
-      Vector[(CompactFilterHeaderDb, Option[BigInt])]] = {
-      safeDatabase.runVec(query.result)
-    }
-    headersWithWorkF.map {
-      headersWithWork: Vector[(CompactFilterHeaderDb, Option[BigInt])] =>
-        if (headersWithWork.isEmpty) {
-          None
-        } else {
-          val highestWork = headersWithWork.maxBy(_._2.getOrElse(BigInt(0)))._1
-          Some(highestWork)
-        }
-    }
+    for {
+      blockHeaderDb <- BlockHeaderDAO().chainTips.map(_.maxBy(_.chainWork))
+      filterHeader <- findByBlockHash(blockHeaderDb.hashBE)
+    } yield filterHeader
   }
 
 }

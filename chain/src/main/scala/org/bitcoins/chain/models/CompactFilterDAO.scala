@@ -21,13 +21,6 @@ case class CompactFilterDAO()(implicit
   }
   import profile.api._
 
-  implicit private val bigIntMapper: BaseColumnType[BigInt] =
-    if (appConfig.driverName == "postgresql") {
-      mappers.bigIntPostgresMapper
-    } else {
-      mappers.bigIntMapper
-    }
-
   class CompactFilterTable(tag: Tag)
       extends Table[CompactFilterDb](tag, "cfilters") {
 
@@ -56,11 +49,6 @@ case class CompactFilterDAO()(implicit
 
   override val table: profile.api.TableQuery[CompactFilterTable] = {
     TableQuery[CompactFilterTable]
-  }
-
-  private lazy val blockHeaderTable: profile.api.TableQuery[
-    BlockHeaderDAO#BlockHeaderTable] = {
-    BlockHeaderDAO().table
   }
 
   override def createAll(
@@ -132,24 +120,9 @@ case class CompactFilterDAO()(implicit
 
   /** Gets the heaviest filter from the database */
   def getBestFilter: Future[Option[CompactFilterDb]] = {
-    val join = (table
-      .join(blockHeaderTable))
-      .on(_.blockHash === _.hash)
-    val query = join.groupBy(_._1).map {
-      case (filter, headers) =>
-        filter -> headers.map(_._2.chainWork).max
-    }
-    val filtersWithWorkF: Future[Vector[(CompactFilterDb, Option[BigInt])]] = {
-      safeDatabase.runVec(query.result)
-    }
-
-    filtersWithWorkF.map { filtersWithWork =>
-      if (filtersWithWork.isEmpty) {
-        None
-      } else {
-        val highest = filtersWithWork.maxBy(_._2.getOrElse(BigInt(0)))._1
-        Some(highest)
-      }
-    }
+    for {
+      blockHeaderDb <- BlockHeaderDAO().chainTips.map(_.maxBy(_.chainWork))
+      filter <- findByBlockHash(blockHeaderDb.hashBE)
+    } yield filter
   }
 }

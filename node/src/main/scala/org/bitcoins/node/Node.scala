@@ -126,8 +126,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val start = System.currentTimeMillis()
 
     for {
-      _ <- nodeAppConfig.start()
       _ <- nodeAppConfig.initialize()
+      _ <- nodeAppConfig.start()
       // get chainApi so we don't need to call chainApiFromDb on every call
       chainApi <- chainApiFromDb
       node <- {
@@ -147,6 +147,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         }
       }
 
+      _ = logger.trace("Fetching node starting point")
       bestHash <- chainApi.getBestBlockHash()
       bestHeight <- chainApi.getBestHashBlockHeight()
       filterCount <- chainApi.getFilterCount
