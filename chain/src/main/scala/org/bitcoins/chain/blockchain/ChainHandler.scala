@@ -82,7 +82,8 @@ case class ChainHandler(
     blockHeaderDAO.findByHash(hash).map { header =>
       logger.debug(s"Looking for header by hash=$hash")
       val resultStr = header
-        .map(h => s"height=${h.height}, hash=${h.hashBE}")
+        .map(h =>
+          s"height=${h.height}, hash=${h.hashBE}, chain work=${h.chainWork}")
         .getOrElse("None")
       logger.debug(s"getHeader result: $resultStr")
       header

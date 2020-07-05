@@ -110,11 +110,36 @@ case class CompactFilterHeaderDAO()(implicit
     query
   }
 
+  implicit private val bigIntMapper: BaseColumnType[BigInt] =
+    if (appConfig.driverName == "postgresql") {
+      mappers.bigIntPostgresMapper
+    } else {
+      mappers.bigIntMapper
+    }
+
+  private lazy val blockHeaderTable: profile.api.TableQuery[
+    BlockHeaderDAO#BlockHeaderTable] = {
+    BlockHeaderDAO().table
+  }
+
   def getBestFilterHeader: Future[Option[CompactFilterHeaderDb]] = {
+    val join = table
+      .join(blockHeaderTable)
+      .on(_.blockHash === _.hash)
+
+    val maxQuery = join.map(_._2.chainWork).max
+
     for {
-      blockHeaderDb <- BlockHeaderDAO().chainTips.map(_.maxBy(_.chainWork))
-      filterHeader <- findByBlockHash(blockHeaderDb.hashBE)
-    } yield filterHeader
+      maxWorkOpt <- safeDatabase.run(maxQuery.result)
+      queryOpt = maxWorkOpt.map(maxWork =>
+        join.filter(_._2.chainWork === maxWork).take(1))
+      filterHeaderOpt <- queryOpt match {
+        case Some(query) =>
+          safeDatabase.run(query.result).map(_.headOption.map(_._1))
+        case None =>
+          Future.successful(None)
+      }
+    } yield filterHeaderOpt
   }
 
 }

@@ -119,10 +119,48 @@ case class CompactFilterDAO()(implicit
   }
 
   /** Gets the heaviest filter from the database */
-  def getBestFilter: Future[Option[CompactFilterDb]] = {
+  def getBestFilter1: Future[Option[CompactFilterDb]] = {
     for {
-      blockHeaderDb <- BlockHeaderDAO().chainTips.map(_.maxBy(_.chainWork))
-      filter <- findByBlockHash(blockHeaderDb.hashBE)
-    } yield filter
+      blockHeaderDbs <- BlockHeaderDAO().chainTips
+      filterHeaderOpt <-
+        if (blockHeaderDbs.isEmpty) {
+          Future.successful(None)
+        } else {
+          val blockHeaderDb = blockHeaderDbs.maxBy(_.chainWork)
+          findByBlockHash(blockHeaderDb.hashBE)
+        }
+    } yield filterHeaderOpt
+  }
+
+  implicit private val bigIntMapper: BaseColumnType[BigInt] =
+    if (appConfig.driverName == "postgresql") {
+      mappers.bigIntPostgresMapper
+    } else {
+      mappers.bigIntMapper
+    }
+
+  private lazy val blockHeaderTable: profile.api.TableQuery[
+    BlockHeaderDAO#BlockHeaderTable] = {
+    BlockHeaderDAO().table
+  }
+
+  def getBestFilter: Future[Option[CompactFilterDb]] = {
+    val join = table
+      .join(blockHeaderTable)
+      .on(_.blockHash === _.hash)
+
+    val maxQuery = join.map(_._2.chainWork).max
+
+    for {
+      maxWorkOpt <- safeDatabase.run(maxQuery.result)
+      queryOpt = maxWorkOpt.map(maxWork =>
+        join.filter(_._2.chainWork === maxWork).take(1))
+      filterOpt <- queryOpt match {
+        case Some(query) =>
+          safeDatabase.run(query.result).map(_.headOption.map(_._1))
+        case None =>
+          Future.successful(None)
+      }
+    } yield filterOpt
   }
 }
