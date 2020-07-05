@@ -38,17 +38,6 @@ case class BIP39KeyManager(
                              password = BIP39Seed.EMPTY_PASSWORD)
   }
 
-  def ==(km: KeyManager): Boolean =
-    km match {
-      case bip39Km: BIP39KeyManager =>
-        mnemonic == bip39Km.mnemonic &&
-          kmParams == bip39Km.kmParams &&
-          bip39PasswordOpt == bip39Km.bip39PasswordOpt &&
-          creationTime.getEpochSecond == bip39Km.creationTime.getEpochSecond
-      case _: KeyManager =>
-        km == this
-    }
-
   override def equals(other: Any): Boolean =
     other match {
       case bip39Km: BIP39KeyManager =>
