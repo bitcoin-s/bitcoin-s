@@ -21,6 +21,13 @@ case class CompactFilterDAO()(implicit
   }
   import profile.api._
 
+  implicit private val bigIntMapper: BaseColumnType[BigInt] =
+    if (appConfig.driverName == "postgresql") {
+      mappers.bigIntPostgresMapper
+    } else {
+      mappers.bigIntMapper
+    }
+
   class CompactFilterTable(tag: Tag)
       extends Table[CompactFilterDb](tag, "cfilters") {
 
@@ -49,6 +56,11 @@ case class CompactFilterDAO()(implicit
 
   override val table: profile.api.TableQuery[CompactFilterTable] = {
     TableQuery[CompactFilterTable]
+  }
+
+  private lazy val blockHeaderTable: profile.api.TableQuery[
+    BlockHeaderDAO#BlockHeaderTable] = {
+    BlockHeaderDAO().table
   }
 
   override def createAll(
@@ -119,31 +131,6 @@ case class CompactFilterDAO()(implicit
   }
 
   /** Gets the heaviest filter from the database */
-  def getBestFilter1: Future[Option[CompactFilterDb]] = {
-    for {
-      blockHeaderDbs <- BlockHeaderDAO().chainTips
-      filterHeaderOpt <-
-        if (blockHeaderDbs.isEmpty) {
-          Future.successful(None)
-        } else {
-          val blockHeaderDb = blockHeaderDbs.maxBy(_.chainWork)
-          findByBlockHash(blockHeaderDb.hashBE)
-        }
-    } yield filterHeaderOpt
-  }
-
-  implicit private val bigIntMapper: BaseColumnType[BigInt] =
-    if (appConfig.driverName == "postgresql") {
-      mappers.bigIntPostgresMapper
-    } else {
-      mappers.bigIntMapper
-    }
-
-  private lazy val blockHeaderTable: profile.api.TableQuery[
-    BlockHeaderDAO#BlockHeaderTable] = {
-    BlockHeaderDAO().table
-  }
-
   def getBestFilter: Future[Option[CompactFilterDb]] = {
     val join = table
       .join(blockHeaderTable)

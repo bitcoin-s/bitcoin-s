@@ -15,6 +15,13 @@ case class CompactFilterHeaderDAO()(implicit
   val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers.doubleSha256DigestBEMapper
 
+  implicit private val bigIntMapper: BaseColumnType[BigInt] =
+    if (appConfig.driverName == "postgresql") {
+      mappers.bigIntPostgresMapper
+    } else {
+      mappers.bigIntMapper
+    }
+
   class CompactFilterHeaderTable(tag: Tag)
       extends Table[CompactFilterHeaderDb](tag, "cfheaders") {
 
@@ -44,6 +51,11 @@ case class CompactFilterHeaderDAO()(implicit
 
   override val table: profile.api.TableQuery[CompactFilterHeaderTable] = {
     TableQuery[CompactFilterHeaderTable]
+  }
+
+  private lazy val blockHeaderTable: profile.api.TableQuery[
+    BlockHeaderDAO#BlockHeaderTable] = {
+    BlockHeaderDAO().table
   }
 
   override def createAll(filterHeaders: Vector[CompactFilterHeaderDb]): Future[
@@ -108,18 +120,6 @@ case class CompactFilterHeaderDAO()(implicit
     Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
-  }
-
-  implicit private val bigIntMapper: BaseColumnType[BigInt] =
-    if (appConfig.driverName == "postgresql") {
-      mappers.bigIntPostgresMapper
-    } else {
-      mappers.bigIntMapper
-    }
-
-  private lazy val blockHeaderTable: profile.api.TableQuery[
-    BlockHeaderDAO#BlockHeaderTable] = {
-    BlockHeaderDAO().table
   }
 
   def getBestFilterHeader: Future[Option[CompactFilterHeaderDb]] = {
