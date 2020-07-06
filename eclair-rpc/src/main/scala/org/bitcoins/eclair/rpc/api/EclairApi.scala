@@ -5,6 +5,7 @@ import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.eclair.{
   AuditResult,
+  ChannelCommandResult,
   ChannelDesc,
   ChannelInfo,
   ChannelResult,
@@ -93,7 +94,7 @@ trait EclairApi {
 
   def disconnect(nodeId: NodeId): Future[Unit]
 
-  def close(id: ChannelId, spk: ScriptPubKey): Future[Unit]
+  def close(id: ChannelId, spk: ScriptPubKey): Future[ChannelCommandResult]
 
   def findRoute(
       nodeId: NodeId,
@@ -105,9 +106,9 @@ trait EclairApi {
       invoice: LnInvoice,
       amountMsat: MilliSatoshis): Future[Vector[NodeId]]
 
-  def forceClose(channelId: ChannelId): Future[Unit]
+  def forceClose(channelId: ChannelId): Future[ChannelCommandResult]
 
-  def forceClose(shortChannelId: ShortChannelId): Future[Unit]
+  def forceClose(shortChannelId: ShortChannelId): Future[ChannelCommandResult]
 
   def getInfo: Future[GetInfoResult]
 
@@ -120,13 +121,13 @@ trait EclairApi {
   def updateRelayFee(
       channelId: ChannelId,
       feeBaseMsat: MilliSatoshis,
-      feePropertionalMillionths: Long): Future[Unit]
+      feePropertionalMillionths: Long): Future[ChannelCommandResult]
 
   def updateRelayFee(
       shortChannelId: ShortChannelId,
       feeBaseMsat: MilliSatoshis,
       feePropertionalMillionths: Long
-  ): Future[Unit]
+  ): Future[ChannelCommandResult]
 
   def open(
       nodeId: NodeId,

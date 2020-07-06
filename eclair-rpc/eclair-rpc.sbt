@@ -21,8 +21,8 @@ TaskKeys.downloadEclair := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "0.4"
-  val commit = "69c538e"
+  val version = "0.4.1"
+  val commit = "e5fb281"
 
   logger.debug(s"(Maybe) downloading Eclair binaries for version: $version")
 
@@ -62,18 +62,20 @@ TaskKeys.downloadEclair := {
     import scala.io.Source
     import scala.collection.JavaConverters._
 
-    val tempPath = scriptPath.getParent resolve scriptPath.getFileName.toString + ".tmp"
+    val tempPath =
+      scriptPath.getParent resolve scriptPath.getFileName.toString + ".tmp"
     Files.createFile(tempPath,
                      PosixFilePermissions.asFileAttribute(
                        PosixFilePermissions.fromString("rwxr-xr-x")))
     val source = Source
       .fromFile(scriptPath.toUri)
 
-    val lines = (Vector("#!/usr/bin/env bash") ++ source.getLines()).map(
-      line =>
-        if (line == "declare -r lib_dir=\"$(realpath \"${app_home::-4}/lib\")\" # {app_home::-4} transforms ../bin in ../")
-          "declare -r lib_dir=\"$(realpath \"${app_home:0:${#app_home}-4}/lib\")\" # {app_home:0:${#app_home}-4} transforms ../bin in ../"
-        else line)
+    val lines = (Vector("#!/usr/bin/env bash") ++ source.getLines()).map(line =>
+      if (
+        line == "declare -r lib_dir=\"$(realpath \"${app_home::-4}/lib\")\" # {app_home::-4} transforms ../bin in ../"
+      )
+        "declare -r lib_dir=\"$(realpath \"${app_home:0:${#app_home}-4}/lib\")\" # {app_home:0:${#app_home}-4} transforms ../bin in ../"
+      else line)
 
     source.close()
 

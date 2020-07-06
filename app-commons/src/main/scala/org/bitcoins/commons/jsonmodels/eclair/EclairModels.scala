@@ -9,7 +9,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
-import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln.node.{Feature, FeatureSupport, NodeId}
 import org.bitcoins.core.protocol.ln.{
   LnHumanReadablePart,
   PaymentPreimage,
@@ -39,6 +39,21 @@ case class PeerInfo(
     state: PeerState,
     address: Option[String],
     channels: Int)
+
+sealed trait ChannelCommandState
+
+object ChannelCommandState {
+  case object OK extends ChannelCommandState
+  case object ChannelOpened extends ChannelCommandState
+  case object ChannelClosed extends ChannelCommandState
+  case class Error(message: String) extends ChannelCommandState
+}
+
+case class ChannelCommandResult(
+    results: scala.collection.Map[
+      Either[ShortChannelId, FundedChannelId],
+      ChannelCommandState]
+)
 
 /**
   * This is the data model returned by the RPC call
@@ -82,14 +97,23 @@ case class OpenChannelInfo(
     state: ChannelState.NORMAL.type
 ) extends ChannelInfo
 
+case class ActivatedFeature(feature: Feature, support: FeatureSupport)
+
+case class UnknownFeature(bitIndex: Int)
+
+case class Features(
+    activated: Set[ActivatedFeature],
+    unknown: Set[UnknownFeature])
+
 case class NodeInfo(
     signature: ECDigitalSignature,
-    features: String,
+    features: Features,
     timestamp: Instant,
     nodeId: NodeId,
     rgbColor: String,
     alias: String,
-    addresses: Vector[InetSocketAddress])
+    addresses: Vector[InetSocketAddress],
+    unknownFields: String)
 
 case class ChannelDesc(shortChannelId: ShortChannelId, a: NodeId, b: NodeId)
 
