@@ -134,11 +134,18 @@ case class NetworkFeesResult(
 
 case class ChannelStats(
     channelId: FundedChannelId,
+    direction: ChannelStats.Direction,
     avgPaymentAmount: Satoshis,
     paymentCount: Long,
     relayFee: Satoshis,
     networkFee: Satoshis
 )
+
+object ChannelStats {
+  sealed trait Direction
+  case object In extends Direction
+  case object Out extends Direction
+}
 
 case class UsableBalancesResult(
     remoteNodeId: NodeId,

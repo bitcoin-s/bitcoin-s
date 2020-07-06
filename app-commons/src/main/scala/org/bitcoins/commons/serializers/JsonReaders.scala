@@ -1201,6 +1201,19 @@ object JsonReaders {
                               timestamp)
   }
 
+  implicit val channelStatsDirectionReads: Reads[ChannelStats.Direction] =
+    Reads { json =>
+      SerializerUtil.processJsString { s =>
+        if (s.toUpperCase == "IN") {
+          ChannelStats.In
+        } else if (s.toUpperCase == "OUT") {
+          ChannelStats.Out
+        } else {
+          throw new RuntimeException(s"Unknown payment direction: `$s`")
+        }
+      }(json)
+    }
+
   implicit val channelStatsReads: Reads[ChannelStats] =
     Json.reads[ChannelStats]
 
