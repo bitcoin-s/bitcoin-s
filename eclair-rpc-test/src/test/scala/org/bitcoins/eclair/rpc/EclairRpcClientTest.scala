@@ -3,16 +3,9 @@ package org.bitcoins.eclair.rpc
 import java.nio.file.Files
 import java.time.Instant
 
-import org.bitcoins.commons.jsonmodels.eclair.{
-  ChannelResult,
-  ChannelUpdate,
-  IncomingPaymentStatus,
-  InvoiceResult,
-  OpenChannelInfo,
-  OutgoingPaymentStatus,
-  WebSocketEvent
-}
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.commons.jsonmodels.eclair._
+import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
@@ -1205,6 +1198,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       nodeInfo2 <- c2.getInfo
       _ <- c1.disconnect(nodeInfo2.nodeId)
     } yield {
+      assert(nodeInfo2.features.activated.nonEmpty)
+      assert(nodeInfo2.network == RegTest)
       succeed
     }
   }

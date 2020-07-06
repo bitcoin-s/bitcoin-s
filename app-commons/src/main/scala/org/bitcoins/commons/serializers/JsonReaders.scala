@@ -263,6 +263,18 @@ object JsonReaders {
       }
   }
 
+  implicit object BitcoinNetworkReads extends Reads[BitcoinNetwork] {
+
+    override def reads(json: JsValue): JsResult[BitcoinNetwork] =
+      SerializerUtil.processJsString {
+        case "mainnet"              => MainNet
+        case "testnet" | "testnet3" => TestNet3
+        case "regtest"              => RegTest
+        case err @ _ =>
+          throw new RuntimeException(s"Unknown Bitcoin network `$err`")
+      }(json)
+  }
+
   // Errors for Unit return types are caught in RpcClient::checkUnit
   implicit object UnitReads extends Reads[Unit] {
     override def reads(json: JsValue): JsResult[Unit] = JsSuccess(())

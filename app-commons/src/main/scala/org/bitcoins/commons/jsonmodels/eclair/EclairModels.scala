@@ -5,6 +5,7 @@ import java.time.Instant
 import java.util.UUID
 
 import org.bitcoins.commons.serializers.JsonReaders._
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
@@ -28,11 +29,15 @@ import scala.concurrent.duration.FiniteDuration
 sealed abstract class EclairModels
 
 case class GetInfoResult(
+    version: String,
     nodeId: NodeId,
     alias: String,
+    features: Features,
     chainHash: DoubleSha256Digest,
+    network: BitcoinNetwork,
     blockHeight: Long,
-    publicAddresses: Seq[InetSocketAddress])
+    publicAddresses: Seq[InetSocketAddress],
+    instanceId: UUID)
 
 case class PeerInfo(
     nodeId: NodeId,
