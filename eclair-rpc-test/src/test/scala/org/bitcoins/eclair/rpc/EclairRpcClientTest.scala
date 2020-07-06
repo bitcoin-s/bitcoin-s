@@ -142,6 +142,23 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     executeWithClientOtherClient(f)
   }
 
+  it should "perform on-chain operations" in {
+    for {
+      c <- clientF
+      address <- c.getNewAddress()
+      balance <- c.onChainBalance()
+      txid <- c.sendOnChain(address, Satoshis(5000), 1)
+      balance1 <- c.onChainBalance()
+      transactions <- c.onChainTransactions()
+    } yield {
+      assert(balance.confirmed > Satoshis(0))
+      assert(balance.unconfirmed == Satoshis(0))
+      // we sent 5000 sats to ourselves and paid some sats in fee
+      assert(balance1.confirmed < balance.confirmed)
+      assert(transactions.exists(_.txid == txid))
+    }
+  }
+
   /**
     * Please keep this test the very first. All other tests rely on the propagated gossip messages.
     */
@@ -1179,15 +1196,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       res <- c.usableBalances()
     } yield {
       assert(res.nonEmpty)
-    }
-  }
-
-  it should "get new address" in {
-    for {
-      c <- clientF
-      res <- c.getNewAddress()
-    } yield {
-      assert(res.toString.nonEmpty)
     }
   }
 

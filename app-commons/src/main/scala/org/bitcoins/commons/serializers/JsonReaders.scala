@@ -42,16 +42,7 @@ import org.bitcoins.core.protocol.{
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECDigitalSignature,
-  ECPublicKey,
-  RipeMd160Digest,
-  RipeMd160DigestBE,
-  Sha256Digest,
-  Sha256Hash160Digest
-}
+import org.bitcoins.crypto._
 import play.api.libs.json._
 
 import scala.concurrent.duration._
@@ -1339,5 +1330,11 @@ object JsonReaders {
             js.validate[WebSocketEvent.PaymentSettlingOnchain]
         }
     }
+
+  implicit val onChainBalanceReads: Reads[OnChainBalance] =
+    Json.reads[OnChainBalance]
+
+  implicit val walletTransactionReads: Reads[WalletTransaction] =
+    Json.reads[WalletTransaction]
 
 }

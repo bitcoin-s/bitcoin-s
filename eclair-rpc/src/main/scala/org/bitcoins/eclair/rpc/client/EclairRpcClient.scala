@@ -31,7 +31,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.util.{BytesUtil, FutureUtil, StartStop}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.NodeUri
@@ -610,6 +610,25 @@ class EclairRpcClient(
 
   override def getNewAddress(): Future[BitcoinAddress] = {
     eclairCall[BitcoinAddress]("getnewaddress")
+  }
+
+  override def onChainBalance(): Future[OnChainBalance] = {
+    eclairCall[OnChainBalance]("onchainbalance")
+  }
+
+  override def onChainTransactions(): Future[Vector[WalletTransaction]] = {
+    eclairCall[Vector[WalletTransaction]]("onchaintransactions")
+  }
+
+  override def sendOnChain(
+      address: BitcoinAddress,
+      amount: Satoshis,
+      confirmationTarget: Int): Future[DoubleSha256DigestBE] = {
+    eclairCall[DoubleSha256DigestBE](
+      "sendonchain",
+      "address" -> address.toString,
+      "amountSatoshis" -> amount.toLong.toString,
+      "confirmationTarget" -> confirmationTarget.toString)
   }
 
   private def eclairCall[T](command: String, parameters: (String, String)*)(

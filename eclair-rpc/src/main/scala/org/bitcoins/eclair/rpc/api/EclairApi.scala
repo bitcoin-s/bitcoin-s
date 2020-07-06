@@ -3,26 +3,7 @@ package org.bitcoins.eclair.rpc.api
 import java.net.InetSocketAddress
 import java.time.Instant
 
-import org.bitcoins.commons.jsonmodels.eclair.{
-  AuditResult,
-  ChannelCommandResult,
-  ChannelDesc,
-  ChannelInfo,
-  ChannelResult,
-  ChannelStats,
-  ChannelUpdate,
-  GetInfoResult,
-  IncomingPayment,
-  InvoiceResult,
-  NetworkFeesResult,
-  NodeInfo,
-  OutgoingPayment,
-  PaymentId,
-  PeerInfo,
-  SendToRouteResult,
-  UsableBalancesResult,
-  WebSocketEvent
-}
+import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
@@ -36,7 +17,7 @@ import org.bitcoins.core.protocol.ln.{
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.eclair.rpc.network.NodeUri
 
 import scala.concurrent.duration._
@@ -297,4 +278,13 @@ trait EclairApi {
   def connectToWebSocket(eventHandler: WebSocketEvent => Unit): Future[Unit]
 
   def getNewAddress(): Future[BitcoinAddress]
+
+  def onChainBalance(): Future[OnChainBalance]
+
+  def onChainTransactions(): Future[Vector[WalletTransaction]]
+
+  def sendOnChain(
+      address: BitcoinAddress,
+      amount: Satoshis,
+      confirmationTarget: Int): Future[DoubleSha256DigestBE]
 }

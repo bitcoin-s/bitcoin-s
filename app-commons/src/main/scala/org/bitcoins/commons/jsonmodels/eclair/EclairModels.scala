@@ -398,3 +398,14 @@ object WebSocketEvent {
   ) extends WebSocketEvent
 
 }
+
+case class OnChainBalance(confirmed: Satoshis, unconfirmed: Satoshis)
+
+case class WalletTransaction(
+    address: String,
+    amount: Satoshis,
+    fees: Satoshis,
+    blockHash: DoubleSha256DigestBE,
+    confirmations: Long,
+    txid: DoubleSha256DigestBE,
+    timestamp: Long)
