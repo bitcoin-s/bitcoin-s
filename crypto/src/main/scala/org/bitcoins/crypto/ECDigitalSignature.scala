@@ -10,8 +10,11 @@ sealed abstract class ECDigitalSignature {
   require(s.signum == 1 || s.signum == 0, s"s must not be negative, got $s")
   def hex: String = CryptoBytesUtil.encodeHex(bytes)
 
-  def ==(p: ECDigitalSignature): Boolean = this.bytes == p.bytes
-  def !=(p: ECDigitalSignature): Boolean = !(this == p)
+  override def equals(other: Any): Boolean =
+    other match {
+      case sig: ECDigitalSignature => bytes == sig.bytes
+      case _                       => other.equals(this)
+    }
 
   def bytes: ByteVector
 
