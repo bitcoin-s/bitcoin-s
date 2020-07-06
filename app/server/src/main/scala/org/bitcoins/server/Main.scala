@@ -93,14 +93,16 @@ object Main extends App with BitcoinSLogger {
       _ <- configInitializedF
       uninitializedNode <- uninitializedNodeF
       chainApi <- chainApiF
+      _ = logger.info("Initialized chain api")
       wallet <- walletConf.createWallet(uninitializedNode,
                                         chainApi,
                                         BitcoinerLiveFeeRateProvider(60),
                                         bip39PasswordOpt)
+      _ = logger.info("Starting wallet")
       _ <- wallet.start()
     } yield wallet
 
-    //add callbacks to our unitialized node
+    //add callbacks to our uninitialized node
     val nodeWithCallbacksF = for {
       uninitializedNode <- uninitializedNodeF
       wallet <- walletF

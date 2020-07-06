@@ -132,24 +132,22 @@ case class CompactFilterDAO()(implicit
 
   /** Gets the heaviest filter from the database */
   def getBestFilter: Future[Option[CompactFilterDb]] = {
-    val join = (table
-      .join(blockHeaderTable))
+    val join = table
+      .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
-    val query = join.groupBy(_._1).map {
-      case (filter, headers) =>
-        filter -> headers.map(_._2.chainWork).max
-    }
-    val filtersWithWorkF: Future[Vector[(CompactFilterDb, Option[BigInt])]] = {
-      safeDatabase.runVec(query.result)
-    }
 
-    filtersWithWorkF.map { filtersWithWork =>
-      if (filtersWithWork.isEmpty) {
-        None
-      } else {
-        val highest = filtersWithWork.maxBy(_._2.getOrElse(BigInt(0)))._1
-        Some(highest)
+    val maxQuery = join.map(_._2.chainWork).max
+
+    for {
+      maxWorkOpt <- safeDatabase.run(maxQuery.result)
+      queryOpt = maxWorkOpt.map(maxWork =>
+        join.filter(_._2.chainWork === maxWork).take(1))
+      filterOpt <- queryOpt match {
+        case Some(query) =>
+          safeDatabase.run(query.result).map(_.headOption.map(_._1))
+        case None =>
+          Future.successful(None)
       }
-    }
+    } yield filterOpt
   }
 }
