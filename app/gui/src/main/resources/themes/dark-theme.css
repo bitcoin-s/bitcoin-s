@@ -13,7 +13,7 @@
 }
 
 /** Customization of the bar where the buttons are located**/
-.dialog > .dialog-pane > .button-bar {
+.dialog-pane > .button-bar > .container {
   -fx-background-color: #304c5a;
   -fx-base: #304c5a;
 }
