@@ -69,6 +69,6 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
                     dbConfig(ProjectType.Node))
     val nodeDbManagement = createNodeDbManagement(nodeAppConfig)
     val result = nodeDbManagement.migrate()
-    assert(result == 1)
+    assert(result == 2)
   }
 }
