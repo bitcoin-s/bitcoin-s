@@ -251,13 +251,8 @@ object JsonReaders {
   implicit object BitcoinNetworkReads extends Reads[BitcoinNetwork] {
 
     override def reads(json: JsValue): JsResult[BitcoinNetwork] =
-      SerializerUtil.processJsString {
-        case "mainnet"              => MainNet
-        case "testnet" | "testnet3" => TestNet3
-        case "regtest"              => RegTest
-        case err @ _ =>
-          throw new RuntimeException(s"Unknown Bitcoin network `$err`")
-      }(json)
+      SerializerUtil.processJsString(BitcoinNetworks.fromString)(json)
+
   }
 
   // Errors for Unit return types are caught in RpcClient::checkUnit
@@ -885,17 +880,7 @@ object JsonReaders {
 
   implicit val channelCommandResultStateReads: Reads[
     ChannelCommandResult.State] = Reads { jsValue =>
-    SerializerUtil.processJsString { s =>
-      if (s == "ok") {
-        ChannelCommandResult.OK
-      } else if (s.startsWith("created channel ")) {
-        ChannelCommandResult.ChannelOpened
-      } else if (s.startsWith("closed channel ")) {
-        ChannelCommandResult.ChannelClosed
-      } else {
-        ChannelCommandResult.Error(s)
-      }
-    }(jsValue)
+    SerializerUtil.processJsString(ChannelCommandResult.fromString)(jsValue)
   }
 
   implicit val channelCommandResultReads: Reads[ChannelCommandResult] = Reads {
@@ -1200,15 +1185,7 @@ object JsonReaders {
 
   implicit val channelStatsDirectionReads: Reads[ChannelStats.Direction] =
     Reads { json =>
-      SerializerUtil.processJsString { s =>
-        if (s.toUpperCase == "IN") {
-          ChannelStats.In
-        } else if (s.toUpperCase == "OUT") {
-          ChannelStats.Out
-        } else {
-          throw new RuntimeException(s"Unknown payment direction: `$s`")
-        }
-      }(json)
+      SerializerUtil.processJsString(ChannelStats.Direction.fromString)(json)
     }
 
   implicit val channelStatsReads: Reads[ChannelStats] =

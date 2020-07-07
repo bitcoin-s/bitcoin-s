@@ -57,6 +57,17 @@ object ChannelCommandResult {
   case object ChannelOpened extends State
   case object ChannelClosed extends State
   case class Error(message: String) extends State
+
+  def fromString(s: String): State =
+    if (s == "ok") {
+      ChannelCommandResult.OK
+    } else if (s.startsWith("created channel ")) {
+      ChannelCommandResult.ChannelOpened
+    } else if (s.startsWith("closed channel ")) {
+      ChannelCommandResult.ChannelClosed
+    } else {
+      ChannelCommandResult.Error(s)
+    }
 }
 
 /**
@@ -149,6 +160,18 @@ object ChannelStats {
   sealed trait Direction
   case object In extends Direction
   case object Out extends Direction
+
+  object Direction {
+
+    def fromString(s: String): Direction =
+      if (s.toUpperCase == "IN") {
+        ChannelStats.In
+      } else if (s.toUpperCase == "OUT") {
+        ChannelStats.Out
+      } else {
+        throw new RuntimeException(s"Unknown payment direction: `$s`")
+      }
+  }
 }
 
 case class UsableBalancesResult(
