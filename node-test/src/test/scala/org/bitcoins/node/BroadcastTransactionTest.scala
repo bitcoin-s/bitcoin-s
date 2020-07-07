@@ -1,12 +1,13 @@
 package org.bitcoins.node
 
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.node.{
   NodeTestUtil,
   NodeUnitTest,
@@ -16,6 +17,7 @@ import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 class BroadcastTransactionTest extends NodeUnitTest {
 
@@ -31,6 +33,22 @@ class BroadcastTransactionTest extends NodeUnitTest {
                                     getBIP39PasswordOpt())
 
   private val sendAmount = 1.bitcoin
+
+  it must "safely broadcast a transaction twice" in { param =>
+    val SpvNodeFundedWalletBitcoind(node, _, _, _) = param
+
+    val tx = TransactionGenerators.transaction.sampleSome
+
+    for {
+      _ <- node.broadcastTransaction(tx)
+      _ <- node.broadcastTransaction(tx)
+
+      txDbOpt <- node.txDAO.findByHash(tx.txId)
+    } yield {
+      assert(txDbOpt.isDefined)
+      assert(txDbOpt.get.transaction == tx)
+    }
+  }
 
   it must "broadcast a transaction" in { param =>
     val SpvNodeFundedWalletBitcoind(node, wallet, rpc, _) = param
@@ -51,6 +69,15 @@ class BroadcastTransactionTest extends NodeUnitTest {
         }
     }
 
+    def attemptBroadcast(tx: Transaction): Future[Unit] = {
+      for {
+        _ <- node.broadcastTransaction(tx)
+        _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
+                                           duration = 1.second,
+                                           maxTries = 25)
+      } yield ()
+    }
+
     val addrF = rpc.getNewAddress
     val balanceF = rpc.getBalance
 
@@ -65,21 +92,11 @@ class BroadcastTransactionTest extends NodeUnitTest {
           .sendToAddress(address, sendAmount, None)
 
       bitcoindBalancePreBroadcast <- balanceF
-      _ <- node.broadcastTransaction(tx)
-      _ <-
-        TestAsyncUtil
-          .awaitConditionF(() => hasSeenTx(tx),
-                           duration = 1.second,
-                           maxTries = 25)
-          .recoverWith {
-            case _: Throwable =>
-              for {
-                _ <- node.broadcastTransaction(tx)
-                _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
-                                                   duration = 1.second,
-                                                   maxTries = 25)
-              } yield ()
-          }
+      _ <- attemptBroadcast(tx)
+        .recoverWith {
+          case NonFatal(_) =>
+            attemptBroadcast(tx)
+        }
       _ <- rpc.generateToAddress(blocks = 1, junkAddress)
       bitcoindBalancePostBroadcast <- rpc.getBalance
 
