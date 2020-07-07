@@ -19,7 +19,7 @@ import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.protocol.ln.channel._
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
-import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln.node.{Feature, FeatureSupport, NodeId}
 import org.bitcoins.core.protocol.script.{
   ScriptPubKey,
   ScriptSignature,
@@ -36,16 +36,7 @@ import org.bitcoins.core.protocol.{
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECDigitalSignature,
-  ECPublicKey,
-  RipeMd160Digest,
-  RipeMd160DigestBE,
-  Sha256Digest,
-  Sha256Hash160Digest
-}
+import org.bitcoins.crypto._
 import play.api.libs.json._
 
 import scala.concurrent.duration._
@@ -255,6 +246,13 @@ object JsonReaders {
             _: JsObject) =>
           SerializerUtil.buildJsErrorMsg("jsstring", err)
       }
+  }
+
+  implicit object BitcoinNetworkReads extends Reads[BitcoinNetwork] {
+
+    override def reads(json: JsValue): JsResult[BitcoinNetwork] =
+      SerializerUtil.processJsString(BitcoinNetworks.fromString)(json)
+
   }
 
   // Errors for Unit return types are caught in RpcClient::checkUnit
@@ -718,6 +716,41 @@ object JsonReaders {
     }
   }
 
+  implicit val featureSupportReads: Reads[FeatureSupport] =
+    Reads { jsValue =>
+      SerializerUtil.processJsString {
+        case "mandatory" => FeatureSupport.Mandatory
+        case "optional"  => FeatureSupport.Optional
+        case err: String =>
+          throw new RuntimeException(s"Invalid feature support value: `$err`")
+      }(jsValue)
+    }
+
+  lazy val featuresByName: Map[String, Feature] =
+    Feature.knownFeatures.map(f => (f.rfcName, f)).toMap
+
+  implicit val featureReads: Reads[Feature] =
+    Reads { jsValue =>
+      SerializerUtil.processJsString(featuresByName)(jsValue)
+    }
+
+  implicit val unknownFeatureReads: Reads[UnknownFeature] =
+    Reads { jsValue =>
+      SerializerUtil.processJsString(s => UnknownFeature(s.toInt))(jsValue)
+    }
+
+  implicit val activatedFeatureReads: Reads[ActivatedFeature] =
+    Reads { jsValue =>
+      for {
+        feature <- (jsValue \ "name").validate[Feature]
+        support <- (jsValue \ "support").validate[FeatureSupport]
+      } yield ActivatedFeature(feature, support)
+    }
+
+  implicit val featuresReads: Reads[Features] = {
+    Json.reads[Features]
+  }
+
   implicit val getInfoResultReads: Reads[GetInfoResult] = {
     Json.reads[GetInfoResult]
   }
@@ -737,20 +770,22 @@ object JsonReaders {
     Reads { jsValue =>
       for {
         signature <- (jsValue \ "signature").validate[ECDigitalSignature]
-        features <- (jsValue \ "features").validate[String]
+        features <- (jsValue \ "features").validate[Features]
         timestamp <- (jsValue \ "timestamp")
           .validate[Instant](instantReadsSeconds)
         nodeId <- (jsValue \ "nodeId").validate[NodeId]
         rgbColor <- (jsValue \ "rgbColor").validate[String]
         alias <- (jsValue \ "alias").validate[String]
         addresses <- (jsValue \ "addresses").validate[Vector[InetSocketAddress]]
+        unknownFields <- (jsValue \ "unknownFields").validate[String]
       } yield NodeInfo(signature,
                        features,
                        timestamp,
                        nodeId,
                        rgbColor,
                        alias,
-                       addresses)
+                       addresses,
+                       unknownFields)
     }
   }
 
@@ -841,6 +876,25 @@ object JsonReaders {
         case _: ChannelState =>
           jsValue.validate[BaseChannelInfo]
       }
+  }
+
+  implicit val channelCommandResultStateReads: Reads[
+    ChannelCommandResult.State] = Reads { jsValue =>
+    SerializerUtil.processJsString(ChannelCommandResult.fromString)(jsValue)
+  }
+
+  implicit val channelCommandResultReads: Reads[ChannelCommandResult] = Reads {
+    case obj: JsObject =>
+      JsSuccess(ChannelCommandResult(obj.value.map { x =>
+        val channelId = Try(FundedChannelId.fromHex(x._1)) match {
+          case Success(id) => Right(id)
+          case Failure(_)  => Left(ShortChannelId.fromHumanReadableString(x._1))
+        }
+        (channelId, x._2.validate[ChannelCommandResult.State].get)
+      }))
+    case err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
+        _: JsNumber) =>
+      SerializerUtil.buildJsErrorMsg("jsobject", err)
   }
 
   implicit val channelUpdateReads: Reads[ChannelUpdate] = {
@@ -1129,6 +1183,11 @@ object JsonReaders {
                               timestamp)
   }
 
+  implicit val channelStatsDirectionReads: Reads[ChannelStats.Direction] =
+    Reads { json =>
+      SerializerUtil.processJsString(ChannelStats.Direction.fromString)(json)
+    }
+
   implicit val channelStatsReads: Reads[ChannelStats] =
     Json.reads[ChannelStats]
 
@@ -1242,5 +1301,11 @@ object JsonReaders {
             js.validate[WebSocketEvent.PaymentSettlingOnchain]
         }
     }
+
+  implicit val onChainBalanceReads: Reads[OnChainBalance] =
+    Json.reads[OnChainBalance]
+
+  implicit val walletTransactionReads: Reads[WalletTransaction] =
+    Json.reads[WalletTransaction]
 
 }

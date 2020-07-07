@@ -5,11 +5,12 @@ import java.time.Instant
 import java.util.UUID
 
 import org.bitcoins.commons.serializers.JsonReaders._
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
-import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln.node.{Feature, FeatureSupport, NodeId}
 import org.bitcoins.core.protocol.ln.{
   LnHumanReadablePart,
   PaymentPreimage,
@@ -28,17 +29,46 @@ import scala.concurrent.duration.FiniteDuration
 sealed abstract class EclairModels
 
 case class GetInfoResult(
+    version: String,
     nodeId: NodeId,
     alias: String,
+    features: Features,
     chainHash: DoubleSha256Digest,
+    network: BitcoinNetwork,
     blockHeight: Long,
-    publicAddresses: Seq[InetSocketAddress])
+    publicAddresses: Seq[InetSocketAddress],
+    instanceId: UUID)
 
 case class PeerInfo(
     nodeId: NodeId,
     state: PeerState,
     address: Option[String],
     channels: Int)
+
+case class ChannelCommandResult(
+    results: scala.collection.Map[
+      Either[ShortChannelId, FundedChannelId],
+      ChannelCommandResult.State]
+)
+
+object ChannelCommandResult {
+  sealed trait State
+  case object OK extends State
+  case object ChannelOpened extends State
+  case object ChannelClosed extends State
+  case class Error(message: String) extends State
+
+  def fromString(s: String): State =
+    if (s == "ok") {
+      ChannelCommandResult.OK
+    } else if (s.startsWith("created channel ")) {
+      ChannelCommandResult.ChannelOpened
+    } else if (s.startsWith("closed channel ")) {
+      ChannelCommandResult.ChannelClosed
+    } else {
+      ChannelCommandResult.Error(s)
+    }
+}
 
 /**
   * This is the data model returned by the RPC call
@@ -82,14 +112,23 @@ case class OpenChannelInfo(
     state: ChannelState.NORMAL.type
 ) extends ChannelInfo
 
+case class ActivatedFeature(feature: Feature, support: FeatureSupport)
+
+case class UnknownFeature(bitIndex: Int)
+
+case class Features(
+    activated: Set[ActivatedFeature],
+    unknown: Set[UnknownFeature])
+
 case class NodeInfo(
     signature: ECDigitalSignature,
-    features: String,
+    features: Features,
     timestamp: Instant,
     nodeId: NodeId,
     rgbColor: String,
     alias: String,
-    addresses: Vector[InetSocketAddress])
+    addresses: Vector[InetSocketAddress],
+    unknownFields: String)
 
 case class ChannelDesc(shortChannelId: ShortChannelId, a: NodeId, b: NodeId)
 
@@ -110,11 +149,30 @@ case class NetworkFeesResult(
 
 case class ChannelStats(
     channelId: FundedChannelId,
+    direction: ChannelStats.Direction,
     avgPaymentAmount: Satoshis,
     paymentCount: Long,
     relayFee: Satoshis,
     networkFee: Satoshis
 )
+
+object ChannelStats {
+  sealed trait Direction
+  case object In extends Direction
+  case object Out extends Direction
+
+  object Direction {
+
+    def fromString(s: String): Direction =
+      if (s.toUpperCase == "IN") {
+        ChannelStats.In
+      } else if (s.toUpperCase == "OUT") {
+        ChannelStats.Out
+      } else {
+        throw new RuntimeException(s"Unknown payment direction: `$s`")
+      }
+  }
+}
 
 case class UsableBalancesResult(
     remoteNodeId: NodeId,
@@ -362,3 +420,14 @@ object WebSocketEvent {
   ) extends WebSocketEvent
 
 }
+
+case class OnChainBalance(confirmed: Satoshis, unconfirmed: Satoshis)
+
+case class WalletTransaction(
+    address: String,
+    amount: Satoshis,
+    fees: Satoshis,
+    blockHash: DoubleSha256DigestBE,
+    confirmations: Long,
+    txid: DoubleSha256DigestBE,
+    timestamp: Long)
