@@ -5,7 +5,9 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.node.{
   NodeTestUtil,
   NodeUnitTest,
@@ -33,20 +35,11 @@ class BroadcastTransactionTest extends NodeUnitTest {
   private val sendAmount = 1.bitcoin
 
   it must "safely broadcast a transaction twice" in { param =>
-    val SpvNodeFundedWalletBitcoind(node, wallet, rpc, _) = param
+    val SpvNodeFundedWalletBitcoind(node, _, _, _) = param
 
-    val addrF = rpc.getNewAddress
+    val tx = TransactionGenerators.transaction.sampleSome
 
     for {
-      _ <- wallet.getBloomFilter()
-      _ <- node.sync()
-      _ <- NodeTestUtil.awaitSync(node, rpc)
-
-      address <- addrF
-      tx <-
-        wallet
-          .sendToAddress(address, sendAmount, None)
-
       _ <- node.broadcastTransaction(tx)
       _ <- node.broadcastTransaction(tx)
 
