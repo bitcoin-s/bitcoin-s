@@ -1,10 +1,10 @@
 package org.bitcoins.node.models
 
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.fixtures.NodeDAOFixture
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 
 class BroadcastAbleTransactionDAOTest extends NodeDAOFixture with EmbeddedPg {
 
@@ -20,7 +20,7 @@ class BroadcastAbleTransactionDAOTest extends NodeDAOFixture with EmbeddedPg {
 
     for {
       created <- txDAO.create(BroadcastAbleTransaction(tx))
-      read <- txDAO.read(created.id.get)
+      read <- txDAO.read(created.transaction.txIdBE)
     } yield assert(read.contains(created))
 
   }
