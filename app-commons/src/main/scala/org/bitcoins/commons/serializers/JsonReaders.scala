@@ -8,12 +8,6 @@ import java.util.UUID
 import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
 import org.bitcoins.commons.jsonmodels.bitcoind._
-import org.bitcoins.commons.jsonmodels.eclair.ChannelCommandState.{
-  ChannelClosed,
-  ChannelOpened,
-  Error,
-  OK
-}
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config._
@@ -889,19 +883,19 @@ object JsonReaders {
       }
   }
 
-  implicit val channelCommandStateReads: Reads[ChannelCommandState] = Reads {
-    jsValue =>
-      SerializerUtil.processJsString { s =>
-        if (s == "ok") {
-          OK
-        } else if (s.startsWith("created channel ")) {
-          ChannelOpened
-        } else if (s.startsWith("closed channel ")) {
-          ChannelClosed
-        } else {
-          Error(s)
-        }
-      }(jsValue)
+  implicit val channelCommandResultStateReads: Reads[
+    ChannelCommandResult.State] = Reads { jsValue =>
+    SerializerUtil.processJsString { s =>
+      if (s == "ok") {
+        ChannelCommandResult.OK
+      } else if (s.startsWith("created channel ")) {
+        ChannelCommandResult.ChannelOpened
+      } else if (s.startsWith("closed channel ")) {
+        ChannelCommandResult.ChannelClosed
+      } else {
+        ChannelCommandResult.Error(s)
+      }
+    }(jsValue)
   }
 
   implicit val channelCommandResultReads: Reads[ChannelCommandResult] = Reads {
@@ -911,7 +905,7 @@ object JsonReaders {
           case Success(id) => Right(id)
           case Failure(_)  => Left(ShortChannelId.fromHumanReadableString(x._1))
         }
-        (channelId, x._2.validate[ChannelCommandState].get)
+        (channelId, x._2.validate[ChannelCommandResult.State].get)
       }))
     case err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
         _: JsNumber) =>

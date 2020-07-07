@@ -45,20 +45,19 @@ case class PeerInfo(
     address: Option[String],
     channels: Int)
 
-sealed trait ChannelCommandState
-
-object ChannelCommandState {
-  case object OK extends ChannelCommandState
-  case object ChannelOpened extends ChannelCommandState
-  case object ChannelClosed extends ChannelCommandState
-  case class Error(message: String) extends ChannelCommandState
-}
-
 case class ChannelCommandResult(
     results: scala.collection.Map[
       Either[ShortChannelId, FundedChannelId],
-      ChannelCommandState]
+      ChannelCommandResult.State]
 )
+
+object ChannelCommandResult {
+  sealed trait State
+  case object OK extends State
+  case object ChannelOpened extends State
+  case object ChannelClosed extends State
+  case class Error(message: String) extends State
+}
 
 /**
   * This is the data model returned by the RPC call
