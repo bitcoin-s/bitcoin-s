@@ -3,16 +3,9 @@ package org.bitcoins.eclair.rpc
 import java.nio.file.Files
 import java.time.Instant
 
-import org.bitcoins.commons.jsonmodels.eclair.{
-  ChannelResult,
-  ChannelUpdate,
-  IncomingPaymentStatus,
-  InvoiceResult,
-  OpenChannelInfo,
-  OutgoingPaymentStatus,
-  WebSocketEvent
-}
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.commons.jsonmodels.eclair._
+import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
@@ -147,6 +140,23 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     executeWithClientOtherClient(f)
+  }
+
+  it should "perform on-chain operations" in {
+    for {
+      c <- clientF
+      address <- c.getNewAddress()
+      balance <- c.onChainBalance()
+      txid <- c.sendOnChain(address, Satoshis(5000), 1)
+      balance1 <- c.onChainBalance()
+      transactions <- c.onChainTransactions()
+    } yield {
+      assert(balance.confirmed > Satoshis(0))
+      assert(balance.unconfirmed == Satoshis(0))
+      // we sent 5000 sats to ourselves and paid some sats in fee
+      assert(balance1.confirmed < balance.confirmed)
+      assert(transactions.exists(_.txid == txid))
+    }
   }
 
   /**
@@ -1189,15 +1199,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  it should "get new address" in {
-    for {
-      c <- clientF
-      res <- c.getNewAddress()
-    } yield {
-      assert(res.toString.nonEmpty)
-    }
-  }
-
   it should "disconnect node" in {
     for {
       c1 <- clientF
@@ -1205,6 +1206,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       nodeInfo2 <- c2.getInfo
       _ <- c1.disconnect(nodeInfo2.nodeId)
     } yield {
+      assert(nodeInfo2.features.activated.nonEmpty)
+      assert(nodeInfo2.network == RegTest)
       succeed
     }
   }

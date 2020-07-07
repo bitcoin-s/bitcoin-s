@@ -31,7 +31,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.util.{BytesUtil, FutureUtil, StartStop}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.NodeUri
@@ -65,7 +65,7 @@ class EclairRpcClient(
   }
 
   override def allNodes(): Future[Vector[NodeInfo]] = {
-    eclairCall[Vector[NodeInfo]]("allnodes")
+    eclairCall[Vector[NodeInfo]]("nodes")
   }
 
   override def allUpdates(): Future[Vector[ChannelUpdate]] =
@@ -108,22 +108,22 @@ class EclairRpcClient(
   private def close(
       channelId: ChannelId,
       shortChannelId: Option[ShortChannelId],
-      scriptPubKey: Option[ScriptPubKey]): Future[Unit] = {
+      scriptPubKey: Option[ScriptPubKey]): Future[ChannelCommandResult] = {
     val params =
       Seq("channelId" -> channelId.hex) ++ Seq(
         shortChannelId.map(x => "shortChannelId" -> x.toString),
         scriptPubKey.map(x => "scriptPubKey" -> BytesUtil.encodeHex(x.asmBytes))
       ).flatten
 
-    eclairCall[String]("close", params: _*).map(_ => ())
+    eclairCall[ChannelCommandResult]("close", params: _*)
   }
 
-  def close(channelId: ChannelId): Future[Unit] =
+  def close(channelId: ChannelId): Future[ChannelCommandResult] =
     close(channelId, scriptPubKey = None, shortChannelId = None)
 
   override def close(
       channelId: ChannelId,
-      scriptPubKey: ScriptPubKey): Future[Unit] = {
+      scriptPubKey: ScriptPubKey): Future[ChannelCommandResult] = {
     close(channelId, scriptPubKey = Some(scriptPubKey), shortChannelId = None)
   }
 
@@ -173,13 +173,16 @@ class EclairRpcClient(
     eclairCall[Vector[NodeId]]("findroute", params: _*)
   }
 
-  override def forceClose(channelId: ChannelId): Future[Unit] = {
-    eclairCall[String]("forceclose", "channelId" -> channelId.hex).map(_ => ())
+  override def forceClose(
+      channelId: ChannelId): Future[ChannelCommandResult] = {
+    eclairCall[ChannelCommandResult]("forceclose", "channelId" -> channelId.hex)
   }
 
-  override def forceClose(shortChannelId: ShortChannelId): Future[Unit] = {
-    eclairCall[String]("forceclose",
-                       "shortChannelId" -> shortChannelId.toString).map(_ => ())
+  override def forceClose(
+      shortChannelId: ShortChannelId): Future[ChannelCommandResult] = {
+    eclairCall[ChannelCommandResult](
+      "forceclose",
+      "shortChannelId" -> shortChannelId.toString)
   }
 
   override def getInfo: Future[GetInfoResult] = {
@@ -530,8 +533,8 @@ class EclairRpcClient(
   override def updateRelayFee(
       channelId: ChannelId,
       feeBaseMsat: MilliSatoshis,
-      feeProportionalMillionths: Long): Future[Unit] = {
-    eclairCall[Unit](
+      feeProportionalMillionths: Long): Future[ChannelCommandResult] = {
+    eclairCall[ChannelCommandResult](
       "updaterelayfee",
       "channelId" -> channelId.hex,
       "feeBaseMsat" -> feeBaseMsat.toLong.toString,
@@ -542,8 +545,8 @@ class EclairRpcClient(
   override def updateRelayFee(
       shortChannelId: ShortChannelId,
       feeBaseMsat: MilliSatoshis,
-      feeProportionalMillionths: Long): Future[Unit] = {
-    eclairCall[Unit](
+      feeProportionalMillionths: Long): Future[ChannelCommandResult] = {
+    eclairCall[ChannelCommandResult](
       "updaterelayfee",
       "shortChannelId" -> shortChannelId.toHumanReadableString,
       "feeBaseMsat" -> feeBaseMsat.toLong.toString,
@@ -607,6 +610,25 @@ class EclairRpcClient(
 
   override def getNewAddress(): Future[BitcoinAddress] = {
     eclairCall[BitcoinAddress]("getnewaddress")
+  }
+
+  override def onChainBalance(): Future[OnChainBalance] = {
+    eclairCall[OnChainBalance]("onchainbalance")
+  }
+
+  override def onChainTransactions(): Future[Vector[WalletTransaction]] = {
+    eclairCall[Vector[WalletTransaction]]("onchaintransactions")
+  }
+
+  override def sendOnChain(
+      address: BitcoinAddress,
+      amount: Satoshis,
+      confirmationTarget: Int): Future[DoubleSha256DigestBE] = {
+    eclairCall[DoubleSha256DigestBE](
+      "sendonchain",
+      "address" -> address.toString,
+      "amountSatoshis" -> amount.toLong.toString,
+      "confirmationTarget" -> confirmationTarget.toString)
   }
 
   private def eclairCall[T](command: String, parameters: (String, String)*)(
@@ -946,8 +968,8 @@ object EclairRpcClient {
       implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "69c538e"
+  private[bitcoins] val commit = "e5fb281"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.4"
+  private[bitcoins] val version = "0.4.1"
 }
