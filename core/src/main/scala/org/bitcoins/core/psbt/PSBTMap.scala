@@ -210,6 +210,20 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     getRecords(FinalizedScriptSigKeyId).nonEmpty || getRecords(
       FinalizedScriptWitnessKeyId).nonEmpty
 
+  def isBIP143Vulnerable: Boolean = {
+    if (!isFinalized && witnessUTXOOpt.isDefined) {
+
+      val isNativeV0 = witnessUTXOOpt.get.witnessUTXO.scriptPubKey
+        .isInstanceOf[WitnessScriptPubKeyV0]
+
+      val isP2SHV0 =
+        redeemScriptOpt.isDefined && redeemScriptOpt.get.redeemScript
+          .isInstanceOf[WitnessScriptPubKeyV0]
+
+      isNativeV0 || isP2SHV0
+    } else false
+  }
+
   /** Finalizes this input if possible, returning a Failure if not */
   def finalize(input: TransactionInput): Try[InputPSBTMap] = {
     if (isFinalized) {

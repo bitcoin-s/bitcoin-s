@@ -37,8 +37,12 @@ case class PSBT(
         prevTxOpt.isEmpty || prevTxOpt.get.transactionSpent.txId == txIn.previousOutput.txId
     },
     "Some of the inputMaps' nonWitnessOrUnknownUTXO txId does not match the unsigned transaction's txId" +
-      s"got $inputMaps, ${transaction.inputs}"
+      s", got $inputMaps, ${transaction.inputs}"
   )
+
+  require(isFinalized || inputMaps.size == 1 || inputMaps.forall(
+            !_.isBIP143Vulnerable),
+          "One or more of the input maps are susceptible to the BIP 143")
 
   import org.bitcoins.core.psbt.InputPSBTRecord._
   import org.bitcoins.core.psbt.PSBTInputKeyId._
