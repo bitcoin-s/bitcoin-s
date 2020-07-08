@@ -107,42 +107,28 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     } yield assert(signed.complete)
   }
 
-  private val SpreadInSeconds = 40
-
   it should "be able to get the address info for a given address" in {
     for {
       (client, _) <- clientsF
       addr <- client.getNewAddress
-      addrTime = System.currentTimeMillis()
       info <- client.getAddressInfo(addr)
-    } yield assert(
-      info.timestamp
-        .map(_.toEpochSecond)
-        .getOrElse(0L) === addrTime / 1000 +- SpreadInSeconds)
+    } yield assert(info.address == addr)
   }
 
   it should "be able to get the address info for a given P2SHSegwit address" in {
     for {
       (client, _) <- clientsF
       addr <- client.getNewAddress(addressType = AddressType.P2SHSegwit)
-      addrTime = System.currentTimeMillis()
       info <- client.getAddressInfo(addr)
-    } yield assert(
-      info.timestamp
-        .map(_.toEpochSecond)
-        .getOrElse(0L) === addrTime / 1000 +- SpreadInSeconds)
+    } yield assert(info.address == addr)
   }
 
   it should "be able to get the address info for a given Legacy address" in {
     for {
       (client, _) <- clientsF
       addr <- client.getNewAddress(addressType = AddressType.Legacy)
-      addrTime = System.currentTimeMillis()
       info <- client.getAddressInfo(addr)
-    } yield assert(
-      info.timestamp
-        .map(_.toEpochSecond)
-        .getOrElse(0L) === addrTime / 1000 +- SpreadInSeconds)
+    } yield assert(info.address == addr)
   }
 
   // needs #360 to be merged
@@ -150,14 +136,10 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     for {
       (client, _) <- clientsF
       addr <- client.getNewAddress(AddressType.Bech32)
-      addrTime = System.currentTimeMillis()
       info <- client.getAddressInfo(addr)
     } yield {
       assert(info.address.networkParameters == RegTest)
-      assert(
-        info.timestamp
-          .map(_.toEpochSecond)
-          .getOrElse(0L) === addrTime / 1000 +- SpreadInSeconds)
+      assert(info.address == addr)
     }
   }
 
