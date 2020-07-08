@@ -8,9 +8,9 @@ import scala.util.Try
 
 trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
 
-  val pgEnabled: Boolean = sys.env.contains("PG_ENABLED")
+  lazy val pgEnabled: Boolean = sys.env.contains("PG_ENABLED")
 
-  val pg: Option[EmbeddedPostgres] =
+  lazy val pg: Option[EmbeddedPostgres] =
     if (pgEnabled) Some(EmbeddedPostgres.start()) else None
 
   def pgUrl(dbname: String): Option[String] =
@@ -21,6 +21,7 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
       case ProjectType.Wallet => pgUrl("walletdb")
       case ProjectType.Node   => pgUrl("nodedb")
       case ProjectType.Chain  => pgUrl("chaindb")
+      case ProjectType.Test   => pgUrl("testdb")
     }
 
   override def beforeAll(): Unit = {
@@ -28,6 +29,7 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
     executePgSql(s"CREATE DATABASE chaindb")
     executePgSql(s"CREATE DATABASE walletdb")
     executePgSql(s"CREATE DATABASE nodedb")
+    executePgSql(s"CREATE DATABASE testdb")
   }
 
   override def afterAll(): Unit = {
@@ -35,6 +37,7 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
     Try(executePgSql(s"DROP DATABASE nodedb"))
     Try(executePgSql(s"DROP DATABASE walletdb"))
     Try(executePgSql(s"DROP DATABASE chaindb"))
+    Try(executePgSql(s"DROP DATABASE testdb"))
     Try(pg.foreach(_.close()))
     ()
   }
