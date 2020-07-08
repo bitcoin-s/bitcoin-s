@@ -53,7 +53,8 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
                                         feeRate = SatoshisPerByte(Satoshis(3)),
                                         inputAmount = Satoshis(4000),
                                         sentAmount = Satoshis(3000),
-                                        blockHashOpt = None)
+                                        blockHashOpt = None,
+                                        newTags = Vector.empty)
 
       updatedCoin <-
         wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
@@ -71,6 +72,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
     for {
       tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                       SatoshisPerVirtualByte.one,
+                                      fromTagOpt = None,
                                       markAsReserved = true)
 
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
@@ -88,6 +90,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       for {
         tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                         SatoshisPerVirtualByte.one,
+                                        fromTagOpt = None,
                                         markAsReserved = true)
 
         reservedUtxos <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
@@ -108,6 +111,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       for {
         tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                         SatoshisPerVirtualByte.one,
+                                        fromTagOpt = None,
                                         markAsReserved = true)
         unreservedUtxos <- wallet.unmarkUTXOsAsReserved(tx)
       } yield {

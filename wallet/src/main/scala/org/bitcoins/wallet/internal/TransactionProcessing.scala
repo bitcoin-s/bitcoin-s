@@ -2,11 +2,12 @@ package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess}
@@ -31,7 +32,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       blockHashOpt: Option[DoubleSha256DigestBE]
   ): Future[Wallet] = {
     for {
-      result <- processTransactionImpl(transaction, blockHashOpt)
+      result <- processTransactionImpl(transaction, blockHashOpt, Vector.empty)
     } yield {
       logger.debug(
         s"Finished processing of transaction=${transaction.txIdBE}. Relevant incomingTXOs=${result.updatedIncoming.length}, outgoingTXOs=${result.updatedOutgoing.length}")
@@ -96,13 +97,14 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       feeRate: FeeUnit,
       inputAmount: CurrencyUnit,
       sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[ProcessTxResult] = {
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[ProcessTxResult] = {
     logger.info(
       s"Processing TX from our wallet, transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
     for {
       _ <-
         insertOutgoingTransaction(transaction, feeRate, inputAmount, sentAmount)
-      result <- processTransactionImpl(transaction, blockHashOpt)
+      result <- processTransactionImpl(transaction, blockHashOpt, newTags)
     } yield {
       val txid = transaction.txIdBE
       val changeOutputs = result.updatedIncoming.length
@@ -156,7 +158,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private def processTransactionImpl(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[ProcessTxResult] = {
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[ProcessTxResult] = {
 
     logger.debug(
       s"Processing transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
@@ -169,7 +172,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             .flatMap {
               // no existing elements found
               case Vector() =>
-                processNewIncomingTx(transaction, blockHashOpt)
+                processNewIncomingTx(transaction, blockHashOpt, newTags)
                   .map(_.toVector)
 
               case txos: Vector[SpendingInfoDb] =>
@@ -371,8 +374,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private def processNewIncomingTx(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[
-    Seq[SpendingInfoDb]] = {
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[Seq[SpendingInfoDb]] = {
     addressDAO.findAll().flatMap { addrs =>
       val relevantOutsWithIdx: Seq[OutputWithIndex] = {
         val withIndex =
@@ -406,6 +409,17 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
           for {
             _ <- insertIncomingTransaction(transaction, totalIncoming)
+            prevTagDbs <- addressTagDAO.findTx(transaction, networkParameters)
+            prevTags = prevTagDbs.map(_.addressTag)
+            tagsToUse =
+              prevTags
+                .filterNot(tag => newTags.contains(tag)) ++ newTags
+            newTagDbs = relevantOutsWithIdx.flatMap { out =>
+              val address = BitcoinAddress
+                .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
+              tagsToUse.map(tag => AddressTagDb(address, tag))
+            }
+            _ <- addressTagDAO.createAll(newTagDbs.toVector)
             utxos <- addUTXOsFut(outputsWithIndex, transaction, blockHashOpt)
           } yield utxos
       }

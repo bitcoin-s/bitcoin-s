@@ -25,6 +25,7 @@ import org.bitcoins.core.wallet.utxo.TxoState.{
   PendingConfirmationsReceived
 }
 import org.bitcoins.core.wallet.utxo.{
+  AddressTag,
   InputInfo,
   ScriptSignatureParams,
   TxoState
@@ -61,6 +62,7 @@ abstract class Wallet
 
   private[wallet] val outgoingTxDAO: OutgoingTransactionDAO =
     OutgoingTransactionDAO()
+  private[wallet] val addressTagDAO: AddressTagDAO = AddressTagDAO()
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
@@ -192,6 +194,13 @@ abstract class Wallet
     unspentInAccountF.map(_.foldLeft(CurrencyUnits.zero)(_ + _.output.value))
   }
 
+  override def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
+    spendingInfoDAO.findAllUnspentForTag(tag).map { allUnspent =>
+      val confirmed = allUnspent.filter(_.state == ConfirmedReceived)
+      confirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
+    }
+  }
+
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
     val unconfirmed = filterThenSum(_.state == PendingConfirmationsReceived)
     unconfirmed.foreach(balance =>
@@ -213,6 +222,13 @@ abstract class Wallet
     }
 
     unspentInAccountF.map(_.foldLeft(CurrencyUnits.zero)(_ + _.output.value))
+  }
+
+  override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
+    spendingInfoDAO.findAllUnspentForTag(tag).map { allUnspent =>
+      val confirmed = allUnspent.filter(_.state == PendingConfirmationsReceived)
+      confirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
+    }
   }
 
   /** Enumerates all the TX outpoints in the wallet */
@@ -265,7 +281,8 @@ abstract class Wallet
       txBuilder: RawTxBuilderWithFinalizer[StandardNonInteractiveFinalizer],
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
       sentAmount: CurrencyUnit,
-      feeRate: FeeUnit): Future[Transaction] = {
+      feeRate: FeeUnit,
+      newTags: Vector[AddressTag]): Future[Transaction] = {
     for {
       utx <- txBuilder.buildTx()
       signed <- RawTxSigner.sign(utx, utxoInfos, feeRate)
@@ -275,7 +292,8 @@ abstract class Wallet
                                  feeRate = feeRate,
                                  inputAmount = creditingAmount,
                                  sentAmount = sentAmount,
-                                 blockHashOpt = None)
+                                 blockHashOpt = None,
+                                 newTags = newTags)
     } yield {
       logger.debug(
         s"Signed transaction=${signed.txIdBE.hex} with outputs=${signed.outputs.length}, inputs=${signed.inputs.length}")
@@ -322,7 +340,7 @@ abstract class Wallet
         feeRate,
         changeAddr.scriptPubKey)
 
-      tx <- finishSend(txBuilder, utxos, amount, feeRate)
+      tx <- finishSend(txBuilder, utxos, amount, feeRate, Vector.empty)
     } yield tx
   }
 
@@ -331,7 +349,8 @@ abstract class Wallet
       amount: CurrencyUnit,
       feeRate: FeeUnit,
       algo: CoinSelectionAlgo,
-      fromAccount: AccountDb): Future[Transaction] = {
+      fromAccount: AccountDb,
+      newTags: Vector[AddressTag]): Future[Transaction] = {
     require(
       address.networkParameters.isSameNetworkBytes(networkParameters),
       s"Cannot send to address on other network, got ${address.networkParameters}"
@@ -344,9 +363,10 @@ abstract class Wallet
         feeRate = feeRate,
         fromAccount = fromAccount,
         keyManagerOpt = Some(keyManager),
-        coinSelectionAlgo = algo)
+        coinSelectionAlgo = algo,
+        fromTagOpt = None)
 
-      tx <- finishSend(txBuilder, utxoInfos, amount, feeRate)
+      tx <- finishSend(txBuilder, utxoInfos, amount, feeRate, newTags)
     } yield tx
   }
 
@@ -360,6 +380,19 @@ abstract class Wallet
                  feeRate,
                  CoinSelectionAlgo.AccumulateLargest,
                  fromAccount)
+
+  override def sendToAddress(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      newTags: Vector[AddressTag]): Future[Transaction] =
+    sendWithAlgo(address,
+                 amount,
+                 feeRate,
+                 CoinSelectionAlgo.AccumulateLargest,
+                 fromAccount,
+                 newTags)
 
   override def sendToAddresses(
       addresses: Vector[BitcoinAddress],
@@ -417,9 +450,10 @@ abstract class Wallet
         feeRate = feeRate,
         fromAccount = fromAccount,
         keyManagerOpt = Some(keyManager),
+        fromTagOpt = None,
         markAsReserved = reserveUtxos)
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
-      tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate)
+      tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, Vector.empty)
     } yield tx
   }
 

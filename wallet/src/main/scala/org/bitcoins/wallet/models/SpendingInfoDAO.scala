@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._
@@ -40,6 +40,11 @@ case class SpendingInfoDAO()(implicit
   private lazy val txTable: profile.api.TableQuery[
     IncomingTransactionDAO#IncomingTransactionTable] = {
     IncomingTransactionDAO().table
+  }
+
+  private lazy val tagTable: profile.api.TableQuery[
+    AddressTagDAO#AddressTagTable] = {
+    AddressTagDAO().table
   }
 
   /**
@@ -166,6 +171,19 @@ case class SpendingInfoDAO()(implicit
     Vector[SpendingInfoDb]] = {
     val query = table.filter(_.outPoint.inSet(outPoints))
     safeDatabase.runVec(query.result).map(_.toVector)
+  }
+
+  def findAllUnspentForTag(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
+    val query = table
+      .filter(_.state.inSet(TxoState.receivedStates))
+      .join(addrTable)
+      .on(_.scriptPubKey === _.scriptPubKey)
+      .join(tagTable)
+      .on(_._2.address === _.address)
+      .filter(_._2.tagName === tag.tagName)
+      .filter(_._2.tagType === tag.tagType)
+
+    safeDatabase.runVec(query.result).map(_.map(_._1._1))
   }
 
   /**

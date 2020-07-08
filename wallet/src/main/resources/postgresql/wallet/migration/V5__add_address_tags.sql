@@ -1,0 +1,1 @@
+CREATE TABLE wallet_address_tags (id SERIAL UNIQUE,address VARCHAR(254) NOT NULL,tag_name VARCHAR(254) NOT NULL,tag_type VARCHAR(254) NOT NULL,constraint fk_address foreign key(address) references addresses(address) on update NO ACTION on delete NO ACTION);
