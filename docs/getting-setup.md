@@ -20,9 +20,9 @@ title: Getting Bitcoin-S installed on your machine
 
 ## Step 1: Java and Scala
 
-The first step in getting setup will be getting the [Java Development Kit](https://www.oracle.com/java/technologies/javase-downloads.html) (JDK) installed on your machine. Bitcoin-S works best with Java 8 but _should_ also work with Java 11 and Java 13.
+To get started you will need Java, Scala, and some other nice tools installed, luckily the Scala team has an easy setup process!
 
-Once java is setup on your machine (try running `javac -version`), you are ready to download and install the [Scala Build Tool](https://www.scala-sbt.org/download.html) (sbt). Note that running `sbt` for the first time will take a while.
+Simply follow the instructions in [this short blog](https://www.scala-lang.org/2020/06/29/one-click-install.html) to get started.
 
 ## Step 2: Bitcoin-S Repository
 
