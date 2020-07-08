@@ -16,7 +16,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.util.{EitherUtil, FutureUtil}
-import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoResult, AddUtxoSuccess}
 import org.bitcoins.wallet.models._
@@ -50,6 +50,20 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     spendingInfoDAO
       .findAll()
       .map(_.filter(spendingInfo => outPoints.contains(spendingInfo.outPoint)))
+  }
+
+  override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findAllUnspentForTag(tag)
+  }
+
+  override def listUtxos(
+      hdAccount: HDAccount,
+      tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findAllUnspentForTag(tag).map { utxos =>
+      utxos.filter(utxo =>
+        HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
+                                account = hdAccount))
+    }
   }
 
   protected def updateUtxoConfirmedState(

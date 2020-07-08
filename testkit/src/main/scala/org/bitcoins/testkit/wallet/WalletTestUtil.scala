@@ -78,7 +78,17 @@ object WalletTestUtil {
   private def freshXpub(): ExtPublicKey =
     CryptoGenerators.extPublicKey.sampleSome
 
-  val defaultHdAccount = HDAccount(HDCoin(HDPurposes.SegWit, hdCoinType), 0)
+  /** Checks that the given values are the same-ish, save for fee-level deviations */
+  def isCloseEnough(
+      first: CurrencyUnit,
+      second: CurrencyUnit,
+      delta: CurrencyUnit = 300.sats): Boolean = {
+    Math.abs(
+      first.satoshis.toLong - second.satoshis.toLong) < delta.satoshis.toLong
+  }
+
+  val defaultHdAccount: HDAccount =
+    HDAccount(HDCoin(HDPurposes.SegWit, hdCoinType), 0)
 
   def getHdAccount1(walletAppConfig: WalletAppConfig): HDAccount = {
     val purpose = walletAppConfig.defaultAccountKind

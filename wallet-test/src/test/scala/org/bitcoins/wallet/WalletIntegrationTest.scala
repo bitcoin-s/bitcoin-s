@@ -5,6 +5,7 @@ import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
+  WalletTestUtil,
   WalletWithBitcoind,
   WalletWithBitcoindRpc
 }
@@ -20,21 +21,6 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
   behavior of "Wallet - integration test"
 
   val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
-
-  /** Checks that the given values are the same-ish, save for fee-level deviations */
-  private def isCloseEnough(
-      first: CurrencyUnit,
-      second: CurrencyUnit,
-      delta: CurrencyUnit = 1000.sats): Boolean = {
-    val diff =
-      if (first > second) {
-        first - second
-      } else if (first < second) {
-        second - first
-      } else 0.sats
-
-    diff < delta
-  }
 
   it should ("create an address, receive funds to it from bitcoind, import the"
     + " UTXO and construct a valid, signed transaction that's"
@@ -127,9 +113,9 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       _ = assert(outgoingTx.get.feeRate == feeRate)
       _ = assert(outgoingTx.get.expectedFee == feeRate.calc(signedTx))
       _ = assert(
-        isCloseEnough(feeRate.calc(signedTx),
-                      outgoingTx.get.actualFee,
-                      3.satoshi))
+        WalletTestUtil.isCloseEnough(feeRate.calc(signedTx),
+                                     outgoingTx.get.actualFee,
+                                     3.satoshi))
       // Safe to use utxos.head because we've already asserted that we only have our change output
       _ = assert(
         outgoingTx.get.actualFee + outgoingTx.get.sentAmount == outgoingTx.get.inputAmount - utxos.head.output.value)
@@ -141,7 +127,8 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         assert(balancePostSend < valueFromBitcoind)
 
         assert(
-          isCloseEnough(balancePostSend, valueFromBitcoind - valueToBitcoind))
+          WalletTestUtil.isCloseEnough(balancePostSend,
+                                       valueFromBitcoind - valueToBitcoind))
       }
 
     } yield {
