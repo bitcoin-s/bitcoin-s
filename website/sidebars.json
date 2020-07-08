@@ -28,6 +28,9 @@
       "crypto/crypto-intro",
       "crypto/sign"
     ],
+    "Fee Provider": [
+      "fee-provider/fee-provider"
+    ],
     "Key Manager": [
       "key-manager/key-manager"
     ],
