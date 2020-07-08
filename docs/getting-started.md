@@ -83,16 +83,16 @@ You can also run on the bleeding edge of Bitcoin-S, by
 adding a snapshot build to your `build.sbt`. The most
 recent snapshot published is `@UNSTABLE_VERSION@`.
 
+""")
+}
+```
+
 To fetch snapshots, you will need to add the correct
 resolver in your `build.sbt`:
 
-​```sbt
+```sbt
 resolvers += Resolver.sonatypeRepo("snapshots")
 ${List.fill(3)("`").mkString /* Hacky solution to get around nesting backticks */ }
-
-""")
-}
-
 ```
 
 The official maven repo for releases is
