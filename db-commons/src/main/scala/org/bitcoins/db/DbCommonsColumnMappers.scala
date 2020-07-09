@@ -74,7 +74,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val bigIntMapper: BaseColumnType[BigInt] =
     MappedColumnType
       .base[BigInt, Array[Byte]](
-        bi => ByteVector(bi.toByteArray).padLeft(32).toArray,
+        bi => ByteVector(bi.toByteArray).padLeft(33).toArray,
         BigInt(1, _))
 
   implicit val bigIntPostgresMapper: BaseColumnType[BigInt] =
