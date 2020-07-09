@@ -61,7 +61,7 @@ sealed trait TestDAOFixture
   def testCreate(testDAO: TestDAO): Future[Boolean] = {
     for {
       _ <- testDAO.create(testDb)
-      read <- testDAO.read(id = "abc")
+      read <- testDAO.read(testDb.pk)
     } yield read.contains(testDb)
   }
 
@@ -84,7 +84,7 @@ sealed trait TestDAOFixture
       _ = assert(create)
 
       _ <- testDAO.delete(testDb)
-      read2 <- testDAO.read(id = "abc")
+      read2 <- testDAO.read(testDb.pk)
     } yield read2.isEmpty
   }
 
@@ -108,10 +108,10 @@ sealed trait TestDAOFixture
   def testUpsert(testDAO: TestDAO): Future[Boolean] = {
     for {
       _ <- testDAO.upsert(testDb)
-      read <- testDAO.read(id = "abc")
+      read <- testDAO.read(testDb.pk)
       _ = assert(read.contains(testDb))
       _ <- testDAO.upsert(updatedDb)
-      read2 <- testDAO.read(id = "abc")
+      read2 <- testDAO.read(testDb.pk)
     } yield read2.contains(updatedDb)
   }
 
@@ -139,12 +139,11 @@ sealed trait TestDAOFixture
 
   def testUpdate(testDAO: TestDAO): Future[Boolean] = {
     for {
-      _ <- testDAO.create(testDb)
-      read <- testDAO.read(id = "abc")
-      _ = assert(read.contains(testDb))
+      created <- testCreate(testDAO)
+      _ = assert(created)
 
       _ <- testDAO.update(updatedDb)
-      read2 <- testDAO.read(id = "abc")
+      read2 <- testDAO.read(updatedDb.pk)
     } yield read2.contains(updatedDb)
   }
 
