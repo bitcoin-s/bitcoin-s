@@ -336,7 +336,20 @@ akka {
 3. Replace `Dockerfile` with the following:
 
 ```docker
-FROM mozilla/sbt:11.0.7_1.3.12
+ARG OPENJDK_TAG=11.0.7
+FROM openjdk:${OPENJDK_TAG}
+
+ARG SBT_VERSION=1.3.12
+
+# Install sbt
+RUN \
+  curl -L -o sbt-$SBT_VERSION.deb https://dl.bintray.com/sbt/debian/sbt-$SBT_VERSION.deb && \
+  dpkg -i sbt-$SBT_VERSION.deb && \
+  rm sbt-$SBT_VERSION.deb && \
+  apt-get update && \
+  apt-get install sbt && \
+  sbt sbtVersion
+
 RUN apt-get update
 RUN apt-get -y install libx11-6
 RUN apt-get -y install mesa-utils libgl1-mesa-glx libgtk-3-0 
