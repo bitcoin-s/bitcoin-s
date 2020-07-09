@@ -7,6 +7,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
   ChainDbUnitTest,
+  ChainTestUtil,
   ChainUnitTest
 }
 import org.scalatest.FutureOutcome
@@ -308,5 +309,40 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         _ <- oneChildF
         lastAssert <- hashDoesNotExistF
       } yield lastAssert
+  }
+
+  it must "get the correct chain tip" in { blockerHeaderDAO: BlockHeaderDAO =>
+    val db1 =
+      BlockHeaderDbHelper.fromBlockHeader(
+        1,
+        BigInt(1, hex"fffef2bf0566ab".toArray),
+        ChainTestUtil.blockHeader562462)
+
+    val db2 =
+      BlockHeaderDbHelper.fromBlockHeader(
+        2,
+        BigInt(1, hex"01253721228459eac00c".toArray),
+        ChainTestUtil.blockHeader562463)
+
+    for {
+      _ <- blockerHeaderDAO.createAll(Vector(db1, db2))
+      tips <- blockerHeaderDAO.chainTips
+    } yield assert(tips == Vector(db2))
+  }
+
+  it must "successfully map a max chain work block" in {
+    blockerHeaderDAO: BlockHeaderDAO =>
+      val bytes = ByteVector.fill(32)(0xff)
+      val chainWork = BigInt(1, bytes.toArray)
+
+      val db =
+        BlockHeaderDbHelper.fromBlockHeader(1,
+                                            chainWork,
+                                            ChainTestUtil.blockHeader562462)
+
+      for {
+        _ <- blockerHeaderDAO.create(db)
+        tips <- blockerHeaderDAO.chainTips
+      } yield assert(tips == Vector(db))
   }
 }
