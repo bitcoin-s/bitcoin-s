@@ -18,15 +18,7 @@ import org.bitcoins.db.AppConfig
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.{
-  Node,
-  NodeCallbacks,
-  OnBlockHeadersReceived,
-  OnBlockReceived,
-  OnCompactFiltersReceived,
-  OnTxReceived,
-  SpvNode
-}
+import org.bitcoins.node._
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -68,6 +60,11 @@ object Main extends App with BitcoinSLogger {
     require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled,
             "Either Neutrino or SPV mode should be enabled")
     implicit val chainConf: ChainAppConfig = conf.chainConf
+
+    if (nodeConf.peers.isEmpty) {
+      throw new IllegalArgumentException(
+        "No peers specified, unable to start node")
+    }
 
     val peerSocket =
       NetworkUtil.parseInetSocketAddress(nodeConf.peers.head,
