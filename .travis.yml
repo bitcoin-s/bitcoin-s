@@ -4,6 +4,13 @@ dist: xenial
 
 jobs:
   include:
+    # compile website, to check for documentation regressions for docs only PRs
+    - stage: docs
+      name: Compile Website
+      env:
+        - TEST_COMMAND="docs/mdoc"
+      scala: 2.13.2
+
     - stage: compile
       os: linux
       name: "Compile & Formatting Check"
@@ -125,18 +132,24 @@ before_script:
   - git submodule sync
 
 stages:
+  - name: docs
+    if:
+      commit_message =~ /(?i)^docs:/ AND NOT
+      ((branch = master AND type = push) OR (tag IS present))
+    # don't run tests on merge builds, just publish library
+    # and website
   - name: compile
     if:
-      commit_message !~ /^Docs:/ AND NOT
+      commit_message !~ /(?i)^docs:/ AND NOT
       ((branch = master AND type = push) OR (tag IS present))
-      # don't run tests on merge builds, just publish library
-      # and website
+    # don't run tests on merge builds, just publish library
+    # and website
   - name: test
     if:
-      commit_message !~ /^Docs:/ AND NOT
+      commit_message !~ /(?i)^docs:/ AND NOT
       ((branch = master AND type = push) OR (tag IS present))
-      # don't run tests on merge builds, just publish library
-      # and website
+    # don't run tests on merge builds, just publish library
+    # and website
   - name: release
     if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
 
