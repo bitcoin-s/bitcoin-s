@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.{
   RawTxBuilder,
   RawTxBuilderWithFinalizer,
+  RawTxSigner,
   StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -45,14 +46,17 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       fromAccount: AccountDb,
       fromTagOpt: Option[AddressTag] = None,
       markAsReserved: Boolean = false): Future[Transaction] = {
-    val txBuilderF =
-      fundRawTransactionInternal(destinations = destinations,
-                                 feeRate = feeRate,
-                                 fromAccount = fromAccount,
-                                 keyManagerOpt = None,
-                                 fromTagOpt = fromTagOpt,
-                                 markAsReserved = markAsReserved)
-    txBuilderF.flatMap(_._1.buildTx())
+    for {
+      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
+        destinations = destinations,
+        feeRate = feeRate,
+        fromAccount = fromAccount,
+        keyManagerOpt = None,
+        fromTagOpt = fromTagOpt,
+        markAsReserved = markAsReserved)
+      utx <- txBuilder.buildTx()
+      signed <- RawTxSigner.sign(utx, utxoInfos, feeRate)
+    } yield signed
   }
 
   /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned transaction with [[RawTxBuilder.result()]]
