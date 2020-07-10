@@ -27,8 +27,6 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 object Main extends App with BitcoinSLogger {
 
   private def runMain(): Unit = {
-    import akka.http.scaladsl.model.HttpEntity
-    val _ = HttpEntity.Empty
     implicit val system = ActorSystem("bitcoin-s")
     implicit val ec: ExecutionContext = system.dispatcher
     val argsWithIndex = args.zipWithIndex
