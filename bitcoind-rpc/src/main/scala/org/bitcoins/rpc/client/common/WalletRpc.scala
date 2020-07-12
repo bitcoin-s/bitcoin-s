@@ -1,21 +1,21 @@
 package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
-import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.MerkleBlock
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
+import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.blockchain.MerkleBlock
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
   ECPrivateKey,
   ECPublicKey
 }
+import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -188,6 +188,13 @@ trait WalletRpc { self: Client =>
     bitcoindCall[Unit](
       "walletpassphrasechange",
       List(JsString(currentPassphrase), JsString(newPassphrase)))
+  }
+
+  def signRawTransactionWithWallet(
+      transaction: Transaction): Future[SignRawTransactionWithWalletResult] = {
+    bitcoindCall[SignRawTransactionWithWalletResult](
+      "signrawtransactionwithwallet",
+      List(JsString(transaction.hex)))
   }
 
   /**

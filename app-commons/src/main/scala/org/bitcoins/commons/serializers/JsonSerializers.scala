@@ -119,6 +119,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   SetWalletFlagResult,
   SignRawTransactionError,
   SignRawTransactionResult,
+  SignRawTransactionWithWalletResult,
   Softfork,
   SoftforkProgress,
   SubmitHeaderResult,
@@ -255,6 +256,10 @@ object JsonSerializers {
 
   implicit val fundRawTransactionResultReads: Reads[FundRawTransactionResult] =
     Json.reads[FundRawTransactionResult]
+
+  implicit val signRawTransactionWithWalletResultReads: Reads[
+    SignRawTransactionWithWalletResult] =
+    Json.reads[SignRawTransactionWithWalletResult]
 
   implicit val getRawTransactionScriptSigReads: Reads[
     GetRawTransactionScriptSig] = Json.reads[GetRawTransactionScriptSig]
