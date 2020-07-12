@@ -131,6 +131,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   WalletProcessPsbtResult
 }
 import org.bitcoins.commons.jsonmodels.wallet.{
+  BitGoResult,
   BitcoinerLiveEstimate,
   BitcoinerLiveResult
 }
@@ -625,6 +626,9 @@ object JsonSerializers {
   implicit val bitcoinerLiveResultReads: Reads[BitcoinerLiveResult] =
     Json.reads[BitcoinerLiveResult]
 
+  implicit val bitGoResultReads: Reads[BitGoResult] =
+    Json.reads[BitGoResult]
+
   // Map stuff
   implicit def mapDoubleSha256DigestReadsPreV19: Reads[
     Map[DoubleSha256Digest, GetMemPoolResultPreV19]] =
@@ -650,6 +654,9 @@ object JsonSerializers {
     Map[BitcoinAddress, LabelResult]] =
     Reads.mapReads[BitcoinAddress, LabelResult](s =>
       JsSuccess(BitcoinAddress.fromString(s)))
+
+  implicit def mapSatsPerKByteByIntReads: Reads[Map[Int, SatoshisPerKiloByte]] =
+    Reads.mapReads[Int, SatoshisPerKiloByte](s => JsSuccess(s.toInt))
 
   implicit def mapBitcoinerLiveEstimateReads: Reads[
     Map[Int, BitcoinerLiveEstimate]] =
