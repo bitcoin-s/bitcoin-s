@@ -52,6 +52,11 @@ case class FundRawTransactionResult(
     changepos: Int)
     extends RawTransactionResult
 
+case class SignRawTransactionWithWalletResult(
+    hex: Transaction,
+    complete: Boolean
+)
+
 case class GetRawTransactionResult(
     in_active_blockchain: Option[Boolean],
     hex: Transaction,

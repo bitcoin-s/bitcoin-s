@@ -11,7 +11,8 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
-  TransactionOutPoint
+  TransactionOutPoint,
+  TransactionOutput
 }
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -524,4 +525,24 @@ class WalletRpcTest extends BitcoindRpcTest {
     } yield assert(tx.fee.get < bumpedTx.fee)
   }
 
+  it should "be able to sign a raw transaction with the wallet" in {
+    for {
+      (client, otherClient, _) <- clientsF
+      address <- otherClient.getNewAddress
+      transactionWithoutFunds <-
+        client
+          .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
+      transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
+      transaction = transactionResult.hex
+      singedTx <- client.signRawTransactionWithWallet(transaction).map(_.hex)
+
+      // Will throw error if invalid
+      _ <- client.sendRawTransaction(singedTx)
+    } yield {
+      assert(transaction.inputs.length == 1)
+      assert(
+        transaction.outputs.contains(
+          TransactionOutput(Bitcoins(1), address.scriptPubKey)))
+    }
+  }
 }
