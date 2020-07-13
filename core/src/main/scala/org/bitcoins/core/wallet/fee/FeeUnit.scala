@@ -9,10 +9,21 @@ import org.bitcoins.core.protocol.transaction.Transaction
   */
 sealed abstract class FeeUnit {
   def currencyUnit: CurrencyUnit
-  def *(cu: CurrencyUnit): CurrencyUnit = this * cu.satoshis.toLong
-  def *(int: Int): CurrencyUnit = this * int.toLong
+  final def *(cu: CurrencyUnit): CurrencyUnit = this * cu.satoshis.toLong
+  final def *(int: Int): CurrencyUnit = this * int.toLong
+
+  /** Should multiply currencyUnit by long along with a scale factor if necessary.
+    * This will be used when calculating the fee for a transaction.
+    *
+    * This should ONLY be overridden if the FeeUnit's denominator is NOT a multiple of 1.
+    *  ie sats/kilobyte
+    */
   def *(long: Long): CurrencyUnit = currencyUnit * long
   def *(tx: Transaction): CurrencyUnit = calc(tx)
+
+  /** Takes the given transaction returns a size that will be used for calculating the fee rate.
+    * This is generally the denominator in the unit, ie sats/byte
+    */
   def txSizeForCalc(tx: Transaction): Long
 
   /** Calculates the fee for the transaction using this fee rate, rounds down satoshis */
