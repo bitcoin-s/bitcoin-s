@@ -17,7 +17,10 @@ case class UnilateralDLCOutcomeWithClosing(
     override val cet: Transaction,
     closingTx: Transaction,
     cetSpendingInfo: ScriptSignatureParams[InputInfo]
-) extends UnilateralDLCOutcome
+) extends UnilateralDLCOutcome {
+  require(cetSpendingInfo.prevTransaction == cet,
+          "CET Spending Info must spend CET")
+}
 
 case class UnilateralDLCOutcomeWithDustClosing(
     override val fundingTx: Transaction,
@@ -33,7 +36,10 @@ case class RefundDLCOutcomeWithClosing(
     override val refundTx: Transaction,
     closingTx: Transaction,
     refundSpendingInfo: ScriptSignatureParams[InputInfo])
-    extends RefundDLCOutcome
+    extends RefundDLCOutcome {
+  require(refundSpendingInfo.prevTransaction == refundTx,
+          "Refund Spending Info must spend Refund Tx")
+}
 
 case class RefundDLCOutcomeWithDustClosing(
     override val fundingTx: Transaction,

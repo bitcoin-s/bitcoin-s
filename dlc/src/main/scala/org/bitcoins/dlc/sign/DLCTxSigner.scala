@@ -145,8 +145,8 @@ case class DLCTxSigner(
           val sigs = allSigs(outPoint)
 
           psbt
-            .addWitnessUTXOToInput(output, index)
             .addSignatures(sigs, index)
+            .addWitnessUTXOToInput(output, index)
       }
     }
 
@@ -177,7 +177,7 @@ case class DLCTxSigner(
       psbt =
         PSBT
           .fromUnsignedTx(utx)
-          .addWitnessUTXOToInput(fundingTx.outputs.head, index = 0)
+          .addUTXOToInput(fundingTx, index = 0)
           .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       signedPSBT <- psbt.sign(inputIndex = 0, fundingPrivKey)
     } yield {
@@ -227,7 +227,7 @@ case class DLCTxSigner(
       psbt <-
         PSBT
           .fromUnsignedTx(utx)
-          .addWitnessUTXOToInput(fundingTx.outputs.head, index = 0)
+          .addUTXOToInput(fundingTx, index = 0)
           .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
           .sign(inputIndex = 0, fundingPrivKey)
     } yield {
@@ -269,7 +269,7 @@ case class DLCTxSigner(
       psbt <-
         PSBT
           .fromUnsignedTx(utx)
-          .addWitnessUTXOToInput(fundingTx.outputs.head, index = 0)
+          .addUTXOToInput(fundingTx, index = 0)
           .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
           .sign(inputIndex = 0, fundingPrivKey)
     } yield {

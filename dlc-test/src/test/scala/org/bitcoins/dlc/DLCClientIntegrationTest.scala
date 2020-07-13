@@ -47,13 +47,14 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
   private val clientF = clientsF.map(_._1)
   private val addressForMiningF = clientF.flatMap(_.getNewAddress)
 
-  def publishTransaction(tx: Transaction): Future[DoubleSha256DigestBE] = {
+  def publishTransaction(tx: Transaction): Future[Transaction] = {
     for {
       client <- clientF
       txid <- client.sendRawTransaction(tx)
+      _ = assert(tx.txIdBE == txid)
       addressForMining <- addressForMiningF
       _ <- client.generateToAddress(blocks = 6, addressForMining)
-    } yield txid
+    } yield tx
   }
 
   def waitUntilBlock(blockHeight: Int): Future[Unit] = {
@@ -138,25 +139,27 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
               }
           }
           .map(_._2)
-      txid <- publishTransaction(signedTxResult.hex)
+      tx <- publishTransaction(signedTxResult.hex)
     } yield {
       assert(localOutputIndex.isDefined)
       assert(remoteOutputIndex.isDefined)
 
-      (txid, localOutputIndex.get, remoteOutputIndex.get, signedTxResult.hex)
+      (tx, localOutputIndex.get, remoteOutputIndex.get, signedTxResult.hex)
     }
 
     val fundingTxF = fundedInputsTxidF.map(_._4)
 
     val localFundingUtxosF = fundedInputsTxidF.map {
-      case (txid, localOutputIndex, _, tx) =>
+      case (prevTx, localOutputIndex, _, tx) =>
         Vector(
           ScriptSignatureParams(
             inputInfo = P2WPKHV0InputInfo(
-              outPoint = TransactionOutPoint(txid, UInt32(localOutputIndex)),
+              outPoint =
+                TransactionOutPoint(prevTx.txIdBE, UInt32(localOutputIndex)),
               amount = tx.outputs(localOutputIndex).value,
               pubKey = inputPubKeyLocal
             ),
+            prevTransaction = prevTx,
             signer = inputPrivKeyLocal,
             hashType = HashType.sigHashAll
           )
@@ -164,14 +167,16 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     }
 
     val remoteFundingUtxosF = fundedInputsTxidF.map {
-      case (txid, _, remoteOutputIndex, tx) =>
+      case (prevTx, _, remoteOutputIndex, tx) =>
         Vector(
           ScriptSignatureParams(
             P2WPKHV0InputInfo(
-              outPoint = TransactionOutPoint(txid, UInt32(remoteOutputIndex)),
+              outPoint =
+                TransactionOutPoint(prevTx.txIdBE, UInt32(remoteOutputIndex)),
               amount = tx.outputs(remoteOutputIndex).value,
               pubKey = inputPubKeyRemote
             ),
+            prevTx,
             inputPrivKeyRemote,
             HashType.sigHashAll
           )

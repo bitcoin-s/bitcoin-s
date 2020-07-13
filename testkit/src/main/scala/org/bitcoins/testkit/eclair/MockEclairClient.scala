@@ -16,7 +16,13 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, ECPublicKey, Sha256Digest}
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  DoubleSha256DigestBE,
+  ECPrivateKey,
+  ECPublicKey,
+  Sha256Digest
+}
 import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.network.NodeUri
 
@@ -388,14 +394,14 @@ class MockEclairClient()(implicit
       channelId: ChannelId,
       feeBaseMsat: MilliSatoshis,
       feePropertionalMillionths: Long
-  ): Future[Unit] =
+  ): Future[ChannelCommandResult] =
     unsupportedFailure
 
   override def updateRelayFee(
       shortChannelId: ShortChannelId,
       feeBaseMsat: MilliSatoshis,
       feePropertionalMillionths: Long
-  ): Future[Unit] =
+  ): Future[ChannelCommandResult] =
     unsupportedFailure
 
   override def payInvoice(
@@ -481,13 +487,16 @@ class MockEclairClient()(implicit
     unsupportedFailure
   }
 
-  override def forceClose(channelId: ChannelId): Future[Unit] =
+  override def forceClose(channelId: ChannelId): Future[ChannelCommandResult] =
     unsupportedFailure
 
-  override def forceClose(shortChannelId: ShortChannelId): Future[Unit] =
+  override def forceClose(
+      shortChannelId: ShortChannelId): Future[ChannelCommandResult] =
     unsupportedFailure
 
-  override def close(id: ChannelId, spk: ScriptPubKey): Future[Unit] =
+  override def close(
+      id: ChannelId,
+      spk: ScriptPubKey): Future[ChannelCommandResult] =
     unsupportedFailure
 
   override def usableBalances(): Future[Vector[UsableBalancesResult]] =
@@ -547,5 +556,16 @@ class MockEclairClient()(implicit
       from: Option[Instant],
       to: Option[Instant]
   ): Future[Vector[LnInvoice]] =
+    unsupportedFailure
+
+  override def onChainBalance(): Future[OnChainBalance] = unsupportedFailure
+
+  override def onChainTransactions(): Future[Vector[WalletTransaction]] =
+    unsupportedFailure
+
+  override def sendOnChain(
+      address: BitcoinAddress,
+      amount: Satoshis,
+      confirmationTarget: Int): Future[DoubleSha256DigestBE] =
     unsupportedFailure
 }

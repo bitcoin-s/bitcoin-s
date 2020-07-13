@@ -66,13 +66,22 @@ class DLCClientTest extends BitcoinSAsyncTest {
         }
 
         val inputKey = ECPrivateKey.freshPrivateKey
+
+        val fundingTx = BaseTransaction(
+          TransactionConstants.validLockVersion,
+          Vector.empty,
+          Vector(
+            TransactionOutput(totalInput,
+                              P2WPKHWitnessSPKV0(inputKey.publicKey))),
+          UInt32.zero)
+
         val utxos: Vector[ScriptSignatureParams[P2WPKHV0InputInfo]] = Vector(
           ScriptSignatureParams(
-            P2WPKHV0InputInfo(outPoint =
-                                TransactionOutPoint(DoubleSha256DigestBE.empty,
-                                                    UInt32.zero),
+            P2WPKHV0InputInfo(outPoint = TransactionOutPoint(fundingTx.txIdBE,
+                                                             UInt32.zero),
                               amount = totalInput,
                               pubKey = inputKey.publicKey),
+            prevTransaction = fundingTx,
             signer = inputKey,
             hashType = HashType.sigHashAll
           ))
@@ -146,6 +155,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
                           TransactionOutPoint(localFundingTx.txId, UInt32.zero),
                         amount = localInput * 2,
                         pubKey = inputPubKeyLocal),
+      prevTransaction = localFundingTx,
       signer = inputPrivKeyLocal,
       hashType = HashType.sigHashAll
     )
@@ -166,6 +176,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
                                                        UInt32.zero),
                         amount = remoteInput * 2,
                         pubKey = inputPubKeyRemote),
+      prevTransaction = remoteFundingTx,
       signer = inputPrivKeyRemote,
       hashType = HashType.sigHashAll
     )

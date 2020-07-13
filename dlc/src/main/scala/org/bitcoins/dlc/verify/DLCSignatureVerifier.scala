@@ -44,8 +44,8 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
             val idx = index + remoteTweak
 
             psbt
-              .addWitnessUTXOToInput(remoteFundingInputs(index).output, idx)
               .addSignatures(sigs, idx)
+              .addWitnessUTXOToInput(remoteFundingInputs(index).output, idx)
               .finalizeInput(idx) match {
               case Success(finalized) =>
                 finalized.verifyFinalizedInput(idx)

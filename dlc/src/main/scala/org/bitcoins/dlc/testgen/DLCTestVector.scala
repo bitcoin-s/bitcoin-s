@@ -594,6 +594,7 @@ case class SerializedDLCInputs(
 case class SerializedSegwitSpendingInfo(
     outPoint: SerializedTransactionOutPoint,
     output: SerializedTransactionOutput,
+    prevTx: Transaction,
     keys: Vector[ECPrivateKey],
     hashType: HashType,
     scriptWitness: ScriptWitnessV0) {
@@ -601,6 +602,7 @@ case class SerializedSegwitSpendingInfo(
   def toSpendingInfo: ScriptSignatureParams[P2WPKHV0InputInfo] = {
     ScriptSignatureParams(
       P2WPKHV0InputInfo(outPoint.toOutPoint, output.value, keys.head.publicKey),
+      prevTx,
       keys.head,
       hashType
     )
@@ -616,6 +618,7 @@ object SerializedSegwitSpendingInfo {
       outPoint =
         SerializedTransactionOutPoint.fromOutPoint(spendingInfo.outPoint),
       output = SerializedTransactionOutput.fromOutput(spendingInfo.output),
+      prevTx = spendingInfo.prevTransaction,
       keys = spendingInfo.signers.map(_.asInstanceOf[ECPrivateKey]),
       hashType = spendingInfo.hashType,
       scriptWitness = spendingInfo.inputInfo.scriptWitness
