@@ -76,14 +76,13 @@ class BroadcastTransactionTest extends NodeUnitTest {
     for {
       // fund bitcoind
       _ <- rpc.getNewAddress.flatMap(rpc.generateToAddress(101, _))
+      bitcoindBalancePreBroadcast <- rpc.getBalance
 
       rawTx <-
         rpc.createRawTransaction(Vector.empty, Map(junkAddress -> sendAmount))
       fundedTx <- rpc.fundRawTransaction(rawTx)
       tx <- rpc.signRawTransactionWithWallet(fundedTx.hex).map(_.hex)
-      _ <- node.broadcastTransaction(tx)
 
-      bitcoindBalancePreBroadcast <- rpc.getBalance
       _ <- attemptBroadcast(tx)
         .recoverWith {
           case NonFatal(_) =>
