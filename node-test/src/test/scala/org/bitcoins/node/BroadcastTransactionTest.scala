@@ -8,11 +8,8 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.core.gen.TransactionGenerators
-import org.bitcoins.testkit.node.{
-  NodeTestUtil,
-  NodeUnitTest,
-  SpvNodeFundedWalletBitcoind
-}
+import org.bitcoins.testkit.node.NodeUnitTest
+import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -25,17 +22,15 @@ class BroadcastTransactionTest extends NodeUnitTest {
   implicit override protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
-  override type FixtureParam = SpvNodeFundedWalletBitcoind
+  override type FixtureParam = SpvNodeConnectedWithBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeFundedWalletBitcoind(test,
-                                    NodeCallbacks.empty,
-                                    getBIP39PasswordOpt())
+    withSpvNodeConnectedToBitcoind(test)
 
   private val sendAmount = 1.bitcoin
 
   it must "safely broadcast a transaction twice" in { param =>
-    val SpvNodeFundedWalletBitcoind(node, _, _, _) = param
+    val node = param.node
 
     val tx = TransactionGenerators.transaction.sampleSome
 
@@ -51,7 +46,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
   }
 
   it must "broadcast a transaction" in { param =>
-    val SpvNodeFundedWalletBitcoind(node, wallet, rpc, _) = param
+    val SpvNodeConnectedWithBitcoind(node, rpc) = param
 
     def hasSeenTx(transaction: Transaction): Future[Boolean] = {
       rpc
@@ -78,20 +73,16 @@ class BroadcastTransactionTest extends NodeUnitTest {
       } yield ()
     }
 
-    val addrF = rpc.getNewAddress
-    val balanceF = rpc.getBalance
-
     for {
-      _ <- wallet.getBloomFilter()
-      _ <- node.sync()
-      _ <- NodeTestUtil.awaitSync(node, rpc)
+      // fund bitcoind
+      _ <- rpc.getNewAddress.flatMap(rpc.generateToAddress(101, _))
+      bitcoindBalancePreBroadcast <- rpc.getBalance
 
-      address <- addrF
-      tx <-
-        wallet
-          .sendToAddress(address, sendAmount, None)
+      rawTx <-
+        rpc.createRawTransaction(Vector.empty, Map(junkAddress -> sendAmount))
+      fundedTx <- rpc.fundRawTransaction(rawTx)
+      tx <- rpc.signRawTransactionWithWallet(fundedTx.hex).map(_.hex)
 
-      bitcoindBalancePreBroadcast <- balanceF
       _ <- attemptBroadcast(tx)
         .recoverWith {
           case NonFatal(_) =>
@@ -101,8 +92,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
       bitcoindBalancePostBroadcast <- rpc.getBalance
 
     } yield assert(
-      // pre-balance + sent amount + 1 block reward maturing
-      bitcoindBalancePreBroadcast + sendAmount + 50.bitcoins == bitcoindBalancePostBroadcast)
-
+      // pre-balance - sent amount + 1 block reward maturing +/- fees
+      (bitcoindBalancePreBroadcast - sendAmount + 50.bitcoins).satoshis.toLong === bitcoindBalancePostBroadcast.satoshis.toLong +- 5000)
   }
 }
