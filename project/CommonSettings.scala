@@ -67,7 +67,8 @@ object CommonSettings {
     },
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     // Travis has performance issues on macOS
-    Test / parallelExecution := !(Properties.isMac && isCI)
+//    Test / parallelExecution := !(Properties.isMac && isCI)
+      Test / parallelExecution := false
   )
 
   private val commonCompilerOpts = {
