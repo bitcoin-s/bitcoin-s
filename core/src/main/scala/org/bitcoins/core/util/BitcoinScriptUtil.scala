@@ -457,13 +457,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       case w: WitnessScriptPubKey =>
         txSignatureComponent match {
           case wtxSigComponent: WitnessTxSigComponent =>
-            val scriptEither: Either[
-              (Seq[ScriptToken], ScriptPubKey),
-              ScriptError] = {
-              w.witnessVersion
-                .rebuild(wtxSigComponent.witness, w.witnessProgram)
-            }
-            parseScriptEither(scriptEither)
+            val scriptT = w.witnessVersion.rebuild(wtxSigComponent.witness,
+                                                   w.witnessProgram)
+            parseScriptTry(scriptT)
           case rWTxSigComponent: WitnessTxSigComponentRebuilt =>
             rWTxSigComponent.scriptPubKey.asm
           case _: BaseTxSigComponent =>
@@ -512,9 +508,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
       case w: WitnessScriptPubKey =>
         val wtx = spendingTransaction.asInstanceOf[WitnessTransaction]
-        val scriptEither =
+        val scriptT =
           w.witnessVersion.rebuild(wtx.witness.witnesses(idx), w.witnessProgram)
-        parseScriptEither(scriptEither)
+        parseScriptTry(scriptT)
 
       case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
           _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
@@ -575,15 +571,13 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     } else program.originalScript
   }
 
-  private def parseScriptEither(
-      scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError]): Seq[
-    ScriptToken] =
-    scriptEither match {
-      case Left((_, scriptPubKey)) =>
+  private def parseScriptTry(scriptT: Try[ScriptPubKey]): Seq[ScriptToken] =
+    scriptT match {
+      case Success(scriptPubKey) =>
         logger.debug(
           "Script pubkey asm inside calculateForSigning: " + scriptPubKey.asm)
         scriptPubKey.asm
-      case Right(_) => Nil //error
+      case Failure(err) => throw err
     }
 
   /**
