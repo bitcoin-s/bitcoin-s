@@ -436,10 +436,46 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
       else evaluated
     }
 
+    def rebuildV0(witness: ScriptWitness, program: Seq[ScriptToken]): Either[
+      (Seq[ScriptToken], ScriptPubKey),
+      ScriptError] = {
+      val programBytes = BytesUtil.toByteVector(program)
+      programBytes.size match {
+        case 20 =>
+          //p2wpkh
+          if (witness.stack.size != 2) {
+            Right(ScriptErrorWitnessProgramMisMatch)
+          } else {
+            Left(
+              (witness.stack.map(ScriptConstant(_)),
+               WitnessVersion0.rebuild(witness, program).get))
+          }
+        case 32 =>
+          //p2wsh
+          if (scriptWitness.stack.isEmpty)
+            Right(ScriptErrorWitnessProgramWitnessEmpty)
+          else {
+            WitnessVersion0.rebuild(witness, program) match {
+              case Success(rebuilt) =>
+                Left((witness.stack.tail.map(ScriptConstant(_)), rebuilt))
+              case Failure(_) =>
+                Right(ScriptErrorWitnessProgramMisMatch)
+            }
+          }
+        case _ =>
+          logger.error(
+            "Invalid witness program length for witness version 0, got: " + programBytes.size)
+          logger.error("Witness: " + scriptWitness)
+          logger.error("Witness program: " + witnessProgram)
+          //witness version 0 programs need to be 20 bytes or 32 bytes in size
+          Right(ScriptErrorWitnessProgramWrongLength)
+      }
+    }
+
     witnessVersion match {
       case WitnessVersion0 =>
         val either: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] =
-          witnessVersion.rebuild(scriptWitness, witnessProgram)
+          rebuildV0(scriptWitness, witnessProgram)
         either match {
           case Left((stack, scriptPubKey)) =>
             val newWTxSigComponent =

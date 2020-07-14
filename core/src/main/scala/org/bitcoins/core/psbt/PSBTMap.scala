@@ -220,7 +220,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         redeemScriptOpt.isDefined && redeemScriptOpt.get.redeemScript
           .isInstanceOf[WitnessScriptPubKeyV0]
 
-      isNativeV0 || isP2SHV0
+      // Only unsafe if it doesn't already have signatures
+      (isNativeV0 || isP2SHV0) && partialSignatures.isEmpty
     } else false
   }
 
