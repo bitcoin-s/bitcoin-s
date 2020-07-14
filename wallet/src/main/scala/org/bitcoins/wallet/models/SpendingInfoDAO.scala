@@ -152,6 +152,12 @@ case class SpendingInfoDAO()(implicit
     allUtxosF.map(filterUtxosByAccount(_, hdAccount))
   }
 
+  def findByTxoState(state: TxoState): Future[Vector[SpendingInfoDb]] = {
+    val query = table.filter(_.state === state)
+
+    safeDatabase.runVec(query.result)
+  }
+
   /** Enumerates all TX outputs in the wallet with the state
     * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.PendingConfirmationsSpent]] */
   def findAllPendingConfirmation: Future[Vector[SpendingInfoDb]] = {
