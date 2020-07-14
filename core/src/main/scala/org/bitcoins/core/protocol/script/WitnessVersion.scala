@@ -49,13 +49,13 @@ case object WitnessVersion0 extends WitnessVersion {
           //need to check if the hashes match
           val stackTop = scriptWitness.stack.head
           val stackHash = CryptoUtil.sha256(stackTop)
-          if (stackHash != Sha256Digest(witnessProgram.head.bytes)) {
+          val witnessHash = Sha256Digest(witnessProgram.head.bytes)
+          if (stackHash != witnessHash) {
             logger.debug(
               "Witness hashes did not match Stack hash: " + stackHash)
             logger.debug("Witness program: " + witnessProgram)
-            Failure(
-              new IllegalArgumentException(
-                "Witness hash did not match stack hash"))
+            Failure(new IllegalArgumentException(
+              s"Witness hash $witnessHash did not match stack hash $stackHash"))
           } else {
             val compactSizeUInt =
               CompactSizeUInt.calculateCompactSizeUInt(stackTop)
@@ -69,9 +69,8 @@ case object WitnessVersion0 extends WitnessVersion {
         logger.error("Witness: " + scriptWitness)
         logger.error("Witness program: " + witnessProgram)
         //witness version 0 programs need to be 20 bytes or 32 bytes in size
-        Failure(
-          new IllegalArgumentException(
-            "Witness program had invalid length for version 0"))
+        Failure(new IllegalArgumentException(
+          s"Witness program had invalid length (${programBytes.length}) for version 0, must be 20 or 30: $witnessProgram"))
     }
   }
 

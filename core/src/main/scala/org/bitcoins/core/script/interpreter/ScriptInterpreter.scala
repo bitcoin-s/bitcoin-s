@@ -437,29 +437,29 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     }
 
     def rebuildV0(witness: ScriptWitness, program: Seq[ScriptToken]): Either[
-      (Seq[ScriptToken], ScriptPubKey),
-      ScriptError] = {
+      ScriptError,
+      (Seq[ScriptToken], ScriptPubKey)] = {
       val programBytes = BytesUtil.toByteVector(program)
       programBytes.size match {
         case 20 =>
           //p2wpkh
           if (witness.stack.size != 2) {
-            Right(ScriptErrorWitnessProgramMisMatch)
+            Left(ScriptErrorWitnessProgramMisMatch)
           } else {
-            Left(
+            Right(
               (witness.stack.map(ScriptConstant(_)),
                WitnessVersion0.rebuild(witness, program).get))
           }
         case 32 =>
           //p2wsh
           if (scriptWitness.stack.isEmpty)
-            Right(ScriptErrorWitnessProgramWitnessEmpty)
+            Left(ScriptErrorWitnessProgramWitnessEmpty)
           else {
             WitnessVersion0.rebuild(witness, program) match {
               case Success(rebuilt) =>
-                Left((witness.stack.tail.map(ScriptConstant(_)), rebuilt))
+                Right((witness.stack.tail.map(ScriptConstant(_)), rebuilt))
               case Failure(_) =>
-                Right(ScriptErrorWitnessProgramMisMatch)
+                Left(ScriptErrorWitnessProgramMisMatch)
             }
           }
         case _ =>
@@ -468,16 +468,16 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
           logger.error("Witness: " + scriptWitness)
           logger.error("Witness program: " + witnessProgram)
           //witness version 0 programs need to be 20 bytes or 32 bytes in size
-          Right(ScriptErrorWitnessProgramWrongLength)
+          Left(ScriptErrorWitnessProgramWrongLength)
       }
     }
 
     witnessVersion match {
       case WitnessVersion0 =>
-        val either: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] =
+        val either: Either[ScriptError, (Seq[ScriptToken], ScriptPubKey)] =
           rebuildV0(scriptWitness, witnessProgram)
         either match {
-          case Left((stack, scriptPubKey)) =>
+          case Right((stack, scriptPubKey)) =>
             val newWTxSigComponent =
               rebuildWTxSigComponent(wTxSigComponent, scriptPubKey)
             val newProgram = newWTxSigComponent.map { comp =>
@@ -491,7 +491,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             }
             val evaluated = newProgram.map(executeProgram)
             evaluated.map(e => postSegWitProgramChecks(e))
-          case Right(err) =>
+          case Left(err) =>
             val program = ExecutedScriptProgram(txSignatureComponent =
                                                   wTxSigComponent,
                                                 stack = Nil,
