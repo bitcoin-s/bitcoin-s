@@ -12,9 +12,7 @@ sealed abstract class FeeUnit {
   final def *(cu: CurrencyUnit): CurrencyUnit = this * cu.satoshis.toLong
   final def *(int: Int): CurrencyUnit = this * int.toLong
 
-  final def *(long: Long): CurrencyUnit =
-    if (scaleFactor == 1) currencyUnit * long
-    else currencyUnit * long / Satoshis(scaleFactor)
+  final def *(long: Long): CurrencyUnit = Satoshis(toLong * long / scaleFactor)
   def *(tx: Transaction): CurrencyUnit = calc(tx)
 
   /** The coefficient the denominator in the unit is multiplied by,
