@@ -94,6 +94,20 @@ class CoinSelectorTest extends BitcoinSWalletTest {
     assert(selection == Vector(fixture.utxo1, fixture.utxo2))
   }
 
+  it must "accumulate random outputs" in { fixture =>
+    val first = CoinSelector.randomSelection(walletUtxos = fixture.utxoSet,
+                                             outputs = Vector(fixture.output),
+                                             feeRate = fixture.feeRate)
+
+    val selections = Vector.fill(20)(
+      CoinSelector.randomSelection(walletUtxos = fixture.utxoSet,
+                                   outputs = Vector(fixture.output),
+                                   feeRate = fixture.feeRate))
+
+    // it should not get the same thing every time
+    assert(selections.exists(_ != first))
+  }
+
   it must "correctly approximate transaction input size" in { fixture =>
     val expected1 =
       32 + 4 + 1 + 4 + fixture.utxo1.scriptWitnessOpt.get.bytes.length
