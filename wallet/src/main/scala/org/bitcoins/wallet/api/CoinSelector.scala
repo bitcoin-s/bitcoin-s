@@ -8,9 +8,21 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.wallet.models.SpendingInfoDb
 
 import scala.annotation.tailrec
+import scala.util.Random
 
 /** Implements algorithms for selecting from a UTXO set to spend to an output set at a given fee rate. */
 trait CoinSelector {
+
+  /** Randomly selects utxos until it has enough to fund the desired amount,
+    * should only be used for research purposes */
+  def randomSelection(
+      walletUtxos: Vector[SpendingInfoDb],
+      outputs: Vector[TransactionOutput],
+      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
+    val randomUtxos = Random.shuffle(walletUtxos)
+
+    accumulate(randomUtxos, outputs, feeRate)
+  }
 
   /**
     * Greedily selects from walletUtxos starting with the largest outputs, skipping outputs with values
@@ -107,6 +119,8 @@ object CoinSelector extends CoinSelector {
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit): Vector[SpendingInfoDb] =
     coinSelectionAlgo match {
+      case RandomSelection =>
+        randomSelection(walletUtxos, outputs, feeRate)
       case AccumulateLargest =>
         accumulateLargest(walletUtxos, outputs, feeRate)
       case AccumulateSmallestViable =>

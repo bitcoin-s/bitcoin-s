@@ -5,6 +5,10 @@ sealed abstract class CoinSelectionAlgo
 
 object CoinSelectionAlgo {
 
+  /** Randomly selects utxos until it has enough to fund the desired amount,
+    * should only be used for research purposes */
+  final case object RandomSelection extends CoinSelectionAlgo
+
   /** Greedily selects from walletUtxos starting with the largest outputs, skipping outputs with values
     * below their fees. Better for high fee environments than accumulateSmallestViable.
     */
@@ -22,7 +26,10 @@ object CoinSelectionAlgo {
   final case object StandardAccumulate extends CoinSelectionAlgo
 
   val all: Vector[CoinSelectionAlgo] =
-    Vector(AccumulateLargest, AccumulateSmallestViable, StandardAccumulate)
+    Vector(RandomSelection,
+           AccumulateLargest,
+           AccumulateSmallestViable,
+           StandardAccumulate)
 
   def fromString(str: String): Option[CoinSelectionAlgo] = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase)
