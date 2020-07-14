@@ -1,6 +1,9 @@
 package org.bitcoins.commons.jsonmodels.wallet
 
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.fee.{
+  SatoshisPerKiloByte,
+  SatoshisPerVirtualByte
+}
 
 sealed abstract class FeeRateApiResult
 
@@ -10,3 +13,12 @@ case class BitcoinerLiveResult(
 ) extends FeeRateApiResult
 
 case class BitcoinerLiveEstimate(sat_per_vbyte: SatoshisPerVirtualByte)
+
+case class BitGoResult(
+    feePerKb: SatoshisPerKiloByte,
+    cpfpFeePerKb: SatoshisPerKiloByte,
+    numBlocks: Int,
+    confidence: Int,
+    multiplier: Int,
+    feeByBlockTarget: Map[Int, SatoshisPerKiloByte]
+) extends FeeRateApiResult
