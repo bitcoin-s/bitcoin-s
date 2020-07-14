@@ -12,14 +12,18 @@ sealed abstract class FeeUnit {
   final def *(cu: CurrencyUnit): CurrencyUnit = this * cu.satoshis.toLong
   final def *(int: Int): CurrencyUnit = this * int.toLong
 
-  /** Should multiply currencyUnit by long along with a scale factor if necessary.
-    * This will be used when calculating the fee for a transaction.
-    *
-    * This should ONLY be overridden if the FeeUnit's denominator is NOT a multiple of 1.
-    *  ie sats/kilobyte
-    */
-  def *(long: Long): CurrencyUnit = currencyUnit * long
+  final def *(long: Long): CurrencyUnit =
+    if (scaleFactor == 1) currencyUnit * long
+    else currencyUnit * long / Satoshis(scaleFactor)
   def *(tx: Transaction): CurrencyUnit = calc(tx)
+
+  /** The coefficient the denominator in the unit is multiplied by,
+    * for example sats/kilobyte -> 1000
+    */
+  def scaleFactor: Long
+
+  require(scaleFactor > 0,
+          s"Scale factor cannot be less than or equal to 0, got $scaleFactor")
 
   /** Takes the given transaction returns a size that will be used for calculating the fee rate.
     * This is generally the denominator in the unit, ie sats/byte
@@ -44,6 +48,8 @@ case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
   }
 
   override def txSizeForCalc(tx: Transaction): Long = tx.byteSize
+
+  override def scaleFactor: Long = 1
 }
 
 object SatoshisPerByte {
@@ -78,8 +84,7 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
 
   override def txSizeForCalc(tx: Transaction): Long = tx.byteSize
 
-  override def *(long: Long): CurrencyUnit =
-    currencyUnit * long / Satoshis(1000)
+  override def scaleFactor: Long = 1000
 }
 
 /**
@@ -91,6 +96,8 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
 case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
     extends BitcoinFeeUnit {
   override def txSizeForCalc(tx: Transaction): Long = tx.vsize
+
+  override def scaleFactor: Long = 1
 }
 
 object SatoshisPerVirtualByte {
@@ -114,8 +121,7 @@ case class SatoshisPerKW(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
 
   override def txSizeForCalc(tx: Transaction): Long = tx.weight
 
-  override def *(long: Long): CurrencyUnit =
-    currencyUnit * long / Satoshis(1000)
+  override def scaleFactor: Long = 1000
 }
 
 object SatoshisPerKW {
