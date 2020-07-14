@@ -1,5 +1,6 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
@@ -49,7 +50,23 @@ sealed abstract class TransactionSignatureSerializer {
       output.scriptPubKey.asm)
     logger.trace(s"scriptForSigning: $script")
     val amount = output.value
-    txSigComponent.sigVersion match {
+
+    serializeForSignature(spendingTransaction,
+                          inputIndex,
+                          hashType,
+                          amount,
+                          script,
+                          txSigComponent.sigVersion)
+  }
+
+  def serializeForSignature(
+      spendingTransaction: Transaction,
+      inputIndex: UInt32,
+      hashType: HashType,
+      amount: CurrencyUnit,
+      script: Seq[ScriptToken],
+      sigVersion: SignatureVersion): ByteVector = {
+    sigVersion match {
       case SigVersionBase =>
         logger.trace("Serializing for signature")
         logger.trace("Script: " + script)
@@ -167,8 +184,8 @@ sealed abstract class TransactionSignatureSerializer {
         }
       case SigVersionWitnessV0 =>
         val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
-        val isNotSigHashSingle = !(HashType.isSigHashSingle(hashType.num))
-        val isNotSigHashNone = !(HashType.isSigHashNone(hashType.num))
+        val isNotSigHashSingle = !HashType.isSigHashSingle(hashType.num)
+        val isNotSigHashNone = !HashType.isSigHashNone(hashType.num)
         val inputIndexInt = inputIndex.toInt
         val emptyHash = DoubleSha256Digest.empty
 
@@ -278,173 +295,13 @@ sealed abstract class TransactionSignatureSerializer {
       output.scriptPubKey.asm)
     logger.trace(s"scriptForSigning: $script")
     val amount = output.value
-    signingInfo.sigVersion match {
-      case SigVersionBase =>
-        logger.trace("Serializing for signature")
-        logger.trace("Script: " + script)
-        // Clear input scripts in preparation for signing. If we're signing a fresh
-        // CScript's inside the Bitcoin Core codebase retain their compactSizeUInt
-        // while clearing out all of the actual asm operations in the CScript
-        val inputSigsRemoved = for {
-          input <- spendingTransaction.inputs
-          s = input.scriptSignature
-        } yield TransactionInput(
-          input.previousOutput,
-          NonStandardScriptSignature(s.compactSizeUInt.hex),
-          input.sequence)
 
-        //make sure all scriptSigs have empty asm
-        inputSigsRemoved.foreach(input =>
-          require(input.scriptSignature.asm.isEmpty,
-                  "Input asm was not empty " + input.scriptSignature.asm))
-
-        // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
-        // is a legacy holdover from a previous, broken design of executing scripts that shipped in Bitcoin 0.1.
-        // It was seriously flawed and would have let anyone take anyone else's money. Later versions switched to
-        // the design we use today where scripts are executed independently but share a stack. This left the
-        // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
-        // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
-        // do it, we could split off the main chain.
-        logger.trace("Before Bitcoin-S Script to be connected: " + script)
-        val scriptWithOpCodeSeparatorsRemoved: Seq[ScriptToken] =
-          removeOpCodeSeparators(script)
-
-        logger.trace(
-          "After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved)
-
-        val inputToSign = inputSigsRemoved(idx)
-
-        // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
-        // the signature covers the hash of the prevout transaction which obviously includes the output script
-        // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
-        val scriptSig =
-          ScriptSignature.fromAsm(scriptWithOpCodeSeparatorsRemoved)
-        logger.trace(s"scriptSig $scriptSig")
-        val inputWithConnectedScript = TransactionInput(
-          inputToSign.previousOutput,
-          scriptSig,
-          inputToSign.sequence)
-
-        //update the input at index i with inputWithConnectScript
-        val updatedInputs = for {
-          (input, index) <- inputSigsRemoved.zipWithIndex
-        } yield {
-          if (index == idx) {
-            inputWithConnectedScript
-          } else input
-        }
-
-        val txWithInputSigsRemoved = BaseTransaction(
-          spendingTransaction.version,
-          updatedInputs,
-          spendingTransaction.outputs,
-          spendingTransaction.lockTime)
-        val sigHashBytes = hashType.num.bytes.reverse
-
-        hashType match {
-          case _: SIGHASH_NONE =>
-            val sigHashNoneTx: Transaction =
-              sigHashNone(txWithInputSigsRemoved, inputIndex)
-            sigHashNoneTx.bytes ++ sigHashBytes
-
-          case _: SIGHASH_SINGLE =>
-            if (idx >= spendingTransaction.outputs.size) {
-              // comment copied from bitcoinj
-              // The input index is beyond the number of outputs, it's a buggy signature made by a broken
-              // Bitcoin implementation. Bitcoin Core also contains a bug in handling this case:
-              // any transaction output that is signed in this case will result in both the signed output
-              // and any future outputs to this public key being steal-able by anyone who has
-              // the resulting signature and the public key (both of which are part of the signed tx input).
-
-              // Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
-              // actually returns the constant "1" to indicate an error, which is never checked for. Oops.
-              errorHash.bytes
-            } else {
-              val sigHashSingleTx =
-                sigHashSingle(txWithInputSigsRemoved, inputIndex)
-              sigHashSingleTx.bytes ++ sigHashBytes
-            }
-
-          case _: SIGHASH_ALL =>
-            val sigHashAllTx: Transaction = sigHashAll(txWithInputSigsRemoved)
-            sigHashAllTx.bytes ++ sigHashBytes
-
-          case _: SIGHASH_ANYONECANPAY =>
-            val txWithInputsRemoved = sigHashAnyoneCanPay(
-              txWithInputSigsRemoved,
-              inputWithConnectedScript)
-            txWithInputsRemoved.bytes ++ sigHashBytes
-
-          case _: SIGHASH_ALL_ANYONECANPAY =>
-            val sigHashAllTx = sigHashAll(txWithInputSigsRemoved)
-            val sigHashAllAnyoneCanPayTx =
-              sigHashAnyoneCanPay(sigHashAllTx, inputWithConnectedScript)
-            sigHashAllAnyoneCanPayTx.bytes ++ sigHashBytes
-
-          case _: SIGHASH_NONE_ANYONECANPAY =>
-            val sigHashNoneTx = sigHashNone(txWithInputSigsRemoved, inputIndex)
-            val sigHashNoneAnyoneCanPay =
-              sigHashAnyoneCanPay(sigHashNoneTx, inputWithConnectedScript)
-            sigHashNoneAnyoneCanPay.bytes ++ sigHashBytes
-
-          case _: SIGHASH_SINGLE_ANYONECANPAY =>
-            val sigHashSingleTx =
-              sigHashSingle(txWithInputSigsRemoved, inputIndex)
-            val sigHashSingleAnyoneCanPay =
-              sigHashAnyoneCanPay(sigHashSingleTx, inputWithConnectedScript)
-            sigHashSingleAnyoneCanPay.bytes ++ sigHashBytes
-        }
-      case SigVersionWitnessV0 =>
-        val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
-        val isNotSigHashSingle = !(HashType.isSigHashSingle(hashType.num))
-        val isNotSigHashNone = !(HashType.isSigHashNone(hashType.num))
-        val inputIndexInt = idx
-        val emptyHash = DoubleSha256Digest.empty
-
-        val outPointHash: ByteVector = if (isNotAnyoneCanPay) {
-          val prevOuts = spendingTransaction.inputs.map(_.previousOutput)
-          val bytes: ByteVector = BytesUtil.toByteVector(prevOuts)
-          CryptoUtil.doubleSHA256(bytes).bytes
-        } else emptyHash.bytes
-
-        val sequenceHash: ByteVector =
-          if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
-            val sequences = spendingTransaction.inputs.map(_.sequence)
-            val littleEndianSeq =
-              sequences.foldLeft(ByteVector.empty)(_ ++ _.bytes.reverse)
-            CryptoUtil.doubleSHA256(littleEndianSeq).bytes
-          } else emptyHash.bytes
-
-        val outputHash: ByteVector =
-          if (isNotSigHashSingle && isNotSigHashNone) {
-            val outputs = spendingTransaction.outputs
-            val bytes = BytesUtil.toByteVector(outputs)
-            CryptoUtil.doubleSHA256(bytes).bytes
-          } else if (
-            HashType.isSigHashSingle(hashType.num) &&
-            idx < spendingTransaction.outputs.size
-          ) {
-            val output = spendingTransaction.outputs(inputIndexInt)
-            val bytes = CryptoUtil
-              .doubleSHA256(RawTransactionOutputParser.write(output))
-              .bytes
-            bytes
-          } else emptyHash.bytes
-
-        val scriptBytes = BytesUtil.toByteVector(script)
-
-        val i = spendingTransaction.inputs(inputIndexInt)
-
-        val serializationForSig: ByteVector =
-          spendingTransaction.version.bytes.reverse ++ outPointHash ++ sequenceHash ++
-            i.previousOutput.bytes ++ CompactSizeUInt.calc(scriptBytes).bytes ++
-            scriptBytes ++ amount.bytes ++ i.sequence.bytes.reverse ++
-            outputHash ++ spendingTransaction.lockTime.bytes.reverse ++ hashType.num.bytes.reverse
-        logger.debug(
-          "Serialization for signature for WitnessV0Sig: " + BytesUtil
-            .encodeHex(serializationForSig))
-        serializationForSig
-    }
+    serializeForSignature(spendingTransaction,
+                          inputIndex,
+                          hashType,
+                          amount,
+                          script,
+                          signingInfo.sigVersion)
   }
 
   /**

@@ -19,55 +19,55 @@ import scala.util.{Failure, Success, Try}
 
 object TxUtil {
 
+  private def computeNextLockTime(
+      currentLockTimeOpt: Option[UInt32],
+      locktime: Long): Try[UInt32] = {
+    val lockTimeT =
+      if (locktime > UInt32.max.toLong || locktime < 0) {
+        TxBuilderError.IncompatibleLockTimes
+      } else Success(UInt32(locktime))
+    lockTimeT.flatMap { lockTime: UInt32 =>
+      currentLockTimeOpt match {
+        case Some(currentLockTime) =>
+          val lockTimeThreshold = TransactionConstants.locktimeThreshold
+          if (currentLockTime < lockTime) {
+            if (
+              currentLockTime < lockTimeThreshold && lockTime >= lockTimeThreshold
+            ) {
+              //means that we spend two different locktime types, one of the outputs spends a
+              //OP_CLTV script by block height, the other spends one by time stamp
+              TxBuilderError.IncompatibleLockTimes
+            } else Success(lockTime)
+          } else if (
+            currentLockTime >= lockTimeThreshold && lockTime < lockTimeThreshold
+          ) {
+            //means that we spend two different locktime types, one of the outputs spends a
+            //OP_CLTV script by block height, the other spends one by time stamp
+            TxBuilderError.IncompatibleLockTimes
+          } else {
+            Success(currentLockTime)
+          }
+        case None => Success(lockTime)
+      }
+    }
+  }
+
   /**
     * This helper function calculates the appropriate locktime for a transaction.
     * To be able to spend [[CLTVScriptPubKey]]'s you need to have the transaction's
     * locktime set to the same value (or higher) than the output it is spending.
     * See BIP65 for more info
     */
-  def calcLockTime(utxos: Seq[InputSigningInfo[InputInfo]]): Try[UInt32] = {
-    def computeNextLockTime(
-        currentLockTimeOpt: Option[UInt32],
-        locktime: Long): Try[UInt32] = {
-      val lockTimeT =
-        if (locktime > UInt32.max.toLong || locktime < 0) {
-          TxBuilderError.IncompatibleLockTimes
-        } else Success(UInt32(locktime))
-      lockTimeT.flatMap { lockTime: UInt32 =>
-        currentLockTimeOpt match {
-          case Some(currentLockTime) =>
-            val lockTimeThreshold = TransactionConstants.locktimeThreshold
-            if (currentLockTime < lockTime) {
-              if (
-                currentLockTime < lockTimeThreshold && lockTime >= lockTimeThreshold
-              ) {
-                //means that we spend two different locktime types, one of the outputs spends a
-                //OP_CLTV script by block height, the other spends one by time stamp
-                TxBuilderError.IncompatibleLockTimes
-              } else Success(lockTime)
-            } else if (
-              currentLockTime >= lockTimeThreshold && lockTime < lockTimeThreshold
-            ) {
-              //means that we spend two different locktime types, one of the outputs spends a
-              //OP_CLTV script by block height, the other spends one by time stamp
-              TxBuilderError.IncompatibleLockTimes
-            } else {
-              Success(currentLockTime)
-            }
-          case None => Success(lockTime)
-        }
-      }
-    }
-
+  def calcLockTimeForInfos(utxos: Seq[InputInfo]): Try[UInt32] = {
     @tailrec
     def loop(
-        remaining: Seq[InputSigningInfo[InputInfo]],
+        remaining: Seq[InputInfo],
         currentLockTimeOpt: Option[UInt32]): Try[UInt32] =
       remaining match {
         case Nil =>
           Success(currentLockTimeOpt.getOrElse(TransactionConstants.lockTime))
         case spendingInfo +: newRemaining =>
-          spendingInfo.inputInfo match {
+          spendingInfo match {
             case lockTime: LockTimeInputInfo =>
               lockTime.scriptPubKey match {
                 case _: CSVScriptPubKey =>
@@ -97,17 +97,12 @@ object TxUtil {
                 }
               }
             case p2sh: P2SHInputInfo =>
-              val nestedSpendingInfo =
-                p2sh.nestedInputInfo.genericWithSignFrom(spendingInfo)
-              loop(nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
+              loop(p2sh.nestedInputInfo +: newRemaining, currentLockTimeOpt)
             case p2wsh: P2WSHV0InputInfo =>
-              val nestedSpendingInfo =
-                p2wsh.nestedInputInfo.genericWithSignFrom(spendingInfo)
-              loop(nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
+              loop(p2wsh.nestedInputInfo +: newRemaining, currentLockTimeOpt)
             case conditional: ConditionalInputInfo =>
-              val nestedSpendingInfo =
-                conditional.nestedInputInfo.genericWithSignFrom(spendingInfo)
-              loop(nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
+              loop(conditional.nestedInputInfo +: newRemaining,
+                   currentLockTimeOpt)
             case _: P2WPKHV0InputInfo | _: UnassignedSegwitNativeInputInfo |
                 _: P2PKInputInfo | _: P2PKHInputInfo |
                 _: MultiSignatureInputInfo | _: EmptyInputInfo =>
@@ -117,6 +112,16 @@ object TxUtil {
       }
 
     loop(utxos, None)
+  }
+
+  /**
+    * This helper function calculates the appropriate locktime for a transaction.
+    * To be able to spend [[CLTVScriptPubKey]]'s you need to have the transaction's
+    * locktime set to the same value (or higher) than the output it is spending.
+    * See BIP65 for more info
+    */
+  def calcLockTime(utxos: Seq[InputSigningInfo[InputInfo]]): Try[UInt32] = {
+    calcLockTimeForInfos(utxos.map(_.inputInfo))
   }
 
   /** Inserts script signatures and (potentially) witness data to a given
