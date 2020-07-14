@@ -1,3 +1,5 @@
+import scala.util.Properties
+
 name := "bitcoin-s-core-test"
 
 libraryDependencies ++= Deps.coreTest
@@ -13,3 +15,5 @@ coverageExcludedPackages := ".*gen"
 coverageMinimum := 90
 
 coverageFailOnMinimum := true
+
+Test / parallelExecution := !(Properties.isMac && CommonSettings.isCI)

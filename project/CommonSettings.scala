@@ -7,7 +7,7 @@ import sbt.Keys._
 import scala.util.Properties
 
 object CommonSettings {
-  private val isCI = {
+  val isCI = {
     sys.props
       .get("CI")
       .isDefined
@@ -66,9 +66,8 @@ object CommonSettings {
       }
     },
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-    // Travis has performance issues on macOS
-//    Test / parallelExecution := !(Properties.isMac && isCI)
-      Test / parallelExecution := false
+    // Travis has performance issues
+    Test / parallelExecution := !isCI
   )
 
   private val commonCompilerOpts = {
