@@ -16,7 +16,7 @@ jobs:
       name: "Compile & Formatting Check"
       env:
         - TEST_COMMAND="test:compile scalafmtCheck test:scalafmtCheck"
-      scala: 2.12.11
+      scala: 2.12.12
 
     # compile website, to check for documentation regressions
     - stage: test
@@ -33,11 +33,11 @@ jobs:
       scala: 2.13.2
 
     - stage: test
-      name: Linux 2.12.11 bitcoind and eclair rpc tests
+      name: Linux 2.12.12 bitcoind and eclair rpc tests
       os: linux
       env:
         - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
-      scala: 2.12.11
+      scala: 2.12.12
 
     - stage: test
       name: Linux 2.13.2 App, Chain, Node, and Core Tests
@@ -47,11 +47,11 @@ jobs:
       scala: 2.13.2
 
     - stage: test
-      name: Linux 2.12.11 App, Chain, Node, and Core Tests
+      name: Linux 2.12.12 App, Chain, Node, and Core Tests
       os: linux
       env:
         - TEST_COMMAND="appCommonsTest/test appServerTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
-      scala: 2.12.11
+      scala: 2.12.12
 
     - stage: test
       name: Linux 2.13.2 KeyManager and Wallet tests
@@ -61,11 +61,11 @@ jobs:
       scala: 2.13.2
 
     - stage: test
-      name: Linux 2.12.11 KeyManager and Wallet tests
+      name: Linux 2.12.12 KeyManager and Wallet tests
       os: linux
       env:
         - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
-      scala: 2.12.11
+      scala: 2.12.12
 
     - stage: test
       os: linux
