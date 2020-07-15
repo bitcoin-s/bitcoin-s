@@ -186,8 +186,21 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           for {
             outputsBeingSpent <-
               spendingInfoDAO.findOutputsBeingSpent(transaction)
+
+            // unreserved outputs now they are in a block
+            outputsToUse = blockHashOpt match {
+              case Some(_) =>
+                outputsBeingSpent.map { out =>
+                  if (out.state == TxoState.Reserved)
+                    out.copyWithState(TxoState.PendingConfirmationsReceived)
+                  else out
+                }
+              case None =>
+                outputsBeingSpent
+            }
+
             processed <-
-              FutureUtil.sequentially(outputsBeingSpent)(markAsPendingSpent)
+              FutureUtil.sequentially(outputsToUse)(markAsPendingSpent)
           } yield processed.flatten.toVector
 
         }

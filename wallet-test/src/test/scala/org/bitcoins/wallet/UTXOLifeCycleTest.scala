@@ -2,10 +2,11 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.EmptyScriptPubKey
+import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
   WalletWithBitcoind,
@@ -126,6 +127,41 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
         unreservedUtxos <- wallet.unmarkUTXOsAsReserved(tx)
       } yield {
         assert(unreservedUtxos.forall(_.state != TxoState.Reserved))
+      }
+  }
+
+  it should "track a utxo state change to reserved and then to unreserved using a block" in {
+    param =>
+      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+
+      val dummyOutput =
+        TransactionOutput(Satoshis(100000),
+                          P2PKHScriptPubKey(ECPublicKey.freshPublicKey))
+
+      for {
+        tx <- wallet.sendToOutputs(Vector(dummyOutput),
+                                   Some(SatoshisPerVirtualByte.one),
+                                   reserveUtxos = true)
+        _ <- wallet.processTransaction(tx, None)
+
+        allReserved <- wallet.listUtxos(TxoState.Reserved)
+        _ = assert(
+          tx.inputs
+            .map(_.previousOutput)
+            .forall(allReserved.map(_.outPoint).contains))
+
+        // Confirm tx in a block
+        _ <- bitcoind.sendRawTransaction(tx)
+        hash <-
+          bitcoind.getNewAddress
+            .flatMap(bitcoind.generateToAddress(1, _))
+            .map(_.head)
+        block <- bitcoind.getBlockRaw(hash)
+        _ <- wallet.processBlock(block)
+
+        newReserved <- wallet.listUtxos(TxoState.Reserved)
+      } yield {
+        assert(newReserved.isEmpty)
       }
   }
 
