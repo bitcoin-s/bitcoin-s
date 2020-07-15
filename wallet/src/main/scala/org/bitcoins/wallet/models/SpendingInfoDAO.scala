@@ -203,7 +203,7 @@ case class SpendingInfoDAO()(implicit
       extends TableAutoInc[SpendingInfoDb](tag, "txo_spending_info") {
 
     def outPoint: Rep[TransactionOutPoint] =
-      column("tx_outpoint")
+      column("tx_outpoint", O.Unique)
 
     def txid: Rep[DoubleSha256DigestBE] = column("txid")
 
