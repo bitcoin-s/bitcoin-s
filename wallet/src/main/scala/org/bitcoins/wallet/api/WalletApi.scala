@@ -19,7 +19,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.AddressTag
+import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{
   AesPassword,
   DoubleSha256Digest,
@@ -196,6 +196,12 @@ trait WalletApi extends WalletLogger {
   def listUtxos(
       hdAccount: HDAccount,
       tag: AddressTag): Future[Vector[SpendingInfoDb]]
+
+  def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]]
+
+  def listUtxos(
+      hdAccount: HDAccount,
+      state: TxoState): Future[Vector[SpendingInfoDb]]
 
   def listAddresses(): Future[Vector[AddressDb]]
 
