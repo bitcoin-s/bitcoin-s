@@ -66,6 +66,20 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
   }
 
+  override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findByTxoState(state)
+  }
+
+  override def listUtxos(
+      hdAccount: HDAccount,
+      state: TxoState): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findByTxoState(state).map { utxos =>
+      utxos.filter(utxo =>
+        HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
+                                account = hdAccount))
+    }
+  }
+
   protected def updateUtxoConfirmedState(
       txo: SpendingInfoDb,
       blockHash: DoubleSha256DigestBE): Future[SpendingInfoDb] = {

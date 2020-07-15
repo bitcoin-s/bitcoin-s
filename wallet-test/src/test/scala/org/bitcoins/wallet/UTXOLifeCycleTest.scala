@@ -76,8 +76,10 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
                                       markAsReserved = true)
 
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+      reserved <- wallet.listUtxos(TxoState.Reserved)
     } yield {
       assert(updatedCoins.forall(_.state == TxoState.Reserved))
+      assert(updatedCoins.forall(reserved.contains))
     }
   }
 
@@ -94,7 +96,9 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
                                         markAsReserved = true)
 
         reservedUtxos <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+        allReserved <- wallet.listUtxos(TxoState.Reserved)
         _ = assert(reservedUtxos.forall(_.state == TxoState.Reserved))
+        _ = assert(reservedUtxos.forall(allReserved.contains))
 
         unreservedUtxos <- wallet.unmarkUTXOsAsReserved(reservedUtxos.toVector)
       } yield {
@@ -113,6 +117,12 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
                                         SatoshisPerVirtualByte.one,
                                         fromTagOpt = None,
                                         markAsReserved = true)
+        allReserved <- wallet.listUtxos(TxoState.Reserved)
+        _ = assert(
+          tx.inputs
+            .map(_.previousOutput)
+            .forall(allReserved.map(_.outPoint).contains))
+
         unreservedUtxos <- wallet.unmarkUTXOsAsReserved(tx)
       } yield {
         assert(unreservedUtxos.forall(_.state != TxoState.Reserved))
