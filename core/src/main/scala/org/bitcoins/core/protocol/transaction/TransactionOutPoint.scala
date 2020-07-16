@@ -29,6 +29,12 @@ case class TransactionOutPoint(txId: DoubleSha256Digest, vout: UInt32)
 
   def !=(outPoint: TransactionOutPoint): Boolean =
     !(this == outPoint)
+
+  def compare(other: TransactionOutPoint): Int = {
+    if (txId == other.txId) {
+      vout.compare(other.vout)
+    } else txIdBE.hex.compareTo(other.txIdBE.hex)
+  }
 }
 
 /**
