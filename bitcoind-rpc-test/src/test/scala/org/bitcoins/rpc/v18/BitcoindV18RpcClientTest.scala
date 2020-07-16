@@ -1,6 +1,10 @@
 package org.bitcoins.rpc.v18
 
 import org.bitcoins.chain.models.BlockHeaderDbHelper
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  AddressInfoResultPostV18,
+  AddressInfoResultPreV18
+}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.rpc.client.common.BitcoindVersion
@@ -107,6 +111,21 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
     val nextHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
     clientF.flatMap(client =>
       client.submitHeader(nextHeader.blockHeader).map(_ => succeed))
+  }
+
+  it should "have extra address information" in {
+    for {
+      (client, _) <- clientPairF
+      address <- client.getNewAddress
+      info <- client.getAddressInfo(address)
+    } yield {
+      info match {
+        case _: AddressInfoResultPreV18 =>
+          fail("Was expecting AddressInfoResultPostV18")
+        case postV18Info: AddressInfoResultPostV18 =>
+          assert(postV18Info.address == address)
+      }
+    }
   }
 
 }
