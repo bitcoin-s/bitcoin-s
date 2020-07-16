@@ -60,6 +60,26 @@ trait RawTxFinalizer {
   }
 }
 
+trait FinalizerFactory[T <: RawTxFinalizer] {
+
+  def txBuilderFrom(
+      outputs: Seq[TransactionOutput],
+      utxos: Seq[InputSigningInfo[InputInfo]],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer[T]
+
+  def txFrom(
+      outputs: Seq[TransactionOutput],
+      utxos: Seq[InputSigningInfo[InputInfo]],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    val builderF = Future(txBuilderFrom(outputs, utxos, feeRate, changeSPK))
+
+    builderF.flatMap(_.buildTx())
+  }
+}
+
 /** A trivial finalizer that does no processing */
 case object RawFinalizer extends RawTxFinalizer {
 
@@ -249,7 +269,8 @@ case class StandardNonInteractiveFinalizer(
   }
 }
 
-object StandardNonInteractiveFinalizer {
+object StandardNonInteractiveFinalizer
+    extends FinalizerFactory[StandardNonInteractiveFinalizer] {
 
   def txBuilderFrom(
       outputs: Seq[TransactionOutput],
@@ -266,17 +287,6 @@ object StandardNonInteractiveFinalizer {
       changeSPK)
 
     builder.setFinalizer(finalizer)
-  }
-
-  def txFrom(
-      outputs: Seq[TransactionOutput],
-      utxos: Seq[InputSigningInfo[InputInfo]],
-      feeRate: FeeUnit,
-      changeSPK: ScriptPubKey)(implicit
-      ec: ExecutionContext): Future[Transaction] = {
-    val builderF = Future(txBuilderFrom(outputs, utxos, feeRate, changeSPK))
-
-    builderF.flatMap(_.buildTx())
   }
 }
 
@@ -303,14 +313,15 @@ case class ShufflingNonInteractiveFinalizer(
     val addWitnessData = AddWitnessDataFinalizer(inputInfos)
 
     addChange
+      .andThen(ShuffleFinalizer)
       .andThen(sanityCheck)
       .andThen(addWitnessData)
-      .andThen(ShuffleFinalizer)
       .buildTx(txBuilderResult)
   }
 }
 
-object ShufflingNonInteractiveFinalizer {
+object ShufflingNonInteractiveFinalizer
+    extends FinalizerFactory[ShufflingNonInteractiveFinalizer] {
 
   def txBuilderFrom(
       outputs: Seq[TransactionOutput],
@@ -327,17 +338,6 @@ object ShufflingNonInteractiveFinalizer {
       changeSPK)
 
     builder.setFinalizer(finalizer)
-  }
-
-  def txFrom(
-      outputs: Seq[TransactionOutput],
-      utxos: Seq[InputSigningInfo[InputInfo]],
-      feeRate: FeeUnit,
-      changeSPK: ScriptPubKey)(implicit
-      ec: ExecutionContext): Future[Transaction] = {
-    val builderF = Future(txBuilderFrom(outputs, utxos, feeRate, changeSPK))
-
-    builderF.flatMap(_.buildTx())
   }
 }
 
