@@ -9,7 +9,7 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
+import scala.util.{Random, Success, Try}
 
 /** This trait is responsible for converting RawTxBuilderResults into
   * finalized (unsigned) transactions. This process usually includes
@@ -57,6 +57,39 @@ trait RawTxFinalizer {
         } yield composedFinalizedTx
       }
     }
+  }
+}
+
+abstract class FinalizerFactory[T <: RawTxFinalizer] {
+
+  def txBuilderFrom(
+      outputs: Seq[TransactionOutput],
+      utxos: Seq[InputSigningInfo[InputInfo]],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer[T] = {
+    val inputs = InputUtil.calcSequenceForInputs(utxos)
+    val lockTime = TxUtil.calcLockTime(utxos).get
+    val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
+    val finalizer =
+      txFinalizerFrom(utxos.toVector.map(_.inputInfo), feeRate, changeSPK)
+
+    builder.setFinalizer(finalizer)
+  }
+
+  def txFinalizerFrom(
+      inputs: Vector[InputInfo],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey): T
+
+  def txFrom(
+      outputs: Seq[TransactionOutput],
+      utxos: Seq[InputSigningInfo[InputInfo]],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    val builderF = Future(txBuilderFrom(outputs, utxos, feeRate, changeSPK))
+
+    builderF.flatMap(_.buildTx())
   }
 }
 
@@ -261,34 +294,55 @@ case class StandardNonInteractiveFinalizer(
   }
 }
 
-object StandardNonInteractiveFinalizer {
+object StandardNonInteractiveFinalizer
+    extends FinalizerFactory[StandardNonInteractiveFinalizer] {
 
-  def txBuilderFrom(
-      outputs: Seq[TransactionOutput],
-      utxos: Seq[InputSigningInfo[InputInfo]],
+  override def txFinalizerFrom(
+      inputs: Vector[InputInfo],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer[
-    StandardNonInteractiveFinalizer] = {
-    val inputs = InputUtil.calcSequenceForInputs(utxos)
-    val lockTime = TxUtil.calcLockTime(utxos).get
-    val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
-    val finalizer = StandardNonInteractiveFinalizer(
-      utxos.toVector.map(_.inputInfo),
-      feeRate,
-      changeSPK)
-
-    builder.setFinalizer(finalizer)
+      changeSPK: ScriptPubKey): StandardNonInteractiveFinalizer = {
+    StandardNonInteractiveFinalizer(inputs, feeRate, changeSPK)
   }
+}
 
-  def txFrom(
-      outputs: Seq[TransactionOutput],
-      utxos: Seq[InputSigningInfo[InputInfo]],
-      feeRate: FeeUnit,
-      changeSPK: ScriptPubKey)(implicit
+/** A finalizer which adds a change output, performs sanity checks,
+  * shuffles inputs and outputs, and adds non-signature witness data.
+  * This is the standard non-interactive finalizer within the Bitcoin-S wallet.
+  */
+case class ShufflingNonInteractiveFinalizer(
+    inputInfos: Vector[InputInfo],
+    feeRate: FeeUnit,
+    changeSPK: ScriptPubKey)
+    extends RawTxFinalizer {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
       ec: ExecutionContext): Future[Transaction] = {
-    val builderF = Future(txBuilderFrom(outputs, utxos, feeRate, changeSPK))
+    val addChange = ChangeFinalizer(inputInfos, feeRate, changeSPK)
 
-    builderF.flatMap(_.buildTx())
+    val sanityCheck = SanityCheckFinalizer(
+      inputInfos = inputInfos,
+      expectedOutputSPKs = txBuilderResult.outputs.map(_.scriptPubKey),
+      expectedFeeRate = feeRate,
+      changeSPKs = Vector(changeSPK))
+
+    val addWitnessData = AddWitnessDataFinalizer(inputInfos)
+
+    addChange
+      .andThen(ShuffleFinalizer)
+      .andThen(sanityCheck)
+      .andThen(addWitnessData)
+      .buildTx(txBuilderResult)
+  }
+}
+
+object ShufflingNonInteractiveFinalizer
+    extends FinalizerFactory[ShufflingNonInteractiveFinalizer] {
+
+  override def txFinalizerFrom(
+      inputs: Vector[InputInfo],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey): ShufflingNonInteractiveFinalizer = {
+    ShufflingNonInteractiveFinalizer(inputs, feeRate, changeSPK)
   }
 }
 
@@ -354,5 +408,38 @@ object SubtractFeeFromOutputsFinalizer {
       .:+((newLastOutput, lastOutputIndex))
 
     (newOutputs ++ unchangedOutputs).sortBy(_._2).map(_._1).toVector
+  }
+}
+
+/** Shuffles in the inputs and outputs of the Transaction into a random order */
+case object ShuffleFinalizer extends RawTxFinalizer {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    ShuffleInputsFinalizer
+      .andThen(ShuffleOutputsFinalizer)
+      .buildTx(txBuilderResult)
+  }
+}
+
+/** Shuffles in the inputs of the Transaction into a random order */
+case object ShuffleInputsFinalizer extends RawTxFinalizer {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    val shuffledInputs = Random.shuffle(txBuilderResult.inputs)
+    Future.successful(
+      txBuilderResult.toBaseTransaction.copy(inputs = shuffledInputs))
+  }
+}
+
+/** Shuffles in the outputs of the Transaction into a random order */
+case object ShuffleOutputsFinalizer extends RawTxFinalizer {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    val shuffledOutputs = Random.shuffle(txBuilderResult.outputs)
+    Future.successful(
+      txBuilderResult.toBaseTransaction.copy(outputs = shuffledOutputs))
   }
 }
