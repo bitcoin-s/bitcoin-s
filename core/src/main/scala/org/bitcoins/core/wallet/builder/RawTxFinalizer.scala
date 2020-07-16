@@ -83,6 +83,18 @@ case object FilterDustFinalizer extends RawTxFinalizer {
   }
 }
 
+case object BIP69Finalizer extends RawTxFinalizer {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    val sortedInputs = txBuilderResult.inputs.sorted
+    val sortedOutputs = txBuilderResult.outputs.sorted
+    Future.successful(
+      txBuilderResult.toBaseTransaction.copy(inputs = sortedInputs,
+                                             outputs = sortedOutputs))
+  }
+}
+
 /** A finalizer who's Future fails if its sanity checks are not passed,
   * otherwise it does nothing.
   */

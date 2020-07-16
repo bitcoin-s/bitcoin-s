@@ -1,5 +1,9 @@
 package org.bitcoins
 
+import org.bitcoins.core.protocol.transaction.{
+  TransactionInput,
+  TransactionOutput
+}
 import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
 import scodec.bits._
 
@@ -32,5 +36,21 @@ package object core {
           compare(x.tail, y.tail)
         }
       }
+    }
+
+  implicit val transactionInputOrder: Ordering[TransactionInput] =
+    new Ordering[TransactionInput] {
+
+      override def compare(x: TransactionInput, y: TransactionInput): Int =
+        x.previousOutput.compare(y.previousOutput)
+    }
+
+  implicit val transactionOutputOrder: Ordering[TransactionOutput] =
+    new Ordering[TransactionOutput] {
+
+      override def compare(x: TransactionOutput, y: TransactionOutput): Int =
+        if (x.value == y.value) {
+          x.scriptPubKey.hex.compare(y.scriptPubKey.hex)
+        } else x.value.compare(y.value)
     }
 }
