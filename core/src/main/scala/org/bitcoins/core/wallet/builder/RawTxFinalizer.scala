@@ -60,13 +60,26 @@ trait RawTxFinalizer {
   }
 }
 
-trait FinalizerFactory[T <: RawTxFinalizer] {
+abstract class FinalizerFactory[T <: RawTxFinalizer] {
 
   def txBuilderFrom(
       outputs: Seq[TransactionOutput],
       utxos: Seq[InputSigningInfo[InputInfo]],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer[T]
+      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer[T] = {
+    val inputs = InputUtil.calcSequenceForInputs(utxos)
+    val lockTime = TxUtil.calcLockTime(utxos).get
+    val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
+    val finalizer =
+      txFinalizerFrom(utxos.toVector.map(_.inputInfo), feeRate, changeSPK)
+
+    builder.setFinalizer(finalizer)
+  }
+
+  def txFinalizerFrom(
+      inputs: Vector[InputInfo],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey): T
 
   def txFrom(
       outputs: Seq[TransactionOutput],
@@ -272,21 +285,11 @@ case class StandardNonInteractiveFinalizer(
 object StandardNonInteractiveFinalizer
     extends FinalizerFactory[StandardNonInteractiveFinalizer] {
 
-  def txBuilderFrom(
-      outputs: Seq[TransactionOutput],
-      utxos: Seq[InputSigningInfo[InputInfo]],
+  override def txFinalizerFrom(
+      inputs: Vector[InputInfo],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer[
-    StandardNonInteractiveFinalizer] = {
-    val inputs = InputUtil.calcSequenceForInputs(utxos)
-    val lockTime = TxUtil.calcLockTime(utxos).get
-    val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
-    val finalizer = StandardNonInteractiveFinalizer(
-      utxos.toVector.map(_.inputInfo),
-      feeRate,
-      changeSPK)
-
-    builder.setFinalizer(finalizer)
+      changeSPK: ScriptPubKey): StandardNonInteractiveFinalizer = {
+    StandardNonInteractiveFinalizer(inputs, feeRate, changeSPK)
   }
 }
 
@@ -323,21 +326,11 @@ case class ShufflingNonInteractiveFinalizer(
 object ShufflingNonInteractiveFinalizer
     extends FinalizerFactory[ShufflingNonInteractiveFinalizer] {
 
-  def txBuilderFrom(
-      outputs: Seq[TransactionOutput],
-      utxos: Seq[InputSigningInfo[InputInfo]],
+  override def txFinalizerFrom(
+      inputs: Vector[InputInfo],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer[
-    ShufflingNonInteractiveFinalizer] = {
-    val inputs = InputUtil.calcSequenceForInputs(utxos)
-    val lockTime = TxUtil.calcLockTime(utxos).get
-    val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
-    val finalizer = ShufflingNonInteractiveFinalizer(
-      utxos.toVector.map(_.inputInfo),
-      feeRate,
-      changeSPK)
-
-    builder.setFinalizer(finalizer)
+      changeSPK: ScriptPubKey): ShufflingNonInteractiveFinalizer = {
+    ShufflingNonInteractiveFinalizer(inputs, feeRate, changeSPK)
   }
 }
 
