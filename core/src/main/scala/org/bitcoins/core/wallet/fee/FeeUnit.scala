@@ -1,6 +1,6 @@
 package org.bitcoins.core.wallet.fee
 
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 
 /**
@@ -9,8 +9,27 @@ import org.bitcoins.core.protocol.transaction.Transaction
   */
 sealed abstract class FeeUnit {
   def currencyUnit: CurrencyUnit
+  final def *(cu: CurrencyUnit): CurrencyUnit = this * cu.satoshis.toLong
+  final def *(int: Int): CurrencyUnit = this * int.toLong
+
+  final def *(long: Long): CurrencyUnit = Satoshis(toLong * long / scaleFactor)
   def *(tx: Transaction): CurrencyUnit = calc(tx)
-  def calc(tx: Transaction): CurrencyUnit
+
+  /** The coefficient the denominator in the unit is multiplied by,
+    * for example sats/kilobyte -> 1000
+    */
+  def scaleFactor: Long
+
+  require(scaleFactor > 0,
+          s"Scale factor cannot be less than or equal to 0, got $scaleFactor")
+
+  /** Takes the given transaction returns a size that will be used for calculating the fee rate.
+    * This is generally the denominator in the unit, ie sats/byte
+    */
+  def txSizeForCalc(tx: Transaction): Long
+
+  /** Calculates the fee for the transaction using this fee rate, rounds down satoshis */
+  final def calc(tx: Transaction): CurrencyUnit = this * txSizeForCalc(tx)
   def toLong: Long = currencyUnit.satoshis.toLong
 }
 
@@ -26,8 +45,9 @@ case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
     SatoshisPerKiloByte(currencyUnit.satoshis * Satoshis(1000))
   }
 
-  override def calc(tx: Transaction): CurrencyUnit =
-    Satoshis(tx.byteSize * toLong)
+  override def txSizeForCalc(tx: Transaction): Long = tx.byteSize
+
+  override def scaleFactor: Long = 1
 }
 
 object SatoshisPerByte {
@@ -60,10 +80,9 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
 
   lazy val toSatPerByte: SatoshisPerByte = toSatPerByteExact
 
-  // Same as bitcoin-core https://github.com/bitcoin/bitcoin/blob/b5c423c48e094bd098e11c3d1f57acae7502a4da/src/policy/feerate.cpp#L23
-  /** Calculates the fee for the transaction using this fee rate, rounds down satoshis */
-  override def calc(tx: Transaction): CurrencyUnit =
-    Satoshis(tx.byteSize * toLong / 1000)
+  override def txSizeForCalc(tx: Transaction): Long = tx.byteSize
+
+  override def scaleFactor: Long = 1000
 }
 
 /**
@@ -74,7 +93,9 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
   */
 case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
     extends BitcoinFeeUnit {
-  override def calc(tx: Transaction): CurrencyUnit = Satoshis(tx.vsize * toLong)
+  override def txSizeForCalc(tx: Transaction): Long = tx.vsize
+
+  override def scaleFactor: Long = 1
 }
 
 object SatoshisPerVirtualByte {
@@ -96,8 +117,9 @@ object SatoshisPerVirtualByte {
   */
 case class SatoshisPerKW(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
 
-  override def calc(tx: Transaction): CurrencyUnit =
-    Satoshis((tx.weight * toLong / 1000))
+  override def txSizeForCalc(tx: Transaction): Long = tx.weight
+
+  override def scaleFactor: Long = 1000
 }
 
 object SatoshisPerKW {

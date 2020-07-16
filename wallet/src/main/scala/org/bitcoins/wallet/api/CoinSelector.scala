@@ -68,7 +68,7 @@ trait CoinSelector {
         valueSoFar: CurrencyUnit,
         bytesSoFar: Long,
         utxosLeft: Vector[SpendingInfoDb]): Vector[SpendingInfoDb] = {
-      val fee = feeRate.currencyUnit * bytesSoFar
+      val fee = feeRate * bytesSoFar
       if (valueSoFar > totalValue + fee) {
         alreadyAdded
       } else if (utxosLeft.isEmpty) {
@@ -77,7 +77,7 @@ trait CoinSelector {
       } else {
         val nextUtxo = utxosLeft.head
         val approxUtxoSize = CoinSelector.approximateUtxoSize(nextUtxo)
-        val nextUtxoFee = feeRate.currencyUnit * approxUtxoSize
+        val nextUtxoFee = feeRate * approxUtxoSize
         if (nextUtxo.output.value < nextUtxoFee) {
           addUtxos(alreadyAdded, valueSoFar, bytesSoFar, utxosLeft.tail)
         } else {
