@@ -61,6 +61,10 @@ sealed abstract class CurrencyUnit
     Satoshis(satoshis.underlying * c.satoshis.underlying)
   }
 
+  def /(c: CurrencyUnit): CurrencyUnit = {
+    Satoshis(satoshis.underlying / c.satoshis.underlying)
+  }
+
   def unary_- : CurrencyUnit = {
     Satoshis(-satoshis.underlying)
   }
