@@ -94,15 +94,8 @@ sealed trait TestDAOFixture
       _ = assert(created)
 
       _ = testDAO.deleteAll()
-      secondRead0 <- testDAO.read(id = "abc")
-      secondRead1 <- testDAO.read(id = "abc1")
-      secondRead2 <- testDAO.read(id = "abc2")
-      secondRead3 <- testDAO.read(id = "abc3")
-    } yield {
-      val read2 =
-        Vector(secondRead0, secondRead1, secondRead2, secondRead3).flatten
-      read2 == Vector.empty
-    }
+      all <- testDAO.findAll()
+    } yield all.isEmpty
   }
 
   def testUpsert(testDAO: TestDAO): Future[Boolean] = {
