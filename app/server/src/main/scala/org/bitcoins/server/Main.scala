@@ -16,9 +16,9 @@ import org.bitcoins.core.Core
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NetworkUtil}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
+import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node._
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -124,6 +124,8 @@ object Main extends App with BitcoinSLogger {
         } else {
           logger.info(s"Starting unknown type of node sync")
         }
+      _ = BitcoinSServer.startedFP.success(Future.successful(binding))
+
       _ <- node.sync()
     } yield {
       logger.info(s"Done starting Main!")
@@ -147,9 +149,6 @@ object Main extends App with BitcoinSLogger {
 
       binding
     }
-
-    BitcoinSServer.startedFP.success(startFut)
-
     startFut.failed.foreach { err =>
       logger.error(s"Error on server startup!", err)
     }
