@@ -105,9 +105,17 @@ object Main extends App with BitcoinSLogger {
     } yield initNode
 
     //start and sync our node
-    val syncedNodeF = for {
+    val startedNodeF = for {
       node <- nodeWithCallbacksF
       _ <- node.start()
+    } yield node
+
+    //start our http server now that we are synced
+    val startFut = for {
+      node <- startedNodeF
+      wallet <- walletF
+      binding <- startHttpServer(node, wallet, rpcPortOpt)
+
       _ =
         if (nodeConf.isSPVEnabled) {
           logger.info(s"Starting SPV node sync")
@@ -117,13 +125,6 @@ object Main extends App with BitcoinSLogger {
           logger.info(s"Starting unknown type of node sync")
         }
       _ <- node.sync()
-    } yield node
-
-    //start our http server now that we are synced
-    val startFut = for {
-      node <- syncedNodeF
-      wallet <- walletF
-      binding <- startHttpServer(node, wallet, rpcPortOpt)
     } yield {
       logger.info(s"Done starting Main!")
       sys.addShutdownHook {
