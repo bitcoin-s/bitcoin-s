@@ -8,142 +8,19 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script.{
-  ScriptPubKey,
-  ScriptSignature,
-  WitnessScriptPubKey
-}
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
-import org.bitcoins.core.protocol.{
-  Address,
-  BitcoinAddress,
-  P2PKHAddress,
-  P2SHAddress
-}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol._
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.wallet.fee.{
-  BitcoinFeeUnit,
-  SatoshisPerKiloByte,
-  SatoshisPerVirtualByte
-}
+import org.bitcoins.core.wallet.fee._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonWriters._
 import java.time.LocalDateTime
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
-import org.bitcoins.commons.jsonmodels.bitcoind.{
-  AddressInfoResult,
-  AnalyzePsbtInput,
-  AnalyzePsbtResult,
-  ArrayOfWalletsInput,
-  BalanceInfo,
-  Bip9Softfork,
-  BlockTransaction,
-  BumpFeeResult,
-  ChainTip,
-  CreateWalletResult,
-  DecodePsbtResult,
-  DecodeScriptResult,
-  DeriveAddressesResult,
-  DumpWalletResult,
-  EmbeddedResult,
-  EstimateSmartFeeResult,
-  FeeInfo,
-  FinalizePsbtResult,
-  FinalizedPsbt,
-  FundRawTransactionResult,
-  GetBalancesResult,
-  GetBlockChainInfoResult,
-  GetBlockHeaderResult,
-  GetBlockResult,
-  GetBlockTemplateResult,
-  GetBlockWithTransactionsResult,
-  GetChainTxStatsResult,
-  GetDescriptorInfoResult,
-  GetMemPoolEntryResultPostV19,
-  GetMemPoolEntryResultPreV19,
-  GetMemPoolInfoResult,
-  GetMemPoolResultPostV19,
-  GetMemPoolResultPreV19,
-  GetMemoryInfoResult,
-  GetMiningInfoResult,
-  GetNetTotalsResult,
-  GetNetworkInfoResult,
-  GetNodeAddressesResult,
-  GetRawTransactionResult,
-  GetRawTransactionScriptSig,
-  GetRawTransactionVin,
-  GetRpcInfoResult,
-  GetTransactionResult,
-  GetTxOutResult,
-  GetTxOutSetInfoResult,
-  GetWalletInfoResult,
-  ImportMultiError,
-  ImportMultiResult,
-  LabelResult,
-  ListSinceBlockResult,
-  ListTransactionsResult,
-  ListWalletDirResult,
-  MemoryManager,
-  MultiSigResult,
-  NetTarget,
-  Network,
-  NetworkAddress,
-  Node,
-  NodeAddress,
-  NodeBan,
-  NonFinalizedPsbt,
-  Payment,
-  Peer,
-  PeerNetworkInfo,
-  PsbtBIP32Deriv,
-  PsbtMissingData,
-  PsbtWitnessUtxoInput,
-  ReceivedAccount,
-  ReceivedAddress,
-  ReceivedLabel,
-  RescanBlockChainResult,
-  RpcAccount,
-  RpcAddress,
-  RpcCommands,
-  RpcPsbtInput,
-  RpcPsbtOutput,
-  RpcPsbtScript,
-  RpcScriptPubKey,
-  RpcTransaction,
-  RpcTransactionOutput,
-  SetWalletFlagResult,
-  SignRawTransactionError,
-  SignRawTransactionResult,
-  SignRawTransactionWithWalletResult,
-  Softfork,
-  SoftforkProgress,
-  SubmitHeaderResult,
-  TestMempoolAcceptResult,
-  TransactionDetails,
-  UnspentOutput,
-  ValidateAddressResultImpl,
-  WalletCreateFundedPsbtResult,
-  WalletProcessPsbtResult
-}
-import org.bitcoins.commons.jsonmodels.wallet.{
-  BitGoResult,
-  BitcoinerLiveEstimate,
-  BitcoinerLiveResult
-}
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECDigitalSignature,
-  ECPublicKey,
-  RipeMd160Digest,
-  RipeMd160DigestBE,
-  Sha256Hash160Digest
-}
+import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.jsonmodels.wallet._
+import org.bitcoins.crypto._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -525,8 +402,25 @@ object JsonSerializers {
   implicit val embeddedResultReads: Reads[EmbeddedResult] =
     Json.reads[EmbeddedResult]
 
-  implicit val addressInfoResultReads: Reads[AddressInfoResult] =
-    Json.reads[AddressInfoResult]
+  implicit val addressInfoResultPreV18Reads: Reads[AddressInfoResultPreV18] =
+    Json.reads[AddressInfoResultPreV18]
+
+  implicit val addressInfoResultPostV18Reads: Reads[
+    AddressInfoResultPostV18] = {
+    Reads[AddressInfoResultPostV18] { json =>
+      for {
+        isProps <-
+          Json.reads[AddressInfoResultPostV18.AddressInfoIsProps].reads(json)
+        infoWithoutProps <-
+          Json
+            .reads[
+              AddressInfoResultPostV18.AddressInfoResultPostV18WithoutIsProps]
+            .reads(json)
+      } yield {
+        AddressInfoResultPostV18(infoWithoutProps, isProps)
+      }
+    }
+  }
 
   implicit val receivedLabelReads: Reads[ReceivedLabel] =
     Json.reads[ReceivedLabel]

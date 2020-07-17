@@ -204,7 +204,30 @@ case class UnspentOutput(
     reused: Option[Boolean])
     extends WalletResult
 
-case class AddressInfoResult(
+sealed trait AddressInfoResult extends WalletResult {
+  def address: BitcoinAddress
+  def scriptPubKey: ScriptPubKey
+  def ismine: Boolean
+  def iswatchonly: Boolean
+  def isscript: Boolean
+  def iswitness: Boolean
+  def iscompressed: Option[Boolean]
+  def witness_version: Option[WitnessVersion]
+  def witness_program: Option[String] // todo what's the correct type here?
+  def script: Option[ScriptType]
+  def hex: Option[ScriptPubKey]
+  def pubkeys: Option[Vector[ECPublicKey]]
+  def sigsrequired: Option[Int]
+  def pubkey: Option[ECPublicKey]
+  def embedded: Option[EmbeddedResult]
+  def label: String
+  def timestamp: Option[ZonedDateTime]
+  def hdkeypath: Option[BIP32Path]
+  def hdseedid: Option[RipeMd160Digest]
+  def labels: Vector[LabelResult]
+}
+
+case class AddressInfoResultPreV18(
     address: BitcoinAddress,
     scriptPubKey: ScriptPubKey,
     ismine: Boolean,
@@ -213,7 +236,7 @@ case class AddressInfoResult(
     iswitness: Boolean,
     iscompressed: Option[Boolean],
     witness_version: Option[WitnessVersion],
-    witness_program: Option[String], // todo what's the correct type here?
+    witness_program: Option[String],
     script: Option[ScriptType],
     hex: Option[ScriptPubKey],
     pubkeys: Option[Vector[ECPublicKey]],
@@ -226,7 +249,94 @@ case class AddressInfoResult(
     hdseedid: Option[RipeMd160Digest],
     hdmasterkeyid: Option[RipeMd160Digest],
     labels: Vector[LabelResult])
-    extends WalletResult
+    extends AddressInfoResult
+
+// The split into two case classes is to deal with the 22 param limit for case classes
+case class AddressInfoResultPostV18(
+    address: BitcoinAddress,
+    scriptPubKey: ScriptPubKey,
+    isProps: AddressInfoResultPostV18.AddressInfoIsProps,
+    desc: String,
+    witness_version: Option[WitnessVersion],
+    witness_program: Option[String],
+    script: Option[ScriptType],
+    hex: Option[ScriptPubKey],
+    pubkeys: Option[Vector[ECPublicKey]],
+    sigsrequired: Option[Int],
+    pubkey: Option[ECPublicKey],
+    embedded: Option[EmbeddedResult],
+    label: String,
+    ischange: Boolean,
+    timestamp: Option[ZonedDateTime],
+    hdkeypath: Option[BIP32Path],
+    hdseedid: Option[RipeMd160Digest],
+    hdmasterfingerprint: Option[String],
+    labels: Vector[LabelResult])
+    extends AddressInfoResult {
+  override def ismine: Boolean = isProps.ismine
+  def solvable: Boolean = isProps.solvable
+  override def iswatchonly: Boolean = isProps.iswatchonly
+  override def isscript: Boolean = isProps.isscript
+  override def iswitness: Boolean = isProps.iswitness
+  override def iscompressed: Option[Boolean] = isProps.iscompressed
+}
+
+object AddressInfoResultPostV18 {
+
+  case class AddressInfoIsProps(
+      ismine: Boolean,
+      solvable: Boolean,
+      iswatchonly: Boolean,
+      isscript: Boolean,
+      iswitness: Boolean,
+      iscompressed: Option[Boolean])
+
+  case class AddressInfoResultPostV18WithoutIsProps(
+      address: BitcoinAddress,
+      scriptPubKey: ScriptPubKey,
+      desc: String,
+      witness_version: Option[WitnessVersion],
+      witness_program: Option[String],
+      script: Option[ScriptType],
+      hex: Option[ScriptPubKey],
+      pubkeys: Option[Vector[ECPublicKey]],
+      sigsrequired: Option[Int],
+      pubkey: Option[ECPublicKey],
+      embedded: Option[EmbeddedResult],
+      label: String,
+      ischange: Boolean,
+      timestamp: Option[ZonedDateTime],
+      hdkeypath: Option[BIP32Path],
+      hdseedid: Option[RipeMd160Digest],
+      hdmasterfingerprint: Option[String],
+      labels: Vector[LabelResult])
+
+  def apply(
+      info: AddressInfoResultPostV18WithoutIsProps,
+      isProps: AddressInfoIsProps): AddressInfoResultPostV18 = {
+    AddressInfoResultPostV18(
+      address = info.address,
+      scriptPubKey = info.scriptPubKey,
+      isProps = isProps,
+      desc = info.desc,
+      witness_version = info.witness_version,
+      witness_program = info.witness_program,
+      script = info.script,
+      hex = info.hex,
+      pubkeys = info.pubkeys,
+      sigsrequired = info.sigsrequired,
+      pubkey = info.pubkey,
+      embedded = info.embedded,
+      label = info.label,
+      ischange = info.ischange,
+      timestamp = info.timestamp,
+      hdkeypath = info.hdkeypath,
+      hdseedid = info.hdseedid,
+      hdmasterfingerprint = info.hdmasterfingerprint,
+      labels = info.labels
+    )
+  }
+}
 
 case class EmbeddedResult(
     isscript: Boolean,
