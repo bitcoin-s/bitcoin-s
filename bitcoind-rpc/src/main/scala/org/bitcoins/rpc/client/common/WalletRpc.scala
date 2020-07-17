@@ -223,7 +223,13 @@ trait WalletRpc { self: Client =>
     }
 
   def getAddressInfo(address: BitcoinAddress): Future[AddressInfoResult] = {
-    bitcoindCall[AddressInfoResult]("getaddressinfo",
-                                    List(JsString(address.value)))
+    self.version match {
+      case V16 | V17 =>
+        bitcoindCall[AddressInfoResultPreV18]("getaddressinfo",
+                                              List(JsString(address.value)))
+      case V18 | V19 | Experimental | Unknown =>
+        bitcoindCall[AddressInfoResultPostV18]("getaddressinfo",
+                                               List(JsString(address.value)))
+    }
   }
 }
