@@ -16,9 +16,9 @@ import org.bitcoins.core.Core
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NetworkUtil}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
+import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node._
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -105,9 +105,17 @@ object Main extends App with BitcoinSLogger {
     } yield initNode
 
     //start and sync our node
-    val syncedNodeF = for {
+    val startedNodeF = for {
       node <- nodeWithCallbacksF
       _ <- node.start()
+    } yield node
+
+    //start our http server now that we are synced
+    val startFut = for {
+      node <- startedNodeF
+      wallet <- walletF
+      binding <- startHttpServer(node, wallet, rpcPortOpt)
+
       _ =
         if (nodeConf.isSPVEnabled) {
           logger.info(s"Starting SPV node sync")
@@ -116,14 +124,9 @@ object Main extends App with BitcoinSLogger {
         } else {
           logger.info(s"Starting unknown type of node sync")
         }
-      _ <- node.sync()
-    } yield node
+      _ = BitcoinSServer.startedFP.success(Future.successful(binding))
 
-    //start our http server now that we are synced
-    val startFut = for {
-      node <- syncedNodeF
-      wallet <- walletF
-      binding <- startHttpServer(node, wallet, rpcPortOpt)
+      _ <- node.sync()
     } yield {
       logger.info(s"Done starting Main!")
       sys.addShutdownHook {
@@ -146,9 +149,6 @@ object Main extends App with BitcoinSLogger {
 
       binding
     }
-
-    BitcoinSServer.startedFP.success(startFut)
-
     startFut.failed.foreach { err =>
       logger.error(s"Error on server startup!", err)
     }
