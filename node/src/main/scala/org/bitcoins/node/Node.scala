@@ -154,7 +154,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       filterHeaderCount <- chainApi.getFilterHeaderCount
     } yield {
       logger.info(
-        s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filers")
+        s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filters")
       node
     }
   }
