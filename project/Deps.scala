@@ -31,7 +31,7 @@ object Deps {
     val slickV = "3.3.2"
     val sqliteV = "3.32.3.1"
     val scalameterV = "0.17"
-    val scalamockV = "4.4.0"
+    val scalamockV = "5.0.0"
     val pgEmbeddedV = "0.13.3"
 
     val newMicroPickleV = "0.8.0"
