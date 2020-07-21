@@ -95,7 +95,10 @@ abstract class Wallet
       utxos <- utxosWithMissingTx
       blockHashes = utxos.flatMap(_.blockHash.map(_.flip))
       // Download the block the tx is from so we process the block and subsequent txs
-      _ <- nodeApi.downloadBlocks(blockHashes.distinct)
+      _ <-
+        if (blockHashes.nonEmpty) {
+          nodeApi.downloadBlocks(blockHashes.distinct)
+        } else FutureUtil.unit
     } yield ()
 
   override def start(): Future[Unit] = {

@@ -11,7 +11,7 @@ import org.bitcoins.chain.models.{
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.Mutable
+import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{
@@ -229,11 +229,15 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     */
   override def downloadBlocks(
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
-    for {
-      peerMsgSender <- peerMsgSenderF
-      _ <- peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgBlock,
-                                            blockHashes: _*)
-    } yield ()
+    if (blockHashes.isEmpty) {
+      FutureUtil.unit
+    } else {
+      for {
+        peerMsgSender <- peerMsgSenderF
+        _ <- peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgBlock,
+                                              blockHashes: _*)
+      } yield ()
+    }
   }
 
   /** Gets the height of the given block */
