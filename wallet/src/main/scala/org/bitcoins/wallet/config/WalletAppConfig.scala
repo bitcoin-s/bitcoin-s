@@ -162,7 +162,7 @@ case class WalletAppConfig(
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
       bip39PasswordOpt: Option[String])(implicit
-      ec: ExecutionContext): Future[WalletApi] = {
+      ec: ExecutionContext): Future[Wallet] = {
     WalletAppConfig.createWallet(nodeApi = nodeApi,
                                  chainQueryApi = chainQueryApi,
                                  feeRateApi = feeRateApi,
@@ -193,7 +193,7 @@ object WalletAppConfig
       feeRateApi: FeeRateApi,
       bip39PasswordOpt: Option[String])(implicit
       walletConf: WalletAppConfig,
-      ec: ExecutionContext): Future[WalletApi] = {
+      ec: ExecutionContext): Future[Wallet] = {
     walletConf.hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")

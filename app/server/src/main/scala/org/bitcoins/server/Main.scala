@@ -19,6 +19,7 @@ import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -233,7 +234,7 @@ object Main extends App with BitcoinSLogger {
 
   private def startHttpServer(
       node: Node,
-      wallet: WalletApi,
+      wallet: Wallet,
       rpcPortOpt: Option[Int])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
