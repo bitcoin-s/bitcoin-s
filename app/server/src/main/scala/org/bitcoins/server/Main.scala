@@ -84,7 +84,7 @@ object Main extends App with BitcoinSLogger {
     }
 
     //get our wallet
-    val walletF = for {
+    val configuredWalletF = for {
       _ <- configInitializedF
       uninitializedNode <- uninitializedNodeF
       chainApi <- chainApiF
@@ -93,30 +93,29 @@ object Main extends App with BitcoinSLogger {
                                         chainApi,
                                         BitcoinerLiveFeeRateProvider(60),
                                         bip39PasswordOpt)
-      _ = logger.info("Starting wallet")
-      _ <- wallet.start()
-    } yield wallet
+    } yield {
+      logger.info(s"Done configuring wallet")
+      wallet
+    }
 
     //add callbacks to our uninitialized node
-    val nodeWithCallbacksF = for {
+    val configuredNodeF = for {
       uninitializedNode <- uninitializedNodeF
-      wallet <- walletF
+      wallet <- configuredWalletF
       initNode <- addCallbacksAndBloomFilterToNode(uninitializedNode, wallet)
-    } yield initNode
-
-    //start and sync our node
-    val startedNodeF = for {
-      node <- nodeWithCallbacksF
-      _ <- node.start()
-    } yield node
+    } yield {
+      logger.info(s"Done configuring node")
+      initNode
+    }
 
     //start our http server now that we are synced
     val startFut = for {
-      node <- startedNodeF
-      wallet <- walletF
+      node <- configuredNodeF
+      wallet <- configuredWalletF
+      _ <- node.start()
+      _ <- wallet.start()
       binding <- startHttpServer(node, wallet, rpcPortOpt)
-
-      _ =
+      _ = {
         if (nodeConf.isSPVEnabled) {
           logger.info(s"Starting SPV node sync")
         } else if (nodeConf.isNeutrinoEnabled) {
@@ -124,6 +123,7 @@ object Main extends App with BitcoinSLogger {
         } else {
           logger.info(s"Starting unknown type of node sync")
         }
+      }
       _ = BitcoinSServer.startedFP.success(Future.successful(binding))
 
       _ <- node.sync()
