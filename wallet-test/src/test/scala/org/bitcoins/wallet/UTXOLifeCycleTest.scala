@@ -140,9 +140,9 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       for {
         tx <- wallet.sendToOutputs(Vector(dummyOutput),
-                                   Some(SatoshisPerVirtualByte.one),
-                                   reserveUtxos = true)
+                                   Some(SatoshisPerVirtualByte.one))
         _ <- wallet.processTransaction(tx, None)
+        _ <- wallet.markUTXOsAsReserved(tx)
 
         allReserved <- wallet.listUtxos(TxoState.Reserved)
         _ = assert(

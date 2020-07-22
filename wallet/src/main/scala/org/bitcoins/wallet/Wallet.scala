@@ -50,7 +50,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 abstract class Wallet
-    extends WalletApi
+    extends HDWalletApi
     with UtxoHandling
     with AddressHandling
     with AccountHandling
@@ -367,7 +367,8 @@ abstract class Wallet
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction] = {
+      fromAccount: AccountDb,
+      newTags: Vector[AddressTag]): Future[Transaction] = {
     require(
       address.networkParameters.isSameNetworkBytes(networkParameters),
       s"Cannot send to address on other network, got ${address.networkParameters}"
@@ -396,7 +397,7 @@ abstract class Wallet
         feeRate,
         changeAddr.scriptPubKey)
 
-      tx <- finishSend(txBuilder, utxos, amount, feeRate, Vector.empty)
+      tx <- finishSend(txBuilder, utxos, amount, feeRate, newTags)
     } yield tx
   }
 
@@ -455,7 +456,7 @@ abstract class Wallet
       amounts: Vector[CurrencyUnit],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      reserveUtxos: Boolean): Future[Transaction] = {
+      newTags: Vector[AddressTag]): Future[Transaction] = {
     require(amounts.size == addresses.size,
             "Must have an amount for every address")
     require(
@@ -468,7 +469,7 @@ abstract class Wallet
         logger.info(s"Sending $amount to $address at feerate $feeRate")
         TransactionOutput(amount, address.scriptPubKey)
     }
-    sendToOutputs(destinations, feeRate, fromAccount, reserveUtxos)
+    sendToOutputs(destinations, feeRate, fromAccount, newTags)
   }
 
   override def makeOpReturnCommitment(
@@ -492,24 +493,23 @@ abstract class Wallet
 
     val output = TransactionOutput(0.satoshis, scriptPubKey)
 
-    sendToOutputs(Vector(output), feeRate, fromAccount, reserveUtxos = false)
+    sendToOutputs(Vector(output), feeRate, fromAccount)
   }
 
-  def sendToOutputs(
+  override def sendToOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      reserveUtxos: Boolean): Future[Transaction] = {
+      newTags: Vector[AddressTag]): Future[Transaction] = {
     for {
       (txBuilder, utxoInfos) <- fundRawTransactionInternal(
         destinations = outputs,
         feeRate = feeRate,
         fromAccount = fromAccount,
         keyManagerOpt = Some(keyManager),
-        fromTagOpt = None,
-        markAsReserved = reserveUtxos)
+        fromTagOpt = None)
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
-      tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, Vector.empty)
+      tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, newTags)
     } yield tx
   }
 

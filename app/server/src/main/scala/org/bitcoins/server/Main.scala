@@ -233,7 +233,7 @@ object Main extends App with BitcoinSLogger {
 
   private def startHttpServer(
       node: Node,
-      wallet: WalletApi,
+      wallet: HDWalletApi,
       rpcPortOpt: Option[Int])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {

@@ -36,7 +36,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = {
-    listUtxos(walletConfig.defaultAccount)
+    spendingInfoDAO.findAllUnspent()
   }
 
   override def listUtxos(
@@ -253,6 +253,15 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       utxos <- spendingInfoDAO.updateAll(updated)
       _ <- walletCallbacks.executeOnReservedUtxos(logger, utxos)
     } yield utxos
+  }
+
+  /** @inheritdoc */
+  override def markUTXOsAsReserved(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    for {
+      utxos <- spendingInfoDAO.findOutputsBeingSpent(tx)
+      reserved <- markUTXOsAsReserved(utxos.toVector)
+    } yield reserved
   }
 
   override def unmarkUTXOsAsReserved(
