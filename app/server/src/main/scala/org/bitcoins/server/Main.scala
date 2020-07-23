@@ -89,10 +89,10 @@ object Main extends App with BitcoinSLogger {
       uninitializedNode <- uninitializedNodeF
       chainApi <- chainApiF
       _ = logger.info("Initialized chain api")
-      wallet <- walletConf.createWallet(uninitializedNode,
-                                        chainApi,
-                                        BitcoinerLiveFeeRateProvider(60),
-                                        bip39PasswordOpt)
+      wallet <- walletConf.createHDWallet(uninitializedNode,
+                                          chainApi,
+                                          BitcoinerLiveFeeRateProvider(60),
+                                          bip39PasswordOpt)
     } yield {
       logger.info(s"Done configuring wallet")
       wallet

@@ -408,6 +408,9 @@ trait HDWalletApi extends WalletApi {
     } yield tx
   }
 
+  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
+    listUtxos(walletConfig.defaultAccount)
+
   def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]]
 
   def listUtxos(

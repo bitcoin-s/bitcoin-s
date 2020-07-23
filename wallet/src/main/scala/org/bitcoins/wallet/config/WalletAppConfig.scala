@@ -157,16 +157,17 @@ case class WalletAppConfig(
   }
 
   /** Creates a wallet based on this [[WalletAppConfig]] */
-  def createWallet(
+  def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
       bip39PasswordOpt: Option[String])(implicit
       ec: ExecutionContext): Future[HDWalletApi] = {
-    WalletAppConfig.createWallet(nodeApi = nodeApi,
-                                 chainQueryApi = chainQueryApi,
-                                 feeRateApi = feeRateApi,
-                                 bip39PasswordOpt = bip39PasswordOpt)(this, ec)
+    WalletAppConfig.createHDWallet(
+      nodeApi = nodeApi,
+      chainQueryApi = chainQueryApi,
+      feeRateApi = feeRateApi,
+      bip39PasswordOpt = bip39PasswordOpt)(this, ec)
   }
 
   /** Starts the associated application */
@@ -187,7 +188,7 @@ object WalletAppConfig
     WalletAppConfig(datadir, useLogbackConf, confs: _*)
 
   /** Creates a wallet based on the given [[WalletAppConfig]] */
-  def createWallet(
+  def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
