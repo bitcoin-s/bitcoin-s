@@ -279,35 +279,39 @@ object TxUtil {
       estimatedFee: CurrencyUnit,
       actualFee: CurrencyUnit,
       feeRate: FeeUnit): Try[Unit] = {
-
-    //what the number '40' represents is the allowed variance -- in bytes -- between the size of the two
-    //versions of signed tx. I believe the two signed version can vary in size because the digital
-    //signature might have changed in size. It could become larger or smaller depending on the digital
-    //signatures produced.
-
-    //Personally I think 40 seems like a little high. As you shouldn't vary more than a 2 bytes per input in the tx i think?
-    //bumping for now though as I don't want to spend time debugging
-    //I think there is something incorrect that errors to the low side of fee estimation
-    //for p2sh(p2wpkh) txs
-
-    //See this link for more info on variance in size on ECDigitalSignatures
-    //https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
-
-    val acceptableVariance = 40 * feeRate.toLong
-    val min = Satoshis(-acceptableVariance)
-    val max = Satoshis(acceptableVariance)
-    val difference = estimatedFee - actualFee
-    if (difference <= min) {
-      logger.error(
-        s"Fee was too high. Estimated fee $estimatedFee, actualFee $actualFee, difference $difference, acceptableVariance $acceptableVariance")
-      TxBuilderError.HighFee
-    } else if (difference >= max) {
-      logger.error(
-        s"Fee was too low. Estimated fee $estimatedFee, actualFee $actualFee, difference $difference, acceptableVariance $acceptableVariance")
-
-      TxBuilderError.LowFee
-    } else {
+    if (estimatedFee == actualFee) {
       Success(())
+    } else {
+
+      //what the number '40' represents is the allowed variance -- in bytes -- between the size of the two
+      //versions of signed tx. I believe the two signed version can vary in size because the digital
+      //signature might have changed in size. It could become larger or smaller depending on the digital
+      //signatures produced.
+
+      //Personally I think 40 seems like a little high. As you shouldn't vary more than a 2 bytes per input in the tx i think?
+      //bumping for now though as I don't want to spend time debugging
+      //I think there is something incorrect that errors to the low side of fee estimation
+      //for p2sh(p2wpkh) txs
+
+      //See this link for more info on variance in size on ECDigitalSignatures
+      //https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+
+      val acceptableVariance = 40 * feeRate.toLong
+      val min = Satoshis(-acceptableVariance)
+      val max = Satoshis(acceptableVariance)
+      val difference = estimatedFee - actualFee
+      if (difference <= min) {
+        logger.error(
+          s"Fee was too high. Estimated fee $estimatedFee, actualFee $actualFee, difference $difference, acceptableVariance $acceptableVariance")
+        TxBuilderError.HighFee
+      } else if (difference >= max) {
+        logger.error(
+          s"Fee was too low. Estimated fee $estimatedFee, actualFee $actualFee, difference $difference, acceptableVariance $acceptableVariance")
+
+        TxBuilderError.LowFee
+      } else {
+        Success(())
+      }
     }
   }
 
