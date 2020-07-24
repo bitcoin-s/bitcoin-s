@@ -27,7 +27,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 object Main extends App with BitcoinSLogger {
 
   private def runMain(): Unit = {
-    implicit val system = ActorSystem("bitcoin-s")
+    implicit val system: ActorSystem = ActorSystem("bitcoin-s")
     implicit val ec: ExecutionContext = system.dispatcher
     val argsWithIndex = args.zipWithIndex
 
@@ -51,6 +51,10 @@ object Main extends App with BitcoinSLogger {
         case (_, idx) => args(idx + 1).toInt
       }
     }
+
+    val forceChainWorkRecalc: Boolean =
+      argsWithIndex.exists(_._1.toLowerCase == "--force-recalc")
+
     val logger = HttpLoggerImpl(conf.nodeConf).getLogger
 
     implicit val walletConf: WalletAppConfig = conf.walletConf
@@ -73,9 +77,9 @@ object Main extends App with BitcoinSLogger {
     //initialize the config, run migrations
     val configInitializedF = conf.initialize()
 
-    //run chainwork migration
+    //run chain work migration
     val chainApiF = configInitializedF.flatMap { _ =>
-      runChainWorkCalc()
+      runChainWorkCalc(forceChainWorkRecalc)
     }
 
     //get a node that isn't started
@@ -213,7 +217,7 @@ object Main extends App with BitcoinSLogger {
   }
 
   /** This is needed for migrations V2/V3 on the chain project to re-calculate the total work for the chain */
-  private def runChainWorkCalc()(implicit
+  private def runChainWorkCalc(force: Boolean)(implicit
       chainAppConfig: ChainAppConfig,
       ec: ExecutionContext): Future[ChainApi] = {
     for {
@@ -222,7 +226,7 @@ object Main extends App with BitcoinSLogger {
                                             CompactFilterDAO())
       isMissingChainWork <- chainApi.isMissingChainWork
       chainApiWithWork <-
-        if (isMissingChainWork) {
+        if (isMissingChainWork || force) {
           chainApi.recalculateChainWork
         } else {
           logger.info(s"Chain work already calculated")
