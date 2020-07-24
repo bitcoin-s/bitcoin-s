@@ -7,6 +7,7 @@ import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
+import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -30,10 +31,15 @@ import org.bitcoins.core.wallet.utxo.{
   ScriptSignatureParams,
   TxoState
 }
-import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
-import org.bitcoins.keymanager.KeyManagerParams
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.crypto.{
+  AesPassword,
+  CryptoUtil,
+  DoubleSha256Digest,
+  ECPublicKey
+}
+import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.keymanager.util.HDUtil
+import org.bitcoins.keymanager.{KeyManagerParams, KeyManagerUnlockError}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
@@ -117,6 +123,53 @@ abstract class Wallet
       stopWalletThread()
     }
     ()
+  }
+
+  override def processCompactFilters(
+      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
+    Wallet] = {
+    val utxosF = listUtxos()
+    val addressesF = listAddresses()
+    for {
+      utxos <- utxosF
+      addresses <- addressesF
+      scriptPubKeys =
+        utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
+          .map(_.scriptPubKey)
+          .toSet
+      _ <- FutureUtil.sequentially(blockFilters) {
+        case (blockHash, blockFilter) =>
+          val matcher = SimpleFilterMatcher(blockFilter)
+          if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
+            nodeApi.downloadBlocks(Vector(blockHash))
+          } else FutureUtil.unit
+      }
+    } yield {
+      this
+    }
+  }
+
+  override def unlock(
+      passphrase: AesPassword,
+      bip39PasswordOpt: Option[String]): Either[
+    KeyManagerUnlockError,
+    Wallet] = {
+    val kmParams = walletConfig.kmParams
+
+    val unlockedKeyManagerE =
+      BIP39LockedKeyManager.unlock(passphrase = passphrase,
+                                   bip39PasswordOpt = bip39PasswordOpt,
+                                   kmParams = kmParams)
+    unlockedKeyManagerE match {
+      case Right(km) =>
+        val w = Wallet(keyManager = km,
+                       nodeApi = nodeApi,
+                       chainQueryApi = chainQueryApi,
+                       feeRateApi = feeRateApi,
+                       creationTime = km.creationTime)
+        Right(w)
+      case Left(err) => Left(err)
+    }
   }
 
   override def broadcastTransaction(transaction: Transaction): Future[Unit] =
