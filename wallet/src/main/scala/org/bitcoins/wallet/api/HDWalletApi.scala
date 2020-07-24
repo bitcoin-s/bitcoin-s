@@ -430,7 +430,9 @@ trait HDWalletApi extends WalletApi {
 
   def listUnusedAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
-  def clearUtxosAndAddresses(account: HDAccount): Future[WalletApi]
+  override def clearAllUtxosAndAddresses(): Future[HDWalletApi]
+
+  def clearUtxosAndAddresses(account: HDAccount): Future[HDWalletApi]
 
   /** Gets the address associated with the pubkey at
     * the resulting `BIP32Path` determined by the
@@ -503,7 +505,7 @@ trait HDWalletApi extends WalletApi {
     } yield ()
   }
 
-  def createNewAccount(keyManagerParams: KeyManagerParams): Future[Wallet]
+  def createNewAccount(keyManagerParams: KeyManagerParams): Future[HDWalletApi]
 
   /**
     * Tries to create a new account in this wallet. Fails if the
@@ -514,6 +516,6 @@ trait HDWalletApi extends WalletApi {
     */
   def createNewAccount(
       hdAccount: HDAccount,
-      keyManagerParams: KeyManagerParams): Future[Wallet]
+      keyManagerParams: KeyManagerParams): Future[HDWalletApi]
 
 }
