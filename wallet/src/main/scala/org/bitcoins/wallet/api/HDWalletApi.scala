@@ -12,7 +12,6 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.keymanager.KeyManagerParams
-import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
 
 import scala.concurrent.Future
