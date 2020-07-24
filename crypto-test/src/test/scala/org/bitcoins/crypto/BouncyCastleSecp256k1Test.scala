@@ -178,4 +178,63 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
         assert(bouncyCastleSigPoint == secpSigPoint)
     }
   }
+
+  it must "compute adaptor signatures the same" in {
+    forAll(CryptoGenerators.privateKey,
+           CryptoGenerators.publicKey,
+           NumberGenerator.bytevector(32)) {
+      case (privKey, adaptor, msg) =>
+        val sigBouncy =
+          privKey.adaptorSign(adaptor, msg, context = BouncyCastle)
+        val sigSecp = privKey.adaptorSign(adaptor, msg, context = LibSecp256k1)
+        assert(sigBouncy == sigSecp)
+    }
+  }
+
+  it must "verify adaptor signatures the same" in {
+    forAll(CryptoGenerators.privateKey,
+           CryptoGenerators.publicKey,
+           NumberGenerator.bytevector(32),
+           CryptoGenerators.adaptorSignature) {
+      case (privKey, adaptor, msg, badSig) =>
+        val sig = privKey.adaptorSign(adaptor, msg)
+        val pubKey = privKey.publicKey
+
+        assert(
+          pubKey
+            .adaptorVerify(msg, adaptor, sig, context = BouncyCastle) == pubKey
+            .adaptorVerify(msg, adaptor, sig, context = LibSecp256k1))
+        assert(
+          pubKey.adaptorVerify(msg,
+                               adaptor,
+                               badSig,
+                               context = BouncyCastle) == pubKey
+            .adaptorVerify(msg, adaptor, badSig, context = LibSecp256k1))
+    }
+  }
+
+  it must "complete adaptor signatures the same" in {
+    forAll(CryptoGenerators.privateKey, CryptoGenerators.adaptorSignature) {
+      case (adaptorSecret, adaptorSig) =>
+        assert(
+          adaptorSecret.completeAdaptorSignature(
+            adaptorSig,
+            context = BouncyCastle) == adaptorSecret
+            .completeAdaptorSignature(adaptorSig, context = LibSecp256k1))
+    }
+  }
+
+  it must "extract adaptor secrets the same" in {
+    forAll(CryptoGenerators.digitalSignature,
+           CryptoGenerators.adaptorSignature,
+           CryptoGenerators.publicKey) {
+      case (sig, adaptorSig, adaptor) =>
+        assert(
+          adaptor
+            .extractAdaptorSecret(adaptorSig,
+                                  sig,
+                                  context = BouncyCastle) == adaptor
+            .extractAdaptorSecret(adaptorSig, sig, context = LibSecp256k1))
+    }
+  }
 }

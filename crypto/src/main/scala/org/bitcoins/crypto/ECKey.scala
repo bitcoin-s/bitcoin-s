@@ -191,6 +191,75 @@ sealed abstract class ECPrivateKey
     BouncyCastleUtil.schnorrSignWithNonce(dataToSign, this, nonce)
   }
 
+  def adaptorSign(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature = {
+    adaptorSign(adaptorPoint, msg, CryptoContext.default)
+  }
+
+  def adaptorSign(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector,
+      context: CryptoContext): ECAdaptorSignature = {
+    context match {
+      case CryptoContext.LibSecp256k1 =>
+        adaptorSignWithSecp(adaptorPoint, msg)
+      case CryptoContext.BouncyCastle =>
+        adaptorSignWithBouncyCastle(adaptorPoint, msg)
+    }
+  }
+
+  def adaptorSignWithSecp(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature = {
+    val sigWithProof = NativeSecp256k1.adaptorSign(bytes.toArray,
+                                                   adaptorPoint.bytes.toArray,
+                                                   msg.toArray)
+    ECAdaptorSignature(ByteVector(sigWithProof))
+  }
+
+  def adaptorSignWithBouncyCastle(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature = {
+    AdaptorStuff.adaptorSign(this, adaptorPoint, msg)
+  }
+
+  def completeAdaptorSignature(
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
+    completeAdaptorSignature(adaptorSignature, CryptoContext.default)
+  }
+
+  def completeAdaptorSignature(
+      adaptorSignature: ECAdaptorSignature,
+      context: CryptoContext): ECDigitalSignature = {
+    context match {
+      case CryptoContext.LibSecp256k1 =>
+        completeAdaptorSignatureWithSecp(adaptorSignature)
+      case CryptoContext.BouncyCastle =>
+        completeAdaptorSignatureWithBouncyCastle(adaptorSignature)
+    }
+  }
+
+  def completeAdaptorSignatureWithSecp(
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
+    val sigBytes = NativeSecp256k1.adaptorAdapt(
+      bytes.toArray,
+      adaptorSignature.adaptedSig.toArray)
+    ECDigitalSignature.fromBytes(ByteVector(sigBytes))
+  }
+
+  def completeAdaptorSignatureWithBouncyCastle(
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
+    AdaptorStuff.adaptorComplete(this, adaptorSignature.adaptedSig)
+  }
+
+  def completeAdaptorSignature(
+      adaptorSignature: ECAdaptorSignature,
+      hashTypeByte: Byte): ECDigitalSignature = {
+    val completedSig = completeAdaptorSignature(adaptorSignature)
+    ECDigitalSignature(completedSig.bytes ++ ByteVector.fromByte(hashTypeByte))
+  }
+
   def nonceKey: ECPrivateKey = {
     if (schnorrNonce.publicKey == publicKey) {
       this
@@ -416,6 +485,79 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def schnorrPublicKey: SchnorrPublicKey = SchnorrPublicKey(bytes)
 
   def schnorrNonce: SchnorrNonce = SchnorrNonce(bytes)
+
+  def adaptorVerify(
+      msg: ByteVector,
+      adaptorPoint: ECPublicKey,
+      adaptorSignature: ECAdaptorSignature): Boolean = {
+    adaptorVerify(msg, adaptorPoint, adaptorSignature, CryptoContext.default)
+  }
+
+  def adaptorVerify(
+      msg: ByteVector,
+      adaptorPoint: ECPublicKey,
+      adaptorSignature: ECAdaptorSignature,
+      context: CryptoContext): Boolean = {
+    context match {
+      case CryptoContext.LibSecp256k1 =>
+        adaptorVerifyWithSecp(msg, adaptorPoint, adaptorSignature)
+      case CryptoContext.BouncyCastle =>
+        adaptorVerifyWithBouncyCastle(msg, adaptorPoint, adaptorSignature)
+    }
+  }
+
+  def adaptorVerifyWithSecp(
+      msg: ByteVector,
+      adaptorPoint: ECPublicKey,
+      adaptorSignature: ECAdaptorSignature): Boolean = {
+    NativeSecp256k1.adaptorVerify(adaptorSignature.adaptedSig.toArray,
+                                  bytes.toArray,
+                                  msg.toArray,
+                                  adaptorPoint.bytes.toArray,
+                                  adaptorSignature.dleqProof.toArray)
+  }
+
+  def adaptorVerifyWithBouncyCastle(
+      msg: ByteVector,
+      adaptorPoint: ECPublicKey,
+      adaptorSignature: ECAdaptorSignature): Boolean = {
+    AdaptorStuff.adaptorVerify(adaptorSignature, this, msg, adaptorPoint)
+  }
+
+  def extractAdaptorSecret(
+      adaptorSignature: ECAdaptorSignature,
+      signature: ECDigitalSignature): ECPrivateKey = {
+    extractAdaptorSecret(adaptorSignature, signature, CryptoContext.default)
+  }
+
+  def extractAdaptorSecret(
+      adaptorSignature: ECAdaptorSignature,
+      signature: ECDigitalSignature,
+      context: CryptoContext): ECPrivateKey = {
+    context match {
+      case CryptoContext.LibSecp256k1 =>
+        extractAdaptorSecretWithSecp(adaptorSignature, signature)
+      case CryptoContext.BouncyCastle =>
+        extractAdaptorSecretWithBouncyCastle(adaptorSignature, signature)
+    }
+  }
+
+  def extractAdaptorSecretWithSecp(
+      adaptorSignature: ECAdaptorSignature,
+      signature: ECDigitalSignature): ECPrivateKey = {
+    val secretBytes = NativeSecp256k1.adaptorExtractSecret(
+      signature.bytes.toArray,
+      adaptorSignature.adaptedSig.toArray,
+      bytes.toArray)
+
+    ECPrivateKey(ByteVector(secretBytes))
+  }
+
+  def extractAdaptorSecretWithBouncyCastle(
+      adaptorSignature: ECAdaptorSignature,
+      signature: ECDigitalSignature): ECPrivateKey = {
+    AdaptorStuff.extractAdaptorSecret(signature, adaptorSignature, this)
+  }
 
   override def toString: String = "ECPublicKey(" + hex + ")"
 

@@ -674,6 +674,134 @@ public class NativeSecp256k1 {
         }
     }
 
+    public static byte[] adaptorSign(byte[] seckey, byte[] adaptorPoint, byte[] data) throws AssertFailException{
+        checkArgument(seckey.length == 32 &&
+                data.length == 32 &&
+                (adaptorPoint.length == 33 || adaptorPoint.length == 65));
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        if (byteBuff == null || byteBuff.capacity() < 32 + 32 + adaptorPoint.length) {
+            byteBuff = ByteBuffer.allocateDirect(32 + 32 + adaptorPoint.length);
+            byteBuff.order(ByteOrder.nativeOrder());
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(seckey);
+        byteBuff.put(adaptorPoint);
+        byteBuff.put(data);
+
+        byte[][] retByteArray;
+
+        r.lock();
+        try {
+            retByteArray = secp256k1_ecdsa_adaptor_sign(byteBuff, Secp256k1Context.getContext(), adaptorPoint.length);
+        } finally {
+            r.unlock();
+        }
+
+        byte[] sigArr = retByteArray[0];
+        byte[] proofArr = retByteArray[1];
+        int retVal = new BigInteger(new byte[] { retByteArray[2][0] }).intValue();
+
+        if (retVal == 0) {
+            return new byte[]{};
+        } else {
+            byte[] resArray = new byte[sigArr.length + proofArr.length];
+            System.arraycopy(sigArr, 0, resArray, 0, sigArr.length);
+            System.arraycopy(proofArr, 0, resArray, sigArr.length, proofArr.length);
+            return resArray;
+        }
+    }
+
+    public static boolean adaptorVerify(byte[] adaptorSig, byte[] pubKey, byte[] data, byte[] adaptorPoint, byte[] adaptorProof) throws AssertFailException{
+        checkArgument(data.length == 32 &&
+                adaptorSig.length == 65 &&
+                (pubKey.length == 33 || pubKey.length == 65) &&
+                adaptorPoint.length == pubKey.length &&
+                adaptorProof.length == 97);
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        int buffLen = 32 + 65 + pubKey.length + adaptorPoint.length + 97;
+        if (byteBuff == null || byteBuff.capacity() < buffLen) {
+            byteBuff = ByteBuffer.allocateDirect(buffLen);
+            byteBuff.order(ByteOrder.nativeOrder());
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(adaptorSig);
+        byteBuff.put(pubKey);
+        byteBuff.put(data);
+        byteBuff.put(adaptorPoint);
+        byteBuff.put(adaptorProof);
+
+        r.lock();
+        try {
+            return secp256k1_ecdsa_adaptor_sig_verify(byteBuff, Secp256k1Context.getContext(), pubKey.length) == 1;
+        } finally {
+            r.unlock();
+        }
+    }
+
+    public static byte[] adaptorAdapt(byte[] adaptorSec, byte[] adaptorSig) throws AssertFailException{
+        checkArgument(adaptorSec.length == 32 && adaptorSig.length == 65);
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        if (byteBuff == null || byteBuff.capacity() < 32 + 65) {
+            byteBuff = ByteBuffer.allocateDirect(32 + 65);
+            byteBuff.order(ByteOrder.nativeOrder());
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(adaptorSec);
+        byteBuff.put(adaptorSig);
+
+        byte[][] retByteArray;
+
+        r.lock();
+        try {
+            retByteArray = secp256k1_ecdsa_adaptor_adapt(byteBuff, Secp256k1Context.getContext());
+        } finally {
+            r.unlock();
+        }
+
+        byte[] sigArr = retByteArray[0];
+        int sigLen = new BigInteger(new byte[] { retByteArray[1][0] }).intValue();
+        int retVal = new BigInteger(new byte[] { retByteArray[1][1] }).intValue();
+
+        assertEquals(sigArr.length, sigLen, "Got bad signature length.");
+
+        return retVal == 0 ? new byte[0] : sigArr;
+    }
+
+    public static byte[] adaptorExtractSecret(byte[] sig, byte[] adaptorSig, byte[] adaptor) throws AssertFailException{
+        checkArgument(sig.length <= 520 && (adaptor.length == 33 || adaptor.length == 65) && adaptorSig.length == 65);
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        if (byteBuff == null || byteBuff.capacity() < sig.length + adaptor.length + 65) {
+            byteBuff = ByteBuffer.allocateDirect(sig.length + adaptor.length + 65);
+            byteBuff.order(ByteOrder.nativeOrder());
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(sig);
+        byteBuff.put(adaptorSig);
+        byteBuff.put(adaptor);
+
+        byte[][] retByteArray;
+
+        r.lock();
+        try {
+            retByteArray = secp256k1_ecdsa_adaptor_extract_secret(byteBuff, Secp256k1Context.getContext(), sig.length, adaptor.length);
+        } finally {
+            r.unlock();
+        }
+
+        byte[] sigArr = retByteArray[0];
+        int retVal = new BigInteger(new byte[] { retByteArray[1][0] }).intValue();
+
+        return retVal == 0 ? new byte[0] : sigArr;
+    }
+
 
     /**
      * This helper method is needed to resolve issue 1524 on bitcoin-s
@@ -723,4 +851,12 @@ public class NativeSecp256k1 {
     private static native byte[][] secp256k1_schnorrsig_compute_sigpoint(ByteBuffer byteBuff, long context, boolean compressed);
 
     private static native int secp256k1_schnorrsig_verify(ByteBuffer byteBuffer, long context);
+
+    private static native byte[][] secp256k1_ecdsa_adaptor_sign(ByteBuffer byteBuff, long context, int adaptorLen);
+
+    private static native int secp256k1_ecdsa_adaptor_sig_verify(ByteBuffer byteBuff, long context, int pubKeyLen);
+
+    private static native byte[][] secp256k1_ecdsa_adaptor_adapt(ByteBuffer byteBuff, long context);
+
+    private static native byte[][] secp256k1_ecdsa_adaptor_extract_secret(ByteBuffer byteBuff, long context, int sigLen, int adaptorLen);
 }
