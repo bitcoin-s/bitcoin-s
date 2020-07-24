@@ -5,13 +5,9 @@ import org.slf4j.Logger
 
 /** Exposes access to the key manager logger */
 private[bitcoins] trait KeyManagerLogger {
-  private var _logger: Logger = _
 
   protected[bitcoins] def logger(implicit config: LoggerConfig): Logger = {
-    if (_logger == null) {
-      _logger = KeyManagerLoggerImpl(config).getLogger
-    }
-    _logger
+    KeyManagerLoggerImpl(config).getLogger
   }
 }
 

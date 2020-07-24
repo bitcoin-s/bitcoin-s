@@ -9,7 +9,6 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeCallbacks, P2PLogger}
-import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -29,11 +28,6 @@ case class DataMessageHandler(
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
     extends P2PLogger {
-
-  // Need to overwrite logger because nodeAppConfig and chainAppConfig are both
-  // instances of LoggerConfig
-  protected def logger(implicit config: NodeAppConfig): Logger =
-    super.logger(config)
 
   private val txDAO = BroadcastAbleTransactionDAO()
 
