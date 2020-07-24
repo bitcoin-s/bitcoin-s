@@ -128,24 +128,25 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
   it must "compute schnorr signatures the same" in {
     forAll(CryptoGenerators.privateKey,
            NumberGenerator.bytevector(32),
-           NumberGenerator.bytevector(32)) {
-      case (privKey, bytes, auxRand) =>
-        assert(
-          privKey.schnorrSign(bytes, auxRand, context = BouncyCastle) == privKey
-            .schnorrSign(bytes, auxRand, context = LibSecp256k1))
+           NumberGenerator.bytevector(32)) { case (privKey, bytes, auxRand) =>
+      assert(
+        LibSecp256k1CryptoRuntime
+          .schnorrSign(bytes, privKey, auxRand) == BouncycastleCryptoRuntime
+          .schnorrSign(bytes, privKey, auxRand))
     }
   }
 
   it must "compute schnorr signature for fixed nonce the same" in {
     forAll(CryptoGenerators.privateKey,
            CryptoGenerators.privateKey,
-           NumberGenerator.bytevector(32)) {
-      case (privKey, nonceKey, bytes) =>
-        val sigBC = privKey
-          .schnorrSignWithNonce(bytes, nonceKey, context = BouncyCastle)
-        val sigSecP = privKey
-          .schnorrSignWithNonce(bytes, nonceKey, context = LibSecp256k1)
-        assert(sigBC.bytes == sigSecP.bytes)
+           NumberGenerator.bytevector(32)) { case (privKey, nonceKey, bytes) =>
+      assert(
+        LibSecp256k1CryptoRuntime.schnorrSignWithNonce(
+          bytes,
+          privKey,
+          nonceKey) == BouncycastleCryptoRuntime.schnorrSignWithNonce(bytes,
+                                                                      privKey,
+                                                                      nonceKey))
     }
   }
 
@@ -157,31 +158,87 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
         val sig = privKey.schnorrSign(bytes)
         val pubKey = privKey.schnorrPublicKey
         assert(
-          pubKey.verify(bytes, sig, context = BouncyCastle) == pubKey
-            .verify(bytes, sig, context = LibSecp256k1))
+          LibSecp256k1CryptoRuntime.schnorrVerify(
+            bytes,
+            pubKey,
+            sig) == BouncycastleCryptoRuntime.schnorrVerify(bytes, pubKey, sig))
         assert(
-          pubKey.verify(bytes, badSig, context = BouncyCastle) == pubKey
-            .verify(bytes, badSig, context = LibSecp256k1))
+          LibSecp256k1CryptoRuntime
+            .schnorrVerify(bytes, pubKey, badSig) == BouncycastleCryptoRuntime
+            .schnorrVerify(bytes, pubKey, badSig))
     }
   }
 
   it must "compute schnorr signature points the same" in {
     forAll(CryptoGenerators.schnorrPublicKey,
            CryptoGenerators.schnorrNonce,
-           NumberGenerator.bytevector(32)) {
-      case (pubKey, nonce, bytes) =>
-        val bouncyCastleSigPoint =
-          pubKey.computeSigPoint(bytes,
-                                 nonce,
-                                 compressed = true,
-                                 context = BouncyCastle)
+           NumberGenerator.bytevector(32)) { case (pubKey, nonce, bytes) =>
+      assert(
+        LibSecp256k1CryptoRuntime.schnorrComputeSigPoint(
+          bytes,
+          nonce,
+          pubKey,
+          compressed = true) == BouncycastleCryptoRuntime
+          .schnorrComputeSigPoint(bytes, nonce, pubKey, compressed = true))
+    }
+  }
 
-        val secpSigPoint = pubKey.computeSigPoint(bytes,
-                                                  nonce,
-                                                  compressed = true,
-                                                  context = LibSecp256k1)
+  it must "compute adaptor signatures the same" in {
+    forAll(CryptoGenerators.privateKey,
+           CryptoGenerators.publicKey,
+           NumberGenerator.bytevector(32)) { case (privKey, adaptor, msg) =>
+      assert(
+        LibSecp256k1CryptoRuntime.adaptorSign(
+          privKey,
+          adaptor,
+          msg) == BouncycastleCryptoRuntime.adaptorSign(privKey, adaptor, msg))
+    }
+  }
 
-        assert(bouncyCastleSigPoint == secpSigPoint)
+  it must "verify adaptor signatures the same" in {
+    forAll(CryptoGenerators.privateKey,
+           CryptoGenerators.publicKey,
+           NumberGenerator.bytevector(32),
+           CryptoGenerators.adaptorSignature) {
+      case (privKey, adaptor, msg, badSig) =>
+        val sig = privKey.adaptorSign(adaptor, msg)
+        val pubKey = privKey.publicKey
+
+        assert(LibSecp256k1CryptoRuntime
+          .adaptorVerify(sig, pubKey, msg, adaptor) == BouncycastleCryptoRuntime
+          .adaptorVerify(sig, pubKey, msg, adaptor))
+        assert(
+          LibSecp256k1CryptoRuntime.adaptorVerify(
+            badSig,
+            pubKey,
+            msg,
+            adaptor) == BouncycastleCryptoRuntime
+            .adaptorVerify(badSig, pubKey, msg, adaptor))
+    }
+  }
+
+  it must "complete adaptor signatures the same" in {
+    forAll(CryptoGenerators.privateKey, CryptoGenerators.adaptorSignature) {
+      case (adaptorSecret, adaptorSig) =>
+        assert(
+          LibSecp256k1CryptoRuntime.adaptorComplete(
+            adaptorSecret,
+            adaptorSig) == BouncycastleCryptoRuntime
+            .adaptorComplete(adaptorSecret, adaptorSig))
+    }
+  }
+
+  it must "extract adaptor secrets the same" in {
+    forAll(CryptoGenerators.digitalSignature,
+           CryptoGenerators.adaptorSignature,
+           CryptoGenerators.publicKey) { case (sig, adaptorSig, adaptor) =>
+      assert(
+        LibSecp256k1CryptoRuntime.extractAdaptorSecret(
+          sig,
+          adaptorSig,
+          adaptor) == BouncycastleCryptoRuntime.extractAdaptorSecret(sig,
+                                                                     adaptorSig,
+                                                                     adaptor))
     }
   }
 }
