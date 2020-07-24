@@ -3,7 +3,12 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
-import org.bitcoins.crypto.{DERSignatureUtil, ECDigitalSignature, ECPrivateKey}
+import org.bitcoins.crypto.{
+  DERSignatureUtil,
+  ECAdaptorSignature,
+  ECDigitalSignature,
+  ECPrivateKey
+}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -144,6 +149,15 @@ sealed abstract class TransactionSignatureCreator {
       require(DERSignatureUtil.isLowS(s), "Sig does not have a low s value")
       s
     }
+  }
+
+  def createSig(
+      component: TxSigComponent,
+      adaptorSign: ByteVector => ECAdaptorSignature,
+      hashType: HashType): ECAdaptorSignature = {
+    val hash =
+      TransactionSignatureSerializer.hashForSignature(component, hashType)
+    adaptorSign(hash.bytes)
   }
 }
 
