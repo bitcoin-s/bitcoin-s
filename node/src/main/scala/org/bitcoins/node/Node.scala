@@ -196,15 +196,11 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def sync(): Future[Unit] = {
     for {
       chainApi <- chainApiFromDb()
-      hash <- chainApi.getBestBlockHash()
-      header <-
-        chainApi
-          .getHeader(hash)
-          .map(_.get) // .get is safe since this is an internal call
-
+      header <- chainApi.getBestBlockHeader()
     } yield {
-      peerMsgSenderF.map(_.sendGetHeadersMessage(hash.flip))
-      logger.info(s"Starting sync node, height=${header.height} hash=$hash")
+      peerMsgSenderF.map(_.sendGetHeadersMessage(header.hashBE.flip))
+      logger.info(
+        s"Starting sync node, height=${header.height} hash=${header.hashBE}")
     }
   }
 
