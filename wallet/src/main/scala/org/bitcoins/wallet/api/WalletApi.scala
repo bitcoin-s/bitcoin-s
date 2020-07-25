@@ -7,7 +7,7 @@ import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
+import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -26,7 +26,7 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE
 }
 import org.bitcoins.keymanager._
-import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
@@ -107,27 +107,7 @@ trait WalletApi extends WalletLogger {
 
   def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
-    WalletApi] = {
-    val utxosF = listUtxos()
-    val addressesF = listAddresses()
-    for {
-      utxos <- utxosF
-      addresses <- addressesF
-      scriptPubKeys =
-        utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
-          .map(_.scriptPubKey)
-          .toSet
-      _ <- FutureUtil.sequentially(blockFilters) {
-        case (blockHash, blockFilter) =>
-          val matcher = SimpleFilterMatcher(blockFilter)
-          if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
-            nodeApi.downloadBlocks(Vector(blockHash))
-          } else FutureUtil.unit
-      }
-    } yield {
-      this
-    }
-  }
+    WalletApi]
 
   /** Gets the sum of all UTXOs in this wallet */
   def getBalance(): Future[CurrencyUnit] = {
@@ -367,24 +347,7 @@ trait WalletApi extends WalletLogger {
     */
   def unlock(passphrase: AesPassword, bip39PasswordOpt: Option[String]): Either[
     KeyManagerUnlockError,
-    WalletApi] = {
-    val kmParams = walletConfig.kmParams
-
-    val unlockedKeyManagerE =
-      BIP39LockedKeyManager.unlock(passphrase = passphrase,
-                                   bip39PasswordOpt = bip39PasswordOpt,
-                                   kmParams = kmParams)
-    unlockedKeyManagerE match {
-      case Right(km) =>
-        val w = Wallet(keyManager = km,
-                       nodeApi = nodeApi,
-                       chainQueryApi = chainQueryApi,
-                       feeRateApi = feeRateApi,
-                       creationTime = km.creationTime)
-        Right(w)
-      case Left(err) => Left(err)
-    }
-  }
+    WalletApi]
 
   def listAccounts(): Future[Vector[AccountDb]]
 
