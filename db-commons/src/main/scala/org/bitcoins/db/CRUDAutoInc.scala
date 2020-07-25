@@ -21,7 +21,7 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
       idAutoInc.into((t, id) => t.copyWithId(id = id))
     }
     val actions = query.++=(ts)
-    safeDatabase.runVec(actions)
+    safeDatabase.runVec(actions.transactionally)
   }
 
   // FIXME: This is a temporary fix for https://github.com/bitcoin-s/bitcoin-s/issues/1586
