@@ -89,7 +89,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     val query = findAll(ts)
     val actions = ts.map(t => query.update(t))
     val affectedRows: Future[Vector[Int]] =
-      safeDatabase.run(DBIO.sequence(actions))
+      safeDatabase.run(DBIO.sequence(actions).transactionally)
     val updatedTs = findAll(ts)
     affectedRows.flatMap { _ =>
       safeDatabase.runVec(updatedTs.result)
@@ -125,7 +125,8 @@ abstract class CRUD[T, PrimaryKeyType](implicit
   /** Upserts all of the given ts in the database, then returns the upserted values */
   def upsertAll(ts: Vector[T]): Future[Vector[T]] = {
     val actions = ts.map(t => table.insertOrUpdate(t))
-    val result: Future[Vector[Int]] = safeDatabase.run(DBIO.sequence(actions))
+    val result: Future[Vector[Int]] =
+      safeDatabase.run(DBIO.sequence(actions).transactionally)
     val findQueryFuture = result.map(_ => findAll(ts).result)
     findQueryFuture.flatMap(safeDatabase.runVec(_))
   }
