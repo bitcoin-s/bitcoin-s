@@ -334,6 +334,48 @@ case class BlockHeaderDAO()(implicit
     headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
   }
 
+  /** Retrieves a blockchain with the best tip being the given header */
+  def getBlockchainsBetweenHeights(from: Int, to: Int)(implicit
+      ec: ExecutionContext): Future[Vector[Blockchain]] = {
+    getBetweenHeights(from = from, to = to).map { headers =>
+      if (headers.map(_.height).distinct.size == headers.size) {
+        Vector(Blockchain.fromHeaders(headers.reverse))
+      } else {
+        val headersByHeight = headers.groupBy(_.height).toVector
+        val sortedHeaders = headersByHeight.sortBy(_._1).reverse.map(_._2)
+        val chains = makeChains(sortedHeaders, Vector.empty)
+        chains.map(Blockchain(_))
+      }
+    }
+  }
+
+  @tailrec
+  private def makeChains(
+      headersByHeight: Vector[Vector[BlockHeaderDb]],
+      accum: Vector[Vector[BlockHeaderDb]]): Vector[Vector[BlockHeaderDb]] = {
+    if (headersByHeight.isEmpty) {
+      accum
+    } else {
+      if (accum.isEmpty) {
+        makeChains(headersByHeight.tail, accum :+ headersByHeight.head)
+      } else {
+        val toAdd = headersByHeight.head
+        // get them in the right order
+        val addToChains = accum.last.map(header =>
+          toAdd.find(_.hashBE == header.previousBlockHashBE).get)
+        // create new vectors for any header not apart of the current chains
+        val newChains = toAdd.diff(addToChains).map(Vector(_))
+
+        val newAccum =
+          accum.zip(addToChains).map {
+            case (current, addition) => current :+ addition
+          } ++ newChains
+
+        makeChains(headersByHeight.tail, newAccum)
+      }
+    }
+  }
+
   /** Retrieves a full blockchain with the best tip being the given header */
   def getFullBlockchainFrom(header: BlockHeaderDb)(implicit
       ec: ExecutionContext): Future[Blockchain] = {
