@@ -8,7 +8,7 @@ import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.GolombFilter
-import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
+import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
@@ -27,10 +27,10 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.wallet.WalletLogger
 import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
-import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.wallet.models.{AddressDb, SpendingInfoDb}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -120,18 +120,6 @@ trait WalletApi extends WalletLogger {
     } yield confirmed + unconfirmed
   }
 
-  /** Gets the balance of the given account */
-  def getBalance(account: HDAccount): Future[CurrencyUnit] = {
-    val confirmedF = getConfirmedBalance(account)
-    val unconfirmedF = getUnconfirmedBalance(account)
-    for {
-      confirmed <- confirmedF
-      unconfirmed <- unconfirmedF
-    } yield {
-      confirmed + unconfirmed
-    }
-  }
-
   /** Gets the sum of all UTXOs in this wallet with the address tag */
   def getBalance(tag: AddressTag): Future[CurrencyUnit] = {
     val confirmedF = getConfirmedBalance(tag)
@@ -146,14 +134,10 @@ trait WalletApi extends WalletLogger {
   /** Gets the sum of all confirmed UTXOs in this wallet */
   def getConfirmedBalance(): Future[CurrencyUnit]
 
-  def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit]
-
   def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit]
 
   /** Gets the sum of all unconfirmed UTXOs in this wallet */
   def getUnconfirmedBalance(): Future[CurrencyUnit]
-
-  def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit]
 
   def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit]
 
@@ -169,39 +153,23 @@ trait WalletApi extends WalletLogger {
     */
   def listUtxos(): Future[Vector[SpendingInfoDb]]
 
-  def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]]
-
   def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]]
-
-  def listUtxos(
-      hdAccount: HDAccount,
-      tag: AddressTag): Future[Vector[SpendingInfoDb]]
 
   def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]]
 
-  def listUtxos(
-      hdAccount: HDAccount,
-      state: TxoState): Future[Vector[SpendingInfoDb]]
-
   def listAddresses(): Future[Vector[AddressDb]]
-
-  def listAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
   def listSpentAddresses(): Future[Vector[AddressDb]]
 
-  def listSpentAddresses(account: HDAccount): Future[Vector[AddressDb]]
-
   def listFundedAddresses(): Future[Vector[(AddressDb, CurrencyUnit)]]
-
-  def listFundedAddresses(
-      account: HDAccount): Future[Vector[(AddressDb, CurrencyUnit)]]
 
   def listUnusedAddresses(): Future[Vector[AddressDb]]
 
-  def listUnusedAddresses(account: HDAccount): Future[Vector[AddressDb]]
-
   def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
+
+  /** Marks all utxos that are ours in this transactions as reserved */
+  def markUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]]
 
   def unmarkUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
@@ -211,15 +179,6 @@ trait WalletApi extends WalletLogger {
 
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
-
-  /** Removes all utxos and addresses from the wallet account.
-    * Don't call this unless you are sure you can recover
-    * your wallet
-    */
-  def clearUtxosAndAddresses(account: HDAccount): Future[WalletApi]
-
-  def clearUtxosAndAddresses(): Future[WalletApi] =
-    clearUtxosAndAddresses(walletConfig.defaultAccount)
 
   /** Removes all utxos and addresses from the wallet.
     * Don't call this unless you are sure you can recover
@@ -235,7 +194,7 @@ trait WalletApi extends WalletLogger {
   def getNewAddress(addressType: AddressType): Future[BitcoinAddress]
 
   /**
-    * Gets a new external address from the default account.
+    * Gets a new external address
     * Calling this method multiple
     * times will return the same address, until it has
     * received funds.
@@ -257,42 +216,18 @@ trait WalletApi extends WalletLogger {
   }
 
   /**
-    * Gets a external address from the account associated with
-    * the given AddressType. Calling this method multiple
-    * times will return the same address, until it has
+    * Gets a external address the given AddressType. Calling this
+    * method multiple times will return the same address, until it has
     * received funds.
     */
   def getUnusedAddress(addressType: AddressType): Future[BitcoinAddress]
 
   /**
-    * Gets a external address from the default account.
-    * Calling this method multiple
+    * Gets a external address. Calling this method multiple
     * times will return the same address, until it has
     * received funds.
     */
   def getUnusedAddress: Future[BitcoinAddress]
-
-  /** Gets the address associated with the pubkey at
-    * the resulting `BIP32Path` determined by the
-    * default account and the given chainType and addressIndex
-    */
-  def getAddress(
-      chainType: HDChainType,
-      addressIndex: Int): Future[AddressDb] = {
-    for {
-      account <- getDefaultAccount()
-      address <- getAddress(account, chainType, addressIndex)
-    } yield address
-  }
-
-  /** Gets the address associated with the pubkey at
-    * the resulting `BIP32Path` determined the given
-    * account, chainType, and addressIndex
-    */
-  def getAddress(
-      account: AccountDb,
-      chainType: HDChainType,
-      addressIndex: Int): Future[AddressDb]
 
   /**
     * Mimics the `getaddressinfo` RPC call in Bitcoin Core
@@ -317,29 +252,7 @@ trait WalletApi extends WalletLogger {
   }
 
   /** Generates a new change address */
-  protected[wallet] def getNewChangeAddress(
-      account: AccountDb): Future[BitcoinAddress]
-
-  /** Generates a new change address for the default account */
-  final protected[wallet] def getNewChangeAddress(): Future[BitcoinAddress] = {
-    for {
-      account <- getDefaultAccount
-      address <- getNewChangeAddress(account)
-
-    } yield address
-  }
-
-  /**
-    * Fetches the default account from the DB
-    * @return Future[AccountDb]
-    */
-  protected[wallet] def getDefaultAccount(): Future[AccountDb]
-
-  /** Fetches the default account for the given address/account kind
-    * @param addressType
-    */
-  protected[wallet] def getDefaultAccountForType(
-      addressType: AddressType): Future[AccountDb]
+  protected[wallet] def getNewChangeAddress(): Future[BitcoinAddress]
 
   /**
     * Unlocks the wallet with the provided passphrase,
@@ -348,15 +261,6 @@ trait WalletApi extends WalletLogger {
   def unlock(passphrase: AesPassword, bip39PasswordOpt: Option[String]): Either[
     KeyManagerUnlockError,
     WalletApi]
-
-  def listAccounts(): Future[Vector[AccountDb]]
-
-  /** Lists all wallet accounts with the given type
-    * @param purpose
-    * @return [[Future[Vector[AccountDb]]
-    */
-  def listAccounts(purpose: HDPurpose): Future[Vector[AccountDb]] =
-    listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
 
   /**
     * Iterates over the block filters in order to find filters that match to the given addresses
@@ -406,37 +310,15 @@ trait WalletApi extends WalletLogger {
     * @param endOpt end block (if None it ends at the current tip)
     * @param addressBatchSize how many addresses to match in a single pass
     */
+
   def rescanNeutrinoWallet(
-      account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
       useCreationTime: Boolean): Future[Unit]
 
-  def rescanNeutrinoWallet(
-      startOpt: Option[BlockStamp],
-      endOpt: Option[BlockStamp],
-      addressBatchSize: Int,
-      useCreationTime: Boolean): Future[Unit] =
-    rescanNeutrinoWallet(account = walletConfig.defaultAccount,
-                         startOpt = startOpt,
-                         endOpt = endOpt,
-                         addressBatchSize = addressBatchSize,
-                         useCreationTime = useCreationTime)
-
   /** Helper method to rescan the ENTIRE blockchain. */
-  def fullRescanNeutrinoWallet(addressBatchSize: Int): Future[Unit] =
-    fullRescanNeutrinoWallet(account = walletConfig.defaultAccount,
-                             addressBatchSize = addressBatchSize)
-
-  def fullRescanNeutrinoWallet(
-      account: HDAccount,
-      addressBatchSize: Int): Future[Unit] =
-    rescanNeutrinoWallet(account = account,
-                         startOpt = None,
-                         endOpt = None,
-                         addressBatchSize = addressBatchSize,
-                         useCreationTime = false)
+  def fullRescanNeutrinoWallet(addressBatchSize: Int): Future[Unit]
 
   /**
     * Recreates the account using BIP-44 approach
@@ -447,7 +329,7 @@ trait WalletApi extends WalletLogger {
 
   def keyManager: BIP39KeyManager
 
-  private def determineFeeRate(feeRateOpt: Option[FeeUnit]): Future[FeeUnit] =
+  protected def determineFeeRate(feeRateOpt: Option[FeeUnit]): Future[FeeUnit] =
     feeRateOpt match {
       case None =>
         feeRateApi.getFeeRate
@@ -459,29 +341,17 @@ trait WalletApi extends WalletLogger {
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction]
+      feeRate: FeeUnit): Future[Transaction]
 
   def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit]
+  ): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendFromOutPoints(outPoints, address, amount, feeRate, fromAccount)
-    } yield tx
-  }
-
-  def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit]): Future[Transaction] = {
-    for {
-      account <- getDefaultAccount()
-      tx <- sendFromOutPoints(outPoints, address, amount, feeRateOpt, account)
+      tx <- sendFromOutPoints(outPoints, address, amount, feeRate)
     } yield tx
   }
 
@@ -489,214 +359,91 @@ trait WalletApi extends WalletLogger {
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      algo: CoinSelectionAlgo,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]): Future[Transaction]
-
-  def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      algo: CoinSelectionAlgo,
-      fromAccount: AccountDb): Future[Transaction] =
-    sendWithAlgo(address, amount, feeRate, algo, fromAccount, Vector.empty)
+      algo: CoinSelectionAlgo): Future[Transaction]
 
   def sendWithAlgo(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit],
-      algo: CoinSelectionAlgo,
-      fromAccount: AccountDb): Future[Transaction] = {
+      algo: CoinSelectionAlgo
+  ): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendWithAlgo(address, amount, feeRate, algo, fromAccount)
-    } yield tx
-  }
-
-  def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit],
-      algo: CoinSelectionAlgo): Future[Transaction] = {
-    for {
-      account <- getDefaultAccount()
-      tx <- sendWithAlgo(address, amount, feeRateOpt, algo, account)
+      tx <- sendWithAlgo(address, amount, feeRate, algo)
     } yield tx
   }
 
   /**
-    * Sends money from the specified account
+    * Sends money to the address
     *
     * todo: add error handling to signature
     */
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction]
+      feeRate: FeeUnit): Future[Transaction]
 
-  /**
-    * Sends money from the specified account
-    *
-    * todo: add error handling to signature
-    */
-  def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendToAddress(address, amount, feeRate, fromAccount)
-    } yield tx
-  }
-
-  /**
-    * Sends money from the default account
-    *
-    * todo: add error handling to signature
-    */
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit]
   ): Future[Transaction] = {
     for {
-      account <- getDefaultAccount()
-      tx <- sendToAddress(address, amount, feeRateOpt, account)
+      feeRate <- determineFeeRate(feeRateOpt)
+      tx <- sendToAddress(address, amount, feeRate)
     } yield tx
   }
 
-  def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]): Future[Transaction]
-
   /**
-    * Sends money from the specified account
+    * Sends funds using the specified outputs
     *
     * todo: add error handling to signature
     */
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      reserveUtxos: Boolean): Future[Transaction]
-
-  def sendToOutputs(
-      outputs: Vector[TransactionOutput],
-      feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb,
-      reserveUtxos: Boolean): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit]): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendToOutputs(outputs, feeRate, fromAccount, reserveUtxos)
+      tx <- sendToOutputs(outputs, feeRate)
     } yield tx
   }
 
-  /**
-    * Sends money from the default account
-    *
-    * todo: add error handling to signature
-    */
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
-      feeRateOpt: Option[FeeUnit],
-      reserveUtxos: Boolean): Future[Transaction] = {
-    for {
-      account <- getDefaultAccount()
-      tx <- sendToOutputs(outputs, feeRateOpt, account, reserveUtxos)
-    } yield tx
-  }
+      feeRate: FeeUnit): Future[Transaction]
 
   /**
-    * Sends money from the specified account
-    *
-    * todo: add error handling to signature
+    * Sends funds to each address
     */
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      reserveUtxos: Boolean): Future[Transaction]
-
-  /**
-    * Sends money from the specified account
-    *
-    * todo: add error handling to signature
-    */
-  def sendToAddresses(
-      addresses: Vector[BitcoinAddress],
-      amounts: Vector[CurrencyUnit],
-      feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb,
-      reserveUtxos: Boolean): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit]): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
-      tx <-
-        sendToAddresses(addresses, amounts, feeRate, fromAccount, reserveUtxos)
+      tx <- sendToAddresses(addresses, amounts, feeRate)
     } yield tx
   }
 
-  /**
-    * Sends money from the default account
-    *
-    * todo: add error handling to signature
-    */
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
-      feeRateOpt: Option[FeeUnit],
-      reserveUtxos: Boolean): Future[Transaction] = {
-    for {
-      account <- getDefaultAccount()
-      tx <-
-        sendToAddresses(addresses, amounts, feeRateOpt, account, reserveUtxos)
-    } yield tx
-  }
+      feeRate: FeeUnit): Future[Transaction]
 
   def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction]
-
-  def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- makeOpReturnCommitment(message, hashMessage, feeRate, fromAccount)
-    } yield tx
-  }
+      feeRate: FeeUnit): Future[Transaction]
 
   def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,
       feeRateOpt: Option[FeeUnit]): Future[Transaction] = {
     for {
-      account <- getDefaultAccount()
-      tx <- makeOpReturnCommitment(message, hashMessage, feeRateOpt, account)
+      feeRate <- determineFeeRate(feeRateOpt)
+      tx <- makeOpReturnCommitment(message, hashMessage, feeRate)
     } yield tx
   }
-
-  def createNewAccount(keyManagerParams: KeyManagerParams): Future[Wallet]
-
-  /**
-    * Tries to create a new account in this wallet. Fails if the
-    * most recent account has no transaction history, as per
-    * BIP44
-    *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
-    */
-  def createNewAccount(
-      hdAccount: HDAccount,
-      keyManagerParams: KeyManagerParams): Future[Wallet]
 
 }
 

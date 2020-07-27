@@ -3,18 +3,17 @@ package org.bitcoins.wallet
 import org.bitcoins.core.hd.{AddressType, HDPurposes}
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.WalletApi
 import org.scalatest.FutureOutcome
 
 class SegwitWalletTest extends BitcoinSWalletTest {
 
-  override type FixtureParam = WalletApi
+  override type FixtureParam = Wallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withSegwitWallet(test)
   }
 
-  it should "generate segwit addresses" in { wallet: WalletApi =>
+  it should "generate segwit addresses" in { wallet =>
     for {
       addr <- wallet.getNewAddress()
       account <- wallet.getDefaultAccount()
