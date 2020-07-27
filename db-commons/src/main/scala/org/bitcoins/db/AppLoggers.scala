@@ -77,6 +77,7 @@ private[bitcoins] trait AppLoggers {
     logFileAppender.setName(s"FILE-${logger.hashCode}")
     logFileAppender.setEncoder(encoder)
     logFileAppender.setAppend(true)
+    logFileAppender.setFile(conf.logFile.toString)
 
     val logFilePolicy = new TimeBasedRollingPolicy()
     logFilePolicy.setContext(context)
@@ -87,7 +88,6 @@ private[bitcoins] trait AppLoggers {
 
     logFileAppender.setRollingPolicy(logFilePolicy)
 
-    logFileAppender.setFile(conf.logFile.toString)
     logFileAppender.start()
 
     logFileAppender.asInstanceOf[FileAppender[ILoggingEvent]]
@@ -124,8 +124,19 @@ private[bitcoins] trait AppLoggers {
       val appender = newConsoleAppender(logger)
       AppLoggers.consoleAppenders.put(logger.hashCode, appender)
     }
-    logger.addAppender(AppLoggers.fileAppenders.get(logger.hashCode))
-    logger.addAppender(AppLoggers.consoleAppenders.get(logger.hashCode))
+    val consoleAppender = AppLoggers.consoleAppenders.get(logger.hashCode)
+    val fileAppender = AppLoggers.fileAppenders.get(logger.hashCode)
+
+    logger.addAppender(consoleAppender)
+    logger.addAppender(fileAppender)
+
+    val policy = fileAppender
+      .asInstanceOf[RollingFileAppender[ILoggingEvent]]
+      .getRollingPolicy
+    if (!policy.isStarted) {
+      policy.start()
+    }
+
     val iter = logger.iteratorForAppenders()
     while (iter.hasNext) {
       val appender = iter.next()
