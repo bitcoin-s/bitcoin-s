@@ -3,12 +3,12 @@ package org.bitcoins.wallet.api
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.keymanager.KeyManagerParams
@@ -491,47 +491,6 @@ trait HDWalletApi extends WalletApi {
   def listAccounts(purpose: HDPurpose)(implicit
       ec: ExecutionContext): Future[Vector[AccountDb]] =
     listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
-
-  def rescanNeutrinoWallet(
-      account: HDAccount,
-      startOpt: Option[BlockStamp],
-      endOpt: Option[BlockStamp],
-      addressBatchSize: Int,
-      useCreationTime: Boolean): Future[Unit]
-
-  override def rescanNeutrinoWallet(
-      startOpt: Option[BlockStamp],
-      endOpt: Option[BlockStamp],
-      addressBatchSize: Int,
-      useCreationTime: Boolean)(implicit ec: ExecutionContext): Future[Unit] = {
-    for {
-      account <- getDefaultAccount()
-      _ <- rescanNeutrinoWallet(account.hdAccount,
-                                startOpt,
-                                endOpt,
-                                addressBatchSize,
-                                useCreationTime)
-    } yield ()
-  }
-
-  def fullRescanNeutrinoWallet(
-      account: HDAccount,
-      addressBatchSize: Int): Future[Unit] = {
-    rescanNeutrinoWallet(account = account,
-                         startOpt = None,
-                         endOpt = None,
-                         addressBatchSize = addressBatchSize,
-                         useCreationTime = false)
-  }
-
-  /** Helper method to rescan the ENTIRE blockchain. */
-  override def fullRescanNeutrinoWallet(addressBatchSize: Int)(implicit
-      ec: ExecutionContext): Future[Unit] = {
-    for {
-      account <- getDefaultAccount()
-      _ <- fullRescanNeutrinoWallet(account.hdAccount, addressBatchSize)
-    } yield ()
-  }
 
   def createNewAccount(keyManagerParams: KeyManagerParams): Future[HDWalletApi]
 

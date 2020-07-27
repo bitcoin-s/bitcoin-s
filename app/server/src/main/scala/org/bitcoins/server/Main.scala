@@ -19,7 +19,7 @@ import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.wallet.api._
+import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -157,11 +157,11 @@ object Main extends App with BitcoinSLogger {
   //start everything!
   runMain()
 
-  private def createCallbacks(wallet: WalletApi)(implicit
+  private def createCallbacks(wallet: Wallet)(implicit
       nodeConf: NodeAppConfig,
       ec: ExecutionContext): Future[NodeCallbacks] = {
     lazy val onTx: OnTxReceived = { tx =>
-      wallet.processTransaction(tx, blockHash = None).map(_ => ())
+      wallet.processTransaction(tx, blockHashOpt = None).map(_ => ())
     }
     lazy val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
       wallet
@@ -192,7 +192,7 @@ object Main extends App with BitcoinSLogger {
     }
   }
 
-  private def addCallbacksAndBloomFilterToNode(node: Node, wallet: WalletApi)(
+  private def addCallbacksAndBloomFilterToNode(node: Node, wallet: Wallet)(
       implicit
       nodeAppConfig: NodeAppConfig,
       ec: ExecutionContext): Future[Node] = {
@@ -233,7 +233,7 @@ object Main extends App with BitcoinSLogger {
 
   private def startHttpServer(
       node: Node,
-      wallet: HDWalletApi,
+      wallet: Wallet,
       rpcPortOpt: Option[Int])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {

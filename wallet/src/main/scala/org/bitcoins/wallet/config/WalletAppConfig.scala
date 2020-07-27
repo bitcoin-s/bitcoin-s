@@ -14,7 +14,6 @@ import org.bitcoins.keymanager.{
   KeyManagerParams,
   WalletStorage
 }
-import org.bitcoins.wallet.api.HDWalletApi
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -162,7 +161,7 @@ case class WalletAppConfig(
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
       bip39PasswordOpt: Option[String])(implicit
-      ec: ExecutionContext): Future[HDWalletApi] = {
+      ec: ExecutionContext): Future[Wallet] = {
     WalletAppConfig.createHDWallet(
       nodeApi = nodeApi,
       chainQueryApi = chainQueryApi,
@@ -194,7 +193,7 @@ object WalletAppConfig
       feeRateApi: FeeRateApi,
       bip39PasswordOpt: Option[String])(implicit
       walletConf: WalletAppConfig,
-      ec: ExecutionContext): Future[HDWalletApi] = {
+      ec: ExecutionContext): Future[Wallet] = {
     walletConf.hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")

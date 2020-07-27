@@ -6,12 +6,12 @@ import akka.http.scaladsl.server._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.currency._
 import org.bitcoins.node.Node
-import org.bitcoins.wallet.api.HDWalletApi
+import org.bitcoins.wallet.api.AnyHDWalletApi
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: HDWalletApi, node: Node)(implicit
+case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
     system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
