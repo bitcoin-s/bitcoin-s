@@ -89,10 +89,10 @@ object Main extends App with BitcoinSLogger {
       uninitializedNode <- uninitializedNodeF
       chainApi <- chainApiF
       _ = logger.info("Initialized chain api")
-      wallet <- walletConf.createWallet(uninitializedNode,
-                                        chainApi,
-                                        BitcoinerLiveFeeRateProvider(60),
-                                        bip39PasswordOpt)
+      wallet <- walletConf.createHDWallet(uninitializedNode,
+                                          chainApi,
+                                          BitcoinerLiveFeeRateProvider(60),
+                                          bip39PasswordOpt)
     } yield {
       logger.info(s"Done configuring wallet")
       wallet
@@ -233,7 +233,7 @@ object Main extends App with BitcoinSLogger {
 
   private def startHttpServer(
       node: Node,
-      wallet: WalletApi,
+      wallet: HDWalletApi,
       rpcPortOpt: Option[Int])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {

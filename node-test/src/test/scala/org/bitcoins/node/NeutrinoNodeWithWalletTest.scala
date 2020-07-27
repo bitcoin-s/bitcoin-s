@@ -92,7 +92,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
           confirmedBalance <- wallet.getConfirmedBalance()
           unconfirmedBalance <- wallet.getUnconfirmedBalance()
           addresses <- wallet.listAddresses()
-          utxos <- wallet.listUtxos()
+          utxos <- wallet.listDefaultAccountUtxos()
         } yield {
           (expectedConfirmedAmount == confirmedBalance) &&
           (expectedUnconfirmedAmount == unconfirmedBalance) &&
@@ -175,7 +175,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
       for {
         addresses <- wallet.listAddresses()
-        utxos <- wallet.listUtxos()
+        utxos <- wallet.listDefaultAccountUtxos()
         _ = assert(addresses.size == 6)
         _ = assert(utxos.size == 3)
 
@@ -189,14 +189,14 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
             .sendToAddress(address, TestAmount)
 
         addresses <- wallet.listAddresses()
-        utxos <- wallet.listUtxos()
+        utxos <- wallet.listDefaultAccountUtxos()
         _ = assert(addresses.size == 7)
         _ = assert(utxos.size == 3)
 
         _ <- wallet.clearAllUtxosAndAddresses()
 
         addresses <- wallet.listAddresses()
-        utxos <- wallet.listUtxos()
+        utxos <- wallet.listDefaultAccountUtxos()
         _ = assert(addresses.isEmpty)
         _ = assert(utxos.isEmpty)
 

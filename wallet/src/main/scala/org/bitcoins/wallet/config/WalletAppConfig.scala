@@ -14,7 +14,7 @@ import org.bitcoins.keymanager.{
   KeyManagerParams,
   WalletStorage
 }
-import org.bitcoins.wallet.api.WalletApi
+import org.bitcoins.wallet.api.HDWalletApi
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -157,16 +157,17 @@ case class WalletAppConfig(
   }
 
   /** Creates a wallet based on this [[WalletAppConfig]] */
-  def createWallet(
+  def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
       bip39PasswordOpt: Option[String])(implicit
-      ec: ExecutionContext): Future[WalletApi] = {
-    WalletAppConfig.createWallet(nodeApi = nodeApi,
-                                 chainQueryApi = chainQueryApi,
-                                 feeRateApi = feeRateApi,
-                                 bip39PasswordOpt = bip39PasswordOpt)(this, ec)
+      ec: ExecutionContext): Future[HDWalletApi] = {
+    WalletAppConfig.createHDWallet(
+      nodeApi = nodeApi,
+      chainQueryApi = chainQueryApi,
+      feeRateApi = feeRateApi,
+      bip39PasswordOpt = bip39PasswordOpt)(this, ec)
   }
 
   /** Starts the associated application */
@@ -187,13 +188,13 @@ object WalletAppConfig
     WalletAppConfig(datadir, useLogbackConf, confs: _*)
 
   /** Creates a wallet based on the given [[WalletAppConfig]] */
-  def createWallet(
+  def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi,
       bip39PasswordOpt: Option[String])(implicit
       walletConf: WalletAppConfig,
-      ec: ExecutionContext): Future[WalletApi] = {
+      ec: ExecutionContext): Future[HDWalletApi] = {
     walletConf.hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
