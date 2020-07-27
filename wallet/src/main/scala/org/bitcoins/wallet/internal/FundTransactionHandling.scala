@@ -121,7 +121,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         addrInfoOptF = selectedUtxos.map { utxo =>
           // .gets should be safe here because of foreign key at the database level
           for {
-            addrInfo <- getAddressInfo(utxo).map(_.get)
+            addrInfo <- getAddressInfo(utxo, networkParameters).map(_.get)
             prevTx <-
               transactionDAO
                 .findByOutPoint(utxo.outPoint)

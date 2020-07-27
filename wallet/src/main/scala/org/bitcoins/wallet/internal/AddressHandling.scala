@@ -241,6 +241,21 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   /** @inheritdoc */
+  override def getNewAddress(): Future[BitcoinAddress] = {
+    for {
+      address <- getNewAddress(walletConfig.defaultAddressType)
+    } yield address
+  }
+
+  /** @inheritdoc */
+  override def getNewAddress(
+      tags: Vector[AddressTag]): Future[BitcoinAddress] = {
+    for {
+      address <- getNewAddress(walletConfig.defaultAddressType, tags)
+    } yield address
+  }
+
+  /** @inheritdoc */
   def getAddress(
       account: AccountDb,
       chainType: HDChainType,
