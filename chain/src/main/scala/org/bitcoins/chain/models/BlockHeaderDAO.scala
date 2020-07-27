@@ -334,6 +334,23 @@ case class BlockHeaderDAO()(implicit
     headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
   }
 
+  /** Retrieves a blockchain with the best tip being the given header */
+  def getBlockchainsBetweenHeights(from: Int, to: Int)(implicit
+      ec: ExecutionContext): Future[Vector[Blockchain]] = {
+    getBetweenHeights(from = from, to = to).map { headers =>
+      if (headers.map(_.height).distinct.size == headers.size) {
+        Vector(Blockchain.fromHeaders(headers.reverse))
+      } else {
+        val headersByHeight = headers.groupBy(_.height).toVector
+        val sortedHeaders = headersByHeight.sortBy(_._1).reverse.map(_._2)
+        val chains = sortedHeaders.map { headers =>
+          Blockchain.reconstructFromHeaders(headers.head, headers.tail)
+        }
+        chains.flatten.distinct
+      }
+    }
+  }
+
   /** Retrieves a full blockchain with the best tip being the given header */
   def getFullBlockchainFrom(header: BlockHeaderDb)(implicit
       ec: ExecutionContext): Future[Blockchain] = {

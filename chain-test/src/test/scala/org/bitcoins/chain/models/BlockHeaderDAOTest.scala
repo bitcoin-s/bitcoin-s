@@ -1,9 +1,11 @@
 package org.bitcoins.chain.models
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.chain.blockchain.Blockchain
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.TimeUtil
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
   ChainDbUnitTest,
@@ -344,5 +346,47 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         _ <- blockerHeaderDAO.create(db)
         tips <- blockerHeaderDAO.chainTips
       } yield assert(tips == Vector(db))
+  }
+
+  it must "successfully getBlockchainsBetweenHeights" in {
+    blockerHeaderDAO: BlockHeaderDAO =>
+      val duplicate = BlockHeader(
+        version = Int32.one,
+        previousBlockHash = ChainTestUtil.blockHeader562462.hash,
+        merkleRootHash = DoubleSha256Digest.empty,
+        time = UInt32.zero,
+        nBits = UInt32.zero,
+        nonce = UInt32.zero
+      )
+
+      val chain1 = Vector(
+        BlockHeaderDbHelper.fromBlockHeader(3,
+                                            BigInt(2),
+                                            ChainTestUtil.blockHeader562464),
+        BlockHeaderDbHelper.fromBlockHeader(2,
+                                            BigInt(1),
+                                            ChainTestUtil.blockHeader562463),
+        BlockHeaderDbHelper.fromBlockHeader(1,
+                                            BigInt(0),
+                                            ChainTestUtil.blockHeader562462)
+      )
+
+      val chain2 = Vector(
+        BlockHeaderDbHelper.fromBlockHeader(2, BigInt(1), duplicate),
+        BlockHeaderDbHelper.fromBlockHeader(1,
+                                            BigInt(0),
+                                            ChainTestUtil.blockHeader562462)
+      )
+
+      val headers = (chain1 ++ chain2).distinct
+
+      val expectedChains = Vector(Blockchain(chain1), Blockchain(chain2))
+
+      for {
+        _ <- blockerHeaderDAO.createAll(headers)
+        chains <- blockerHeaderDAO.getBlockchainsBetweenHeights(1, 3)
+      } yield {
+        assert(chains.forall(expectedChains.contains))
+      }
   }
 }
