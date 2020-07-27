@@ -343,35 +343,10 @@ case class BlockHeaderDAO()(implicit
       } else {
         val headersByHeight = headers.groupBy(_.height).toVector
         val sortedHeaders = headersByHeight.sortBy(_._1).reverse.map(_._2)
-        val chains = makeChains(sortedHeaders, Vector.empty)
-        chains.map(Blockchain(_))
-      }
-    }
-  }
-
-  @tailrec
-  private def makeChains(
-      headersByHeight: Vector[Vector[BlockHeaderDb]],
-      accum: Vector[Vector[BlockHeaderDb]]): Vector[Vector[BlockHeaderDb]] = {
-    if (headersByHeight.isEmpty) {
-      accum
-    } else {
-      if (accum.isEmpty) {
-        makeChains(headersByHeight.tail, accum :+ headersByHeight.head)
-      } else {
-        val toAdd = headersByHeight.head
-        // get them in the right order
-        val addToChains = accum.last.map(header =>
-          toAdd.find(_.hashBE == header.previousBlockHashBE).get)
-        // create new vectors for any header not apart of the current chains
-        val newChains = toAdd.diff(addToChains).map(Vector(_))
-
-        val newAccum =
-          accum.zip(addToChains).map {
-            case (current, addition) => current :+ addition
-          } ++ newChains
-
-        makeChains(headersByHeight.tail, newAccum)
+        val chains = sortedHeaders.map { headers =>
+          Blockchain.reconstructFromHeaders(headers.head, headers.tail)
+        }
+        chains.flatten.distinct
       }
     }
   }
