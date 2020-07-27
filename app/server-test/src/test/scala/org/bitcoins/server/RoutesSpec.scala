@@ -38,7 +38,7 @@ import scodec.bits.ByteVector
 import ujson.Value.InvalidData
 import ujson._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
@@ -203,8 +203,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the wallet's balance" in {
-      (mockWalletApi.getBalance: () => Future[CurrencyUnit])
-        .expects()
+      (mockWalletApi
+        .getBalance()(_: ExecutionContext))
+        .expects(executor)
         .returning(Future.successful(Bitcoins(50)))
 
       val route =
@@ -218,8 +219,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the wallet's balance in sats" in {
-      (mockWalletApi.getBalance: () => Future[CurrencyUnit])
-        .expects()
+      (mockWalletApi
+        .getBalance()(_: ExecutionContext))
+        .expects(executor)
         .returning(Future.successful(Bitcoins(50)))
 
       val route =
@@ -447,8 +449,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return a new address" in {
-      (mockWalletApi.getNewAddress: () => Future[BitcoinAddress])
-        .expects()
+      (mockWalletApi
+        .getNewAddress()(_: ExecutionContext))
+        .expects(executor)
         .returning(Future.successful(testAddress))
 
       val route =
@@ -485,8 +488,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       // positive cases
 
       (mockWalletApi
-        .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: Option[FeeUnit]))
-        .expects(testAddress, Bitcoins(100), *)
+        .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: Option[FeeUnit])(
+          _: ExecutionContext))
+        .expects(testAddress, Bitcoins(100), *, executor)
         .returning(Future.successful(EmptyTransaction))
 
       (mockWalletApi.broadcastTransaction _)
@@ -551,11 +555,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .sendFromOutPoints(_: Vector[TransactionOutPoint],
                            _: BitcoinAddress,
                            _: CurrencyUnit,
-                           _: Option[FeeUnit]))
+                           _: Option[FeeUnit])(_: ExecutionContext))
         .expects(Vector.empty[TransactionOutPoint],
                  testAddress,
                  Bitcoins(100),
-                 *)
+                 *,
+                 executor)
         .returning(Future.successful(EmptyTransaction))
 
       (mockWalletApi.broadcastTransaction _)
@@ -630,11 +635,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .sendWithAlgo(_: BitcoinAddress,
                       _: CurrencyUnit,
                       _: Option[FeeUnit],
-                      _: CoinSelectionAlgo))
+                      _: CoinSelectionAlgo)(_: ExecutionContext))
         .expects(testAddress,
                  Bitcoins(100),
                  Some(SatoshisPerVirtualByte(Satoshis(4))),
-                 CoinSelectionAlgo.AccumulateSmallestViable)
+                 CoinSelectionAlgo.AccumulateSmallestViable,
+                 executor)
         .returning(Future.successful(EmptyTransaction))
 
       (mockWalletApi.broadcastTransaction _)
@@ -710,8 +716,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       val message = "Never gonna give you up, never gonna let you down"
 
       (mockWalletApi
-        .makeOpReturnCommitment(_: String, _: Boolean, _: Option[FeeUnit]))
-        .expects(message, false, *)
+        .makeOpReturnCommitment(_: String, _: Boolean, _: Option[FeeUnit])(
+          _: ExecutionContext))
+        .expects(message, false, *, executor)
         .returning(Future.successful(EmptyTransaction))
 
       (mockWalletApi.broadcastTransaction _)
@@ -753,8 +760,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
                               _: Int,
-                              _: Boolean))
-        .expects(None, None, 100, false)
+                              _: Boolean)(_: ExecutionContext))
+        .expects(None, None, 100, false, executor)
         .returning(FutureUtil.unit)
 
       val route1 =
@@ -773,13 +780,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
                               _: Int,
-                              _: Boolean))
+                              _: Boolean)(_: ExecutionContext))
         .expects(
           Some(BlockTime(
             ZonedDateTime.of(2018, 10, 27, 12, 34, 56, 0, ZoneId.of("UTC")))),
           None,
           100,
-          false)
+          false,
+          executor)
         .returning(FutureUtil.unit)
 
       val route2 =
@@ -800,8 +808,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
                               _: Int,
-                              _: Boolean))
-        .expects(None, Some(BlockHash(DoubleSha256DigestBE.empty)), 100, false)
+                              _: Boolean)(_: ExecutionContext))
+        .expects(None,
+                 Some(BlockHash(DoubleSha256DigestBE.empty)),
+                 100,
+                 false,
+                 executor)
         .returning(FutureUtil.unit)
 
       val route3 =
@@ -822,8 +834,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
                               _: Int,
-                              _: Boolean))
-        .expects(Some(BlockHeight(12345)), Some(BlockHeight(67890)), 100, false)
+                              _: Boolean)(_: ExecutionContext))
+        .expects(Some(BlockHeight(12345)),
+                 Some(BlockHeight(67890)),
+                 100,
+                 false,
+                 executor)
         .returning(FutureUtil.unit)
 
       val route4 =
@@ -877,8 +893,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
                               _: Int,
-                              _: Boolean))
-        .expects(None, None, 55, false)
+                              _: Boolean)(_: ExecutionContext))
+        .expects(None, None, 55, false, executor)
         .returning(FutureUtil.unit)
 
       val route8 =

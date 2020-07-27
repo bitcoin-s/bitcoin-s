@@ -58,6 +58,8 @@ abstract class Wallet
     with TransactionProcessing
     with RescanHandling {
 
+  implicit val ec: ExecutionContext
+
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
   private[wallet] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
@@ -368,7 +370,8 @@ abstract class Wallet
       amount: CurrencyUnit,
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      newTags: Vector[AddressTag]): Future[Transaction] = {
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     require(
       address.networkParameters.isSameNetworkBytes(networkParameters),
       s"Cannot send to address on other network, got ${address.networkParameters}"
@@ -407,7 +410,8 @@ abstract class Wallet
       feeRate: FeeUnit,
       algo: CoinSelectionAlgo,
       fromAccount: AccountDb,
-      newTags: Vector[AddressTag]): Future[Transaction] = {
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     require(
       address.networkParameters.isSameNetworkBytes(networkParameters),
       s"Cannot send to address on other network, got ${address.networkParameters}"
@@ -431,7 +435,8 @@ abstract class Wallet
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction] =
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] =
     sendWithAlgo(address,
                  amount,
                  feeRate,
@@ -443,7 +448,8 @@ abstract class Wallet
       amount: CurrencyUnit,
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      newTags: Vector[AddressTag]): Future[Transaction] =
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction] =
     sendWithAlgo(address,
                  amount,
                  feeRate,
@@ -456,7 +462,8 @@ abstract class Wallet
       amounts: Vector[CurrencyUnit],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      newTags: Vector[AddressTag]): Future[Transaction] = {
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     require(amounts.size == addresses.size,
             "Must have an amount for every address")
     require(
@@ -476,7 +483,8 @@ abstract class Wallet
       message: String,
       hashMessage: Boolean,
       feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction] = {
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     val messageToUse = if (hashMessage) {
       CryptoUtil.sha256(ByteVector(message.getBytes)).bytes
     } else {
@@ -500,7 +508,8 @@ abstract class Wallet
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      newTags: Vector[AddressTag]): Future[Transaction] = {
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       (txBuilder, utxoInfos) <- fundRawTransactionInternal(
         destinations = outputs,
