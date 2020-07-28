@@ -1,5 +1,7 @@
 package org.bitcoins.db
 
+import java.util.concurrent.ConcurrentHashMap
+
 import ch.qos.logback.classic.{Logger, LoggerContext}
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.classic.joran.JoranConfigurator
@@ -27,7 +29,7 @@ private[bitcoins] trait AppLoggers {
 
   def conf: LoggerConfig
 
-  private val context: LoggerContext = {
+  private def context: LoggerContext = {
     val context = LoggerFactory.getILoggerFactory match {
       case ctx: LoggerContext => ctx
       case other              => sys.error(s"Expected LoggerContext, got: $other")
@@ -44,7 +46,7 @@ private[bitcoins] trait AppLoggers {
   }
 
   /** Responsible for formatting our logs */
-  private val encoder: Encoder[Nothing] = {
+  private def encoder: Encoder[Nothing] = {
     val encoder = new PatternLayoutEncoder()
     // same date format as Bitcoin Core
     encoder.setPattern(
@@ -55,13 +57,12 @@ private[bitcoins] trait AppLoggers {
   }
 
   /** Responsible for writing to stdout
-    *
-    * TODO: Use different appender than file?
     */
-  private lazy val consoleAppender: ConsoleAppender[ILoggingEvent] = {
+  private def newConsoleAppender(
+      logger: Logger): ConsoleAppender[ILoggingEvent] = {
     val appender = new ConsoleAppender()
     appender.setContext(context)
-    appender.setName("STDOUT")
+    appender.setName(s"STDOUT-${logger.hashCode}")
     appender.setEncoder(encoder)
     appender.start()
     appender.asInstanceOf[ConsoleAppender[ILoggingEvent]]
@@ -70,12 +71,13 @@ private[bitcoins] trait AppLoggers {
   /**
     * Responsible for writing to the log file
     */
-  private lazy val fileAppender: FileAppender[ILoggingEvent] = {
+  private def newFileAppender(logger: Logger): FileAppender[ILoggingEvent] = {
     val logFileAppender = new RollingFileAppender()
     logFileAppender.setContext(context)
-    logFileAppender.setName("FILE")
+    logFileAppender.setName(s"FILE-${logger.hashCode}")
     logFileAppender.setEncoder(encoder)
     logFileAppender.setAppend(true)
+    logFileAppender.setFile(conf.logFile.toString)
 
     val logFilePolicy = new TimeBasedRollingPolicy()
     logFilePolicy.setContext(context)
@@ -86,7 +88,6 @@ private[bitcoins] trait AppLoggers {
 
     logFileAppender.setRollingPolicy(logFilePolicy)
 
-    logFileAppender.setFile(conf.logFile.toString)
     logFileAppender.start()
 
     logFileAppender.asInstanceOf[FileAppender[ILoggingEvent]]
@@ -94,6 +95,9 @@ private[bitcoins] trait AppLoggers {
 
   /** Stitches together the encoder, appenders and sets the correct
     * logging level
+    *
+    * For some reason the LoggerContext where our loggers are cached does not
+    * keep appenders around, so they have to be attached _and_ started each time.
     */
   protected def getLoggerImpl(loggerKind: LoggerKind): Logger = {
     import LoggerKind._
@@ -112,8 +116,34 @@ private[bitcoins] trait AppLoggers {
     // This also will make any logger using the class name fall under the same logger
     val logger: Logger = context.getLogger(s"org.bitcoins.$name")
     logger.setAdditive(true)
-    logger.addAppender(fileAppender)
+    if (!AppLoggers.fileAppenders.containsKey(logger.hashCode)) {
+      val appender = newFileAppender(logger)
+      AppLoggers.fileAppenders.put(logger.hashCode, appender)
+    }
+    if (!AppLoggers.consoleAppenders.containsKey(logger.hashCode)) {
+      val appender = newConsoleAppender(logger)
+      AppLoggers.consoleAppenders.put(logger.hashCode, appender)
+    }
+    val consoleAppender = AppLoggers.consoleAppenders.get(logger.hashCode)
+    val fileAppender = AppLoggers.fileAppenders.get(logger.hashCode)
+
     logger.addAppender(consoleAppender)
+    logger.addAppender(fileAppender)
+
+    val policy = fileAppender
+      .asInstanceOf[RollingFileAppender[ILoggingEvent]]
+      .getRollingPolicy
+    if (!policy.isStarted) {
+      policy.start()
+    }
+
+    val iter = logger.iteratorForAppenders()
+    while (iter.hasNext) {
+      val appender = iter.next()
+      if (!appender.isStarted) {
+        appender.start()
+      }
+    }
 
     // Set level from config if we aren't using the logback.conf
     if (!conf.useLogbackConf) {
@@ -122,4 +152,13 @@ private[bitcoins] trait AppLoggers {
 
     logger
   }
+}
+
+object AppLoggers {
+
+  val fileAppenders: ConcurrentHashMap[Int, FileAppender[ILoggingEvent]] =
+    new ConcurrentHashMap()
+
+  val consoleAppenders: ConcurrentHashMap[Int, ConsoleAppender[ILoggingEvent]] =
+    new ConcurrentHashMap()
 }
