@@ -5,13 +5,9 @@ import org.slf4j.Logger
 
 /** Exposes acccess to the wallet logger */
 private[bitcoins] trait WalletLogger {
-  private var _logger: Logger = _
 
   protected[bitcoins] def logger(implicit config: LoggerConfig): Logger = {
-    if (_logger == null) {
-      _logger = WalletLoggerImpl(config).getLogger
-    }
-    _logger
+    WalletLoggerImpl(config).getLogger
   }
 }
 

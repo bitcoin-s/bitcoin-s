@@ -20,7 +20,6 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
   Normal,
   Preconnection
 }
-import org.slf4j.Logger
 
 import scala.concurrent.Future
 
@@ -42,11 +41,6 @@ class PeerMessageReceiver(
     chainAppConfig: ChainAppConfig)
     extends P2PLogger {
   import ref.dispatcher
-
-  // Need to overwrite logger because nodeAppConfig and chainAppConfig are both
-  // instances of LoggerConfig
-  protected def logger(implicit config: NodeAppConfig): Logger =
-    super.logger(config)
 
   /** This method is called when we have received
     * a [[akka.io.Tcp.Connected]] message from our peer

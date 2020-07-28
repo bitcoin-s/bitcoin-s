@@ -1,17 +1,14 @@
 package org.bitcoins.node
 
 import org.bitcoins.db.{AppLoggers, LoggerConfig}
+import org.bitcoins.node.config.NodeAppConfig
 import org.slf4j.Logger
 
 /** Exposes access to the P2P submodule logger */
 private[bitcoins] trait P2PLogger {
-  private var _logger: Logger = _
 
-  protected def logger(implicit config: LoggerConfig): Logger = {
-    if (_logger == null) {
-      _logger = P2PLoggerImpl(config).getLogger
-    }
-    _logger
+  protected def logger(implicit config: NodeAppConfig): Logger = {
+    P2PLoggerImpl(config).getLogger
   }
 }
 

@@ -23,7 +23,7 @@ case class NeutrinoNode(
 
   implicit override def nodeAppConfig: NodeAppConfig = nodeConfig
 
-  implicit override def chainAppConfig: ChainAppConfig = chainConfig
+  override def chainAppConfig: ChainAppConfig = chainConfig
 
   override val peer: Peer = nodePeer
 
