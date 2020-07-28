@@ -119,7 +119,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     * delete all records from the table
     */
   def deleteAll(): Future[Int] =
-    safeDatabase.run(table.delete)
+    safeDatabase.run(table.delete.transactionally)
 
   /**
     * insert the record if it does not exist, update it if it does
