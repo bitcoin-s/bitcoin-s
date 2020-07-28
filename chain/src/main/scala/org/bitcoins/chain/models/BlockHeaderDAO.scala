@@ -347,7 +347,7 @@ case class BlockHeaderDAO()(implicit
 
         @tailrec
         def loop(chains: Vector[Blockchain]): Vector[Blockchain] = {
-          val usedHeaders = chains.flatMap(_.headers).distinctBy(_.hashBE)
+          val usedHeaders = chains.flatMap(_.headers).distinct
           val diff = allHeaders.filter(header =>
             !usedHeaders.exists(_.hashBE == header.hashBE))
           if (diff.isEmpty) {
