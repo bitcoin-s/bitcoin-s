@@ -45,7 +45,6 @@ import scala.util.{Failure, Success}
 trait WalletApi extends WalletLogger {
 
   implicit val walletConfig: WalletAppConfig
-  implicit val ec: ExecutionContext
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
@@ -80,7 +79,8 @@ trait WalletApi extends WalletLogger {
 
   def processTransactions(
       transactions: Vector[Transaction],
-      blockHash: Option[DoubleSha256DigestBE]): Future[WalletApi] = {
+      blockHash: Option[DoubleSha256DigestBE])(implicit
+      ec: ExecutionContext): Future[WalletApi] = {
     transactions.foldLeft(Future.successful(this)) {
       case (wallet, tx) =>
         wallet.flatMap(_.processTransaction(tx, blockHash))
@@ -110,7 +110,7 @@ trait WalletApi extends WalletLogger {
     WalletApi]
 
   /** Gets the sum of all UTXOs in this wallet */
-  def getBalance(): Future[CurrencyUnit] = {
+  def getBalance()(implicit ec: ExecutionContext): Future[CurrencyUnit] = {
     val confirmedF = getConfirmedBalance()
     val unconfirmedF = getUnconfirmedBalance()
 
@@ -121,7 +121,8 @@ trait WalletApi extends WalletLogger {
   }
 
   /** Gets the sum of all UTXOs in this wallet with the address tag */
-  def getBalance(tag: AddressTag): Future[CurrencyUnit] = {
+  def getBalance(tag: AddressTag)(implicit
+      ec: ExecutionContext): Future[CurrencyUnit] = {
     val confirmedF = getConfirmedBalance(tag)
     val unconfirmedF = getUnconfirmedBalance(tag)
 
@@ -199,7 +200,7 @@ trait WalletApi extends WalletLogger {
     * times will return the same address, until it has
     * received funds.
     */
-  def getNewAddress(): Future[BitcoinAddress] = {
+  def getNewAddress()(implicit ec: ExecutionContext): Future[BitcoinAddress] = {
     for {
       address <- getNewAddress(walletConfig.defaultAddressType)
     } yield address
@@ -209,7 +210,8 @@ trait WalletApi extends WalletLogger {
       addressType: AddressType,
       tags: Vector[AddressTag]): Future[BitcoinAddress]
 
-  def getNewAddress(tags: Vector[AddressTag]): Future[BitcoinAddress] = {
+  def getNewAddress(tags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[BitcoinAddress] = {
     for {
       address <- getNewAddress(walletConfig.defaultAddressType, tags)
     } yield address
@@ -252,7 +254,8 @@ trait WalletApi extends WalletLogger {
   }
 
   /** Generates a new change address */
-  protected[wallet] def getNewChangeAddress(): Future[BitcoinAddress]
+  protected[wallet] def getNewChangeAddress()(implicit
+      ec: ExecutionContext): Future[BitcoinAddress]
 
   /**
     * Unlocks the wallet with the provided passphrase,
@@ -315,10 +318,11 @@ trait WalletApi extends WalletLogger {
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
-      useCreationTime: Boolean): Future[Unit]
+      useCreationTime: Boolean)(implicit ec: ExecutionContext): Future[Unit]
 
   /** Helper method to rescan the ENTIRE blockchain. */
-  def fullRescanNeutrinoWallet(addressBatchSize: Int): Future[Unit]
+  def fullRescanNeutrinoWallet(addressBatchSize: Int)(implicit
+      ec: ExecutionContext): Future[Unit]
 
   /**
     * Recreates the account using BIP-44 approach
@@ -341,14 +345,14 @@ trait WalletApi extends WalletLogger {
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit): Future[Transaction]
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
 
   def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit]
-  ): Future[Transaction] = {
+  )(implicit ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendFromOutPoints(outPoints, address, amount, feeRate)
@@ -359,14 +363,15 @@ trait WalletApi extends WalletLogger {
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      algo: CoinSelectionAlgo): Future[Transaction]
+      algo: CoinSelectionAlgo)(implicit
+      ec: ExecutionContext): Future[Transaction]
 
   def sendWithAlgo(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit],
       algo: CoinSelectionAlgo
-  ): Future[Transaction] = {
+  )(implicit ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendWithAlgo(address, amount, feeRate, algo)
@@ -381,13 +386,13 @@ trait WalletApi extends WalletLogger {
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit): Future[Transaction]
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
 
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit]
-  ): Future[Transaction] = {
+  )(implicit ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToAddress(address, amount, feeRate)
@@ -401,16 +406,16 @@ trait WalletApi extends WalletLogger {
     */
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
-      feeRateOpt: Option[FeeUnit]): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToOutputs(outputs, feeRate)
     } yield tx
   }
 
-  def sendToOutputs(
-      outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Future[Transaction]
+  def sendToOutputs(outputs: Vector[TransactionOutput], feeRate: FeeUnit)(
+      implicit ec: ExecutionContext): Future[Transaction]
 
   /**
     * Sends funds to each address
@@ -418,7 +423,8 @@ trait WalletApi extends WalletLogger {
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
-      feeRateOpt: Option[FeeUnit]): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToAddresses(addresses, amounts, feeRate)
@@ -428,17 +434,18 @@ trait WalletApi extends WalletLogger {
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit): Future[Transaction]
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
 
   def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,
-      feeRate: FeeUnit): Future[Transaction]
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
 
   def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,
-      feeRateOpt: Option[FeeUnit]): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- makeOpReturnCommitment(message, hashMessage, feeRate)
