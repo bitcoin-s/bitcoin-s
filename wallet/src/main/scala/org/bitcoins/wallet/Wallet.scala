@@ -151,9 +151,7 @@ abstract class Wallet
     }
   }
 
-  override def unlock(
-      passphrase: AesPassword,
-      bip39PasswordOpt: Option[String]): Either[
+  def unlock(passphrase: AesPassword, bip39PasswordOpt: Option[String]): Either[
     KeyManagerUnlockError,
     Wallet] = {
     val kmParams = walletConfig.kmParams
