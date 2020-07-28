@@ -449,9 +449,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return a new address" in {
-      (mockWalletApi
-        .getNewAddress()(_: ExecutionContext))
-        .expects(executor)
+      (mockWalletApi.getNewAddress: () => Future[BitcoinAddress])
+        .expects()
         .returning(Future.successful(testAddress))
 
       val route =

@@ -35,6 +35,10 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   self: Wallet =>
 
   /** @inheritdoc */
+  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
+    listUtxos(walletConfig.defaultAccount)
+
+  /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = {
     spendingInfoDAO.findAllUnspent()
   }

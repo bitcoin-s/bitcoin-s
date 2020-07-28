@@ -9,7 +9,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.hd.AddressType
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -24,7 +24,6 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.keymanager._
 import org.bitcoins.wallet.WalletLogger
 import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
-import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AddressDb, SpendingInfoDb}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,16 +38,10 @@ import scala.util.{Failure, Success}
   */
 trait WalletApi extends WalletLogger {
 
-  implicit val walletConfig: WalletAppConfig
-
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
   val feeRateApi: FeeRateApi
   val creationTime: Instant
-
-  def chainParams: ChainParams = walletConfig.chain
-
-  def networkParameters: NetworkParameters = walletConfig.network
 
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
@@ -195,22 +188,13 @@ trait WalletApi extends WalletLogger {
     * times will return the same address, until it has
     * received funds.
     */
-  def getNewAddress()(implicit ec: ExecutionContext): Future[BitcoinAddress] = {
-    for {
-      address <- getNewAddress(walletConfig.defaultAddressType)
-    } yield address
-  }
+  def getNewAddress(): Future[BitcoinAddress]
 
   def getNewAddress(
       addressType: AddressType,
       tags: Vector[AddressTag]): Future[BitcoinAddress]
 
-  def getNewAddress(tags: Vector[AddressTag])(implicit
-      ec: ExecutionContext): Future[BitcoinAddress] = {
-    for {
-      address <- getNewAddress(walletConfig.defaultAddressType, tags)
-    } yield address
-  }
+  def getNewAddress(tags: Vector[AddressTag]): Future[BitcoinAddress]
 
   /**
     * Gets a external address the given AddressType. Calling this
@@ -236,7 +220,8 @@ trait WalletApi extends WalletLogger {
   def getAddressInfo(address: BitcoinAddress): Future[Option[AddressInfo]]
 
   def getAddressInfo(
-      spendingInfoDb: SpendingInfoDb): Future[Option[AddressInfo]] = {
+      spendingInfoDb: SpendingInfoDb,
+      networkParameters: NetworkParameters): Future[Option[AddressInfo]] = {
     val addressT = BitcoinAddress.fromScriptPubKeyT(
       spk = spendingInfoDb.output.scriptPubKey,
       np = networkParameters)
@@ -316,7 +301,7 @@ trait WalletApi extends WalletLogger {
     */
   def rescanSPVWallet(): Future[Unit]
 
-  def discoveryBatchSize(): Int = walletConfig.discoveryBatchSize
+  def discoveryBatchSize(): Int = 25
 
   def keyManager: KeyManager
 
