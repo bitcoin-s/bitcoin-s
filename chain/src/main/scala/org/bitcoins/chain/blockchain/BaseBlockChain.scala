@@ -1,11 +1,10 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.chain.models.BlockHeaderDb
-import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.ChainVerificationLogger
-import org.bitcoins.chain.validation.TipUpdateResult
-import org.bitcoins.chain.validation.TipValidation
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models.BlockHeaderDb
+import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
@@ -39,6 +38,8 @@ private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
       headers: scala.collection.immutable.Seq[BlockHeaderDb]): Blockchain
 
   val tip: BlockHeaderDb = headers.head
+
+  require(headers.size == 1 || headers(1).height == tip.height - 1)
 
   /** The height of the chain */
   val height: Int = tip.height
