@@ -1,4 +1,4 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
 import java.math.BigInteger
 import java.security.SecureRandom

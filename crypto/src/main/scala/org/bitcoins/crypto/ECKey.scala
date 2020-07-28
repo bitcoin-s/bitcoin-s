@@ -74,17 +74,17 @@ sealed abstract class ECPrivateKey
   override def signWithEntropy(
       bytes: ByteVector,
       entropy: ByteVector): ECDigitalSignature = {
-    signWithEntropy(bytes, entropy, Secp256k1Context.isEnabled)
+    signWithEntropy(bytes, entropy, CryptoContext.default)
   }
 
   def signWithEntropy(
       bytes: ByteVector,
       entropy: ByteVector,
-      useSecp: Boolean): ECDigitalSignature = {
-    if (useSecp) {
-      signWithEntropyWithSecp(bytes, entropy)
-    } else {
-      signWithEntropyWithBouncyCastle(bytes, entropy)
+      context: CryptoContext): ECDigitalSignature = {
+    context match {
+      case CryptoContext.LibSecp256k1 => signWithEntropyWithSecp(bytes, entropy)
+      case CryptoContext.BouncyCastle =>
+        signWithEntropyWithBouncyCastle(bytes, entropy)
     }
   }
 

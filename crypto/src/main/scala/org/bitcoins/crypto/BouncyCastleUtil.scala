@@ -90,7 +90,7 @@ object BouncyCastleUtil {
     *
     * In particular, this is used when generating low R signatures.
     * @see [[https://github.com/bitcoin/bitcoin/pull/13666/]]
-    * */
+    */
   def signWithEntropy(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,

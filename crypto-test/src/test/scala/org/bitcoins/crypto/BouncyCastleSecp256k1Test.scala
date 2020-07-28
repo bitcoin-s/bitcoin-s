@@ -96,8 +96,10 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
            NumberGenerator.bytevector(32)) {
       case (privKey, bytes, entropy) =>
         assert(
-          privKey.signWithEntropy(bytes, entropy) == BouncyCastleUtil
-            .signWithEntropy(bytes, privKey, entropy))
+          privKey.signWithEntropy(bytes,
+                                  entropy,
+                                  context = BouncyCastle) == privKey
+            .signWithEntropy(bytes, entropy, context = LibSecp256k1))
     }
   }
 
