@@ -28,7 +28,13 @@ trait BlockchainRpc { self: Client =>
   }
 
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
-    bitcoindCall[GetBlockChainInfoResult]("getblockchaininfo")
+    self.version match {
+      case BitcoindVersion.V16 | BitcoindVersion.V17 | BitcoindVersion.V18 =>
+        bitcoindCall[GetBlockChainInfoResultPreV19]("getblockchaininfo")
+      case BitcoindVersion.V19 | BitcoindVersion.Experimental |
+          BitcoindVersion.Unknown =>
+        bitcoindCall[GetBlockChainInfoResultPostV19]("getblockchaininfo")
+    }
   }
 
   def getBlockCount: Future[Int] = {
