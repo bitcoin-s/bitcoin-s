@@ -20,13 +20,8 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
-import org.bitcoins.crypto.{
-  AesPassword,
-  DoubleSha256Digest,
-  DoubleSha256DigestBE
-}
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.keymanager._
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.WalletLogger
 import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -258,14 +253,6 @@ trait WalletApi extends WalletLogger {
       ec: ExecutionContext): Future[BitcoinAddress]
 
   /**
-    * Unlocks the wallet with the provided passphrase,
-    * making it possible to send transactions.
-    */
-  def unlock(passphrase: AesPassword, bip39PasswordOpt: Option[String]): Either[
-    KeyManagerUnlockError,
-    WalletApi]
-
-  /**
     * Iterates over the block filters in order to find filters that match to the given addresses
     *
     * I queries the filter database for [[batchSize]] filters a time
@@ -331,7 +318,7 @@ trait WalletApi extends WalletLogger {
 
   def discoveryBatchSize(): Int = walletConfig.discoveryBatchSize
 
-  def keyManager: BIP39KeyManager
+  def keyManager: KeyManager
 
   protected def determineFeeRate(feeRateOpt: Option[FeeUnit]): Future[FeeUnit] =
     feeRateOpt match {

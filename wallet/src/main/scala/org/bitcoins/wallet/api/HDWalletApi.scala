@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.keymanager.KeyManagerParams
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,6 +25,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
 trait HDWalletApi extends WalletApi {
+
+  override def keyManager: BIP39KeyManager
 
   /** Gets the balance of the given account */
   def getBalance(account: HDAccount)(implicit
