@@ -52,7 +52,23 @@ case class GetBlockWithTransactionsResult(
     nextblockhash: Option[DoubleSha256DigestBE])
     extends BlockchainResult
 
-case class GetBlockChainInfoResult(
+sealed trait GetBlockChainInfoResult extends BlockchainResult {
+  def chain: NetworkParameters
+  def blocks: Int
+  def headers: Int
+  def bestblockhash: DoubleSha256DigestBE
+  def difficulty: BigDecimal
+  def mediantime: Int
+  def verificationprogress: BigDecimal
+  def initialblockdownload: Boolean
+  def chainwork: String // How should this be handled?
+  def size_on_disk: Long
+  def pruned: Boolean
+  def pruneheight: Option[Int]
+  def warnings: String
+}
+
+case class GetBlockChainInfoResultPreV19(
     chain: NetworkParameters,
     blocks: Int,
     headers: Int,
@@ -65,29 +81,62 @@ case class GetBlockChainInfoResult(
     size_on_disk: Long,
     pruned: Boolean,
     pruneheight: Option[Int],
-    softforks: Vector[Softfork],
-    bip9_softforks: Map[String, Bip9Softfork],
+    softforks: Vector[SoftforkPreV19],
+    bip9_softforks: Map[String, Bip9SoftforkPreV19],
     warnings: String)
-    extends BlockchainResult
+    extends GetBlockChainInfoResult
 
-case class Softfork(
+case class GetBlockChainInfoResultPostV19(
+    chain: NetworkParameters,
+    blocks: Int,
+    headers: Int,
+    bestblockhash: DoubleSha256DigestBE,
+    difficulty: BigDecimal,
+    mediantime: Int,
+    verificationprogress: BigDecimal,
+    initialblockdownload: Boolean,
+    chainwork: String, // How should this be handled?
+    size_on_disk: Long,
+    pruned: Boolean,
+    pruneheight: Option[Int],
+    softforks: Map[String, SoftforkPostV19],
+    warnings: String)
+    extends GetBlockChainInfoResult
+
+case class SoftforkPreV19(
     id: String,
     version: Int,
-    enforce: Option[Map[String, SoftforkProgress]],
-    reject: SoftforkProgress)
+    enforce: Option[Map[String, SoftforkProgressPreV19]],
+    reject: SoftforkProgressPreV19)
     extends BlockchainResult
 
-case class SoftforkProgress(
+case class SoftforkProgressPreV19(
     status: Option[Boolean],
     found: Option[Int],
     required: Option[Int],
     window: Option[Int])
     extends BlockchainResult
 
-case class Bip9Softfork(
+case class Bip9SoftforkPreV19(
     status: String,
     bit: Option[Int],
     startTime: Int,
+    timeout: BigInt,
+    since: Int)
+    extends BlockchainResult
+
+sealed trait SoftforkPostV19 extends BlockchainResult
+
+case class BuriedSoftforkPostV19(active: Boolean, height: Long)
+    extends SoftforkPostV19
+
+case class Bip9SoftforkPostV19(active: Boolean, bip9: Bip9SoftforkDetails)
+    extends SoftforkPostV19
+
+case class Bip9SoftforkDetails(
+    status: String,
+    bit: Option[Int],
+    start_time: Int,
     timeout: BigInt,
     since: Int)
     extends BlockchainResult

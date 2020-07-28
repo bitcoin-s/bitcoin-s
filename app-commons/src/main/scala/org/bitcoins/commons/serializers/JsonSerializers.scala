@@ -216,13 +216,32 @@ object JsonSerializers {
     GetBlockWithTransactionsResult] =
     Json.reads[GetBlockWithTransactionsResult]
 
-  implicit val softforkProgressReads: Reads[SoftforkProgress] =
-    Json.reads[SoftforkProgress]
-  implicit val softforkReads: Reads[Softfork] = Json.reads[Softfork]
-  implicit val bip9SoftforkReads: Reads[Bip9Softfork] = Json.reads[Bip9Softfork]
+  implicit val softforkProgressPreV19Reads: Reads[SoftforkProgressPreV19] =
+    Json.reads[SoftforkProgressPreV19]
 
-  implicit val getBlockChainInfoResultReads: Reads[GetBlockChainInfoResult] =
-    Json.reads[GetBlockChainInfoResult]
+  implicit val softforkPreV19Reads: Reads[SoftforkPreV19] =
+    Json.reads[SoftforkPreV19]
+
+  implicit val bip9SoftforkPreV19Reads: Reads[Bip9SoftforkPreV19] =
+    Json.reads[Bip9SoftforkPreV19]
+
+  implicit val getBlockChainInfoResultPreV19Reads: Reads[
+    GetBlockChainInfoResultPreV19] =
+    Json.reads[GetBlockChainInfoResultPreV19]
+
+  implicit val bip9SoftforkDetailsReads: Reads[Bip9SoftforkDetails] =
+    Json.reads[Bip9SoftforkDetails]
+
+  implicit val softforkPostV19Reads: Reads[SoftforkPostV19] =
+    Reads[SoftforkPostV19] { json =>
+      (json \ "type").validate[String].flatMap {
+        case "bip9" => Json.reads[Bip9SoftforkPostV19].reads(json)
+        case _      => Json.reads[BuriedSoftforkPostV19].reads(json)
+      }
+    }
+
+  implicit val getBlockChainInfoResultPostV19Reads: Reads[
+    GetBlockChainInfoResultPostV19] = Json.reads[GetBlockChainInfoResultPostV19]
 
   implicit val blockHeaderFormattedReads: Reads[GetBlockHeaderResult] =
     Json.reads[GetBlockHeaderResult]
