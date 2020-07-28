@@ -1,5 +1,6 @@
 package org.bitcoins.rpc.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResultPreV19
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddNodeArgument,
   AddressType
@@ -82,10 +83,12 @@ class BlockchainRpcTest extends BitcoindRpcTest {
       info <- client.getBlockChainInfo
       bestHash <- client.getBestBlockHash
     } yield {
-      assert(info.chain == RegTest)
-      assert(info.softforks.length >= 3)
-      assert(info.bip9_softforks.keySet.size >= 2)
-      assert(info.bestblockhash == bestHash)
+      assert(info.isInstanceOf[GetBlockChainInfoResultPreV19])
+      val preV19Info = info.asInstanceOf[GetBlockChainInfoResultPreV19]
+      assert(preV19Info.chain == RegTest)
+      assert(preV19Info.softforks.length >= 3)
+      assert(preV19Info.bip9_softforks.keySet.size >= 2)
+      assert(preV19Info.bestblockhash == bestHash)
     }
   }
 

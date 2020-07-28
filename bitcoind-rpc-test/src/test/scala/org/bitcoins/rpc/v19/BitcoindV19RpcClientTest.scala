@@ -1,6 +1,11 @@
 package org.bitcoins.rpc.v19
 
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  Bip9SoftforkPostV19,
+  GetBlockChainInfoResultPostV19
+}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
@@ -69,6 +74,22 @@ class BitcoindV19RpcClientTest extends BitcoindRpcTest {
       assert(immatureBalance.mine.immature.toBigDecimal >= 0)
       assert(
         immatureBalance.mine.immature.toBigDecimal + blockReward == newImmatureBalance.mine.immature.toBigDecimal)
+    }
+  }
+
+  it should "be able to get blockchain info" in {
+    for {
+      (client, _) <- clientPairF
+      info <- client.getBlockChainInfo
+      bestHash <- client.getBestBlockHash
+    } yield {
+      assert(info.isInstanceOf[GetBlockChainInfoResultPostV19])
+      val preV19Info = info.asInstanceOf[GetBlockChainInfoResultPostV19]
+      assert(preV19Info.chain == RegTest)
+      assert(preV19Info.softforks.size >= 5)
+      assert(
+        preV19Info.softforks.values.exists(_.isInstanceOf[Bip9SoftforkPostV19]))
+      assert(preV19Info.bestblockhash == bestHash)
     }
   }
 
