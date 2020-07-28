@@ -5,11 +5,13 @@ import java.time.Instant
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
@@ -59,6 +61,14 @@ abstract class Wallet
     with RescanHandling {
 
   implicit val ec: ExecutionContext
+
+  implicit val walletConfig: WalletAppConfig
+
+  val chainParams: ChainParams = walletConfig.chain
+
+  val networkParameters: NetworkParameters = walletConfig.network
+
+  override val discoveryBatchSize: Int = walletConfig.discoveryBatchSize
 
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
