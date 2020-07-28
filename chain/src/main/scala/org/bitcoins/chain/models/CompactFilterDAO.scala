@@ -140,8 +140,6 @@ case class CompactFilterDAO()(implicit
 
     val query = join.filter(_._2.chainWork === maxQuery).take(1).map(_._1)
 
-    println(query.result.statements.mkString(" "))
-
     for {
       filterOpt <-
         safeDatabase
