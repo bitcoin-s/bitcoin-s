@@ -1,6 +1,7 @@
 package org.bitcoins.db
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import ch.qos.logback.classic.{Logger, LoggerContext}
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
@@ -8,7 +9,7 @@ import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.encoder.Encoder
 import ch.qos.logback.core.rolling.{RollingFileAppender, TimeBasedRollingPolicy}
-import ch.qos.logback.core.{ConsoleAppender, FileAppender}
+import ch.qos.logback.core.{Appender, ConsoleAppender, FileAppender}
 import org.slf4j.LoggerFactory
 
 /** Provides logging functionality for Bitcoin-S
@@ -118,32 +119,31 @@ private[bitcoins] trait AppLoggers {
     logger.setAdditive(true)
     if (!AppLoggers.fileAppenders.containsKey(logger.hashCode)) {
       val appender = newFileAppender(logger)
-      AppLoggers.fileAppenders.put(logger.hashCode, appender)
+      AppLoggers.fileAppenders.put(logger.hashCode,
+                                   AppLoggers.ConcurentAppender(appender))
     }
     if (!AppLoggers.consoleAppenders.containsKey(logger.hashCode)) {
       val appender = newConsoleAppender(logger)
-      AppLoggers.consoleAppenders.put(logger.hashCode, appender)
+      AppLoggers.consoleAppenders.put(logger.hashCode,
+                                      AppLoggers.ConcurentAppender(appender))
     }
     val consoleAppender = AppLoggers.consoleAppenders.get(logger.hashCode)
     val fileAppender = AppLoggers.fileAppenders.get(logger.hashCode)
 
-    logger.addAppender(consoleAppender)
-    logger.addAppender(fileAppender)
+    logger.addAppender(consoleAppender.appender)
+    logger.addAppender(fileAppender.appender)
 
-    val policy = fileAppender
-      .asInstanceOf[RollingFileAppender[ILoggingEvent]]
-      .getRollingPolicy
-    if (!policy.isStarted) {
-      policy.start()
-    }
-
-    val iter = logger.iteratorForAppenders()
-    while (iter.hasNext) {
-      val appender = iter.next()
-      if (!appender.isStarted) {
-        appender.start()
+    fileAppender.doSafeAction { appender =>
+      val policy = appender
+        .asInstanceOf[RollingFileAppender[ILoggingEvent]]
+        .getRollingPolicy
+      if (!policy.isStarted) {
+        policy.start()
       }
     }
+
+    consoleAppender.start()
+    fileAppender.start()
 
     // Set level from config if we aren't using the logback.conf
     if (!conf.useLogbackConf) {
@@ -156,9 +156,41 @@ private[bitcoins] trait AppLoggers {
 
 object AppLoggers {
 
-  val fileAppenders: ConcurrentHashMap[Int, FileAppender[ILoggingEvent]] =
+  case class ConcurentAppender[T <: Appender[ILoggingEvent]](appender: T) {
+    private val lock = new ReentrantReadWriteLock().writeLock()
+
+    def isStarted: Boolean = appender.isStarted
+
+    def start(): Unit = {
+      lock.lock()
+      if (!appender.isStarted) {
+        try {
+          appender.start()
+        } finally {
+          lock.unlock()
+        }
+      } else {
+        lock.unlock()
+      }
+    }
+
+    def doSafeAction(func: T => Unit): Unit = {
+      lock.lock()
+      try {
+        func(appender)
+      } finally {
+        lock.unlock()
+      }
+    }
+  }
+
+  val fileAppenders: ConcurrentHashMap[
+    Int,
+    ConcurentAppender[FileAppender[ILoggingEvent]]] =
     new ConcurrentHashMap()
 
-  val consoleAppenders: ConcurrentHashMap[Int, ConsoleAppender[ILoggingEvent]] =
+  val consoleAppenders: ConcurrentHashMap[
+    Int,
+    ConcurentAppender[ConsoleAppender[ILoggingEvent]]] =
     new ConcurrentHashMap()
 }
