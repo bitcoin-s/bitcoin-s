@@ -386,7 +386,8 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         _ <- blockerHeaderDAO.createAll(headers)
         chains <- blockerHeaderDAO.getBlockchainsBetweenHeights(1, 3)
       } yield {
-        assert(chains.forall(expectedChains.contains))
+        assert(chains.nonEmpty)
+        assert(expectedChains.forall(chains.contains))
       }
   }
 }
