@@ -355,7 +355,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         previousBlockHash = ChainTestUtil.blockHeader562462.hash,
         merkleRootHash = DoubleSha256Digest.empty,
         time = UInt32.zero,
-        nBits = UInt32.zero,
+        nBits = ChainTestUtil.blockHeader562463.nBits,
         nonce = UInt32.zero
       )
 

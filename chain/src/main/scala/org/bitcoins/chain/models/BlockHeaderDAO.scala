@@ -343,35 +343,35 @@ case class BlockHeaderDAO()(implicit
       } else {
         val headersByHeight = headers.groupBy(_.height).toVector
         val sortedHeaders = headersByHeight.sortBy(_._1).reverse.map(_._2)
-        val chains = makeChains(sortedHeaders, Vector.empty)
-        chains.map(Blockchain(_))
+        val allHeaders = sortedHeaders.flatten
+
+        @tailrec
+        def loop(chains: Vector[Blockchain]): Vector[Blockchain] = {
+          val usedHeaders = chains.flatMap(_.headers).distinctBy(_.hashBE)
+          val diff = allHeaders.filter(header =>
+            !usedHeaders.exists(_.hashBE == header.hashBE))
+          if (diff.isEmpty) {
+            chains
+          } else {
+            val sortedDiff = diff.sortBy(_.height).reverse
+
+            val newChainHeaders =
+              Blockchain.connectWalkBackwards(sortedDiff.head, allHeaders)
+            val newChain = Blockchain(newChainHeaders.sortBy(_.height).reverse)
+            loop(chains :+ newChain)
+          }
+        }
+
+        val chains = sortedHeaders.head.map { headers =>
+          Blockchain
+            .connectWalkBackwards(headers, sortedHeaders.tail.flatten)
+            .sortBy(_.height)
+            .reverse
+        }
+        val init = chains.map(Blockchain(_)).distinct
+
+        loop(init).distinct
       }
-    }
-  }
-
-  @tailrec
-  private def makeChains(
-      headersByHeight: Vector[Vector[BlockHeaderDb]],
-      accum: Vector[Vector[BlockHeaderDb]]): Vector[Vector[BlockHeaderDb]] = {
-    if (headersByHeight.isEmpty) {
-      accum
-    } else if (accum.isEmpty) {
-      makeChains(headersByHeight.tail, accum :+ headersByHeight.head)
-    } else {
-      val toAdd = headersByHeight.head
-
-      // get them in the right order
-      val addToChains = accum.map(vec =>
-        toAdd.find(_.hashBE == vec.last.previousBlockHashBE).get)
-      // create new vectors for any header not apart of the current chains
-      val newChains = toAdd.diff(addToChains).map(Vector(_))
-
-      val newAccum =
-        accum.zip(addToChains).map {
-          case (current, addition) => current :+ addition
-        } ++ newChains
-
-      makeChains(headersByHeight.tail, newAccum)
     }
   }
 
