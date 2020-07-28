@@ -9,7 +9,7 @@ import org.bitcoins.wallet.api.NeutrinoWalletApi.BlockMatchingResponse
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait NeutrinoWalletApi extends WalletApi {
+trait NeutrinoWalletApi { self: WalletApi =>
 
   /**
     * Processes the give block, updating our DB state if it's relevant to us.

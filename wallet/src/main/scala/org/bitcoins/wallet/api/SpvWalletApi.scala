@@ -11,7 +11,7 @@ import scala.concurrent.Future
   *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
-trait SpvWalletApi extends WalletApi {
+trait SpvWalletApi { self: WalletApi =>
 
   /**
     * Recreates the account using BIP-44 approach
