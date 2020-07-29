@@ -227,6 +227,14 @@ object Deps {
     Compile.scodec
   )
 
+  // version number needed for MicroJson
+  val dlc = List(
+    Compile.playJson,
+    Compile.newMicroJson
+  )
+
+  val dlcTest = List()
+
   val secp256k1jni = List(
     Compile.nativeLoader,
     Test.junitInterface
@@ -307,6 +315,12 @@ object Deps {
       Compile.akkaHttp,
       Compile.akkaSlf4j
     )
+
+  val dlcSuredbitsClient = List(
+    Compile.akkaStream,
+    Compile.akkaHttp,
+    Compile.playJson
+  )
 
   val eclairRpc = List(
     Compile.akkaHttp,

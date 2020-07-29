@@ -52,7 +52,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 abstract class Wallet
-    extends AnyHDWalletApi
+    extends AnyDLCHDWalletApi
     with UtxoHandling
     with AddressHandling
     with AccountHandling
@@ -82,6 +82,13 @@ abstract class Wallet
   private[wallet] val outgoingTxDAO: OutgoingTransactionDAO =
     OutgoingTransactionDAO()
   private[wallet] val addressTagDAO: AddressTagDAO = AddressTagDAO()
+
+  private[wallet] val dlcOfferDAO: DLCOfferDAO = DLCOfferDAO()
+  private[wallet] val dlcAcceptDAO: DLCAcceptDAO = DLCAcceptDAO()
+  private[wallet] val dlcDAO: DLCDAO = DLCDAO()
+  private[wallet] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
+  private[wallet] val dlcSigsDAO: DLCCETSignatureDAO = DLCCETSignatureDAO()
+  private[wallet] val dlcRefundSigDAO: DLCRefundSigDAO = DLCRefundSigDAO()
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
@@ -590,7 +597,7 @@ object Wallet extends WalletLogger {
   )(implicit
       override val walletConfig: WalletAppConfig,
       override val ec: ExecutionContext
-  ) extends Wallet
+  ) extends DLCWallet
 
   def apply(
       keyManager: BIP39KeyManager,

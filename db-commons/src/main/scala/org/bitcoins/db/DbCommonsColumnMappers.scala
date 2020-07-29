@@ -1,6 +1,7 @@
 package org.bitcoins.db
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
+import org.bitcoins.commons.jsonmodels.dlc.DLCState
 import org.bitcoins.core.config.{BitcoinNetwork, BitcoinNetworks}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
@@ -285,5 +286,16 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[SchnorrDigitalSignature, String](
       _.hex,
       SchnorrDigitalSignature.fromHex)
+  }
+
+  implicit val ecAdaptorSignatureMapper: BaseColumnType[ECAdaptorSignature] = {
+    MappedColumnType.base[ECAdaptorSignature, String](
+      _.hex,
+      ECAdaptorSignature.fromHex)
+  }
+
+  implicit val dlcStateMapper: BaseColumnType[DLCState] = {
+    MappedColumnType
+      .base[DLCState, String](_.toString, DLCState.fromString)
   }
 }

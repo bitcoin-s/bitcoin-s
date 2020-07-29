@@ -10,6 +10,7 @@ flywayClean / aggregate := false
 Test / flywayClean / aggregate := true
 
 lazy val Benchmark = config("bench") extend Test
+
 lazy val benchSettings: Seq[Def.SettingsDefinition] = {
   //for scalameter
   //https://scalameter.github.io/home/download/
@@ -31,6 +32,7 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
 import Projects._
 lazy val crypto = project in file("crypto")
 lazy val core = project in file("core") dependsOn crypto
+
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(CommonSettings.prodSettings: _*)
@@ -57,6 +59,10 @@ lazy val `bitcoin-s` = project
     dbCommonsTest,
     feeProvider,
     feeProviderTest,
+    dlc,
+    dlcTest,
+    dlcSuredbitsClient,
+    dlcSuredbitsClientTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -245,7 +251,8 @@ lazy val appServer = project
     chain,
     wallet,
     bitcoindRpc,
-    feeProvider
+    feeProvider,
+    dlc
   )
 
 lazy val appServerTest = project
@@ -261,7 +268,8 @@ lazy val cli = project
   .in(file("app/cli"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
-    appCommons
+    appCommons,
+    dlc
   )
 
 lazy val cliTest = project
@@ -284,7 +292,21 @@ lazy val gui = project
     cli
   )
 
+lazy val dlcSuredbitsClient = project
+  .in(file("app/dlc-suredbits-client"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(eclairRpc, wallet)
+
+lazy val dlcSuredbitsClientTest = project
+  .in(file("app/dlc-suredbits-client-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .dependsOn(
+    dlcSuredbitsClient,
+    testkit
+  )
+
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
+
 lazy val chain = project
   .in(file("chain"))
   .settings(CommonSettings.prodSettings: _*)
@@ -375,6 +397,7 @@ lazy val eclairRpcTest = project
   .dependsOn(core % testAndCompile, testkit)
 
 lazy val nodeDbSettings = dbFlywaySettings("nodedb")
+
 lazy val node =
   project
     .in(file("node"))
@@ -429,7 +452,8 @@ lazy val testkit = project
     eclairRpc,
     node,
     wallet,
-    zmq
+    zmq,
+    dlc
   )
 
 lazy val docs = project
@@ -461,6 +485,7 @@ lazy val keyManagerTest = project
   .dependsOn(keyManager, testkit)
 
 lazy val walletDbSettings = dbFlywaySettings("walletdb")
+
 lazy val wallet = project
   .in(file("wallet"))
   .settings(CommonSettings.prodSettings: _*)
@@ -469,7 +494,7 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(core, appCommons, dbCommons, keyManager)
+  .dependsOn(core, appCommons, dbCommons, dlc, keyManager)
   .enablePlugins(FlywayPlugin)
 
 lazy val walletTest = project
@@ -482,6 +507,29 @@ lazy val walletTest = project
   )
   .dependsOn(core % testAndCompile, testkit, wallet)
   .enablePlugins(FlywayPlugin)
+
+lazy val dlc = project
+  .in(file("dlc"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc",
+    // version number needed for MicroJson
+    libraryDependencies ++= Deps.dlc
+  )
+  .dependsOn(core, dbCommons)
+
+lazy val dlcTest = project
+  .in(file("dlc-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-test",
+    libraryDependencies ++= Deps.dlcTest
+  )
+  .dependsOn(
+    core % testAndCompile,
+    testkit,
+    dlc
+  )
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet) */
@@ -505,15 +553,16 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
     db.createNewFile()
   }
 
-  def makeNetworkSettings(directoryPath: String): List[Setting[_]] = List(
-    Test / flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
-    Test / flywayLocations := List("nodedb/migration"),
-    Test / flywayUser := "nodedb",
-    Test / flywayPassword := "",
-    flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
-    flywayUser := "nodedb",
-    flywayPassword := ""
-  )
+  def makeNetworkSettings(directoryPath: String): List[Setting[_]] =
+    List(
+      Test / flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
+      Test / flywayLocations := List("nodedb/migration"),
+      Test / flywayUser := "nodedb",
+      Test / flywayPassword := "",
+      flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
+      flywayUser := "nodedb",
+      flywayPassword := ""
+    )
 
   lazy val mainnet = makeNetworkSettings(mainnetDir)
 

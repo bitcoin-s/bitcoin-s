@@ -41,6 +41,9 @@ trait WalletApi extends WalletLogger with StartStopAsync[WalletApi] {
   val feeRateApi: FeeRateApi
   val creationTime: Instant
 
+  def decodeRawTransaction(tx: Transaction): String =
+    SerializedTransaction.decodeRawTransaction(tx)
+
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
@@ -365,5 +368,12 @@ trait SpvHDWalletApi extends HDWalletApi with SpvWalletApi
 /** An HDWallet that supports both Neutrino and SPV methods of syncing */
 trait AnyHDWalletApi
     extends HDWalletApi
+    with NeutrinoWalletApi
+    with SpvWalletApi
+
+/** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */
+trait AnyDLCHDWalletApi
+    extends HDWalletApi
+    with DLCWalletApi
     with NeutrinoWalletApi
     with SpvWalletApi
