@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
 import org.bitcoins.core.protocol.dlc.DLCMessage._
@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
+import org.bitcoins.testkitcore.gen.{LnMessageGen, TLVGen}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
 class DLCMessageTest extends BitcoinSJvmTest {
@@ -41,13 +42,32 @@ class DLCMessageTest extends BitcoinSJvmTest {
   it must "not allow a negative collateral for a DLCOffer" in {
     assertThrows[IllegalArgumentException](
       DLCOffer(
-        ContractInfo.dummy,
-        DLCPublicKeys(dummyPubKey, dummyAddress),
-        Satoshis(-1),
-        Vector.empty,
-        dummyAddress,
-        SatoshisPerVirtualByte.one,
-        DLCTimeouts(BlockHeight(1), BlockHeight(2))
+        contractInfo = ContractInfo.dummy,
+        pubKeys = DLCPublicKeys(dummyPubKey, dummyAddress),
+        totalCollateral = Satoshis(-1),
+        fundingInputs = Vector.empty,
+        changeAddress = dummyAddress,
+        payoutSerialId = UInt64.zero,
+        changeSerialId = UInt64.one,
+        fundOutputSerialId = UInt64.max,
+        feeRate = SatoshisPerVirtualByte.one,
+        timeouts = DLCTimeouts(BlockHeight(1), BlockHeight(2))
+      ))
+  }
+
+  it must "not allow same change and fund output serial id for a DLCOffer" in {
+    assertThrows[IllegalArgumentException](
+      DLCOffer(
+        contractInfo = ContractInfo.dummy,
+        pubKeys = DLCPublicKeys(dummyPubKey, dummyAddress),
+        totalCollateral = Satoshis(-1),
+        fundingInputs = Vector.empty,
+        changeAddress = dummyAddress,
+        payoutSerialId = UInt64.zero,
+        changeSerialId = UInt64.one,
+        fundOutputSerialId = UInt64.one,
+        feeRate = SatoshisPerVirtualByte.one,
+        timeouts = DLCTimeouts(BlockHeight(1), BlockHeight(2))
       ))
   }
 
@@ -58,6 +78,8 @@ class DLCMessageTest extends BitcoinSJvmTest {
         DLCPublicKeys(dummyPubKey, dummyAddress),
         Vector.empty,
         dummyAddress,
+        payoutSerialId = UInt64.zero,
+        changeSerialId = UInt64.one,
         CETSignatures(Vector(
                         EnumOracleOutcome(
                           Vector(dummyOracle),
@@ -67,5 +89,31 @@ class DLCMessageTest extends BitcoinSJvmTest {
         Sha256Digest.empty
       )
     )
+  }
+
+  it must "be able to go back and forth between TLV and deserialized" in {
+    forAll(TLVGen.dlcOfferTLVAcceptTLVSignTLV) {
+      case (offerTLV, acceptTLV, signTLV) =>
+        val offer = DLCOffer.fromTLV(offerTLV)
+        val accept = DLCAccept.fromTLV(acceptTLV, offer)
+        val sign = DLCSign.fromTLV(signTLV, offer)
+
+        assert(offer.toTLV == offerTLV)
+        assert(accept.toTLV == acceptTLV)
+        assert(sign.toTLV == signTLV)
+    }
+  }
+
+  it must "be able to go back and forth between LN Message and deserialized" in {
+    forAll(LnMessageGen.dlcOfferMessageAcceptMessageSignMessage) {
+      case (offerMsg, acceptMsg, signMsg) =>
+        val offer = DLCOffer.fromMessage(offerMsg)
+        val accept = DLCAccept.fromMessage(acceptMsg, offer)
+        val sign = DLCSign.fromMessage(signMsg, offer)
+
+        assert(offer.toMessage == offerMsg)
+        assert(accept.toMessage == acceptMsg)
+        assert(sign.toMessage == signMsg)
+    }
   }
 }

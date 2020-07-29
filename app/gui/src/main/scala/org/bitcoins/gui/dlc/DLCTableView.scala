@@ -1,6 +1,5 @@
 package org.bitcoins.gui.dlc
 
-import org.bitcoins.core.protocol.dlc.SingleOracleInfo
 import org.bitcoins.core.protocol.dlc.DLCStatus._
 import org.bitcoins.core.protocol.dlc.{AcceptedDLCStatus, DLCStatus}
 import scalafx.beans.property.StringProperty
@@ -71,9 +70,11 @@ class DLCTableView(model: DLCPaneModel) {
       cellValueFactory = { status =>
         new StringProperty(
           status,
-          "Oracle",
-          status.value.oracleInfo.asInstanceOf[SingleOracleInfo].publicKey.hex
-        ) // FIXME
+          "Oracles",
+          status.value.oracleInfo.singleOracleInfos
+            .map(_.publicKey.hex)
+            .mkString
+        )
       }
     }
 
@@ -83,12 +84,9 @@ class DLCTableView(model: DLCPaneModel) {
       cellValueFactory = { status =>
         new StringProperty(status,
                            "Event",
-                           status.value.oracleInfo
-                             .asInstanceOf[SingleOracleInfo]
-                             .nonces
-                             .map(_.hex)
-                             .mkString("")
-        ) // FIXME
+                           status.value.oracleInfo.singleOracleInfos
+                             .flatMap(_.nonces.map(_.hex))
+                             .mkString)
       }
     }
 

@@ -1,7 +1,5 @@
 package org.bitcoins.gui.dlc.dialog
 
-import java.io.File
-
 import org.bitcoins.cli.CliCommand
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.GlobalDLCData
@@ -13,6 +11,7 @@ import scalafx.scene.control._
 import scalafx.scene.layout.GridPane
 import scalafx.stage.{FileChooser, Window}
 
+import java.io.File
 import scala.util.Properties
 
 abstract class DLCDialog[T <: CliCommand](
@@ -39,7 +38,7 @@ abstract class DLCDialog[T <: CliCommand](
 
   readCachedValue(DLCDialog.dlcContractIdStr, GlobalDLCData.lastContractId)
   readCachedValue(DLCDialog.dlcOracleSigStr, GlobalDLCData.lastOracleSig)
-  readCachedValue(DLCDialog.oracleAnnouncementStr,
+  readCachedValue(DLCDialog.oracleAnnouncementsStr,
                   GlobalDLCData.lastOracleAnnouncement)
   readCachedValue(DLCDialog.contractInfoStr, GlobalDLCData.lastContractInfo)
 
@@ -120,7 +119,7 @@ abstract class DLCDialog[T <: CliCommand](
         writeCachedValue(DLCDialog.dlcOracleSigStr,
                          textInputs,
                          GlobalDLCData.lastOracleSig = _)
-        writeCachedValue(DLCDialog.oracleAnnouncementStr,
+        writeCachedValue(DLCDialog.oracleAnnouncementsStr,
                          textInputs,
                          GlobalDLCData.lastOracleAnnouncement = _)
         writeCachedValue(DLCDialog.contractInfoStr,
@@ -147,14 +146,18 @@ object DLCDialog {
     }
   }
 
-  def fileChooserButton[T](handleFile: File => T): Node = {
+  def fileChooserButton[T](open: Boolean, handleFile: File => T): Node = {
     new Button("Browse...") {
       onAction = _ => {
         val fileChooser = new FileChooser() {
           initialDirectory = new File(Properties.userHome)
         }
 
-        val selectedFile = fileChooser.showOpenDialog(null)
+        val selectedFile =
+          if (open)
+            fileChooser.showOpenDialog(null)
+          else
+            fileChooser.showSaveDialog(null)
 
         if (selectedFile != null) {
           handleFile(selectedFile)
@@ -168,11 +171,16 @@ object DLCDialog {
   var acceptDLCFile: Option[File] = None
   var signDLCFile: Option[File] = None
 
+  var acceptDestDLCFile: Option[File] = None
+  var signDestDLCFile: Option[File] = None
+
   val offerFileChosenLabel = new Label("")
   val acceptFileChosenLabel = new Label("")
+  val acceptDestFileChosenLabel = new Label("")
   val signFileChosenLabel = new Label("")
+  val signDestFileChosenLabel = new Label("")
 
-  val oracleAnnouncementStr = "Oracle Announcement"
+  val oracleAnnouncementsStr = "Oracle Announcements"
   val contractInfoStr = "Contract Info"
   val collateralStr = "Your Collateral"
   val feeRateStr = "Fee Rate"
@@ -200,8 +208,12 @@ object DLCDialog {
   val dlcOfferStr = "DLC Offer"
   val dlcOfferFileStr = "Open Offer from File"
 
+  val dlcAcceptFileDestStr = "Accept file destination"
+
   val dlcAcceptStr = "DLC Accept Message"
   val dlcAcceptFileStr = "Open Accept from File"
+
+  val dlcSignFileDestStr = "Sign file destination"
 
   val dlcSigStr = "DLC Signatures"
   val dlcSignFileStr = "Open Sign from File"

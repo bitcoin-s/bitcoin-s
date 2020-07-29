@@ -234,6 +234,12 @@ sealed abstract class ExtPrivateKey
     key.signWithEntropy(bytes, entropy)
   }
 
+  override def adaptorSign(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature = {
+    key.adaptorSign(adaptorPoint, msg)
+  }
+
   /** Signs the given bytes with the given [[BIP32Path path]] */
   override def deriveAndSign(
       bytes: ByteVector,

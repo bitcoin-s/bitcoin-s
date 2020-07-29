@@ -107,6 +107,13 @@ object AsyncSign {
   }
 }
 
+trait AsyncAdaptorSign extends AsyncSign {
+
+  def asyncAdaptorSign(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): Future[ECAdaptorSignature]
+}
+
 trait Sign extends AsyncSign {
   def sign(bytes: ByteVector): ECDigitalSignature
 
@@ -191,5 +198,18 @@ object Sign {
 
   def dummySign(publicKey: ECPublicKey): Sign = {
     constant(EmptyDigitalSignature, publicKey)
+  }
+}
+
+trait AdaptorSign extends Sign with AsyncAdaptorSign {
+
+  def adaptorSign(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature
+
+  override def asyncAdaptorSign(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): Future[ECAdaptorSignature] = {
+    Future.successful(adaptorSign(adaptorPoint, msg))
   }
 }
