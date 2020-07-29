@@ -1,16 +1,16 @@
 package org.bitcoins.server
 
-import com.typesafe.config.Config
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.chain.config.ChainAppConfig
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
 import java.nio.file.Path
 
+import com.typesafe.config.Config
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
+import org.bitcoins.dlc.wallet.DLCAppConfig
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.wallet.config.WalletAppConfig
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * A unified config class for all submodules of Bitcoin-S
@@ -29,10 +29,14 @@ case class BitcoinSAppConfig(
   val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
   val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
   val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
+  val dlcConf: DLCAppConfig = DLCAppConfig(directory, confs: _*)
 
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[Unit] = {
-    val futures = List(walletConf.start(), nodeConf.start(), chainConf.start())
+    val futures = List(walletConf.start(),
+                       nodeConf.start(),
+                       chainConf.start(),
+                       dlcConf.start())
 
     Future.sequence(futures).map(_ => ())
   }

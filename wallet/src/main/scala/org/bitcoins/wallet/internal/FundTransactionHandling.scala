@@ -65,7 +65,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
     *
     * Currently utxos are funded with [[CoinSelector.accumulateLargest() accumulateLargest]] coin seleciton algorithm
     */
-  private[wallet] def fundRawTransactionInternal(
+  private[bitcoins] def fundRawTransactionInternal(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
