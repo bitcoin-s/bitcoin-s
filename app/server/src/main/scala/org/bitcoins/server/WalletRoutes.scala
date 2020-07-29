@@ -1,21 +1,24 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import akka.stream.Materializer
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage
 import org.bitcoins.commons.serializers.Picklers._
-import org.bitcoins.core.api.wallet.AnyHDWalletApi
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.AddressLabelTagType
 import org.bitcoins.crypto.NetworkElement
+import org.bitcoins.dlc.wallet.AnyDLCHDWalletApi
 import ujson._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
+case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
@@ -24,6 +27,24 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
       "outpoint" -> Str(spendingInfoDb.outPoint.hex),
       "value" -> Num(spendingInfoDb.output.value.satoshis.toLong.toDouble)
     )
+  }
+
+  implicit val materializer: Materializer =
+    Materializer.createMaterializer(system)
+
+  /** Takes a string and turns into an escaped version of itself */
+  private def escape(raw: String): String = {
+    import scala.reflect.runtime.universe._
+    Literal(Constant(raw)).toString
+  }
+
+  private def handleDLCMessage(
+      dlcMessage: DLCMessage,
+      escaped: Boolean): HttpEntity.Strict = {
+    val json = dlcMessage.toJson
+    val sendString =
+      if (escaped) escape(json.toString()) else json.render(indent = 2)
+    Server.httpSuccess(sendString)
   }
 
   private def handleBroadcastable(
@@ -204,6 +225,122 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
           }
       }
 
+    case ServerCommand("createdlcoffer", arr) =>
+      CreateDLCOffer.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(
+              CreateDLCOffer(oracleInfo,
+                             contractInfo,
+                             collateral,
+                             feeRateOpt,
+                             locktime,
+                             refundLT,
+                             escaped)) =>
+          complete {
+            wallet
+              .createDLCOffer(oracleInfo,
+                              contractInfo,
+                              collateral,
+                              feeRateOpt,
+                              locktime,
+                              refundLT)
+              .map(handleDLCMessage(_, escaped))
+          }
+      }
+
+    case ServerCommand("acceptdlcoffer", arr) =>
+      AcceptDLCOffer.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AcceptDLCOffer(offer, escaped)) =>
+          complete {
+            wallet
+              .acceptDLCOffer(offer)
+              .map(handleDLCMessage(_, escaped))
+          }
+      }
+
+    case ServerCommand("signdlc", arr) =>
+      SignDLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(SignDLC(accept, escaped)) =>
+          complete {
+            wallet
+              .signDLC(accept)
+              .map(handleDLCMessage(_, escaped))
+          }
+      }
+
+    case ServerCommand("adddlcsigs", arr) =>
+      AddDLCSigs.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AddDLCSigs(sigs)) =>
+          complete {
+            wallet.addDLCSigs(sigs).map { _ =>
+              Server.httpSuccess(
+                s"Successfully added sigs to DLC ${sigs.contractId.toHex}")
+            }
+          }
+      }
+
+    case ServerCommand("getdlcfundingtx", arr) =>
+      GetDLCFundingTx.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetDLCFundingTx(contractId)) =>
+          complete {
+            wallet.getDLCFundingTx(contractId).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("broadcastdlcfundingtx", arr) =>
+      BroadcastDLCFundingTx.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(BroadcastDLCFundingTx(contractId)) =>
+          complete {
+            wallet.broadcastDLCFundingTx(contractId).map { tx =>
+              Server.httpSuccess(tx.txIdBE.hex)
+            }
+          }
+      }
+
+    case ServerCommand("executedlc", arr) =>
+      ExecuteDLCUnilateralClose.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(
+              ExecuteDLCUnilateralClose(contractId, oracleSig, noBroadcast)) =>
+          complete {
+            for {
+              tx <- wallet.executeDLC(contractId, oracleSig)
+              retStr <- handleBroadcastable(tx, noBroadcast)
+            } yield {
+              Server.httpSuccess(retStr.hex)
+            }
+          }
+      }
+
+    case ServerCommand("executedlcrefund", arr) =>
+      ExecuteDLCRefund.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLCRefund(contractId, noBroadcast)) =>
+          complete {
+            for {
+              tx <- wallet.executeDLCRefund(contractId)
+              retStr <- handleBroadcastable(tx, noBroadcast)
+            } yield {
+              Server.httpSuccess(retStr.hex)
+            }
+          }
+      }
+
     case ServerCommand("sendtoaddress", arr) =>
       // TODO create custom directive for this?
       SendToAddress.fromJsArr(arr) match {
@@ -219,9 +356,9 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
               tx <- wallet.sendToAddress(address,
                                          bitcoins,
                                          satoshisPerVirtualByteOpt)
-              _ <- handleBroadcastable(tx, noBroadcast)
+              retStr <- handleBroadcastable(tx, noBroadcast)
             } yield {
-              Server.httpSuccess(tx.txIdBE)
+              Server.httpSuccess(retStr.hex)
             }
           }
       }
@@ -406,5 +543,15 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
         }
       }
 
+    case ServerCommand("decoderawtransaction", arr) =>
+      DecodeRawTransaction.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DecodeRawTransaction(tx)) =>
+          complete {
+            val jsonStr = wallet.decodeRawTransaction(tx)
+            Server.httpSuccess(jsonStr)
+          }
+      }
   }
 }

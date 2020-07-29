@@ -18,6 +18,7 @@ import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto.{
   SchnorrDigitalSignature,
   SchnorrNonce,
+  Sha256Digest,
   Sha256DigestBE
 }
 import scopt._
@@ -191,6 +192,13 @@ object CliReaders {
         LockUnspentOutputParameter.fromJsonString
     }
 
+  implicit val sha256DigestReads: Read[Sha256Digest] =
+    new Read[Sha256Digest] {
+      val arity: Int = 1
+
+      val reads: String => Sha256Digest = Sha256Digest.fromHex
+    }
+
   implicit val dlcOfferReads: Read[DLCOffer] = new Read[DLCOffer] {
     override def arity: Int = 1
 
@@ -220,12 +228,4 @@ object CliReaders {
         DLCSign.fromJson(ujson.read(str))
       }
   }
-
-  implicit val dlcMutualCloseSigReads: Read[DLCMutualCloseSig] =
-    new Read[DLCMutualCloseSig] {
-      override def arity: Int = 1
-
-      override def reads: String => DLCMutualCloseSig =
-        str => DLCMutualCloseSig.fromJson(ujson.read(str))
-    }
 }

@@ -40,6 +40,9 @@ object Picklers {
   implicit val sha256DigestBEPickler: ReadWriter[Sha256DigestBE] =
     readwriter[String].bimap(_.hex, Sha256DigestBE.fromHex)
 
+  implicit val sha256DigestPickler: ReadWriter[Sha256Digest] =
+    readwriter[String].bimap(_.hex, Sha256Digest.fromHex)
+
   implicit val doubleSha256DigestBEPickler: ReadWriter[DoubleSha256DigestBE] =
     readwriter[String].bimap(_.hex, DoubleSha256DigestBE.fromHex)
 
@@ -75,11 +78,6 @@ object Picklers {
   implicit val dlcSignPickler: ReadWriter[DLCSign] =
     readwriter[String]
       .bimap(_.toJsonStr, str => DLCSign.fromJson(ujson.read(str).obj))
-
-  implicit val dlcMutualCloseSigPickler: ReadWriter[DLCMutualCloseSig] =
-    readwriter[String].bimap(
-      _.toJsonStr,
-      str => DLCMutualCloseSig.fromJson(ujson.read(str).obj))
 
   implicit val blockStampPickler: ReadWriter[BlockStamp] =
     readwriter[String].bimap(_.mkString, BlockStamp.fromString)

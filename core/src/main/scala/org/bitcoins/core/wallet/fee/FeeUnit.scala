@@ -162,6 +162,8 @@ case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
 
   override def factory: FeeUnitFactory[SatoshisPerVirtualByte] =
     SatoshisPerVirtualByte
+
+  def toSatoshisPerKW: SatoshisPerKW = SatoshisPerKW(currencyUnit * 4000)
 }
 
 object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
