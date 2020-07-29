@@ -13,27 +13,37 @@ class AcceptDLCDialog
       "Enter DLC Offer to accept or open from file",
       Vector(
         DLCDialog.dlcOfferStr -> DLCDialog.textArea(),
-        DLCDialog.dlcOfferFileStr -> DLCDialog.fileChooserButton(file => {
-          DLCDialog.offerDLCFile = Some(file)
-          DLCDialog.offerFileChosenLabel.text = file.toString
-        }),
+        DLCDialog.dlcOfferFileStr -> DLCDialog.fileChooserButton(
+          open = true,
+          file => {
+            DLCDialog.offerDLCFile = Some(file)
+            DLCDialog.offerFileChosenLabel.text = file.toString
+          }),
         DLCDialog.fileChosenStr -> DLCDialog.offerFileChosenLabel,
-        DLCDialog.oracleAnnouncementStr -> new TextField() {
+        DLCDialog.dlcAcceptFileDestStr -> DLCDialog.fileChooserButton(
+          open = false,
+          file => {
+            DLCDialog.acceptDestDLCFile = Some(file)
+            DLCDialog.acceptDestFileChosenLabel.text = file.toString
+          }),
+        DLCDialog.fileChosenStr -> DLCDialog.acceptDestFileChosenLabel,
+        DLCDialog.oracleAnnouncementsStr -> new TextField() {
           promptText = "(optional)"
         }
       ),
       Vector(DLCDialog.dlcOfferStr,
              DLCDialog.dlcOfferFileStr,
-             DLCDialog.oracleAnnouncementStr)) {
+             DLCDialog.dlcAcceptFileDestStr,
+             DLCDialog.oracleAnnouncementsStr)) {
   import DLCDialog._
 
-  def validateMatchingAnnouncement(
+  def validateMatchingAnnouncements(
       offer: LnMessage[DLCOfferTLV],
-      announcement: OracleAnnouncementTLV): Boolean = {
+      announcements: Vector[OracleAnnouncementTLV]): Boolean = {
     val fromOffer = OracleInfo.fromTLV(offer.tlv.contractInfo.oracleInfo)
-    val fromAnnouncement = SingleOracleInfo(announcement)
+    val singles = announcements.map(SingleOracleInfo(_))
 
-    fromOffer == fromAnnouncement
+    singles.forall(an => fromOffer.singleOracleInfos.contains(an))
   }
 
   override def constructFromInput(
@@ -43,16 +53,22 @@ class AcceptDLCDialog
         // TODO figure how to validate when using a file
         offerDLCFile = None // reset
         offerFileChosenLabel.text = "" // reset
-        AcceptDLCOfferFromFile(file.toPath, None)
+        val destPathOpt = acceptDestDLCFile
+        acceptDestDLCFile = None // reset
+        acceptDestFileChosenLabel.text = "" // reset
+
+        AcceptDLCOfferFromFile(file.toPath, destPathOpt.map(_.toPath))
       case None =>
         val offerHex = readStringFromNode(inputs(dlcOfferStr))
         val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)
 
-        val announcementHex = readStringFromNode(inputs(oracleAnnouncementStr))
+        val announcementsHex = readStringFromNode(
+          inputs(oracleAnnouncementsStr))
 
-        if (announcementHex.nonEmpty) {
-          val announcement = OracleAnnouncementTLV(announcementHex)
-          if (!validateMatchingAnnouncement(offer, announcement)) {
+        if (announcementsHex.nonEmpty) {
+          val announcements =
+            announcementsHex.split(",").map(OracleAnnouncementTLV.fromHex)
+          if (!validateMatchingAnnouncements(offer, announcements.toVector)) {
             throw new RuntimeException(
               "Offer given does not have the same oracle info as announcement!")
           }
