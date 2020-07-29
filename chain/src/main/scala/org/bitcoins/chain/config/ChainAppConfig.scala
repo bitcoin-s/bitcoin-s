@@ -5,6 +5,7 @@ import java.nio.file.Path
 import com.typesafe.config.{Config, ConfigException}
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDbHelper}
+import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
 
@@ -68,10 +69,11 @@ case class ChainAppConfig(
         FutureUtil.unit
       } else {
         val genesisHeader =
-          BlockHeaderDbHelper.fromBlockHeader(height = 0,
-                                              chainWork = BigInt(0),
-                                              bh =
-                                                chain.genesisBlock.blockHeader)
+          BlockHeaderDbHelper.fromBlockHeader(
+            height = 0,
+            chainWork = Pow.getBlockProof(chain.genesisBlock.blockHeader),
+            bh = chain.genesisBlock.blockHeader)
+
         val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
         val bhCreatedF = blockHeaderDAO.create(genesisHeader)
         bhCreatedF.flatMap { _ =>
