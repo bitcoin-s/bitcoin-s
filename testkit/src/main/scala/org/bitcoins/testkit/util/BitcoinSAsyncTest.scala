@@ -25,8 +25,8 @@ trait BaseAsyncTest
     extends BeforeAndAfter
     with BeforeAndAfterAll
     with Matchers
-    with ScalaCheckPropertyChecks
     with AsyncTimeLimitedTests
+    with ScalaCheckPropertyChecks
     with BitcoinSLogger { this: AsyncTestSuite =>
 
   implicit def np: NetworkParameters = RegTest

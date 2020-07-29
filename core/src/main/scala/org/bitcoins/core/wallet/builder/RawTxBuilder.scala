@@ -181,3 +181,10 @@ case class RawTxBuilderWithFinalizer[F <: RawTxFinalizer](
     this
   }
 }
+
+object RawTxBuilderWithFinalizer {
+
+  def apply[F <: RawTxFinalizer](finalizer: F): RawTxBuilderWithFinalizer[F] = {
+    RawTxBuilderWithFinalizer(RawTxBuilder(), finalizer)
+  }
+}
