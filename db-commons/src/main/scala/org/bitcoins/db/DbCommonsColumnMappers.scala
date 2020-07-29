@@ -73,10 +73,17 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val bigIntMapper: BaseColumnType[BigInt] =
     MappedColumnType
-      .base[BigInt, Array[Byte]](
-        bi => ByteVector(bi.toByteArray).padLeft(33).toArray,
-        { arr =>
-          val bytes = arr.dropWhile(_ == 0x00)
+      .base[BigInt, String](
+        { bigInt =>
+          val bytes = ByteVector(bigInt.toByteArray)
+          val padded = if (bytes.length <= 33) {
+            bytes.padLeft(33)
+          } else bytes
+
+          padded.toHex
+        },
+        { hex =>
+          val bytes = ByteVector.fromValidHex(hex).dropWhile(_ == 0x00).toArray
           BigInt(1, bytes)
         }
       )
