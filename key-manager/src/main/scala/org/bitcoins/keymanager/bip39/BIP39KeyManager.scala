@@ -27,6 +27,10 @@ import scala.util.{Failure, Success, Try}
   * BIP39 key manager
   *
   * @param rootExtPrivKey the root seed used for this wallet
+  *                       This is still required to make the
+  *                       DLCClient from the wallet,
+  *                       can change back to private val when
+  *                       we change the client to use a Sign instead.
   * @param kmParams the parameters used to generate the right keychain
   * @see https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
   */

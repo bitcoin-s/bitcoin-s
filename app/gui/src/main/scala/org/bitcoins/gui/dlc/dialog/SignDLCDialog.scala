@@ -11,16 +11,29 @@ class SignDLCDialog
                                            DLCDialog.dlcAcceptStr -> DLCDialog
                                              .textArea(),
                                            "Open Accept from File" ->
-                                             DLCDialog.fileChooserButton { file =>
-                                               DLCDialog.acceptDLCFile =
-                                                 Some(file)
-                                               DLCDialog.acceptFileChosenLabel.text =
-                                                 file.toString
-                                             },
-                                           DLCDialog.fileChosenStr -> DLCDialog.acceptFileChosenLabel
+                                             DLCDialog.fileChooserButton(
+                                               open = true,
+                                               { file =>
+                                                 DLCDialog.acceptDLCFile =
+                                                   Some(file)
+                                                 DLCDialog.acceptFileChosenLabel.text =
+                                                   file.toString
+                                               }),
+                                           DLCDialog.fileChosenStr -> DLCDialog.acceptFileChosenLabel,
+                                           DLCDialog.dlcSignFileDestStr ->
+                                             DLCDialog.fileChooserButton(
+                                               open = false,
+                                               { file =>
+                                                 DLCDialog.signDestDLCFile =
+                                                   Some(file)
+                                                 DLCDialog.signDestFileChosenLabel.text =
+                                                   file.toString
+                                               }),
+                                           DLCDialog.fileChosenStr -> DLCDialog.signDestFileChosenLabel
                                          ),
                                          Vector(DLCDialog.dlcAcceptStr,
-                                                DLCDialog.dlcAcceptFileStr)) {
+                                                DLCDialog.dlcAcceptFileStr,
+                                                DLCDialog.dlcSignFileDestStr)) {
   import DLCDialog._
 
   override def constructFromInput(
@@ -29,7 +42,11 @@ class SignDLCDialog
       case Some(file) =>
         acceptDLCFile = None // reset
         acceptFileChosenLabel.text = "" // reset
-        SignDLCFromFile(file.toPath, None)
+        val destPathOpt = signDestDLCFile
+        signDestDLCFile = None // reset
+        signFileChosenLabel.text = "" // reset
+
+        SignDLCFromFile(file.toPath, destPathOpt.map(_.toPath))
       case None =>
         val acceptHex = readStringFromNode(inputs(dlcAcceptStr))
 

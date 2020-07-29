@@ -1,16 +1,18 @@
 package org.bitcoins.gui
 
-import org.bitcoins.cli.CliCommand.{GetBalance, GetNewAddress, SendToAddress}
+import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.gui.dialog.{GetNewAddressDialog, SendDialog}
+import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.gui.dialog._
+import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.control.Alert
 import scalafx.scene.control.Alert.AlertType
 import scalafx.stage.Window
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class WalletGUIModel() {
   var taskRunner: TaskRunner = _
@@ -40,6 +42,16 @@ class WalletGUIModel() {
   }
 
   startBalanceThread()
+
+  def updateFeeRate(): Try[FeeUnit] = {
+    ConsoleCli.exec(EstimateFee, GlobalData.consoleCliConfig).map { feeStr =>
+      val feeUnit = FeeUnit.fromString(feeStr)
+      GlobalData.feeRate = feeUnit
+      feeUnit
+    }
+  }
+
+  updateFeeRate()
 
   def onGetNewAddress(): Unit = {
     val address = StringProperty("")
@@ -88,11 +100,32 @@ class WalletGUIModel() {
     updateBalance()
   }
 
+  def onAbout(): Unit = {
+    AboutDialog.showAndWait(parentWindow.value)
+  }
+
   private def updateBalance(): Unit = {
     ConsoleCli.exec(GetBalance(isSats = true),
                     GlobalData.consoleCliConfig) match {
       case Success(commandReturn) =>
-        GlobalData.currentBalance.value = commandReturn.split(' ').head.toLong
+        val json = ujson.read(commandReturn).obj
+        val confirmedBalance =
+          GUIUtil.numberFormatter.format(
+            json("confirmed").str.split(' ').head.toLong)
+        val unconfirmedBalance =
+          GUIUtil.numberFormatter.format(
+            json("unconfirmed").str.split(' ').head.toLong)
+        val reservedBalance =
+          GUIUtil.numberFormatter.format(
+            json("reserved").str.split(' ').head.toLong)
+        val totalBalance =
+          GUIUtil.numberFormatter.format(
+            json("total").str.split(' ').head.toLong)
+
+        GlobalData.currentConfirmedBalance.value = confirmedBalance
+        GlobalData.currentUnconfirmedBalance.value = unconfirmedBalance
+        GlobalData.currentReservedBalance.value = reservedBalance
+        GlobalData.currentTotalBalance.value = totalBalance
       case Failure(err) =>
         err.printStackTrace()
         val _ = new Alert(AlertType.Error) {

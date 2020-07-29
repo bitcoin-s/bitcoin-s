@@ -295,6 +295,8 @@ object Deps {
     }
   }
 
+  val dlcTest = List(Compile.playJson)
+
   val secp256k1jni = List(
     Compile.nativeLoader,
     Test.junitInterface
@@ -420,6 +422,12 @@ object Deps {
     )
   }
 
+  val dlcSuredbitsClient = List(
+    Compile.akkaStream,
+    Compile.akkaHttp,
+    Compile.playJson
+  )
+
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
@@ -529,6 +537,18 @@ object Deps {
       Compile.grizzledSlf4j
     )
 
+  val dlcWallet =
+    List(
+      Compile.newMicroJson,
+      Compile.logback
+    )
+
+  val dlcWalletTest =
+    List(
+      Test.akkaTestkit,
+      Test.pgEmbedded
+    )
+
   val walletTest = List(
     Test.akkaTestkit,
     Test.pgEmbedded
@@ -576,10 +596,6 @@ object Deps {
     Compile.akkaActor,
     Compile.akkaHttp,
     Compile.akkaStream,
-    Compile.playJson
-  )
-
-  val dlcTest = Vector(
     Compile.playJson
   )
 }

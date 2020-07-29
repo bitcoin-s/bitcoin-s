@@ -197,4 +197,3 @@ val lnMsg = LnMessageFactory(DLCOfferTLV).fromHex(lnMsgHex)
 
 lnMsg.tlv == offerTLV
 ```
-
