@@ -350,12 +350,30 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
   it must "successfully getBlockchainsBetweenHeights" in {
     blockerHeaderDAO: BlockHeaderDAO =>
-      val duplicate = BlockHeader(
+      val duplicate3 = BlockHeader(
+        version = Int32.one,
+        previousBlockHash = ChainTestUtil.blockHeader562463.hash,
+        merkleRootHash = DoubleSha256Digest.empty,
+        time = UInt32.zero,
+        nBits = ChainTestUtil.blockHeader562464.nBits,
+        nonce = UInt32.zero
+      )
+
+      val duplicate2 = BlockHeader(
         version = Int32.one,
         previousBlockHash = ChainTestUtil.blockHeader562462.hash,
         merkleRootHash = DoubleSha256Digest.empty,
         time = UInt32.zero,
-        nBits = UInt32.zero,
+        nBits = ChainTestUtil.blockHeader562463.nBits,
+        nonce = UInt32.zero
+      )
+
+      val duplicate1 = BlockHeader(
+        version = Int32.one,
+        previousBlockHash = genesisHeaderDb.hashBE.flip,
+        merkleRootHash = DoubleSha256Digest.empty,
+        time = UInt32.zero,
+        nBits = ChainTestUtil.blockHeader562462.nBits,
         nonce = UInt32.zero
       )
 
@@ -372,21 +390,40 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       )
 
       val chain2 = Vector(
-        BlockHeaderDbHelper.fromBlockHeader(2, BigInt(1), duplicate),
+        BlockHeaderDbHelper.fromBlockHeader(2, BigInt(1), duplicate2),
         BlockHeaderDbHelper.fromBlockHeader(1,
                                             BigInt(0),
                                             ChainTestUtil.blockHeader562462)
       )
 
-      val headers = (chain1 ++ chain2).distinct
+      val chain3 = Vector(
+        BlockHeaderDbHelper.fromBlockHeader(3, BigInt(2), duplicate3),
+        BlockHeaderDbHelper.fromBlockHeader(2,
+                                            BigInt(1),
+                                            ChainTestUtil.blockHeader562463),
+        BlockHeaderDbHelper.fromBlockHeader(1,
+                                            BigInt(0),
+                                            ChainTestUtil.blockHeader562462)
+      )
 
-      val expectedChains = Vector(Blockchain(chain1), Blockchain(chain2))
+      val chain4 = Vector(
+        BlockHeaderDbHelper.fromBlockHeader(1, BigInt(0), duplicate1)
+      )
+
+      val expectedChains =
+        Vector(Blockchain(chain1),
+               Blockchain(chain2),
+               Blockchain(chain3),
+               Blockchain(chain4))
+
+      val headers = expectedChains.flatMap(_.headers).distinct
 
       for {
         _ <- blockerHeaderDAO.createAll(headers)
         chains <- blockerHeaderDAO.getBlockchainsBetweenHeights(1, 3)
       } yield {
-        assert(chains.forall(expectedChains.contains))
+        assert(chains.nonEmpty)
+        assert(expectedChains.forall(chains.contains))
       }
   }
 }
