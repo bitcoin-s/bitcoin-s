@@ -1,0 +1,1 @@
+ALTER TABLE "wallet_dlcs" ADD COLUMN "outcome" TEXT;

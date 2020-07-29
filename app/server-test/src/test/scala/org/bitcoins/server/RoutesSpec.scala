@@ -3,7 +3,7 @@ package org.bitcoins.server
 import java.time.{ZoneId, ZonedDateTime}
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db._
@@ -20,19 +20,25 @@ import org.bitcoins.core.protocol.BlockStamp.{
   BlockTime,
   InvalidBlockStamp
 }
+import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.script.EmptyScriptWitness
+import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.script.{EmptyScriptWitness, P2WPKHWitnessV0}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
+import org.bitcoins.core.protocol.{
+  Bech32Address,
+  BitcoinAddress,
+  BlockStamp,
+  P2PKHAddress
+}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.crypto._
+import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.node.Node
 import org.bitcoins.server.BitcoinSAppConfig.implicitToWalletConf
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -45,11 +51,14 @@ import ujson._
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
 
 class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   implicit val conf: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
+
+  implicit val timeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   // the genesis address
   val testAddressStr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
@@ -793,6 +802,332 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    val contractInfoDigests =
+      Vector("ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562",
+             "e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea")
+
+    val contractInfo = SingleNonceContractInfo.fromStringVec(
+      Vector(
+        (contractInfoDigests.head, Satoshis(5)),
+        (contractInfoDigests.last, Satoshis(4))
+      ))
+
+    val contractInfoTLV = contractInfo.toTLV
+
+    val contractMaturity = 1580323752
+    val contractTimeout = 1581323752
+
+    val dummyKey = ECPrivateKey.freshPrivateKey
+    val dummyPubKey = dummyKey.publicKey
+
+    val dummySig = dummyKey.sign(Sha256DigestBE.empty)
+
+    val dummyPartialSig = PartialSignature(dummyPubKey, dummySig)
+
+    val dummyScriptWitness: P2WPKHWitnessV0 = {
+      P2WPKHWitnessV0(dummyPartialSig.pubKey, dummyPartialSig.signature)
+    }
+
+    val dummyOracleSig = SchnorrDigitalSignature(
+      "65ace55b5d073cc7a1c783fa8c254692c421270fa988247e3c87627ffe804ed06c20bf779da91f82da3311b1d9e0a3a513409a15c66f25201280751177dad24c")
+
+    lazy val winStr: String = "WIN"
+
+    lazy val loseStr: String = "LOSE"
+
+    lazy val dummyOutcomeSigs: Vector[(EnumOutcome, ECAdaptorSignature)] =
+      Vector(EnumOutcome(winStr) -> ECAdaptorSignature.dummy,
+             EnumOutcome(loseStr) -> ECAdaptorSignature.dummy)
+
+    val dummyAddress = "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2"
+
+    val dummyDLCKeys =
+      DLCPublicKeys(dummyPubKey, BitcoinAddress(dummyAddress))
+
+    val paramHash = Sha256DigestBE(
+      "de462f212d95ca4cf5db54eee08f14be0ee934e9ecfc6e9b7014ecfa51ba7b66")
+
+    val contractId = ByteVector.fromValidHex(
+      "4c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919")
+
+    val wtx: WitnessTransaction = WitnessTransaction(
+      "02000000000101a2619b5d58b209439c937e563018efcf174063ca011e4f177a5b14e5ba76211c0100000017160014614e9b96cbc7477eda98f0936385ded6b636f74efeffffff024e3f57c4000000001600147cf00288c2c1b3c5cdf275db532a1c15c514bb2fae1112000000000016001440efb02597b9e9d9bc968f12cec3347e2e264c570247304402205768c2ac8178539fd44721e2a7541bedd6b55654f095143514624203c133f7e8022060d51f33fc2b5c1f51f26c7f703de21be6246dbb5fb7e1c6919aae6d442610c6012102b99a63f166ef53ca67a5c55ae969e80c33456e07189f8457e3438f000be42c19307d1900")
+
+    val fundingInput: DLCFundingInputP2WPKHV0 =
+      DLCFundingInputP2WPKHV0(wtx, UInt32.zero, UInt32.zero)
+
+    val announcementTLV = OracleAnnouncementV0TLV(
+      "fdd8249426cbca0e5366f6688fd837a83d3fe34d103f8d88a3bdc40d648e47e43c6f70a7e65fb85d5de46779604b541ebe74d06b3c316446a6f97fcd23d6de8e1d7b9451f74577f8cab8361962ce642a8da4b1f48f8813ed243203cb50ebba45c789abf0fdd8223000015b0fb6b85a9badee0a826349822db7412f79c71efdd903eac94a10ee10d6e4425fe3da00fdd80604000101620161")
+
+    val oracleInfo = SingleNonceOracleInfo(announcementTLV.publicKey,
+                                           announcementTLV.eventTLV.nonces.head)
+
+    val offer = DLCOffer(
+      OracleAndContractInfo(oracleInfo, contractInfo),
+      dummyDLCKeys,
+      Satoshis(2500),
+      Vector(fundingInput, fundingInput),
+      Bech32Address.fromString(dummyAddress),
+      SatoshisPerVirtualByte.one,
+      DLCTimeouts(BlockStamp(contractMaturity), BlockStamp(contractTimeout))
+    )
+
+    "create a dlc offer" in {
+      (mockWalletApi
+        .createDLCOffer(_: OracleInfo,
+                        _: ContractInfoTLV,
+                        _: Satoshis,
+                        _: Option[FeeUnit],
+                        _: UInt32,
+                        _: UInt32))
+        .expects(
+          oracleInfo,
+          contractInfoTLV,
+          Satoshis(2500),
+          Some(SatoshisPerVirtualByte(Satoshis.one)),
+          UInt32(contractMaturity),
+          UInt32(contractTimeout)
+        )
+        .returning(Future.successful(offer))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand(
+          "createdlcoffer",
+          Arr(
+            Str(announcementTLV.hex),
+            Str(contractInfoTLV.hex),
+            Num(2500),
+            Num(1),
+            Num(contractMaturity),
+            Num(contractTimeout)
+          )
+        ))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == s"""{"result":"${LnMessage(
+          offer.toTLV).hex}","error":null}""")
+      }
+    }
+
+    val accept = DLCAccept(
+      Satoshis(1000),
+      dummyDLCKeys,
+      Vector(fundingInput),
+      Bech32Address
+        .fromString(dummyAddress),
+      CETSignatures(dummyOutcomeSigs, dummyPartialSig),
+      Sha256Digest.empty
+    )
+
+    "accept a dlc offer" in {
+      (mockWalletApi
+        .acceptDLCOffer(_: DLCOfferTLV))
+        .expects(offer.toTLV)
+        .returning(Future.successful(accept))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("acceptdlcoffer", Arr(Str(LnMessage(offer.toTLV).hex))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == s"""{"result":"${LnMessage(
+          accept.toTLV).hex}","error":null}""")
+      }
+    }
+
+    val sign = DLCSign(
+      CETSignatures(dummyOutcomeSigs, dummyPartialSig),
+      FundingSignatures(Vector((EmptyTransactionOutPoint, dummyScriptWitness))),
+      paramHash.bytes
+    )
+
+    "sign a dlc" in {
+
+      (mockWalletApi
+        .signDLC(_: DLCAcceptTLV))
+        .expects(accept.toTLV)
+        .returning(Future.successful(sign))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("signdlc", Arr(Str(LnMessage(accept.toTLV).hex))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == s"""{"result":"${LnMessage(
+          sign.toTLV).hex}","error":null}""")
+      }
+    }
+
+    "add dlc sigs" in {
+
+      (mockWalletApi
+        .addDLCSigs(_: DLCSignTLV))
+        .expects(sign.toTLV)
+        .returning(Future.successful(DLCDb(
+          paramHash = paramHash,
+          tempContractId = Sha256Digest.empty,
+          contractIdOpt = Some(contractId),
+          state = DLCState.Signed,
+          isInitiator = false,
+          account = HDAccount(HDCoin(HDPurpose(89), HDCoinType.Testnet), 0),
+          keyIndex = 0,
+          oracleSigsOpt = None,
+          fundingOutPointOpt = None,
+          fundingTxIdOpt = None,
+          closingTxIdOpt = None,
+          outcomeOpt = None
+        )))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("adddlcsigs", Arr(Str(LnMessage(sign.toTLV).hex))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == s"""{"result":"Successfully added sigs to DLC ${contractId.toHex}","error":null}""")
+      }
+    }
+
+    "get dlc funding tx" in {
+      (mockWalletApi
+        .getDLCFundingTx(_: ByteVector))
+        .expects(contractId)
+        .returning(Future.successful(EmptyTransaction))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("getdlcfundingtx", Arr(Str(contractId.toHex))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+      }
+    }
+
+    "broadcast dlc funding tx" in {
+      (mockWalletApi
+        .broadcastDLCFundingTx(_: ByteVector))
+        .expects(contractId)
+        .returning(Future.successful(EmptyTransaction))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("broadcastdlcfundingtx", Arr(Str(contractId.toHex))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+      }
+    }
+
+    "execute a dlc" in {
+      (mockWalletApi
+        .executeDLC(_: ByteVector, _: Vector[SchnorrDigitalSignature]))
+        .expects(contractId, Vector(dummyOracleSig))
+        .returning(Future.successful(EmptyTransaction))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand(
+          "executedlc",
+          Arr(Str(contractId.toHex), Arr(Str(dummyOracleSig.hex)), Bool(true))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+      }
+    }
+
+    "execute a dlc with multiple sigs" in {
+      (mockWalletApi
+        .executeDLC(_: ByteVector, _: Vector[SchnorrDigitalSignature]))
+        .expects(contractId, Vector(dummyOracleSig, dummyOracleSig))
+        .returning(Future.successful(EmptyTransaction))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("executedlc",
+                      Arr(Str(contractId.toHex),
+                          Arr(Str(dummyOracleSig.hex), Str(dummyOracleSig.hex)),
+                          Bool(true))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+      }
+    }
+
+    "execute a dlc with broadcast" in {
+      (mockWalletApi
+        .executeDLC(_: ByteVector, _: Vector[SchnorrDigitalSignature]))
+        .expects(contractId, Vector(dummyOracleSig))
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockWalletApi.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("executedlc",
+                      Arr(Str(contractId.toHex),
+                          Arr(Str(dummyOracleSig.hex)),
+                          Bool(false))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+      }
+    }
+
+    "execute a dlc refund" in {
+      (mockWalletApi
+        .executeDLCRefund(_: ByteVector))
+        .expects(contractId)
+        .returning(Future.successful(EmptyTransaction))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("executedlcrefund",
+                      Arr(Str(contractId.toHex), Bool(true))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+      }
+    }
+
+    "execute a dlc refund with broadcast" in {
+      (mockWalletApi
+        .executeDLCRefund(_: ByteVector))
+        .expects(contractId)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockWalletApi.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("executedlcrefund",
+                      Arr(Str(contractId.toHex), Bool(false))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+      }
+    }
+
     "send to an address" in {
       // positive cases
 
@@ -809,7 +1144,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val route = walletRoutes.handleCommand(
         ServerCommand("sendtoaddress",
-                      Arr(Str(testAddressStr), Num(100), Num(4), Bool(true))))
+                      Arr(Str(testAddressStr), Num(100), Num(4), Bool(false))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
