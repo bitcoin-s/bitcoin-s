@@ -93,7 +93,7 @@ sealed trait TestDAOFixture
       created <- testCreateAll(testDAO)
       _ = assert(created)
 
-      _ = testDAO.deleteAll()
+      _ <- testDAO.deleteAll()
       all <- testDAO.findAll()
     } yield all.isEmpty
   }
