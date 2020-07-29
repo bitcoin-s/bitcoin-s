@@ -68,8 +68,9 @@ case class TestDLCClient(
       getSigs: Future[(CETSignatures, FundingSignatures)]): Future[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
+    val (remoteCetSigs, cets) = dlcTxSigner.createCETsAndCETSigs()
+
     for {
-      (remoteCetSigs, cets) <- dlcTxSigner.createCETsAndCETSigsAsync()
       _ <- sendSigs(remoteCetSigs)
       (cetSigs, fundingSigs) <- getSigs
       setupDLC <- Future.fromTry {
@@ -98,7 +99,7 @@ case class TestDLCClient(
       }
       cetSigs =
         dlcTxSigner.createCETSigs(setupDLCWithoutFundingTxSigs.cets.map {
-          case (msg, info) => OutcomeCETPair(msg, info.tx)
+          case (msg, info) => AdaptorPointCETPair(msg, info.tx)
         })
       localFundingSigs <- Future.fromTry {
         dlcTxSigner.signFundingTx()

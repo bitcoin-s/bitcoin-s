@@ -1,21 +1,18 @@
 package org.bitcoins.gui
 
-import javafx.event.{ActionEvent, EventHandler}
 import javafx.scene.image.Image
 import org.bitcoins.cli.CliCommand.GetInfo
 import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
 import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.gui.dlc.DLCPane
-import org.bitcoins.gui.settings.SettingsPane
-import scalafx.application.{JFXApp, Platform}
+import scalafx.application.JFXApp
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Scene
 import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.control.TabPane.TabClosingPolicy
 import scalafx.scene.control._
-import scalafx.scene.layout.{BorderPane, HBox, StackPane, VBox}
+import scalafx.scene.layout.{BorderPane, StackPane, VBox}
 
 import scala.util.{Failure, Success}
 
@@ -70,76 +67,78 @@ object WalletGUI extends JFXApp {
     text <== GlobalData.statusText
   }
 
-  private val resultArea = new TextArea {
-    editable = false
-    wrapText = true
+  private val confirmedText = new Label() {
     text <== StringProperty(
-      "Your current balance is: ") + GlobalData.currentBalance + StringProperty(
-      s" sats\n\n${(0 until 60).map(_ => "-").mkString}\n\n") + GlobalData.log
+      "Confirmed balance:\t\t") + GlobalData.currentConfirmedBalance + StringProperty(
+      " sats")
+  }
+
+  private val unconfirmedText = new Label() {
+    text <== StringProperty(
+      "Unconfirmed balance:\t") + GlobalData.currentReservedBalance + StringProperty(
+      " sats")
+  }
+
+  private val reservedText = new Label() {
+    text <== StringProperty(
+      "Reserved balance:\t\t") + GlobalData.currentReservedBalance + StringProperty(
+      " sats")
+  }
+
+  private val totalBalanceText = new Label() {
+    text <== StringProperty(
+      "Total balance:\t\t\t") + GlobalData.currentTotalBalance + StringProperty(
+      " sats")
   }
 
   private val model = new WalletGUIModel()
+  private val dlcPane = new DLCPane(glassPane)
+
+  private val balanceBox = new VBox {
+    spacing = 10
+    children = Vector(confirmedText,
+                      unconfirmedText,
+                      reservedText,
+                      new Separator(),
+                      totalBalanceText)
+  }
 
   private val getNewAddressButton = new Button {
     text = "Get New Address"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onGetNewAddress()
-    }
+    onAction = _ => model.onGetNewAddress()
   }
 
   private val sendButton = new Button {
     text = "Send"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onSend()
-    }
+    onAction = _ => model.onSend()
   }
 
-  private val buttonBar = new HBox {
-    children = Seq(getNewAddressButton, sendButton)
-    alignment = Pos.Center
-    spacing <== width / 2
+  private val sidebar = new VBox {
+    padding = Insets(10)
+    spacing = 20
+
+    getNewAddressButton.prefWidth <== width
+    sendButton.prefWidth <== width
+    getNewAddressButton.maxWidth = 300
+    sendButton.maxWidth = 300
+    children = Vector(balanceBox, getNewAddressButton, sendButton)
   }
 
   private val borderPane = new BorderPane {
-    top = buttonBar
-    center = resultArea
+    top = AppMenuBar.menuBar(model)
+    left = sidebar
+    center = dlcPane.borderPane
     bottom = statusLabel
-  }
-
-  private val dlcPane = new DLCPane(glassPane)
-
-  private val settingsPane = new SettingsPane
-
-  private val tabPane: TabPane = new TabPane {
-
-    val walletTab: Tab = new Tab {
-      text = "Wallet"
-      content = borderPane
-    }
-
-    val dlcTab: Tab = new Tab {
-      text = "DLC"
-      content = dlcPane.borderPane
-    }
-
-    val settingsTab: Tab = new Tab {
-      text = "Settings"
-      content = settingsPane.view
-    }
-
-    tabs = Seq(walletTab, dlcTab, settingsTab)
-
-    tabClosingPolicy = TabClosingPolicy.Unavailable
   }
 
   private val rootView = new StackPane {
     children = Seq(
-      tabPane,
+      borderPane,
       glassPane
     )
   }
 
-  private val walletScene = new Scene(1000, 600) {
+  private val walletScene = new Scene(1400, 600) {
     root = rootView
     stylesheets = GlobalData.currentStyleSheets
   }
@@ -166,7 +165,6 @@ object WalletGUI extends JFXApp {
        "Bitcoin-S Wallet - [regtest]")
     case SigNet =>
       (new Image("/icons/bitcoin-s-signet.png"), "Bitcoin-S Wallet - [signet]")
-
   }
 
   stage = new JFXApp.PrimaryStage {
@@ -175,10 +173,8 @@ object WalletGUI extends JFXApp {
     icons.add(img)
   }
 
-  private val taskRunner = new TaskRunner(resultArea, glassPane)
+  private val taskRunner = new TaskRunner(borderPane, glassPane)
   model.taskRunner = taskRunner
-
-  Platform.runLater(sendButton.requestFocus())
 
   override def stopApp(): Unit = {
     sys.exit(0) // Kills the server if GUI is closed in AppBundle

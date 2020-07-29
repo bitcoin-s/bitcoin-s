@@ -25,6 +25,8 @@ sealed trait OracleOutcome {
     */
   def outcome: DLCOutcomeType
 
+  def oraclesAndOutcomes: Vector[(SingleOracleInfo, DLCOutcomeType)]
+
   protected def computeSigPoint: ECPublicKey
 
   /** The adaptor point used to encrypt the signatures for this corresponding CET. */
@@ -48,6 +50,9 @@ case class EnumOracleOutcome(
     oracles.map(_.sigPoint(outcome)).reduce(_.add(_))
   }
 
+  override val oraclesAndOutcomes: Vector[(EnumSingleOracleInfo, EnumOutcome)] =
+    oracles.map((_, outcome))
+
   override lazy val aggregateNonce: SchnorrNonce = {
     oracles
       .map(_.aggregateNonce(outcome))
@@ -60,7 +65,7 @@ case class EnumOracleOutcome(
 /** Corresponds to a CET in an Numeric Outcome DLC where some set of `threshold`
   * oracles have each signed some NumericOutcome.
   */
-case class NumericOracleOutcome(oraclesAndOutcomes: Vector[
+case class NumericOracleOutcome(override val oraclesAndOutcomes: Vector[
   (NumericSingleOracleInfo, UnsignedNumericOutcome)])
     extends OracleOutcome {
 
@@ -103,5 +108,5 @@ object NumericOracleOutcome {
   }
 }
 
-/** An oracle outcome and it's corresponding CET */
-case class OutcomeCETPair(outcome: OracleOutcome, wtx: WitnessTransaction)
+/** An adaptor point and it's corresponding CET */
+case class AdaptorPointCETPair(sigPoint: ECPublicKey, wtx: WitnessTransaction)
