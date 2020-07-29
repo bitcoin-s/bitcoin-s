@@ -519,7 +519,7 @@ case class ChainHandler(
             prevWork
           case None =>
             // this should be the case where the accum is
-            //empty, so this header is the last one we hvae
+            //empty, so this header is the last one we have
             //stored in the database
             lastHeaderWithWorkInDb.chainWork
         }
@@ -539,7 +539,7 @@ case class ChainHandler(
       batchSize: Int): Future[Vector[Blockchain]] = {
     val batchEndHeight = Math.min(maxHeight, startHeight + batchSize - 1)
     val headersToCalcF = {
-      logger.trace(s"Fetching from=${startHeight} to=${batchEndHeight}")
+      logger.trace(s"Fetching from=$startHeight to=$batchEndHeight")
       blockHeaderDAO.getBlockchainsBetweenHeights(from = startHeight,
                                                   to = batchEndHeight)
     }
@@ -547,7 +547,7 @@ case class ChainHandler(
     headersToCalcF
   }
 
-  /** Creates [[numBatches]] of requqests to the database fetching [[batchSize]] headers
+  /** Creates [[numBatches]] of requests to the database fetching [[batchSize]] headers
     * starting at [[batchStartHeight]]. These are executed in parallel. After all are fetched
     * we join them into one future and return it. */
   private def batchAndGetBlockchains(
@@ -598,14 +598,14 @@ case class ChainHandler(
         headersToCalc <- headersToCalcF
         _ = headersToCalc.headOption.map { h =>
           logger.info(
-            s"Recalculating chain work... current height: ${h.height} maxHeight=${maxHeight}")
+            s"Recalculating chain work... current height: ${h.height} maxHeight=$maxHeight")
         }
         headersWithWork = {
-          headersToCalc.map { chain =>
+          headersToCalc.flatMap { chain =>
             calcChainWork(remainingHeaders = chain.headers.sortBy(_.height),
                           accum = Vector.empty,
                           lastHeaderWithWorkInDb = lastHeader)
-          }.flatten
+          }
         }
 
         //unfortunately on sqlite there is a bottle neck here
@@ -614,7 +614,7 @@ case class ChainHandler(
         //so while it looks like we are executing in parallel
         //in reality there is only one thread that can write to the db
         //at a single time
-        _ = logger.debug(
+        _ = logger.trace(
           s"Upserting from height=${headersWithWork.headOption.map(_.height)} " +
             s"to height=${headersWithWork.lastOption.map(_.height)}")
         _ <- FutureUtil.batchExecute(
@@ -644,7 +644,7 @@ case class ChainHandler(
         if (startHeight == 0) {
           val genesisHeaderF = blockHeaderDAO.getAtHeight(0)
           genesisHeaderF.flatMap { h =>
-            require(h.length == 1, s"Shoudl only have one genesis header!")
+            require(h.length == 1, s"Should only have one genesis header!")
             calculateChainWorkGenesisBlock(h.head)
               .map(Vector(_))
           }
@@ -664,15 +664,14 @@ case class ChainHandler(
       this.copy(blockchains = newBlockchains)
     }
 
-    resultF.failed.foreach {
-      case err =>
-        logger.error(s"Failed to recalculate chain work", err)
+    resultF.failed.foreach { err =>
+      logger.error(s"Failed to recalculate chain work", err)
     }
 
     resultF
   }
 
-  /** Calculates the chainwork for the genesis header */
+  /** Calculates the chain work for the genesis header */
   private def calculateChainWorkGenesisBlock(
       genesisHeader: BlockHeaderDb): Future[BlockHeaderDb] = {
     val expectedWork = Pow.getBlockProof(genesisHeader.blockHeader)
