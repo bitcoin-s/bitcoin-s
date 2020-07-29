@@ -1,16 +1,22 @@
 package org.bitcoins.gui
 
-import org.bitcoins.cli.CliCommand.{GetBalance, GetNewAddress, SendToAddress}
+import org.bitcoins.cli.CliCommand.{
+  EstimateFee,
+  GetBalance,
+  GetNewAddress,
+  SendToAddress
+}
 import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.dialog.{GetNewAddressDialog, SendDialog}
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.control.Alert
 import scalafx.scene.control.Alert.AlertType
 import scalafx.stage.Window
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class WalletGUIModel() {
   var taskRunner: TaskRunner = _
@@ -40,6 +46,16 @@ class WalletGUIModel() {
   }
 
   startBalanceThread()
+
+  def updateFeeRate(): Try[FeeUnit] = {
+    ConsoleCli.exec(EstimateFee, GlobalData.consoleCliConfig).map { feeStr =>
+      val feeUnit = FeeUnit.fromString(feeStr)
+      GlobalData.feeRate = feeUnit
+      feeUnit
+    }
+  }
+
+  updateFeeRate()
 
   def onGetNewAddress(): Unit = {
     val address = StringProperty("")

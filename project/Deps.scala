@@ -293,6 +293,14 @@ object Deps {
     }
   }
 
+  // version number needed for MicroJson
+  val dlc = List(
+    Compile.playJson,
+    Compile.newMicroJson
+  )
+
+  val dlcTest = List()
+
   val secp256k1jni = List(
     Compile.nativeLoader,
     Test.junitInterface
@@ -418,6 +426,12 @@ object Deps {
     )
   }
 
+  val dlcSuredbitsClient = List(
+    Compile.akkaStream,
+    Compile.akkaHttp,
+    Compile.playJson
+  )
+
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
@@ -518,6 +532,18 @@ object Deps {
       Compile.logback,
       Compile.slf4j,
       Compile.grizzledSlf4j
+    )
+
+  val dlcWallet =
+    List(
+      Compile.newMicroJson,
+      Compile.logback
+    )
+
+  val dlcWalletTest =
+    List(
+      Test.akkaTestkit,
+      Test.pgEmbedded
     )
 
   val walletTest = List(

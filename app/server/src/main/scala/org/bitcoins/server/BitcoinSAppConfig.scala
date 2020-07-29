@@ -5,6 +5,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
+import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -28,6 +29,7 @@ case class BitcoinSAppConfig(
   lazy val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
   lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
   lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
+  lazy val dlcConf: DLCAppConfig = DLCAppConfig(directory, confs: _*)
 
   lazy val kmConf: KeyManagerAppConfig =
     KeyManagerAppConfig(directory, confs: _*)
@@ -41,7 +43,8 @@ case class BitcoinSAppConfig(
                        walletConf.start(),
                        nodeConf.start(),
                        chainConf.start(),
-                       bitcoindRpcConf.start())
+                       bitcoindRpcConf.start(),
+                       dlcConf.start())
 
     Future.sequence(futures).map(_ => ())
   }

@@ -1,16 +1,16 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.api.wallet.AnyHDWalletApi
 import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.dlc.wallet.AnyDLCHDWalletApi
 
 import scala.concurrent.Future
 
 /** ScalaMock cannot stub traits with protected methods,
   * so we need to stub them manually.
   */
-abstract class MockWalletApi extends AnyHDWalletApi {
+abstract class MockWalletApi extends AnyDLCHDWalletApi {
 
   override def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress] =
     stub

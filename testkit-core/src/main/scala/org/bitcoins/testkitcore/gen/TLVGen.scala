@@ -3,19 +3,15 @@ package org.bitcoins.testkitcore.gen
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{UInt32, UInt64}
-import org.bitcoins.core.protocol.dlc.DLCMessage.DLCOffer
-import org.bitcoins.core.protocol.dlc.{
-  ContractInfo,
-  DLCFundingInputP2WPKHV0,
-  DLCMessage,
-  EnumContractDescriptor
-}
+import org.bitcoins.core.protocol.dlc.DLCMessage.{DLCAccept, DLCOffer}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
-import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.dlc.builder.DLCTxBuilder
+import org.bitcoins.dlc.testgen.DLCTestUtil
 import org.scalacheck.Gen
 
 trait TLVGen {
@@ -125,31 +121,8 @@ trait TLVGen {
         Gen
           .choose(numOutcomes + 1, Long.MaxValue / 10000L)
           .map(Satoshis.apply)
-      contractDescriptor = {
-        //DLCTestUtil.genContractDescriptors(outcomes.toVector, totalInput)
-        val satVals = {
-          val vals = if (outcomes.length < 2) {
-            throw new IllegalArgumentException(
-              s"Size must be at least two, got ${outcomes.length}")
-          } else if (outcomes.length == 2) {
-            Vector(totalInput, Satoshis.zero)
-          } else {
-            (0 until outcomes.length - 2).map { _ =>
-              Satoshis(NumberUtil.randomLong(totalInput.toLong))
-            }.toVector :+ totalInput :+ Satoshis.zero
-          }
-
-          val valsWithOrder = vals.map(_ -> scala.util.Random.nextDouble())
-          valsWithOrder.sortBy(_._2).map(_._1)
-        }
-
-        val outcomeMap =
-          outcomes.toVector
-            .map(EnumOutcome.apply)
-            .zip(satVals)
-
-        EnumContractDescriptor(outcomeMap)
-      }
+      (contractDescriptor, _) =
+        DLCTestUtil.genContractDescriptors(outcomes.toVector, totalInput)
     } yield {
       (contractDescriptor.toTLV, totalInput)
     }
@@ -439,6 +412,41 @@ trait TLVGen {
     } yield {
       DLCSignTLV(contractId, cetSigs, refundSig, fundingSigs)
     }
+  }
+
+  def dlcSignTLV(offer: DLCOfferTLV, accept: DLCAcceptTLV): Gen[DLCSignTLV] = {
+    val contractInfo = ContractInfo.fromTLV(offer.contractInfo)
+
+    for {
+      cetSigs <- cetSignaturesV0TLV(contractInfo.allOutcomes.length)
+      refundSig <- CryptoGenerators.digitalSignature
+      fundingSigs <- fundingSignaturesV0TLV(offer.fundingInputs.length)
+    } yield {
+      val deserOffer = DLCOffer.fromTLV(offer)
+      val builder =
+        DLCTxBuilder(deserOffer,
+                     DLCAccept.fromTLV(accept, deserOffer).withoutSigs)
+      val fundingTx = builder.buildFundingTx
+      val contractId = fundingTx.txIdBE.bytes.xor(accept.tempContractId.bytes)
+
+      DLCSignTLV(contractId, cetSigs, refundSig, fundingSigs)
+    }
+  }
+
+  def dlcOfferTLVAcceptTLVSignTLV: Gen[
+    (DLCOfferTLV, DLCAcceptTLV, DLCSignTLV)] = {
+    for {
+      (offer, accept) <- dlcOfferTLVAcceptTLV
+      sign <- dlcSignTLV(offer, accept)
+    } yield (offer, accept, sign)
+  }
+
+  def dlcOfferTLVAcceptTLVSignTLVWithOralceKeys: Gen[
+    (DLCOfferTLV, DLCAcceptTLV, DLCSignTLV, ECPrivateKey, ECPrivateKey)] = {
+    for {
+      (offer, accept, privKey, kValue) <- dlcOfferTLVAcceptTLVWithOracleKeys
+      sign <- dlcSignTLV(offer, accept)
+    } yield (offer, accept, sign, privKey, kValue)
   }
 
   def tlv: Gen[TLV] = {

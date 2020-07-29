@@ -6,15 +6,20 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.hd.AddressType.SegWit
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE, ECPublicKey}
+import org.bitcoins.crypto._
+import scodec.bits.ByteVector
 import ujson._
 
+import java.io.File
+import java.nio.file.Path
 import scala.util.{Failure, Try}
 
 case class GetNewAddress(labelOpt: Option[AddressLabelTag])
@@ -617,6 +622,248 @@ object SendToAddress extends ServerJsonModels {
 
 }
 
+case class GetDLC(paramHash: Sha256DigestBE)
+
+object GetDLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetDLC] = {
+    jsArr.arr.toList match {
+      case paramHashJs :: Nil =>
+        Try {
+          val paramHash = Sha256DigestBE(paramHashJs.str)
+          GetDLC(paramHash)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing paramHash argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class CreateDLCOffer(
+    contractInfoTLV: ContractInfoV0TLV,
+    collateral: Satoshis,
+    feeRateOpt: Option[SatoshisPerVirtualByte],
+    locktime: UInt32,
+    refundLocktime: UInt32)
+
+object CreateDLCOffer extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateDLCOffer] = {
+
+    jsArr.arr.toList match {
+      case contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: Nil =>
+        Try {
+          val contractInfoTLV = jsToContractInfoTLV(contractInfoJs)
+          val collateral = jsToSatoshis(collateralJs)
+          val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
+          val locktime = jsToUInt32(locktimeJs)
+          val refundLT = jsToUInt32(refundLTJs)
+          CreateDLCOffer(contractInfoTLV,
+                         collateral,
+                         feeRate,
+                         locktime,
+                         refundLT)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 6"))
+    }
+  }
+}
+
+case class AcceptDLCOffer(offer: LnMessage[DLCOfferTLV])
+
+object AcceptDLCOffer extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLCOffer] = {
+    jsArr.arr.toList match {
+      case offerJs :: Nil =>
+        Try {
+          val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
+          AcceptDLCOffer(offer)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing offer argument"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class SignDLC(accept: LnMessage[DLCAcceptTLV])
+
+object SignDLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SignDLC] = {
+    jsArr.arr.toList match {
+      case acceptJs :: Nil =>
+        Try {
+          val accept = LnMessageFactory(DLCAcceptTLV).fromHex(acceptJs.str)
+          SignDLC(accept)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing accept argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class AddDLCSigs(sigs: LnMessage[DLCSignTLV])
+
+object AddDLCSigs extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AddDLCSigs] = {
+    jsArr.arr.toList match {
+      case sigsJs :: Nil =>
+        Try {
+          val sigs = LnMessageFactory(DLCSignTLV).fromHex(sigsJs.str)
+          AddDLCSigs(sigs)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing sigs argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class DLCDataFromFile(path: Path, destinationOpt: Option[Path])
+
+object DLCDataFromFile extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DLCDataFromFile] = {
+    jsArr.arr.toList match {
+      case pathJs :: Nil =>
+        Try {
+          val path = new File(pathJs.str).toPath
+          DLCDataFromFile(path, None)
+        }
+      case pathJs :: destJs :: Nil =>
+        Try {
+          val path = new File(pathJs.str).toPath
+          val destJsOpt = nullToOpt(destJs)
+          val destOpt = destJsOpt.map(js => new File(js.str).toPath)
+          DLCDataFromFile(path, destOpt)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing path argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class GetDLCFundingTx(contractId: ByteVector)
+
+object GetDLCFundingTx extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetDLCFundingTx] = {
+    jsArr.arr.toList match {
+      case contractIdJs :: Nil =>
+        Try {
+          val contractId = ByteVector.fromValidHex(contractIdJs.str)
+          GetDLCFundingTx(contractId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing contractId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class BroadcastDLCFundingTx(contractId: ByteVector)
+
+object BroadcastDLCFundingTx extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[BroadcastDLCFundingTx] = {
+    jsArr.arr.toList match {
+      case contractIdJs :: Nil =>
+        Try {
+          val contractId = ByteVector.fromValidHex(contractIdJs.str)
+          BroadcastDLCFundingTx(contractId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing contractId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class ExecuteDLC(
+    contractId: ByteVector,
+    oracleSigs: Vector[OracleAttestmentTLV],
+    noBroadcast: Boolean)
+    extends Broadcastable
+
+object ExecuteDLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLC] = {
+    jsArr.arr.toList match {
+      case contractIdJs :: oracleSigsJs :: noBroadcastJs :: Nil =>
+        Try {
+          val contractId = ByteVector.fromValidHex(contractIdJs.str)
+          val oracleSigs = jsToOracleAttestmentTLVVec(oracleSigsJs)
+          val noBroadcast = noBroadcastJs.bool
+
+          ExecuteDLC(contractId, oracleSigs, noBroadcast)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing contractId, oracleSigs, and noBroadcast arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class ExecuteDLCRefund(contractId: ByteVector, noBroadcast: Boolean)
+    extends Broadcastable
+
+object ExecuteDLCRefund extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCRefund] = {
+    jsArr.arr.toList match {
+      case contractIdJs :: noBroadcastJs :: Nil =>
+        Try {
+          val contractId = ByteVector.fromValidHex(contractIdJs.str)
+          val noBroadcast = noBroadcastJs.bool
+
+          ExecuteDLCRefund(contractId, noBroadcast)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing contractId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
 case class SendFromOutpoints(
     outPoints: Vector[TransactionOutPoint],
     address: BitcoinAddress,
@@ -758,6 +1005,54 @@ object BumpFee extends ServerJsonModels {
 
 trait ServerJsonModels {
 
+  def jsToOracleAnnouncementTLV(js: Value): OracleAnnouncementTLV =
+    js match {
+      case str: Str =>
+        OracleAnnouncementTLV(str.value)
+      case _: Value =>
+        throw Value.InvalidData(
+          js,
+          "Expected an OracleAnnouncementTLV as a hex string")
+    }
+
+  def jsToContractInfoTLV(js: Value): ContractInfoV0TLV =
+    js match {
+      case str: Str =>
+        ContractInfoV0TLV(str.value)
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected a ContractInfo as a hex string")
+    }
+
+  def jsToSatoshisPerVirtualByteOpt(js: Value): Option[SatoshisPerVirtualByte] =
+    nullToOpt(js).map {
+      case str: Str =>
+        SatoshisPerVirtualByte(Satoshis(str.value))
+      case num: Num =>
+        SatoshisPerVirtualByte(Satoshis(num.value.toLong))
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected a fee rate in sats/vbyte")
+    }
+
+  def jsToUInt32(js: Value): UInt32 =
+    js match {
+      case str: Str =>
+        UInt32(BigInt(str.value))
+      case num: Num =>
+        UInt32(num.value.toLong)
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected a UInt32")
+    }
+
+  def jsToSatoshis(js: Value): Satoshis =
+    js match {
+      case str: Str =>
+        Satoshis(BigInt(str.value))
+      case num: Num =>
+        Satoshis(num.value.toLong)
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected value in Satoshis")
+    }
+
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
     try {
       BitcoinAddress.fromString(js.str)
@@ -803,4 +1098,35 @@ trait ServerJsonModels {
       case Arr(arr) if arr.size == 1 => Some(arr.head)
       case _: Value                  => Some(value)
     }
+
+  def jsToSchnorrDigitalSignature(js: Value): SchnorrDigitalSignature =
+    js match {
+      case str: Str =>
+        SchnorrDigitalSignature(str.value)
+      case _: Value =>
+        throw Value.InvalidData(
+          js,
+          "Expected a SchnorrDigitalSignature as a hex string")
+    }
+
+  def jsToSchnorrDigitalSignatureVec(
+      js: Value): Vector[SchnorrDigitalSignature] = {
+    js.arr.foldLeft(Vector.empty[SchnorrDigitalSignature])((vec, sig) =>
+      vec :+ jsToSchnorrDigitalSignature(sig))
+  }
+
+  def jsToOracleAttestmentTLV(js: Value): OracleAttestmentTLV =
+    js match {
+      case str: Str =>
+        OracleAttestmentTLV(str.value)
+      case _: Value =>
+        throw Value.InvalidData(
+          js,
+          "Expected a OracleAttestmentTLV as a hex string")
+    }
+
+  def jsToOracleAttestmentTLVVec(js: Value): Vector[OracleAttestmentTLV] = {
+    js.arr.foldLeft(Vector.empty[OracleAttestmentTLV])((vec, tlv) =>
+      vec :+ jsToOracleAttestmentTLV(tlv))
+  }
 }
