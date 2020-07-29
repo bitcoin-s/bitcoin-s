@@ -1,6 +1,12 @@
 package org.bitcoins.gui.dlc.dialog
 
+import org.bitcoins.core.protocol.dlc.DLCStatus.Offered
 import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.tlv.{
+  EnumOutcome,
+  SignedNumericOutcome,
+  UnsignedNumericOutcome
+}
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
 import scalafx.Includes._
@@ -192,12 +198,24 @@ object ViewDLCDialog {
                   .flip(status.totalCollateral.satoshis)
                   .outcomeValueFunc
               }
-              DLCPlotUtil.plotCETsWithOriginalCurve(
-                base = 2,
-                descriptor.numDigits,
-                payoutCurve,
-                status.contractInfo.totalCollateral,
-                descriptor.roundingIntervals)
+
+              val outcomeOpt = status match {
+                case claimed: ClaimedDLCStatus =>
+                  claimed.oracleOutcome.outcome match {
+                    case EnumOutcome(_) | SignedNumericOutcome(_, _) => None
+                    case UnsignedNumericOutcome(digits) =>
+                      Some(digits)
+                  }
+                case _: Offered | _: AcceptedDLCStatus =>
+                  None
+              }
+
+              DLCPlotUtil.plotCETs(base = 2,
+                                   descriptor.numDigits,
+                                   payoutCurve,
+                                   status.contractInfo.totalCollateral,
+                                   descriptor.roundingIntervals,
+                                   outcomeOpt)
               ()
             }
           }

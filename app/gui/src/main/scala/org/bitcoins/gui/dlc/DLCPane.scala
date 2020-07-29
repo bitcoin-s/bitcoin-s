@@ -45,7 +45,7 @@ class DLCPane(glassPane: VBox) {
 
   // This is commented out because it will cause the GUI startup to fail on master
   // It should be uncommented when on the adaptor-dlc branch
-  //model.setUp()
+  model.setUp()
 
   private val enumContractButton = new Button {
     text = "Enum Contract"

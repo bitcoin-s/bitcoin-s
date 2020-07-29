@@ -1,5 +1,6 @@
 package org.bitcoins.commons
 
+import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc.{DLCState, DLCStatus}
@@ -30,6 +31,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         assert(status.state == DLCState.Offered)
         assert(read[DLCStatus](write(status)) == status)
+        assert(read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
     }
   }
 
@@ -57,6 +60,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         assert(status.state == DLCState.Accepted)
         assert(read[DLCStatus](write(status)) == status)
+        assert(read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
     }
   }
 
@@ -84,6 +89,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         assert(status.state == DLCState.Signed)
         assert(read[DLCStatus](write(status)) == status)
+        assert(read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
     }
   }
 
@@ -113,6 +120,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         assert(status.state == DLCState.Broadcasted)
         assert(read[DLCStatus](write(status)) == status)
+        assert(read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
     }
   }
 
@@ -142,6 +151,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         assert(status.state == DLCState.Confirmed)
         assert(read[DLCStatus](write(status)) == status)
+        assert(read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
     }
   }
 
@@ -181,6 +192,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       assert(status.state == DLCState.Claimed)
       assert(read[DLCStatus](write(status)) == status)
+      assert(
+        read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
     }
   }
 
@@ -220,6 +234,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       assert(status.state == DLCState.RemoteClaimed)
       assert(read[DLCStatus](write(status)) == status)
+      assert(
+        read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
     }
   }
 
@@ -252,6 +269,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       assert(status.state == DLCState.Refunded)
       assert(read[DLCStatus](write(status)) == status)
+      assert(
+        read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
     }
   }
 }

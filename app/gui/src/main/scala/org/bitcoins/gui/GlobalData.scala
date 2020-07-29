@@ -2,6 +2,7 @@ package org.bitcoins.gui
 
 import org.bitcoins.cli.Config
 import org.bitcoins.core.config._
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.gui.settings.Themes
 import scalafx.beans.property.{LongProperty, StringProperty}
@@ -55,4 +56,6 @@ object GlobalData {
         s"View transaction on your own node on $net"
     }
   }
+
+  var feeRate: FeeUnit = SatoshisPerVirtualByte.fromLong(50)
 }

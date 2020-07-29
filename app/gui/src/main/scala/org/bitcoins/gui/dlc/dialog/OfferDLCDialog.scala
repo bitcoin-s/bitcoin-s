@@ -30,7 +30,7 @@ class OfferDLCDialog
         ContractInfoV0TLV.fromHex(readStringFromNode(inputs(contractInfoStr))),
       collateral = Satoshis(BigInt(readStringFromNode(inputs(collateralStr)))),
       feeRateOpt = feeRate,
-      locktime = UInt32(BigInt(readStringFromNode(inputs(locktimeStr)))),
+      locktime = UInt32.zero,
       refundLT = UInt32(BigInt(readStringFromNode(inputs(refundLocktimeStr))))
     )
   }
