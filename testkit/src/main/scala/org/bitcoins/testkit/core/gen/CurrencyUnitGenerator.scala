@@ -1,11 +1,6 @@
 package org.bitcoins.testkit.core.gen
 
-import org.bitcoins.core.currency.{
-  Bitcoins,
-  CurrencyUnit,
-  CurrencyUnits,
-  Satoshis
-}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.currency._
 import org.scalacheck.Gen
 
@@ -24,7 +19,7 @@ trait CurrencyUnitGenerator {
   def currencyUnit: Gen[CurrencyUnit] = Gen.oneOf(satoshis, bitcoins)
 
   def positiveSatoshis: Gen[Satoshis] =
-    satoshis.suchThat(_ >= CurrencyUnits.zero)
+    Gen.choose(0, Long.MaxValue).map(Satoshis.apply)
 
   /**
     * Generates a postiive satoshi value that is 'realistic'. This current 'realistic' range

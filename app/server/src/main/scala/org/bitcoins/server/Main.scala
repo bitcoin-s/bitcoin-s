@@ -24,6 +24,7 @@ import org.bitcoins.core.config.{
 }
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.db._
+import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
@@ -115,6 +116,7 @@ object Main extends App with HttpLogger {
     implicit val walletConf: WalletAppConfig = conf.walletConf
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
     implicit val chainConf: ChainAppConfig = conf.chainConf
+    implicit val dlcConf: DLCAppConfig = conf.dlcConf
 
     if (nodeConf.peers.isEmpty) {
       throw new IllegalArgumentException(
@@ -146,10 +148,10 @@ object Main extends App with HttpLogger {
       node <- nodeF
       chainApi <- chainApiF
       _ = logger.info("Initialized chain api")
-      wallet <- walletConf.createHDWallet(node,
-                                          chainApi,
-                                          BitcoinerLiveFeeRateProvider(60),
-                                          bip39PasswordOpt)
+      wallet <- dlcConf.createDLCWallet(node,
+                                        chainApi,
+                                        BitcoinerLiveFeeRateProvider(60),
+                                        bip39PasswordOpt)
       callbacks <- createCallbacks(wallet)
       _ = nodeConf.addCallbacks(callbacks)
     } yield {
@@ -287,7 +289,7 @@ object Main extends App with HttpLogger {
 
   private def startHttpServer(
       node: Node,
-      wallet: Wallet,
+      wallet: DLCWallet,
       rpcPortOpt: Option[Int])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {

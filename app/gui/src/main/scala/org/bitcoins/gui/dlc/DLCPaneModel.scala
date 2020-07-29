@@ -105,20 +105,8 @@ class DLCPaneModel(
     printDLCDialogResult("GetDLCFundingTx", GetFundingDLCDialog)
   }
 
-  def onInitClose(): Unit = {
-    printDLCDialogResult("InitDLCMutualClose", InitCloseDLCDialog)
-  }
-
-  def onAcceptClose(): Unit = {
-    printDLCDialogResult("AcceptDLCMutualClose", AcceptCloseDLCDialog)
-  }
-
-  def onForceClose(): Unit = {
-    printDLCDialogResult("ExecuteUnilateralDLC", ForceCloseDLCDialog)
-  }
-
-  def onPunish(): Unit = {
-    printDLCDialogResult("ExecuteDLCPunishment", PunishDLCDialog)
+  def onClose(): Unit = {
+    printDLCDialogResult("ExecuteDLC", ForceCloseDLCDialog)
   }
 
   def onRefund(): Unit = {
