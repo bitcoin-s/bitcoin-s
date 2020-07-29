@@ -87,7 +87,7 @@ object DLCPlotUtil {
              executedCETOpt = Some(executedDLC))
   }
 
-  private def plotCETs(
+  def plotCETs(
       base: Int,
       numDigits: Int,
       function: DLCPayoutCurve,

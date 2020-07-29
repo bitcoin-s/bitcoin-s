@@ -20,7 +20,7 @@ jobs:
         with:
           java-version: zulu@1.11
       - uses: olafurpg/setup-gpg@v3
-      - run: sbt ci-release docs/publishWebsite
+      - run: sbt ci-release #docs/publishWebsite
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}

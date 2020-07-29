@@ -14,6 +14,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.AppConfig
+import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node.{
   NodeCallbacks,
@@ -44,6 +45,24 @@ trait BitcoinSWalletTest
     with BaseWalletTest
     with EmbeddedPg {
   import BitcoinSWalletTest._
+
+  implicit protected def getFreshDLCAppConfig: DLCAppConfig = {
+    getFreshConfig.dlcConf
+  }
+
+  override def beforeAll(): Unit = {
+    AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
+    AppConfig.throwIfDefaultDatadir(getFreshConfig.dlcConf)
+    super[EmbeddedPg].beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    Await.result(getFreshConfig.chainConf.stop(), 1.minute)
+    Await.result(getFreshConfig.nodeConf.stop(), 1.minute)
+    Await.result(getFreshConfig.walletConf.stop(), 1.minute)
+    Await.result(getFreshConfig.dlcConf.stop(), 1.minute)
+    super[EmbeddedPg].afterAll()
+  }
 
   def nodeApi: NodeApi = MockNodeApi
 
@@ -335,6 +354,40 @@ object BitcoinSWalletTest extends WalletLogger {
       }
     }
 
+  private def createDLCWallet(
+      keyManager: BIP39KeyManager,
+      bip39PasswordOpt: Option[String],
+      extraConfig: Option[Config],
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi)(implicit
+      config: BitcoinSAppConfig,
+      ec: ExecutionContext): Future[DLCWallet] = {
+    val defaultConf = config.walletConf
+    val walletConfig = extraConfig match {
+      case None    => defaultConf
+      case Some(c) => defaultConf.withOverrides(c)
+    }
+
+    // we want to check we're not overwriting
+    // any user data
+    AppConfig.throwIfDefaultDatadir(walletConfig)
+
+    val initConfs = for {
+      _ <- walletConfig.start()
+      _ <- config.dlcConf.start()
+    } yield ()
+
+    initConfs.flatMap { _ =>
+      val wallet =
+        DLCWallet(keyManager,
+                  nodeApi,
+                  chainQueryApi,
+                  new RandomFeeProvider,
+                  keyManager.creationTime)(walletConfig, config.dlcConf, ec)
+      Wallet.initialize(wallet, bip39PasswordOpt).map(_.asInstanceOf[DLCWallet])
+    }
+  }
+
   /** Creates a wallet with the default configuration */
   def createDefaultWallet(
       nodeApi: NodeApi,
@@ -418,6 +471,30 @@ object BitcoinSWalletTest extends WalletLogger {
                                                     wallet.keyManager.kmParams)
     } yield newAccountWallet
 
+  }
+
+  def createDLCWallet2Accounts(
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      bip39PasswordOpt: Option[String],
+      extraConfig: Option[Config] = None)(implicit
+      config: BitcoinSAppConfig,
+      system: ActorSystem): Future[DLCWallet] = {
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
+    val km =
+      createNewKeyManager(bip39PasswordOpt = bip39PasswordOpt)(
+        config.walletConf)
+    for {
+      wallet <- createDLCWallet(km,
+                                bip39PasswordOpt,
+                                extraConfig,
+                                nodeApi,
+                                chainQueryApi)
+      account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+      newAccountWallet <- wallet.createNewAccount(hdAccount = account1,
+                                                  kmParams =
+                                                    wallet.keyManager.kmParams)
+    } yield newAccountWallet.asInstanceOf[DLCWallet]
   }
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
@@ -577,9 +654,8 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   def destroyWallet(wallet: Wallet): Future[Unit] = {
-    import wallet.walletConfig.ec
+    import wallet.ec
     for {
-
       _ <- wallet.walletConfig.dropTable("flyway_schema_history")
       _ <- wallet.walletConfig.dropAll()
       _ <- wallet.stop()
