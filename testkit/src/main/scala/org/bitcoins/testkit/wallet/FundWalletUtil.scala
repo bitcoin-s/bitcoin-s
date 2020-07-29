@@ -8,10 +8,14 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.util.TransactionTestUtil
-import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
+import org.bitcoins.testkit.wallet.FundWalletUtil.{
+  FundedTestWallet,
+  FundedWallet
+}
 import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -75,7 +79,7 @@ trait FundWalletUtil {
 
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
   def fundWallet(wallet: Wallet)(implicit
-      ec: ExecutionContext): Future[FundedWallet] = {
+      ec: ExecutionContext): Future[FundedTestWallet] = {
 
     val defaultAccount = wallet.walletConfig.defaultAccount
     val fundedDefaultAccountWalletF = FundWalletUtil.fundAccountForWallet(
@@ -116,11 +120,29 @@ trait FundWalletUtil {
 
 object FundWalletUtil extends FundWalletUtil {
 
+  trait FundedTestWallet {
+    def wallet: Wallet
+  }
+
+  object FundedTestWallet {
+
+    def apply(wallet: Wallet): FundedTestWallet = {
+      wallet match {
+        case dlc: DLCWallet =>
+          FundedDLCWallet(dlc)
+        case _: Wallet =>
+          FundedWallet(wallet)
+      }
+    }
+  }
+
   /** This is a wallet that was two funded accounts
     * Account 0 (default account) has utxos of 1,2,3 bitcoin in it (6 btc total)
     * Account 1 has a utxos of 0.2,0.3,0.5 bitcoin in it (0.6 total)
     */
-  case class FundedWallet(wallet: Wallet)
+  case class FundedWallet(wallet: Wallet) extends FundedTestWallet
+
+  case class FundedDLCWallet(wallet: DLCWallet) extends FundedTestWallet
 
   /** This creates a wallet that was two funded accounts
     * Account 0 (default account) has utxos of 1,2,3 bitcoin in it (6 btc total)
@@ -142,6 +164,24 @@ object FundWalletUtil extends FundWalletUtil {
         bip39PasswordOpt = bip39PasswordOpt,
         extraConfig = extraConfig)
       funded <- FundWalletUtil.fundWallet(wallet)
-    } yield funded
+    } yield FundedWallet(funded.wallet)
+  }
+
+  def createFundedDLCWallet(
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      bip39PasswordOpt: Option[String],
+      extraConfig: Option[Config] = None)(implicit
+      config: BitcoinSAppConfig,
+      system: ActorSystem): Future[FundedDLCWallet] = {
+    import system.dispatcher
+    for {
+      wallet <- BitcoinSWalletTest.createDLCWallet2Accounts(
+        nodeApi = nodeApi,
+        chainQueryApi = chainQueryApi,
+        bip39PasswordOpt = bip39PasswordOpt,
+        extraConfig = extraConfig)
+      funded <- FundWalletUtil.fundWallet(wallet)
+    } yield FundedDLCWallet(funded.wallet.asInstanceOf[DLCWallet])
   }
 }
