@@ -48,14 +48,16 @@ trait WalletDbManagement extends DbManagement {
   // Ordering matters here, tables with a foreign key should be listed after
   // the table that key references
   override lazy val allTables: List[TableQuery[Table[_]]] = {
-    List(spkTable,
-         accountTable,
-         addressTable,
-         addressTagTable,
-         txTable,
-         incomingTxTable,
-         utxoTable,
-         outgoingTxTable)
+    List(
+      spkTable,
+      accountTable,
+      addressTable,
+      addressTagTable,
+      txTable,
+      incomingTxTable,
+      utxoTable,
+      outgoingTxTable
+    )
   }
 
 }

@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.zmq.ZMQSubscriber
@@ -22,7 +23,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
   def createWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
-      wallet: Wallet)(implicit ec: ExecutionContext): Wallet = {
+      wallet: DLCWallet)(implicit ec: ExecutionContext): DLCWallet = {
     // Kill the old wallet
     wallet.stopWalletThread()
 
@@ -31,7 +32,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     // so we don't lose the internal state of the wallet
     val walletCallbackP = Promise[Wallet]()
 
-    val pairedWallet = Wallet(
+    val pairedWallet = DLCWallet(
       keyManager = wallet.keyManager,
       nodeApi =
         BitcoindRpcBackendUtil.getNodeApiWalletCallback(bitcoind,
@@ -39,7 +40,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       chainQueryApi = bitcoind,
       feeRateApi = wallet.feeRateApi,
       creationTime = wallet.keyManager.creationTime
-    )(wallet.walletConfig, wallet.ec)
+    )(wallet.walletConfig, wallet.dlcConfig, wallet.ec)
 
     walletCallbackP.success(pairedWallet)
 

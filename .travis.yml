@@ -63,7 +63,7 @@ jobs:
       name: Linux 2.13.3 KeyManager Wallet, dlc tests
       os: linux
       env:
-        - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls"
+        - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls dlcTest/test dlcWalletTest/test"
       scala: 2.13.3
 
     - stage: test
@@ -102,7 +102,7 @@ jobs:
       os: osx
       name: "macOS wallet, node, dlc tests"
       env:
-        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coveralls"
+        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coveralls dlcTest/test dlcWalletTest/test"
       scala: 2.13.3
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
@@ -143,6 +143,10 @@ cache:
     - $HOME/build/bitcoin-s/bitcoin-s/dlc-oracle-test/target
     - $HOME/build/bitcoin-s/bitcoin-s/db-commons/target
     - $HOME/build/bitcoin-s/bitcoin-s/db-commons-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/dlc/target
+    - $HOME/build/bitcoin-s/bitcoin-s/dlc-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/dlc-wallet-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/dlc-wallet/target
     - $HOME/build/bitcoin-s/bitcoin-s/eclair-rpc/target
     - $HOME/build/bitcoin-s/bitcoin-s/eclair-rpc-test/target
     - $HOME/build/bitcoin-s/bitcoin-s/fee-provider/target
@@ -193,11 +197,11 @@ stages:
     if:
       commit_message !~ /(?i)^docs:/ AND
       commit_message !~ /(?i)^trivial:/ AND NOT
-      ((branch = dlc-crypto AND type = push) OR (tag IS present))
+      ((branch = adaptor-dlc AND type = push) OR (tag IS present))
     # don't run tests on merge builds, just publish library
     # and website
   - name: release
-    if: ((branch = dlc-crypto AND type = push) OR (tag IS present)) AND NOT fork
+    if: ((branch = adaptor-dlc AND type = push) OR (tag IS present)) AND NOT fork
 
 script:
   # Modify PATH to include binaries we are about to download

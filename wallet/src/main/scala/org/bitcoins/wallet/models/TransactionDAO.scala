@@ -40,7 +40,7 @@ trait TxDAO[DbEntryType <: TxDB]
   override def createAll(ts: Vector[DbEntryType]): Future[Vector[DbEntryType]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(
+  override def findByPrimaryKeys(
       txIdBEs: Vector[DoubleSha256DigestBE]): Query[DbTable, DbEntryType, Seq] =
     table.filter(_.txIdBE.inSet(txIdBEs))
 
@@ -76,6 +76,11 @@ trait TxDAO[DbEntryType <: TxDB]
 
   def findByTxId(txId: DoubleSha256Digest): Future[Option[DbEntryType]] =
     findByTxId(txId.flip)
+
+  def findByTxIdBEs(
+      txIdBEs: Vector[DoubleSha256DigestBE]): Future[Vector[DbEntryType]] = {
+    database.run(findByPrimaryKeys(txIdBEs).result).map(_.toVector)
+  }
 }
 
 case class TransactionDAO()(implicit
@@ -124,6 +129,5 @@ case class TransactionDAO()(implicit
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)
-
   }
 }
