@@ -127,7 +127,7 @@ lazy val testkitCore = crossProject(JVMPlatform, JSPlatform)
   .jsSettings(commonJsSettings: _*)
   .dependsOn(asyncUtils, core, crypto)
 
-lazy val testkitCoreJVM = testkitCore.jvm
+lazy val testkitCoreJVM = testkitCore.jvm.dependsOn(dlc)
 
 lazy val testkitCoreJS = testkitCore.js
 
@@ -170,7 +170,7 @@ lazy val `bitcoin-s` = project
     coreJVM,
     coreJS,
     coreTestJVM,
-    coreTestJS,
+    //coreTestJS,
     cryptoJVM,
     cryptoJS,
     cryptoTestJVM,
@@ -181,6 +181,14 @@ lazy val `bitcoin-s` = project
     feeProviderTest,
     dlcOracle,
     dlcOracleTest,
+    dlc,
+    dlcTest,
+    dlcWallet,
+    dlcWalletTest,
+    dlcOracle,
+    dlcOracleTest,
+    dlcSuredbitsClient,
+    dlcSuredbitsClientTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -199,7 +207,7 @@ lazy val `bitcoin-s` = project
     appCommons,
     appCommonsTest,
     testkitCoreJVM,
-    testkitCoreJS,
+    //testkitCoreJS,
     testkit,
     zmq,
     oracleExplorerClient,
@@ -218,7 +226,7 @@ lazy val `bitcoin-s` = project
     coreJVM,
     coreJS,
     coreTestJVM,
-    coreTestJS,
+    //coreTestJS,
     cryptoJVM,
     cryptoJS,
     cryptoTestJVM,
@@ -229,6 +237,12 @@ lazy val `bitcoin-s` = project
     feeProviderTest,
     dlcOracle,
     dlcOracleTest,
+    dlc,
+    dlcTest,
+    dlcWallet,
+    dlcWalletTest,
+    dlcSuredbitsClient,
+    dlcSuredbitsClientTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -369,7 +383,8 @@ lazy val appServer = project
     wallet,
     bitcoindRpc,
     feeProvider,
-    zmq
+    zmq,
+    dlcWallet
   )
   .enablePlugins(JavaAppPackaging, DockerPlugin)
 
@@ -389,7 +404,8 @@ lazy val cli = project
     name := "bitcoin-s-cli"
   )
   .dependsOn(
-    appCommons
+    appCommons,
+    dlc
   )
 
 lazy val cliTest = project
@@ -410,6 +426,19 @@ lazy val gui = project
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     cli
+  )
+
+lazy val dlcSuredbitsClient = project
+  .in(file("app/dlc-suredbits-client"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(eclairRpc, wallet)
+
+lazy val dlcSuredbitsClientTest = project
+  .in(file("app/dlc-suredbits-client-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .dependsOn(
+    dlcSuredbitsClient,
+    testkit
   )
 
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
@@ -585,8 +614,10 @@ lazy val testkit = project
     node,
     wallet,
     zmq,
+    testkitCoreJVM,
     dlcOracle,
-    testkitCoreJVM
+    dlc,
+    dlcWallet
   )
 
 lazy val docs = project
@@ -659,7 +690,7 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(coreJVM, appCommons, dbCommons, keyManager, asyncUtilsJVM)
+  .dependsOn(coreJVM, appCommons, dbCommons, dlc, keyManager, asyncUtilsJVM)
   .enablePlugins(FlywayPlugin)
 
 lazy val walletTest = project
@@ -699,6 +730,47 @@ lazy val oracleExplorerClient = project
     libraryDependencies ++= Deps.oracleExplorerClient
   )
   .dependsOn(coreJVM, appCommons, testkit % "test->test")
+
+lazy val dlc = project
+  .in(file("dlc"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc",
+    // version number needed for MicroJson
+    libraryDependencies ++= Deps.dlc
+  )
+  .dependsOn(coreJVM, appCommons)
+
+lazy val dlcTest = project
+  .in(file("dlc-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-test",
+    libraryDependencies ++= Deps.dlcTest
+  )
+  .dependsOn(
+    coreJVM % testAndCompile,
+    testkitCoreJVM,
+    dlc
+  )
+
+lazy val dlcWallet = project
+  .in(file("dlc-wallet"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-wallet",
+    libraryDependencies ++= Deps.dlcWallet
+  )
+  .dependsOn(wallet, dlc)
+
+lazy val dlcWalletTest = project
+  .in(file("dlc-wallet-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-wallet-test",
+    libraryDependencies ++= Deps.dlcWalletTest
+  )
+  .dependsOn(coreJVM % testAndCompile, dlcWallet, testkit)
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet)

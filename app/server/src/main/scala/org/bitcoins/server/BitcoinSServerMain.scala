@@ -12,6 +12,7 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.dlc.wallet._
 import org.bitcoins.feeprovider.FeeProviderName._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
@@ -38,6 +39,7 @@ class BitcoinSServerMain(override val args: Array[String])
     implicit val walletConf: WalletAppConfig = conf.walletConf
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
     implicit val chainConf: ChainAppConfig = conf.chainConf
+    implicit val dlcConf: DLCAppConfig = conf.dlcConf
     implicit val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
 
     def startBitcoinSBackend(): Future[Unit] = {
@@ -71,7 +73,7 @@ class BitcoinSServerMain(override val args: Array[String])
         chainApi <- chainApiF
         _ = logger.info("Initialized chain api")
         feeProvider = getFeeProviderOrElse(MempoolSpaceProvider(HourFeeTarget))
-        wallet <- walletConf.createHDWallet(node, chainApi, feeProvider)
+        wallet <- dlcConf.createDLCWallet(node, chainApi, feeProvider)
         callbacks <- createCallbacks(wallet)
         _ = nodeConf.addCallbacks(callbacks)
       } yield {
@@ -142,10 +144,10 @@ class BitcoinSServerMain(override val args: Array[String])
         _ <- bitcoindRpcConf.start()
         _ = logger.info("Creating wallet")
         feeProvider = getFeeProviderOrElse(bitcoind)
-        tmpWallet <- walletConf.createHDWallet(nodeApi = bitcoind,
-                                               chainQueryApi = bitcoind,
-                                               feeRateApi = feeProvider)
-        wallet = BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
+        tmpWallet <- dlcConf.createDLCWallet(nodeApi = bitcoind,
+                                             chainQueryApi = bitcoind,
+                                             feeRateApi = feeProvider)
+        wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
           bitcoind,
           tmpWallet)
         _ = logger.info("Starting wallet")
@@ -288,7 +290,7 @@ class BitcoinSServerMain(override val args: Array[String])
   private def startHttpServer(
       nodeApi: NodeApi,
       chainApi: ChainApi,
-      wallet: Wallet,
+      wallet: DLCWallet,
       rpcbindOpt: Option[String],
       rpcPortOpt: Option[Int])(implicit
       system: ActorSystem,

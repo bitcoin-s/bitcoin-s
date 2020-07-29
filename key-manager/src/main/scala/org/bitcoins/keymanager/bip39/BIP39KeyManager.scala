@@ -15,7 +15,7 @@ import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
   KeyManagerParams
 }
-import org.bitcoins.crypto.{AesPassword, Sign}
+import org.bitcoins.crypto.{AdaptorSign, AesPassword}
 import org.bitcoins.keymanager._
 import scodec.bits.BitVector
 
@@ -27,6 +27,10 @@ import scala.util.{Failure, Success, Try}
   * BIP39 key manager
   *
   * @param rootExtPrivKey the root seed used for this wallet
+  *                       This is still required to make the
+  *                       DLCClient from the wallet,
+  *                       can change back to private val when
+  *                       we change the client to use a Sign instead.
   * @param kmParams the parameters used to generate the right keychain
   * @see https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
   */
@@ -50,7 +54,7 @@ class BIP39KeyManager(
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO
     */
-  def toSign(privKeyPath: HDPath): Sign = {
+  def toSign(privKeyPath: HDPath): AdaptorSign = {
     val xpriv =
       rootExtPrivKey.deriveChildPrivKey(privKeyPath)
 

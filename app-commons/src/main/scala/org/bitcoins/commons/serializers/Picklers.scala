@@ -165,7 +165,6 @@ object Picklers {
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -186,7 +185,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -207,7 +205,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -229,7 +226,6 @@ object Picklers {
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -252,7 +248,6 @@ object Picklers {
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -273,7 +268,7 @@ object Picklers {
         (Arr.from(oracles.map(o => Str(o.announcement.hex))),
          Str(outcome.outcome))
       case numeric: NumericOracleOutcome =>
-        (Arr.from(numeric.oracles.map(_.hex)),
+        (Arr.from(numeric.oracles.map(_.announcement.hex)),
          Arr.from(numeric.outcomes.map(o => Arr.from(o.digits))))
     }
 
@@ -283,7 +278,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -319,7 +313,6 @@ object Picklers {
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -345,7 +338,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -360,14 +352,24 @@ object Picklers {
     )
   }
 
-  implicit val dlcStatusW: Writer[DLCStatus] = Writer.merge(offeredW,
-                                                            acceptedW,
-                                                            signedW,
-                                                            broadcastedW,
-                                                            confirmedW,
-                                                            claimedW,
-                                                            remoteClaimedW,
-                                                            refundedW)
+  implicit val dlcStatusW: Writer[DLCStatus] = writer[Value].comap {
+    case o: Offered =>
+      writeJs(o)(offeredW)
+    case a: Accepted =>
+      writeJs(a)(acceptedW)
+    case s: Signed =>
+      writeJs(s)(signedW)
+    case b: Broadcasted =>
+      writeJs(b)(broadcastedW)
+    case c: Confirmed =>
+      writeJs(c)(confirmedW)
+    case c: Claimed =>
+      writeJs(c)(claimedW)
+    case r: RemoteClaimed =>
+      writeJs(r)(remoteClaimedW)
+    case r: Refunded =>
+      writeJs(r)(refundedW)
+  }
 
   implicit val dlcStatusR: Reader[DLCStatus] = reader[Obj].map { obj =>
     val paramHash = Sha256DigestBE(obj("paramHash").str)

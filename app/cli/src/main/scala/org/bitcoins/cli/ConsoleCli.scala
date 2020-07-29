@@ -22,12 +22,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{
-  AesPassword,
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  Sha256DigestBE
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import scopt.OParser
 import ujson._
@@ -238,7 +233,8 @@ object ConsoleCli {
         ),
       cmd("acceptdlcofferfromfile")
         .action((_, conf) =>
-          conf.copy(command = AcceptDLCOfferFromFile(new File("").toPath)))
+          conf.copy(command =
+            AcceptDLCOfferFromFile(new File("").toPath, None)))
         .text("Accepts a DLC offer given from another party")
         .children(
           arg[Path]("path")
@@ -247,6 +243,14 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case accept: AcceptDLCOfferFromFile =>
                   accept.copy(path = path)
+                case other => other
+              })),
+          arg[Path]("destination")
+            .optional()
+            .action((dest, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOfferFromFile =>
+                  accept.copy(destination = Some(dest))
                 case other => other
               }))
         ),
@@ -265,7 +269,7 @@ object ConsoleCli {
         ),
       cmd("signdlcfromfile")
         .action((_, conf) =>
-          conf.copy(command = SignDLCFromFile(new File("").toPath)))
+          conf.copy(command = SignDLCFromFile(new File("").toPath, None)))
         .text("Signs a DLC")
         .children(
           arg[Path]("path")
@@ -274,6 +278,14 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case signDLC: SignDLCFromFile =>
                   signDLC.copy(path = path)
+                case other => other
+              })),
+          arg[Path]("destination")
+            .optional()
+            .action((dest, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: SignDLCFromFile =>
+                  accept.copy(destination = Some(dest))
                 case other => other
               }))
         ),
@@ -1333,6 +1345,9 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("estimatefee")
+        .action((_, conf) => conf.copy(command = EstimateFee))
+        .text("Returns the recommend fee rate using the fee provider"),
       checkConfig {
         case Config(NoCommand, _, _, _) =>
           failure("You need to provide a command!")
@@ -1409,12 +1424,13 @@ object ConsoleCli {
         )
       case AcceptDLCOffer(offer) =>
         RequestParam("acceptdlcoffer", Seq(up.writeJs(offer)))
-      case AcceptDLCOfferFromFile(path) =>
-        RequestParam("acceptdlcofferfromfile", Seq(up.writeJs(path)))
+      case AcceptDLCOfferFromFile(path, dest) =>
+        RequestParam("acceptdlcofferfromfile",
+                     Seq(up.writeJs(path), up.writeJs(dest)))
       case SignDLC(accept) =>
         RequestParam("signdlc", Seq(up.writeJs(accept)))
-      case SignDLCFromFile(path) =>
-        RequestParam("signdlcfromfile", Seq(up.writeJs(path)))
+      case SignDLCFromFile(path, dest) =>
+        RequestParam("signdlcfromfile", Seq(up.writeJs(path), up.writeJs(dest)))
       case AddDLCSigs(sigs) =>
         RequestParam("adddlcsigs", Seq(up.writeJs(sigs)))
       case AddDLCSigsFromFile(path) =>
@@ -1614,6 +1630,7 @@ object ConsoleCli {
                      Seq(up.writeJs(requiredKeys),
                          up.writeJs(keys),
                          up.writeJs(addressType)))
+      case EstimateFee => RequestParam("estimatefee")
 
       case GetVersion =>
         // skip sending to server and just return version number of cli
@@ -1763,13 +1780,15 @@ object CliCommand {
   case class AcceptDLCOffer(offer: LnMessage[DLCOfferTLV])
       extends AcceptDLCCliCommand
 
-  case class AcceptDLCOfferFromFile(path: Path) extends AcceptDLCCliCommand
+  case class AcceptDLCOfferFromFile(path: Path, destination: Option[Path])
+      extends AcceptDLCCliCommand
 
   sealed trait SignDLCCliCommand extends AppServerCliCommand
 
   case class SignDLC(accept: LnMessage[DLCAcceptTLV]) extends SignDLCCliCommand
 
-  case class SignDLCFromFile(path: Path) extends SignDLCCliCommand
+  case class SignDLCFromFile(path: Path, destination: Option[Path])
+      extends SignDLCCliCommand
 
   sealed trait AddDLCSigsCliCommand extends AppServerCliCommand
 
@@ -1928,11 +1947,14 @@ object CliCommand {
   case class ConvertToPSBT(transaction: Transaction) extends AppServerCliCommand
   case class AnalyzePSBT(psbt: PSBT) extends AppServerCliCommand
 
+  // Util
   case class CreateMultisig(
       requiredKeys: Int,
       keys: Vector[ECPublicKey],
       addressType: AddressType)
       extends AppServerCliCommand
+
+  case object EstimateFee extends AppServerCliCommand
 
   // Oracle
   case object GetPublicKey extends OracleServerCliCommand

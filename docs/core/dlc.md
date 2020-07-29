@@ -17,6 +17,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.dlc.RoundingIntervals.IntervalStart
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.Indexed
@@ -179,9 +180,12 @@ val offerTLV = DLCOfferTLV(
     contractInfo = contractInfo.toTLV,
     fundingPubKey = ECPublicKey.freshPublicKey,
     payoutSPK = EmptyScriptPubKey,
+    payoutSerialId = UInt64(1),
     totalCollateralSatoshis = Satoshis(500),
     fundingInputs = Vector.empty,
     changeSPK = EmptyScriptPubKey,
+    changeSerialId = UInt64(2),
+    fundOutputSerialId = UInt64(3),
     feeRate = SatoshisPerVirtualByte(Satoshis(1)),
     contractMaturityBound = BlockStamp.BlockHeight(0),
     contractTimeout = BlockStamp.BlockHeight(0)
@@ -192,4 +196,3 @@ val lnMsg = LnMessageFactory(DLCOfferTLV).fromHex(lnMsgHex)
 
 lnMsg.tlv == offerTLV
 ```
-

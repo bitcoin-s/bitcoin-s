@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
@@ -10,6 +11,9 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
+
+import scala.annotation.tailrec
+import scala.util.Random
 
 sealed trait DLCMessage
 
@@ -21,6 +25,32 @@ object DLCMessage {
     CryptoUtil
       .sha256(contractInfo.bytes ++ timeouts.bytes)
       .flip
+  }
+
+  @tailrec
+  def genSerialId(notEqualTo: Vector[UInt64] = Vector.empty): UInt64 = {
+    val rand = {
+      // Copy of Random.nextBytes(Int)
+      // Not available for older versions
+      val bytes = new Array[Byte](0 max 8)
+      Random.nextBytes(bytes)
+      bytes
+    }
+    val res = UInt64(ByteVector(rand))
+
+    if (notEqualTo.contains(res)) genSerialId(notEqualTo)
+    else res
+  }
+
+  @tailrec
+  def genSerialIds(
+      size: Int,
+      notEqualTo: Vector[UInt64] = Vector.empty): Vector[UInt64] = {
+    val ids = 0.until(size).toVector.map(_ => genSerialId(notEqualTo))
+
+    if (ids.distinct.size != size)
+      genSerialIds(size, notEqualTo)
+    else ids
   }
 
   sealed trait DLCSetupMessage extends DLCMessage {
@@ -55,9 +85,20 @@ object DLCMessage {
       totalCollateral: Satoshis,
       fundingInputs: Vector[DLCFundingInput],
       changeAddress: BitcoinAddress,
+      payoutSerialId: UInt64,
+      changeSerialId: UInt64,
+      fundOutputSerialId: UInt64,
       feeRate: SatoshisPerVirtualByte,
       timeouts: DLCTimeouts)
       extends DLCSetupMessage {
+
+    require(
+      fundingInputs.map(_.inputSerialId).distinct.size == fundingInputs.size,
+      "All funding input serial ids must be unique")
+
+    require(
+      changeSerialId != fundOutputSerialId,
+      s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)")
 
     val oracleInfo: OracleInfo = contractInfo.oracleInfo
     val contractDescriptor: ContractDescriptor = contractInfo.contractDescriptor
@@ -77,9 +118,12 @@ object DLCMessage {
         contractInfo.toTLV,
         fundingPubKey = pubKeys.fundingKey,
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
+        payoutSerialId = payoutSerialId,
         totalCollateralSatoshis = totalCollateral,
         fundingInputs = fundingInputs.map(_.toTLV),
         changeSPK = changeAddress.scriptPubKey,
+        changeSerialId = changeSerialId,
+        fundOutputSerialId = fundOutputSerialId,
         feeRate = feeRate,
         contractMaturityBound = timeouts.contractMaturity,
         contractTimeout = timeouts.contractTimeout
@@ -109,6 +153,9 @@ object DLCMessage {
         },
         changeAddress =
           BitcoinAddress.fromScriptPubKey(offer.changeSPK, network),
+        payoutSerialId = offer.payoutSerialId,
+        changeSerialId = offer.changeSerialId,
+        fundOutputSerialId = offer.fundOutputSerialId,
         feeRate = offer.feeRate,
         timeouts =
           DLCTimeouts(offer.contractMaturityBound, offer.contractTimeout)
@@ -125,6 +172,8 @@ object DLCMessage {
       pubKeys: DLCPublicKeys,
       fundingInputs: Vector[DLCFundingInput],
       changeAddress: BitcoinAddress,
+      payoutSerialId: UInt64,
+      changeSerialId: UInt64,
       negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest) {
 
@@ -134,6 +183,8 @@ object DLCMessage {
         pubKeys = pubKeys,
         fundingInputs = fundingInputs,
         changeAddress = changeAddress,
+        payoutSerialId = payoutSerialId,
+        changeSerialId = changeSerialId,
         cetSigs = cetSigs,
         negotiationFields = negotiationFields,
         tempContractId = tempContractId
@@ -146,10 +197,16 @@ object DLCMessage {
       pubKeys: DLCPublicKeys,
       fundingInputs: Vector[DLCFundingInput],
       changeAddress: BitcoinAddress,
+      payoutSerialId: UInt64,
+      changeSerialId: UInt64,
       cetSigs: CETSignatures,
       negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest)
       extends DLCSetupMessage {
+
+    require(
+      fundingInputs.map(_.inputSerialId).distinct.size == fundingInputs.size,
+      "All funding input serial ids must be unique")
 
     def toTLV: DLCAcceptTLV = {
       DLCAcceptTLV(
@@ -157,8 +214,10 @@ object DLCMessage {
         totalCollateralSatoshis = totalCollateral,
         fundingPubKey = pubKeys.fundingKey,
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
+        payoutSerialId = payoutSerialId,
         fundingInputs = fundingInputs.map(_.toTLV),
         changeSPK = changeAddress.scriptPubKey,
+        changeSerialId = changeSerialId,
         cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
         refundSignature = ECDigitalSignature.fromFrontOfBytes(
           cetSigs.refundSig.signature.bytes),
@@ -171,12 +230,16 @@ object DLCMessage {
     }
 
     def withoutSigs: DLCAcceptWithoutSigs = {
-      DLCAcceptWithoutSigs(totalCollateral,
-                           pubKeys,
-                           fundingInputs,
-                           changeAddress,
-                           negotiationFields,
-                           tempContractId)
+      DLCAcceptWithoutSigs(
+        totalCollateral = totalCollateral,
+        pubKeys = pubKeys,
+        fundingInputs = fundingInputs,
+        changeAddress = changeAddress,
+        payoutSerialId = payoutSerialId,
+        changeSerialId = changeSerialId,
+        negotiationFields = negotiationFields,
+        tempContractId = tempContractId
+      )
     }
   }
 
@@ -228,6 +291,8 @@ object DLCMessage {
         },
         changeAddress =
           BitcoinAddress.fromScriptPubKey(accept.changeSPK, network),
+        payoutSerialId = accept.payoutSerialId,
+        changeSerialId = accept.changeSerialId,
         cetSigs = CETSignatures(
           outcomeSigs,
           PartialSignature(
