@@ -28,14 +28,16 @@ trait WalletDAOFixture extends BitcoinSWalletTest {
     val incomingTx = IncomingTransactionDAO()
     val outgoingTx = OutgoingTransactionDAO()
     val scriptPubKey = ScriptPubKeyDAO()
-    WalletDAOs(account,
-               address,
-               tags,
-               utxo,
-               tx,
-               incomingTx,
-               outgoingTx,
-               scriptPubKey)
+    WalletDAOs(
+      accountDAO = account,
+      addressDAO = address,
+      addressTagDAO = tags,
+      utxoDAO = utxo,
+      transactionDAO = tx,
+      incomingTxDAO = incomingTx,
+      outgoingTxDAO = outgoingTx,
+      scriptPubKeyDAO = scriptPubKey
+    )
   }
 
   final override type FixtureParam = WalletDAOs
