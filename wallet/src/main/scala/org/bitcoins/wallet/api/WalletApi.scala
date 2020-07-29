@@ -4,26 +4,22 @@ import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
-import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.hd.AddressType
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.keymanager._
 import org.bitcoins.wallet.WalletLogger
-import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.models.{AddressDb, SpendingInfoDb}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,12 +47,6 @@ trait WalletApi extends WalletLogger {
   def stop(): Unit
 
   /**
-    * Retrieves a bloom filter that that can be sent to a P2P network node
-    * to get information about our transactions, pubkeys and scripts.
-    */
-  def getBloomFilter(): Future[BloomFilter]
-
-  /**
     * Processes the given transaction, updating our DB state if it's relevant to us.
     * @param transaction The transaction we're processing
     * @param blockHash Containing block hash
@@ -81,21 +71,6 @@ trait WalletApi extends WalletLogger {
     */
   def updateUtxoPendingStates(
       blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]]
-
-  /**
-    * Processes the give block, updating our DB state if it's relevant to us.
-    * @param block The block we're processing
-    */
-  def processBlock(block: Block): Future[WalletApi]
-
-  def processCompactFilter(
-      blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter): Future[WalletApi] =
-    processCompactFilters(Vector((blockHash, blockFilter)))
-
-  def processCompactFilters(
-      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
-    WalletApi]
 
   /** Gets the sum of all UTXOs in this wallet */
   def getBalance()(implicit ec: ExecutionContext): Future[CurrencyUnit] = {
@@ -129,13 +104,6 @@ trait WalletApi extends WalletLogger {
   def getUnconfirmedBalance(): Future[CurrencyUnit]
 
   def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit]
-
-  /**
-    * If a UTXO is spent outside of the wallet, we
-    * need to remove it from the database so it won't be
-    * attempted spent again by us.
-    */
-  // def updateUtxo: Future[WalletApi]
 
   /** Lists unspent transaction outputs in the wallet
     * @return Vector[SpendingInfoDb]
@@ -236,72 +204,6 @@ trait WalletApi extends WalletLogger {
   /** Generates a new change address */
   protected[wallet] def getNewChangeAddress()(implicit
       ec: ExecutionContext): Future[BitcoinAddress]
-
-  /**
-    * Iterates over the block filters in order to find filters that match to the given addresses
-    *
-    * I queries the filter database for [[batchSize]] filters a time
-    * and tries to run [[GolombFilter.matchesAny]] for each filter.
-    *
-    * It tries to match the filters in parallel using [[parallelismLevel]] threads.
-    * For best results use it with a separate execution context.
-    *
-    * @param scripts list of [[ScriptPubKey]]'s to watch
-    * @param startOpt start point (if empty it starts with the genesis block)
-    * @param endOpt end point (if empty it ends with the best tip)
-    * @param batchSize number of filters that can be matched in one batch
-    * @param parallelismLevel max number of threads required to perform matching
-    *                         (default [[Runtime.getRuntime.availableProcessors()]])
-    * @return a list of matching block hashes
-    */
-  def getMatchingBlocks(
-      scripts: Vector[ScriptPubKey],
-      startOpt: Option[BlockStamp] = None,
-      endOpt: Option[BlockStamp] = None,
-      batchSize: Int = 100,
-      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(implicit
-      ec: ExecutionContext): Future[Vector[BlockMatchingResponse]]
-
-  /**
-    * Recreates the account using BIP-157 approach
-    *
-    * DANGER! This method removes all records from the wallet database
-    * and creates new ones while the account discovery process.
-    *
-    * The Wallet UI should check if the database is empty before calling
-    * this method and let the end users to decide whether they want to proceed or not.
-    *
-    * This method generates [[addressBatchSize]] of addresses, then matches them against the BIP-158 compact filters,
-    * and downloads and processes the matched blocks. This method keeps doing the steps until there are [[WalletConfig.addressGapLimit]]
-    * or more unused addresses in a row. In this case it considers the discovery process completed.
-    *
-    * [[addressBatchSize]] - the number of addresses we should generate from a keychain to attempt to match in in a rescan
-    * [[WalletConfig.addressGapLimit]] - the number of addresses required to go without a match before we determine that our wallet is "discovered".
-    * For instance, if addressBatchSize=100, and AddressGapLimit=20 we do a rescan and the last address we find containing
-    * funds is at index 75, we would not generate more addresses to try and rescan. However if the last index containing
-    * funds was 81, we would generate another 100 addresses from the keychain and attempt to rescan those.
-    *
-    * @param startOpt start block (if None it starts from the genesis block)
-    * @param endOpt end block (if None it ends at the current tip)
-    * @param addressBatchSize how many addresses to match in a single pass
-    */
-
-  def rescanNeutrinoWallet(
-      startOpt: Option[BlockStamp],
-      endOpt: Option[BlockStamp],
-      addressBatchSize: Int,
-      useCreationTime: Boolean)(implicit ec: ExecutionContext): Future[Unit]
-
-  /** Helper method to rescan the ENTIRE blockchain. */
-  def fullRescanNeutrinoWallet(addressBatchSize: Int)(implicit
-      ec: ExecutionContext): Future[Unit]
-
-  /**
-    * Recreates the account using BIP-44 approach
-    */
-  def rescanSPVWallet(): Future[Unit]
-
-  def discoveryBatchSize(): Int = 25
 
   def keyManager: KeyManager
 
@@ -426,10 +328,14 @@ trait WalletApi extends WalletLogger {
 
 }
 
-object WalletApi {
+/** An HDWallet that uses Neutrino to sync */
+trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi
 
-  case class BlockMatchingResponse(
-      blockHash: DoubleSha256DigestBE,
-      blockHeight: Int)
+/** An HDWallet that uses SPV to sync */
+trait SpvHDWalletApi extends HDWalletApi with SpvWalletApi
 
-}
+/** An HDWallet that supports both Neutrino and SPV methods of syncing */
+trait AnyHDWalletApi
+    extends HDWalletApi
+    with NeutrinoWalletApi
+    with SpvWalletApi

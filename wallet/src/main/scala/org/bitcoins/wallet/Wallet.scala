@@ -52,7 +52,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 abstract class Wallet
-    extends HDWalletApi
+    extends AnyHDWalletApi
     with UtxoHandling
     with AddressHandling
     with AccountHandling

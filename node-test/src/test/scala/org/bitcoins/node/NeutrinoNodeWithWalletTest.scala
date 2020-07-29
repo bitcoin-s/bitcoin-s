@@ -14,7 +14,7 @@ import org.bitcoins.testkit.node.{
   NodeUnitTest
 }
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.WalletApi
+import org.bitcoins.wallet.Wallet
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.{Future, Promise}
@@ -42,8 +42,8 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     }
   }
 
-  private var walletP: Promise[WalletApi] = Promise()
-  private var walletF: Future[WalletApi] = walletP.future
+  private var walletP: Promise[Wallet] = Promise()
+  private var walletF: Future[Wallet] = walletP.future
   after {
     //reset assertion after a test runs, because we
     //are doing mutation to work around our callback
