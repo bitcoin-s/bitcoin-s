@@ -217,9 +217,10 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
     */
   def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(implicit
       ec: ExecutionContext): Future[Vector[R]] = {
-    val result =
+    val result = scala.concurrent.blocking {
       if (sqlite) database.run[Seq[R]](foreignKeysPragma >> action)
       else database.run[Seq[R]](action)
+    }
     result.map(_.toVector).recoverWith { logAndThrowError(action) }
   }
 }
