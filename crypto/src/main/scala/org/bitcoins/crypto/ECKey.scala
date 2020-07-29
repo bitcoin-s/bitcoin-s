@@ -71,6 +71,47 @@ sealed abstract class ECPrivateKey
       ec: ExecutionContext): Future[ECDigitalSignature] =
     Future(sign(hash))
 
+  override def signWithEntropy(
+      bytes: ByteVector,
+      entropy: ByteVector): ECDigitalSignature = {
+    signWithEntropy(bytes, entropy, CryptoContext.default)
+  }
+
+  def signWithEntropy(
+      bytes: ByteVector,
+      entropy: ByteVector,
+      context: CryptoContext): ECDigitalSignature = {
+    context match {
+      case CryptoContext.LibSecp256k1 => signWithEntropyWithSecp(bytes, entropy)
+      case CryptoContext.BouncyCastle =>
+        signWithEntropyWithBouncyCastle(bytes, entropy)
+    }
+  }
+
+  def signWithEntropyWithSecp(
+      bytes: ByteVector,
+      entropy: ByteVector): ECDigitalSignature = {
+    val sigBytes = NativeSecp256k1.signWithEntropy(bytes.toArray,
+                                                   this.bytes.toArray,
+                                                   entropy.toArray)
+
+    ECDigitalSignature(ByteVector(sigBytes))
+  }
+
+  def signWithEntropyWithBouncyCastle(
+      bytes: ByteVector,
+      entropy: ByteVector): ECDigitalSignature = {
+    BouncyCastleUtil.signWithEntropy(bytes, this, entropy)
+  }
+
+  override def signWithEntropyFunction: (
+      ByteVector,
+      ByteVector) => Future[ECDigitalSignature] = {
+    case (bytes, entropy) =>
+      import scala.concurrent.ExecutionContext.Implicits.global
+      Future(signWithEntropy(bytes, entropy))
+  }
+
   def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
     val auxRand = ECPrivateKey.freshPrivateKey.bytes
     schnorrSign(dataToSign, auxRand)

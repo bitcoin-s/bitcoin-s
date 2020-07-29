@@ -86,8 +86,8 @@ public class NativeSecp256k1Test {
     }
 
     /**
-      * This tests sign() for a valid secretkey
-      */
+     * This tests sign() for a valid secretkey
+     */
     @Test
     public void testSignPos() throws AssertFailException{
 
@@ -110,6 +110,35 @@ public class NativeSecp256k1Test {
         byte[] resultArr = NativeSecp256k1.sign(data, sec);
         String sigString = toHex(resultArr);
         assertEquals( sigString, "" , "testSignNeg");
+    }
+
+    /**
+      * This tests signWithEntropy() for a valid secretkey
+      */
+    @Test
+    public void testSignWithEntropyPos() throws AssertFailException{
+
+        byte[] data = toByteArray("53702647283D86B3D6410ADEF184EC608372CC3DD8B9202795D731EB1EA54275");
+        byte[] sec = toByteArray("B4F62DE42D38D5D24B66FF01761C3FD0A6E7C8B719E0DC54D168FA013BFAF97F");
+        byte[] entropy = toByteArray("EDF312C904B610B11442320FFB94C4F976831051A481A17176CE2B81EB3A8B6F");
+
+        byte[] resultArr = NativeSecp256k1.signWithEntropy(data, sec, entropy);
+        String sigString = toHex(resultArr);
+        assertEquals( sigString, "30450221009D9714BE0CE9A3FD08497125C6D01362FDE2FF118FC817FDB14EE4C38CADFB7A022033B082E161F7D75ABC25642ED71226049DC59EC14AB19DF2A8EFEA47A6C75FAC" , "testSignWithEntropyPos");
+    }
+
+    /**
+     * This tests signWithEntropy() for a invalid secretkey
+     */
+    @Test
+    public void testSignWithEntropyNeg() throws AssertFailException{
+        byte[] data = toByteArray("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
+        byte[] sec = toByteArray("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        byte[] entropy = toByteArray("EDF312C904B610B11442320FFB94C4F976831051A481A17176CE2B81EB3A8B6F");
+
+        byte[] resultArr = NativeSecp256k1.signWithEntropy(data, sec, entropy);
+        String sigString = toHex(resultArr);
+        assertEquals( sigString, "" , "testSignWithEntropyNeg");
     }
 
     /**

@@ -1,35 +1,56 @@
 package org.bitcoins.crypto
 
 import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import scodec.bits.ByteVector
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
-import scala.concurrent.{ExecutionContext, Future}
+class SignTest extends BitcoinSAsyncTest {
 
-class SignTest extends BitcoinSUnitTest {
-  implicit val ec = ExecutionContext.global
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
 
   //ECPrivateKey implements the sign interface
   //so just use it for testing purposes
-  val signTestImpl = new Sign {
-    private val key = ECPrivateKey.freshPrivateKey
-
-    override def signFunction: ByteVector => Future[ECDigitalSignature] = {
-      key.signFunction
-    }
-
-    override def publicKey: ECPublicKey = key.publicKey
-  }
+  val privKey: Sign = ECPrivateKey.freshPrivateKey
+  val pubKey: ECPublicKey = privKey.publicKey
 
   behavior of "Sign"
 
   it must "sign arbitrary pieces of data correctly" in {
-    forAll(CryptoGenerators.sha256Digest) {
-      case hash: Sha256Digest =>
-        val pubKey = signTestImpl.publicKey
-        val sigF = signTestImpl.signFunction(hash.bytes)
+    forAllAsync(CryptoGenerators.sha256Digest) { hash =>
+      val sigF = privKey.signFunction(hash.bytes)
 
-        sigF.map(sig => assert(pubKey.verify(hash.hex, sig)))
+      sigF.map { sig =>
+        assert(pubKey.verify(hash.bytes, sig))
+      }
+    }
+  }
+
+  it must "sign arbitrary pieces of data with arbitrary entropy correctly" in {
+    forAllAsync(CryptoGenerators.sha256Digest, CryptoGenerators.sha256Digest) {
+      case (hash, entropy) =>
+        val sigF = privKey.signWithEntropyFunction(hash.bytes, entropy.bytes)
+
+        sigF.map { sig =>
+          assert(pubKey.verify(hash.bytes, sig))
+        }
+    }
+  }
+
+  it must "sign arbitrary data correctly with low R values" in {
+    forAllAsync(CryptoGenerators.sha256Digest) { hash =>
+      val bytes = hash.bytes
+
+      for {
+        sig1 <- privKey.signLowRFuture(bytes)
+        sig2 <- privKey.signLowRFuture(bytes) // Check for determinism
+      } yield {
+        assert(pubKey.verify(bytes, sig1))
+        assert(
+          sig1.bytes.length <= 70
+        ) // This assertion fails if Low R is not used
+        assert(sig1.bytes == sig2.bytes)
+        assert(sig1 == sig2)
+      }
     }
   }
 }
