@@ -114,6 +114,52 @@ public class NativeSecp256k1 {
     }
 
     /**
+     * libsecp256k1 Create an ECDSA signature adding specified entropy.
+     *
+     * This can be used to include your own entropy to nonce generation
+     * in addition to the message and private key, while still doing so deterministically.
+     *
+     * In particular, this is used when generating low R signatures.
+     * See https://github.com/bitcoin/bitcoin/pull/13666/
+     *
+     * @param data Message hash, 32 bytes
+     * @param seckey ECDSA Secret key, 32 bytes
+     * @param entropy 32 bytes of entropy
+     * @return sig byte array of signature
+     */
+    public static byte[] signWithEntropy(byte[] data, byte[] seckey, byte[] entropy) throws AssertFailException{
+        checkArgument(data.length == 32 && seckey.length == 32 && entropy.length == 32);
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        if (byteBuff == null || byteBuff.capacity() < 32 + 32 + 32) {
+            byteBuff = ByteBuffer.allocateDirect(32 + 32 + 32);
+            byteBuff.order(ByteOrder.nativeOrder());
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(data);
+        byteBuff.put(seckey);
+        byteBuff.put(entropy);
+
+        byte[][] retByteArray;
+
+        r.lock();
+        try {
+            retByteArray = secp256k1_ecdsa_sign_with_entropy(byteBuff, Secp256k1Context.getContext());
+        } finally {
+            r.unlock();
+        }
+
+        byte[] sigArr = retByteArray[0];
+        int sigLen = new BigInteger(new byte[] { retByteArray[1][0] }).intValue();
+        int retVal = new BigInteger(new byte[] { retByteArray[1][1] }).intValue();
+
+        assertEquals(sigArr.length, sigLen, "Got bad signature length.");
+
+        return retVal == 0 ? new byte[0] : sigArr;
+    }
+
+    /**
      * libsecp256k1 Seckey Verify - Verifies an ECDSA secret key
      *
      * @param seckey ECDSA Secret key, 32 bytes
@@ -525,6 +571,8 @@ public class NativeSecp256k1 {
     private static native int secp256k1_ecdsa_verify(ByteBuffer byteBuff, long context, int sigLen, int pubLen);
 
     private static native byte[][] secp256k1_ecdsa_sign(ByteBuffer byteBuff, long context);
+
+    private static native byte[][] secp256k1_ecdsa_sign_with_entropy(ByteBuffer byteBuff, long context);
 
     private static native int secp256k1_ec_seckey_verify(ByteBuffer byteBuff, long context);
 
