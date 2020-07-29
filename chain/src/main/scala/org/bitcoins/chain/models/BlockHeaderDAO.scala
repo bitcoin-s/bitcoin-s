@@ -334,43 +334,47 @@ case class BlockHeaderDAO()(implicit
     headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
   }
 
+  @tailrec
+  private def loop(
+      chains: Vector[Blockchain],
+      allHeaders: Vector[BlockHeaderDb]): Vector[Blockchain] = {
+    val usedHeaders = chains.flatMap(_.headers).distinct
+    val diff = allHeaders.filter(header =>
+      !usedHeaders.exists(_.hashBE == header.hashBE))
+    if (diff.isEmpty) {
+      chains
+    } else {
+      val sortedDiff = diff.sortBy(_.height)(Ordering.Int.reverse)
+
+      val newChainHeaders =
+        Blockchain.connectWalkBackwards(sortedDiff.head, allHeaders)
+      val newChain = Blockchain(
+        newChainHeaders.sortBy(_.height)(Ordering.Int.reverse))
+      loop(chains :+ newChain, allHeaders)
+    }
+  }
+
   /** Retrieves a blockchain with the best tip being the given header */
   def getBlockchainsBetweenHeights(from: Int, to: Int)(implicit
       ec: ExecutionContext): Future[Vector[Blockchain]] = {
     getBetweenHeights(from = from, to = to).map { headers =>
       if (headers.map(_.height).distinct.size == headers.size) {
-        Vector(Blockchain.fromHeaders(headers.sortBy(_.height).reverse))
+        Vector(
+          Blockchain.fromHeaders(
+            headers.sortBy(_.height)(Ordering.Int.reverse)))
       } else {
-        val headersByHeight = headers.groupBy(_.height).toVector
-        val sortedHeaders = headersByHeight.sortBy(_._1).reverse.map(_._2)
-        val allHeaders = sortedHeaders.flatten
+        val headersByHeight: Vector[(Int, Vector[BlockHeaderDb])] =
+          headers.groupBy(_.height).toVector
+        val tips: Vector[BlockHeaderDb] = headersByHeight.maxBy(_._1)._2
 
-        @tailrec
-        def loop(chains: Vector[Blockchain]): Vector[Blockchain] = {
-          val usedHeaders = chains.flatMap(_.headers).distinct
-          val diff = allHeaders.filter(header =>
-            !usedHeaders.exists(_.hashBE == header.hashBE))
-          if (diff.isEmpty) {
-            chains
-          } else {
-            val sortedDiff = diff.sortBy(_.height).reverse
-
-            val newChainHeaders =
-              Blockchain.connectWalkBackwards(sortedDiff.head, allHeaders)
-            val newChain = Blockchain(newChainHeaders.sortBy(_.height).reverse)
-            loop(chains :+ newChain)
-          }
-        }
-
-        val chains = sortedHeaders.head.map { headers =>
+        val chains = tips.map { tip =>
           Blockchain
-            .connectWalkBackwards(headers, sortedHeaders.tail.flatten)
-            .sortBy(_.height)
-            .reverse
+            .connectWalkBackwards(tip, headers)
+            .sortBy(_.height)(Ordering.Int.reverse)
         }
-        val init = chains.map(Blockchain(_)).distinct
+        val init = chains.map(Blockchain(_))
 
-        loop(init).distinct
+        loop(init, headers).distinct
       }
     }
   }
