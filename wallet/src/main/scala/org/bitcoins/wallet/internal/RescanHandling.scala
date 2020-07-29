@@ -9,9 +9,9 @@ import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
-import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.wallet.api.NeutrinoWalletApi.BlockMatchingResponse
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -23,6 +23,22 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
   /** @inheritdoc */
   override def rescanNeutrinoWallet(
+      startOpt: Option[BlockStamp],
+      endOpt: Option[BlockStamp],
+      addressBatchSize: Int,
+      useCreationTime: Boolean)(implicit ec: ExecutionContext): Future[Unit] = {
+    for {
+      account <- getDefaultAccount()
+      _ <- rescanNeutrinoWallet(account.hdAccount,
+                                startOpt,
+                                endOpt,
+                                addressBatchSize,
+                                useCreationTime)
+    } yield ()
+  }
+
+  /** @inheritdoc */
+  def rescanNeutrinoWallet(
       account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],

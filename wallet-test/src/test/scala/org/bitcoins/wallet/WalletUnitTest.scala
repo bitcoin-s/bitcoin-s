@@ -10,7 +10,7 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.KeyManagerUnlockError.MnemonicNotFound
 import org.bitcoins.keymanager.{KeyManagerUnlockError, WalletStorage}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
+import org.bitcoins.wallet.api.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.models.AddressDb
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
