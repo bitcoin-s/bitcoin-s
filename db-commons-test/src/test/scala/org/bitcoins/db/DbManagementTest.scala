@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.db.DatabaseDriver._
+import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCDbManagement}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
@@ -26,6 +27,13 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
       override val ec: ExecutionContext = system.dispatcher
 
       override def appConfig: ChainAppConfig = chainAppConfig
+    }
+
+  def createDLCDbManagement(dlcAppConfig: DLCAppConfig): DLCDbManagement =
+    new DLCDbManagement with JdbcProfileComponent[DLCAppConfig] {
+      override val ec: ExecutionContext = system.dispatcher
+
+      override def appConfig: DLCAppConfig = dlcAppConfig
     }
 
   def createWalletDbManagement(
@@ -52,6 +60,15 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
       case SQLite     => 5
       case PostgreSQL => 4
     }
+    assert(result == expected)
+  }
+
+  it must "run migrations for dlc db" in {
+    val dlcAppConfig =
+      DLCAppConfig(BitcoinSTestAppConfig.tmpDir(), dbConfig(ProjectType.DLC))
+    val dlcDbManagement = createDLCDbManagement(dlcAppConfig)
+    val result = dlcDbManagement.migrate()
+    val expected = if (dlcAppConfig.driverName == "postgresql") 1 else 1
     assert(result == expected)
   }
 

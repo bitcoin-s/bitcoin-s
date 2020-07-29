@@ -61,6 +61,12 @@ lazy val `bitcoin-s` = project
     feeProviderTest,
     dlcOracle,
     dlcOracleTest,
+    dlc,
+    dlcTest,
+    dlcWallet,
+    dlcWalletTest,
+    dlcSuredbitsClient,
+    dlcSuredbitsClientTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -249,7 +255,8 @@ lazy val appServer = project
     chain,
     wallet,
     bitcoindRpc,
-    feeProvider
+    feeProvider,
+    dlcWallet
   )
 
 lazy val appServerTest = project
@@ -265,7 +272,8 @@ lazy val cli = project
   .in(file("app/cli"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
-    appCommons
+    appCommons,
+    dlc
   )
 
 lazy val cliTest = project
@@ -286,6 +294,19 @@ lazy val gui = project
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     cli
+  )
+
+lazy val dlcSuredbitsClient = project
+  .in(file("app/dlc-suredbits-client"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(eclairRpc, wallet)
+
+lazy val dlcSuredbitsClientTest = project
+  .in(file("app/dlc-suredbits-client-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .dependsOn(
+    dlcSuredbitsClient,
+    testkit
   )
 
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
@@ -435,7 +456,9 @@ lazy val testkit = project
     eclairRpc,
     node,
     wallet,
-    zmq
+    zmq,
+    dlc,
+    dlcWallet
   )
 
 lazy val docs = project
@@ -476,7 +499,7 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(core, appCommons, dbCommons, keyManager)
+  .dependsOn(core, appCommons, dbCommons, dlc, keyManager)
   .enablePlugins(FlywayPlugin)
 
 lazy val walletTest = project
@@ -507,6 +530,47 @@ lazy val dlcOracleTest = project
     libraryDependencies ++= Deps.dlcOracleTest
   )
   .dependsOn(core % testAndCompile, dlcOracle, testkit)
+
+lazy val dlc = project
+  .in(file("dlc"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc",
+    // version number needed for MicroJson
+    libraryDependencies ++= Deps.dlc
+  )
+  .dependsOn(core, appCommons)
+
+lazy val dlcTest = project
+  .in(file("dlc-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-test",
+    libraryDependencies ++= Deps.dlcTest
+  )
+  .dependsOn(
+    core % testAndCompile,
+    testkit,
+    dlc
+  )
+
+lazy val dlcWallet = project
+  .in(file("dlc-wallet"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-wallet",
+    libraryDependencies ++= Deps.dlcWallet
+  )
+  .dependsOn(wallet, dlc)
+
+lazy val dlcWalletTest = project
+  .in(file("dlc-wallet-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-wallet-test",
+    libraryDependencies ++= Deps.dlcWalletTest
+  )
+  .dependsOn(core % testAndCompile, dlcWallet, testkit)
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet)
