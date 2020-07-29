@@ -25,12 +25,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{
-  AesPassword,
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  Sha256DigestBE
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import scopt.OParser
 import ujson._

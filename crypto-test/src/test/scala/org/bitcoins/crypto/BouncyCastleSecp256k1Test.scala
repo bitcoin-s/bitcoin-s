@@ -120,24 +120,22 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
   it must "compute schnorr signatures the same" in {
     forAll(CryptoGenerators.privateKey,
            NumberGenerator.bytevector(32),
-           NumberGenerator.bytevector(32)) {
-      case (privKey, bytes, auxRand) =>
-        assert(
-          privKey.schnorrSign(bytes, auxRand, context = BouncyCastle) == privKey
-            .schnorrSign(bytes, auxRand, context = LibSecp256k1))
+           NumberGenerator.bytevector(32)) { case (privKey, bytes, auxRand) =>
+      assert(
+        privKey.schnorrSign(bytes, auxRand, context = BouncyCastle) == privKey
+          .schnorrSign(bytes, auxRand, context = LibSecp256k1))
     }
   }
 
   it must "compute schnorr signature for fixed nonce the same" in {
     forAll(CryptoGenerators.privateKey,
            CryptoGenerators.privateKey,
-           NumberGenerator.bytevector(32)) {
-      case (privKey, nonceKey, bytes) =>
-        val sigBC = privKey
-          .schnorrSignWithNonce(bytes, nonceKey, context = BouncyCastle)
-        val sigSecP = privKey
-          .schnorrSignWithNonce(bytes, nonceKey, context = LibSecp256k1)
-        assert(sigBC.bytes == sigSecP.bytes)
+           NumberGenerator.bytevector(32)) { case (privKey, nonceKey, bytes) =>
+      val sigBC = privKey
+        .schnorrSignWithNonce(bytes, nonceKey, context = BouncyCastle)
+      val sigSecP = privKey
+        .schnorrSignWithNonce(bytes, nonceKey, context = LibSecp256k1)
+      assert(sigBC.bytes == sigSecP.bytes)
     }
   }
 
@@ -160,32 +158,30 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
   it must "compute schnorr signature points the same" in {
     forAll(CryptoGenerators.schnorrPublicKey,
            CryptoGenerators.schnorrNonce,
-           NumberGenerator.bytevector(32)) {
-      case (pubKey, nonce, bytes) =>
-        val bouncyCastleSigPoint =
-          pubKey.computeSigPoint(bytes,
-                                 nonce,
-                                 compressed = true,
-                                 context = BouncyCastle)
+           NumberGenerator.bytevector(32)) { case (pubKey, nonce, bytes) =>
+      val bouncyCastleSigPoint =
+        pubKey.computeSigPoint(bytes,
+                               nonce,
+                               compressed = true,
+                               context = BouncyCastle)
 
-        val secpSigPoint = pubKey.computeSigPoint(bytes,
-                                                  nonce,
-                                                  compressed = true,
-                                                  context = LibSecp256k1)
+      val secpSigPoint = pubKey.computeSigPoint(bytes,
+                                                nonce,
+                                                compressed = true,
+                                                context = LibSecp256k1)
 
-        assert(bouncyCastleSigPoint == secpSigPoint)
+      assert(bouncyCastleSigPoint == secpSigPoint)
     }
   }
 
   it must "compute adaptor signatures the same" in {
     forAll(CryptoGenerators.privateKey,
            CryptoGenerators.publicKey,
-           NumberGenerator.bytevector(32)) {
-      case (privKey, adaptor, msg) =>
-        val sigBouncy =
-          privKey.adaptorSign(adaptor, msg, context = BouncyCastle)
-        val sigSecp = privKey.adaptorSign(adaptor, msg, context = LibSecp256k1)
-        assert(sigBouncy == sigSecp)
+           NumberGenerator.bytevector(32)) { case (privKey, adaptor, msg) =>
+      val sigBouncy =
+        privKey.adaptorSign(adaptor, msg, context = BouncyCastle)
+      val sigSecp = privKey.adaptorSign(adaptor, msg, context = LibSecp256k1)
+      assert(sigBouncy == sigSecp)
     }
   }
 
@@ -225,14 +221,13 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
   it must "extract adaptor secrets the same" in {
     forAll(CryptoGenerators.digitalSignature,
            CryptoGenerators.adaptorSignature,
-           CryptoGenerators.publicKey) {
-      case (sig, adaptorSig, adaptor) =>
-        assert(
-          adaptor
-            .extractAdaptorSecret(adaptorSig,
-                                  sig,
-                                  context = BouncyCastle) == adaptor
-            .extractAdaptorSecret(adaptorSig, sig, context = LibSecp256k1))
+           CryptoGenerators.publicKey) { case (sig, adaptorSig, adaptor) =>
+      assert(
+        adaptor
+          .extractAdaptorSecret(adaptorSig,
+                                sig,
+                                context = BouncyCastle) == adaptor
+          .extractAdaptorSecret(adaptorSig, sig, context = LibSecp256k1))
     }
   }
 }

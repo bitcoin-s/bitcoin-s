@@ -164,7 +164,6 @@ object Picklers {
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -185,7 +184,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -206,7 +204,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -228,7 +225,6 @@ object Picklers {
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -251,7 +247,6 @@ object Picklers {
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -282,7 +277,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -318,7 +312,6 @@ object Picklers {
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -344,7 +337,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
