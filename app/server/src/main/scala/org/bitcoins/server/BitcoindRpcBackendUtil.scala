@@ -9,6 +9,7 @@ import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.config.ZmqConfig
@@ -159,6 +160,32 @@ object BitcoindRpcBackendUtil extends Logging {
                         rawTxListener = None,
                         rawBlockListener = rawBlockListener).start()
     }
+  }
+
+  def createDLCWalletWithBitcoindCallbacks(
+      bitcoind: BitcoindRpcClient,
+      wallet: DLCWallet)(implicit system: ActorSystem): DLCWallet = {
+    // Kill the old wallet
+    wallet.stop()
+
+    // We need to create a promise so we can inject the wallet with the callback
+    // after we have created it into SyncUtil.getNodeApiWalletCallback
+    // so we don't lose the internal state of the wallet
+    val walletCallbackP = Promise[Wallet]()
+
+    val pairedWallet = DLCWallet(
+      keyManager = wallet.keyManager,
+      nodeApi =
+        BitcoindRpcBackendUtil.getNodeApiWalletCallback(bitcoind,
+                                                        walletCallbackP.future),
+      chainQueryApi = bitcoind,
+      feeRateApi = wallet.feeRateApi,
+      creationTime = wallet.keyManager.creationTime
+    )(wallet.walletConfig, wallet.dlcConfig, wallet.ec)
+
+    walletCallbackP.success(pairedWallet)
+
+    pairedWallet
   }
 
   private def filterSync(

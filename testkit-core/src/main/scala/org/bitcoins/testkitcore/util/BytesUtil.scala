@@ -1,4 +1,4 @@
-package org.bitcoins.testkit.util
+package org.bitcoins.testkitcore.util
 
 import org.bitcoins.core.protocol.dlc.{CETSignatures, FundingSignatures}
 import org.bitcoins.core.protocol.script.{
@@ -28,7 +28,7 @@ object BytesUtil {
   }
 
   def flipBit(adaptorSignature: ECAdaptorSignature): ECAdaptorSignature = {
-    ECAdaptorSignature(flipAtIndex(adaptorSignature.bytes, 40))
+    ECAdaptorSignature(flipAtIndex(adaptorSignature.bytes, 70))
   }
 
   def flipBit(witness: ScriptWitnessV0): ScriptWitnessV0 = {

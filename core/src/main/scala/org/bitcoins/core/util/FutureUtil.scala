@@ -4,6 +4,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object FutureUtil {
 
+  val unit: Future[Unit] = Future.successful(())
+
   /** Executes a series of futures sequentially
     *
     * @param items The elements we want to transform into futures

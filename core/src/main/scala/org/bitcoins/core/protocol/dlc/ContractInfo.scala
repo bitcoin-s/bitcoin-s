@@ -281,4 +281,13 @@ object ContractInfo
     ContractInfo(totalCollateral = enumDescriptor.values.maxBy(_.toLong),
                  enumPair)
   }
+
+  def apply(
+      totalCollateral: Satoshis,
+      contractDescriptor: ContractDescriptor,
+      oracleInfo: OracleInfo): ContractInfo = {
+    ContractInfo(
+      totalCollateral,
+      ContractOraclePair.fromDescriptorOracle(contractDescriptor, oracleInfo))
+  }
 }
