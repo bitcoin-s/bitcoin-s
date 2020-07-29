@@ -24,10 +24,28 @@ trait Sign {
   def signFuture(bytes: ByteVector): Future[ECDigitalSignature] =
     signFunction(bytes)
 
+  /** Note that using this function to generate digital signatures with specific
+    * properties (by trying a bunch of entropy values) can reduce privacy as it will
+    * fingerprint your wallet. Additionally it could lead to a loss of entropy in
+    * the resulting nonce should the property you are interested in cause a constraint
+    * on the input space.
+    *
+    * In short, ALL USES OF THIS FUNCTION THAT SIGN THE SAME DATA WITH DIFFERENT ENTROPY
+    * HAVE THE POTENTIAL TO CAUSE REDUCTIONS IN SECURITY AND PRIVACY, BEWARE!
+    */
   def signWithEntropyFunction: (
       ByteVector,
       ByteVector) => Future[ECDigitalSignature]
 
+  /** Note that using this function to generate digital signatures with specific
+    * properties (by trying a bunch of entropy values) can reduce privacy as it will
+    * fingerprint your wallet. Additionally it could lead to a loss of entropy in
+    * the resulting nonce should the property you are interested in cause a constraint
+    * on the input space.
+    *
+    * In short, ALL USES OF THIS FUNCTION THAT SIGN THE SAME DATA WITH DIFFERENT ENTROPY
+    * HAVE THE POTENTIAL TO CAUSE REDUCTIONS IN SECURITY AND PRIVACY, BEWARE!
+    */
   def signWithEntropyFuture(
       bytes: ByteVector,
       entropy: ByteVector): Future[ECDigitalSignature] =
@@ -36,23 +54,15 @@ trait Sign {
   private def signLowRFuture(bytes: ByteVector, startAt: Long)(implicit
       ec: ExecutionContext): Future[ECDigitalSignature] = {
     val startBytes = ByteVector.fromLong(startAt).padLeft(32)
-    val startPlusOneBytes = ByteVector.fromLong(startAt + 1).padLeft(32)
 
-    val sig1F: Future[ECDigitalSignature] =
+    val sigF: Future[ECDigitalSignature] =
       signWithEntropyFunction(bytes, startBytes)
-    val sig2F: Future[ECDigitalSignature] =
-      signWithEntropyFunction(bytes, startPlusOneBytes)
-    sig1F.flatMap { sig1 =>
-      if (sig1.bytes.length <= 70) {
-        Future.successful(sig1)
+
+    sigF.flatMap { sig =>
+      if (sig.bytes.length <= 70) {
+        Future.successful(sig)
       } else {
-        sig2F.flatMap { sig2 =>
-          if (sig2.bytes.length <= 70) {
-            Future.successful(sig2)
-          } else {
-            signLowRFuture(bytes, startAt + 2)
-          }
-        }
+        signLowRFuture(bytes, startAt + 1)
       }
     }
   }
