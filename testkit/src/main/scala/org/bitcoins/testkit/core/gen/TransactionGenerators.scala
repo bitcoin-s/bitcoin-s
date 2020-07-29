@@ -54,7 +54,18 @@ object TransactionGenerators extends BitcoinSLogger {
     }
 
   def realisticOutputs: Gen[Seq[TransactionOutput]] =
-    Gen.choose(0, 5).flatMap(n => Gen.listOfN(n, realisticOutput))
+    Gen.choose(1, 5).flatMap(n => Gen.listOfN(n, realisticOutput))
+
+  def realisticWitnessOutput: Gen[TransactionOutput] = {
+    CurrencyUnitGenerator.positiveRealistic.flatMap { amt =>
+      ScriptGenerators.witnessScriptPubKeyV0.map(spk =>
+        TransactionOutput(amt, spk._1))
+    }
+  }
+
+  def realisticWitnessOutputs: Gen[Seq[TransactionOutput]] = {
+    Gen.choose(1, 5).flatMap(n => Gen.listOfN(n, realisticWitnessOutput))
+  }
 
   /** Generates a small list of TX outputs paying to the given SPK */
   def smallOutputsTo(spk: ScriptPubKey): Gen[Seq[TransactionOutput]] =
@@ -150,6 +161,20 @@ object TransactionGenerators extends BitcoinSLogger {
   def smallInputsNonEmpty: Gen[Seq[TransactionInput]] =
     Gen.choose(1, 5).flatMap(i => Gen.listOfN(i, input))
 
+  def outputReference: Gen[OutputReference] = {
+    for {
+      outPoint <- outPoint
+      output <- output
+    } yield OutputReference(outPoint, output)
+  }
+
+  def realisticOutputReference: Gen[OutputReference] = {
+    for {
+      outPoint <- outPoint
+      output <- realisticOutput
+    } yield OutputReference(outPoint, output)
+  }
+
   /**
     * Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction Transaction]]
     * This transaction's [[org.bitcoins.core.protocol.transaction.TransactionInput TransactionInput]]s
@@ -169,6 +194,13 @@ object TransactionGenerators extends BitcoinSLogger {
   def transaction: Gen[Transaction] =
     Gen.oneOf(baseTransaction, witnessTransaction)
 
+  def realisticTransaction: Gen[Transaction] =
+    Gen.oneOf(realisticBaseTransaction, realisiticWitnessTransaction)
+
+  def realisticTransactionWitnessOut: Gen[Transaction] =
+    Gen.oneOf(realisticBaseTransactionWitnessOut,
+              realisiticWitnessTransactionWitnessOut)
+
   /** Generates a transaction where at least one output pays to the given SPK */
   def transactionTo(spk: ScriptPubKey) =
     Gen.oneOf(baseTransactionTo(spk), witnessTransactionTo(spk))
@@ -184,6 +216,24 @@ object TransactionGenerators extends BitcoinSLogger {
       os <- smallOutputs
       lockTime <- NumberGenerator.uInt32s
     } yield BaseTransaction(version, is, os, lockTime)
+
+  def realisticBaseTransaction: Gen[BaseTransaction] = {
+    for {
+      version <- NumberGenerator.int32s
+      is <- smallInputs
+      os <- realisticOutputs
+      lockTime <- NumberGenerator.uInt32s
+    } yield BaseTransaction(version, is, os, lockTime)
+  }
+
+  def realisticBaseTransactionWitnessOut: Gen[BaseTransaction] = {
+    for {
+      version <- NumberGenerator.int32s
+      is <- smallInputs
+      os <- realisticWitnessOutputs
+      lockTime <- NumberGenerator.uInt32s
+    } yield BaseTransaction(version, is, os, lockTime)
+  }
 
   /** Generates a legacy transaction with at least one output paying to the given SPK */
   def baseTransactionTo(spk: ScriptPubKey): Gen[BaseTransaction] =
@@ -218,6 +268,18 @@ object TransactionGenerators extends BitcoinSLogger {
   def witnessTransaction: Gen[WitnessTransaction] =
     for {
       os <- smallOutputs
+      tx <- witnessTxHelper(os)
+    } yield tx
+
+  def realisiticWitnessTransaction: Gen[WitnessTransaction] =
+    for {
+      os <- realisticOutputs
+      tx <- witnessTxHelper(os)
+    } yield tx
+
+  def realisiticWitnessTransactionWitnessOut: Gen[WitnessTransaction] =
+    for {
+      os <- realisticWitnessOutputs
       tx <- witnessTxHelper(os)
     } yield tx
 

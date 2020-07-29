@@ -168,7 +168,7 @@ case class WalletAppConfig(
     *  2. wallet exists
     *  3. The account exists
     */
-  private def hasWallet()(implicit
+  def hasWallet()(implicit
       walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Boolean] = {
     if (walletConf.seedExists()) {

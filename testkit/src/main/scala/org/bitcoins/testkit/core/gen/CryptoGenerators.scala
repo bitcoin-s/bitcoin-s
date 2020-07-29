@@ -12,6 +12,7 @@ import org.bitcoins.crypto.{
   AesPassword,
   CryptoUtil,
   DoubleSha256Digest,
+  DoubleSha256DigestBE,
   ECAdaptorSignature,
   ECDigitalSignature,
   ECPrivateKey,
@@ -21,6 +22,7 @@ import org.bitcoins.crypto.{
   SchnorrNonce,
   SchnorrPublicKey,
   Sha256Digest,
+  Sha256DigestBE,
   Sha256Hash160Digest
 }
 import org.scalacheck.Gen
@@ -222,6 +224,15 @@ sealed abstract class CryptoGenerators {
       hash <- CryptoGenerators.doubleSha256Digest
     } yield privKey.sign(hash)
 
+  def digitalSignatureWithSigHash: Gen[ECDigitalSignature] = {
+    for {
+      sig <- digitalSignature
+      sigHash <- hashType
+    } yield {
+      ECDigitalSignature(sig.bytes :+ sigHash.byte)
+    }
+  }
+
   def schnorrDigitalSignature: Gen[SchnorrDigitalSignature] = {
     for {
       privKey <- privateKey
@@ -247,12 +258,20 @@ sealed abstract class CryptoGenerators {
       digest = CryptoUtil.sha256(bytes)
     } yield digest
 
+  def sha256DigestBE: Gen[Sha256DigestBE] = {
+    sha256Digest.map(_.flip)
+  }
+
   /** Generates a random [[DoubleSha256Digest DoubleSha256Digest]] */
   def doubleSha256Digest: Gen[DoubleSha256Digest] =
     for {
       key <- privateKey
       digest = CryptoUtil.doubleSHA256(key.bytes)
     } yield digest
+
+  def doubleSha256DigestBE: Gen[DoubleSha256DigestBE] = {
+    doubleSha256Digest.map(_.flip)
+  }
 
   /**
     * Generates a sequence of [[DoubleSha256Digest DoubleSha256Digest]]

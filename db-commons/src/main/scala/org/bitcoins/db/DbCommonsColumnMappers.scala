@@ -1,7 +1,7 @@
 package org.bitcoins.db
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
-import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
+import org.bitcoins.commons.jsonmodels.dlc.{DLCState, SigningVersion}
 import org.bitcoins.commons.jsonmodels.wallet.{
   WalletStateDescriptor,
   WalletStateDescriptorType
@@ -310,4 +310,15 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[WalletStateDescriptor, String](
       _.toString,
       WalletStateDescriptor.fromString)
+
+  implicit val ecAdaptorSignatureMapper: BaseColumnType[ECAdaptorSignature] = {
+    MappedColumnType.base[ECAdaptorSignature, String](
+      _.hex,
+      ECAdaptorSignature.fromHex)
+  }
+
+  implicit val dlcStateMapper: BaseColumnType[DLCState] = {
+    MappedColumnType
+      .base[DLCState, String](_.toString, DLCState.fromString)
+  }
 }

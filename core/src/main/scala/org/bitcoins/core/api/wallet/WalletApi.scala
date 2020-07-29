@@ -39,6 +39,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   val feeRateApi: FeeRateApi
   val creationTime: Instant
 
+  def decodeRawTransaction(tx: Transaction): String
+
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
