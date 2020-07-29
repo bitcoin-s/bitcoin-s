@@ -1,8 +1,8 @@
 package org.bitcoins.wallet
 
 import java.time.Instant
-
 import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
+import org.bitcoins.commons.jsonmodels.SerializedTransaction
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -43,6 +43,7 @@ import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
+import play.api.libs.json.Json
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -58,6 +59,9 @@ abstract class Wallet
     with RescanHandling
     with WalletLogger {
 
+  override def decodeRawTransaction(tx: Transaction): String =
+    Json.prettyPrint(SerializedTransaction.decodeRawTransaction(tx).toJson)
+
   override def keyManager: BIP39KeyManager
 
   implicit val ec: ExecutionContext
@@ -70,18 +74,18 @@ abstract class Wallet
 
   override val discoveryBatchSize: Int = walletConfig.discoveryBatchSize
 
-  private[wallet] val addressDAO: AddressDAO = AddressDAO()
-  private[wallet] val accountDAO: AccountDAO = AccountDAO()
-  private[wallet] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
-  private[wallet] val transactionDAO: TransactionDAO = TransactionDAO()
-  private[wallet] val scriptPubKeyDAO: ScriptPubKeyDAO = ScriptPubKeyDAO()
+  private[bitcoins] val addressDAO: AddressDAO = AddressDAO()
+  private[bitcoins] val accountDAO: AccountDAO = AccountDAO()
+  private[bitcoins] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
+  private[bitcoins] val transactionDAO: TransactionDAO = TransactionDAO()
+  private[bitcoins] val scriptPubKeyDAO: ScriptPubKeyDAO = ScriptPubKeyDAO()
 
-  private[wallet] val incomingTxDAO: IncomingTransactionDAO =
+  private[bitcoins] val incomingTxDAO: IncomingTransactionDAO =
     IncomingTransactionDAO()
 
-  private[wallet] val outgoingTxDAO: OutgoingTransactionDAO =
+  private[bitcoins] val outgoingTxDAO: OutgoingTransactionDAO =
     OutgoingTransactionDAO()
-  private[wallet] val addressTagDAO: AddressTagDAO = AddressTagDAO()
+  private[bitcoins] val addressTagDAO: AddressTagDAO = AddressTagDAO()
 
   private[wallet] val stateDescriptorDAO: WalletStateDescriptorDAO =
     WalletStateDescriptorDAO()
@@ -215,6 +219,7 @@ abstract class Wallet
   override def broadcastTransaction(transaction: Transaction): Future[Unit] =
     for {
       _ <- nodeApi.broadcastTransaction(transaction)
+      _ <- processTransaction(transaction, blockHashOpt = None)
       _ <- walletCallbacks.executeOnTransactionBroadcast(logger, transaction)
     } yield ()
 
@@ -752,14 +757,14 @@ abstract class Wallet
 object Wallet extends WalletLogger {
 
   private case class WalletImpl(
-      override val keyManager: BIP39KeyManager,
-      override val nodeApi: NodeApi,
-      override val chainQueryApi: ChainQueryApi,
-      override val feeRateApi: FeeRateApi,
+      keyManager: BIP39KeyManager,
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      feeRateApi: FeeRateApi,
       override val creationTime: Instant
   )(implicit
-      override val walletConfig: WalletAppConfig,
-      override val ec: ExecutionContext
+      val walletConfig: WalletAppConfig,
+      val ec: ExecutionContext
   ) extends Wallet
 
   def apply(

@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.zmq.ZMQSubscriber
@@ -101,6 +102,32 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       feeRateApi = wallet.feeRateApi,
       creationTime = wallet.keyManager.creationTime
     )(wallet.walletConfig, wallet.ec)
+
+    walletCallbackP.success(pairedWallet)
+
+    pairedWallet
+  }
+
+  def createDLCWalletWithBitcoindCallbacks(
+      bitcoind: BitcoindRpcClient,
+      wallet: DLCWallet)(implicit ec: ExecutionContext): DLCWallet = {
+    // Kill the old wallet
+    wallet.stopWalletThread()
+
+    // We need to create a promise so we can inject the wallet with the callback
+    // after we have created it into SyncUtil.getNodeApiWalletCallback
+    // so we don't lose the internal state of the wallet
+    val walletCallbackP = Promise[Wallet]()
+
+    val pairedWallet = DLCWallet(
+      keyManager = wallet.keyManager,
+      nodeApi =
+        BitcoindRpcBackendUtil.getNodeApiWalletCallback(bitcoind,
+                                                        walletCallbackP.future),
+      chainQueryApi = bitcoind,
+      feeRateApi = wallet.feeRateApi,
+      creationTime = wallet.keyManager.creationTime
+    )(wallet.walletConfig, wallet.dlcConfig, wallet.ec)
 
     walletCallbackP.success(pairedWallet)
 

@@ -673,7 +673,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       tx.outputs(txIn.previousOutput.vout.toInt)
     } else {
       throw new UnsupportedOperationException(
-        "Not enough information in the InputPSBTMap to get a valid InputInfo")
+        s"Not enough information in the InputPSBTMap to get a valid InputInfo: $elements")
     }
 
     val redeemScriptOpt = finalizedScriptSigOpt match {

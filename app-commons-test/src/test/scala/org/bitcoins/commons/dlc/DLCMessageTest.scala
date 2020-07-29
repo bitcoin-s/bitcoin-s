@@ -65,4 +65,30 @@ class DLCMessageTest extends BitcoinSAsyncTest {
       )
     )
   }
+
+  it must "be able to go back and forth between TLV and deserialized" in {
+    forAll(TLVGen.dlcOfferTLVAcceptTLVSignTLV) {
+      case (offerTLV, acceptTLV, signTLV) =>
+        val offer = DLCOffer.fromTLV(offerTLV)
+        val accept = DLCAccept.fromTLV(acceptTLV, offer)
+        val sign = DLCSign.fromTLV(signTLV, offer)
+
+        assert(offer.toTLV == offerTLV)
+        assert(accept.toTLV == acceptTLV)
+        assert(sign.toTLV == signTLV)
+    }
+  }
+
+  it must "be able to go back and forth between LN Message and deserialized" in {
+    forAll(LnMessageGen.dlcOfferMessageAcceptMessageSignMessage) {
+      case (offerMsg, acceptMsg, signMsg) =>
+        val offer = DLCOffer.fromMessage(offerMsg)
+        val accept = DLCAccept.fromMessage(acceptMsg, offer)
+        val sign = DLCSign.fromMessage(signMsg, offer)
+
+        assert(offer.toMessage == offerMsg)
+        assert(accept.toMessage == acceptMsg)
+        assert(sign.toMessage == signMsg)
+    }
+  }
 }

@@ -3,21 +3,25 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import akka.stream.Materializer
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleInfo
 import org.bitcoins.commons.serializers.Picklers._
-import org.bitcoins.core.api.wallet.AnyHDWalletApi
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
 import org.bitcoins.crypto.NetworkElement
+import org.bitcoins.dlc.wallet.AnyDLCHDWalletApi
 import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 
+import java.nio.file.Files
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
+case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     system: ActorSystem,
     walletConf: WalletAppConfig)
     extends ServerRoute {
@@ -29,6 +33,9 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       "value" -> Num(spendingInfoDb.output.value.satoshis.toLong.toDouble)
     )
   }
+
+  implicit val materializer: Materializer =
+    Materializer.createMaterializer(system)
 
   private def handleBroadcastable(
       tx: Transaction,
@@ -208,6 +215,210 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("getdlcs", _) =>
+      complete {
+        wallet.listDLCs().map { dlcs =>
+          Server.httpSuccess(dlcs.map(_.toJson))
+        }
+      }
+
+    case ServerCommand("getdlc", arr) =>
+      GetDLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetDLC(paramHash)) =>
+          complete {
+            wallet.findDLC(paramHash).map {
+              case None => Server.httpSuccess(ujson.Null)
+              case Some(dlc) =>
+                Server.httpSuccess(dlc.toJson)
+            }
+          }
+      }
+
+    case ServerCommand("createdlcoffer", arr) =>
+      CreateDLCOffer.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(
+              CreateDLCOffer(announcement,
+                             contractInfo,
+                             collateral,
+                             feeRateOpt,
+                             locktime,
+                             refundLT)) =>
+          complete {
+            if (!announcement.validateSignature) {
+              throw new RuntimeException(
+                s"Received Oracle announcement with invalid signature! ${announcement.hex}")
+            }
+
+            val oracleInfo = OracleInfo.fromOracleAnnouncement(announcement)
+
+            wallet
+              .createDLCOffer(oracleInfo,
+                              contractInfo,
+                              collateral,
+                              feeRateOpt,
+                              locktime,
+                              refundLT)
+              .map { offer =>
+                Server.httpSuccess(offer.toMessage.hex)
+              }
+          }
+      }
+
+    case ServerCommand("acceptdlcoffer", arr) =>
+      AcceptDLCOffer.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AcceptDLCOffer(offer)) =>
+          complete {
+            wallet
+              .acceptDLCOffer(offer.tlv)
+              .map { accept =>
+                Server.httpSuccess(accept.toMessage.hex)
+              }
+          }
+      }
+
+    case ServerCommand("acceptdlcofferfromfile", arr) =>
+      DLCDataFromFile.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DLCDataFromFile(path)) =>
+          complete {
+
+            val hex = Files.readAllLines(path).get(0)
+
+            val offerMessage = LnMessageFactory(DLCOfferTLV).fromHex(hex)
+
+            wallet
+              .acceptDLCOffer(offerMessage.tlv)
+              .map { accept =>
+                Server.httpSuccess(accept.toMessage.hex)
+              }
+          }
+      }
+
+    case ServerCommand("signdlc", arr) =>
+      SignDLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(SignDLC(accept)) =>
+          complete {
+            wallet
+              .signDLC(accept.tlv)
+              .map { sign =>
+                Server.httpSuccess(sign.toMessage.hex)
+              }
+          }
+      }
+
+    case ServerCommand("signdlcfromfile", arr) =>
+      DLCDataFromFile.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DLCDataFromFile(path)) =>
+          complete {
+
+            val hex = Files.readAllLines(path).get(0)
+
+            val acceptMessage = LnMessageFactory(DLCAcceptTLV).fromHex(hex)
+
+            wallet
+              .signDLC(acceptMessage.tlv)
+              .map { sign =>
+                Server.httpSuccess(sign.toMessage.hex)
+              }
+          }
+      }
+
+    case ServerCommand("adddlcsigs", arr) =>
+      AddDLCSigs.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AddDLCSigs(sigs)) =>
+          complete {
+            wallet.addDLCSigs(sigs.tlv).map { db =>
+              Server.httpSuccess(
+                s"Successfully added sigs to DLC ${db.contractIdOpt.get.toHex}")
+            }
+          }
+      }
+
+    case ServerCommand("adddlcsigsfromfile", arr) =>
+      DLCDataFromFile.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DLCDataFromFile(path)) =>
+          complete {
+
+            val hex = Files.readAllLines(path).get(0)
+
+            val signMessage = LnMessageFactory(DLCSignTLV).fromHex(hex)
+
+            wallet.addDLCSigs(signMessage.tlv).map { db =>
+              Server.httpSuccess(
+                s"Successfully added sigs to DLC ${db.contractIdOpt.get.toHex}")
+            }
+          }
+      }
+
+    case ServerCommand("getdlcfundingtx", arr) =>
+      GetDLCFundingTx.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetDLCFundingTx(contractId)) =>
+          complete {
+            wallet.getDLCFundingTx(contractId).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("broadcastdlcfundingtx", arr) =>
+      BroadcastDLCFundingTx.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(BroadcastDLCFundingTx(contractId)) =>
+          complete {
+            wallet.broadcastDLCFundingTx(contractId).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("executedlc", arr) =>
+      ExecuteDLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLC(contractId, oracleSigs, noBroadcast)) =>
+          complete {
+            for {
+              tx <- wallet.executeDLC(contractId, oracleSigs)
+              retStr <- handleBroadcastable(tx, noBroadcast)
+            } yield {
+              Server.httpSuccess(retStr.hex)
+            }
+          }
+      }
+
+    case ServerCommand("executedlcrefund", arr) =>
+      ExecuteDLCRefund.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLCRefund(contractId, noBroadcast)) =>
+          complete {
+            for {
+              tx <- wallet.executeDLCRefund(contractId)
+              retStr <- handleBroadcastable(tx, noBroadcast)
+            } yield {
+              Server.httpSuccess(retStr.hex)
+            }
+          }
+      }
+
     case ServerCommand("sendtoaddress", arr) =>
       // TODO create custom directive for this?
       SendToAddress.fromJsArr(arr) match {
@@ -223,9 +434,9 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
               tx <- wallet.sendToAddress(address,
                                          bitcoins,
                                          satoshisPerVirtualByteOpt)
-              _ <- handleBroadcastable(tx, noBroadcast)
+              retStr <- handleBroadcastable(tx, noBroadcast)
             } yield {
-              Server.httpSuccess(tx.txIdBE)
+              Server.httpSuccess(retStr.hex)
             }
           }
       }
@@ -455,6 +666,16 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
             WalletStorage.changeAesPassword(path, None, Some(password))
 
             Server.httpSuccess(ujson.Null)
+          }
+      }
+    case ServerCommand("decoderawtransaction", arr) =>
+      DecodeRawTransaction.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DecodeRawTransaction(tx)) =>
+          complete {
+            val jsonStr = wallet.decodeRawTransaction(tx)
+            Server.httpSuccess(jsonStr)
           }
       }
   }
