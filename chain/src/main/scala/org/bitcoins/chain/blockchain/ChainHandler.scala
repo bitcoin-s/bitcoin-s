@@ -54,26 +54,28 @@ case class ChainHandler(
   }
 
   override def getBestBlockHeader(): Future[BlockHeaderDb] = {
-    logger.debug(s"Querying for best block hash")
-    //https://bitcoin.org/en/glossary/block-chain
-    val groupedChains = blockchains.groupBy(_.tip.chainWork)
-    val maxWork = groupedChains.keys.max
-    val chains = groupedChains(maxWork)
+    Future {
+      logger.debug(s"Querying for best block hash")
+      //https://bitcoin.org/en/glossary/block-chain
+      val groupedChains = blockchains.groupBy(_.tip.chainWork)
+      val maxWork = groupedChains.keys.max
+      val chains = groupedChains(maxWork)
 
-    val bestHeader: BlockHeaderDb = chains match {
-      case Vector() =>
-        // This should never happen
-        val errMsg = s"Did not find blockchain with work $maxWork"
-        logger.error(errMsg)
-        throw new RuntimeException(errMsg)
-      case chain +: Vector() =>
-        chain.tip
-      case chain +: rest =>
-        logger.warn(
-          s"We have multiple competing blockchains: ${(chain +: rest).map(_.tip.hashBE.hex).mkString(", ")}")
-        chain.tip
+      val bestHeader: BlockHeaderDb = chains match {
+        case Vector() =>
+          // This should never happen
+          val errMsg = s"Did not find blockchain with work $maxWork"
+          logger.error(errMsg)
+          throw new RuntimeException(errMsg)
+        case chain +: Vector() =>
+          chain.tip
+        case chain +: rest =>
+          logger.warn(
+            s"We have multiple competing blockchains: ${(chain +: rest).map(_.tip.hashBE.hex).mkString(", ")}")
+          chain.tip
+      }
+      bestHeader
     }
-    Future.successful(bestHeader)
   }
 
   /** @inheritdoc */

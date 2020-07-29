@@ -148,7 +148,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       filterHeaderCount <- chainApi.getFilterHeaderCount
     } yield {
       logger.info(
-        s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filers")
+        s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filters")
       node
     }
   }
@@ -190,15 +190,11 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def sync(): Future[Unit] = {
     for {
       chainApi <- chainApiFromDb()
-      hash <- chainApi.getBestBlockHash()
-      header <-
-        chainApi
-          .getHeader(hash)
-          .map(_.get) // .get is safe since this is an internal call
-
+      header <- chainApi.getBestBlockHeader()
     } yield {
-      peerMsgSenderF.map(_.sendGetHeadersMessage(hash.flip))
-      logger.info(s"Starting sync node, height=${header.height} hash=$hash")
+      peerMsgSenderF.map(_.sendGetHeadersMessage(header.hashBE.flip))
+      logger.info(
+        s"Starting sync node, height=${header.height} hash=${header.hashBE}")
     }
   }
 
