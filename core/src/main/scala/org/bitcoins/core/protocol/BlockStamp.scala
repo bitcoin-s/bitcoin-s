@@ -57,7 +57,6 @@ object BlockStamp extends StringFactory[BlockStamp] {
       val time = UInt32(seconds)
       new BlockTime(time)
     }
-
   }
 
   override def fromStringT(s: String): Try[BlockStamp] = {
@@ -71,6 +70,21 @@ object BlockStamp extends StringFactory[BlockStamp] {
     lazy val error = Failure(InvalidBlockStamp(s))
 
     blockHash orElse blockHeight orElse blockTime orElse error
+  }
+
+  def apply(timeLockNumber: UInt32): BlockTimeStamp =
+    fromUInt32(timeLockNumber)
+
+  def apply(timeLockNumber: Int): BlockTimeStamp =
+    fromUInt32(UInt32(timeLockNumber))
+
+  /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki#detailed-specification]] */
+  def fromUInt32(uInt32: UInt32): BlockTimeStamp = {
+    if (uInt32 < TransactionConstants.locktimeThreshold) {
+      BlockHeight(uInt32.toInt)
+    } else {
+      BlockStamp.BlockTime(uInt32)
+    }
   }
 
   override def fromString(string: String): BlockStamp = {
