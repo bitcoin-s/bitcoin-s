@@ -39,8 +39,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
       tx <- wallet.sendToAddress(testAddress, amountToSend, feeRateOpt)
     } yield {
       assert(
-        tx.outputs.head == TransactionOutput(amountToSend,
-                                             testAddress.scriptPubKey))
+        tx.outputs.contains(
+          TransactionOutput(amountToSend, testAddress.scriptPubKey)))
     }
   }
 

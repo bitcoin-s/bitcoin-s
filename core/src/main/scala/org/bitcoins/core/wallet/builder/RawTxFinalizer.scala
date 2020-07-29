@@ -319,19 +319,25 @@ case class ShufflingNonInteractiveFinalizer(
       ec: ExecutionContext): Future[Transaction] = {
     val addChange = ChangeFinalizer(inputInfos, feeRate, changeSPK)
 
-    val sanityCheck = SanityCheckFinalizer(
-      inputInfos = inputInfos,
-      expectedOutputSPKs = txBuilderResult.outputs.map(_.scriptPubKey),
-      expectedFeeRate = feeRate,
-      changeSPKs = Vector(changeSPK))
+    val shuffled = addChange.andThen(ShuffleFinalizer)
 
-    val addWitnessData = AddWitnessDataFinalizer(inputInfos)
+    shuffled.buildTx(txBuilderResult).flatMap { tempTx =>
+      val tempTxBuilderResult = RawTxBuilderResult.fromTransaction(tempTx)
 
-    addChange
-      .andThen(ShuffleFinalizer)
-      .andThen(sanityCheck)
-      .andThen(addWitnessData)
-      .buildTx(txBuilderResult)
+      val shuffledInputInfos = tempTxBuilderResult.inputs
+        .map(input => inputInfos.find(_.outPoint == input.previousOutput).get)
+
+      val sanityCheck =
+        SanityCheckFinalizer(inputInfos = shuffledInputInfos,
+                             expectedOutputSPKs =
+                               tempTxBuilderResult.outputs.map(_.scriptPubKey),
+                             expectedFeeRate = feeRate,
+                             changeSPKs = Vector(changeSPK))
+
+      sanityCheck
+        .andThen(AddWitnessDataFinalizer(shuffledInputInfos))
+        .buildTx(tempTxBuilderResult)
+    }
   }
 }
 

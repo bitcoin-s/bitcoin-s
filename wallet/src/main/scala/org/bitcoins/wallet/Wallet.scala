@@ -20,7 +20,7 @@ import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, Mutable}
 import org.bitcoins.core.wallet.builder.{
   RawTxBuilderWithFinalizer,
   RawTxSigner,
-  StandardNonInteractiveFinalizer
+  ShufflingNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState.{
@@ -344,7 +344,7 @@ abstract class Wallet
     * finalizing and signing the transaction, then correctly processing and logging it
     */
   private def finishSend(
-      txBuilder: RawTxBuilderWithFinalizer[StandardNonInteractiveFinalizer],
+      txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
       sentAmount: CurrencyUnit,
       feeRate: FeeUnit,
@@ -402,7 +402,7 @@ abstract class Wallet
       changeAddr <- getNewChangeAddress(fromAccount.hdAccount)
 
       output = TransactionOutput(amount, address.scriptPubKey)
-      txBuilder = StandardNonInteractiveFinalizer.txBuilderFrom(
+      txBuilder = ShufflingNonInteractiveFinalizer.txBuilderFrom(
         Vector(output),
         utxos,
         feeRate,
