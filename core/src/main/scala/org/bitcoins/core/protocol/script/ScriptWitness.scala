@@ -167,9 +167,9 @@ object ScriptWitness {
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
     val isPubKey = {
       stack.nonEmpty &&
-      ECPublicKey.isFullyValid(stack.head) &&
       (stack.head.size == 33
-      || stack.head.size == 65)
+      || stack.head.size == 65) &&
+      ECPublicKey.isFullyValid(stack.head)
     }
     if (stack.isEmpty) {
       EmptyScriptWitness
