@@ -53,11 +53,15 @@ case class ChainHandler(
       case Some(count) => Future.successful(count)
       case None =>
         logger.debug(s"Querying for block count")
-        blockHeaderDAO.bestHeight.map { height =>
+        val res = blockHeaderDAO.bestHeight.map { height =>
           logger.debug(s"getBlockCount result: count=$height")
-          cacheBlockCount(Some(height))
           height
         }
+        res.foreach { count =>
+          cacheBlockCount(Some(count))
+        }
+        res.failed.foreach(_ => cacheBlockCount(None))
+        res
     }
   }
 
