@@ -54,7 +54,7 @@ object Main extends App with BitcoinSLogger {
     }
 
     val forceChainWorkRecalc: Boolean =
-      argsWithIndex.exists(_._1.toLowerCase == "--force-recalc")
+      args.exists(_.toLowerCase == "--force-recalc-chainwork")
 
     val logger = HttpLoggerImpl(conf.nodeConf).getLogger
 
