@@ -138,16 +138,13 @@ case class CompactFilterDAO()(implicit
 
     val maxQuery = join.map(_._2.chainWork).max
 
+    val query = join.filter(_._2.chainWork === maxQuery).take(1).map(_._1)
+
     for {
-      maxWorkOpt <- safeDatabase.run(maxQuery.result)
-      queryOpt = maxWorkOpt.map(maxWork =>
-        join.filter(_._2.chainWork === maxWork).take(1))
-      filterOpt <- queryOpt match {
-        case Some(query) =>
-          safeDatabase.run(query.result).map(_.headOption.map(_._1))
-        case None =>
-          Future.successful(None)
-      }
+      filterOpt <-
+        safeDatabase
+          .run(query.result)
+          .map(_.headOption)
     } yield filterOpt
   }
 }
