@@ -675,12 +675,8 @@ case class ChainHandler(
   private def calculateChainWorkGenesisBlock(
       genesisHeader: BlockHeaderDb): Future[BlockHeaderDb] = {
     val expectedWork = Pow.getBlockProof(genesisHeader.blockHeader)
-    if (genesisHeader.chainWork != expectedWork) {
-      val genesisWithWork = genesisHeader.copy(chainWork = expectedWork)
-      blockHeaderDAO.update(genesisWithWork)
-    } else {
-      Future.successful(genesisHeader)
-    }
+    val genesisWithWork = genesisHeader.copy(chainWork = expectedWork)
+    blockHeaderDAO.update(genesisWithWork)
   }
 }
 
