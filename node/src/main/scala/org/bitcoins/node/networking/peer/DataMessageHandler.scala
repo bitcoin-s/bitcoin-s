@@ -4,7 +4,6 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
@@ -79,40 +78,43 @@ case class DataMessageHandler(
         val batchSizeFull: Boolean =
           currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {
-          (newBatch, newSyncing) <-
+          newSyncing <-
             if (batchSizeFull) {
               logger.info(
                 s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
               for {
                 _ <- sendNextGetCompactFilterCommand(peerMsgSender,
                                                      filter.blockHash.flip)
-              } yield (Vector.empty, syncing)
+              } yield syncing
             } else {
               for {
                 filterHeaderCount <- chainApi.getFilterHeaderCount()
-                filterCount <- chainApi.getFilterCount()
+                dbFilters <- chainApi.getFilterCount()
               } yield {
+                val filterCount = dbFilters + currentFilterBatch.size
                 val syncing = filterCount < filterHeaderCount - 1
                 if (!syncing) {
                   logger.info(s"We are synced")
                 }
-                (currentFilterBatch :+ filter, syncing)
+                syncing
               }
             }
           // If we are not syncing or our filter batch is full, process the filters
-          newChainApi <-
+          filterBatch = currentFilterBatch :+ filter
+          (newBatch, newChainApi) <-
             if (!newSyncing || batchSizeFull) {
-              val blockFilters = newBatch.map { filter =>
+              val blockFilters = filterBatch.map { filter =>
                 (filter.blockHash,
                  BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
               }
+              logger.debug(s"Processing ${filterBatch.size} filters")
               for {
-                newChainApi <- chainApi.processFilters(newBatch)
+                newChainApi <- chainApi.processFilters(filterBatch)
                 _ <- callbacks.executeOnCompactFiltersReceivedCallbacks(
                   logger,
                   blockFilters)
-              } yield newChainApi
-            } else Future.successful(chainApi)
+              } yield (Vector.empty, newChainApi)
+            } else Future.successful((filterBatch, chainApi))
 
         } yield {
           this.copy(chainApi = newChainApi,
