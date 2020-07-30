@@ -44,12 +44,20 @@ case class ChainHandler(
     extends ChainApi
     with ChainVerificationLogger {
 
+  @volatile private var blockCount: Option[Int] = None
+  @volatile private var filterHeaderCount: Option[Int] = None
+
   /** @inheritdoc */
   override def getBlockCount(): Future[Int] = {
-    logger.debug(s"Querying for block count")
-    blockHeaderDAO.bestHeight.map { height =>
-      logger.debug(s"getBlockCount result: count=$height")
-      height
+    cachedBlockCount match {
+      case Some(count) => Future.successful(count)
+      case None =>
+        logger.debug(s"Querying for block count")
+        blockHeaderDAO.bestHeight.map { height =>
+          logger.debug(s"getBlockCount result: count=$height")
+          cacheBlockCount(Some(height))
+          height
+        }
     }
   }
 
@@ -251,6 +259,7 @@ case class ChainHandler(
       val maxHeight = filterHeadersToCreate.maxBy(_.height)
       logger.info(
         s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE}")
+      cacheFilterHeaderCount(None)
       this
     }
   }
@@ -367,15 +376,24 @@ case class ChainHandler(
     blockHeaderDAO.getAtHeight(height)
 
   /** @inheritdoc */
-  override def getFilterHeaderCount: Future[Int] = {
-    logger.debug(s"Querying for filter header count")
-    filterHeaderDAO.getBestFilterHeader.map {
-      case Some(filterHeader) =>
-        val height = filterHeader.height
-        logger.debug(s"getFilterCount result: count=$height")
-        height
-      case None =>
-        0
+  override def getFilterHeaderCount(): Future[Int] = {
+    cachedFilterHeaderCount match {
+      case Some(count) => Future.successful(count)
+      case _ =>
+        logger.debug(s"Querying for filter header count")
+        val res = filterHeaderDAO.getBestFilterHeader.map {
+          case Some(filterHeader) =>
+            val height = filterHeader.height
+            logger.debug(s"getFilterHeaderCount result: count=$height")
+            height
+          case None =>
+            0
+        }
+        res.foreach { count =>
+          cacheFilterHeaderCount(Some(count))
+        }
+        res.failed.foreach(_ => cacheFilterHeaderCount(None))
+        res
     }
   }
 
@@ -584,6 +602,23 @@ case class ChainHandler(
       this.copy(blockchains = newBlockchains)
     }
   }
+
+  private def cachedBlockCount: Option[Int] =
+    synchronized(blockCount)
+
+  private def cacheBlockCount(count: Option[Int]): Unit =
+    synchronized {
+      blockCount = count
+    }
+
+  private def cachedFilterHeaderCount: Option[Int] =
+    synchronized(filterHeaderCount)
+
+  private def cacheFilterHeaderCount(count: Option[Int]): Unit =
+    synchronized {
+      filterHeaderCount = count
+    }
+
 }
 
 object ChainHandler {
