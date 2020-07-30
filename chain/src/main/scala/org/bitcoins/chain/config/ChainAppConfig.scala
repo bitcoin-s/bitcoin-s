@@ -98,6 +98,10 @@ case class ChainAppConfig(
   lazy val filterBatchSize: Int =
     config.getInt(s"${moduleName}.neutrino.filter-batch-size")
 
+  lazy val forceRecalcChainWork: Boolean =
+    config.getBooleanOrElse(s"$moduleName.neutrino.filter-batch-size",
+                            default = false)
+
   /** Starts the associated application */
   override def start(): Future[Unit] = FutureUtil.unit
 }
