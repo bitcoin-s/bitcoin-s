@@ -331,7 +331,8 @@ case class BlockHeaderDAO()(implicit
     val diffInterval = appConfig.chain.difficultyChangeInterval
     val height = Math.max(0, header.height - diffInterval)
     val headersF = getBetweenHeights(from = height, to = header.height)
-    headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
+    headersF.map(headers =>
+      Blockchain.fromHeaders(headers.sortBy(_.height)(Ordering.Int.reverse)))
   }
 
   @tailrec
