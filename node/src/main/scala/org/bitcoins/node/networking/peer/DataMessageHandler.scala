@@ -99,17 +99,20 @@ case class DataMessageHandler(
                 (currentFilterBatch :+ filter, syncing)
               }
             }
-          newChainApi <- chainApi.processFilter(filter)
           // If we are not syncing or our filter batch is full, process the filters
-          _ <-
+          newChainApi <-
             if (!newSyncing || batchSizeFull) {
               val blockFilters = newBatch.map { filter =>
                 (filter.blockHash,
                  BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
               }
-              callbacks.executeOnCompactFiltersReceivedCallbacks(logger,
-                                                                 blockFilters)
-            } else FutureUtil.unit
+              for {
+                newChainApi <- chainApi.processFilters(newBatch)
+                _ <- callbacks.executeOnCompactFiltersReceivedCallbacks(
+                  logger,
+                  blockFilters)
+              } yield newChainApi
+            } else Future.successful(chainApi)
 
         } yield {
           this.copy(chainApi = newChainApi,
