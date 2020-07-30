@@ -2,7 +2,7 @@ package org.bitcoins.db
 
 import java.sql.SQLException
 
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import slick.dbio.{DBIOAction, NoStream}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -84,15 +84,22 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     }
   }
 
-  /** Updates all of the given ts in the database */
+  // FIXME: This is a temporary fix for https://github.com/bitcoin-s/bitcoin-s/issues/1586
+  // This is an inefficient solution that does each update individually
   def updateAll(ts: Vector[T]): Future[Vector[T]] = {
-    val query = findAll(ts)
-    val actions = ts.map(t => query.update(t))
-    val affectedRows: Future[Vector[Int]] =
-      safeDatabase.run(DBIO.sequence(actions).transactionally)
-    val updatedTs = findAll(ts)
-    affectedRows.flatMap { _ =>
-      safeDatabase.runVec(updatedTs.result)
+    def oldUpdateAll(ts: Vector[T]): Future[Vector[T]] = {
+      val query = findAll(ts)
+      val actions = ts.map(query.update)
+      val affectedRows: Future[Vector[Int]] =
+        safeDatabase.runVec(DBIO.sequence(actions).transactionally)
+      val updatedTs = findAll(ts)
+      affectedRows.flatMap { _ =>
+        safeDatabase.runVec(updatedTs.result)
+      }
+    }
+
+    FutureUtil.foldLeftAsync(Vector.empty[T], ts) { (accum, t) =>
+      oldUpdateAll(Vector(t)).map(accum ++ _)
     }
   }
 
@@ -112,7 +119,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     * delete all records from the table
     */
   def deleteAll(): Future[Int] =
-    safeDatabase.run(table.delete)
+    safeDatabase.run(table.delete.transactionally)
 
   /**
     * insert the record if it does not exist, update it if it does
@@ -120,7 +127,14 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     * @param t - the record to inserted / updated
     * @return t - the record that has been inserted / updated
     */
-  def upsert(t: T): Future[T] = upsertAll(Vector(t)).map(_.head)
+  def upsert(t: T): Future[T] = {
+    upsertAll(Vector(t)).map { ts =>
+      ts.headOption match {
+        case Some(updated) => updated
+        case None          => throw UpsertFailedException("Upsert failed for: " + t)
+      }
+    }
+  }
 
   /** Upserts all of the given ts in the database, then returns the upserted values */
   def upsertAll(ts: Vector[T]): Future[Vector[T]] = {
@@ -211,4 +225,7 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
 }
 
 case class UpdateFailedException(message: String)
+    extends RuntimeException(message)
+
+case class UpsertFailedException(message: String)
     extends RuntimeException(message)
