@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.stream.Materializer
 import akka.util.ByteString
 import org.bitcoins.commons.jsonmodels.eclair.OutgoingPaymentStatus
+import org.bitcoins.commons.jsonmodels.sbclient._
 import org.bitcoins.crypto.{
   AesCrypt,
   AesEncryptedData,
@@ -18,8 +19,51 @@ import org.bitcoins.core.protocol.ln.{LnInvoice, PaymentPreimage}
 import org.bitcoins.eclair.rpc.api.EclairApi
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json, Reads}
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+
+case class SbClient(
+    eclairApi: EclairApi,
+    endpoint: String = "https://test.api.suredbits.com/dlc/v0") {
+
+  def getPublicKey(exchange: Exchange, pair: TradingPair)(implicit
+      system: ActorSystem): Future[SchnorrPublicKey] = {
+    val uri =
+      s"$endpoint/${exchange.toLongString}/${pair.toLowerString}/PublicKey"
+
+    import system.dispatcher
+
+    SbClient.rawRestCall(uri).map(SchnorrPublicKey.fromHex)
+  }
+
+  def requestRValueAndPay(
+      exchange: Exchange,
+      tradingPair: TradingPair,
+      eclairApi: EclairApi)(implicit
+      system: ActorSystem): Future[ECPublicKey] = {
+    val dataF =
+      SbClient.requestAndPay(exchange = exchange,
+                             tradingPair = tradingPair,
+                             requestType = RequestType.RValue,
+                             eclairApi = eclairApi,
+                             endpoint = endpoint)
+    dataF.map(ECPublicKey.fromHex)(system.dispatcher)
+  }
+
+  def requestLastSigAndPay(
+      exchange: Exchange,
+      tradingPair: TradingPair,
+      eclairApi: EclairApi)(implicit
+      system: ActorSystem): Future[SchnorrDigitalSignature] = {
+    val dataF =
+      SbClient.requestAndPay(exchange = exchange,
+                             tradingPair = tradingPair,
+                             requestType = RequestType.LastSig,
+                             eclairApi = eclairApi,
+                             endpoint = endpoint)
+    dataF.map(SchnorrDigitalSignature.fromHex)(system.dispatcher)
+  }
+}
 
 object SbClient {
 
@@ -35,19 +79,6 @@ object SbClient {
           .map(payload => payload.decodeString(ByteString.UTF_8)))
   }
 
-  def getPublicKey(
-      exchange: Exchange,
-      pair: TradingPair,
-      endpoint: String = "https://test.api.suredbits.com/dlc/v0")(implicit
-      system: ActorSystem): Future[SchnorrPublicKey] = {
-    val uri =
-      s"$endpoint/${exchange.toLongString}/${pair.toLowerString}/PublicKey"
-
-    import system.dispatcher
-
-    rawRestCall(uri).map(SchnorrPublicKey.fromHex)
-  }
-
   def restCall(uri: Uri)(implicit system: ActorSystem): Future[JsValue] = {
     rawRestCall(uri).map(Json.parse)(system.dispatcher)
   }
@@ -61,7 +92,7 @@ object SbClient {
       exchange: Exchange,
       tradingPair: TradingPair,
       requestType: RequestType,
-      endpoint: String = "https://test.api.suredbits.com/dlc/v0")(implicit
+      endpoint: String)(implicit
       system: ActorSystem): Future[InvoiceAndDataResponse] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
 
@@ -116,8 +147,7 @@ object SbClient {
       tradingPair: TradingPair,
       requestType: RequestType,
       eclairApi: EclairApi,
-      endpoint: String = "https://test.api.suredbits.com/dlc/v0")(implicit
-      system: ActorSystem): Future[String] = {
+      endpoint: String)(implicit system: ActorSystem): Future[String] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     for {
@@ -125,25 +155,5 @@ object SbClient {
         request(exchange, tradingPair, requestType, endpoint)
       preImage <- makePayment(eclairApi, invoice)
     } yield decryptData(encryptedData, preImage)
-  }
-
-  def requestRValueAndPay(
-      exchange: Exchange,
-      tradingPair: TradingPair,
-      eclairApi: EclairApi)(implicit
-      system: ActorSystem): Future[ECPublicKey] = {
-    val dataF =
-      requestAndPay(exchange, tradingPair, RequestType.RValue, eclairApi)
-    dataF.map(ECPublicKey.fromHex)(system.dispatcher)
-  }
-
-  def requestLastSigAndPay(
-      exchange: Exchange,
-      tradingPair: TradingPair,
-      eclairApi: EclairApi)(implicit
-      system: ActorSystem): Future[SchnorrDigitalSignature] = {
-    val dataF =
-      requestAndPay(exchange, tradingPair, RequestType.LastSig, eclairApi)
-    dataF.map(SchnorrDigitalSignature.fromHex)(system.dispatcher)
   }
 }

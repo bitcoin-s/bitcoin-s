@@ -251,6 +251,8 @@ lazy val appServer = project
     chain,
     wallet,
     bitcoindRpc,
+    eclairRpc,
+    dlcSuredbitsClient,
     feeProvider,
     dlc
   )

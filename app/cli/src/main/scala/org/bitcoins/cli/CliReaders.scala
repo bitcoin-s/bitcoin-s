@@ -4,6 +4,7 @@ import java.time.{ZoneId, ZonedDateTime}
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.sbclient.{Exchange, TradingPair}
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
@@ -191,4 +192,16 @@ object CliReaders {
       override def reads: String => DLCMutualCloseSig =
         str => DLCMutualCloseSig.fromJson(ujson.read(str))
     }
+
+  implicit val exchangeReads: Read[Exchange] = new Read[Exchange] {
+    override def arity: Int = 1
+
+    override def reads: String => Exchange = Exchange.fromString(_).get
+  }
+
+  implicit val tradingPairReads: Read[TradingPair] = new Read[TradingPair] {
+    override def arity: Int = 1
+
+    override def reads: String => TradingPair = TradingPair.fromString
+  }
 }

@@ -1,10 +1,8 @@
 package org.bitcoins.gui.dlc
 
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleInfo
-import org.bitcoins.crypto.ECPrivateKey
-import org.bitcoins.gui.TaskRunner
 import org.bitcoins.gui.dlc.dialog._
+import org.bitcoins.gui.{TaskRunner, WalletGUI}
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.{TextArea, TextField}
 import scalafx.stage.Window
@@ -51,18 +49,8 @@ class DLCPaneModel(
     val result = InitOracleDialog.showAndWait(parentWindow.value, numOutcomes)
 
     result match {
-      case Some((outcomes, contractInfo)) =>
+      case Some((_, contractInfo)) =>
         val builder = new StringBuilder()
-
-        val privKey = ECPrivateKey.freshPrivateKey
-        val pubKey = privKey.schnorrPublicKey
-        val kValue = ECPrivateKey.freshPrivateKey
-        val rValue = kValue.schnorrNonce
-        val oracleInfo = OracleInfo(pubKey, rValue)
-
-        builder.append(
-          s"Oracle Public Key: ${pubKey.hex}\nEvent R value: ${rValue.hex}\n")
-        builder.append(s"Serialized Oracle Info: ${oracleInfo.hex}\n\n")
 
         builder.append("Outcome hashes and amounts in order of entry:\n")
         contractInfo.foreach {
@@ -70,14 +58,6 @@ class DLCPaneModel(
         }
         builder.append(s"\nSerialized Contract Info:\n${contractInfo.hex}\n\n")
 
-        builder.append("Outcomes and oracle sigs in order of entry:\n")
-        outcomes.zip(contractInfo.keys).foreach {
-          case (outcome, hash) =>
-            val sig = privKey.schnorrSignWithNonce(hash.bytes, kValue)
-            builder.append(s"$outcome - ${sig.hex}\n")
-        }
-
-        GlobalDLCData.lastOracleInfo = oracleInfo.hex
         GlobalDLCData.lastContractInfo = contractInfo.hex
 
         oracleInfoArea.text = builder.result()
@@ -87,10 +67,12 @@ class DLCPaneModel(
 
   def onOffer(): Unit = {
     printDLCDialogResult("CreateDLCOffer", OfferDLCDialog)
+    WalletGUI.model.updateBalance()
   }
 
   def onAccept(): Unit = {
     printDLCDialogResult("AcceptDLCOffer", AcceptDLCDialog)
+    WalletGUI.model.updateBalance()
   }
 
   def onSign(): Unit = {
@@ -115,6 +97,7 @@ class DLCPaneModel(
 
   def onForceClose(): Unit = {
     printDLCDialogResult("ExecuteUnilateralDLC", ForceCloseDLCDialog)
+    WalletGUI.model.updateBalance()
   }
 
   def onPunish(): Unit = {

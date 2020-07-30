@@ -2,7 +2,7 @@ package org.bitcoins.eclair.rpc.client
 
 import java.io.File
 import java.net.InetSocketAddress
-import java.nio.file.NoSuchFileException
+import java.nio.file.{Files, NoSuchFileException, Path}
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -777,7 +777,7 @@ class EclairRpcClient(
 
     val started: Future[EclairRpcClient] = {
       for {
-        _ <- AsyncUtil.retryUntilSatisfiedF(() => isStarted,
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => isStarted(),
                                             duration = 1.seconds,
                                             maxTries = 60)
       } yield this
@@ -946,6 +946,29 @@ object EclairRpcClient {
   /** THe name we use to create actor systems. We use this to know which
     * actor systems to shut down on node shutdown */
   private[eclair] val ActorSystemName = "eclair-rpc-client-created-by-bitcoin-s"
+
+  /** Path to Jar downloaded by Eclair, if it exists */
+  private[bitcoins] def getEclairBinary(
+      eclairBinaryDirectory: Path,
+      eclairVersionOpt: Option[String] = None,
+      eclairCommitOpt: Option[String] = None): Option[File] = {
+    val path = eclairBinaryDirectory
+      .resolve(eclairVersionOpt.getOrElse(EclairRpcClient.version))
+      .resolve(
+        s"eclair-node-${EclairRpcClient.version}-${eclairCommitOpt.getOrElse(EclairRpcClient.commit)}")
+      .resolve("bin")
+      .resolve(
+        if (sys.props("os.name").toLowerCase.contains("windows"))
+          "eclair-node.bat"
+        else
+          "eclair-node.sh")
+
+    if (Files.exists(path)) {
+      Some(path.toFile)
+    } else {
+      None
+    }
+  }
 
   /**
     * Creates an RPC client from the given instance,

@@ -2,6 +2,7 @@ package org.bitcoins.server
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.sbclient.{Exchange, TradingPair}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
@@ -744,6 +745,129 @@ object OpReturnCommit extends ServerJsonModels {
     }
   }
 
+}
+
+// SbClient
+
+case class OpenSbChannel(amount: Satoshis)
+
+object OpenSbChannel extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[OpenSbChannel] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(OpenSbChannel(jsToSatoshis(jsArr.arr.head)))
+  }
+}
+
+trait PriceDataApiCall {
+  def exchange: Exchange
+  def tradingPair: TradingPair
+}
+
+case class GetSbPubKey(exchange: Exchange, tradingPair: TradingPair)
+    extends PriceDataApiCall
+
+object GetSbPubKey extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetSbPubKey] = {
+    jsArr.arr.toList match {
+      case exchangeJs :: tradingPairJs :: Nil =>
+        Try {
+          val exchange = Exchange.fromString(exchangeJs.str).get
+          val tradingPair = TradingPair.fromString(tradingPairJs.str)
+
+          GetSbPubKey(exchange, tradingPair)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing exchange and tradingPair arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class GetSbRValue(exchange: Exchange, tradingPair: TradingPair)
+    extends PriceDataApiCall
+
+object GetSbRValue extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetSbRValue] = {
+    jsArr.arr.toList match {
+      case exchangeJs :: tradingPairJs :: Nil =>
+        Try {
+          val exchange = Exchange.fromString(exchangeJs.str).get
+          val tradingPair = TradingPair.fromString(tradingPairJs.str)
+
+          GetSbRValue(exchange, tradingPair)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing exchange and tradingPair arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class GetSbOracleInfo(exchange: Exchange, tradingPair: TradingPair)
+    extends PriceDataApiCall
+
+object GetSbOracleInfo extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetSbOracleInfo] = {
+    jsArr.arr.toList match {
+      case exchangeJs :: tradingPairJs :: Nil =>
+        Try {
+          val exchange = Exchange.fromString(exchangeJs.str).get
+          val tradingPair = TradingPair.fromString(tradingPairJs.str)
+
+          GetSbOracleInfo(exchange, tradingPair)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing exchange and tradingPair arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class GetSbLastSig(exchange: Exchange, tradingPair: TradingPair)
+    extends PriceDataApiCall
+
+object GetSbLastSig extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetSbLastSig] = {
+    jsArr.arr.toList match {
+      case exchangeJs :: tradingPairJs :: Nil =>
+        Try {
+          val exchange = Exchange.fromString(exchangeJs.str).get
+          val tradingPair = TradingPair.fromString(tradingPairJs.str)
+
+          GetSbLastSig(exchange, tradingPair)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing exchange and tradingPair arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
 }
 
 trait ServerJsonModels {

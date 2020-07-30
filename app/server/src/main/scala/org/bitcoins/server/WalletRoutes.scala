@@ -292,7 +292,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi, node: Node)(implicit
                   for {
                     retStr <- handleBroadcastable(txs._1, noBroadcast)
                     closingRetStr <- handleBroadcastable(closingTx, noBroadcast)
-                  } yield Server.httpSuccess(s"$retStr\n$closingRetStr")
+                  } yield Server.httpSuccess(
+                    s"${retStr.hex}\n${closingRetStr.hex}")
                 case None =>
                   handleBroadcastable(txs._1, noBroadcast).map { retStr =>
                     Server.httpSuccess(retStr.hex)
@@ -334,7 +335,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi, node: Node)(implicit
                   for {
                     retStr <- handleBroadcastable(txs._1, noBroadcast)
                     closingRetStr <- handleBroadcastable(closingTx, noBroadcast)
-                  } yield Server.httpSuccess(s"$retStr\n$closingRetStr")
+                  } yield Server.httpSuccess(
+                    s"${retStr.hex}\n${closingRetStr.hex}")
                 case None =>
                   handleBroadcastable(txs._1, noBroadcast).map { retStr =>
                     Server.httpSuccess(retStr.hex)

@@ -3,6 +3,7 @@ package org.bitcoins.gui
 import javafx.event.{ActionEvent, EventHandler}
 import javafx.scene.image.Image
 import org.bitcoins.gui.dlc.DLCPane
+import org.bitcoins.gui.sbclient.SbClientPane
 import org.bitcoins.gui.settings.SettingsPane
 import scalafx.application.{JFXApp, Platform}
 import scalafx.beans.property.StringProperty
@@ -55,7 +56,7 @@ object WalletGUI extends JFXApp {
       s"\n\n${(0 until 60).map(_ => "-").mkString("")}\n\n") + GlobalData.log
   }
 
-  private val model = new WalletGUIModel()
+  val model = new WalletGUIModel()
 
   private val getNewAddressButton = new Button {
     text = "Get New Address"
@@ -71,10 +72,17 @@ object WalletGUI extends JFXApp {
     }
   }
 
+  private val updateBalanceButton = new Button {
+    text = "Update Balance"
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.updateBalance()
+    }
+  }
+
   private val buttonBar = new HBox {
-    children = Seq(getNewAddressButton, sendButton)
+    children = Seq(updateBalanceButton, getNewAddressButton, sendButton)
     alignment = Pos.Center
-    spacing <== width / 2
+    spacing <== width / children.size
   }
 
   private val borderPane = new BorderPane {
@@ -84,6 +92,8 @@ object WalletGUI extends JFXApp {
   }
 
   private val dlcPane = new DLCPane(glassPane)
+
+  private val sbClientPane = new SbClientPane(glassPane)
 
   private val settingsPane = new SettingsPane
 
@@ -99,12 +109,17 @@ object WalletGUI extends JFXApp {
       content = dlcPane.borderPane
     }
 
+    val sbClientTab: Tab = new Tab {
+      text = "Sb Client"
+      content = sbClientPane.borderPane
+    }
+
     val settingsTab: Tab = new Tab {
       text = "Settings"
       content = settingsPane.view
     }
 
-    tabs = Seq(walletTab, dlcTab, settingsTab)
+    tabs = Seq(walletTab, dlcTab, sbClientTab, settingsTab)
 
     tabClosingPolicy = TabClosingPolicy.Unavailable
   }

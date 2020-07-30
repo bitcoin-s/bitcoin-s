@@ -1,9 +1,11 @@
 package org.bitcoins.rpc.client.common
 
 import java.io.File
+import java.nio.file.{Files, Path}
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
+import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
@@ -15,7 +17,9 @@ import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
 
+import scala.annotation.tailrec
 import scala.concurrent.Future
+import scala.util.Properties
 
 /**
   * This class is not guaranteed to be compatible with any particular
@@ -177,7 +181,9 @@ sealed trait BitcoindVersion
 object BitcoindVersion {
 
   /** The newest version of `bitcoind` we support */
-  val newest = V19
+  val newest: BitcoindVersion = V19
+
+  val known = Vector(V16, V17, V18, V19, Experimental)
 
   case object V16 extends BitcoindVersion {
     override def toString: String = "v0.16"
@@ -203,4 +209,50 @@ object BitcoindVersion {
     override def toString: String = "Unknown"
   }
 
+  def fromString(str: String): Option[BitcoindVersion] = {
+    known.find(_.toString.toLowerCase == str.toLowerCase)
+  }
+
+  @tailrec
+  private[bitcoins] def getBitcoindBinary(
+      binaryDirectory: Path,
+      version: BitcoindVersion): File =
+    version match {
+      // default to newest version
+      case Unknown => getBitcoindBinary(binaryDirectory, BitcoindVersion.newest)
+      case known @ (Experimental | V16 | V17 | V18 | V19) =>
+        val dir = binaryDirectory.resolve("bitcoind")
+        val fileList = Files
+          .list(dir)
+          .iterator()
+          .asScala
+          .toList
+          .filter(f => Files.isDirectory(f))
+        // drop leading 'v'
+        val version = known.toString.drop(1)
+        val filtered =
+          if (known == Experimental)
+            // we want exact match for the experimental version
+            fileList
+              .filter(f => f.toString.endsWith(version))
+          else
+            // we don't want the experimental version to appear in the list along with the production ones
+            fileList
+              .filterNot(f =>
+                f.toString.endsWith(Experimental.toString.drop(1)))
+              .filter(f => f.toString.contains(version))
+
+        if (filtered.isEmpty)
+          throw new RuntimeException(
+            s"bitcoind ${known.toString} is not installed in $dir. Run `sbt downloadBitcoind`")
+
+        // might be multiple versions downloaded for
+        // each major version, i.e. 0.16.2 and 0.16.3
+        val versionFolder = filtered.max
+
+        versionFolder
+          .resolve("bin")
+          .resolve(if (Properties.isWin) "bitcoind.exe" else "bitcoind")
+          .toFile
+    }
 }

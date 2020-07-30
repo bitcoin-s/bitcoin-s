@@ -1,4 +1,4 @@
-package org.bitcoins.sbclient
+package org.bitcoins.commons.jsonmodels.sbclient
 
 sealed trait Exchange {
 
@@ -93,6 +93,16 @@ object Exchange {
     override def toString: String = "kraken"
     override def toLongString: String = "krakenfut"
     override def pairs: Vector[TradingPair] = KrakenFutTradingPair.all
+  }
+
+  def fromString(exchange: String): Option[Exchange] = {
+    SpotExchange
+      .fromString(exchange) match {
+      case Some(spot) =>
+        Some(spot)
+      case None =>
+        FuturesExchange.fromString(exchange)
+    }
   }
 }
 

@@ -26,8 +26,7 @@ class DLCPane(glassPane: VBox) {
     prefHeight = 700
     prefWidth = 400
     editable = false
-    text =
-      "Click on Init Demo Oracle to generate example oracle and contract information"
+    text = "Click Create Contract Info button to get started"
     wrapText = true
   }
 
@@ -39,7 +38,7 @@ class DLCPane(glassPane: VBox) {
     new DLCPaneModel(resultArea, demoOracleArea, numOutcomesTF)
 
   private val demoOracleButton = new Button {
-    text = "Init Demo Oracle"
+    text = "Create Contract Info"
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onInitOracle()
     }

@@ -5,6 +5,7 @@ import org.bitcoins.commons.jsonmodels.eclair.{
   OutgoingPaymentStatus
 }
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
+import org.bitcoins.commons.jsonmodels.sbclient.{Exchange, TradingPair}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.testkit.eclair.MockEclairClient
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
@@ -110,8 +111,8 @@ class SbClientTest extends BitcoinSAsyncTest {
   it should "successfully request and receive a public key" in {
     forAllAsync(exchangeAndPairGen) {
       case (exchange, pair) =>
-        SbClient
-          .getPublicKey(exchange, pair, server.endpoint)
+        SbClient(server.mockEclair, server.endpoint)
+          .getPublicKey(exchange, pair)
           .map { response =>
             val hash = CryptoUtil.sha256(
               ByteVector(

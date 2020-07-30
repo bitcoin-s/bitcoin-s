@@ -1,13 +1,14 @@
 package org.bitcoins.server
 
-import com.typesafe.config.Config
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.chain.config.ChainAppConfig
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
 import java.nio.file.Path
+
+import com.typesafe.config.Config
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.db.AppConfig
+import org.bitcoins.node.config.{EclairAppConfig, NodeAppConfig}
+import org.bitcoins.wallet.config.WalletAppConfig
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * A unified config class for all submodules of Bitcoin-S
@@ -25,12 +26,14 @@ case class BitcoinSAppConfig(
   val walletConf: WalletAppConfig = WalletAppConfig(directory, false, confs: _*)
   val nodeConf: NodeAppConfig = NodeAppConfig(directory, false, confs: _*)
   val chainConf: ChainAppConfig = ChainAppConfig(directory, false, confs: _*)
+  val eclairConf: EclairAppConfig = EclairAppConfig(directory, false, confs: _*)
 
   /** Initializes the wallet, node and chain projects */
   def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
     val futures = List(walletConf.initialize(),
                        nodeConf.initialize(),
-                       chainConf.initialize())
+                       chainConf.initialize(),
+                       eclairConf.initialize())
 
     Future.sequence(futures).map(_ => ())
   }
@@ -39,6 +42,7 @@ case class BitcoinSAppConfig(
   lazy val config: Config = {
     assert(chainConf.config == nodeConf.config)
     assert(nodeConf.config == walletConf.config)
+    assert(eclairConf.config == nodeConf.config)
 
     // there's nothing special about nodeConf, they should all
     // be equal
@@ -99,5 +103,14 @@ object BitcoinSAppConfig {
   /** Converts the given config to a node config */
   implicit def toNodeConf(conf: BitcoinSAppConfig): NodeAppConfig =
     conf.nodeConf
+
+  /** Converts the given implicit config to a node config */
+  implicit def implicitToEclairConf(implicit
+      conf: BitcoinSAppConfig): EclairAppConfig =
+    conf.eclairConf
+
+  /** Converts the given config to a node config */
+  implicit def toEclairConf(conf: BitcoinSAppConfig): EclairAppConfig =
+    conf.eclairConf
 
 }

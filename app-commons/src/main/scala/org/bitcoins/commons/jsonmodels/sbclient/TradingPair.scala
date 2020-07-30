@@ -1,7 +1,7 @@
-package org.bitcoins.sbclient
+package org.bitcoins.commons.jsonmodels.sbclient
 
-import org.bitcoins.sbclient.Asset._
-import org.bitcoins.sbclient.TradingPair.UnsupportedTradingPair
+import org.bitcoins.commons.jsonmodels.sbclient.Asset._
+import org.bitcoins.commons.jsonmodels.sbclient.TradingPair.UnsupportedTradingPair
 
 sealed abstract class TradingPair(left: Asset, right: Asset)
     extends Serializable {

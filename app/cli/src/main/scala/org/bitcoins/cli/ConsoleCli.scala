@@ -4,6 +4,7 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.sbclient.{Exchange, TradingPair}
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency._
@@ -503,6 +504,95 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("opensbchannel")
+        .action((_, conf) => conf.copy(command = OpenSbChannel(0.satoshis)))
+        .text("Opens a channel to the suredbits node")
+        .children(
+          arg[Satoshis]("amount").required
+            .action((sats, conf) =>
+              conf.copy(command = conf.command match {
+                case openSbChannel: OpenSbChannel =>
+                  openSbChannel.copy(amount = sats)
+                case other => other
+              }))
+        ),
+      cmd("getsbpubkey")
+        .action((_, conf) => conf.copy(command = GetSbPubKey(null, null)))
+        .text("Gets the Suredbits public key for the given exchange pair")
+        .children(
+          arg[Exchange]("exchange").required
+            .action((exchange, conf) =>
+              conf.copy(command = conf.command match {
+                case getSbPubKey: GetSbPubKey =>
+                  getSbPubKey.copy(exchange = exchange)
+                case other => other
+              })),
+          arg[TradingPair]("tradingpair").required
+            .action((tradingPair, conf) =>
+              conf.copy(command = conf.command match {
+                case getSbPubKey: GetSbPubKey =>
+                  getSbPubKey.copy(tradingPair = tradingPair)
+                case other => other
+              }))
+        ),
+      cmd("getsbrvalue")
+        .action((_, conf) => conf.copy(command = GetSbRValue(null, null)))
+        .text("Gets the Suredbits r value for the given exchange pair")
+        .children(
+          arg[Exchange]("exchange").required
+            .action((exchange, conf) =>
+              conf.copy(command = conf.command match {
+                case getSbRValue: GetSbRValue =>
+                  getSbRValue.copy(exchange = exchange)
+                case other => other
+              })),
+          arg[TradingPair]("tradingpair").required
+            .action((tradingPair, conf) =>
+              conf.copy(command = conf.command match {
+                case getSbRValue: GetSbRValue =>
+                  getSbRValue.copy(tradingPair = tradingPair)
+                case other => other
+              }))
+        ),
+      cmd("getsboracleinfo")
+        .action((_, conf) => conf.copy(command = GetSbOracleInfo(null, null)))
+        .text(
+          "Gets the Suredbits pubkey and r value for the given exchange pair")
+        .children(
+          arg[Exchange]("exchange").required
+            .action((exchange, conf) =>
+              conf.copy(command = conf.command match {
+                case getSbOracleInfo: GetSbOracleInfo =>
+                  getSbOracleInfo.copy(exchange = exchange)
+                case other => other
+              })),
+          arg[TradingPair]("tradingpair").required
+            .action((tradingPair, conf) =>
+              conf.copy(command = conf.command match {
+                case getSbOracleInfo: GetSbOracleInfo =>
+                  getSbOracleInfo.copy(tradingPair = tradingPair)
+                case other => other
+              }))
+        ),
+      cmd("getsblastsig")
+        .action((_, conf) => conf.copy(command = GetSbLastSig(null, null)))
+        .text("Gets the Suredbits signature for the given exchange pair")
+        .children(
+          arg[Exchange]("exchange").required
+            .action((exchange, conf) =>
+              conf.copy(command = conf.command match {
+                case getSbLastSig: GetSbLastSig =>
+                  getSbLastSig.copy(exchange = exchange)
+                case other => other
+              })),
+          arg[TradingPair]("tradingpair").required
+            .action((tradingPair, conf) =>
+              conf.copy(command = conf.command match {
+                case getSbLastSig: GetSbLastSig =>
+                  getSbLastSig.copy(tradingPair = tradingPair)
+                case other => other
+              }))
+        ),
       cmd("getbalance")
         .action((_, conf) => conf.copy(command = GetBalance(false)))
         .text("Get the wallet balance")
@@ -954,6 +1044,21 @@ object ConsoleCli {
                      Seq(up.writeJs(eventId),
                          up.writeJs(forceCloseTx),
                          up.writeJs(noBroadcast)))
+      // Suredbits Client
+      case OpenSbChannel(amount) =>
+        RequestParam("opensbchannel", Seq(up.writeJs(amount)))
+      case GetSbPubKey(exchange, tradingPair) =>
+        RequestParam("getsbpubkey",
+                     Seq(up.writeJs(exchange), up.writeJs(tradingPair)))
+      case GetSbRValue(exchange, tradingPair) =>
+        RequestParam("getsbrvalue",
+                     Seq(up.writeJs(exchange), up.writeJs(tradingPair)))
+      case GetSbOracleInfo(exchange, tradingPair) =>
+        RequestParam("getsboracleinfo",
+                     Seq(up.writeJs(exchange), up.writeJs(tradingPair)))
+      case GetSbLastSig(exchange, tradingPair) =>
+        RequestParam("getsblastsig",
+                     Seq(up.writeJs(exchange), up.writeJs(tradingPair)))
       // Wallet
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
@@ -1062,6 +1167,7 @@ object ConsoleCli {
         case Right(response) => response
       }
 
+      debug(s"Raw Message: $rawBody")
       val js = ujson.read(rawBody)
       val jsObjT =
         Try(js.obj).transform[mutable.LinkedHashMap[String, ujson.Value]](
@@ -1125,12 +1231,17 @@ sealed abstract class CliCommand
 object CliCommand {
   case object NoCommand extends CliCommand
 
-  trait JsonResponse {
+  sealed trait JsonResponse {
     def escaped: Boolean
   }
 
-  trait Broadcastable {
+  sealed trait Broadcastable {
     def noBroadcast: Boolean
+  }
+
+  sealed trait PriceDataApiCall extends CliCommand {
+    def exchange: Exchange
+    def tradingPair: TradingPair
   }
 
   // DLC
@@ -1210,6 +1321,21 @@ object CliCommand {
       noBroadcast: Boolean)
       extends CliCommand
       with Broadcastable
+
+  // Suredbits Client
+  case class OpenSbChannel(amount: Satoshis) extends CliCommand
+
+  case class GetSbPubKey(exchange: Exchange, tradingPair: TradingPair)
+      extends PriceDataApiCall
+
+  case class GetSbRValue(exchange: Exchange, tradingPair: TradingPair)
+      extends PriceDataApiCall
+
+  case class GetSbOracleInfo(exchange: Exchange, tradingPair: TradingPair)
+      extends PriceDataApiCall
+
+  case class GetSbLastSig(exchange: Exchange, tradingPair: TradingPair)
+      extends PriceDataApiCall
 
   // Wallet
   case class SendToAddress(

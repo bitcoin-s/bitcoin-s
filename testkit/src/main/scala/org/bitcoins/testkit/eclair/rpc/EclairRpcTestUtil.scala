@@ -2,7 +2,6 @@ package org.bitcoins.testkit.eclair.rpc
 
 import java.io.{File, PrintWriter}
 import java.net.URI
-import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
@@ -60,21 +59,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       eclairVersionOpt: Option[String],
       eclairCommitOpt: Option[String]): Option[File] = {
     val path = binaryDirectory
-      .resolve(eclairVersionOpt.getOrElse(EclairRpcClient.version))
-      .resolve(
-        s"eclair-node-${EclairRpcClient.version}-${eclairCommitOpt.getOrElse(EclairRpcClient.commit)}")
-      .resolve("bin")
-      .resolve(
-        if (sys.props("os.name").toLowerCase.contains("windows"))
-          "eclair-node.bat"
-        else
-          "eclair-node.sh")
-
-    if (Files.exists(path)) {
-      Some(path.toFile)
-    } else {
-      None
-    }
+    EclairRpcClient.getEclairBinary(path, eclairVersionOpt, eclairCommitOpt)
   }
 
   def randomDirName: String =

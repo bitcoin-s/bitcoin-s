@@ -1,4 +1,4 @@
-package org.bitcoins.sbclient
+package org.bitcoins.commons.jsonmodels.sbclient
 
 sealed abstract class Asset {
   def toLowerString: String = this.toString.toLowerCase

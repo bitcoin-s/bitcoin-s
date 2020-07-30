@@ -64,7 +64,7 @@ class WalletGUIModel() {
     updateBalance()
   }
 
-  private def updateBalance(): Unit = {
+  def updateBalance(): Unit = {
     ConsoleCli.exec(GetBalance(isSats = false), Config.empty) match {
       case Success(commandReturn) =>
         GlobalData.currentBalance.value = commandReturn.split(' ').head.toDouble

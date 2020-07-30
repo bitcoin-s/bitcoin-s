@@ -1,6 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand
+import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.GlobalDLCData
 import scalafx.Includes._
 import scalafx.application.Platform
@@ -47,6 +48,7 @@ abstract class DLCDialog[T <: CliCommand](
     }
 
     dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+    dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
 
     dialog.dialogPane().content = new GridPane {
       hgap = 10
