@@ -224,8 +224,11 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     } else {
       for {
         peerMsgSender <- peerMsgSenderF
-        _ <- peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgBlock,
-                                              blockHashes: _*)
+        _ <-
+          if (nodeAppConfig.isSPVEnabled)
+            peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgBlock,
+                                             blockHashes: _*)
+          else FutureUtil.unit
       } yield ()
     }
   }
