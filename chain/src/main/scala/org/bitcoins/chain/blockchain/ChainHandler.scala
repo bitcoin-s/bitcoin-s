@@ -18,6 +18,7 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE
 }
 
+import scala.annotation.tailrec
 import scala.concurrent._
 
 /**
@@ -502,87 +503,180 @@ case class ChainHandler(
     } yield isMissingWork
   }
 
+  @tailrec
+  private def calcChainWork(
+      remainingHeaders: Vector[BlockHeaderDb],
+      accum: Vector[BlockHeaderDb],
+      lastHeaderWithWorkInDb: BlockHeaderDb): Vector[BlockHeaderDb] = {
+    if (remainingHeaders.isEmpty) {
+      accum
+    } else {
+      val header = remainingHeaders.head
+
+      val currentChainWork = {
+        accum.lastOption.map(_.chainWork) match {
+          case Some(prevWork) =>
+            prevWork
+          case None =>
+            // this should be the case where the accum is
+            //empty, so this header is the last one we have
+            //stored in the database
+            lastHeaderWithWorkInDb.chainWork
+        }
+      }
+      val newChainWork =
+        currentChainWork + Pow.getBlockProof(header.blockHeader)
+      val newHeader = header.copy(chainWork = newChainWork)
+      calcChainWork(remainingHeaders.tail,
+                    accum :+ newHeader,
+                    lastHeaderWithWorkInDb)
+    }
+  }
+
+  private def getBatchForRecalc(
+      startHeight: Int,
+      maxHeight: Int,
+      batchSize: Int): Future[Vector[Blockchain]] = {
+    val batchEndHeight = Math.min(maxHeight, startHeight + batchSize - 1)
+    val headersToCalcF = {
+      logger.trace(s"Fetching from=$startHeight to=$batchEndHeight")
+      blockHeaderDAO.getBlockchainsBetweenHeights(from = startHeight,
+                                                  to = batchEndHeight)
+    }
+
+    headersToCalcF
+  }
+
+  /** Creates [[numBatches]] of requests to the database fetching [[batchSize]] headers
+    * starting at [[batchStartHeight]]. These are executed in parallel. After all are fetched
+    * we join them into one future and return it. */
+  private def batchAndGetBlockchains(
+      batchSize: Int,
+      batchStartHeight: Int,
+      maxHeight: Int,
+      numBatches: Int): Future[Vector[Blockchain]] = {
+    var counter = batchStartHeight
+    val range = 0.until(numBatches)
+    val batchesNested: Vector[Future[Vector[Blockchain]]] = range.map { _ =>
+      val f =
+        if (counter <= maxHeight) {
+          getBatchForRecalc(startHeight = counter,
+                            maxHeight = maxHeight,
+                            batchSize = batchSize)
+        } else {
+          Future.successful(Vector.empty)
+        }
+      counter += batchSize
+      f
+    }.toVector
+
+    Future
+      .sequence(batchesNested)
+      .map(_.flatten)
+  }
+
+  private def runRecalculateChainWork(
+      maxHeight: Int,
+      lastHeader: BlockHeaderDb): Future[Vector[BlockHeaderDb]] = {
+    val currentHeight = lastHeader.height
+    val numBatches = 1
+    val batchSize =
+      chainConfig.appConfig.chain.difficultyChangeInterval / numBatches
+    if (currentHeight >= maxHeight) {
+      Future.successful(Vector.empty)
+    } else {
+      val batchStartHeight = currentHeight + 1
+
+      val headersToCalcF = batchAndGetBlockchains(
+        batchSize = batchSize,
+        batchStartHeight = batchStartHeight,
+        maxHeight = maxHeight,
+        numBatches = numBatches
+      )
+
+      for {
+        headersToCalc <- headersToCalcF
+        _ = headersToCalc.headOption.map { h =>
+          logger.info(
+            s"Recalculating chain work... current height: ${h.height} maxHeight=$maxHeight")
+        }
+        headersWithWork = {
+          headersToCalc.flatMap { chain =>
+            calcChainWork(remainingHeaders = chain.headers.sortBy(_.height),
+                          accum = Vector.empty,
+                          lastHeaderWithWorkInDb = lastHeader)
+          }
+        }
+
+        //unfortunately on sqlite there is a bottle neck here
+        //sqlite allows you to read in parallel but only write
+        //sequentially https://stackoverflow.com/a/23350768/967713
+        //so while it looks like we are executing in parallel
+        //in reality there is only one thread that can write to the db
+        //at a single time
+        _ = logger.trace(
+          s"Upserting from height=${headersWithWork.headOption.map(_.height)} " +
+            s"to height=${headersWithWork.lastOption.map(_.height)}")
+        _ <- FutureUtil.batchExecute(
+          headersWithWork,
+          blockHeaderDAO.upsertAll,
+          Vector.empty,
+          batchSize
+        )
+        _ = logger.trace(
+          s"Done upserting from height=${headersWithWork.headOption.map(
+            _.height)} to height=${headersWithWork.lastOption.map(_.height)}")
+        next <- runRecalculateChainWork(maxHeight, headersWithWork.last)
+      } yield {
+        next
+      }
+    }
+  }
+
   def recalculateChainWork: Future[ChainHandler] = {
     logger.info("Calculating chain work for previous blocks")
 
-    val batchSize = chainConfig.chain.difficultyChangeInterval
-
-    def loop(
-        remainingHeaders: Vector[BlockHeaderDb],
-        accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
-      if (remainingHeaders.isEmpty) {
-        blockHeaderDAO.upsertAll(accum.takeRight(batchSize))
-      } else {
-        val header = remainingHeaders.head
-
-        val currentChainWork =
-          accum.lastOption.map(_.chainWork).getOrElse(BigInt(0))
-        val newChainWork =
-          currentChainWork + Pow.getBlockProof(header.blockHeader)
-        val newHeader = header.copy(chainWork = newChainWork)
-
-        // Add the last batch to the database and create log
-        if (header.height % batchSize == 0) {
-          logger.info(
-            s"Recalculating chain work... current height: ${header.height}")
-          val updated = accum :+ newHeader
-          // updated the latest batch
-          blockHeaderDAO
-            .upsertAll(updated.takeRight(batchSize))
-            .flatMap(_ =>
-              loop(
-                remainingHeaders.tail,
-                updated.takeRight(batchSize)
-              ))
-        } else {
-          loop(remainingHeaders.tail, accum :+ newHeader)
-        }
-      }
-    }
-
-    def loop2(
-        maxHeight: Int,
-        accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
-
-      val highestHeaderOpt =
-        if (accum.isEmpty) None else Some(accum.maxBy(_.height))
-      val currentHeight = highestHeaderOpt.map(_.height).getOrElse(0)
-
-      if (currentHeight >= maxHeight) {
-        Future.successful(accum)
-      } else {
-        val (batchStartHeight, prev) = if (currentHeight == 0) {
-          (0, Vector.empty)
-        } else {
-          (currentHeight + 1, Vector(highestHeaderOpt).flatten)
-        }
-
-        val batchEndHeight = Math.min(maxHeight, currentHeight + batchSize)
-        for {
-          headersToCalc <-
-            blockHeaderDAO.getBetweenHeights(batchStartHeight, batchEndHeight)
-          sortedHeaders = headersToCalc.sortBy(_.height)
-          headersWithWork <- loop(sortedHeaders, prev)
-          next <- loop2(maxHeight, headersWithWork)
-        } yield next
-      }
-    }
-
-    for {
-      maxHeight <- blockHeaderDAO.maxHeight
-      startHeight <- blockHeaderDAO.getLowestNoWorkHeight
-      start <-
+    val maxHeightF = blockHeaderDAO.maxHeight
+    val startHeightF = blockHeaderDAO.getLowestNoWorkHeight
+    val startF = for {
+      startHeight <- startHeightF
+      headers <- {
         if (startHeight == 0) {
-          Future.successful(Vector.empty)
+          val genesisHeaderF = blockHeaderDAO.getAtHeight(0)
+          genesisHeaderF.flatMap { h =>
+            require(h.length == 1, s"Should only have one genesis header!")
+            calculateChainWorkGenesisBlock(h.head)
+              .map(Vector(_))
+          }
         } else {
           blockHeaderDAO.getAtHeight(startHeight - 1)
         }
-      _ <- loop2(maxHeight, start)
+      }
+    } yield headers
+
+    val resultF = for {
+      maxHeight <- maxHeightF
+      start <- startF
+      _ <- runRecalculateChainWork(maxHeight, start.head)
       newBlockchains <- blockHeaderDAO.getBlockchains()
     } yield {
       logger.info("Finished calculating chain work")
       this.copy(blockchains = newBlockchains)
     }
+
+    resultF.failed.foreach { err =>
+      logger.error(s"Failed to recalculate chain work", err)
+    }
+
+    resultF
+  }
+
+  /** Calculates the chain work for the genesis header */
+  private def calculateChainWorkGenesisBlock(
+      genesisHeader: BlockHeaderDb): Future[BlockHeaderDb] = {
+    val expectedWork = Pow.getBlockProof(genesisHeader.blockHeader)
+    val genesisWithWork = genesisHeader.copy(chainWork = expectedWork)
+    blockHeaderDAO.update(genesisWithWork)
   }
 }
 

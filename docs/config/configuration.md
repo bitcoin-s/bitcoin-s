@@ -122,6 +122,7 @@ bitcoin-s {
     }
 
     chain {
+        force-recalc-chainwork = false
         neutrino {
             filter-header-batch-size = 2000
             filter-header-batch-size.regtest = 10
