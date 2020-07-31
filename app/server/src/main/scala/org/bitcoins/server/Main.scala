@@ -3,6 +3,7 @@ package org.bitcoins.server
 import java.nio.file.Paths
 
 import akka.actor.ActorSystem
+import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
@@ -53,7 +54,7 @@ object Main extends App with BitcoinSLogger {
     }
 
     val forceChainWorkRecalc: Boolean =
-      argsWithIndex.exists(_._1.toLowerCase == "--force-recalc")
+      args.exists(_.toLowerCase == "--force-recalc-chainwork")
 
     val logger = HttpLoggerImpl(conf.nodeConf).getLogger
 
@@ -79,7 +80,7 @@ object Main extends App with BitcoinSLogger {
 
     //run chain work migration
     val chainApiF = configInitializedF.flatMap { _ =>
-      runChainWorkCalc(forceChainWorkRecalc)
+      runChainWorkCalc(forceChainWorkRecalc || chainConf.forceRecalcChainWork)
     }
 
     //get a node that isn't started
@@ -219,11 +220,15 @@ object Main extends App with BitcoinSLogger {
   /** This is needed for migrations V2/V3 on the chain project to re-calculate the total work for the chain */
   private def runChainWorkCalc(force: Boolean)(implicit
       chainAppConfig: ChainAppConfig,
-      ec: ExecutionContext): Future[ChainApi] = {
+      system: ActorSystem): Future[ChainApi] = {
+    import system.dispatcher
+    val blockEC =
+      system.dispatchers.lookup(Dispatchers.DefaultBlockingDispatcherId)
     for {
-      chainApi <- ChainHandler.fromDatabase(blockHeaderDAO = BlockHeaderDAO(),
-                                            CompactFilterHeaderDAO(),
-                                            CompactFilterDAO())
+      chainApi <- ChainHandler.fromDatabase(
+        blockHeaderDAO = BlockHeaderDAO()(blockEC, chainAppConfig),
+        CompactFilterHeaderDAO()(blockEC, chainAppConfig),
+        CompactFilterDAO()(blockEC, chainAppConfig))
       isMissingChainWork <- chainApi.isMissingChainWork
       chainApiWithWork <-
         if (isMissingChainWork || force) {
