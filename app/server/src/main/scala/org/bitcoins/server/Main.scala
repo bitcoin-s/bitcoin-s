@@ -80,7 +80,7 @@ object Main extends App with BitcoinSLogger {
 
     //run chain work migration
     val chainApiF = configInitializedF.flatMap { _ =>
-      runChainWorkCalc(forceChainWorkRecalc)
+      runChainWorkCalc(forceChainWorkRecalc || chainConf.forceRecalcChainWork)
     }
 
     //get a node that isn't started

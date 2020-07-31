@@ -99,7 +99,7 @@ case class ChainAppConfig(
     config.getInt(s"${moduleName}.neutrino.filter-batch-size")
 
   lazy val forceRecalcChainWork: Boolean =
-    config.getBooleanOrElse(s"$moduleName.neutrino.filter-batch-size",
+    config.getBooleanOrElse(s"$moduleName.force-recalc-chainwork",
                             default = false)
 
   /** Starts the associated application */
