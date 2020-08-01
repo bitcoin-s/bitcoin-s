@@ -30,6 +30,6 @@ addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.3")
 // SQL migrations
 addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.4.2")
 
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.0")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
 
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
