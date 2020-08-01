@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
@@ -8,7 +7,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.crypto.Sha256DigestBE
+import org.bitcoins.crypto.{ECAdaptorSignature, Sha256DigestBE}
 import org.bitcoins.db.CRUD
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, DLCWalletUtil}
@@ -49,7 +48,7 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val offerDAO = daos.dlcOfferDAO
 
     val offerDb =
-      DLCOfferDb.fromDLCOffer(DLCWalletUtil.sampleDLCOffer, RegTest)
+      DLCOfferDbHelper.fromDLCOffer(DLCWalletUtil.sampleDLCOffer)
 
     verifyDatabaseInsertion(offerDb, eventId, offerDAO, dlcDAO)
   }
@@ -59,7 +58,7 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val acceptDAO = daos.dlcAcceptDAO
 
     val acceptDb =
-      DLCAcceptDb.fromDLCAccept(DLCWalletUtil.sampleDLCAccept)
+      DLCAcceptDbHelper.fromDLCAccept(DLCWalletUtil.sampleDLCAccept)
 
     verifyDatabaseInsertion(acceptDb, eventId, acceptDAO, dlcDAO)
   }
@@ -73,6 +72,8 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
       isInitiator = true,
       outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
       output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
+      redeemScriptOpt = None,
+      witnessScriptOpt = None,
       sigs = Vector(DLCWalletUtil.dummyPartialSig)
     )
 
@@ -90,6 +91,8 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
           isInitiator = true,
           outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
+          redeemScriptOpt = None,
+          witnessScriptOpt = None,
           sigs = Vector(DLCWalletUtil.dummyPartialSig)
         ),
         DLCFundingInputDb(
@@ -97,6 +100,8 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
           isInitiator = false,
           outPoint = TransactionOutPoint(testBlockHash, UInt32.one),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
+          redeemScriptOpt = None,
+          witnessScriptOpt = None,
           sigs = Vector(DLCWalletUtil.dummyPartialSig)
         ),
         DLCFundingInputDb(
@@ -104,6 +109,8 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
           isInitiator = true,
           outPoint = TransactionOutPoint(testBlockHash, UInt32(3)),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
+          redeemScriptOpt = None,
+          witnessScriptOpt = None,
           sigs = Vector(DLCWalletUtil.dummyPartialSig)
         )
       )
@@ -123,7 +130,7 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val sig = DLCCETSignatureDb(
       eventId = eventId,
       outcomeHash = DLCWalletUtil.winHash,
-      signature = DLCWalletUtil.dummyPartialSig
+      signature = ECAdaptorSignature.dummy
     )
 
     verifyDatabaseInsertion(sig,
@@ -140,12 +147,12 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
       DLCCETSignatureDb(
         eventId = eventId,
         outcomeHash = DLCWalletUtil.winHash,
-        signature = DLCWalletUtil.dummyPartialSig
+        signature = ECAdaptorSignature.dummy
       ),
       DLCCETSignatureDb(
         eventId = eventId,
         outcomeHash = DLCWalletUtil.loseHash,
-        signature = DLCWalletUtil.dummyPartialSig
+        signature = ECAdaptorSignature.dummy
       )
     )
 

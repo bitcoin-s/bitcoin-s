@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, DLCMessage}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCOffer, DLCSign}
+import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, DLCMessage}
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.bitcoins.wallet.Wallet
@@ -65,16 +65,23 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         dlcDb <- walletB.addDLCSigs(sign)
         outcomeSigs <- walletB.dlcSigsDAO.findByEventId(sign.eventId)
 
+        refundSigsA <-
+          walletA.dlcRefundSigDAO.findByEventId(eventId).map(_.map(_.refundSig))
+        refundSigsB <-
+          walletB.dlcRefundSigDAO.findByEventId(eventId).map(_.map(_.refundSig))
+
         walletAChange <- walletA.addressDAO.read(offer.changeAddress)
-        walletAFinal <- walletA.addressDAO.read(offer.pubKeys.finalAddress)
+        walletAFinal <- walletA.addressDAO.read(offer.pubKeys.payoutAddress)
 
         walletBChange <- walletB.addressDAO.read(accept.changeAddress)
-        walletBFinal <- walletB.addressDAO.read(accept.pubKeys.finalAddress)
+        walletBFinal <- walletB.addressDAO.read(accept.pubKeys.payoutAddress)
 
       } yield {
         assert(dlcDb.eventId == sign.eventId)
-        assert(dlcDb.refundSigOpt.isDefined)
-        assert(dlcDb.refundSigOpt.get === sign.cetSigs.refundSig)
+
+        assert(refundSigsA.size == 2)
+        assert(refundSigsA.forall(refundSigsB.contains))
+
         assert(sign.cetSigs.outcomeSigs.forall(sig =>
           outcomeSigs.exists(_.toTuple == sig)))
 

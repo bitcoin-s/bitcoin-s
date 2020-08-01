@@ -2,7 +2,6 @@ package org.bitcoins.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto.{ECPublicKey, Sha256Digest, Sha256DigestBE}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config._
@@ -62,64 +61,22 @@ case class DLCAcceptDAO()(implicit
   class DLCAcceptTable(tag: Tag)
       extends Table[DLCAcceptDb](tag, "wallet_dlc_accepts") {
 
-    def eventId: Rep[Sha256DigestBE] = column("eventId", O.Unique)
+    def eventId: Rep[Sha256DigestBE] = column("event_id", O.PrimaryKey)
 
-    def fundingKey: Rep[ECPublicKey] = column("fundingKey")
+    def fundingKey: Rep[ECPublicKey] = column("funding_key")
 
-    def toLocalCETKey: Rep[ECPublicKey] = column("toLocalCETKey")
+    def payoutAddress: Rep[BitcoinAddress] = column("payout_address")
 
-    def finalAddress: Rep[BitcoinAddress] = column("finalAddress")
+    def totalCollateral: Rep[CurrencyUnit] = column("total_collateral")
 
-    def totalCollateral: Rep[CurrencyUnit] = column("totalCollateral")
-
-    def refundSig: Rep[PartialSignature] = column("refundSig")
-
-    def changeAddress: Rep[BitcoinAddress] = column("changeAddress")
-
-    private type DLCTuple = (
-        Sha256DigestBE,
-        ECPublicKey,
-        ECPublicKey,
-        BitcoinAddress,
-        CurrencyUnit,
-        PartialSignature,
-        BitcoinAddress)
-
-    private val fromTuple: DLCTuple => DLCAcceptDb = {
-      case (eventId,
-            fundingKey,
-            toLocalCETKey,
-            finalAddress,
-            totalCollateral,
-            refundSig,
-            changeAddress) =>
-        DLCAcceptDb(eventId,
-                    fundingKey,
-                    toLocalCETKey,
-                    finalAddress,
-                    totalCollateral,
-                    refundSig,
-                    changeAddress)
-    }
-
-    private val toTuple: DLCAcceptDb => Option[DLCTuple] = dlc =>
-      Some(
-        (dlc.eventId,
-         dlc.fundingKey,
-         dlc.toLocalCETKey,
-         dlc.finalAddress,
-         dlc.totalCollateral,
-         dlc.refundSig,
-         dlc.changeAddress))
+    def changeAddress: Rep[BitcoinAddress] = column("change_address")
 
     def * : ProvenShape[DLCAcceptDb] =
       (eventId,
        fundingKey,
-       toLocalCETKey,
-       finalAddress,
+       payoutAddress,
        totalCollateral,
-       refundSig,
-       changeAddress) <> (fromTuple, toTuple)
+       changeAddress) <> (DLCAcceptDb.tupled, DLCAcceptDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_accept", sourceColumns = eventId)

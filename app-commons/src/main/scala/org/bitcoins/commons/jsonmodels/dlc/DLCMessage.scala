@@ -153,7 +153,6 @@ object DLCMessage {
 
       val timeoutsJson =
         mutable.LinkedHashMap(
-          "penalty" -> Num(timeouts.penaltyTimeout.toLong.toDouble),
           "contractMaturity" -> Num(
             timeouts.contractMaturity.toUInt32.toLong.toDouble),
           "contractTimeout" -> Num(
@@ -163,8 +162,7 @@ object DLCMessage {
       val pubKeysJson =
         mutable.LinkedHashMap(
           "fundingKey" -> Str(pubKeys.fundingKey.hex),
-          "toLocalCETKey" -> Str(pubKeys.toLocalCETKey.hex),
-          "finalAddress" -> Str(pubKeys.finalAddress.value)
+          "payoutAddress" -> Str(pubKeys.payoutAddress.value)
         )
 
       Obj(
@@ -236,13 +234,11 @@ object DLCMessage {
               implicit val obj: mutable.LinkedHashMap[String, Value] = value.obj
 
               val fundingKey = getValue("fundingKey")
-              val toLocalCETKey = getValue("toLocalCETKey")
-              val finalAddress = getValue("finalAddress")
+              val payoutAddress = getValue("payoutAddress")
 
               DLCPublicKeys(
                 ECPublicKey(fundingKey.str),
-                ECPublicKey(toLocalCETKey.str),
-                BitcoinAddress(finalAddress.str)
+                BitcoinAddress(payoutAddress.str)
               )
           }
           .get
@@ -268,12 +264,10 @@ object DLCMessage {
           .map {
             case (_, value) =>
               implicit val obj: mutable.LinkedHashMap[String, Value] = value.obj
-              val penalty = getValue("penalty")
               val contractMaturity = getValue("contractMaturity")
               val contractTimeout = getValue("contractTimeout")
 
               DLCTimeouts(
-                UInt32(penalty.num.toLong),
                 BlockTime(UInt32(contractMaturity.num.toLong)),
                 BlockTime(UInt32(contractTimeout.num.toLong))
               )
@@ -326,8 +320,7 @@ object DLCMessage {
       val pubKeysJson =
         mutable.LinkedHashMap(
           "fundingKey" -> Str(pubKeys.fundingKey.hex),
-          "toLocalCETKey" -> Str(pubKeys.toLocalCETKey.hex),
-          "finalAddress" -> Str(pubKeys.finalAddress.value)
+          "payoutAddress" -> Str(pubKeys.payoutAddress.value)
         )
 
       Obj(
@@ -375,15 +368,12 @@ object DLCMessage {
 
               val fundingKey =
                 getValue("fundingKey")
-              val toLocalCETKey =
-                getValue("toLocalCETKey")
-              val finalAddress =
-                getValue("finalAddress")
+              val payoutAddress =
+                getValue("payoutAddress")
 
               DLCPublicKeys(
                 ECPublicKey(fundingKey.str),
-                ECPublicKey(toLocalCETKey.str),
-                BitcoinAddress(finalAddress.str)
+                BitcoinAddress(payoutAddress.str)
               )
           }
           .get
@@ -418,7 +408,7 @@ object DLCMessage {
               val outcomeSigs = outcomeSigsMap.arr.map { v =>
                 val (key, value) = v.obj.head
                 val hash = Sha256DigestBE(key)
-                val sig = PartialSignature(value.str)
+                val sig = ECAdaptorSignature(value.str)
                 (hash, sig)
               }
 
@@ -496,7 +486,7 @@ object DLCMessage {
               val outcomeSigs = outcomeSigsMap.arr.map { item =>
                 val (key, value) = item.obj.head
                 val hash = Sha256DigestBE(key)
-                val sig = PartialSignature(value.str)
+                val sig = ECAdaptorSignature(value.str)
                 (hash, sig)
               }
 
@@ -534,45 +524,6 @@ object DLCMessage {
         vec.find(_._1 == "eventId").map(obj => Sha256DigestBE(obj._2.str)).get
 
       DLCSign(cetSigs, FundingSignatures(fundingSigs), eventId)
-    }
-  }
-
-  case class DLCMutualCloseSig(
-      eventId: Sha256DigestBE,
-      oracleSig: SchnorrDigitalSignature,
-      mutualSig: PartialSignature)
-      extends DLCMessage {
-
-    override def toJson: Value = {
-      Obj(
-        mutable.LinkedHashMap[String, Value](
-          "eventId" -> Str(eventId.hex),
-          "oracleSig" -> Str(oracleSig.hex),
-          "mutualCloseSig" -> Str(mutualSig.hex)
-        )
-      )
-    }
-  }
-
-  object DLCMutualCloseSig {
-
-    def fromJson(js: Value): DLCMutualCloseSig = {
-      val vec = js.obj.toVector
-
-      val eventId =
-        vec.find(_._1 == "eventId").map(obj => Sha256DigestBE(obj._2.str)).get
-
-      val oracleSig = vec
-        .find(_._1 == "oracleSig")
-        .map(obj => SchnorrDigitalSignature(obj._2.str))
-        .get
-
-      val sig = vec
-        .find(_._1 == "mutualCloseSig")
-        .map(obj => PartialSignature(obj._2.str))
-        .get
-
-      DLCMutualCloseSig(eventId, oracleSig, sig)
     }
   }
 }

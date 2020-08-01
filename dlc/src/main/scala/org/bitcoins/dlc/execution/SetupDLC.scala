@@ -1,9 +1,8 @@
 package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
-import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256DigestBE}
+import org.bitcoins.crypto.{ECAdaptorSignature, Sha256DigestBE}
 
 case class SetupDLC(
     fundingTx: Transaction,
@@ -31,23 +30,4 @@ case class SetupDLC(
   )
 }
 
-case class CETInfo(
-    tx: Transaction,
-    witness: P2WSHWitnessV0,
-    remoteTxid: DoubleSha256DigestBE,
-    remoteWitness: P2WSHWitnessV0)
-
-object CETInfo {
-
-  def mapFromMaps(
-      localCetData: Map[Sha256DigestBE, (Transaction, P2WSHWitnessV0)],
-      remoteCetData: Map[Sha256DigestBE, (Transaction, P2WSHWitnessV0)]): Map[
-    Sha256DigestBE,
-    CETInfo] = {
-    localCetData.map {
-      case (msg, (localCet, localWitness)) =>
-        val (remoteCet, remoteWitness) = remoteCetData(msg)
-        msg -> CETInfo(localCet, localWitness, remoteCet.txIdBE, remoteWitness)
-    }
-  }
-}
+case class CETInfo(tx: Transaction, remoteSignature: ECAdaptorSignature)

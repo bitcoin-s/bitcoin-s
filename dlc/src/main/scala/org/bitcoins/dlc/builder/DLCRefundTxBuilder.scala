@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.builder
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCTimeouts
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
   MultiSignatureScriptPubKey,
@@ -11,8 +11,8 @@ import org.bitcoins.core.protocol.script.{
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.{
   AddWitnessDataFinalizer,
-  P2WPKHSubtractFeesFromOutputsFinalizer,
-  RawTxBuilder
+  RawTxBuilder,
+  SubtractFeeFromOutputsFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{ConditionalPath, P2WSHV0InputInfo}
@@ -20,7 +20,6 @@ import org.bitcoins.crypto.ECPublicKey
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Responsible for constructing the unsigned DLC refund transaction */
 case class DLCRefundTxBuilder(
     offerInput: CurrencyUnit,
     offerFundingKey: ECPublicKey,
@@ -32,7 +31,6 @@ case class DLCRefundTxBuilder(
     timeouts: DLCTimeouts,
     feeRate: FeeUnit) {
   private val OutputReference(fundingOutPoint, fundingOutput) = fundingOutputRef
-  private val totalInput = offerInput + acceptInput
 
   private val fundingInfo = P2WSHV0InputInfo(
     outPoint = fundingOutPoint,
@@ -45,25 +43,21 @@ case class DLCRefundTxBuilder(
   /** Constructs the unsigned DLC refund transaction */
   def buildRefundTx()(implicit
       ec: ExecutionContext): Future[WitnessTransaction] = {
+
     val builder = RawTxBuilder().setLockTime(timeouts.contractTimeout.toUInt32)
 
     builder += TransactionInput(fundingOutPoint,
                                 EmptyScriptSignature,
                                 TransactionConstants.disableRBFSequence)
 
-    val offerValue = Satoshis(
-      (fundingOutput.value * offerInput).satoshis.toLong / totalInput.satoshis.toLong)
-    val acceptValue = Satoshis(
-      (fundingOutput.value * acceptInput).satoshis.toLong / totalInput.satoshis.toLong)
+    builder += TransactionOutput(offerInput, offerFinalSPK)
+    builder += TransactionOutput(acceptInput, acceptFinalSPK)
 
-    builder += TransactionOutput(offerValue, offerFinalSPK)
-    builder += TransactionOutput(acceptValue, acceptFinalSPK)
-
-    // TODO: Should be SubtractFeeFromOutputsFinalizer since we know fundingInputInfo
-    val finalizer = P2WPKHSubtractFeesFromOutputsFinalizer(
-      feeRate,
-      Vector(offerFinalSPK, acceptFinalSPK))
-      .andThen(AddWitnessDataFinalizer(Vector(fundingInfo)))
+    val finalizer =
+      SubtractFeeFromOutputsFinalizer(Vector(fundingInfo),
+                                      feeRate,
+                                      Vector(offerFinalSPK, acceptFinalSPK))
+        .andThen(AddWitnessDataFinalizer(Vector(fundingInfo)))
 
     val txF = finalizer.buildTx(builder.result())
 

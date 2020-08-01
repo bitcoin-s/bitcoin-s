@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.commons.jsonmodels.dlc.DLCState
 import org.bitcoins.core.hd.HDAccount
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto.{
   SchnorrDigitalSignature,
   Sha256Digest,
@@ -59,60 +59,26 @@ case class DLCDAO()(implicit
 
   class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
 
-    def eventId: Rep[Sha256DigestBE] = column("eventId", O.Unique)
+    def eventId: Rep[Sha256DigestBE] = column("event_id", O.Unique)
 
-    def isInitiator: Rep[Boolean] = column("isInitiator")
+    def state: Rep[DLCState] = column("state")
+
+    def isInitiator: Rep[Boolean] = column("is_initiator")
 
     def account: Rep[HDAccount] = column("account")
 
-    def keyIndex: Rep[Int] = column("keyIndex")
+    def keyIndex: Rep[Int] = column("key_index")
 
-    def initiatorRefundSigOpt: Rep[Option[PartialSignature]] =
-      column("initiatorRefundSig")
-
-    def oracleSigOpt: Rep[Option[SchnorrDigitalSignature]] = column("oracleSig")
-
-    private type DLCTuple = (
-        Sha256DigestBE,
-        Boolean,
-        HDAccount,
-        Int,
-        Option[PartialSignature],
-        Option[SchnorrDigitalSignature])
-
-    private val fromTuple: DLCTuple => DLCDb = {
-      case (eventId,
-            isInitiator,
-            account,
-            keyIndex,
-            initiatorRefundSigOpt,
-            oracleSigOpt) =>
-        DLCDb(
-          eventId,
-          isInitiator,
-          account,
-          keyIndex,
-          initiatorRefundSigOpt,
-          oracleSigOpt
-        )
-    }
-
-    private val toTuple: DLCDb => Option[DLCTuple] = dlc =>
-      Some(
-        (dlc.eventId,
-         dlc.isInitiator,
-         dlc.account,
-         dlc.keyIndex,
-         dlc.refundSigOpt,
-         dlc.oracleSigOpt))
+    def oracleSigOpt: Rep[Option[SchnorrDigitalSignature]] =
+      column("oracle_sig")
 
     def * : ProvenShape[DLCDb] =
       (eventId,
+       state,
        isInitiator,
        account,
        keyIndex,
-       initiatorRefundSigOpt,
-       oracleSigOpt) <> (fromTuple, toTuple)
+       oracleSigOpt) <> (DLCDb.tupled, DLCDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc", sourceColumns = eventId)

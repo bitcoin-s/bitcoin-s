@@ -183,12 +183,4 @@ object CliReaders {
         DLCSign.fromJson(ujson.read(str))
       }
   }
-
-  implicit val dlcMutualCloseSigReads: Read[DLCMutualCloseSig] =
-    new Read[DLCMutualCloseSig] {
-      override def arity: Int = 1
-
-      override def reads: String => DLCMutualCloseSig =
-        str => DLCMutualCloseSig.fromJson(ujson.read(str))
-    }
 }

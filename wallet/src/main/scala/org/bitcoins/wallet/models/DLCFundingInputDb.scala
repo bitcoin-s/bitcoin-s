@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   TransactionOutPoint,
@@ -13,6 +14,8 @@ case class DLCFundingInputDb(
     isInitiator: Boolean,
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
+    redeemScriptOpt: Option[ScriptPubKey],
+    witnessScriptOpt: Option[ScriptWitness],
     sigs: Vector[PartialSignature]) {
 
   def toOutputReference: OutputReference =

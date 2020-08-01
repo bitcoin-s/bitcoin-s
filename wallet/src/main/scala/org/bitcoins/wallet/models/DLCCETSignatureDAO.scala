@@ -1,7 +1,6 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.crypto.{Sha256Digest, Sha256DigestBE}
+import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest, Sha256DigestBE}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config._
 import slick.lifted.{ForeignKeyQuery, PrimaryKey, ProvenShape}
@@ -62,29 +61,16 @@ case class DLCCETSignatureDAO()(implicit
   class DLCCETSignatureTable(tag: Tag)
       extends Table[DLCCETSignatureDb](tag, "wallet_dlc_cet_sigs") {
 
-    def eventId: Rep[Sha256DigestBE] = column("eventId")
+    def eventId: Rep[Sha256DigestBE] = column("event_id")
 
-    def outcomeHash: Rep[Sha256DigestBE] = column("outcomeHash")
+    def outcomeHash: Rep[Sha256DigestBE] = column("outcome_hash")
 
-    def signature: Rep[PartialSignature] = column("signature")
-
-    private type DLCCETSignatureTuple =
-      (Sha256DigestBE, Sha256DigestBE, PartialSignature)
-
-    private val fromTuple: DLCCETSignatureTuple => DLCCETSignatureDb = {
-      case (eventId, outcomeHash, signature) =>
-        DLCCETSignatureDb(
-          eventId,
-          outcomeHash,
-          signature
-        )
-    }
-
-    private val toTuple: DLCCETSignatureDb => Option[DLCCETSignatureTuple] =
-      dlc => Some((dlc.eventId, dlc.outcomeHash, dlc.signature))
+    def signature: Rep[ECAdaptorSignature] = column("signature")
 
     def * : ProvenShape[DLCCETSignatureDb] =
-      (eventId, outcomeHash, signature) <> (fromTuple, toTuple)
+      (eventId,
+       outcomeHash,
+       signature) <> (DLCCETSignatureDb.tupled, DLCCETSignatureDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_cet_sigs",

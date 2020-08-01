@@ -87,6 +87,7 @@ abstract class Wallet
   private[wallet] val dlcDAO: DLCDAO = DLCDAO()
   private[wallet] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
   private[wallet] val dlcSigsDAO: DLCCETSignatureDAO = DLCCETSignatureDAO()
+  private[wallet] val dlcRefundSigDAO: DLCRefundSigDAO = DLCRefundSigDAO()
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi

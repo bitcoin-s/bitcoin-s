@@ -56,13 +56,11 @@ case class DLCFundingTxBuilder(
   /** The funding output's P2WSH(MultiSig) ScriptPubKey */
   val fundingSPK: P2WSHWitnessSPKV0 = P2WSHWitnessSPKV0(fundingMultiSig)
 
-  private val spendingFee =
-    DLCTxBuilder.approxCETVBytes + DLCTxBuilder.approxToLocalClosingVBytes
-
   val fundingTxFinalizer: P2WPKHDualFundingTxFinalizer =
-    P2WPKHDualFundingTxFinalizer(spendingFee, feeRate, fundingSPK)
+    P2WPKHDualFundingTxFinalizer(DLCTxBuilder.approxClosingVBytes,
+                                 feeRate,
+                                 fundingSPK)
 
-  /** Constructs the unsigned DLC funding transaction */
   def buildFundingTx()(implicit ec: ExecutionContext): Future[Transaction] = {
     val builder = RawTxBuilderWithFinalizer(fundingTxFinalizer)
 

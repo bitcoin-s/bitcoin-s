@@ -1,31 +1,24 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  ContractInfo,
-  DLCMutualCloseSig
-}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.commons.jsonmodels.dlc._
-import org.bitcoins.core.config.BitcoinNetwork
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.{OutputReference, Transaction}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.execution.{
-  CooperativeDLCOutcome,
   DLCExecutor,
+  ExecutedDLCOutcome,
   RefundDLCOutcome,
-  SetupDLC,
-  UnilateralDLCOutcome
+  SetupDLC
 }
 import org.bitcoins.dlc.sign.DLCTxSigner
-import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -36,26 +29,26 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   * @param offer The DLCOffer associated with this DLC
   * @param accept The DLCAccept (without sigs) associated with this DLC
   * @param isInitiator True if this client sends the offer message
-  * @param extPrivKey This client's extended private key (at the account level) for this event
-  * @param nextAddressIndex The next unused address index for the provided extPrivKey
+  * @param fundingPrivKey This client's funding private key for this event
+  * @param payoutPrivKey This client's payout private key for this event
   * @param fundingUtxos This client's funding BitcoinUTXOSpendingInfo collection
   */
 case class TestDLCClient(
     offer: DLCMessage.DLCOffer,
     accept: DLCMessage.DLCAcceptWithoutSigs,
     isInitiator: Boolean,
-    extPrivKey: ExtPrivateKey,
-    nextAddressIndex: Int,
+    fundingPrivKey: ECPrivateKey,
+    payoutPrivKey: ECPrivateKey,
     fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(implicit
     ec: ExecutionContext)
     extends BitcoinSLogger {
-
   private val dlcTxBuilder = DLCTxBuilder(offer, accept)
 
   private val dlcTxSigner = DLCTxSigner(dlcTxBuilder,
                                         isInitiator,
-                                        extPrivKey,
-                                        nextAddressIndex,
+                                        fundingPrivKey,
+                                        payoutPrivKey,
+                                        RegTest,
                                         fundingUtxos)
 
   private val dlcExecutor = DLCExecutor(dlcTxSigner)
@@ -74,12 +67,6 @@ case class TestDLCClient(
     Await.result(dlcTxBuilder.buildFundingTx, 5.seconds)
 
   lazy val fundingTxIdBE: DoubleSha256DigestBE = fundingTx.txIdBE
-
-  def createUnsignedMutualCloseTx(sig: SchnorrDigitalSignature): Transaction = {
-    val utxF = dlcTxBuilder.buildMutualCloseTx(sig)
-
-    Await.result(utxF, 5.seconds)
-  }
 
   /** Sets up the non-initiator's DLC given functions for sending
     * CETSignatures to the initiator as well as receiving CETSignatures
@@ -123,71 +110,16 @@ case class TestDLCClient(
     }
   }
 
-  /** Initiates and executes a cooperative close given a function
-    * for sending signatures to the counterparty and a Future which
-    * will be populated with the broadcasted (or relayed) mutual close tx
-    */
-  def initiateMutualClose(
-      dlcSetup: SetupDLC,
-      sig: SchnorrDigitalSignature,
-      sendSigs: (SchnorrDigitalSignature, PartialSignature) => Future[Unit],
-      getMutualCloseTx: Future[Transaction]): Future[CooperativeDLCOutcome] = {
-    val fundingTx = dlcSetup.fundingTx
-
-    logger.info(s"Attempting Mutual Close for funding tx: ${fundingTx.txIdBE}")
-
-    for {
-      DLCMutualCloseSig(_, _, fundingSig) <-
-        dlcTxSigner.createMutualCloseTxSig(sig)
-      _ <- sendSigs(sig, fundingSig)
-      mutualCloseTx <- getMutualCloseTx
-    } yield {
-      CooperativeDLCOutcome(fundingTx, mutualCloseTx)
-    }
-  }
-
-  /** Executes a mutual close given remote's signatures */
-  def executeMutualClose(
-      dlcSetup: SetupDLC,
-      getSigs: Future[(SchnorrDigitalSignature, PartialSignature)]): Future[
-    CooperativeDLCOutcome] = {
-    val fundingTx = dlcSetup.fundingTx
-
-    for {
-      (sig, fundingSig) <- getSigs
-      mutualCloseTx <- dlcTxSigner.signMutualCloseTx(sig, fundingSig)
-    } yield {
-      CooperativeDLCOutcome(fundingTx, mutualCloseTx)
-    }
-  }
-
-  /** Constructs a UnilateralDLCOutcome given an oracle signature */
-  def executeUnilateralDLC(
+  def executeDLC(
       dlcSetup: SetupDLC,
       oracleSigF: Future[SchnorrDigitalSignature]): Future[
-    UnilateralDLCOutcome] = {
+    ExecutedDLCOutcome] = {
     oracleSigF.flatMap { oracleSig =>
-      dlcExecutor.executeUnilateralDLC(dlcSetup, oracleSig)
+      dlcExecutor.executeDLC(dlcSetup, oracleSig)
     }
   }
 
-  /** Constructs a UnilateralDLCOutcome given remote's published CET */
-  def executeRemoteUnilateralDLC(
-      dlcSetup: SetupDLC,
-      publishedCET: Transaction,
-      sweepSPK: WitnessScriptPubKey): Future[UnilateralDLCOutcome] = {
-    dlcExecutor.executeRemoteUnilateralDLC(dlcSetup, publishedCET, sweepSPK)
-  }
-
-  /** Constructs a UnilateralDLCOutcome given remote's timed-out CET */
-  def executeJusticeDLC(
-      dlcSetup: SetupDLC,
-      timedOutCET: Transaction): Future[UnilateralDLCOutcome] = {
-    dlcExecutor.executeJusticeDLC(dlcSetup, timedOutCET)
-  }
-
-  /** Constructs a RefundDLCOutcome */
-  def executeRefundDLC(dlcSetup: SetupDLC): Future[RefundDLCOutcome] = {
+  def executeRefundDLC(dlcSetup: SetupDLC): RefundDLCOutcome = {
     dlcExecutor.executeRefundDLC(dlcSetup)
   }
 }
@@ -199,8 +131,8 @@ object TestDLCClient {
       oraclePubKey: SchnorrPublicKey,
       preCommittedR: SchnorrNonce,
       isInitiator: Boolean,
-      extPrivKey: ExtPrivateKey,
-      nextAddressIndex: Int,
+      fundingPrivKey: ECPrivateKey,
+      payoutPrivKey: ECPrivateKey,
       remotePubKeys: DLCPublicKeys,
       input: CurrencyUnit,
       remoteInput: CurrencyUnit,
@@ -211,9 +143,11 @@ object TestDLCClient {
       changeSPK: ScriptPubKey,
       remoteChangeSPK: ScriptPubKey,
       network: BitcoinNetwork)(implicit ec: ExecutionContext): TestDLCClient = {
-    val pubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(extPrivKey,
-                                                       nextAddressIndex,
-                                                       network)
+    val pubKeys = DLCPublicKeys.fromPrivKeys(
+      fundingPrivKey,
+      payoutPrivKey,
+      network
+    )
 
     val remoteOutcomes: ContractInfo = ContractInfo(outcomes.map {
       case (hash, amt) => (hash, (input + remoteInput - amt).satoshis)
@@ -274,58 +208,8 @@ object TestDLCClient {
     TestDLCClient(offer,
                   accept,
                   isInitiator,
-                  extPrivKey,
-                  nextAddressIndex,
+                  fundingPrivKey,
+                  payoutPrivKey,
                   fundingUtxos)
-  }
-
-  def apply(
-      outcomeWin: String,
-      outcomeLose: String,
-      oraclePubKey: SchnorrPublicKey,
-      preCommittedR: SchnorrNonce,
-      isInitiator: Boolean,
-      extPrivKey: ExtPrivateKey,
-      nextAddressIndex: Int,
-      remotePubKeys: DLCPublicKeys,
-      input: CurrencyUnit,
-      remoteInput: CurrencyUnit,
-      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]],
-      remoteFundingInputs: Vector[OutputReference],
-      winPayout: CurrencyUnit,
-      losePayout: CurrencyUnit,
-      timeouts: DLCTimeouts,
-      feeRate: SatoshisPerVirtualByte,
-      changeSPK: WitnessScriptPubKeyV0,
-      remoteChangeSPK: WitnessScriptPubKeyV0,
-      network: BitcoinNetwork)(implicit ec: ExecutionContext): TestDLCClient = {
-    val hashWin = CryptoUtil.sha256(ByteVector(outcomeWin.getBytes)).flip
-    val hashLose = CryptoUtil.sha256(ByteVector(outcomeLose.getBytes)).flip
-
-    val outcomes = ContractInfo(
-      Map(
-        hashWin -> winPayout.satoshis,
-        hashLose -> losePayout.satoshis
-      )
-    )
-
-    TestDLCClient(
-      outcomes = outcomes,
-      oraclePubKey = oraclePubKey,
-      preCommittedR = preCommittedR,
-      isInitiator = isInitiator,
-      extPrivKey = extPrivKey,
-      nextAddressIndex = nextAddressIndex,
-      remotePubKeys = remotePubKeys,
-      input = input,
-      remoteInput = remoteInput,
-      fundingUtxos = fundingUtxos,
-      remoteFundingInputs = remoteFundingInputs,
-      timeouts = timeouts,
-      feeRate = feeRate,
-      changeSPK = changeSPK,
-      remoteChangeSPK = remoteChangeSPK,
-      network = network
-    )
   }
 }

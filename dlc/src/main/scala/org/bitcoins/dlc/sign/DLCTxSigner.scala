@@ -1,39 +1,28 @@
 package org.bitcoins.dlc.sign
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  DLCAcceptWithoutSigs,
-  DLCMutualCloseSig,
-  DLCOffer
-}
-import org.bitcoins.commons.jsonmodels.dlc.{
-  CETSignatures,
-  DLCPublicKeys,
-  FundingSignatures
-}
-import org.bitcoins.core.crypto.ExtPrivateKey
+import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, FundingSignatures}
+import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.crypto.TransactionSignatureSerializer
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd.BIP32Path
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
+  P2WPKHWitnessSPKV0,
   P2WSHWitnessV0
 }
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
-  TransactionOutPoint
+  TransactionOutPoint,
+  TxUtil
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.signer.BitcoinSigner
-import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  ECPrivateKey,
-  ECPublicKey,
-  FieldElement,
-  SchnorrDigitalSignature,
-  Sha256DigestBE
-}
+import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,51 +33,39 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCTxSigner(
     builder: DLCTxBuilder,
     isInitiator: Boolean,
-    extPrivKey: ExtPrivateKey,
-    nextAddressIndex: Int,
+    fundingKey: ECPrivateKey,
+    finalAddress: BitcoinAddress,
     fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(implicit
-    val ec: ExecutionContext) {
+    ec: ExecutionContext) {
+
   private val offer = builder.offer
   private val accept = builder.accept
+
+  private val remoteFundingPubKey = if (isInitiator) {
+    accept.pubKeys.fundingKey
+  } else {
+    offer.pubKeys.fundingKey
+  }
 
   private val fundingSPK = MultiSignatureScriptPubKey(
     2,
     Vector(offer.pubKeys.fundingKey, accept.pubKeys.fundingKey)
   )
 
-  val fundingPrivKey: ECPrivateKey =
-    extPrivKey
-      .deriveChildPrivKey(BIP32Path.fromString(s"m/0/$nextAddressIndex"))
-      .key
-
-  val cetToLocalPrivKey: ECPrivateKey =
-    extPrivKey
-      .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 1}"))
-      .key
-
-  val finalPrivKey: ECPrivateKey =
-    extPrivKey
-      .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 2}"))
-      .key
-
-  private val pubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(extPrivKey,
-                                                             nextAddressIndex,
-                                                             builder.network)
-
   if (isInitiator) {
-    require(
-      pubKeys == offer.pubKeys,
-      "Given ExtPrivateKey and index does not match the public keys in offer")
+    require(fundingKey.publicKey == offer.pubKeys.fundingKey &&
+              finalAddress == offer.pubKeys.payoutAddress,
+            "Given keys do not match public key and address in offer")
     require(fundingUtxos.map(_.outputReference) == offer.fundingInputs,
             "Funding ScriptSignatureParams did not match offer funding inputs")
   } else {
     require(
-      pubKeys == accept.pubKeys,
-      "Given ExtPrivateKey and index does not match the public keys in accept")
-    require(
-      fundingUtxos.map(_.outputReference) == accept.fundingInputs,
-      s"Funding ScriptSignatureParams ($fundingUtxos) did not match accept funding inputs (${accept.fundingInputs})"
+      fundingKey.publicKey == accept.pubKeys.fundingKey &&
+        finalAddress == accept.pubKeys.payoutAddress,
+      "Given keys do not match public key and address in accept"
     )
+    require(fundingUtxos.map(_.outputReference) == accept.fundingInputs,
+            "Funding ScriptSignatureParams did not match accept funding inputs")
   }
 
   /** Return's this party's payout for a given oracle signature */
@@ -169,88 +146,52 @@ case class DLCTxSigner(
     }
   }
 
-  private def createPartiallySignedMutualCloseTx(
-      oracleSig: SchnorrDigitalSignature): Future[PSBT] = {
+  /** Signs remote's Contract Execution Transaction (CET) for a given outcome hash */
+  def createRemoteCETSig(msg: Sha256DigestBE): Future[ECAdaptorSignature] = {
+    val adaptorPoint = builder.sigPubKeys(msg)
+    val hashType = HashType.sigHashAll
     for {
       fundingTx <- builder.buildFundingTx
-      utx <- builder.buildMutualCloseTx(oracleSig)
-      psbt =
-        PSBT
-          .fromUnsignedTx(utx)
-          .addUTXOToInput(fundingTx, index = 0)
-          .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-      signedPSBT <- psbt.sign(inputIndex = 0, fundingPrivKey)
+      fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
+      utx <- builder.buildCET(msg)
+      signingInfo = ECSignatureParams(
+        P2WSHV0InputInfo(outPoint = fundingOutPoint,
+                         amount = fundingTx.outputs.head.value,
+                         scriptWitness = P2WSHWitnessV0(fundingSPK),
+                         conditionalPath = ConditionalPath.NoCondition),
+        fundingTx,
+        fundingKey,
+        hashType
+      )
+      utxWithData = TxUtil.addWitnessData(utx, signingInfo)
+      hashToSign = TransactionSignatureSerializer.hashForSignature(utxWithData,
+                                                                   signingInfo,
+                                                                   hashType)
     } yield {
-      signedPSBT
+      fundingKey.adaptorSign(adaptorPoint, hashToSign.bytes)
     }
   }
 
-  /** Constructs a DLCMutualCloseSig message given an oracle signature */
-  def createMutualCloseTxSig(
-      oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
-    for {
-      psbt <- createPartiallySignedMutualCloseTx(oracleSig)
-      sig <- findSigInPSBT(psbt, fundingPrivKey.publicKey)
-    } yield {
-      DLCMutualCloseSig(accept.eventId, oracleSig, sig)
-    }
-  }
-
-  /** Constructs a signed mutual close transaction given an oracle
-    * signature and remote's mutual close sig (both found in a DLCMutualCloseSig) */
-  def signMutualCloseTx(
-      oracleSig: SchnorrDigitalSignature,
-      remoteSig: PartialSignature): Future[Transaction] = {
-    createPartiallySignedMutualCloseTx(oracleSig).flatMap { psbt =>
-      val txT = psbt
-        .addSignature(remoteSig, inputIndex = 0)
-        .finalizePSBT
-        .flatMap(_.extractTransactionAndValidate)
-
-      Future.fromTry(txT)
-    }
-  }
-
-  private def createPartiallySignedCET(
+  def signCET(
       msg: Sha256DigestBE,
-      isOffer: Boolean): Future[PSBT] = {
+      remoteAdaptorSig: ECAdaptorSignature,
+      oracleSig: SchnorrDigitalSignature): Future[Transaction] = {
+    val remoteSig =
+      oracleSig.sig.toPrivateKey
+        .completeAdaptorSignature(remoteAdaptorSig, HashType.sigHashAll.byte)
+
+    val remotePartialSig = PartialSignature(remoteFundingPubKey, remoteSig)
     for {
       fundingTx <- builder.buildFundingTx
-      utx <- {
-        if (isOffer) {
-          builder.buildOfferCET(msg)
-        } else {
-          builder.buildAcceptCET(msg)
-        }
-      }
+      utx <- builder.buildCET(msg)
 
       psbt <-
         PSBT
           .fromUnsignedTx(utx)
           .addUTXOToInput(fundingTx, index = 0)
           .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-          .sign(inputIndex = 0, fundingPrivKey)
-    } yield {
-      psbt
-    }
-  }
-
-  /** Signs remote's Contract Execution Transaction (CET) for a given outcome hash */
-  def createRemoteCETSig(msg: Sha256DigestBE): Future[PartialSignature] = {
-    for {
-      psbt <- createPartiallySignedCET(msg, !isInitiator)
-      signature <- findSigInPSBT(psbt, fundingPrivKey.publicKey)
-    } yield {
-      signature
-    }
-  }
-
-  def signCET(
-      msg: Sha256DigestBE,
-      remoteSig: PartialSignature): Future[Transaction] = {
-    for {
-      unsignedPsbt <- createPartiallySignedCET(msg, isInitiator)
-      psbt = unsignedPsbt.addSignature(remoteSig, inputIndex = 0)
+          .addSignature(remotePartialSig, inputIndex = 0)
+          .sign(inputIndex = 0, fundingKey)
 
       cetT = psbt.finalizePSBT.flatMap(_.extractTransactionAndValidate)
       cet <- Future.fromTry(cetT)
@@ -271,7 +212,7 @@ case class DLCTxSigner(
           .fromUnsignedTx(utx)
           .addUTXOToInput(fundingTx, index = 0)
           .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-          .sign(inputIndex = 0, fundingPrivKey)
+          .sign(inputIndex = 0, fundingKey)
     } yield {
       psbt
     }
@@ -281,7 +222,7 @@ case class DLCTxSigner(
   def createRefundSig(): Future[PartialSignature] = {
     for {
       psbt <- createPartiallySignedRefundTx()
-      signature <- findSigInPSBT(psbt, fundingPrivKey.publicKey)
+      signature <- findSigInPSBT(psbt, fundingKey.publicKey)
     } yield {
       signature
     }
@@ -316,33 +257,15 @@ case class DLCTxSigner(
 object DLCTxSigner {
 
   def apply(
-      offer: DLCOffer,
-      accept: DLCAcceptWithoutSigs,
+      builder: DLCTxBuilder,
       isInitiator: Boolean,
-      extPrivKey: ExtPrivateKey,
-      nextAddressIndex: Int,
+      fundingKey: ECPrivateKey,
+      payoutPrivKey: ECPrivateKey,
+      network: BitcoinNetwork,
       fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(implicit
       ec: ExecutionContext): DLCTxSigner = {
-    DLCTxSigner(DLCTxBuilder(offer, accept),
-                isInitiator,
-                extPrivKey,
-                nextAddressIndex,
-                fundingUtxos)
-  }
-
-  /** Computes the tweaked private key used to claim a
-    * Contract Execution Transaction's to_local output
-    * given an oracle signature
-    */
-  def tweakedPrivKey(
-      fundingPrivKey: ECPrivateKey,
-      cetToLocalPrivKey: ECPrivateKey,
-      oracleSig: SchnorrDigitalSignature): ECPrivateKey = {
-    val privKeyWithoutTweak = oracleSig.sig.add(fundingPrivKey.fieldElement)
-
-    val tweakHash = CryptoUtil.sha256(cetToLocalPrivKey.publicKey.bytes).flip
-    val tweak = FieldElement(tweakHash.bytes)
-
-    privKeyWithoutTweak.add(tweak).toPrivateKey
+    val payoutAddr =
+      Bech32Address(P2WPKHWitnessSPKV0(payoutPrivKey.publicKey), network)
+    DLCTxSigner(builder, isInitiator, fundingKey, payoutAddr, fundingUtxos)
   }
 }

@@ -10,9 +10,7 @@ import org.bitcoins.commons.jsonmodels.dlc.{
   DLCPublicKeys,
   DLCTimeouts
 }
-import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.OutputReference
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -20,26 +18,21 @@ import org.bitcoins.crypto._
 
 case class DLCOfferDb(
     eventId: Sha256DigestBE,
-    network: BitcoinNetwork,
     oraclePubKey: SchnorrPublicKey,
     oracleRValue: SchnorrNonce,
     contractInfo: ContractInfo,
-    penaltyTimeout: UInt32,
     contractMaturity: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
     fundingKey: ECPublicKey,
-    toLocalCETKey: ECPublicKey,
-    finalAddress: BitcoinAddress,
+    payoutAddress: BitcoinAddress,
     totalCollateral: CurrencyUnit,
     feeRate: SatoshisPerVirtualByte,
     changeAddress: BitcoinAddress) {
 
   def toDLCOffer(fundingInputs: Vector[OutputReference]): DLCOffer = {
     val oracleInfo = OracleInfo(oraclePubKey, oracleRValue)
-    val pubKeys =
-      DLCPublicKeys(fundingKey, toLocalCETKey, finalAddress)
-    val timeouts =
-      DLCTimeouts(penaltyTimeout, contractMaturity, contractTimeout)
+    val pubKeys = DLCPublicKeys(fundingKey, payoutAddress)
+    val timeouts = DLCTimeouts(contractMaturity, contractTimeout)
     DLCOffer(
       contractInfo,
       oracleInfo,
@@ -53,24 +46,21 @@ case class DLCOfferDb(
   }
 }
 
-object DLCOfferDb {
+object DLCOfferDbHelper {
 
-  def fromDLCOffer(offer: DLCOffer, network: BitcoinNetwork): DLCOfferDb = {
+  def fromDLCOffer(offer: DLCOffer): DLCOfferDb = {
     val eventId = DLCMessage.calcEventId(offer.oracleInfo,
                                          offer.contractInfo,
                                          offer.timeouts)
     DLCOfferDb(
       eventId,
-      network,
       offer.oracleInfo.pubKey,
       offer.oracleInfo.rValue,
       offer.contractInfo,
-      offer.timeouts.penaltyTimeout,
       offer.timeouts.contractMaturity,
       offer.timeouts.contractTimeout,
       offer.pubKeys.fundingKey,
-      offer.pubKeys.toLocalCETKey,
-      offer.pubKeys.finalAddress,
+      offer.pubKeys.payoutAddress,
       offer.totalCollateral,
       offer.feeRate,
       offer.changeAddress

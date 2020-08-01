@@ -51,10 +51,8 @@ trait DLCWalletUtil {
   lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(1666335)
   lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1666337)
 
-  lazy val dummyTimeouts: DLCTimeouts = DLCTimeouts(
-    DLCTimeouts.DEFAULT_PENALTY_TIMEOUT,
-    dummyContractMaturity,
-    dummyContractTimeout)
+  lazy val dummyTimeouts: DLCTimeouts =
+    DLCTimeouts(dummyContractMaturity, dummyContractTimeout)
 
   lazy val dummyKey: ECPublicKey = ECPublicKey.freshPublicKey
 
@@ -67,7 +65,7 @@ trait DLCWalletUtil {
     "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2")
 
   lazy val dummyDLCKeys: DLCPublicKeys =
-    DLCPublicKeys(dummyKey, dummyKey2, dummyAddress)
+    DLCPublicKeys(dummyKey, dummyAddress)
 
   lazy val dummyBlockHash: DoubleSha256DigestBE = DoubleSha256DigestBE(
     "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75")
@@ -93,8 +91,9 @@ trait DLCWalletUtil {
   lazy val sampleDLCEventId: Sha256DigestBE =
     DLCMessage.calcEventId(sampleOracleInfo, sampleContractInfo, dummyTimeouts)
 
-  lazy val dummyOutcomeSigs: Map[Sha256DigestBE, PartialSignature] =
-    Map(winHash -> dummyPartialSig, loseHash -> dummyPartialSig)
+  lazy val dummyOutcomeSigs: Map[Sha256DigestBE, ECAdaptorSignature] =
+    Map(winHash -> ECAdaptorSignature.dummy,
+        loseHash -> ECAdaptorSignature.dummy)
 
   lazy val dummyCETSigs: CETSignatures =
     CETSignatures(dummyOutcomeSigs, dummyPartialSig)
@@ -118,10 +117,10 @@ trait DLCWalletUtil {
 
   lazy val sampleDLCDb: DLCDb = DLCDb(
     eventId = sampleDLCEventId,
+    state = DLCState.Offered,
     isInitiator = true,
     account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,
     keyIndex = 0,
-    refundSigOpt = None,
     oracleSigOpt = Some(sampleOracleLoseSig)
   )
 

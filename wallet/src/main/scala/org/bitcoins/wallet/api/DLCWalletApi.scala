@@ -37,38 +37,16 @@ trait DLCWalletApi { self: WalletApi =>
 
   def addDLCSigs(sigs: DLCSign): Future[DLCDb]
 
-  def initDLCMutualClose(
-      eventId: Sha256DigestBE,
-      oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig]
-
-  def acceptDLCMutualClose(
-      mutualCloseSig: DLCMutualCloseSig): Future[Transaction]
-
   def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction]
 
-  def executeDLCUnilateralClose(
-      eventId: Sha256DigestBE,
-      oracleSig: SchnorrDigitalSignature): Future[
-    (Transaction, Option[Transaction])]
+  def broadcastDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction]
 
-  def executeRemoteUnilateralDLC(
+  /** Creates the CET for the given eventId and oracle signature, does not broadcast it */
+  def executeDLC(
       eventId: Sha256DigestBE,
-      cet: Transaction): Future[Option[Transaction]]
+      oracleSig: SchnorrDigitalSignature): Future[Transaction]
 
-  def executeDLCForceClose(
-      eventId: Sha256DigestBE,
-      oracleSig: SchnorrDigitalSignature): Future[
-    (Transaction, Option[Transaction])]
-
-  def claimDLCRemoteFunds(
-      eventId: Sha256DigestBE,
-      forceCloseTx: Transaction): Future[Option[Transaction]]
-
-  def executeDLCRefund(
-      eventId: Sha256DigestBE): Future[(Transaction, Option[Transaction])]
-
-  def claimDLCPenaltyFunds(
-      eventId: Sha256DigestBE,
-      forceCloseTx: Transaction): Future[Option[Transaction]]
+  /** Creates the refund transaction for the given eventId, does not broadcast it */
+  def executeDLCRefund(eventId: Sha256DigestBE): Future[Transaction]
 
 }

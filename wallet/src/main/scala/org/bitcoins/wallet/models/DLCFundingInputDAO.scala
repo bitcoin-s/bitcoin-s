@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
@@ -81,39 +82,35 @@ case class DLCFundingInputDAO()(implicit
   class DLCFundingInputsTable(tag: Tag)
       extends Table[DLCFundingInputDb](tag, "wallet_dlc_funding_inputs") {
 
-    def eventId: Rep[Sha256DigestBE] = column("eventId")
+    def eventId: Rep[Sha256DigestBE] = column("event_id")
 
-    def isInitiator: Rep[Boolean] = column("isInitiator")
+    def isInitiator: Rep[Boolean] = column("is_initiator")
 
-    def outPoint: Rep[TransactionOutPoint] = column("outPoint", O.Unique)
+    def outPoint: Rep[TransactionOutPoint] = column("out_point", O.Unique)
 
     def output: Rep[TransactionOutput] = column("output")
 
+    def redeemScriptOpt: Rep[Option[ScriptPubKey]] = column("redeem_script_opt")
+
+    def witnessScriptOpt: Rep[Option[ScriptWitness]] =
+      column("witness_script_opt")
+
     def sigs: Rep[Vector[PartialSignature]] = column("sigs")
 
-    private type DLCTuple = (
-        Sha256DigestBE,
-        Boolean,
-        TransactionOutPoint,
-        TransactionOutput,
-        Vector[PartialSignature])
-
-    private val fromTuple: DLCTuple => DLCFundingInputDb = {
-      case (eventId, isInitiator, outPoint, output, sigs) =>
-        DLCFundingInputDb(eventId, isInitiator, outPoint, output, sigs)
-    }
-
-    private val toTuple: DLCFundingInputDb => Option[DLCTuple] = dlc =>
-      Some((dlc.eventId, dlc.isInitiator, dlc.outPoint, dlc.output, dlc.sigs))
-
     def * : ProvenShape[DLCFundingInputDb] =
-      (eventId, isInitiator, outPoint, output, sigs) <> (fromTuple, toTuple)
+      (eventId,
+       isInitiator,
+       outPoint,
+       output,
+       redeemScriptOpt,
+       witnessScriptOpt,
+       sigs) <> (DLCFundingInputDb.tupled, DLCFundingInputDb.unapply)
 
     def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_dlcInput", sourceColumns = outPoint)
+      primaryKey(name = "pk_dlc_input", sourceColumns = outPoint)
 
     def fk: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_eventId",
+      foreignKey("fk_event_id",
                  sourceColumns = eventId,
                  targetTableQuery = dlcTable)(_.eventId)
   }

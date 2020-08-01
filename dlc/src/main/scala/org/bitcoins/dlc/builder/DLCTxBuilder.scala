@@ -1,38 +1,40 @@
 package org.bitcoins.dlc.builder
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+  ContractInfo,
+  DLCAcceptWithoutSigs,
+  DLCOffer,
+  OracleInfo
+}
 import org.bitcoins.commons.jsonmodels.dlc.{DLCPublicKeys, DLCTimeouts}
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.P2WSHWitnessV0
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.transaction.{
+  OutputReference,
+  Transaction,
+  TransactionOutPoint,
+  WitnessTransaction
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Given all non-signature DLC setup information, this
-  * builder can construct any (unsigned) DLC component.
-  */
-case class DLCTxBuilder(
-    offer: DLCOffer,
-    accept: DLCAcceptWithoutSigs
-)(implicit ec: ExecutionContext) {
+case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
+    ec: ExecutionContext) {
 
   val DLCOffer(
     offerOutcomes: ContractInfo,
     OracleInfo(oraclePubKey: SchnorrPublicKey, preCommittedR: SchnorrNonce),
     DLCPublicKeys(offerFundingKey: ECPublicKey,
-                  offerToLocalCETKey: ECPublicKey,
                   offerFinalAddress: BitcoinAddress),
     offerTotalCollateral: Satoshis,
     offerFundingInputs: Vector[OutputReference],
     offerChangeAddress: BitcoinAddress,
     feeRate: SatoshisPerVirtualByte,
-    DLCTimeouts(penaltyTimeout: UInt32,
-                contractMaturity: BlockTimeStamp,
+    DLCTimeouts(contractMaturity: BlockTimeStamp,
                 contractTimeout: BlockTimeStamp)) = offer
 
   val network: BitcoinNetwork = offerFinalAddress.networkParameters match {
@@ -41,7 +43,6 @@ case class DLCTxBuilder(
 
   val DLCAcceptWithoutSigs(acceptTotalCollateral: Satoshis,
                            DLCPublicKeys(acceptFundingKey: ECPublicKey,
-                                         acceptToLocalCETKey: ECPublicKey,
                                          acceptFinalAddress: BitcoinAddress),
                            acceptFundingInputs: Vector[OutputReference],
                            acceptChangeAddress: BitcoinAddress,
@@ -117,10 +118,8 @@ case class DLCTxBuilder(
         offerOutcomes = offerOutcomes,
         acceptOutcomes = acceptOutcomes,
         offerFundingKey = offerFundingKey,
-        offerToLocalKey = offerToLocalCETKey,
         offerFinalSPK = offerFinalAddress.scriptPubKey,
         acceptFundingKey = acceptFundingKey,
-        acceptToLocalKey = acceptToLocalCETKey,
         acceptFinalSPK = acceptFinalAddress.scriptPubKey,
         timeouts = offer.timeouts,
         feeRate = feeRate,
@@ -130,68 +129,14 @@ case class DLCTxBuilder(
     }
   }
 
-  /** Constructs the initiator's unsigned Contract Execution Transaction
-    * (CET) for a given outcome hash
+  /** Constructs the unsigned Contract Execution Transaction (CET)
+    * for a given outcome hash
     */
-  def buildOfferCET(msg: Sha256DigestBE): Future[WitnessTransaction] = {
+  def buildCET(msg: Sha256DigestBE): Future[WitnessTransaction] = {
     for {
       cetBuilder <- cetBuilderF
-      cet <- cetBuilder.buildOfferCET(msg)
+      cet <- cetBuilder.buildCET(msg)
     } yield cet
-  }
-
-  /** Constructs the non-initiator's unsigned Contract Execution
-    * Transaction (CET) for a given outcome hash
-    */
-  def buildAcceptCET(msg: Sha256DigestBE): Future[WitnessTransaction] = {
-    for {
-      cetBuilder <- cetBuilderF
-      cet <- cetBuilder.buildAcceptCET(msg)
-    } yield cet
-  }
-
-  /** Constructs the given party's unsigned Contract Execution
-    * Transaction (CET) for a given outcome hash
-    */
-  def buildCET(
-      msg: Sha256DigestBE,
-      isInitiator: Boolean): Future[WitnessTransaction] = {
-    if (isInitiator) {
-      buildOfferCET(msg)
-    } else {
-      buildAcceptCET(msg)
-    }
-  }
-
-  /** Constructs the initiator's P2WSH redeem script corresponding to
-    * the CET for a given outcome hash
-    */
-  def getOfferCETWitness(msg: Sha256DigestBE): Future[P2WSHWitnessV0] = {
-    cetBuilderF
-      .map(_.buildOfferToLocalP2PK(msg))
-      .map(P2WSHWitnessV0(_))
-  }
-
-  /** Constructs the non-initiator's P2WSH redeem script corresponding to
-    * the CET for a given outcome hash
-    */
-  def getAcceptCETWitness(msg: Sha256DigestBE): Future[P2WSHWitnessV0] = {
-    cetBuilderF
-      .map(_.buildAcceptToLocalP2PK(msg))
-      .map(P2WSHWitnessV0(_))
-  }
-
-  /** Constructs the given party's P2WSH redeem script corresponding to
-    * the CET for a given outcome hash
-    */
-  def getCETWitness(
-      msg: Sha256DigestBE,
-      isInitiator: Boolean): Future[P2WSHWitnessV0] = {
-    if (isInitiator) {
-      getOfferCETWitness(msg)
-    } else {
-      getAcceptCETWitness(msg)
-    }
   }
 
   /** Constructs the unsigned refund transaction */
@@ -218,33 +163,12 @@ case class DLCTxBuilder(
 
     builderF.flatMap(_.buildRefundTx())
   }
-
-  /** Constructs the unsigned mutual close transaction for a given oracle signature */
-  def buildMutualCloseTx(sig: SchnorrDigitalSignature): Future[Transaction] = {
-    val builderF = for {
-      fundingTx <- buildFundingTx
-    } yield {
-      val fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
-
-      DLCMutualCloseTxBuilder(offer.oracleInfo,
-                              offerFinalAddress.scriptPubKey,
-                              offerOutcomes,
-                              acceptFinalAddress.scriptPubKey,
-                              acceptOutcomes,
-                              fundingOutPoint)
-    }
-
-    builderF.flatMap(_.buildMutualCloseTx(sig))
-  }
 }
 
 object DLCTxBuilder {
 
-  /** Experimental approx. vbytes for a CET */
-  val approxCETVBytes = 190
-
-  /** Experimental approx. vbytes for a closing tx spending ToLocalOutput */
-  val approxToLocalClosingVBytes = 122
+  /** vbytes for a CET/Refund Tx */
+  val approxClosingVBytes: Long = 169L
 
   /** Returns the payouts for the signature as (toOffer, toAccept) */
   def getPayouts(
@@ -259,19 +183,5 @@ object DLCTxBuilder {
         throw new IllegalArgumentException(
           s"Signature does not correspond to a possible outcome! $oracleSig")
     }
-  }
-
-  /** Computes the tweaked public key used in a CET to_local
-    * output's success branch
-    */
-  def tweakedPubKey(
-      fundingPubKey: ECPublicKey,
-      toLocalCETKey: ECPublicKey,
-      sigPubKey: ECPublicKey): ECPublicKey = {
-    val tweak = CryptoUtil.sha256(toLocalCETKey.bytes).flip
-
-    val tweakPubKey = ECPrivateKey.fromBytes(tweak.bytes).publicKey
-
-    sigPubKey.add(fundingPubKey).add(tweakPubKey)
   }
 }
