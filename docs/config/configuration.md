@@ -43,6 +43,23 @@ val configFromCustomDirAndOverride = WalletAppConfig(customDirectory, false, cus
 You can pass as many `com.typesafe.config.Config`s as you'd like. If any
 keys appear multiple times the last one encountered takes precedence.
 
+## Command Line Options
+
+There are a few command line options available that take precedence over configuration file.
+
+- `--datadir <directory>`
+
+     `datadir` sets the data directory instead of using the default `$HOME/.bitcoin-s`
+
+- `--rpcport <port>`
+
+    `rpcport` sets the port the rpc server binds to instead of using the default `9999`
+
+- `--force-recalc-chainwork`
+
+    `force-recalc-chainwork` will force a recalculation of the entire chain's chain work, this
+    can be useful if there is an incompatible migration or if it got out of sync.
+
 ## Internal configuration
 
 Database connections are also configured by using HOCON. This is done in
