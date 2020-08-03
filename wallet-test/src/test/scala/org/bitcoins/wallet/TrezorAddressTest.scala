@@ -1,6 +1,5 @@
 package org.bitcoins.wallet
 
-import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}

@@ -20,7 +20,7 @@ import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.keymanager._
 import org.bitcoins.wallet.WalletLogger
-import org.bitcoins.wallet.models.{AddressDb, SpendingInfoDb}
+import org.bitcoins.wallet.models.{AddressDb, SpendingInfoDb, TransactionDb}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -64,6 +64,8 @@ trait WalletApi extends WalletLogger {
         wallet.flatMap(_.processTransaction(tx, blockHash))
     }
   }
+
+  def listTransactions(): Future[Vector[TransactionDb]]
 
   /**
     * Takes in a block header and updates our TxoStates to the new chain tip

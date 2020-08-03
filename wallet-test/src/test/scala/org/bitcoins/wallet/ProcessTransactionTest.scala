@@ -23,10 +23,12 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
   private def checkUtxosAndBalance(wallet: WalletApi)(
       action: => Future[_]): Future[Assertion] =
     for {
+      oldTransactions <- wallet.listTransactions()
       oldUtxos <- wallet.listUtxos()
       oldUnconfirmed <- wallet.getUnconfirmedBalance()
       oldConfirmed <- wallet.getBalance()
       _ <- action // by name
+      newTransactions <- wallet.listTransactions()
       newUtxos <- wallet.listUtxos()
       newUnconfirmed <- wallet.getUnconfirmedBalance()
       newConfirmed <- wallet.getBalance()
@@ -35,6 +37,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       assert(oldConfirmed == newConfirmed)
       assert(oldUnconfirmed == newUnconfirmed)
       assert(oldUtxos == newUtxos)
+      assert(oldTransactions == newTransactions)
     }
 
   it must "change state when processing a transaction with a block hash" in {
