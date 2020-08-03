@@ -236,28 +236,16 @@ case class DataMessageHandler(
 
   private def sendNextGetCompactFilterHeadersCommand(
       peerMsgSender: PeerMessageSender,
-      stopHash: DoubleSha256DigestBE): Future[Boolean] = {
-    for {
-      nextRangeOpt <- chainApi.nextHeaderBatchRange(
-        stopHash,
-        chainConfig.filterHeaderBatchSize)
-      res <- nextRangeOpt match {
-        case Some((startHeight, stopHash)) =>
-          logger.info(
-            s"Requesting compact filter headers from=$startHeight to=${stopHash.flip}")
-          peerMsgSender
-            .sendGetCompactFilterHeadersMessage(startHeight, stopHash)
-            .map(_ => true)
-        case None =>
-          Future.successful(false)
-      }
-    } yield res
-  }
+      stopHash: DoubleSha256DigestBE): Future[Boolean] =
+    peerMsgSender.sendNextGetCompactFilterHeadersCommand(
+      chainApi = chainApi,
+      filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
+      stopHash = stopHash)
 
   private def sendFirstGetCompactFilterHeadersCommand(
       peerMsgSender: PeerMessageSender): Future[Boolean] =
     for {
-      filterHeaderCount <- chainApi.getFilterHeaderCount
+      filterHeaderCount <- chainApi.getFilterHeaderCount()
       highestFilterHeaderOpt <-
         chainApi
           .getFilterHeadersAtHeight(filterHeaderCount)
@@ -272,28 +260,16 @@ case class DataMessageHandler(
 
   private def sendNextGetCompactFilterCommand(
       peerMsgSender: PeerMessageSender,
-      stopHash: DoubleSha256DigestBE): Future[Boolean] = {
-    for {
-      nextRangeOpt <- chainApi.nextFilterHeaderBatchRange(
-        stopHash,
-        chainConfig.filterBatchSize)
-      res <- nextRangeOpt match {
-        case Some((startHeight, stopHash)) =>
-          logger.info(
-            s"Requesting compact filters from=$startHeight to=${stopHash.flip}")
-          peerMsgSender
-            .sendGetCompactFiltersMessage(startHeight, stopHash)
-            .map(_ => true)
-        case None =>
-          Future.successful(false)
-      }
-    } yield res
-  }
+      stopHash: DoubleSha256DigestBE): Future[Boolean] =
+    peerMsgSender.sendNextGetCompactFilterCommand(chainApi = chainApi,
+                                                  filterBatchSize =
+                                                    chainConfig.filterBatchSize,
+                                                  stopHash = stopHash)
 
   private def sendFirstGetCompactFilterCommand(
       peerMsgSender: PeerMessageSender): Future[Boolean] =
     for {
-      filterCount <- chainApi.getFilterCount
+      filterCount <- chainApi.getFilterCount()
       highestFilterOpt <-
         chainApi
           .getFiltersAtHeight(filterCount)

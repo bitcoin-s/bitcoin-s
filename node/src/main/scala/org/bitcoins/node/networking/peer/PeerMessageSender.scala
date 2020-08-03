@@ -3,15 +3,19 @@ package org.bitcoins.node.networking.peer
 import akka.actor.ActorRef
 import akka.io.Tcp
 import akka.util.Timeout
-import org.bitcoins.core.p2p.NetworkMessage
-import org.bitcoins.core.p2p._
-import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.node.P2PLogger
+import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.p2p.{NetworkMessage, _}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.{DoubleSha256Digest, HashDigest}
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  HashDigest
+}
+import org.bitcoins.node.P2PLogger
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.networking.P2PClient
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -154,6 +158,47 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     val message = GetCompactFilterCheckPointMessage(stopHash)
     logger.debug(s"Sending getcfcheckpt=$message to peer ${client.peer}")
     sendMsg(message)
+  }
+
+  private[node] def sendNextGetCompactFilterCommand(
+      chainApi: ChainApi,
+      filterBatchSize: Int,
+      stopHash: DoubleSha256DigestBE)(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    for {
+      nextRangeOpt <-
+        chainApi.nextFilterHeaderBatchRange(stopHash, filterBatchSize)
+      res <- nextRangeOpt match {
+        case Some((startHeight, stopHash)) =>
+          logger.info(
+            s"Requesting compact filters from=$startHeight to=${stopHash.flip}")
+
+          sendGetCompactFiltersMessage(startHeight, stopHash)
+            .map(_ => true)
+        case None =>
+          Future.successful(false)
+      }
+    } yield res
+  }
+
+  private[node] def sendNextGetCompactFilterHeadersCommand(
+      chainApi: ChainApi,
+      filterHeaderBatchSize: Int,
+      stopHash: DoubleSha256DigestBE)(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    for {
+      nextRangeOpt <-
+        chainApi.nextHeaderBatchRange(stopHash, filterHeaderBatchSize)
+      res <- nextRangeOpt match {
+        case Some((startHeight, stopHash)) =>
+          logger.info(
+            s"Requesting compact filter headers from=$startHeight to=${stopHash.flip}")
+          sendGetCompactFilterHeadersMessage(startHeight, stopHash)
+            .map(_ => true)
+        case None =>
+          Future.successful(false)
+      }
+    } yield res
   }
 
   private[node] def sendMsg(msg: NetworkPayload): Future[Unit] = {
