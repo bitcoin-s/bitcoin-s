@@ -22,8 +22,8 @@ case class DataMessageHandler(
     chainApi: ChainApi,
     callbacks: NodeCallbacks,
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
-    filterHeaderHeight: Int = -1,
-    filterHeight: Int = -1,
+    filterHeaderHeightOpt: Option[Int] = None,
+    filterHeightOpt: Option[Int] = None,
     syncing: Boolean = false)(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
@@ -72,14 +72,16 @@ case class DataMessageHandler(
                 synced
               }
             }
-          newFilterHeaderHeight <-
-            if (filterHeaderHeight < 0) {
+          newFilterHeaderHeight <- filterHeaderHeightOpt match {
+            case None =>
               chainApi.getFilterHeaderCount()
-            } else Future.successful(filterHeaderHeight + filterHeaders.size)
+            case Some(filterHeaderHeight) =>
+              Future.successful(filterHeaderHeight + filterHeaders.size)
+          }
         } yield {
           this.copy(chainApi = newChainApi,
                     syncing = newSyncing,
-                    filterHeaderHeight = newFilterHeaderHeight)
+                    filterHeaderHeightOpt = Some(newFilterHeaderHeight))
         }
       case filter: CompactFilterMessage =>
         logger.debug(s"Received ${filter.commandName}, $filter")
@@ -87,12 +89,15 @@ case class DataMessageHandler(
           currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {
           (newFilterHeaderHeight, newFilterHeight) <-
-            if (filterHeight < 0 || filterHeaderHeight < 0) {
-              for {
-                filterHeaderCount <- chainApi.getFilterHeaderCount()
-                filterCount <- chainApi.getFilterCount()
-              } yield (filterHeaderCount, filterCount + 1)
-            } else Future.successful((filterHeaderHeight, filterHeight + 1))
+            (filterHeaderHeightOpt, filterHeightOpt) match {
+              case (Some(filterHeaderHeight), Some(filterHeight)) =>
+                Future.successful((filterHeaderHeight, filterHeight + 1))
+              case (_, _) => // If either are None
+                for {
+                  filterHeaderCount <- chainApi.getFilterHeaderCount()
+                  filterCount <- chainApi.getFilterCount()
+                } yield (filterHeaderCount, filterCount + 1)
+            }
           newSyncing <-
             if (batchSizeFull) {
               logger.info(
@@ -102,7 +107,7 @@ case class DataMessageHandler(
                                                      filter.blockHash.flip)
               } yield syncing
             } else {
-              val syncing = filterHeight < filterHeaderHeight - 1
+              val syncing = newFilterHeight < newFilterHeaderHeight
               if (!syncing) {
                 logger.info(s"We are synced")
               }
@@ -126,11 +131,13 @@ case class DataMessageHandler(
             } else Future.successful((filterBatch, chainApi))
 
         } yield {
-          this.copy(chainApi = newChainApi,
-                    currentFilterBatch = newBatch,
-                    syncing = newSyncing,
-                    filterHeaderHeight = newFilterHeaderHeight,
-                    filterHeight = newFilterHeight)
+          this.copy(
+            chainApi = newChainApi,
+            currentFilterBatch = newBatch,
+            syncing = newSyncing,
+            filterHeaderHeightOpt = Some(newFilterHeaderHeight),
+            filterHeightOpt = Some(newFilterHeight)
+          )
         }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
           _: GetBlocksMessage | _: GetCompactFiltersMessage |
