@@ -44,6 +44,43 @@ case class NeutrinoNode(
     res
   }
 
+  /** Starts to sync our node with our peer
+    * If our local best block hash is the same as our peers
+    * we will not sync, otherwise we will keep syncing
+    * until our best block hashes match up
+    *
+    * @return
+    */
+  override def sync(): Future[Unit] = {
+    for {
+      chainApi <- chainApiFromDb()
+      header <- chainApi.getBestBlockHeader()
+      filterHeaderCount <- chainApi.getFilterHeaderCount
+      filterCount <- chainApi.getFilterCount
+      peerMsgSender <- peerMsgSenderF
+    } yield {
+      peerMsgSender.sendGetHeadersMessage(header.hashBE.flip)
+
+      // If we have started syncing filters headers
+      if (filterHeaderCount != 0) {
+        peerMsgSender.sendNextGetCompactFilterHeadersCommand(
+          chainApi = chainApi,
+          filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
+          stopHash = header.hashBE)
+
+        // If we have started syncing filters
+        if (filterCount != filterHeaderCount)
+          peerMsgSender.sendNextGetCompactFilterCommand(
+            chainApi = chainApi,
+            filterBatchSize = chainConfig.filterBatchSize,
+            stopHash = header.hashBE)
+      }
+
+      logger.info(
+        s"Starting sync node, height=${header.height} hash=${header.hashBE.hex}")
+    }
+  }
+
   /** Gets the number of compact filters in the database */
   override def getFilterCount: Future[Int] =
     chainApiFromDb().flatMap(_.getFilterCount)
