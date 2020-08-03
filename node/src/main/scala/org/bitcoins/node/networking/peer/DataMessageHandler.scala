@@ -22,6 +22,8 @@ case class DataMessageHandler(
     chainApi: ChainApi,
     callbacks: NodeCallbacks,
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
+    filterHeaderHeight: Int = -1,
+    filterHeight: Int = -1,
     syncing: Boolean = false)(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
@@ -70,14 +72,27 @@ case class DataMessageHandler(
                 synced
               }
             }
+          newFilterHeaderHeight <-
+            if (filterHeaderHeight < 0) {
+              chainApi.getFilterHeaderCount()
+            } else Future.successful(filterHeaderHeight + filterHeaders.size)
         } yield {
-          this.copy(chainApi = newChainApi, syncing = newSyncing)
+          this.copy(chainApi = newChainApi,
+                    syncing = newSyncing,
+                    filterHeaderHeight = newFilterHeaderHeight)
         }
       case filter: CompactFilterMessage =>
         logger.debug(s"Received ${filter.commandName}, $filter")
         val batchSizeFull: Boolean =
           currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {
+          (newFilterHeaderHeight, newFilterHeight) <-
+            if (filterHeight < 0 || filterHeaderHeight < 0) {
+              for {
+                filterHeaderCount <- chainApi.getFilterHeaderCount()
+                filterCount <- chainApi.getFilterCount()
+              } yield (filterHeaderCount, filterCount + 1)
+            } else Future.successful((filterHeaderHeight, filterHeight + 1))
           newSyncing <-
             if (batchSizeFull) {
               logger.info(
@@ -87,17 +102,11 @@ case class DataMessageHandler(
                                                      filter.blockHash.flip)
               } yield syncing
             } else {
-              for {
-                filterHeaderCount <- chainApi.getFilterHeaderCount()
-                dbFilters <- chainApi.getFilterCount()
-              } yield {
-                val filterCount = dbFilters + currentFilterBatch.size
-                val syncing = filterCount < filterHeaderCount - 1
-                if (!syncing) {
-                  logger.info(s"We are synced")
-                }
-                syncing
+              val syncing = filterHeight < filterHeaderHeight - 1
+              if (!syncing) {
+                logger.info(s"We are synced")
               }
+              Future.successful(syncing)
             }
           // If we are not syncing or our filter batch is full, process the filters
           filterBatch = currentFilterBatch :+ filter
@@ -119,7 +128,9 @@ case class DataMessageHandler(
         } yield {
           this.copy(chainApi = newChainApi,
                     currentFilterBatch = newBatch,
-                    syncing = newSyncing)
+                    syncing = newSyncing,
+                    filterHeaderHeight = newFilterHeaderHeight,
+                    filterHeight = newFilterHeight)
         }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
           _: GetBlocksMessage | _: GetCompactFiltersMessage |
