@@ -4,13 +4,8 @@ import java.nio.file.{Files, Path, Paths}
 
 import ch.qos.logback.classic.Level
 import com.typesafe.config._
-import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
-import org.bitcoins.core.protocol.blockchain.{
-  ChainParams,
-  MainNetChainParams,
-  RegTestNetChainParams,
-  TestNetChainParams
-}
+import org.bitcoins.core.config._
+import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.{BitcoinSLogger, StartStop}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -129,14 +124,8 @@ abstract class AppConfig extends LoggerConfig with StartStop[Unit] {
   /** Chain parameters for the blockchain we're on */
   lazy val chain: ChainParams = {
     val networkStr = config.getString("network")
-    networkStr match {
-      case "mainnet"  => MainNetChainParams
-      case "testnet3" => TestNetChainParams
-      case "regtest"  => RegTestNetChainParams
-      case other: String =>
-        throw new IllegalArgumentException(
-          s"'$other' is not a recognized network! Available options: mainnet, testnet3, regtest")
-    }
+
+    BitcoinNetworks.fromString(networkStr).chainParams
   }
 
   /** The blockchain network we're on */
