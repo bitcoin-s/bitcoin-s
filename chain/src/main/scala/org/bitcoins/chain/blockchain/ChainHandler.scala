@@ -2,9 +2,12 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.chain.blockchain.BlockchainUpdate._
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.chain.validation.TipUpdateResult._
+import org.bitcoins.chain.validation.TipValidation
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.number.UInt32
@@ -93,6 +96,39 @@ case class ChainHandler(
     }
   }
 
+  private def handleLargeReorgHeaders(
+      blockchainUpdates: Vector[BlockchainUpdate]): Future[
+    Vector[BlockHeaderDb]] = {
+    val headersToCheck = blockchainUpdates.flatMap {
+      case Successful(_, _) => None
+      case Failed(_, _, failedHeader, tipUpdateFailure) =>
+        tipUpdateFailure match {
+          case BadPreviousBlockHash(_) => Some(failedHeader)
+          case BadPOW(_)               => None
+          case BadNonce(_)             => None
+        }
+    }
+
+    val headerWithPrevFs = headersToCheck.map { header =>
+      blockHeaderDAO
+        .read(header.previousBlockHashBE)
+        .map(_.flatMap { prev =>
+          // Do other checks now
+          TipValidation.checkNewTip(header, Blockchain(Vector(prev))) match {
+            case Success(headerDb) =>
+              Some(headerDb)
+            case _: Failure =>
+              None
+          }
+        })
+    }
+
+    for {
+      headersWithPrev <- Future.sequence(headerWithPrevFs)
+      created <- blockHeaderDAO.createAll(headersWithPrev.flatten.distinct)
+    } yield created
+  }
+
   /** @inheritdoc */
   override def processHeaders(
       headers: Vector[BlockHeader]): Future[ChainApi] = {
@@ -109,16 +145,28 @@ case class ChainHandler(
 
       val chains = blockchainUpdates.map(_.blockchain)
 
-      val createdF = blockHeaderDAO.createAll(headersToBeCreated)
+      val createdF = for {
+        successful <- blockHeaderDAO.createAll(headersToBeCreated)
+        others <- handleLargeReorgHeaders(blockchainUpdates)
+      } yield successful ++ others
 
-      val newChainHandler = this.copy(blockchains = chains)
+      val (totalWork, bestChains) = chains.groupBy(_.tip.chainWork).maxBy(_._1)
 
-      createdF.map { _ =>
-        chains.foreach { c =>
+      for {
+        created <- createdF
+        newChains <-
+          // If there is now a chain in our db with more work than our local chains
+          if (created.exists(_.chainWork > totalWork)) {
+            blockHeaderDAO.getBlockchains()
+          } else {
+            Future.successful(bestChains)
+          }
+      } yield {
+        newChains.foreach { c =>
           logger.info(s"Processed headers from height=${c(
             headers.length - 1).height} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
         }
-        newChainHandler
+        this.copy(blockchains = newChains)
       }
     }
   }
