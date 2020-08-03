@@ -125,7 +125,7 @@ case class ChainHandler(
 
     for {
       headersWithPrev <- Future.sequence(headerWithPrevFs)
-      created <- blockHeaderDAO.createAll(headersWithPrev.flatten.distinct)
+      created <- blockHeaderDAO.upsertAll(headersWithPrev.flatten.distinct)
     } yield created
   }
 
