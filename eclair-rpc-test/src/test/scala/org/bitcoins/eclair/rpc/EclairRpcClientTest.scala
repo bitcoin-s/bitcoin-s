@@ -223,9 +223,17 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       info <- client4.getInfo
       _ = assert(info.nodeId == invoice.nodeId)
       paymentId <- client1.payInvoice(invoice)
+      _ <-
+        EclairRpcTestUtil
+          .awaitUntilIncomingPaymentStatus[IncomingPaymentStatus.Received](
+            client4,
+            invoice.lnTags.paymentHash.hash,
+            duration = 1.second)
+
       _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1,
                                                         paymentId,
                                                         duration = 1.second)
+
       received <- client4.audit()
       relayed <- client2.audit()
       sent <- client1.audit()
