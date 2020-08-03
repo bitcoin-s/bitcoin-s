@@ -112,20 +112,36 @@ case class ChainHandler(
     val headerWithPrevFs = headersToCheck.map { header =>
       blockHeaderDAO
         .read(header.previousBlockHashBE)
-        .map(_.flatMap { prev =>
+        .map(_.map { prev =>
           // Do other checks now
-          TipValidation.checkNewTip(header, Blockchain(Vector(prev))) match {
-            case Success(headerDb) =>
-              Some(headerDb)
-            case _: Failure =>
-              None
+          val chainParams = chainConfig.chain
+
+          val chainF =
+            if (
+              chainParams.allowMinDifficultyBlocks && prev.nBits == chainParams.compressedPowLimit
+            ) {
+              blockHeaderDAO.getNAncestors(prev.hashBE, 2016)
+            } else Future.successful(Vector(prev))
+
+          chainF.map { chain =>
+            TipValidation.checkNewTip(header, Blockchain(chain)) match {
+              case Success(headerDb) =>
+                Some(headerDb)
+              case _: Failure =>
+                None
+            }
           }
         })
     }
 
+    val headersWithPrevF = for {
+      uncheckedHeaderFs <- Future.sequence(headerWithPrevFs).map(_.flatten)
+      checkedHeaders <- Future.sequence(uncheckedHeaderFs)
+    } yield checkedHeaders.flatten
+
     for {
-      headersWithPrev <- Future.sequence(headerWithPrevFs)
-      created <- blockHeaderDAO.upsertAll(headersWithPrev.flatten.distinct)
+      headersWithPrev <- headersWithPrevF
+      created <- blockHeaderDAO.upsertAll(headersWithPrev)
     } yield created
   }
 
