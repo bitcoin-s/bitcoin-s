@@ -5,10 +5,9 @@ import scodec.bits.ByteVector
 /**
   * Created by chris on 2/26/16.
   */
-sealed abstract class ECDigitalSignature {
+sealed abstract class ECDigitalSignature extends NetworkElement {
   require(r.signum == 1 || r.signum == 0, s"r must not be negative, got $r")
   require(s.signum == 1 || s.signum == 0, s"s must not be negative, got $s")
-  def hex: String = CryptoBytesUtil.encodeHex(bytes)
 
   override def equals(other: Any): Boolean =
     other match {
