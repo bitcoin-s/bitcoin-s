@@ -3,6 +3,7 @@ package org.bitcoins.feeprovider
 import org.bitcoins.core.api.FeeRateApi
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.feeprovider.MempoolSpaceTarget._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalatest.Assertion
 
@@ -22,6 +23,21 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
 
   it must "get a valid fee rate from BitGo with a block target" in {
     val provider = BitGoFeeRateProvider(Some(100))
+    testProvider(provider)
+  }
+
+  it must "get a valid fee rate from mempool.space using the fastest fee target" in {
+    val provider = MempoolSpaceProvider(FastestFeeTarget)
+    testProvider(provider)
+  }
+
+  it must "get a valid fee rate from mempool.space using a half hour fee target" in {
+    val provider = MempoolSpaceProvider(HalfHourFeeTarget)
+    testProvider(provider)
+  }
+
+  it must "get a valid fee rate from mempool.space using an hour fee target" in {
+    val provider = MempoolSpaceProvider(HourFeeTarget)
     testProvider(provider)
   }
 
