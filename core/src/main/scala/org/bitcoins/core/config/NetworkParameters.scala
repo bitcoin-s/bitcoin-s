@@ -177,7 +177,7 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
 
   /** Uses the notation used in `bitcoin.conf` */
   override def fromString(string: String): BitcoinNetwork =
-    string match {
+    string.toLowerCase match {
       case "mainnet"  => MainNet
       case "main"     => MainNet
       case "testnet3" => TestNet3
