@@ -1062,11 +1062,11 @@ object ConsoleCli {
         case Right(response) => response
       }
 
-      val js = ujson.read(rawBody)
       val jsObjT =
-        Try(js.obj).transform[mutable.LinkedHashMap[String, ujson.Value]](
-          Success(_),
-          _ => error(s"Response was not a JSON object! Got: $rawBody"))
+        Try(ujson.read(rawBody).obj)
+          .transform[mutable.LinkedHashMap[String, ujson.Value]](
+            Success(_),
+            _ => error(s"Response was not a JSON object! Got: $rawBody"))
 
       /** Gets the given key from jsObj if it exists
         * and is not null */
