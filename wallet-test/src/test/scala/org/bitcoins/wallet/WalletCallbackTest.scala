@@ -38,7 +38,9 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onNewAddressGenerated(callback)
 
-      val wallet = fundedWallet.wallet.addCallbacks(callbacks)
+      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+
+      val wallet = fundedWallet.wallet
 
       for {
         address <- wallet.getNewAddress()
@@ -61,7 +63,9 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onTransactionProcessed(callback)
 
-      val wallet = fundedWallet.wallet.addCallbacks(callbacks)
+      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+
+      val wallet = fundedWallet.wallet
 
       for {
         _ <- wallet.processTransaction(EmptyTransaction, None)
@@ -82,7 +86,9 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onTransactionBroadcast(callback)
 
-      val wallet = fundedWallet.wallet.addCallbacks(callbacks)
+      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+
+      val wallet = fundedWallet.wallet
 
       for {
         _ <- wallet.broadcastTransaction(EmptyTransaction)
@@ -107,7 +113,9 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onReservedUtxos(callback)
 
-      val wallet = fundedWallet.wallet.addCallbacks(callbacks)
+      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+
+      val wallet = fundedWallet.wallet
 
       for {
         utxos <- wallet.listUtxos()
@@ -134,7 +142,9 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       for {
         utxos <- fundedWallet.wallet.listUtxos()
         reserved <- fundedWallet.wallet.markUTXOsAsReserved(Vector(utxos.head))
-        wallet = fundedWallet.wallet.addCallbacks(callbacks)
+        _ = fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+
+        wallet = fundedWallet.wallet
 
         _ <- wallet.unmarkUTXOsAsReserved(reserved)
         result <- resultP.future

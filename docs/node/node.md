@@ -22,8 +22,8 @@ Bitcoin-S support call backs for the following events that happen on the bitcoin
 
 That means every time one of these events happens on the p2p network, we will call your callback
 so that you can be notified of the event. These callbacks will be run after the message has been
-recieved and will execute sequentially. If any of them failan error log will be output and the remainder of the callbacks will continue.
-Let's make a easy one
+recieved and will execute sequentially. If any of them fail an error log will be output and the remainder of the callbacks will continue.
+Let's make an easy one
 
 #### Example
 
@@ -121,13 +121,11 @@ Future.successful(
   println(s"Received blockhash=${block.blockHeader.hashBE}"))
 }
 
+// Create callback
 val nodeCallbacks = NodeCallbacks.onBlockReceived(blockReceivedFunc)
 
-//ok, now we need to add this allback to our running node
-val nodeWithCallbackF = for {
-  node <- startedNodeF
-  withCallback = node.addCallbacks(nodeCallbacks)
-} yield withCallback
+// Add call to our node's config
+nodeConfig.addCallbacks(nodeCallbacks)
 
 //let's test it out by generating a block with bitcoind!
 
@@ -144,7 +142,7 @@ val genBlockF = for {
 val cleanupF = for {
   _ <- genBlockF
   bitcoind <- bitcoindF
-  node <- nodeWithCallbackF
+  node <- startedNodeF
   x = NeutrinoNodeConnectedWithBitcoind(node.asInstanceOf[NeutrinoNode],bitcoind)
   _ <- NodeUnitTest.destroyNodeConnectedWithBitcoind(x)
 } yield ()

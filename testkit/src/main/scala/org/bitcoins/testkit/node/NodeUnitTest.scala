@@ -472,6 +472,9 @@ object NodeUnitTest extends P2PLogger {
       chainAppConfig: ChainAppConfig,
       nodeAppConfig: NodeAppConfig): Future[SpvNode] = {
     import system.dispatcher
+
+    nodeAppConfig.addCallbacks(callbacks)
+
     val checkConfigF = Future {
       assert(nodeAppConfig.isSPVEnabled)
       assert(!nodeAppConfig.isNeutrinoEnabled)
@@ -492,7 +495,7 @@ object NodeUnitTest extends P2PLogger {
       ).setBloomFilter(NodeTestUtil.emptyBloomFilter)
     }
 
-    nodeF.flatMap(_.addCallbacks(callbacks).start()).flatMap(_ => nodeF)
+    nodeF.flatMap(_.start()).flatMap(_ => nodeF)
   }
 
   /** Creates a Neutrino node peered with the given bitcoind client, this method
@@ -503,6 +506,9 @@ object NodeUnitTest extends P2PLogger {
       chainAppConfig: ChainAppConfig,
       nodeAppConfig: NodeAppConfig): Future[NeutrinoNode] = {
     import system.dispatcher
+
+    nodeAppConfig.addCallbacks(callbacks)
+
     val checkConfigF = Future {
       assert(!nodeAppConfig.isSPVEnabled)
       assert(nodeAppConfig.isNeutrinoEnabled)
@@ -521,7 +527,7 @@ object NodeUnitTest extends P2PLogger {
                    actorSystem = system)
     }
 
-    nodeF.flatMap(_.addCallbacks(callbacks).start()).flatMap(_ => nodeF)
+    nodeF.flatMap(_.start()).flatMap(_ => nodeF)
   }
 
 }

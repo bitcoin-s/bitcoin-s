@@ -5,9 +5,9 @@ import java.nio.file.Path
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
-import org.bitcoins.node.{NeutrinoNode, Node, SpvNode}
+import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer
 
@@ -35,6 +35,14 @@ case class NodeAppConfig(
   protected[bitcoins] def baseDatadir: Path = directory
 
   override def appConfig: NodeAppConfig = this
+
+  private val callbacks = new Mutable(NodeCallbacks.empty)
+
+  def nodeCallbacks: NodeCallbacks = callbacks.atomicGet
+
+  def addCallbacks(newCallbacks: NodeCallbacks): NodeCallbacks = {
+    callbacks.atomicUpdate(newCallbacks)(_ + _)
+  }
 
   /**
     * Ensures correct tables and other required information is in

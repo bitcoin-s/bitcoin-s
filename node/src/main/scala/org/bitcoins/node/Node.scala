@@ -11,7 +11,7 @@ import org.bitcoins.chain.models.{
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.{FutureUtil, Mutable}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{
@@ -45,14 +45,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   val peer: Peer
 
-  private val callbacks = new Mutable(NodeCallbacks.empty)
-
-  def nodeCallbacks: NodeCallbacks = callbacks.atomicGet
-
-  def addCallbacks(newCallbacks: NodeCallbacks): Node = {
-    callbacks.atomicUpdate(newCallbacks)(_ + _)
-    this
-  }
+  def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
 
   lazy val txDAO = BroadcastAbleTransactionDAO()
 

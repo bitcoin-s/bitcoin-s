@@ -84,20 +84,22 @@ object Main extends App with BitcoinSLogger {
     }
 
     //get a node that isn't started
-    val uninitializedNodeF = configInitializedF.flatMap { _ =>
+    val nodeF = configInitializedF.flatMap { _ =>
       nodeConf.createNode(peer)(chainConf, system)
     }
 
     //get our wallet
     val configuredWalletF = for {
       _ <- configInitializedF
-      uninitializedNode <- uninitializedNodeF
+      node <- nodeF
       chainApi <- chainApiF
       _ = logger.info("Initialized chain api")
-      wallet <- walletConf.createHDWallet(uninitializedNode,
+      wallet <- walletConf.createHDWallet(node,
                                           chainApi,
                                           BitcoinerLiveFeeRateProvider(60),
                                           bip39PasswordOpt)
+      callbacks <- createCallbacks(wallet)
+      _ = nodeConf.addCallbacks(callbacks)
     } yield {
       logger.info(s"Done configuring wallet")
       wallet
@@ -105,9 +107,9 @@ object Main extends App with BitcoinSLogger {
 
     //add callbacks to our uninitialized node
     val configuredNodeF = for {
-      uninitializedNode <- uninitializedNodeF
+      node <- nodeF
       wallet <- configuredWalletF
-      initNode <- addCallbacksAndBloomFilterToNode(uninitializedNode, wallet)
+      initNode <- setBloomFilter(node, wallet)
     } yield {
       logger.info(s"Done configuring node")
       initNode
@@ -197,9 +199,7 @@ object Main extends App with BitcoinSLogger {
     }
   }
 
-  private def addCallbacksAndBloomFilterToNode(node: Node, wallet: Wallet)(
-      implicit
-      nodeAppConfig: NodeAppConfig,
+  private def setBloomFilter(node: Node, wallet: Wallet)(implicit
       ec: ExecutionContext): Future[Node] = {
     for {
       nodeWithBloomFilter <- node match {
@@ -211,9 +211,8 @@ object Main extends App with BitcoinSLogger {
           } yield spvNode.setBloomFilter(bloom)
         case _: Node => Future.successful(node)
       }
-      callbacks <- createCallbacks(wallet)
     } yield {
-      nodeWithBloomFilter.addCallbacks(callbacks)
+      nodeWithBloomFilter
     }
   }
 
