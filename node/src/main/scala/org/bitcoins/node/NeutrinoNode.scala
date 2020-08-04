@@ -59,7 +59,10 @@ case class NeutrinoNode(
       filterCount <- chainApi.getFilterCount
       peerMsgSender <- peerMsgSenderF
     } yield {
-      peerMsgSender.sendGetHeadersMessage(header.hashBE.flip)
+      // Get all of our cached headers in case of a reorg
+      val cachedHeaders =
+        chainApi.blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      peerMsgSender.sendGetHeadersMessage(cachedHeaders)
 
       // If we have started syncing filters headers
       if (filterHeaderCount != 0) {

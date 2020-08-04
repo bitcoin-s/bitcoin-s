@@ -84,6 +84,14 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(headersMsg)
   }
 
+  def sendGetHeadersMessage(
+      hashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+    // GetHeadersMessage has a max of 101 hashes
+    val headersMsg = GetHeadersMessage(hashes.distinct.take(101))
+    logger.trace(s"Sending getheaders=$headersMsg to peer=${client.peer}")
+    sendMsg(headersMsg)
+  }
+
   def sendHeadersMessage(): Future[Unit] = {
     val sendHeadersMsg = SendHeadersMessage
     sendMsg(sendHeadersMsg)
