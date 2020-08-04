@@ -77,8 +77,8 @@ val wallet =
            feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one),
            creationTime = Instant.now)
 
-// Finally, we can add the callbacks to our wallet
-wallet.addCallbacks(exampleCallbacks)
+// Finally, we can add the callbacks to our wallet config
+walletConf.addCallbacks(exampleCallbacks)
 
 // Then to trigger the event we can run
 val exampleTx = Transaction(

@@ -16,7 +16,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, Mutable}
+import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
 import org.bitcoins.core.wallet.builder.{
   RawTxBuilderWithFinalizer,
   RawTxSigner,
@@ -86,14 +86,7 @@ abstract class Wallet
   val chainQueryApi: ChainQueryApi
   val creationTime: Instant = keyManager.creationTime
 
-  private val callbacks = new Mutable(WalletCallbacks.empty)
-
-  def walletCallbacks: WalletCallbacks = callbacks.atomicGet
-
-  def addCallbacks(newCallbacks: WalletCallbacks): Wallet = {
-    callbacks.atomicUpdate(newCallbacks)(_ + _)
-    this
-  }
+  def walletCallbacks: WalletCallbacks = walletConfig.walletCallbacks
 
   private def utxosWithMissingTx: Future[Vector[SpendingInfoDb]] = {
     for {

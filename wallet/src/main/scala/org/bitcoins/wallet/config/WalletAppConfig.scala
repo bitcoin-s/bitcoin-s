@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import com.typesafe.config.Config
 import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
 import org.bitcoins.core.hd._
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.keymanager.{
@@ -16,7 +16,7 @@ import org.bitcoins.keymanager.{
 }
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
-import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -43,6 +43,14 @@ case class WalletAppConfig(
   protected[bitcoins] def baseDatadir: Path = directory
 
   override def appConfig: WalletAppConfig = this
+
+  private val callbacks = new Mutable(WalletCallbacks.empty)
+
+  def walletCallbacks: WalletCallbacks = callbacks.atomicGet
+
+  def addCallbacks(newCallbacks: WalletCallbacks): WalletCallbacks = {
+    callbacks.atomicUpdate(newCallbacks)(_ + _)
+  }
 
   lazy val defaultAccountKind: HDPurpose =
     config.getString("wallet.defaultAccountType") match {
