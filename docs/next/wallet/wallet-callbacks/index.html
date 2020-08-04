@@ -113,8 +113,8 @@ Let's make an easy one:</p>
            feeRateApi = <span class="hljs-type">ConstantFeeRateProvider</span>(<span class="hljs-type">SatoshisPerVirtualByte</span>.one),
            creationTime = <span class="hljs-type">Instant</span>.now)
 
-<span class="hljs-comment">// Finally, we can add the callbacks to our wallet</span>
-wallet.addCallbacks(exampleCallbacks)
+<span class="hljs-comment">// Finally, we can add the callbacks to our wallet config</span>
+walletConf.addCallbacks(exampleCallbacks)
 
 <span class="hljs-comment">// Then to trigger the event we can run</span>
 <span class="hljs-keyword">val</span> exampleTx = <span class="hljs-type">Transaction</span>(
