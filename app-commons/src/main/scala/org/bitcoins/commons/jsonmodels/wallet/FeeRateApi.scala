@@ -22,3 +22,9 @@ case class BitGoResult(
     multiplier: Int,
     feeByBlockTarget: Map[Int, SatoshisPerKiloByte]
 ) extends FeeRateApiResult
+
+case class MempoolSpaceResult(
+    fastestFee: SatoshisPerVirtualByte,
+    halfHourFee: SatoshisPerVirtualByte,
+    hourFee: SatoshisPerVirtualByte
+) extends FeeRateApiResult
