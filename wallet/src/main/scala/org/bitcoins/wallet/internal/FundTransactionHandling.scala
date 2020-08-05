@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.{
   RawTxBuilder,
   RawTxBuilderWithFinalizer,
-  StandardNonInteractiveFinalizer
+  ShufflingNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
@@ -74,7 +74,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         CoinSelectionAlgo.AccumulateLargest,
       fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean = false): Future[(
-      RawTxBuilderWithFinalizer[StandardNonInteractiveFinalizer],
+      RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       Vector[ScriptSignatureParams[InputInfo]])] = {
     val utxosF = for {
       utxos <- fromTagOpt match {
@@ -170,7 +170,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       val txBuilder =
         RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
 
-      val finalizer = StandardNonInteractiveFinalizer(
+      val finalizer = ShufflingNonInteractiveFinalizer(
         utxoSpendingInfos.map(_.inputInfo),
         feeRate,
         change.scriptPubKey)
