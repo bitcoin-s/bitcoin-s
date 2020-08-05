@@ -138,8 +138,10 @@ private[blockchain] trait BaseBlockChainCompObject
                 //means we have a reorg, since we aren't connecting to latest tip
                 ConnectTipResult.Reorg(success, newChain)
               } else {
-                val newChain = Blockchain(
-                  success.headerDb +: blockchain.headers)
+                val olderChain = if (blockchain.size < 2016) {
+                  blockchain.headers
+                } else blockchain.headers.take(2015)
+                val newChain = Blockchain(success.headerDb +: olderChain)
                 //we just extended the latest tip
                 ConnectTipResult.ExtendChain(success, newChain)
               }
