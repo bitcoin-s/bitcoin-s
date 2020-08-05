@@ -311,7 +311,10 @@ case class DataMessageHandler(
     logger.info(s"Received inv=${invMsg}")
     val getData = GetDataMessage(invMsg.inventories.map {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
-        Inventory(TypeIdentifier.MsgFilteredBlock, hash)
+        // only request the merkle block if we are spv enabled
+        if (appConfig.isSPVEnabled) {
+          Inventory(TypeIdentifier.MsgFilteredBlock, hash)
+        } else Inventory(TypeIdentifier.MsgBlock, hash)
       case other: Inventory => other
     })
     peerMsgSender.sendMsg(getData)
