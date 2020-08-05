@@ -63,6 +63,9 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     res
   }
 
+  override def listTransactions(): Future[Vector[TransactionDb]] =
+    transactionDAO.findAll()
+
   private[wallet] case class ProcessTxResult(
       updatedIncoming: List[SpendingInfoDb],
       updatedOutgoing: List[SpendingInfoDb])

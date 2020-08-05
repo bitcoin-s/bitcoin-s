@@ -1,14 +1,7 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  EmptyTransaction,
-  Transaction,
-  TransactionOutput
-}
-import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.wallet.models.SpendingInfoDb
@@ -95,10 +88,6 @@ class WalletCallbackTest extends BitcoinSWalletTest {
         result <- resultP.future
       } yield assert(result == EmptyTransaction)
   }
-
-  private val dummyOutput = TransactionOutput(
-    10000.satoshis,
-    P2PKHScriptPubKey(ECPublicKey.freshPublicKey))
 
   it must "verify OnReservedUtxos callbacks are executed when reserving" in {
     fundedWallet: FundedWallet =>

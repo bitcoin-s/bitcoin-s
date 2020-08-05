@@ -5,7 +5,7 @@ import java.net.InetSocketAddress
 import org.bitcoins.core.util.BytesUtil
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.slf4j.LoggerFactory
-import org.zeromq.{ZFrame, ZMQ, ZMsg}
+import org.zeromq.{SocketType, ZFrame, ZMQ, ZMsg}
 import scodec.bits.ByteVector
 
 import scala.concurrent.Promise
@@ -38,7 +38,7 @@ class ZMQSubscriberTest extends AsyncFlatSpec {
     val socket = new InetSocketAddress("tcp://127.0.0.1", port)
 
     val context = ZMQ.context(1)
-    val publisher = context.socket(ZMQ.PUB)
+    val publisher = context.socket(SocketType.PUB)
 
     val uri = socket.getHostString + ":" + socket.getPort
     publisher.bind(uri)

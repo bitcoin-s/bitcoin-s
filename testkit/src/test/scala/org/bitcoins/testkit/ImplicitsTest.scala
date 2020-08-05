@@ -19,12 +19,13 @@ class ImplicitsTest extends BitcoinSUnitTest {
         List(succeed, assert(4 + 4 == 7), assert(true))
       assertions.toAssertion
     } catch {
-      case e: TestFailedException =>
+      case _: TestFailedException =>
         succeed
-      case e: Throwable => fail
+      case _: Throwable => fail
     }
   }
 
+  /* TODO fix the deprecation warning here
   it should "fail to flatten a lazy sequence of assertions where one has failed" in {
     try {
       val assertions: Stream[org.scalatest.Assertion] =
@@ -34,11 +35,12 @@ class ImplicitsTest extends BitcoinSUnitTest {
 
       assertions.toAssertion
     } catch {
-      case e: TestFailedException =>
+      case _: TestFailedException =>
         succeed
-      case e: Throwable => fail
+      case _: Throwable => fail
     }
   }
+   */
 
   it should "fail to flatten an empty list" in {
     intercept[TestFailedException] {

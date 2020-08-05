@@ -32,13 +32,17 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
     val WalletWithBitcoindRpc(wallet, _) = param
 
     for {
+      oldTransactions <- wallet.listTransactions()
       tx <- wallet.sendToAddress(testAddr,
                                  Satoshis(3000),
                                  Some(SatoshisPerByte(Satoshis(3))))
 
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+      newTransactions <- wallet.listTransactions()
     } yield {
       assert(updatedCoins.forall(_.state == TxoState.PendingConfirmationsSpent))
+      assert(!oldTransactions.map(_.transaction).contains(tx))
+      assert(newTransactions.map(_.transaction).contains(tx))
     }
   }
 
@@ -46,6 +50,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
     val WalletWithBitcoindRpc(wallet, bitcoind) = param
 
     for {
+      oldTransactions <- wallet.listTransactions()
       addr <- wallet.getNewAddress()
 
       txId <- bitcoind.sendToAddress(addr, Satoshis(3000))
@@ -59,9 +64,12 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       updatedCoin <-
         wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
+      newTransactions <- wallet.listTransactions()
     } yield {
       assert(
         updatedCoin.forall(_.state == TxoState.PendingConfirmationsReceived))
+      assert(!oldTransactions.map(_.transaction).contains(tx))
+      assert(newTransactions.map(_.transaction).contains(tx))
     }
   }
 
@@ -71,6 +79,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
     val dummyOutput = TransactionOutput(Satoshis(3000), EmptyScriptPubKey)
 
     for {
+      oldTransactions <- wallet.listTransactions()
       tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                       SatoshisPerVirtualByte.one,
                                       fromTagOpt = None,
@@ -78,9 +87,12 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       reserved <- wallet.listUtxos(TxoState.Reserved)
+      newTransactions <- wallet.listTransactions()
     } yield {
       assert(updatedCoins.forall(_.state == TxoState.Reserved))
       assert(updatedCoins.forall(reserved.contains))
+      assert(!oldTransactions.map(_.transaction).contains(tx))
+      assert(!newTransactions.map(_.transaction).contains(tx))
     }
   }
 
@@ -91,6 +103,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       val dummyOutput = TransactionOutput(Satoshis(3000), EmptyScriptPubKey)
 
       for {
+        oldTransactions <- wallet.listTransactions()
         tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                         SatoshisPerVirtualByte.one,
                                         fromTagOpt = None,
@@ -102,8 +115,11 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
         _ = assert(reservedUtxos.forall(allReserved.contains))
 
         unreservedUtxos <- wallet.unmarkUTXOsAsReserved(reservedUtxos.toVector)
+        newTransactions <- wallet.listTransactions()
       } yield {
         assert(unreservedUtxos.forall(_.state != TxoState.Reserved))
+        assert(!oldTransactions.map(_.transaction).contains(tx))
+        assert(!newTransactions.map(_.transaction).contains(tx))
       }
   }
 
@@ -114,6 +130,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       val dummyOutput = TransactionOutput(Satoshis(3000), EmptyScriptPubKey)
 
       for {
+        oldTransactions <- wallet.listTransactions()
         tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                         SatoshisPerVirtualByte.one,
                                         fromTagOpt = None,
@@ -125,8 +142,11 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
             .forall(allReserved.map(_.outPoint).contains))
 
         unreservedUtxos <- wallet.unmarkUTXOsAsReserved(tx)
+        newTransactions <- wallet.listTransactions()
       } yield {
         assert(unreservedUtxos.forall(_.state != TxoState.Reserved))
+        assert(!oldTransactions.map(_.transaction).contains(tx))
+        assert(!newTransactions.map(_.transaction).contains(tx))
       }
   }
 
@@ -139,6 +159,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
                           P2PKHScriptPubKey(ECPublicKey.freshPublicKey))
 
       for {
+        oldTransactions <- wallet.listTransactions()
         tx <- wallet.sendToOutputs(Vector(dummyOutput),
                                    Some(SatoshisPerVirtualByte.one))
         _ <- wallet.processTransaction(tx, None)
@@ -160,8 +181,11 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
         _ <- wallet.processBlock(block)
 
         newReserved <- wallet.listUtxos(TxoState.Reserved)
+        newTransactions <- wallet.listTransactions()
       } yield {
         assert(newReserved.isEmpty)
+        assert(!oldTransactions.map(_.transaction).contains(tx))
+        assert(newTransactions.map(_.transaction).contains(tx))
       }
   }
 

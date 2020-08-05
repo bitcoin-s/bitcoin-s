@@ -34,7 +34,7 @@ class WalletBloomTest extends BitcoinSWalletTest {
 
   it should "generate a bloom filter that matches the outpoints in our wallet" in {
     param =>
-      val WalletWithBitcoindRpc(walletApi, bitcoind) = param
+      val WalletWithBitcoindRpc(walletApi, _) = param
       val wallet = walletApi.asInstanceOf[Wallet]
 
       for {
