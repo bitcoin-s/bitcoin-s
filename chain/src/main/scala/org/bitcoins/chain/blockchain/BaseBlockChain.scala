@@ -139,7 +139,7 @@ private[blockchain] trait BaseBlockChainCompObject
                 ConnectTipResult.Reorg(success, newChain)
               } else {
                 val newChain = Blockchain(
-                  success.headerDb +: blockchain.headers)
+                  success.headerDb +: blockchain.headers.init)
                 //we just extended the latest tip
                 ConnectTipResult.ExtendChain(success, newChain)
               }
