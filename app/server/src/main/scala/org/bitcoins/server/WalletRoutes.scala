@@ -206,7 +206,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi, node: Node)(implicit
           }
       }
 
-    case ServerCommand("executedlcunilateralclose", arr) =>
+    case ServerCommand("executedlc", arr) =>
       ExecuteDLCUnilateralClose.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
