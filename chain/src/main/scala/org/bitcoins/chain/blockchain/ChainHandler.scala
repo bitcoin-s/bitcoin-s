@@ -109,7 +109,8 @@ case class ChainHandler(
 
       val chains = blockchainUpdates.map(_.blockchain)
 
-      val createdF = blockHeaderDAO.createAll(headersToBeCreated)
+      // During reorgs, we can be sent a header twice
+      val createdF = blockHeaderDAO.upsertAll(headersToBeCreated)
 
       val newChainHandler = this.copy(blockchains = chains)
 
