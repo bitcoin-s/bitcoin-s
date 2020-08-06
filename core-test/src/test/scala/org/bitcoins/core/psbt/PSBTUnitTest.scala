@@ -119,14 +119,16 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
     assert(psbtWithSigHash.bytes == nextExpected.bytes)
   }
 
-  it must "fail to create a InputPSBTMap with both a NonWitness and Witness UTXO" in {
+  it must "create a InputPSBTMap with both a NonWitness and Witness UTXO" in {
     val nonWitnessOrUnknownUTXO = NonWitnessOrUnknownUTXO(Transaction(
       "02000000019dfc6628c26c5899fe1bd3dc338665bfd55d7ada10f6220973df2d386dec12760100000000ffffffff01f03dcd1d000000001600147b3a00bfdc14d27795c2b74901d09da6ef13357900000000"))
     val witnessUTXO =
       WitnessUTXO(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
 
-    assertThrows[IllegalArgumentException](
-      InputPSBTMap(Vector(nonWitnessOrUnknownUTXO, witnessUTXO)))
+    val inputMap = InputPSBTMap(Vector(nonWitnessOrUnknownUTXO, witnessUTXO))
+
+    assert(
+      inputMap.bytes == hex"01005202000000019dfc6628c26c5899fe1bd3dc338665bfd55d7ada10f6220973df2d386dec12760100000000ffffffff01f03dcd1d000000001600147b3a00bfdc14d27795c2b74901d09da6ef1335790000000001010901000000000000000000")
   }
 
   it must "correctly filter a GlobalPSBTMap" in {
