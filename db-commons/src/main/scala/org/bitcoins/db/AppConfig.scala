@@ -6,7 +6,7 @@ import ch.qos.logback.classic.Level
 import com.typesafe.config._
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.core.util.{BitcoinSLogger, StartStop}
+import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -21,7 +21,7 @@ import scala.util.{Failure, Properties, Success, Try}
   * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
   *      for more information.
   */
-abstract class AppConfig extends LoggerConfig with StartStop[Unit] {
+abstract class AppConfig extends LoggerConfig with StartStopAsync[Unit] {
 
   private val logger = BitcoinSLogger.logger
 
