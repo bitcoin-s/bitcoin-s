@@ -8,7 +8,6 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeCallbacks, P2PLogger}
-import org.sqlite.SQLiteException
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -236,19 +235,18 @@ case class DataMessageHandler(
           s"Received block message with hash ${block.blockHeader.hash.flip}")
 
         val newApiF = {
-          // if we've already processed this header it will fail, but we should still try
-          try {
-            for {
-              processedApi <- chainApi.processHeader(block.blockHeader)
-              _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(
-                logger,
-                Vector(block.blockHeader))
-            } yield processedApi
-
-          } catch {
-            case _: SQLiteException =>
-              Future.successful(chainApi)
-          }
+          chainApi
+            .getHeader(block.blockHeader.hashBE)
+            .flatMap { headerOpt =>
+              if (headerOpt.isEmpty) {
+                for {
+                  processedApi <- chainApi.processHeader(block.blockHeader)
+                  _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(
+                    logger,
+                    Vector(block.blockHeader))
+                } yield processedApi
+              } else Future.successful(chainApi)
+            }
         }
 
         for {
