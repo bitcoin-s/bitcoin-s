@@ -8,6 +8,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeCallbacks, P2PLogger}
+import org.sqlite.SQLiteException
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -230,11 +231,34 @@ case class DataMessageHandler(
           this.copy(chainApi = newApi, syncing = newSyncing)
         }
       case msg: BlockMessage =>
+        val block = msg.block
         logger.info(
-          s"Received block message with hash ${msg.block.blockHeader.hash.flip}")
-        callbacks
-          .executeOnBlockReceivedCallbacks(logger, msg.block)
-          .map(_ => this)
+          s"Received block message with hash ${block.blockHeader.hash.flip}")
+
+        val newApiF = {
+          // if we've already processed this header it will fail, but we should still try
+          try {
+            for {
+              processedApi <- chainApi.processHeader(block.blockHeader)
+              _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(
+                logger,
+                Vector(block.blockHeader))
+            } yield processedApi
+
+          } catch {
+            case _: SQLiteException =>
+              Future.successful(chainApi)
+          }
+        }
+
+        for {
+          newApi <- newApiF
+          _ <-
+            callbacks
+              .executeOnBlockReceivedCallbacks(logger, block)
+        } yield {
+          this.copy(chainApi = newApi)
+        }
       case TransactionMessage(tx) =>
         MerkleBuffers.putTx(tx, callbacks).flatMap { belongsToMerkle =>
           if (belongsToMerkle) {
