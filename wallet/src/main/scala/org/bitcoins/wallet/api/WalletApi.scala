@@ -8,7 +8,6 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -71,8 +70,7 @@ trait WalletApi extends WalletLogger {
     * Takes in a block header and updates our TxoStates to the new chain tip
     * @param blockHeader Block header we are processing
     */
-  def updateUtxoPendingStates(
-      blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]]
+  def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]]
 
   /** Gets the sum of all UTXOs in this wallet */
   def getBalance()(implicit ec: ExecutionContext): Future[CurrencyUnit] = {

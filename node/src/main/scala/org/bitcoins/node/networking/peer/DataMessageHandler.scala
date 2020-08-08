@@ -230,11 +230,33 @@ case class DataMessageHandler(
           this.copy(chainApi = newApi, syncing = newSyncing)
         }
       case msg: BlockMessage =>
+        val block = msg.block
         logger.info(
-          s"Received block message with hash ${msg.block.blockHeader.hash.flip}")
-        callbacks
-          .executeOnBlockReceivedCallbacks(logger, msg.block)
-          .map(_ => this)
+          s"Received block message with hash ${block.blockHeader.hash.flip}")
+
+        val newApiF = {
+          chainApi
+            .getHeader(block.blockHeader.hashBE)
+            .flatMap { headerOpt =>
+              if (headerOpt.isEmpty) {
+                for {
+                  processedApi <- chainApi.processHeader(block.blockHeader)
+                  _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(
+                    logger,
+                    Vector(block.blockHeader))
+                } yield processedApi
+              } else Future.successful(chainApi)
+            }
+        }
+
+        for {
+          newApi <- newApiF
+          _ <-
+            callbacks
+              .executeOnBlockReceivedCallbacks(logger, block)
+        } yield {
+          this.copy(chainApi = newApi)
+        }
       case TransactionMessage(tx) =>
         MerkleBuffers.putTx(tx, callbacks).flatMap { belongsToMerkle =>
           if (belongsToMerkle) {

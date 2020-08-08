@@ -313,7 +313,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           }
 
           // Update Txo State
-          val updateF = updateUtxoConfirmedState(unreservedTxo, blockHash)
+          val updateF = updateUtxoConfirmedState(unreservedTxo)
 
           updateF.foreach(tx =>
             logger.debug(

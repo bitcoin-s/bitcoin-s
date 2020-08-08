@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
@@ -46,6 +47,36 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
     }
   }
 
+  it should "track a utxo state change to confirmed spent" in { param =>
+    val WalletWithBitcoindRpc(wallet, bitcoind) = param
+
+    for {
+      oldTransactions <- wallet.listTransactions()
+      tx <- wallet.sendToAddress(testAddr,
+                                 Satoshis(3000),
+                                 Some(SatoshisPerByte(Satoshis(3))))
+
+      updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+      newTransactions <- wallet.listTransactions()
+      _ = assert(updatedCoins.forall(_.state == PendingConfirmationsSpent))
+      _ = assert(!oldTransactions.map(_.transaction).contains(tx))
+      _ = assert(newTransactions.map(_.transaction).contains(tx))
+
+      // Give tx a fake hash so it can appear as it's in a block
+      hash <- bitcoind.getBestBlockHash
+      _ <- wallet.spendingInfoDAO.upsertAll(
+        updatedCoins.map(_.copyWithBlockHash(hash)).toVector)
+
+      // Put confirmations on top of the tx's block
+      _ <- bitcoind.getNewAddress.flatMap(
+        bitcoind.generateToAddress(wallet.walletConfig.requiredConfirmations,
+                                   _))
+      // Need to call this to actually update the state, normally a node callback would do this
+      _ <- wallet.updateUtxoPendingStates()
+      confirmedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+    } yield assert(confirmedCoins.forall(_.state == ConfirmedSpent))
+  }
+
   it should "track a utxo state change to pending recieved" in { param =>
     val WalletWithBitcoindRpc(wallet, bitcoind) = param
 
@@ -71,6 +102,44 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       assert(!oldTransactions.map(_.transaction).contains(tx))
       assert(newTransactions.map(_.transaction).contains(tx))
     }
+  }
+
+  it should "track a utxo state change to confirmed received" in { param =>
+    val WalletWithBitcoindRpc(wallet, bitcoind) = param
+
+    for {
+      oldTransactions <- wallet.listTransactions()
+      addr <- wallet.getNewAddress()
+
+      blockHash <- bitcoind.getBestBlockHash
+
+      txId <- bitcoind.sendToAddress(addr, Satoshis(3000))
+      tx <- bitcoind.getRawTransactionRaw(txId)
+      _ <- wallet.processOurTransaction(
+        transaction = tx,
+        feeRate = SatoshisPerByte(Satoshis(3)),
+        inputAmount = Satoshis(4000),
+        sentAmount = Satoshis(3000),
+        blockHashOpt = Some(blockHash), // give fake hash
+        newTags = Vector.empty
+      )
+
+      updatedCoin <-
+        wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
+      newTransactions <- wallet.listTransactions()
+      _ = assert(updatedCoin.forall(_.state == PendingConfirmationsReceived))
+      _ = assert(!oldTransactions.map(_.transaction).contains(tx))
+      _ = assert(newTransactions.map(_.transaction).contains(tx))
+
+      // Put confirmations on top of the tx's block
+      _ <- bitcoind.getNewAddress.flatMap(
+        bitcoind.generateToAddress(wallet.walletConfig.requiredConfirmations,
+                                   _))
+      // Need to call this to actually update the state, normally a node callback would do this
+      _ <- wallet.updateUtxoPendingStates()
+      confirmedCoins <-
+        wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
+    } yield assert(confirmedCoins.forall(_.state == ConfirmedReceived))
   }
 
   it should "track a utxo state change to reserved" in { param =>
