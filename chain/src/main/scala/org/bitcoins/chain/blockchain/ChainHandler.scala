@@ -441,11 +441,9 @@ case class ChainHandler(
     getBlockHeight(blockHash).flatMap {
       case None => FutureUtil.none
       case Some(blockHeight) =>
-        for {
-          tipHash <- getBestBlockHash()
-          tipHeightOpt <- getBlockHeight(tipHash)
-        } yield {
-          tipHeightOpt.map(tipHeight => tipHeight - blockHeight + 1)
+        blockHeaderDAO.chainTips.map { tips =>
+          val bestHeader = tips.maxBy(_.chainWork)
+          Some(bestHeader.height - blockHeight + 1)
         }
     }
   }
