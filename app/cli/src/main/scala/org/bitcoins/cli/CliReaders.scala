@@ -2,8 +2,8 @@ package org.bitcoins.cli
 
 import java.time.{ZoneId, ZonedDateTime}
 
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
@@ -13,6 +13,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import scopt._
 
@@ -145,6 +146,13 @@ object CliReaders {
 
       override def reads: String => PartialSignature =
         PartialSignature.fromHex
+    }
+
+  implicit val addressLabelTagReads: Read[AddressLabelTag] =
+    new Read[AddressLabelTag] {
+      val arity: Int = 1
+
+      val reads: String => AddressLabelTag = str => AddressLabelTag(str)
     }
 
   implicit val sha256DigestBEReads: Read[Sha256DigestBE] =

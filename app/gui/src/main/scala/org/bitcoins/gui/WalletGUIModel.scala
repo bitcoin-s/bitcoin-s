@@ -28,7 +28,7 @@ class WalletGUIModel() {
     taskRunner.run(
       caption = "Get New Address",
       op = {
-        ConsoleCli.exec(GetNewAddress, Config.empty) match {
+        ConsoleCli.exec(GetNewAddress(None), Config.empty) match {
           case Success(commandReturn) => address.value = commandReturn
           case Failure(err)           => throw err
         }

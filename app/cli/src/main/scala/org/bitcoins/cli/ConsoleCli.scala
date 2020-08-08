@@ -16,6 +16,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import scopt.OParser
 import ujson.{Num, Str}
@@ -582,8 +583,84 @@ object ConsoleCli {
               }))
         ),
       cmd("getnewaddress")
-        .action((_, conf) => conf.copy(command = GetNewAddress))
-        .text("Get a new address"),
+        .action((_, conf) => conf.copy(command = GetNewAddress(None)))
+        .text("Get a new address")
+        .children(
+          opt[AddressLabelTag]("label")
+            .text("The label name for the address to be linked to")
+            .action((label, conf) =>
+              conf.copy(command = conf.command match {
+                case getNewAddress: GetNewAddress =>
+                  getNewAddress.copy(labelOpt = Some(label))
+                case other => other
+              }))
+        ),
+      cmd("labeladdress")
+        .action((_, conf) =>
+          conf.copy(command = LabelAddress(null, AddressLabelTag(""))))
+        .text("Add a label to the wallet address")
+        .children(
+          arg[BitcoinAddress]("address")
+            .text("The address to label")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case labelAddress: LabelAddress =>
+                  labelAddress.copy(address = addr)
+                case other => other
+              })),
+          arg[AddressLabelTag]("label")
+            .text("The label name for the address to be linked to")
+            .required()
+            .action((label, conf) =>
+              conf.copy(command = conf.command match {
+                case labelAddress: LabelAddress =>
+                  labelAddress.copy(label = label)
+                case other => other
+              }))
+        ),
+      cmd("getaddresstags")
+        .action((_, conf) => conf.copy(command = GetAddressTags(null)))
+        .text("Get all the tags associated with this address")
+        .children(
+          arg[BitcoinAddress]("address")
+            .text("The address to get with the associated tags")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case getAddressTags: GetAddressTags =>
+                  getAddressTags.copy(address = addr)
+                case other => other
+              }))
+        ),
+      cmd("getaddresslabels")
+        .action((_, conf) => conf.copy(command = GetAddressLabels(null)))
+        .text("Get all the labels associated with this address")
+        .children(
+          arg[BitcoinAddress]("address")
+            .text("The address to get with the associated labels")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case getAddressLabels: GetAddressLabels =>
+                  getAddressLabels.copy(address = addr)
+                case other => other
+              }))
+        ),
+      cmd("dropaddresslabels")
+        .action((_, conf) => conf.copy(command = DropAddressLabels(null)))
+        .text("Drop all the labels associated with this address")
+        .children(
+          arg[BitcoinAddress]("address")
+            .text("The address to drop the associated labels of")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case dropAddressLabels: DropAddressLabels =>
+                  dropAddressLabels.copy(address = addr)
+                case other => other
+              }))
+        ),
       cmd("sendtoaddress")
         .action(
           // TODO how to handle null here?
@@ -963,8 +1040,17 @@ object ConsoleCli {
         RequestParam("getunconfirmedbalance", Seq(up.writeJs(isSats)))
       case GetAddressInfo(address) =>
         RequestParam("getaddressinfo", Seq(up.writeJs(address)))
-      case GetNewAddress =>
-        RequestParam("getnewaddress")
+      case GetNewAddress(labelOpt) =>
+        RequestParam("getnewaddress", Seq(up.writeJs(labelOpt)))
+      case LabelAddress(address, label) =>
+        RequestParam("labeladdress",
+                     Seq(up.writeJs(address), up.writeJs(label)))
+      case GetAddressTags(address) =>
+        RequestParam("getaddresstags", Seq(up.writeJs(address)))
+      case GetAddressLabels(address) =>
+        RequestParam("getaddresslabels", Seq(up.writeJs(address)))
+      case DropAddressLabels(address) =>
+        RequestParam("dropaddresslabels", Seq(up.writeJs(address)))
       case Rescan(addressBatchSize,
                   startBlock,
                   endBlock,
@@ -1239,7 +1325,17 @@ object CliCommand {
       hashMessage: Boolean,
       feeRateOpt: Option[SatoshisPerVirtualByte])
       extends CliCommand
-  case object GetNewAddress extends CliCommand
+
+  case class LabelAddress(address: BitcoinAddress, label: AddressLabelTag)
+      extends CliCommand
+
+  case class GetAddressTags(address: BitcoinAddress) extends CliCommand
+
+  case class GetAddressLabels(address: BitcoinAddress) extends CliCommand
+
+  case class DropAddressLabels(address: BitcoinAddress) extends CliCommand
+
+  case class GetNewAddress(labelOpt: Option[AddressLabelTag]) extends CliCommand
   case object GetUtxos extends CliCommand
   case object GetAddresses extends CliCommand
   case object GetSpentAddresses extends CliCommand
