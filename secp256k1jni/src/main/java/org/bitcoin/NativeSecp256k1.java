@@ -136,7 +136,7 @@ public class NativeSecp256k1 {
             byteBuff.order(ByteOrder.nativeOrder());
             nativeECDSABuffer.set(byteBuff);
         }
-        byteBuff.rewind();
+        safeRewind(byteBuff);
         byteBuff.put(data);
         byteBuff.put(seckey);
         byteBuff.put(entropy);
