@@ -441,9 +441,17 @@ case class ChainHandler(
     getBlockHeight(blockHash).flatMap {
       case None => FutureUtil.none
       case Some(blockHeight) =>
-        blockHeaderDAO.chainTips.map { tips =>
-          val bestHeader = tips.maxBy(_.chainWork)
-          Some(bestHeader.height - blockHeight + 1)
+        for {
+          tip <- getBestBlockHeader()
+          chains <-
+            blockHeaderDAO.getBlockchainsBetweenHeights(blockHeight, tip.height)
+        } yield {
+          val inBestChain = chains.exists(chain =>
+            chain.exists(_.hashBE == blockHash) && chain.exists(
+              _.hashBE == tip.hashBE))
+          if (inBestChain) {
+            Some(tip.height - blockHeight + 1)
+          } else None
         }
     }
   }
