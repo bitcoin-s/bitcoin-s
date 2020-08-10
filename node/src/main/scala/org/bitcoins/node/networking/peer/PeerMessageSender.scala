@@ -1,11 +1,14 @@
 package org.bitcoins.node.networking.peer
 
+import java.net.InetAddress
+
 import akka.actor.ActorRef
 import akka.io.Tcp
 import akka.util.Timeout
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.p2p.{NetworkMessage, _}
+import org.bitcoins.core.number.Int32
+import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{
@@ -64,6 +67,22 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     val versionMsg = VersionMessage(client.peer.socket, conf.network)
     logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
     sendMsg(versionMsg)
+  }
+
+  def sendVersionMessage(chainApi: ChainApi)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    chainApi.getBestHashBlockHeight().flatMap { height =>
+      val transmittingIpAddress = InetAddress.getLocalHost
+      val receivingIpAddress = client.peer.socket.getAddress
+      val versionMsg = VersionMessage(conf.network,
+                                      "/Bitcoin-S:0.3.0/",
+                                      Int32(height),
+                                      receivingIpAddress,
+                                      transmittingIpAddress)
+
+      logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
+      sendMsg(versionMsg)
+    }
   }
 
   def sendVerackMessage(): Future[Unit] = {
