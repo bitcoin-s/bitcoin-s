@@ -39,7 +39,8 @@ private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
 
   val tip: BlockHeaderDb = headers.head
 
-  require(headers.size <= 1 || headers(1).height == tip.height - 1)
+  require(headers.size <= 1 || headers(1).height == tip.height - 1,
+          s"Headers must be in descending order, got ${headers.take(5)}")
 
   /** The height of the chain */
   val height: Int = tip.height
@@ -118,7 +119,7 @@ private[blockchain] trait BaseBlockChainCompObject
           //found a header to connect to!
           val prevBlockHeader = blockchain.headers(prevHeaderIdx)
           logger.debug(
-            s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain of ${blockchain.length} headers")
+            s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain of ${blockchain.length} headers with tip ${blockchain.tip.hashBE.hex}")
           val chain = blockchain.fromValidHeader(prevBlockHeader)
           val tipResult =
             TipValidation.checkNewTip(newPotentialTip = header, chain)
