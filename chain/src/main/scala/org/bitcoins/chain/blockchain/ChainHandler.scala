@@ -104,7 +104,11 @@ case class ChainHandler(
       }
 
       val headersToBeCreated = {
-        blockchainUpdates.flatMap(_.successfulHeaders).distinct
+        // During reorgs, we can be sent a header twice
+        blockchainUpdates
+          .flatMap(_.successfulHeaders)
+          .distinct
+          .filterNot(blockchains.flatMap(_.headers).contains)
       }
 
       val chains = blockchainUpdates.map(_.blockchain)
@@ -234,16 +238,11 @@ case class ChainHandler(
                 s"Unexpected previous header's height: ${prevHeader.height} != ${filterHeadersToCreate.head.height - 1}"
               )
             case None =>
-              if (
-                firstFilter.previousFilterHeaderBE == DoubleSha256DigestBE.empty && firstFilter.height == 0
-              ) {
-                //we are ok, according to BIP157 the previous the genesis filter's prev hash should
-                //be the empty hash
-                ()
-              } else {
-                sys.error(
-                  s"Previous filter header does not exist: $firstFilter")
-              }
+              // If the previous filter header doesn't exist it must be for the genesis block
+              require(
+                firstFilter.previousFilterHeaderBE == DoubleSha256DigestBE.empty && firstFilter.height == 0,
+                s"Previous filter header does not exist: $firstFilter"
+              )
           }
         } else FutureUtil.unit
       _ <- filterHeaderDAO.createAll(filterHeadersToCreate)

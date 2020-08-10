@@ -318,10 +318,10 @@ case class BlockHeaderDAO()(implicit
       ec: ExecutionContext): Future[Vector[Blockchain]] = {
     val chainTipsF = chainTips
     chainTipsF.flatMap { tips =>
-      val nestedFuture: Vector[Future[Blockchain]] = tips.map { tip =>
-        getBlockchainFrom(tip)
+      val nestedFuture: Vector[Future[Vector[Blockchain]]] = tips.map { tip =>
+        getBlockchainsFrom(tip)
       }
-      Future.sequence(nestedFuture)
+      Future.sequence(nestedFuture).map(_.flatten)
     }
   }
 
@@ -333,6 +333,14 @@ case class BlockHeaderDAO()(implicit
     val headersF = getBetweenHeights(from = height, to = header.height)
     headersF.map(headers =>
       Blockchain.fromHeaders(headers.sortBy(_.height)(Ordering.Int.reverse)))
+  }
+
+  def getBlockchainsFrom(header: BlockHeaderDb)(implicit
+      ec: ExecutionContext): Future[Vector[Blockchain]] = {
+    val diffInterval = appConfig.chain.difficultyChangeInterval
+    val height = Math.max(0, header.height - diffInterval)
+
+    getBlockchainsBetweenHeights(from = height, to = header.height)
   }
 
   @tailrec

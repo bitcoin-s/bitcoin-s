@@ -245,6 +245,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
   }
 
+  // B
+  // C -> D
   it must "handle a very basic reorg where one chain is one block behind the best chain" in {
     chainHandler: ChainHandler =>
       val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
@@ -278,10 +280,38 @@ class ChainHandlerTest extends ChainDbUnitTest {
       for {
         chainHandler <- chainHandlerDF
         newHeaderD <- newHeaderDF
-        hash <- chainHandler.getBestBlockHash
+        hash <- chainHandler.getBestBlockHash()
       } yield {
         // assert that header D overtook header B
         assert(hash == newHeaderD.hashBE)
+      }
+  }
+
+  // G -> A -> B
+  // G -> C -> D -> E
+  it must "handle a reorg where one chain is two blocks behind the best chain" in {
+    chainHandler: ChainHandler =>
+      for {
+        genesis <- chainHandler.getBestBlockHeader()
+
+        oldFirst = BlockHeaderHelper.buildNextHeader(genesis)
+        oldSecond = BlockHeaderHelper.buildNextHeader(oldFirst)
+        startChain = Vector(oldFirst, oldSecond)
+
+        toBeReorged <-
+          chainHandler.processHeaders(startChain.map(_.blockHeader))
+        oldTip <- toBeReorged.getBestBlockHeader()
+        _ = assert(oldTip.hashBE == oldSecond.hashBE)
+
+        newFirst = BlockHeaderHelper.buildNextHeader(genesis)
+        newSecond = BlockHeaderHelper.buildNextHeader(newFirst)
+        third = BlockHeaderHelper.buildNextHeader(newSecond)
+        newChain = Vector(newFirst, newSecond, third)
+
+        reorged <- chainHandler.processHeaders(newChain.map(_.blockHeader))
+        newTip <- reorged.getBestBlockHeader()
+      } yield {
+        assert(newTip.hashBE == third.hashBE)
       }
   }
 
