@@ -4,7 +4,9 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.Config
-import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
+import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}

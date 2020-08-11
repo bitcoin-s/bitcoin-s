@@ -2,7 +2,10 @@ package org.bitcoins.wallet.internal
 
 import java.util.concurrent.Executors
 
-import org.bitcoins.core.api.ChainQueryApi.{FilterResponse, InvalidBlockRange}
+import org.bitcoins.core.api.chain.ChainQueryApi.{
+  FilterResponse,
+  InvalidBlockRange
+}
 import org.bitcoins.core.gcs.SimpleFilterMatcher
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
