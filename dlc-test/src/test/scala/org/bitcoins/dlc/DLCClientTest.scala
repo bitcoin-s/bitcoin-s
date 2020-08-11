@@ -1,13 +1,7 @@
 package org.bitcoins.dlc
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.DLCSign
-import org.bitcoins.commons.jsonmodels.dlc.{
-  CETSignatures,
-  DLCPublicKeys,
-  DLCStatus,
-  DLCTimeouts,
-  FundingSignatures
-}
+import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -18,7 +12,6 @@ import org.bitcoins.core.protocol.script.{
   P2WPKHWitnessSPKV0,
   P2WSHWitnessV0
 }
-import org.bitcoins.core.protocol.transaction
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
