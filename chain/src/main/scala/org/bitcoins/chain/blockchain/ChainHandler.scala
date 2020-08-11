@@ -448,11 +448,15 @@ case class ChainHandler(
           }
           ancestorChains <- Future.sequence(getNAncestorsFs)
         } yield {
-          ancestorChains.flatMap { chain =>
+          val confs = ancestorChains.flatMap { chain =>
             if (chain.last.hashBE == blockHash) {
               Some(chain.head.height - blockHeight + 1)
             } else None
-          }.maxOption
+          }
+
+          if (confs.nonEmpty) {
+            Some(confs.max)
+          } else None
         }
     }
   }
