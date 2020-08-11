@@ -153,6 +153,10 @@ object AddressLabelTagType extends InternalAddressTagType {
 
 case class AddressLabelTagName(name: String) extends InternalAddressTagName
 
+/** Used for generic address labeling, generally labels should be
+  * provided by the user so they keep track which parties are aware
+  * of which addresses
+  */
 case class AddressLabelTag(name: String) extends InternalAddressTag {
   override val tagType: AddressTagType = AddressLabelTagType
 
