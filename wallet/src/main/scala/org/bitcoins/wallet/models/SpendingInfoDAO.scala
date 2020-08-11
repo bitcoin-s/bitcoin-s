@@ -1,5 +1,7 @@
 package org.bitcoins.wallet.models
 
+import java.sql.SQLException
+
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
@@ -58,30 +60,31 @@ case class SpendingInfoDAO()(implicit
           .filter(_.scriptPubKey === si.output.scriptPubKey)
           .result
           .headOption
-      res <- spkOpt match {
+      utxo: UTXORecord <- spkOpt match {
         case Some(foundSpk) =>
           val utxo = UTXORecord.fromSpendingInfoDb(si, foundSpk.id.get)
-          val res = query += utxo
-          res.map(x => (x, foundSpk))
+          query += utxo
         case None =>
-          val spkQuery =
-            spkTable
-              .returning(table.map(_.id))
-              .into((t, id) => t.copyWithId(id = id))
-
           (for {
-            newSpk <- spkQuery += (ScriptPubKeyDb(si.output.scriptPubKey))
+            newSpkId <- spkTable += (ScriptPubKeyDb(si.output.scriptPubKey))
           } yield {
-            val utxo = UTXORecord.fromSpendingInfoDb(si, newSpk.id.get)
-            val res = query += utxo
-            res.map(x => (x, newSpk))
+            val utxo = UTXORecord.fromSpendingInfoDb(si, newSpkId)
+            query += utxo
           }).flatten
       }
-    } yield res
+      spk <-
+        spkTable
+          .filter(_.id === utxo.scriptPubKeyId)
+          .result
+          .headOption
+    } yield (utxo, spk)
 
     safeDatabase
       .run(actions.transactionally)
-      .map(utxo => utxo._1.toSpendingInfoDb(utxo._2.scriptPubKey))
+      .map {
+        case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
+        case _                 => throw new SQLException("unexpected result")
+      }
   }
 
   def upsertAllSpendingInfoDb(
@@ -103,22 +106,31 @@ case class SpendingInfoDAO()(implicit
           .filter(_.scriptPubKey === si.output.scriptPubKey)
           .result
           .headOption
-      res <- spkOpt match {
+      _ <- spkOpt match {
         case Some(foundSpk) =>
           val utxo = UTXORecord.fromSpendingInfoDb(si, foundSpk.id.get)
-          table.update(utxo)
+          table.filter(_.id === utxo.id).update(utxo)
         case None =>
           (for {
             newSpkId <- spkTable += (ScriptPubKeyDb(si.output.scriptPubKey))
           } yield {
             val utxo = UTXORecord.fromSpendingInfoDb(si, newSpkId)
-            table.update(utxo)
+            table.filter(_.id === utxo.id).update(utxo)
           }).flatten
       }
-    } yield res
+      utxo <- table.filter(_.id === si.id.get).result.headOption
+      spk <-
+        spkTable
+          .filter(_.scriptPubKey === si.output.scriptPubKey)
+          .result
+          .headOption
+    } yield (utxo, spk)
     safeDatabase
       .run(actions.transactionally)
-      .map(_ => si)
+      .map {
+        case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
+        case _                       => throw new SQLException("unexpected result")
+      }
   }
 
   def upsert(si: SpendingInfoDb): Future[SpendingInfoDb] = {
@@ -128,7 +140,7 @@ case class SpendingInfoDAO()(implicit
           .filter(_.scriptPubKey === si.output.scriptPubKey)
           .result
           .headOption
-      res <- spkOpt match {
+      _ <- spkOpt match {
         case Some(foundSpk) =>
           table.insertOrUpdate(
             UTXORecord.fromSpendingInfoDb(si, foundSpk.id.get))
@@ -139,10 +151,19 @@ case class SpendingInfoDAO()(implicit
           } yield table.insertOrUpdate(
             UTXORecord.fromSpendingInfoDb(si, newSpk.id.get))).flatten
       }
-    } yield res
+      utxo <- table.filter(_.id === si.id.get).result.headOption
+      spk <-
+        spkTable
+          .filter(_.scriptPubKey === si.output.scriptPubKey)
+          .result
+          .headOption
+    } yield (utxo, spk)
     safeDatabase
-      .run(DBIO.sequence(Seq(actions)).transactionally)
-      .map(_ => si)
+      .run(actions.transactionally)
+      .map {
+        case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
+        case _                       => throw new SQLException("unexpected result")
+      }
   }
 
   def delete(si: SpendingInfoDb): Future[Int] = {

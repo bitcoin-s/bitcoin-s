@@ -1,26 +1,11 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.protocol.script.{
-  CLTVScriptPubKey,
-  CSVScriptPubKey,
-  EmptyScriptPubKey,
-  MultiSignatureScriptPubKey,
-  MultiSignatureWithTimeoutScriptPubKey,
-  NonStandardIfConditionalScriptPubKey,
-  NonStandardNotIfConditionalScriptPubKey,
-  NonStandardScriptPubKey,
-  P2PKHScriptPubKey,
-  P2PKScriptPubKey,
-  P2PKWithTimeoutScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WSHWitnessSPKV0,
-  RawScriptPubKey,
-  WitnessCommitment
-}
+import java.sql.SQLException
+
+import org.bitcoins.core.protocol.script.{CLTVScriptPubKey, CSVScriptPubKey, EmptyScriptPubKey, MultiSignatureScriptPubKey, MultiSignatureWithTimeoutScriptPubKey, NonStandardIfConditionalScriptPubKey, NonStandardNotIfConditionalScriptPubKey, NonStandardScriptPubKey, P2PKHScriptPubKey, P2PKScriptPubKey, P2PKWithTimeoutScriptPubKey, P2SHScriptPubKey, P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0, RawScriptPubKey, WitnessCommitment}
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
-import org.bitcoins.testkit.fixtures.{WalletDAOFixture, WalletDAOs}
+import org.bitcoins.testkit.fixtures.{WalletDAOFixture}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.core.script.reserved._
 
@@ -28,7 +13,7 @@ class ScriptPubKeyDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   behavior of "ScriptPubKeyDAO"
 
   it must "be able to store and load spks" in { daos =>
-    val WalletDAOs(_, _, _, _, _, _, _, scriptPubKeyDAO) = daos
+    val scriptPubKeyDAO = daos.scriptPubKeyDAO
 
     val multisig = MultiSignatureScriptPubKey(
       2,
@@ -73,6 +58,18 @@ class ScriptPubKeyDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
       assert(actual.map(_.scriptPubKey) == spks.map(_.scriptPubKey))
     }
 
+  }
+
+  it must "fail inserting non unique scripts" in { daos =>
+    val scriptPubKeyDAO = daos.scriptPubKeyDAO
+    val pkh = P2PKHScriptPubKey(ECPublicKey.freshPublicKey)
+    val insertF = for {
+      _ <- scriptPubKeyDAO.create(ScriptPubKeyDb(pkh))
+      _ <- scriptPubKeyDAO.create(ScriptPubKeyDb(pkh))
+    } yield {
+      ()
+    }
+    recoverToSucceededIf[SQLException](insertF)
   }
 
 }

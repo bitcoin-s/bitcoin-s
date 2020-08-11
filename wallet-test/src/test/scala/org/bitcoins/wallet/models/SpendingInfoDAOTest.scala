@@ -23,11 +23,11 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
       addr <- addressDAO.create(getAddressDb(account))
 
       u1 = sampleLegacyUTXO(addr.scriptPubKey)
-      tx1 <- insertDummyIncomingTransaction(daos, u1)
+      _ <- insertDummyIncomingTransaction(daos, u1)
       utxo1 <- daos.utxoDAO.create(u1)
 
       u2 = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey)
-      tx2 <- insertDummyIncomingTransaction(daos, u2)
+      _ <- insertDummyIncomingTransaction(daos, u2)
       utxo2 <- daos.utxoDAO.create(u2)
 
       utxos = Vector(utxo1, utxo2)

@@ -1,5 +1,7 @@
 package org.bitcoins.wallet.models
 
+import java.sql.SQLException
+
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{HDAccount, HDChainType, HDCoinType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -48,24 +50,32 @@ case class AddressDAO()(implicit
       spkTable.filter(_.scriptPubKey === addressDb.scriptPubKey).result
     val actions = for {
       spkOpt: Option[ScriptPubKeyDb] <- spkFind.headOption
-      res <- spkOpt match {
+      _ <- spkOpt match {
         case Some(foundSpk) =>
           table += AddressRecord.fromAddressDb(addressDb, foundSpk.id.get)
         case None =>
-          for {
+          (for {
             newSpkId <- spkTable += (ScriptPubKeyDb(addressDb.scriptPubKey))
           } yield {
-            println(s"newSpkId=$newSpkId")
             val record = AddressRecord.fromAddressDb(addressDb, newSpkId)
-            println(s"record=$record")
             table += record
-          }
+          }).flatten
       }
-    } yield res
+      addr <- table.filter(_.address === addressDb.address).result.headOption
+      spk <-
+        spkTable
+          .filter(_.scriptPubKey === addressDb.scriptPubKey)
+          .result
+          .headOption
+    } yield (addr, spk)
 
     database
-      .run(DBIO.sequence(Seq(actions)).transactionally)
-      .map(_ => addressDb)
+      .run(actions.transactionally)
+      .map {
+        case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
+        case _                       => throw new SQLException("unexpected result")
+      }
+
   }
 
   def upsert(addressDb: AddressDb): Future[AddressDb] = {
@@ -73,22 +83,31 @@ case class AddressDAO()(implicit
       spkTable.filter(_.scriptPubKey === addressDb.scriptPubKey).result
     val actions = for {
       spkOpt: Option[ScriptPubKeyDb] <- spkFind.headOption
-      res <- spkOpt match {
+      _ <- spkOpt match {
         case Some(foundSpk) =>
           table.insertOrUpdate(
             AddressRecord.fromAddressDb(addressDb, foundSpk.id.get))
         case None =>
-          for {
+          (for {
             newSpk <- (spkTable returning spkTable) += (ScriptPubKeyDb(
               addressDb.scriptPubKey))
           } yield table.insertOrUpdate(
-            AddressRecord.fromAddressDb(addressDb, newSpk.id.get))
+            AddressRecord.fromAddressDb(addressDb, newSpk.id.get))).flatten
       }
-    } yield res
+      addr <- table.filter(_.address === addressDb.address).result.headOption
+      spk <-
+        spkTable
+          .filter(_.scriptPubKey === addressDb.scriptPubKey)
+          .result
+          .headOption
+    } yield (addr, spk)
 
     safeDatabase
-      .run(DBIO.sequence(Seq(actions)).transactionally)
-      .map(_ => addressDb)
+      .run(actions.transactionally)
+      .map {
+        case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
+        case _                       => throw new SQLException("unexpected result")
+      }
   }
 
   def delete(addressDb: AddressDb): Future[Int] = {
@@ -294,13 +313,6 @@ case class AddressDAO()(implicit
 
     def scriptWitness: Rep[Option[ScriptWitness]] = column("script_witness")
 
-    def fk_scriptPubKeyId: slick.lifted.ForeignKeyQuery[_, ScriptPubKeyDb] = {
-      val scriptPubKeyTable = spkTable
-      foreignKey("fk_scriptPubKeyId",
-                 sourceColumns = scriptPubKeyId,
-                 targetTableQuery = scriptPubKeyTable)(_.id)
-    }
-
     override def * =
       (purpose,
        accountCoin,
@@ -319,5 +331,12 @@ case class AddressDAO()(implicit
                  targetTableQuery = accountTable) { accountTable =>
         (accountTable.purpose, accountTable.coinType, accountTable.index)
       }
+
+    def fk_scriptPubKeyId: ForeignKeyQuery[_, ScriptPubKeyDb] = {
+      foreignKey("fk_spk",
+                 sourceColumns = scriptPubKeyId,
+                 targetTableQuery = spkTable)(_.id)
+    }
+
   }
 }
