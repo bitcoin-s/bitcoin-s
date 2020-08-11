@@ -443,18 +443,16 @@ case class ChainHandler(
       case Some(blockHeight) =>
         for {
           tips <- blockHeaderDAO.chainTips
-          chains <- blockHeaderDAO.getBlockchainsBetweenHeights(
-            blockHeight,
-            // max by height so we get the most chains since all tips will have same work
-            tips.maxBy(_.height).height)
-        } yield {
-          val confs = chains.flatMap { chain =>
-            val inChain = chain.exists(_.hashBE == blockHash) && chain.exists(
-              _.hashBE == chain.tip.hashBE)
-            if (inChain) Some(chain.tip.height - blockHeight + 1)
-            else None
+          getNAncestorsFs = tips.map { tip =>
+            blockHeaderDAO.getNAncestors(tip.hashBE, tip.height - blockHeight)
           }
-          confs.maxOption
+          ancestorChains <- Future.sequence(getNAncestorsFs)
+        } yield {
+          ancestorChains.flatMap { chain =>
+            if (chain.last.hashBE == blockHash) {
+              Some(chain.head.height - blockHeight + 1)
+            } else None
+          }.maxOption
         }
     }
   }
