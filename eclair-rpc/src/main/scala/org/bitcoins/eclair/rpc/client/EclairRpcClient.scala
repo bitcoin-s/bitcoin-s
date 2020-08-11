@@ -29,7 +29,7 @@ import org.bitcoins.core.protocol.ln.{
 }
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
-import org.bitcoins.core.util.{BytesUtil, FutureUtil, StartStop}
+import org.bitcoins.core.util.{BytesUtil, FutureUtil, StartStopAsync}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.eclair.rpc.api._
@@ -52,7 +52,7 @@ class EclairRpcClient(
     val instance: EclairInstance,
     binary: Option[File] = None)(implicit system: ActorSystem)
     extends EclairApi
-    with StartStop[EclairRpcClient] {
+    with StartStopAsync[EclairRpcClient] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 

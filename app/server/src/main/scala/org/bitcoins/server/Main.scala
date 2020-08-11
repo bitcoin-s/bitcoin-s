@@ -182,7 +182,7 @@ object Main extends App with BitcoinSLogger {
       if (headers.isEmpty) {
         FutureUtil.unit
       } else {
-        wallet.updateUtxoPendingStates(headers.last).map(_ => ())
+        wallet.updateUtxoPendingStates().map(_ => ())
       }
     }
     if (nodeConf.isSPVEnabled) {

@@ -7,9 +7,9 @@ import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
-import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -78,8 +78,10 @@ case class NodeAppConfig(
     */
   lazy val peers: Vector[String] = {
     val list = config.getStringList("node.peers")
-    0.until(list.size())
+    val strs = 0
+      .until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
+    strs.map(_.replace("localhost", "127.0.0.1"))
   }
 
   /** Starts the associated application */

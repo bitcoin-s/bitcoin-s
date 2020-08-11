@@ -10,7 +10,6 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.p2p.{NetworkMessage, _}
-import org.bitcoins.node.{NodeCallbacks, P2PLogger}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
@@ -20,6 +19,7 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
   Normal,
   Preconnection
 }
+import org.bitcoins.node.{NodeCallbacks, P2PLogger}
 
 import scala.concurrent.Future
 
@@ -60,7 +60,7 @@ class PeerMessageReceiver(
 
         val peerMsgSender = PeerMessageSender(client)
 
-        peerMsgSender.sendVersionMessage()
+        peerMsgSender.sendVersionMessage(dataMessageHandler.chainApi)
 
         val newRecv = toState(newState)
 

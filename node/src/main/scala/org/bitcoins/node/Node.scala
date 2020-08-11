@@ -185,7 +185,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
     } yield {
-      peerMsgSenderF.map(_.sendGetHeadersMessage(header.hashBE.flip))
+      // Get all of our cached headers in case of a reorg
+      val cachedHeaders =
+        chainApi.blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      peerMsgSenderF.map(_.sendGetHeadersMessage(cachedHeaders))
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE}")
     }

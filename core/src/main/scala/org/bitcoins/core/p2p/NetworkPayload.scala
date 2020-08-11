@@ -1257,14 +1257,25 @@ object VersionMessage extends Factory[VersionMessage] {
       network: NetworkParameters,
       receivingIpAddress: InetAddress,
       transmittingIpAddress: InetAddress): VersionMessage = {
+    VersionMessage(network,
+                   ProtocolVersion.userAgent,
+                   Int32.zero,
+                   receivingIpAddress,
+                   transmittingIpAddress)
+  }
+
+  def apply(
+      network: NetworkParameters,
+      userAgent: String,
+      startHeight: Int32,
+      receivingIpAddress: InetAddress,
+      transmittingIpAddress: InetAddress): VersionMessage = {
     val nonce = UInt64.zero
-    val userAgent = ProtocolVersion.userAgent
-    val startHeight = Int32.zero
     val relay = false
     VersionMessage(
       version = ProtocolVersion.default,
       services = ServiceIdentifier.NODE_NONE,
-      timestamp = Int64(java.time.Instant.now.toEpochMilli),
+      timestamp = Int64(java.time.Instant.now.getEpochSecond),
       addressReceiveServices = ServiceIdentifier.NODE_NONE,
       addressReceiveIpAddress = receivingIpAddress,
       addressReceivePort = network.port,

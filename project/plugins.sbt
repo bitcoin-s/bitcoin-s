@@ -12,7 +12,7 @@ addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 
 // export typed values from sbt configuration into Scala sources
-addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.9.0")
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.10.0")
 
 // ensure proper linkage across libraries in Scaladoc
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
@@ -25,7 +25,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.4.3")
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.3")
 
 // write markdown files with type-checked Scala
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.3")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.4")
 
 // SQL migrations
 addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.4.2")
