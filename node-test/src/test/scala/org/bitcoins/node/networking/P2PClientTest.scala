@@ -2,7 +2,6 @@ package org.bitcoins.node.networking
 
 import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestProbe}
-import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.p2p.{HeadersMessage, NetworkMessage, VersionMessage}
@@ -119,6 +118,7 @@ class P2PClientTest extends BitcoindRpcTest {
   override def beforeAll(): Unit = {
     implicit val chainConf = config.chainConf
     chainConf.migrate()
+    ()
   }
 
   override def afterAll(): Unit = {

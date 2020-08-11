@@ -392,7 +392,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       newTags: Vector[AddressTag]): Future[Seq[SpendingInfoDb]] = {
-    addressDAO.findAll().flatMap { addrs =>
+    addressDAO.findAllAddresses().flatMap { addrs =>
       val relevantOutsWithIdx: Seq[OutputWithIndex] = {
         val withIndex =
           transaction.outputs.zipWithIndex

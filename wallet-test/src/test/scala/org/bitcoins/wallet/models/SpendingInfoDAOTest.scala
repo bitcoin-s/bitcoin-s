@@ -16,23 +16,23 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   behavior of "SpendingInfoDAO"
 
   it must "be able to update multiple utxos" in { daos =>
-    val WalletDAOs(_, addressDAO, _, spendingInfoDAO, _, _, _) = daos
+    val WalletDAOs(_, addressDAO, _, spendingInfoDAO, _, _, _, _) = daos
 
     for {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- addressDAO.create(getAddressDb(account))
 
       u1 = sampleLegacyUTXO(addr.scriptPubKey)
-      _ <- insertDummyIncomingTransaction(daos, u1)
+      tx1 <- insertDummyIncomingTransaction(daos, u1)
       utxo1 <- daos.utxoDAO.create(u1)
 
       u2 = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey)
-      _ <- insertDummyIncomingTransaction(daos, u2)
+      tx2 <- insertDummyIncomingTransaction(daos, u2)
       utxo2 <- daos.utxoDAO.create(u2)
 
       utxos = Vector(utxo1, utxo2)
       changed = utxos.map(_.copyWithState(TxoState.DoesNotExist))
-      updated <- spendingInfoDAO.updateAll(changed)
+      updated <- spendingInfoDAO.updateAllSpendingInfoDb(changed)
     } yield assert(updated == changed)
   }
 
@@ -41,7 +41,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
     for {
       created <- WalletTestUtil.insertSegWitUTXO(daos)
-      read <- utxoDAO.read(created.id.get)
+      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(null)))
     } yield read match {
       case None                          => fail(s"Did not read back a UTXO")
       case Some(_: SegwitV0SpendingInfo) => succeed
@@ -53,7 +53,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val utxoDAO = daos.utxoDAO
     for {
       created <- WalletTestUtil.insertLegacyUTXO(daos)
-      read <- utxoDAO.read(created.id.get)
+      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(null)))
     } yield read match {
       case None                        => fail(s"Did not read back a UTXO")
       case Some(_: LegacySpendingInfo) => succeed
@@ -154,7 +154,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val utxoDAO = daos.utxoDAO
     for {
       created <- WalletTestUtil.insertNestedSegWitUTXO(daos)
-      read <- utxoDAO.read(created.id.get)
+      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(null)))
     } yield read match {
       case None                                => fail(s"Did not read back a UTXO")
       case Some(_: NestedSegwitV0SpendingInfo) => succeed

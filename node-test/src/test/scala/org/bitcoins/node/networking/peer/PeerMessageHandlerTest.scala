@@ -1,7 +1,5 @@
 package org.bitcoins.node.networking.peer
 
-import akka.testkit.TestKit
-import akka.util.Timeout
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -34,7 +32,7 @@ class PeerMessageHandlerTest extends NodeUnitTest {
     val p2pClientF = peerHandlerF.map(_.p2pClient)
 
     val _ =
-      bitcoindPeerF.flatMap(p => peerHandlerF.map(_.peerMsgSender.connect()))
+      bitcoindPeerF.flatMap(_ => peerHandlerF.map(_.peerMsgSender.connect()))
 
     val isConnectedF = TestAsyncUtil.retryUntilSatisfiedF(
       () => p2pClientF.flatMap(_.isConnected),

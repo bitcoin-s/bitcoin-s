@@ -45,7 +45,7 @@ import org.bitcoins.keymanager.{KeyManagerParams, KeyManagerUnlockError}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
-import org.bitcoins.wallet.models.{SpendingInfoDb, _}
+import org.bitcoins.wallet.models.{ScriptPubKeyDAO, SpendingInfoDb, _}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -74,6 +74,7 @@ abstract class Wallet
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
   private[wallet] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
   private[wallet] val transactionDAO: TransactionDAO = TransactionDAO()
+  private[wallet] val scriptPubKeyDAO: ScriptPubKeyDAO = ScriptPubKeyDAO()
 
   private[wallet] val incomingTxDAO: IncomingTransactionDAO =
     IncomingTransactionDAO()

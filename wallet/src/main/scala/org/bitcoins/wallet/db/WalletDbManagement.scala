@@ -41,6 +41,10 @@ trait WalletDbManagement extends DbManagement {
     OutgoingTransactionDAO()(ec, appConfig).table
   }
 
+  private lazy val spkTable: TableQuery[Table[_]] = {
+    ScriptPubKeyDAO()(ec, appConfig).table
+  }
+
   // Ordering matters here, tables with a foreign key should be listed after
   // the table that key references
   override lazy val allTables: List[TableQuery[Table[_]]] = {
@@ -50,7 +54,8 @@ trait WalletDbManagement extends DbManagement {
          txTable,
          incomingTxTable,
          utxoTable,
-         outgoingTxTable)
+         outgoingTxTable,
+         spkTable)
   }
 
 }

@@ -52,7 +52,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   def listUtxos(outPoints: Vector[TransactionOutPoint]): Future[
     Vector[SpendingInfoDb]] = {
     spendingInfoDAO
-      .findAll()
+      .findAllSpendingInfos()
       .map(_.filter(spendingInfo => outPoints.contains(spendingInfo.outPoint)))
   }
 
@@ -123,7 +123,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
                   txo
               }
             }
-            spendingInfoDAO.upsertAll(updatedTxos)
+            spendingInfoDAO.upsertAllSpendingInfoDb(updatedTxos)
         }
       }
     } yield stateChanges
@@ -254,7 +254,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
     for {
-      utxos <- spendingInfoDAO.updateAll(updated)
+      utxos <- spendingInfoDAO.updateAllSpendingInfoDb(updated)
       _ <- walletCallbacks.executeOnReservedUtxos(logger, utxos)
     } yield utxos
   }
@@ -289,7 +289,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }.flatten
 
     for {
-      updatedMempoolUtxos <- spendingInfoDAO.updateAll(mempoolUtxos)
+      updatedMempoolUtxos <-
+        spendingInfoDAO.updateAllSpendingInfoDb(mempoolUtxos)
       // update the confirmed ones
       updatedBlockUtxos <-
         FutureUtil

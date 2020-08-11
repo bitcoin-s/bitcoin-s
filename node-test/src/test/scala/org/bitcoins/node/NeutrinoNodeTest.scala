@@ -1,22 +1,16 @@
 package org.bitcoins.node
 
-import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
-import org.bitcoins.testkit.node.{
-  NeutrinoNodeFundedWalletBitcoind,
-  NodeTestUtil,
-  NodeUnitTest
-}
+import org.bitcoins.testkit.node.{NeutrinoNodeFundedWalletBitcoind, NodeTestUtil, NodeUnitTest}
 import org.scalatest.{DoNotDiscover, FutureOutcome}
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Future, Promise}
 
 @DoNotDiscover
 class NeutrinoNodeTest extends NodeUnitTest {
@@ -33,28 +27,28 @@ class NeutrinoNodeTest extends NodeUnitTest {
                                          getBIP39PasswordOpt(),
                                          Some(BitcoindVersion.Experimental))
 
-  private val testTimeout = 30.seconds
-  private var assertionP: Promise[Boolean] = Promise()
+//  private val testTimeout = 30.seconds
+//  private var assertionP: Promise[Boolean] = Promise()
   after {
     //reset assertion after a test runs, because we
     //are doing mutation to work around our callback
     //limitations, we can't currently modify callbacks
     //after a NeutrinoNode is constructed :-(
-    assertionP = Promise()
+//    assertionP = Promise()
   }
-  private var utxos: Set[ScriptPubKey] = _
+//  private var utxos: Set[ScriptPubKey] = _
 
-  private def blockCallback(block: Block): Future[Unit] = {
-    val scriptPubKeys =
-      block.transactions.flatMap(tx => tx.outputs.map(_.scriptPubKey)).toSet
-    assertionP
-      .success(utxos.intersect(scriptPubKeys) == utxos)
-      .future
-      .map(_ => ())
-  }
+//  private def blockCallback(block: Block): Future[Unit] = {
+//    val scriptPubKeys =
+//      block.transactions.flatMap(tx => tx.outputs.map(_.scriptPubKey)).toSet
+//    assertionP
+//      .success(utxos.intersect(scriptPubKeys) == utxos)
+//      .future
+//      .map(_ => ())
+//  }
 
   def callbacks: NodeCallbacks = {
-    NodeCallbacks(onBlockReceived = Vector(blockCallback))
+    NodeCallbacks() //(onBlockReceived = Vector(blockCallback))
   }
 
   behavior of "NeutrinoNode"

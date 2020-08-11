@@ -11,7 +11,7 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config.WalletAppConfig
-import slick.lifted.{ForeignKeyQuery, ProvenShape}
+import slick.lifted.ProvenShape
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,6 +35,11 @@ case class AddressTagDAO()(implicit
   private lazy val addressTable: slick.lifted.TableQuery[
     AddressDAO#AddressTable] = {
     AddressDAO().table
+  }
+
+  private lazy val spkTable: profile.api.TableQuery[
+    ScriptPubKeyDAO#ScriptPubKeyTable] = {
+    ScriptPubKeyDAO().table
   }
 
   override def createAll(
@@ -86,8 +91,26 @@ case class AddressTagDAO()(implicit
       tx: Transaction,
       network: NetworkParameters): Future[Vector[AddressTagDb]] = {
     val txIds = tx.inputs.map(_.previousOutput.txIdBE)
-    val infoQuery = spendingInfoTable.filter(_.txid.inSet(txIds))
-    val spendingInfosF = safeDatabase.runVec(infoQuery.result)
+
+    def findUtxos = {
+      val infoQuery = spendingInfoTable.filter(_.txid.inSet(txIds))
+      safeDatabase.runVec(infoQuery.result)
+    }
+
+    def findSpks(ids: Vector[Long]) = {
+      val spkQuery = spkTable.filter(_.id.inSet(ids))
+      safeDatabase.runVec(spkQuery.result)
+    }
+
+    val spendingInfosF = for {
+      utxos <- findUtxos
+      spks <-
+        if (utxos.isEmpty) Future.successful(Vector.empty)
+        else findSpks(utxos.map(_.scriptPubKeyId))
+    } yield {
+      val spksMap = spks.map(spk => (spk.id.get, spk.scriptPubKey)).toMap
+      utxos.map(utxo => utxo.toSpendingInfoDb(spksMap(utxo.scriptPubKeyId)))
+    }
 
     spendingInfosF.flatMap { spendingInfos =>
       if (spendingInfos.isEmpty) {
@@ -127,7 +150,7 @@ case class AddressTagDAO()(implicit
       (address, tagName, tagType) <> (fromTuple, toTuple)
 
     /** All tags must have an associated address */
-    def fk_address: ForeignKeyQuery[_, AddressDb] = {
+    def fk_address = {
       foreignKey("fk_address",
                  sourceColumns = address,
                  targetTableQuery = addressTable)(_.address)

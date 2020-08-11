@@ -12,15 +12,22 @@ sealed abstract class ScriptType {
 
   override def toString: String =
     this match {
-      case NONSTANDARD           => "nonstandard"
-      case PUBKEY                => "pubkey"
-      case PUBKEYHASH            => "pubkeyhash"
-      case SCRIPTHASH            => "scripthash"
-      case MULTISIG              => "multisig"
-      case NULLDATA              => "nulldata"
-      case WITNESS_V0_KEYHASH    => "witness_v0_keyhash"
-      case WITNESS_V0_SCRIPTHASH => "witness_v0_scripthash"
-      case WITNESS_UNKNOWN       => "witness_unknown"
+      case NONSTANDARD                => "nonstandard"
+      case PUBKEY                     => "pubkey"
+      case PUBKEYHASH                 => "pubkeyhash"
+      case SCRIPTHASH                 => "scripthash"
+      case MULTISIG                   => "multisig"
+      case CLTV                       => "cltv"
+      case CSV                        => "csv"
+      case NONSTANDARD_IF_CONDITIONAL => "nonstandard_if_conditional"
+      case NOT_IF_CONDITIONAL         => "not_if_conditional"
+      case MULTISIG_WITH_TIMEOUT      => "multisig_with_timeout"
+      case PUBKEY_WITH_TIMEOUT        => "pubkey_with_timeout"
+      case NULLDATA                   => "nulldata"
+      case WITNESS_V0_KEYHASH         => "witness_v0_keyhash"
+      case WITNESS_V0_SCRIPTHASH      => "witness_v0_scripthash"
+      case WITNESS_UNKNOWN            => "witness_unknown"
+      case WITNESS_COMMITMENT         => "witness_commitment"
     }
 }
 
@@ -33,15 +40,24 @@ sealed abstract class ScriptType {
   */
 object ScriptType {
 
-  private[script] val all: Seq[ScriptType] = Vector(NONSTANDARD,
-                                                    PUBKEY,
-                                                    PUBKEYHASH,
-                                                    SCRIPTHASH,
-                                                    MULTISIG,
-                                                    NULLDATA,
-                                                    WITNESS_V0_KEYHASH,
-                                                    WITNESS_V0_SCRIPTHASH,
-                                                    WITNESS_UNKNOWN)
+  private[script] val all: Seq[ScriptType] = Vector(
+    NONSTANDARD,
+    PUBKEY,
+    PUBKEYHASH,
+    SCRIPTHASH,
+    MULTISIG,
+    NULLDATA,
+    WITNESS_V0_KEYHASH,
+    WITNESS_V0_SCRIPTHASH,
+    WITNESS_UNKNOWN,
+    CLTV,
+    CSV,
+    NONSTANDARD_IF_CONDITIONAL,
+    NOT_IF_CONDITIONAL,
+    MULTISIG_WITH_TIMEOUT,
+    PUBKEY_WITH_TIMEOUT,
+    WITNESS_COMMITMENT
+  )
 
   def fromString(string: String): Option[ScriptType] =
     all.find(_.toString == string)
@@ -62,6 +78,14 @@ object ScriptType {
   final case object SCRIPTHASH extends ScriptType
   final case object MULTISIG extends ScriptType
 
+  final case object CLTV extends ScriptType
+  final case object CSV extends ScriptType
+  final case object NONSTANDARD_IF_CONDITIONAL extends ScriptType
+  final case object NOT_IF_CONDITIONAL extends ScriptType
+  final case object MULTISIG_WITH_TIMEOUT extends ScriptType
+
+  final case object PUBKEY_WITH_TIMEOUT extends ScriptType
+
   /** unspendable OP_RETURN script that carries data */
   final case object NULLDATA extends ScriptType
   final case object WITNESS_V0_KEYHASH extends ScriptType
@@ -69,4 +93,6 @@ object ScriptType {
 
   /** Only for Witness versions not already defined */
   final case object WITNESS_UNKNOWN extends ScriptType
+
+  final case object WITNESS_COMMITMENT extends ScriptType
 }

@@ -1,9 +1,8 @@
 package org.bitcoins.node
 
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BitcoinSUnitTest}
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.config.TestNet3
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.config.MainNet

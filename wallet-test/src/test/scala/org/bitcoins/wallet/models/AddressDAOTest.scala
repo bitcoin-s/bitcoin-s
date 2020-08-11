@@ -18,6 +18,10 @@ class AddressDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
         addressDAO.create(addressDb)
       }
 
+      readF.failed.foreach(_.printStackTrace())
+
+      readF.foreach(println)
+
       recoverToSucceededIf[SQLException](readF)
   }
 
@@ -34,7 +38,9 @@ class AddressDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
           val addressDb = WalletTestUtil.getAddressDb(createdAccount)
           addressDAO.create(addressDb)
         }
-        readAddress <- addressDAO.read(createdAddress.address)
+        readAddress <- {
+          addressDAO.read(createdAddress.address)
+        }
       } yield assert(readAddress.contains(createdAddress))
   }
 }
