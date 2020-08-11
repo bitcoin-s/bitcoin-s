@@ -5,6 +5,7 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   DLCOffer,
   DLCSign
 }
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.crypto.{
@@ -185,29 +186,33 @@ object DLCStatus {
           cetSig: ECDigitalSignature): SchnorrDigitalSignature = {
         val sigPubKey = oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
         val possibleOracleS =
-          sigPubKey.extractAdaptorSecret(adaptorSig, cetSig).fieldElement
+          sigPubKey
+            .extractAdaptorSecret(adaptorSig,
+                                  ECDigitalSignature(cetSig.bytes.dropRight(1)))
+            .fieldElement
         SchnorrDigitalSignature(preCommittedR, possibleOracleS)
       }
 
+      val outcomeValues = cet.outputs.map(_.value).sorted
+      val totalCollateral = offer.totalCollateral + accept.totalCollateral
+
+      val possibleMessages = offer.contractInfo.filter {
+        case (_, amt) =>
+          Vector(amt, totalCollateral - amt)
+            .filter(_ >= Policy.dustThreshold)
+            .sorted == outcomeValues
+      }.keys
+
       val (cetSig, outcomeSigs) = if (isInitiator) {
-        val localValue = cet.outputs.head.value
-        val possibleMessages =
-          offer.contractInfo.filter(_._2 == localValue).keys
-        val possibleOutcomeSigs = sign.cetSigs.outcomeSigs.filter {
-          case (msg, _) => possibleMessages.exists(_ == msg)
-        }
-        (cetSigs.head, possibleOutcomeSigs)
-      } else {
-        val localValue = cet.outputs.last.value
-        val localContractInfo = offer.contractInfo.map {
-          case (msg, amt) =>
-            msg -> (offer.totalCollateral + accept.totalCollateral - amt).satoshis
-        }
-        val possibleMessages = localContractInfo.filter(_._2 == localValue).keys
         val possibleOutcomeSigs = sign.cetSigs.outcomeSigs.filter {
           case (msg, _) => possibleMessages.exists(_ == msg)
         }
         (cetSigs.last, possibleOutcomeSigs)
+      } else {
+        val possibleOutcomeSigs = accept.cetSigs.outcomeSigs.filter {
+          case (msg, _) => possibleMessages.exists(_ == msg)
+        }
+        (cetSigs.head, possibleOutcomeSigs)
       }
 
       val sigOpt = outcomeSigs.find {

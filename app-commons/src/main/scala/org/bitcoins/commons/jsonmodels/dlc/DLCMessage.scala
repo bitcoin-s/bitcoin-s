@@ -291,7 +291,17 @@ object DLCMessage {
       pubKeys: DLCPublicKeys,
       fundingInputs: Vector[OutputReference],
       changeAddress: BitcoinAddress,
-      eventId: Sha256DigestBE)
+      eventId: Sha256DigestBE) {
+
+    def withSigs(cetSigs: CETSignatures): DLCAccept = {
+      DLCAccept(totalCollateral = totalCollateral,
+                pubKeys = pubKeys,
+                fundingInputs = fundingInputs,
+                changeAddress = changeAddress,
+                cetSigs = cetSigs,
+                eventId = eventId)
+    }
+  }
 
   case class DLCAccept(
       totalCollateral: Satoshis,

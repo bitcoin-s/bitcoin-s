@@ -42,14 +42,14 @@ case class TestDLCClient(
     fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(implicit
     ec: ExecutionContext)
     extends BitcoinSLogger {
-  private val dlcTxBuilder = DLCTxBuilder(offer, accept)
+  val dlcTxBuilder: DLCTxBuilder = DLCTxBuilder(offer, accept)
 
-  private val dlcTxSigner = DLCTxSigner(dlcTxBuilder,
-                                        isInitiator,
-                                        fundingPrivKey,
-                                        payoutPrivKey,
-                                        RegTest,
-                                        fundingUtxos)
+  val dlcTxSigner: DLCTxSigner = DLCTxSigner(dlcTxBuilder,
+                                             isInitiator,
+                                             fundingPrivKey,
+                                             payoutPrivKey,
+                                             RegTest,
+                                             fundingUtxos)
 
   private val dlcExecutor = DLCExecutor(dlcTxSigner)
 

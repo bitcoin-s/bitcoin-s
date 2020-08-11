@@ -11,6 +11,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.{ECAdaptorSignature, Sha256DigestBE}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
@@ -20,7 +21,8 @@ import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 /** Responsible for verifying all DLC signatures */
-case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
+case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
+    extends BitcoinSLogger {
   private lazy val fundingTx = Await.result(builder.buildFundingTx, 5.seconds)
 
   def verifyRemoteFundingSigs(remoteSigs: FundingSignatures): Boolean = {
@@ -35,20 +37,22 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
     remoteSigs.zipWithIndex
       .foldLeft(true) {
         case (ret, ((outPoint, sigs), index)) =>
+          val idx = index + remoteTweak
           if (ret) {
-            require(psbt.transaction.inputs(index).previousOutput == outPoint,
-                    "Adding signature for incorrect input")
+            if (psbt.transaction.inputs(idx).previousOutput != outPoint) {
+              logger.error("Adding signature for incorrect input")
 
-            val idx = index + remoteTweak
-
-            psbt
-              .addSignatures(sigs, idx)
-              .addWitnessUTXOToInput(remoteFundingInputs(index).output, idx)
-              .finalizeInput(idx) match {
-              case Success(finalized) =>
-                finalized.verifyFinalizedInput(idx)
-              case Failure(_) =>
-                false
+              false
+            } else {
+              psbt
+                .addSignatures(sigs, idx)
+                .addWitnessUTXOToInput(remoteFundingInputs(index).output, idx)
+                .finalizeInput(idx) match {
+                case Success(finalized) =>
+                  finalized.verifyFinalizedInput(idx)
+                case Failure(_) =>
+                  false
+              }
             }
           } else false
       }
