@@ -24,13 +24,7 @@ case class NodeRoutes(node: Node)(implicit system: ActorSystem)
           Server.httpSuccess("Node shutting down")
         }
 
-        val shutdownRunnable = new Runnable {
-          override def run(): Unit = {
-            sys.exit()
-          }
-        }
-
-        system.scheduler.scheduleOnce(3.seconds, shutdownRunnable)
+        system.scheduler.scheduleOnce(7.seconds)(sys.exit())
         nodeStopping
       }
 
