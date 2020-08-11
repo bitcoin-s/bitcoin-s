@@ -31,11 +31,6 @@ case class AddressDAO()(implicit
     SpendingInfoDAO().table
   }
 
-  private lazy val accountTable: slick.lifted.TableQuery[
-    AccountDAO#AccountTable] = {
-    AccountDAO().table
-  }
-
   private lazy val spkTable: profile.api.TableQuery[
     ScriptPubKeyDAO#ScriptPubKeyTable] = {
     ScriptPubKeyDAO().table
@@ -324,13 +319,6 @@ case class AddressDAO()(implicit
        hashedPubKey,
        scriptPubKeyId,
        scriptWitness) <> ((AddressRecord.apply _).tupled, AddressRecord.unapply)
-
-    def fk: ForeignKeyQuery[_, AccountDb] =
-      foreignKey("fk_account",
-                 sourceColumns = (purpose, accountCoin, accountIndex),
-                 targetTableQuery = accountTable) { accountTable =>
-        (accountTable.purpose, accountTable.coinType, accountTable.index)
-      }
 
     def fk_scriptPubKeyId: ForeignKeyQuery[_, ScriptPubKeyDb] = {
       foreignKey("fk_spk",

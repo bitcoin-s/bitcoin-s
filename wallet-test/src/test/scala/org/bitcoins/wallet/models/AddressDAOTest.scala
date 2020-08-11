@@ -9,29 +9,24 @@ class AddressDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
   behavior of "AddressDAO"
 
-  it should "fail to insert and read an address into the database without a corresponding account" in {
+  it should "fail to insert and read an address into the database without a corresponding public key script" in {
     daos =>
       val addressDAO = daos.addressDAO
       val readF = {
         val addressDb =
           WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb)
-//        addressDAO.create(addressDb)
         addressDAO.create(AddressRecord.fromAddressDb(addressDb, -1))
       }
       recoverToSucceededIf[SQLException](readF)
   }
 
-  it should "insert and read an address into the database with a corresponding account" in {
+  it should "insert and read an address into the database with a corresponding public key script" in {
     daos =>
-      val accountDAO = daos.accountDAO
       val addressDAO = daos.addressDAO
       for {
-        createdAccount <- {
-          val account = WalletTestUtil.firstAccountDb
-          accountDAO.create(account)
-        }
         createdAddress <- {
-          val addressDb = WalletTestUtil.getAddressDb(createdAccount)
+          val addressDb =
+            WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb)
           addressDAO.create(addressDb)
         }
         readAddress <- {
