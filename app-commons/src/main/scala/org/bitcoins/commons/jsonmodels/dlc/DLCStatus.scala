@@ -188,7 +188,7 @@ object DLCStatus {
         val possibleOracleS =
           sigPubKey
             .extractAdaptorSecret(adaptorSig,
-                                  ECDigitalSignature(cetSig.bytes.dropRight(1)))
+                                  ECDigitalSignature(cetSig.bytes.init))
             .fieldElement
         SchnorrDigitalSignature(preCommittedR, possibleOracleS)
       }

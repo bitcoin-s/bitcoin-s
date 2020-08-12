@@ -13,7 +13,6 @@ import org.bitcoins.core.protocol.script.{
   P2WSHWitnessV0
 }
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -30,7 +29,6 @@ import org.bitcoins.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalatest.Assertion
-import scodec.bits.ByteVector
 
 import scala.concurrent.{Future, Promise}
 
@@ -337,36 +335,6 @@ class DLCClientTest extends BitcoinSAsyncTest {
     Future.sequence(testFs).flatMap(_ => executeRefundCase(numOutcomes))
   }
 
-  private def flipAtIndex(bytes: ByteVector, byteIndex: Int): ByteVector = {
-    val (front, backWithToFlip) = bytes.splitAt(byteIndex)
-    val (toFlip, back) = backWithToFlip.splitAt(1)
-    front ++ toFlip.xor(ByteVector.fromByte(1)) ++ back
-  }
-
-  private def flipBit(fundingSigs: FundingSignatures): FundingSignatures = {
-    val (firstOutPoint, sigs) = fundingSigs.head
-    val badSigBytes = flipAtIndex(sigs.head.signature.bytes, 60)
-    val badSig = ECDigitalSignature(badSigBytes)
-    val badSigs =
-      sigs.tail.prepended(PartialSignature(sigs.head.pubKey, badSig))
-    FundingSignatures(fundingSigs.tail.+(firstOutPoint -> badSigs))
-  }
-
-  private def flipBit(cetSigs: CETSignatures): CETSignatures = {
-    val badOutcomeSigs = cetSigs.outcomeSigs.map {
-      case (outcome, sig) =>
-        val badSigBytes = flipAtIndex(sig.bytes, 40)
-        val badSig = ECAdaptorSignature(badSigBytes)
-        outcome -> badSig
-    }
-    val badRefundSigBytes =
-      flipAtIndex(cetSigs.refundSig.signature.bytes, 60)
-    val badRefundSig =
-      PartialSignature(cetSigs.refundSig.pubKey,
-                       ECDigitalSignature(badRefundSigBytes))
-    CETSignatures(badOutcomeSigs, badRefundSig)
-  }
-
   it should "fail on invalid funding signatures" in {
     val (offerClient, acceptClient, _) =
       constructDLCClients(numOutcomes = 3)
@@ -378,8 +346,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
       offerFundingSigs <- offerClient.dlcTxSigner.createFundingTxSigs()
       acceptFundingSigs <- acceptClient.dlcTxSigner.createFundingTxSigs()
 
-      badOfferFundingSigs = flipBit(offerFundingSigs)
-      badAcceptFundingSigs = flipBit(acceptFundingSigs)
+      badOfferFundingSigs = DLCTestUtil.flipBit(offerFundingSigs)
+      badAcceptFundingSigs = DLCTestUtil.flipBit(acceptFundingSigs)
 
       _ <- recoverToSucceededIf[RuntimeException] {
         offerClient.dlcTxSigner.signFundingTx(badAcceptFundingSigs)
@@ -409,8 +377,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
       offerCETSigs <- offerClient.dlcTxSigner.createCETSigs()
       acceptCETSigs <- acceptClient.dlcTxSigner.createCETSigs()
 
-      badOfferCETSigs = flipBit(offerCETSigs)
-      badAcceptCETSigs = flipBit(acceptCETSigs)
+      badOfferCETSigs = DLCTestUtil.flipBit(offerCETSigs)
+      badAcceptCETSigs = DLCTestUtil.flipBit(acceptCETSigs)
 
       cetFailures = outcomes.map { outcome =>
         val oracleSig =

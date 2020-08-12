@@ -1,8 +1,10 @@
 package org.bitcoins.testkit.dlc
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
+import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, FundingSignatures}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.crypto.{CryptoUtil, Sha256DigestBE}
+import org.bitcoins.testkit.util.BytesUtil
 import scodec.bits.ByteVector
 
 object DLCTestUtil {
@@ -43,5 +45,20 @@ object DLCTestUtil {
     }
 
     (ContractInfo(outcomeMap), ContractInfo(otherOutcomeMap))
+  }
+
+  def flipBit(fundingSigs: FundingSignatures): FundingSignatures = {
+    val (firstOutPoint, sigs) = fundingSigs.head
+    val badSig = BytesUtil.flipBit(sigs.head)
+    val badSigs = sigs.tail.+:(badSig)
+    FundingSignatures(fundingSigs.tail.+(firstOutPoint -> badSigs))
+  }
+
+  def flipBit(cetSigs: CETSignatures): CETSignatures = {
+    val badOutcomeSigs = cetSigs.outcomeSigs.map {
+      case (outcome, sig) => outcome -> BytesUtil.flipBit(sig)
+    }
+    val badRefundSig = BytesUtil.flipBit(cetSigs.refundSig)
+    CETSignatures(badOutcomeSigs, badRefundSig)
   }
 }
