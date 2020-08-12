@@ -14,3 +14,12 @@ DROP TABLE "addresses";
 CREATE TABLE IF NOT EXISTS "addresses" ("hd_purpose" INTEGER NOT NULL,"account_index" INTEGER NOT NULL,"hd_coin" INTEGER NOT NULL,"hd_chain_type" INTEGER NOT NULL,"address" TEXT PRIMARY KEY NOT NULL,"script_witness" TEXT,"script_pub_key_id" INT NOT NULL,"address_index" INTEGER NOT NULL,"pubkey" TEXT NOT NULL,"hashed_pubkey" TEXT NOT NULL,constraint "fk_spk" foreign key("script_pub_key_id") references "pub_key_scripts"("id") on update NO ACTION on delete NO ACTION);
 INSERT INTO "addresses" ("hd_purpose","account_index","hd_coin","hd_chain_type","address","script_witness","script_pub_key_id","address_index","pubkey","hashed_pubkey") SELECT a."hd_purpose",a."account_index",a."hd_coin",a."hd_chain_type",a."address",a."script_witness",s."id",a."address_index",a."pubkey",a."hashed_pubkey" FROM "addresses_backup" a, "pub_key_scripts" s WHERE s."script_pub_key" = a."script_pub_key";
 DROP TABLE "addresses_backup";
+
+-- wallet_address_tags_backup.fk_address was dropped along with address table, and we need to recreate it
+-- SQLite dosn't allow to create foreign key for existing tables, so we recreate the whole table here
+CREATE TABLE "wallet_address_tags_backup" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"address" VARCHAR(254) NOT NULL,"tag_name" VARCHAR(254) NOT NULL,"tag_type" VARCHAR(254) NOT NULL,constraint "fk_address" foreign key("address") references "addresses"("address") on update NO ACTION on delete NO ACTION);
+INSERT INTO "wallet_address_tags_backup" SELECT * FROM "wallet_address_tags";
+DROP TABLE "wallet_address_tags";
+CREATE TABLE "wallet_address_tags" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"address" VARCHAR(254) NOT NULL,"tag_name" VARCHAR(254) NOT NULL,"tag_type" VARCHAR(254) NOT NULL,constraint "fk_address" foreign key("address") references "addresses"("address") on update NO ACTION on delete NO ACTION);
+INSERT INTO "wallet_address_tags" SELECT * FROM "wallet_address_tags_backup";
+DROP TABLE "wallet_address_tags_backup";
