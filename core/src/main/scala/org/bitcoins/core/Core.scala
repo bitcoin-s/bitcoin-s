@@ -1,6 +1,6 @@
 package org.bitcoins.core
 
-import org.bitcoins.core.api.CoreApi
+import org.bitcoins.core.api.core.CoreApi
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.PSBT
 

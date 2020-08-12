@@ -1,5 +1,7 @@
 package org.bitcoins.db
 
+import org.bitcoins.core.api.db.DbRowAutoInc
+
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit

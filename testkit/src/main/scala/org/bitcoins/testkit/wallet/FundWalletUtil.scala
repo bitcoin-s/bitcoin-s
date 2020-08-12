@@ -2,7 +2,8 @@ package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress

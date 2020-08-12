@@ -49,7 +49,9 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.models._
 
 import org.bitcoins.core.api._
-import ChainQueryApi._
+import chain._
+import chain.ChainQueryApi.FilterResponse
+import node._
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.transaction._

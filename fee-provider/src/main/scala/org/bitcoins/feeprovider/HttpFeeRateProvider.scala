@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.util.ByteString
-import org.bitcoins.core.api.FeeRateApi
+import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 
