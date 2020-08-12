@@ -1,7 +1,7 @@
 package org.bitcoins.commons.serializers
 
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import upickle.default._
 
@@ -88,4 +89,7 @@ object Picklers {
 
   implicit val coinSelectionAlgoPickler: ReadWriter[CoinSelectionAlgo] =
     readwriter[String].bimap(_.toString, CoinSelectionAlgo.fromString(_).get)
+
+  implicit val addressLabelTagPickler: ReadWriter[AddressLabelTag] =
+    readwriter[String].bimap(_.name, AddressLabelTag)
 }

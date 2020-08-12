@@ -63,6 +63,16 @@ case class AddressTagDAO()(implicit
     safeDatabase.run(query.result).map(_.toVector)
   }
 
+  def findByAddressAndTag(
+      address: BitcoinAddress,
+      tagType: AddressTagType): Future[Vector[AddressTagDb]] = {
+    val query = table
+      .filter(_.address === address)
+      .filter(_.tagType === tagType)
+
+    safeDatabase.runVec(query.result)
+  }
+
   def findByTag(tag: AddressTag): Future[Vector[AddressTagDb]] = {
     val query = table
       .filter(_.tagName === tag.tagName)
@@ -79,7 +89,23 @@ case class AddressTagDAO()(implicit
   def findByTagType(tagType: AddressTagType): Future[Vector[AddressTagDb]] = {
     val query = table.filter(_.tagType === tagType)
 
-    safeDatabase.run(query.result).map(_.toVector)
+    safeDatabase.run(query.result.transactionally).map(_.toVector)
+  }
+
+  def dropByTagType(tagType: AddressTagType): Future[Int] = {
+    val query = table.filter(_.tagType === tagType)
+
+    safeDatabase.run(query.delete)
+  }
+
+  def dropByAddressAndTag(
+      address: BitcoinAddress,
+      tagType: AddressTagType): Future[Int] = {
+    val query = table
+      .filter(_.address === address)
+      .filter(_.tagType === tagType)
+
+    safeDatabase.run(query.delete)
   }
 
   def findTx(
@@ -106,7 +132,8 @@ case class AddressTagDAO()(implicit
   class AddressTagTable(t: Tag)
       extends Table[AddressTagDb](t, "wallet_address_tags") {
 
-    def address: Rep[BitcoinAddress] = column[BitcoinAddress]("address")
+    def address: Rep[BitcoinAddress] =
+      column[BitcoinAddress]("address", O.PrimaryKey)
 
     def tagName: Rep[AddressTagName] = column[AddressTagName]("tag_name")
 

@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import ujson._
 import upickle.default._
 
@@ -17,6 +18,106 @@ case class ServerCommand(method: String, params: ujson.Arr)
 
 object ServerCommand {
   implicit val rw: ReadWriter[ServerCommand] = macroRW
+}
+
+case class GetNewAddress(labelOpt: Option[AddressLabelTag])
+
+object GetNewAddress extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetNewAddress] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    val labelOpt = nullToOpt(jsArr.arr.head).map {
+      case Str(str) =>
+        AddressLabelTag(str)
+      case value: Value =>
+        throw Value.InvalidData(value, "Expected a String")
+    }
+
+    Try(GetNewAddress(labelOpt))
+  }
+}
+
+case class LabelAddress(address: BitcoinAddress, label: AddressLabelTag)
+
+object LabelAddress extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[LabelAddress] = {
+    jsArr.arr.toList match {
+      case addrJs :: labelJs :: Nil =>
+        Try {
+          val addr = jsToBitcoinAddress(addrJs)
+          val label = AddressLabelTag(labelJs.str)
+
+          LabelAddress(addr, label)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class GetAddressTags(address: BitcoinAddress)
+
+object GetAddressTags extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetAddressTags] = {
+    jsArr.arr.toList match {
+      case addrJs :: Nil =>
+        Try {
+          val addr = jsToBitcoinAddress(addrJs)
+
+          GetAddressTags(addr)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class GetAddressLabels(address: BitcoinAddress)
+
+object GetAddressLabels extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetAddressLabels] = {
+    jsArr.arr.toList match {
+      case addrJs :: Nil =>
+        Try {
+          val addr = jsToBitcoinAddress(addrJs)
+
+          GetAddressLabels(addr)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class DropAddressLabels(address: BitcoinAddress)
+
+object DropAddressLabels extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DropAddressLabels] = {
+    jsArr.arr.toList match {
+      case addrJs :: Nil =>
+        Try {
+          val addr = jsToBitcoinAddress(addrJs)
+
+          DropAddressLabels(addr)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
 }
 
 case class GetBalance(isSats: Boolean)

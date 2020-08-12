@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.wallet.utxo.AddressTag
+import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType}
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
@@ -404,6 +404,46 @@ private[wallet] trait AddressHandling extends WalletLogger {
                     path = address.path)
       }
     }
+  }
+
+  override def tagAddress(
+      address: BitcoinAddress,
+      tag: AddressTag): Future[AddressTagDb] = {
+    val addressTagDb = AddressTagDb(address, tag)
+    addressTagDAO.upsert(addressTagDb)
+  }
+
+  def getAddressTags(address: BitcoinAddress): Future[Vector[AddressTagDb]] = {
+    addressTagDAO.findByAddress(address)
+  }
+
+  override def getAddressTags(
+      address: BitcoinAddress,
+      tagType: AddressTagType): Future[Vector[AddressTagDb]] = {
+    addressTagDAO.findByAddressAndTag(address, tagType)
+  }
+
+  def getAddressTags: Future[Vector[AddressTagDb]] = {
+    addressTagDAO.findAll()
+  }
+
+  def getAddressTags(tagType: AddressTagType): Future[Vector[AddressTagDb]] = {
+    addressTagDAO.findByTagType(tagType)
+  }
+
+  override def dropAddressTag(addressTagDb: AddressTagDb): Future[Int] = {
+    addressTagDAO.delete(addressTagDb)
+  }
+
+  override def dropAddressTagType(
+      addressTagType: AddressTagType): Future[Int] = {
+    addressTagDAO.dropByTagType(addressTagType)
+  }
+
+  override def dropAddressTagType(
+      address: BitcoinAddress,
+      addressTagType: AddressTagType): Future[Int] = {
+    addressTagDAO.dropByAddressAndTag(address, addressTagType)
   }
 
   private val threadStarted = new AtomicBoolean(false)
