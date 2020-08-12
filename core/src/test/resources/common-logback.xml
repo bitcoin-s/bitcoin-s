@@ -86,7 +86,7 @@
     <logger name="slick.jdbc.JdbcBackend.benchmark" level="INFO"/>
 
     <!-- see what statements are executed by setting to DEBUG -->
-    <logger name="slick.jdbc.JdbcBackend.statement" level="INFO"/>
+    <logger name="slick.jdbc.JdbcBackend.statement" level="DEBUG"/>
 
     <!-- see what slick is compiling to in sql -->
     <logger name="slick.compiler" level="INFO"/>

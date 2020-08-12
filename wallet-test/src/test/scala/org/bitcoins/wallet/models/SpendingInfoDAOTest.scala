@@ -15,6 +15,40 @@ import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   behavior of "SpendingInfoDAO"
 
+  it should "preserve public key scripts" in { daos =>
+    val addressDAO = daos.addressDAO
+    val spendingInfoDAO = daos.utxoDAO
+
+    val addr1 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
+                                            addressIndex = 0)
+    val addr2 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
+                                            addressIndex = 1)
+    assert(addr1.scriptPubKey != addr2.scriptPubKey)
+
+    for {
+      createdAddr1 <- addressDAO.create(addr1)
+      createdAddr2 <- addressDAO.create(addr2)
+
+      u1 = sampleLegacyUTXO(addr1.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, u1)
+      utxo1 <- daos.utxoDAO.create(u1)
+
+      u2 = WalletTestUtil.sampleSegwitUTXO(addr2.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, u2)
+      utxo2 <- daos.utxoDAO.create(u2)
+
+      utxos = Vector(utxo1, utxo2)
+      changed = utxos.map(_.copyWithState(TxoState.DoesNotExist))
+      updated <- spendingInfoDAO.updateAllSpendingInfoDb(changed)
+    } yield {
+      assert(updated == changed)
+      assert(addr1 == createdAddr1)
+      assert(addr2 == createdAddr2)
+      assert(addr1.scriptPubKey == utxo1.output.scriptPubKey)
+      assert(addr2.scriptPubKey == utxo2.output.scriptPubKey)
+    }
+  }
+
   it must "be able to update multiple utxos" in { daos =>
     val WalletDAOs(_, addressDAO, _, spendingInfoDAO, _, _, _, _) = daos
 

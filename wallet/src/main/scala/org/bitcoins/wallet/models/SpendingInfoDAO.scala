@@ -66,7 +66,9 @@ case class SpendingInfoDAO()(implicit
           query += utxo
         case None =>
           (for {
-            newSpkId <- spkTable += (ScriptPubKeyDb(si.output.scriptPubKey))
+            newSpkId <-
+              (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
+                si.output.scriptPubKey))
           } yield {
             val utxo = UTXORecord.fromSpendingInfoDb(si, newSpkId)
             query += utxo
@@ -112,7 +114,9 @@ case class SpendingInfoDAO()(implicit
           table.filter(_.id === utxo.id).update(utxo)
         case None =>
           (for {
-            newSpkId <- spkTable += (ScriptPubKeyDb(si.output.scriptPubKey))
+            newSpkId <-
+              (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
+                si.output.scriptPubKey))
           } yield {
             val utxo = UTXORecord.fromSpendingInfoDb(si, newSpkId)
             table.filter(_.id === utxo.id).update(utxo)
@@ -146,10 +150,11 @@ case class SpendingInfoDAO()(implicit
             UTXORecord.fromSpendingInfoDb(si, foundSpk.id.get))
         case None =>
           (for {
-            newSpk <- (spkTable returning spkTable) += (ScriptPubKeyDb(
-              si.output.scriptPubKey))
+            newSpkId <-
+              (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
+                si.output.scriptPubKey))
           } yield table.insertOrUpdate(
-            UTXORecord.fromSpendingInfoDb(si, newSpk.id.get))).flatten
+            UTXORecord.fromSpendingInfoDb(si, newSpkId))).flatten
       }
       utxo <- table.filter(_.id === si.id.get).result.headOption
       spk <-

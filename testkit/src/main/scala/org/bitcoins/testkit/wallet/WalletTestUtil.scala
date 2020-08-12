@@ -168,11 +168,11 @@ object WalletTestUtil {
   }
 
   /** Given an account returns a sample address */
-  def getAddressDb(account: AccountDb): AddressDb = {
+  def getAddressDb(account: AccountDb, addressIndex: Int = 0): AddressDb = {
     val path = SegWitHDPath(WalletTestUtil.hdCoinType,
                             chainType = HDChainType.External,
                             accountIndex = account.hdAccount.index,
-                            addressIndex = 0)
+                            addressIndex = addressIndex)
     val pubkey: ECPublicKey = ECPublicKey.freshPublicKey
     val hashedPubkey = CryptoUtil.sha256Hash160(pubkey.bytes)
     val wspk = P2WPKHWitnessSPKV0(pubkey)
