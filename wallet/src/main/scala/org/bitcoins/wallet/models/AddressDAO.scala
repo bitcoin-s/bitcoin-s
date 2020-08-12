@@ -50,7 +50,9 @@ case class AddressDAO()(implicit
           table += AddressRecord.fromAddressDb(addressDb, foundSpk.id.get)
         case None =>
           (for {
-            newSpkId <- spkTable += (ScriptPubKeyDb(addressDb.scriptPubKey))
+            newSpkId <-
+              (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
+                addressDb.scriptPubKey))
           } yield {
             val record = AddressRecord.fromAddressDb(addressDb, newSpkId)
             table += record
@@ -84,10 +86,11 @@ case class AddressDAO()(implicit
             AddressRecord.fromAddressDb(addressDb, foundSpk.id.get))
         case None =>
           (for {
-            newSpk <- (spkTable returning spkTable) += (ScriptPubKeyDb(
-              addressDb.scriptPubKey))
+            newSpkId <-
+              (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
+                addressDb.scriptPubKey))
           } yield table.insertOrUpdate(
-            AddressRecord.fromAddressDb(addressDb, newSpk.id.get))).flatten
+            AddressRecord.fromAddressDb(addressDb, newSpkId))).flatten
       }
       addr <- table.filter(_.address === addressDb.address).result.headOption
       spk <-
