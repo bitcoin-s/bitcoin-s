@@ -1,6 +1,6 @@
 package org.bitcoins.server
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
@@ -14,6 +14,7 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.Core
+import org.bitcoins.core.config.{BitcoinNetworks, MainNet, RegTest, TestNet3}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NetworkUtil}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
@@ -28,21 +29,41 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 object Main extends App with BitcoinSLogger {
 
   private def runMain(): Unit = {
-    implicit val system: ActorSystem = ActorSystem("bitcoin-s")
-    implicit val ec: ExecutionContext = system.dispatcher
     val argsWithIndex = args.zipWithIndex
 
-    implicit val conf: BitcoinSAppConfig = {
+    val dataDirIndexOpt = {
+      argsWithIndex.find(_._1.toLowerCase == "--datadir")
+    }
+    val datadirPath = dataDirIndexOpt match {
+      case None => AppConfig.DEFAULT_BITCOIN_S_DATADIR
+      case Some((_, dataDirIndex)) =>
+        val str = args(dataDirIndex + 1)
+        Paths.get(str)
+    }
 
-      val dataDirIndexOpt = {
-        argsWithIndex.find(_._1.toLowerCase == "--datadir")
+    val baseConfig = AppConfig.getBaseConfig(datadirPath)
+
+    val networkStr = baseConfig.getString("bitcoin-s.network")
+    val network = BitcoinNetworks.fromString(networkStr)
+
+    val datadir: Path = {
+      val lastDirname = network match {
+        case MainNet  => "mainnet"
+        case TestNet3 => "testnet3"
+        case RegTest  => "regtest"
       }
-      val datadirPath = dataDirIndexOpt match {
-        case None => AppConfig.DEFAULT_BITCOIN_S_DATADIR
-        case Some((_, dataDirIndex)) =>
-          val str = args(dataDirIndex + 1)
-          Paths.get(str)
-      }
+      datadirPath.resolve(lastDirname)
+    }
+
+    System.setProperty("bitcoins.log.location",
+                       datadir.resolve("bitcoin-s.log").toAbsolutePath.toString)
+
+    implicit val system: ActorSystem = ActorSystem("bitcoin-s", baseConfig)
+    implicit val ec: ExecutionContext = system.dispatcher
+
+    system.log.info("Akka logger started")
+
+    implicit val conf: BitcoinSAppConfig = {
       BitcoinSAppConfig(datadirPath)
     }
 
