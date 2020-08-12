@@ -98,6 +98,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       case (Some(blockHash), txos) =>
         chainQueryApi.getNumberOfConfirmations(blockHash).map {
           case None =>
+            logger.warn(
+              s"Given txos exist in block (${blockHash.hex}) that we do not have! $txos")
             Vector.empty
           case Some(confs) =>
             txos.map { txo =>
@@ -106,7 +108,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
                   if (confs >= walletConfig.requiredConfirmations) {
                     txo.copyWithState(TxoState.ConfirmedReceived)
                   } else {
-                    txo.copyWithState(TxoState.PendingConfirmationsReceived)
+                    txo
                   }
                 case TxoState.PendingConfirmationsSpent =>
                   if (confs >= walletConfig.requiredConfirmations) {
@@ -124,7 +126,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
               }
             }
         }
-      case (None, _) =>
+      case (None, txos) =>
+        logger.debug(s"Currently have ${txos.size} transactions in the mempool")
         Future.successful(Vector.empty)
     }
 
@@ -316,6 +319,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   override def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]] = {
     for {
       infos <- spendingInfoDAO.findAllPendingConfirmation
+      _ = logger.debug(s"Updating states of ${infos.size} pending utxos...")
       updatedInfos <- updateUtxoConfirmedStates(infos)
     } yield updatedInfos
   }
