@@ -19,7 +19,7 @@ The server project provides a away to access information from these three projec
 You can build the server with the [sbt native packager](https://github.com/sbt/sbt-native-packager).
 The native packager offers [numerous ways to package the project](https://github.com/sbt/sbt-native-packager#examples).
 
-In this example we are going to use `stage` which will produce bash scripts we can easily execute. You can stage the server with the following command
+In this example we are going to use `stage` which will produce bash scripts we can easily execute. You can stage the server with the following command.
 
 ```bash
  $ sbt appServer/universal:stage
@@ -31,10 +31,18 @@ This will produce a script to execute bitcoin-s which you can start with
 $ ./app/server/target/universal/stage/bin/bitcoin-s-server
 ```
 
+### Configuration
+
 If you would like to pass in a custom datadir for your server, you can do
 
 ```bash
 ./app/server/target/universal/stage/bin/bitcoin-s-server --datadir /path/to/datadir/
+```
+
+To use a config file that is not the `bitcoin-s.conf` file in your datadir, you can do
+
+```bash
+./app/server/target/universal/stage/bin/bitcoin-s-server --conf /path/to/file.conf
 ```
 
 You can also pass in a custom `rpcport` to bind to

@@ -45,7 +45,7 @@ object Main extends App with BitcoinSLogger {
     }
 
     val configIndexOpt = {
-      argsWithIndex.find(_._1.toLowerCase == "--config")
+      argsWithIndex.find(_._1.toLowerCase == "--conf")
     }
     val baseConfig = configIndexOpt match {
       case None =>
