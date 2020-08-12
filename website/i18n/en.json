@@ -12,7 +12,7 @@
         "title": "CLI"
       },
       "applications/configuration": {
-        "title": "Application Configuration"
+        "title": "Application configuration"
       },
       "applications/dlc": {
         "title": "Executing A DLC with Bitcoin-S"
@@ -24,7 +24,7 @@
         "title": "GUI"
       },
       "applications/node": {
-        "title": "Light Client"
+        "title": "Light client"
       },
       "applications/server": {
         "title": "Application Server"
@@ -79,6 +79,9 @@
       },
       "crypto/sign": {
         "title": "Sign API"
+      },
+      "fee-provider/fee-provider": {
+        "title": "Fee Provider"
       },
       "getting-setup": {
         "title": "Getting Bitcoin-S installed on your machine"
@@ -340,6 +343,7 @@
       "Configuration": "Configuration",
       "Core Module": "Core Module",
       "Crypto Module": "Crypto Module",
+      "Fee Provider": "Fee Provider",
       "Key Manager": "Key Manager",
       "Node": "Node",
       "Wallet": "Wallet",
