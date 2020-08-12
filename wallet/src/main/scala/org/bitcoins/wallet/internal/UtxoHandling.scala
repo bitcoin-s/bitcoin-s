@@ -305,14 +305,11 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   /** @inheritdoc */
   override def unmarkUTXOsAsReserved(
       tx: Transaction): Future[Vector[SpendingInfoDb]] = {
-    val utxosF = listUtxos()
-    val utxosInTxF = for {
-      utxos <- utxosF
-    } yield {
-      val txOutPoints = tx.inputs.map(_.previousOutput)
-      utxos.filter(si => txOutPoints.contains(si.outPoint))
-    }
-    utxosInTxF.flatMap(unmarkUTXOsAsReserved)
+    for {
+      utxos <- spendingInfoDAO.findOutputsBeingSpent(tx)
+      reserved = utxos.filter(_.state == TxoState.Reserved)
+      updated <- unmarkUTXOsAsReserved(reserved.toVector)
+    } yield updated
   }
 
   /** @inheritdoc */
