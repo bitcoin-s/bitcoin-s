@@ -23,7 +23,13 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
-import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo.{
+  AddressLabelTag,
+  AddressLabelTagType,
+  AddressTag,
+  AddressTagType,
+  TxoState
+}
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPublicKey,
@@ -45,6 +51,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   // the genesis address
   val testAddressStr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
   val testAddress = BitcoinAddress.fromString(testAddressStr)
+  val testLabel: AddressLabelTag = AddressLabelTag("test")
 
   val mockWalletApi = mock[MockWalletApi]
 
@@ -449,17 +456,138 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return a new address" in {
-      (mockWalletApi.getNewAddress: () => Future[BitcoinAddress])
-        .expects()
+      (mockWalletApi
+        .getNewAddress(_: Vector[AddressTag]))
+        .expects(Vector.empty)
         .returning(Future.successful(testAddress))
 
       val route =
-        walletRoutes.handleCommand(ServerCommand("getnewaddress", Arr()))
+        walletRoutes.handleCommand(
+          ServerCommand("getnewaddress", Arr(ujson.Null)))
 
       Get() ~> route ~> check {
         contentType == `application/json`
         responseAs[
           String] == """{"result":"""" + testAddressStr + """","error":null}"""
+      }
+    }
+
+    "return a new address with a label" in {
+      (mockWalletApi
+        .getNewAddress(_: Vector[AddressTag]))
+        .expects(Vector(testLabel))
+        .returning(Future.successful(testAddress))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getnewaddress", Arr(Str(testLabel.name))))
+
+      Get() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[
+          String] == """{"result":"""" + testAddressStr + """","error":null}"""
+      }
+    }
+
+    "label an address" in {
+      (mockWalletApi
+        .tagAddress(_: BitcoinAddress, _: AddressTag))
+        .expects(testAddress, testLabel)
+        .returning(Future.successful(AddressTagDb(testAddress, testLabel)))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("labeladdress",
+                        Arr(Str(testAddressStr), Str(testLabel.name))))
+
+      Get() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[
+          String] == """{"result":"""" + s"Added label \'${testLabel.name}\' to $testAddressStr" + """","error":null}"""
+      }
+    }
+
+    "get address tags" in {
+      (mockWalletApi
+        .getAddressTags(_: BitcoinAddress))
+        .expects(testAddress)
+        .returning(
+          Future.successful(Vector(AddressTagDb(testAddress, testLabel))))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getaddresstags", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[
+          String] == """{"result":"""" + testLabel.name + """","error":null}"""
+      }
+    }
+
+    "get address labels" in {
+      (mockWalletApi
+        .getAddressTags(_: BitcoinAddress, _: AddressTagType))
+        .expects(testAddress, AddressLabelTagType)
+        .returning(
+          Future.successful(Vector(AddressTagDb(testAddress, testLabel))))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getaddresslabels", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[
+          String] == """{"result":"""" + testLabel.name + """","error":null}"""
+      }
+    }
+
+    "drop address labels with no labels" in {
+      (mockWalletApi
+        .dropAddressTagType(_: BitcoinAddress, _: AddressTagType))
+        .expects(testAddress, AddressLabelTagType)
+        .returning(Future.successful(2))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("dropaddresslabels", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[String] == """{"result":"""" + "Address had no labels" + """","error":null}"""
+      }
+    }
+
+    "drop address labels with 1 label" in {
+      (mockWalletApi
+        .dropAddressTagType(_: BitcoinAddress, _: AddressTagType))
+        .expects(testAddress, AddressLabelTagType)
+        .returning(Future.successful(1))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("dropaddresslabels", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[String] == """{"result":"""" + "1 label dropped" + """","error":null}"""
+      }
+    }
+
+    "drop address labels with 2 labels" in {
+      (mockWalletApi
+        .dropAddressTagType(_: BitcoinAddress, _: AddressTagType))
+        .expects(testAddress, AddressLabelTagType)
+        .returning(Future.successful(2))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("dropaddresslabels", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[String] == """{"result":"""" + "2 labels dropped" + """","error":null}"""
       }
     }
 
