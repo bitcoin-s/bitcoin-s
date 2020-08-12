@@ -132,8 +132,12 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
 
     for {
-      toUpdate <- Future.sequence(toUpdateFs)
-      updated <- spendingInfoDAO.upsertAll(toUpdate.flatten.toVector)
+      toUpdate <- Future.sequence(toUpdateFs).map(_.flatten.toVector)
+      _ =
+        if (toUpdate.nonEmpty)
+          logger.info(s"${toUpdate.size} txos are now confirmed!")
+        else logger.info("No txos to be confirmed")
+      updated <- spendingInfoDAO.upsertAll(toUpdate)
     } yield updated
   }
 
