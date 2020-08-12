@@ -1,4 +1,4 @@
-package org.bitcoins.core.api
+package org.bitcoins.core.api.feeprovider
 
 import org.bitcoins.core.wallet.fee.FeeUnit
 

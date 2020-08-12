@@ -2,8 +2,10 @@ package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
-import org.bitcoins.core.api.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi, NodeChainQueryApi}
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.node.{NodeApi, NodeChainQueryApi}
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.node
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -180,7 +182,7 @@ abstract class SyncUtil extends BitcoinSLogger {
       ec: ExecutionContext): NodeChainQueryApi = {
     val chainQuery = SyncUtil.getTestChainQueryApi(bitcoind)
     val nodeApi = SyncUtil.getNodeApi(bitcoind)
-    NodeChainQueryApi(nodeApi, chainQuery)
+    node.NodeChainQueryApi(nodeApi, chainQuery)
   }
 
   def getNodeChainQueryApiWalletCallback(
@@ -190,7 +192,7 @@ abstract class SyncUtil extends BitcoinSLogger {
     val chainQuery = SyncUtil.getTestChainQueryApi(bitcoind)
     val nodeApi =
       SyncUtil.getNodeApiWalletCallback(bitcoind, walletF)
-    NodeChainQueryApi(nodeApi, chainQuery)
+    node.NodeChainQueryApi(nodeApi, chainQuery)
   }
 }
 

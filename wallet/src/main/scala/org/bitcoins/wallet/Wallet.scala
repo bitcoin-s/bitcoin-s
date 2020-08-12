@@ -3,7 +3,9 @@ package org.bitcoins.wallet
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
-import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
+import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey

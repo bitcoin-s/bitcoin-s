@@ -5,7 +5,7 @@ import org.bitcoins.chain.models.{
   CompactFilterDb,
   CompactFilterHeaderDb
 }
-import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp

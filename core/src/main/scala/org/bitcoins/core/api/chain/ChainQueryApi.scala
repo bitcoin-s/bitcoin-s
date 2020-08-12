@@ -1,4 +1,4 @@
-package org.bitcoins.core.api
+package org.bitcoins.core.api.chain
 
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.BlockStamp
@@ -10,8 +10,6 @@ import scala.concurrent.{ExecutionContext, Future}
   * This trait provides methods to query various types of blockchain data.
   */
 trait ChainQueryApi {
-
-  import org.bitcoins.core.api.ChainQueryApi._
 
   /** Gets the height of the given block */
   def getBlockHeight(blockHash: DoubleSha256DigestBE): Future[Option[Int]]
@@ -39,7 +37,7 @@ trait ChainQueryApi {
 
   def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[FilterResponse]]
+      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]]
 
   /** Gets the block height of the closest block to the given time */
   def epochSecondToBlockHeight(time: Long): Future[Int]

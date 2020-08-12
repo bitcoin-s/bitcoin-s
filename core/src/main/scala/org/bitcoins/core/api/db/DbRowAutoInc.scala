@@ -1,4 +1,4 @@
-package org.bitcoins.db
+package org.bitcoins.core.api.db
 
 /** This is meant to be coupled with [[CRUDAutoInc]]
   * and [[TableAutoInc]] to allow for automatically incrementing an id

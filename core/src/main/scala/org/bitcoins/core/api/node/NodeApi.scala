@@ -1,4 +1,4 @@
-package org.bitcoins.core.api
+package org.bitcoins.core.api.node
 
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest

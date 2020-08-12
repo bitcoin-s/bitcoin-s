@@ -3,7 +3,7 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import org.bitcoins.core.api.CoreApi
+import org.bitcoins.core.api.core.CoreApi
 
 import scala.util.{Failure, Success}
 

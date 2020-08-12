@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.hd.{
   HDPath,
   LegacyHDPath,
@@ -20,7 +21,6 @@ import org.bitcoins.core.wallet.utxo.{
   TxoState
 }
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sign}
-import org.bitcoins.db.DbRowAutoInc
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 
 /**
