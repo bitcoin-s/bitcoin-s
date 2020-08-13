@@ -1,5 +1,8 @@
 <configuration>
-    <!-- Stop output INFO at start -->
+    <!-- http://logback.qos.ch/manual/configuration.html#dumpingStatusData
+         This prints status of the logging configuration on startup
+         If you want to silence this output replace 'OnConsoleStatusListener'
+         with 'NopStatusListener' -->
     <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
 
 
