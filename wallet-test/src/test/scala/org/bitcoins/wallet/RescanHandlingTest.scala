@@ -10,8 +10,9 @@ import org.bitcoins.testkit.wallet.{
   WalletWithBitcoind,
   WalletWithBitcoindV19
 }
-import org.scalatest.FutureOutcome
+import org.scalatest.{DoNotDiscover, FutureOutcome}
 
+@DoNotDiscover
 class RescanHandlingTest extends BitcoinSWalletTest {
 
   /** Wallet config with data directory set to user temp directory */

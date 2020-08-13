@@ -203,6 +203,7 @@ abstract class Wallet
     for {
       _ <- spendingInfoDAO.deleteAll()
       _ <- addressDAO.deleteAll()
+      _ <- scriptPubKeyDAO.deleteAll()
     } yield this
   }
 

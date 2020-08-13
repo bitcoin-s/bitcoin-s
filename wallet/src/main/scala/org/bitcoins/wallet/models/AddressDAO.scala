@@ -113,7 +113,7 @@ case class AddressDAO()(implicit
       spkTable.filter(_.scriptPubKey === addressDb.scriptPubKey).delete
     val addrDelete = table.filter(_.address === addressDb.address).delete
     safeDatabase
-      .run(DBIO.sequence(Seq(spkDelete, addrDelete)).transactionally)
+      .run(DBIO.sequence(Seq(addrDelete, spkDelete)).transactionally)
       .map(_.sum)
   }
 
