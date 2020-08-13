@@ -169,7 +169,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     for {
       aggregate <- {
 
-        val incomingTxoFut: Future[Vector[SpendingInfoDb]] =
+        def incomingTxoFut: Future[Vector[SpendingInfoDb]] =
           spendingInfoDAO
             .findTx(transaction)
             .flatMap {
@@ -185,7 +185,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
                   .map(_.toVector)
             }
 
-        val outgoingTxFut: Future[Vector[SpendingInfoDb]] = {
+        def outgoingTxFut: Future[Vector[SpendingInfoDb]] = {
           for {
             outputsBeingSpent <-
               spendingInfoDAO.findOutputsBeingSpent(transaction)
