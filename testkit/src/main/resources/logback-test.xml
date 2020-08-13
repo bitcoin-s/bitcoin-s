@@ -20,7 +20,7 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <root level="WARN">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
@@ -34,17 +34,17 @@
     <!-- ╚═══════════════════╝ -->
 
     <!-- inspect resolved DB connection -->
-    <logger name="org.bitcoins.db.SafeDatabase" level="INFO"/>
+    <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
 
     <!-- inspect resolved config -->
-    <logger name="org.bitcoins.chain.config" level="INFO"/>
-    <logger name="org.bitcoins.node.config" level="INFO"/>
-    <logger name="org.bitcoins.wallet.config" level="INFO"/>
+    <logger name="org.bitcoins.chain.config" level="WARN"/>
+    <logger name="org.bitcoins.node.config" level="WARN"/>
+    <logger name="org.bitcoins.wallet.config" level="WARN"/>
 
     <!-- inspect table creation, etc -->
-    <logger name="org.bitcoins.chain.db" level="INFO" />
-    <logger name="org.bitcoins.node.db" level="INFO" />
-    <logger name="org.bitcoins.wallet.db" level="INFO" />
+    <logger name="org.bitcoins.chain.db" level="WARN" />
+    <logger name="org.bitcoins.node.db" level="WARN" />
+    <logger name="org.bitcoins.wallet.db" level="WARN" />
 
     <!-- ╔═════════════════╗ -->
     <!-- ║   Node module   ║ -->
@@ -68,10 +68,9 @@
 
     <!-- See queries received by chain handler, as well as result of  -->
     <!-- connecting new block headers to chain -->
-    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="INFO"/>
+    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="WARN"/>
 
-    <!-- Set to TRACE to inspect details of chain vaidation -->
-    <logger name="org.bitcoins.chain.validation" level="INFO"/>
+    <logger name="org.bitcoins.chain.validation" level="WARN"/>
 
     <!-- ╔═════════════════════╗ -->
     <!-- ║   Wallet module     ║ -->
