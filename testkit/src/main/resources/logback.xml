@@ -1,6 +1,9 @@
-<included>
-    <!-- Stop output INFO at start -->
-    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+<configuration>
+    <!-- http://logback.qos.ch/manual/configuration.html#dumpingStatusData
+         This prints status of the logging configuration on startup
+         If you want to silence this output replace 'OnConsoleStatusListener'
+         with 'NopStatusListener' -->
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
 
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
@@ -94,11 +97,12 @@
     <!-- see what's returned by Slick -->
     <logger name="slick.jdbc.StatementInvoker.result" level="INFO"/>
 
-    <!-- Get rid of messages like this: 
-    Connection attempt failed. Backing off new connection 
+    <!-- Get rid of messages like this:
+    Connection attempt failed. Backing off new connection
     attempts for at least 800 milliseconds. -->
     <logger name="akka.http.impl.engine.client.PoolGateway" level="OFF"/>
 
     <!-- get rid of "Slf4jLogger started" messages -->
     <logger name="akka.event.slf4j.Slf4jLogger" level="OFF"/>
-</included>
+
+</configuration>
