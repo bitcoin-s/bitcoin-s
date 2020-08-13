@@ -46,14 +46,13 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       fromAccount: AccountDb,
       fromTagOpt: Option[AddressTag] = None,
       markAsReserved: Boolean = false): Future[Transaction] = {
-    val txBuilderF =
-      fundRawTransactionInternal(destinations = destinations,
-                                 feeRate = feeRate,
-                                 fromAccount = fromAccount,
-                                 keyManagerOpt = None,
-                                 fromTagOpt = fromTagOpt,
-                                 markAsReserved = markAsReserved)
-    txBuilderF.flatMap(_._1.buildTx())
+    fundRawTransactionInternal(destinations = destinations,
+                               feeRate = feeRate,
+                               fromAccount = fromAccount,
+                               keyManagerOpt = None,
+                               fromTagOpt = fromTagOpt,
+                               markAsReserved = markAsReserved)
+      .flatMap(_._1.buildTx())
   }
 
   /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned transaction with [[RawTxBuilder.result()]]
@@ -77,41 +76,43 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       markAsReserved: Boolean = false): Future[(
       RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       Vector[ScriptSignatureParams[InputInfo]])] = {
-    val utxosF = for {
-      utxos <- fromTagOpt match {
-        case None =>
-          listUtxos(fromAccount.hdAccount)
-        case Some(tag) =>
-          listUtxos(fromAccount.hdAccount, tag)
-      }
+    def utxosF: Future[Vector[SpendingInfoDb]] =
+      for {
+        utxos <- fromTagOpt match {
+          case None =>
+            listUtxos(fromAccount.hdAccount)
+          case Some(tag) =>
+            listUtxos(fromAccount.hdAccount, tag)
+        }
 
-      // Need to remove immature coinbase inputs
-      coinbaseUtxos = utxos.filter(_.outPoint == EmptyTransactionOutPoint)
-      confFs = coinbaseUtxos.map(utxo =>
-        chainQueryApi
-          .getNumberOfConfirmations(utxo.blockHash.get)
-          .map((utxo, _)))
-      confs <- FutureUtil.collect(confFs)
-      immatureCoinbases =
-        confs
-          .filter {
-            case (_, confsOpt) =>
-              confsOpt.isDefined && confsOpt.get > Consensus.coinbaseMaturity
-          }
-          .map(_._1)
-    } yield utxos.diff(immatureCoinbases)
+        // Need to remove immature coinbase inputs
+        coinbaseUtxos = utxos.filter(_.outPoint == EmptyTransactionOutPoint)
+        confFs = coinbaseUtxos.map(utxo =>
+          chainQueryApi
+            .getNumberOfConfirmations(utxo.blockHash.get)
+            .map((utxo, _)))
+        confs <- FutureUtil.collect(confFs)
+        immatureCoinbases =
+          confs
+            .filter {
+              case (_, confsOpt) =>
+                confsOpt.isDefined && confsOpt.get > Consensus.coinbaseMaturity
+            }
+            .map(_._1)
+      } yield utxos.diff(immatureCoinbases)
 
-    val selectedUtxosF = for {
-      walletUtxos <- utxosF
-      //currently just grab the biggest utxos
-      utxos = CoinSelector.selectByAlgo(coinSelectionAlgo = coinSelectionAlgo,
-                                        walletUtxos = walletUtxos,
-                                        outputs = destinations,
-                                        feeRate = feeRate)
-      selectedUtxos <-
-        if (markAsReserved) markUTXOsAsReserved(utxos)
-        else Future.successful(utxos)
-    } yield selectedUtxos
+    def selectedUtxosF: Future[Vector[SpendingInfoDb]] =
+      for {
+        walletUtxos <- utxosF
+        //currently just grab the biggest utxos
+        utxos = CoinSelector.selectByAlgo(coinSelectionAlgo = coinSelectionAlgo,
+                                          walletUtxos = walletUtxos,
+                                          outputs = destinations,
+                                          feeRate = feeRate)
+        selectedUtxos <-
+          if (markAsReserved) markUTXOsAsReserved(utxos)
+          else Future.successful(utxos)
+      } yield selectedUtxos
 
     val addrInfosWithUtxoF: Future[
       Vector[(SpendingInfoDb, Transaction, AddressInfo)]] =
@@ -132,7 +133,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         vec <- FutureUtil.collect(addrInfoOptF).map(_.toVector)
       } yield vec
 
-    val txBuilderF = for {
+    for {
       addrInfosWithUtxo <- addrInfosWithUtxoF
       change <- getNewChangeAddress(fromAccount)
       utxoSpendingInfos = {
@@ -178,7 +179,5 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
       (txBuilder.setFinalizer(finalizer), utxoSpendingInfos)
     }
-
-    txBuilderF
   }
 }

@@ -358,8 +358,7 @@ case class SpendingInfoDAO()(implicit
 
   def findAllForAccount(
       hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
-    val allUtxosF = findAllSpendingInfos()
-    allUtxosF.map(filterUtxosByAccount(_, hdAccount))
+    findAllSpendingInfos().map(filterUtxosByAccount(_, hdAccount))
   }
 
   def findByTxoState(state: TxoState): Future[Vector[SpendingInfoDb]] = {

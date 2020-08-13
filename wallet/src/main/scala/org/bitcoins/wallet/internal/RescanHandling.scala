@@ -212,14 +212,15 @@ private[wallet] trait RescanHandling extends WalletLogger {
     val threadPool =
       Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors() * 2)
 
-    val blocksF = for {
-      blocks <- getMatchingBlocks(
-        scripts = scriptPubKeys,
-        startOpt = startOpt,
-        endOpt = endOpt)(ExecutionContext.fromExecutor(threadPool))
-    } yield {
-      blocks.sortBy(_.blockHeight).map(_.blockHash.flip)
-    }
+    def blocksF =
+      for {
+        blocks <- getMatchingBlocks(
+          scripts = scriptPubKeys,
+          startOpt = startOpt,
+          endOpt = endOpt)(ExecutionContext.fromExecutor(threadPool))
+      } yield {
+        blocks.sortBy(_.blockHeight).map(_.blockHash.flip)
+      }
 
     blocksF.onComplete(_ => threadPool.shutdown())
     blocksF

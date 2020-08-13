@@ -208,7 +208,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
         }
 
-        val aggregateFut =
+        def aggregateFut =
           for {
             incoming <- incomingTxoFut
             outgoing <- outgoingTxFut
@@ -233,8 +233,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   /** If the given UTXO is marked as unspent, updates
     * its spending status. Otherwise returns `None`.
     */
-  private val markAsPendingSpent: SpendingInfoDb => Future[
-    Option[SpendingInfoDb]] = { out: SpendingInfoDb =>
+  private def markAsPendingSpent(
+      out: SpendingInfoDb): Future[Option[SpendingInfoDb]] = {
     out.state match {
       case TxoState.ConfirmedReceived | TxoState.PendingConfirmationsReceived =>
         val updated =
@@ -261,11 +261,10 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       index: Int,
       state: TxoState,
       blockHash: Option[DoubleSha256DigestBE]): Future[SpendingInfoDb] = {
-    val addUtxoF = addUtxo(transaction = transaction,
-                           vout = UInt32(index),
-                           state = state,
-                           blockHash = blockHash)
-    addUtxoF.flatMap {
+    addUtxo(transaction = transaction,
+            vout = UInt32(index),
+            state = state,
+            blockHash = blockHash).flatMap {
       case AddUtxoSuccess(utxo) => Future.successful(utxo)
       case err: AddUtxoError =>
         logger.error(s"Could not add UTXO", err)
@@ -313,7 +312,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           }
 
           // Update Txo State
-          val updateF = updateUtxoConfirmedState(unreservedTxo)
+          def updateF = updateUtxoConfirmedState(unreservedTxo)
 
           updateF.foreach(tx =>
             logger.debug(
