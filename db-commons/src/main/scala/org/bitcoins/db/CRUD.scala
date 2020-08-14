@@ -128,10 +128,11 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     * @return t - the record that has been inserted / updated
     */
   def upsert(t: T): Future[T] = {
-    upsertAll(Vector(t)).map { ts =>
+    upsertAll(Vector(t)).flatMap { ts =>
       ts.headOption match {
-        case Some(updated) => updated
-        case None          => throw UpsertFailedException("Upsert failed for: " + t)
+        case Some(updated) => Future.successful(updated)
+        case None =>
+          Future.failed(UpsertFailedException("Upsert failed for: " + t))
       }
     }
   }
