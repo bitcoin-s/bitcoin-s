@@ -163,10 +163,12 @@ case class AddressDAO()(implicit
       .on(_.scriptPubKeyId === _.id)
       .filter(_._1.accountIndex === accountIndex)
 
-  def findAllForAccount(account: HDAccount): Future[Vector[AddressDb]] = {
+  def findAllAddressDbForAccount(
+      account: HDAccount): Future[Vector[AddressDb]] = {
     val query = table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
+      .filter(_._1.purpose === account.purpose)
       .filter(_._1.accountIndex === account.index)
       .filter(_._1.accountCoin === account.coin.coinType)
 
@@ -176,6 +178,15 @@ case class AddressDAO()(implicit
         res.map {
           case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
         })
+  }
+
+  def findAllForAccount(account: HDAccount): Future[Vector[AddressRecord]] = {
+    val query = table
+      .filter(_.purpose === account.purpose)
+      .filter(_.accountIndex === account.index)
+      .filter(_.accountCoin === account.coin.coinType)
+
+    safeDatabase.runVec(query.result)
   }
 
   /**

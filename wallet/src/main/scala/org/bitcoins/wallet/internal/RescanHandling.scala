@@ -130,8 +130,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
                             endOpt = endOpt,
                             startOpt = startOpt)
       _ <- downloadAndProcessBlocks(blocks)
-      externalGap <- calcAddressGap(HDChainType.External)
-      changeGap <- calcAddressGap(HDChainType.Change)
+      externalGap <- calcAddressGap(HDChainType.External, account)
+      changeGap <- calcAddressGap(HDChainType.Change, account)
       res <-
         if (
           externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
@@ -162,16 +162,18 @@ private[wallet] trait RescanHandling extends WalletLogger {
     } yield ()
   }
 
-  private def calcAddressGap(chainType: HDChainType): Future[Int] = {
+  private def calcAddressGap(
+      chainType: HDChainType,
+      account: HDAccount): Future[Int] = {
     for {
-      addressDbs <- addressDAO.findAll()
+      addressDbs <- addressDAO.findAllForAccount(account)
       addressGap <-
         addressDbs
         //make sure all addressDb are of the correct chainType
         //and they are sorted according to their index so we can
         //calculate the gap accurately
           .filter(_.accountChain == chainType)
-          .sortBy(_.accountIndex)
+          .sortBy(_.addressIndex)
           .foldLeft(Future.successful(0)) { (prevNF, addressDb) =>
             for {
               prevN <- prevNF
