@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.db.DbRowAutoInc
+import org.bitcoins.core.api.db.DbRowAutoInc
 
 case class ScriptPubKeyDb(scriptPubKey: ScriptPubKey, id: Option[Long] = None)
     extends DbRowAutoInc[ScriptPubKeyDb] {

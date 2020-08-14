@@ -18,7 +18,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.db.DbRowAutoInc
+import org.bitcoins.core.api.db.DbRowAutoInc
 
 case class UTXORecord(
     outpoint: TransactionOutPoint,

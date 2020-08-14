@@ -75,7 +75,8 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
     for {
       created <- WalletTestUtil.insertSegWitUTXO(daos)
-      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(null)))
+      spk = created.output.scriptPubKey
+      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(spk)))
     } yield read match {
       case None                          => fail(s"Did not read back a UTXO")
       case Some(_: SegwitV0SpendingInfo) => succeed
@@ -87,7 +88,8 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val utxoDAO = daos.utxoDAO
     for {
       created <- WalletTestUtil.insertLegacyUTXO(daos)
-      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(null)))
+      spk = created.output.scriptPubKey
+      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(spk)))
     } yield read match {
       case None                        => fail(s"Did not read back a UTXO")
       case Some(_: LegacySpendingInfo) => succeed
@@ -188,7 +190,8 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val utxoDAO = daos.utxoDAO
     for {
       created <- WalletTestUtil.insertNestedSegWitUTXO(daos)
-      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(null)))
+      spk = created.output.scriptPubKey
+      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(spk)))
     } yield read match {
       case None                                => fail(s"Did not read back a UTXO")
       case Some(_: NestedSegwitV0SpendingInfo) => succeed
