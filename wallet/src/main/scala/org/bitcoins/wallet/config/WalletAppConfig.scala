@@ -29,7 +29,6 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class WalletAppConfig(
     private val directory: Path,
-    override val useLogbackConf: Boolean,
     private val conf: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with WalletDbManagement
@@ -40,7 +39,7 @@ case class WalletAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): WalletAppConfig =
-    WalletAppConfig(directory, useLogbackConf, configs: _*)
+    WalletAppConfig(directory, configs: _*)
 
   protected[bitcoins] def baseDatadir: Path = directory
 
@@ -190,11 +189,9 @@ object WalletAppConfig
   /** Constructs a wallet configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  override def fromDatadir(
-      datadir: Path,
-      useLogbackConf: Boolean,
-      confs: Vector[Config])(implicit ec: ExecutionContext): WalletAppConfig =
-    WalletAppConfig(datadir, useLogbackConf, confs: _*)
+  override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
+      ec: ExecutionContext): WalletAppConfig =
+    WalletAppConfig(datadir, confs: _*)
 
   /** Creates a wallet based on the given [[WalletAppConfig]] */
   def createHDWallet(
