@@ -19,7 +19,7 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
 
   val config: WalletAppConfig =
-    WalletAppConfig(directory = tempDir, useLogbackConf = false)
+    WalletAppConfig(directory = tempDir)
 
   it must "resolve DB connections correctly " in {
     assert(config.dbPath.startsWith(Properties.tmpDir))
@@ -44,13 +44,12 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
                                                  |}
                                                  |""".stripMargin)
 
-    val throughConstuctor =
-      WalletAppConfig(tempDir, useLogbackConf = false, overrider)
+    val throughConstructor = WalletAppConfig(tempDir, overrider)
     val throughWithOverrides = config.withOverrides(overrider)
     assert(throughWithOverrides.network == MainNet)
-    assert(throughWithOverrides.network == throughConstuctor.network)
+    assert(throughWithOverrides.network == throughConstructor.network)
 
-    assert(throughWithOverrides.datadir == throughConstuctor.datadir)
+    assert(throughWithOverrides.datadir == throughConstructor.datadir)
 
   }
 
@@ -96,7 +95,7 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig = WalletAppConfig(directory = tempDir, useLogbackConf = false)
+    val appConfig = WalletAppConfig(directory = tempDir)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)

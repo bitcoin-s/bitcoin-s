@@ -44,7 +44,6 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for chain db" in {
     val chainAppConfig = ChainAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                                        useLogbackConf = false,
                                         dbConfig(ProjectType.Chain))
     val chainDbManagement = createChainDbManagement(chainAppConfig)
     val result = chainDbManagement.migrate()
@@ -54,7 +53,6 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for wallet db" in {
     val walletAppConfig = WalletAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                                          useLogbackConf = false,
                                           dbConfig(ProjectType.Wallet))
     val walletDbManagement = createWalletDbManagement(walletAppConfig)
     val result = walletDbManagement.migrate()
@@ -64,9 +62,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for node db" in {
     val nodeAppConfig =
-      NodeAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                    useLogbackConf = false,
-                    dbConfig(ProjectType.Node))
+      NodeAppConfig(BitcoinSTestAppConfig.tmpDir(), dbConfig(ProjectType.Node))
     val nodeDbManagement = createNodeDbManagement(nodeAppConfig)
     val result = nodeDbManagement.migrate()
     assert(result == 2)

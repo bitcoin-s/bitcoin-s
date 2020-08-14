@@ -87,10 +87,10 @@ val config = ConfigFactory.parseString {
 val datadir = Files.createTempDirectory("bitcoin-s-wallet")
 
 
-implicit val walletConfig = WalletAppConfig(datadir, false, config)
+implicit val walletConfig = WalletAppConfig(datadir, config)
 
 // we also need to store chain state for syncing purposes
-implicit val chainConfig = ChainAppConfig(datadir, false, config)
+implicit val chainConfig = ChainAppConfig(datadir, config)
 
 // when this future completes, we have
 // created the necessary directories and
