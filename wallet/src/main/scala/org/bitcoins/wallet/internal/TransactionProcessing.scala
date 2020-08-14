@@ -166,67 +166,49 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
     logger.debug(
       s"Processing transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
+    def incomingTxoFut: Future[Vector[SpendingInfoDb]] =
+      spendingInfoDAO
+        .findTx(transaction)
+        .flatMap {
+          // no existing elements found
+          case Vector() =>
+            processNewIncomingTx(transaction, blockHashOpt, newTags)
+              .map(_.toVector)
+
+          case txos: Vector[SpendingInfoDb] =>
+            FutureUtil
+              .sequentially(txos)(txo =>
+                processExistingIncomingTxo(transaction, blockHashOpt, txo))
+              .map(_.toVector)
+        }
+
+    def outgoingTxFut: Future[Vector[SpendingInfoDb]] = {
+      for {
+        outputsBeingSpent <- spendingInfoDAO.findOutputsBeingSpent(transaction)
+
+        // unreserved outputs now they are in a block
+        outputsToUse = blockHashOpt match {
+          case Some(_) =>
+            outputsBeingSpent.map { out =>
+              if (out.state == TxoState.Reserved)
+                out.copyWithState(TxoState.PendingConfirmationsReceived)
+              else out
+            }
+          case None =>
+            outputsBeingSpent
+        }
+
+        processed <- FutureUtil.sequentially(outputsToUse)(markAsPendingSpent)
+      } yield processed.flatten.toVector
+
+    }
+
     for {
-      aggregate <- {
-
-        def incomingTxoFut: Future[Vector[SpendingInfoDb]] =
-          spendingInfoDAO
-            .findTx(transaction)
-            .flatMap {
-              // no existing elements found
-              case Vector() =>
-                processNewIncomingTx(transaction, blockHashOpt, newTags)
-                  .map(_.toVector)
-
-              case txos: Vector[SpendingInfoDb] =>
-                FutureUtil
-                  .sequentially(txos)(txo =>
-                    processExistingIncomingTxo(transaction, blockHashOpt, txo))
-                  .map(_.toVector)
-            }
-
-        def outgoingTxFut: Future[Vector[SpendingInfoDb]] = {
-          for {
-            outputsBeingSpent <-
-              spendingInfoDAO.findOutputsBeingSpent(transaction)
-
-            // unreserved outputs now they are in a block
-            outputsToUse = blockHashOpt match {
-              case Some(_) =>
-                outputsBeingSpent.map { out =>
-                  if (out.state == TxoState.Reserved)
-                    out.copyWithState(TxoState.PendingConfirmationsReceived)
-                  else out
-                }
-              case None =>
-                outputsBeingSpent
-            }
-
-            processed <-
-              FutureUtil.sequentially(outputsToUse)(markAsPendingSpent)
-          } yield processed.flatten.toVector
-
-        }
-
-        def aggregateFut =
-          for {
-            incoming <- incomingTxoFut
-            outgoing <- outgoingTxFut
-            _ <-
-              walletCallbacks.executeOnTransactionProcessed(logger, transaction)
-          } yield {
-            ProcessTxResult(incoming.toList, outgoing.toList)
-          }
-
-        aggregateFut.failed.foreach { err =>
-          val msg = s"Error when processing transaction=${transaction.txIdBE}"
-          logger.error(msg, err)
-        }
-
-        aggregateFut
-      }
+      incoming <- incomingTxoFut
+      outgoing <- outgoingTxFut
+      _ <- walletCallbacks.executeOnTransactionProcessed(logger, transaction)
     } yield {
-      aggregate
+      ProcessTxResult(incoming.toList, outgoing.toList)
     }
   }
 
@@ -312,17 +294,11 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           }
 
           // Update Txo State
-          def updateF = updateUtxoConfirmedState(unreservedTxo)
-
-          updateF.foreach(tx =>
+          updateUtxoConfirmedState(unreservedTxo).map { txo =>
             logger.debug(
-              s"Updated block_hash of txo=${tx.txid.hex} new block hash=${blockHash.hex}"))
-          updateF.failed.foreach(err =>
-            logger.error(
-              s"Failed to update confirmation count of transaction=${transaction.txIdBE.hex}",
-              err))
-
-          updateF
+              s"Updated block_hash of txo=${txo.txid.hex} new block hash=${blockHash.hex}")
+            txo
+          }
         case (Some(oldBlockHash), Some(newBlockHash)) =>
           if (oldBlockHash == newBlockHash) {
             logger.debug(

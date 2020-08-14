@@ -676,19 +676,10 @@ object Wallet extends WalletLogger {
         }
       } yield accounts
 
-    def accountCreationF =
-      createAccountFutures.flatMap(accounts => FutureUtil.collect(accounts))
-
-    accountCreationF.foreach { _ =>
-      logger.debug(s"Created root level accounts for wallet")
+    createAccountFutures.flatMap(accounts => FutureUtil.collect(accounts)).map {
+      _ =>
+        logger.debug(s"Created root level accounts for wallet")
+        wallet
     }
-
-    accountCreationF.failed.foreach { err =>
-      err.printStackTrace()
-      logger.error(s"Failed to create root level accounts: $err")
-    }
-
-    accountCreationF.map(_ => wallet)
   }
-
 }
