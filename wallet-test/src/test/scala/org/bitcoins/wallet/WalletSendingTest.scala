@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
@@ -221,6 +222,22 @@ class WalletSendingTest extends BitcoinSWalletTest {
       assert(tx.outputs.contains(expectedOutput),
              "Did not contain expected output")
     }
+  }
+
+  it should "fail to send from outpoints when already spent" in {
+    fundedWallet =>
+      val wallet = fundedWallet.wallet
+      for {
+        allUtxos <- wallet.listUtxos()
+        // Make one already spent
+        spent = allUtxos.head.copyWithState(TxoState.PendingConfirmationsSpent)
+        _ <- wallet.spendingInfoDAO.update(spent)
+        test <- recoverToSucceededIf[IllegalArgumentException](
+          wallet.sendFromOutPoints(allUtxos.map(_.outPoint),
+                                   testAddress,
+                                   amountToSend,
+                                   feeRateOpt))
+      } yield test
   }
 
   def testSendWithAlgo(
