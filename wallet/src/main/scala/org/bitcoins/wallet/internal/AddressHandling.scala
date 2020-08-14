@@ -410,7 +410,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
       address: BitcoinAddress,
       tag: AddressTag): Future[AddressTagDb] = {
     val addressTagDb = AddressTagDb(address, tag)
-    addressTagDAO.upsert(addressTagDb)
+    val f = addressTagDAO.create(addressTagDb)
+    f
   }
 
   def getAddressTags(address: BitcoinAddress): Future[Vector[AddressTagDb]] = {
