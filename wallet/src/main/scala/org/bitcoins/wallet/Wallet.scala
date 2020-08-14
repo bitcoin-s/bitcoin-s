@@ -11,7 +11,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
-import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
+import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurpose, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -526,23 +526,25 @@ abstract class Wallet
     } yield tx
   }
 
+  protected def getLastAccountOpt(
+      purpose: HDPurpose): Future[Option[AccountDb]] = {
+    accountDAO
+      .findAll()
+      .map(_.filter(_.hdAccount.purpose == purpose))
+      .map(_.sortBy(_.hdAccount.index))
+      // we want to the most recently created account,
+      // to know what the index of our new account
+      // should be.
+      .map(_.lastOption)
+  }
+
   /** Creates a new account my reading from our account database, finding the last account,
     * and then incrementing the account index by one, and then creating that account
     *
     * @return
     */
   override def createNewAccount(kmParams: KeyManagerParams): Future[Wallet] = {
-    def lastAccountOptF =
-      accountDAO
-        .findAll()
-        .map(_.filter(_.hdAccount.purpose == kmParams.purpose))
-        .map(_.sortBy(_.hdAccount.index))
-        // we want to the most recently created account,
-        // to know what the index of our new account
-        // should be.
-        .map(_.lastOption)
-
-    lastAccountOptF.flatMap {
+    getLastAccountOpt(kmParams.purpose).flatMap {
       case Some(accountDb) =>
         val hdAccount = accountDb.hdAccount
         val newAccount = hdAccount.copy(index = hdAccount.index + 1)
