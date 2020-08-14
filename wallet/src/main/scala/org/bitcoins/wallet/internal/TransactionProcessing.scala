@@ -328,7 +328,12 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           if (oldBlockHash == newBlockHash) {
             logger.debug(
               s"Skipping further processing of transaction=${transaction.txIdBE}, already processed.")
-            Future.successful(foundTxo)
+
+            for {
+              relevantOuts <- getRelevantOutputs(transaction)
+              totalIncoming = relevantOuts.map(_.output.value).sum
+              _ <- insertIncomingTransaction(transaction, totalIncoming)
+            } yield foundTxo
           } else {
             val errMsg =
               Seq(
@@ -383,6 +388,19 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     } yield written
   }
 
+  private def getRelevantOutputs(
+      transaction: Transaction): Future[Seq[OutputWithIndex]] = {
+    addressDAO.findAll().map { addrs =>
+      val withIndex =
+        transaction.outputs.zipWithIndex
+      withIndex.collect {
+        case (out, idx)
+            if addrs.map(_.scriptPubKey).contains(out.scriptPubKey) =>
+          OutputWithIndex(out, idx)
+      }
+    }
+  }
+
   /**
     * Processes an incoming transaction that's new to us
     *
@@ -392,53 +410,41 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       newTags: Vector[AddressTag]): Future[Seq[SpendingInfoDb]] = {
-    addressDAO.findAll().flatMap { addrs =>
-      val relevantOutsWithIdx: Seq[OutputWithIndex] = {
-        val withIndex =
-          transaction.outputs.zipWithIndex
-        withIndex.collect {
-          case (out, idx)
-              if addrs.map(_.scriptPubKey).contains(out.scriptPubKey) =>
-            OutputWithIndex(out, idx)
-        }
-      }
+    getRelevantOutputs(transaction).flatMap {
+      case Nil =>
+        logger.debug(
+          s"Found no outputs relevant to us in transaction${transaction.txIdBE}")
+        Future.successful(Vector.empty)
 
-      relevantOutsWithIdx match {
-        case Nil =>
-          logger.debug(
-            s"Found no outputs relevant to us in transaction${transaction.txIdBE}")
-          Future.successful(Vector.empty)
-
-        case outputsWithIndex =>
-          val count = outputsWithIndex.length
-          val outputStr = {
-            outputsWithIndex
-              .map { elem =>
-                s"${transaction.txIdBE.hex}:${elem.index}"
-              }
-              .mkString(", ")
-          }
-          logger.trace(
-            s"Found $count relevant output(s) in transaction=${transaction.txIdBE}: $outputStr")
-
-          val totalIncoming = outputsWithIndex.map(_.output.value).sum
-
-          for {
-            _ <- insertIncomingTransaction(transaction, totalIncoming)
-            prevTagDbs <- addressTagDAO.findTx(transaction, networkParameters)
-            prevTags = prevTagDbs.map(_.addressTag)
-            tagsToUse =
-              prevTags
-                .filterNot(tag => newTags.contains(tag)) ++ newTags
-            newTagDbs = relevantOutsWithIdx.flatMap { out =>
-              val address = BitcoinAddress
-                .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
-              tagsToUse.map(tag => AddressTagDb(address, tag))
+      case outputsWithIndex =>
+        val count = outputsWithIndex.length
+        val outputStr = {
+          outputsWithIndex
+            .map { elem =>
+              s"${transaction.txIdBE.hex}:${elem.index}"
             }
-            _ <- addressTagDAO.createAll(newTagDbs.toVector)
-            utxos <- addUTXOsFut(outputsWithIndex, transaction, blockHashOpt)
-          } yield utxos
-      }
+            .mkString(", ")
+        }
+        logger.trace(
+          s"Found $count relevant output(s) in transaction=${transaction.txIdBE}: $outputStr")
+
+        val totalIncoming = outputsWithIndex.map(_.output.value).sum
+
+        for {
+          _ <- insertIncomingTransaction(transaction, totalIncoming)
+          prevTagDbs <- addressTagDAO.findTx(transaction, networkParameters)
+          prevTags = prevTagDbs.map(_.addressTag)
+          tagsToUse =
+            prevTags
+              .filterNot(tag => newTags.contains(tag)) ++ newTags
+          newTagDbs = outputsWithIndex.flatMap { out =>
+            val address = BitcoinAddress
+              .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
+            tagsToUse.map(tag => AddressTagDb(address, tag))
+          }
+          _ <- addressTagDAO.createAll(newTagDbs.toVector)
+          utxos <- addUTXOsFut(outputsWithIndex, transaction, blockHashOpt)
+        } yield utxos
     }
   }
 }

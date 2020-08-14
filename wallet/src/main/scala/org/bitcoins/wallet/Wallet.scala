@@ -92,7 +92,7 @@ abstract class Wallet
 
   private def utxosWithMissingTx: Future[Vector[SpendingInfoDb]] = {
     for {
-      utxos <- spendingInfoDAO.findAllUnspent()
+      utxos <- spendingInfoDAO.findAll()
       hasTxs <- FutureUtil.foldLeftAsync(Vector.empty[SpendingInfoDb], utxos) {
         (accum, utxo) =>
           // If we don't have tx in our transactionDAO, add it to the list
@@ -110,6 +110,8 @@ abstract class Wallet
       // Download the block the tx is from so we process the block and subsequent txs
       _ <-
         if (blockHashes.nonEmpty) {
+          logger.info(
+            s"Missing relevant ${utxos.size} wallet transactions, fetching their blocks..")
           nodeApi.downloadBlocks(blockHashes.distinct)
         } else FutureUtil.unit
     } yield ()
