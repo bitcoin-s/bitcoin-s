@@ -109,7 +109,7 @@ class BitcoinPowTest extends ChainDbUnitTest {
         for {
           blockchain <- blockchainF
           nextTip = blockchain.head
-          chain = Blockchain.fromHeaders(blockchain.tail)
+          chain = Blockchain.fromHeaders(blockchain.tail.toVector)
           nextNBits = Pow.getNetworkWorkRequired(nextTip.blockHeader, chain)
         } yield assert(nextNBits == nextTip.nBits)
       }
