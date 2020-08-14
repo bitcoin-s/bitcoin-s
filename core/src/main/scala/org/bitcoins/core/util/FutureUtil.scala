@@ -2,7 +2,7 @@ package org.bitcoins.core.util
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object FutureUtil extends BitcoinSLogger {
+object FutureUtil {
 
   /**
     * Executes a series of futures sequentially
@@ -14,21 +14,11 @@ object FutureUtil extends BitcoinSLogger {
   def sequentially[T, U](items: Seq[T])(fun: T => Future[U])(implicit
       ec: ExecutionContext): Future[List[U]] = {
     val init = Future.successful(List.empty[U])
-    items
-      .foldLeft(init) {
-        case (f, item) =>
-          f.flatMap { x =>
-            try {
-              fun(item).map(_ :: x)
-            } catch {
-              case scala.util.control.NonFatal(exn) =>
-                logger.error(s"Failed to process sequentially", exn)
-                Future.failed(exn)
-            }
-
-          }
+    items.foldLeft(init) { (f, item) =>
+      f.flatMap { x =>
+        fun(item).map(_ :: x)
       }
-      .map(_.reverse)
+    } map (_.reverse)
   }
 
   val unit: Future[Unit] = Future.successful(())
