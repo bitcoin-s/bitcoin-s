@@ -438,7 +438,8 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getNumberOfConfirmations(
       blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
-    getBlockHeight(blockHash).flatMap {
+    logger.debug(s"Getting number of confirmations for hash=$blockHash")
+    val numberConfirmsationsF = getBlockHeight(blockHash).flatMap {
       case None => FutureUtil.none
       case Some(blockHeight) =>
         for {
@@ -448,6 +449,11 @@ case class ChainHandler(
           tipHeightOpt.map(tipHeight => tipHeight - blockHeight + 1)
         }
     }
+
+    numberConfirmsationsF.failed.foreach(err =>
+      logger.error(s"Failed to get number conformations for hash=${blockHash}",
+                   err))
+    numberConfirmsationsF
   }
 
   override def getFiltersBetweenHeights(
