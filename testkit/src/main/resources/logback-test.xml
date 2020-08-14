@@ -1,6 +1,9 @@
-<included>
-    <!-- Stop output INFO at start -->
-    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+<configuration>
+    <!-- http://logback.qos.ch/manual/configuration.html#dumpingStatusData
+         This prints status of the logging configuration on startup
+         If you want to silence this output replace 'OnConsoleStatusListener'
+         with 'NopStatusListener' -->
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
 
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
@@ -17,7 +20,7 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <root level="WARN">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
@@ -31,17 +34,17 @@
     <!-- ╚═══════════════════╝ -->
 
     <!-- inspect resolved DB connection -->
-    <logger name="org.bitcoins.db.SafeDatabase" level="INFO"/>
+    <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
 
     <!-- inspect resolved config -->
-    <logger name="org.bitcoins.chain.config" level="INFO"/>
-    <logger name="org.bitcoins.node.config" level="INFO"/>
-    <logger name="org.bitcoins.wallet.config" level="INFO"/>
+    <logger name="org.bitcoins.chain.config" level="WARN"/>
+    <logger name="org.bitcoins.node.config" level="WARN"/>
+    <logger name="org.bitcoins.wallet.config" level="WARN"/>
 
     <!-- inspect table creation, etc -->
-    <logger name="org.bitcoins.chain.db" level="INFO" />
-    <logger name="org.bitcoins.node.db" level="INFO" />
-    <logger name="org.bitcoins.wallet.db" level="INFO" />
+    <logger name="org.bitcoins.chain.db" level="WARN" />
+    <logger name="org.bitcoins.node.db" level="WARN" />
+    <logger name="org.bitcoins.wallet.db" level="WARN" />
 
     <!-- ╔═════════════════╗ -->
     <!-- ║   Node module   ║ -->
@@ -65,10 +68,9 @@
 
     <!-- See queries received by chain handler, as well as result of  -->
     <!-- connecting new block headers to chain -->
-    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="INFO"/>
+    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="WARN"/>
 
-    <!-- Set to TRACE to inspect details of chain vaidation -->
-    <logger name="org.bitcoins.chain.validation" level="INFO"/>
+    <logger name="org.bitcoins.chain.validation" level="WARN"/>
 
     <!-- ╔═════════════════════╗ -->
     <!-- ║   Wallet module     ║ -->
@@ -94,11 +96,12 @@
     <!-- see what's returned by Slick -->
     <logger name="slick.jdbc.StatementInvoker.result" level="INFO"/>
 
-    <!-- Get rid of messages like this: 
-    Connection attempt failed. Backing off new connection 
+    <!-- Get rid of messages like this:
+    Connection attempt failed. Backing off new connection
     attempts for at least 800 milliseconds. -->
     <logger name="akka.http.impl.engine.client.PoolGateway" level="OFF"/>
 
     <!-- get rid of "Slf4jLogger started" messages -->
     <logger name="akka.event.slf4j.Slf4jLogger" level="OFF"/>
-</included>
+
+</configuration>

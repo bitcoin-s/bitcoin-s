@@ -1,6 +1,6 @@
 package org.bitcoins.feeprovider
 
-import org.bitcoins.core.api.FeeRateApi
+import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.feeprovider.MempoolSpaceTarget._

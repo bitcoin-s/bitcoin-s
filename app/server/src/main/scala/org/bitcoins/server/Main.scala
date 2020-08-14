@@ -1,10 +1,11 @@
 package org.bitcoins.server
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -14,8 +15,9 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.Core
+import org.bitcoins.core.config.{BitcoinNetworks, MainNet, RegTest, TestNet3}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NetworkUtil}
-import org.bitcoins.db.AppConfig
+import org.bitcoins.db._
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
@@ -24,26 +26,74 @@ import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Properties
 
 object Main extends App with BitcoinSLogger {
 
   private def runMain(): Unit = {
-    implicit val system: ActorSystem = ActorSystem("bitcoin-s")
-    implicit val ec: ExecutionContext = system.dispatcher
     val argsWithIndex = args.zipWithIndex
 
-    implicit val conf: BitcoinSAppConfig = {
+    val dataDirIndexOpt = {
+      argsWithIndex.find(_._1.toLowerCase == "--datadir")
+    }
+    val datadirPathOpt = dataDirIndexOpt match {
+      case None => None
+      case Some((_, dataDirIndex)) =>
+        val str = args(dataDirIndex + 1)
+        val usableStr = str.replace("~", Properties.userHome)
+        Some(Paths.get(usableStr))
+    }
 
-      val dataDirIndexOpt = {
-        argsWithIndex.find(_._1.toLowerCase == "--datadir")
+    val configIndexOpt = {
+      argsWithIndex.find(_._1.toLowerCase == "--conf")
+    }
+    val baseConfig = configIndexOpt match {
+      case None =>
+        val configPath =
+          datadirPathOpt.getOrElse(AppConfig.DEFAULT_BITCOIN_S_DATADIR)
+        AppConfig.getBaseConfig(configPath)
+      case Some((_, configIndex)) =>
+        val str = args(configIndex + 1)
+        val usableStr = str.replace("~", Properties.userHome)
+        val path = Paths.get(usableStr)
+        ConfigFactory.parseFile(path.toFile).resolve()
+    }
+
+    val configDataDir = Paths.get(
+      baseConfig.getStringOrElse("bitcoin-s.datadir",
+                                 AppConfig.DEFAULT_BITCOIN_S_DATADIR.toString))
+    val datadirPath = datadirPathOpt.getOrElse(configDataDir)
+
+    val networkStr = baseConfig.getString("bitcoin-s.network")
+    val network = BitcoinNetworks.fromString(networkStr)
+
+    val datadir: Path = {
+      val lastDirname = network match {
+        case MainNet  => "mainnet"
+        case TestNet3 => "testnet3"
+        case RegTest  => "regtest"
       }
-      val datadirPath = dataDirIndexOpt match {
-        case None => AppConfig.DEFAULT_BITCOIN_S_DATADIR
-        case Some((_, dataDirIndex)) =>
-          val str = args(dataDirIndex + 1)
-          Paths.get(str)
+      datadirPath.resolve(lastDirname)
+    }
+
+    System.setProperty("bitcoins.log.location",
+                       datadir.resolve("bitcoin-s.log").toAbsolutePath.toString)
+
+    implicit val system: ActorSystem = ActorSystem("bitcoin-s", baseConfig)
+    implicit val ec: ExecutionContext = system.dispatcher
+
+    system.log.info("Akka logger started")
+
+    implicit val conf: BitcoinSAppConfig = {
+      val dataDirOverrideOpt = datadirPathOpt.map(dir =>
+        ConfigFactory.parseString(s"bitcoin-s.datadir = $dir"))
+
+      dataDirOverrideOpt match {
+        case Some(dataDirOverride) =>
+          BitcoinSAppConfig(datadirPath, baseConfig, dataDirOverride)
+        case None =>
+          BitcoinSAppConfig(datadirPath, baseConfig)
       }
-      BitcoinSAppConfig(datadirPath)
     }
 
     val rpcPortOpt: Option[Int] = {

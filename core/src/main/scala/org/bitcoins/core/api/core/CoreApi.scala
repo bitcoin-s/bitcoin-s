@@ -1,4 +1,4 @@
-package org.bitcoins.core.api
+package org.bitcoins.core.api.core
 
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.PSBT

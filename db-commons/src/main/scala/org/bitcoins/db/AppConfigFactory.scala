@@ -8,15 +8,11 @@ import scala.concurrent.ExecutionContext
 
 trait AppConfigFactory[C <: AppConfig] {
 
-  def fromDefaultDatadir(
-      useLogbackConf: Boolean,
-      confs: Vector[Config] = Vector.empty)(implicit
+  def fromDefaultDatadir(confs: Vector[Config] = Vector.empty)(implicit
       ec: ExecutionContext): C = {
-    fromDatadir(AppConfig.DEFAULT_BITCOIN_S_DATADIR, useLogbackConf, confs)
+    fromDatadir(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs)
   }
 
-  def fromDatadir(
-      datadir: Path,
-      useLogbackConf: Boolean,
-      confs: Vector[Config] = Vector.empty)(implicit ec: ExecutionContext): C
+  def fromDatadir(datadir: Path, confs: Vector[Config] = Vector.empty)(implicit
+      ec: ExecutionContext): C
 }

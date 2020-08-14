@@ -12,7 +12,7 @@ import org.scalatest.FutureOutcome
 
 class ChainAppConfigTest extends ChainUnitTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
-  val config = ChainAppConfig(directory = tempDir, useLogbackConf = false)
+  val config = ChainAppConfig(directory = tempDir)
 
   //if we don't turn off logging here, isInitF a few lines down will
   //produce some nasty error logs since we are testing initialization
@@ -72,7 +72,7 @@ class ChainAppConfigTest extends ChainUnitTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig = ChainAppConfig(directory = tempDir, useLogbackConf = false)
+    val appConfig = ChainAppConfig(directory = tempDir)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)

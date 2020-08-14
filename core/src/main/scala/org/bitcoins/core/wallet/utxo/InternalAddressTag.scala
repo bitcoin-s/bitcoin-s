@@ -63,7 +63,9 @@ object InternalAddressTagName {
 }
 
 object InternalAddressTagType {
-  val all: Seq[InternalAddressTagType] = Vector(StorageLocationTagType)
+
+  val all: Seq[InternalAddressTagType] =
+    Vector(StorageLocationTagType, AddressLabelTagType)
 
   def fromStringOpt(string: String): Option[InternalAddressTagType] =
     all.find(_.typeName.toLowerCase == string.toLowerCase)
@@ -78,8 +80,6 @@ object InternalAddressTag {
       tagName: AddressTagName,
       tagType: AddressTagType): InternalAddressTag = {
     tagType match {
-      case unknownType: UnknownAddressTagType =>
-        UnknownAddressTag(tagName, unknownType)
       case StorageLocationTagType =>
         tagName match {
           case StorageLocationTag.HotStorageName =>
@@ -91,6 +91,10 @@ object InternalAddressTag {
           case unknownName: UnknownAddressTagName =>
             UnknownAddressTag(unknownName, StorageLocationTagType)
         }
+      case AddressLabelTagType =>
+        AddressLabelTag(tagName.name)
+      case unknownType: UnknownAddressTagType =>
+        UnknownAddressTag(tagName, unknownType)
     }
   }
 }
@@ -141,4 +145,20 @@ object StorageLocationTag extends AddressTagFactory[StorageLocationTag] {
 
   override val all: Vector[StorageLocationTag] =
     Vector(HotStorage, ColdStorage, DeepColdStorage)
+}
+
+object AddressLabelTagType extends InternalAddressTagType {
+  override val typeName: String = "Label"
+}
+
+case class AddressLabelTagName(name: String) extends InternalAddressTagName
+
+/** Used for generic address labeling, generally labels should be
+  * provided by the user so they keep track which parties are aware
+  * of which addresses
+  */
+case class AddressLabelTag(name: String) extends InternalAddressTag {
+  override val tagType: AddressTagType = AddressLabelTagType
+
+  override val tagName: AddressTagName = AddressLabelTagName(name)
 }

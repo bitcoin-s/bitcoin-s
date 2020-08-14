@@ -2,7 +2,7 @@ package org.bitcoins.node
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}

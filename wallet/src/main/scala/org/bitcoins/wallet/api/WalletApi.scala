@@ -3,7 +3,9 @@ package org.bitcoins.wallet.api
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
-import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
+import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.AddressType
@@ -15,11 +17,16 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
+import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.keymanager._
 import org.bitcoins.wallet.WalletLogger
-import org.bitcoins.wallet.models.{AddressDb, SpendingInfoDb, TransactionDb}
+import org.bitcoins.wallet.models.{
+  AddressDb,
+  AddressTagDb,
+  SpendingInfoDb,
+  TransactionDb
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -200,6 +207,27 @@ trait WalletApi extends WalletLogger {
         FutureUtil.none
     }
   }
+
+  /** Tags the address with the address tag, updates the tag if one of tag's TagType already exists */
+  def tagAddress(address: BitcoinAddress, tag: AddressTag): Future[AddressTagDb]
+
+  def getAddressTags(address: BitcoinAddress): Future[Vector[AddressTagDb]]
+
+  def getAddressTags(
+      address: BitcoinAddress,
+      tagType: AddressTagType): Future[Vector[AddressTagDb]]
+
+  def getAddressTags: Future[Vector[AddressTagDb]]
+
+  def getAddressTags(tagType: AddressTagType): Future[Vector[AddressTagDb]]
+
+  def dropAddressTag(addressTagDb: AddressTagDb): Future[Int]
+
+  def dropAddressTagType(addressTagType: AddressTagType): Future[Int]
+
+  def dropAddressTagType(
+      address: BitcoinAddress,
+      addressTagType: AddressTagType): Future[Int]
 
   /** Generates a new change address */
   protected[wallet] def getNewChangeAddress()(implicit

@@ -3,6 +3,12 @@ package org.bitcoins.wallet
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
+import org.bitcoins.core.wallet.utxo.{
+  AddressLabelTag,
+  AddressLabelTagType,
+  StorageLocationTagType
+}
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
@@ -164,6 +170,78 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         .map(_.output.scriptPubKey)
         .intersect(fundedAddresses.map(_.scriptPubKey))
       assert(intersect.isEmpty, s"Returned used addresses $intersect")
+    }
+  }
+
+  it must "tag an address" in { fundedWallet: FundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    for {
+      addr <- wallet.getNewAddress()
+      initTags <- wallet.getAddressTags(addr)
+      _ = assert(initTags.isEmpty)
+
+      tag = AddressLabelTag("for test")
+      _ <- wallet.tagAddress(addr, tag)
+      tags <- wallet.getAddressTags(addr)
+    } yield {
+      assert(tags.size == 1)
+      val tagDb = tags.head
+      assert(tagDb.address == addr)
+      assert(tagDb.addressTag == tag)
+    }
+  }
+
+  it must "drop an address tag" in { fundedWallet: FundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    for {
+      addr <- wallet.getNewAddress()
+      initTags <- wallet.getAddressTags(addr)
+      _ = assert(initTags.isEmpty)
+
+      tag = AddressLabelTag("no one knows the supply of eth")
+      _ <- wallet.tagAddress(addr, tag)
+      tags <- wallet.getAddressTags(addr)
+      _ = assert(tags.size == 1)
+      tagDb = tags.head
+      _ = assert(tagDb.address == addr)
+      _ = assert(tagDb.addressTag == tag)
+
+      num <- wallet.dropAddressTag(tagDb)
+    } yield assert(num == 1)
+  }
+
+  it must "drop an address tag type" in { fundedWallet: FundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    for {
+      addr <- wallet.getNewAddress()
+      addr1 <- wallet.getNewAddress()
+      initTags <- wallet.getAddressTags(addr)
+      initTags1 <- wallet.getAddressTags(addr1)
+      _ = assert(initTags.isEmpty)
+      _ = assert(initTags1.isEmpty)
+
+      tag = AddressLabelTag("no one knows the supply of eth")
+      _ <- wallet.tagAddress(addr, tag)
+      _ <- wallet.tagAddress(addr, HotStorage)
+      _ <- wallet.tagAddress(addr1, tag)
+      tags <- wallet.getAddressTags(AddressLabelTagType)
+      _ = assert(tags.size == 2)
+      tagDb = tags.head
+      _ = assert(tagDb.address == addr)
+      _ = assert(tagDb.addressTag == tag)
+      tagDb1 = tags.last
+      _ = assert(tagDb1.address == addr1)
+      _ = assert(tagDb1.addressTag == tag)
+
+      numDropped <- wallet.dropAddressTagType(AddressLabelTagType)
+      hotStorageTags <- wallet.getAddressTags(StorageLocationTagType)
+    } yield {
+      assert(numDropped == 2)
+      assert(hotStorageTags.size == 1)
+      assert(hotStorageTags.head.address == addr)
     }
   }
 }
