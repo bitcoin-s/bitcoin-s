@@ -385,6 +385,11 @@ abstract class Wallet
       diff = utxoDbs.map(_.outPoint).diff(outPoints)
       _ = require(diff.isEmpty,
                   s"Not all OutPoints belong to this wallet, diff $diff")
+      spentUtxos =
+        utxoDbs.filterNot(utxo => TxoState.receivedStates.contains(utxo.state))
+      _ = require(
+        spentUtxos.isEmpty,
+        s"Some out points given have already been spent, ${spentUtxos.map(_.outPoint)}")
 
       prevTxFs = utxoDbs.map(utxo =>
         transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
