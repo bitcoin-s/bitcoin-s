@@ -20,9 +20,9 @@ DROP TABLE "addresses_backup";
 
 -- wallet_address_tags_backup.fk_address was dropped along with address table, and we need to recreate it
 -- SQLite dosn't allow to create foreign key for existing tables, so we recreate the whole table here
-CREATE TABLE "wallet_address_tags_backup" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"address" VARCHAR(254) NOT NULL,"tag_name" VARCHAR(254) NOT NULL,"tag_type" VARCHAR(254) NOT NULL,constraint "fk_address" foreign key("address") references "addresses"("address") on update NO ACTION on delete NO ACTION);
+CREATE TABLE "wallet_address_tags_backup" ("address" VARCHAR(254) NOT NULL,"tag_name" VARCHAR(254) NOT NULL,"tag_type" VARCHAR(254) NOT NULL,constraint "pk_address_tags" primary key ("address", "tag_type"), constraint "fk_address" foreign key("address") references "addresses"("address") on update NO ACTION on delete NO ACTION);
 INSERT INTO "wallet_address_tags_backup" SELECT * FROM "wallet_address_tags";
 DROP TABLE "wallet_address_tags";
-CREATE TABLE "wallet_address_tags" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"address" VARCHAR(254) NOT NULL,"tag_name" VARCHAR(254) NOT NULL,"tag_type" VARCHAR(254) NOT NULL,constraint "fk_address" foreign key("address") references "addresses"("address") on update NO ACTION on delete NO ACTION);
+CREATE TABLE "wallet_address_tags" ("address" VARCHAR(254) NOT NULL,"tag_name" VARCHAR(254) NOT NULL,"tag_type" VARCHAR(254) NOT NULL,constraint "pk_address_tags" primary key ("address", "tag_type"), constraint "fk_address" foreign key("address") references "addresses"("address") on update NO ACTION on delete NO ACTION);
 INSERT INTO "wallet_address_tags" SELECT * FROM "wallet_address_tags_backup";
 DROP TABLE "wallet_address_tags_backup";

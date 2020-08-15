@@ -3,17 +3,19 @@ package org.bitcoins.chain.pow
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.protocol.blockchain.{
   MainNetChainParams,
   TestNetChainParams
 }
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.chain.fixture.{ChainFixture, ChainFixtureTag}
 import org.bitcoins.testkit.chain.{
   ChainDbUnitTest,
   ChainTestUtil,
   ChainUnitTest
 }
-import org.scalatest.FutureOutcome
+import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future
 
@@ -62,24 +64,17 @@ class BitcoinPowTest extends ChainDbUnitTest {
     case ChainFixture.PopulatedBlockHeaderDAO(blockHeaderDAO) =>
       val iterations = 4200
       // We must start after the first POW change to avoid looking for a block we don't have
-      val assertionFs =
-        (ChainUnitTest.FIRST_POW_CHANGE + 1 until ChainUnitTest.FIRST_POW_CHANGE + 1 + iterations)
-          .map { height =>
-            val blockF = blockHeaderDAO.getAtHeight(height).map(_.head)
-            val blockchainF =
-              blockF.flatMap(b => blockHeaderDAO.getBlockchainFrom(b))
-            val nextBlockF = blockHeaderDAO.getAtHeight(height + 1).map(_.head)
+      val iterator =
+        (ChainUnitTest.FIRST_POW_CHANGE + 1)
+          .until(ChainUnitTest.FIRST_POW_CHANGE + 1 + iterations)
+          .toVector
+      val assertionFs: Future[Assertion] = FutureUtil
+        .batchExecute(elements = iterator,
+                      f = batchCheckHeaderPOW(_: Vector[Int], blockHeaderDAO),
+                      init = succeed,
+                      batchSize = 1000)
 
-            for {
-              blockchain <- blockchainF
-              nextTip <- nextBlockF
-              nextNBits =
-                Pow.getNetworkWorkRequired(nextTip.blockHeader, blockchain)
-            } yield assert(nextNBits == nextTip.nBits)
-          }
-      val seqF = Future.sequence(assertionFs)
-
-      seqF.map(_ => succeed)
+      assertionFs
   }
 
   it must "getBlockProof correctly for the testnet genesis block" inFixtured {
@@ -100,5 +95,27 @@ class BitcoinPowTest extends ChainDbUnitTest {
 
         assert(proof == BigInt(4295032833L))
       }
+  }
+
+  /** Helper method to check headers proof of work in batches */
+  private def batchCheckHeaderPOW(
+      iterator: Vector[Int],
+      blockHeaderDAO: BlockHeaderDAO): Future[Assertion] = {
+    val nestedAssertions: Vector[Future[Assertion]] = {
+      iterator.map { height =>
+        val blockF = blockHeaderDAO.getAtHeight(height + 1).map(_.head)
+        val blockchainF =
+          blockF.flatMap(b => blockHeaderDAO.getBlockchainFrom(b))
+        for {
+          blockchain <- blockchainF
+          nextTip = blockchain.head
+          chain = Blockchain.fromHeaders(blockchain.tail.toVector)
+          nextNBits = Pow.getNetworkWorkRequired(nextTip.blockHeader, chain)
+        } yield assert(nextNBits == nextTip.nBits)
+      }
+    }
+    Future
+      .sequence(nestedAssertions)
+      .map(_ => succeed)
   }
 }

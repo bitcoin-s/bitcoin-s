@@ -53,7 +53,8 @@ class AddressTagDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
           AddressTagDb(createdAddress.address, tag)
         addressTagDAO.create(tagDb)
       }
-      readAddressTagOpt <- addressTagDAO.read(createdAddressTag.address)
+      readAddressTagOpt <-
+        addressTagDAO.findByAddress(createdAddressTag.address).map(_.headOption)
     } yield {
       assert(readAddressTagOpt.isDefined)
       val readAddressTag = readAddressTagOpt.get
