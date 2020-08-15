@@ -3,6 +3,7 @@ package org.bitcoins.wallet.internal
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.builder.{
   RawTxBuilder,
   RawTxBuilderWithFinalizer,
@@ -90,7 +91,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         chainQueryApi
           .getNumberOfConfirmations(utxo.blockHash.get)
           .map((utxo, _)))
-      confs <- Future.sequence(confFs)
+      confs <- FutureUtil.collect(confFs)
       immatureCoinbases =
         confs
           .filter {
@@ -128,7 +129,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                 .map(_.get.transaction)
           } yield (utxo, prevTx, addrInfo)
         }
-        vec <- Future.sequence(addrInfoOptF)
+        vec <- FutureUtil.collect(addrInfoOptF).map(_.toVector)
       } yield vec
 
     val txBuilderF = for {

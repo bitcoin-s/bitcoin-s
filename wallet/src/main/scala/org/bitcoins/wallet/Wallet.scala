@@ -194,10 +194,10 @@ abstract class Wallet
     for {
       accountUtxos <- spendingInfoDAO.findAllForAccount(account)
       deleteUtxoFs = accountUtxos.map(spendingInfoDAO.delete)
-      _ <- Future.sequence(deleteUtxoFs)
+      _ <- FutureUtil.collect(deleteUtxoFs)
       accountAddresses <- addressDAO.findAllForAccount(account)
       deleteAddrFs = accountAddresses.map(addressDAO.delete)
-      _ <- Future.sequence(deleteAddrFs)
+      _ <- FutureUtil.collect(deleteAddrFs)
     } yield this
   }
 
@@ -395,7 +395,7 @@ abstract class Wallet
 
       prevTxFs = utxoDbs.map(utxo =>
         transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
-      prevTxs <- Future.sequence(prevTxFs)
+      prevTxs <- FutureUtil.collect(prevTxFs)
       utxos =
         utxoDbs
           .zip(prevTxs)
@@ -684,7 +684,7 @@ object Wallet extends WalletLogger {
     } yield accounts
 
     val accountCreationF =
-      createAccountFutures.flatMap(accounts => Future.sequence(accounts))
+      createAccountFutures.flatMap(accounts => FutureUtil.collect(accounts))
 
     accountCreationF.foreach { _ =>
       logger.debug(s"Created root level accounts for wallet")

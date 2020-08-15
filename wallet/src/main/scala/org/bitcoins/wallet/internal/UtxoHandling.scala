@@ -14,7 +14,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.util.EitherUtil
+import org.bitcoins.core.util.{EitherUtil, FutureUtil}
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoResult, AddUtxoSuccess}
@@ -129,9 +129,9 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
 
     for {
-      toUpdate <- Future.sequence(toUpdateFs)
+      toUpdate <- FutureUtil.collect(toUpdateFs)
       updated <-
-        spendingInfoDAO.upsertAllSpendingInfoDb(toUpdate.flatten.toVector)
+        spendingInfoDAO.upsertAllSpendingInfoDb(toUpdate.toVector.flatten)
     } yield updated
   }
 

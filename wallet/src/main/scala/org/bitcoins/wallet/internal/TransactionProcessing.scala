@@ -357,20 +357,20 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   private def addUTXOsFut(
       outputsWithIndex: Seq[OutputWithIndex],
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Seq[SpendingInfoDb]] =
-    Future
-      .sequence {
-        outputsWithIndex.map(out =>
-          processUtxo(
-            transaction,
-            out.index,
-            // TODO is this correct?
-            //we probably need to incorporate what
-            //what our wallet's desired confirmation number is
-            state = TxoState.PendingConfirmationsReceived,
-            blockHash = blockHashOpt
-          ))
-      }
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[
+    Seq[SpendingInfoDb]] = {
+    FutureUtil.sequentially(outputsWithIndex) { out =>
+      processUtxo(
+        transaction,
+        out.index,
+        // TODO is this correct?
+        //we probably need to incorporate what
+        //what our wallet's desired confirmation number is
+        state = TxoState.PendingConfirmationsReceived,
+        blockHash = blockHashOpt
+      )
+    }
+  }
 
   private[wallet] def insertIncomingTransaction(
       transaction: Transaction,

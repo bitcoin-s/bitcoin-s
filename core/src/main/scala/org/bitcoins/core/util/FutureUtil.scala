@@ -11,7 +11,7 @@ object FutureUtil {
     * @param fun A function that transforms each element into a future
     * @return The processed elements
     */
-  def sequentially[T, U](items: Seq[T])(fun: T => Future[U])(implicit
+  def sequentially[T, U](items: Iterable[T])(fun: T => Future[U])(implicit
       ec: ExecutionContext): Future[List[U]] = {
     val init = Future.successful(List.empty[U])
     items.foldLeft(init) { (f, item) =>
@@ -19,6 +19,17 @@ object FutureUtil {
         fun(item).map(_ :: x)
       }
     } map (_.reverse)
+  }
+
+  /**
+    * Executes a series of futures sequentially. It's similar to [[FutureUtil.sequentially()]],
+    * but it accepts a collection of futures and executes them one by one.
+    * @param items The collection of futures
+    * @return The processed elements
+    */
+  def collect[T](items: Iterable[Future[T]])(implicit
+      ec: ExecutionContext): Future[List[T]] = {
+    FutureUtil.sequentially(items)(x => x)
   }
 
   val unit: Future[Unit] = Future.successful(())

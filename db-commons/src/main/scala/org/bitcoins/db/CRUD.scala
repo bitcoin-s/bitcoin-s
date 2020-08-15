@@ -90,12 +90,10 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     def oldUpdateAll(ts: Vector[T]): Future[Vector[T]] = {
       val query = findAll(ts)
       val actions = ts.map(query.update)
-      val affectedRows: Future[Vector[Int]] =
-        safeDatabase.runVec(DBIO.sequence(actions).transactionally)
-      val updatedTs = findAll(ts)
-      affectedRows.flatMap { _ =>
-        safeDatabase.runVec(updatedTs.result)
-      }
+      for {
+        _ <- safeDatabase.runVec(DBIO.sequence(actions).transactionally)
+        result <- safeDatabase.runVec(findAll(ts).result)
+      } yield result
     }
 
     FutureUtil.foldLeftAsync(Vector.empty[T], ts) { (accum, t) =>
@@ -139,11 +137,18 @@ abstract class CRUD[T, PrimaryKeyType](implicit
 
   /** Upserts all of the given ts in the database, then returns the upserted values */
   def upsertAll(ts: Vector[T]): Future[Vector[T]] = {
-    val actions = ts.map(t => table.insertOrUpdate(t))
-    val result: Future[Vector[Int]] =
-      safeDatabase.run(DBIO.sequence(actions).transactionally)
-    val findQueryFuture = result.map(_ => findAll(ts).result)
-    findQueryFuture.flatMap(safeDatabase.runVec(_))
+    def oldUpsertAll(ts: Vector[T]): Future[Vector[T]] = {
+      val actions = ts.map(t => table.insertOrUpdate(t))
+      for {
+        _ <- safeDatabase.run(DBIO.sequence(actions).transactionally)
+        result <- safeDatabase.runVec(findAll(ts).result)
+      } yield result
+
+    }
+
+    FutureUtil.foldLeftAsync(Vector.empty[T], ts) { (accum, t) =>
+      oldUpsertAll(Vector(t)).map(accum ++ _)
+    }
   }
 
   /**

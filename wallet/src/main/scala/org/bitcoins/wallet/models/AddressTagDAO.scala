@@ -3,6 +3,7 @@ package org.bitcoins.wallet.models
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.{
   AddressTag,
   AddressTagName,
@@ -128,15 +129,16 @@ case class AddressTagDAO()(implicit
       safeDatabase.runVec(spkQuery.result)
     }
 
-    val spendingInfosF = for {
-      utxos <- findUtxos
-      spks <-
-        if (utxos.isEmpty) Future.successful(Vector.empty)
-        else findSpks(utxos.map(_.scriptPubKeyId))
-    } yield {
-      val spksMap = spks.map(spk => (spk.id.get, spk.scriptPubKey)).toMap
-      utxos.map(utxo => utxo.toSpendingInfoDb(spksMap(utxo.scriptPubKeyId)))
-    }
+    def spendingInfosF =
+      for {
+        utxos <- findUtxos
+        spks <-
+          if (utxos.isEmpty) Future.successful(Vector.empty)
+          else findSpks(utxos.map(_.scriptPubKeyId))
+      } yield {
+        val spksMap = spks.map(spk => (spk.id.get, spk.scriptPubKey)).toMap
+        utxos.map(utxo => utxo.toSpendingInfoDb(spksMap(utxo.scriptPubKeyId)))
+      }
 
     spendingInfosF.flatMap { spendingInfos =>
       if (spendingInfos.isEmpty) {
@@ -147,7 +149,7 @@ case class AddressTagDAO()(implicit
           spks.map(spk => BitcoinAddress.fromScriptPubKey(spk, network))
 
         val findByAddressFs = addresses.map(address => findByAddress(address))
-        Future.sequence(findByAddressFs).map(_.flatten)
+        FutureUtil.collect(findByAddressFs).map(_.toVector.flatten)
       }
     }
   }
