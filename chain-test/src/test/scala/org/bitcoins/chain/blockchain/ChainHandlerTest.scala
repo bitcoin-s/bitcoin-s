@@ -597,14 +597,20 @@ class ChainHandlerTest extends ChainDbUnitTest {
             getHeaderF.map(headerOpt =>
               assert(headerOpt.contains(expectedBlockHeaderDb)))
           val newAccum = accum.:+(assertionF)
-          loop(headersTail, Some(expectedBlockHeaderDb), height + 1, newAccum)
+          loop(remainingHeaders = headersTail,
+               prevHeaderDbOpt = Some(expectedBlockHeaderDb),
+               height = height + 1,
+               accum = newAccum)
         case Vector() =>
           accum
       }
     }
 
     val vecFutAssert: Vector[Future[Assertion]] =
-      loop(headers, None, height, Vector.empty)
+      loop(remainingHeaders = headers,
+           prevHeaderDbOpt = None,
+           height = height,
+           accum = Vector.empty)
 
     ScalaTestUtil.toAssertF(vecFutAssert)
   }
