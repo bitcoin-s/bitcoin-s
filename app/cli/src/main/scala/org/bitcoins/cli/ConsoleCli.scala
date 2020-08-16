@@ -1079,7 +1079,7 @@ object ConsoleCli {
                          up.writeJs(bitcoins),
                          up.writeJs(feeRateOpt)))
       case SendWithAlgo(address, bitcoins, feeRateOpt, algo) =>
-        RequestParam("SendWithAlgo",
+        RequestParam("sendwithalgo",
                      Seq(up.writeJs(address),
                          up.writeJs(bitcoins),
                          up.writeJs(feeRateOpt),
