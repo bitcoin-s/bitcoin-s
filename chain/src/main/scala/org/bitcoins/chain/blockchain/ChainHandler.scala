@@ -442,10 +442,21 @@ case class ChainHandler(
       case None => FutureUtil.none
       case Some(blockHeight) =>
         for {
-          tipHash <- getBestBlockHash()
-          tipHeightOpt <- getBlockHeight(tipHash)
+          tips <- blockHeaderDAO.chainTips
+          getNAncestorsFs = tips.map { tip =>
+            blockHeaderDAO.getNAncestors(tip.hashBE, tip.height - blockHeight)
+          }
+          ancestorChains <- Future.sequence(getNAncestorsFs)
         } yield {
-          tipHeightOpt.map(tipHeight => tipHeight - blockHeight + 1)
+          val confs = ancestorChains.flatMap { chain =>
+            if (chain.last.hashBE == blockHash) {
+              Some(chain.head.height - blockHeight + 1)
+            } else None
+          }
+
+          if (confs.nonEmpty) {
+            Some(confs.max)
+          } else None
         }
     }
   }

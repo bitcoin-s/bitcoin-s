@@ -232,13 +232,14 @@ case class DataMessageHandler(
       case msg: BlockMessage =>
         val block = msg.block
         logger.info(
-          s"Received block message with hash ${block.blockHeader.hash.flip}")
+          s"Received block message with hash ${block.blockHeader.hash.flip.hex}")
 
         val newApiF = {
           chainApi
             .getHeader(block.blockHeader.hashBE)
             .flatMap { headerOpt =>
               if (headerOpt.isEmpty) {
+                logger.debug("Processing block's header...")
                 for {
                   processedApi <- chainApi.processHeader(block.blockHeader)
                   _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(
