@@ -499,13 +499,29 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
   }
 
-  it must "return the number of confirmations" in {
+  it must "return the number of confirmations for the chain tip" in {
     chainHandler: ChainHandler =>
       for {
         bestBlockHashBE <- chainHandler.getBestBlockHash()
         confirmations <- chainHandler.getNumberOfConfirmations(bestBlockHashBE)
       } yield {
-        assert(confirmations == Some(1))
+        assert(confirmations.contains(1))
+      }
+  }
+
+  it must "return the number of confirmations" in {
+    chainHandler: ChainHandler =>
+      val headers = 0.until(20).foldLeft(Vector(genesis)) { (accum, _) =>
+        accum :+ BlockHeaderHelper.buildNextHeader(accum.last)
+      }
+
+      for {
+        _ <- chainHandler.blockHeaderDAO.createAll(headers.tail)
+
+        confirmations <-
+          chainHandler.getNumberOfConfirmations(headers(3).hashBE)
+      } yield {
+        assert(confirmations.contains(18))
       }
   }
 
