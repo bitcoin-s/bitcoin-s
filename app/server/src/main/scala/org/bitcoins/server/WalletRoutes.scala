@@ -250,9 +250,9 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
                       startOpt = startBlock,
                       endOpt = endBlock,
                       addressBatchSize =
-                        batchSize.getOrElse(wallet.discoveryBatchSize),
+                        batchSize.getOrElse(wallet.discoveryBatchSize()),
                       useCreationTime = !ignoreCreationTime)
-                    .map(_ => "scheduled")
+                  Future.successful("Rescan started.")
                 } else {
                   Future.successful(
                     "DANGER! The wallet is not empty, however the rescan " +
