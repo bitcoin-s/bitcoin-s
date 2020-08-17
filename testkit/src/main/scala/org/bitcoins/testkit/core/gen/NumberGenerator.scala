@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.number._
-import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.{BigSizeUInt, CompactSizeUInt}
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.util.NumberUtil
 import org.scalacheck.Arbitrary.arbitrary
@@ -95,6 +95,8 @@ trait NumberGenerator {
     Gen.choose(0L, Int64.max.toLong).map(ScriptNumber(_))
 
   def compactSizeUInts: Gen[CompactSizeUInt] = uInt64s.map(CompactSizeUInt(_))
+
+  def bigSizeUInt: Gen[BigSizeUInt] = uInt64.map(BigSizeUInt.apply)
 
   /** Generates an arbitrary [[scala.Byte Byte]] in Scala */
   def byte: Gen[Byte] = arbitrary[Byte]
