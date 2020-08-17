@@ -5,7 +5,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.currency._
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.AddressLabelTagType
+import org.bitcoins.crypto.NetworkElement
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.api.AnyHDWalletApi
 
@@ -16,6 +18,16 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
     system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
+
+  private def handleBroadcastable(
+      tx: Transaction,
+      noBroadcast: Boolean): Future[NetworkElement] = {
+    if (noBroadcast) {
+      Future.successful(tx)
+    } else {
+      node.broadcastTransaction(tx).map(_ => tx.txIdBE)
+    }
+  }
 
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
 
@@ -157,13 +169,16 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-              SendToAddress(address, bitcoins, satoshisPerVirtualByteOpt)) =>
+              SendToAddress(address,
+                            bitcoins,
+                            satoshisPerVirtualByteOpt,
+                            noBroadcast)) =>
           complete {
             for {
               tx <- wallet.sendToAddress(address,
                                          bitcoins,
                                          satoshisPerVirtualByteOpt)
-              _ <- wallet.broadcastTransaction(tx)
+              _ <- handleBroadcastable(tx, noBroadcast)
             } yield {
               Server.httpSuccess(tx.txIdBE)
             }
