@@ -317,6 +317,22 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
         }
       }
 
+    case ServerCommand("getaddressinfo", arr) =>
+      GetAddressInfo.fromJsArr(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(GetAddressInfo(address)) =>
+          complete {
+            wallet.getAddressInfo(address).map {
+              case Some(addressInfo) =>
+                Server.httpSuccess(
+                  s"${addressInfo.pubkey.hex} ${addressInfo.path.toString}")
+              case None =>
+                Server.httpSuccess("Wallet does not contain address")
+            }
+          }
+      }
+
     case ServerCommand("createnewaccount", _) =>
       complete {
         for {
