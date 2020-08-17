@@ -10,7 +10,7 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
@@ -573,46 +573,49 @@ class ChainHandlerTest extends ChainDbUnitTest {
       processorF: Future[ChainApi],
       headers: Vector[BlockHeader],
       height: Int): Future[Assertion] = {
-    val processedHeadersF = processorF.flatMap(_.processHeaders(headers))
 
-    @tailrec
-    def loop(
-        remainingHeaders: Vector[BlockHeader],
-        prevHeaderDbOpt: Option[BlockHeaderDb],
-        height: Int,
-        accum: Vector[Future[Assertion]]): Vector[Future[Assertion]] = {
-      remainingHeaders match {
-        case header +: headersTail =>
-          val getHeaderF = processedHeadersF.flatMap(_.getHeader(header.hashBE))
+    def processedHeadersF =
+      for {
+        chainApi <- processorF
+        chainApiWithHeaders <-
+          FutureUtil.foldLeftAsync(chainApi, headers.grouped(2000).toVector)(
+            (chainApi, headers) => chainApi.processHeaders(headers))
+      } yield {
+        FutureUtil.foldLeftAsync((Option.empty[BlockHeaderDb],
+                                  height,
+                                  Vector.empty[Future[Assertion]]),
+                                 headers) {
+          case ((prevHeaderDbOpt, height, assertions), header) =>
+            for {
+              headerOpt <- chainApiWithHeaders.getHeader(header.hashBE)
+            } yield {
+              val chainWork = prevHeaderDbOpt match {
+                case None => Pow.getBlockProof(header)
+                case Some(prevHeader) =>
+                  prevHeader.chainWork + Pow.getBlockProof(header)
+              }
 
-          val chainWork = prevHeaderDbOpt match {
-            case None => Pow.getBlockProof(header)
-            case Some(prevHeader) =>
-              prevHeader.chainWork + Pow.getBlockProof(header)
-          }
+              val expectedBlockHeaderDb =
+                BlockHeaderDbHelper.fromBlockHeader(height, chainWork, header)
 
-          val expectedBlockHeaderDb =
-            BlockHeaderDbHelper.fromBlockHeader(height, chainWork, header)
-          val assertionF =
-            getHeaderF.map(headerOpt =>
-              assert(headerOpt.contains(expectedBlockHeaderDb)))
-          val newAccum = accum.:+(assertionF)
-          loop(remainingHeaders = headersTail,
-               prevHeaderDbOpt = Some(expectedBlockHeaderDb),
-               height = height + 1,
-               accum = newAccum)
-        case Vector() =>
-          accum
+              val newHeight = height + 1
+
+              val newAssertions = assertions :+ Future(
+                assert(headerOpt.contains(expectedBlockHeaderDb)))
+
+              (Some(expectedBlockHeaderDb), newHeight, newAssertions)
+            }
+        }
       }
+
+    for {
+      processedHeaders <- processedHeadersF
+      (_, _, vecFutAssert) <- processedHeaders
+      assertion <- ScalaTestUtil.toAssertF(vecFutAssert)
+    } yield {
+      assertion
     }
 
-    val vecFutAssert: Vector[Future[Assertion]] =
-      loop(remainingHeaders = headers,
-           prevHeaderDbOpt = None,
-           height = height,
-           accum = Vector.empty)
-
-    ScalaTestUtil.toAssertF(vecFutAssert)
   }
 
   /** Builds two competing headers that are built from the same parent */

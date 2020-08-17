@@ -12,11 +12,11 @@ object FutureUtil {
     * @return The processed elements
     */
   def sequentially[T, U](items: Iterable[T])(fun: T => Future[U])(implicit
-      ec: ExecutionContext): Future[List[U]] = {
-    val init = Future.successful(List.empty[U])
+      ec: ExecutionContext): Future[Vector[U]] = {
+    val init = Future.successful(Vector.empty[U])
     items.foldLeft(init) { (f, item) =>
       f.flatMap { x =>
-        fun(item).map(_ :: x)
+        fun(item).map(_ +: x)
       }
     } map (_.reverse)
   }
@@ -28,7 +28,7 @@ object FutureUtil {
     * @return The processed elements
     */
   def collect[T](items: Iterable[Future[T]])(implicit
-      ec: ExecutionContext): Future[List[T]] = {
+      ec: ExecutionContext): Future[Vector[T]] = {
     FutureUtil.sequentially(items)(x => x)
   }
 
