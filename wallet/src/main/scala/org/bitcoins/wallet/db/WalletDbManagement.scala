@@ -61,6 +61,10 @@ trait WalletDbManagement extends DbManagement {
     DLCCETSignatureDAO()(ec, appConfig).table
   }
 
+  private lazy val dlcRefundSigTable: TableQuery[Table[_]] = {
+    DLCRefundSigDAO()(ec, appConfig).table
+  }
+
   // Ordering matters here, tables with a foreign key should be listed after
   // the table that key references
   override lazy val allTables: List[TableQuery[Table[_]]] = {
@@ -76,7 +80,8 @@ trait WalletDbManagement extends DbManagement {
       dlcOfferTable,
       dlcAcceptTable,
       dlcFundingInputsTable,
-      dlcCETSigTable
+      dlcCETSigTable,
+      dlcRefundSigTable
     )
   }
 
