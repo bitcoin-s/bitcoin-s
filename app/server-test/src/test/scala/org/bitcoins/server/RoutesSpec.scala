@@ -8,6 +8,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.Core
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd._
@@ -37,6 +38,7 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockWalletApi
+import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
@@ -469,6 +471,27 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         contentType == `application/json`
         responseAs[
           String] == """{"result":"""" + testAddressStr + """","error":null}"""
+      }
+    }
+
+    "get address info" in {
+
+      val key = ECPublicKey.freshPublicKey
+      val hdPath = HDPath.fromString("m/84'/1'/0'/0/0").get
+
+      (mockWalletApi
+        .getAddressInfo(_: BitcoinAddress))
+        .expects(testAddress)
+        .returning(Future.successful(Some(AddressInfo(key, RegTest, hdPath))))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getaddressinfo", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[
+          String] == """{"result":"""" + key.hex + " " + hdPath.toString + """","error":null}"""
       }
     }
 
