@@ -650,7 +650,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val route = walletRoutes.handleCommand(
         ServerCommand("sendtoaddress",
-                      Arr(Str(testAddressStr), Num(100), Num(4))))
+                      Arr(Str(testAddressStr), Num(100), Num(4), Bool(true))))
 
       Post() ~> route ~> check {
         contentType == `application/json`
@@ -660,7 +660,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       // negative cases
 
       val route1 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr(Null, Null, Null)))
+        ServerCommand("sendtoaddress", Arr(Null, Null, Null, Bool(false))))
 
       Post() ~> route1 ~> check {
         rejection == ValidationRejection(
@@ -669,7 +669,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
 
       val route2 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr("Null", Null, Null)))
+        ServerCommand("sendtoaddress", Arr("Null", Null, Null, Bool(false))))
 
       Post() ~> route2 ~> check {
         rejection == ValidationRejection(
@@ -678,7 +678,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
 
       val route3 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Null, Null)))
+        ServerCommand("sendtoaddress",
+                      Arr(Str(testAddressStr), Null, Null, Bool(false))))
 
       Post() ~> route3 ~> check {
         rejection == ValidationRejection(
@@ -688,7 +689,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val route4 = walletRoutes.handleCommand(
         ServerCommand("sendtoaddress",
-                      Arr(Str(testAddressStr), Str("abc"), Null)))
+                      Arr(Str(testAddressStr), Str("abc"), Null, Bool(false))))
 
       Post() ~> route4 ~> check {
         rejection == ValidationRejection(

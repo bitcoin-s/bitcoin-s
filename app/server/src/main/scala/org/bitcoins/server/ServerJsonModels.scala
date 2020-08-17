@@ -325,7 +325,8 @@ object Rescan extends ServerJsonModels {
 case class SendToAddress(
     address: BitcoinAddress,
     amount: Bitcoins,
-    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
+    noBroadcast: Boolean)
 
 object SendToAddress extends ServerJsonModels {
 
@@ -333,14 +334,15 @@ object SendToAddress extends ServerJsonModels {
   // custom akka-http directive?
   def fromJsArr(jsArr: ujson.Arr): Try[SendToAddress] = {
     jsArr.arr.toList match {
-      case addrJs :: bitcoinsJs :: satsPerVBytesJs :: Nil =>
+      case addrJs :: bitcoinsJs :: satsPerVBytesJs :: noBroadcastJs :: Nil =>
         Try {
           val address = jsToBitcoinAddress(addrJs)
           val bitcoins = Bitcoins(bitcoinsJs.num)
           val satoshisPerVirtualByte =
             nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
               SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
-          SendToAddress(address, bitcoins, satoshisPerVirtualByte)
+          val noBroadcast = noBroadcastJs.bool
+          SendToAddress(address, bitcoins, satoshisPerVirtualByte, noBroadcast)
         }
       case Nil =>
         Failure(
@@ -350,7 +352,7 @@ object SendToAddress extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 3"))
+            s"Bad number of arguments: ${other.length}. Expected: 4"))
     }
   }
 
