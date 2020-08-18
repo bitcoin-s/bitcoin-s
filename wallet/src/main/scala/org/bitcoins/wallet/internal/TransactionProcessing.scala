@@ -67,8 +67,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     transactionDAO.findAll()
 
   private[wallet] case class ProcessTxResult(
-      updatedIncoming: List[SpendingInfoDb],
-      updatedOutgoing: List[SpendingInfoDb])
+      updatedIncoming: Vector[SpendingInfoDb],
+      updatedOutgoing: Vector[SpendingInfoDb])
 
   /////////////////////
   // Internal wallet API
@@ -154,6 +154,49 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       }
     }
 
+  private def processIncomingUtxos(
+      transaction: Transaction,
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[Vector[SpendingInfoDb]] =
+    spendingInfoDAO
+      .findTx(transaction)
+      .flatMap {
+        // no existing elements found
+        case Vector() =>
+          processNewIncomingTx(transaction, blockHashOpt, newTags)
+            .map(_.toVector)
+
+        case txos: Vector[SpendingInfoDb] =>
+          FutureUtil
+            .sequentially(txos)(txo =>
+              processExistingIncomingTxo(transaction, blockHashOpt, txo))
+            .map(_.toVector)
+      }
+
+  def processOutgoingUtxos(
+      transaction: Transaction,
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[
+    Vector[SpendingInfoDb]] = {
+    for {
+      outputsBeingSpent <- spendingInfoDAO.findOutputsBeingSpent(transaction)
+
+      // unreserved outputs now they are in a block
+      outputsToUse = blockHashOpt match {
+        case Some(_) =>
+          outputsBeingSpent.map { out =>
+            if (out.state == TxoState.Reserved)
+              out.copyWithState(TxoState.PendingConfirmationsReceived)
+            else out
+          }
+        case None =>
+          outputsBeingSpent
+      }
+
+      processed <- FutureUtil.sequentially(outputsToUse)(markAsPendingSpent)
+    } yield processed.flatten.toVector
+
+  }
+
   /** Does the grunt work of processing a TX.
     * This is called by either the internal or public TX
     * processing method, which logs and transforms the
@@ -166,49 +209,13 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
     logger.debug(
       s"Processing transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
-    def incomingTxoFut: Future[Vector[SpendingInfoDb]] =
-      spendingInfoDAO
-        .findTx(transaction)
-        .flatMap {
-          // no existing elements found
-          case Vector() =>
-            processNewIncomingTx(transaction, blockHashOpt, newTags)
-              .map(_.toVector)
-
-          case txos: Vector[SpendingInfoDb] =>
-            FutureUtil
-              .sequentially(txos)(txo =>
-                processExistingIncomingTxo(transaction, blockHashOpt, txo))
-              .map(_.toVector)
-        }
-
-    def outgoingTxFut: Future[Vector[SpendingInfoDb]] = {
-      for {
-        outputsBeingSpent <- spendingInfoDAO.findOutputsBeingSpent(transaction)
-
-        // unreserved outputs now they are in a block
-        outputsToUse = blockHashOpt match {
-          case Some(_) =>
-            outputsBeingSpent.map { out =>
-              if (out.state == TxoState.Reserved)
-                out.copyWithState(TxoState.PendingConfirmationsReceived)
-              else out
-            }
-          case None =>
-            outputsBeingSpent
-        }
-
-        processed <- FutureUtil.sequentially(outputsToUse)(markAsPendingSpent)
-      } yield processed.flatten.toVector
-
-    }
 
     for {
-      incoming <- incomingTxoFut
-      outgoing <- outgoingTxFut
+      incoming <- processIncomingUtxos(transaction, blockHashOpt, newTags)
+      outgoing <- processOutgoingUtxos(transaction, blockHashOpt)
       _ <- walletCallbacks.executeOnTransactionProcessed(logger, transaction)
     } yield {
-      ProcessTxResult(incoming.toList, outgoing.toList)
+      ProcessTxResult(incoming, outgoing)
     }
   }
 
