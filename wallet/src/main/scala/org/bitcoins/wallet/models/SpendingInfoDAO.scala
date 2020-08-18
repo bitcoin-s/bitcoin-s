@@ -85,7 +85,9 @@ case class SpendingInfoDAO()(implicit
       .run(actions.transactionally)
       .map {
         case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
-        case _                 => throw new SQLException("unexpected result")
+        case _ =>
+          throw new SQLException(
+            s"Unexpected result: Cannot create either a UTXO or a SPK record for $si")
       }
   }
 
@@ -133,7 +135,9 @@ case class SpendingInfoDAO()(implicit
       .run(actions.transactionally)
       .map {
         case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
-        case _                       => throw new SQLException("unexpected result")
+        case _ =>
+          throw new SQLException(
+            s"Unexpected result: Cannot update either a UTXO or a SPK record for $si")
       }
   }
 
@@ -167,7 +171,9 @@ case class SpendingInfoDAO()(implicit
       .run(actions.transactionally)
       .map {
         case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
-        case _                       => throw new SQLException("unexpected result")
+        case _ =>
+          throw new SQLException(
+            s"Unexpected result: Cannot upsert either a UTXO or a SPK record for $si")
       }
   }
 
@@ -207,7 +213,7 @@ case class SpendingInfoDAO()(implicit
 
     for {
       utxos <- _findOutputsBeingSpent
-      spks <- findPublicKeyScriptsByUtxos(utxos)
+      spks <- findScriptPubKeysByUtxos(utxos)
     } yield {
       utxos.map(utxo =>
         utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey))
@@ -260,8 +266,8 @@ case class SpendingInfoDAO()(implicit
 
     for {
       res <- _withAddress
-      utxoSpks <- findPublicKeyScriptsByUtxos(res.map(_._1))
-      addrSpks <- findPublicKeyScripts(res.map(_._2.scriptPubKeyId))
+      utxoSpks <- findScriptPubKeysByUtxos(res.map(_._1))
+      addrSpks <- findScriptPubKeys(res.map(_._2.scriptPubKeyId))
     } yield {
       res.map(r =>
         (r._1.toSpendingInfoDb(utxoSpks(r._1.scriptPubKeyId).scriptPubKey),
@@ -318,7 +324,7 @@ case class SpendingInfoDAO()(implicit
 
   def utxoToInfo(utxos: Vector[UTXORecord]): Future[Vector[SpendingInfoDb]] =
     for {
-      spks <- findPublicKeyScriptsByUtxos(utxos)
+      spks <- findScriptPubKeysByUtxos(utxos)
     } yield utxos.map(utxo =>
       utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey))
 
@@ -430,16 +436,16 @@ case class SpendingInfoDAO()(implicit
       })
   }
 
-  private def findPublicKeyScripts(
+  private def findScriptPubKeys(
       ids: Seq[Long]): Future[Map[Long, ScriptPubKeyDb]] = {
     val query = spkTable.filter(t => t.id.inSet(ids))
     safeDatabase.runVec(query.result).map(_.map(spk => (spk.id.get, spk)).toMap)
   }
 
-  private def findPublicKeyScriptsByUtxos(
+  private def findScriptPubKeysByUtxos(
       utxos: Seq[UTXORecord]): Future[Map[Long, ScriptPubKeyDb]] = {
     val ids = utxos.map(_.scriptPubKeyId)
-    findPublicKeyScripts(ids)
+    findScriptPubKeys(ids)
   }
 
   private def findPublicKeyScriptsBySpendingInfoDb(

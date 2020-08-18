@@ -70,7 +70,9 @@ case class AddressDAO()(implicit
       .run(actions.transactionally)
       .map {
         case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
-        case _                       => throw new SQLException("unexpected result")
+        case _ =>
+          throw new SQLException(
+            s"Unexpected result: Cannot create either a address or a SPK record for $addressDb")
       }
 
   }
@@ -104,7 +106,9 @@ case class AddressDAO()(implicit
       .run(actions.transactionally)
       .map {
         case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
-        case _                       => throw new SQLException("unexpected result")
+        case _ =>
+          throw new SQLException(
+            s"Unexpected result: Cannot upsert either a address or a SPK record for $addressDb")
       }
   }
 
