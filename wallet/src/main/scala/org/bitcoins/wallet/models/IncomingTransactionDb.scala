@@ -1,6 +1,7 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.wallet.transactions.TxDB
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 /**

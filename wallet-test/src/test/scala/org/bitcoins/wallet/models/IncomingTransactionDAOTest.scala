@@ -1,6 +1,10 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.wallet.transactions.{
+  TransactionDb,
+  TransactionDbHelper
+}
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 
@@ -9,7 +13,7 @@ class IncomingTransactionDAOTest
     with WalletDAOFixture {
 
   val txDb: TransactionDb =
-    TransactionDb.fromTransaction(WalletTestUtil.sampleTransaction)
+    TransactionDbHelper.fromTransaction(WalletTestUtil.sampleTransaction)
 
   val incoming: IncomingTransactionDb =
     IncomingTransactionDb(WalletTestUtil.sampleTransaction.txIdBE,

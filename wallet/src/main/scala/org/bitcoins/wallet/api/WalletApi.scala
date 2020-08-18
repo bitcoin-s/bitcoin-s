@@ -20,10 +20,11 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.transactions.TransactionDb
 import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.WalletLogger
-import org.bitcoins.wallet.models.{AddressDb, ScriptPubKeyDb, TransactionDb}
+import org.bitcoins.wallet.models.{AddressDb, ScriptPubKeyDb}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}

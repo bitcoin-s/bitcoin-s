@@ -26,6 +26,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.core.wallet.transactions.TransactionDb
 import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}

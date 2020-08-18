@@ -8,6 +8,10 @@ import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.transactions.{
+  TransactionDb,
+  TransactionDbHelper
+}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.wallet._
@@ -79,7 +83,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       feeRate: FeeUnit,
       inputAmount: CurrencyUnit,
       sentAmount: CurrencyUnit): Future[OutgoingTransactionDb] = {
-    val txDb = TransactionDb.fromTransaction(transaction)
+    val txDb = TransactionDbHelper.fromTransaction(transaction)
     val outgoingDb =
       OutgoingTransactionDb.fromTransaction(transaction,
                                             inputAmount,
@@ -363,7 +367,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   private[wallet] def insertIncomingTransaction(
       transaction: Transaction,
       incomingAmount: CurrencyUnit): Future[IncomingTransactionDb] = {
-    val txDb = TransactionDb.fromTransaction(transaction)
+    val txDb = TransactionDbHelper.fromTransaction(transaction)
     val incomingDb = IncomingTransactionDb(transaction.txIdBE, incomingAmount)
     for {
       _ <- transactionDAO.upsert(txDb)
