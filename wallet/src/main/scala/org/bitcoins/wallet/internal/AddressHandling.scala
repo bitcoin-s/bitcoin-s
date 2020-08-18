@@ -235,24 +235,18 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
-    val addrF =
-      getNewAddressHelper(account, HDChainType.External)
-    addrF
+    getNewAddressHelper(account, HDChainType.External)
   }
 
   /** @inheritdoc */
   override def getNewAddress(): Future[BitcoinAddress] = {
-    for {
-      address <- getNewAddress(walletConfig.defaultAddressType)
-    } yield address
+    getNewAddress(walletConfig.defaultAddressType)
   }
 
   /** @inheritdoc */
   override def getNewAddress(
       tags: Vector[AddressTag]): Future[BitcoinAddress] = {
-    for {
-      address <- getNewAddress(walletConfig.defaultAddressType, tags)
-    } yield address
+    getNewAddress(walletConfig.defaultAddressType, tags)
   }
 
   /** @inheritdoc */
@@ -395,9 +389,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   /** @inheritdoc */
   override def getAddressInfo(
       address: BitcoinAddress): Future[Option[AddressInfo]] = {
-
-    val addressOptF = addressDAO.findAddress(address)
-    addressOptF.map { addressOpt =>
+    addressDAO.findAddress(address).map { addressOpt =>
       addressOpt.map { address =>
         AddressInfo(pubkey = address.ecPublicKey,
                     network = address.address.networkParameters,
@@ -503,18 +495,12 @@ private[wallet] trait AddressHandling extends WalletLogger {
         logger.debug(
           s"Processing $account $chainType in our address request queue")
 
-        val addressDbF = getNewAddressDb(account, chainType)
-        val resultF: Future[BitcoinAddress] = addressDbF.flatMap { addressDb =>
-          val writeF = addressDAO.create(addressDb)
-
-          val addrF = writeF.map { w =>
-            promise.success(w)
-            w.address
-          }
-          addrF.failed.foreach { exn =>
-            promise.failure(exn)
-          }
-          addrF
+        val resultF = for {
+          addressDb <- getNewAddressDb(account, chainType)
+          writtenAddressDb <- addressDAO.create(addressDb)
+        } yield {
+          promise.success(writtenAddressDb)
+          writtenAddressDb
         }
         //make sure this is completed before we iterate to the next one
         //otherwise we will possibly have a race condition
