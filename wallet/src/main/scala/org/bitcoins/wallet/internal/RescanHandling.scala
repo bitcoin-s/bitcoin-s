@@ -212,7 +212,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     val threadPool =
       Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors() * 2)
 
-    for {
+    val blocksF = for {
       blocks <- getMatchingBlocks(
         scripts = scriptPubKeys,
         startOpt = startOpt,
@@ -221,6 +221,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
       threadPool.shutdown()
       blocks.sortBy(_.blockHeight).map(_.blockHash.flip)
     }
+
+    blocksF.onComplete(_ => threadPool.shutdown())
+    blocksF
   }
 
   private def generateScriptPubKeys(
