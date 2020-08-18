@@ -169,7 +169,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     for {
       aggregate <- {
 
-        val incomingTxoFut: Future[Vector[SpendingInfoDb]] =
+        def incomingTxoFut: Future[Vector[SpendingInfoDb]] =
           spendingInfoDAO
             .findTx(transaction)
             .flatMap {
@@ -185,7 +185,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
                   .map(_.toVector)
             }
 
-        val outgoingTxFut: Future[Vector[SpendingInfoDb]] = {
+        def outgoingTxFut: Future[Vector[SpendingInfoDb]] = {
           for {
             outputsBeingSpent <-
               spendingInfoDAO.findOutputsBeingSpent(transaction)
@@ -362,20 +362,20 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   private def addUTXOsFut(
       outputsWithIndex: Seq[OutputWithIndex],
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Seq[SpendingInfoDb]] =
-    Future
-      .sequence {
-        outputsWithIndex.map(out =>
-          processUtxo(
-            transaction,
-            out.index,
-            // TODO is this correct?
-            //we probably need to incorporate what
-            //what our wallet's desired confirmation number is
-            state = TxoState.PendingConfirmationsReceived,
-            blockHash = blockHashOpt
-          ))
-      }
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[
+    Seq[SpendingInfoDb]] = {
+    FutureUtil.sequentially(outputsWithIndex) { out =>
+      processUtxo(
+        transaction,
+        out.index,
+        // TODO is this correct?
+        //we probably need to incorporate what
+        //what our wallet's desired confirmation number is
+        state = TxoState.PendingConfirmationsReceived,
+        blockHash = blockHashOpt
+      )
+    }
+  }
 
   private[wallet] def insertIncomingTransaction(
       transaction: Transaction,
@@ -390,7 +390,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
   private def getRelevantOutputs(
       transaction: Transaction): Future[Seq[OutputWithIndex]] = {
-    addressDAO.findAll().map { addrs =>
+    addressDAO.findAllAddresses().map { addrs =>
       val withIndex =
         transaction.outputs.zipWithIndex
       withIndex.collect {

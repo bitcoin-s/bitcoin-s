@@ -64,7 +64,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       // Give tx a fake hash so it can appear as it's in a block
       hash <- bitcoind.getBestBlockHash
-      _ <- wallet.spendingInfoDAO.upsertAll(
+      _ <- wallet.spendingInfoDAO.upsertAllSpendingInfoDb(
         updatedCoins.map(_.copyWithBlockHash(hash)).toVector)
 
       // Put confirmations on top of the tx's block

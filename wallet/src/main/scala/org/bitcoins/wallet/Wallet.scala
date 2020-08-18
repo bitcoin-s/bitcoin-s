@@ -47,7 +47,7 @@ import org.bitcoins.keymanager.{KeyManagerParams, KeyManagerUnlockError}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
-import org.bitcoins.wallet.models.{SpendingInfoDb, _}
+import org.bitcoins.wallet.models.{ScriptPubKeyDAO, SpendingInfoDb, _}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -76,6 +76,7 @@ abstract class Wallet
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
   private[wallet] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
   private[wallet] val transactionDAO: TransactionDAO = TransactionDAO()
+  private[wallet] val scriptPubKeyDAO: ScriptPubKeyDAO = ScriptPubKeyDAO()
 
   private[wallet] val incomingTxDAO: IncomingTransactionDAO =
     IncomingTransactionDAO()
@@ -92,7 +93,7 @@ abstract class Wallet
 
   private def utxosWithMissingTx: Future[Vector[SpendingInfoDb]] = {
     for {
-      utxos <- spendingInfoDAO.findAll()
+      utxos <- spendingInfoDAO.findAllSpendingInfos()
       hasTxs <- FutureUtil.foldLeftAsync(Vector.empty[SpendingInfoDb], utxos) {
         (accum, utxo) =>
           // If we don't have tx in our transactionDAO, add it to the list
@@ -195,10 +196,10 @@ abstract class Wallet
     for {
       accountUtxos <- spendingInfoDAO.findAllForAccount(account)
       deleteUtxoFs = accountUtxos.map(spendingInfoDAO.delete)
-      _ <- Future.sequence(deleteUtxoFs)
+      _ <- FutureUtil.collect(deleteUtxoFs)
       accountAddresses <- addressDAO.findAllForAccount(account)
       deleteAddrFs = accountAddresses.map(addressDAO.delete)
-      _ <- Future.sequence(deleteAddrFs)
+      _ <- FutureUtil.collect(deleteAddrFs)
     } yield this
   }
 
@@ -206,6 +207,7 @@ abstract class Wallet
     for {
       _ <- spendingInfoDAO.deleteAll()
       _ <- addressDAO.deleteAll()
+      _ <- scriptPubKeyDAO.deleteAll()
     } yield this
   }
 
@@ -395,7 +397,7 @@ abstract class Wallet
 
       prevTxFs = utxoDbs.map(utxo =>
         transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
-      prevTxs <- Future.sequence(prevTxFs)
+      prevTxs <- FutureUtil.collect(prevTxFs)
       utxos =
         utxoDbs
           .zip(prevTxs)
@@ -684,7 +686,7 @@ object Wallet extends WalletLogger {
     } yield accounts
 
     val accountCreationF =
-      createAccountFutures.flatMap(accounts => Future.sequence(accounts))
+      createAccountFutures.flatMap(accounts => FutureUtil.collect(accounts))
 
     accountCreationF.foreach { _ =>
       logger.debug(s"Created root level accounts for wallet")
