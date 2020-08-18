@@ -6,7 +6,7 @@ import org.bitcoins.crypto.Sign
 
 import scala.util.Try
 
-sealed trait KeyManagerApi
+trait KeyManagerApi
 
 trait BIP39KeyManagerApi extends KeyManagerApi {
   def toSign(privKeyPath: HDPath): Sign
