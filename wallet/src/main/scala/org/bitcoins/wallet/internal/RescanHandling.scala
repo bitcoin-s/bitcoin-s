@@ -218,6 +218,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         startOpt = startOpt,
         endOpt = endOpt)(ExecutionContext.fromExecutor(threadPool))
     } yield {
+      threadPool.shutdown()
       blocks.sortBy(_.blockHeight).map(_.blockHash.flip)
     }
 

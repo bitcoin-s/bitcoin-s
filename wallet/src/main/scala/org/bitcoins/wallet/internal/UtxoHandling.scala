@@ -241,19 +241,20 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
       // second check: do we have an address associated with the provided
       // output in our DB?
-      val addressDbEitherF: Future[CompatEither[AddUtxoError, AddressDb]] =
+      def addressDbEitherF: Future[CompatEither[AddUtxoError, AddressDb]] =
         findAddress(output.scriptPubKey)
 
       // insert the UTXO into the DB
       addressDbEitherF.flatMap { addressDbE =>
-        val biasedE: CompatEither[AddUtxoError, Future[SpendingInfoDb]] = for {
-          addressDb <- addressDbE
-        } yield writeUtxo(tx = transaction,
-                          state = state,
-                          output = output,
-                          outPoint = outPoint,
-                          addressDb = addressDb,
-                          blockHash = blockHash)
+        def biasedE: CompatEither[AddUtxoError, Future[SpendingInfoDb]] =
+          for {
+            addressDb <- addressDbE
+          } yield writeUtxo(tx = transaction,
+                            state = state,
+                            output = output,
+                            outPoint = outPoint,
+                            addressDb = addressDb,
+                            blockHash = blockHash)
 
         EitherUtil.liftRightBiasedFutureE(biasedE)
       } map {
