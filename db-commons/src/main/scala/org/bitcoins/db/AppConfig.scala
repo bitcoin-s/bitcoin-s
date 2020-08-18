@@ -161,8 +161,8 @@ abstract class AppConfig extends LoggerConfig with StartStopAsync[Unit] {
     baseDatadir.resolve(lastDirname)
   }
 
-  override val logFile: Path = {
-    val path = datadir.resolve("bitcoin-s.log")
+  override val logLocation: Path = {
+    val path = datadir
     // Set property for loggers
     System.setProperty("bitcoins.log.location", path.toAbsolutePath.toString)
     path

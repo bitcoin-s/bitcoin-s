@@ -76,8 +76,7 @@ object Main extends App with BitcoinSLogger {
       datadirPath.resolve(lastDirname)
     }
 
-    System.setProperty("bitcoins.log.location",
-                       datadir.resolve("bitcoin-s.log").toAbsolutePath.toString)
+    System.setProperty("bitcoins.log.location", datadir.toAbsolutePath.toString)
 
     implicit val system: ActorSystem = ActorSystem("bitcoin-s", baseConfig)
     implicit val ec: ExecutionContext = system.dispatcher

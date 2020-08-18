@@ -3,12 +3,16 @@ package org.bitcoins.db
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import ch.qos.logback.classic.{Logger, LoggerContext}
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.classic.{Logger, LoggerContext}
 import ch.qos.logback.core.encoder.Encoder
-import ch.qos.logback.core.rolling.{RollingFileAppender, TimeBasedRollingPolicy}
+import ch.qos.logback.core.rolling.{
+  RollingFileAppender,
+  SizeAndTimeBasedRollingPolicy
+}
+import ch.qos.logback.core.util.FileSize
 import ch.qos.logback.core.{Appender, ConsoleAppender, FileAppender}
 import org.slf4j.LoggerFactory
 
@@ -78,13 +82,16 @@ private[bitcoins] trait AppLoggers {
     logFileAppender.setName(s"FILE-${logger.hashCode}")
     logFileAppender.setEncoder(encoder)
     logFileAppender.setAppend(true)
-    logFileAppender.setFile(conf.logFile.toString)
+    logFileAppender.setFile(conf.logLocation.resolve("bitcoin-s.log").toString)
 
-    val logFilePolicy = new TimeBasedRollingPolicy()
+    val logFilePolicy = new SizeAndTimeBasedRollingPolicy()
     logFilePolicy.setContext(context)
     logFilePolicy.setParent(logFileAppender)
-    logFilePolicy.setFileNamePattern("bitcoin-s-%d{yyyy-MM-dd_HH}.log")
-    logFilePolicy.setMaxHistory(7)
+    logFilePolicy.setFileNamePattern(
+      s"${conf.logLocation}/logs/bitcoin-s-%d{yyyy-MM-dd_HH}.%i.log")
+    logFilePolicy.setMaxHistory(48)
+    logFilePolicy.setMaxFileSize(FileSize.valueOf("100MB"))
+    logFilePolicy.setTotalSizeCap(FileSize.valueOf("2GB"))
     logFilePolicy.start()
 
     logFileAppender.setRollingPolicy(logFilePolicy)
