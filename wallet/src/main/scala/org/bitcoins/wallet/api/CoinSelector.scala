@@ -5,7 +5,7 @@ import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.wallet.models.SpendingInfoDb
+import org.bitcoins.core.wallet.utxo.SpendingInfoDb
 
 import scala.annotation.tailrec
 import scala.util.Random

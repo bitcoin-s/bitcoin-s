@@ -1,12 +1,12 @@
 package org.bitcoins.testkit.keymanager
 
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.keymanager.KeyManagerParams
+import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
-trait KeyManagerUnitTest extends BitcoinSUnitTest {
+trait KeyManagerApiUnitTest extends BitcoinSUnitTest {
 
   def withInitializedKeyManager(
       kmParams: KeyManagerParams = KeyManagerTestUtil.createKeyManagerParams(),

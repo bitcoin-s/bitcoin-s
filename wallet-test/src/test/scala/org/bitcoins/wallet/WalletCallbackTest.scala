@@ -2,9 +2,9 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
+import org.bitcoins.core.wallet.utxo.SpendingInfoDb
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.bitcoins.wallet.models.SpendingInfoDb
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.{Future, Promise}

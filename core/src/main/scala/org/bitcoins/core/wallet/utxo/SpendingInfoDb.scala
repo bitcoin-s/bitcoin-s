@@ -1,6 +1,7 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.api.db.DbRowAutoInc
+import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.hd.{
   HDPath,
   LegacyHDPath,
@@ -14,14 +15,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.utxo.{
-  ConditionalPath,
-  InputInfo,
-  ScriptSignatureParams,
-  TxoState
-}
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sign}
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
 
 /**
   * DB representation of a native V0
@@ -175,7 +169,7 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
     * a signable (and sensitive) real-world UTXO
     */
   def toUTXOInfo(
-      keyManager: BIP39KeyManager,
+      keyManager: BIP39KeyManagerApi,
       prevTransaction: Transaction): ScriptSignatureParams[InputInfo] = {
 
     val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)

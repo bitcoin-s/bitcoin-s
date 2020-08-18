@@ -10,10 +10,10 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
-import org.bitcoins.keymanager.KeyManagerParams
+import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
+import org.bitcoins.wallet.models.{AccountDb, AddressDb}
 
 import scala.concurrent.{ExecutionContext, Future}
 

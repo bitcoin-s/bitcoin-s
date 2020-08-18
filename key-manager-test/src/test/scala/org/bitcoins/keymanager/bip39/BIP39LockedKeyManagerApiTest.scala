@@ -1,10 +1,13 @@
 package org.bitcoins.keymanager.bip39
 
+import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError
 import org.bitcoins.crypto.AesPassword
-import org.bitcoins.keymanager.KeyManagerUnlockError
-import org.bitcoins.testkit.keymanager.{KeyManagerTestUtil, KeyManagerUnitTest}
+import org.bitcoins.testkit.keymanager.{
+  KeyManagerApiUnitTest,
+  KeyManagerTestUtil
+}
 
-class BIP39LockedKeyManagerTest extends KeyManagerUnitTest {
+class BIP39LockedKeyManagerApiTest extends KeyManagerApiUnitTest {
 
   it must "be able to read a locked mnemonic from disk" in {
     val bip39PwOpt = KeyManagerTestUtil.bip39PasswordOpt

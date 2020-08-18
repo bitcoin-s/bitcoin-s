@@ -29,6 +29,8 @@ import org.bitcoins.core.wallet.utxo.{
   AddressLabelTagType,
   AddressTag,
   AddressTagType,
+  SegwitV0SpendingInfo,
+  SpendingInfoDb,
   TxoState
 }
 import org.bitcoins.crypto.{

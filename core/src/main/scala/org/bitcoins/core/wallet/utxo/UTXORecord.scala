@@ -1,5 +1,6 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.core.wallet.utxo
 
+import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{
   HDPath,
@@ -16,9 +17,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.api.db.DbRowAutoInc
 
 case class UTXORecord(
     outpoint: TransactionOutPoint,
@@ -27,7 +26,7 @@ case class UTXORecord(
     scriptPubKeyId: Long, // output SPK
     value: CurrencyUnit, // output value
     path: HDPath,
-    redeemScript: Option[ScriptPubKey], // ReedemScript
+    redeemScript: Option[ScriptPubKey], // RedeemScript
     scriptWitness: Option[ScriptWitness],
     blockHash: Option[DoubleSha256DigestBE], // block hash
     id: Option[Long] = None
