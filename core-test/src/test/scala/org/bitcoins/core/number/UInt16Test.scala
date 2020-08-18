@@ -111,6 +111,16 @@ class UInt16Test extends BitcoinSUnitTest {
     }
   }
 
+  it must "subtract from zero correctly" in {
+    forAll(NumberGenerator.uInt16) { num =>
+      if (num == UInt16.zero) {
+        assert(UInt16.zero - num == UInt16.zero)
+      } else {
+        assert(Try(UInt16.zero - num).isFailure)
+      }
+    }
+  }
+
   it must "subtract a uint16 from another uint16 and get the correct result" in {
     forAll(NumberGenerator.uInt16, NumberGenerator.uInt16) {
       (num1: UInt16, num2: UInt16) =>

@@ -34,8 +34,10 @@ object TLV extends Factory[TLV] {
     (tpe, length, value)
   }
 
-  private[tlv] val allFactories: Vector[TLVFactory[TLV]] =
+  private val allFactories: Vector[TLVFactory[TLV]] =
     Vector(ErrorTLV, PingTLV, PongTLV)
+
+  val knownTypes: Vector[BigSizeUInt] = allFactories.map(_.tpe)
 
   def fromBytes(bytes: ByteVector): TLV = {
     val (tpe, _, value) = decodeTLV(bytes)
@@ -61,7 +63,7 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
 }
 
 case class UnknownTLV(tpe: BigSizeUInt, value: ByteVector) extends TLV {
-  require(!TLV.allFactories.map(_.tpe).contains(tpe), s"Type $tpe is known")
+  require(!TLV.knownTypes.contains(tpe), s"Type $tpe is known")
 }
 
 object UnknownTLV extends Factory[UnknownTLV] {

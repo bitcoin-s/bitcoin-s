@@ -4,17 +4,10 @@ import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.tlv._
 import org.scalacheck.Gen
 
-import scala.util.{Failure, Success, Try}
-
 trait TLVGen {
 
   def unknownTpe: Gen[BigSizeUInt] = {
-    NumberGenerator.bigSizeUInt.suchThat { tpe =>
-      Try(TLV(tpe.bytes ++ BigSizeUInt(0).bytes)) match {
-        case Success(UnknownTLV(_, _)) => true
-        case Success(_) | Failure(_)   => false
-      }
-    }
+    NumberGenerator.bigSizeUInt.suchThat(num => !TLV.knownTypes.contains(num))
   }
 
   def unknownTLV: Gen[UnknownTLV] = {
