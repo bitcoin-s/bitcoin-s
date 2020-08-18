@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType}
+import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagDb, AddressTagType}
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
@@ -20,7 +20,6 @@ import org.bitcoins.wallet.models.{
   AccountDb,
   AddressDb,
   AddressDbHelper,
-  AddressTagDb,
   ScriptPubKeyDb
 }
 

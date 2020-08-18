@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.{
   AddressTag,
+  AddressTagDb,
   AddressTagName,
   AddressTagType,
   InternalAddressTagType

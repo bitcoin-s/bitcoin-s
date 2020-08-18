@@ -1,12 +1,6 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.wallet.utxo.{
-  AddressTag,
-  AddressTagName,
-  AddressTagType,
-  InternalAddressTag
-}
 
 case class AddressTagDb(
     address: BitcoinAddress,
