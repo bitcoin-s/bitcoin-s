@@ -71,4 +71,8 @@ object BigSizeUInt extends Factory[BigSizeUInt] {
 
     bigSizeUInt
   }
+
+  def calcFor(bytes: ByteVector): BigSizeUInt = {
+    BigSizeUInt(bytes.length)
+  }
 }

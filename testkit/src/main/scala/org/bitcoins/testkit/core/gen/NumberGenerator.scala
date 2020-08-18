@@ -49,6 +49,8 @@ trait NumberGenerator {
 
   def uInt8s: Gen[Seq[UInt8]] = Gen.listOf(uInt8)
 
+  def uInt16: Gen[UInt16] = Gen.choose(0, 65535).map(UInt16(_))
+
   /**
     * Generates a number in the range 0 <= x <= 2 ^^32 - 1
     * then wraps it in a UInt32
