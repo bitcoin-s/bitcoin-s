@@ -88,7 +88,7 @@ private[bitcoins] trait AppLoggers {
     logFilePolicy.setContext(context)
     logFilePolicy.setParent(logFileAppender)
     logFilePolicy.setFileNamePattern(
-      s"${conf.logLocation}/logs/bitcoin-s-%d{yyyy-MM-dd_HH}.log")
+      s"${conf.logLocation}/logs/bitcoin-s-%d{yyyy-MM-dd_HH}.%i.log")
     logFilePolicy.setMaxHistory(48)
     logFilePolicy.setMaxFileSize(FileSize.valueOf("100MB"))
     logFilePolicy.setTotalSizeCap(FileSize.valueOf("2GB"))
