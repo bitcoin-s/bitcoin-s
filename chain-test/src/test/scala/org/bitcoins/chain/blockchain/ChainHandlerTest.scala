@@ -585,79 +585,53 @@ class ChainHandlerTest extends ChainDbUnitTest {
     }
   }
 
-  private def fetchHeadersFromDb(
-      chainApi: ChainApi,
-      headers: Vector[BlockHeader]): Future[Vector[BlockHeaderDb]] = {
-    def f(headers: Vector[BlockHeader]): Future[Vector[BlockHeaderDb]] = {
-      val nested = headers.map { h =>
-        chainApi
-          .getHeader(h.hashBE)
-          .map {
-            case Some(h) => h
-            case None    => fail(s"Failed to find header=${h} in database")
-          }
-      }
-      Future.sequence(nested)
-    }
-    val result = FutureUtil
-      .batchAndSyncExecute[BlockHeader, BlockHeaderDb](elements = headers,
-                                                       f = f,
-                                                       batchSize = 1000)
-    result
-  }
-
   final def processHeaders(
       processorF: Future[ChainApi],
       headers: Vector[BlockHeader],
       height: Int): Future[Assertion] = {
-    val processedHeadersF = processorF.flatMap(_.processHeaders(headers))
 
-    val dbHeadersF = for {
-      chainApi <- processedHeadersF
-      dbHeaders <- fetchHeadersFromDb(chainApi, headers)
-    } yield {
-      dbHeaders
-    }
+    def processedHeadersF =
+      for {
+        chainApi <- processorF
+        chainApiWithHeaders <-
+          FutureUtil.foldLeftAsync(chainApi, headers.grouped(2000).toVector)(
+            (chainApi, headers) => chainApi.processHeaders(headers))
+      } yield {
+        FutureUtil.foldLeftAsync((Option.empty[BlockHeaderDb],
+                                  height,
+                                  Vector.empty[Future[Assertion]]),
+                                 headers) {
+          case ((prevHeaderDbOpt, height, assertions), header) =>
+            for {
+              headerOpt <- chainApiWithHeaders.getHeader(header.hashBE)
+            } yield {
+              val chainWork = prevHeaderDbOpt match {
+                case None => Pow.getBlockProof(header)
+                case Some(prevHeader) =>
+                  prevHeader.chainWork + Pow.getBlockProof(header)
+              }
 
-    @tailrec
-    def loop(
-        remainingHeaders: Vector[BlockHeaderDb],
-        prevHeaderDbOpt: Option[BlockHeaderDb],
-        height: Int,
-        accum: Vector[Assertion]): Vector[Assertion] = {
-      remainingHeaders match {
-        case headerDb +: headersTail =>
-          val header = headerDb.blockHeader
-          val chainWork = prevHeaderDbOpt match {
-            case None => Pow.getBlockProof(header)
-            case Some(prevHeader) =>
-              prevHeader.chainWork + Pow.getBlockProof(header)
-          }
+              val expectedBlockHeaderDb =
+                BlockHeaderDbHelper.fromBlockHeader(height, chainWork, header)
 
-          val expectedBlockHeaderDb = {
-            BlockHeaderDbHelper.fromBlockHeader(height, chainWork, header)
-          }
-          val assertion = assert(headerDb == expectedBlockHeaderDb)
-          val newAccum = accum.:+(assertion)
-          loop(remainingHeaders = headersTail,
-               prevHeaderDbOpt = Some(expectedBlockHeaderDb),
-               height = height + 1,
-               accum = newAccum)
-        case Vector() =>
-          accum
+              val newHeight = height + 1
+
+              val newAssertions = assertions :+ Future(
+                assert(headerOpt.contains(expectedBlockHeaderDb)))
+
+              (Some(expectedBlockHeaderDb), newHeight, newAssertions)
+            }
+        }
       }
-    }
 
-    val vecFutAssert: Future[Vector[Assertion]] = for {
-      dbHeaders <- dbHeadersF
+    for {
+      processedHeaders <- processedHeadersF
+      (_, _, vecFutAssert) <- processedHeaders
+      assertion <- ScalaTestUtil.toAssertF(vecFutAssert)
     } yield {
-      loop(remainingHeaders = dbHeaders,
-           prevHeaderDbOpt = None,
-           height = height,
-           accum = Vector.empty)
+      assertion
     }
 
-    vecFutAssert.map(_ => succeed)
   }
 
   /** Builds two competing headers that are built from the same parent */

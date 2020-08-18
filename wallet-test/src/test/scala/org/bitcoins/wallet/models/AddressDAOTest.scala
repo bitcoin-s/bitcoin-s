@@ -9,32 +9,52 @@ class AddressDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
   behavior of "AddressDAO"
 
-  it should "fail to insert and read an address into the database without a corresponding account" in {
+  it should "preserve public key scripts" in { daos =>
+    val addressDAO = daos.addressDAO
+
+    val addr1 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
+                                            addressIndex = 0)
+    val addr2 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
+                                            addressIndex = 1)
+    assert(addr1.scriptPubKey != addr2.scriptPubKey)
+
+    for {
+      created1 <- addressDAO.create(addr1)
+      created2 <- addressDAO.create(addr2)
+      found <- addressDAO.findAllAddresses()
+    } yield {
+      assert(addr1 == created1)
+      assert(addr2 == created2)
+      assert(
+        Vector(addr1, addr2).sortBy(_.address.toString) == found.sortBy(
+          _.address.toString))
+    }
+  }
+
+  it should "fail to insert and read an address into the database without a corresponding public key script" in {
     daos =>
       val addressDAO = daos.addressDAO
       val readF = {
         val addressDb =
           WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb)
-        addressDAO.create(addressDb)
+        addressDAO.create(AddressRecord.fromAddressDb(addressDb, -1))
       }
-
       recoverToSucceededIf[SQLException](readF)
   }
 
-  it should "insert and read an address into the database with a corresponding account" in {
+  it should "insert and read an address into the database with a corresponding public key script" in {
     daos =>
-      val accountDAO = daos.accountDAO
       val addressDAO = daos.addressDAO
       for {
-        createdAccount <- {
-          val account = WalletTestUtil.firstAccountDb
-          accountDAO.create(account)
-        }
         createdAddress <- {
-          val addressDb = WalletTestUtil.getAddressDb(createdAccount)
+          val addressDb =
+            WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb)
           addressDAO.create(addressDb)
         }
-        readAddress <- addressDAO.read(createdAddress.address)
+        readAddress <- {
+          addressDAO.findAddress(createdAddress.address)
+        }
       } yield assert(readAddress.contains(createdAddress))
   }
+
 }

@@ -5,9 +5,9 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.db.NodeDbManagement
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BitcoinSUnitTest}
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
 
@@ -56,7 +56,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
                                           dbConfig(ProjectType.Wallet))
     val walletDbManagement = createWalletDbManagement(walletAppConfig)
     val result = walletDbManagement.migrate()
-    val expected = if (walletAppConfig.driverName == "postgresql") 5 else 7
+    val expected = if (walletAppConfig.driverName == "postgresql") 6 else 8
     assert(result == expected)
   }
 

@@ -163,7 +163,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
 
     for {
-      addrDbs <- wallet.spendingInfoDAO.findAll()
+      addrDbs <- wallet.spendingInfoDAO.findAllSpendingInfos()
       fundedAddresses <- wallet.listUnusedAddresses()
     } yield {
       val intersect = addrDbs

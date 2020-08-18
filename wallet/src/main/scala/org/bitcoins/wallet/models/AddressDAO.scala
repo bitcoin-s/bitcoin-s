@@ -1,37 +1,24 @@
 package org.bitcoins.wallet.models
 
+import java.sql.SQLException
+
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd.{
-  HDAccount,
-  HDChainType,
-  HDCoinType,
-  HDPurpose,
-  HDPurposes,
-  LegacyHDPath,
-  NestedSegWitHDPath,
-  SegWitHDPath
-}
-import org.bitcoins.core.protocol.{
-  Bech32Address,
-  BitcoinAddress,
-  P2PKHAddress,
-  P2SHAddress
-}
+import org.bitcoins.core.hd.{HDAccount, HDChainType, HDCoinType, HDPurpose}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
-import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config.WalletAppConfig
-import slick.lifted.{ForeignKeyQuery, ProvenShape}
+import slick.lifted.ForeignKeyQuery
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class AddressDAO()(implicit
     ec: ExecutionContext,
     config: WalletAppConfig
-) extends CRUD[AddressDb, BitcoinAddress]
-    with SlickUtil[AddressDb, BitcoinAddress] {
+) extends CRUD[AddressRecord, BitcoinAddress]
+    with SlickUtil[AddressRecord, BitcoinAddress] {
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
@@ -44,38 +31,166 @@ case class AddressDAO()(implicit
     SpendingInfoDAO().table
   }
 
-  private lazy val accountTable: slick.lifted.TableQuery[
-    AccountDAO#AccountTable] = {
-    AccountDAO().table
+  private lazy val spkTable: profile.api.TableQuery[
+    ScriptPubKeyDAO#ScriptPubKeyTable] = {
+    ScriptPubKeyDAO().table
   }
 
-  override def createAll(ts: Vector[AddressDb]): Future[Vector[AddressDb]] =
+  override def createAll(
+      ts: Vector[AddressRecord]): Future[Vector[AddressRecord]] =
     createAllNoAutoInc(ts, safeDatabase)
 
+  def create(addressDb: AddressDb): Future[AddressDb] = {
+    val spkFind =
+      spkTable.filter(_.scriptPubKey === addressDb.scriptPubKey).result
+    val actions = for {
+      spkOpt: Option[ScriptPubKeyDb] <- spkFind.headOption
+      _ <- spkOpt match {
+        case Some(foundSpk) =>
+          table += AddressRecord.fromAddressDb(addressDb, foundSpk.id.get)
+        case None =>
+          (for {
+            newSpkId <-
+              (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
+                addressDb.scriptPubKey))
+          } yield {
+            val record = AddressRecord.fromAddressDb(addressDb, newSpkId)
+            table += record
+          }).flatten
+      }
+      addr <- table.filter(_.address === addressDb.address).result.headOption
+      spk <-
+        spkTable
+          .filter(_.scriptPubKey === addressDb.scriptPubKey)
+          .result
+          .headOption
+    } yield (addr, spk)
+
+    database
+      .run(actions.transactionally)
+      .map {
+        case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
+        case _ =>
+          throw new SQLException(
+            s"Unexpected result: Cannot create either a address or a SPK record for $addressDb")
+      }
+
+  }
+
+  def upsert(addressDb: AddressDb): Future[AddressDb] = {
+    val spkFind =
+      spkTable.filter(_.scriptPubKey === addressDb.scriptPubKey).result
+    val actions = for {
+      spkOpt: Option[ScriptPubKeyDb] <- spkFind.headOption
+      _ <- spkOpt match {
+        case Some(foundSpk) =>
+          table.insertOrUpdate(
+            AddressRecord.fromAddressDb(addressDb, foundSpk.id.get))
+        case None =>
+          (for {
+            newSpkId <-
+              (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
+                addressDb.scriptPubKey))
+          } yield table.insertOrUpdate(
+            AddressRecord.fromAddressDb(addressDb, newSpkId))).flatten
+      }
+      addr <- table.filter(_.address === addressDb.address).result.headOption
+      spk <-
+        spkTable
+          .filter(_.scriptPubKey === addressDb.scriptPubKey)
+          .result
+          .headOption
+    } yield (addr, spk)
+
+    safeDatabase
+      .run(actions.transactionally)
+      .map {
+        case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
+        case _ =>
+          throw new SQLException(
+            s"Unexpected result: Cannot upsert either a address or a SPK record for $addressDb")
+      }
+  }
+
+  def delete(addressDb: AddressDb): Future[Int] = {
+    val spkDelete =
+      spkTable.filter(_.scriptPubKey === addressDb.scriptPubKey).delete
+    val addrDelete = table.filter(_.address === addressDb.address).delete
+    safeDatabase
+      .run(DBIO.sequence(Seq(addrDelete, spkDelete)).transactionally)
+      .map(_.sum)
+  }
+
   /** Finds the rows that correlate to the given primary keys */
-  override def findByPrimaryKeys(
-      addresses: Vector[BitcoinAddress]): Query[AddressTable, AddressDb, Seq] =
+  override def findByPrimaryKeys(addresses: Vector[BitcoinAddress]): Query[
+    AddressTable,
+    AddressRecord,
+    Seq] =
     table.filter(_.address.inSet(addresses))
 
   override def findAll(
-      ts: Vector[AddressDb]): Query[AddressTable, AddressDb, Seq] =
+      ts: Vector[AddressRecord]): Query[AddressTable, AddressRecord, Seq] =
     findByPrimaryKeys(ts.map(_.address))
 
-  def findAddress(addr: BitcoinAddress): Future[Option[AddressDb]] = {
-    val query = findByPrimaryKey(addr).result
-    database.run(query).map(_.headOption)
+  def findAllAddresses(): Future[Vector[AddressDb]] = {
+    val query = table
+      .join(spkTable)
+      .on(_.scriptPubKeyId === _.id)
+    safeDatabase
+      .runVec(query.result)
+      .map(res =>
+        res.map {
+          case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+        })
   }
 
-  private def addressesForAccountQuery(
-      accountIndex: Int): Query[AddressTable, AddressDb, Seq] =
-    table.filter(_.accountIndex === accountIndex)
-
-  def findAllForAccount(account: HDAccount): Future[Vector[AddressDb]] = {
+  def findAddress(addr: BitcoinAddress): Future[Option[AddressDb]] = {
     val query = table
+      .join(spkTable)
+      .on(_.scriptPubKeyId === _.id)
+      .filter(_._1.address === addr)
+    safeDatabase
+      .run(query.result)
+      .map(_.headOption)
+      .map(res =>
+        res.map {
+          case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+        })
+  }
+
+  private def addressesForAccountQuery(accountIndex: Int): Query[
+    (AddressTable, ScriptPubKeyDAO#ScriptPubKeyTable),
+    (AddressRecord, ScriptPubKeyDb),
+    Seq] =
+    table
+      .join(spkTable)
+      .on(_.scriptPubKeyId === _.id)
+      .filter(_._1.accountIndex === accountIndex)
+
+  def findAllAddressDbForAccount(
+      account: HDAccount): Future[Vector[AddressDb]] = {
+    val query = table
+      .join(spkTable)
+      .on(_.scriptPubKeyId === _.id)
+      .filter(_._1.purpose === account.purpose)
+      .filter(_._1.accountIndex === account.index)
+      .filter(_._1.accountCoin === account.coin.coinType)
+
+    safeDatabase
+      .runVec(query.result)
+      .map(res =>
+        res.map {
+          case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+        })
+  }
+
+  def findAllForAccount(account: HDAccount): Future[Vector[AddressRecord]] = {
+    val query = table
+      .filter(_.purpose === account.purpose)
       .filter(_.accountIndex === account.index)
       .filter(_.accountCoin === account.coin.coinType)
 
-    database.run(query.result).map(_.toVector)
+    safeDatabase.runVec(query.result)
   }
 
   /**
@@ -85,7 +200,11 @@ case class AddressDAO()(implicit
     val query =
       findMostRecentForChain(hdAccount, HDChainType.Change)
 
-    safeDatabase.run(query)
+    safeDatabase
+      .run(query)
+      .map(_.map {
+        case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+      })
   }
 
   /** Finds all public keys in the wallet */
@@ -96,23 +215,26 @@ case class AddressDAO()(implicit
 
   /** Finds all SPKs in the wallet */
   def findAllSPKs(): Future[Vector[ScriptPubKey]] = {
-    val query = table.map(_.scriptPubKey).distinct
-    safeDatabase.run(query.result).map(_.toVector)
+    val query = table.join(spkTable).on(_.scriptPubKeyId === _.id)
+    safeDatabase.run(query.result).map(_.toVector.map(_._2.scriptPubKey))
   }
 
   def getUnusedAddresses: Future[Vector[AddressDb]] = {
-    val query: slick.lifted.Query[
-      (AddressTable, _),
-      (AddressTable#TableElementType, Option[SpendingInfoDb]),
-      Seq] = {
-      val joined =
-        table
+    val query = {
+      val joineWithSpks = table.join(spkTable).on(_.scriptPubKeyId === _.id)
+      val joinedWithSpendingInfo =
+        joineWithSpks
           .joinLeft(spendingInfoTable)
-          .on(_.scriptPubKey === _.scriptPubKey)
-      joined.filter(_._2.isEmpty)
+          .on(_._1.scriptPubKeyId === _.scriptPubKeyId)
+      joinedWithSpendingInfo.filter(_._2.isEmpty)
     }
-
-    safeDatabase.runVec(query.result).map(_.map(_._1))
+    safeDatabase
+      .runVec(query.result)
+      .map(res =>
+        res.map {
+          case ((addrRec, spkRec), _) =>
+            addrRec.toAddressDb(spkRec.scriptPubKey)
+        })
   }
 
   def getUnusedAddresses(hdAccount: HDAccount): Future[Vector[AddressDb]] = {
@@ -120,39 +242,45 @@ case class AddressDAO()(implicit
   }
 
   def getSpentAddresses: Future[Vector[AddressDb]] = {
-    val query = table
-      .join(spendingInfoTable)
-      .on(_.scriptPubKey === _.scriptPubKey)
-      .filter(_._2.state.inSet(TxoState.spentStates))
-      .map(_._1)
+    val query =
+      table
+        .join(spkTable)
+        .on(_.scriptPubKeyId === _.id)
+        .join(spendingInfoTable)
+        .on(_._1.scriptPubKeyId === _.scriptPubKeyId)
+        .filter(_._2.state.inSet(TxoState.spentStates))
+        .map(_._1)
 
-    safeDatabase.runVec(query.result)
+    safeDatabase
+      .runVec(query.result)
+      .map(res =>
+        res.map {
+          case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+        })
   }
 
   def getFundedAddresses: Future[Vector[(AddressDb, CurrencyUnit)]] = {
     val query = table
+      .join(spkTable)
+      .on(_.scriptPubKeyId === _.id)
       .join(spendingInfoTable)
-      .on(_.scriptPubKey === _.scriptPubKey)
+      .on(_._1.scriptPubKeyId === _.scriptPubKeyId)
       .filter(_._2.state.inSet(TxoState.receivedStates))
 
     safeDatabase
       .runVec(query.result)
       .map(_.map {
-        case (addrDb, utxoDb) => (addrDb, utxoDb.output.value)
+        case ((addrRec, spkRec), utxoDb) =>
+          (addrRec.toAddressDb(spkRec.scriptPubKey), utxoDb.value)
       })
   }
 
-  private def findMostRecentForChain(
-      account: HDAccount,
-      chain: HDChainType): slick.sql.SqlAction[
-    Option[AddressDb],
-    NoStream,
-    Effect.Read] = {
+  private def findMostRecentForChain(account: HDAccount, chain: HDChainType) = {
     addressesForAccountQuery(account.index)
-      .filter(_.purpose === account.purpose)
-      .filter(_.accountCoin === account.coin.coinType)
-      .filter(_.accountChainType === chain)
-      .sortBy(_.addressIndex.desc)
+      .filter(_._1.purpose === account.purpose)
+      .filter(_._1.accountCoin === account.coin.coinType)
+      .filter(_._1.accountChainType === chain)
+      .sortBy(_._1.addressIndex.desc)
       .take(1)
       .result
       .headOption
@@ -165,14 +293,18 @@ case class AddressDAO()(implicit
       hdAccount: HDAccount): Future[Option[AddressDb]] = {
     val query =
       findMostRecentForChain(hdAccount, HDChainType.External)
-    safeDatabase.run(query)
+    safeDatabase
+      .run(query)
+      .map(_.map {
+        case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+      })
   }
 
   /**
     * todo: this needs design rework.
     * todo: https://github.com/bitcoin-s/bitcoin-s-core/pull/391#discussion_r274188334
     */
-  class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
+  class AddressTable(tag: Tag) extends Table[AddressRecord](tag, "addresses") {
 
     def purpose: Rep[HDPurpose] = column("hd_purpose")
 
@@ -190,158 +322,27 @@ case class AddressDAO()(implicit
 
     def hashedPubKey: Rep[Sha256Hash160Digest] = column("hashed_pubkey")
 
-    def scriptType: Rep[ScriptType] = column("script_type")
-
-    def scriptPubKey: Rep[ScriptPubKey] = column("script_pub_key", O.Unique)
+    def scriptPubKeyId: Rep[Long] = column("script_pub_key_id", O.Unique)
 
     def scriptWitness: Rep[Option[ScriptWitness]] = column("script_witness")
 
-    private type AddressTuple = (
-        HDPurpose,
-        Int,
-        HDCoinType,
-        HDChainType,
-        BitcoinAddress,
-        Option[ScriptWitness],
-        ScriptPubKey,
-        Int,
-        ECPublicKey,
-        Sha256Hash160Digest,
-        ScriptType)
-
-    private val fromTuple: AddressTuple => AddressDb = {
-      case (purpose,
-            accountIndex,
-            accountCoin,
-            accountChain,
-            address,
-            scriptWitnessOpt,
-            scriptPubKey,
-            addressIndex,
-            pubKey,
-            hashedPubKey,
-            scriptType @ _ // what should we do about this? scriptType is inferrable from purpose
-          ) =>
-        (purpose, address, scriptWitnessOpt) match {
-          case (HDPurposes.SegWit,
-                bechAddr: Bech32Address,
-                Some(scriptWitness)) =>
-            val path =
-              SegWitHDPath(coinType = accountCoin,
-                           accountIndex = accountIndex,
-                           chainType = accountChain,
-                           addressIndex = addressIndex)
-
-            SegWitAddressDb(path,
-                            ecPublicKey = pubKey,
-                            hashedPubKey = hashedPubKey,
-                            address = bechAddr,
-                            witnessScript = scriptWitness,
-                            scriptPubKey = scriptPubKey)
-
-          case (HDPurposes.Legacy, legacyAddr: P2PKHAddress, None) =>
-            val path = LegacyHDPath(coinType = accountCoin,
-                                    accountIndex = accountIndex,
-                                    chainType = accountChain,
-                                    addressIndex = addressIndex)
-            LegacyAddressDb(path,
-                            pubKey,
-                            hashedPubKey,
-                            legacyAddr,
-                            scriptPubKey = scriptPubKey)
-
-          case (HDPurposes.NestedSegWit,
-                address: P2SHAddress,
-                Some(scriptWitness)) =>
-            val path = NestedSegWitHDPath(coinType = accountCoin,
-                                          accountIndex = accountIndex,
-                                          chainType = accountChain,
-                                          addressIndex = addressIndex)
-            NestedSegWitAddressDb(path,
-                                  pubKey,
-                                  hashedPubKey,
-                                  address,
-                                  witnessScript = scriptWitness,
-                                  scriptPubKey = scriptPubKey)
-          case (purpose: HDPurpose,
-                address: BitcoinAddress,
-                scriptWitnessOpt) =>
-            throw new IllegalArgumentException(
-              s"Got invalid combination of HD purpose, address and script witness: $purpose, $address, $scriptWitnessOpt")
-        }
-    }
-
-    private val toTuple: AddressDb => Option[AddressTuple] = {
-      case SegWitAddressDb(path,
-                           pubKey,
-                           hashedPubKey,
-                           address,
-                           scriptWitness,
-                           scriptPubKey) =>
-        Some(
-          (path.purpose,
-           path.account.index,
-           path.coin.coinType,
-           path.chain.chainType,
-           address,
-           Some(scriptWitness),
-           scriptPubKey,
-           path.address.index,
-           pubKey,
-           hashedPubKey,
-           ScriptType.WITNESS_V0_KEYHASH))
-      case LegacyAddressDb(path, pubkey, hashedPub, address, scriptPubKey) =>
-        Some(
-          path.purpose,
-          path.account.index,
-          path.coin.coinType,
-          path.chain.chainType,
-          address,
-          None, // scriptwitness
-          scriptPubKey,
-          path.address.index,
-          pubkey,
-          hashedPub,
-          ScriptType.PUBKEYHASH
-        )
-      case NestedSegWitAddressDb(path,
-                                 pubKey,
-                                 hashedPubKey,
-                                 address,
-                                 scriptWitness,
-                                 scriptPubKey) =>
-        Some(
-          (path.purpose,
-           path.account.index,
-           path.coin.coinType,
-           path.chain.chainType,
-           address,
-           Some(scriptWitness),
-           scriptPubKey,
-           path.address.index,
-           pubKey,
-           hashedPubKey,
-           ScriptType.SCRIPTHASH))
-    }
-
-    override def * : ProvenShape[AddressDb] =
+    override def * =
       (purpose,
-       accountIndex,
        accountCoin,
+       accountIndex,
        accountChainType,
-       address,
-       scriptWitness,
-       scriptPubKey,
        addressIndex,
+       address,
        ecPublicKey,
        hashedPubKey,
-       scriptType) <> (fromTuple, toTuple)
+       scriptPubKeyId,
+       scriptWitness) <> ((AddressRecord.apply _).tupled, AddressRecord.unapply)
 
-    def fk: ForeignKeyQuery[_, AccountDb] =
-      foreignKey("fk_account",
-                 sourceColumns = (purpose, accountCoin, accountIndex),
-                 targetTableQuery = accountTable) { accountTable =>
-        (accountTable.purpose, accountTable.coinType, accountTable.index)
-      }
+    def fk_scriptPubKeyId: ForeignKeyQuery[_, ScriptPubKeyDb] = {
+      foreignKey("fk_spk",
+                 sourceColumns = scriptPubKeyId,
+                 targetTableQuery = spkTable)(_.id)
+    }
+
   }
 }

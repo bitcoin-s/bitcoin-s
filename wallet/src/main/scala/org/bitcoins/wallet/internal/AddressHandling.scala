@@ -49,7 +49,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   override def listAddresses(): Future[Vector[AddressDb]] =
-    addressDAO.findAll()
+    addressDAO.findAllAddresses()
 
   override def listAddresses(account: HDAccount): Future[Vector[AddressDb]] = {
     val allAddressesF: Future[Vector[AddressDb]] = listAddresses()
