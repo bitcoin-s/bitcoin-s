@@ -26,7 +26,7 @@ import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 import org.scalatest._
 
 import scala.concurrent.{
@@ -564,10 +564,12 @@ object BitcoinSWalletTest extends WalletLogger {
       versionOpt: Option[BitcoindVersion],
       nodeApi: NodeApi,
       bip39PasswordOpt: Option[String],
-      chainQueryApi: ChainQueryApi)(implicit
+      chainQueryApi: ChainQueryApi,
+      walletCallbacks: WalletCallbacks)(implicit
       config: BitcoinSAppConfig,
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
+    config.walletConf.addCallbacks(walletCallbacks)
     for {
       wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi,
                                                          chainQueryApi,
@@ -581,10 +583,12 @@ object BitcoinSWalletTest extends WalletLogger {
       bitcoindRpcClient: BitcoindRpcClient,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      bip39PasswordOpt: Option[String])(implicit
+      bip39PasswordOpt: Option[String],
+      walletCallbacks: WalletCallbacks)(implicit
       config: BitcoinSAppConfig,
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
+    config.walletConf.addCallbacks(walletCallbacks)
     for {
       wallet <- BitcoinSWalletTest.createWallet2Accounts(
         nodeApi = nodeApi,

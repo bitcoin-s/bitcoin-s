@@ -17,7 +17,7 @@ import org.bitcoins.testkit.node.{
   NodeUnitTest
 }
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.{OnTransactionProcessed, Wallet, WalletCallbacks}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -39,9 +39,11 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     } else {
       withNeutrinoNodeFundedWalletBitcoind(
         test = test,
-        callbacks = callbacks,
+        nodeCallbacks = nodeCallbacks,
+        walletCallbacks = walletCallbacks,
         bip39PasswordOpt = getBIP39PasswordOpt(),
-        versionOpt = Some(BitcoindVersion.Experimental))
+        versionOpt = Some(BitcoindVersion.Experimental)
+      )
     }
   }
 
@@ -62,13 +64,17 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
   val FeeRate = SatoshisPerByte(10.sats)
   val TestFees = 2240.sats
 
-  def callbacks: NodeCallbacks = {
-    val onTxReceived: OnTxReceived = { tx =>
+  def walletCallbacks: WalletCallbacks = {
+    val onTxProcessed: OnTransactionProcessed = { tx =>
       Future {
         txs.add(tx)
         ()
       }
     }
+    WalletCallbacks(onTransactionProcessed = Vector(onTxProcessed))
+  }
+
+  def nodeCallbacks: NodeCallbacks = {
     val onBlock: OnBlockReceived = { block =>
       for {
         _ <- wallet.processBlock(block)
@@ -82,8 +88,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
     NodeCallbacks(
       onBlockReceived = Vector(onBlock),
-      onCompactFiltersReceived = Vector(onCompactFilters),
-      onTxReceived = Vector(onTxReceived)
+      onCompactFiltersReceived = Vector(onCompactFilters)
     )
   }
 
@@ -169,6 +174,15 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
       wallet = param.wallet
 
+      def generateBlock() =
+        for {
+          _ <-
+            bitcoind.getNewAddress
+              .flatMap(bitcoind.generateToAddress(1, _))
+          _ <- NodeTestUtil.awaitSync(node, bitcoind)
+          _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+        } yield ()
+
       val pk1 = ECPublicKey.freshPublicKey
       val pk2 = ECPublicKey.freshPublicKey
       val spk = MultiSignatureScriptPubKey(2, Vector(pk1, pk2))
@@ -180,17 +194,17 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
+        // start watching
         _ <- wallet.watchScriptPubKey(spk)
 
         // send
         txSent <- wallet.sendToOutputs(Vector(output), FeeRate)
+        _ <- node.broadcastTransaction(txSent)
 
         // confirm
-        _ <-
-          bitcoind.getNewAddress
-            .flatMap(bitcoind.generateToAddress(1, _))
-        _ <- NodeTestUtil.awaitSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+        _ <- generateBlock()
+        _ <- generateBlock()
+        _ <- generateBlock()
 
         // verify
         _ <- AsyncUtil.awaitConditionF { () =>
