@@ -1,12 +1,13 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db
+import org.bitcoins.core.api.wallet.db.AddressTagDb
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.{
   AddressTag,
-  AddressTagDb,
   AddressTagName,
   AddressTagType,
   InternalAddressTagType
@@ -178,7 +179,7 @@ case class AddressTagDAO()(implicit
 
     private val fromTuple: AddressTagTuple => AddressTagDb = {
       case (address, tagName, tagType) =>
-        AddressTagDb(address, tagName, tagType)
+        db.AddressTagDb(address, tagName, tagType)
     }
 
     private val toTuple: AddressTagDb => Option[AddressTagTuple] =

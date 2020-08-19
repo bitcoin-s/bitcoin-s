@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.api.wallet.db.{AddressTagDb, SpendingInfoDb}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
