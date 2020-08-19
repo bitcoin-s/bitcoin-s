@@ -20,7 +20,7 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.Wallet
 import org.scalatest.FutureOutcome
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
@@ -45,8 +45,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     }
   }
 
-  private var walletP: Promise[Wallet] = Promise()
-  private var walletF: Future[Wallet] = walletP.future
+  private var wallet: Wallet = _
 
   // unlike other mutable collection types java.util.Vector is thread safe
   private var txs = new java.util.Vector[Transaction]()
@@ -56,8 +55,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     //are doing mutation to work around our callback
     //limitations, we can't currently modify callbacks
     //after a NeutrinoNode is constructed :-(
-    walletP = Promise()
-    walletF = walletP.future
     txs = new java.util.Vector[Transaction]()
   }
 
@@ -74,13 +71,11 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     }
     val onBlock: OnBlockReceived = { block =>
       for {
-        wallet <- walletF
         _ <- wallet.processBlock(block)
       } yield ()
     }
     val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
       for {
-        wallet <- walletF
         _ <- wallet.processCompactFilters(blockFilters)
       } yield ()
     }
@@ -94,9 +89,9 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
   it must "receive information about received payments" taggedAs UsesExperimentalBitcoind in {
     param =>
-      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+      val NeutrinoNodeFundedWalletBitcoind(node, _, bitcoind, _) = param
 
-      walletP.success(wallet)
+      wallet = param.wallet
 
       def condition(
           expectedConfirmedAmount: CurrencyUnit,
@@ -170,37 +165,9 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
   it must "watch an arbitrary SPKs" taggedAs UsesExperimentalBitcoind in {
     param =>
-      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+      val NeutrinoNodeFundedWalletBitcoind(node, _, bitcoind, _) = param
 
-      walletP.success(wallet)
-
-      def condition(
-          expectedConfirmedAmount: CurrencyUnit,
-          expectedUnconfirmedAmount: CurrencyUnit,
-          expectedUtxos: Int,
-          expectedAddresses: Int): Future[Boolean] = {
-        for {
-          confirmedBalance <- wallet.getConfirmedBalance()
-          unconfirmedBalance <- wallet.getUnconfirmedBalance()
-          addresses <- wallet.listAddresses()
-          utxos <- wallet.listDefaultAccountUtxos()
-        } yield {
-          (expectedConfirmedAmount == confirmedBalance) &&
-          (expectedUnconfirmedAmount == unconfirmedBalance) &&
-          (expectedAddresses == addresses.size) &&
-          (expectedUtxos == utxos.size)
-        }
-      }
-
-      val condition1 = () => {
-        condition(
-          expectedConfirmedAmount = 0.sats,
-          expectedUnconfirmedAmount =
-            BitcoinSWalletTest.expectedDefaultAmt - TestAmount - TestFees,
-          expectedUtxos = 3,
-          expectedAddresses = 7
-        )
-      }
+      wallet = param.wallet
 
       val pk1 = ECPublicKey.freshPublicKey
       val pk2 = ECPublicKey.freshPublicKey
@@ -212,6 +179,8 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- node.sync()
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+
+        _ <- wallet.watchScriptPubKey(spk)
 
         // send
         txSent <- wallet.sendToOutputs(Vector(output), FeeRate)
@@ -225,16 +194,16 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
         // verify
         _ <- AsyncUtil.awaitConditionF { () =>
-          Future.successful(txs.contains(txSent))
+          Future { txs.contains(txSent) }
         }
       } yield succeed
   }
 
   it must "rescan and receive information about received payments" taggedAs UsesExperimentalBitcoind in {
     param =>
-      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+      val NeutrinoNodeFundedWalletBitcoind(node, _, bitcoind, _) = param
 
-      walletP.success(wallet)
+      wallet = param.wallet
 
       def condition(): Future[Boolean] = {
         for {

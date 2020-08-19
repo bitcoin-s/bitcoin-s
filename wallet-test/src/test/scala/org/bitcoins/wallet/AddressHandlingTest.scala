@@ -5,7 +5,11 @@ import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
-import org.bitcoins.core.wallet.utxo.{AddressLabelTag, AddressLabelTagType, StorageLocationTagType}
+import org.bitcoins.core.wallet.utxo.{
+  AddressLabelTag,
+  AddressLabelTagType,
+  StorageLocationTagType
+}
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
