@@ -1,12 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import org.bitcoins.core.api.wallet.db
-import org.bitcoins.core.api.wallet.db.{
-  LegacySpendingInfo,
-  NestedSegwitV0SpendingInfo,
-  SegwitV0SpendingInfo,
-  SpendingInfoDb
-}
+import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
@@ -26,7 +21,6 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.core.wallet.transactions.TransactionDb
 import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}

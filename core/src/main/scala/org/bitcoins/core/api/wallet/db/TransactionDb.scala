@@ -1,4 +1,4 @@
-package org.bitcoins.core.wallet.transactions
+package org.bitcoins.core.api.wallet.db
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32

@@ -1,8 +1,8 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.TransactionDb
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.core.wallet.transactions.TransactionDb
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.config._
 import slick.lifted.{PrimaryKey, ProvenShape}

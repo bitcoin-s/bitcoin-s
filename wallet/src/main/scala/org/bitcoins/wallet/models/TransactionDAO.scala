@@ -1,9 +1,9 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.{TransactionDb, TxDB}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
-import org.bitcoins.core.wallet.transactions.{TransactionDb, TxDB}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config._

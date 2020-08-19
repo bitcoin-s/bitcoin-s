@@ -1,10 +1,7 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.{TransactionDb, TransactionDbHelper}
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.wallet.transactions.{
-  TransactionDb,
-  TransactionDbHelper
-}
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 
