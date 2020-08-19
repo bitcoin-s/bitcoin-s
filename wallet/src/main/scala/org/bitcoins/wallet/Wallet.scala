@@ -140,11 +140,9 @@ abstract class Wallet
     Wallet] = {
     for {
       utxos <- listUtxos()
-      addresses <- listAddresses()
+      scripts <- listScriptPubKeys()
       scriptPubKeys =
-        utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
-          .map(_.scriptPubKey)
-          .toSet
+        utxos.flatMap(_.redeemScriptOpt).toSet ++ scripts.map(_.scriptPubKey)
       _ <- FutureUtil.sequentially(blockFilters) {
         case (blockHash, blockFilter) =>
           val matcher = SimpleFilterMatcher(blockFilter)

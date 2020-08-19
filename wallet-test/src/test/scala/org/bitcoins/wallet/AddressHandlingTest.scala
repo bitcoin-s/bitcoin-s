@@ -1,14 +1,11 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
-import org.bitcoins.core.wallet.utxo.{
-  AddressLabelTag,
-  AddressLabelTagType,
-  StorageLocationTagType
-}
+import org.bitcoins.core.wallet.utxo.{AddressLabelTag, AddressLabelTagType, StorageLocationTagType}
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
@@ -242,6 +239,22 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       assert(numDropped == 2)
       assert(hotStorageTags.size == 1)
       assert(hotStorageTags.head.address == addr)
+    }
+  }
+
+  it must "add public key scripts to watch" in { fundedWallet: FundedWallet =>
+    val wallet = fundedWallet.wallet
+    val spk = EmptyScriptPubKey
+    for {
+      before <- wallet.listScriptPubKeys()
+      spkDb <- wallet.watchScriptPubKey(spk)
+      after <- wallet.listScriptPubKeys()
+    } yield {
+      assert(before.size + 1 == after.size)
+      assert(spkDb.scriptPubKey == spk)
+      assert(spkDb.id.nonEmpty)
+      assert(!before.contains(spkDb))
+      assert(after.contains(spkDb))
     }
   }
 }

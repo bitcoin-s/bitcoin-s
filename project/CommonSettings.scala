@@ -7,6 +7,7 @@ import sbt.Keys._
 import scala.util.Properties
 
 object CommonSettings {
+
   private val isCI = {
     sys.props
       .get("CI")
@@ -38,21 +39,14 @@ object CommonSettings {
     apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
     // scaladoc settings end
     ////
-
     scalacOptions in Compile := compilerOpts(scalaVersion.value),
     //remove annoying import unused things in the scala console
     //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
     scalacOptions in (Compile, console) ~= (_ filterNot (s =>
-      s == "-Ywarn-unused-import"
-        || s =="-Ywarn-unused"
-        || s =="-Xfatal-warnings"
-        //for 2.13 -- they use different compiler opts
-        || s == "-Xlint:unused")),
-
-    //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
-    scalacOptions in (Compile,doc) ~= (_ filterNot (s =>
       s == "-Xfatal-warnings")),
-
+    //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
+    scalacOptions in (Compile, doc) ~= (_ filterNot (s =>
+      s == "-Xfatal-warnings")),
     scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
     scalacOptions in Test := testCompilerOpts,
     Compile / compile / javacOptions ++= {
@@ -77,13 +71,11 @@ object CommonSettings {
     )
   }
 
-  private val scala2_13CompilerOpts = Seq("-Xlint:unused","-Xfatal-warnings")
+  private val scala2_13CompilerOpts = Seq("-Xfatal-warnings")
 
   private val nonScala2_13CompilerOpts = Seq(
     "-Xmax-classfile-name",
-    "128",
-    "-Ywarn-unused",
-    "-Ywarn-unused-import"
+    "128"
   )
 
   //https://docs.scala-lang.org/overviews/compiler-options/index.html
@@ -96,7 +88,6 @@ object CommonSettings {
       "-deprecation",
       "-Ywarn-dead-code",
       "-Ywarn-value-discard",
-      "-Ywarn-unused",
       "-unchecked",
       "-deprecation",
       "-feature"
@@ -123,5 +114,6 @@ object CommonSettings {
 
   lazy val prodSettings: Seq[Setting[_]] = settings
 
-  lazy val binariesPath = Paths.get(Properties.userHome, ".bitcoin-s", "binaries")
+  lazy val binariesPath =
+    Paths.get(Properties.userHome, ".bitcoin-s", "binaries")
 }
