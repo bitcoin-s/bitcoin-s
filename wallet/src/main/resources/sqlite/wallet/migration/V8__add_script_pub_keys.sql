@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS "txo_spending_info_backup" ("id" INTEGER PRIMARY KEY 
 INSERT INTO "txo_spending_info_backup" SELECT * FROM "txo_spending_info";
 DROP TABLE "txo_spending_info";
 CREATE TABLE IF NOT EXISTS "txo_spending_info" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"tx_outpoint" TEXT NOT NULL, "script_pub_key_id" INT NOT NULL,"value" INTEGER NOT NULL,"hd_privkey_path" TEXT NOT NULL,"redeem_script" TEXT,"script_witness" TEXT,"txid" VARCHAR(254) NOT NULL,"block_hash" VARCHAR(254), "txo_state" TEXT NOT NULL, constraint "fk_scriptPubKey" foreign key("script_pub_key_id") references "pub_key_scripts"("id"), constraint "fk_incoming_txId" foreign key("txid") references "wallet_incoming_txs"("txIdBE") on update NO ACTION on delete NO ACTION);
-INSERT INTO "txo_spending_info" ("id","tx_outpoint","script_pub_key_id","hd_privkey_path","redeem_script","script_witness","txid","block_hash","txo_state") SELECT t."id",t."tx_outpoint",s."id",t."hd_privkey_path",t."redeem_script",t."script_witness",t."txid",t."block_hash",t."txo_state" FROM "txo_spending_info_backup" t, "pub_key_scripts" s WHERE s."script_pub_key" = t."script_pub_key";
+INSERT INTO "txo_spending_info" ("id","tx_outpoint","script_pub_key_id","value","hd_privkey_path","redeem_script","script_witness","txid","block_hash","txo_state") SELECT t."id",t."tx_outpoint",s."id",t.value,t."hd_privkey_path",t."redeem_script",t."script_witness",t."txid",t."block_hash",t."txo_state" FROM "txo_spending_info_backup" t, "pub_key_scripts" s WHERE s."script_pub_key" = t."script_pub_key";
 CREATE INDEX "txo_spending_info_spk_idx" ON "txo_spending_info"("script_pub_key_id");
 DROP TABLE "txo_spending_info_backup";
 
