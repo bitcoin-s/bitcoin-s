@@ -199,7 +199,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
     val broadcastTx = BroadcastAbleTransaction(transaction)
 
-    txDAO.upsert(broadcastTx).onComplete {
+    val addToDbF = txDAO.upsert(broadcastTx)
+
+    addToDbF.onComplete {
       case Failure(exception) =>
         logger.error(s"Error when writing broadcastable TX to DB", exception)
       case Success(written) =>
@@ -207,8 +209,12 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           s"Wrote tx=${written.transaction.txIdBE} to broadcastable table")
     }
 
-    logger.info(s"Sending out inv for tx=${transaction.txIdBE}")
-    peerMsgSenderF.flatMap(_.sendInventoryMessage(transaction))
+    for {
+      _ <- addToDbF
+      peerMsgSender <- peerMsgSenderF
+      _ = logger.info(s"Sending out inv for tx=${transaction.txIdBE}")
+      _ <- peerMsgSender.sendInventoryMessage(transaction)
+    } yield ()
   }
 
   /**
