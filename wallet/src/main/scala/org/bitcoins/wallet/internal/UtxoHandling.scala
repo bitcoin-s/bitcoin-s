@@ -1,5 +1,11 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.core.api.wallet.db.{
+  LegacySpendingInfo,
+  NestedSegwitV0SpendingInfo,
+  SegwitV0SpendingInfo,
+  SpendingInfoDb
+}
 import org.bitcoins.core.compat._
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.number.UInt32

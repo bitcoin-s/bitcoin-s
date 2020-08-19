@@ -2,6 +2,7 @@ package org.bitcoins.wallet.models
 
 import java.sql.SQLException
 
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}

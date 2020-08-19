@@ -1,4 +1,4 @@
-package org.bitcoins.core.wallet.utxo
+package org.bitcoins.core.api.wallet.db
 
 import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
@@ -15,6 +15,12 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.wallet.utxo.{
+  ConditionalPath,
+  InputInfo,
+  ScriptSignatureParams,
+  TxoState
+}
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sign}
 
 /**

@@ -1,6 +1,7 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil

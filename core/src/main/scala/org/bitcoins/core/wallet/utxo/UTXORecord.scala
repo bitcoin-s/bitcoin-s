@@ -1,6 +1,12 @@
 package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.api.db.DbRowAutoInc
+import org.bitcoins.core.api.wallet.db.{
+  LegacySpendingInfo,
+  NestedSegwitV0SpendingInfo,
+  SegwitV0SpendingInfo,
+  SpendingInfoDb
+}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{
   HDPath,

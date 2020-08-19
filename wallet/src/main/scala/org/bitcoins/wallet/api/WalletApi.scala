@@ -7,6 +7,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.AddressType

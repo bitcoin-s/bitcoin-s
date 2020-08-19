@@ -1,14 +1,12 @@
 package org.bitcoins.wallet.api
 
+import org.bitcoins.core.api.wallet.db
+import org.bitcoins.core.api.wallet.db.{SegwitV0SpendingInfo, SpendingInfoDb}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
-import org.bitcoins.core.wallet.utxo.{
-  SegwitV0SpendingInfo,
-  SpendingInfoDb,
-  TxoState
-}
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{
   CryptoGenerators,
@@ -45,7 +43,7 @@ class CoinSelectorTest extends BitcoinSWalletTest {
       scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
       blockHash = None
     )
-    val utxo2 = SegwitV0SpendingInfo(
+    val utxo2 = db.SegwitV0SpendingInfo(
       txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
       state = TxoState.DoesNotExist,
       id = Some(2),
@@ -55,7 +53,7 @@ class CoinSelectorTest extends BitcoinSWalletTest {
       scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
       blockHash = None
     )
-    val utxo3 = SegwitV0SpendingInfo(
+    val utxo3 = db.SegwitV0SpendingInfo(
       txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
       state = TxoState.DoesNotExist,
       id = Some(3),
