@@ -10,6 +10,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -24,6 +25,7 @@ import org.bitcoins.wallet.WalletLogger
 import org.bitcoins.wallet.models.{
   AddressDb,
   AddressTagDb,
+  ScriptPubKeyDb,
   SpendingInfoDb,
   TransactionDb
 }
@@ -128,6 +130,10 @@ trait WalletApi extends WalletLogger {
   def listFundedAddresses(): Future[Vector[(AddressDb, CurrencyUnit)]]
 
   def listUnusedAddresses(): Future[Vector[AddressDb]]
+
+  def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]]
+
+  def watchScriptPubKey(scriptPubKey: ScriptPubKey): Future[ScriptPubKeyDb]
 
   def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]

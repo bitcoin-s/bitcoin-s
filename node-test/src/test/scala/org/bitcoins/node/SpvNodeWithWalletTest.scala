@@ -55,6 +55,7 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
             assertionP.success(result)
           }
         }
+        ()
       }
     }
     NodeCallbacks(
