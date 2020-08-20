@@ -203,8 +203,10 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       for {
         fundedTx <- fundedTxF
         spendingInfos <- wallet.spendingInfoDAO.findOutputsBeingSpent(fundedTx)
+        reserved <- wallet.spendingInfoDAO.findByTxoState(TxoState.Reserved)
       } yield {
         assert(spendingInfos.exists(_.state == TxoState.Reserved))
+        assert(reserved.size == spendingInfos.size)
       }
   }
 
