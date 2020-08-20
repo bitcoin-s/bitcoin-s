@@ -113,7 +113,7 @@ object BitcoinSTestAppConfig {
          |   driver = "org.postgresql.Driver"
          |   username = "postgres"
          |   password = ""
-         |   numThreads = 3
+         |   numThreads = 10
          |   keepAliveConnection = true
          | }""".stripMargin
     }
