@@ -117,8 +117,36 @@ jobs:
 cache:
   directories:
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot/
+    - $HOME/.sbt
+    - $HOME/.m2
     - $HOME/.bitcoin-s/binaries/
+    - $HOME/build/bitcoin-s/bitcoin-s/app/server/target
+    - $HOME/build/bitcoin-s/bitcoin-s/app/server-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/app-commons/target
+    - $HOME/build/bitcoin-s/bitcoin-s/app-commons-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/bitcoind-rpc/target
+    - $HOME/build/bitcoin-s/bitcoin-s/bitcoind-rpc-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/chain/target
+    - $HOME/build/bitcoin-s/bitcoin-s/chain-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/core/target
+    - $HOME/build/bitcoin-s/bitcoin-s/core-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/crypto/target
+    - $HOME/build/bitcoin-s/bitcoin-s/crypto-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/db-commons/target
+    - $HOME/build/bitcoin-s/bitcoin-s/db-commons-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/eclair-rpc/target
+    - $HOME/build/bitcoin-s/bitcoin-s/eclair-rpc-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/fee-provider/target
+    - $HOME/build/bitcoin-s/bitcoin-s/fee-provider-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/key-manager/target
+    - $HOME/build/bitcoin-s/bitcoin-s/key-manager-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/node/target
+    - $HOME/build/bitcoin-s/bitcoin-s/node-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/secp256k1jni/target
+    - $HOME/build/bitcoin-s/bitcoin-s/testkit/target
+    - $HOME/build/bitcoin-s/bitcoin-s/wallet/target
+    - $HOME/build/bitcoin-s/bitcoin-s/wallet-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/zmq/target
 
 # https://www.scala-sbt.org/1.x/docs/Travis-CI-with-sbt.html#Caching
 before_cache:
