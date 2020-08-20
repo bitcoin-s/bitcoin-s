@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.tlv
 
 import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.protocol.BigSizeUInt
+import org.bitcoins.core.protocol.tlv.TLV.DecodeTLVResult
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
@@ -20,7 +21,12 @@ sealed trait TLV extends NetworkElement {
 
 object TLV extends Factory[TLV] {
 
-  def decodeTLV(bytes: ByteVector): (BigSizeUInt, BigSizeUInt, ByteVector) = {
+  case class DecodeTLVResult(
+      tpe: BigSizeUInt,
+      length: BigSizeUInt,
+      value: ByteVector)
+
+  def decodeTLV(bytes: ByteVector): DecodeTLVResult = {
     val tpe = BigSizeUInt(bytes)
     val length = BigSizeUInt(bytes.drop(tpe.byteSize))
     val prefixSize = tpe.byteSize + length.byteSize
@@ -31,7 +37,7 @@ object TLV extends Factory[TLV] {
 
     val value = bytes.drop(prefixSize).take(length.num.toLong)
 
-    (tpe, length, value)
+    DecodeTLVResult(tpe, length, value)
   }
 
   private val allFactories: Vector[TLVFactory[TLV]] =
@@ -40,7 +46,7 @@ object TLV extends Factory[TLV] {
   val knownTypes: Vector[BigSizeUInt] = allFactories.map(_.tpe)
 
   def fromBytes(bytes: ByteVector): TLV = {
-    val (tpe, _, value) = decodeTLV(bytes)
+    val DecodeTLVResult(tpe, _, value) = decodeTLV(bytes)
 
     allFactories.find(_.tpe == tpe) match {
       case Some(tlvFactory) => tlvFactory.fromTLVValue(value)
@@ -54,7 +60,7 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
   def fromTLVValue(value: ByteVector): T
 
   override def fromBytes(bytes: ByteVector): T = {
-    val (tpe, _, value) = TLV.decodeTLV(bytes)
+    val DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
 
     require(tpe == this.tpe, s"Invalid type $tpe when expecting ${this.tpe}")
 
@@ -69,7 +75,7 @@ case class UnknownTLV(tpe: BigSizeUInt, value: ByteVector) extends TLV {
 object UnknownTLV extends Factory[UnknownTLV] {
 
   override def fromBytes(bytes: ByteVector): UnknownTLV = {
-    val (tpe, _, value) = TLV.decodeTLV(bytes)
+    val DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
 
     UnknownTLV(tpe, value)
   }
