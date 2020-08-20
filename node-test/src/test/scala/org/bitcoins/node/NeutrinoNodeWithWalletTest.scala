@@ -1,8 +1,11 @@
 package org.bitcoins.node
 
 import org.bitcoins.core.currency._
+import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
@@ -14,7 +17,7 @@ import org.bitcoins.testkit.node.{
   NodeUnitTest
 }
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.{OnTransactionProcessed, Wallet, WalletCallbacks}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.{Future, Promise}
@@ -36,14 +39,19 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     } else {
       withNeutrinoNodeFundedWalletBitcoind(
         test = test,
-        callbacks = callbacks,
+        nodeCallbacks = nodeCallbacks,
+        walletCallbacks = walletCallbacks,
         bip39PasswordOpt = getBIP39PasswordOpt(),
-        versionOpt = Some(BitcoindVersion.Experimental))
+        versionOpt = Some(BitcoindVersion.Experimental)
+      )
     }
   }
 
+  // unlike other mutable collection types java.util.Vector is thread safe
+  private var txs = new java.util.Vector[Transaction]()
   private var walletP: Promise[Wallet] = Promise()
   private var walletF: Future[Wallet] = walletP.future
+
   after {
     //reset assertion after a test runs, because we
     //are doing mutation to work around our callback
@@ -51,13 +59,24 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     //after a NeutrinoNode is constructed :-(
     walletP = Promise()
     walletF = walletP.future
+    txs = new java.util.Vector[Transaction]()
   }
 
   val TestAmount = 1.bitcoin
   val FeeRate = SatoshisPerByte(10.sats)
   val TestFees = 2240.sats
 
-  def callbacks: NodeCallbacks = {
+  def walletCallbacks: WalletCallbacks = {
+    val onTxProcessed: OnTransactionProcessed = { tx =>
+      Future {
+        txs.add(tx)
+        ()
+      }
+    }
+    WalletCallbacks(onTransactionProcessed = Vector(onTxProcessed))
+  }
+
+  def nodeCallbacks: NodeCallbacks = {
     val onBlock: OnBlockReceived = { block =>
       for {
         wallet <- walletF
@@ -150,6 +169,51 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
         _ <- AsyncUtil.awaitConditionF(condition2)
+      } yield succeed
+  }
+
+  it must "watch an arbitrary SPKs" taggedAs UsesExperimentalBitcoind in {
+    param =>
+      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+
+      walletP.success(wallet)
+
+      def generateBlock() =
+        for {
+          _ <-
+            bitcoind.getNewAddress
+              .flatMap(bitcoind.generateToAddress(1, _))
+          _ <- NodeTestUtil.awaitSync(node, bitcoind)
+          _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+        } yield ()
+
+      val pk1 = ECPublicKey.freshPublicKey
+      val pk2 = ECPublicKey.freshPublicKey
+      val spk = MultiSignatureScriptPubKey(2, Vector(pk1, pk2))
+      val sats = TestAmount
+      val output = TransactionOutput(sats, spk)
+
+      for {
+        _ <- node.sync()
+        _ <- NodeTestUtil.awaitSync(node, bitcoind)
+        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+
+        // start watching
+        _ <- wallet.watchScriptPubKey(spk)
+
+        // send
+        txSent <- wallet.sendToOutputs(Vector(output), FeeRate)
+        _ <- node.broadcastTransaction(txSent)
+
+        // confirm
+        _ <- generateBlock()
+        _ <- generateBlock()
+        _ <- generateBlock()
+
+        // verify
+        _ <- AsyncUtil.awaitConditionF { () =>
+          Future { txs.contains(txSent) }
+        }
       } yield succeed
   }
 

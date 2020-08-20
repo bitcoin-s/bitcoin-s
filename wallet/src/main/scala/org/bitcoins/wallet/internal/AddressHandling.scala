@@ -20,7 +20,8 @@ import org.bitcoins.wallet.models.{
   AccountDb,
   AddressDb,
   AddressDbHelper,
-  AddressTagDb
+  AddressTagDb,
+  ScriptPubKeyDb
 }
 
 import scala.concurrent.{Await, Future, Promise, TimeoutException}
@@ -107,6 +108,13 @@ private[wallet] trait AddressHandling extends WalletLogger {
         HDAccount.isSameAccount(addr.path, account))
     }
   }
+
+  override def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]] =
+    scriptPubKeyDAO.findAll()
+
+  override def watchScriptPubKey(
+      scriptPubKey: ScriptPubKey): Future[ScriptPubKeyDb] =
+    scriptPubKeyDAO.create(ScriptPubKeyDb(scriptPubKey = scriptPubKey))
 
   /** Enumerates the public keys in this wallet */
   protected[wallet] def listPubkeys(): Future[Vector[ECPublicKey]] =
