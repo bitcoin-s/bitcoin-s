@@ -18,7 +18,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -40,7 +40,7 @@ import scala.util.{Failure, Success}
   *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
-trait WalletApi extends WalletLogger {
+trait WalletApi extends WalletLogger with StartStopAsync[WalletApi] {
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
@@ -50,9 +50,9 @@ trait WalletApi extends WalletLogger {
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
-  def start(): Future[Unit]
+  def start(): Future[WalletApi]
 
-  def stop(): Unit
+  def stop(): Future[WalletApi]
 
   /**
     * Processes the given transaction, updating our DB state if it's relevant to us.

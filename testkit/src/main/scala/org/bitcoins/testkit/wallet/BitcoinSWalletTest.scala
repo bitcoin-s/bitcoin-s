@@ -660,7 +660,8 @@ object BitcoinSWalletTest extends WalletLogger {
 
       _ <- wallet.walletConfig.dropTable("flyway_schema_history")
       _ <- wallet.walletConfig.dropAll()
-    } yield wallet.stop()
+      _ <- wallet.stop()
+    } yield ()
   }
 
 }

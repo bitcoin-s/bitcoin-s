@@ -152,6 +152,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     logger.info(s"Stopping node")
     val disconnectF = for {
       _ <- nodeAppConfig.stop()
+      _ <- chainAppConfig.stop()
       p <- peerMsgSenderF
       disconnect <- p.disconnect()
     } yield disconnect

@@ -116,22 +116,23 @@ abstract class Wallet
         } else FutureUtil.unit
     } yield ()
 
-  override def start(): Future[Unit] = {
+  override def start(): Future[Wallet] = {
     for {
       _ <- walletConfig.start()
       _ <- downloadMissingUtxos
     } yield {
       startWalletThread()
+      this
     }
   }
 
-  override def stop(): Unit = {
+  override def stop(): Future[Wallet] = {
     for {
       _ <- walletConfig.stop()
     } yield {
       stopWalletThread()
+      this
     }
-    ()
   }
 
   override def processCompactFilters(
