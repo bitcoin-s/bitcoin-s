@@ -117,7 +117,7 @@ abstract class Wallet
         } else FutureUtil.unit
     } yield ()
 
-  override def start(): Future[WalletApi] = {
+  override def start(): Future[Wallet] = {
     for {
       _ <- walletConfig.start()
       _ <- downloadMissingUtxos
@@ -127,7 +127,7 @@ abstract class Wallet
     }
   }
 
-  override def stop(): Future[WalletApi] = {
+  override def stop(): Future[Wallet] = {
     for {
       _ <- walletConfig.stop()
     } yield {
