@@ -2,10 +2,10 @@ package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
@@ -29,12 +29,8 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 import org.scalatest._
 
-import scala.concurrent.{
-  ExecutionContext,
-  ExecutionContextExecutor,
-  Future,
-  Promise
-}
+import scala.concurrent.duration._
+import scala.concurrent._
 
 trait BitcoinSWalletTest
     extends BitcoinSFixture
@@ -53,6 +49,13 @@ trait BitcoinSWalletTest
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
     super[EmbeddedPg].beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    Await.result(config.chainConf.stop(), 1.minute)
+    Await.result(config.nodeConf.stop(), 1.minute)
+    Await.result(config.walletConf.stop(), 1.minute)
+    super[EmbeddedPg].afterAll()
   }
 
   def nodeApi: NodeApi = MockNodeApi
