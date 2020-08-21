@@ -101,7 +101,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
             .map(_._1)
       } yield utxos.diff(immatureCoinbases)
 
-    def selectedUtxosF: Future[Vector[SpendingInfoDb]] =
+    val selectedUtxosF: Future[Vector[SpendingInfoDb]] =
       for {
         walletUtxos <- utxosF
         //currently just grab the biggest utxos

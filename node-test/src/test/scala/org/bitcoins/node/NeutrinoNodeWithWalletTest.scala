@@ -40,15 +40,12 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       withNeutrinoNodeFundedWalletBitcoind(
         test = test,
         nodeCallbacks = nodeCallbacks,
-        walletCallbacks = walletCallbacks,
         bip39PasswordOpt = getBIP39PasswordOpt(),
         versionOpt = Some(BitcoindVersion.Experimental)
       )
     }
   }
 
-  // unlike other mutable collection types java.util.Vector is thread safe
-  private var txs = new java.util.Vector[Transaction]()
   private var walletP: Promise[Wallet] = Promise()
   private var walletF: Future[Wallet] = walletP.future
 
@@ -59,22 +56,11 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     //after a NeutrinoNode is constructed :-(
     walletP = Promise()
     walletF = walletP.future
-    txs = new java.util.Vector[Transaction]()
   }
 
   val TestAmount = 1.bitcoin
   val FeeRate = SatoshisPerByte(10.sats)
   val TestFees = 2240.sats
-
-  def walletCallbacks: WalletCallbacks = {
-    val onTxProcessed: OnTransactionProcessed = { tx =>
-      Future {
-        txs.add(tx)
-        ()
-      }
-    }
-    WalletCallbacks(onTransactionProcessed = Vector(onTxProcessed))
-  }
 
   def nodeCallbacks: NodeCallbacks = {
     val onBlock: OnBlockReceived = { block =>
@@ -172,7 +158,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       } yield succeed
   }
 
-  it must "watch an arbitrary SPKs" taggedAs UsesExperimentalBitcoind in {
+  it must "watch an arbitrary SPK" taggedAs UsesExperimentalBitcoind in {
     param =>
       val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
@@ -211,10 +197,8 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- generateBlock()
 
         // verify
-        _ <- AsyncUtil.awaitConditionF { () =>
-          Future { txs.contains(txSent) }
-        }
-      } yield succeed
+        txs <- wallet.listTransactions()
+      } yield assert(txs.exists(_.txIdBE == txSent.txIdBE))
   }
 
   it must "rescan and receive information about received payments" taggedAs UsesExperimentalBitcoind in {
