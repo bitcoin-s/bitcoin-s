@@ -213,8 +213,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     for {
       _ <- addToDbF
       peerMsgSender <- peerMsgSenderF
-      _ = logger.info(s"Sending out inv for tx=${transaction.txIdBE}")
-      _ <- peerMsgSender.sendInventoryMessage(transaction)
+      _ = logger.info(s"Sending out txmessage for tx=${transaction.txIdBE}")
+      _ <- peerMsgSender.sendTransactionMessage(transaction)
     } yield ()
   }
 
