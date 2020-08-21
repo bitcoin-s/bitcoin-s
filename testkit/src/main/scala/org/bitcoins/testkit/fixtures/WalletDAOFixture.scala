@@ -53,9 +53,15 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
     makeFixture(build = () => Future(walletConfig.migrate()).map(_ => daos),
                 destroy = () => dropAll())(test)
 
-  def dropAll(): Future[Unit] =
-    for {
+  def dropAll(): Future[Unit] = {
+    val res = for {
       _ <- walletConfig.dropTable("flyway_schema_history")
       _ <- walletConfig.dropAll()
     } yield ()
+    res.failed.foreach { ex =>
+      ex.printStackTrace()
+    }
+    res
+  }
+
 }
