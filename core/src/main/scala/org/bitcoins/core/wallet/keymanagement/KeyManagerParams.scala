@@ -1,4 +1,4 @@
-package org.bitcoins.keymanager
+package org.bitcoins.core.wallet.keymanagement
 
 import java.nio.file.Path
 

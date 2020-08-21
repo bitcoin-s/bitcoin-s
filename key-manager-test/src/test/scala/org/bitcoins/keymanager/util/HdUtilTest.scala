@@ -16,9 +16,9 @@ import org.bitcoins.core.crypto.ExtKeyVersion.{
   SegWitTestNet3Pub
 }
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose, HDPurposes}
-import org.bitcoins.testkit.keymanager.KeyManagerUnitTest
+import org.bitcoins.testkit.keymanager.KeyManagerApiUnitTest
 
-class HdUtilTest extends KeyManagerUnitTest {
+class HdUtilTest extends KeyManagerApiUnitTest {
 
   it must "get the correct version for a public key" in {
     assert(

@@ -6,6 +6,7 @@ import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -25,16 +26,15 @@ import org.bitcoins.core.wallet.builder.{
   ShufflingNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.keymanagement.{
+  KeyManagerParams,
+  KeyManagerUnlockError
+}
 import org.bitcoins.core.wallet.utxo.TxoState.{
   ConfirmedReceived,
   PendingConfirmationsReceived
 }
-import org.bitcoins.core.wallet.utxo.{
-  AddressTag,
-  InputInfo,
-  ScriptSignatureParams,
-  TxoState
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{
   AesPassword,
   CryptoUtil,
@@ -43,11 +43,10 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.keymanager.util.HDUtil
-import org.bitcoins.keymanager.{KeyManagerParams, KeyManagerUnlockError}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
-import org.bitcoins.wallet.models.{ScriptPubKeyDAO, SpendingInfoDb, _}
+import org.bitcoins.wallet.models._
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}

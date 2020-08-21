@@ -1,8 +1,13 @@
-package org.bitcoins.keymanager
+package org.bitcoins.core.api.keymanager
 
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.core.wallet.keymanagement.{
+  KeyManagerInitializeError,
+  KeyManagerParams
+}
 import scodec.bits.BitVector
+
+trait KeyManagerCreateApi
 
 /**
   * @define initialize
@@ -17,16 +22,15 @@ import scodec.bits.BitVector
   *                           can write it down. They should also be prompted
   *                           to confirm at least parts of the code.
   */
-trait BIP39KeyManagerCreateApi {
+trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
+    extends KeyManagerCreateApi {
 
   /**
     * $initialize
     */
   final def initialize(
       kmParams: KeyManagerParams,
-      bip39PasswordOpt: Option[String]): Either[
-    KeyManagerInitializeError,
-    BIP39KeyManager] =
+      bip39PasswordOpt: Option[String]): Either[KeyManagerInitializeError, T] =
     initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits,
                           bip39PasswordOpt = bip39PasswordOpt,
                           kmParams = kmParams)
@@ -37,9 +41,7 @@ trait BIP39KeyManagerCreateApi {
   def initializeWithEntropy(
       entropy: BitVector,
       bip39PasswordOpt: Option[String],
-      kmParams: KeyManagerParams): Either[
-    KeyManagerInitializeError,
-    BIP39KeyManager]
+      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T]
 
   /**
     * Helper method to initialize a [[KeyManagerCreate$ KeyManager]] with a [[MnemonicCode MnemonicCode]]
@@ -51,9 +53,7 @@ trait BIP39KeyManagerCreateApi {
   final def initializeWithMnemonic(
       mnemonicCode: MnemonicCode,
       bip39PasswordOpt: Option[String],
-      kmParams: KeyManagerParams): Either[
-    KeyManagerInitializeError,
-    BIP39KeyManager] = {
+      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T] = {
     val entropy = mnemonicCode.toEntropy
     initializeWithEntropy(entropy = entropy,
                           bip39PasswordOpt = bip39PasswordOpt,

@@ -2,10 +2,10 @@ package org.bitcoins.wallet.api
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo._
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.wallet.models.SpendingInfoDb
 
 import scala.annotation.tailrec
 import scala.util.Random

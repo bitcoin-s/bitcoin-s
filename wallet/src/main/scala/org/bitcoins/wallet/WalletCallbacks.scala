@@ -1,9 +1,9 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.wallet.models.SpendingInfoDb
 import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}

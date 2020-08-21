@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.wallet.models._
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 
 sealed trait AddUtxoResult
 

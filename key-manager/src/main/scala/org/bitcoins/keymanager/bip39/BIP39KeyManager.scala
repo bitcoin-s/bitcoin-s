@@ -3,10 +3,21 @@ package org.bitcoins.keymanager.bip39
 import java.nio.file.Files
 import java.time.Instant
 
+import org.bitcoins.core.api.keymanager.{
+  BIP39KeyManagerApi,
+  BIP39KeyManagerCreateApi,
+  KeyManagerApi
+}
 import org.bitcoins.core.compat.{CompatEither, CompatLeft, CompatRight}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd.{HDAccount, HDPath}
 import org.bitcoins.core.util.{BitcoinSLogger, TimeUtil}
+import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError._
+import org.bitcoins.core.wallet.keymanagement.{
+  InitializeKeyManagerError,
+  KeyManagerInitializeError,
+  KeyManagerParams
+}
 import org.bitcoins.crypto.{AesPassword, Sign}
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.util.HDUtil
@@ -27,7 +38,7 @@ case class BIP39KeyManager(
     kmParams: KeyManagerParams,
     private val bip39PasswordOpt: Option[String],
     creationTime: Instant)
-    extends KeyManager
+    extends BIP39KeyManagerApi
     with KeyManagerLogger {
 
   private val seed = bip39PasswordOpt match {
@@ -74,7 +85,9 @@ case class BIP39KeyManager(
   }
 }
 
-object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
+object BIP39KeyManager
+    extends BIP39KeyManagerCreateApi[BIP39KeyManager]
+    with BitcoinSLogger {
   val badPassphrase = AesPassword.fromString("changeMe").get
 
   /** Initializes the mnemonic seed and saves it to file */
@@ -89,7 +102,7 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
 
     val time = TimeUtil.now
 
-    val writtenToDiskE: CompatEither[KeyManagerInitializeError, KeyManager] =
+    val writtenToDiskE: CompatEither[KeyManagerInitializeError, KeyManagerApi] =
       if (Files.notExists(seedPath)) {
         logger.info(
           s"Seed path parent directory does not exist, creating ${seedPath.getParent}")
@@ -144,7 +157,7 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
           case Left(err) =>
             CompatLeft(
               InitializeKeyManagerError.FailedToReadWrittenSeed(
-                KeyManagerUnlockError.JsonParsingError(err.toString)))
+                JsonParsingError(err.toString)))
         }
       }
 

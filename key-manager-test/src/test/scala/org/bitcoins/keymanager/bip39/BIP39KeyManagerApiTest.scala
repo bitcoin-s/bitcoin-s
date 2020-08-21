@@ -6,12 +6,20 @@ import org.bitcoins.core.config.{MainNet, RegTest}
 import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.wallet.keymanagement
+import org.bitcoins.core.wallet.keymanagement.{
+  InitializeKeyManagerError,
+  KeyManagerParams
+}
 import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE}
 import org.bitcoins.keymanager._
-import org.bitcoins.testkit.keymanager.{KeyManagerTestUtil, KeyManagerUnitTest}
+import org.bitcoins.testkit.keymanager.{
+  KeyManagerApiUnitTest,
+  KeyManagerTestUtil
+}
 import scodec.bits.BitVector
 
-class BIP39KeyManagerTest extends KeyManagerUnitTest {
+class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
   val purpose = HDPurposes.Legacy
 
   //this is taken from 'trezor-addresses.json' which give us test cases that conform with trezor
@@ -200,7 +208,8 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
 
   it must "read an existing seed from disk if we call initialize and one already exists" in {
     val seedPath = KeyManagerTestUtil.tmpSeedPath
-    val kmParams = KeyManagerParams(seedPath, HDPurposes.SegWit, RegTest)
+    val kmParams =
+      keymanagement.KeyManagerParams(seedPath, HDPurposes.SegWit, RegTest)
     val entropy = MnemonicCode.getEntropy256Bits
     val passwordOpt = Some(KeyManagerTestUtil.bip39Password)
     val keyManager = withInitializedKeyManager(kmParams = kmParams,
@@ -225,8 +234,8 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
   }
 
   private def buildParams(): KeyManagerParams = {
-    KeyManagerParams(seedPath = KeyManagerTestUtil.tmpSeedPath,
-                     purpose = purpose,
-                     network = MainNet)
+    keymanagement.KeyManagerParams(seedPath = KeyManagerTestUtil.tmpSeedPath,
+                                   purpose = purpose,
+                                   network = MainNet)
   }
 }
