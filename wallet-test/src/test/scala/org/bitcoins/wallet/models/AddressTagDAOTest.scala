@@ -2,6 +2,7 @@ package org.bitcoins.wallet.models
 
 import java.sql.SQLException
 
+import org.bitcoins.core.api.wallet.db.AddressTagDb
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
 import org.bitcoins.core.wallet.utxo.{
   AddressTag,
