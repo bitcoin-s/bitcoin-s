@@ -124,33 +124,37 @@ private[bitcoins] trait AppLoggers {
     // This also will make any logger using the class name fall under the same logger
     val logger: Logger = context.getLogger(s"org.bitcoins.$name")
     logger.setAdditive(true)
-    if (!AppLoggers.fileAppenders.containsKey(logger.hashCode)) {
-      val appender = newFileAppender(logger)
-      AppLoggers.fileAppenders.put(logger.hashCode,
-                                   AppLoggers.ConcurentAppender(appender))
-    }
-    if (!AppLoggers.consoleAppenders.containsKey(logger.hashCode)) {
-      val appender = newConsoleAppender(logger)
-      AppLoggers.consoleAppenders.put(logger.hashCode,
-                                      AppLoggers.ConcurentAppender(appender))
-    }
-    val consoleAppender = AppLoggers.consoleAppenders.get(logger.hashCode)
-    val fileAppender = AppLoggers.fileAppenders.get(logger.hashCode)
 
-    logger.addAppender(consoleAppender.appender)
-    logger.addAppender(fileAppender.appender)
+    if (!conf.useLogbackConf) {
 
-    fileAppender.doSafeAction { appender =>
-      val policy = appender
-        .asInstanceOf[RollingFileAppender[ILoggingEvent]]
-        .getRollingPolicy
-      if (!policy.isStarted) {
-        policy.start()
+      if (!AppLoggers.fileAppenders.containsKey(logger.hashCode)) {
+        val appender = newFileAppender(logger)
+        AppLoggers.fileAppenders.put(logger.hashCode,
+                                     AppLoggers.ConcurrentAppender(appender))
       }
-    }
+      if (!AppLoggers.consoleAppenders.containsKey(logger.hashCode)) {
+        val appender = newConsoleAppender(logger)
+        AppLoggers.consoleAppenders.put(logger.hashCode,
+                                        AppLoggers.ConcurrentAppender(appender))
+      }
+      val consoleAppender = AppLoggers.consoleAppenders.get(logger.hashCode)
+      val fileAppender = AppLoggers.fileAppenders.get(logger.hashCode)
 
-    consoleAppender.start()
-    fileAppender.start()
+      logger.addAppender(consoleAppender.appender)
+      logger.addAppender(fileAppender.appender)
+
+      fileAppender.doSafeAction { appender =>
+        val policy = appender
+          .asInstanceOf[RollingFileAppender[ILoggingEvent]]
+          .getRollingPolicy
+        if (!policy.isStarted) {
+          policy.start()
+        }
+      }
+
+      consoleAppender.start()
+      fileAppender.start()
+    }
 
     // Set level from config if we aren't using the logback.conf
     if (!conf.useLogbackConf) {
@@ -163,7 +167,7 @@ private[bitcoins] trait AppLoggers {
 
 object AppLoggers {
 
-  case class ConcurentAppender[T <: Appender[ILoggingEvent]](appender: T) {
+  case class ConcurrentAppender[T <: Appender[ILoggingEvent]](appender: T) {
     private val lock = new ReentrantReadWriteLock().writeLock()
 
     def isStarted: Boolean = appender.isStarted
@@ -193,11 +197,11 @@ object AppLoggers {
 
   val fileAppenders: ConcurrentHashMap[
     Int,
-    ConcurentAppender[FileAppender[ILoggingEvent]]] =
+    ConcurrentAppender[FileAppender[ILoggingEvent]]] =
     new ConcurrentHashMap()
 
   val consoleAppenders: ConcurrentHashMap[
     Int,
-    ConcurentAppender[ConsoleAppender[ILoggingEvent]]] =
+    ConcurrentAppender[ConsoleAppender[ILoggingEvent]]] =
     new ConcurrentHashMap()
 }
