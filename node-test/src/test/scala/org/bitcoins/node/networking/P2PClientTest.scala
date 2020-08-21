@@ -14,11 +14,15 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
+<<<<<<< HEAD
 import org.bitcoins.testkit.node.{
   CachedAppConfig,
   CachedBitcoinSAppConfig,
   NodeTestUtil
 }
+=======
+import org.bitcoins.testkit.node.{CachedAppConfig, NodeTestUtil}
+>>>>>>> Extend StartStopAsync with BitcoinSAppConfig, create 'CachedAppConfig' test trait, clean up P2PClientTest
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest._
@@ -27,7 +31,11 @@ import scodec.bits._
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
+<<<<<<< HEAD
 class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
+=======
+class P2PClientTest extends BitcoindRpcTest with CachedAppConfig {
+>>>>>>> Extend StartStopAsync with BitcoinSAppConfig, create 'CachedAppConfig' test trait, clean up P2PClientTest
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
