@@ -349,9 +349,10 @@ object NodeUnitTest extends P2PLogger {
   def destroyNode(node: Node)(implicit
       config: BitcoinSAppConfig,
       ec: ExecutionContext): Future[Unit] = {
-    node
-      .stop()
-      .flatMap(_ => ChainUnitTest.destroyAllTables())
+    for {
+      _ <- ChainUnitTest.destroyAllTables()
+      _ <- node.stop()
+    } yield ()
   }
 
   def destroyNodeConnectedWithBitcoind(
@@ -445,6 +446,7 @@ object NodeUnitTest extends P2PLogger {
     val destroyedF = for {
       _ <- destroyNode(fundedWalletBitcoind.node)
       _ <- BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
+      _ <- appConfig.walletConf.stop()
     } yield ()
 
     destroyedF
