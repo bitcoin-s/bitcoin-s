@@ -76,6 +76,8 @@ import org.bitcoins.keymanager._
 
 import org.bitcoins.keymanager.bip39._
 
+import org.bitcoins.core.wallet.keymanagement._
+
 import java.nio.file._
 
 ```

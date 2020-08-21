@@ -2,6 +2,7 @@ package org.bitcoins.wallet.models
 
 import java.sql.SQLException
 
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
@@ -11,7 +12,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._

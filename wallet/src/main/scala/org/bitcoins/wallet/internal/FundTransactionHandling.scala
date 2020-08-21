@@ -1,6 +1,7 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil
@@ -10,15 +11,11 @@ import org.bitcoins.core.wallet.builder.{
   ShufflingNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{
-  AddressTag,
-  InputInfo,
-  ScriptSignatureParams
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sign
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.api.{AddressInfo, CoinSelector}
-import org.bitcoins.wallet.models.{AccountDb, SpendingInfoDb}
+import org.bitcoins.wallet.models.AccountDb
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future
@@ -58,7 +55,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
   /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned transaction with [[RawTxBuilder.result()]]
     * which can be used with signing.
     *
-    * If you pass in a [[org.bitcoins.keymanager.KeyManager]], the [[org.bitcoins.core.wallet.utxo.ScriptSignatureParams.signers signers]]
+    * If you pass in a [[KeyManagerApi]], the [[org.bitcoins.core.wallet.utxo.ScriptSignatureParams.signers signers]]
     * will be populated with valid signers that can be used to produce valid [[org.bitcoins.crypto.ECDigitalSignature signatures]]
     *
     * If you do not pass in a key manager, the transaction built by [[RawTxBuilder txbuilder]] will contain [[org.bitcoins.core.protocol.script.EmptyScriptSignature EmptyScriptSignature]]

@@ -3,9 +3,11 @@ package org.bitcoins.wallet.api
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
-import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.keymanager.KeyManagerApi
+import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.AddressType
@@ -18,15 +20,13 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType, TxoState}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.keymanager._
 import org.bitcoins.wallet.WalletLogger
 import org.bitcoins.wallet.models.{
   AddressDb,
   AddressTagDb,
   ScriptPubKeyDb,
-  SpendingInfoDb,
   TransactionDb
 }
 
@@ -239,7 +239,7 @@ trait WalletApi extends WalletLogger {
   protected[wallet] def getNewChangeAddress()(implicit
       ec: ExecutionContext): Future[BitcoinAddress]
 
-  def keyManager: KeyManager
+  def keyManager: KeyManagerApi
 
   protected def determineFeeRate(feeRateOpt: Option[FeeUnit]): Future[FeeUnit] =
     feeRateOpt match {
