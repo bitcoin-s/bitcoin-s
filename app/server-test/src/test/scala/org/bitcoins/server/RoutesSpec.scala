@@ -8,7 +8,11 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.Core
-import org.bitcoins.core.api.wallet.db.{SegwitV0SpendingInfo, SpendingInfoDb}
+import org.bitcoins.core.api.wallet.db.{
+  AddressTagDb,
+  SegwitV0SpendingInfo,
+  SpendingInfoDb
+}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
@@ -25,13 +29,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
-import org.bitcoins.core.wallet.utxo.{
-  AddressLabelTag,
-  AddressLabelTagType,
-  AddressTag,
-  AddressTagType,
-  TxoState
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPublicKey,
