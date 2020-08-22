@@ -14,7 +14,11 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.{CachedAppConfig, NodeTestUtil}
+import org.bitcoins.testkit.node.{
+  CachedAppConfig,
+  CachedBitcoinSAppConfig,
+  NodeTestUtil
+}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest._
@@ -23,7 +27,7 @@ import scodec.bits._
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class P2PClientTest extends BitcoindRpcTest with CachedAppConfig {
+class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
@@ -124,7 +128,7 @@ class P2PClientTest extends BitcoindRpcTest with CachedAppConfig {
       _ <- chainConf.dropTable("flyway_schema_history")
       _ <- chainConf.dropAll()
     } yield {
-      super[CachedAppConfig].afterAll()
+      super[CachedBitcoinSAppConfig].afterAll()
     }
 
     shutdownConfigF.onComplete { _ =>

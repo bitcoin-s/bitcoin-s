@@ -9,14 +9,14 @@ import org.bitcoins.testkit.core.gen.{
   BlockchainElementsGenerator,
   TransactionGenerators
 }
-import org.bitcoins.testkit.node.CachedAppConfig
+import org.bitcoins.testkit.node.{CachedAppConfig, CachedBitcoinSAppConfig}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-class MerkleBuffersTest extends BitcoinSAsyncTest with CachedAppConfig {
+class MerkleBuffersTest extends BitcoinSAsyncTest with CachedBitcoinSAppConfig {
 
   behavior of "MerkleBuffers"
 

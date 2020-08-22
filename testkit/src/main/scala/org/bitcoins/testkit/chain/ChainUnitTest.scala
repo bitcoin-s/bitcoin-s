@@ -18,6 +18,7 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
+import org.bitcoins.testkit.node.CachedChainAppConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
@@ -31,7 +32,8 @@ import scala.concurrent.{ExecutionContext, Future}
 trait ChainUnitTest
     extends BitcoinSFixture
     with ChainFixtureHelper
-    with ChainVerificationLogger {
+    with ChainVerificationLogger
+    with CachedChainAppConfig {
 
   implicit lazy val appConfig: ChainAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
@@ -47,6 +49,11 @@ trait ChainUnitTest
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(appConfig)
+  }
+
+  override def afterAll(): Unit = {
+    super[CachedChainAppConfig].afterAll()
+    super[BitcoinSFixture].afterAll()
   }
 
   /**
