@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.{TransactionDb, TxDB}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
@@ -109,51 +110,6 @@ case class TransactionDAO()(implicit
 
     def locktime: Rep[UInt32] = column("locktime")
 
-    private type TransactionTuple =
-      (
-          DoubleSha256DigestBE,
-          Transaction,
-          DoubleSha256DigestBE,
-          Transaction,
-          Option[DoubleSha256DigestBE],
-          CurrencyUnit,
-          Int,
-          Int,
-          UInt32)
-
-    private val fromTuple: TransactionTuple => TransactionDb = {
-      case (txId,
-            transaction,
-            unsignedTxIdBE,
-            unsignedTx,
-            wTxIdBEOpt,
-            totalOutput,
-            numInputs,
-            numOutputs,
-            locktime) =>
-        TransactionDb(txId,
-                      transaction,
-                      unsignedTxIdBE,
-                      unsignedTx,
-                      wTxIdBEOpt,
-                      totalOutput,
-                      numInputs,
-                      numOutputs,
-                      locktime)
-    }
-
-    private val toTuple: TransactionDb => Option[TransactionTuple] = tx =>
-      Some(
-        (tx.txIdBE,
-         tx.transaction,
-         tx.unsignedTxIdBE,
-         tx.unsignedTx,
-         tx.wTxIdBEOpt,
-         tx.totalOutput,
-         tx.numInputs,
-         tx.numOutputs,
-         tx.lockTime))
-
     def * : ProvenShape[TransactionDb] =
       (txIdBE,
        transaction,
@@ -163,7 +119,7 @@ case class TransactionDAO()(implicit
        totalOutput,
        numInputs,
        numOutputs,
-       locktime) <> (fromTuple, toTuple)
+       locktime) <> (TransactionDb.tupled, TransactionDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)

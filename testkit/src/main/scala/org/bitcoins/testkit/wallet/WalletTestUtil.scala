@@ -1,12 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import org.bitcoins.core.api.wallet.db
-import org.bitcoins.core.api.wallet.db.{
-  LegacySpendingInfo,
-  NestedSegwitV0SpendingInfo,
-  SegwitV0SpendingInfo,
-  SpendingInfoDb
-}
+import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._

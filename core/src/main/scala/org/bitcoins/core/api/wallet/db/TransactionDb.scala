@@ -1,16 +1,9 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.core.api.wallet.db
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.EmptyScriptSignature
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  EmptyWitness,
-  NonWitnessTransaction,
-  Transaction,
-  TransactionInput,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 trait TxDB {
@@ -48,7 +41,7 @@ case class TransactionDb(
   lazy val wTxIdOpt: Option[DoubleSha256Digest] = wTxIdBEOpt.map(_.flip)
 }
 
-object TransactionDb {
+object TransactionDbHelper {
 
   def fromTransaction(tx: Transaction): TransactionDb = {
     val (unsignedTx, wTxIdBEOpt) = tx match {
