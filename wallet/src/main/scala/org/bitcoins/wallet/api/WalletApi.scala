@@ -7,7 +7,11 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.db.{AddressTagDb, SpendingInfoDb}
+import org.bitcoins.core.api.wallet.db.{
+  AddressTagDb,
+  SpendingInfoDb,
+  TransactionDb
+}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.AddressType
@@ -23,7 +27,7 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.WalletLogger
-import org.bitcoins.wallet.models.{AddressDb, ScriptPubKeyDb, TransactionDb}
+import org.bitcoins.wallet.models.{AddressDb, ScriptPubKeyDb}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
