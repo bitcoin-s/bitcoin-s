@@ -1,5 +1,6 @@
 package org.bitcoins.node
 
+import akka.actor.Cancellable
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
@@ -77,13 +78,13 @@ class SpvNodeTest extends NodeUnitTest {
 
       //start generating a block every 10 seconds with bitcoind
       //this should result in 5 blocks
-      val startGenF = initSyncF.map { _ =>
+      val startGenF: Future[Cancellable] = initSyncF.map { _ =>
         //generate a block every 5 seconds
         //until we have generated 5 total blocks
         genBlockInterval(bitcoind)
       }
 
-      startGenF.flatMap { _ =>
+      startGenF.flatMap { cancel =>
         //we should expect 5 headers have been announced to us via
         //the send headers message.
         val has6BlocksF = RpcUtil.retryUntilSatisfiedF(
@@ -91,7 +92,13 @@ class SpvNodeTest extends NodeUnitTest {
             () => spvNode.chainApiFromDb().flatMap(_.getBlockCount.map(_ == 6)),
           duration = 250.millis)
 
-        has6BlocksF.map(_ => succeed)
+        has6BlocksF.map { _ =>
+          val isCanceled = cancel.cancel()
+          if (!isCanceled) {
+            logger.warn(s"Failed to cancel generating blocks on bitcoind")
+          }
+          succeed
+        }
       }
   }
 
