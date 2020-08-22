@@ -10,6 +10,8 @@ import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.util.FileUtil
 import org.scalatest.FutureOutcome
 
+import scala.concurrent.Await
+
 class ChainAppConfigTest extends ChainUnitTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
   val config = ChainAppConfig(directory = tempDir)
@@ -81,7 +83,11 @@ class ChainAppConfigTest extends ChainUnitTest {
   }
 
   override def afterAll: Unit = {
-
     FileUtil.deleteTmpDir(chainAppConfig.baseDatadir)
+    val config1StopF = chainAppConfig.stop()
+    val config2StopF = config.stop()
+    val stopF = config1StopF.flatMap(_ => config2StopF)
+    Await.result(stopF, akkaTimeout.duration)
+    super.afterAll()
   }
 }
