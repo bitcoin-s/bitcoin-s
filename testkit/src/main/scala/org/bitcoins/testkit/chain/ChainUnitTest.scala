@@ -47,12 +47,6 @@ trait ChainUnitTest
     BitcoinSTestAppConfig.getSpvTestConfig(mainnetConf)
   }
 
-  override def afterAll(): Unit = {
-    appConfig.stop()
-    mainnetAppConfig.stop()
-    super.afterAll()
-  }
-
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(appConfig)
   }
