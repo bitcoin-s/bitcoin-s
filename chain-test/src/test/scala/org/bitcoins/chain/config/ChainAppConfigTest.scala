@@ -84,9 +84,10 @@ class ChainAppConfigTest extends ChainUnitTest {
 
   override def afterAll: Unit = {
     FileUtil.deleteTmpDir(chainAppConfig.baseDatadir)
-    val config1StopF = chainAppConfig.stop()
-    val config2StopF = config.stop()
-    val stopF = config1StopF.flatMap(_ => config2StopF)
+    val stopF = for {
+      _ <- config.stop()
+      _ <- chainAppConfig.stop()
+    } yield ()
     Await.result(stopF, akkaTimeout.duration)
     super.afterAll()
   }
