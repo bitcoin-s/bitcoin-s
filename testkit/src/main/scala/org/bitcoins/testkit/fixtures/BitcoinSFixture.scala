@@ -25,7 +25,7 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
   def makeDependentFixture[T](
       build: () => Future[T],
       destroy: T => Future[Any])(test: OneArgAsyncTest): FutureOutcome = {
-    val fixtureF = build()
+    val fixtureF: Future[T] = build()
 
     val outcomeF: Future[Outcome] = fixtureF
       .flatMap { fixture =>
@@ -36,14 +36,21 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
           FutureOutcome.failed(err).toFuture
       }
 
-    val futOutcome: FutureOutcome = new FutureOutcome(outcomeF)
-
-    val result: FutureOutcome = futOutcome.onOutcomeThen { _ =>
-      fixtureF.flatMap(f => destroy(f))
-      ()
+    val destructedF: Future[Outcome] = outcomeF.transformWith {
+      case Success(o) =>
+        for {
+          t <- fixtureF
+          _ <- destroy(t)
+        } yield o
+      case Failure(exn) =>
+        for {
+          t <- fixtureF
+          _ <- destroy(t)
+        } yield {
+          throw exn
+        }
     }
-
-    result
+    new FutureOutcome(destructedF)
   }
 
   /**
