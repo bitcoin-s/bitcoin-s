@@ -3,10 +3,10 @@ package org.bitcoins.wallet
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
-import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
-import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -19,7 +19,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
+import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
 import org.bitcoins.core.wallet.builder.{
   RawTxBuilderWithFinalizer,
   RawTxSigner,
@@ -42,7 +42,6 @@ import org.bitcoins.crypto.{
   ECPublicKey
 }
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
-import org.bitcoins.keymanager.util.HDUtil
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._

@@ -2,6 +2,7 @@ package org.bitcoins.wallet
 
 import java.nio.file.Files
 
+import org.bitcoins.core.api.wallet.db.AddressDb
 import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -12,7 +13,6 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.NeutrinoWalletApi.BlockMatchingResponse
-import org.bitcoins.wallet.models.AddressDb
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 

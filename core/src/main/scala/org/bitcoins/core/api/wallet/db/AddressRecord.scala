@@ -1,21 +1,13 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.core.api.wallet.db
 
-import org.bitcoins.core.hd.{
-  HDChainType,
-  HDCoinType,
-  HDPurpose,
-  HDPurposes,
-  LegacyHDPath,
-  NestedSegWitHDPath,
-  SegWitHDPath
-}
+import org.bitcoins.core.hd._
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.{
   Bech32Address,
   BitcoinAddress,
   P2PKHAddress,
   P2SHAddress
 }
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.crypto.{ECPublicKey, Sha256Hash160Digest}
 
 case class AddressRecord(

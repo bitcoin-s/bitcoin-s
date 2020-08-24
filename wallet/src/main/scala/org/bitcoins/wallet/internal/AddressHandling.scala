@@ -2,7 +2,7 @@ package org.bitcoins.wallet.internal
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import org.bitcoins.core.api.wallet.db.AddressTagDb
+import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
@@ -17,12 +17,6 @@ import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType}
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
-import org.bitcoins.wallet.models.{
-  AccountDb,
-  AddressDb,
-  AddressDbHelper,
-  ScriptPubKeyDb
-}
 
 import scala.concurrent.{Await, Future, Promise, TimeoutException}
 import scala.util.{Failure, Success}

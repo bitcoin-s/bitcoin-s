@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.ScriptPubKeyDb
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.db.CRUDAutoInc

@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.core.api.wallet.db
 
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.hd._

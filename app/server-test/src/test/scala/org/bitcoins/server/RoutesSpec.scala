@@ -9,7 +9,10 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.wallet.db.{
+  AccountDb,
+  AddressDb,
   AddressTagDb,
+  LegacyAddressDb,
   SegwitV0SpendingInfo,
   SpendingInfoDb
 }
