@@ -5,7 +5,6 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.ChainVerificationLogger
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.config.ChainAppConfig
@@ -14,6 +13,7 @@ import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   BlockHeaderDbHelper,
+  ChainApi,
   CompactFilterDb,
   CompactFilterHeaderDb
 }

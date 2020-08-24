@@ -8,7 +8,7 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.chain._
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -63,7 +63,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   /** Unlike our chain api, this is cached inside our node
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
-    * the [[org.bitcoins.chain.api.ChainApi chain api]] is updated inside of the p2p client
+    * the [[ChainApi chain api]] is updated inside of the p2p client
     */
   lazy val clientF: Future[P2PClient] = {
     for {

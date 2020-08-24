@@ -1,7 +1,7 @@
 package org.bitcoins.chain.blockchain.sync
 
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.core.api.chain.db.ChainApi
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.fixture.BitcoindV19ChainHandler

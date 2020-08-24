@@ -5,7 +5,7 @@ import java.net.InetAddress
 import akka.actor.ActorRef
 import akka.io.Tcp
 import akka.util.Timeout
-import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.core.api.chain.db.ChainApi
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
