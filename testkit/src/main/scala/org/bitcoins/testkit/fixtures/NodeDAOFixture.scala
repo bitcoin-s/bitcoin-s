@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.fixtures
 
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.testkit.node.NodeUnitTest
 import org.scalatest._
@@ -18,13 +19,19 @@ trait NodeDAOFixture extends NodeUnitTest {
 
   final override type FixtureParam = NodeDAOs
 
-  def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    makeFixture(build = () =>
-                  Future(
-                    nodeConfig
-                      .migrate())(executionContext)
-                    .map(_ => daos),
-                destroy = () =>
+  def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(build = () => {
                   nodeConfig
-                    .dropAll()(executionContext))(test)
+                    .initialize()
+                    .map(_ => daos)
+                },
+                destroy = () => destroyAppConfig(nodeConfig))(test)
+  }
+
+  private def destroyAppConfig(nodeConfig: NodeAppConfig): Future[Unit] = {
+    for {
+      _ <- nodeConfig.dropAll()
+      _ <- nodeConfig.stop()
+    } yield ()
+  }
 }

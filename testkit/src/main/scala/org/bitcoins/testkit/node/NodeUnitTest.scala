@@ -2,7 +2,7 @@ package org.bitcoins.testkit.node
 
 import java.net.InetSocketAddress
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -287,9 +287,10 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
     )(test)
   }
 
-  /** Helper method to generate blocks every interval */
+  /** Helper method to generate blocks every interval
+    * @return a cancellable that will stop generating blocks */
   def genBlockInterval(bitcoind: BitcoindRpcClient)(implicit
-      system: ActorSystem): Unit = {
+      system: ActorSystem): Cancellable = {
 
     var counter = 0
     val desiredBlocks = 5
@@ -305,7 +306,6 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
     }
 
     system.scheduler.scheduleAtFixedRate(2.second, interval)(genBlock)
-    ()
   }
 
   def getBIP39PasswordOpt(): Option[String] =

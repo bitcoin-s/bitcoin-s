@@ -43,7 +43,7 @@ trait BaseAsyncTest
     * Needed because the default execution context will become overloaded
     * if we do not specify a unique execution context for each suite
     */
-  implicit override lazy val executionContext: ExecutionContext =
+  implicit override def executionContext: ExecutionContext =
     system.dispatcher
 
   override lazy val timeLimit: Span = 5.minutes
@@ -56,7 +56,7 @@ trait BaseAsyncTest
     */
   implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny[T]
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
   }
 

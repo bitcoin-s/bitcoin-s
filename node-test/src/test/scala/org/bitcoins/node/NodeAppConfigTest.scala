@@ -9,6 +9,8 @@ import org.bitcoins.core.config.MainNet
 import ch.qos.logback.classic.Level
 import java.nio.file.Files
 
+import scala.concurrent.Await
+
 class NodeAppConfigTest extends BitcoinSAsyncTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
 
@@ -25,6 +27,12 @@ class NodeAppConfigTest extends BitcoinSAsyncTest {
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val mainnet: NodeAppConfig = withOther.withOverrides(mainnetConf)
     assert(mainnet.network == MainNet)
+    for {
+      _ <- withOther.stop()
+      _ <- mainnet.stop()
+    } yield {
+      succeed
+    }
   }
 
   it must "be overridable with multiple levels" in {
@@ -58,5 +66,10 @@ class NodeAppConfigTest extends BitcoinSAsyncTest {
     assert(appConfig.network == TestNet3)
     assert(appConfig.logLevel == Level.OFF)
     assert(appConfig.p2pLogLevel == Level.WARN)
+  }
+
+  override def afterAll(): Unit = {
+    Await.result(config.stop(), akkaTimeout.duration)
+    super.afterAll()
   }
 }

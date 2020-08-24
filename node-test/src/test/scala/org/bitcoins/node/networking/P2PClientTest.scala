@@ -14,7 +14,11 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeTestUtil
+import org.bitcoins.testkit.node.{
+  CachedAppConfig,
+  CachedBitcoinSAppConfig,
+  NodeTestUtil
+}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest._
@@ -23,10 +27,7 @@ import scodec.bits._
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class P2PClientTest extends BitcoindRpcTest {
-
-  implicit private val config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
@@ -123,11 +124,17 @@ class P2PClientTest extends BitcoindRpcTest {
 
   override def afterAll(): Unit = {
     implicit val chainConf = config.chainConf
-    for {
+    val shutdownConfigF = for {
       _ <- chainConf.dropTable("flyway_schema_history")
       _ <- chainConf.dropAll()
-    } yield ()
-    super.afterAll()
+    } yield {
+      super[CachedBitcoinSAppConfig].afterAll()
+    }
+
+    shutdownConfigF.onComplete { _ =>
+      super[BitcoindRpcTest].afterAll()
+    }
+
   }
 
   it must "establish a tcp connection with a bitcoin node" in {

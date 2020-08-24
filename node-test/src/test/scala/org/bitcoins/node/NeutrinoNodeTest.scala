@@ -1,5 +1,6 @@
 package org.bitcoins.node
 
+import akka.actor.Cancellable
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -112,13 +113,13 @@ class NeutrinoNodeTest extends NodeUnitTest {
 
       //start generating a block every 10 seconds with bitcoind
       //this should result in 5 blocks
-      val startGenF = initSyncF.map { _ =>
+      val startGenF: Future[Cancellable] = initSyncF.map { _ =>
         //generate a block every 5 seconds
         //until we have generated 5 total blocks
         genBlockInterval(bitcoind)
       }
 
-      startGenF.flatMap { _ =>
+      startGenF.flatMap { cancellable =>
         //we should expect 5 headers have been announced to us via
         //the send headers message.
         val ExpectedCount = 113
@@ -154,7 +155,13 @@ class NeutrinoNodeTest extends NodeUnitTest {
           _ <- hasBlocksF
           _ <- hasFilterHeadersF
           _ <- hasFiltersF
-        } yield succeed
+        } yield {
+          val isCancelled = cancellable.cancel()
+          if (!isCancelled) {
+            logger.warn(s"Failed to cancel generating blocks on bitcoind")
+          }
+          succeed
+        }
       }
   }
 

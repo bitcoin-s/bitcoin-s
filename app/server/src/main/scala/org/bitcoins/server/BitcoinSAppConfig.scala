@@ -4,9 +4,12 @@ import com.typesafe.config.Config
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.chain.config.ChainAppConfig
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import java.nio.file.Path
+
+import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
 
 /**
@@ -21,18 +24,27 @@ import org.bitcoins.db.AppConfig
   */
 case class BitcoinSAppConfig(
     private val directory: Path,
-    private val confs: Config*)(implicit ec: ExecutionContext) {
+    private val confs: Config*)(implicit ec: ExecutionContext)
+    extends StartStopAsync[Unit] {
   val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
   val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
   val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
 
   /** Initializes the wallet, node and chain projects */
-  def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
+  override def start(): Future[Unit] = {
     val futures = List(walletConf.initialize(),
                        nodeConf.initialize(),
                        chainConf.initialize())
 
     Future.sequence(futures).map(_ => ())
+  }
+
+  override def stop(): Future[Unit] = {
+    for {
+      _ <- nodeConf.stop()
+      _ <- walletConf.stop()
+      _ <- chainConf.stop()
+    } yield ()
   }
 
   /** The underlying config the result of our fields derive from */
