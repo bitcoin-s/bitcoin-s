@@ -354,7 +354,8 @@ sealed abstract class TransactionSignatureSerializer {
     }
 
   /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_NONE SIGHASH_NONE]]
-    * procedure on a spending transaction for the input specified by inputIndex. */
+    * procedure on a spending transaction for the input specified by inputIndex.
+    */
   private def sigHashNone(
       spendingTransaction: Transaction,
       inputIndex: UInt32): Transaction = {
@@ -373,7 +374,8 @@ sealed abstract class TransactionSignatureSerializer {
   }
 
   /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_SINGLE SIGHASH_SINGLE]] procedure on a spending
-    * transaction for the input specified by inputIndex */
+    * transaction for the input specified by inputIndex
+    */
   private def sigHashSingle(
       spendingTransaction: Transaction,
       inputIndex: UInt32): Transaction = {
@@ -403,13 +405,15 @@ sealed abstract class TransactionSignatureSerializer {
   }
 
   /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_ALL SIGHASH_ALL]] procedure on a spending
-    * transaction at inputIndex. */
+    * transaction at inputIndex.
+    */
   private def sigHashAll(spendingTransaction: Transaction): Transaction = {
     spendingTransaction
   }
 
   /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_ANYONECANPAY SIGHASH_ANYONECANPAY]] procedure
-    * on a spending transaction at inputIndex. */
+    * on a spending transaction at inputIndex.
+    */
   private def sigHashAnyoneCanPay(
       spendingTransaction: Transaction,
       input: TransactionInput): Transaction = {
@@ -420,7 +424,8 @@ sealed abstract class TransactionSignatureSerializer {
   }
 
   /** Removes [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
-    * operations then returns the script. */
+    * operations then returns the script.
+    */
   def removeOpCodeSeparators(script: Seq[ScriptToken]): Seq[ScriptToken] = {
     if (script.contains(OP_CODESEPARATOR)) {
       val scriptWithoutOpCodeSeparators: Seq[ScriptToken] =

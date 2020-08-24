@@ -944,7 +944,8 @@ class EclairRpcClient(
 object EclairRpcClient {
 
   /** THe name we use to create actor systems. We use this to know which
-    * actor systems to shut down on node shutdown */
+    * actor systems to shut down on node shutdown
+    */
   private[eclair] val ActorSystemName = "eclair-rpc-client-created-by-bitcoin-s"
 
   /**

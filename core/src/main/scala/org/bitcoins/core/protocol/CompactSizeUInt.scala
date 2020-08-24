@@ -89,7 +89,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   def calc(bytes: ByteVector): CompactSizeUInt = calculateCompactSizeUInt(bytes)
 
   /** Responsible for calculating what the
-    * [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] is for this hex string. */
+    * [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] is for this hex string.
+    */
   def calculateCompactSizeUInt(hex: String): CompactSizeUInt =
     calculateCompactSizeUInt(BytesUtil.decodeHex(hex))
 

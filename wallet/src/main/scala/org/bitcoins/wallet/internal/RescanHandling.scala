@@ -172,9 +172,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressDbs <- addressDAO.findAllForAccount(account)
       addressGap <-
         addressDbs
-        //make sure all addressDb are of the correct chainType
-        //and they are sorted according to their index so we can
-        //calculate the gap accurately
+          //make sure all addressDb are of the correct chainType
+          //and they are sorted according to their index so we can
+          //calculate the gap accurately
           .filter(_.accountChain == chainType)
           .sortBy(_.addressIndex)
           .foldLeft(Future.successful(0)) { (prevNF, addressDb) =>
@@ -303,7 +303,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
   }
 
   /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
-    * It's needed to limit number of threads required to run the matching */
+    * It's needed to limit number of threads required to run the matching
+    */
   private def calcGroupSize(vectorSize: Int, parallelismLevel: Int): Int = {
     if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
       vectorSize / parallelismLevel + 1

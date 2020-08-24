@@ -316,15 +316,18 @@ object P2PClient extends P2PLogger {
   sealed trait MetaMsg
 
   /** A message that can be sent to [[P2PClient p2p client]] that returns true
-    * if the peer is connected, false if not */
+    * if the peer is connected, false if not
+    */
   final case object IsConnected extends MetaMsg
 
   /** A message that can be sent to [[P2PClient p2p client]] that returns true
-    * if the peer is initialized (p2p handshake complete), false if not */
+    * if the peer is initialized (p2p handshake complete), false if not
+    */
   final case object IsInitialized extends MetaMsg
 
   /** A message that can be sent to [[P2PClient p2p client]] that returns true
-    * if the peer is disconnected, false otherwise */
+    * if the peer is disconnected, false otherwise
+    */
   final case object IsDisconnected extends MetaMsg
 
   def props(peer: Peer, peerMsgHandlerReceiver: PeerMessageReceiver)(implicit

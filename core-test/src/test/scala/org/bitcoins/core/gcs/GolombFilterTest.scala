@@ -48,10 +48,10 @@ class GolombFilterTest extends BitcoinSAsyncTest {
         .map(ByteVector(_))
         .map(SipHashKey)
 
-    val genData: Gen[Vector[ByteVector]] = Gen.chooseNum(1, 10000).flatMap {
-      size =>
+    val genData: Gen[Vector[ByteVector]] =
+      Gen.chooseNum(1, 10000).flatMap { size =>
         Gen.listOfN(size, NumberGenerator.bytevector).map(_.toVector)
-    }
+      }
 
     val genRandHashes: Gen[Vector[UInt64]] =
       Gen.listOfN(100, NumberGenerator.uInt64).map(_.toVector)

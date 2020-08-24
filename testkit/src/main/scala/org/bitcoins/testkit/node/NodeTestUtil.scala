@@ -98,7 +98,8 @@ abstract class NodeTestUtil extends P2PLogger {
   }
 
   /** Gets the [[org.bitcoins.node.models.Peer]] that
-    * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]] */
+    * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]]
+    */
   def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient): Peer = {
     val socket = getBitcoindSocketAddress(bitcoindRpcClient)
     Peer(socket)

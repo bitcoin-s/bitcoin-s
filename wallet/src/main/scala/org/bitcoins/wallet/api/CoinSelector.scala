@@ -14,7 +14,8 @@ import scala.util.Random
 trait CoinSelector {
 
   /** Randomly selects utxos until it has enough to fund the desired amount,
-    * should only be used for research purposes */
+    * should only be used for research purposes
+    */
   def randomSelection(
       walletUtxos: Vector[SpendingInfoDb],
       outputs: Vector[TransactionOutput],

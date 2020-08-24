@@ -40,7 +40,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
   }
 
   /** Generates a [[org.bitcoins.core.protocol.transaction.TransactionWitness]] with
-    * the specified number of witnesses */
+    * the specified number of witnesses
+    */
   def transactionWitness(numWitnesses: Int): Gen[TransactionWitness] =
     for {
       inputWitnesses <- Gen.listOfN(numWitnesses, Gen.option(scriptWitness))
@@ -176,7 +177,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
   }
 
   /** Helps generate a signed
-    * [[org.bitcoins.core.protocol.script.MultiSignatureScriptSignature MultiSignatureScriptSignature]] */
+    * [[org.bitcoins.core.protocol.script.MultiSignatureScriptSignature MultiSignatureScriptSignature]]
+    */
   private def multiSigScriptSigGenHelper(
       privateKeys: Seq[ECPrivateKey],
       scriptPubKey: MultiSignatureScriptPubKey,
@@ -210,7 +212,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
 
   /** Takes a signed [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] and an unsignedTx
     * and adds the witness to the unsigned
-    * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] */
+    * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
+    */
   def createSignedWTxComponent(
       witness: ScriptWitness,
       unsignedWTxComponent: WitnessTxSigComponent): (
@@ -240,7 +243,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
   }
 
   /** Creates a unsigned [[org.bitcoins.core.crypto.WitnessTxSigComponent]] from
-    * the given parameters */
+    * the given parameters
+    */
   def createUnsignedRawWTxSigComponent(
       witScriptPubKey: WitnessScriptPubKey,
       amount: CurrencyUnit,

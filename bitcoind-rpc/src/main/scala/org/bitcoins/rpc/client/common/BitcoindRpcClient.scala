@@ -118,7 +118,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
 object BitcoindRpcClient {
 
   /** The name we give to actor systems we create. We use this
-    * information to know which actor systems to shut down */
+    * information to know which actor systems to shut down
+    */
   private[rpc] val ActorSystemName = "bitcoind-rpc-client-created-by-bitcoin-s"
 
   /**
