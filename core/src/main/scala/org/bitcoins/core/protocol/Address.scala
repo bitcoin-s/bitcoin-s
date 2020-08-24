@@ -31,7 +31,8 @@ sealed abstract class Address {
     }
 
   /** Every address is derived from a [[HashDigest HashDigest]] in a
-    * [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]] */
+    * [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]]
+    */
   def hash: HashDigest
 
   /** The [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] the address represents */
@@ -155,7 +156,8 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   }
 
   /** Tries to convert the given string a to a
-    * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] */
+    * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
+    */
   def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
     val decoded = fromStringT(string)
     decoded.flatMap { bech32Addr =>

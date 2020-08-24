@@ -136,12 +136,12 @@ object TxUtil {
       ec: ExecutionContext): Future[Transaction] = {
     val dummyInputAndWitnessFs = inputInfos.zipWithIndex.map {
       case (inputInfo, index) =>
-        val mockSigners = inputInfo.pubKeys.take(inputInfo.requiredSigs).map {
-          pubKey =>
+        val mockSigners =
+          inputInfo.pubKeys.take(inputInfo.requiredSigs).map { pubKey =>
             Sign(_ => Future.successful(DummyECDigitalSignature),
                  (_, _) => Future.successful(DummyECDigitalSignature),
                  pubKey)
-        }
+          }
 
         val mockSpendingInfo =
           inputInfo.toSpendingInfo(EmptyTransaction,

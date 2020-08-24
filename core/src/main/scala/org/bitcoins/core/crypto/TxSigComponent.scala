@@ -271,7 +271,8 @@ sealed trait WitnessTxSigComponent extends TxSigComponent {
 
 /** This represents checking the [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
   * against a [[org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0 P2WPKHWitnessSPKV0]] or a
-  * [[org.bitcoins.core.protocol.script.P2WSHWitnessSPKV0 P2WSHWitnessSPKV0]] */
+  * [[org.bitcoins.core.protocol.script.P2WSHWitnessSPKV0 P2WSHWitnessSPKV0]]
+  */
 sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
 
   override def scriptPubKey: WitnessScriptPubKey =
@@ -283,7 +284,8 @@ sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
 }
 
 /** This represents checking the [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
-  * against a P2SH(P2WSH) or P2SH(P2WPKH) scriptPubKey */
+  * against a P2SH(P2WSH) or P2SH(P2WPKH) scriptPubKey
+  */
 sealed abstract class WitnessTxSigComponentP2SH
     extends P2SHTxSigComponent
     with WitnessTxSigComponent {
@@ -339,7 +341,8 @@ sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
   override def scriptPubKey: ScriptPubKey = output.scriptPubKey
 
   /** The [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] we used to
-    * rebuild the scriptPubKey above */
+    * rebuild the scriptPubKey above
+    */
   def witnessScriptPubKey: WitnessScriptPubKey
 
   override def sigVersion: SignatureVersion = SigVersionWitnessV0

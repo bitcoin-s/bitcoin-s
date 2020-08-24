@@ -334,7 +334,8 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
   /** Verifies if a given piece of data is signed by the
     * [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]]'s corresponding
-    * [[org.bitcoins.crypto.ECPublicKey ECPublicKey]]. */
+    * [[org.bitcoins.crypto.ECPublicKey ECPublicKey]].
+    */
   def verify(data: ByteVector, signature: ECDigitalSignature): Boolean = {
     verify(data, signature, CryptoContext.default)
   }

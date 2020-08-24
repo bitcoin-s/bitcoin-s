@@ -91,8 +91,8 @@ object RawTxSigner extends BitcoinSLogger {
 
         val witnessesBuilder = Vector.newBuilder[Option[ScriptWitness]]
 
-        val inputsAddedToBuilderF = Future.sequence(inputAndWitnessFs).map {
-          inputsAndWitnesses =>
+        val inputsAddedToBuilderF =
+          Future.sequence(inputAndWitnessFs).map { inputsAndWitnesses =>
             utx.inputs.foreach { unsignedInput =>
               val (input, witnessOpt) = inputsAndWitnesses
                 .find(_._1.previousOutput == unsignedInput.previousOutput)
@@ -101,7 +101,7 @@ object RawTxSigner extends BitcoinSLogger {
               witnessesBuilder += witnessOpt
               builder += input
             }
-        }
+          }
 
         for {
           _ <- inputsAddedToBuilderF

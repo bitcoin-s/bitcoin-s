@@ -559,7 +559,8 @@ case class ChainHandler(
 
   /** Creates [[numBatches]] of requests to the database fetching [[batchSize]] headers
     * starting at [[batchStartHeight]]. These are executed in parallel. After all are fetched
-    * we join them into one future and return it. */
+    * we join them into one future and return it.
+    */
   private def batchAndGetBlockchains(
       batchSize: Int,
       batchStartHeight: Int,

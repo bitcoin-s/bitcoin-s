@@ -18,7 +18,8 @@ import org.slf4j.LoggerFactory
 
 /** Provides logging functionality for Bitcoin-S
   * app modules (i.e. the modules that are capable
-  * of running on their own) */
+  * of running on their own)
+  */
 private[bitcoins] trait AppLoggers {
 
   sealed private[bitcoins] trait LoggerKind
