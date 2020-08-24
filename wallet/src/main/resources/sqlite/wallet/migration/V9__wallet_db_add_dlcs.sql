@@ -1,4 +1,4 @@
-CREATE TABLE "wallet_dlcs" ("event_id" VARCHAR(254) NOT NULL UNIQUE,"state" VARCHAR(254) NOT NULL,"is_initiator" INTEGER NOT NULL, "account" VARCHAR(254) NOT NULL, "key_index" INTEGER NOT NULL,"oracle_sig" VARCHAR(254));
+CREATE TABLE "wallet_dlcs" ("event_id" VARCHAR(254) NOT NULL UNIQUE,"state" VARCHAR(254) NOT NULL,"is_initiator" INTEGER NOT NULL, "account" VARCHAR(254) NOT NULL, "key_index" INTEGER NOT NULL, "oracle_sig" VARCHAR(254), "funding_tx_id" VARCHAR(254), "closing_tx_id" VARCHAR(254));
 CREATE INDEX "wallet_dlcs_event_id_index" on "wallet_dlcs" ("event_id");
 
 CREATE TABLE "wallet_dlc_offers" ("event_id" VARCHAR(254) NOT NULL UNIQUE,"oracle_pub_key" VARCHAR(254) NOT NULL,"oracle_r_value" VARCHAR(254) NOT NULL,"contract_info" VARCHAR(254) NOT NULL,"contract_maturity" VARCHAR(254) NOT NULL,"contract_timeout" VARCHAR(254) NOT NULL,"funding_key" VARCHAR(254) NOT NULL,"payout_address" VARCHAR(254) NOT NULL,"total_collateral" INTEGER NOT NULL,"fee_rate" VARCHAR(254),"change_address" VARCHAR(254) NOT NULL,constraint "fk_event_id" foreign key("event_id") references "wallet_dlcs"("event_id")on update NO ACTION on delete NO ACTION);

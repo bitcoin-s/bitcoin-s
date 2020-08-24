@@ -324,13 +324,6 @@ case class SpendingInfoDAO()(implicit
     database.run(query.result).map(_.toVector)
   }
 
-  def findAllUnspent(): Future[Vector[SpendingInfoDb]] = {
-    for {
-      utxos <- _findAllUnspent()
-      infos <- utxoToInfo(utxos)
-    } yield infos
-  }
-
   def utxoToInfo(utxos: Vector[UTXORecord]): Future[Vector[SpendingInfoDb]] =
     for {
       spks <- findScriptPubKeysByUtxos(utxos)
