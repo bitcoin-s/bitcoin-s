@@ -2,6 +2,7 @@ package org.bitcoins.chain.models
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.Blockchain
+import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.TimeUtil

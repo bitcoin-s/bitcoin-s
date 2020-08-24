@@ -2,7 +2,6 @@ package org.bitcoins.chain.config
 
 import java.nio.file.Files
 
-import akka.actor.ActorSystem
 import ch.qos.logback.classic.Level
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}

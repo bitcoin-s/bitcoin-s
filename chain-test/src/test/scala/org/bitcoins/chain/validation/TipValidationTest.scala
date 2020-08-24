@@ -1,8 +1,9 @@
 package org.bitcoins.chain.validation
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDbHelper}
+import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
 import org.scalatest.{Assertion, FutureOutcome}
@@ -28,7 +29,7 @@ class TipValidationTest extends ChainDbUnitTest {
   val currentTipDb = BlockHeaderHelper.header2Db
   val blockchain = Blockchain.fromHeaders(Vector(currentTipDb))
 
-  it must "connect two blocks with that are valid" in { bhDAO =>
+  it must "connect two blocks with that are valid" in { _ =>
     val newValidTipDb =
       BlockHeaderDbHelper.fromBlockHeader(
         566093,

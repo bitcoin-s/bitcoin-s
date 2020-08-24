@@ -2,8 +2,8 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 
 // INTERNAL NOTE: Due to changes in the Scala collections in 2.13 this
 // class and its companion object
-// has to be implemented separetely for the different Scala versions.
+// has to be implemented separately for the different Scala versions.
 // The general idea is that all three implement a collection, but slightly
 // different ones (the one that the 2.12 and 2.11 versions implement got
 // removed in 2.13). The most interesting method is `compObjectFromHeaders`.

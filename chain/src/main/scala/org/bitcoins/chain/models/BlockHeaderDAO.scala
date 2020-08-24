@@ -2,6 +2,7 @@ package org.bitcoins.chain.models
 
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db._

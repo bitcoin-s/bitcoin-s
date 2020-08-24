@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.chain
 
-import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, GolombFilter}
 import org.bitcoins.core.protocol.blockchain.{
   BlockHeader,
