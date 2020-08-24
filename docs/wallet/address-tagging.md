@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.currency._
-import org.bitcoins.wallet.models.AccountDb
+import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.wallet._
 
 val ExampleAddressTag = UnknownAddressTag("name", "tagType")

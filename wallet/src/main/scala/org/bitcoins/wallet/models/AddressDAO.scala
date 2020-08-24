@@ -2,6 +2,11 @@ package org.bitcoins.wallet.models
 
 import java.sql.SQLException
 
+import org.bitcoins.core.api.wallet.db.{
+  AddressDb,
+  AddressRecord,
+  ScriptPubKeyDb
+}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{HDAccount, HDChainType, HDCoinType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -89,8 +94,8 @@ case class AddressDAO()(implicit
         case None =>
           (for {
             newSpkId <-
-              (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
-                addressDb.scriptPubKey))
+              (spkTable returning spkTable.map(_.id)) += ScriptPubKeyDb(
+                addressDb.scriptPubKey)
           } yield table.insertOrUpdate(
             AddressRecord.fromAddressDb(addressDb, newSpkId))).flatten
       }

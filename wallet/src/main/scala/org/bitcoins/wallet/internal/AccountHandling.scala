@@ -1,17 +1,16 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.wallet.Wallet
-import scala.concurrent.Future
-import org.bitcoins.wallet.models.AccountDb
-import org.bitcoins.core.hd.HDCoinType
-import org.bitcoins.core.hd.HDCoin
-import org.bitcoins.core.protocol.blockchain.TestNetChainParams
-import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
-import org.bitcoins.core.protocol.blockchain.MainNetChainParams
-import org.bitcoins.core.hd.HDPurpose
+import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.hd.AddressType._
-import org.bitcoins.core.hd.AddressType
-import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.core.hd._
+import org.bitcoins.core.protocol.blockchain.{
+  MainNetChainParams,
+  RegTestNetChainParams,
+  TestNetChainParams
+}
+import org.bitcoins.wallet.Wallet
+
+import scala.concurrent.Future
 
 /**
   * Provides functionality related enumerating accounts. Account

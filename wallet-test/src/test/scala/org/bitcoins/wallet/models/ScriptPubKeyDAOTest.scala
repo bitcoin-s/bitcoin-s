@@ -2,29 +2,13 @@ package org.bitcoins.wallet.models
 
 import java.sql.SQLException
 
-import org.bitcoins.core.protocol.script.{
-  CLTVScriptPubKey,
-  CSVScriptPubKey,
-  EmptyScriptPubKey,
-  MultiSignatureScriptPubKey,
-  MultiSignatureWithTimeoutScriptPubKey,
-  NonStandardIfConditionalScriptPubKey,
-  NonStandardNotIfConditionalScriptPubKey,
-  NonStandardScriptPubKey,
-  P2PKHScriptPubKey,
-  P2PKScriptPubKey,
-  P2PKWithTimeoutScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WSHWitnessSPKV0,
-  RawScriptPubKey,
-  WitnessCommitment
-}
+import org.bitcoins.core.api.wallet.db.ScriptPubKeyDb
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptNumber
-import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
-import org.bitcoins.testkit.fixtures.{WalletDAOFixture}
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.core.script.reserved._
+import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
+import org.bitcoins.testkit.fixtures.WalletDAOFixture
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 
 class ScriptPubKeyDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   behavior of "ScriptPubKeyDAO"

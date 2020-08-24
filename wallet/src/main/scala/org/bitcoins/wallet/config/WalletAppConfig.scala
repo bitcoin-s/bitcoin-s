@@ -4,9 +4,9 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.Config
-import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.core.wallet.keymanagement.{
@@ -14,8 +14,8 @@ import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerParams
 }
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
-import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}

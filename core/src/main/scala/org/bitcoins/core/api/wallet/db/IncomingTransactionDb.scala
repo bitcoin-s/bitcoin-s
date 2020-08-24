@@ -1,11 +1,11 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.core.api.wallet.db
 
-import org.bitcoins.core.api.wallet.db.TxDB
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 /**
   * Represents a relevant transaction for the wallet that we should be keeping track of
+  *
   * @param txIdBE Transaction ID
   */
 case class IncomingTransactionDb(

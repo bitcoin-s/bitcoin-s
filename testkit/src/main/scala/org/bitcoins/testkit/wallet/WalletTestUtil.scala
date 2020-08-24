@@ -26,7 +26,6 @@ import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.fixtures.WalletDAOs
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models._
 
 import scala.concurrent.{ExecutionContext, Future}
 

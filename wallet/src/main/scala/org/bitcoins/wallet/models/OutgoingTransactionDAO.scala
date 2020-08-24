@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.api.wallet.db.TransactionDb
+import org.bitcoins.core.api.wallet.db.{OutgoingTransactionDb, TransactionDb}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.DoubleSha256DigestBE

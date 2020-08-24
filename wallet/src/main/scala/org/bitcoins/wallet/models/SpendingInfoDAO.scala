@@ -2,7 +2,7 @@ package org.bitcoins.wallet.models
 
 import java.sql.SQLException
 
-import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
@@ -118,8 +118,8 @@ case class SpendingInfoDAO()(implicit
         case None =>
           (for {
             newSpkId <-
-              (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
-                si.output.scriptPubKey))
+              (spkTable returning spkTable.map(_.id)) += ScriptPubKeyDb(
+                si.output.scriptPubKey)
           } yield {
             val utxo = UTXORecord.fromSpendingInfoDb(si, newSpkId)
             table.filter(_.id === utxo.id).update(utxo)
@@ -156,8 +156,8 @@ case class SpendingInfoDAO()(implicit
         case None =>
           (for {
             newSpkId <-
-              (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
-                si.output.scriptPubKey))
+              (spkTable returning spkTable.map(_.id)) += ScriptPubKeyDb(
+                si.output.scriptPubKey)
           } yield table.insertOrUpdate(
             UTXORecord.fromSpendingInfoDb(si, newSpkId))).flatten
       }
