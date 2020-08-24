@@ -27,7 +27,12 @@ class NodeAppConfigTest extends BitcoinSAsyncTest {
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val mainnet: NodeAppConfig = withOther.withOverrides(mainnetConf)
     assert(mainnet.network == MainNet)
-    withOther.stop().map(_ => succeed)
+    for {
+      _ <- withOther.stop()
+      _ <- mainnet.stop()
+    } yield {
+      succeed
+    }
   }
 
   it must "be overridable with multiple levels" in {
