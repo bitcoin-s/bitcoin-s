@@ -263,12 +263,12 @@ object AppConfig extends BitcoinSLogger {
       withDatadir.withFallback(config)
     }
 
-    // `load` tries to resolve substitions,
+    // `load` tries to resolve substitutions,
     // `parseResources` does not
     val dbConfig = ConfigFactory
       .parseResources("db.conf")
 
-    // we want to NOT resolve substitutions in the configuraton until the user
+    // we want to NOT resolve substitutions in the configuration until the user
     // provided configs also has been loaded. .parseResources() does not do that
     // whereas .load() does
     val classPathConfig = {
@@ -294,7 +294,7 @@ object AppConfig extends BitcoinSLogger {
             .reduce(_.withFallback(_))
 
         // to make the overrides actually override
-        // the default setings we have to do it
+        // the default settings we have to do it
         // in this order
         overrides.withFallback(unresolvedConfig)
       } else {
