@@ -90,7 +90,7 @@ case class ChainAppConfig(
         s"$moduleName.neutrino.filter-header-batch-size.${chain.network.chainParams.networkId}")
     } catch {
       case _: ConfigException.Missing | _: ConfigException.WrongType =>
-        config.getInt(s"$moduleName.neutrino.filter-header-batch-size")
+        config.getInt(s"$moduleName.neutrino.filter-header-batch-size.default")
     }
   }
 

@@ -141,7 +141,7 @@ bitcoin-s {
     chain {
         force-recalc-chainwork = false
         neutrino {
-            filter-header-batch-size = 2000
+            filter-header-batch-size.default = 2000
             filter-header-batch-size.regtest = 10
             # You can set a network specific filter-header-batch-size
             # by adding a trailing `.networkId` (main, test, regtest)
