@@ -125,7 +125,7 @@ object Main extends App with BitcoinSLogger {
     val bip39PasswordOpt = None //todo need to prompt user for this
 
     //initialize the config, run migrations
-    val configInitializedF = conf.initialize()
+    val configInitializedF = conf.start()
 
     //run chain work migration
     val chainApiF = configInitializedF.flatMap { _ =>

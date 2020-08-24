@@ -5,22 +5,18 @@ import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.{NodeCallbacks, OnMerkleBlockReceived}
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.core.gen.{
   BlockchainElementsGenerator,
   TransactionGenerators
 }
+import org.bitcoins.testkit.node.{CachedAppConfig, CachedBitcoinSAppConfig}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-class MerkleBuffersTest extends BitcoinSAsyncTest {
-
-  implicit private val config: NodeAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig().nodeConf
+class MerkleBuffersTest extends BitcoinSAsyncTest with CachedBitcoinSAppConfig {
 
   behavior of "MerkleBuffers"
 
