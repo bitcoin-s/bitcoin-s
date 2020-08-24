@@ -19,6 +19,7 @@ import org.bitcoins.testkit.node.{
   CachedBitcoinSAppConfig,
   NodeTestUtil
 }
+import org.bitcoins.testkit.node.{CachedAppConfig, NodeTestUtil}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest._

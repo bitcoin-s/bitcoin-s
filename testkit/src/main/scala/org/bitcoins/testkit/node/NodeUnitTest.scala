@@ -48,7 +48,7 @@ import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
@@ -58,6 +58,9 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
   }
 
   override def afterAll(): Unit = {
+    Await.result(config.chainConf.stop(), 1.minute)
+    Await.result(config.nodeConf.stop(), 1.minute)
+    Await.result(config.walletConf.stop(), 1.minute)
     super[EmbeddedPg].afterAll()
   }
 

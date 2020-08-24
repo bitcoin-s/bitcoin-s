@@ -29,9 +29,8 @@ sealed trait TestDAOFixture
   }
 
   override def afterAll(): Unit = {
-    super.afterAll()
     testConfig.stop()
-    ()
+    super.afterAll()
   }
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
