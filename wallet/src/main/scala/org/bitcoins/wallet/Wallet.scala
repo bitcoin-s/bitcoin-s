@@ -207,7 +207,8 @@ abstract class Wallet
   }
 
   /** Sums up the value of all unspent
-    * TXOs in the wallet, filtered by the given predicate */
+    * TXOs in the wallet, filtered by the given predicate
+    */
   private def filterThenSum(
       predicate: SpendingInfoDb => Boolean): Future[CurrencyUnit] = {
     for (

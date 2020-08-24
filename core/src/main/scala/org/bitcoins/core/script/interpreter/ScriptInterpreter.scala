@@ -1186,7 +1186,8 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
   }
 
   /**  Calculates the new op count after the execution of the given
-    * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] */
+    * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]]
+    */
   private def calcOpCount(oldOpCount: Int, token: ScriptToken): Int =
     if (BitcoinScriptUtil.countsTowardsScriptOpLimit(token)) {
       oldOpCount + 1

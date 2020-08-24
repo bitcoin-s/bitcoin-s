@@ -289,8 +289,8 @@ object AppConfig extends BitcoinSLogger {
       if (configOverrides.nonEmpty) {
         val overrides =
           configOverrides
-          // we reverse to make the configs specified last take precedent
-          .reverse
+            // we reverse to make the configs specified last take precedent
+            .reverse
             .reduce(_.withFallback(_))
 
         // to make the overrides actually override

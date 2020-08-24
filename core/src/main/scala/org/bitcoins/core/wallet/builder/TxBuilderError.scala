@@ -83,20 +83,23 @@ object TxBuilderError {
 
   /** We expected a
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 WitnessScriptPubKeyV0]],
-    * but got a non witness spk type */
+    * but got a non witness spk type
+    */
   val NonWitnessSPK = Failure(
     new IllegalArgumentException(
       "We expected a witness spk, but got a non witness spk"))
 
   /** We cannot have a
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] nested inside of another
-    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] */
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
+    */
   //case object NestedWitnessSPK extends TxBuilderError
   val NestedWitnessSPK = Failure(
     new IllegalArgumentException("We cannot nested witness SPKs"))
 
   /** We cannot have a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]]
-    * nested inside of another spk */
+    * nested inside of another spk
+    */
   val NestedP2SHSPK = Failure(
     new IllegalArgumentException("We cannot sign nested P2SHScriptPubKeys"))
 
@@ -163,12 +166,14 @@ object TxBuilderError {
     "This transaction creates spends more money than it was funded by the given utxos"))
 
   /** Means that the fee was too low for
-    * [[org.bitcoins.core.wallet.builder.TxBuilder.feeRate TxBuilder.feeRate]] */
+    * [[org.bitcoins.core.wallet.builder.TxBuilder.feeRate TxBuilder.feeRate]]
+    */
   val LowFee = Failure(
     new IllegalArgumentException("Means that the fee was too low"))
 
   /** Means tha this transaction pays too high of a fee for
-    * [[org.bitcoins.core.wallet.builder.TxBuilder.feeRate TxBuilder.feeRate]] */
+    * [[org.bitcoins.core.wallet.builder.TxBuilder.feeRate TxBuilder.feeRate]]
+    */
 
   val HighFee = Failure(
     new IllegalArgumentException("Means that the fee was too high"))
@@ -184,7 +189,8 @@ object TxBuilderError {
     "Means you tried to spend an output that requires a lock by blockheight, and another output that requires a lock by timestamp"))
 
   /** Means we have a output on this transaction below
-    * [[org.bitcoins.core.policy.Policy.dustThreshold Policy.dustThreshold]] */
+    * [[org.bitcoins.core.policy.Policy.dustThreshold Policy.dustThreshold]]
+    */
   def OutputBelowDustThreshold(
       belowDustOutputs: Seq[TransactionOutput]): Failure[Nothing] =
     Failure(new IllegalArgumentException(

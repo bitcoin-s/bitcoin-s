@@ -119,7 +119,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
     addressDAO.findAllSPKs()
 
   /** Given a transaction, returns the outputs (with their corresponding outpoints)
-    * that pay to this wallet */
+    * that pay to this wallet
+    */
   def findOurOuts(transaction: Transaction): Future[
     Vector[(TransactionOutput, TransactionOutPoint)]] =
     for {
@@ -447,7 +448,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * We to ensure independent calls to getNewAddress don't result in a race condition
     * to the database that would generate the same address and cause an error.
     * With this background thread, we poll the [[addressRequestQueue]] seeing if there
-    * are any elements in it, if there are, we process them and complete the Promise in the queue. */
+    * are any elements in it, if there are, we process them and complete the Promise in the queue.
+    */
   lazy val walletThread = new Thread(AddressQueueRunnable)
 
   lazy val addressRequestQueue = {

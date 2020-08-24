@@ -1155,14 +1155,16 @@ object ConsoleCli {
             _ => error(s"Response was not a JSON object! Got: $rawBody"))
 
       /** Gets the given key from jsObj if it exists
-        * and is not null */
+        * and is not null
+        */
       def getKey(key: String): Option[ujson.Value] = {
         jsObjT.toOption.flatMap(_.get(key).flatMap(result =>
           if (result.isNull) None else Some(result)))
       }
 
       /** Converts a `ujson.Value` to String, making an
-        * effort to avoid preceding and trailing `"`s */
+        * effort to avoid preceding and trailing `"`s
+        */
       def jsValueToString(value: ujson.Value) =
         value match {
           case Str(string)             => string

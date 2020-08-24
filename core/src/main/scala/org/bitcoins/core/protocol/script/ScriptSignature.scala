@@ -359,7 +359,8 @@ object MultiSignatureScriptSignature
     }
 
   /** Iterates through the given given script tokens and return false if
-    * one of the elements is NOT [[ScriptConstant]] or a push operation */
+    * one of the elements is NOT [[ScriptConstant]] or a push operation
+    */
   private def isPushOpsOrScriptConstants(asm: Seq[ScriptToken]): Boolean = {
     asm.forall(token =>
       token.isInstanceOf[ScriptConstant] ||

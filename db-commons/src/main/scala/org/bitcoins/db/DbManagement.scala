@@ -87,7 +87,8 @@ trait DbManagement extends BitcoinSLogger {
 
   /** Executes migrations related to this database
     *
-    * @see [[https://flywaydb.org/documentation/api/#programmatic-configuration-java]] */
+    * @see [[https://flywaydb.org/documentation/api/#programmatic-configuration-java]]
+    */
   def migrate(): Int = {
     val module = appConfig.moduleName
     val config =

@@ -522,7 +522,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /** Removes the given [[ECDigitalSignature ECDigitalSignature]] from the list of
-    * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] if it exists. */
+    * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] if it exists.
+    */
   def removeSignatureFromScript(
       signature: ECDigitalSignature,
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
@@ -540,7 +541,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /** Removes the list of [[ECDigitalSignature ECDigitalSignature]] from the list of
-    * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] */
+    * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]]
+    */
   def removeSignaturesFromScript(
       sigs: Seq[ECDigitalSignature],
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
@@ -597,7 +599,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /** Since witnesses are not run through the interpreter, replace
-    * `OP_0`/`OP_1` with `ScriptNumber.zero`/`ScriptNumber.one` */
+    * `OP_0`/`OP_1` with `ScriptNumber.zero`/`ScriptNumber.one`
+    */
   def minimalIfOp(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
     asm.map {
       case OP_0               => ScriptNumber.zero
@@ -608,7 +611,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   /** Replaces the [[org.bitcoins.core.script.constant.OP_0 OP_0]] dummy for
     * [[org.bitcoins.core.script.crypto.OP_CHECKMULTISIG OP_CHECKMULTISIG]] with
-    * [[org.bitcoins.core.script.constant.ScriptNumber.zero ScriptNumber.zero]] */
+    * [[org.bitcoins.core.script.constant.ScriptNumber.zero ScriptNumber.zero]]
+    */
   def minimalDummy(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
     if (asm.headOption.contains(OP_0)) ScriptNumber.zero +: asm.tail
     else asm

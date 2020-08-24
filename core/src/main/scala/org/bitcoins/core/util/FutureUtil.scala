@@ -78,7 +78,8 @@ object FutureUtil {
   }
 
   /** Batches the elements by batchSize, executes f, and then aggregates all of the results
-    * into a vector and returns it. This is is the synchrononous version of [[batchAndParallelExecute()]] */
+    * into a vector and returns it. This is is the synchrononous version of [[batchAndParallelExecute()]]
+    */
   def batchAndSyncExecute[T, U](
       elements: Vector[T],
       f: Vector[T] => Future[Vector[U]],
@@ -99,7 +100,8 @@ object FutureUtil {
   }
 
   /** Batches the [[elements]] by [[batchSize]] and then calls [[f]] on them in parallel
-    * This is the parallel version of [[batchAndSyncExecute()]] */
+    * This is the parallel version of [[batchAndSyncExecute()]]
+    */
   def batchAndParallelExecute[T, U](
       elements: Vector[T],
       f: Vector[T] => Future[U],

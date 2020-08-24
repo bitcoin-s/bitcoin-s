@@ -7,7 +7,8 @@ import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Contains a finalized tx (output from [[RawTxFinalizer.buildTx]]) and the
-  * ScriptSignatureParams needed to sign that transaction. */
+  * ScriptSignatureParams needed to sign that transaction.
+  */
 case class FinalizedTxWithSigningInfo(
     finalizedTx: Transaction,
     infos: Vector[ScriptSignatureParams[InputInfo]]) {
