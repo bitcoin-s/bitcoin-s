@@ -2,9 +2,9 @@ package org.bitcoins.cli
 
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32

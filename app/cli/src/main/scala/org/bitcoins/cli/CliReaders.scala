@@ -3,7 +3,7 @@ package org.bitcoins.cli
 import java.time.{ZoneId, ZonedDateTime}
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
+import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32

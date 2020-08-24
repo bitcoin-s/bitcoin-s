@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.api
+package org.bitcoins.core.api.wallet
 
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 

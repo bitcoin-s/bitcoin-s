@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.core.api.wallet.{AddUtxoError, AddUtxoSuccess}
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
@@ -11,7 +12,6 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.wallet._
-import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess}
 
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}

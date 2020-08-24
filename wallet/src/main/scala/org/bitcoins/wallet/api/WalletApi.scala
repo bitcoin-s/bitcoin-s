@@ -2,11 +2,11 @@ package org.bitcoins.wallet.api
 
 import java.time.Instant
 
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
