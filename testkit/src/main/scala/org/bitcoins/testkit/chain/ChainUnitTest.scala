@@ -68,19 +68,8 @@ trait ChainUnitTest
 
     val fixtureTag: ChainFixtureTag = ChainFixtureTag.from(stringTag)
 
-    val fixtureF: Future[ChainFixture] = createFixture(fixtureTag)
-
-    val outcomeF = fixtureF.flatMap(fixture =>
-      test(fixture.asInstanceOf[FixtureParam]).toFuture)
-
-    val fixtureTakeDownF = outcomeF.flatMap { outcome =>
-      val destroyedF =
-        fixtureF.flatMap(fixture => destroyFixture(fixture))
-
-      destroyedF.map(_ => outcome)
-    }
-
-    new FutureOutcome(fixtureTakeDownF)
+    makeDependentFixture(build = () => createFixture(fixtureTag),
+                         destroy = destroyFixture)(test)
   }
 
   /**
