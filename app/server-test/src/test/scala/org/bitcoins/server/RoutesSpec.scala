@@ -6,8 +6,8 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.Core
+import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
 import org.bitcoins.core.api.wallet.db.{
   AccountDb,
   AddressDb,
@@ -40,8 +40,6 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockWalletApi
-import org.bitcoins.wallet.api.AddressInfo
-import org.bitcoins.wallet.models._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 import scodec.bits.ByteVector

@@ -2,6 +2,8 @@ package org.bitcoins.wallet.internal
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import org.bitcoins.core.api.wallet
+import org.bitcoins.core.api.wallet.AddressInfo
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
@@ -16,7 +18,6 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType}
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.wallet._
-import org.bitcoins.wallet.api.AddressInfo
 
 import scala.concurrent.{Await, Future, Promise, TimeoutException}
 import scala.util.{Failure, Success}
@@ -394,9 +395,9 @@ private[wallet] trait AddressHandling extends WalletLogger {
       address: BitcoinAddress): Future[Option[AddressInfo]] = {
     addressDAO.findAddress(address).map { addressOpt =>
       addressOpt.map { address =>
-        AddressInfo(pubkey = address.ecPublicKey,
-                    network = address.address.networkParameters,
-                    path = address.path)
+        wallet.AddressInfo(pubkey = address.ecPublicKey,
+                           network = address.address.networkParameters,
+                           path = address.path)
       }
     }
   }
