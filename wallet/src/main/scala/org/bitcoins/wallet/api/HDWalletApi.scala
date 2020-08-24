@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
+import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.wallet.db.{AccountDb, AddressDb, SpendingInfoDb}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}

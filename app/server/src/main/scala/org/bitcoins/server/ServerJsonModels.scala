@@ -1,6 +1,6 @@
 package org.bitcoins.server
 
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
+import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}

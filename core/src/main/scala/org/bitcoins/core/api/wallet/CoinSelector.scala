@@ -1,7 +1,6 @@
-package org.bitcoins.wallet.api
+package org.bitcoins.core.api.wallet
 
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo._
+import org.bitcoins.core.api.wallet.CoinSelectionAlgo._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.transaction.TransactionOutput

@@ -1,4 +1,4 @@
-package org.bitcoins.commons.jsonmodels.wallet
+package org.bitcoins.core.api.wallet
 
 /** Represents the various ways the wallet can do coin selection */
 sealed abstract class CoinSelectionAlgo
