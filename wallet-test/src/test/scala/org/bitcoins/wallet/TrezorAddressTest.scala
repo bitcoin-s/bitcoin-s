@@ -2,6 +2,7 @@ package org.bitcoins.wallet
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -18,7 +19,6 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   MockNodeApi
 }
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{AccountDb, AddressDb}
 import org.scalatest.compatible.Assertion
 import play.api.libs.json._
 

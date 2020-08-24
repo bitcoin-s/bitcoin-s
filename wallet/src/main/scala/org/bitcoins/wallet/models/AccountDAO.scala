@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.hd._
 import org.bitcoins.db.{CRUD, SlickUtil}

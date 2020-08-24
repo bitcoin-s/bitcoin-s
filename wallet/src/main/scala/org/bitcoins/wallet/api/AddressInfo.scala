@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.core.hd.HDPath
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.hd.HDPath
 import org.bitcoins.crypto.ECPublicKey
 
 /**

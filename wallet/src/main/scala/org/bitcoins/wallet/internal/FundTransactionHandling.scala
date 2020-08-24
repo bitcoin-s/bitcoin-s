@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
-import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil
@@ -15,7 +15,6 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sign
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.api.{AddressInfo, CoinSelector}
-import org.bitcoins.wallet.models.AccountDb
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future

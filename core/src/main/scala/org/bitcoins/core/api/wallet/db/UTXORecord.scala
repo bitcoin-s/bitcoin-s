@@ -1,12 +1,6 @@
-package org.bitcoins.core.wallet.utxo
+package org.bitcoins.core.api.wallet.db
 
 import org.bitcoins.core.api.db.DbRowAutoInc
-import org.bitcoins.core.api.wallet.db.{
-  LegacySpendingInfo,
-  NestedSegwitV0SpendingInfo,
-  SegwitV0SpendingInfo,
-  SpendingInfoDb
-}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{
   HDPath,
@@ -23,6 +17,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 case class UTXORecord(

@@ -16,6 +16,7 @@ import org.bitcoins.core.crypto.ExtKeyVersion.{
   SegWitTestNet3Pub
 }
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose, HDPurposes}
+import org.bitcoins.core.util.HDUtil
 import org.bitcoins.testkit.keymanager.KeyManagerApiUnitTest
 
 class HdUtilTest extends KeyManagerApiUnitTest {

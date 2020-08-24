@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
@@ -15,8 +16,7 @@ class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
         val xpub = CryptoGenerators.extPublicKey.sampleSome
 
-        val accountDb =
-          AccountDb(xpub, account)
+        val accountDb = AccountDb(xpub, account)
         accountDAO.create(accountDb)
       }
       found <-

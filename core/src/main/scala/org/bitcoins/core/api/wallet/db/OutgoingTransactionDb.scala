@@ -1,6 +1,5 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.core.api.wallet.db
 
-import org.bitcoins.core.api.wallet.db.TxDB
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte

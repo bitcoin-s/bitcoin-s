@@ -1,16 +1,13 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest}
-import org.bitcoins.core.config.TestNet3
-import com.typesafe.config.ConfigFactory
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.wallet.config.WalletAppConfig
-
-import org.bitcoins.core.hd.HDPurposes
 import java.nio.file.Files
 
 import ch.qos.logback.classic.Level
+import com.typesafe.config.ConfigFactory
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.util.Properties
 
