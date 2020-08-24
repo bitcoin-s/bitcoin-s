@@ -220,7 +220,7 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
         entropy = ByteVector.fromValidHex(rawEntropy),
         expectedWords = rawWords.split(" ").toVector,
         expectedSeed = BIP39Seed.fromHex(rawSeed),
-        expectedXPriv = ExtPrivateKey.fromString(rawXpriv).get
+        expectedXPriv = ExtPrivateKey.fromString(rawXpriv)
       )
     }
 

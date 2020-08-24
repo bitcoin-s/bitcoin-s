@@ -97,8 +97,7 @@ object JsonSerializers {
   implicit val xpubFormat: Format[ExtPublicKey] = new Format[ExtPublicKey] {
 
     override def reads(json: JsValue): JsResult[ExtPublicKey] =
-      SerializerUtil.processJsStringOpt(ExtPublicKey.fromString(_).toOption)(
-        json)
+      SerializerUtil.processJsStringOpt(ExtPublicKey.fromStringOpt(_))(json)
 
     override def writes(key: ExtPublicKey): JsValue = JsString(key.toString)
   }
@@ -106,8 +105,7 @@ object JsonSerializers {
   implicit val xprivForamt: Format[ExtPrivateKey] = new Format[ExtPrivateKey] {
 
     override def reads(json: JsValue): JsResult[ExtPrivateKey] =
-      SerializerUtil.processJsStringOpt(ExtPrivateKey.fromString(_).toOption)(
-        json)
+      SerializerUtil.processJsStringOpt(ExtPrivateKey.fromStringOpt(_))(json)
     override def writes(key: ExtPrivateKey): JsValue = JsString(key.toString)
   }
 

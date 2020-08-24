@@ -14,7 +14,8 @@ import org.bitcoins.crypto.{
   Factory,
   FieldElement,
   MaskedToString,
-  NetworkElement
+  NetworkElement,
+  StringFactory
 }
 import scodec.bits.{ByteVector, HexStringSyntax}
 
@@ -125,13 +126,21 @@ sealed abstract class ExtKey extends NetworkElement {
 
 }
 
-object ExtKey extends Factory[ExtKey] {
+object ExtKey extends Factory[ExtKey] with StringFactory[ExtKey] {
   val hardenedIdx = UInt32(NumberUtil.pow2(31).toLong)
 
   val masterFingerprint: ByteVector = hex"00000000"
 
   /** Takes in a base58 string and tries to convert it to an extended key */
-  def fromString(base58: String): Try[ExtKey] = {
+  override def fromString(base58: String): ExtKey = {
+    fromStringT(base58) match {
+      case Success(key) => key
+      case Failure(exn) =>
+        throw exn
+    }
+  }
+
+  override def fromStringT(base58: String): Try[ExtKey] = {
     val decoded: Try[ByteVector] = Base58.decodeCheck(base58)
     val extKey = decoded.flatMap { bytes =>
       require(bytes.size == 78, "Not 78 bytes")
@@ -268,7 +277,9 @@ sealed abstract class ExtPrivateKey
   }
 }
 
-object ExtPrivateKey extends Factory[ExtPrivateKey] {
+object ExtPrivateKey
+    extends Factory[ExtPrivateKey]
+    with StringFactory[ExtPrivateKey] {
 
   private case class ExtPrivateKeyImpl(
       version: ExtKeyPrivVersion,
@@ -297,8 +308,8 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
   }
 
   /** Takes in a base58 string and tries to convert it to an extended private key */
-  def fromString(base58: String): Try[ExtPrivateKey] =
-    ExtKey.fromString(base58) match {
+  override def fromStringT(base58: String): Try[ExtPrivateKey] =
+    ExtKey.fromStringT(base58) match {
       case Success(priv: ExtPrivateKey) => Success(priv)
       case Success(_: ExtPublicKey) =>
         Failure(
@@ -310,11 +321,18 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
       case Failure(exc) => Failure(exc)
     }
 
+  override def fromString(base58: String): ExtPrivateKey = {
+    fromStringT(base58) match {
+      case Success(key) => key
+      case Failure(exn) => throw exn
+    }
+  }
+
   override def fromBytes(bytes: ByteVector): ExtPrivateKey = {
     require(bytes.size == 78, "ExtPrivateKey can only be 78 bytes")
     val base58 =
       Base58.encode(bytes ++ CryptoUtil.doubleSHA256(bytes).bytes.take(4))
-    ExtKey.fromString(base58) match {
+    ExtKey.fromStringT(base58) match {
       case Success(priv: ExtPrivateKey) => priv
       case Success(_: ExtPublicKey) =>
         throw new IllegalArgumentException(
@@ -418,7 +436,9 @@ sealed abstract class ExtPublicKey extends ExtKey {
   }
 }
 
-object ExtPublicKey extends Factory[ExtPublicKey] {
+object ExtPublicKey
+    extends Factory[ExtPublicKey]
+    with StringFactory[ExtPublicKey] {
 
   private case class ExtPublicKeyImpl(
       version: ExtKeyPubVersion,
@@ -440,8 +460,8 @@ object ExtPublicKey extends Factory[ExtPublicKey] {
   }
 
   /** Takes in a base58 string and tries to convert it to an extended public key */
-  def fromString(base58: String): Try[ExtPublicKey] =
-    ExtKey.fromString(base58) match {
+  override def fromStringT(base58: String): Try[ExtPublicKey] =
+    ExtKey.fromStringT(base58) match {
       case Success(pub: ExtPublicKey) => Success(pub)
       case Success(_: ExtPrivateKey) =>
         Failure(
@@ -453,11 +473,18 @@ object ExtPublicKey extends Factory[ExtPublicKey] {
       case Failure(fail) => Failure(fail)
     }
 
+  override def fromString(base58: String): ExtPublicKey = {
+    fromStringT(base58) match {
+      case Success(key) => key
+      case Failure(exn) => throw exn
+    }
+  }
+
   override def fromBytes(bytes: ByteVector): ExtPublicKey = {
     require(bytes.size == 78, "ExtPublicKey can only be 78 bytes")
     val base58 =
       Base58.encode(bytes ++ CryptoUtil.doubleSHA256(bytes).bytes.take(4))
-    ExtKey.fromString(base58) match {
+    ExtKey.fromStringT(base58) match {
       case Success(_: ExtPrivateKey) =>
         throw new IllegalArgumentException(
           "Cannot create ext privatkey in ExtPublicKey")

@@ -73,7 +73,6 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
     val extKey = ExtKey
       .fromString(
         "tprv8ZgxMBicQKsPd9TeAdPADNnSyH9SSUUbTVeFszDE23Ki6TBB5nCefAdHkK8Fm3qMQR6sHwA56zqRmKmxnHk37JkiFzvncDqoKmPWubu7hDF")
-      .get
 
     val psbt = start
       .addUTXOToInput(

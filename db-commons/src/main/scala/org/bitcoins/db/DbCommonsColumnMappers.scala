@@ -164,7 +164,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val xpubMapper: BaseColumnType[ExtPublicKey] = {
     MappedColumnType
-      .base[ExtPublicKey, String](_.toString, ExtPublicKey.fromString(_).get)
+      .base[ExtPublicKey, String](_.toString, ExtPublicKey.fromString(_))
   }
 
   implicit val hdCoinTypeMapper: BaseColumnType[HDCoinType] = {
@@ -173,15 +173,11 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val hdPathMappper: BaseColumnType[HDPath] =
     MappedColumnType
-      .base[HDPath, String](_.toString,
-                            HDPath.fromString(_).get
-      ) // hm rethink .get?
+      .base[HDPath, String](_.toString, HDPath.fromString(_))
 
   implicit val segwitPathMappper: BaseColumnType[SegWitHDPath] =
     MappedColumnType
-      .base[SegWitHDPath, String](_.toString,
-                                  SegWitHDPath.fromString
-      ) // hm rethink .get?
+      .base[SegWitHDPath, String](_.toString, SegWitHDPath.fromString)
 
   implicit val hdChainTypeMapper: BaseColumnType[HDChainType] =
     MappedColumnType.base[HDChainType, Int](_.index, HDChainType.fromInt)

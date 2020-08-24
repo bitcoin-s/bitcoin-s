@@ -82,7 +82,7 @@ object Picklers {
     readwriter[String].bimap(_.hex, Transaction.fromHex)
 
   implicit val extPubKeyPickler: ReadWriter[ExtPublicKey] =
-    readwriter[String].bimap(_.toString, ExtPublicKey.fromString(_).get)
+    readwriter[String].bimap(_.toString, ExtPublicKey.fromString(_))
 
   implicit val transactionOutPointPickler: ReadWriter[TransactionOutPoint] =
     readwriter[String].bimap(_.hex, TransactionOutPoint.fromHex)

@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.number.UInt5
 import org.bitcoins.core.util.Bech32
+import org.bitcoins.crypto.StringFactory
 
 sealed abstract class LnTagPrefix {
   val value: Char
@@ -13,7 +14,7 @@ sealed abstract class LnTagPrefix {
   * This defines the necessary Lightning Network Tag Prefix's, as specified in BOLT-11
   * Please see: https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields
   */
-object LnTagPrefix {
+object LnTagPrefix extends StringFactory[LnTagPrefix] {
 
   case class Unknown(value: Char) extends LnTagPrefix
 
@@ -72,11 +73,11 @@ object LnTagPrefix {
       .map(prefix => prefix.value -> prefix)
       .toMap
 
-  def fromString(str: String): Option[LnTagPrefix] = {
+  override def fromString(str: String): LnTagPrefix = {
     if (str.length == 1) {
-      Option(fromChar(str.head))
+      fromChar(str.head)
     } else {
-      None
+      sys.error(s"LnTagPrefix can only be one char in length, got=${str}")
     }
   }
 
