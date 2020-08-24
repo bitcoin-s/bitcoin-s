@@ -114,9 +114,9 @@ object CommonSettings {
 
   lazy val testWithDbSettings: Seq[Setting[_]] = Seq(
     // To make in-memory DBs work properly
-    Test / fork := true,
+    Test / fork := false,
     // To avoid deadlock issues with SQLite
-    Test / parallelExecution := false
+    Test / parallelExecution := true
   ) ++ testSettings
 
   lazy val prodSettings: Seq[Setting[_]] = settings
