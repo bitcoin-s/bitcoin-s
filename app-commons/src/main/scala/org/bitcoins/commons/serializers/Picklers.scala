@@ -88,7 +88,7 @@ object Picklers {
     readwriter[String].bimap(_.hex, TransactionOutPoint.fromHex)
 
   implicit val coinSelectionAlgoPickler: ReadWriter[CoinSelectionAlgo] =
-    readwriter[String].bimap(_.toString, CoinSelectionAlgo.fromString(_).get)
+    readwriter[String].bimap(_.toString, CoinSelectionAlgo.fromString(_))
 
   implicit val addressLabelTagPickler: ReadWriter[AddressLabelTag] =
     readwriter[String].bimap(_.name, AddressLabelTag)

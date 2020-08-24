@@ -1,9 +1,11 @@
 package org.bitcoins.core.api.wallet
 
+import org.bitcoins.crypto.StringFactory
+
 /** Represents the various ways the wallet can do coin selection */
 sealed abstract class CoinSelectionAlgo
 
-object CoinSelectionAlgo {
+object CoinSelectionAlgo extends StringFactory[CoinSelectionAlgo] {
 
   /** Randomly selects utxos until it has enough to fund the desired amount,
     * should only be used for research purposes
@@ -32,7 +34,13 @@ object CoinSelectionAlgo {
            AccumulateSmallestViable,
            StandardAccumulate)
 
-  def fromString(str: String): Option[CoinSelectionAlgo] = {
+  override def fromStringOpt(str: String): Option[CoinSelectionAlgo] = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase)
+  }
+
+  override def fromString(string: String): CoinSelectionAlgo = {
+    val algoOpt = fromStringOpt(string)
+    algoOpt.getOrElse(
+      sys.error(s"Could not find coin selection algorithm=${string}"))
   }
 }

@@ -129,7 +129,7 @@ object CliReaders {
       val arity: Int = 1
 
       val reads: String => CoinSelectionAlgo =
-        CoinSelectionAlgo.fromString(_).get
+        CoinSelectionAlgo.fromString(_)
     }
 
   implicit val schnorrSigReads: Read[SchnorrDigitalSignature] =

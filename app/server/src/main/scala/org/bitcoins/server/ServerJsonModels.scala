@@ -490,8 +490,6 @@ trait ServerJsonModels {
   def jsToCoinSelectionAlgo(js: Value): CoinSelectionAlgo =
     CoinSelectionAlgo
       .fromString(js.str)
-      .getOrElse(
-        throw new IllegalArgumentException("Invalid CoinSelectionAlgo"))
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 

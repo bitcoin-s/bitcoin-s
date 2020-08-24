@@ -878,8 +878,7 @@ object JsonReaders {
       }
   }
 
-  implicit val channelCommandResultStateReads: Reads[
-    ChannelCommandResult.State] = Reads { jsValue =>
+  implicit val channelCommandResultStateReads: Reads[State] = Reads { jsValue =>
     SerializerUtil.processJsString(ChannelCommandResult.fromString)(jsValue)
   }
 
@@ -890,7 +889,7 @@ object JsonReaders {
           case Success(id) => Right(id)
           case Failure(_)  => Left(ShortChannelId.fromHumanReadableString(x._1))
         }
-        (channelId, x._2.validate[ChannelCommandResult.State].get)
+        (channelId, x._2.validate[State].get)
       }))
     case err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
         _: JsNumber) =>
