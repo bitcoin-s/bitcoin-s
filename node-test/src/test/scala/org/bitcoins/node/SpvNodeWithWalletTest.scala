@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.Cancellable
+import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -10,7 +11,6 @@ import org.bitcoins.testkit.node.{
   NodeUnitTest,
   SpvNodeFundedWalletBitcoind
 }
-import org.bitcoins.wallet.api.WalletApi
 import org.scalatest.FutureOutcome
 import org.scalatest.exceptions.TestFailedException
 

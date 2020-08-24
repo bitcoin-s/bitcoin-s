@@ -6,6 +6,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi.{
   FilterResponse,
   InvalidBlockRange
 }
+import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.gcs.SimpleFilterMatcher
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
@@ -13,7 +14,6 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.wallet.api.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.{ExecutionContext, Future}
