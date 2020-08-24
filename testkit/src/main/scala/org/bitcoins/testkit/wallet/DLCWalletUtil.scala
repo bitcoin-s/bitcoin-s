@@ -121,7 +121,9 @@ trait DLCWalletUtil {
     isInitiator = true,
     account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,
     keyIndex = 0,
-    oracleSigOpt = Some(sampleOracleLoseSig)
+    oracleSigOpt = Some(sampleOracleLoseSig),
+    fundingTxIdOpt = None,
+    closingTxIdOpt = None
   )
 
   def initDLC(fundedWalletA: FundedDLCWallet, fundedWalletB: FundedDLCWallet)(

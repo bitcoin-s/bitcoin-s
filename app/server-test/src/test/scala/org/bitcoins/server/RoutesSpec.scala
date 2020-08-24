@@ -665,8 +665,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     val dummyKey = ECPublicKey(
       "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919")
-    val dummyKey2 = ECPublicKey(
-      "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b918")
 
     val dummyPartialSig = PartialSignature(
       ECPublicKey(
@@ -807,16 +805,16 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       (mockWalletApi
         .addDLCSigs(_: DLCSign))
         .expects(DLCSign.fromJson(ujson.read(sigsStr)))
-        .returning(
-          Future.successful(
-            DLCDb(
-              eventId = eventId,
-              state = DLCState.Signed,
-              isInitiator = false,
-              account = HDAccount(HDCoin(HDPurpose(89), HDCoinType.Testnet), 0),
-              keyIndex = 0,
-              oracleSigOpt = None
-            )))
+        .returning(Future.successful(DLCDb(
+          eventId = eventId,
+          state = DLCState.Signed,
+          isInitiator = false,
+          account = HDAccount(HDCoin(HDPurpose(89), HDCoinType.Testnet), 0),
+          keyIndex = 0,
+          oracleSigOpt = None,
+          fundingTxIdOpt = None,
+          closingTxIdOpt = None
+        )))
 
       val route = walletRoutes.handleCommand(
         ServerCommand("adddlcsigs", Arr(Str(sigsStr))))

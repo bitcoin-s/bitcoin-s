@@ -85,13 +85,23 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     val dlcA = wallets._1.wallet
     val dlcB = wallets._2.wallet
 
+    val wallet = if (asInitiator) dlcA else dlcB
+
     for {
-      offer <- getInitialOffer(dlcA)
+      offer <- getInitialOffer(wallet)
       fundingTx <- dlcB.getDLCFundingTx(offer.eventId)
-      tx <- if (asInitiator) func(dlcA) else func(dlcB)
+      tx <- func(wallet)
+      dlcDbOpt <- wallet.dlcDAO.findByEventId(offer.eventId)
     } yield {
       assert(tx.inputs.size == 1)
       assert(tx.outputs.size == expectedOutputs)
+
+      assert(dlcDbOpt.isDefined)
+      val dlcDb = dlcDbOpt.get
+      assert(dlcDb.fundingTxIdOpt.contains(fundingTx.txIdBE))
+
+      assert(dlcDb.closingTxIdOpt.contains(tx.txIdBE))
+
       assert(ScriptInterpreter.checkTransaction(tx))
       assert(verifyInput(tx, 0, fundingTx.outputs.head))
     }

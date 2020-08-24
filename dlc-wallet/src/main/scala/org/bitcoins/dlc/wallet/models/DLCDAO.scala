@@ -3,6 +3,7 @@ package org.bitcoins.dlc.wallet.models
 import org.bitcoins.commons.jsonmodels.dlc.DLCState
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
   SchnorrDigitalSignature,
   Sha256Digest,
   Sha256DigestBE
@@ -72,13 +73,21 @@ case class DLCDAO()(implicit
     def oracleSigOpt: Rep[Option[SchnorrDigitalSignature]] =
       column("oracle_sig")
 
+    def fundingTxIdOpt: Rep[Option[DoubleSha256DigestBE]] =
+      column("funding_tx_id")
+
+    def closingTxIdOpt: Rep[Option[DoubleSha256DigestBE]] =
+      column("closing_tx_id")
+
     def * : ProvenShape[DLCDb] =
       (eventId,
        state,
        isInitiator,
        account,
        keyIndex,
-       oracleSigOpt) <> (DLCDb.tupled, DLCDb.unapply)
+       oracleSigOpt,
+       fundingTxIdOpt,
+       closingTxIdOpt) <> (DLCDb.tupled, DLCDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc", sourceColumns = eventId)

@@ -63,7 +63,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               isInitiator = isInitiator,
               account = account.hdAccount,
               keyIndex = nextIndex,
-              oracleSigOpt = None
+              oracleSigOpt = None,
+              fundingTxIdOpt = None,
+              closingTxIdOpt = None
             )
           }
           _ <- writeDLCKeysToAddressDb(account, nextIndex)
@@ -85,6 +87,41 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               s"No DLCDb found with eventId ${eventId.hex}"))
       }
       updated <- dlcDAO.update(dlcDb.updateState(state))
+    } yield updated
+  }
+
+  private def updateDLCFundingTxId(
+      eventId: Sha256DigestBE,
+      fundingTx: Transaction): Future[DLCDb] = {
+    for {
+      dlcOpt <- dlcDAO.read(eventId)
+      dlcDb <- dlcOpt match {
+        case Some(dlc) => Future.successful(dlc)
+        case None =>
+          Future.failed(
+            new IllegalArgumentException(
+              s"No DLCDb found with eventId ${eventId.hex}"))
+      }
+      newDlcDb =
+        dlcDb
+          .setFundingTxId(fundingTx.txIdBE)
+      updated <- dlcDAO.update(newDlcDb)
+    } yield updated
+  }
+
+  private def updateDLCClosingTxId(
+      eventId: Sha256DigestBE,
+      txId: DoubleSha256DigestBE): Future[DLCDb] = {
+    for {
+      dlcOpt <- dlcDAO.read(eventId)
+      dlcDb <- dlcOpt match {
+        case Some(dlc) => Future.successful(dlc)
+        case None =>
+          Future.failed(
+            new IllegalArgumentException(
+              s"No DLCDb found with eventId ${eventId.hex}"))
+      }
+      updated <- dlcDAO.update(dlcDb.setClosingTxId(txId))
     } yield updated
   }
 
@@ -337,6 +374,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                            finalAddress = dlcPubKeys.payoutAddress,
                            fundingUtxos = spendingInfos)
 
+      fundingTx <- builder.buildFundingTx
       cetSigs <- signer.createCETSigs()
 
       _ = logger.debug(
@@ -385,6 +423,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ <- dlcAcceptDAO.create(dlcAcceptDb)
       _ <- dlcSigsDAO.createAll(sigsDbs.toVector)
       _ <- dlcRefundSigDAO.create(refundSigDb)
+      _ <- updateDLCFundingTxId(dlc.eventId, fundingTx)
     } yield {
       dlcAcceptDb.toDLCAccept(utxos, cetSigs.outcomeSigs, cetSigs.refundSig)
     }
@@ -437,6 +476,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     for {
       _ <- registerDLCAccept(accept)
       signer <- signerFromDb(accept.eventId)
+      fundingTx <- signer.builder.buildFundingTx
 
       cetSigs <- signer.createCETSigs()
       fundingSigs <- signer.createFundingTxSigs()
@@ -446,6 +486,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ <- dlcRefundSigDAO.upsert(refundSigDb)
 
       _ <- updateDLCState(accept.eventId, DLCState.Signed)
+      _ <- updateDLCFundingTxId(accept.eventId, fundingTx)
     } yield {
       DLCSign(cetSigs, fundingSigs, accept.eventId)
     }
@@ -759,6 +800,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       outcome <- executor.executeDLC(setup, oracleSig)
 
       _ <- updateDLCState(eventId, DLCState.Claimed)
+      _ <- updateDLCClosingTxId(eventId, outcome.cet.txIdBE)
     } yield {
       outcome.cet
     }
@@ -768,11 +810,11 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       eventId: Sha256DigestBE): Future[Transaction] = {
     for {
       (executor, setup) <- executorAndSetupFromDb(eventId)
+      tx = executor.executeRefundDLC(setup).refundTx
+
       _ <- updateDLCState(eventId, DLCState.Refunded)
-    } yield {
-      val outcome = executor.executeRefundDLC(setup)
-      outcome.refundTx
-    }
+      _ <- updateDLCClosingTxId(eventId, tx.txIdBE)
+    } yield tx
   }
 
 }
