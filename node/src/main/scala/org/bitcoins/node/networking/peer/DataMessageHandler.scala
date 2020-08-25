@@ -340,8 +340,6 @@ case class DataMessageHandler(
         } else Inventory(TypeIdentifier.MsgBlock, hash)
       case other: Inventory => other
     })
-    peerMsgSender.sendMsg(getData)
-    Future.successful(this)
-
+    peerMsgSender.sendMsg(getData).map(_ => this)
   }
 }

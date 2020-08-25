@@ -66,7 +66,7 @@ case class SpvNode(
     val hash = address.hash
     _bloomFilter.atomicUpdate(hash)(_.insert(_))
 
-    val sentFilterAddF = peerMsgSenderF.map(_.sendFilterAddMessage(hash))
+    val sentFilterAddF = peerMsgSenderF.flatMap(_.sendFilterAddMessage(hash))
 
     sentFilterAddF.map(_ => this)
   }
