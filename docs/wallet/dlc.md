@@ -85,9 +85,11 @@ To first start up the GUI you first need to start your bitcoin-s server, after d
 sbt gui/run
 ```
 
+or by following the instructions for building and running the GUI [here](../getting-setup#step-5-setting-up-a-bitcoin-s-server-neutrino-node)
+
 ### Step 3: Setup The DLC
 
-If you're a visual learner there is a [video demo](https://www.youtube.com/watch?v=zy1sL2ndcDg) that explains this process in detail.
+If you're a visual learner there is a [video demo](https://www.youtube.com/watch?v=zy1sL2ndcDg) that explains this process in detail. But do note that this demonstrates the old non-adaptor version of DLCs so that the Offer, Accept, Sign protocol is the same, but the contents will be different.
 
 
 #### Creating The Offer
@@ -109,23 +111,10 @@ After doing so you can get the fully signed funding transaction using the `Get F
 
 ### Step 4: Executing the DLC
 
-#### Mutual Close
+#### Execute
 
-Upon receiving an oracle signature, either party can initiate a mutual close with the `Init Close` button.
-This will take in the event id of the DLC plus the oracle signature.
-Afterwards, it should give you a JSON output that can be sent to your counter party.
-
-And if you receive one of these CloseSig messages from your counter-party, you can generate the fully-signed mutual closing transaction with the `AcceptClose` button and simply pasting in their message.
-
-#### Unilateral Close
-
-If your counter-party is unresponsive upon receiving a mutual close message, or is unreachable, you can execute the DLC unilaterally with the `Force Close` button.
-This will return two fully-signed transactions in the case that you are owed any funds, and one fully-signed transaction in the case that you aren't. The first transaction returned should be the fully signed Contract Execution Transaction, and the second transaction, if existing, should be the fully-signed sweep transaction which claims your funds on the CET.
-
-
-##### Claiming Penalty Funds
-
-If your counter-party has broadcasted a CET to the network, and does not sweep their ToLocal funds in `5` blocks, you can claim the funds on the `ToLocalOutput` using the `Punish` button.
+You can execute the DLC unilaterally with the `Execute` button which will require the oracle signature.
+This will return a fully signed Contract Execution Transaction for the event signed by the oracle.
 
 #### Refund
 
@@ -140,7 +129,7 @@ If the `refundlocktime` for the DLC has been reached, you can get the fully-sign
 Once these terms are agreed to, either party can call on `createdlcoffer` with flags for each of the fields in the table above. For example:
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli createdlcoffer --oracleInfo 02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cabb1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750 --contractInfo c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920fa0860100000000005c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c0000000000000000 --collateral 40000 --locktime 1666720 --refundlocktime 1666730 --feerate 3
+./app/cli/target/universal/stage/bitcoin-s-cli createdlcoffer --oracleInfo 02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cabb1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750 --contractInfo c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920fa0860100000000005c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c0000000000000000 --collateral 40000 --locktime 1666720 --refundlocktime 1666730 --feerate 3
 ```
 
 This will return a nice pretty-printed JSON offer. To get an offer that can be sent to the counter-party, add the `--escaped` flag to the end of this command.
@@ -150,7 +139,7 @@ This will return a nice pretty-printed JSON offer. To get an offer that can be s
 Upon receiving a DLC Offer from your counter-party, the following command will create the serialized accept message:
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli acceptdlcoffer --offer [offer] --escaped
+./app/cli/target/universal/stage/bitcoin-s-cli acceptdlcoffer --offer [offer] --escaped
 ```
 
 #### Signing The DLC
@@ -158,7 +147,7 @@ Upon receiving a DLC Offer from your counter-party, the following command will c
 Upon receiving a DLC Accept message from your counter-party, the following command will generate all of your signatures for this DLC:
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli signdlc --accept [accept] --escaped
+./app/cli/target/universal/stage/bitcoin-s-cli signdlc --accept [accept] --escaped
 ```
 
 #### Adding DLC Signatures To Your Database
@@ -166,64 +155,34 @@ Upon receiving a DLC Accept message from your counter-party, the following comma
 Upon receiving a DLC Sign message from your counter-party, add their signatures to your database by:
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli adddlcsigs --sigs [sign]
+./app/cli/target/universal/stage/bitcoin-s-cli adddlcsigs --sigs [sign]
 ```
 
 You are now fully setup and can generate the fully signed funding transaction for broadcast using
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli getdlcfundingtx --eventid [eventid]
+./app/cli/target/universal/stage/bitcoin-s-cli getdlcfundingtx --eventid [eventid]
 ```
 
 where the `eventid` is in all but the messages other than the DLC Offer message, and is also returned by the `adddlcsigs` command.
 
 ### Step 4: Executing the DLC
 
-#### Mutual Close
+#### Execute
 
-Upon receiving an oracle signature, either party can initiate a mutual close with
-
-```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli initdlcmutualclose --eventid [eventid] --oraclesig [sig] --escaped
-```
-
-And if you receive one of these CloseSig messages from your counter-party, you can generate the fully-signed mutual closing transaction with
+Upon receiving an oracle signature, you can execute the DLC unilaterally with
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli acceptdlcmutualclose --closesig [closesig]
+./app/cli/target/universal/stage/bitcoin-s-cli executedlc --eventid [eventid] --oraclesig [sig]
 ```
 
-#### Unilateral Close
-
-If your counter-party is unresponsive upon receiving an `initdlcmutualclose` message, or is unreachable, you can execute the DLC unilaterally with
-
-```bashrcDiscreet Log Contract (DLC) GUI Demo
-./app/cli/target/graalvm-native-image/bitcoin-s-cli executedlcforceclose --eventid [eventid] --oraclesig [sig]
-```
-
-which will return two fully-signed transactions in the case that you are owed any funds, and one fully-signed transaction in the case that you aren't. The first transaction returned should be the fully signed Contract Execution Transaction, and the second transaction, if existing, should be the fully-signed sweep transaction which claims your funds on the CET.
-
-##### Claiming Remote Funds When Counter-Party Unilaterally Closes
-
-If your counter-party has broadcasted a CET to the network, you can claim the funds on the `ToRemoteOutput` using
-
-```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli claimdlcremotefunds --eventid [eventid] --forceclosetx [cet]
-```
-
-##### Claiming Penalty Funds
-
-If your counter-party has broadcasted a CET to the network, and does not sweep their ToLocal funds in `5` blocks, you can claim the funds on the `ToLocalOutput` using
-
-```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli claimdlcpenaltyfunds --eventid [eventid] --forceclosetx [cet]
-```
+which will return fully signed Contract Execution Transaction for the event signed by the oracle.
 
 #### Refund
 
 If the `refundlocktime` for the DLC has been reached, you can get the fully-signed refund transaction with
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli executedlcrefund --eventid [eventid]
+./app/cli/target/universal/stage/bitcoin-s-cli executedlcrefund --eventid [eventid]
 ```
 
