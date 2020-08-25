@@ -268,6 +268,54 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
     override val value: ByteVector = porCommitment
   }
 
+  case class RIPEMD160PreImage(preImage: ByteVector) extends InputPSBTRecord {
+    override type KeyId = RIPEMD160PreImageKeyId.type
+
+    val hash: RipeMd160Digest = CryptoUtil.ripeMd160(preImage)
+
+    lazy val hashBE: RipeMd160DigestBE = hash.flip
+
+    override val key: ByteVector =
+      ByteVector(RIPEMD160PreImageKeyId.byte) ++ hash.bytes
+    override val value: ByteVector = preImage
+  }
+
+  case class SHA256PreImage(preImage: ByteVector) extends InputPSBTRecord {
+    override type KeyId = SHA256PreImageKeyId.type
+
+    val hash: Sha256Digest = CryptoUtil.sha256(preImage)
+
+    lazy val hashBE: Sha256DigestBE = hash.flip
+
+    override val key: ByteVector =
+      ByteVector(SHA256PreImageKeyId.byte) ++ hash.bytes
+    override val value: ByteVector = preImage
+  }
+
+  case class HASH160PreImage(preImage: ByteVector) extends InputPSBTRecord {
+    override type KeyId = HASH160PreImageKeyId.type
+
+    val hash: Sha256Hash160Digest = CryptoUtil.sha256Hash160(preImage)
+
+    lazy val hashBE: Sha256Hash160DigestBE = hash.flip
+
+    override val key: ByteVector =
+      ByteVector(HASH160PreImageKeyId.byte) ++ hash.bytes
+    override val value: ByteVector = preImage
+  }
+
+  case class HASH256PreImage(preImage: ByteVector) extends InputPSBTRecord {
+    override type KeyId = HASH256PreImageKeyId.type
+
+    val hash: DoubleSha256Digest = CryptoUtil.doubleSHA256(preImage)
+
+    lazy val hashBE: DoubleSha256DigestBE = hash.flip
+
+    override val key: ByteVector =
+      ByteVector(HASH256PreImageKeyId.byte) ++ hash.bytes
+    override val value: ByteVector = preImage
+  }
+
   case class Unknown(key: ByteVector, value: ByteVector)
       extends InputPSBTRecord {
     override type KeyId = UnknownKeyId.type
@@ -328,6 +376,46 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
         FinalizedScriptWitness(RawScriptWitnessParser.read(value))
       case ProofOfReservesCommitmentKeyId =>
         ProofOfReservesCommitment(value)
+      case RIPEMD160PreImageKeyId =>
+        require(
+          key.size == 21,
+          s"The key must contain the 1 byte type followed by the 20 byte hash, got: $key")
+
+        val hash = key.tail
+        val record = RIPEMD160PreImage(value)
+        require(record.hash.bytes == hash,
+                "Received invalid RIPEMD160PreImage, hash does not match")
+        record
+      case SHA256PreImageKeyId =>
+        require(
+          key.size == 33,
+          s"The key must contain the 1 byte type followed by the 32 byte hash, got: $key")
+
+        val hash = key.tail
+        val record = SHA256PreImage(value)
+        require(record.hash.bytes == hash,
+                "Received invalid SHA256PreImage, hash does not match")
+        record
+      case HASH160PreImageKeyId =>
+        require(
+          key.size == 21,
+          s"The key must contain the 1 byte type followed by the 20 byte hash, got: $key")
+
+        val hash = key.tail
+        val record = HASH160PreImage(value)
+        require(record.hash.bytes == hash,
+                "Received invalid HASH160PreImage, hash does not match")
+        record
+      case HASH256PreImageKeyId =>
+        require(
+          key.size == 21,
+          s"The key must contain the 1 byte type followed by the 32 byte hash, got: $key")
+
+        val hash = key.tail
+        val record = HASH256PreImage(value)
+        require(record.hash.bytes == hash,
+                "Received invalid HASH256PreImage, hash does not match")
+        record
       case UnknownKeyId =>
         InputPSBTRecord.Unknown(key, value)
     }
