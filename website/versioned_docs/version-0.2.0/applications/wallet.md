@@ -97,7 +97,7 @@ val getBestBlockHashFunc = { () =>
 
 // once this future completes, we have a initialized
 // wallet
-import org.bitcoins.wallet.api.WalletApi
+import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.wallet.api.InitializeWalletSuccess
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.core.api._

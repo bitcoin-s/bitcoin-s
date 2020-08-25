@@ -62,7 +62,7 @@ import org.bitcoins.keymanager.bip39._
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.api.WalletApi
+import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.wallet.Wallet
 
 import com.typesafe.config.ConfigFactory

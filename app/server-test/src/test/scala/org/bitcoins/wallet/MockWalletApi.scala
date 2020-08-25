@@ -1,9 +1,9 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.api.wallet.AnyHDWalletApi
 import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.wallet.api.AnyHDWalletApi
 
 import scala.concurrent.Future
 
@@ -13,12 +13,12 @@ import scala.concurrent.Future
   */
 abstract class MockWalletApi extends AnyHDWalletApi {
 
-  override protected[wallet] def getNewChangeAddress(
-      account: AccountDb): Future[BitcoinAddress] = stub
+  override def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress] =
+    stub
 
-  override protected[wallet] def getDefaultAccount(): Future[AccountDb] = stub
+  override def getDefaultAccount(): Future[AccountDb] = stub
 
-  override protected[wallet] def getDefaultAccountForType(
+  override def getDefaultAccountForType(
       addressType: AddressType): Future[AccountDb] = stub
 
   private def stub[T] =

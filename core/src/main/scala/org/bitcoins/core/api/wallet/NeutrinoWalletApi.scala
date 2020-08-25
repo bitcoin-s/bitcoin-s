@@ -1,11 +1,11 @@
-package org.bitcoins.wallet.api
+package org.bitcoins.core.api.wallet
 
+import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.wallet.api.NeutrinoWalletApi.BlockMatchingResponse
 
 import scala.concurrent.{ExecutionContext, Future}
 

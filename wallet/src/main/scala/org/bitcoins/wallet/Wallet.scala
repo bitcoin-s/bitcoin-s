@@ -5,8 +5,8 @@ import java.time.Instant
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
+import org.bitcoins.core.api.wallet.{AnyHDWalletApi, CoinSelectionAlgo}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -42,7 +42,6 @@ import org.bitcoins.crypto.{
   ECPublicKey
 }
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
-import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
@@ -58,7 +57,10 @@ abstract class Wallet
     with AccountHandling
     with FundTransactionHandling
     with TransactionProcessing
-    with RescanHandling {
+    with RescanHandling
+    with WalletLogger {
+
+  override def keyManager: BIP39KeyManager
 
   implicit val ec: ExecutionContext
 
