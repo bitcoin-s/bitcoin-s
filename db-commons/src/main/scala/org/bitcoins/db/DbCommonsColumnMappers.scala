@@ -213,7 +213,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val txoStateMapper: BaseColumnType[TxoState] = {
     MappedColumnType
-      .base[TxoState, String](_.toString, TxoState.fromString(_).get)
+      .base[TxoState, String](_.toString, TxoState.fromString(_))
   }
 
   implicit val satoshisPerByteMapper: BaseColumnType[SatoshisPerByte] = {

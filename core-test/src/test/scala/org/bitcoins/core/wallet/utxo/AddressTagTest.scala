@@ -7,13 +7,13 @@ class AddressTagTest extends BitcoinSUnitTest {
   behavior of "AddressTag"
 
   it must "read StorageLocationTag from string" in {
-    StorageLocationTag.fromString("HotStorage").get must be(
+    StorageLocationTag.fromString("HotStorage") must be(
       StorageLocationTag.HotStorage)
 
-    StorageLocationTag.fromString("ColdStorage").get must be(
+    StorageLocationTag.fromString("ColdStorage") must be(
       StorageLocationTag.ColdStorage)
 
-    StorageLocationTag.fromString("DeepColdStorage").get must be(
+    StorageLocationTag.fromString("DeepColdStorage") must be(
       StorageLocationTag.DeepColdStorage)
   }
 

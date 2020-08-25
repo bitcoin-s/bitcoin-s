@@ -1,5 +1,7 @@
 package org.bitcoins.core.wallet.utxo
 
+import org.bitcoins.crypto.StringFactory
+
 /**
   * An AddressTagNames that is native to Bitcoin-S.
   * InternalAddressTagNames are still usable when using Bitcoin-S
@@ -51,26 +53,26 @@ object UnknownAddressTag {
     UnknownAddressTag(tagName, UnknownAddressTagType(tagType))
 }
 
-object InternalAddressTagName {
+object InternalAddressTagName extends StringFactory[InternalAddressTagName] {
 
   val all: Seq[InternalAddressTagName] = StorageLocationTag.tagNames
 
-  def fromStringOpt(string: String): Option[InternalAddressTagName] =
+  override def fromStringOpt(string: String): Option[InternalAddressTagName] =
     all.find(_.name.toLowerCase == string.toLowerCase)
 
-  def fromString(string: String): InternalAddressTagName =
+  override def fromString(string: String): InternalAddressTagName =
     fromStringOpt(string).getOrElse(UnknownAddressTagName(string))
 }
 
-object InternalAddressTagType {
+object InternalAddressTagType extends StringFactory[InternalAddressTagType] {
 
   val all: Seq[InternalAddressTagType] =
     Vector(StorageLocationTagType, AddressLabelTagType)
 
-  def fromStringOpt(string: String): Option[InternalAddressTagType] =
+  override def fromStringOpt(string: String): Option[InternalAddressTagType] =
     all.find(_.typeName.toLowerCase == string.toLowerCase)
 
-  def fromString(string: String): InternalAddressTagType =
+  override def fromString(string: String): InternalAddressTagType =
     fromStringOpt(string).getOrElse(UnknownAddressTagType(string))
 }
 

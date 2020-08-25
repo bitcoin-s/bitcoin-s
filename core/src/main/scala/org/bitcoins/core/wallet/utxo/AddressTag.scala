@@ -1,5 +1,7 @@
 package org.bitcoins.core.wallet.utxo
 
+import org.bitcoins.crypto.StringFactory
+
 /** A type of address tag, many AddressTags of the same type
   * should inherit the AddressTagType that they all share
   */
@@ -30,7 +32,7 @@ trait AddressTag {
   def !=(at: AddressTag): Boolean = !(this == at)
 }
 
-trait AddressTagFactory[Tag <: AddressTag] {
+trait AddressTagFactory[Tag <: AddressTag] extends StringFactory[Tag] {
 
   def tagType: AddressTagType
 
@@ -38,6 +40,13 @@ trait AddressTagFactory[Tag <: AddressTag] {
 
   def all: Vector[Tag]
 
-  def fromString(str: String): Option[Tag] =
+  override def fromStringOpt(str: String): Option[Tag] =
     all.find(tag => str.toLowerCase() == tag.toString.toLowerCase)
+
+  override def fromString(string: String): Tag = {
+    fromStringOpt(string) match {
+      case Some(t) => t
+      case None    => sys.error(s"Could not find tag for string=${string}")
+    }
+  }
 }
