@@ -17,6 +17,6 @@ class ScriptTypeTest extends BitcoinSUnitTest {
     val lyrics = "Never gonna give you up, never gonna let you down"
 
     assert(ScriptType.fromStringOpt(lyrics).isEmpty)
-    assertThrows[IllegalArgumentException](ScriptType.fromString(lyrics))
+    assertThrows[RuntimeException](ScriptType.fromString(lyrics))
   }
 }
