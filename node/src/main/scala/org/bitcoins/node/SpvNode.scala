@@ -18,7 +18,7 @@ case class SpvNode(
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
     extends Node {
-  require(nodeConfig.isSPVEnabled,
+  require(nodeConfig.nodeType == NodeType.SpvNode,
           s"We need our SPV mode enabled to be able to construct a SPV node!")
 
   implicit override def system: ActorSystem = actorSystem

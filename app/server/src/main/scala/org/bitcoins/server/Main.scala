@@ -109,8 +109,6 @@ object Main extends App with BitcoinSLogger {
 
     implicit val walletConf: WalletAppConfig = conf.walletConf
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
-    require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled,
-            "Either Neutrino or SPV mode should be enabled")
     implicit val chainConf: ChainAppConfig = conf.chainConf
 
     if (nodeConf.peers.isEmpty) {
@@ -172,13 +170,7 @@ object Main extends App with BitcoinSLogger {
       _ <- wallet.start()
       binding <- startHttpServer(node, wallet, rpcPortOpt)
       _ = {
-        if (nodeConf.isSPVEnabled) {
-          logger.info(s"Starting SPV node sync")
-        } else if (nodeConf.isNeutrinoEnabled) {
-          logger.info(s"Starting neutrino node sync")
-        } else {
-          logger.info(s"Starting unknown type of node sync")
-        }
+        logger.info(s"Starting ${nodeConf.nodeType.shortName} node sync")
       }
       _ = BitcoinSServer.startedFP.success(Future.successful(binding))
 
@@ -193,13 +185,7 @@ object Main extends App with BitcoinSLogger {
         node
           .stop()
           .foreach(_ =>
-            if (nodeConf.isSPVEnabled) {
-              logger.info(s"Stopped SPV node")
-            } else if (nodeConf.isNeutrinoEnabled) {
-              logger.info(s"Stopped neutrino node")
-            } else {
-              logger.info(s"Stopped unknown type of node")
-            })
+            logger.info(s"Stopped ${nodeConf.nodeType.shortName} node"))
         system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
       }
 
@@ -234,17 +220,18 @@ object Main extends App with BitcoinSLogger {
         wallet.updateUtxoPendingStates().map(_ => ())
       }
     }
-    if (nodeConf.isSPVEnabled) {
-      Future.successful(
-        NodeCallbacks(onTxReceived = Vector(onTx),
-                      onBlockHeadersReceived = Vector(onHeaders)))
-    } else if (nodeConf.isNeutrinoEnabled) {
-      Future.successful(
-        NodeCallbacks(onBlockReceived = Vector(onBlock),
-                      onCompactFiltersReceived = Vector(onCompactFilters),
-                      onBlockHeadersReceived = Vector(onHeaders)))
-    } else {
-      Future.failed(new RuntimeException("Unexpected node type"))
+    nodeConf.nodeType match {
+      case NodeType.SpvNode =>
+        Future.successful(
+          NodeCallbacks(onTxReceived = Vector(onTx),
+                        onBlockHeadersReceived = Vector(onHeaders)))
+      case NodeType.NeutrinoNode =>
+        Future.successful(
+          NodeCallbacks(onBlockReceived = Vector(onBlock),
+                        onCompactFiltersReceived = Vector(onCompactFilters),
+                        onBlockHeadersReceived = Vector(onHeaders)))
+      case NodeType.FullNode =>
+        Future.failed(new RuntimeException("Not yet implemented"))
     }
   }
 
