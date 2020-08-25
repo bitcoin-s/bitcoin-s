@@ -1,4 +1,4 @@
-package org.bitcoins.chain.models
+package org.bitcoins.core.api.chain.db
 
 import org.bitcoins.core.gcs.{BlockFilter, FilterType, GolombFilter}
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}

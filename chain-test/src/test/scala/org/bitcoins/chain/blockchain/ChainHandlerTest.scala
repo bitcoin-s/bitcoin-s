@@ -1,10 +1,13 @@
 package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.db.{
+  BlockHeaderDb,
+  BlockHeaderDbHelper,
+  ChainApi
+}
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -27,7 +30,6 @@ import org.bitcoins.testkit.util.{FileUtil, ScalaTestUtil}
 import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
-import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.io.BufferedSource
 

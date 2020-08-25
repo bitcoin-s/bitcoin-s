@@ -1,8 +1,8 @@
 package org.bitcoins.testkit.chain
 
-import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.chain.validation.TipValidation
+import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{

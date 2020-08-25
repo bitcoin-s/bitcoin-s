@@ -1,4 +1,4 @@
-package org.bitcoins.chain.models
+package org.bitcoins.core.api.chain.db
 
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.crypto.DoubleSha256DigestBE

@@ -3,8 +3,8 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.core.api.chain.db.ChainApi
 
 case class ChainRoutes(chain: ChainApi)(implicit system: ActorSystem)
     extends ServerRoute {

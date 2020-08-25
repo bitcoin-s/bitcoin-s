@@ -1,11 +1,11 @@
 package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.ChainVerificationLogger
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -23,7 +23,7 @@ import scala.concurrent._
 
 /**
   * Chain Handler is meant to be the reference implementation
-  * of [[org.bitcoins.chain.api.ChainApi ChainApi]], this is the entry point in to the
+  * of [[ChainApi ChainApi]], this is the entry point in to the
   * chain project.
   *
   * @param blockHeaderDAO block header DB

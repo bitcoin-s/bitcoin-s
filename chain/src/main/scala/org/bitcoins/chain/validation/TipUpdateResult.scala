@@ -1,6 +1,6 @@
 package org.bitcoins.chain.validation
 
-import org.bitcoins.chain.models.BlockHeaderDb
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 /** Represents the result of updating the chain with

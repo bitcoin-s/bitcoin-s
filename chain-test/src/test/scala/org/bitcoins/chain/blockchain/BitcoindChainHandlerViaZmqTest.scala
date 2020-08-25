@@ -2,7 +2,7 @@ package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
+import org.bitcoins.testkit.chain.ChainDbUnitTest
 import org.bitcoins.testkit.chain.fixture.BitcoindChainHandlerViaZmq
 import org.scalatest.FutureOutcome
 

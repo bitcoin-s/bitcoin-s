@@ -5,9 +5,9 @@ import java.time.{ZoneId, ZonedDateTime}
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
+import org.bitcoins.core.api.chain.db.ChainApi
 import org.bitcoins.core.api.wallet.db.{
   AccountDb,
   AddressDb,

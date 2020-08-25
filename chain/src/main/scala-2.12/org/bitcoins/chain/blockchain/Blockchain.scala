@@ -1,6 +1,6 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.chain.models.BlockHeaderDb
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
 
 import scala.collection.mutable
 

@@ -1,10 +1,5 @@
-package org.bitcoins.chain.api
+package org.bitcoins.core.api.chain.db
 
-import org.bitcoins.chain.models.{
-  BlockHeaderDb,
-  CompactFilterDb,
-  CompactFilterHeaderDb
-}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage

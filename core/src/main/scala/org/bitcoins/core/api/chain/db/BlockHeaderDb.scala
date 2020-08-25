@@ -1,4 +1,4 @@
-package org.bitcoins.chain.models
+package org.bitcoins.core.api.chain.db
 
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader

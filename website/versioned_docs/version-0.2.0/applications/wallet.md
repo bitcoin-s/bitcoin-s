@@ -68,7 +68,7 @@ val bitcoind = BitcoindRpcClient(bitcoindInstance)
 // when this future completes, we have
 // synced our chain handler to our bitcoind
 // peer
-import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.core.api.chain.db.ChainApi
 val syncF: Future[ChainApi] = configF.flatMap { _ =>
     import org.bitcoins.crypto.DoubleSha256DigestBE
 val getBestBlockHashFunc = { () =>
