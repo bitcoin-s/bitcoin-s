@@ -1,9 +1,17 @@
 package org.bitcoins.core.psbt
 
+import org.bitcoins.core.psbt.InputPSBTRecord.{
+  HASH160PreImage,
+  HASH256PreImage,
+  RIPEMD160PreImage,
+  SHA256PreImage
+}
 import org.bitcoins.core.psbt.OutputPSBTRecord.{RedeemScript, WitnessScript}
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.core.gen._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import scodec.bits._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -208,6 +216,54 @@ class PSBTTest extends BitcoinSAsyncTest {
 
         assert(txT.get == signedTx)
       }
+    }
+  }
+
+  it must "correctly serialize RIPEMD160 hash preimages" in {
+    forAllAsync(StringGenerators.hexString) { hex =>
+      val preimage = ByteVector.fromValidHex(hex)
+
+      val ripeMd160 = RIPEMD160PreImage(preimage)
+      val ripeMd160Hash = CryptoUtil.ripeMd160(preimage)
+      assert(ripeMd160.hash == ripeMd160Hash)
+      assert(ripeMd160.value == preimage)
+      assert(ripeMd160.key == hex"0a" ++ ripeMd160Hash.bytes)
+    }
+  }
+
+  it must "correctly serialize SHA256 hash preimages" in {
+    forAllAsync(StringGenerators.hexString) { hex =>
+      val preimage = ByteVector.fromValidHex(hex)
+
+      val sha256 = SHA256PreImage(preimage)
+      val sha256Hash = CryptoUtil.sha256(preimage)
+      assert(sha256.hash == sha256Hash)
+      assert(sha256.value == preimage)
+      assert(sha256.key == hex"0b" ++ sha256Hash.bytes)
+    }
+  }
+
+  it must "correctly serialize HASH160 hash preimages" in {
+    forAllAsync(StringGenerators.hexString) { hex =>
+      val preimage = ByteVector.fromValidHex(hex)
+
+      val hash160 = HASH160PreImage(preimage)
+      val hash160Hash = CryptoUtil.sha256Hash160(preimage)
+      assert(hash160.hash == hash160Hash)
+      assert(hash160.value == preimage)
+      assert(hash160.key == hex"0c" ++ hash160Hash.bytes)
+    }
+  }
+
+  it must "correctly serialize HASH256 hash preimages" in {
+    forAllAsync(StringGenerators.hexString) { hex =>
+      val preimage = ByteVector.fromValidHex(hex)
+
+      val hash256 = HASH256PreImage(preimage)
+      val hash256Hash = CryptoUtil.doubleSHA256(preimage)
+      assert(hash256.hash == hash256Hash)
+      assert(hash256.value == preimage)
+      assert(hash256.key == hex"0d" ++ hash256Hash.bytes)
     }
   }
 }
