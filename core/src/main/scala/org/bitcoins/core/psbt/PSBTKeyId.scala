@@ -83,6 +83,10 @@ object PSBTInputKeyId extends PSBTKeyIdFactory[PSBTInputKeyId] {
       case FinalizedScriptSigKeyId.byte        => FinalizedScriptSigKeyId
       case FinalizedScriptWitnessKeyId.byte    => FinalizedScriptWitnessKeyId
       case ProofOfReservesCommitmentKeyId.byte => ProofOfReservesCommitmentKeyId
+      case RIPEMD160PreImageKeyId.byte         => RIPEMD160PreImageKeyId
+      case SHA256PreImageKeyId.byte            => SHA256PreImageKeyId
+      case HASH160PreImageKeyId.byte           => HASH160PreImageKeyId
+      case HASH256PreImageKeyId.byte           => HASH256PreImageKeyId
       case _: Byte                             => UnknownKeyId
 
     }
@@ -135,6 +139,26 @@ object PSBTInputKeyId extends PSBTKeyIdFactory[PSBTInputKeyId] {
   final case object ProofOfReservesCommitmentKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x09.byteValue
     type RecordType = InputPSBTRecord.ProofOfReservesCommitment
+  }
+
+  final case object RIPEMD160PreImageKeyId extends PSBTInputKeyId {
+    override val byte: Byte = 0x0a.byteValue
+    type RecordType = InputPSBTRecord.RIPEMD160PreImage
+  }
+
+  final case object SHA256PreImageKeyId extends PSBTInputKeyId {
+    override val byte: Byte = 0x0b.byteValue
+    type RecordType = InputPSBTRecord.SHA256PreImage
+  }
+
+  final case object HASH160PreImageKeyId extends PSBTInputKeyId {
+    override val byte: Byte = 0x0c.byteValue
+    type RecordType = InputPSBTRecord.HASH160PreImage
+  }
+
+  final case object HASH256PreImageKeyId extends PSBTInputKeyId {
+    override val byte: Byte = 0x0d.byteValue
+    type RecordType = InputPSBTRecord.HASH256PreImage
   }
 
   final case object UnknownKeyId extends PSBTInputKeyId {
