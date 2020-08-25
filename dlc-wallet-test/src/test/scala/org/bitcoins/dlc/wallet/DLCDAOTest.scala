@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
@@ -9,13 +9,14 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.crypto.{ECAdaptorSignature, Sha256DigestBE}
 import org.bitcoins.db.CRUD
-import org.bitcoins.testkit.fixtures.WalletDAOFixture
+import org.bitcoins.dlc.wallet.models._
+import org.bitcoins.testkit.fixtures.DLCDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, DLCWalletUtil}
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
 
-class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
+class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
 
   behavior of "DLCDAO"
 

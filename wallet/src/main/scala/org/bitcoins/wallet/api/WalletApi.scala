@@ -370,10 +370,3 @@ trait AnyHDWalletApi
     extends HDWalletApi
     with NeutrinoWalletApi
     with SpvWalletApi
-
-/** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */
-trait AnyDLCHDWalletApi
-    extends HDWalletApi
-    with DLCWalletApi
-    with NeutrinoWalletApi
-    with SpvWalletApi

@@ -387,6 +387,18 @@ object Deps {
       Compile.logback
     )
 
+  val dlcWallet =
+    List(
+      Compile.newMicroJson,
+      Compile.logback
+    )
+
+  val dlcWalletTest =
+    List(
+      Test.akkaTestkit,
+      Test.pgEmbedded
+    )
+
   val walletTest = List(
     Test.akkaTestkit,
     Test.pgEmbedded

@@ -1,10 +1,11 @@
 package org.bitcoins.testkit.wallet
 
 import org.bitcoins.db.AppConfig
+import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
-import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
+import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.FutureOutcome
 
@@ -18,9 +19,15 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
     config2.walletConf
   }
 
+  implicit protected def dlc2AppConfig: DLCAppConfig = {
+    config2.dlcConf
+  }
+
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
     AppConfig.throwIfDefaultDatadir(config2.walletConf)
+    AppConfig.throwIfDefaultDatadir(config.dlcConf)
+    AppConfig.throwIfDefaultDatadir(config2.dlcConf)
     super.beforeAll()
   }
 
@@ -28,26 +35,25 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
     * peered with a bitcoind so the funds in the wallets are not tied to an
     * underlying blockchain
     */
-  def withDualFundedSegwitWallets(test: OneArgAsyncTest): FutureOutcome = {
+  def withDualFundedDLCWallets(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
       build = () =>
         for {
-          walletA <- FundWalletUtil.createFundedWallet(nodeApi,
-                                                       chainQueryApi,
-                                                       getBIP39PasswordOpt(),
-                                                       Some(segwitWalletConf))
-          walletB <- FundWalletUtil.createFundedWallet(
+          walletA <-
+            FundWalletUtil.createFundedDLCWallet(nodeApi,
+                                                 chainQueryApi,
+                                                 getBIP39PasswordOpt(),
+                                                 Some(segwitWalletConf))
+          walletB <- FundWalletUtil.createFundedDLCWallet(
             nodeApi,
             chainQueryApi,
             getBIP39PasswordOpt(),
             Some(segwitWalletConf))(config2, system)
         } yield (walletA, walletB),
-      destroy = { fundedWallets: (FundedWallet, FundedWallet) =>
-        val destroy1 = destroyWallet(fundedWallets._1.wallet)
-        val destroy2 = destroyWallet(fundedWallets._2.wallet)
+      destroy = { fundedWallets: (FundedDLCWallet, FundedDLCWallet) =>
         for {
-          _ <- destroy1
-          _ <- destroy2
+          _ <- destroyWallet(fundedWallets._1.wallet)
+          _ <- destroyWallet(fundedWallets._2.wallet)
         } yield ()
       }
     )(test)
@@ -58,11 +64,12 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
     makeDependentFixture(
       build = () =>
         for {
-          walletA <- FundWalletUtil.createFundedWallet(nodeApi,
-                                                       chainQueryApi,
-                                                       getBIP39PasswordOpt(),
-                                                       Some(segwitWalletConf))
-          walletB <- FundWalletUtil.createFundedWallet(
+          walletA <-
+            FundWalletUtil.createFundedDLCWallet(nodeApi,
+                                                 chainQueryApi,
+                                                 getBIP39PasswordOpt(),
+                                                 Some(segwitWalletConf))
+          walletB <- FundWalletUtil.createFundedDLCWallet(
             nodeApi,
             chainQueryApi,
             getBIP39PasswordOpt(),
@@ -71,11 +78,9 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
             DLCWalletUtil.createDLCWallets(walletA, walletB)
         } yield (dlcWalletA, dlcWalletB),
       destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
-        val destroy1 = destroyWallet(dlcWallets._1.wallet)
-        val destroy2 = destroyWallet(dlcWallets._2.wallet)
         for {
-          _ <- destroy1
-          _ <- destroy2
+          _ <- destroyWallet(dlcWallets._1.wallet)
+          _ <- destroyWallet(dlcWallets._2.wallet)
         } yield ()
       }
     )(test)

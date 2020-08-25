@@ -1,27 +1,26 @@
-package org.bitcoins.wallet.dlc
+package org.bitcoins.dlc.wallet
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCOffer, DLCSign}
 import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, DLCMessage}
-import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
+import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
-import org.bitcoins.wallet.Wallet
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future
 
 class WalletDLCSetupTest extends BitcoinSDualWalletTest {
-  type FixtureParam = (FundedWallet, FundedWallet)
+  type FixtureParam = (FundedDLCWallet, FundedDLCWallet)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withDualFundedSegwitWallets(test)
+    withDualFundedDLCWallets(test)
   }
 
   behavior of "DLCWallet"
 
   it must "correctly negotiate a dlc" in {
-    fundedWallets: (FundedWallet, FundedWallet) =>
-      val walletA = fundedWallets._1.wallet
-      val walletB = fundedWallets._2.wallet
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
 
       val offerData = DLCWalletUtil.sampleDLCOffer
       val eventId = DLCMessage.calcEventId(offerData.oracleInfo,
@@ -94,8 +93,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   def getDLCReadyToAddSigs(
-      walletA: Wallet,
-      walletB: Wallet,
+      walletA: DLCWallet,
+      walletB: DLCWallet,
       offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer): Future[DLCSign] = {
     for {
       offer <- walletA.createDLCOffer(
@@ -113,8 +112,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   def testDLCSignVerification(
-      walletA: Wallet,
-      walletB: Wallet,
+      walletA: DLCWallet,
+      walletB: DLCWallet,
       makeDLCSignInvalid: DLCSign => DLCSign): Future[Assertion] = {
     val failedAddSigsF = for {
       sign <- getDLCReadyToAddSigs(walletA, walletB)
@@ -126,9 +125,9 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to add dlc funding sigs that are invalid" in {
-    fundedWallets: (FundedWallet, FundedWallet) =>
-      val walletA = fundedWallets._1.wallet
-      val walletB = fundedWallets._2.wallet
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
 
       testDLCSignVerification(
         walletA,
@@ -138,9 +137,9 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to add dlc cet sigs that are invalid" in {
-    fundedWallets: (FundedWallet, FundedWallet) =>
-      val walletA = fundedWallets._1.wallet
-      val walletB = fundedWallets._2.wallet
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
 
       testDLCSignVerification(
         walletA,
@@ -152,9 +151,9 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to add an invalid dlc refund sig" in {
-    fundedWallets: (FundedWallet, FundedWallet) =>
-      val walletA = fundedWallets._1.wallet
-      val walletB = fundedWallets._2.wallet
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
 
       testDLCSignVerification(
         walletA,

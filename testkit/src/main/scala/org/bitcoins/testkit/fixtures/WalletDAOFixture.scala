@@ -15,13 +15,7 @@ case class WalletDAOs(
     transactionDAO: TransactionDAO,
     incomingTxDAO: IncomingTransactionDAO,
     outgoingTxDAO: OutgoingTransactionDAO,
-    scriptPubKeyDAO: ScriptPubKeyDAO,
-    dlcDAO: DLCDAO,
-    dlcOfferDAO: DLCOfferDAO,
-    dlcAcceptDAO: DLCAcceptDAO,
-    dlcInputsDAO: DLCFundingInputDAO,
-    dlcSigsDAO: DLCCETSignatureDAO,
-    dlcRefundSigDAO: DLCRefundSigDAO)
+    scriptPubKeyDAO: ScriptPubKeyDAO)
 
 trait WalletDAOFixture extends BitcoinSWalletTest {
 
@@ -34,12 +28,6 @@ trait WalletDAOFixture extends BitcoinSWalletTest {
     val incomingTx = IncomingTransactionDAO()
     val outgoingTx = OutgoingTransactionDAO()
     val scriptPubKey = ScriptPubKeyDAO()
-    val dlc = DLCDAO()
-    val dlcOfferDAO = DLCOfferDAO()
-    val dlcAcceptDAO = DLCAcceptDAO()
-    val dlcInputsDAO = DLCFundingInputDAO()
-    val dlcSigsDAO = DLCCETSignatureDAO()
-    val dlcRefundSigDAO = DLCRefundSigDAO()
     WalletDAOs(
       accountDAO = account,
       addressDAO = address,
@@ -48,13 +36,7 @@ trait WalletDAOFixture extends BitcoinSWalletTest {
       transactionDAO = tx,
       incomingTxDAO = incomingTx,
       outgoingTxDAO = outgoingTx,
-      scriptPubKeyDAO = scriptPubKey,
-      dlcDAO = dlc,
-      dlcOfferDAO = dlcOfferDAO,
-      dlcAcceptDAO = dlcAcceptDAO,
-      dlcInputsDAO = dlcInputsDAO,
-      dlcSigsDAO = dlcSigsDAO,
-      dlcRefundSigDAO = dlcRefundSigDAO
+      scriptPubKeyDAO = scriptPubKey
     )
   }
 

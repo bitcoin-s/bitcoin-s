@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
@@ -8,14 +8,14 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto.{Sha256Digest, Sha256DigestBE}
 import org.bitcoins.db.{CRUD, SlickUtil}
-import org.bitcoins.wallet.config._
+import org.bitcoins.dlc.wallet.DLCAppConfig
 import slick.lifted.{ForeignKeyQuery, PrimaryKey, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCFundingInputDAO()(implicit
     val ec: ExecutionContext,
-    override val appConfig: WalletAppConfig)
+    override val appConfig: DLCAppConfig)
     extends CRUD[DLCFundingInputDb, TransactionOutPoint]
     with SlickUtil[DLCFundingInputDb, TransactionOutPoint] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)

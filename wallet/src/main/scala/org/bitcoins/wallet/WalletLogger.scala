@@ -1,12 +1,13 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.db.{AppLoggers, LoggerConfig}
+import org.bitcoins.wallet.config.WalletAppConfig
 import org.slf4j.Logger
 
 /** Exposes acccess to the wallet logger */
 private[bitcoins] trait WalletLogger {
 
-  protected[bitcoins] def logger(implicit config: LoggerConfig): Logger = {
+  protected[bitcoins] def logger(implicit config: WalletAppConfig): Logger = {
     WalletLoggerImpl(config).getLogger
   }
 }

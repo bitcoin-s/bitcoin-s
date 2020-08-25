@@ -11,9 +11,9 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.AddressLabelTagType
 import org.bitcoins.crypto.NetworkElement
+import org.bitcoins.dlc.wallet.AnyDLCHDWalletApi
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.WalletLogger
-import org.bitcoins.wallet.api.AnyDLCHDWalletApi
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}

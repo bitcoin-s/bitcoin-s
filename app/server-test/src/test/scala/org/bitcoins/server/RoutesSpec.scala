@@ -52,7 +52,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockWalletApi
 import org.bitcoins.wallet.api.AddressInfo
-import org.bitcoins.wallet.models._
+import org.bitcoins.dlc.wallet.models._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 import scodec.bits.ByteVector
@@ -60,8 +60,6 @@ import ujson.Value.InvalidData
 import ujson._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.Future
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
