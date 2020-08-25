@@ -72,30 +72,33 @@ trait DbManagement extends BitcoinSLogger {
   def dropTable(
       table: TableQuery[Table[_]]
   ): Future[Unit] = {
-    val result = database.run(table.schema.dropIfExists)
+    val query = table.schema.dropIfExists
+    val result = database.run(query)
     result
   }
 
-  def dropTable(tableName: String): Future[Int] = {
+  def dropTable(tableName: String)(implicit
+      ec: ExecutionContext): Future[Int] = {
     val fullTableName = schemaName.map(_ + ".").getOrElse("") + tableName
-    val result = database.run(sqlu"""DROP TABLE IF EXISTS #$fullTableName""")
-    import scala.concurrent.ExecutionContext.Implicits.global
+    val sql = sqlu"""DROP TABLE IF EXISTS #$fullTableName"""
+    val result = database.run(sql)
     result.failed.foreach { ex =>
       ex.printStackTrace()
     }
     result
   }
 
-  def createSchema(createIfNotExists: Boolean = true): Future[Unit] =
+  def createSchema(createIfNotExists: Boolean = true)(implicit
+      ec: ExecutionContext): Future[Unit] =
     schemaName match {
-      case None => FutureUtil.unit
+      case None =>
+        FutureUtil.unit
       case Some(schema) =>
         val sql =
           if (createIfNotExists)
             sqlu"""CREATE SCHEMA IF NOT EXISTS #$schema"""
           else
             sqlu"""CREATE SCHEMA #$schema"""
-        import scala.concurrent.ExecutionContext.Implicits.global
         database.run(sql).map(_ => ())
     }
 
