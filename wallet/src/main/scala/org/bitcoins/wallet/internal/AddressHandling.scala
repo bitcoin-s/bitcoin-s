@@ -374,7 +374,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   /** Generates a new change address */
-  override protected[wallet] def getNewChangeAddress(
+  override def getNewChangeAddress(
       account: AccountDb): Future[BitcoinAddress] = {
     getNewAddressHelper(account, HDChainType.Change)
   }

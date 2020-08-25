@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.api
+package org.bitcoins.core.api.wallet
 
 import java.time.Instant
 
@@ -6,7 +6,6 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
@@ -22,7 +21,6 @@ import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.wallet.WalletLogger
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -34,7 +32,7 @@ import scala.util.{Failure, Success}
   *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
-trait WalletApi extends WalletLogger with StartStopAsync[WalletApi] {
+trait WalletApi extends StartStopAsync[WalletApi] {
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
