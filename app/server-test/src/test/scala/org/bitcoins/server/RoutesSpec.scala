@@ -436,7 +436,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       val xpub = ExtPublicKey
         .fromString(
           "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8")
-        .get
 
       val accountDb =
         AccountDb(xpub = xpub,
@@ -477,7 +476,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     "get address info" in {
 
       val key = ECPublicKey.freshPublicKey
-      val hdPath = HDPath.fromString("m/84'/1'/0'/0/0").get
+      val hdPath = HDPath.fromString("m/84'/1'/0'/0/0")
 
       (mockWalletApi
         .getAddressInfo(_: BitcoinAddress))

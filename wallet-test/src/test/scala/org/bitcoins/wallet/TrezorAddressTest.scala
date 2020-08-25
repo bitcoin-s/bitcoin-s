@@ -62,7 +62,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     override def reads(json: JsValue): JsResult[HDPath] =
       json
         .validate[String]
-        .flatMap(HDPath.fromString(_) match {
+        .flatMap(HDPath.fromStringOpt(_) match {
           case None        => JsError(s"Could not read $json")
           case Some(value) => JsSuccess(value)
         })

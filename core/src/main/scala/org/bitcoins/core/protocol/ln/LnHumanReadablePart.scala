@@ -4,6 +4,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.ln.LnParams._
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, LnCurrencyUnits}
 import org.bitcoins.core.util.Bech32HumanReadablePart
+import org.bitcoins.crypto.StringFactory
 import scodec.bits.ByteVector
 
 import scala.util.matching.Regex
@@ -34,7 +35,7 @@ sealed abstract class LnHumanReadablePart extends Bech32HumanReadablePart {
   override lazy val toString: String = chars
 }
 
-object LnHumanReadablePart {
+object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
 
   /** Prefix for generating a LN invoice on the Bitcoin MainNet */
   case class lnbc(override val amount: Option[LnCurrencyUnit])
@@ -55,7 +56,7 @@ object LnHumanReadablePart {
   }
 
   /** Tries to construct a LN HRP with optional amount specified from the given string */
-  def apply(bech32: String): Try[LnHumanReadablePart] = fromString(bech32)
+  def apply(bech32: String): Try[LnHumanReadablePart] = fromStringT(bech32)
 
   def apply(network: NetworkParameters): LnHumanReadablePart = {
     val lnNetwork = LnParams.fromNetworkParameters(network)
@@ -108,7 +109,7 @@ object LnHumanReadablePart {
     * and
     * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#Specification BIP173]]
     */
-  def fromString(bech32: String): Try[LnHumanReadablePart] = {
+  override def fromStringT(bech32: String): Try[LnHumanReadablePart] = {
     //Select all of the letters, until we hit a number, as the network
     val networkPattern: Regex = "^[a-z]*".r
     val networkStringOpt = networkPattern.findFirstIn(bech32)
@@ -134,6 +135,13 @@ object LnHumanReadablePart {
       } else {
         Success(LnHumanReadablePart(lnParams, amount))
       }
+    }
+  }
+
+  override def fromString(string: String): LnHumanReadablePart = {
+    fromStringT(string) match {
+      case Success(hrp) => hrp
+      case Failure(exn) => throw exn
     }
   }
 }

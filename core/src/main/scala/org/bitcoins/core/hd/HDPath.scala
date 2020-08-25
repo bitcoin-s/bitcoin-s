@@ -1,6 +1,8 @@
 package org.bitcoins.core.hd
 
-import scala.util.Try
+import org.bitcoins.crypto.StringFactory
+
+import scala.util.{Failure, Success, Try}
 
 private[bitcoins] trait HDPath extends BIP32Path {
 
@@ -54,12 +56,19 @@ private[bitcoins] trait HDPath extends BIP32Path {
   override val path: Vector[BIP32Node] = address.path
 }
 
-object HDPath {
+object HDPath extends StringFactory[HDPath] {
 
   /** Attempts to parse a string into a valid HD path */
-  def fromString(string: String): Option[HDPath] =
-    Try(LegacyHDPath.fromString(string))
-      .orElse(Try(SegWitHDPath.fromString(string)))
-      .orElse(Try(NestedSegWitHDPath.fromString(string)))
-      .toOption
+  override def fromStringT(string: String): Try[HDPath] =
+    LegacyHDPath
+      .fromStringT(string)
+      .orElse(SegWitHDPath.fromStringT(string))
+      .orElse(NestedSegWitHDPath.fromStringT(string))
+
+  override def fromString(string: String): HDPath = {
+    fromStringT(string) match {
+      case Success(path) => path
+      case Failure(exn)  => throw exn
+    }
+  }
 }

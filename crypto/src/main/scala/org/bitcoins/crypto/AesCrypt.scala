@@ -131,7 +131,7 @@ final case class AesPassword private (private val value: String)
   }
 }
 
-object AesPassword {
+object AesPassword extends StringFactory[AesPassword] {
 
   private val KEY_SIZE = 256
   private val ITERATIONS = 65536
@@ -142,15 +142,24 @@ object AesPassword {
   /** Tries to construct a password from the given string. Fails
     * if the string is empty.
     */
-  def fromString(string: String): Option[AesPassword] = {
+  override def fromStringOpt(string: String): Option[AesPassword] = {
     if (string.isEmpty) None else Some(AesPassword(string))
+  }
+
+  override def fromString(string: String): AesPassword = {
+    fromStringOpt(string) match {
+      case Some(password) => password
+      case None =>
+        sys.error(
+          s"Could not construct AesPassword from given string, not logging in case it's sensitive")
+    }
   }
 
   /** Constructs a password from the given string. Throws
     * if the string is empty.
     */
   def fromNonEmptyString(string: String): AesPassword =
-    fromString(string).getOrElse(
+    fromStringOpt(string).getOrElse(
       throw new IllegalArgumentException(
         "Cannot construct empty AES passwords!"))
 }

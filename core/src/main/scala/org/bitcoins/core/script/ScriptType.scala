@@ -1,5 +1,7 @@
 package org.bitcoins.core.script
 
+import org.bitcoins.crypto.StringFactory
+
 /**
   * The different Bitcoin Script type variations
   *
@@ -38,7 +40,7 @@ sealed abstract class ScriptType {
   *     and [[https://github.com/bitcoin/bitcoin/blob/03732f8644a449af34f4df1bb3b8915fb15ef22c/src/script/standard.cpp#L27 standarc.cpp]]
   *     from Bitcoin Core
   */
-object ScriptType {
+object ScriptType extends StringFactory[ScriptType] {
 
   private[script] val all: Seq[ScriptType] = Vector(
     NONSTANDARD,
@@ -59,15 +61,15 @@ object ScriptType {
     WITNESS_COMMITMENT
   )
 
-  def fromString(string: String): Option[ScriptType] =
+  override def fromStringOpt(string: String): Option[ScriptType] =
     all.find(_.toString == string)
 
   /** Throws if given string is invalid */
-  def fromStringExn(string: String): ScriptType =
-    fromString(string)
-      .getOrElse(
-        throw new IllegalArgumentException(
-          s"$string is not a valid script type!"))
+  override def fromString(string: String): ScriptType =
+    fromStringOpt(string) match {
+      case Some(scriptType) => scriptType
+      case None             => sys.error(s"Could not find scriptType=${string}")
+    }
 
   final case object NONSTANDARD extends ScriptType
 

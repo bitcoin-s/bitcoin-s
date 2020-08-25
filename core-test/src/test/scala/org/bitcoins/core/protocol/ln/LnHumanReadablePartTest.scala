@@ -46,25 +46,25 @@ class LnHumanReadablePartTest extends BitcoinSUnitTest {
 
   it must "deserialize hrp from string" in {
 
-    LnHumanReadablePart.fromString("lnbc").get must be(
+    LnHumanReadablePart.fromString("lnbc") must be(
       LnHumanReadablePart(LnBitcoinMainNet))
-    LnHumanReadablePart.fromString("lntb").get must be(
+    LnHumanReadablePart.fromString("lntb") must be(
       LnHumanReadablePart(LnBitcoinTestNet))
-    LnHumanReadablePart.fromString("lnbcrt").get must be(
+    LnHumanReadablePart.fromString("lnbcrt") must be(
       LnHumanReadablePart(LnBitcoinRegTest))
 
-    LnHumanReadablePart.fromString("lnbc1m").get must be(
+    LnHumanReadablePart.fromString("lnbc1m") must be(
       LnHumanReadablePart(LnBitcoinMainNet, mBtcOpt))
-    LnHumanReadablePart.fromString("lntb1m").get must be(
+    LnHumanReadablePart.fromString("lntb1m") must be(
       LnHumanReadablePart(LnBitcoinTestNet, mBtcOpt))
-    LnHumanReadablePart.fromString("lnbcrt1m").get must be(
+    LnHumanReadablePart.fromString("lnbcrt1m") must be(
       LnHumanReadablePart(LnBitcoinRegTest, mBtcOpt))
   }
 
   it must "fail to deserialize hrp from invalid string" in {
-    LnHumanReadablePart.fromString("invalid").isFailure must be(true)
-    LnHumanReadablePart.fromString("lnbc9000").isFailure must be(true)
-    LnHumanReadablePart.fromString("lnbc90z0m").isFailure must be(true)
+    LnHumanReadablePart.fromStringT("invalid").isFailure must be(true)
+    LnHumanReadablePart.fromStringT("lnbc9000").isFailure must be(true)
+    LnHumanReadablePart.fromStringT("lnbc90z0m").isFailure must be(true)
 
   }
 }

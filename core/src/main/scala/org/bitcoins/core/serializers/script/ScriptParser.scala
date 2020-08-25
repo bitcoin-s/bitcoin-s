@@ -4,7 +4,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.crypto.Factory
+import org.bitcoins.crypto.{Factory, StringFactory}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -13,10 +13,12 @@ import scala.util.Try
 /**
   * Created by chris on 1/7/16.
   */
-sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
+sealed abstract class ScriptParser
+    extends Factory[Vector[ScriptToken]]
+    with StringFactory[Vector[ScriptToken]] {
 
   /** Parses a list of bytes into a list of script tokens */
-  def fromBytes(bytes: ByteVector): Vector[ScriptToken] = {
+  override def fromBytes(bytes: ByteVector): Vector[ScriptToken] = {
     val scriptTokens: Vector[ScriptToken] = parse(bytes)
     scriptTokens
   }
@@ -26,7 +28,7 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
     * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
     * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
     */
-  def fromString(str: String): Vector[ScriptToken] = {
+  override def fromString(str: String): Vector[ScriptToken] = {
     if (
       str.size > 1 && str.substring(0, 2) == "0x" && str
         .split(" ")
@@ -97,8 +99,8 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
         case h +: t if h == ""  => loop(t, accum)
         case h +: t if h == "0" => loop(t, OP_0.bytes ++ accum)
 
-        case h +: t if ScriptOperation.fromString(h).isDefined =>
-          val op = ScriptOperation.fromString(h).get
+        case h +: t if ScriptOperation.fromStringOpt(h).isDefined =>
+          val op = ScriptOperation.fromString(h)
           loop(t, op.bytes ++ accum)
         case h +: t if tryParsingLong(h) =>
           val hexLong =

@@ -42,7 +42,7 @@ object CliReaders {
     new Read[BitcoinAddress] {
       val arity: Int = 1
 
-      val reads: String => BitcoinAddress = BitcoinAddress.fromStringExn
+      val reads: String => BitcoinAddress = BitcoinAddress.fromString
     }
 
   implicit val bitcoinsReads: Read[Bitcoins] =
@@ -129,7 +129,7 @@ object CliReaders {
       val arity: Int = 1
 
       val reads: String => CoinSelectionAlgo =
-        CoinSelectionAlgo.fromString(_).get
+        CoinSelectionAlgo.fromString(_)
     }
 
   implicit val schnorrSigReads: Read[SchnorrDigitalSignature] =

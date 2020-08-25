@@ -29,7 +29,7 @@ class BIP39LockedKeyManagerApiTest extends KeyManagerApiUnitTest {
 
   it must "fail to read bad json in the seed file" in {
     val km = withInitializedKeyManager()
-    val badPassword = AesPassword.fromString("other bad password").get
+    val badPassword = AesPassword.fromString("other bad password")
     val unlockedE = BIP39LockedKeyManager.unlock(passphrase = badPassword,
                                                  bip39PasswordOpt = None,
                                                  kmParams = km.kmParams)
@@ -47,7 +47,7 @@ class BIP39LockedKeyManagerApiTest extends KeyManagerApiUnitTest {
     val km = withInitializedKeyManager()
 
     val badPath = km.kmParams.copy(seedPath = badSeedPath)
-    val badPassword = AesPassword.fromString("other bad password").get
+    val badPassword = AesPassword.fromString("other bad password")
     val unlockedE = BIP39LockedKeyManager.unlock(badPassword, None, badPath)
 
     unlockedE match {

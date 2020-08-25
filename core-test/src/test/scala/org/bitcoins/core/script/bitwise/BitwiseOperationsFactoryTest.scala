@@ -8,8 +8,9 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 class BitwiseOperationsFactoryTest extends BitcoinSUnitTest {
 
   "BitwiseOperationsFactory" must "match strings with bitwise operations" in {
-    BitwiseOperation.fromString("OP_EQUAL") must be(Some(OP_EQUAL))
-    BitwiseOperation.fromString("OP_EQUALVERIFY") must be(Some(OP_EQUALVERIFY))
-    BitwiseOperation.fromString("RANDOM") must be(None)
+    BitwiseOperation.fromStringOpt("OP_EQUAL") must be(Some(OP_EQUAL))
+    BitwiseOperation.fromStringOpt("OP_EQUALVERIFY") must be(
+      Some(OP_EQUALVERIFY))
+    BitwiseOperation.fromStringOpt("RANDOM") must be(None)
   }
 }

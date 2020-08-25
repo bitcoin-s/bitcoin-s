@@ -1,11 +1,13 @@
 package org.bitcoins.core.protocol.ln.channel
 
+import org.bitcoins.crypto.StringFactory
+
 /**
   * Copied from [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/scala/fr/acinq/eclair/channel/ChannelTypes.scala Eclair]]
   */
 sealed trait ChannelState
 
-object ChannelState {
+object ChannelState extends StringFactory[ChannelState] {
   case object WAIT_FOR_INIT_INTERNAL extends ChannelState
   case object WAIT_FOR_OPEN_CHANNEL extends ChannelState
   case object WAIT_FOR_ACCEPT_CHANNEL extends ChannelState
@@ -48,7 +50,14 @@ object ChannelState {
     ERR_INFORMATION_LEAK
   ).map(state => state.toString -> state).toMap
 
-  def fromString(str: String): Option[ChannelState] = {
+  override def fromStringOpt(str: String): Option[ChannelState] = {
     all.get(str)
+  }
+
+  override def fromString(str: String): ChannelState = {
+    fromStringOpt(str) match {
+      case Some(state) => state
+      case None        => sys.error(s"Could not find channel state=${str}")
+    }
   }
 }

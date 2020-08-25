@@ -10,7 +10,7 @@ class NodeUriTest extends BitcoinSAsyncTest {
   it must "read the suredbits node uri" in {
     val sb =
       "0338f57e4e20abf4d5c86b71b59e995ce4378e373b021a7b6f41dabb42d3aad069@ln.test.suredbits.com:9735"
-    val uriT = NodeUri.fromString(sb)
+    val uriT = NodeUri.fromStringT(sb)
     assert(uriT.isSuccess == true)
 
     assert(uriT.get.toString == sb)
@@ -29,7 +29,7 @@ class NodeUriTest extends BitcoinSAsyncTest {
     val sb =
       "0338f57e4e20abf4d5c86b71b59e995ce4378e373b021a7b6f41dabb42d3aad069@127.0.0.1:9735"
 
-    val uriT = NodeUri.fromString(sb)
+    val uriT = NodeUri.fromStringT(sb)
 
     assert(uriT.isSuccess)
 
@@ -38,14 +38,14 @@ class NodeUriTest extends BitcoinSAsyncTest {
 
   it must "fail to read a node uri without a nodeId" in {
     val sb = "@ln.test.suredbits.com"
-    val uriT = NodeUri.fromString(sb)
+    val uriT = NodeUri.fromStringT(sb)
     assert(uriT.isFailure == true)
   }
 
   it must "fail to read a node uri with a invalid port" in {
     val sb =
       "0338f57e4e20abf4d5c86b71b59e995ce4378e373b021a7b6f41dabb42d3aad069@ln.test.suredbits.com:abc2"
-    val uriT = NodeUri.fromString(sb)
+    val uriT = NodeUri.fromStringT(sb)
     assert(uriT.isFailure == true)
   }
 }

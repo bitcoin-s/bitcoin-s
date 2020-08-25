@@ -672,7 +672,7 @@ case class PSBT(
   }
 }
 
-object PSBT extends Factory[PSBT] {
+object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
 
   // The known version of PSBTs this library can process defined by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#version-numbers
   final val knownVersions: Vector[UInt32] = Vector(UInt32.zero)
@@ -682,7 +682,7 @@ object PSBT extends Factory[PSBT] {
 
   final val empty = fromUnsignedTx(EmptyTransaction)
 
-  def fromString(str: String): PSBT = {
+  override def fromString(str: String): PSBT = {
     ByteVector.fromHex(str) match {
       case Some(hex) =>
         PSBT(hex)

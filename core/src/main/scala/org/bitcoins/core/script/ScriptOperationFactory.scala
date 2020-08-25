@@ -10,6 +10,7 @@ import org.bitcoins.core.script.reserved.ReservedOperation
 import org.bitcoins.core.script.splice.SpliceOperation
 import org.bitcoins.core.script.stack.StackOperation
 import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.crypto.StringFactory
 import scodec.bits.ByteVector
 
 /**
@@ -17,7 +18,9 @@ import scodec.bits.ByteVector
   * Responsible for matching script op codes with their given
   * hexadecimal representation or byte representation
   */
-trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
+trait ScriptOperationFactory[T <: ScriptOperation]
+    extends StringFactory[T]
+    with BitcoinSLogger {
 
   /** All of the [[org.bitcoins.core.script.ScriptOperation ScriptOperation]]s for a particular `T`. */
   def operations: Vector[T]
@@ -25,13 +28,21 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
   /**
     * Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given string
     */
-  def fromString(str: String): Option[T] = {
+  override def fromStringOpt(str: String): Option[T] = {
     val result: Option[T] = operations.find(_.toString == str)
     if (result.isEmpty) {
       //try and remove the 'OP_' prefix on the operations and see if it matches anything.
       operations.find(op =>
         removeOP_Prefix(op.toString) == removeOP_Prefix(str))
     } else result
+  }
+
+  override def fromString(str: String): T = {
+    fromStringOpt(str) match {
+      case Some(op) => op
+      case None =>
+        sys.error(s"Could not find script operation=${str}")
+    }
   }
 
   /**

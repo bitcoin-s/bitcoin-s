@@ -18,7 +18,7 @@ class ExtKeySpec extends BitcoinSUnitTest {
 
   it must "have serialization symmetry" in {
     Prop.forAll(CryptoGenerators.extKey) { extKey =>
-      ExtKey.fromString(extKey.toString) == Success(extKey) &&
+      ExtKey.fromStringT(extKey.toString) == Success(extKey) &&
       ExtKey(extKey.bytes) == extKey
     }
   }

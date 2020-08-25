@@ -98,7 +98,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
   it must "have toString/fromString symmetry" in {
     forAll(HDGenerators.hdPath) { path =>
-      val pathFromString = HDPath.fromString(path.toString)
+      val pathFromString = HDPath.fromStringOpt(path.toString)
       val resultOpt = pathFromString.map {
         case value: LegacyHDPath =>
           assert(value == path.asInstanceOf[LegacyHDPath])
@@ -119,7 +119,7 @@ class HDPathTest extends BitcoinSUnitTest {
     }
 
     forAll(badPaths) { badPath =>
-      val attempt = HDPath.fromString(badPath.toString)
+      val attempt = HDPath.fromStringOpt(badPath.toString)
       attempt match {
         case None =>
           succeed
@@ -214,7 +214,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(first.account.index == 0)
     assert(first.chain.chainType == HDChainType.External)
     assert(first.address.index == 0)
-    assert(HDPath.fromString(firstString).contains(first))
+    assert(HDPath.fromStringOpt(firstString).contains(first))
 
     val secondString = " m / 44' / 0' / 0' / 0 / 1 "
     val second = LegacyHDPath.fromString(secondString)
@@ -223,7 +223,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(second.account.index == 0)
     assert(second.chain.chainType == HDChainType.External)
     assert(second.address.index == 1)
-    assert(HDPath.fromString(secondString).contains(second))
+    assert(HDPath.fromStringOpt(secondString).contains(second))
 
     val thirdString = " m / 44' / 0' / 0' / 1 / 0 "
     val third = LegacyHDPath.fromString(thirdString)
@@ -232,7 +232,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(third.account.index == 0)
     assert(third.chain.chainType == HDChainType.Change)
     assert(third.address.index == 0)
-    assert(HDPath.fromString(thirdString).contains(third))
+    assert(HDPath.fromStringOpt(thirdString).contains(third))
 
     val fourthString = " m / 44' / 0' / 0' / 1 / 1 "
     val fourth = LegacyHDPath.fromString(fourthString)
@@ -241,7 +241,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(fourth.account.index == 0)
     assert(fourth.chain.chainType == HDChainType.Change)
     assert(fourth.address.index == 1)
-    assert(HDPath.fromString(fourthString).contains(fourth))
+    assert(HDPath.fromStringOpt(fourthString).contains(fourth))
 
     val fifthString = " m / 44' / 0' / 1' / 0 / 0 "
     val fifth = LegacyHDPath.fromString(fifthString)
@@ -250,7 +250,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(fifth.account.index == 1)
     assert(fifth.chain.chainType == HDChainType.External)
     assert(fifth.address.index == 0)
-    assert(HDPath.fromString(fifthString).contains(fifth))
+    assert(HDPath.fromStringOpt(fifthString).contains(fifth))
 
     val sixthString = " m / 44' / 0' / 1' / 0 / 1 "
     val sixth = LegacyHDPath.fromString(sixthString)
@@ -259,7 +259,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(sixth.account.index == 1)
     assert(sixth.chain.chainType == HDChainType.External)
     assert(sixth.address.index == 1)
-    assert(HDPath.fromString(sixthString).contains(sixth))
+    assert(HDPath.fromStringOpt(sixthString).contains(sixth))
 
     val seventhString = " m / 44' / 0' / 1' / 1 / 0 "
     val seventh = LegacyHDPath.fromString(seventhString)
@@ -268,7 +268,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(seventh.account.index == 1)
     assert(seventh.chain.chainType == HDChainType.Change)
     assert(seventh.address.index == 0)
-    assert(HDPath.fromString(seventhString).contains(seventh))
+    assert(HDPath.fromStringOpt(seventhString).contains(seventh))
 
     val eightString = " m / 44' / 0' / 1' / 1 / 1 "
     val eigth = LegacyHDPath.fromString(eightString)
@@ -277,7 +277,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(eigth.account.index == 1)
     assert(eigth.chain.chainType == HDChainType.Change)
     assert(eigth.address.index == 1)
-    assert(HDPath.fromString(eightString).contains(eigth))
+    assert(HDPath.fromStringOpt(eightString).contains(eigth))
 
     val ninthString = " m / 44' / 1' / 0' / 0 / 1 "
     val ninth = LegacyHDPath.fromString(ninthString)
@@ -286,7 +286,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(ninth.account.index == 0)
     assert(ninth.chain.chainType == HDChainType.External)
     assert(ninth.address.index == 1)
-    assert(HDPath.fromString(ninthString).contains(ninth))
+    assert(HDPath.fromStringOpt(ninthString).contains(ninth))
 
     val tenthString = " m / 44' / 1' / 0' / 0 / 1 "
     val tenth = LegacyHDPath.fromString(tenthString)
@@ -295,7 +295,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(tenth.account.index == 0)
     assert(tenth.chain.chainType == HDChainType.External)
     assert(tenth.address.index == 1)
-    assert(HDPath.fromString(tenthString).contains(tenth))
+    assert(HDPath.fromStringOpt(tenthString).contains(tenth))
 
     val eleventhString = " m / 44' / 1' / 0' / 1 / 0 "
     val eleventh = LegacyHDPath.fromString(eleventhString)
@@ -304,7 +304,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(eleventh.account.index == 0)
     assert(eleventh.chain.chainType == HDChainType.Change)
     assert(eleventh.address.index == 0)
-    assert(HDPath.fromString(eleventhString).contains(eleventh))
+    assert(HDPath.fromStringOpt(eleventhString).contains(eleventh))
 
     val twelfthString = " m / 44' / 1' / 0' / 1 / 1 "
     val twelfth = LegacyHDPath.fromString(twelfthString)
@@ -313,7 +313,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(twelfth.account.index == 0)
     assert(twelfth.chain.chainType == HDChainType.Change)
     assert(twelfth.address.index == 1)
-    assert(HDPath.fromString(twelfthString).contains(twelfth))
+    assert(HDPath.fromStringOpt(twelfthString).contains(twelfth))
 
     val thirteenthString = " m / 44' / 1' / 1' / 0 / 0 "
     val thirteenth = LegacyHDPath.fromString(thirteenthString)
@@ -322,7 +322,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(thirteenth.account.index == 1)
     assert(thirteenth.chain.chainType == HDChainType.External)
     assert(thirteenth.address.index == 0)
-    assert(HDPath.fromString(thirteenthString).contains(thirteenth))
+    assert(HDPath.fromStringOpt(thirteenthString).contains(thirteenth))
 
     val fourteenthString = " m / 44' / 1' / 1' / 0 / 1 "
     val fourteenth = LegacyHDPath.fromString(fourteenthString)
@@ -331,7 +331,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(fourteenth.account.index == 1)
     assert(fourteenth.chain.chainType == HDChainType.External)
     assert(fourteenth.address.index == 1)
-    assert(HDPath.fromString(fourteenthString).contains(fourteenth))
+    assert(HDPath.fromStringOpt(fourteenthString).contains(fourteenth))
 
     val fifteenthString = " m / 44' / 1' / 1' / 1 / 0 "
     val fifteenth = LegacyHDPath.fromString(fifteenthString)
@@ -340,7 +340,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(fifteenth.account.index == 1)
     assert(fifteenth.chain.chainType == HDChainType.Change)
     assert(fifteenth.address.index == 0)
-    assert(HDPath.fromString(fifteenthString).contains(fifteenth))
+    assert(HDPath.fromStringOpt(fifteenthString).contains(fifteenth))
 
     val sixteenthString = " m / 44' / 1' / 1' / 1 / 1 "
     val sixteenth = LegacyHDPath.fromString(sixteenthString)
@@ -349,7 +349,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(sixteenth.account.index == 1)
     assert(sixteenth.chain.chainType == HDChainType.Change)
     assert(sixteenth.address.index == 1)
-    assert(HDPath.fromString(sixteenthString).contains(sixteenth))
+    assert(HDPath.fromStringOpt(sixteenthString).contains(sixteenth))
 
   }
 
@@ -372,10 +372,10 @@ class HDPathTest extends BitcoinSUnitTest {
     val xpriv = seed.toExtPrivateKey(ExtKeyVersion.SegWitMainNetPriv)
     val xpub = xpriv.extPublicKey
 
-    assert(ExtPrivateKey.fromString("zprvAWgYBB").isFailure)
-    val Success(expectedXpriv) = ExtPrivateKey.fromString(
+    assert(ExtPrivateKey.fromStringT("zprvAWgYBB").isFailure)
+    val Success(expectedXpriv) = ExtPrivateKey.fromStringT(
       "zprvAWgYBBk7JR8Gjrh4UJQ2uJdG1r3WNRRfURiABBE3RvMXYSrRJL62XuezvGdPvG6GFBZduosCc1YP5wixPox7zhZLfiUm8aunE96BBa4Kei5")
-    val Success(expectedXpub) = ExtPublicKey.fromString(
+    val Success(expectedXpub) = ExtPublicKey.fromStringT(
       "zpub6jftahH18ngZxLmXaKw3GSZzZsszmt9WqedkyZdezFtWRFBZqsQH5hyUmb4pCEeZGmVfQuP5bedXTB8is6fTv19U1GQRyQUKQGUTzyHACMF")
 
     assert(xpriv == expectedXpriv)
@@ -489,7 +489,7 @@ class HDPathTest extends BitcoinSUnitTest {
         ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyMainNetPriv, seed)
       val path = LegacyHDPath.fromString("m/44'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
-      val Success(expectedXpub) = ExtPublicKey.fromString(
+      val Success(expectedXpub) = ExtPublicKey.fromStringT(
         "xpub6FR8LqriB4qyPvdtZwhHW2HQP4daR2qXsYAAsfaiF8DoFJJ5AqGCpiGM3kFC4Z9AZWnReXrzp2nzhp91myPjz96e3wrJoMvgnCyMBjKz8vJ")
       assert(xpub == expectedXpub)
     }
@@ -500,7 +500,7 @@ class HDPathTest extends BitcoinSUnitTest {
         ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyTestNet3Priv, seed)
       val path = LegacyHDPath.fromString("m/44'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
-      val Success(expectedXpub) = ExtPublicKey.fromString(
+      val Success(expectedXpub) = ExtPublicKey.fromStringT(
         "tpubDFnks5gPtLoRfipk28gNhwcmiBjEQRLbRAkUEDdrb2ygzaxnF47Hy9wBHnKyb46QMRKLG7NsM8d3PzddAqEysaYw7YbcUtavNAZkwjM7aqi")
       assert(xpub == expectedXpub)
     }
@@ -511,7 +511,7 @@ class HDPathTest extends BitcoinSUnitTest {
         ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.NestedSegWitMainNetPriv, seed)
       val path = NestedSegWitHDPath.fromString("m/49'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
-      val Success(expectedXpub) = ExtPublicKey.fromString(
+      val Success(expectedXpub) = ExtPublicKey.fromStringT(
         "ypub6c6461WnUp9LoRskZCU3bHBJahDvtrPwCCo1WEtuhsrFGZ8Mn2YMNGab2tj5eujgsMx5U1BZz7hA1q87ZdVSXZdArxM9G5Y9iZchQFrov4q")
       assert(xpub == expectedXpub)
     }
@@ -523,7 +523,7 @@ class HDPathTest extends BitcoinSUnitTest {
                                     seed)
       val path = NestedSegWitHDPath.fromString("m/49'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
-      val Success(expectedXpub) = ExtPublicKey.fromString(
+      val Success(expectedXpub) = ExtPublicKey.fromStringT(
         "upub5JkzsLq7t5yRQF7HDmKYkvoHtpe98NRwXki8NfKNBrLj49sSmPt6t1x2x4tjfH81EoUrU6oL9UGxUgfrgqqPLctmPbZSvSGCdfN7qyMHU7g")
       assert(xpub == expectedXpub)
     }
@@ -534,7 +534,7 @@ class HDPathTest extends BitcoinSUnitTest {
         ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv, seed)
       val path = SegWitHDPath.fromString("m/84'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
-      val Success(expectedXpub) = ExtPublicKey.fromString(
+      val Success(expectedXpub) = ExtPublicKey.fromStringT(
         "zpub6vibtacmZKTajuFATBMJPq629qFzaonkAHzWDBEgpHnuhDBozTVWxbF4zJ1Hm4tdkAMJTg9kUqizEz4JQXGkxyotn3MCxbT92mJ8XVcNN5E")
       assert(xpub == expectedXpub)
     }
@@ -545,7 +545,7 @@ class HDPathTest extends BitcoinSUnitTest {
         ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitTestNet3Priv, seed)
       val path = SegWitHDPath.fromString("m/84'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
-      val Success(expectedXpub) = ExtPublicKey.fromString(
+      val Success(expectedXpub) = ExtPublicKey.fromStringT(
         "vpub5dPYfuw6xbHfLiUh7kCoZUi1TxgCpKpkVqud5bf9JGHPUovtypqGULcWuUAwmSGx7bt5TmmWeCJnhqc3Xjchn35VJgZWcxBBws3Yy6zYa7G")
       assert(xpub == expectedXpub)
     }
@@ -579,14 +579,14 @@ class HDPathTest extends BitcoinSUnitTest {
     // we pass in the wrong version bytes to make the test vector
     // from bip49 pass
     val rootXpriv = seed.toExtPrivateKey(ExtKeyVersion.LegacyTestNet3Priv)
-    val Success(expectedRootXpriv) = ExtPrivateKey.fromString(
+    val Success(expectedRootXpriv) = ExtPrivateKey.fromStringT(
       "tprv8ZgxMBicQKsPe5YMU9gHen4Ez3ApihUfykaqUorj9t6FDqy3nP6eoXiAo2ssvpAjoLroQxHqr3R5nE3a5dU3DHTjTgJDd7zrbniJr6nrCzd")
 
     val path = NestedSegWitHDPath.fromString("m/49'/1'/0'/0/0")
 
     val firstAccount = path.account
     val accountXpriv = rootXpriv.deriveChildPrivKey(firstAccount)
-    val Success(expectedAccountXpriv) = ExtPrivateKey.fromString(
+    val Success(expectedAccountXpriv) = ExtPrivateKey.fromStringT(
       "tprv8gRrNu65W2Msef2BdBSUgFdRTGzC8EwVXnV7UGS3faeXtuMVtGfEdidVeGbThs4ELEoayCAzZQ4uUji9DUiAs7erdVskqju7hrBcDvDsdbY")
     assert(expectedAccountXpriv == accountXpriv)
 
@@ -640,9 +640,9 @@ class HDPathTest extends BitcoinSUnitTest {
       val accountXpriv = rootXpriv.deriveChildPrivKey(legacyPathAccount)
       val accountXpub = accountXpriv.extPublicKey
 
-      val Success(expectedAccountXpriv) = ExtPrivateKey.fromString(
+      val Success(expectedAccountXpriv) = ExtPrivateKey.fromStringT(
         "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb")
-      val Success(expectedAccountXpub) = ExtPublicKey.fromString(
+      val Success(expectedAccountXpub) = ExtPublicKey.fromStringT(
         "xpub6BosfCnifzxcFwrSzQiqu2DBVTshkCXacvNsWGYJVVhhawA7d4R5WSWGFNbi8Aw6ZRc1brxMyWMzG3DSSSSoekkudhUd9yLb6qx39T9nMdj")
 
       assert(expectedAccountXpriv == accountXpriv)
@@ -659,9 +659,9 @@ class HDPathTest extends BitcoinSUnitTest {
       val accountXpriv = rootXpriv.deriveChildPrivKey(nestedSegwithPathAccount)
       val accountXpub = accountXpriv.extPublicKey
 
-      val Success(expectedAccountXpriv) = ExtPrivateKey.fromString(
+      val Success(expectedAccountXpriv) = ExtPrivateKey.fromStringT(
         "yprvAHwhK6RbpuS3dgCYHM5jc2ZvEKd7Bi61u9FVhYMpgMSuZS613T1xxQeKTffhrHY79hZ5PsskBjcc6C2V7DrnsMsNaGDaWev3GLRQRgV7hxF")
-      val Success(expectedAccountXpub) = ExtPublicKey.fromString(
+      val Success(expectedAccountXpub) = ExtPublicKey.fromStringT(
         "ypub6Ww3ibxVfGzLrAH1PNcjyAWenMTbbAosGNB6VvmSEgytSER9azLDWCxoJwW7Ke7icmizBMXrzBx9979FfaHxHcrArf3zbeJJJUZPf663zsP")
 
       assert(expectedAccountXpriv == accountXpriv)
@@ -677,9 +677,9 @@ class HDPathTest extends BitcoinSUnitTest {
       val accountXpriv = rootXpriv.deriveChildPrivKey(segwithPathAccount)
       val accountXpub = accountXpriv.extPublicKey
 
-      val Success(expectedAccountXpriv) = ExtPrivateKey.fromString(
+      val Success(expectedAccountXpriv) = ExtPrivateKey.fromStringT(
         "zprvAdG4iTXWBoARxkkzNpNh8r6Qag3irQB8PzEMkAFeTRXxHpbF9z4QgEvBRmfvqWvGp42t42nvgGpNgYSJA9iefm1yYNZKEm7z6qUWCroSQnE")
-      val Success(expectedAccountXpub) = ExtPublicKey.fromString(
+      val Success(expectedAccountXpub) = ExtPublicKey.fromStringT(
         "zpub6rFR7y4Q2AijBEqTUquhVz398htDFrtymD9xYYfG1m4wAcvPhXNfE3EfH1r1ADqtfSdVCToUG868RvUUkgDKf31mGDtKsAYz2oz2AGutZYs")
 
       assert(expectedAccountXpriv == accountXpriv)

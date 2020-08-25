@@ -43,7 +43,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
   it must "fail to make a private key out of a public key" in {
     forAll(CryptoGenerators.extPublicKey) { pub =>
-      val attempt = ExtPrivateKey.fromString(pub.toString)
+      val attempt = ExtPrivateKey.fromStringT(pub.toString)
       attempt match {
         case Success(_)   => fail
         case Failure(exc) => assert(exc.getMessage.contains("expected private"))
@@ -237,7 +237,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
     //actual priv key 68e5ed2b2c8fc5a6605107d29d074e3d6ccb119c2811007e32f48305176f814c
     val str =
       "xprv9s21ZrQH143K4LCRq4tUZUt3fiTNZr6QTiep3HGzMxtSwfxKAhBmNJJnsmoyWuYZCPC4DNsiVwToHJbxZtq4iEkozBhMzWNTiCH4tzJNjPi"
-    val masterPriv = ExtPrivateKey.fromString(str).get
+    val masterPriv = ExtPrivateKey.fromString(str)
     val idx = UInt32((1L << 31) - 1)
     val path1 = masterPriv.deriveChildPrivKey(idx).extPublicKey.key
     val path2 = masterPriv.extPublicKey.deriveChildPubKey(idx).get.key
