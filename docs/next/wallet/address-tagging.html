@@ -138,13 +138,21 @@ set of users but all with different ids.</p>
 
   <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> tagNames = <span class="hljs-type">Vector</span>(<span class="hljs-type">CompanyTagName</span>, <span class="hljs-type">InsuranceFundTagName</span>)
 
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">fromString</span></span>(str: <span class="hljs-type">String</span>): <span class="hljs-type">Option</span>[<span class="hljs-type">UserIdTag</span>] = {
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">fromStringOpt</span></span>(str: <span class="hljs-type">String</span>): <span class="hljs-type">Option</span>[<span class="hljs-type">UserIdTag</span>] = {
     all.find(tag =&gt; str.toLowerCase() == tag.toString.toLowerCase) <span class="hljs-keyword">match</span> {
       <span class="hljs-keyword">case</span> <span class="hljs-type">Some</span>(tag) =&gt;
         <span class="hljs-type">Some</span>(tag)
       <span class="hljs-keyword">case</span> <span class="hljs-type">None</span> =&gt;
         <span class="hljs-type">Some</span>(<span class="hljs-type">UserId</span>(str))
     }
+  }
+
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">fromString</span></span>(str: <span class="hljs-type">String</span>): <span class="hljs-type">UserIdTag</span> = {
+    fromStringOpt(str) <span class="hljs-keyword">match</span> {
+      <span class="hljs-keyword">case</span> <span class="hljs-type">Some</span>(tag) =&gt; tag
+      <span class="hljs-keyword">case</span> <span class="hljs-type">None</span> =&gt; sys.error(<span class="hljs-string">s"Could not find tag=<span class="hljs-subst">$str</span>"</span>)
+    }
+
   }
 
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">fromUID</span></span>(uid: <span class="hljs-type">Long</span>): <span class="hljs-type">UserIdTag</span> = {
