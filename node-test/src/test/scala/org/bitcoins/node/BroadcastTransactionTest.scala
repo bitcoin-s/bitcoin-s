@@ -67,6 +67,10 @@ class BroadcastTransactionTest extends NodeUnitTest {
     def attemptBroadcast(tx: Transaction): Future[Unit] = {
       for {
         _ <- node.broadcastTransaction(tx)
+        txOpt <- node.txDAO.findByHash(tx.txId)
+        _ = assert(
+          txOpt.isDefined,
+          "Transaction was not added to BroadcastableTransaction database")
         _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
                                            duration = 1.second,
                                            maxTries = 25)
