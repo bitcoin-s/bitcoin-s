@@ -6,7 +6,6 @@ import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
 import com.typesafe.config.ConfigFactory
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -15,6 +14,7 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.Core
+import org.bitcoins.core.api.chain.db.ChainApi
 import org.bitcoins.core.config.{BitcoinNetworks, MainNet, RegTest, TestNet3}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NetworkUtil}
 import org.bitcoins.db._

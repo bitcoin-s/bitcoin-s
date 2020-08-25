@@ -3,14 +3,14 @@ package org.bitcoins.testkit.node
 import java.net.InetSocketAddress
 
 import akka.actor.{ActorSystem, Cancellable}
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
+  ChainApi,
   CompactFilterDb,
   CompactFilterHeaderDb
 }
-import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage

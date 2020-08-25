@@ -1,6 +1,7 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.chain.db.CompactFilterDb
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.{CRUD, SlickUtil}

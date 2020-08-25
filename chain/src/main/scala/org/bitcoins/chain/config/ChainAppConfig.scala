@@ -4,8 +4,9 @@ import java.nio.file.Path
 
 import com.typesafe.config.{Config, ConfigException}
 import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDbHelper}
+import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
 

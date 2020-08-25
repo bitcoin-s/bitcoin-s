@@ -1,7 +1,7 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.chain.validation.TipUpdateResult
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 /** The result indicating how the [[org.bitcoins.chain.validation.TipUpdateResult TipUpdateResult]]

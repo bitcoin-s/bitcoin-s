@@ -2,7 +2,7 @@ package org.bitcoins.chain.pow
 
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDb
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain._
 import org.bitcoins.core.util.NumberUtil
@@ -49,7 +49,7 @@ sealed abstract class Pow {
                   case RegTestNetChainParams =>
                     RegTestNetChainParams.compressedPowLimit
                   case TestNetChainParams | MainNetChainParams =>
-                    //if we can't find a non min diffulty block, let's just fail
+                    //if we can't find a non min difficulty block, let's just fail
                     throw new RuntimeException(
                       s"Could not find non mindifficulty block in chain of size=${blockchain.length}! hash=${tip.hashBE.hex} height=${currentHeight}")
                 }
@@ -63,8 +63,9 @@ sealed abstract class Pow {
         val firstHeight: Int =
           currentHeight - (chainParams.difficultyChangeInterval - 1)
 
-        require(firstHeight >= 0,
-                s"We must have our first height be postive, got=${firstHeight}")
+        require(
+          firstHeight >= 0,
+          s"We must have our first height be positive, got=${firstHeight}")
 
         val firstBlockAtIntervalOpt: Option[BlockHeaderDb] =
           blockchain.findAtHeight(firstHeight)
