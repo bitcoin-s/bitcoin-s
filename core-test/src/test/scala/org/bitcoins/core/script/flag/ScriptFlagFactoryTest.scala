@@ -8,63 +8,60 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 class ScriptFlagFactoryTest extends BitcoinSUnitTest {
 
   "ScriptFlagFactory" must "find a NONE script flag" in {
-    ScriptFlagFactory.fromString("NONE").get must be(ScriptVerifyNone)
+    ScriptFlagFactory.fromString("NONE") must be(ScriptVerifyNone)
   }
 
   it must "find a P2SH script flag" in {
-    ScriptFlagFactory.fromString("P2SH").get must be(ScriptVerifyP2SH)
+    ScriptFlagFactory.fromString("P2SH") must be(ScriptVerifyP2SH)
   }
 
   it must "find a STRICTENC flag" in {
-    ScriptFlagFactory.fromString("STRICTENC").get must be(ScriptVerifyStrictEnc)
+    ScriptFlagFactory.fromString("STRICTENC") must be(ScriptVerifyStrictEnc)
   }
 
   it must "find a DERSIG flag" in {
-    ScriptFlagFactory.fromString("DERSIG").get must be(ScriptVerifyDerSig)
+    ScriptFlagFactory.fromString("DERSIG") must be(ScriptVerifyDerSig)
   }
 
   it must "find a LOW_S flag" in {
-    ScriptFlagFactory.fromString("LOW_S").get must be(ScriptVerifyLowS)
+    ScriptFlagFactory.fromString("LOW_S") must be(ScriptVerifyLowS)
   }
 
   it must "find a SIGPUSHONLY flag" in {
-    ScriptFlagFactory.fromString("SIGPUSHONLY").get must be(
-      ScriptVerifySigPushOnly)
+    ScriptFlagFactory.fromString("SIGPUSHONLY") must be(ScriptVerifySigPushOnly)
   }
 
   it must "find a MINIMALDATA flag" in {
-    ScriptFlagFactory.fromString("MINIMALDATA").get must be(
-      ScriptVerifyMinimalData)
+    ScriptFlagFactory.fromString("MINIMALDATA") must be(ScriptVerifyMinimalData)
   }
 
   it must "find a NULLDUMMY flag" in {
-    ScriptFlagFactory.fromString("NULLDUMMY").get must be(ScriptVerifyNullDummy)
+    ScriptFlagFactory.fromString("NULLDUMMY") must be(ScriptVerifyNullDummy)
   }
 
   it must "find a DISCOURAGE_UPGRADABLE_NOPS flag" in {
-    ScriptFlagFactory.fromString("DISCOURAGE_UPGRADABLE_NOPS").get must be(
+    ScriptFlagFactory.fromString("DISCOURAGE_UPGRADABLE_NOPS") must be(
       ScriptVerifyDiscourageUpgradableNOPs)
   }
 
   it must "find a CLEANSTACK flag" in {
-    ScriptFlagFactory.fromString("CLEANSTACK").get must be(
-      ScriptVerifyCleanStack)
+    ScriptFlagFactory.fromString("CLEANSTACK") must be(ScriptVerifyCleanStack)
   }
 
   it must "find a CHECKLOCKTIMEVERIFY flag" in {
-    ScriptFlagFactory.fromString("CHECKLOCKTIMEVERIFY").get must be(
+    ScriptFlagFactory.fromString("CHECKLOCKTIMEVERIFY") must be(
       ScriptVerifyCheckLocktimeVerify)
 
   }
 
   it must "find a CHECKSEQUENCEVERIFY flag" in {
-    ScriptFlagFactory.fromString("CHECKSEQUENCEVERIFY").get must be(
+    ScriptFlagFactory.fromString("CHECKSEQUENCEVERIFY") must be(
       ScriptVerifyCheckSequenceVerify)
   }
 
   it must "match a string version of a script flag" in {
     val str = "MINIMALDATA"
-    ScriptFlagFactory.fromString(str) must be(Some(ScriptVerifyMinimalData))
+    ScriptFlagFactory.fromStringOpt(str) must be(Some(ScriptVerifyMinimalData))
   }
 
   it must "match a comma separated list of flags" in {

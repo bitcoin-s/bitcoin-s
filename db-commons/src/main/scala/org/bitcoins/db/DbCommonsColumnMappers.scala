@@ -164,7 +164,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val xpubMapper: BaseColumnType[ExtPublicKey] = {
     MappedColumnType
-      .base[ExtPublicKey, String](_.toString, ExtPublicKey.fromString(_).get)
+      .base[ExtPublicKey, String](_.toString, ExtPublicKey.fromString(_))
   }
 
   implicit val hdCoinTypeMapper: BaseColumnType[HDCoinType] = {
@@ -173,15 +173,11 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val hdPathMappper: BaseColumnType[HDPath] =
     MappedColumnType
-      .base[HDPath, String](_.toString,
-                            HDPath.fromString(_).get
-      ) // hm rethink .get?
+      .base[HDPath, String](_.toString, HDPath.fromString(_))
 
   implicit val segwitPathMappper: BaseColumnType[SegWitHDPath] =
     MappedColumnType
-      .base[SegWitHDPath, String](_.toString,
-                                  SegWitHDPath.fromString
-      ) // hm rethink .get?
+      .base[SegWitHDPath, String](_.toString, SegWitHDPath.fromString)
 
   implicit val hdChainTypeMapper: BaseColumnType[HDChainType] =
     MappedColumnType.base[HDChainType, Int](_.index, HDChainType.fromInt)
@@ -194,15 +190,15 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val bitcoinAddressMapper: BaseColumnType[BitcoinAddress] =
     MappedColumnType
-      .base[BitcoinAddress, String](_.value, BitcoinAddress.fromStringExn)
+      .base[BitcoinAddress, String](_.value, BitcoinAddress.fromString)
 
   implicit val bech32AddressMapper: BaseColumnType[Bech32Address] =
     MappedColumnType
-      .base[Bech32Address, String](_.value, Bech32Address.fromStringExn)
+      .base[Bech32Address, String](_.value, Bech32Address.fromString)
 
   implicit val scriptTypeMapper: BaseColumnType[ScriptType] =
     MappedColumnType
-      .base[ScriptType, String](_.toString, ScriptType.fromStringExn)
+      .base[ScriptType, String](_.toString, ScriptType.fromString)
 
   implicit val txMapper: BaseColumnType[Transaction] =
     MappedColumnType.base[Transaction, String](_.hex, Transaction.fromHex)
@@ -217,7 +213,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val txoStateMapper: BaseColumnType[TxoState] = {
     MappedColumnType
-      .base[TxoState, String](_.toString, TxoState.fromString(_).get)
+      .base[TxoState, String](_.toString, TxoState.fromString(_))
   }
 
   implicit val satoshisPerByteMapper: BaseColumnType[SatoshisPerByte] = {

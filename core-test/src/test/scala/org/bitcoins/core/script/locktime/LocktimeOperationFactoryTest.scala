@@ -8,7 +8,7 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 class LocktimeOperationFactoryTest extends BitcoinSUnitTest {
 
   "LocktimeOperationFactory" must "match lock time operations from strings" in {
-    LocktimeOperation.fromString("OP_CHECKLOCKTIMEVERIFY") must be(
+    LocktimeOperation.fromStringOpt("OP_CHECKLOCKTIMEVERIFY") must be(
       Some(OP_CHECKLOCKTIMEVERIFY))
   }
 

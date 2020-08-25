@@ -466,7 +466,7 @@ trait ServerJsonModels {
 
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
     try {
-      BitcoinAddress.fromStringExn(js.str)
+      BitcoinAddress.fromString(js.str)
     } catch {
       case _: IllegalArgumentException =>
         throw Value.InvalidData(js, "Expected a valid address")
@@ -490,8 +490,6 @@ trait ServerJsonModels {
   def jsToCoinSelectionAlgo(js: Value): CoinSelectionAlgo =
     CoinSelectionAlgo
       .fromString(js.str)
-      .getOrElse(
-        throw new IllegalArgumentException("Invalid CoinSelectionAlgo"))
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 

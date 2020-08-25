@@ -159,7 +159,7 @@ object Networks extends StringFactory[NetworkParameters] {
   val p2pkhNetworkBytes: Seq[ByteVector] = BitcoinNetworks.p2pkhNetworkBytes
   val p2shNetworkBytes: Seq[ByteVector] = BitcoinNetworks.p2shNetworkBytes
 
-  def fromString(string: String): NetworkParameters =
+  override def fromString(string: String): NetworkParameters =
     BitcoinNetworks.fromString(string)
 
   def magicToNetwork: Map[ByteVector, NetworkParameters] =

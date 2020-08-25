@@ -422,7 +422,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
   it must "have serialization symmetry for LnHrps" in {
     forAll(LnInvoiceGen.lnHrp) { hrp =>
-      LnHumanReadablePart.fromString(hrp.toString).get == hrp
+      LnHumanReadablePart.fromString(hrp.toString) == hrp
     }
   }
 

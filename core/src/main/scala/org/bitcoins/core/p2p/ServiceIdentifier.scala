@@ -2,7 +2,7 @@ package org.bitcoins.core.p2p
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.serializers.p2p.messages.RawServiceIdentifierSerializer
-import org.bitcoins.crypto.{Factory, NetworkElement}
+import org.bitcoins.crypto.{Factory, NetworkElement, StringFactory}
 import scodec.bits.ByteVector
 
 /**
@@ -106,7 +106,9 @@ sealed trait UnknownService extends ServiceIdentifier {
   override def toString(): String = s"UnknownService(${num.toLong})"
 }
 
-object ServiceIdentifier extends Factory[ServiceIdentifier] {
+object ServiceIdentifier
+    extends Factory[ServiceIdentifier]
+    with StringFactory[ServiceIdentifier] {
 
   /**
     * This node is not a full node.
@@ -172,7 +174,7 @@ object ServiceIdentifier extends Factory[ServiceIdentifier] {
   def fromBytes(bytes: ByteVector): ServiceIdentifier =
     RawServiceIdentifierSerializer.read(bytes)
 
-  def fromString(string: String): ServiceIdentifier =
+  override def fromString(string: String): ServiceIdentifier =
     string match {
       case "NETWORK"         => NODE_NETWORK
       case "NETWORK_LIMITED" => NODE_NETWORK_LIMITED

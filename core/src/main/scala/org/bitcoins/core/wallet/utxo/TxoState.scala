@@ -1,5 +1,7 @@
 package org.bitcoins.core.wallet.utxo
 
+import org.bitcoins.crypto.StringFactory
+
 /** Represents the various states a transaction output can be in */
 sealed abstract class TxoState
 
@@ -7,7 +9,7 @@ sealed abstract class ReceivedState extends TxoState
 
 sealed abstract class SpentState extends TxoState
 
-object TxoState {
+object TxoState extends StringFactory[TxoState] {
 
   /** Means that no funds have been sent to this utxo EVER */
   final case object DoesNotExist extends TxoState
@@ -47,7 +49,15 @@ object TxoState {
                                      PendingConfirmationsSpent,
                                      ConfirmedSpent)
 
-  def fromString(str: String): Option[TxoState] = {
+  override def fromStringOpt(str: String): Option[TxoState] = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase)
+  }
+
+  override def fromString(string: String): TxoState = {
+    fromStringOpt(string) match {
+      case Some(state) => state
+      case None =>
+        sys.error(s"Could not find txo state for string=${string}")
+    }
   }
 }

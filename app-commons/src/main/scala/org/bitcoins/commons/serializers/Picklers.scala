@@ -20,7 +20,7 @@ object Picklers {
 
   implicit val bitcoinAddressPickler: ReadWriter[BitcoinAddress] =
     readwriter[String]
-      .bimap(_.value, BitcoinAddress.fromStringExn)
+      .bimap(_.value, BitcoinAddress.fromString)
 
   implicit val bitcoinsPickler: ReadWriter[Bitcoins] =
     readwriter[Double].bimap(_.toBigDecimal.toDouble, Bitcoins(_))
@@ -82,13 +82,13 @@ object Picklers {
     readwriter[String].bimap(_.hex, Transaction.fromHex)
 
   implicit val extPubKeyPickler: ReadWriter[ExtPublicKey] =
-    readwriter[String].bimap(_.toString, ExtPublicKey.fromString(_).get)
+    readwriter[String].bimap(_.toString, ExtPublicKey.fromString(_))
 
   implicit val transactionOutPointPickler: ReadWriter[TransactionOutPoint] =
     readwriter[String].bimap(_.hex, TransactionOutPoint.fromHex)
 
   implicit val coinSelectionAlgoPickler: ReadWriter[CoinSelectionAlgo] =
-    readwriter[String].bimap(_.toString, CoinSelectionAlgo.fromString(_).get)
+    readwriter[String].bimap(_.toString, CoinSelectionAlgo.fromString(_))
 
   implicit val addressLabelTagPickler: ReadWriter[AddressLabelTag] =
     readwriter[String].bimap(_.name, AddressLabelTag)

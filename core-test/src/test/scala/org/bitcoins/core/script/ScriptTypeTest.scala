@@ -7,7 +7,7 @@ class ScriptTypeTest extends BitcoinSUnitTest {
 
   it must "have serialization symmetry" in {
     ScriptType.all.foreach { scriptType =>
-      val newScriptType = ScriptType.fromString(scriptType.toString)
+      val newScriptType = ScriptType.fromStringOpt(scriptType.toString)
 
       assert(newScriptType.contains(scriptType))
     }
@@ -16,7 +16,7 @@ class ScriptTypeTest extends BitcoinSUnitTest {
   it must "fail when nonsense ScriptType is used" in {
     val lyrics = "Never gonna give you up, never gonna let you down"
 
-    assert(ScriptType.fromString(lyrics).isEmpty)
-    assertThrows[IllegalArgumentException](ScriptType.fromStringExn(lyrics))
+    assert(ScriptType.fromStringOpt(lyrics).isEmpty)
+    assertThrows[RuntimeException](ScriptType.fromString(lyrics))
   }
 }

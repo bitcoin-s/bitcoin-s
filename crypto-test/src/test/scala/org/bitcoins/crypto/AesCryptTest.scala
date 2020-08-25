@@ -375,7 +375,7 @@ class AesCryptTest extends BitcoinSUnitTest {
   }
 
   it must "fail to create an empty AES password" in {
-    assert(AesPassword.fromString("").isEmpty)
+    assert(AesPassword.fromStringOpt("").isEmpty)
     intercept[IllegalArgumentException] {
       AesPassword.fromNonEmptyString("")
     }

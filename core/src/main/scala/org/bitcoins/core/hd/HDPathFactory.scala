@@ -1,8 +1,11 @@
 package org.bitcoins.core.hd
 
+import org.bitcoins.crypto.StringFactory
+
 import scala.util.Try
 
-private[hd] trait HDPathFactory[PathType <: BIP32Path] {
+private[hd] trait HDPathFactory[PathType <: BIP32Path]
+    extends StringFactory[PathType] {
 
   private lazy val pathName = getClass.getSimpleName
 
@@ -32,7 +35,7 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path] {
   }
 
   /** Parses a string representation of a HD path */
-  def fromString(string: String): PathType = {
+  override def fromString(string: String): PathType = {
 
     val bip32Path = BIP32Path.fromString(string)
     val children = bip32Path.path

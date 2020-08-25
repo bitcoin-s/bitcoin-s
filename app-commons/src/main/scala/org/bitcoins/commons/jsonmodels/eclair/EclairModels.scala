@@ -20,7 +20,8 @@ import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
   ECDigitalSignature,
-  Sha256Digest
+  Sha256Digest,
+  StringFactory
 }
 import play.api.libs.json.JsObject
 
@@ -48,17 +49,18 @@ case class PeerInfo(
 case class ChannelCommandResult(
     results: scala.collection.Map[
       Either[ShortChannelId, FundedChannelId],
-      ChannelCommandResult.State]
+      State]
 )
+sealed trait State
 
-object ChannelCommandResult {
-  sealed trait State
+object ChannelCommandResult extends StringFactory[State] {
+
   case object OK extends State
   case object ChannelOpened extends State
   case object ChannelClosed extends State
   case class Error(message: String) extends State
 
-  def fromString(s: String): State =
+  override def fromString(s: String): State =
     if (s == "ok") {
       ChannelCommandResult.OK
     } else if (s.startsWith("created channel ")) {
@@ -161,9 +163,9 @@ object ChannelStats {
   case object In extends Direction
   case object Out extends Direction
 
-  object Direction {
+  object Direction extends StringFactory[Direction] {
 
-    def fromString(s: String): Direction =
+    override def fromString(s: String): Direction =
       if (s.toUpperCase == "IN") {
         ChannelStats.In
       } else if (s.toUpperCase == "OUT") {
@@ -279,13 +281,13 @@ case class PaymentRequest(
 
 sealed trait PaymentType
 
-object PaymentType {
+object PaymentType extends StringFactory[PaymentType] {
 
   case object Standard extends PaymentType
   case object SwapIn extends PaymentType
   case object SwapOut extends PaymentType
 
-  def fromString(str: String): PaymentType =
+  override def fromString(str: String): PaymentType =
     str match {
       case "Standard" => Standard
       case "SwapIn"   => SwapIn
