@@ -649,7 +649,7 @@ object JsonReaders {
 
   implicit val channelStateReads: Reads[ChannelState] = {
     Reads { jsValue: JsValue =>
-      SerializerUtil.processJsStringOpt(ChannelState.fromString)(jsValue)
+      SerializerUtil.processJsStringOpt(ChannelState.fromStringOpt)(jsValue)
     }
   }
 

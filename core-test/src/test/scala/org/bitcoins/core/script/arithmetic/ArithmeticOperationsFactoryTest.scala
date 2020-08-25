@@ -7,9 +7,9 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
   */
 class ArithmeticOperationsFactoryTest extends BitcoinSUnitTest {
   "ArithmeticOperationsFactory" must "match strings with arithmetic operations" in {
-    ArithmeticOperation.fromString("OP_1ADD") must be(Some(OP_1ADD))
-    ArithmeticOperation.fromString("OP_ADD") must be(Some(OP_ADD))
-    ArithmeticOperation.fromString("OP_LESSTHAN") must be(Some(OP_LESSTHAN))
-    ArithmeticOperation.fromString("OP_RANDOM") must be(None)
+    ArithmeticOperation.fromStringOpt("OP_1ADD") must be(Some(OP_1ADD))
+    ArithmeticOperation.fromStringOpt("OP_ADD") must be(Some(OP_ADD))
+    ArithmeticOperation.fromStringOpt("OP_LESSTHAN") must be(Some(OP_LESSTHAN))
+    ArithmeticOperation.fromStringOpt("OP_RANDOM") must be(None)
   }
 }
