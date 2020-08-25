@@ -485,8 +485,12 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
   private def setupHeaderTable()(implicit
-      appConfig: ChainAppConfig): Future[Unit] = {
-    appConfig.createHeaderTable(createIfNotExists = true)
+      appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[Unit] = {
+    for {
+      _ <- appConfig.createSchema(createIfNotExists = true)
+      _ <- appConfig.createHeaderTable(createIfNotExists = true)
+    } yield ()
   }
 
   def setupAllTables()(implicit

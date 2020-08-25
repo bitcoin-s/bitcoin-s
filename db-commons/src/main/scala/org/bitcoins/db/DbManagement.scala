@@ -77,7 +77,8 @@ trait DbManagement extends BitcoinSLogger {
   }
 
   def dropTable(tableName: String): Future[Int] = {
-    val result = database.run(sqlu"""DROP TABLE IF EXISTS #$tableName""")
+    val fullTableName = schemaName.map(_ + ".").getOrElse("") + tableName
+    val result = database.run(sqlu"""DROP TABLE IF EXISTS #$fullTableName""")
     import scala.concurrent.ExecutionContext.Implicits.global
     result.failed.foreach { ex =>
       ex.printStackTrace()
@@ -85,16 +86,37 @@ trait DbManagement extends BitcoinSLogger {
     result
   }
 
+  def createSchema(createIfNotExists: Boolean = true): Future[Unit] =
+    schemaName match {
+      case None => FutureUtil.unit
+      case Some(schema) =>
+        val sql =
+          if (createIfNotExists)
+            sqlu"""CREATE SCHEMA IF NOT EXISTS #$schema"""
+          else
+            sqlu"""CREATE SCHEMA #$schema"""
+        import scala.concurrent.ExecutionContext.Implicits.global
+        database.run(sql).map(_ => ())
+    }
+
   /** Executes migrations related to this database
     *
     * @see [[https://flywaydb.org/documentation/api/#programmatic-configuration-java]]
     */
   def migrate(): Int = {
     val module = appConfig.moduleName
-    val config =
-      Flyway
+    val config = {
+      val conf = Flyway
         .configure()
         .locations(s"classpath:${driverName}/${module}/migration/")
+      if (isPostgres) {
+        conf
+          .schemas(module)
+          .defaultSchema(module)
+      } else {
+        conf
+      }
+    }
     val flyway = config.dataSource(jdbcUrl, username, password).load
 
     try {
@@ -110,4 +132,7 @@ trait DbManagement extends BitcoinSLogger {
         flyway.migrate()
     }
   }
+
+  private def isPostgres =
+    appConfig.slickDbConfig.profile.getClass.getName == "slick.jdbc.PostgresProfile$"
 }

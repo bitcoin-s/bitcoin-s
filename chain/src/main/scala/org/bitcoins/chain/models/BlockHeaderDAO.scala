@@ -416,7 +416,7 @@ case class BlockHeaderDAO()(implicit
 
   /** A table that stores block headers related to a blockchain */
   class BlockHeaderTable(tag: Tag)
-      extends Table[BlockHeaderDb](tag, "block_headers") {
+      extends Table[BlockHeaderDb](tag, schemaName, "block_headers") {
 
     def height = column[Int]("height")
 

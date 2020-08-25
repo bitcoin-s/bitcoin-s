@@ -34,7 +34,7 @@ class BlockchainTest extends ChainUnitTest {
         case ConnectTipResult.ExtendChain(_, newChain) =>
           assert(newHeader == newChain.tip)
 
-        case fail @ (_: ConnectTipResult.Reorg | _: ConnectTipResult.BadTip) =>
+        case _ @(_: ConnectTipResult.Reorg | _: ConnectTipResult.BadTip) =>
           assert(false)
       }
   }

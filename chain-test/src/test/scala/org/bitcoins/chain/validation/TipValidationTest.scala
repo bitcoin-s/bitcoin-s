@@ -41,7 +41,7 @@ class TipValidationTest extends ChainDbUnitTest {
   }
 
   it must "fail to connect two blocks that do not reference prev block hash correctly" in {
-    bhDAO =>
+    _ =>
       val badPrevHash = BlockHeaderHelper.badPrevHash
 
       val expected = TipUpdateResult.BadPreviousBlockHash(badPrevHash)
@@ -50,13 +50,13 @@ class TipValidationTest extends ChainDbUnitTest {
   }
 
   it must "fail to connect two blocks with two different POW requirements at the wrong interval" in {
-    bhDAO =>
+    _ =>
       val badPOW = BlockHeaderHelper.badNBits
       val expected = TipUpdateResult.BadPOW(badPOW)
       runTest(badPOW, expected, blockchain)
   }
 
-  it must "fail to connect two blocks with a bad nonce" in { bhDAO =>
+  it must "fail to connect two blocks with a bad nonce" in { _ =>
     val badNonce = BlockHeaderHelper.badNonce
     val expected = TipUpdateResult.BadNonce(badNonce)
     runTest(badNonce, expected, blockchain)

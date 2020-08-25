@@ -239,6 +239,8 @@ bitcoin-s {
 }
 ```
 
+The database driver will create a separate SQL namespace for each sub-project: `chain`, `node` and `wallet`.
+
 Also you can use mix databases and drivers in one configuration. For example,
 This configuration file enables Sqlite for `node` project (it's default, so its configuration 
 is omitted), and `walletdb` and `chaindb` PostgreSQL databases for `wallet` and `chain` projects:

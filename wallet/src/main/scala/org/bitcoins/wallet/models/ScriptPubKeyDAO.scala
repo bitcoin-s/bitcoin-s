@@ -23,7 +23,7 @@ case class ScriptPubKeyDAO()(implicit
     TableQuery[ScriptPubKeyTable]
 
   case class ScriptPubKeyTable(tag: Tag)
-      extends TableAutoInc[ScriptPubKeyDb](tag, "pub_key_scripts") {
+      extends TableAutoInc[ScriptPubKeyDb](tag, schemaName, "pub_key_scripts") {
 
     def scriptPubKey: Rep[ScriptPubKey] = column("script_pub_key")
     def scriptType: Rep[ScriptType] = column("script_type")

@@ -30,7 +30,7 @@ case class CompactFilterDAO()(implicit
     }
 
   class CompactFilterTable(tag: Tag)
-      extends Table[CompactFilterDb](tag, "cfilters") {
+      extends Table[CompactFilterDb](tag, schemaName, "cfilters") {
 
     def hash = column[DoubleSha256DigestBE]("hash")
 

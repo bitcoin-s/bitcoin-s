@@ -59,7 +59,7 @@ case class AccountDAO()(implicit
   }
 
   class AccountTable(tag: Tag)
-      extends Table[AccountDb](tag, "wallet_accounts") {
+      extends Table[AccountDb](tag, schemaName, "wallet_accounts") {
 
     def xpub: Rep[ExtPublicKey] = column[ExtPublicKey]("xpub")
 
