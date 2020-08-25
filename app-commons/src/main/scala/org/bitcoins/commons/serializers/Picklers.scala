@@ -20,7 +20,7 @@ object Picklers {
 
   implicit val bitcoinAddressPickler: ReadWriter[BitcoinAddress] =
     readwriter[String]
-      .bimap(_.value, BitcoinAddress.fromStringExn)
+      .bimap(_.value, BitcoinAddress.fromString)
 
   implicit val bitcoinsPickler: ReadWriter[Bitcoins] =
     readwriter[Double].bimap(_.toBigDecimal.toDouble, Bitcoins(_))

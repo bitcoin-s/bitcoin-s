@@ -9,6 +9,7 @@ import scala.util.{Failure, Success, Try}
 abstract class AddressFactory[T <: Address] extends StringFactory[T] {
 
   /** Same as fromString, but throws the exception */
+  @deprecated(s"Use fromString() instead", "2020-08-24")
   def fromStringExn(str: String): T = fromString(str)
 
   def fromScriptPubKey(spk: ScriptPubKey, np: NetworkParameters): T = {

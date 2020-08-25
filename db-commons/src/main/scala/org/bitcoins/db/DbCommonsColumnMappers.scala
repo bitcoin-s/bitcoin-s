@@ -190,15 +190,15 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val bitcoinAddressMapper: BaseColumnType[BitcoinAddress] =
     MappedColumnType
-      .base[BitcoinAddress, String](_.value, BitcoinAddress.fromStringExn)
+      .base[BitcoinAddress, String](_.value, BitcoinAddress.fromString)
 
   implicit val bech32AddressMapper: BaseColumnType[Bech32Address] =
     MappedColumnType
-      .base[Bech32Address, String](_.value, Bech32Address.fromStringExn)
+      .base[Bech32Address, String](_.value, Bech32Address.fromString)
 
   implicit val scriptTypeMapper: BaseColumnType[ScriptType] =
     MappedColumnType
-      .base[ScriptType, String](_.toString, ScriptType.fromStringExn)
+      .base[ScriptType, String](_.toString, ScriptType.fromString)
 
   implicit val txMapper: BaseColumnType[Transaction] =
     MappedColumnType.base[Transaction, String](_.hex, Transaction.fromHex)

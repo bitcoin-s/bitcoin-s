@@ -466,7 +466,7 @@ trait ServerJsonModels {
 
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
     try {
-      BitcoinAddress.fromStringExn(js.str)
+      BitcoinAddress.fromString(js.str)
     } catch {
       case _: IllegalArgumentException =>
         throw Value.InvalidData(js, "Expected a valid address")

@@ -579,7 +579,7 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[ScriptType] =
       json
         .validate[String]
-        .map(ScriptType.fromStringExn)
+        .map(ScriptType.fromString)
   }
 
   implicit object TestMempoolAcceptResultReads
@@ -691,8 +691,8 @@ object JsonReaders {
 
   implicit val lnHrpReads: Reads[LnHumanReadablePart] = {
     Reads { jsValue =>
-      SerializerUtil.processJsStringOpt(
-        LnHumanReadablePart.fromString(_).toOption)(jsValue)
+      SerializerUtil.processJsStringOpt(LnHumanReadablePart.fromStringOpt(_))(
+        jsValue)
     }
   }
 
