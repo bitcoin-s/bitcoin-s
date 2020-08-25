@@ -1,7 +1,10 @@
 package org.bitcoins.testkit.core.gen
 
-import org.bitcoins.core.protocol.BigSizeUInt
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.wallet.fee.SatoshisPerKW
+import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.scalacheck.Gen
 
 trait TLVGen {
@@ -41,12 +44,76 @@ trait TLVGen {
     NumberGenerator.bytevector.map(PongTLV.forIgnored)
   }
 
+  def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
+    for {
+      numOutcomes <- Gen.choose(2, 10)
+      outcomes <-
+        Gen.listOfN(numOutcomes, CryptoGenerators.sha256Digest.map(_.flip))
+      totalInput <-
+        Gen
+          .choose(numOutcomes + 1, Long.MaxValue)
+          .map(Satoshis.apply)
+      (contractInfo, _) =
+        DLCTestUtil.genContractInfos(outcomes.toVector, totalInput)
+    } yield {
+      ContractInfoV0TLV(contractInfo.outcomeValueMap)
+    }
+  }
+
+  def oracleInfoV0TLV: Gen[OracleInfoV0TLV] = {
+    for {
+      pubKey <- CryptoGenerators.schnorrPublicKey
+      rValue <- CryptoGenerators.schnorrNonce
+    } yield OracleInfoV0TLV(pubKey, rValue)
+  }
+
+  def fundingInputTempTLV: Gen[FundingInputTempTLV] = {
+    TransactionGenerators.outputReference.map(FundingInputTempTLV.apply)
+  }
+
+  def dLCOfferTLV: Gen[DLCOfferTLV] = {
+    for {
+      contractFlags <- NumberGenerator.byte
+      chainHash <- CryptoGenerators.sha256DigestBE
+      contractInfo <- contractInfoV0TLV
+      oracleInfo <- oracleInfoV0TLV
+      fundingPubKey <- CryptoGenerators.publicKey
+      (payoutSPK, _) <- ScriptGenerators.scriptPubKey
+      totalCollateralSatoshis <- CurrencyUnitGenerator.positiveSatoshis
+      fundingInputs <- Gen.listOf(fundingInputTempTLV)
+      (changeSPK, _) <- ScriptGenerators.scriptPubKey
+      feeRatePerKW <-
+        CurrencyUnitGenerator.positiveSatoshis.map(SatoshisPerKW.apply)
+      contractMaturityBound <- NumberGenerator.uInt32s.map(BlockTimeStamp.apply)
+      contractTimeout <- NumberGenerator.uInt32s.map(BlockTimeStamp.apply)
+    } yield {
+      DLCOfferTLV(
+        contractFlags,
+        chainHash,
+        contractInfo,
+        oracleInfo,
+        fundingPubKey,
+        payoutSPK,
+        totalCollateralSatoshis,
+        fundingInputs.toVector,
+        changeSPK,
+        feeRatePerKW,
+        contractMaturityBound,
+        contractTimeout
+      )
+    }
+  }
+
   def tlv: Gen[TLV] = {
     Gen.oneOf(
       unknownTLV,
       errorTLV,
       pingTLV,
-      pongTLV
+      pongTLV,
+      contractInfoV0TLV,
+      oracleInfoV0TLV,
+      fundingInputTempTLV,
+      dLCOfferTLV
     )
   }
 }

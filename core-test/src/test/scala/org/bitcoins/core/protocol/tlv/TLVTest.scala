@@ -41,4 +41,32 @@ class TLVTest extends BitcoinSUnitTest {
       assert(TLV(pong.bytes) == pong)
     }
   }
+
+  "ContractInfoV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.contractInfoV0TLV) { contractInfo =>
+      assert(ContractInfoV0TLV(contractInfo.bytes) == contractInfo)
+      assert(TLV(contractInfo.bytes) == contractInfo)
+    }
+  }
+
+  "OracleInfoV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.oracleInfoV0TLV) { oracleInfo =>
+      assert(OracleInfoV0TLV(oracleInfo.bytes) == oracleInfo)
+      assert(TLV(oracleInfo.bytes) == oracleInfo)
+    }
+  }
+
+  "FundingInputTempTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.fundingInputTempTLV) { fundingInput =>
+      assert(FundingInputTempTLV(fundingInput.bytes) == fundingInput)
+      assert(TLV(fundingInput.bytes) == fundingInput)
+    }
+  }
+
+  "DLCOfferTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.dLCOfferTLV) { offer =>
+      assert(DLCOfferTLV(offer.bytes) == offer)
+      assert(TLV(offer.bytes) == offer)
+    }
+  }
 }

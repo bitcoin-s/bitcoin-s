@@ -21,6 +21,7 @@ import org.bitcoins.crypto.{
   SchnorrNonce,
   SchnorrPublicKey,
   Sha256Digest,
+  Sha256DigestBE,
   Sha256Hash160Digest
 }
 import org.scalacheck.Gen
@@ -246,6 +247,10 @@ sealed abstract class CryptoGenerators {
       bytes <- NumberGenerator.bytevector
       digest = CryptoUtil.sha256(bytes)
     } yield digest
+
+  def sha256DigestBE: Gen[Sha256DigestBE] = {
+    sha256Digest.map(_.flip)
+  }
 
   /** Generates a random [[DoubleSha256Digest DoubleSha256Digest]] */
   def doubleSha256Digest: Gen[DoubleSha256Digest] =

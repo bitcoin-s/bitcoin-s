@@ -24,7 +24,7 @@ object DLCTestUtil {
       Vector(totalAmount.satoshis, Satoshis.zero)
     } else {
       (0 until size - 2).map { _ =>
-        Satoshis(scala.util.Random.nextInt(totalAmount.satoshis.toLong.toInt))
+        Satoshis(scala.util.Random.nextLong(totalAmount.satoshis.toLong))
       }.toVector :+ totalAmount.satoshis :+ Satoshis.zero
     }
 
