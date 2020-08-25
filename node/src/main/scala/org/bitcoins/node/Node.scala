@@ -207,14 +207,22 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         logger.error(s"Error when writing broadcastable TX to DB", exception)
       case Success(written) =>
         logger.debug(
-          s"Wrote tx=${written.transaction.txIdBE} to broadcastable table")
+          s"Wrote tx=${written.transaction.txIdBE.hex} to broadcastable table")
     }
 
     for {
       _ <- addToDbF
       peerMsgSender <- peerMsgSenderF
-      _ = logger.info(s"Sending out inv for tx=${transaction.txIdBE}")
-      _ <- peerMsgSender.sendInventoryMessage(transaction)
+
+      // Note: This is a privacy leak and should be fixed in the future. Ideally, we should
+      // be using an inventory message to broadcast the transaction to help hide the fact that
+      // this transaction belongs to us. However, currently it is okay for us to use a transaction
+      // message because a Bitcoin-S node currently doesn't have a mempool and only
+      // broadcasts/relays transactions from its own wallet.
+      // See https://developer.bitcoin.org/reference/p2p_networking.html#tx
+      _ =
+        logger.info(s"Sending out tx message for tx=${transaction.txIdBE.hex}")
+      _ <- peerMsgSender.sendTransactionMessage(transaction)
     } yield ()
   }
 
