@@ -79,7 +79,13 @@ Where you can replace the messages `WIN` and `LOSE` to have the oracle sign any 
 
 ## Using the GUI
 
-To first start up the GUI you first need to start your bitcoin-s server, after doing so you can run the gui by doing:
+To first start up the GUI you first need to start your bitcoin-s server and gui with
+
+```bashrc
+sbt bundle/run
+```
+
+or if your bitcoin-s server is already running, you can run the standalone gui with
 
 ```bashrc
 sbt gui/run
