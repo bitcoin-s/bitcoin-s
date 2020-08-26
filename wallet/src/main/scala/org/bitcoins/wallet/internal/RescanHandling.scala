@@ -218,7 +218,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
         startOpt = startOpt,
         endOpt = endOpt)(ExecutionContext.fromExecutor(threadPool))
     } yield {
-      threadPool.shutdown()
       blocks.sortBy(_.blockHeight).map(_.blockHash.flip)
     }
 
@@ -264,7 +263,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
         startHeight = startHeight,
         endHeight = endHeight)
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)
-    } yield filtered.toVector
+    } yield {
+      logger.info(
+        s"Found ${filtered.length} matches from start=${startHeight} to end=${endHeight}")
+      filtered.toVector
+    }
   }
 
   private def findMatches(
