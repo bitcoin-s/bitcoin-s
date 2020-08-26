@@ -213,7 +213,7 @@ case class ContractInfoV0TLV(outcomes: Map[Sha256DigestBE, Satoshis])
   override val value: ByteVector = {
     outcomes.foldLeft(ByteVector.empty) {
       case (bytes, (outcome, amt)) =>
-        bytes ++ outcome.bytes ++ UInt64(amt.toLong).bytes
+        bytes ++ outcome.bytes ++ amt.toUInt64.bytes
     }
   }
 }
@@ -228,7 +228,7 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
 
     while (iter.index < value.length) {
       val outcome = Sha256DigestBE(iter.take(32))
-      val amt = Satoshis(UInt64(iter.takeBits(64)).toLong)
+      val amt = Satoshis(UInt64(iter.takeBits(64)))
       builder.+=(outcome -> amt)
     }
 
@@ -361,11 +361,11 @@ case class DLCOfferTLV(
       oracleInfo.bytes ++
       fundingPubKey.bytes ++
       payoutSPK.bytes ++
-      UInt64(totalCollateralSatoshis.toLong).bytes ++
+      totalCollateralSatoshis.toUInt64.bytes ++
       UInt16(fundingInputs.length).bytes ++
       fundingInputs.foldLeft(ByteVector.empty)(_ ++ _.bytes) ++
       changeSPK.bytes ++
-      UInt64(feeRatePerKW.toLong).bytes ++
+      feeRatePerKW.currencyUnit.satoshis.toUInt64.bytes ++
       contractMaturityBound.toUInt32.bytes ++
       contractTimeout.toUInt32.bytes
   }
@@ -386,7 +386,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
     val fundingPubKey = ECPublicKey(iter.take(33))
     val payoutSPK = ScriptPubKey(iter.current)
     iter.skip(payoutSPK)
-    val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)).toLong)
+    val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)))
     val numFundingInputs = UInt16(iter.takeBits(16))
     val fundingInputs = (0 until numFundingInputs.toInt).toVector.map { _ =>
       val fundingInput = FundingInputTempTLV.fromBytes(iter.current)
@@ -395,7 +395,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
     }
     val changeSPK = ScriptPubKey(iter.current)
     iter.skip(changeSPK)
-    val feeRatePerKW = SatoshisPerKW(Satoshis(UInt64(iter.takeBits(64)).toLong))
+    val feeRatePerKW = SatoshisPerKW(Satoshis(UInt64(iter.takeBits(64))))
     val contractMaturityBound = BlockTimeStamp(UInt32(iter.takeBits(32)))
     val contractTimeout = BlockTimeStamp(UInt32(iter.takeBits(32)))
 
@@ -430,7 +430,7 @@ case class DLCAcceptTLV(
 
   override val value: ByteVector = {
     tempContractId.bytes ++
-      UInt64(totalCollateralSatoshis.toLong).bytes ++
+      totalCollateralSatoshis.toUInt64.bytes ++
       fundingPubKey.bytes ++
       payoutSPK.bytes ++
       UInt16(fundingInputs.length).bytes ++
@@ -448,7 +448,7 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
     val iter = ValueIterator(value)
 
     val tempContractId = Sha256DigestBE(iter.take(32))
-    val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)).toLong)
+    val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)))
     val fundingPubKey = ECPublicKey(iter.take(33))
     val payoutSPK = ScriptPubKey(iter.current)
     iter.skip(payoutSPK)
