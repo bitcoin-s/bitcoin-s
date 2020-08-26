@@ -38,6 +38,12 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
     parts(1)
   }
 
+  lazy val schemaName: Option[String] =
+    if (driverName == "postgresql")
+      Some(appConfig.moduleName)
+    else
+      None
+
   lazy val username: String = dbConfig.config.getString("db.username")
 
   lazy val password: String = dbConfig.config.getString("db.password")

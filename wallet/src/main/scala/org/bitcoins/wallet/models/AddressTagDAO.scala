@@ -166,7 +166,7 @@ case class AddressTagDAO()(implicit
   }
 
   class AddressTagTable(t: Tag)
-      extends Table[AddressTagDb](t, "wallet_address_tags") {
+      extends Table[AddressTagDb](t, schemaName, "wallet_address_tags") {
 
     def address: Rep[BitcoinAddress] = column[BitcoinAddress]("address")
 

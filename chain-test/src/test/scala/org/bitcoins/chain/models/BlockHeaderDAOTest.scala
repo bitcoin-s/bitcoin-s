@@ -244,7 +244,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       bh.height == 1
     }
 
-    val foundF = createdF.flatMap(created => blockHeaderDAO.find(f))
+    val foundF = createdF.flatMap(_ => blockHeaderDAO.find(f))
 
     for {
       created <- createdF

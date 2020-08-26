@@ -17,8 +17,9 @@ trait TxCRUDComponent[DbEntryType <: TxDB] {
 
   abstract class TxTable[DbEntryType <: TxDB](
       tag: profile.api.Tag,
+      schemaName: Option[String],
       tableName: String)
-      extends Table[DbEntryType](tag, tableName) {
+      extends Table[DbEntryType](tag, schemaName, tableName) {
     def txIdBE: Rep[DoubleSha256DigestBE]
   }
 }
@@ -89,7 +90,7 @@ case class TransactionDAO()(implicit
   override val table = TableQuery[TransactionTable]
 
   class TransactionTable(tag: Tag)
-      extends TxTable[TransactionDb](tag, "tx_table") {
+      extends TxTable[TransactionDb](tag, schemaName, "tx_table") {
 
     def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.Unique)
 

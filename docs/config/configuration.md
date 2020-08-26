@@ -230,14 +230,26 @@ bitcoin-s {
     common {
         profile = "slick.jdbc.PostgresProfile$"
         db {
+            driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/database"
-            driver = "org.postgresql.Driver"
             username = "user"
             password = "topsecret"
+            numThreads = 5
         }
     }
+
+    chain.profile = ${bitcoin-s.common.profile}
+    chain.db = ${bitcoin-s.common.db}
+ 
+    node.profile = ${bitcoin-s.common.profile}
+    node.db = ${bitcoin-s.common.db}
+    
+    wallet.profile = ${bitcoin-s.common.profile}
+    wallet.db = ${bitcoin-s.common.db}
 }
 ```
+
+The database driver will create a separate SQL namespace for each sub-project: `chain`, `node` and `wallet`.
 
 Also you can use mix databases and drivers in one configuration. For example,
 This configuration file enables Sqlite for `node` project (it's default, so its configuration 
@@ -248,8 +260,8 @@ bitcoin-s {
     chain {
         profile = "slick.jdbc.PostgresProfile$"
         db {
+            driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/chaindb"
-            driver = "org.postgresql.Driver"
             username = "user"
             password = "topsecret"
         }
@@ -257,8 +269,8 @@ bitcoin-s {
     wallet {
         profile = "slick.jdbc.PostgresProfile$"
         db {
+            driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/walletdb"
-            driver = "org.postgresql.Driver"
             username = "user"
             password = "topsecret"
         }
