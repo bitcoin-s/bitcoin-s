@@ -231,11 +231,19 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             url = "jdbc:postgresql://localhost:5432/database"
-            driver = "org.postgresql.Driver"
             username = "user"
             password = "topsecret"
         }
     }
+
+    chain.profile = ${bitcoin-s.common.profile}
+    chain.db = ${bitcoin-s.common.db}
+ 
+    node.profile = ${bitcoin-s.common.profile}
+    node.db = ${bitcoin-s.common.db}
+    
+    wallet.profile = ${bitcoin-s.common.profile}
+    wallet.db = ${bitcoin-s.common.db}
 }
 ```
 
@@ -251,7 +259,6 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             url = "jdbc:postgresql://localhost:5432/chaindb"
-            driver = "org.postgresql.Driver"
             username = "user"
             password = "topsecret"
         }
@@ -260,7 +267,6 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             url = "jdbc:postgresql://localhost:5432/walletdb"
-            driver = "org.postgresql.Driver"
             username = "user"
             password = "topsecret"
         }
