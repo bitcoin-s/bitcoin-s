@@ -47,8 +47,11 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
 trait TableAutoIncComponent[T <: DbRowAutoInc[T]] { self: CRUDAutoInc[T] =>
   import profile.api._
 
-  abstract class TableAutoInc[T](tag: profile.api.Tag, tableName: String)
-      extends profile.api.Table[T](tag, tableName) {
+  abstract class TableAutoInc[T](
+      tag: profile.api.Tag,
+      schemaName: Option[String],
+      tableName: String)
+      extends profile.api.Table[T](tag, schemaName, tableName) {
     def id: Rep[Long] = column[Long]("id", O.PrimaryKey, O.AutoInc)
   }
 }

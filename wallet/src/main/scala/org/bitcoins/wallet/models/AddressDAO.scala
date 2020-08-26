@@ -309,7 +309,8 @@ case class AddressDAO()(implicit
     * todo: this needs design rework.
     * todo: https://github.com/bitcoin-s/bitcoin-s-core/pull/391#discussion_r274188334
     */
-  class AddressTable(tag: Tag) extends Table[AddressRecord](tag, "addresses") {
+  class AddressTable(tag: Tag)
+      extends Table[AddressRecord](tag, schemaName, "addresses") {
 
     def purpose: Rep[HDPurpose] = column("hd_purpose")
 

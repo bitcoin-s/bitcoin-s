@@ -55,7 +55,9 @@ final case class BroadcastAbleTransactionDAO()(implicit
 
   /** Table over TXs we can broadcast over the P2P network */
   class BroadcastAbleTransactionTable(tag: Tag)
-      extends Table[BroadcastAbleTransaction](tag, "broadcast_elements") {
+      extends Table[BroadcastAbleTransaction](tag,
+                                              schemaName,
+                                              "broadcast_elements") {
     private type Tuple = (DoubleSha256DigestBE, ByteVector)
 
     private val fromTuple: Tuple => BroadcastAbleTransaction = {

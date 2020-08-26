@@ -34,7 +34,7 @@ class ChainSyncTest extends ChainDbUnitTest {
       //let's generate a block on bitcoind
       val block1F =
         bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
-      val newChainHandlerF: Future[ChainApi] = block1F.flatMap { hashes =>
+      val newChainHandlerF: Future[ChainApi] = block1F.flatMap { _ =>
         ChainSync.sync(chainHandler = chainHandler,
                        getBlockHeaderFunc = getBlockHeaderFunc,
                        getBestBlockHashFunc = getBestBlockHashFunc)

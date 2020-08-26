@@ -24,7 +24,9 @@ case class IncomingTransactionDAO()(implicit
   }
 
   class IncomingTransactionTable(tag: Tag)
-      extends TxTable[IncomingTransactionDb](tag, "wallet_incoming_txs") {
+      extends TxTable[IncomingTransactionDb](tag,
+                                             schemaName,
+                                             "wallet_incoming_txs") {
 
     private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
     import mappers._

@@ -10,13 +10,7 @@ import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
-import org.bitcoins.core.api.chain.db.{
-  BlockHeaderDb,
-  BlockHeaderDbHelper,
-  ChainApi,
-  CompactFilterDb,
-  CompactFilterHeaderDb
-}
+import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
@@ -359,8 +353,6 @@ object ChainUnitTest extends ChainVerificationLogger {
     // The height of the first block in the json file
     val OFFSET: Int = FIRST_BLOCK_HEIGHT
 
-    val tableSetupF = ChainUnitTest.setupHeaderTable()
-
     val source =
       scala.io.Source.fromURL(getClass.getResource("/block_headers.json"))
     val arrStr = source.getLines.next
@@ -412,21 +404,20 @@ object ChainUnitTest extends ChainVerificationLogger {
                                                 dbHeaders = dbHeaders,
                                                 batchesSoFar = Vector.empty)
 
-        val chainHandlerF = ChainUnitTest.makeChainHandler()
-
-        val insertedF = tableSetupF.flatMap { _ =>
-          batchedDbHeaders.foldLeft(
+        for {
+          _ <- ChainUnitTest.setupAllTables()
+          chainHandler <- ChainUnitTest.makeChainHandler()
+          _ <- batchedDbHeaders.foldLeft(
             Future.successful[Vector[BlockHeaderDb]](Vector.empty)) {
             case (fut, batch) =>
               for {
                 _ <- fut
-                chainHandler <- chainHandlerF
                 headers <- chainHandler.blockHeaderDAO.createAll(batch)
               } yield headers
           }
+        } yield {
+          chainHandler.blockHeaderDAO
         }
-
-        insertedF.flatMap(_ => chainHandlerF.map(_.blockHeaderDAO))
     }
   }
 
@@ -481,12 +472,6 @@ object ChainUnitTest extends ChainVerificationLogger {
   def destroyBitcoind(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem): Future[Unit] = {
     BitcoindRpcTestUtil.stopServer(bitcoind)
-  }
-
-  /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
-  private def setupHeaderTable()(implicit
-      appConfig: ChainAppConfig): Future[Unit] = {
-    appConfig.createHeaderTable(createIfNotExists = true)
   }
 
   def setupAllTables()(implicit

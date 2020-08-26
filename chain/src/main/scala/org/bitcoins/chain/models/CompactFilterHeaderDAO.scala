@@ -24,7 +24,7 @@ case class CompactFilterHeaderDAO()(implicit
     }
 
   class CompactFilterHeaderTable(tag: Tag)
-      extends Table[CompactFilterHeaderDb](tag, "cfheaders") {
+      extends Table[CompactFilterHeaderDb](tag, schemaName, "cfheaders") {
 
     def hash = column[DoubleSha256DigestBE]("hash", O.PrimaryKey)
 
