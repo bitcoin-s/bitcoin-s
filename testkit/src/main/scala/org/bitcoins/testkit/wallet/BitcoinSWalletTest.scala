@@ -296,7 +296,7 @@ trait BitcoinSWalletTest
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {
       val walletConf = config.walletConf
-      walletConf.initialize().map(_ => walletConf)
+      walletConf.start().map(_ => walletConf)
     }
 
     val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
@@ -411,7 +411,7 @@ object BitcoinSWalletTest extends WalletLogger {
       // any user data
       AppConfig.throwIfDefaultDatadir(walletConfig)
 
-      walletConfig.initialize().flatMap { _ =>
+      walletConfig.start().flatMap { _ =>
         val wallet =
           Wallet(keyManager,
                  nodeApi,

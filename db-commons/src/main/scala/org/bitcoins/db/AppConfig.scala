@@ -10,7 +10,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Future}
 import scala.util.matching.Regex
 import scala.util.{Failure, Properties, Success, Try}
 
@@ -26,17 +26,14 @@ abstract class AppConfig extends LoggerConfig with StartStopAsync[Unit] {
   private val logger = BitcoinSLogger.logger
 
   /**
-    * Initializes this project.
+    * Starts this project.
     * After this future resolves, all operations should be
     * able to be performed correctly.
     *
-    * Initializing may include creating database tables,
-    * making directories or files needed latern or
+    * Starting may include creating database tables,
+    * making directories or files needed later or
     * something else entirely.
     */
-  def initialize()(implicit ec: ExecutionContext): Future[Unit]
-
-  /** Starts the associated application */
   override def start(): Future[Unit]
 
   /** Releases the thread pool associated with this AppConfig's DB */

@@ -32,9 +32,7 @@ case class BitcoinSAppConfig(
 
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[Unit] = {
-    val futures = List(walletConf.initialize(),
-                       nodeConf.initialize(),
-                       chainConf.initialize())
+    val futures = List(walletConf.start(), nodeConf.start(), chainConf.start())
 
     Future.sequence(futures).map(_ => ())
   }

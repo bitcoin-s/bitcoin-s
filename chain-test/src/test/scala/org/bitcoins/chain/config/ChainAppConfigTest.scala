@@ -27,13 +27,13 @@ class ChainAppConfigTest extends ChainUnitTest {
     withChainFixture(test)
 
   it must "initialize our chain project" in { _ =>
-    val isInitF = chainAppConfig.isInitialized()
+    val isInitF = chainAppConfig.isStarted()
 
     for {
       isInit <- isInitF
       _ = assert(!isInit)
-      _ <- chainAppConfig.initialize()
-      isInitAgain <- chainAppConfig.isInitialized()
+      _ <- chainAppConfig.start()
+      isInitAgain <- chainAppConfig.isStarted()
     } yield assert(isInitAgain)
   }
 

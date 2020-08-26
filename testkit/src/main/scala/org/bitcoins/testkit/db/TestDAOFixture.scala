@@ -35,7 +35,7 @@ sealed trait TestDAOFixture
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(
-      build = () => testConfig.initialize().map(_ => TestDAO()),
+      build = () => testConfig.start().map(_ => TestDAO()),
       destroy = () => dropAll()
     )(test)
   }

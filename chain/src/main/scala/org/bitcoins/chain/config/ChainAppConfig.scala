@@ -39,7 +39,7 @@ case class ChainAppConfig(
     * trying to read the genesis block header from our block
     * header table
     */
-  def isInitialized()(implicit ec: ExecutionContext): Future[Boolean] = {
+  def isStarted(): Future[Boolean] = {
     val bhDAO = BlockHeaderDAO()(ec, appConfig)
     val isDefinedOptF = {
       bhDAO.read(chain.genesisBlock.blockHeader.hashBE).map(_.isDefined)
@@ -58,12 +58,12 @@ case class ChainAppConfig(
     * This creates the necessary tables for the chain project
     * and inserts preliminary data like the genesis block header
     */
-  override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
+  override def start(): Future[Unit] = {
     val numMigrations = migrate()
 
     logger.info(s"Applied ${numMigrations} to chain project")
 
-    val isInitF = isInitialized()
+    val isInitF = isStarted()
     isInitF.flatMap { isInit =>
       if (isInit) {
         FutureUtil.unit
@@ -101,9 +101,6 @@ case class ChainAppConfig(
   lazy val forceRecalcChainWork: Boolean =
     config.getBooleanOrElse(s"$moduleName.force-recalc-chainwork",
                             default = false)
-
-  /** Starts the associated application */
-  override def start(): Future[Unit] = FutureUtil.unit
 }
 
 object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {
