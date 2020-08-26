@@ -209,7 +209,13 @@ case class DataMessageHandler(
                        "which is less than max. This means we are synced,",
                        "not requesting more.")
                     .mkString(" "))
-                if (appConfig.nodeType == NodeType.NeutrinoNode && !syncing)
+                // If we are in neutrino mode, we might need to start fetching filters and their headers
+                // if we are syncing we should do this, however, sometimes syncing isn't a good enough check,
+                // so we also check if our cached filter heights have been set as well, if they haven't then
+                // we probably need to sync filters
+                if (
+                  appConfig.nodeType == NodeType.NeutrinoNode && (!syncing || filterHeaderHeightOpt.isEmpty || filterHeightOpt.isEmpty)
+                )
                   sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
                 else
                   Future.successful(syncing)
