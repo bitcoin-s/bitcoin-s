@@ -131,6 +131,9 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         initBlockHeight <- initBlockHeightF
         txInBlockHeight = initBlockHeight + numBlocks
         txInBlockHeightOpt = Some(BlockStamp.BlockHeight(txInBlockHeight))
+        _ <- newTxWallet.clearAllUtxosAndAddresses()
+        zeroBalance <- newTxWallet.getBalance()
+        _ = assert(zeroBalance == Satoshis.zero)
         _ <- newTxWallet.rescanNeutrinoWallet(startOpt = txInBlockHeightOpt,
                                               endOpt = None,
                                               addressBatchSize =
