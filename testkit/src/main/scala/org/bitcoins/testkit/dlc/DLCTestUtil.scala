@@ -3,6 +3,7 @@ package org.bitcoins.testkit.dlc
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, FundingSignatures}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.crypto.{CryptoUtil, Sha256DigestBE}
 import org.bitcoins.testkit.util.BytesUtil
 import scodec.bits.ByteVector
@@ -24,7 +25,7 @@ object DLCTestUtil {
       Vector(totalAmount.satoshis, Satoshis.zero)
     } else {
       (0 until size - 2).map { _ =>
-        Satoshis(scala.util.Random.nextLong(totalAmount.satoshis.toLong))
+        Satoshis(NumberUtil.randomLong(totalAmount.satoshis.toLong))
       }.toVector :+ totalAmount.satoshis :+ Satoshis.zero
     }
 
