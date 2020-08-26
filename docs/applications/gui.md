@@ -5,7 +5,8 @@ title: GUI
 
 
 ## Bitcoin-S Graphical User Interface
-There is now a GUI built using [scalafx](https://www.scalafx.org/) to allow users who do not wish to use the [command line interface](cli.md) to interact with a Bitcoin-S wallet. This GUI is currently very minimal and looks something like this:
+There is now a GUI built using [scalafx](https://www.scalafx.org/) to allow users who do not wish to use the [command line interface](cli.md) to interact with a Bitcoin-S wallet.
+This GUI is currently very minimal and looks something like this:
 
 ![](gui-snapshot.png)
 
@@ -13,7 +14,22 @@ At the time of writing this document, creating addresses and sending Bitcoin are
 
 ### Running the GUI
 
-The GUI will only function properly if it can connect to the [bitcoin-s server](server.md) which must be running in the background before running the GUI.
+> It is required to use java11 to run the GUI
+
+There are two ways to run the GUI
+
+#### Bundled version (easy)
+
+This command will start both the [bitcoin-s server](server.md) and the GUI at the same time
+
+```bashrc
+sbt bundle/run
+```
+
+#### Standalone version (advanced)
+
+The GUI will only function properly if it can connect to the [bitcoin-s server](server.md) which must be
+running in the background before running the GUI.
 
 To run the gui, simply execute
 
@@ -21,7 +37,7 @@ To run the gui, simply execute
 sbt gui/run
 ```
 
-alternatively the gui can be built into an executable using the [sbt native packager](https://www.scala-sbt.org/sbt-native-packager/).
+The gui can be built into an executable using the [sbt native packager](https://www.scala-sbt.org/sbt-native-packager/).
 
 ### ScalaFX
 
