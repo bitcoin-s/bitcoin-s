@@ -97,8 +97,8 @@ implicit val chainConfig = ChainAppConfig(datadir, config)
 // databases for managing both chain state
 // and wallet state
 val configF: Future[Unit] = for {
-    _ <- walletConfig.initialize()
-    _ <- chainConfig.initialize()
+    _ <- walletConfig.start()
+    _ <- chainConfig.start()
 } yield ()
 
 val bitcoindInstance = BitcoindInstance.fromDatadir()

@@ -22,7 +22,7 @@ trait NodeDAOFixture extends NodeUnitTest {
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => {
                   nodeConfig
-                    .initialize()
+                    .start()
                     .map(_ => daos)
                 },
                 destroy = () => destroyAppConfig(nodeConfig))(test)
