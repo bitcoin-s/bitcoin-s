@@ -108,28 +108,6 @@ git checkout adaptor-dlc
 git submodule update
 ```
 
-If you want to use the end-to-end DLC client you will need to checkout a separate branch instead:
-
-```bashrc
-git fetch origin pull/1389/head:end-to-end-dlc
-git checkout end-to-end-dlc
-git submodule update
-```
-
-if you are using the end-to-end DLC client you will need to make sure eclair is correctly paired with your bitcoind.
-You will also need to add an eclair section to your `bitcoin-s.conf`, this needs to be placed inside of the `bitcoin-s` module.
-
-```
-eclair {
-	enabled = true
-        datadir = ${HOME}/.eclair
-        bitcoind {
-            version = "v0.18.99" #needs to be v0.18.99 for neutrino
-            datadir = ${HOME}/.bitcoin
-        }
-    }
-```
-
 and then finally test that `Secp256k1Context.isEnabled()` as in Step 2.
 
 ## Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)
