@@ -264,14 +264,25 @@ PostgreSQL database for all project you need to add following into your config f
     common {
        <span class="hljs-built_in"> profile </span>= <span class="hljs-string">"slick.jdbc.PostgresProfile$"</span>
         db {
+            driver = org.postgresql.Driver
             url = <span class="hljs-string">"jdbc:postgresql://localhost:5432/database"</span>
-            driver = <span class="hljs-string">"org.postgresql.Driver"</span>
             username = <span class="hljs-string">"user"</span>
             password = <span class="hljs-string">"topsecret"</span>
+            numThreads = 5
         }
     }
+
+    chain.profile = <span class="hljs-variable">${bitcoin-s.common.profile}</span>
+    chain.db = <span class="hljs-variable">${bitcoin-s.common.db}</span>
+ 
+    node.profile = <span class="hljs-variable">${bitcoin-s.common.profile}</span>
+    node.db = <span class="hljs-variable">${bitcoin-s.common.db}</span>
+    
+    wallet.profile = <span class="hljs-variable">${bitcoin-s.common.profile}</span>
+    wallet.db = <span class="hljs-variable">${bitcoin-s.common.db}</span>
 }
 </code></pre>
+<p>The database driver will create a separate SQL namespace for each sub-project: <code>chain</code>, <code>node</code> and <code>wallet</code>.</p>
 <p>Also you can use mix databases and drivers in one configuration. For example,
 This configuration file enables Sqlite for <code>node</code> project (it's default, so its configuration
 is omitted), and <code>walletdb</code> and <code>chaindb</code> PostgreSQL databases for <code>wallet</code> and <code>chain</code> projects:</p>
@@ -279,8 +290,8 @@ is omitted), and <code>walletdb</code> and <code>chaindb</code> PostgreSQL datab
     chain {
        <span class="hljs-built_in"> profile </span>= <span class="hljs-string">"slick.jdbc.PostgresProfile$"</span>
         db {
+            driver = org.postgresql.Driver
             url = <span class="hljs-string">"jdbc:postgresql://localhost:5432/chaindb"</span>
-            driver = <span class="hljs-string">"org.postgresql.Driver"</span>
             username = <span class="hljs-string">"user"</span>
             password = <span class="hljs-string">"topsecret"</span>
         }
@@ -288,8 +299,8 @@ is omitted), and <code>walletdb</code> and <code>chaindb</code> PostgreSQL datab
     wallet {
        <span class="hljs-built_in"> profile </span>= <span class="hljs-string">"slick.jdbc.PostgresProfile$"</span>
         db {
+            driver = org.postgresql.Driver
             url = <span class="hljs-string">"jdbc:postgresql://localhost:5432/walletdb"</span>
-            driver = <span class="hljs-string">"org.postgresql.Driver"</span>
             username = <span class="hljs-string">"user"</span>
             password = <span class="hljs-string">"topsecret"</span>
         }
