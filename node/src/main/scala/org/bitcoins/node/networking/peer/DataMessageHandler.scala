@@ -7,7 +7,7 @@ import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.bitcoins.node.{NodeCallbacks, P2PLogger}
+import org.bitcoins.node.{NodeCallbacks, NodeType, P2PLogger}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -180,7 +180,7 @@ case class DataMessageHandler(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainApi.processHeaders(headers)
 
-        if (appConfig.isSPVEnabled) {
+        if (appConfig.nodeType == NodeType.SpvNode) {
           logger.trace(s"Requesting data for headers=${headers.length}")
           peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgFilteredBlock,
                                            headers.map(_.hash): _*)
@@ -209,7 +209,7 @@ case class DataMessageHandler(
                        "which is less than max. This means we are synced,",
                        "not requesting more.")
                     .mkString(" "))
-                if (appConfig.isNeutrinoEnabled && !syncing)
+                if (appConfig.nodeType == NodeType.NeutrinoNode && !syncing)
                   sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
                 else
                   Future.successful(syncing)
@@ -335,9 +335,12 @@ case class DataMessageHandler(
     val getData = GetDataMessage(invMsg.inventories.map {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
         // only request the merkle block if we are spv enabled
-        if (appConfig.isSPVEnabled) {
-          Inventory(TypeIdentifier.MsgFilteredBlock, hash)
-        } else Inventory(TypeIdentifier.MsgBlock, hash)
+        appConfig.nodeType match {
+          case NodeType.SpvNode =>
+            Inventory(TypeIdentifier.MsgFilteredBlock, hash)
+          case NodeType.NeutrinoNode | NodeType.FullNode =>
+            Inventory(TypeIdentifier.MsgBlock, hash)
+        }
       case other: Inventory => other
     })
     peerMsgSender.sendMsg(getData)
