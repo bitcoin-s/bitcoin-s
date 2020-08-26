@@ -55,8 +55,8 @@ case class NeutrinoNode(
     for {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
-      filterHeaderCount <- chainApi.getFilterHeaderCount()
-      filterCount <- chainApi.getFilterCount()
+      filterHeaderCount <- chainApi.getFilterHeaderCount
+      filterCount <- chainApi.getFilterCount
       peerMsgSender <- peerMsgSenderF
     } yield {
       // Get all of our cached headers in case of a reorg

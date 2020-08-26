@@ -355,7 +355,7 @@ case class ChainHandler(
     blockHeaderDAO.getAtHeight(height)
 
   /** @inheritdoc */
-  override def getFilterHeaderCount(): Future[Int] = {
+  override def getFilterHeaderCount: Future[Int] = {
     logger.debug(s"Querying for filter header count")
     filterHeaderDAO.getBestFilterHeader.map {
       case Some(filterHeader) =>
@@ -383,7 +383,7 @@ case class ChainHandler(
     filterHeaderDAO.findByBlockHash(blockHash)
 
   /** @inheritdoc */
-  override def getFilterCount(): Future[Int] = {
+  override def getFilterCount: Future[Int] = {
     logger.debug(s"Querying for filter count")
     filterDAO.getBestFilter.map {
       case Some(filter) =>
