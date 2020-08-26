@@ -5,9 +5,6 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class TLVTest extends BitcoinSUnitTest {
 
-  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    generatorDrivenConfigNewCode
-
   "TLV" must "have serizliation symmetry" in {
     forAll(TLVGen.tlv) { tlv =>
       assert(TLV(tlv.bytes) == tlv)
@@ -63,10 +60,24 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
+  "CETSignaturesV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.cetSignaturesV0TLV) { cetSigs =>
+      assert(CETSignaturesV0TLV(cetSigs.bytes) == cetSigs)
+      assert(TLV(cetSigs.bytes) == cetSigs)
+    }
+  }
+
   "DLCOfferTLV" must "have serialization symmetry" in {
-    forAll(TLVGen.dLCOfferTLV) { offer =>
+    forAll(TLVGen.dlcOfferTLV) { offer =>
       assert(DLCOfferTLV(offer.bytes) == offer)
       assert(TLV(offer.bytes) == offer)
+    }
+  }
+
+  "DLCAcceptTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.dlcAcceptTLV) { accept =>
+      assert(DLCAcceptTLV(accept.bytes) == accept)
+      assert(TLV(accept.bytes) == accept)
     }
   }
 }

@@ -71,7 +71,13 @@ trait TLVGen {
     TransactionGenerators.outputReference.map(FundingInputTempTLV.apply)
   }
 
-  def dLCOfferTLV: Gen[DLCOfferTLV] = {
+  def cetSignaturesV0TLV: Gen[CETSignaturesV0TLV] = {
+    Gen
+      .listOf(CryptoGenerators.adaptorSignature)
+      .map(sigs => CETSignaturesV0TLV(sigs.toVector))
+  }
+
+  def dlcOfferTLV: Gen[DLCOfferTLV] = {
     for {
       contractFlags <- NumberGenerator.byte
       chainHash <- CryptoGenerators.sha256DigestBE
@@ -104,6 +110,28 @@ trait TLVGen {
     }
   }
 
+  def dlcAcceptTLV: Gen[DLCAcceptTLV] = {
+    for {
+      tempContractId <- CryptoGenerators.sha256DigestBE
+      totalCollateralSatoshis <- CurrencyUnitGenerator.positiveSatoshis
+      fundingPubKey <- CryptoGenerators.publicKey
+      (payoutSPK, _) <- ScriptGenerators.scriptPubKey
+      fundingInputs <- Gen.listOf(fundingInputTempTLV)
+      (changeSPK, _) <- ScriptGenerators.scriptPubKey
+      cetSigs <- cetSignaturesV0TLV
+      refundSig <- CryptoGenerators.digitalSignature
+    } yield {
+      DLCAcceptTLV(tempContractId,
+                   totalCollateralSatoshis,
+                   fundingPubKey,
+                   payoutSPK,
+                   fundingInputs.toVector,
+                   changeSPK,
+                   cetSigs,
+                   refundSig)
+    }
+  }
+
   def tlv: Gen[TLV] = {
     Gen.oneOf(
       unknownTLV,
@@ -113,7 +141,9 @@ trait TLVGen {
       contractInfoV0TLV,
       oracleInfoV0TLV,
       fundingInputTempTLV,
-      dLCOfferTLV
+      cetSignaturesV0TLV,
+      dlcOfferTLV,
+      dlcAcceptTLV
     )
   }
 }

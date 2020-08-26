@@ -8,6 +8,8 @@ import org.bitcoins.core.protocol.tlv.TLV.DecodeTLVResult
 import org.bitcoins.core.protocol.transaction.OutputReference
 import org.bitcoins.core.wallet.fee.SatoshisPerKW
 import org.bitcoins.crypto.{
+  ECAdaptorSignature,
+  ECDigitalSignature,
   ECPublicKey,
   Factory,
   NetworkElement,
@@ -58,7 +60,9 @@ object TLV extends Factory[TLV] {
            ContractInfoV0TLV,
            OracleInfoV0TLV,
            FundingInputTempTLV,
-           DLCOfferTLV)
+           CETSignaturesV0TLV,
+           DLCOfferTLV,
+           DLCAcceptTLV)
 
   val knownTypes: Vector[BigSizeUInt] = allFactories.map(_.tpe)
 
@@ -340,5 +344,93 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
       contractMaturityBound,
       contractTimeout
     )
+  }
+}
+
+sealed trait CETSignaturesTLV extends TLV
+
+case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
+    extends CETSignaturesTLV {
+  override val tpe: BigSizeUInt = CETSignaturesV0TLV.tpe
+
+  override val value: ByteVector = {
+    sigs.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+  }
+}
+
+object CETSignaturesV0TLV extends TLVFactory[CETSignaturesV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42776)
+
+  override def fromTLVValue(value: ByteVector): CETSignaturesV0TLV = {
+    val iter = ValueIterator(value)
+
+    val builder = Vector.newBuilder[ECAdaptorSignature]
+
+    while (iter.index < value.length) {
+      val sig = ECAdaptorSignature(iter.take(162))
+      builder.+=(sig)
+    }
+
+    CETSignaturesV0TLV(builder.result())
+  }
+}
+
+case class DLCAcceptTLV(
+    tempContractId: Sha256DigestBE,
+    totalCollateralSatoshis: Satoshis,
+    fundingPubKey: ECPublicKey,
+    payoutSPK: ScriptPubKey,
+    fundingInputs: Vector[FundingInputTLV],
+    changeSPK: ScriptPubKey,
+    cetSignatures: CETSignaturesTLV,
+    refundSignature: ECDigitalSignature)
+    extends TLV {
+  override val tpe: BigSizeUInt = DLCAcceptTLV.tpe
+
+  override val value: ByteVector = {
+    tempContractId.bytes ++
+      UInt64(totalCollateralSatoshis.toLong).bytes ++
+      fundingPubKey.bytes ++
+      payoutSPK.bytes ++
+      UInt16(fundingInputs.length).bytes ++
+      fundingInputs.foldLeft(ByteVector.empty)(_ ++ _.bytes) ++
+      changeSPK.bytes ++
+      cetSignatures.bytes ++
+      refundSignature.bytes
+  }
+}
+
+object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42778)
+
+  override def fromTLVValue(value: ByteVector): DLCAcceptTLV = {
+    val iter = ValueIterator(value)
+
+    val tempContractId = Sha256DigestBE(iter.take(32))
+    val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)).toLong)
+    val fundingPubKey = ECPublicKey(iter.take(33))
+    val payoutSPK = ScriptPubKey(iter.current)
+    iter.skip(payoutSPK)
+    val numFundingInputs = UInt16(iter.takeBits(16))
+    val fundingInputs = (0 until numFundingInputs.toInt).toVector.map { _ =>
+      val fundingInput = FundingInputTempTLV.fromBytes(iter.current)
+      iter.skip(fundingInput)
+      fundingInput
+    }
+    val changeSPK = ScriptPubKey(iter.current)
+    iter.skip(changeSPK)
+    val cetSignatures = CETSignaturesV0TLV.fromBytes(iter.current)
+    iter.skip(cetSignatures)
+    val refundSignature = ECDigitalSignature(iter.current)
+    iter.skip(refundSignature)
+
+    DLCAcceptTLV(tempContractId,
+                 totalCollateralSatoshis,
+                 fundingPubKey,
+                 payoutSPK,
+                 fundingInputs,
+                 changeSPK,
+                 cetSignatures,
+                 refundSignature)
   }
 }
