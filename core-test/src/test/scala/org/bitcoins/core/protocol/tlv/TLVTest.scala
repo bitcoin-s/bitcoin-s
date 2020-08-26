@@ -67,6 +67,13 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
+  "FundingSignaturesV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.fundingSignaturesV0TLV) { fundingSigs =>
+      assert(FundingSignaturesV0TLV(fundingSigs.bytes) == fundingSigs)
+      assert(TLV(fundingSigs.bytes) == fundingSigs)
+    }
+  }
+
   "DLCOfferTLV" must "have serialization symmetry" in {
     forAll(TLVGen.dlcOfferTLV) { offer =>
       assert(DLCOfferTLV(offer.bytes) == offer)
@@ -78,6 +85,13 @@ class TLVTest extends BitcoinSUnitTest {
     forAll(TLVGen.dlcAcceptTLV) { accept =>
       assert(DLCAcceptTLV(accept.bytes) == accept)
       assert(TLV(accept.bytes) == accept)
+    }
+  }
+
+  "DLCSignTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.dlcSignTLV) { sign =>
+      assert(DLCSignTLV(sign.bytes) == sign)
+      assert(TLV(sign.bytes) == sign)
     }
   }
 }

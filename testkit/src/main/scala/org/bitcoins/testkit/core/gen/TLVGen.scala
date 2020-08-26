@@ -77,6 +77,16 @@ trait TLVGen {
       .map(sigs => CETSignaturesV0TLV(sigs.toVector))
   }
 
+  def fundingSignaturesV0TLV: Gen[FundingSignaturesV0TLV] = {
+    for {
+      numInputs <- Gen.choose(1, 10)
+      outPoints <- Gen.listOfN(numInputs, TransactionGenerators.outPoint)
+      sigs <- Gen.listOfN(numInputs, CryptoGenerators.digitalSignature)
+    } yield {
+      FundingSignaturesV0TLV(outPoints.zip(sigs).toMap)
+    }
+  }
+
   def dlcOfferTLV: Gen[DLCOfferTLV] = {
     for {
       contractFlags <- NumberGenerator.byte
@@ -132,6 +142,17 @@ trait TLVGen {
     }
   }
 
+  def dlcSignTLV: Gen[DLCSignTLV] = {
+    for {
+      contractId <- CryptoGenerators.sha256DigestBE
+      cetSigs <- cetSignaturesV0TLV
+      refundSig <- CryptoGenerators.digitalSignature
+      fundingSigs <- fundingSignaturesV0TLV
+    } yield {
+      DLCSignTLV(contractId, cetSigs, refundSig, fundingSigs)
+    }
+  }
+
   def tlv: Gen[TLV] = {
     Gen.oneOf(
       unknownTLV,
@@ -142,8 +163,10 @@ trait TLVGen {
       oracleInfoV0TLV,
       fundingInputTempTLV,
       cetSignaturesV0TLV,
+      fundingSignaturesV0TLV,
       dlcOfferTLV,
-      dlcAcceptTLV
+      dlcAcceptTLV,
+      dlcSignTLV
     )
   }
 }
