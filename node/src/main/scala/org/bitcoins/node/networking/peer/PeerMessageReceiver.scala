@@ -115,9 +115,7 @@ class PeerMessageReceiver(
       s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} state=${state} ")
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
-        val peerMsgRecvF =
-          handleControlPayload(payload = controlPayload, sender = peerMsgSender)
-        peerMsgRecvF
+        handleControlPayload(payload = controlPayload, sender = peerMsgSender)
       case dataPayload: DataPayload =>
         handleDataPayload(payload = dataPayload, sender = peerMsgSender)
     }
@@ -136,10 +134,7 @@ class PeerMessageReceiver(
       sender: PeerMessageSender): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    val newDataMessageHandlerF =
-      dataMessageHandler.handleDataPayload(payload, sender)
-
-    newDataMessageHandlerF.map { handler =>
+    dataMessageHandler.handleDataPayload(payload, sender).map { handler =>
       new PeerMessageReceiver(handler, state, peer, callbacks)
     }
   }

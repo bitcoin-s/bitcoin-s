@@ -147,10 +147,9 @@ case class ChainHandler(
           throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
-    val blockCountF = getBlockCount()
     for {
       startHeight <- startHeightF
-      blockCount <- blockCountF
+      blockCount <- getBlockCount
       stopHeight =
         if (startHeight - 1 + batchSize > blockCount) blockCount
         else startHeight - 1 + batchSize
@@ -169,7 +168,6 @@ case class ChainHandler(
   override def nextFilterHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
-    val filterHeaderCountF = getFilterHeaderCount
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
     } else {
@@ -182,7 +180,7 @@ case class ChainHandler(
 
     for {
       startHeight <- startHeightF
-      filterHeaderCount <- filterHeaderCountF
+      filterHeaderCount <- getFilterHeaderCount
       stopHeight =
         if (startHeight - 1 + batchSize > filterHeaderCount)
           filterHeaderCount
@@ -272,22 +270,12 @@ case class ChainHandler(
           (blockHash, messages.head)
       }
 
-    val sizeCheckF = for {
-      filterHeaders <- filterHeadersF
-      _ = logger.debug(s"processFilters: filterHeaders=${filterHeaders}")
-
-      _ <-
-        if (filterHeaders.size != messages.size) {
-          Future.failed(new UnknownBlockHash(
-            s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}"))
-        } else {
-          FutureUtil.unit
-        }
-    } yield ()
-
     for {
       filterHeaders <- filterHeadersF
-      _ <- sizeCheckF
+      _ = logger.debug(s"processFilters: filterHeaders=$filterHeaders")
+      _ = require(
+        filterHeaders.size == messages.size,
+        s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}")
       compactFilterDbs <- Future {
         filterHeaders.map { filterHeader =>
           findFilterDbFromMessage(filterHeader, messagesByBlockHash)

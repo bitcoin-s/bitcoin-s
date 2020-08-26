@@ -48,7 +48,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
 
-  lazy val txDAO = BroadcastAbleTransactionDAO()
+  lazy val txDAO: BroadcastAbleTransactionDAO = BroadcastAbleTransactionDAO()
 
   /** This is constructing a chain api from disk every time we call this method
     * This involves database calls which can be slow and expensive to construct
