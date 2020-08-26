@@ -17,7 +17,7 @@ ready. Use at your own risk, and without too much money depending on it.
 
 The bitcoin-s wallet is a scalable way for individuals up to large bitcoin exchanges to safely and securely store their bitcoin in a scalable way.
 
-All key interactions are delegated to the [key-manager](key-manager.md) which is a minimal dependecy library to store and use key material.
+All key interactions are delegated to the [key-manager](../key-manager/key-manager.md) which is a minimal dependecy library to store and use key material.
 
 By default, we store the encrypted root key in `$HOME/.bitcoin-s/encrypted-bitcoin-s-seed.json`. This is the seed that is used for each of the wallets on each bitcoin network.
 

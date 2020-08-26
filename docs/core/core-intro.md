@@ -5,13 +5,13 @@ title: Core Module
 
 The `core` module is the core (duh!) functionality of Bitcoin-S. The goal is to provide basic
 data structures that are found in the Bitcoin and Lightning protocols while
-minimizing external depedencies for security purposes. We aim to have an extremely
+minimizing external dependencies for security purposes. We aim to have an extremely
 high level of test coverage in this module to flesh out bugs. We use property based
 testing heavily in this library to ensure high quality of code.
 
 ## The basics
 
-Every bitcoin protocol data structure (and some other data structures) extends [`NetworkElement`](/api/org/bitcoins/core/protocol/NetworkElement). `NetworkElement` provides methods to convert the data structure to hex or byte representation. When paired with [`Factory`](/api/org/bitcoins/core/util/Factory) we can easily serialize and deserialize data structures.
+Every bitcoin protocol data structure (and some other data structures) extends [`NetworkElement`](/api/org/bitcoins/crypto/NetworkElement). `NetworkElement` provides methods to convert the data structure to hex or byte representation. When paired with [`Factory`](/api/org/bitcoins/crypto/Factory) we can easily serialize and deserialize data structures.
 
 Most data structures have companion objects that extends `Factory` to be able to easily create protocol data structures. An example of this is the [`ScriptPubKey`](/api/org/bitcoins/core/protocol/script/ScriptPubKey) companion object. You can use this companion object to create a `ScriptPubKey` from a hex string or a byte array.
 
@@ -43,7 +43,7 @@ val tx = Transaction.fromHex(hexTx)
 tx.hex == hexTx
 ```
 
-This gives us an example of a hex encoded Bitcoin transaction that is deserialized to a native Scala object called a [`Transaction`](/api/org/bitcoins/core/protocol/transaction/Transaction). You could also serialize the transaction to bytes using `tx.bytes` instead of `tx.hex`. These methods are available on every data structure that extends NetworkElement, like [`ECPrivateKey`](/api/org/bitcoins/core/crypto/ECPrivateKey), [`ScriptPubKey`](/api/org/bitcoins/core/protocol/script/ScriptPubKey), [`ScriptWitness`](/api/org/bitcoins/core/protocol/script/ScriptWitness), and [`Block`](/api/org/bitcoins/core/protocol/blockchain/Block).
+This gives us an example of a hex encoded Bitcoin transaction that is deserialized to a native Scala object called a [`Transaction`](/api/org/bitcoins/core/protocol/transaction/Transaction). You could also serialize the transaction to bytes using `tx.bytes` instead of `tx.hex`. These methods are available on every data structure that extends NetworkElement, like [`ECPrivateKey`](/api/org/bitcoins/crypto/ECPrivateKey), [`ScriptPubKey`](/api/org/bitcoins/core/protocol/script/ScriptPubKey), [`ScriptWitness`](/api/org/bitcoins/core/protocol/script/ScriptWitness), and [`Block`](/api/org/bitcoins/core/protocol/blockchain/Block).
 
 #### Generating a BIP39 mnemonic phrase and an `xpriv`
 
@@ -53,13 +53,13 @@ See our [HD example](hd-keys)
 
 Bitcoin Core supports building unsigned transactions and then signing them with a set of private keys. The first important thing to look at is [`UTXOSpendingInfo`](/api/org/bitcoins/core/wallet/utxo/UTXOSpendingInfo). This contains all of the information needed to create a validly signed [`ScriptSignature`](/api/org/bitcoins/core/protocol/script/ScriptSignature) that spends this output.
 
-Our [`TxBuilder`](/api/org/bitcoins/core/wallet/builder/TxBuilder) class requires you to provide the following:
+Our [`RawTxBuilder`](/api/org/bitcoins/core/wallet/builder/RawTxBuilder) class requires you to provide the following:
 
 1. `destinations` - the places we are sending bitcoin to. These are [TransactionOutputs](/api/org/bitcoins/core/protocol/transaction/TransactionOutput) you are sending coins too
-2. `utxos` - these are the [UTXOs](/api/org/bitcoins/core/wallet/utxo/UTXOSpendingInfo) used to fund your transaction. These must exist in your wallet, and you must know how to spend them (i.e. have the private key)
+2. `utxos` - these are the [InputSigningInfo](/api/org/bitcoins/core/wallet/utxo/InputSigningInfo) used to fund your transaction. These must exist in your wallet, and you must know how to spend them (i.e. have the private key)
 3. `feeRate` - the fee rate you want to pay for this transaction
 4. `changeSPK` - where the change (i.e. `creditingAmount - destinationAmount - fee`) from the transaction will be sent
-5. `network` - the network(/api/org/bitcoins/core/config/NetworkParameters) we are transacting on
+5. `network` - the [network](/api/org/bitcoins/core/config/NetworkParameters) we are transacting on
 
 After providing this information, you can generate a validly signed bitcoin transaction by calling the `sign` method.
 

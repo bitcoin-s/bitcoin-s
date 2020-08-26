@@ -92,7 +92,6 @@ resolver in your `build.sbt`:
 
 ```sbt
 resolvers += Resolver.sonatypeRepo("snapshots")
-${List.fill(3)("`").mkString /* Hacky solution to get around nesting backticks */ }
 ```
 
 The official maven repo for releases is
