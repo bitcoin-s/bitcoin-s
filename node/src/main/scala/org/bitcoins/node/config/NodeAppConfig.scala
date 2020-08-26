@@ -7,9 +7,9 @@ import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
+import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -56,21 +56,8 @@ case class NodeAppConfig(
     FutureUtil.unit
   }
 
-  /**
-    * Whether or not SPV (simplified payment verification)
-    * mode is enabled.
-    */
-  lazy val isSPVEnabled: Boolean = config
-    .getString("node.mode")
-    .toLowerCase == "spv"
-
-  /**
-    * Whether or not Neutrino (compact block filters) mode
-    * is enabled
-    */
-  lazy val isNeutrinoEnabled: Boolean = config
-    .getString("node.mode")
-    .toLowerCase == "neutrino"
+  lazy val nodeType: NodeType =
+    NodeType.fromString(config.getString("node.mode"))
 
   /**
     * List of peers
@@ -108,13 +95,13 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
       nodeConf: NodeAppConfig,
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
-    if (nodeConf.isSPVEnabled) {
-      Future.successful(SpvNode(peer, nodeConf, chainConf, system))
-    } else if (nodeConf.isNeutrinoEnabled) {
-      Future.successful(NeutrinoNode(peer, nodeConf, chainConf, system))
-    } else {
-      Future.failed(
-        new RuntimeException("Neither Neutrino nor SPV mode is enabled."))
+    nodeConf.nodeType match {
+      case NodeType.SpvNode =>
+        Future.successful(SpvNode(peer, nodeConf, chainConf, system))
+      case NodeType.NeutrinoNode =>
+        Future.successful(NeutrinoNode(peer, nodeConf, chainConf, system))
+      case NodeType.FullNode =>
+        Future.failed(new RuntimeException("Not implemented"))
     }
   }
 }
