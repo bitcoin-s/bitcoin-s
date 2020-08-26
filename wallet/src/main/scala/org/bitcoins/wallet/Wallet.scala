@@ -655,7 +655,7 @@ object Wallet extends WalletLogger {
     // and still have their wallet work
     def createAccountFutures =
       for {
-        _ <- walletAppConfig.initialize()
+        _ <- walletAppConfig.start()
         accounts = HDPurposes.all.map { purpose =>
           //we need to create key manager params for each purpose
           //and then initialize a key manager to derive the correct xpub

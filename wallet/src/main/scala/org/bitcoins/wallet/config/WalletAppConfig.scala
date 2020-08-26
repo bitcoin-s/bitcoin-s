@@ -94,7 +94,7 @@ case class WalletAppConfig(
     requiredConfirmations >= 1,
     s"requiredConfirmations cannot be less than 1, got: $requiredConfirmations")
 
-  override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
+  override def start(): Future[Unit] = {
     logger.debug(s"Initializing wallet setup")
 
     if (Files.notExists(datadir)) {
@@ -181,8 +181,6 @@ case class WalletAppConfig(
       bip39PasswordOpt = bip39PasswordOpt)(this, ec)
   }
 
-  /** Starts the associated application */
-  override def start(): Future[Unit] = FutureUtil.unit
 }
 
 object WalletAppConfig

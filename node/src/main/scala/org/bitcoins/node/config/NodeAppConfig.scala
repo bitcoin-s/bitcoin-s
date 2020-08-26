@@ -47,7 +47,7 @@ case class NodeAppConfig(
     * Ensures correct tables and other required information is in
     * place for our node.
     */
-  override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
+  override def start(): Future[Unit] = {
     logger.debug(s"Initializing node setup")
     val numMigrations = migrate()
 
@@ -69,9 +69,6 @@ case class NodeAppConfig(
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
     strs.map(_.replace("localhost", "127.0.0.1"))
   }
-
-  /** Starts the associated application */
-  override def start(): Future[Unit] = FutureUtil.unit
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
   def createNode(peer: Peer)(
