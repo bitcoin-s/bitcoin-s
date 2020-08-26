@@ -230,9 +230,11 @@ bitcoin-s {
     common {
         profile = "slick.jdbc.PostgresProfile$"
         db {
+            driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/database"
             username = "user"
             password = "topsecret"
+            numThreads = 5
         }
     }
 
@@ -258,6 +260,7 @@ bitcoin-s {
     chain {
         profile = "slick.jdbc.PostgresProfile$"
         db {
+            driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/chaindb"
             username = "user"
             password = "topsecret"
@@ -266,6 +269,7 @@ bitcoin-s {
     wallet {
         profile = "slick.jdbc.PostgresProfile$"
         db {
+            driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/walletdb"
             username = "user"
             password = "topsecret"

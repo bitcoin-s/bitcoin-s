@@ -17,9 +17,9 @@ trait TxCRUDComponent[DbEntryType <: TxDB] {
 
   abstract class TxTable[DbEntryType <: TxDB](
       tag: profile.api.Tag,
-      schema: Option[String],
+      schemaName: Option[String],
       tableName: String)
-      extends Table[DbEntryType](tag, schema, tableName) {
+      extends Table[DbEntryType](tag, schemaName, tableName) {
     def txIdBE: Rep[DoubleSha256DigestBE]
   }
 }
