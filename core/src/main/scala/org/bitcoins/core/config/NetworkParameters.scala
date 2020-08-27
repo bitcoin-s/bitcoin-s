@@ -1,7 +1,7 @@
 package org.bitcoins.core.config
 
 import org.bitcoins.core.protocol.blockchain._
-import org.bitcoins.crypto.StringFactory
+import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
 import scodec.bits.ByteVector
 
 sealed abstract class NetworkParameters {
@@ -167,6 +167,13 @@ object Networks extends StringFactory[NetworkParameters] {
 
   def bytesToNetwork: Map[ByteVector, NetworkParameters] =
     BitcoinNetworks.bytesToNetwork
+
+  def fromChainHash(chainHash: DoubleSha256DigestBE): NetworkParameters = {
+    knownNetworks
+      .find(_.chainParams.genesisBlock.blockHeader.hashBE == chainHash)
+      .getOrElse(throw new IllegalArgumentException(
+        s"$chainHash is not a recognized Chain Hash"))
+  }
 }
 
 object BitcoinNetworks extends StringFactory[BitcoinNetwork] {

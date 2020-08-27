@@ -24,9 +24,8 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.execution._
-import org.bitcoins.dlc.testgen.TestDLCClient
+import org.bitcoins.dlc.testgen.{DLCTestUtil, TestDLCClient}
 import org.bitcoins.dlc.verify.DLCSignatureVerifier
-import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalatest.Assertion
 

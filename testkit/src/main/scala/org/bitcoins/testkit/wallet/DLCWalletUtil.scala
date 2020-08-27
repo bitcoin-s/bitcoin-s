@@ -15,9 +15,9 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.testgen.DLCTestUtil
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import scodec.bits.ByteVector
