@@ -1009,6 +1009,20 @@ case class CompactFilterHeadersMessage(
       acc :+ acc.last.nextHeader(nextFilterHash)
     }
   }
+
+  override def toString: String = {
+    val hashesString = {
+      if (filterHashes.isEmpty) {
+        "empty"
+      } else {
+        s"${filterHashes.head.flip.hex}...${filterHashes.last.flip.hex}"
+      }
+    }
+    s"CompactFilterHeadersMessage(filterType=${filterType}, " +
+      s"previousFilterHeader=${previousFilterHeader.flip.hex}, " +
+      s"stopHash=${stopHash.flip.hex} " +
+      s"filterHeaders=${hashesString})"
+  }
 }
 
 object CompactFilterHeadersMessage
@@ -1065,10 +1079,10 @@ case class CompactFilterCheckPointMessage(
       if (filterHeaders.isEmpty) {
         "empty"
       } else {
-        s"${filterHeaders.head}...${filterHeaders.last}"
+        s"${filterHeaders.head.flip.hex}...${filterHeaders.last.flip.hex}"
       }
     }
-    s"CompactFilterCheckPointMessage(filterType=${filterType}, stopHash=${stopHash}, filterHeaders=${headersString})"
+    s"CompactFilterCheckPointMessage(filterType=${filterType}, stopHash=${stopHash.flip.hex}, filterHeaders=${headersString})"
   }
 }
 
