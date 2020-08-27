@@ -163,16 +163,21 @@ class PeerMessageReceiver(
           case good: Initializing =>
             val newState = good.withVersionMsg(versionMsg)
 
+            // TODO: do not throw error once we have peer discovery
             nodeAppConfig.nodeType match {
               case NodeType.NeutrinoNode =>
                 if (!versionMsg.services.nodeCompactFilters) {
-                  logger.warn(
-                    s"Connected Peer ($peer) does not support compact filters")
+                  val errMsg =
+                    s"Connected Peer ($peer) does not support compact filters"
+                  logger.warn(errMsg)
+                  sys.error(errMsg)
                 }
               case NodeType.SpvNode =>
                 if (!versionMsg.services.nodeBloom) {
-                  logger.warn(
-                    s"Connected Peer ($peer) does not support bloom filters")
+                  val errMsg =
+                    s"Connected Peer ($peer) does not support bloom filters"
+                  logger.warn(errMsg)
+                  sys.error(errMsg)
                 }
               case NodeType.FullNode =>
                 sys.error("Not yet implemented.")
