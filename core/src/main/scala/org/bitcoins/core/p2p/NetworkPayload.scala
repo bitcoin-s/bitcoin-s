@@ -1015,7 +1015,7 @@ case class CompactFilterHeadersMessage(
       if (filterHashes.isEmpty) {
         "empty"
       } else {
-        s"${filterHashes.head}...${filterHashes.last}"
+        s"${filterHashes.head.flip.hex}...${filterHashes.last.flip.hex}"
       }
     }
     s"CompactFilterHeadersMessage(filterType=${filterType}, " +
