@@ -1019,8 +1019,8 @@ case class CompactFilterHeadersMessage(
       }
     }
     s"CompactFilterHeadersMessage(filterType=${filterType}, " +
-      s"previousFilterHeader=${previousFilterHeader}, " +
-      s"stopHash=${stopHash} " +
+      s"previousFilterHeader=${previousFilterHeader.flip.hex}, " +
+      s"stopHash=${stopHash.flip.hex} " +
       s"filterHeaders=${hashesString})"
   }
 }
@@ -1079,10 +1079,10 @@ case class CompactFilterCheckPointMessage(
       if (filterHeaders.isEmpty) {
         "empty"
       } else {
-        s"${filterHeaders.head}...${filterHeaders.last}"
+        s"${filterHeaders.head.flip.hex}...${filterHeaders.last.flip.hex}"
       }
     }
-    s"CompactFilterCheckPointMessage(filterType=${filterType}, stopHash=${stopHash}, filterHeaders=${headersString})"
+    s"CompactFilterCheckPointMessage(filterType=${filterType}, stopHash=${stopHash.flip.hex}, filterHeaders=${headersString})"
   }
 }
 
