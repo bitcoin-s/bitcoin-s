@@ -374,7 +374,21 @@ case class ChainHandler(
 
   /** @inheritdoc */
   override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] = {
-    filterHeaderDAO.getBestFilterHeader
+    val bestFilterHeadersInChains = blockchains.map { blockchain =>
+      filterHeaderDAO.getBestFilterHeaderForHeaders(blockchain.toVector)
+    }
+
+    val filterHeadersOptF: Future[Vector[Option[CompactFilterHeaderDb]]] = {
+      Future.sequence(bestFilterHeadersInChains)
+    }
+
+    for {
+      filterHeaders <- filterHeadersOptF
+      maxHeightOpt = filterHeaders.flatten.maxByOption(_.height)
+    } yield {
+      maxHeightOpt
+    }
+
   }
 
   /** @inheritdoc */

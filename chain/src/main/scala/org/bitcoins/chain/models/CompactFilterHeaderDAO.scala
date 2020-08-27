@@ -1,7 +1,7 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.chain.db.CompactFilterHeaderDb
+import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterHeaderDb}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db.{CRUD, SlickUtil}
@@ -138,6 +138,48 @@ case class CompactFilterHeaderDAO()(implicit
           .run(query.result)
           .map(_.headOption)
     } yield filterOpt
+  }
+
+  def getBestFilterHeaderForHeaders(
+      headers: Vector[BlockHeaderDb]): Future[Option[CompactFilterHeaderDb]] = {
+    val hashes = headers.map(_.hashBE)
+    val join = table
+      .join(blockHeaderTable)
+      .on(_.blockHash === _.hash)
+
+    val maxQuery = join.map(_._2.chainWork).max
+
+    val query = join
+      .filter {
+        case (filterTable, _) =>
+          filterTable.blockHash.inSet(hashes)
+      }
+      .filter(_._2.chainWork === maxQuery)
+      .take(1)
+      .map(_._1)
+
+    for {
+      filterOpt <-
+        safeDatabase
+          .run(query.result)
+          .map(_.headOption)
+    } yield filterOpt
+  }
+
+  def getBetweenHeights(
+      from: Int,
+      to: Int): Future[Vector[CompactFilterHeaderDb]] = {
+    val query = getBetweenHeightsQuery(from, to)
+    safeDatabase.runVec(query)
+  }
+
+  def getBetweenHeightsQuery(
+      from: Int,
+      to: Int): profile.StreamingProfileAction[
+    Seq[CompactFilterHeaderDb],
+    CompactFilterHeaderDb,
+    Effect.Read] = {
+    table.filter(header => header.height >= from && header.height <= to).result
   }
 
 }
