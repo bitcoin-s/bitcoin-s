@@ -132,6 +132,9 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
     override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] =
       Future.successful(None)
 
+    override def getBestFilter: Future[Option[CompactFilterDb]] =
+      Future.successful(None)
+
     override def getFilterHeader(blockHash: DoubleSha256DigestBE): Future[
       Option[CompactFilterHeaderDb]] = Future.successful(None)
 

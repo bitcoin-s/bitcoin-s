@@ -378,6 +378,11 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
+  override def getBestFilter: Future[Option[CompactFilterDb]] = {
+    filterDAO.getBestFilter
+  }
+
+  /** @inheritdoc */
   override def getFilterHeader(
       blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] =
     filterHeaderDAO.findByBlockHash(blockHash)

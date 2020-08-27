@@ -122,6 +122,13 @@ trait ChainApi extends ChainQueryApi {
     */
   def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]]
 
+  /** Finds the "best" filter we have stored in our database
+    * What this means in practice is the latest filter we
+    * have received from our peer.
+    * Returns none if we have no filters in the database
+    */
+  def getBestFilter: Future[Option[CompactFilterDb]]
+
   /**
     * Looks up a compact filter header by its hash.
     */
