@@ -19,7 +19,7 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
   Normal,
   Preconnection
 }
-import org.bitcoins.node.{NodeCallbacks, P2PLogger}
+import org.bitcoins.node.{NodeCallbacks, NodeType, P2PLogger}
 
 import scala.concurrent.Future
 
@@ -162,6 +162,26 @@ class PeerMessageReceiver(
 
           case good: Initializing =>
             val newState = good.withVersionMsg(versionMsg)
+
+            // TODO: do not throw error once we have peer discovery
+            nodeAppConfig.nodeType match {
+              case NodeType.NeutrinoNode =>
+                if (!versionMsg.services.nodeCompactFilters) {
+                  val errMsg =
+                    s"Connected Peer ($peer) does not support compact filters"
+                  logger.warn(errMsg)
+                  sys.error(errMsg)
+                }
+              case NodeType.SpvNode =>
+                if (!versionMsg.services.nodeBloom) {
+                  val errMsg =
+                    s"Connected Peer ($peer) does not support bloom filters"
+                  logger.warn(errMsg)
+                  sys.error(errMsg)
+                }
+              case NodeType.FullNode =>
+                sys.error("Not yet implemented.")
+            }
 
             sender.sendVerackMessage()
 
