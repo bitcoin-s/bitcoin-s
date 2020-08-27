@@ -4,6 +4,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.db.CompactFilterDb
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import scodec.bits.ByteVector
 
@@ -23,10 +24,9 @@ case class CompactFilterDAO()(implicit
   import profile.api._
 
   implicit private val bigIntMapper: BaseColumnType[BigInt] =
-    if (appConfig.driverName == "postgresql") {
-      mappers.bigIntPostgresMapper
-    } else {
-      mappers.bigIntMapper
+    appConfig.driver match {
+      case SQLite     => mappers.bigIntMapper
+      case PostgreSQL => mappers.bigIntPostgresMapper
     }
 
   class CompactFilterTable(tag: Tag)
