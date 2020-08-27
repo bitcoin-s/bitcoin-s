@@ -15,7 +15,7 @@ bitcoin-s, the values there take precedence over the ones found in our
 Bitcoin-S data directory.
 
 The resolved configuration gets parsed by
-[`AppConfig`](../../db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala).
+[`AppConfig`](api/org/bitcoins/db/AppConfig).
 `AppConfig` is an abstract class that's implemented by corresponding case
 classes in the `wallet`, `chain` and `node` projects. Here's some examples of how to
 construct a wallet configuration:
@@ -63,7 +63,7 @@ There are a few command line options available that take precedence over configu
 ## Internal configuration
 
 Database connections are also configured by using HOCON. This is done in
-[`db.conf`](../../db-commons/src/main/resources/db.conf). The options
+[`db.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/db.conf). The options
 exposed here are **not** intended to
 be used by users of Bitcoin-S, and are internal only.
 
@@ -75,14 +75,14 @@ called [flyway](https://flywaydb.org/). To find your projects migraitons, you ne
 the path `chain/src/main/resources/chaindb/migration/V1__chain_db_baseline.sql`.
 
 Migrations can be executed by calling the [`DbManagement.migrate()`](https://github.com/bitcoin-s/bitcoin-s/blob/e387d075b0ff2e0a0fec15788fcb48e4ddc4d9d5/db-commons/src/main/scala/org/bitcoins/db/DbManagement.scala#L92) 
-method. Migrations are applied by default on server startup, via the [`AppConfig.initialize()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49) 
+method. Migrations are applied by default on server startup, via the [`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
 method. 
 
 These migrations are setup so that project's databases and migrations are independent of each other. Therefore if you
 want to use the `bitcoin-s-chain` project, but not the `bitcoin-s-wallet` project, wallet migrations are not applied. 
 It should be noted if you are using a module as a library, you are responsible for configuring the database via 
 [slick's configuration](https://scala-slick.org/doc/3.3.1/database.html#using-typesafe-config) and calling 
-[`AppConfig.initialize()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49) 
+[`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
 to ensure the entire module is initialized correctly.
 
 ## Example Configuration File

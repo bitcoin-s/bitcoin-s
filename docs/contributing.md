@@ -160,15 +160,15 @@ is an example of a property in the bitcoin-s-core test suite
 ```
 
 What this property says is that for every transaction we can generate with
-[`TransactionGenerators.transactions`](/api/org/bitcoins/core/gen/TransactionGenerators)
+[`TransactionGenerators.transactions`](/api/org/bitcoins/testkit/core/gen/TransactionGenerators$)
 we _must_ be able to serialize it to hex format, then deserialize it back
 to a transaction and get the original `tx` back.
 
 A more complex example of property based testing is checking that a
 multisignature transaction was signed correctly (see
-[`TransactionSignatureCreatorSpec`](core-test/src/test/scala/org/bitcoins/core/crypto/TransactionSignatureCreatorSpec.scala)
+[`TransactionSignatureCreatorSpec`](https://github.com/bitcoin-s/bitcoin-s/blob/master/core-test/src/test/scala/org/bitcoins/core/crypto/TransactionSignatureCreatorSpec.scala)
 line 29-34). First we generate a _supposedly_ validly signed multisig
-transaction with [`TransactionGenerators.signedMultiSigTransaction`](/api/org/bitcoins/testkit/core/gen/TransactionGenerators)
+transaction with [`TransactionGenerators.signedMultiSigTransaction`](/api/org/bitcoins/testkit/core/gen/TransactionGenerators$)
 (line 102-108). These transactions have varying `m` of `n` requirements.
 An interesting corner case if when you have 0 of `n` signatures, which
 means no signature is required. Property based testing is really good at

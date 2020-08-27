@@ -31,8 +31,8 @@ This gives the ability to create and destroy `bitcoind` on the underlying operat
 
 Make sure you have run `sbt downloadBitcoind` before running this example, as you need access to the bitcoind binaries.
 
-Our [BitcoindRpcClient](../../bitcoind-rpc/src/main/scala/org/bitcoins/rpc/client/common/BitcoindRpcClient.scala) is tested with the functionality provided in the testkit.
-A quick example of a useful utility method is [BitcoindRpcTestUtil.startedBitcoindRpcClient()](../../bitcoind-rpc/src/main/scala/org/bitcoins/testkit/rpc/BitcoindRpcTestUtil.scala).
+Our [BitcoindRpcClient](/api/org/bitcoins/rpc/client/common/BitcoindRpcClient) is tested with the functionality provided in the testkit.
+A quick example of a useful utility method is [BitcoindRpcTestUtil.startedBitcoindRpcClient()](/api/org/bitcoins/testkit/rpc/BitcoindRpcTestUtil).
 This spins up a bitcoind regtest instance on machine and generates 101 blocks on that node.
 
 This gives you the ability to start spending money immediately with that bitcoind node.
@@ -170,10 +170,10 @@ You can see examples of us using these generators inside of testkit in our [Priv
 
 You may find useful testkit functionality for other modules here
 
-1. [Chain](../../testkit/src/main/scala/org/bitcoins/testkit/chain/ChainUnitTest.scala)
-2. [Key Manager](../../testkit/src/main/scala/org/bitcoins/testkit/keymanager/KeyManagerUnitTest.scala)
-3. [Wallet](../../testkit/src/main/scala/org/bitcoins/testkit/wallet/BitcoinSWalletTest.scala)
-4. [Node](../../testkit/src/main/scala/org/bitcoins/testkit/node/NodeUnitTest.scala)
+1. [Chain](/api/org/bitcoins/testkit/chain/ChainUnitTest)
+2. [Key Manager](/api/org/bitcoins/testkit/keymanager/KeyManagerApiUnitTest)
+3. [Wallet](/api/org/bitcoins/testkit/wallet/BitcoinSWalletTest)
+4. [Node](/api/org/bitcoins/testkit/node/NodeUnitTest)
 
 In general, you will find constructors and destructors of fixtures that can be useful when testing your applications
 if yo uare using any of those modules.

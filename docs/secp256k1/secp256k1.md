@@ -33,7 +33,7 @@ val isEnabled = org.bitcoin.Secp256k1Context.isEnabled()
 println(s"Secp256k1Context.isEnabled=${isEnabled}")
 ```
 
-If libsecp256k1 is enabled, you can use [NativeSecp256k1](../../secp256k1jni/src/main/java/org/bitcoin/NativeSecp256k1.java)
+If libsecp256k1 is enabled, you can use [NativeSecp256k1](/api/org/bitcoin/NativeSecp256k1)
 with static method defined in the class.
 
 

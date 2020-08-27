@@ -7,8 +7,7 @@ With [BIP157](https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki) yo
 later for rescans in the case you need to restore your wallets. Our [chain](../applications/chain.md) project gives us
 an API with the ability to query for filters.
 
-You can rescan your wallet with filters with [`WalletApi.rescanNeutrinoWallet()`](https://github.com/bitcoin-s/bitcoin-s/blob/1a3b6b5b1e4eb8442dfab8b1a9faeff74418bdb0/wallet/src/main/scala/org/bitcoins/wallet/api/WalletApi.scala#L399)
-
+You can rescan your wallet with filters with [`WalletApi.rescanNeutrinoWallet()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/api/wallet/NeutrinoWalletApi.scala#L77)
 
 ### Example
 

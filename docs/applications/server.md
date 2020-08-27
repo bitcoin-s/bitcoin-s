@@ -6,7 +6,7 @@ title: Application Server
 
 ### App server
 
-The [server](../../app/server) project is the aggregation of these three sub projects
+The server project is the aggregation of these three sub projects
 
 1. [Wallet](../wallet/wallet.md)
 2. [Chain](../chain/chain.md)
