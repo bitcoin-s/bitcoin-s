@@ -314,6 +314,16 @@ class ChainHandlerTest extends ChainDbUnitTest {
         newTip <- reorged.getBestBlockHeader()
       } yield {
         assert(newTip.hashBE == third.hashBE)
+        assert(chainHandler.blockchains.size == 2)
+
+        val bestChain =
+          chainHandler.blockchains.find(_.tip.hashBE == third.hashBE).get
+        assert(bestChain.forall(_.inBestChain))
+
+        val oldChain =
+          chainHandler.blockchains.find(_.tip.hashBE != third.hashBE).get
+        // .init to exclude genesis
+        assert(oldChain.init.forall(_.inBestChain))
       }
   }
 

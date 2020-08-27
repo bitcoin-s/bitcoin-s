@@ -127,6 +127,7 @@ case class CompactFilterHeaderDAO()(implicit
     val join = table
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
+      .filter(_._2.inBestChain)
 
     val maxQuery = join.map(_._2.chainWork).max
 

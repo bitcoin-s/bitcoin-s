@@ -14,7 +14,8 @@ case class BlockHeaderDb(
     nBits: UInt32,
     nonce: UInt32,
     hex: String,
-    chainWork: BigInt) {
+    chainWork: BigInt,
+    inBestChain: Boolean) {
 
   lazy val blockHeader: BlockHeader = {
     val blockHeader = BlockHeader.fromHex(hex)
@@ -34,7 +35,8 @@ object BlockHeaderDbHelper {
   def fromBlockHeader(
       height: Int,
       chainWork: BigInt,
-      bh: BlockHeader): BlockHeaderDb = {
+      bh: BlockHeader,
+      inBestChain: Boolean = true): BlockHeaderDb = {
     BlockHeaderDb(
       height = height,
       hashBE = bh.hashBE,
@@ -45,7 +47,8 @@ object BlockHeaderDbHelper {
       nonce = bh.nonce,
       version = bh.version,
       hex = bh.hex,
-      chainWork = chainWork
+      chainWork = chainWork,
+      inBestChain = inBestChain
     )
   }
 }

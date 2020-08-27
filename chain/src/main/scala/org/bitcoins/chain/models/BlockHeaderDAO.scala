@@ -438,6 +438,8 @@ case class BlockHeaderDAO()(implicit
 
     def chainWork: Rep[BigInt] = column[BigInt]("chain_work")
 
+    def inBestChain: Rep[Boolean] = column[Boolean]("in_best_chain")
+
     /** The sql index for searching based on [[height]] */
     def heightIndex = index("block_headers_height_index", height)
 
@@ -453,7 +455,8 @@ case class BlockHeaderDAO()(implicit
        nBits,
        nonce,
        hex,
-       chainWork).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
+       chainWork,
+       inBestChain).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
     }
 
   }

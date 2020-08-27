@@ -1,7 +1,9 @@
 package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.ChainVerificationLogger
+import org.bitcoins.chain.blockchain.BlockchainUpdate.{Failed, Successful}
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.validation.TipUpdateResult.Success
 import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -137,7 +139,9 @@ private[blockchain] trait BaseBlockChainCompObject
                   success.headerDb +: blockchain.headers.takeRight(
                     connectionIdx))
                 //means we have a reorg, since we aren't connecting to latest tip
-                ConnectTipResult.Reorg(success, newChain)
+                ConnectTipResult.Reorg(
+                  Success(success.headerDb.copy(inBestChain = false)),
+                  newChain)
               } else {
                 val olderChain = if (blockchain.size < 2016) {
                   blockchain.headers
@@ -203,7 +207,28 @@ private[blockchain] trait BaseBlockChainCompObject
             val competingUpdate = BlockchainUpdate.Successful(
               newChain,
               tipUpdateResult.headerDb +: lastUpdate.successfulHeaders)
-            Vector(lastUpdate, competingUpdate)
+            if (
+              lastUpdate.blockchain.tip.chainWork >= competingUpdate.blockchain.tip.chainWork
+            ) {
+              val temp =
+                competingUpdate.blockchain.map(_.copy(inBestChain = false))
+              Vector(
+                lastUpdate,
+                competingUpdate.copy(blockchain = Blockchain(temp.toVector)))
+            } else {
+              val updatedHeaders =
+                lastUpdate.blockchain.map(_.copy(inBestChain = false))
+              val newChain = Blockchain(updatedHeaders.toVector)
+
+              val newLastUpdate = lastUpdate match {
+                case success: Successful =>
+                  success.copy(blockchain = newChain)
+                case failed: Failed =>
+                  failed.copy(blockchain = newChain)
+              }
+
+              Vector(newLastUpdate, competingUpdate)
+            }
           case ConnectTipResult.BadTip(tipUpdateResult) =>
             val failedUpdate = BlockchainUpdate.Failed(
               lastUpdate.blockchain,

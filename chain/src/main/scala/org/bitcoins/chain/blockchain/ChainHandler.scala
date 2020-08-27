@@ -506,6 +506,15 @@ case class ChainHandler(
     } yield isMissingWork
   }
 
+  def needsInBestChainCalc: Future[Boolean] = {
+    // We calculate this starting at the chain tip and then walk backwards towards
+    // genesis. Therefore, if the genesis block header is marked best in chain, the calculation
+    // has been done
+    for {
+      genesis <- blockHeaderDAO.getAtHeight(0).map(_.head)
+    } yield !genesis.inBestChain
+  }
+
   @tailrec
   private def calcChainWork(
       remainingHeaders: Vector[BlockHeaderDb],
@@ -670,6 +679,72 @@ case class ChainHandler(
 
     resultF.failed.foreach { err =>
       logger.error(s"Failed to recalculate chain work", err)
+    }
+
+    resultF
+  }
+
+  def recalcBestChain(): Future[ChainHandler] = {
+    logger.info("Calculating best chain")
+
+    val numBatches = 1
+    val interval = chainConfig.appConfig.chain.difficultyChangeInterval
+    val batchSize = interval / numBatches
+
+    val tip = blockchains.map(_.tip).maxBy(_.chainWork)
+
+    def loop(current: BlockHeaderDb): Future[Unit] = {
+      if (current.height > 0) {
+        val totalProcessed = tip.height - current.height + 1
+        logger.info(
+          s"Recalculating best chain... remaining: ${current.height}, total processed: $totalProcessed")
+
+        val chainsF = batchAndGetBlockchains(
+          batchSize = batchSize,
+          batchStartHeight = current.height - interval,
+          maxHeight = current.height,
+          numBatches = numBatches
+        )
+
+        for {
+          chains <- chainsF
+          chainOpt = chains.find(_.tip.hashBE == current.previousBlockHashBE)
+          _ <- {
+            chainOpt match {
+              case Some(chain) =>
+                val updated = chain.headers.map(_.copy(inBestChain = true))
+                for {
+                  _ <- FutureUtil.batchExecute(
+                    updated,
+                    blockHeaderDAO.updateAll,
+                    Vector.empty,
+                    batchSize
+                  )
+                  _ <- loop(updated.last)
+                } yield ()
+              case None =>
+                Future.failed(
+                  new RuntimeException(
+                    s"Missing block header ${current.previousBlockHashBE.hex}"))
+            }
+          }
+        } yield ()
+      } else {
+        FutureUtil.unit
+      }
+    }
+
+    val resultF = for {
+      _ <- blockHeaderDAO.update(tip.copy(inBestChain = true))
+      _ <- loop(tip)
+      newBlockchains <- blockHeaderDAO.getBlockchains()
+    } yield {
+      logger.info("Finished calculating best chain")
+      this.copy(blockchains = newBlockchains)
+    }
+
+    resultF.failed.foreach { err =>
+      logger.error(s"Failed to recalculate best chain", err)
     }
 
     resultF

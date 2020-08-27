@@ -272,7 +272,15 @@ object Main extends App with BitcoinSLogger {
           logger.info(s"Chain work already calculated")
           Future.successful(chainApi)
         }
-    } yield chainApiWithWork
+      needsInBestChainCalc <- chainApiWithWork.needsInBestChainCalc
+      finalChainApi <-
+        if (needsInBestChainCalc || force) {
+          chainApiWithWork.recalcBestChain()
+        } else {
+          logger.info(s"Best chain already calculated")
+          Future.successful(chainApiWithWork)
+        }
+    } yield finalChainApi
   }
 
   private def startHttpServer(
