@@ -8,9 +8,9 @@ title: Key Manager
 
 The key manager module's goal is to encapusulate all private key interactions with the [wallet](../wallet/wallet.md) project.
 
-As of this writing, there is only one type of `KeyManager` - [`BIP39KeyManager`](../../key-manager/src/main/scala/org/bitcoins/keymanager/bip39/BIP39KeyManager.scala). 
+As of this writing, there is only one type of `KeyManager` - [`BIP39KeyManager`](/api/org/bitcoins/keymanager/bip39/BIP39KeyManager).
 
-The [`BIP39KeyManager`](../../key-manager/src/main/scala/org/bitcoins/keymanager/bip39/BIP39KeyManager.scala) stores a [`MnemonicCode`](../../core/src/main/scala/org/bitcoins/core/crypto/MnemonicCode.scala) on disk which can be decrypted and used as a hot wallet.
+The [`BIP39KeyManager`](/api/org/bitcoins/keymanager/bip39/BIP39KeyManager) stores a [`MnemonicCode`](/api/org/bitcoins/core/crypto/MnemonicCode) on disk which can be decrypted and used as a hot wallet.
  
 Over the long run, we want to make it so that the wallet project needs to communicate with the key-manager to access private keys.
 
@@ -34,7 +34,7 @@ as a logical distinction for further development in subsequent releases.
 
 The first thing you need create a key manager is some entropy.
 
-A popular way for bitcoin wallet's to represent entropy is [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) which you [can use in bitcoin-s](../../core/src/main/scala/org/bitcoins/core/crypto/BIP39Seed.scala)
+A popular way for bitcoin wallet's to represent entropy is [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) which you [can use in bitcoin-s](/api/org/bitcoins/core/crypto/BIP39Seed)
 
 You can generate a `MnemonicCode` in bitcoin-s with the following code
 
@@ -56,8 +56,8 @@ generate specific kinds of addresses for wallets.
 `KeyManagerParams` takes 3 parameters:
 
 1. `seedPath` there is where we store the `MnemonicCode` on your file system
-2. [`purpose`](../../core/src/main/scala/org/bitcoins/core/hd/HDPurpose.scala) which represents what type of utxo this `KeyManager` is associated with. The specification for this is in [BIP43](https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki)
-3. [`network`](../../core/src/main/scala/org/bitcoins/core/config/NetworkParameters.scala) what cryptocurrency network this key manager is associated with
+2. [`purpose`](/api/org/bitcoins/core/hd/HDPurpose) which represents what type of utxo this `KeyManager` is associated with. The specification for this is in [BIP43](https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki)
+3. [`network`](/api/org/bitcoins/core/config/NetworkParameters) what cryptocurrency network this key manager is associated with
 
 
 This controls how the root key is defined. The combination of `purpose` and `network` determine how the root `ExtKey` is serialized. For more information on how this works please see [hd-keys](../core/hd-keys.md)

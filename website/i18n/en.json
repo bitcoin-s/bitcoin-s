@@ -12,7 +12,7 @@
         "title": "CLI"
       },
       "applications/configuration": {
-        "title": "Application configuration"
+        "title": "Application Configuration"
       },
       "applications/dlc": {
         "title": "Executing A DLC with Bitcoin-S"
@@ -24,13 +24,16 @@
         "title": "GUI"
       },
       "applications/node": {
-        "title": "Light client"
+        "title": "Light Client"
       },
       "applications/server": {
         "title": "Application Server"
       },
       "applications/wallet": {
         "title": "Wallet"
+      },
+      "chain/chain-query-api": {
+        "title": "Chain Query API"
       },
       "chain/chain": {
         "title": "Blockchain Verification"
@@ -91,6 +94,9 @@
       },
       "key-manager/key-manager": {
         "title": "Key Manager"
+      },
+      "node/node-api": {
+        "title": "Node API"
       },
       "node/node": {
         "title": "Light Client"
