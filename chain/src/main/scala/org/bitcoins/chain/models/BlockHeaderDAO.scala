@@ -5,6 +5,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 
 import scala.annotation.tailrec
@@ -26,10 +27,9 @@ case class BlockHeaderDAO()(implicit
   import mappers.{doubleSha256DigestBEMapper, int32Mapper, uInt32Mapper}
 
   implicit private val bigIntMapper: BaseColumnType[BigInt] =
-    if (appConfig.driverName == "postgresql") {
-      mappers.bigIntPostgresMapper
-    } else {
-      mappers.bigIntMapper
+    appConfig.driver match {
+      case SQLite     => mappers.bigIntMapper
+      case PostgreSQL => mappers.bigIntPostgresMapper
     }
 
   override val table =
