@@ -360,7 +360,7 @@ case class ChainHandler(
     filterHeaderDAO.getBestFilterHeader.map {
       case Some(filterHeader) =>
         val height = filterHeader.height
-        logger.debug(s"getFilterCount result: count=$height")
+        logger.debug(s"getFilterHeaderCount result: count=$height")
         height
       case None =>
         0
