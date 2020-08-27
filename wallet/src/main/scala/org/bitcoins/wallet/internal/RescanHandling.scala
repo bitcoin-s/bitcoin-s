@@ -107,10 +107,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
         _ = logger.info(
           s"Beginning to search for matches between ${startHeight}:${endHeight} against ${scripts.length} spks")
         range = startHeight.to(endHeight)
-        matched <- FutureUtil.batchExecute(
+        matched <- FutureUtil.batchAndSyncExecute(
           elements = range.toVector,
           f = fetchFiltersInRange(scripts, parallelismLevel),
-          init = Vector.empty,
           batchSize = batchSize)
       } yield {
         logger.info(s"Matched ${matched.length} blocks on rescan")
@@ -264,20 +263,28 @@ private[wallet] trait RescanHandling extends WalletLogger {
         startHeight = startHeight,
         endHeight = endHeight)
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)
-    } yield filtered.toVector
+    } yield {
+      logger.info(
+        s"Found ${filtered.length} matches from start=$startHeight to end=$endHeight")
+      filtered
+    }
   }
 
   private def findMatches(
       filters: Vector[FilterResponse],
       scripts: Vector[ScriptPubKey],
-      parallelismLevel: Int): Future[Iterator[BlockMatchingResponse]] = {
-    if (filters.isEmpty)
-      Future.successful(Iterator.empty)
-    else {
+      parallelismLevel: Int): Future[Vector[BlockMatchingResponse]] = {
+    if (filters.isEmpty) {
+      logger.info("No Filters to check against")
+      Future.successful(Vector.empty)
+    } else if (scripts.isEmpty) {
+      logger.info("No scripts to check against")
+      Future.successful(Vector.empty)
+    } else {
       val bytes = scripts.map(_.asmBytes)
       /* Iterates over the grouped vector of filters to find matches with the given [[bytes]]. */
       val groupSize = calcGroupSize(filters.size, parallelismLevel)
-      val filterGroups = filters.grouped(groupSize)
+      val filterGroups = filters.grouped(groupSize).toVector
       // Sequence on the filter groups making sure the number of threads doesn't exceed [[parallelismLevel]].
       Future
         .sequence(filterGroups.map { filterGroup =>
@@ -290,6 +297,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
                 (blocks, filter) =>
                   val matcher = SimpleFilterMatcher(filter.compactFilter)
                   if (matcher.matchesAny(bytes)) {
+                    logger.info(s"Found a match in block ${filter.blockHeight}")
                     blocks :+ BlockMatchingResponse(filter.blockHash,
                                                     filter.blockHeight)
                   } else {

@@ -2,6 +2,7 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -11,6 +12,8 @@ import org.bitcoins.testkit.wallet.{
   WalletWithBitcoindV19
 }
 import org.scalatest.FutureOutcome
+
+import scala.concurrent.Future
 
 class RescanHandlingTest extends BitcoinSWalletTest {
 
@@ -131,6 +134,9 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         initBlockHeight <- initBlockHeightF
         txInBlockHeight = initBlockHeight + numBlocks
         txInBlockHeightOpt = Some(BlockStamp.BlockHeight(txInBlockHeight))
+        _ <- newTxWallet.clearAllUtxosAndAddresses()
+        zeroBalance <- newTxWallet.getBalance()
+        _ = assert(zeroBalance == Satoshis.zero)
         _ <- newTxWallet.rescanNeutrinoWallet(startOpt = txInBlockHeightOpt,
                                               endOpt = None,
                                               addressBatchSize =
@@ -139,6 +145,66 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         balance <- newTxWallet.getBalance()
       } yield {
         assert(balance == amt)
+      }
+  }
+
+  it must "be able to discover funds using multiple batches" in {
+    fixture: WalletWithBitcoind =>
+      val WalletWithBitcoindV19(wallet, bitcoind) = fixture
+
+      val amt = Bitcoins.one
+      val numBlocks = 1
+
+      //send funds to a fresh wallet address
+      val addrF = wallet.getNewAddress()
+      val bitcoindAddrF = bitcoind.getNewAddress
+      val newTxWalletF = for {
+        addr <- addrF
+        txid <- bitcoind.sendToAddress(addr, amt)
+        tx <- bitcoind.getRawTransactionRaw(txid)
+        bitcoindAddr <- bitcoindAddrF
+        blockHashes <-
+          bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
+        newTxWallet <- wallet.processTransaction(transaction = tx,
+                                                 blockHashOpt =
+                                                   blockHashes.headOption)
+        balance <- newTxWallet.getBalance()
+        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
+      } yield {
+        //balance doesn't have to exactly equal, as there was money in the
+        //wallet before hand.
+        assert(balance >= amt)
+        assert(balance == unconfirmedBalance)
+        newTxWallet
+      }
+
+      for {
+        newTxWallet <- newTxWalletF
+
+        account <- newTxWallet.getDefaultAccount()
+        blocks <-
+          newTxWallet.spendingInfoDAO
+            .findAllForAccount(account.hdAccount)
+            .map(_.flatMap(_.blockHash).distinct)
+
+        _ <- newTxWallet.clearAllUtxosAndAddresses()
+        scriptPubKeys <-
+          1.to(10).foldLeft(Future.successful(Vector.empty[ScriptPubKey])) {
+            (prevFuture, _) =>
+              for {
+                prev <- prevFuture
+                address <- newTxWallet.getNewAddress(account)
+                changeAddress <- newTxWallet.getNewChangeAddress(account)
+              } yield prev :+ address.scriptPubKey :+ changeAddress.scriptPubKey
+          }
+        matches <- newTxWallet.getMatchingBlocks(scriptPubKeys,
+                                                 None,
+                                                 None,
+                                                 batchSize = 1)
+      } yield {
+        assert(matches.size == blocks.size)
+        assert(
+          matches.forall(blockMatch => blocks.contains(blockMatch.blockHash)))
       }
   }
 
