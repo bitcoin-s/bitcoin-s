@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.api
+package org.bitcoins.dlc.wallet
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.currency.Satoshis
@@ -6,7 +6,13 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
-import org.bitcoins.wallet.models.DLCDb
+import org.bitcoins.dlc.wallet.models.DLCDb
+import org.bitcoins.wallet.api.{
+  HDWalletApi,
+  NeutrinoWalletApi,
+  SpvWalletApi,
+  WalletApi
+}
 
 import scala.concurrent.Future
 
@@ -50,3 +56,10 @@ trait DLCWalletApi { self: WalletApi =>
   def executeDLCRefund(eventId: Sha256DigestBE): Future[Transaction]
 
 }
+
+/** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */
+trait AnyDLCHDWalletApi
+    extends HDWalletApi
+    with DLCWalletApi
+    with NeutrinoWalletApi
+    with SpvWalletApi

@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCState
 import org.bitcoins.core.hd.HDAccount
@@ -8,14 +8,14 @@ import org.bitcoins.crypto.{
   Sha256DigestBE
 }
 import org.bitcoins.db.{CRUD, SlickUtil}
-import org.bitcoins.wallet.config._
+import org.bitcoins.dlc.wallet.DLCAppConfig
 import slick.lifted.{PrimaryKey, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCDAO()(implicit
     val ec: ExecutionContext,
-    override val appConfig: WalletAppConfig)
+    override val appConfig: DLCAppConfig)
     extends CRUD[DLCDb, Sha256DigestBE]
     with SlickUtil[DLCDb, Sha256DigestBE] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)

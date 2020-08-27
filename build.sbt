@@ -61,6 +61,8 @@ lazy val `bitcoin-s` = project
     feeProviderTest,
     dlc,
     dlcTest,
+    dlcWallet,
+    dlcWalletTest,
     dlcSuredbitsClient,
     dlcSuredbitsClientTest,
     bitcoindRpc,
@@ -252,7 +254,7 @@ lazy val appServer = project
     wallet,
     bitcoindRpc,
     feeProvider,
-    dlc
+    dlcWallet
   )
 
 lazy val appServerTest = project
@@ -453,7 +455,8 @@ lazy val testkit = project
     node,
     wallet,
     zmq,
-    dlc
+    dlc,
+    dlcWallet
   )
 
 lazy val docs = project
@@ -516,7 +519,7 @@ lazy val dlc = project
     // version number needed for MicroJson
     libraryDependencies ++= Deps.dlc
   )
-  .dependsOn(core, dbCommons)
+  .dependsOn(core, appCommons)
 
 lazy val dlcTest = project
   .in(file("dlc-test"))
@@ -531,8 +534,27 @@ lazy val dlcTest = project
     dlc
   )
 
+lazy val dlcWallet = project
+  .in(file("dlc-wallet"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-wallet",
+    libraryDependencies ++= Deps.dlcWallet
+  )
+  .dependsOn(wallet, dlc)
+
+lazy val dlcWalletTest = project
+  .in(file("dlc-wallet-test"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-wallet-test",
+    libraryDependencies ++= Deps.dlcWalletTest
+  )
+  .dependsOn(core % testAndCompile, dlcWallet, testkit)
+
 /** Given a database name, returns the appropriate
-  * Flyway settings we apply to a project (chain, node, wallet) */
+  * Flyway settings we apply to a project (chain, node, wallet)
+  */
 def dbFlywaySettings(dbName: String): List[Setting[_]] = {
   lazy val DB_HOST = "localhost"
   lazy val DB_NAME = s"${dbName}.sqlite"

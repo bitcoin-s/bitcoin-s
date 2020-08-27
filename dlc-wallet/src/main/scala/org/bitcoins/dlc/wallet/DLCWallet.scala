@@ -1,7 +1,12 @@
-package org.bitcoins.wallet
+package org.bitcoins.dlc.wallet
+
+import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc._
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -19,11 +24,23 @@ import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.execution._
 import org.bitcoins.dlc.sign.DLCTxSigner
 import org.bitcoins.dlc.verify.DLCSignatureVerifier
-import org.bitcoins.wallet.models._
+import org.bitcoins.dlc.wallet.models._
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-abstract class DLCWallet extends Wallet {
+abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
+
+  implicit val dlcConfig: DLCAppConfig
+
+  private[bitcoins] val dlcOfferDAO: DLCOfferDAO = DLCOfferDAO()
+  private[bitcoins] val dlcAcceptDAO: DLCAcceptDAO = DLCAcceptDAO()
+  private[bitcoins] val dlcDAO: DLCDAO = DLCDAO()
+  private[bitcoins] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
+  private[bitcoins] val dlcSigsDAO: DLCCETSignatureDAO = DLCCETSignatureDAO()
+  private[bitcoins] val dlcRefundSigDAO: DLCRefundSigDAO = DLCRefundSigDAO()
 
   private def initDLC(
       eventId: Sha256DigestBE,
@@ -758,4 +775,31 @@ abstract class DLCWallet extends Wallet {
     }
   }
 
+}
+
+object DLCWallet extends WalletLogger {
+
+  private case class DLCWalletImpl(
+      keyManager: BIP39KeyManager,
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      feeRateApi: FeeRateApi,
+      override val creationTime: Instant
+  )(implicit
+      val walletConfig: WalletAppConfig,
+      val dlcConfig: DLCAppConfig,
+      val ec: ExecutionContext
+  ) extends DLCWallet
+
+  def apply(
+      keyManager: BIP39KeyManager,
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      feeRateApi: FeeRateApi,
+      creationTime: Instant)(implicit
+      config: WalletAppConfig,
+      dlcConfig: DLCAppConfig,
+      ec: ExecutionContext): DLCWallet = {
+    DLCWalletImpl(keyManager, nodeApi, chainQueryApi, feeRateApi, creationTime)
+  }
 }

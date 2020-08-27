@@ -15,11 +15,11 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.wallet.DLCWallet
+import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
-import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.bitcoins.wallet.Wallet
-import org.bitcoins.wallet.models.DLCDb
+import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -124,8 +124,8 @@ trait DLCWalletUtil {
     oracleSigOpt = Some(sampleOracleLoseSig)
   )
 
-  def initDLC(fundedWalletA: FundedWallet, fundedWalletB: FundedWallet)(implicit
-      ec: ExecutionContext): Future[
+  def initDLC(fundedWalletA: FundedDLCWallet, fundedWalletB: FundedDLCWallet)(
+      implicit ec: ExecutionContext): Future[
     (InitializedDLCWallet, InitializedDLCWallet)] = {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
@@ -152,21 +152,21 @@ trait DLCWalletUtil {
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)
     } yield {
-      (InitializedDLCWallet(FundedWallet(walletA)),
-       InitializedDLCWallet(FundedWallet(walletB)))
+      (InitializedDLCWallet(FundedDLCWallet(walletA)),
+       InitializedDLCWallet(FundedDLCWallet(walletB)))
     }
   }
 }
 
 object DLCWalletUtil extends DLCWalletUtil {
 
-  case class InitializedDLCWallet(funded: FundedWallet) {
-    val wallet: Wallet = funded.wallet
+  case class InitializedDLCWallet(funded: FundedDLCWallet) {
+    val wallet: DLCWallet = funded.wallet
   }
 
   def createDLCWallets(
-      fundedWalletA: FundedWallet,
-      fundedWalletB: FundedWallet)(implicit ec: ExecutionContext): Future[
+      fundedWalletA: FundedDLCWallet,
+      fundedWalletB: FundedDLCWallet)(implicit ec: ExecutionContext): Future[
     (InitializedDLCWallet, InitializedDLCWallet)] = {
 
     initDLC(fundedWalletA, fundedWalletB)

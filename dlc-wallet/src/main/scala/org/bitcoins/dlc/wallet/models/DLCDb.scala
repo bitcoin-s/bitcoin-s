@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.models
+package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCState
 import org.bitcoins.core.hd.HDAccount

@@ -3,6 +3,7 @@ package org.bitcoins.db
 import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
+import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCDbManagement}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
@@ -25,6 +26,13 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
       override val ec: ExecutionContext = system.dispatcher
 
       override def appConfig: ChainAppConfig = chainAppConfig
+    }
+
+  def createDLCDbManagement(dlcAppConfig: DLCAppConfig): DLCDbManagement =
+    new DLCDbManagement with JdbcProfileComponent[DLCAppConfig] {
+      override val ec: ExecutionContext = system.dispatcher
+
+      override def appConfig: DLCAppConfig = dlcAppConfig
     }
 
   def createWalletDbManagement(
@@ -51,12 +59,21 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
     assert(result == expected)
   }
 
+  it must "run migrations for dlc db" in {
+    val dlcAppConfig =
+      DLCAppConfig(BitcoinSTestAppConfig.tmpDir(), dbConfig(ProjectType.DLC))
+    val dlcDbManagement = createDLCDbManagement(dlcAppConfig)
+    val result = dlcDbManagement.migrate()
+    val expected = if (dlcAppConfig.driverName == "postgresql") 1 else 1
+    assert(result == expected)
+  }
+
   it must "run migrations for wallet db" in {
     val walletAppConfig = WalletAppConfig(BitcoinSTestAppConfig.tmpDir(),
                                           dbConfig(ProjectType.Wallet))
     val walletDbManagement = createWalletDbManagement(walletAppConfig)
     val result = walletDbManagement.migrate()
-    val expected = if (walletAppConfig.driverName == "postgresql") 7 else 9
+    val expected = if (walletAppConfig.driverName == "postgresql") 6 else 8
     assert(result == expected)
   }
 
