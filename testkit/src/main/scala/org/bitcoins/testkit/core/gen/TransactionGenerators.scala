@@ -150,6 +150,13 @@ object TransactionGenerators extends BitcoinSLogger {
   def smallInputsNonEmpty: Gen[Seq[TransactionInput]] =
     Gen.choose(1, 5).flatMap(i => Gen.listOfN(i, input))
 
+  def outputReference: Gen[OutputReference] = {
+    for {
+      outPoint <- outPoint
+      output <- output
+    } yield OutputReference(outPoint, output)
+  }
+
   /**
     * Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction Transaction]]
     * This transaction's [[org.bitcoins.core.protocol.transaction.TransactionInput TransactionInput]]s

@@ -336,6 +336,39 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
   def posInt: Int = {
     Math.abs(scala.util.Random.nextInt())
   }
+
+  /** Returns a pseudorandom, uniformly distributed long value between 0
+    *  (inclusive) and the specified value (exclusive), drawn from this
+    *  random number generator's sequence.
+    *
+    *  Stolen from scala.util.Random.nextLong (in scala version 2.13)
+    */
+  def randomLong(bound: Long): Long = {
+    require(bound > 0, "bound must be positive")
+
+    /*
+     * Divide bound by two until small enough for nextInt. On each
+     * iteration (at most 31 of them but usually much less),
+     * randomly choose both whether to include high bit in result
+     * (offset) and whether to continue with the lower vs upper
+     * half (which makes a difference only if odd).
+     */
+
+    var offset = 0L
+    var _bound = bound
+
+    while (_bound >= Integer.MAX_VALUE) {
+      val bits = scala.util.Random.nextInt(2)
+      val halfn = _bound >>> 1
+      val nextn =
+        if ((bits & 2) == 0) halfn
+        else _bound - halfn
+      if ((bits & 1) == 0)
+        offset += _bound - nextn
+      _bound = nextn
+    }
+    offset + scala.util.Random.nextInt(_bound.toInt)
+  }
 }
 
 object NumberUtil extends NumberUtil
