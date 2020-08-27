@@ -36,7 +36,7 @@ case class DataMessageHandler(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
 
-    payload match {
+    val resultF = payload match {
       case checkpoint: CompactFilterCheckPointMessage =>
         logger.debug(
           s"Got ${checkpoint.filterHeaders.size} checkpoints ${checkpoint}")
@@ -284,6 +284,13 @@ case class DataMessageHandler(
       case invMsg: InventoryMessage =>
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
     }
+
+    resultF.failed.foreach {
+      case err =>
+        logger.error(s"Failed to handle data payload=${payload}", err)
+    }
+
+    resultF
   }
 
   private def sendNextGetCompactFilterHeadersCommand(

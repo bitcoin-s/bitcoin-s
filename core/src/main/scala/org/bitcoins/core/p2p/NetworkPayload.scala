@@ -1009,6 +1009,20 @@ case class CompactFilterHeadersMessage(
       acc :+ acc.last.nextHeader(nextFilterHash)
     }
   }
+
+  override def toString: String = {
+    val hashesString = {
+      if (filterHashes.isEmpty) {
+        "empty"
+      } else {
+        s"${filterHashes.head}...${filterHashes.last}"
+      }
+    }
+    s"CompactFilterHeadersMessage(filterType=${filterType}, " +
+      s"previousFilterHeader=${previousFilterHeader}, " +
+      s"stopHash=${stopHash} " +
+      s"filterHeaders=${hashesString})"
+  }
 }
 
 object CompactFilterHeadersMessage
