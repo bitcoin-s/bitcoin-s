@@ -13,6 +13,7 @@ import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
   KeyManagerParams
 }
+import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
 import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
@@ -157,10 +158,13 @@ case class WalletAppConfig(
     if (walletConf.seedExists()) {
       val hdCoin = walletConf.defaultAccount.coin
       val walletDB = walletConf.dbPath resolve walletConf.dbName
-      if (walletConf.driverName == "postgresql" || Files.exists(walletDB)) {
-        AccountDAO().read((hdCoin, 0)).map(_.isDefined)
-      } else {
-        Future.successful(false)
+      walletConf.driver match {
+        case PostgreSQL =>
+          AccountDAO().read((hdCoin, 0)).map(_.isDefined)
+        case SQLite =>
+          if (Files.exists(walletDB))
+            AccountDAO().read((hdCoin, 0)).map(_.isDefined)
+          else Future.successful(false)
       }
     } else {
       Future.successful(false)
