@@ -530,7 +530,8 @@ public class NativeSecp256k1 {
             byteBuff.order(ByteOrder.nativeOrder());
             nativeECDSABuffer.set(byteBuff);
         }
-        byteBuff.rewind();
+
+        safeRewind(byteBuff);
         byteBuff.put(data);
         byteBuff.put(secKey);
         byteBuff.put(auxRand);
@@ -567,7 +568,8 @@ public class NativeSecp256k1 {
             byteBuff.order(ByteOrder.nativeOrder());
             nativeECDSABuffer.set(byteBuff);
         }
-        byteBuff.rewind();
+
+        safeRewind(byteBuff);
         byteBuff.put(data);
         byteBuff.put(secKey);
         byteBuff.put(nonce);
@@ -597,7 +599,8 @@ public class NativeSecp256k1 {
             byteBuff.order(ByteOrder.nativeOrder());
             nativeECDSABuffer.set(byteBuff);
         }
-        byteBuff.rewind();
+
+        safeRewind(byteBuff);
         byteBuff.put(data);
         byteBuff.put(nonce);
         byteBuff.put(pubkey);
@@ -636,7 +639,8 @@ public class NativeSecp256k1 {
             byteBuffer.order(ByteOrder.nativeOrder());
             nativeECDSABuffer.set(byteBuffer);
         }
-        byteBuffer.rewind();
+
+        safeRewind(byteBuffer);
         byteBuffer.put(sig);
         byteBuffer.put(data);
         byteBuffer.put(pubx);
@@ -685,7 +689,8 @@ public class NativeSecp256k1 {
             byteBuff.order(ByteOrder.nativeOrder());
             nativeECDSABuffer.set(byteBuff);
         }
-        byteBuff.rewind();
+
+        safeRewind(byteBuff);
         byteBuff.put(seckey);
         byteBuff.put(adaptorPoint);
         byteBuff.put(data);
@@ -727,7 +732,8 @@ public class NativeSecp256k1 {
             byteBuff.order(ByteOrder.nativeOrder());
             nativeECDSABuffer.set(byteBuff);
         }
-        byteBuff.rewind();
+
+        safeRewind(byteBuff);
         byteBuff.put(adaptorSig);
         byteBuff.put(pubKey);
         byteBuff.put(data);
@@ -751,7 +757,8 @@ public class NativeSecp256k1 {
             byteBuff.order(ByteOrder.nativeOrder());
             nativeECDSABuffer.set(byteBuff);
         }
-        byteBuff.rewind();
+
+        safeRewind(byteBuff);
         byteBuff.put(adaptorSec);
         byteBuff.put(adaptorSig);
 
@@ -782,7 +789,8 @@ public class NativeSecp256k1 {
             byteBuff.order(ByteOrder.nativeOrder());
             nativeECDSABuffer.set(byteBuff);
         }
-        byteBuff.rewind();
+
+        safeRewind(byteBuff);
         byteBuff.put(sig);
         byteBuff.put(adaptorSig);
         byteBuff.put(adaptor);
