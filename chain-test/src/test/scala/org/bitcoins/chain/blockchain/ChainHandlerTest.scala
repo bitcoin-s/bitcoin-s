@@ -587,6 +587,20 @@ class ChainHandlerTest extends ChainDbUnitTest {
     }
   }
 
+  it must "get best filter header with zero blockchains in memory" in {
+    chainHandler: ChainHandler =>
+      val noChainsChainHandler = chainHandler.copy(blockchains = Vector.empty)
+
+      val filterHeaderF = noChainsChainHandler.getBestFilterHeader()
+
+      for {
+        filterHeaderOpt <- filterHeaderF
+      } yield {
+        assert(filterHeaderOpt.isDefined)
+        assert(filterHeaderOpt.get == ChainUnitTest.genesisFilterHeaderDb)
+      }
+  }
+
   final def processHeaders(
       processorF: Future[ChainApi],
       headers: Vector[BlockHeader],

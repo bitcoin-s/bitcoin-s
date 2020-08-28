@@ -120,7 +120,11 @@ class CompactFilterHeaderDAOTest extends ChainDbUnitTest {
       val filterHeaders =
         Vector(filterHeaderDbLightWork, filterHeaderDbHeavyWork)
 
-      val createdF = filterHeaderDAO.createAll(filterHeaders)
+      val createdF = for {
+        _ <- blockHeaderDbF
+        created <- filterHeaderDAO.createAll(filterHeaders)
+      } yield created
+
       for {
         _ <- createdF
         found <- filterHeaderDAO.getBestFilterHeader

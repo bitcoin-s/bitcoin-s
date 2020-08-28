@@ -409,7 +409,7 @@ case class ChainHandler(
     Option[CompactFilterHeaderDb]] = {
     val bestFilterHeaderOptF = filterHeaderDAO.getBestFilterHeader
 
-    //get best blockchain we currently have
+    //get best blockchain around our latest filter header
     val blockchainF: Future[Blockchain] = {
       for {
         bestFilterHeaderOpt <- bestFilterHeaderOptF
