@@ -384,9 +384,13 @@ case class ChainHandler(
 
     for {
       filterHeaders <- filterHeadersOptF
-      maxHeightOpt = filterHeaders.flatten.maxByOption(_.height)
     } yield {
-      maxHeightOpt
+      val flattened = filterHeaders.flatten
+      if (flattened.isEmpty) None
+      else {
+        Some(flattened.maxBy(_.height))
+      }
+
     }
 
   }
