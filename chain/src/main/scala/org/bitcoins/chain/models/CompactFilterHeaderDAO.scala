@@ -155,14 +155,12 @@ case class CompactFilterHeaderDAO()(implicit
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
 
-    val maxQuery = join.map(_._2.chainWork).max
-
     val query = join
       .filter {
         case (filterTable, _) =>
           filterTable.blockHash.inSet(hashes)
       }
-      .filter(_._2.chainWork === maxQuery)
+      .sortBy(_._2.chainWork.desc)
       .take(1)
       .map(_._1)
 
