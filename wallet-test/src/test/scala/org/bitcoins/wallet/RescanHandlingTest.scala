@@ -143,8 +143,10 @@ class RescanHandlingTest extends BitcoinSWalletTest {
                                                 DEFAULT_ADDR_BATCH_SIZE,
                                               useCreationTime = false)
         balance <- newTxWallet.getBalance()
+        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
       } yield {
         assert(balance == amt)
+        assert(unconfirmedBalance == Bitcoins(1))
       }
   }
 
@@ -246,8 +248,10 @@ class RescanHandlingTest extends BitcoinSWalletTest {
                                                 DEFAULT_ADDR_BATCH_SIZE,
                                               useCreationTime = true)
         balance <- newTxWallet.getBalance()
+        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
       } yield {
         assert(balance == Bitcoins(7))
+        assert(unconfirmedBalance == Bitcoins(1))
       }
   }
 
