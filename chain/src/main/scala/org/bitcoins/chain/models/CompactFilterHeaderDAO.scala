@@ -123,6 +123,11 @@ case class CompactFilterHeaderDAO()(implicit
     query
   }
 
+  /** Fetches the best filter header from the database _without_ context
+    * that it's actually in our best blockchain. For instance, this filter header could be
+    * reorged out for whatever reason.
+    * @see https://github.com/bitcoin-s/bitcoin-s/issues/1919#issuecomment-682041737
+    */
   def getBestFilterHeader: Future[Option[CompactFilterHeaderDb]] = {
     val join = table
       .join(blockHeaderTable)
@@ -140,6 +145,9 @@ case class CompactFilterHeaderDAO()(implicit
     } yield filterOpt
   }
 
+  /** This looks for best filter headers whose [[CompactFilterHeaderDb.blockHashBE]] are associated with the given
+    * [[BlockHeaderDb.hashBE]] given as a parameter.
+    */
   def getBestFilterHeaderForHeaders(
       headers: Vector[BlockHeaderDb]): Future[Option[CompactFilterHeaderDb]] = {
     val hashes = headers.map(_.hashBE)
