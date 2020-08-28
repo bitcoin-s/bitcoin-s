@@ -123,7 +123,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         //balance doesn't have to exactly equal, as there was money in the
         //wallet before hand.
         assert(balance >= amt)
-        assert(balance == unconfirmedBalance)
+        assert(amt == unconfirmedBalance)
         newTxWallet
       }
 
@@ -174,7 +174,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         //balance doesn't have to exactly equal, as there was money in the
         //wallet before hand.
         assert(balance >= amt)
-        assert(balance == unconfirmedBalance)
+        assert(amt == unconfirmedBalance)
         newTxWallet
       }
 
@@ -234,7 +234,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         //balance doesn't have to exactly equal, as there was money in the
         //wallet before hand.
         assert(balance >= amt)
-        assert(balance == unconfirmedBalance)
+        assert(amt == unconfirmedBalance)
         newTxWallet
       }
 
