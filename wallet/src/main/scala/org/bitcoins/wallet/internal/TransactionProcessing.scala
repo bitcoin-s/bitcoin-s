@@ -346,16 +346,31 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Seq[SpendingInfoDb]] = {
-    FutureUtil.sequentially(outputsWithIndex) { out =>
-      processUtxo(
-        transaction,
-        out.index,
-        // TODO is this correct?
-        //we probably need to incorporate what
-        //what our wallet's desired confirmation number is
-        state = TxoState.PendingConfirmationsReceived,
-        blockHash = blockHashOpt
-      )
+    val stateF: Future[TxoState] = blockHashOpt match {
+      case None =>
+        Future.successful(TxoState.PendingConfirmationsReceived)
+      case Some(blockHash) =>
+        chainQueryApi.getNumberOfConfirmations(blockHash).map {
+          case None =>
+            TxoState.PendingConfirmationsReceived
+          case Some(confs) =>
+            if (confs >= walletConfig.requiredConfirmations) {
+              TxoState.ConfirmedReceived
+            } else {
+              TxoState.PendingConfirmationsReceived
+            }
+        }
+    }
+
+    stateF.flatMap { state =>
+      FutureUtil.sequentially(outputsWithIndex) { out =>
+        processUtxo(
+          transaction,
+          out.index,
+          state = state,
+          blockHash = blockHashOpt
+        )
+      }
     }
   }
 
@@ -408,7 +423,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             .mkString(", ")
         }
         logger.trace(
-          s"Found $count relevant output(s) in transaction=${transaction.txIdBE}: $outputStr")
+          s"Found $count relevant output(s) in transaction=${transaction.txIdBE.hex}: $outputStr")
 
         val totalIncoming = outputsWithIndex.map(_.output.value).sum
 
