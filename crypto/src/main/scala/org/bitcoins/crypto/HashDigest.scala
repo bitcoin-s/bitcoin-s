@@ -116,6 +116,8 @@ case class DoubleSha256Digest(bytes: ByteVector) extends HashDigest {
 
   lazy val flip: DoubleSha256DigestBE = DoubleSha256DigestBE(bytes.reverse)
 
+  override lazy val hex: String = bytes.toHex
+
   override def toString = s"DoubleSha256Digest($hex)"
 }
 
