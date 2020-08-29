@@ -302,20 +302,19 @@ case class DataMessageHandler(
       stopHash = stopHash)
 
   private def sendFirstGetCompactFilterHeadersCommand(
-      peerMsgSender: PeerMessageSender): Future[Boolean] =
+      peerMsgSender: PeerMessageSender): Future[Boolean] = {
     for {
-      filterHeaderCount <- chainApi.getFilterHeaderCount()
-      highestFilterHeaderOpt <-
+      bestFilterHeaderOpt <-
         chainApi
-          .getFilterHeadersAtHeight(filterHeaderCount)
-          .map(_.headOption)
+          .getBestFilterHeader()
       highestFilterBlockHash =
-        highestFilterHeaderOpt
+        bestFilterHeaderOpt
           .map(_.blockHashBE)
           .getOrElse(DoubleSha256DigestBE.empty)
       res <- sendNextGetCompactFilterHeadersCommand(peerMsgSender,
                                                     highestFilterBlockHash)
     } yield res
+  }
 
   private def sendNextGetCompactFilterCommand(
       peerMsgSender: PeerMessageSender,
