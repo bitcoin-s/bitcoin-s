@@ -54,6 +54,29 @@ class CompactFilterHeaderDAOTest extends ChainDbUnitTest {
       }
   }
 
+  it must "find filters between height" in { filterHeaderDAO =>
+    val blockHeaderDAO = BlockHeaderDAO()
+    val blockHeaderDb =
+      BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
+    val blockHeaderDbF = blockHeaderDAO.create(blockHeaderDb)
+    val filterHeaderDb1F = for {
+      blockHeaderDb <- blockHeaderDbF
+    } yield {
+      randomFilterHeader(blockHeaderDb)
+    }
+
+    val createdF = filterHeaderDb1F.flatMap(filterHeaderDAO.create)
+
+    for {
+      headerDb <- createdF
+      fromDbVec <-
+        filterHeaderDAO.getBetweenHeights(headerDb.height, headerDb.height)
+    } yield {
+      assert(fromDbVec.length == 1)
+      assert(fromDbVec.head == headerDb)
+    }
+  }
+
   it must "get the best filter header that has a block header associated with it" in {
     filterHeaderDAO =>
       val blockHeaderDAO = BlockHeaderDAO()

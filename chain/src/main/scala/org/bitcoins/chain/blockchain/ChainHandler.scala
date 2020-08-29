@@ -410,7 +410,7 @@ case class ChainHandler(
     val bestFilterHeaderOptF = filterHeaderDAO.getBestFilterHeader
 
     //get best blockchain around our latest filter header
-    val blockchainF: Future[Blockchain] = {
+    val blockchainOptF: Future[Option[Blockchain]] = {
       for {
         bestFilterHeaderOpt <- bestFilterHeaderOptF
         blockchains <- {
@@ -429,15 +429,25 @@ case class ChainHandler(
           }
         }
       } yield {
-        blockchains.maxBy(_.tip.chainWork)
+        if (blockchains.isEmpty) {
+          None
+        } else {
+          Some(blockchains.maxBy(_.tip.chainWork))
+        }
       }
     }
 
     val filterHeadersOptF: Future[Option[CompactFilterHeaderDb]] = {
       for {
-        blockchain <- blockchainF
-        bestHeadersForChain <-
-          filterHeaderDAO.getBestFilterHeaderForHeaders(blockchain.toVector)
+        blockchainOpt <- blockchainOptF
+        bestHeadersForChainFOpt = {
+          blockchainOpt.map(b =>
+            filterHeaderDAO.getBestFilterHeaderForHeaders(b.toVector))
+        }
+        bestHeadersForChain <- bestHeadersForChainFOpt match {
+          case Some(f) => f
+          case None    => Future.successful(None)
+        }
       } yield bestHeadersForChain
     }
 
