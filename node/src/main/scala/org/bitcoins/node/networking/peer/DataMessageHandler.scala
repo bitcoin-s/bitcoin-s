@@ -215,8 +215,8 @@ case class DataMessageHandler(
                 // we probably need to sync filters
                 if (
                   appConfig.nodeType == NodeType.NeutrinoNode && (!syncing ||
-                  filterHeaderHeightOpt.isEmpty &&
-                  filterHeightOpt.isEmpty)
+                  (filterHeaderHeightOpt.isEmpty &&
+                  filterHeightOpt.isEmpty))
                 )
                   sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
                 else
