@@ -1,7 +1,7 @@
 package org.bitcoins.gui
 
 import org.bitcoins.cli.CliCommand.{GetBalance, GetNewAddress, SendToAddress}
-import org.bitcoins.cli.{Config, ConsoleCli}
+import org.bitcoins.cli.{ConsoleCli}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.gui.dialog.{GetNewAddressDialog, SendDialog}
