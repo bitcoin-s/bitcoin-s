@@ -103,15 +103,11 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
     val selectedUtxosF: Future[Vector[SpendingInfoDb]] =
       for {
         walletUtxos <- utxosF
-        //currently just grab the biggest utxos
         utxos = CoinSelector.selectByAlgo(coinSelectionAlgo = coinSelectionAlgo,
                                           walletUtxos = walletUtxos,
                                           outputs = destinations,
                                           feeRate = feeRate)
-        selectedUtxos <-
-          if (markAsReserved) markUTXOsAsReserved(utxos)
-          else Future.successful(utxos)
-      } yield selectedUtxos
+      } yield utxos
 
     val addrInfosWithUtxoF: Future[
       Vector[(SpendingInfoDb, Transaction, AddressInfo)]] =
@@ -147,6 +143,9 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
         }
       }
+      _ <-
+        if (markAsReserved) markUTXOsAsReserved(addrInfosWithUtxo.map(_._1))
+        else FutureUtil.unit
     } yield {
       logger.info {
         val utxosStr = utxoSpendingInfos
