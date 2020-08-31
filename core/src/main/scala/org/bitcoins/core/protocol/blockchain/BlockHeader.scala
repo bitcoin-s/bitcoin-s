@@ -125,7 +125,7 @@ sealed trait BlockHeader extends NetworkElement {
     * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
     * @return
     */
-  def hashBE: DoubleSha256DigestBE = hash.flip
+  lazy val hashBE: DoubleSha256DigestBE = hash.flip
 
   override def bytes: ByteVector = RawBlockHeaderSerializer.write(this)
 
