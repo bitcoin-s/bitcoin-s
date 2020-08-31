@@ -9,11 +9,7 @@ import org.bitcoins.core.protocol.script.{
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.wallet.builder.{
-  AddWitnessDataFinalizer,
-  RawTxBuilder,
-  SubtractFeeFromOutputsFinalizer
-}
+import org.bitcoins.core.wallet.builder.{AddWitnessDataFinalizer, RawTxBuilder}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{ConditionalPath, P2WSHV0InputInfo}
 import org.bitcoins.crypto.ECPublicKey
@@ -53,11 +49,7 @@ case class DLCRefundTxBuilder(
     builder += TransactionOutput(offerInput, offerFinalSPK)
     builder += TransactionOutput(acceptInput, acceptFinalSPK)
 
-    val finalizer =
-      SubtractFeeFromOutputsFinalizer(Vector(fundingInfo),
-                                      feeRate,
-                                      Vector(offerFinalSPK, acceptFinalSPK))
-        .andThen(AddWitnessDataFinalizer(Vector(fundingInfo)))
+    val finalizer = AddWitnessDataFinalizer(Vector(fundingInfo))
 
     val txF = finalizer.buildTx(builder.result())
 
