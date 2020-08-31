@@ -1,5 +1,6 @@
 package org.bitcoins.gui
 
+import org.bitcoins.cli.Config
 import org.bitcoins.gui.settings.Themes
 import scalafx.beans.property.{DoubleProperty, StringProperty}
 
@@ -19,4 +20,15 @@ object GlobalData {
       Seq.empty
     }
 
+  var rpcPortOpt: Option[Int] = None
+
+  var debug = false
+
+  def consoleCliConfig: Config =
+    rpcPortOpt match {
+      case None =>
+        Config(debug = debug)
+      case Some(rpcPort) =>
+        Config(debug = debug, rpcPort = rpcPort)
+    }
 }
