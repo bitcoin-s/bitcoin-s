@@ -1,9 +1,10 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
-import org.bitcoins.core.api.{Callback, CallbackHandler}
+import org.bitcoins.core.api.{Callback, Callback3, CallbackHandler}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -14,6 +15,10 @@ import scala.concurrent.{ExecutionContext, Future}
   * the corresponding function.
   */
 trait WalletCallbacks {
+
+  def onBlockTransactionProcessed: CallbackHandler[
+    (Transaction, DoubleSha256DigestBE, Int),
+    OnBlockTransactionProcessed]
 
   def onTransactionProcessed: CallbackHandler[
     Transaction,
@@ -29,6 +34,15 @@ trait WalletCallbacks {
     OnNewAddressGenerated]
 
   def +(other: WalletCallbacks): WalletCallbacks
+
+  def executeOnBlockTransactionProcessed(
+      logger: Logger,
+      tx: Transaction,
+      blockHash: DoubleSha256DigestBE,
+      positionInBlock: Int)(implicit ec: ExecutionContext): Future[Unit] = {
+    onBlockTransactionProcessed.execute(logger,
+                                        (tx, blockHash, positionInBlock))
+  }
 
   def executeOnTransactionProcessed(logger: Logger, tx: Transaction)(implicit
       ec: ExecutionContext): Future[Unit] = {
@@ -53,6 +67,9 @@ trait WalletCallbacks {
 }
 
 /** Callback for handling a processed transaction */
+trait OnBlockTransactionProcessed
+    extends Callback3[Transaction, DoubleSha256DigestBE, Int]
+
 trait OnTransactionProcessed extends Callback[Transaction]
 
 trait OnTransactionBroadcast extends Callback[Transaction]
@@ -64,6 +81,9 @@ trait OnNewAddressGenerated extends Callback[BitcoinAddress]
 object WalletCallbacks {
 
   private case class WalletCallbacksImpl(
+      onBlockTransactionProcessed: CallbackHandler[
+        (Transaction, DoubleSha256DigestBE, Int),
+        OnBlockTransactionProcessed],
       onTransactionProcessed: CallbackHandler[
         Transaction,
         OnTransactionProcessed],
@@ -78,6 +98,8 @@ object WalletCallbacks {
 
     override def +(other: WalletCallbacks): WalletCallbacks =
       copy(
+        onBlockTransactionProcessed =
+          onBlockTransactionProcessed ++ other.onBlockTransactionProcessed,
         onTransactionProcessed =
           onTransactionProcessed ++ other.onTransactionProcessed,
         onTransactionBroadcast =
@@ -87,6 +109,11 @@ object WalletCallbacks {
           onNewAddressGenerated ++ other.onNewAddressGenerated
       )
   }
+
+  /** Constructs a set of callbacks that only acts on processed transaction */
+  def onBlockTransactionProcessed(
+      f: OnBlockTransactionProcessed): WalletCallbacks =
+    WalletCallbacks(onBlockTransactionProcessed = Vector(f))
 
   /** Constructs a set of callbacks that only acts on processed transaction */
   def onTransactionProcessed(f: OnTransactionProcessed): WalletCallbacks =
@@ -109,12 +136,19 @@ object WalletCallbacks {
     apply(Vector.empty, Vector.empty, Vector.empty, Vector.empty)
 
   def apply(
+      onBlockTransactionProcessed: Vector[OnBlockTransactionProcessed] =
+        Vector.empty,
       onTransactionProcessed: Vector[OnTransactionProcessed] = Vector.empty,
       onTransactionBroadcast: Vector[OnTransactionBroadcast] = Vector.empty,
       onReservedUtxos: Vector[OnReservedUtxos] = Vector.empty,
       onNewAddressGenerated: Vector[OnNewAddressGenerated] = Vector.empty
   ): WalletCallbacks = {
     WalletCallbacksImpl(
+      onBlockTransactionProcessed =
+        CallbackHandler[(Transaction, DoubleSha256DigestBE, Int),
+                        OnBlockTransactionProcessed](
+          "onBlockTransactionProcessed",
+          onBlockTransactionProcessed),
       onTransactionProcessed =
         CallbackHandler[Transaction, OnTransactionProcessed](
           "onTransactionProcessed",

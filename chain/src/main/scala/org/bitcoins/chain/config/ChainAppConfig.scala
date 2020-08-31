@@ -3,11 +3,12 @@ package org.bitcoins.chain.config
 import java.nio.file.Path
 
 import com.typesafe.config.{Config, ConfigException}
+import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.db._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,6 +34,14 @@ case class ChainAppConfig(
   protected[bitcoins] def baseDatadir: Path = directory
 
   override lazy val appConfig: ChainAppConfig = this
+
+  private val callbacks = new Mutable(ChainCallbacks.empty)
+
+  def chainCallbacks: ChainCallbacks = callbacks.atomicGet
+
+  def addCallbacks(newCallbacks: ChainCallbacks): ChainCallbacks = {
+    callbacks.atomicUpdate(newCallbacks)(_ + _)
+  }
 
   /**
     * Checks whether or not the chain project is initialized by

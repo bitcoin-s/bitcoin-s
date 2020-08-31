@@ -117,7 +117,19 @@ case class ChainHandler(
 
       val newChainHandler = this.copy(blockchains = chains)
 
-      createdF.map { _ =>
+      createdF.map { headers =>
+        if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
+          headers.reverseIterator.foldLeft(FutureUtil.unit) { (acc, header) =>
+            for {
+              _ <- acc
+              _ <-
+                chainConfig.chainCallbacks
+                  .executeOnBlockHeaderConnectedCallbacks(logger,
+                                                          header.height,
+                                                          header.blockHeader)
+            } yield ()
+          }
+        }
         chains.foreach { c =>
           logger.info(
             s"Processed headers from height=${c.height - headers.length} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
