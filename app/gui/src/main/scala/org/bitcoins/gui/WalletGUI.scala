@@ -32,6 +32,23 @@ object WalletGUI extends JFXApp {
       }
     )
 
+  private val argsWithIndex = parameters.raw.zipWithIndex
+
+  val rpcPortOpt: Option[Int] = {
+    val portOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcport")
+    portOpt.map {
+      case (_, idx) => parameters.raw(idx + 1).toInt
+    }
+  }
+
+  GlobalData.rpcPortOpt = rpcPortOpt
+
+  val debug: Boolean = {
+    parameters.raw.exists(_.toLowerCase == "--debug")
+  }
+
+  GlobalData.debug = debug
+
   private val glassPane = new VBox {
     children = new ProgressIndicator {
       progress = ProgressIndicator.IndeterminateProgress

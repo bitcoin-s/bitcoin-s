@@ -28,7 +28,8 @@ class WalletGUIModel() {
     taskRunner.run(
       caption = "Get New Address",
       op = {
-        ConsoleCli.exec(GetNewAddress(None), Config.empty) match {
+        ConsoleCli.exec(GetNewAddress(None),
+                        GlobalData.consoleCliConfig) match {
           case Success(commandReturn) => address.value = commandReturn
           case Failure(err)           => throw err
         }
@@ -46,11 +47,13 @@ class WalletGUIModel() {
         taskRunner.run(
           caption = s"Send $amount to $address",
           op = {
-            ConsoleCli.exec(SendToAddress(BitcoinAddress.fromString(address),
-                                          Bitcoins(BigDecimal(amount)),
-                                          satoshisPerVirtualByte = None,
-                                          noBroadcast = false),
-                            Config.empty) match {
+            ConsoleCli.exec(
+              SendToAddress(BitcoinAddress.fromString(address),
+                            Bitcoins(BigDecimal(amount)),
+                            satoshisPerVirtualByte = None,
+                            noBroadcast = false),
+              GlobalData.consoleCliConfig
+            ) match {
               case Success(txid) =>
                 GlobalData.log.value =
                   s"Sent $amount to $address in tx: $txid\n\n${GlobalData.log()}"
@@ -65,7 +68,8 @@ class WalletGUIModel() {
   }
 
   private def updateBalance(): Unit = {
-    ConsoleCli.exec(GetBalance(isSats = false), Config.empty) match {
+    ConsoleCli.exec(GetBalance(isSats = false),
+                    GlobalData.consoleCliConfig) match {
       case Success(commandReturn) =>
         GlobalData.currentBalance.value = commandReturn.split(' ').head.toDouble
       case Failure(err) =>
