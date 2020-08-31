@@ -1,11 +1,11 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.api.wallet.{
   AddressInfo,
   CoinSelectionAlgo,
   CoinSelector
 }
-import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil
@@ -128,7 +128,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         vec <- FutureUtil.collect(addrInfoOptF).map(_.toVector)
       } yield vec
 
-    for {
+    val resultF = for {
       addrInfosWithUtxo <- addrInfosWithUtxoF
       change <- getNewChangeAddress(fromAccount)
       utxoSpendingInfos = {
@@ -177,5 +177,17 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
       (txBuilder.setFinalizer(finalizer), utxoSpendingInfos)
     }
+
+    resultF.recoverWith { error =>
+      // un-reserve utxos since we failed to create valid spending infos
+      if (markAsReserved) {
+        for {
+          utxos <- selectedUtxosF
+          _ <- unmarkUTXOsAsReserved(utxos)
+        } yield error
+      } else Future.failed(error)
+    }
+
+    resultF
   }
 }
