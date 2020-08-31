@@ -2,7 +2,7 @@ package org.bitcoins.node
 
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.ECPublicKey
@@ -11,13 +11,9 @@ import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
-import org.bitcoins.testkit.node.{
-  NeutrinoNodeFundedWalletBitcoind,
-  NodeTestUtil,
-  NodeUnitTest
-}
+import org.bitcoins.testkit.node.{NeutrinoNodeFundedWalletBitcoind, NodeTestUtil, NodeUnitTest}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.{OnTransactionProcessed, Wallet, WalletCallbacks}
+import org.bitcoins.wallet.Wallet
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.{Future, Promise}
