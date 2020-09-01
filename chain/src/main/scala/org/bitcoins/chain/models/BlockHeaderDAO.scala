@@ -261,9 +261,7 @@ case class BlockHeaderDAO()(implicit
   /** Returns the block height of the block with the most work from our database */
   def bestHeight: Future[Int] = {
     chainTips.map { tips =>
-      if (tips.nonEmpty) {
-        tips.maxBy(_.chainWork).height
-      } else 0
+      tips.maxByOption(_.chainWork).map(_.height).getOrElse(0)
     }
   }
 
