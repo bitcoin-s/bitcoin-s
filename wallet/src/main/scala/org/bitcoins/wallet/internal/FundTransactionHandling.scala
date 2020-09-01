@@ -1,11 +1,11 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.api.wallet.{
   AddressInfo,
   CoinSelectionAlgo,
   CoinSelector
 }
-import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil
@@ -21,6 +21,7 @@ import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
@@ -103,15 +104,11 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
     val selectedUtxosF: Future[Vector[SpendingInfoDb]] =
       for {
         walletUtxos <- utxosF
-        //currently just grab the biggest utxos
         utxos = CoinSelector.selectByAlgo(coinSelectionAlgo = coinSelectionAlgo,
                                           walletUtxos = walletUtxos,
                                           outputs = destinations,
                                           feeRate = feeRate)
-        selectedUtxos <-
-          if (markAsReserved) markUTXOsAsReserved(utxos)
-          else Future.successful(utxos)
-      } yield selectedUtxos
+      } yield utxos
 
     val addrInfosWithUtxoF: Future[
       Vector[(SpendingInfoDb, Transaction, AddressInfo)]] =
@@ -132,7 +129,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         vec <- FutureUtil.collect(addrInfoOptF).map(_.toVector)
       } yield vec
 
-    for {
+    val resultF = for {
       addrInfosWithUtxo <- addrInfosWithUtxoF
       change <- getNewChangeAddress(fromAccount)
       utxoSpendingInfos = {
@@ -147,6 +144,9 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
         }
       }
+      _ <-
+        if (markAsReserved) markUTXOsAsReserved(addrInfosWithUtxo.map(_._1))
+        else FutureUtil.unit
     } yield {
       logger.info {
         val utxosStr = utxoSpendingInfos
@@ -178,5 +178,18 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
       (txBuilder.setFinalizer(finalizer), utxoSpendingInfos)
     }
+
+    resultF.recoverWith {
+      case NonFatal(error) =>
+        // un-reserve utxos since we failed to create valid spending infos
+        if (markAsReserved) {
+          for {
+            utxos <- selectedUtxosF
+            _ <- unmarkUTXOsAsReserved(utxos)
+          } yield error
+        } else Future.failed(error)
+    }
+
+    resultF
   }
 }
