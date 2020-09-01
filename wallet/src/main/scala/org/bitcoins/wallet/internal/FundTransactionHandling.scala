@@ -21,6 +21,7 @@ import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
@@ -178,14 +179,15 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       (txBuilder.setFinalizer(finalizer), utxoSpendingInfos)
     }
 
-    resultF.recoverWith { error =>
-      // un-reserve utxos since we failed to create valid spending infos
-      if (markAsReserved) {
-        for {
-          utxos <- selectedUtxosF
-          _ <- unmarkUTXOsAsReserved(utxos)
-        } yield error
-      } else Future.failed(error)
+    resultF.recoverWith {
+      case NonFatal(error) =>
+        // un-reserve utxos since we failed to create valid spending infos
+        if (markAsReserved) {
+          for {
+            utxos <- selectedUtxosF
+            _ <- unmarkUTXOsAsReserved(utxos)
+          } yield error
+        } else Future.failed(error)
     }
 
     resultF
