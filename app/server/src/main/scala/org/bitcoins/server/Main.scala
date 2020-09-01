@@ -193,6 +193,8 @@ object Main extends App with BitcoinSLogger {
     }
     startFut.failed.foreach { err =>
       logger.error(s"Error on server startup!", err)
+      err.printStackTrace()
+      sys.exit(1)
     }
   }
 
