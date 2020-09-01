@@ -73,4 +73,15 @@ class ScriptPubKeyDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     recoverToSucceededIf[SQLException](insertF)
   }
 
+  it must "be able to create new scripts if they don't exist" in { daos =>
+    val scriptPubKeyDAO = daos.scriptPubKeyDAO
+    val pkh = P2PKHScriptPubKey(ECPublicKey.freshPublicKey)
+    for {
+      db1 <- scriptPubKeyDAO.createIfNotExists(ScriptPubKeyDb(pkh))
+      db2 <- scriptPubKeyDAO.createIfNotExists(ScriptPubKeyDb(pkh))
+    } yield {
+      assert(db1 == db2)
+    }
+  }
+
 }
