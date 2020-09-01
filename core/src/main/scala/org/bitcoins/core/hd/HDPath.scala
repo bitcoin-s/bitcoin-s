@@ -41,7 +41,7 @@ private[bitcoins] trait HDPath extends BIP32Path {
     * [[org.bitcoins.core.crypto.ExtKey ExtKey]]
     */
   def next: NextPath =
-    HDAddress(chain, address.index + 1).toPath.asInstanceOf[NextPath]
+    HDAddress(change, address.index + 1).toPath.asInstanceOf[NextPath]
 
   def account: HDAccount = address.account
 
@@ -49,7 +49,7 @@ private[bitcoins] trait HDPath extends BIP32Path {
 
   def coin: HDCoin = address.coin
 
-  def chain: HDChain = address.chain
+  def change: HDChange = address.change
 
   def address: HDAddress
 

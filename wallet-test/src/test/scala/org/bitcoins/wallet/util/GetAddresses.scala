@@ -64,7 +64,8 @@ object GetAddresses extends App {
     val xpub = xpubCmd.!!.split("\n").last.split(": ").last
 
     val addresses = for {
-      chainType <- List[HDChainType](HDChainType.Change, HDChainType.External)
+      chainType <-
+        List[HDChangeType](HDChangeType.Change, HDChangeType.External)
       addressIndex <- 0 until 3
     } yield {
       val path = BIP32Path(

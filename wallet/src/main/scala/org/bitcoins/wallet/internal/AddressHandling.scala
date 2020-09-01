@@ -146,14 +146,14 @@ private[wallet] trait AddressHandling extends WalletLogger {
     */
   private def getNewAddressDb(
       account: AccountDb,
-      chainType: HDChainType
+      chainType: HDChangeType
   ): Future[AddressDb] = {
     logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
 
     val lastAddrOptF = chainType match {
-      case HDChainType.External =>
+      case HDChangeType.External =>
         addressDAO.findMostRecentExternal(account.hdAccount)
-      case HDChainType.Change =>
+      case HDChangeType.Change =>
         addressDAO.findMostRecentChange(account.hdAccount)
     }
 
@@ -165,7 +165,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
             s"Found previous address at path=${addr.path}, next=$next")
           next
         case None =>
-          val chain = account.hdAccount.toChain(chainType)
+          val chain = account.hdAccount.toChange(chainType)
           val address = HDAddress(chain, 0)
           val path = address.toPath
           logger.debug(s"Did not find previous address, next=$path")
@@ -208,7 +208,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     */
   private def getNewAddressHelper(
       account: AccountDb,
-      chainType: HDChainType
+      chainType: HDChangeType
   ): Future[BitcoinAddress] = {
     val p = Promise[AddressDb]
     addressRequestQueue.add((account, chainType, p))
@@ -223,7 +223,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
 
   def getNextAvailableIndex(
       accountDb: AccountDb,
-      chainType: HDChainType): Future[Int] = {
+      chainType: HDChangeType): Future[Int] = {
     getNewAddressDb(accountDb, chainType).map(_.path.path.last.index)
   }
 
@@ -239,7 +239,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
-    getNewAddressHelper(account, HDChainType.External)
+    getNewAddressHelper(account, HDChangeType.External)
   }
 
   /** @inheritdoc */
@@ -256,7 +256,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   /** @inheritdoc */
   def getAddress(
       account: AccountDb,
-      chainType: HDChainType,
+      chainType: HDChangeType,
       addressIndex: Int): Future[AddressDb] = {
 
     val coinType = account.hdAccount.coin.coinType
@@ -356,7 +356,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
       addressType: AddressType): Future[BitcoinAddress] = {
     for {
       account <- getDefaultAccountForType(addressType)
-      address <- getNewAddressHelper(account, HDChainType.External)
+      address <- getNewAddressHelper(account, HDChangeType.External)
     } yield address
   }
 
@@ -366,7 +366,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
       tags: Vector[AddressTag]): Future[BitcoinAddress] = {
     for {
       account <- getDefaultAccountForType(addressType)
-      address <- getNewAddressHelper(account, HDChainType.External)
+      address <- getNewAddressHelper(account, HDChangeType.External)
 
       tagDbs = tags.map(tag => AddressTagDb(address, tag))
       _ <- addressTagDAO.createAll(tagDbs)
@@ -376,7 +376,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   /** Generates a new change address */
   override def getNewChangeAddress(
       account: AccountDb): Future[BitcoinAddress] = {
-    getNewAddressHelper(account, HDChainType.Change)
+    getNewAddressHelper(account, HDChangeType.Change)
   }
 
   def getNewChangeAddress(account: HDAccount): Future[BitcoinAddress] = {
@@ -456,7 +456,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   lazy val addressRequestQueue = {
     val queue = new java.util.concurrent.ArrayBlockingQueue[(
         AccountDb,
-        HDChainType,
+        HDChangeType,
         Promise[AddressDb])](
       walletConfig.addressQueueSize
     )

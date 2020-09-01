@@ -87,18 +87,19 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       }
   }
 
-  implicit val hdchainType = new Reads[HDChainType] {
+  implicit val hdChangeTypeReads: Reads[HDChangeType] =
+    new Reads[HDChangeType] {
 
-    override def reads(json: JsValue): JsResult[HDChainType] =
-      json.validate[String].map(_.toLowerCase).map {
-        case "change"   => HDChainType.Change
-        case "external" => HDChainType.External
-      }
-  }
+      override def reads(json: JsValue): JsResult[HDChangeType] =
+        json.validate[String].map(_.toLowerCase).map {
+          case "change"   => HDChangeType.Change
+          case "external" => HDChangeType.External
+        }
+    }
 
   case class TestAddress(
       path: HDPath,
-      chain: HDChainType,
+      change: HDChangeType,
       addressIndex: Int,
       address: BitcoinAddress)
 
@@ -216,9 +217,9 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       case (acc, vec) =>
         val addrFutures: Future[Seq[AddressDb]] =
           FutureUtil.sequentially(vec.addresses) { vector =>
-            val addrFut = vector.chain match {
-              case HDChainType.Change => wallet.getNewChangeAddress(acc)
-              case HDChainType.External =>
+            val addrFut = vector.change match {
+              case HDChangeType.Change => wallet.getNewChangeAddress(acc)
+              case HDChangeType.External =>
                 wallet.getNewAddress(acc)
             }
             addrFut.flatMap(wallet.addressDAO.findAddress).map {

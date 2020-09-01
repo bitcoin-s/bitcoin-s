@@ -57,7 +57,7 @@ val segwitPath = SegWitHDPath.fromString("m/84'/0'/0'/0/0")
 val otherSegwitPath =
 SegWitHDPath(HDCoinType.Bitcoin,
              accountIndex = 0,
-             HDChainType.External,
+             HDChangeType.External,
              addressIndex = 0)
 
 segwitPath == otherSegwitPath

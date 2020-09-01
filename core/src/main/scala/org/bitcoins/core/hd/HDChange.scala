@@ -5,7 +5,7 @@ package org.bitcoins.core.hd
   * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#change BIP44]]
   * change chain
   */
-sealed abstract class HDChain extends BIP32Path {
+sealed abstract class HDChange extends BIP32Path {
 
   override val path: Vector[BIP32Node] = {
     account.path :+ BIP32Node(toInt, hardened = false)
@@ -17,25 +17,25 @@ sealed abstract class HDChain extends BIP32Path {
 
   def account: HDAccount
 
-  def chainType: HDChainType
+  def changeType: HDChangeType
 
-  def toInt: Int = chainType.index
+  def toInt: Int = changeType.index
 
   /** Given a index, creates a HD address */
   def toHDAddress(index: Int): HDAddress = HDAddress(this, index = index)
 
 }
 
-object HDChain {
+object HDChange {
 
-  private case class BIP44ChainImpl(
+  private case class BIP44ChangeImpl(
       coin: HDCoin,
-      chainType: HDChainType,
+      changeType: HDChangeType,
       account: HDAccount,
       purpose: HDPurpose)
-      extends HDChain
+      extends HDChange
 
-  def apply(chainType: HDChainType, account: HDAccount): HDChain =
-    BIP44ChainImpl(account.coin, chainType, account, account.purpose)
+  def apply(changeType: HDChangeType, account: HDAccount): HDChange =
+    BIP44ChangeImpl(account.coin, changeType, account, account.purpose)
 
 }

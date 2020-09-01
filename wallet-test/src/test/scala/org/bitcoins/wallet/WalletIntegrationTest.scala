@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.currency._
-import org.bitcoins.core.hd.HDChainType
+import org.bitcoins.core.hd.HDChangeType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
@@ -102,7 +102,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       utxos <- wallet.listUtxos()
       _ = utxos match {
         case utxo +: Vector() =>
-          assert(utxo.privKeyPath.chain.chainType == HDChainType.Change)
+          assert(utxo.privKeyPath.change.changeType == HDChangeType.Change)
         case other => fail(s"Found ${other.length} utxos!")
       }
 

@@ -19,11 +19,11 @@ object NestedSegWitHDPath extends HDPathFactory[NestedSegWitHDPath] {
   override def apply(
       coinType: HDCoinType,
       accountIndex: Int,
-      chainType: HDChainType,
+      changeType: HDChangeType,
       addressIndex: Int): NestedSegWitHDPath = {
 
     val address =
-      assembleAddress(coinType, accountIndex, chainType, addressIndex)
+      assembleAddress(coinType, accountIndex, changeType, addressIndex)
     NestedSegWitHDPathImpl(address)
   }
 }

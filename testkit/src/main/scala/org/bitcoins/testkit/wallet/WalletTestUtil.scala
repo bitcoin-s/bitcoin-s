@@ -61,19 +61,19 @@ object WalletTestUtil {
   lazy val sampleSegwitPath =
     SegWitHDPath(hdCoinType,
                  accountIndex = 0,
-                 HDChainType.External,
+                 HDChangeType.External,
                  addressIndex = 0)
 
   /** Sample legacy HD path */
   lazy val sampleLegacyPath = LegacyHDPath(hdCoinType,
                                            accountIndex = 0,
-                                           HDChainType.Change,
+                                           HDChangeType.Change,
                                            addressIndex = 0)
 
   lazy val sampleNestedSegwitPath: NestedSegWitHDPath =
     NestedSegWitHDPath(hdCoinType,
                        accountIndex = 0,
-                       HDChainType.External,
+                       HDChangeType.External,
                        addressIndex = 0)
 
   private def freshXpub(): ExtPublicKey =
@@ -171,7 +171,7 @@ object WalletTestUtil {
   /** Given an account returns a sample address */
   def getAddressDb(account: AccountDb, addressIndex: Int = 0): AddressDb = {
     val path = SegWitHDPath(WalletTestUtil.hdCoinType,
-                            chainType = HDChainType.External,
+                            changeType = HDChangeType.External,
                             accountIndex = account.hdAccount.index,
                             addressIndex = addressIndex)
     val pubkey: ECPublicKey = ECPublicKey.freshPublicKey
@@ -211,7 +211,7 @@ object WalletTestUtil {
   /** Given an account returns a sample address */
   def getNestedSegwitAddressDb(account: AccountDb): AddressDb = {
     val path = NestedSegWitHDPath(WalletTestUtil.hdCoinType,
-                                  chainType = HDChainType.External,
+                                  changeType = HDChangeType.External,
                                   accountIndex = account.hdAccount.index,
                                   addressIndex = 0)
     val pubkey: ECPublicKey = ECPublicKey.freshPublicKey

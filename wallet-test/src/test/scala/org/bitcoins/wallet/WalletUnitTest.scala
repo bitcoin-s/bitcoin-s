@@ -4,8 +4,8 @@ import java.nio.file.Files
 
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.api.wallet.db.AddressDb
-import org.bitcoins.core.hd.HDChainType.{Change, External}
-import org.bitcoins.core.hd.{HDAccount, HDChainType}
+import org.bitcoins.core.hd.HDChangeType.{Change, External}
+import org.bitcoins.core.hd.{HDAccount, HDChangeType}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError
@@ -65,8 +65,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it should "know what the last address index is" in { wallet =>
     def getMostRecent(
         hdAccount: HDAccount,
-        chain: HDChainType): Future[AddressDb] = {
-      val recentOptFut: Future[Option[AddressDb]] = chain match {
+        change: HDChangeType): Future[AddressDb] = {
+      val recentOptFut: Future[Option[AddressDb]] = change match {
         case Change =>
           wallet.addressDAO.findMostRecentChange(hdAccount)
         case External =>
@@ -75,15 +75,15 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
       recentOptFut.map {
         case Some(addr) => addr
-        case None       => fail(s"Did not find $chain address!")
+        case None       => fail(s"Did not find $change address!")
       }
     }
 
     def assertIndexIs(
         hdAccount: HDAccount,
-        chain: HDChainType,
+        change: HDChangeType,
         addrIndex: Int): Future[Assertion] = {
-      getMostRecent(hdAccount, chain) map { addr =>
+      getMostRecent(hdAccount, change) map { addr =>
         assert(addr.path.address.index == addrIndex)
       }
     }
@@ -95,16 +95,16 @@ class WalletUnitTest extends BitcoinSWalletTest {
       * Generate some addresses, and verify that the correct address index is
       * being reported
       */
-    def testChain(
+    def testChangeType(
         hdAccount: HDAccount,
-        chain: HDChainType): Future[Assertion] = {
-      val getAddrFunc: () => Future[BitcoinAddress] = chain match {
+        change: HDChangeType): Future[Assertion] = {
+      val getAddrFunc: () => Future[BitcoinAddress] = change match {
         case Change   => wallet.getNewChangeAddress _
         case External => wallet.getNewAddress _
       }
       for {
         _ <- {
-          val addrF = chain match {
+          val addrF = change match {
             case Change =>
               wallet.addressDAO.findMostRecentChange(hdAccount)
             case External =>
@@ -113,14 +113,14 @@ class WalletUnitTest extends BitcoinSWalletTest {
           addrF.map {
             case Some(addr) =>
               fail(
-                s"Found ${addr.address} $chain address although there was no previous addreses generated")
+                s"Found ${addr.address} $change address although there was no previous addreses generated")
             case None =>
           }
         }
         _ <- FutureUtil.sequentially(addrRange)(_ => getAddrFunc())
-        _ <- assertIndexIs(hdAccount, chain, addrIndex = addressesToGenerate)
+        _ <- assertIndexIs(hdAccount, change, addrIndex = addressesToGenerate)
         newest <- getAddrFunc()
-        res <- getMostRecent(hdAccount, chain).map { found =>
+        res <- getMostRecent(hdAccount, change).map { found =>
           assert(found.address == newest)
           assert(found.path.address.index == addressesToGenerate + 1)
         }
@@ -129,8 +129,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
     for {
       account <- wallet.getDefaultAccount()
-      _ <- testChain(hdAccount = account.hdAccount, External)
-      res <- testChain(hdAccount = account.hdAccount, Change)
+      _ <- testChangeType(hdAccount = account.hdAccount, External)
+      res <- testChangeType(hdAccount = account.hdAccount, Change)
     } yield res
   }
 

@@ -14,7 +14,7 @@ case class AddressRecord(
     purpose: HDPurpose,
     accountCoin: HDCoinType,
     accountIndex: Int,
-    accountChain: HDChainType,
+    accountChain: HDChangeType,
     addressIndex: Int,
     address: BitcoinAddress,
     pubKey: ECPublicKey,
@@ -29,7 +29,7 @@ case class AddressRecord(
         val path =
           SegWitHDPath(coinType = accountCoin,
                        accountIndex = accountIndex,
-                       chainType = accountChain,
+                       changeType = accountChain,
                        addressIndex = addressIndex)
 
         SegWitAddressDb(path,
@@ -42,7 +42,7 @@ case class AddressRecord(
       case (HDPurposes.Legacy, legacyAddr: P2PKHAddress, None) =>
         val path = LegacyHDPath(coinType = accountCoin,
                                 accountIndex = accountIndex,
-                                chainType = accountChain,
+                                changeType = accountChain,
                                 addressIndex = addressIndex)
         LegacyAddressDb(path,
                         pubKey,
@@ -55,7 +55,7 @@ case class AddressRecord(
             Some(scriptWitness)) =>
         val path = NestedSegWitHDPath(coinType = accountCoin,
                                       accountIndex = accountIndex,
-                                      chainType = accountChain,
+                                      changeType = accountChain,
                                       addressIndex = addressIndex)
         NestedSegWitAddressDb(path,
                               pubKey,
@@ -84,7 +84,7 @@ object AddressRecord {
           path.purpose,
           path.coin.coinType,
           path.account.index,
-          path.chain.chainType,
+          path.change.changeType,
           path.address.index,
           address,
           pubKey,
@@ -97,7 +97,7 @@ object AddressRecord {
           path.purpose,
           path.coin.coinType,
           path.account.index,
-          path.chain.chainType,
+          path.change.changeType,
           path.address.index,
           address,
           pubkey,
@@ -115,7 +115,7 @@ object AddressRecord {
           path.purpose,
           path.coin.coinType,
           path.account.index,
-          path.chain.chainType,
+          path.change.changeType,
           path.address.index,
           address,
           pubKey,

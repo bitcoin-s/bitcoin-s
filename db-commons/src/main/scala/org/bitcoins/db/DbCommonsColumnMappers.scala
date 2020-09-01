@@ -179,8 +179,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType
       .base[SegWitHDPath, String](_.toString, SegWitHDPath.fromString)
 
-  implicit val hdChainTypeMapper: BaseColumnType[HDChainType] =
-    MappedColumnType.base[HDChainType, Int](_.index, HDChainType.fromInt)
+  implicit val hdChainTypeMapper: BaseColumnType[HDChangeType] =
+    MappedColumnType.base[HDChangeType, Int](_.index, HDChangeType.fromInt)
 
   implicit val hdPurposeMapper: BaseColumnType[HDPurpose] =
     MappedColumnType

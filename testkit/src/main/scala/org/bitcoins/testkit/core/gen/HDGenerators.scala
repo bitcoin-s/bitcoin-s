@@ -47,19 +47,19 @@ object HDGenerators {
     } yield BIP32Path(children.toVector)
 
   /**
-    * Generates a valid BIP44 chain type (external/internal change)
+    * Generates a valid BIP44 change type (external/internal change)
     */
-  def hdChainType: Gen[HDChainType] =
-    Gen.oneOf(HDChainType.Change, HDChainType.External)
+  def hdChangeType: Gen[HDChangeType] =
+    Gen.oneOf(HDChangeType.Change, HDChangeType.External)
 
   /**
     * Generates a valid BIP44 chain path
     */
-  def hdChain: Gen[HDChain] =
+  def hdChange: Gen[HDChange] =
     for {
-      chainType <- hdChainType
+      chainType <- hdChangeType
       account <- hdAccount
-    } yield HDChain(chainType, account)
+    } yield HDChange(chainType, account)
 
   /**
     * Generates a valid HD coin type
@@ -91,7 +91,7 @@ object HDGenerators {
     */
   def hdAddress: Gen[HDAddress] =
     for {
-      chain <- hdChain
+      chain <- hdChange
       int <- NumberGenerator.positiveInts
     } yield HDAddress(chain, int)
 
@@ -104,33 +104,33 @@ object HDGenerators {
       purpose = HDPurposes.Legacy
       accountIndex <- NumberGenerator.positiveInts
       addressIndex <- NumberGenerator.positiveInts
-      chainType <- hdChainType
+      chainType <- hdChangeType
     } yield LegacyHDPath(coinType = coinType,
                          addressIndex = addressIndex,
                          accountIndex = accountIndex,
-                         chainType = chainType)
+                         changeType = chainType)
 
   def segwithHdPath: Gen[SegWitHDPath] =
     for {
       coinType <- hdCoinType
       accountIndex <- NumberGenerator.positiveInts
       addressIndex <- NumberGenerator.positiveInts
-      chainType <- hdChainType
+      chainType <- hdChangeType
     } yield SegWitHDPath(coinType = coinType,
                          addressIndex = addressIndex,
                          accountIndex = accountIndex,
-                         chainType = chainType)
+                         changeType = chainType)
 
   def nestedSegwithHdPath: Gen[NestedSegWitHDPath] =
     for {
       coinType <- hdCoinType
       accountIndex <- NumberGenerator.positiveInts
       addressIndex <- NumberGenerator.positiveInts
-      chainType <- hdChainType
+      chainType <- hdChangeType
     } yield NestedSegWitHDPath(coinType = coinType,
                                addressIndex = addressIndex,
                                accountIndex = accountIndex,
-                               chainType = chainType)
+                               changeType = chainType)
 
   def hdPath: Gen[HDPath] =
     Gen.oneOf(legacyHdPath, segwithHdPath, nestedSegwithHdPath)

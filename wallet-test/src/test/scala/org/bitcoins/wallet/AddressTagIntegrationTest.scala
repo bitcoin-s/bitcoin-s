@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.currency._
-import org.bitcoins.core.hd.HDChainType
+import org.bitcoins.core.hd.HDChangeType
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.builder.RawTxSigner
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -97,8 +97,9 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       // One change one external
       assert(utxos.size == 2)
       assert(
-        utxos.exists(_.privKeyPath.chain.chainType == HDChainType.External))
-      assert(utxos.exists(_.privKeyPath.chain.chainType == HDChainType.Change))
+        utxos.exists(_.privKeyPath.change.changeType == HDChangeType.External))
+      assert(
+        utxos.exists(_.privKeyPath.change.changeType == HDChangeType.Change))
 
       // untagged balance should be untouched
       assert(balancePostSend - tagBalancePostSend == valueFromBitcoind.satoshis)

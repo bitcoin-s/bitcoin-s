@@ -12,7 +12,7 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
   def apply(
       coin: HDCoinType,
       accountIndex: Int,
-      chainType: HDChainType,
+      changeType: HDChangeType,
       addressIndex: Int): PathType
 
   /**
@@ -29,7 +29,7 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
     apply(
       coin = address.coin.coinType,
       accountIndex = address.account.index,
-      chainType = address.chain.chainType,
+      changeType = address.change.changeType,
       addressIndex = address.index
     )
   }
@@ -61,34 +61,33 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
     require(children.length == 5,
             s"A $pathName path string must have five elements")
 
-    val _ :+ coinChild :+ accountChild :+ chainChild :+ addressChild =
+    val _ :+ coinChild :+ accountChild :+ changeChild :+ addressChild =
       children
 
     require(coinChild.hardened, "The coin type child must be hardened!")
     require(accountChild.hardened, "The account child must be hardened!")
-    require(!chainChild.hardened, "The chain child must not be hardened!")
+    require(!changeChild.hardened, "The change child must not be hardened!")
     require(!addressChild.hardened,
             "The address index child must not be hardened!")
 
-    val chainType = HDChainType.fromInt(chainChild.index)
+    val changeType = HDChangeType.fromInt(changeChild.index)
     val coinType = HDCoinType.fromInt(coinChild.index)
 
     apply(coin = coinType,
           accountIndex = accountChild.index,
-          chainType = chainType,
+          changeType = changeType,
           addressIndex = addressChild.index)
   }
 
   protected def assembleAddress(
       coinType: HDCoinType,
       accountIndex: Int,
-      chainType: HDChainType,
+      changeType: HDChangeType,
       addressIndex: Int): HDAddress = {
     val coin = HDCoin(hdPurpose, coinType)
     val account = HDAccount(coin = coin, index = accountIndex)
-    val chain =
-      HDChain(account = account, chainType = chainType)
-    HDAddress(chain, addressIndex)
+    val change = HDChange(account = account, changeType = changeType)
+    HDAddress(change, addressIndex)
   }
 
   /**
@@ -104,22 +103,22 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
   lazy val purposeChild: BIP32Node = BIP32Node(PURPOSE, hardened = true)
 
   /**
-    * The index of the coin segement of a BIP44 path
+    * The index of the coin segment of a BIP44 path
     */
   final val COIN_INDEX: Int = 1
 
   /**
-    * The index of the account segement of a BIP44 path
+    * The index of the account segment of a BIP44 path
     */
   final val ACCOUNT_INDEX: Int = 2
 
   /**
-    * The index of the chain segement of a BIP44 path
+    * The index of the change segment of a BIP44 path
     */
-  final val CHAIN_INDEX: Int = 3
+  final val CHANGE_INDEX: Int = 3
 
   /**
-    * The index of the address segement of a BIP44 path
+    * The index of the address segment of a BIP44 path
     */
   final val ADDRESS_INDEX: Int = 4
 }

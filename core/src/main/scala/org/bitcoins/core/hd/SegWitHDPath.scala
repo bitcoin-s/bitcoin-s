@@ -18,10 +18,10 @@ object SegWitHDPath extends HDPathFactory[SegWitHDPath] {
   override def apply(
       coinType: HDCoinType,
       accountIndex: Int,
-      chainType: HDChainType,
+      changeType: HDChangeType,
       addressIndex: Int): SegWitHDPath = {
     val address =
-      assembleAddress(coinType, accountIndex, chainType, addressIndex)
+      assembleAddress(coinType, accountIndex, changeType, addressIndex)
     SegWitHDPathImpl(address)
 
   }

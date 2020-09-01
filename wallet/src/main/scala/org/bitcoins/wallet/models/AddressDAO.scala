@@ -8,7 +8,7 @@ import org.bitcoins.core.api.wallet.db.{
   ScriptPubKeyDb
 }
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd.{HDAccount, HDChainType, HDCoinType, HDPurpose}
+import org.bitcoins.core.hd.{HDAccount, HDChangeType, HDCoinType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.wallet.utxo.TxoState
@@ -203,7 +203,7 @@ case class AddressDAO()(implicit
     */
   def findMostRecentChange(hdAccount: HDAccount): Future[Option[AddressDb]] = {
     val query =
-      findMostRecentForChain(hdAccount, HDChainType.Change)
+      findMostRecentForChange(hdAccount, HDChangeType.Change)
 
     safeDatabase
       .run(query)
@@ -280,11 +280,13 @@ case class AddressDAO()(implicit
       })
   }
 
-  private def findMostRecentForChain(account: HDAccount, chain: HDChainType) = {
+  private def findMostRecentForChange(
+      account: HDAccount,
+      change: HDChangeType) = {
     addressesForAccountQuery(account.index)
       .filter(_._1.purpose === account.purpose)
       .filter(_._1.accountCoin === account.coin.coinType)
-      .filter(_._1.accountChainType === chain)
+      .filter(_._1.changeType === change)
       .sortBy(_._1.addressIndex.desc)
       .take(1)
       .result
@@ -297,7 +299,7 @@ case class AddressDAO()(implicit
   def findMostRecentExternal(
       hdAccount: HDAccount): Future[Option[AddressDb]] = {
     val query =
-      findMostRecentForChain(hdAccount, HDChainType.External)
+      findMostRecentForChange(hdAccount, HDChangeType.External)
     safeDatabase
       .run(query)
       .map(_.map {
@@ -318,7 +320,7 @@ case class AddressDAO()(implicit
 
     def accountIndex: Rep[Int] = column("account_index")
 
-    def accountChainType: Rep[HDChainType] = column("hd_chain_type")
+    def changeType: Rep[HDChangeType] = column("hd_chain_type")
 
     def addressIndex: Rep[Int] = column("address_index")
 
@@ -336,7 +338,7 @@ case class AddressDAO()(implicit
       (purpose,
        accountCoin,
        accountIndex,
-       accountChainType,
+       changeType,
        addressIndex,
        address,
        ecPublicKey,

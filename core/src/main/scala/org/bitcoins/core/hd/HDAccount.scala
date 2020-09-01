@@ -22,8 +22,8 @@ case class HDAccount(
 
   def purpose: HDPurpose = coin.purpose
 
-  def toChain(chainType: HDChainType): HDChain =
-    HDChain(chainType = chainType, account = this)
+  def toChange(changeType: HDChangeType): HDChange =
+    HDChange(changeType = changeType, account = this)
 }
 
 object HDAccount {

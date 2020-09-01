@@ -9,13 +9,13 @@ sealed abstract class HDAddress extends BIP32Path {
   require(index >= 0, s"Address index ($index) must be positive!")
 
   override val path: Vector[BIP32Node] = {
-    chain.path :+ BIP32Node(index, hardened = false)
+    change.path :+ BIP32Node(index, hardened = false)
   }
 
   def purpose: HDPurpose
   def coin: HDCoin
   def account: HDAccount
-  def chain: HDChain
+  def change: HDChange
   def index: Int
 
   def toPath: HDPath =
@@ -33,16 +33,16 @@ object HDAddress {
   private case class HDAddressImpl(
       coin: HDCoin,
       account: HDAccount,
-      chain: HDChain,
+      change: HDChange,
       index: Int,
       purpose: HDPurpose)
       extends HDAddress
 
-  def apply(chain: HDChain, index: Int): HDAddress =
-    HDAddressImpl(coin = chain.coin,
-                  account = chain.account,
-                  chain = chain,
+  def apply(change: HDChange, index: Int): HDAddress =
+    HDAddressImpl(coin = change.coin,
+                  account = change.account,
+                  change = change,
                   index = index,
-                  purpose = chain.purpose)
+                  purpose = change.purpose)
 
 }

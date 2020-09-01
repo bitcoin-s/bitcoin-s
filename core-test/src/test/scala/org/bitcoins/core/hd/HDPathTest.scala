@@ -22,29 +22,29 @@ class HDPathTest extends BitcoinSUnitTest {
     }
   }
 
-  it must "be convertable to a HDChain" in {
-    forAll(HDGenerators.hdAccount, HDGenerators.hdChainType) {
-      (account, chainType) =>
-        val chain = account.toChain(chainType)
-        assert(chain.account == account)
+  it must "be convertable to a HDChange" in {
+    forAll(HDGenerators.hdAccount, HDGenerators.hdChangeType) {
+      (account, changeType) =>
+        val change = account.toChange(changeType)
+        assert(change.account == account)
     }
   }
 
-  behavior of "HDChain"
+  behavior of "HDChange"
 
   it must "be convertable to an address" in {
-    forAll(HDGenerators.hdChain, NumberGenerator.positiveInts) { (chain, i) =>
-      val addr = chain.toHDAddress(i)
-      assert(addr.chain == chain)
+    forAll(HDGenerators.hdChange, NumberGenerator.positiveInts) { (change, i) =>
+      val addr = change.toHDAddress(i)
+      assert(addr.change == change)
     }
   }
 
   behavior of "HDAddress"
 
-  it must "fail to make addresses with neagtives indices" in {
-    forAll(HDGenerators.hdChain, NumberGenerator.negativeInts) { (chain, i) =>
+  it must "fail to make addresses with negatives indices" in {
+    forAll(HDGenerators.hdChange, NumberGenerator.negativeInts) { (change, i) =>
       assertThrows[IllegalArgumentException](
-        HDAddress(chain = chain, index = i))
+        HDAddress(change = change, index = i))
     }
   }
 
@@ -56,14 +56,14 @@ class HDPathTest extends BitcoinSUnitTest {
     }
   }
 
-  behavior of "HDChainType"
+  behavior of "HDChangeType"
 
-  it must "correctly represent external and change chains" in {
-    HDChainType.fromInt(0) must be(HDChainType.External)
-    HDChainType.fromInt(1) must be(HDChainType.Change)
+  it must "correctly represent external and change types" in {
+    HDChangeType.fromInt(0) must be(HDChangeType.External)
+    HDChangeType.fromInt(1) must be(HDChangeType.Change)
 
     forAll(NumberGenerator.ints.suchThat(i => i != 1 && i != 0)) { i =>
-      assertThrows[IllegalArgumentException](HDChainType.fromInt(i))
+      assertThrows[IllegalArgumentException](HDChangeType.fromInt(i))
     }
   }
 
@@ -172,18 +172,18 @@ class HDPathTest extends BitcoinSUnitTest {
             assert(exc.getMessage.contains("account child must be hardened"))
         }
 
-        val hardenedChainChildren = hd.path.zipWithIndex.map {
+        val hardenedChangeChildren = hd.path.zipWithIndex.map {
           case (child, index) =>
-            if (index == LegacyHDPath.CHAIN_INDEX) child.copy(hardened = true)
+            if (index == LegacyHDPath.CHANGE_INDEX) child.copy(hardened = true)
             else child
         }
-        val badChainAttempt =
-          hdApply(hardenedChainChildren)
+        val badChangeAttempt =
+          hdApply(hardenedChangeChildren)
 
-        badChainAttempt match {
+        badChangeAttempt match {
           case Success(_) => fail
           case Failure(exc) =>
-            assert(exc.getMessage.contains("chain child must not be hardened"))
+            assert(exc.getMessage.contains("change child must not be hardened"))
         }
 
         val hardenedAddressChildren = hd.path.zipWithIndex.map {
@@ -212,7 +212,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(first.purpose == HDPurposes.Legacy)
     assert(first.coin.coinType == HDCoinType.Bitcoin)
     assert(first.account.index == 0)
-    assert(first.chain.chainType == HDChainType.External)
+    assert(first.change.changeType == HDChangeType.External)
     assert(first.address.index == 0)
     assert(HDPath.fromStringOpt(firstString).contains(first))
 
@@ -221,7 +221,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(second.purpose == HDPurposes.Legacy)
     assert(second.coin.coinType == HDCoinType.Bitcoin)
     assert(second.account.index == 0)
-    assert(second.chain.chainType == HDChainType.External)
+    assert(second.change.changeType == HDChangeType.External)
     assert(second.address.index == 1)
     assert(HDPath.fromStringOpt(secondString).contains(second))
 
@@ -230,7 +230,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(third.purpose == HDPurposes.Legacy)
     assert(third.coin.coinType == HDCoinType.Bitcoin)
     assert(third.account.index == 0)
-    assert(third.chain.chainType == HDChainType.Change)
+    assert(third.change.changeType == HDChangeType.Change)
     assert(third.address.index == 0)
     assert(HDPath.fromStringOpt(thirdString).contains(third))
 
@@ -239,7 +239,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(fourth.purpose == HDPurposes.Legacy)
     assert(fourth.coin.coinType == HDCoinType.Bitcoin)
     assert(fourth.account.index == 0)
-    assert(fourth.chain.chainType == HDChainType.Change)
+    assert(fourth.change.changeType == HDChangeType.Change)
     assert(fourth.address.index == 1)
     assert(HDPath.fromStringOpt(fourthString).contains(fourth))
 
@@ -248,7 +248,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(fifth.purpose == HDPurposes.Legacy)
     assert(fifth.coin.coinType == HDCoinType.Bitcoin)
     assert(fifth.account.index == 1)
-    assert(fifth.chain.chainType == HDChainType.External)
+    assert(fifth.change.changeType == HDChangeType.External)
     assert(fifth.address.index == 0)
     assert(HDPath.fromStringOpt(fifthString).contains(fifth))
 
@@ -257,7 +257,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(sixth.purpose == HDPurposes.Legacy)
     assert(sixth.coin.coinType == HDCoinType.Bitcoin)
     assert(sixth.account.index == 1)
-    assert(sixth.chain.chainType == HDChainType.External)
+    assert(sixth.change.changeType == HDChangeType.External)
     assert(sixth.address.index == 1)
     assert(HDPath.fromStringOpt(sixthString).contains(sixth))
 
@@ -266,7 +266,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(seventh.purpose == HDPurposes.Legacy)
     assert(seventh.coin.coinType == HDCoinType.Bitcoin)
     assert(seventh.account.index == 1)
-    assert(seventh.chain.chainType == HDChainType.Change)
+    assert(seventh.change.changeType == HDChangeType.Change)
     assert(seventh.address.index == 0)
     assert(HDPath.fromStringOpt(seventhString).contains(seventh))
 
@@ -275,7 +275,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(eigth.purpose == HDPurposes.Legacy)
     assert(eigth.coin.coinType == HDCoinType.Bitcoin)
     assert(eigth.account.index == 1)
-    assert(eigth.chain.chainType == HDChainType.Change)
+    assert(eigth.change.changeType == HDChangeType.Change)
     assert(eigth.address.index == 1)
     assert(HDPath.fromStringOpt(eightString).contains(eigth))
 
@@ -284,7 +284,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(ninth.purpose == HDPurposes.Legacy)
     assert(ninth.coin.coinType == HDCoinType.Testnet)
     assert(ninth.account.index == 0)
-    assert(ninth.chain.chainType == HDChainType.External)
+    assert(ninth.change.changeType == HDChangeType.External)
     assert(ninth.address.index == 1)
     assert(HDPath.fromStringOpt(ninthString).contains(ninth))
 
@@ -293,7 +293,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(tenth.purpose == HDPurposes.Legacy)
     assert(tenth.coin.coinType == HDCoinType.Testnet)
     assert(tenth.account.index == 0)
-    assert(tenth.chain.chainType == HDChainType.External)
+    assert(tenth.change.changeType == HDChangeType.External)
     assert(tenth.address.index == 1)
     assert(HDPath.fromStringOpt(tenthString).contains(tenth))
 
@@ -302,7 +302,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(eleventh.purpose == HDPurposes.Legacy)
     assert(eleventh.coin.coinType == HDCoinType.Testnet)
     assert(eleventh.account.index == 0)
-    assert(eleventh.chain.chainType == HDChainType.Change)
+    assert(eleventh.change.changeType == HDChangeType.Change)
     assert(eleventh.address.index == 0)
     assert(HDPath.fromStringOpt(eleventhString).contains(eleventh))
 
@@ -311,7 +311,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(twelfth.purpose == HDPurposes.Legacy)
     assert(twelfth.coin.coinType == HDCoinType.Testnet)
     assert(twelfth.account.index == 0)
-    assert(twelfth.chain.chainType == HDChainType.Change)
+    assert(twelfth.change.changeType == HDChangeType.Change)
     assert(twelfth.address.index == 1)
     assert(HDPath.fromStringOpt(twelfthString).contains(twelfth))
 
@@ -320,7 +320,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(thirteenth.purpose == HDPurposes.Legacy)
     assert(thirteenth.coin.coinType == HDCoinType.Testnet)
     assert(thirteenth.account.index == 1)
-    assert(thirteenth.chain.chainType == HDChainType.External)
+    assert(thirteenth.change.changeType == HDChangeType.External)
     assert(thirteenth.address.index == 0)
     assert(HDPath.fromStringOpt(thirteenthString).contains(thirteenth))
 
@@ -329,7 +329,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(fourteenth.purpose == HDPurposes.Legacy)
     assert(fourteenth.coin.coinType == HDCoinType.Testnet)
     assert(fourteenth.account.index == 1)
-    assert(fourteenth.chain.chainType == HDChainType.External)
+    assert(fourteenth.change.changeType == HDChangeType.External)
     assert(fourteenth.address.index == 1)
     assert(HDPath.fromStringOpt(fourteenthString).contains(fourteenth))
 
@@ -338,7 +338,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(fifteenth.purpose == HDPurposes.Legacy)
     assert(fifteenth.coin.coinType == HDCoinType.Testnet)
     assert(fifteenth.account.index == 1)
-    assert(fifteenth.chain.chainType == HDChainType.Change)
+    assert(fifteenth.change.changeType == HDChangeType.Change)
     assert(fifteenth.address.index == 0)
     assert(HDPath.fromStringOpt(fifteenthString).contains(fifteenth))
 
@@ -347,7 +347,7 @@ class HDPathTest extends BitcoinSUnitTest {
     assert(sixteenth.purpose == HDPurposes.Legacy)
     assert(sixteenth.coin.coinType == HDCoinType.Testnet)
     assert(sixteenth.account.index == 1)
-    assert(sixteenth.chain.chainType == HDChainType.Change)
+    assert(sixteenth.change.changeType == HDChangeType.Change)
     assert(sixteenth.address.index == 1)
     assert(HDPath.fromStringOpt(sixteenthString).contains(sixteenth))
 

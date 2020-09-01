@@ -320,7 +320,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       val spendingInfoDb = SegwitV0SpendingInfo(
         EmptyTransactionOutPoint,
         EmptyTransactionOutput,
-        SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+        SegWitHDPath(HDCoinType.Testnet, 0, HDChangeType.External, 0),
         EmptyScriptWitness,
         DoubleSha256DigestBE.empty,
         TxoState.PendingConfirmationsSpent,
@@ -343,7 +343,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "return the wallet addresses" in {
       val addressDb = LegacyAddressDb(
-        LegacyHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+        LegacyHDPath(HDCoinType.Testnet, 0, HDChangeType.External, 0),
         ECPublicKey.freshPublicKey,
         Sha256Hash160Digest.fromBytes(ByteVector.low(20)),
         testAddress.asInstanceOf[P2PKHAddress],
@@ -365,7 +365,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "return the wallet's spent addresses" in {
       val addressDb = LegacyAddressDb(
-        LegacyHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+        LegacyHDPath(HDCoinType.Testnet, 0, HDChangeType.External, 0),
         ECPublicKey.freshPublicKey,
         Sha256Hash160Digest.fromBytes(ByteVector.low(20)),
         testAddress.asInstanceOf[P2PKHAddress],
@@ -387,7 +387,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "return the wallet's funded addresses" in {
       val addressDb = LegacyAddressDb(
-        LegacyHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+        LegacyHDPath(HDCoinType.Testnet, 0, HDChangeType.External, 0),
         ECPublicKey.freshPublicKey,
         Sha256Hash160Digest.fromBytes(ByteVector.low(20)),
         testAddress.asInstanceOf[P2PKHAddress],
@@ -412,7 +412,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "return the wallet's unused addresses" in {
       val addressDb = LegacyAddressDb(
-        LegacyHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+        LegacyHDPath(HDCoinType.Testnet, 0, HDChangeType.External, 0),
         ECPublicKey.freshPublicKey,
         Sha256Hash160Digest.fromBytes(ByteVector.low(20)),
         testAddress.asInstanceOf[P2PKHAddress],

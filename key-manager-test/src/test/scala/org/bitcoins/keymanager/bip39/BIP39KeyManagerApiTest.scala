@@ -31,7 +31,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
   val hdAccount = HDAccount(coin, 0)
 
   val path: HDPath =
-    LegacyHDPath(coin.coinType, coin.purpose.constant, HDChainType.External, 0)
+    LegacyHDPath(coin.coinType, coin.purpose.constant, HDChangeType.External, 0)
 
   it must "initialize the key manager" in {
     val entropy = MnemonicCode.getEntropy256Bits

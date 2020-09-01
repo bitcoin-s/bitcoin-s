@@ -8,7 +8,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi.{
 }
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.gcs.SimpleFilterMatcher
-import org.bitcoins.core.hd.{HDAccount, HDChainType}
+import org.bitcoins.core.hd.{HDAccount, HDChangeType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -132,8 +132,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
                             endOpt = endOpt,
                             startOpt = startOpt)
       _ <- downloadAndProcessBlocks(blocks)
-      externalGap <- calcAddressGap(HDChainType.External, account)
-      changeGap <- calcAddressGap(HDChainType.Change, account)
+      externalGap <- calcAddressGap(HDChangeType.External, account)
+      changeGap <- calcAddressGap(HDChangeType.Change, account)
       res <-
         if (
           externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
@@ -165,7 +165,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
   }
 
   private def calcAddressGap(
-      chainType: HDChainType,
+      chainType: HDChangeType,
       account: HDAccount): Future[Int] = {
     for {
       addressDbs <- addressDAO.findAllForAccount(account)

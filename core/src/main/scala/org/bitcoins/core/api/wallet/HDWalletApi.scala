@@ -3,7 +3,7 @@ package org.bitcoins.core.api.wallet
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.api.wallet.db.{AccountDb, AddressDb, SpendingInfoDb}
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
+import org.bitcoins.core.hd.{AddressType, HDAccount, HDChangeType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -464,7 +464,7 @@ trait HDWalletApi extends WalletApi {
     * the resulting `BIP32Path` determined by the
     * default account and the given chainType and addressIndex
     */
-  def getAddress(chainType: HDChainType, addressIndex: Int)(implicit
+  def getAddress(chainType: HDChangeType, addressIndex: Int)(implicit
       ec: ExecutionContext): Future[AddressDb] = {
     for {
       account <- getDefaultAccount()
@@ -478,7 +478,7 @@ trait HDWalletApi extends WalletApi {
     */
   def getAddress(
       account: AccountDb,
-      chainType: HDChainType,
+      chainType: HDChangeType,
       addressIndex: Int): Future[AddressDb]
 
   def listAccounts(): Future[Vector[AccountDb]]
