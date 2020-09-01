@@ -47,7 +47,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   val peer: Peer
 
-  val initialSyncDone: Option[Promise[Done]]
+  protected val initialSyncDone: Option[Promise[Done]]
 
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
 
