@@ -3,12 +3,13 @@ package org.bitcoins.bench.eclair
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.BiFunction
 
-import org.bitcoins.commons.jsonmodels.eclair.{PaymentId, WebSocketEvent}
 import org.bitcoins.commons.jsonmodels.eclair.WebSocketEvent.{
   PaymentFailed,
   PaymentReceived,
   PaymentSent
 }
+import org.bitcoins.commons.jsonmodels.eclair.{PaymentId, WebSocketEvent}
+import org.bitcoins.core.seqUtil
 import org.bitcoins.crypto.Sha256Digest
 
 import scala.concurrent.Promise
@@ -41,7 +42,13 @@ object PaymentLog {
         case Some(e) =>
           e match {
             case PaymentReceived(_, parts) =>
-              parts.maxBy(_.timestamp).timestamp.toEpochMilli
+              parts.maxByOption(_.timestamp) match {
+                case Some(part) =>
+                  part.timestamp.toEpochMilli
+                case None =>
+                  throw new RuntimeException(
+                    s"PaymentReceived but with no parts, got $e")
+              }
             case PaymentFailed(_, _, _, timestamp) => timestamp.toEpochMilli
             case _: WebSocketEvent =>
               throw new RuntimeException("Can't extract a timestamp")

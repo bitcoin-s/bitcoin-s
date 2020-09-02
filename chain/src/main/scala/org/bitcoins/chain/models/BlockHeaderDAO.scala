@@ -377,16 +377,21 @@ case class BlockHeaderDAO()(implicit
       } else {
         val headersByHeight: Vector[(Int, Vector[BlockHeaderDb])] =
           headers.groupBy(_.height).toVector
-        val tips: Vector[BlockHeaderDb] = headersByHeight.maxBy(_._1)._2
+        val tipsOpt = headersByHeight.maxByOption(_._1).map(_._2)
 
-        val chains = tips.map { tip =>
-          Blockchain
-            .connectWalkBackwards(tip, headers)
-            .sortBy(_.height)(Ordering.Int.reverse)
+        tipsOpt match {
+          case None =>
+            Vector.empty
+          case Some(tips) =>
+            val chains = tips.map { tip =>
+              Blockchain
+                .connectWalkBackwards(tip, headers)
+                .sortBy(_.height)(Ordering.Int.reverse)
+            }
+            val init = chains.map(Blockchain(_))
+
+            loop(init, headers).distinct
         }
-        val init = chains.map(Blockchain(_))
-
-        loop(init, headers).distinct
       }
     }
   }
