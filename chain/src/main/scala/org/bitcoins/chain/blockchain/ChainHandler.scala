@@ -135,7 +135,7 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def nextHeaderBatchRange(
+  override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
