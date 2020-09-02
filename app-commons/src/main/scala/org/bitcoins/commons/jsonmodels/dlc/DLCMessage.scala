@@ -155,7 +155,7 @@ object DLCMessage {
         totalCollateralSatoshis = totalCollateral,
         fundingInputs = fundingInputs.map(FundingInputTempTLV(_)),
         changeSPK = changeAddress.scriptPubKey,
-        feeRatePerKW = feeRate.toSatoshisPerKW,
+        feeRate = feeRate,
         contractMaturityBound = timeouts.contractMaturity,
         contractTimeout = timeouts.contractTimeout
       )
@@ -227,8 +227,7 @@ object DLCMessage {
         },
         changeAddress =
           BitcoinAddress.fromScriptPubKey(offer.changeSPK, network),
-        feeRate = SatoshisPerVirtualByte(
-          offer.feeRatePerKW.currencyUnit / Satoshis(4000)),
+        feeRate = offer.feeRate,
         timeouts =
           DLCTimeouts(offer.contractMaturityBound, offer.contractTimeout)
       )

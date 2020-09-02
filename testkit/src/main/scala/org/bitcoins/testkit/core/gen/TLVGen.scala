@@ -5,7 +5,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.core.wallet.fee.SatoshisPerKW
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.testgen.DLCTestUtil
@@ -119,8 +119,8 @@ trait TLVGen {
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveSatoshis
       fundingInputs <- Gen.listOf(fundingInputTempTLV)
       (changeSPK, _) <- ScriptGenerators.scriptPubKey
-      feeRatePerKW <-
-        CurrencyUnitGenerator.positiveSatoshis.map(SatoshisPerKW.apply)
+      feeRate <-
+        CurrencyUnitGenerator.positiveSatoshis.map(SatoshisPerVirtualByte.apply)
       contractMaturityBound <- NumberGenerator.uInt32s.map(BlockTimeStamp.apply)
       contractTimeout <- NumberGenerator.uInt32s.map(BlockTimeStamp.apply)
     } yield {
@@ -134,7 +134,7 @@ trait TLVGen {
         totalCollateralSatoshis,
         fundingInputs.toVector,
         changeSPK,
-        feeRatePerKW,
+        feeRate,
         contractMaturityBound,
         contractTimeout
       )
