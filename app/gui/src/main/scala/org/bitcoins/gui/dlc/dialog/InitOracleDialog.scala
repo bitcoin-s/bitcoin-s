@@ -2,7 +2,7 @@ package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.crypto.{CryptoUtil, Sha256DigestBE}
 import scalafx.Includes._
 import scalafx.application.Platform
 import scalafx.geometry.Insets
@@ -67,8 +67,8 @@ object InitOracleDialog {
         }
         val contractMap = inputs.map {
           case (str, value) =>
-            val hash = CryptoUtil.sha256(ByteVector(str.getBytes)).flip
-            hash -> Satoshis(BigInt(value))
+            val hash = CryptoUtil.sha256(ByteVector(str.getBytes))
+            Sha256DigestBE(hash.bytes) -> Satoshis(BigInt(value))
         }.toMap
 
         val outcomes = inputs.map(_._1).toVector
