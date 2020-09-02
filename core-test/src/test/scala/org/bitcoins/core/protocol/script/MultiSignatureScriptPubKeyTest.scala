@@ -63,4 +63,23 @@ class MultiSignatureScriptPubKeyTest extends BitcoinSUnitTest {
 
   }
 
+  it must "correctly convert to a BIP67MultiSignatureScriptPubKey" in {
+    val requiredSigs = 2
+
+    val sortedKeys = Vector(
+      ECPublicKey(
+        "0215b5bd050869166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f"),
+      ECPublicKey(
+        "025878e270211662a27181cf4d6ad4d2cf0e69a98a3815c086f587c7e9388d8718"),
+      ECPublicKey(
+        "03fc85980e3fac1f3d8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906")
+    )
+
+    val unsortedKeys = sortedKeys.reverse
+
+    val spk = MultiSignatureScriptPubKey(requiredSigs, unsortedKeys)
+
+    assert(spk.publicKeys == unsortedKeys)
+    assert(spk.toBIP67MultiSignatureScriptPubKey.publicKeys == sortedKeys)
+  }
 }
