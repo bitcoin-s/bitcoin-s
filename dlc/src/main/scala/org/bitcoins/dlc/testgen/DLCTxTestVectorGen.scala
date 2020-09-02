@@ -17,7 +17,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
-import org.bitcoins.core.wallet.fee.SatoshisPerKW
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
@@ -32,7 +32,8 @@ object DLCTxTestVectorGen {
       contractInfo: ContractInfo = genContractInfo(),
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200),
-      feeRate: SatoshisPerKW = SatoshisPerKW(Satoshis(8000))): DLCParams = {
+      feeRate: SatoshisPerVirtualByte =
+        SatoshisPerVirtualByte(Satoshis(5))): DLCParams = {
     DLCParams(oracleInfo,
               contractInfo,
               contractMaturityBound,

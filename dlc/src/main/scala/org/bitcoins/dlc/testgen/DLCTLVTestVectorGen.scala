@@ -91,15 +91,22 @@ object DLCTLVTestVectorGen {
     )
   }
 
-  def ecdsaSig: ECDigitalSignature = {
-    ECDigitalSignature.fromRS(
+  def ecdsaSig(sigHashByte: Boolean = true): ECDigitalSignature = {
+    val sigWithoutSigHash = ECDigitalSignature.fromRS(
       ECPrivateKey.freshPrivateKey.fieldElement.toBigInteger,
       ECPrivateKey.freshPrivateKey.fieldElement.toBigInteger)
+
+    if (sigHashByte) {
+      ECDigitalSignature(sigWithoutSigHash.bytes :+ 0x01)
+    } else {
+      sigWithoutSigHash
+    }
   }
 
   def partialSig(
-      pubKey: ECPublicKey = ECPublicKey.freshPublicKey): PartialSignature = {
-    PartialSignature(pubKey, ecdsaSig)
+      pubKey: ECPublicKey = ECPublicKey.freshPublicKey,
+      sigHashByte: Boolean = true): PartialSignature = {
+    PartialSignature(pubKey, ecdsaSig(sigHashByte))
   }
 
   def cetSigs(
@@ -107,7 +114,7 @@ object DLCTLVTestVectorGen {
       fundingPubKey: ECPublicKey =
         ECPublicKey.freshPublicKey): CETSignatures = {
     CETSignatures(outcomes.map(outcome => outcome -> adaptorSig).toMap,
-                  partialSig(fundingPubKey))
+                  partialSig(fundingPubKey, sigHashByte = false))
   }
 
   def fundingSigs(

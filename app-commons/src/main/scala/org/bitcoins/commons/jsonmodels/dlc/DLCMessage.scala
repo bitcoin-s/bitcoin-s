@@ -21,6 +21,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.MapWrapper
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -552,7 +553,8 @@ object DLCMessage {
       DLCSignTLV(
         contractId = contractId,
         cetSignatures = CETSignaturesV0TLV(cetSigs.outcomeSigs.values.toVector),
-        refundSignature = cetSigs.refundSig.signature,
+        refundSignature = ECDigitalSignature.fromFrontOfBytes(
+          cetSigs.refundSig.signature.bytes),
         fundingSignatures = fundingSigs.toTLV
       )
     }
@@ -609,9 +611,12 @@ object DLCMessage {
       }
 
       DLCSign(
-        cetSigs =
-          CETSignatures(outcomeSigs,
-                        PartialSignature(fundingPubKey, sign.refundSignature)),
+        cetSigs = CETSignatures(
+          outcomeSigs,
+          PartialSignature(
+            fundingPubKey,
+            ECDigitalSignature(
+              sign.refundSignature.bytes :+ HashType.sigHashAll.byte))),
         fundingSigs = FundingSignatures(fundingSigMap),
         contractId = sign.contractId
       )

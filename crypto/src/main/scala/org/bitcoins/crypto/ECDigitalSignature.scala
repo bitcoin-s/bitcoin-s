@@ -131,6 +131,12 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     sig
   }
 
+  def fromFrontOfBytesWithSigHash(bytes: ByteVector): ECDigitalSignature = {
+    val sigWithoutSigHash = fromFrontOfBytes(bytes)
+    ECDigitalSignature(
+      sigWithoutSigHash.bytes :+ bytes.drop(sigWithoutSigHash.byteSize).head)
+  }
+
   def apply(r: BigInt, s: BigInt): ECDigitalSignature = fromRS(r, s)
 
   /**

@@ -331,7 +331,7 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
 
     while (iter.index < value.length) {
       val outPoint = TransactionOutPoint(iter.take(36))
-      val sig = ECDigitalSignature.fromFrontOfBytes(iter.current)
+      val sig = ECDigitalSignature.fromFrontOfBytesWithSigHash(iter.current)
       iter.skip(sig)
       builder.+=(outPoint -> sig)
     }

@@ -16,12 +16,17 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
-import org.bitcoins.crypto.{ECPrivateKey, NetworkElement}
+import org.bitcoins.crypto.{
+  ECPrivateKey,
+  Factory,
+  NetworkElement,
+  SchnorrNonce,
+  SchnorrPublicKey,
+  Sha256DigestBE
+}
 import play.api.libs.json._
-
-import scala.annotation.nowarn
 
 sealed trait DLCTestVector
 
@@ -77,7 +82,7 @@ case class DLCParams(
     contractInfo: ContractInfo,
     contractMaturityBound: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
-    feeRate: SatoshisPerKW)
+    feeRate: SatoshisPerVirtualByte)
 
 case class ValidTestInputs(
     params: DLCParams,
@@ -96,41 +101,103 @@ case class SuccessTestVector(
     refundTx: Transaction)
     extends DLCTestVector {
 
-  @nowarn
   def toJson: JsValue = {
-    def hexWrites[T <: NetworkElement]: Writes[T] =
-      Writes[T](element => JsString(element.hex))
-    implicit val oracleInfoWrites: Writes[OracleInfo] = hexWrites[OracleInfo]
-    implicit val contractInfoWrites: Writes[ContractInfo] =
-      hexWrites[ContractInfo]
-    implicit val blockTimeStampWrites: Writes[BlockTimeStamp] =
-      Writes[BlockTimeStamp] { stamp => JsNumber(stamp.toUInt32.toLong) }
-    implicit val satsPerKWWrites: Writes[SatoshisPerKW] =
-      Writes[SatoshisPerKW] { satsPerKW => JsNumber(satsPerKW.toLong) }
-    implicit val currencyUnitWrites: Writes[CurrencyUnit] =
-      Writes[CurrencyUnit] { currency => JsNumber(currency.satoshis.toLong) }
-    implicit val transactionWrites: Writes[Transaction] = hexWrites[Transaction]
-    implicit val ecPrivKeyWrites: Writes[ECPrivateKey] = hexWrites[ECPrivateKey]
-    implicit val fundingInputTxWrites: Writes[FundingInputTx] =
-      Json.writes[FundingInputTx]
-    implicit val addressWrites: Writes[BitcoinAddress] =
-      Writes[BitcoinAddress] { address => JsString(address.toString) }
-    implicit val dlcParamWrites: Writes[DLCParams] = Json.writes[DLCParams]
-    implicit val dlcPartyParamWrites: Writes[DLCPartyParams] =
-      Json.writes[DLCPartyParams]
-
-    implicit val offerTLVWrites: Writes[DLCOfferTLV] = hexWrites[DLCOfferTLV]
-    implicit val acceptTLVWrites: Writes[DLCAcceptTLV] = hexWrites[DLCAcceptTLV]
-    implicit val signTLVWrites: Writes[DLCSignTLV] = hexWrites[DLCSignTLV]
-    implicit val validTestInputsWrites: Writes[ValidTestInputs] =
-      Json.writes[ValidTestInputs]
-    implicit val successTestVectorWrites: Writes[SuccessTestVector] =
-      Json.writes[SuccessTestVector]
-
-    Json.toJson(this)
+    Json.toJson(this)(SuccessTestVector.successTestVectorFormat)
   }
 
   def toJsonStr: String = {
     Json.prettyPrint(toJson)
+  }
+}
+
+object SuccessTestVector {
+
+  def hexFormat[T <: NetworkElement](factory: Factory[T]): Format[T] =
+    Format[T](
+      { hex => hex.validate[String].map(factory.fromHex) },
+      { element => JsString(element.hex) }
+    )
+
+  implicit val oracleInfoFormat: Format[OracleInfo] = Format[OracleInfo](
+    {
+      _.validate[Map[String, String]]
+        .map(map =>
+          OracleInfo(SchnorrPublicKey(map("publicKey")),
+                     SchnorrNonce(map("nonce"))))
+    },
+    { info =>
+      Json.toJson(
+        Map("publicKey" -> info.pubKey.hex, "nonce" -> info.rValue.hex))
+    }
+  )
+
+  implicit val contractInfoFormat: Format[ContractInfo] =
+    Format[ContractInfo](
+      {
+        _.validate[Map[String, Long]]
+          .map(_.map {
+            case (outcome, amt) => Sha256DigestBE(outcome) -> Satoshis(amt)
+          })
+          .map(ContractInfo.apply)
+      },
+      { info =>
+        Json.toJson(info.outcomeValueMap.map {
+          case (outcome, amt) =>
+            outcome.hex -> amt.toLong
+        })
+      }
+    )
+
+  implicit val blockTimeStampFormat: Format[BlockTimeStamp] =
+    Format[BlockTimeStamp](
+      { _.validate[Long].map(UInt32.apply).map(BlockTimeStamp.apply) },
+      { stamp => JsNumber(stamp.toUInt32.toLong) }
+    )
+
+  implicit val satsPerVBFormat: Format[SatoshisPerVirtualByte] =
+    Format[SatoshisPerVirtualByte](
+      {
+        _.validate[Long].map(Satoshis.apply).map(SatoshisPerVirtualByte.apply)
+      },
+      { satsPerVB => JsNumber(satsPerVB.toLong) }
+    )
+
+  implicit val currencyUnitFormat: Format[CurrencyUnit] =
+    Format[CurrencyUnit](
+      { _.validate[Long].map(Satoshis.apply) },
+      { currency => JsNumber(currency.satoshis.toLong) }
+    )
+  implicit val transactionFormat: Format[Transaction] = hexFormat(Transaction)
+  implicit val ecPrivKeyFormat: Format[ECPrivateKey] = hexFormat(ECPrivateKey)
+
+  implicit val fundingInputTxFormat: Format[FundingInputTx] =
+    Json.format[FundingInputTx]
+
+  implicit val addressFormat: Format[BitcoinAddress] =
+    Format[BitcoinAddress](
+      { _.validate[String].map(BitcoinAddress.fromString) },
+      { address => JsString(address.toString) }
+    )
+  implicit val dlcParamFormat: Format[DLCParams] = Json.format[DLCParams]
+
+  implicit val DLCPartyParamsFormat: Format[DLCPartyParams] =
+    Json.format[DLCPartyParams]
+
+  implicit val offerTLVFormat: Format[DLCOfferTLV] = hexFormat(DLCOfferTLV)
+  implicit val acceptTLVFormat: Format[DLCAcceptTLV] = hexFormat(DLCAcceptTLV)
+  implicit val signTLVFormat: Format[DLCSignTLV] = hexFormat(DLCSignTLV)
+
+  implicit val validTestInputsFormat: Format[ValidTestInputs] =
+    Json.format[ValidTestInputs]
+
+  implicit val successTestVectorFormat: Format[SuccessTestVector] =
+    Json.format[SuccessTestVector]
+
+  def fromJson(json: JsValue): JsResult[SuccessTestVector] = {
+    json.validate[SuccessTestVector]
+  }
+
+  def fromString(str: String): JsResult[SuccessTestVector] = {
+    fromJson(Json.parse(str))
   }
 }
