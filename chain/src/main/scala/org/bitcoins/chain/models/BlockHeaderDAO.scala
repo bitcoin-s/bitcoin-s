@@ -260,7 +260,9 @@ case class BlockHeaderDAO()(implicit
 
   /** Returns the block height of the block with the most work from our database */
   def bestHeight: Future[Int] = {
-    chainTips.map(_.maxBy(_.chainWork).height)
+    chainTips.map { tips =>
+      tips.maxByOption(_.chainWork).map(_.height).getOrElse(0)
+    }
   }
 
   private val maxWorkQuery: profile.ProfileAction[
