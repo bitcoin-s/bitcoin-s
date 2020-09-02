@@ -215,7 +215,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       ec: ExecutionContext): Future[Boolean] = {
     for {
       nextRangeOpt <-
-        chainApi.nextHeaderBatchRange(stopHash, filterHeaderBatchSize)
+        chainApi.nextBlockHeaderBatchRange(stopHash, filterHeaderBatchSize)
       res <- nextRangeOpt match {
         case Some((startHeight, stopHash)) =>
           logger.info(
