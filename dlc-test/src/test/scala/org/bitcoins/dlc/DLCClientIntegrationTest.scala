@@ -99,7 +99,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     ECPublicKey.freshPublicKey)
 
   def constructDLC(numOutcomes: Int): Future[
-    (TestDLCClient, TestDLCClient, Vector[Sha256DigestBE])] = {
+    (TestDLCClient, TestDLCClient, Vector[Sha256Digest])] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
       Bitcoins((input + Satoshis(200)).satoshis)
     }
@@ -369,7 +369,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         SetupDLC,
         TestDLCClient,
         SetupDLC,
-        Vector[Sha256DigestBE])] = {
+        Vector[Sha256Digest])] = {
     for {
       (acceptDLC, offerDLC, outcomeHashes) <- constructDLC(numOutcomes)
       (acceptSetup, offerSetup) <- setupDLC(acceptDLC, offerDLC)

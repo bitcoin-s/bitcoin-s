@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCRefundSigDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCRefundSigDb, (Sha256DigestBE, Boolean)]
-    with SlickUtil[DLCRefundSigDb, (Sha256DigestBE, Boolean)] {
+    extends CRUD[DLCRefundSigDb, (Sha256Digest, Boolean)]
+    with SlickUtil[DLCRefundSigDb, (Sha256Digest, Boolean)] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -29,10 +29,10 @@ case class DLCRefundSigDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(ids: Vector[
-    (Sha256DigestBE, Boolean)]): Query[DLCRefundSigTable, DLCRefundSigDb, Seq] =
+    (Sha256Digest, Boolean)]): Query[DLCRefundSigTable, DLCRefundSigDb, Seq] =
     table.filter(_.eventId.inSet(ids.map(_._1)))
 
-  override def findByPrimaryKey(id: (Sha256DigestBE, Boolean)): Query[
+  override def findByPrimaryKey(id: (Sha256Digest, Boolean)): Query[
     DLCRefundSigTable,
     DLCRefundSigDb,
     Seq] = {
@@ -48,19 +48,19 @@ case class DLCRefundSigDAO()(implicit
     Seq] =
     findByPrimaryKeys(dlcs.map(dlc => (dlc.eventId, dlc.isInitiator)))
 
-  def findByEventId(eventId: Sha256DigestBE): Future[Vector[DLCRefundSigDb]] = {
+  def findByEventId(eventId: Sha256Digest): Future[Vector[DLCRefundSigDb]] = {
     val q = table.filter(_.eventId === eventId)
 
     safeDatabase.runVec(q.result)
   }
 
-  def findByEventId(eventId: Sha256Digest): Future[Vector[DLCRefundSigDb]] =
+  def findByEventId(eventId: Sha256DigestBE): Future[Vector[DLCRefundSigDb]] =
     findByEventId(eventId.flip)
 
   class DLCRefundSigTable(tag: Tag)
       extends Table[DLCRefundSigDb](tag, "wallet_dlc_refund_sigs") {
 
-    def eventId: Rep[Sha256DigestBE] = column("event_id")
+    def eventId: Rep[Sha256Digest] = column("event_id")
 
     def isInitiator: Rep[Boolean] = column("is_initiator")
 

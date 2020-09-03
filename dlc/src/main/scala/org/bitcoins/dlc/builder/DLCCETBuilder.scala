@@ -20,7 +20,7 @@ import org.bitcoins.crypto.{
   ECPublicKey,
   SchnorrNonce,
   SchnorrPublicKey,
-  Sha256DigestBE
+  Sha256Digest
 }
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -43,7 +43,7 @@ case class DLCCETBuilder(
   val OracleInfo(oraclePubKey: SchnorrPublicKey, preCommittedR: SchnorrNonce) =
     oracleInfo
 
-  val sigPubKeys: Map[Sha256DigestBE, ECPublicKey] = offerOutcomes.keys.map {
+  val sigPubKeys: Map[Sha256Digest, ECPublicKey] = offerOutcomes.keys.map {
     msg =>
       msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
   }.toMap
@@ -61,7 +61,7 @@ case class DLCCETBuilder(
   /** Constructs a Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: Sha256DigestBE)(implicit
+  def buildCET(msg: Sha256Digest)(implicit
       ec: ExecutionContext): Future[WitnessTransaction] = {
     val builder = RawTxBuilder().setLockTime(timeouts.contractMaturity.toUInt32)
 

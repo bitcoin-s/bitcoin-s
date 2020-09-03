@@ -147,7 +147,7 @@ case class DLCTxSigner(
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcome hash */
-  def createRemoteCETSig(msg: Sha256DigestBE): Future[ECAdaptorSignature] = {
+  def createRemoteCETSig(msg: Sha256Digest): Future[ECAdaptorSignature] = {
     val adaptorPoint = builder.sigPubKeys(msg)
     val hashType = HashType.sigHashAll
     for {
@@ -173,7 +173,7 @@ case class DLCTxSigner(
   }
 
   def signCET(
-      msg: Sha256DigestBE,
+      msg: Sha256Digest,
       remoteAdaptorSig: ECAdaptorSignature,
       oracleSig: SchnorrDigitalSignature): Future[Transaction] = {
     val remoteSig =

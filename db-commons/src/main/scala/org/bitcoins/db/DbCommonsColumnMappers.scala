@@ -96,6 +96,9 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val sha256DigestBEMapper: BaseColumnType[Sha256DigestBE] =
     MappedColumnType.base[Sha256DigestBE, String](_.hex, Sha256DigestBE.fromHex)
 
+  implicit val sha256DigestMapper: BaseColumnType[Sha256Digest] =
+    MappedColumnType.base[Sha256Digest, String](_.hex, Sha256Digest.fromHex)
+
   implicit val ecPublicKeyMapper: BaseColumnType[ECPublicKey] =
     MappedColumnType.base[ECPublicKey, String](_.hex, ECPublicKey.fromHex)
 

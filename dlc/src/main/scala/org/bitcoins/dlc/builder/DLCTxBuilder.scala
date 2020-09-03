@@ -46,7 +46,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
                                          acceptFinalAddress: BitcoinAddress),
                            acceptFundingInputs: Vector[OutputReference],
                            acceptChangeAddress: BitcoinAddress,
-                           eventId: Sha256DigestBE) = accept
+                           eventId: Sha256Digest) = accept
 
   val totalInput: CurrencyUnit = offerTotalCollateral + acceptTotalCollateral
 
@@ -77,7 +77,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     case (hash, amt) => (hash, (totalInput - amt).satoshis)
   })
 
-  val sigPubKeys: Map[Sha256DigestBE, ECPublicKey] = offerOutcomes.keys.map {
+  val sigPubKeys: Map[Sha256Digest, ECPublicKey] = offerOutcomes.keys.map {
     msg =>
       msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
   }.toMap
@@ -132,7 +132,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   /** Constructs the unsigned Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: Sha256DigestBE): Future[WitnessTransaction] = {
+  def buildCET(msg: Sha256Digest): Future[WitnessTransaction] = {
     for {
       cetBuilder <- cetBuilderF
       cet <- cetBuilder.buildCET(msg)
@@ -173,7 +173,7 @@ object DLCTxBuilder {
   /** Returns the payouts for the signature as (toOffer, toAccept) */
   def getPayouts(
       oracleSig: SchnorrDigitalSignature,
-      sigPubKeys: Map[Sha256DigestBE, ECPublicKey],
+      sigPubKeys: Map[Sha256Digest, ECPublicKey],
       offerOutcomes: ContractInfo,
       acceptOutcomes: ContractInfo): (CurrencyUnit, CurrencyUnit) = {
     sigPubKeys.find(_._2 == oracleSig.sig.getPublicKey) match {

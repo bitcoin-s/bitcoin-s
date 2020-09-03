@@ -14,8 +14,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCOfferDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCOfferDb, Sha256DigestBE]
-    with SlickUtil[DLCOfferDb, Sha256DigestBE] {
+    extends CRUD[DLCOfferDb, Sha256Digest]
+    with SlickUtil[DLCOfferDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -30,11 +30,11 @@ case class DLCOfferDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[Sha256DigestBE]): Query[DLCOfferTable, DLCOfferDb, Seq] =
+      ids: Vector[Sha256Digest]): Query[DLCOfferTable, DLCOfferDb, Seq] =
     table.filter(_.eventId.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256DigestBE): Query[DLCOfferTable, DLCOfferDb, Seq] = {
+      id: Sha256Digest): Query[DLCOfferTable, DLCOfferDb, Seq] = {
     table
       .filter(_.eventId === id)
   }
@@ -43,7 +43,7 @@ case class DLCOfferDAO()(implicit
       dlcs: Vector[DLCOfferDb]): Query[DLCOfferTable, DLCOfferDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.eventId))
 
-  def findByEventId(eventId: Sha256DigestBE): Future[Option[DLCOfferDb]] = {
+  def findByEventId(eventId: Sha256Digest): Future[Option[DLCOfferDb]] = {
     val q = table.filter(_.eventId === eventId)
 
     safeDatabase.run(q.result).map {
@@ -57,13 +57,13 @@ case class DLCOfferDAO()(implicit
     }
   }
 
-  def findByEventId(eventId: Sha256Digest): Future[Option[DLCOfferDb]] =
+  def findByEventId(eventId: Sha256DigestBE): Future[Option[DLCOfferDb]] =
     findByEventId(eventId.flip)
 
   class DLCOfferTable(tag: Tag)
       extends Table[DLCOfferDb](tag, "wallet_dlc_offers") {
 
-    def eventId: Rep[Sha256DigestBE] = column("event_id", O.Unique)
+    def eventId: Rep[Sha256Digest] = column("event_id", O.Unique)
 
     def oraclePubKey: Rep[SchnorrPublicKey] = column("oracle_pub_key")
 
