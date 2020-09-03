@@ -14,7 +14,11 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{
+  SchnorrDigitalSignature,
+  Sha256Digest,
+  Sha256DigestBE
+}
 import scopt._
 
 /** scopt readers for parsing CLI params and options */
@@ -160,6 +164,13 @@ object CliReaders {
       val arity: Int = 1
 
       val reads: String => Sha256DigestBE = Sha256DigestBE.fromHex
+    }
+
+  implicit val sha256DigestReads: Read[Sha256Digest] =
+    new Read[Sha256Digest] {
+      val arity: Int = 1
+
+      val reads: String => Sha256Digest = Sha256Digest.fromHex
     }
 
   implicit val dlcOfferReads: Read[DLCOffer] = new Read[DLCOffer] {

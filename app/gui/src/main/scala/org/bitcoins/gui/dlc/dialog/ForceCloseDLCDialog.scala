@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand.ExecuteDLC
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
 import scalafx.scene.control.TextField
 
 object ForceCloseDLCDialog
@@ -13,7 +13,7 @@ object ForceCloseDLCDialog
   import DLCDialog._
 
   override def constructFromInput(inputs: Map[String, String]): ExecuteDLC = {
-    val eventId = Sha256DigestBE(inputs(dlcEventIdStr))
+    val eventId = Sha256Digest(inputs(dlcEventIdStr))
     val oracleSig = SchnorrDigitalSignature(inputs(dlcOracleSigStr))
     ExecuteDLC(eventId, oracleSig, noBroadcast = false)
   }

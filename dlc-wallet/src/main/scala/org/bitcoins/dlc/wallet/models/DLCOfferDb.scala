@@ -17,7 +17,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 
 case class DLCOfferDb(
-    eventId: Sha256DigestBE,
+    eventId: Sha256Digest,
     oraclePubKey: SchnorrPublicKey,
     oracleRValue: SchnorrNonce,
     contractInfo: ContractInfo,

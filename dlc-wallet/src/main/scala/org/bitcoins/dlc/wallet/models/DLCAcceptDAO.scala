@@ -12,8 +12,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCAcceptDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCAcceptDb, Sha256DigestBE]
-    with SlickUtil[DLCAcceptDb, Sha256DigestBE] {
+    extends CRUD[DLCAcceptDb, Sha256Digest]
+    with SlickUtil[DLCAcceptDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -28,11 +28,11 @@ case class DLCAcceptDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[Sha256DigestBE]): Query[DLCAcceptTable, DLCAcceptDb, Seq] =
+      ids: Vector[Sha256Digest]): Query[DLCAcceptTable, DLCAcceptDb, Seq] =
     table.filter(_.eventId.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256DigestBE): Query[DLCAcceptTable, DLCAcceptDb, Seq] = {
+      id: Sha256Digest): Query[DLCAcceptTable, DLCAcceptDb, Seq] = {
     table
       .filter(_.eventId === id)
   }
@@ -41,7 +41,7 @@ case class DLCAcceptDAO()(implicit
       dlcs: Vector[DLCAcceptDb]): Query[DLCAcceptTable, DLCAcceptDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.eventId))
 
-  def findByEventId(eventId: Sha256DigestBE): Future[Option[DLCAcceptDb]] = {
+  def findByEventId(eventId: Sha256Digest): Future[Option[DLCAcceptDb]] = {
     val q = table.filter(_.eventId === eventId)
 
     safeDatabase.run(q.result).map {
@@ -55,13 +55,13 @@ case class DLCAcceptDAO()(implicit
     }
   }
 
-  def findByEventId(eventId: Sha256Digest): Future[Option[DLCAcceptDb]] =
+  def findByEventId(eventId: Sha256DigestBE): Future[Option[DLCAcceptDb]] =
     findByEventId(eventId.flip)
 
   class DLCAcceptTable(tag: Tag)
       extends Table[DLCAcceptDb](tag, "wallet_dlc_accepts") {
 
-    def eventId: Rep[Sha256DigestBE] = column("event_id", O.PrimaryKey)
+    def eventId: Rep[Sha256Digest] = column("event_id", O.PrimaryKey)
 
     def fundingKey: Rep[ECPublicKey] = column("funding_key")
 

@@ -17,7 +17,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
 import scopt.OParser
 import ujson.{Num, Str}
 import upickle.{default => up}
@@ -262,7 +262,7 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetDLCFundingTx(null)))
         .text("Returns the Funding Tx corresponding to the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256Digest]("eventid").required
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case getDLCFundingTx: GetDLCFundingTx =>
@@ -275,7 +275,7 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = BroadcastDLCFundingTx(null)))
         .text("Broadcasts the funding Tx corresponding to the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256Digest]("eventid").required
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case broadcastDLCFundingTx: BroadcastDLCFundingTx =>
@@ -289,7 +289,7 @@ object ConsoleCli {
           conf.copy(command = ExecuteDLC(null, null, noBroadcast = false)))
         .text("Executes the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256Digest]("eventid").required
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLC: ExecuteDLC =>
@@ -317,7 +317,7 @@ object ConsoleCli {
           conf.copy(command = ExecuteDLCRefund(null, noBroadcast = false)))
         .text("Executes the Refund transaction for the given DLC")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256Digest]("eventid").required
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRefund: ExecuteDLCRefund =>
@@ -1045,18 +1045,18 @@ object CliCommand {
 
   case class AddDLCSigs(sigs: DLCSign) extends CliCommand
 
-  case class GetDLCFundingTx(eventId: Sha256DigestBE) extends CliCommand
+  case class GetDLCFundingTx(eventId: Sha256Digest) extends CliCommand
 
-  case class BroadcastDLCFundingTx(eventId: Sha256DigestBE) extends CliCommand
+  case class BroadcastDLCFundingTx(eventId: Sha256Digest) extends CliCommand
 
   case class ExecuteDLC(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       oracleSig: SchnorrDigitalSignature,
       noBroadcast: Boolean)
       extends CliCommand
       with Broadcastable
 
-  case class ExecuteDLCRefund(eventId: Sha256DigestBE, noBroadcast: Boolean)
+  case class ExecuteDLCRefund(eventId: Sha256Digest, noBroadcast: Boolean)
       extends CliCommand
       with Broadcastable
 

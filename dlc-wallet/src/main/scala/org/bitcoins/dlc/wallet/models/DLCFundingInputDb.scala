@@ -7,10 +7,10 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.crypto.Sha256DigestBE
+import org.bitcoins.crypto.Sha256Digest
 
 case class DLCFundingInputDb(
-    eventId: Sha256DigestBE,
+    eventId: Sha256Digest,
     isInitiator: Boolean,
     outPoint: TransactionOutPoint,
     output: TransactionOutput,

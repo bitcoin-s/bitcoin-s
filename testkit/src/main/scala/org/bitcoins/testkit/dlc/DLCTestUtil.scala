@@ -4,17 +4,17 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, FundingSignatures}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.crypto.{CryptoUtil, Sha256DigestBE}
+import org.bitcoins.crypto.{CryptoUtil, Sha256Digest}
 import org.bitcoins.testkit.util.BytesUtil
 import scodec.bits.ByteVector
 
 object DLCTestUtil {
 
-  def genOutcomes(size: Int): Vector[Sha256DigestBE] = {
+  def genOutcomes(size: Int): Vector[Sha256Digest] = {
     val strs =
       (0 until size).map(_ => scala.util.Random.nextLong().toString).toVector
 
-    strs.map(str => CryptoUtil.sha256(ByteVector(str.getBytes)).flip)
+    strs.map(str => CryptoUtil.sha256(ByteVector(str.getBytes)))
   }
 
   def genValues(size: Int, totalAmount: CurrencyUnit): Vector[Satoshis] = {
@@ -34,7 +34,7 @@ object DLCTestUtil {
   }
 
   def genContractInfos(
-      outcomeHashes: Vector[Sha256DigestBE],
+      outcomeHashes: Vector[Sha256Digest],
       totalInput: CurrencyUnit): (ContractInfo, ContractInfo) = {
     val outcomeMap =
       outcomeHashes

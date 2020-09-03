@@ -55,17 +55,18 @@ case class DLCFundingInputDAO()(implicit
     findByPrimaryKeys(dlcs.map(_.outPoint))
 
   def findByEventId(
-      eventId: Sha256DigestBE): Future[Vector[DLCFundingInputDb]] = {
+      eventId: Sha256Digest): Future[Vector[DLCFundingInputDb]] = {
     val q = table.filter(_.eventId === eventId)
 
     safeDatabase.run(q.result).map(_.toVector)
   }
 
-  def findByEventId(eventId: Sha256Digest): Future[Vector[DLCFundingInputDb]] =
+  def findByEventId(
+      eventId: Sha256DigestBE): Future[Vector[DLCFundingInputDb]] =
     findByEventId(eventId.flip)
 
   def findByEventId(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       isInitiator: Boolean): Future[Vector[DLCFundingInputDb]] = {
     val q = table
       .filter(_.eventId === eventId)
@@ -75,14 +76,14 @@ case class DLCFundingInputDAO()(implicit
   }
 
   def findByEventId(
-      eventId: Sha256Digest,
+      eventId: Sha256DigestBE,
       isInitiator: Boolean): Future[Vector[DLCFundingInputDb]] =
     findByEventId(eventId.flip, isInitiator)
 
   class DLCFundingInputsTable(tag: Tag)
       extends Table[DLCFundingInputDb](tag, "wallet_dlc_funding_inputs") {
 
-    def eventId: Rep[Sha256DigestBE] = column("event_id")
+    def eventId: Rep[Sha256Digest] = column("event_id")
 
     def isInitiator: Rep[Boolean] = column("is_initiator")
 
