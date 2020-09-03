@@ -174,6 +174,9 @@ case class ChainHandler(
     }
   }
 
+  /** Finds the next header in the chain. Uses chain work to break ties
+    * returning only the header in the chain with the most work
+    */
   private def findNextHeader(
       prevBlockHeader: BlockHeaderDb,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
