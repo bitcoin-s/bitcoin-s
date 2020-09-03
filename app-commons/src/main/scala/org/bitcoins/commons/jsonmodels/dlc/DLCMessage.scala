@@ -23,7 +23,7 @@ sealed trait DLCMessage {
   def toJson: Value
   def toJsonStr: String = toJson.toString()
 
-  def eventId: Sha256DigestBE
+  def eventId: Sha256Digest
 }
 
 object DLCMessage {
@@ -32,10 +32,9 @@ object DLCMessage {
   def calcEventId(
       oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
-      timeouts: DLCTimeouts): Sha256DigestBE = {
+      timeouts: DLCTimeouts): Sha256Digest = {
     CryptoUtil
       .sha256(oracleInfo.bytes ++ contractInfo.bytes ++ timeouts.bytes)
-      .flip
   }
 
   private def getValue(key: String)(implicit
@@ -135,7 +134,7 @@ object DLCMessage {
       timeouts: DLCTimeouts)
       extends DLCSetupMessage {
 
-    val eventId: Sha256DigestBE =
+    val eventId: Sha256Digest =
       calcEventId(oracleInfo, contractInfo, timeouts)
 
     override def toJson: Value = {
@@ -291,7 +290,7 @@ object DLCMessage {
       pubKeys: DLCPublicKeys,
       fundingInputs: Vector[OutputReference],
       changeAddress: BitcoinAddress,
-      eventId: Sha256DigestBE) {
+      eventId: Sha256Digest) {
 
     def withSigs(cetSigs: CETSignatures): DLCAccept = {
       DLCAccept(totalCollateral = totalCollateral,
@@ -309,7 +308,7 @@ object DLCMessage {
       fundingInputs: Vector[OutputReference],
       changeAddress: BitcoinAddress,
       cetSigs: CETSignatures,
-      eventId: Sha256DigestBE)
+      eventId: Sha256Digest)
       extends DLCSetupMessage {
 
     def toJson: Value = {
@@ -432,7 +431,7 @@ object DLCMessage {
           .get
 
       val eventId =
-        vec.find(_._1 == "eventId").map(obj => Sha256DigestBE(obj._2.str)).get
+        vec.find(_._1 == "eventId").map(obj => Sha256Digest(obj._2.str)).get
 
       DLCAccept(totalCollateral,
                 pubKeys,
@@ -446,7 +445,7 @@ object DLCMessage {
   case class DLCSign(
       cetSigs: CETSignatures,
       fundingSigs: FundingSignatures,
-      eventId: Sha256DigestBE)
+      eventId: Sha256Digest)
       extends DLCMessage {
 
     def toJson: Value = {
@@ -531,7 +530,7 @@ object DLCMessage {
           .toMap
 
       val eventId =
-        vec.find(_._1 == "eventId").map(obj => Sha256DigestBE(obj._2.str)).get
+        vec.find(_._1 == "eventId").map(obj => Sha256Digest(obj._2.str)).get
 
       DLCSign(cetSigs, FundingSignatures(fundingSigs), eventId)
     }

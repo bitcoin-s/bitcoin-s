@@ -88,7 +88,7 @@ trait DLCWalletUtil {
     dummyTimeouts
   )
 
-  lazy val sampleDLCEventId: Sha256DigestBE =
+  lazy val sampleDLCEventId: Sha256Digest =
     DLCMessage.calcEventId(sampleOracleInfo, sampleContractInfo, dummyTimeouts)
 
   lazy val dummyOutcomeSigs: Map[Sha256Digest, ECAdaptorSignature] =

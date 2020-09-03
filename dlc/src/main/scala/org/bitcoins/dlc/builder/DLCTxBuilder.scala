@@ -46,7 +46,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
                                          acceptFinalAddress: BitcoinAddress),
                            acceptFundingInputs: Vector[OutputReference],
                            acceptChangeAddress: BitcoinAddress,
-                           eventId: Sha256DigestBE) = accept
+                           eventId: Sha256Digest) = accept
 
   val totalInput: CurrencyUnit = offerTotalCollateral + acceptTotalCollateral
 

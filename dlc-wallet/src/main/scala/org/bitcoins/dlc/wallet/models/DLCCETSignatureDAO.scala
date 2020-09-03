@@ -10,8 +10,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCCETSignatureDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCCETSignatureDb, (Sha256DigestBE, Sha256Digest)]
-    with SlickUtil[DLCCETSignatureDb, (Sha256DigestBE, Sha256Digest)] {
+    extends CRUD[DLCCETSignatureDb, (Sha256Digest, Sha256Digest)]
+    with SlickUtil[DLCCETSignatureDb, (Sha256Digest, Sha256Digest)] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -28,13 +28,13 @@ case class DLCCETSignatureDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(ids: Vector[(
-      Sha256DigestBE,
+      Sha256Digest,
       Sha256Digest)]): Query[DLCCETSignatureTable, DLCCETSignatureDb, Seq] =
     table
       .filter(_.eventId.inSet(ids.map(_._1)))
       .filter(_.outcomeHash.inSet(ids.map(_._2)))
 
-  override def findByPrimaryKey(id: (Sha256DigestBE, Sha256Digest)): Query[
+  override def findByPrimaryKey(id: (Sha256Digest, Sha256Digest)): Query[
     DLCCETSignatureTable,
     DLCCETSignatureDb,
     Seq] = {
@@ -50,18 +50,19 @@ case class DLCCETSignatureDAO()(implicit
     findByPrimaryKeys(dlcs.map(sig => (sig.eventId, sig.outcomeHash)))
 
   def findByEventId(
-      eventId: Sha256DigestBE): Future[Vector[DLCCETSignatureDb]] = {
+      eventId: Sha256Digest): Future[Vector[DLCCETSignatureDb]] = {
     val q = table.filter(_.eventId === eventId)
     safeDatabase.run(q.result).map(_.toVector)
   }
 
-  def findByEventId(eventId: Sha256Digest): Future[Vector[DLCCETSignatureDb]] =
+  def findByEventId(
+      eventId: Sha256DigestBE): Future[Vector[DLCCETSignatureDb]] =
     findByEventId(eventId.flip)
 
   class DLCCETSignatureTable(tag: Tag)
       extends Table[DLCCETSignatureDb](tag, "wallet_dlc_cet_sigs") {
 
-    def eventId: Rep[Sha256DigestBE] = column("event_id")
+    def eventId: Rep[Sha256Digest] = column("event_id")
 
     def outcomeHash: Rep[Sha256Digest] = column("outcome_hash")
 

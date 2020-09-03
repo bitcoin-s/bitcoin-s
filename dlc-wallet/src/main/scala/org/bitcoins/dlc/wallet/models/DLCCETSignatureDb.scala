@@ -1,9 +1,9 @@
 package org.bitcoins.dlc.wallet.models
 
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest, Sha256DigestBE}
+import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest}
 
 case class DLCCETSignatureDb(
-    eventId: Sha256DigestBE,
+    eventId: Sha256Digest,
     outcomeHash: Sha256Digest,
     signature: ECAdaptorSignature) {
   def toTuple: (Sha256Digest, ECAdaptorSignature) = (outcomeHash, signature)
