@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand.ExecuteDLCRefund
-import org.bitcoins.crypto.Sha256DigestBE
+import org.bitcoins.crypto.Sha256Digest
 import scalafx.scene.control.TextField
 
 object RefundDLCDialog
@@ -13,7 +13,7 @@ object RefundDLCDialog
 
   override def constructFromInput(
       inputs: Map[String, String]): ExecuteDLCRefund = {
-    val eventId = Sha256DigestBE(inputs(dlcEventIdStr))
+    val eventId = Sha256Digest(inputs(dlcEventIdStr))
     ExecuteDLCRefund(eventId, noBroadcast = false)
   }
 }

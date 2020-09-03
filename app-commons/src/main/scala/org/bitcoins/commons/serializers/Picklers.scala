@@ -12,7 +12,11 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{
+  SchnorrDigitalSignature,
+  Sha256Digest,
+  Sha256DigestBE
+}
 import upickle.default._
 
 object Picklers {
@@ -31,6 +35,9 @@ object Picklers {
 
   implicit val sha256DigestBEPickler: ReadWriter[Sha256DigestBE] =
     readwriter[String].bimap(_.hex, Sha256DigestBE.fromHex)
+
+  implicit val sha256DigestPickler: ReadWriter[Sha256Digest] =
+    readwriter[String].bimap(_.hex, Sha256Digest.fromHex)
 
   implicit val doubleSha256DigestBEPickler: ReadWriter[DoubleSha256DigestBE] =
     readwriter[String].bimap(_.hex, DoubleSha256DigestBE.fromHex)

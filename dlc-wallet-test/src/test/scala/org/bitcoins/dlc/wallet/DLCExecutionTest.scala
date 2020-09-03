@@ -12,11 +12,10 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
 import org.bitcoins.dlc.wallet.models.DLCOfferDb
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
-import org.bitcoins.wallet.Wallet
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future
@@ -45,10 +44,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     // Get a hash that the initiator wins for
     val initiatorWinHash =
       contractInfo
-        .max(new Ordering[(Sha256DigestBE, Satoshis)] {
+        .max(new Ordering[(Sha256Digest, Satoshis)] {
           override def compare(
-              x: (Sha256DigestBE, Satoshis),
-              y: (Sha256DigestBE, Satoshis)): Int =
+              x: (Sha256Digest, Satoshis),
+              y: (Sha256Digest, Satoshis)): Int =
             x._2.compare(y._2)
         })
         ._1

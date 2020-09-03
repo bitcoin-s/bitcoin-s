@@ -12,7 +12,7 @@ import org.bitcoins.crypto.{
   ECAdaptorSignature,
   ECDigitalSignature,
   SchnorrDigitalSignature,
-  Sha256DigestBE
+  Sha256Digest
 }
 
 /** Represents the state of specific DLC for a given party.
@@ -21,7 +21,7 @@ import org.bitcoins.crypto.{
   * transactions and oracle signatures.
   */
 sealed trait DLCStatus {
-  def eventId: Sha256DigestBE
+  def eventId: Sha256Digest
   def isInitiator: Boolean
   def offer: DLCOffer
   def state: DLCState
@@ -39,7 +39,7 @@ object DLCStatus {
     * accept message has yet been created/received.
     */
   case class Offered(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       isInitiator: Boolean,
       offer: DLCOffer)
       extends DLCStatus {
@@ -54,7 +54,7 @@ object DLCStatus {
     * no sign message has yet been created/received.
     */
   case class Accepted(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept)
@@ -72,7 +72,7 @@ object DLCStatus {
     * broadcasted to the network.
     */
   case class Signed(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
@@ -94,7 +94,7 @@ object DLCStatus {
     * to the blockchain, and it has not yet been confirmed.
     */
   case class Broadcasted(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
@@ -113,7 +113,7 @@ object DLCStatus {
     * initiated.
     */
   case class Confirmed(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
@@ -144,7 +144,7 @@ object DLCStatus {
     * and executed by ourselves.
     */
   case class Claimed(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
@@ -160,7 +160,7 @@ object DLCStatus {
     * and executed by a remote party.
     */
   case class RemoteClaimed(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
@@ -181,7 +181,7 @@ object DLCStatus {
       val preCommittedR = offer.oracleInfo.rValue
 
       def sigFromMsgAndSigs(
-          msg: Sha256DigestBE,
+          msg: Sha256Digest,
           adaptorSig: ECAdaptorSignature,
           cetSig: ECDigitalSignature): SchnorrDigitalSignature = {
         val sigPubKey = oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
@@ -235,7 +235,7 @@ object DLCStatus {
     * accepted by the network.
     */
   case class Refunded(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,

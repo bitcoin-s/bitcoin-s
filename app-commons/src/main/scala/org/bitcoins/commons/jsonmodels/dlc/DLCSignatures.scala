@@ -3,7 +3,7 @@ package org.bitcoins.commons.jsonmodels.dlc
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.MapWrapper
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest}
 
 sealed trait DLCSignatures
 
@@ -29,6 +29,6 @@ case class FundingSignatures(
 }
 
 case class CETSignatures(
-    outcomeSigs: Map[Sha256DigestBE, ECAdaptorSignature],
+    outcomeSigs: Map[Sha256Digest, ECAdaptorSignature],
     refundSig: PartialSignature)
     extends DLCSignatures

@@ -2,17 +2,17 @@ package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest}
 
 case class SetupDLC(
     fundingTx: Transaction,
-    cets: Map[Sha256DigestBE, CETInfo],
+    cets: Map[Sha256Digest, CETInfo],
     refundTx: Transaction) {
   cets.foreach {
     case (msg, cetInfo) =>
       require(
         cetInfo.tx.inputs.size == 1,
-        s"CETs should only spend the funding input, local CET for $msg has ${cetInfo.tx.inputs.size} inputs")
+        s"CETs should only spend the funding input, local CET for ${msg.hex} has ${cetInfo.tx.inputs.size} inputs")
       require(
         cetInfo.tx.inputs.head.previousOutput == TransactionOutPoint(
           fundingTx.txId,

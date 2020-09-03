@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
 import ujson._
 import upickle.default._
 
@@ -503,7 +503,7 @@ object AddDLCSigs extends ServerJsonModels {
   }
 }
 
-case class GetDLCFundingTx(eventId: Sha256DigestBE)
+case class GetDLCFundingTx(eventId: Sha256Digest)
 
 object GetDLCFundingTx extends ServerJsonModels {
 
@@ -511,7 +511,7 @@ object GetDLCFundingTx extends ServerJsonModels {
     jsArr.arr.toList match {
       case eventIdJs :: Nil =>
         Try {
-          val eventId = Sha256DigestBE(eventIdJs.str)
+          val eventId = Sha256Digest(eventIdJs.str)
           GetDLCFundingTx(eventId)
         }
       case Nil =>
@@ -524,7 +524,7 @@ object GetDLCFundingTx extends ServerJsonModels {
   }
 }
 
-case class BroadcastDLCFundingTx(eventId: Sha256DigestBE)
+case class BroadcastDLCFundingTx(eventId: Sha256Digest)
 
 object BroadcastDLCFundingTx extends ServerJsonModels {
 
@@ -532,7 +532,7 @@ object BroadcastDLCFundingTx extends ServerJsonModels {
     jsArr.arr.toList match {
       case eventIdJs :: Nil =>
         Try {
-          val eventId = Sha256DigestBE(eventIdJs.str)
+          val eventId = Sha256Digest(eventIdJs.str)
           BroadcastDLCFundingTx(eventId)
         }
       case Nil =>
@@ -546,7 +546,7 @@ object BroadcastDLCFundingTx extends ServerJsonModels {
 }
 
 case class ExecuteDLCUnilateralClose(
-    eventId: Sha256DigestBE,
+    eventId: Sha256Digest,
     oracleSig: SchnorrDigitalSignature,
     noBroadcast: Boolean)
     extends Broadcastable
@@ -557,7 +557,7 @@ object ExecuteDLCUnilateralClose extends ServerJsonModels {
     jsArr.arr.toList match {
       case eventIdJs :: oracleSigJs :: noBroadcastJs :: Nil =>
         Try {
-          val eventId = Sha256DigestBE(eventIdJs.str)
+          val eventId = Sha256Digest(eventIdJs.str)
           val oracleSig = jsToSchnorrDigitalSignature(oracleSigJs)
           val noBroadcast = noBroadcastJs.bool
 
@@ -575,7 +575,7 @@ object ExecuteDLCUnilateralClose extends ServerJsonModels {
   }
 }
 
-case class ExecuteDLCRefund(eventId: Sha256DigestBE, noBroadcast: Boolean)
+case class ExecuteDLCRefund(eventId: Sha256Digest, noBroadcast: Boolean)
     extends Broadcastable
 
 object ExecuteDLCRefund extends ServerJsonModels {
@@ -584,7 +584,7 @@ object ExecuteDLCRefund extends ServerJsonModels {
     jsArr.arr.toList match {
       case eventIdJs :: noBroadcastJs :: Nil =>
         Try {
-          val eventId = Sha256DigestBE(eventIdJs.str)
+          val eventId = Sha256Digest(eventIdJs.str)
           val noBroadcast = noBroadcastJs.bool
 
           ExecuteDLCRefund(eventId, noBroadcast)
