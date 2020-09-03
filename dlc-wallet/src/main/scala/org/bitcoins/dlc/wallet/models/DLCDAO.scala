@@ -16,8 +16,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCDb, Sha256DigestBE]
-    with SlickUtil[DLCDb, Sha256DigestBE] {
+    extends CRUD[DLCDb, Sha256Digest]
+    with SlickUtil[DLCDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -28,11 +28,11 @@ case class DLCDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[Sha256DigestBE]): Query[DLCTable, DLCDb, Seq] =
+      ids: Vector[Sha256Digest]): Query[DLCTable, DLCDb, Seq] =
     table.filter(_.eventId.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256DigestBE): Query[DLCTable, DLCDb, Seq] = {
+      id: Sha256Digest): Query[DLCTable, DLCDb, Seq] = {
     table
       .filter(_.eventId === id)
   }
@@ -40,7 +40,7 @@ case class DLCDAO()(implicit
   override def findAll(dlcs: Vector[DLCDb]): Query[DLCTable, DLCDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.eventId))
 
-  def findByEventId(eventId: Sha256DigestBE): Future[Option[DLCDb]] = {
+  def findByEventId(eventId: Sha256Digest): Future[Option[DLCDb]] = {
     val q = table.filter(_.eventId === eventId)
 
     safeDatabase.run(q.result).map {
@@ -54,12 +54,12 @@ case class DLCDAO()(implicit
     }
   }
 
-  def findByEventId(eventId: Sha256Digest): Future[Option[DLCDb]] =
+  def findByEventId(eventId: Sha256DigestBE): Future[Option[DLCDb]] =
     findByEventId(eventId.flip)
 
   class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
 
-    def eventId: Rep[Sha256DigestBE] = column("event_id", O.Unique)
+    def eventId: Rep[Sha256Digest] = column("event_id", O.Unique)
 
     def state: Rep[DLCState] = column("state")
 

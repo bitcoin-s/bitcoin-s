@@ -47,8 +47,7 @@ trait TLVGen {
   def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
     for {
       numOutcomes <- Gen.choose(2, 10)
-      outcomes <-
-        Gen.listOfN(numOutcomes, CryptoGenerators.sha256Digest.map(_.flip))
+      outcomes <- Gen.listOfN(numOutcomes, CryptoGenerators.sha256Digest)
       totalInput <-
         Gen
           .choose(numOutcomes + 1, Long.MaxValue)
