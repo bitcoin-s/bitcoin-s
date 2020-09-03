@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand.GetDLCFundingTx
-import org.bitcoins.crypto.Sha256DigestBE
+import org.bitcoins.crypto.Sha256Digest
 import scalafx.scene.control.TextField
 
 object GetFundingDLCDialog
@@ -13,7 +13,7 @@ object GetFundingDLCDialog
 
   override def constructFromInput(
       inputs: Map[String, String]): GetDLCFundingTx = {
-    val eventId = Sha256DigestBE(inputs(dlcEventIdStr))
+    val eventId = Sha256Digest(inputs(dlcEventIdStr))
     GetDLCFundingTx(eventId)
   }
 }

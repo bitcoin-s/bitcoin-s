@@ -18,6 +18,7 @@ import org.bitcoins.crypto.{
   NetworkElement,
   SchnorrNonce,
   SchnorrPublicKey,
+  Sha256Digest,
   Sha256DigestBE
 }
 import scodec.bits.ByteVector
@@ -206,7 +207,7 @@ object PongTLV extends TLVFactory[PongTLV] {
 
 sealed trait ContractInfoTLV extends TLV
 
-case class ContractInfoV0TLV(outcomes: Map[Sha256DigestBE, Satoshis])
+case class ContractInfoV0TLV(outcomes: Map[Sha256Digest, Satoshis])
     extends ContractInfoTLV {
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
@@ -224,10 +225,10 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {
     val iter = ValueIterator(value)
 
-    val builder = Map.newBuilder[Sha256DigestBE, Satoshis]
+    val builder = Map.newBuilder[Sha256Digest, Satoshis]
 
     while (iter.index < value.length) {
-      val outcome = Sha256DigestBE(iter.take(32))
+      val outcome = Sha256Digest(iter.take(32))
       val amt = Satoshis(UInt64(iter.takeBits(64)))
       builder.+=(outcome -> amt)
     }

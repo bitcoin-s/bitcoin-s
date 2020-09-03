@@ -59,7 +59,7 @@ case class TestDLCClient(
     dlcTxBuilder.acceptOutcomes
   }
 
-  val messages: Vector[Sha256DigestBE] = outcomes.keys.toVector
+  val messages: Vector[Sha256Digest] = outcomes.keys.toVector
 
   val timeouts: DLCTimeouts = offer.timeouts
 

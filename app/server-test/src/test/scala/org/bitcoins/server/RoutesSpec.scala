@@ -694,13 +694,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     val dummyAdaptorSig = ECAdaptorSignature.dummy
 
-    lazy val winHash: Sha256DigestBE =
-      CryptoUtil.sha256(ByteVector("WIN".getBytes)).flip
+    lazy val winHash: Sha256Digest =
+      CryptoUtil.sha256(ByteVector("WIN".getBytes))
 
-    lazy val loseHash: Sha256DigestBE =
-      CryptoUtil.sha256(ByteVector("LOSE".getBytes)).flip
+    lazy val loseHash: Sha256Digest =
+      CryptoUtil.sha256(ByteVector("LOSE".getBytes))
 
-    lazy val dummyOutcomeSigs: Map[Sha256DigestBE, ECAdaptorSignature] =
+    lazy val dummyOutcomeSigs: Map[Sha256Digest, ECAdaptorSignature] =
       Map(winHash -> ECAdaptorSignature.dummy,
           loseHash -> ECAdaptorSignature.dummy)
 
@@ -709,7 +709,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val dummyDLCKeys =
       DLCPublicKeys(dummyKey, BitcoinAddress(dummyAddress))
 
-    val eventId = Sha256DigestBE(
+    val eventId = Sha256Digest(
       "de462f212d95ca4cf5db54eee08f14be0ee934e9ecfc6e9b7014ecfa51ba7b66")
 
     "create a dlc offer" in {
@@ -849,7 +849,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "get dlc funding tx" in {
       (mockWalletApi
-        .getDLCFundingTx(_: Sha256DigestBE))
+        .getDLCFundingTx(_: Sha256Digest))
         .expects(eventId)
         .returning(Future.successful(EmptyTransaction))
 
@@ -865,7 +865,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "broadcast dlc funding tx" in {
       (mockWalletApi
-        .broadcastDLCFundingTx(_: Sha256DigestBE))
+        .broadcastDLCFundingTx(_: Sha256Digest))
         .expects(eventId)
         .returning(Future.successful(EmptyTransaction))
 

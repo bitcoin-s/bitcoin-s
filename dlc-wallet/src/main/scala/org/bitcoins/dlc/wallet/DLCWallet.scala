@@ -43,7 +43,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigDAO = DLCRefundSigDAO()
 
   private def initDLC(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       isInitiator: Boolean): Future[DLCDb] = {
     dlcDAO.findByEventId(eventId).flatMap {
       case Some(dlcDb) =>
@@ -73,7 +73,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   }
 
   private def updateDLCState(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       state: DLCState): Future[DLCDb] = {
     for {
       dlcOpt <- dlcDAO.read(eventId)
@@ -89,7 +89,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   }
 
   private def updateDLCOracleSig(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       sig: SchnorrDigitalSignature): Future[DLCDb] = {
     dlcDAO.findByEventId(eventId).flatMap {
       case Some(dlcDb) =>
@@ -546,7 +546,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     } yield dlcDb
   }
 
-  private def getAllDLCData(eventId: Sha256DigestBE): Future[
+  private def getAllDLCData(eventId: Sha256Digest): Future[
     (
         DLCDb,
         DLCOfferDb,
@@ -588,7 +588,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   }
 
   private def verifierFromDb(
-      eventId: Sha256DigestBE): Future[DLCSignatureVerifier] = {
+      eventId: Sha256Digest): Future[DLCSignatureVerifier] = {
     getAllDLCData(eventId).map {
       case (dlcDb, dlcOffer, dlcAccept, _, fundingInputsDb, _) =>
         val offerFundingInputs =
@@ -604,7 +604,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
-  private def signerFromDb(eventId: Sha256DigestBE): Future[DLCTxSigner] = {
+  private def signerFromDb(eventId: Sha256Digest): Future[DLCTxSigner] = {
     for {
       (dlcDb, dlcOffer, dlcAccept, _, fundingInputsDb, _) <- getAllDLCData(
         eventId)
@@ -661,7 +661,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   }
 
   private def executorAndSetupFromDb(
-      eventId: Sha256DigestBE): Future[(DLCExecutor, SetupDLC)] = {
+      eventId: Sha256Digest): Future[(DLCExecutor, SetupDLC)] = {
     getAllDLCData(eventId).flatMap {
       case (dlcDb,
             dlcOffer,
@@ -711,7 +711,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       }
   }
 
-  override def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction] = {
+  override def getDLCFundingTx(eventId: Sha256Digest): Future[Transaction] = {
     for {
       (dlcDb, dlcOffer, dlcAccept, _, fundingInputs, _) <- getAllDLCData(
         eventId)
@@ -733,7 +733,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   }
 
   override def broadcastDLCFundingTx(
-      eventId: Sha256DigestBE): Future[Transaction] = {
+      eventId: Sha256Digest): Future[Transaction] = {
     for {
       tx <- getDLCFundingTx(eventId)
       _ <- broadcastTransaction(tx)
@@ -744,7 +744,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   }
 
   override def executeDLC(
-      eventId: Sha256DigestBE,
+      eventId: Sha256Digest,
       oracleSig: SchnorrDigitalSignature): Future[Transaction] = {
     for {
       _ <- updateDLCOracleSig(eventId, oracleSig)
@@ -764,8 +764,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
-  override def executeDLCRefund(
-      eventId: Sha256DigestBE): Future[Transaction] = {
+  override def executeDLCRefund(eventId: Sha256Digest): Future[Transaction] = {
     for {
       (executor, setup) <- executorAndSetupFromDb(eventId)
       _ <- updateDLCState(eventId, DLCState.Refunded)

@@ -127,7 +127,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
   def constructDLCClients(numOutcomes: Int): (
       TestDLCClient,
       TestDLCClient,
-      Vector[Sha256DigestBE]) = {
+      Vector[Sha256Digest]) = {
     val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
 
     val (outcomes, remoteOutcomes) =
@@ -221,7 +221,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
         TestDLCClient,
         SetupDLC,
         TestDLCClient,
-        Vector[Sha256DigestBE])] = {
+        Vector[Sha256Digest])] = {
     val (dlcOffer, dlcAccept, outcomeHashes) = constructDLCClients(numOutcomes)
 
     val offerSigReceiveP =

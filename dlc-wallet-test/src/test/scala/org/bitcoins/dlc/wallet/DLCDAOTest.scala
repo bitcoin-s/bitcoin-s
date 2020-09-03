@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest}
 import org.bitcoins.db.CRUD
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.testkit.fixtures.DLCDAOFixture
@@ -22,7 +22,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
 
   val dlcDb: DLCDb = DLCWalletUtil.sampleDLCDb
 
-  val eventId: Sha256DigestBE = dlcDb.eventId
+  val eventId: Sha256Digest = dlcDb.eventId
 
   def verifyDatabaseInsertion[ElementType, KeyType](
       element: ElementType,

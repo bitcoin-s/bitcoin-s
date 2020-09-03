@@ -67,7 +67,7 @@ object InitOracleDialog {
         }
         val contractMap = inputs.map {
           case (str, value) =>
-            val hash = CryptoUtil.sha256(ByteVector(str.getBytes)).flip
+            val hash = CryptoUtil.sha256(ByteVector(str.getBytes))
             hash -> Satoshis(BigInt(value))
         }.toMap
 
