@@ -207,7 +207,7 @@ case class BlockHeaderDAO()(implicit
     table.filter(header => header.height >= from && header.height <= to).result
   }
 
-  def findBeforeTime(time: UInt32): Future[Option[BlockHeaderDb]] = {
+  def findClosestBeforeTime(time: UInt32): Future[Option[BlockHeaderDb]] = {
     val beforeTime = table.filter(_.time < time)
 
     val maxTime = beforeTime.map(_.time).max
@@ -227,10 +227,9 @@ case class BlockHeaderDAO()(implicit
 
     opt.flatMap {
       case None =>
-        findBeforeTime(time).flatMap {
+        findClosestBeforeTime(time).flatMap {
           case None =>
-            Future.failed(
-              new IllegalStateException("No block headers in database."))
+            Future.failed(new RuntimeException("No block headers in database."))
           case Some(header) =>
             Future.successful(header)
         }
