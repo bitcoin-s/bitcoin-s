@@ -17,12 +17,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto.{
-  DummyECDigitalSignature,
-  ECAdaptorSignature,
-  ECPublicKey,
-  Sha256DigestBE
-}
+import org.bitcoins.crypto._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits.ByteVector
 
@@ -42,7 +37,7 @@ class DLCMessageTest extends BitcoinSAsyncTest {
   val dummyAddress: BitcoinAddress = BitcoinAddress(
     "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
 
-  val dummyHash: Sha256DigestBE = Sha256DigestBE(
+  val dummyHash: Sha256Digest = Sha256Digest(
     "00000000000000000008bba30d4d0fb53dcbffb601557de9f16d257d4f1985b7")
 
   val dummySig: PartialSignature =

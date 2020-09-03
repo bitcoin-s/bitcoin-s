@@ -29,11 +29,11 @@ trait DLCWalletUtil {
   lazy val kValue: ECPrivateKey = ECPrivateKey.freshPrivateKey
   lazy val rValue: SchnorrNonce = kValue.schnorrNonce
 
-  lazy val winHash: Sha256DigestBE =
-    CryptoUtil.sha256(ByteVector("WIN".getBytes)).flip
+  lazy val winHash: Sha256Digest =
+    CryptoUtil.sha256(ByteVector("WIN".getBytes))
 
-  lazy val loseHash: Sha256DigestBE =
-    CryptoUtil.sha256(ByteVector("LOSE".getBytes)).flip
+  lazy val loseHash: Sha256Digest =
+    CryptoUtil.sha256(ByteVector("LOSE".getBytes))
 
   lazy val sampleOracleInfo: OracleInfo = OracleInfo(
     oraclePrivKey.schnorrPublicKey.bytes ++ rValue.bytes)
@@ -91,7 +91,7 @@ trait DLCWalletUtil {
   lazy val sampleDLCEventId: Sha256DigestBE =
     DLCMessage.calcEventId(sampleOracleInfo, sampleContractInfo, dummyTimeouts)
 
-  lazy val dummyOutcomeSigs: Map[Sha256DigestBE, ECAdaptorSignature] =
+  lazy val dummyOutcomeSigs: Map[Sha256Digest, ECAdaptorSignature] =
     Map(winHash -> ECAdaptorSignature.dummy,
         loseHash -> ECAdaptorSignature.dummy)
 

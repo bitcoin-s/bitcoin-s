@@ -10,8 +10,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCCETSignatureDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCCETSignatureDb, (Sha256DigestBE, Sha256DigestBE)]
-    with SlickUtil[DLCCETSignatureDb, (Sha256DigestBE, Sha256DigestBE)] {
+    extends CRUD[DLCCETSignatureDb, (Sha256DigestBE, Sha256Digest)]
+    with SlickUtil[DLCCETSignatureDb, (Sha256DigestBE, Sha256Digest)] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -29,12 +29,12 @@ case class DLCCETSignatureDAO()(implicit
 
   override protected def findByPrimaryKeys(ids: Vector[(
       Sha256DigestBE,
-      Sha256DigestBE)]): Query[DLCCETSignatureTable, DLCCETSignatureDb, Seq] =
+      Sha256Digest)]): Query[DLCCETSignatureTable, DLCCETSignatureDb, Seq] =
     table
       .filter(_.eventId.inSet(ids.map(_._1)))
       .filter(_.outcomeHash.inSet(ids.map(_._2)))
 
-  override def findByPrimaryKey(id: (Sha256DigestBE, Sha256DigestBE)): Query[
+  override def findByPrimaryKey(id: (Sha256DigestBE, Sha256Digest)): Query[
     DLCCETSignatureTable,
     DLCCETSignatureDb,
     Seq] = {
@@ -63,7 +63,7 @@ case class DLCCETSignatureDAO()(implicit
 
     def eventId: Rep[Sha256DigestBE] = column("event_id")
 
-    def outcomeHash: Rep[Sha256DigestBE] = column("outcome_hash")
+    def outcomeHash: Rep[Sha256Digest] = column("outcome_hash")
 
     def signature: Rep[ECAdaptorSignature] = column("signature")
 

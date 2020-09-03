@@ -64,10 +64,10 @@ object DLCMessage {
     }
   }
 
-  case class ContractInfo(outcomeValueMap: Map[Sha256DigestBE, Satoshis])
+  case class ContractInfo(outcomeValueMap: Map[Sha256Digest, Satoshis])
       extends NetworkElement
-      with MapWrapper[Sha256DigestBE, Satoshis] {
-    override def wrapped: Map[Sha256DigestBE, Satoshis] = outcomeValueMap
+      with MapWrapper[Sha256Digest, Satoshis] {
+    override def wrapped: Map[Sha256Digest, Satoshis] = outcomeValueMap
 
     override def bytes: ByteVector = {
       outcomeValueMap.foldLeft(ByteVector.empty) {
@@ -86,13 +86,13 @@ object DLCMessage {
       @tailrec
       def loop(
           remainingBytes: ByteVector,
-          accum: Vector[(Sha256DigestBE, Satoshis)]): Vector[
-        (Sha256DigestBE, Satoshis)] = {
+          accum: Vector[(Sha256Digest, Satoshis)]): Vector[
+        (Sha256Digest, Satoshis)] = {
         if (remainingBytes.size < sizeOfMapElement) {
           accum
         } else {
           val relevantBytes = remainingBytes.take(sizeOfMapElement)
-          val digest = Sha256DigestBE(relevantBytes.take(32))
+          val digest = Sha256Digest(relevantBytes.take(32))
           val sats = Satoshis(relevantBytes.takeRight(8))
           loop(remainingBytes.drop(sizeOfMapElement), accum :+ (digest, sats))
         }
@@ -198,7 +198,7 @@ object DLCMessage {
                   getValue("sha256")
                 val sats = getValue("sats")
 
-                (Sha256DigestBE(sha256.str), Satoshis(sats.num.toLong))
+                (Sha256Digest(sha256.str), Satoshis(sats.num.toLong))
               }
           }
           .get
@@ -417,7 +417,7 @@ object DLCMessage {
               val outcomeSigsMap = getValue("outcomeSigs")
               val outcomeSigs = outcomeSigsMap.arr.map { v =>
                 val (key, value) = v.obj.head
-                val hash = Sha256DigestBE(key)
+                val hash = Sha256Digest(key)
                 val sig = ECAdaptorSignature(value.str)
                 (hash, sig)
               }
@@ -495,7 +495,7 @@ object DLCMessage {
               val outcomeSigsMap = getValue("outcomeSigs")
               val outcomeSigs = outcomeSigsMap.arr.map { item =>
                 val (key, value) = item.obj.head
-                val hash = Sha256DigestBE(key)
+                val hash = Sha256Digest(key)
                 val sig = ECAdaptorSignature(value.str)
                 (hash, sig)
               }

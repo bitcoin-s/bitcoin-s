@@ -673,13 +673,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     val dummyAdaptorSig = ECAdaptorSignature.dummy
 
-    lazy val winHash: Sha256DigestBE =
-      CryptoUtil.sha256(ByteVector("WIN".getBytes)).flip
+    lazy val winHash: Sha256Digest =
+      CryptoUtil.sha256(ByteVector("WIN".getBytes))
 
-    lazy val loseHash: Sha256DigestBE =
-      CryptoUtil.sha256(ByteVector("LOSE".getBytes)).flip
+    lazy val loseHash: Sha256Digest =
+      CryptoUtil.sha256(ByteVector("LOSE".getBytes))
 
-    lazy val dummyOutcomeSigs: Map[Sha256DigestBE, ECAdaptorSignature] =
+    lazy val dummyOutcomeSigs: Map[Sha256Digest, ECAdaptorSignature] =
       Map(winHash -> ECAdaptorSignature.dummy,
           loseHash -> ECAdaptorSignature.dummy)
 

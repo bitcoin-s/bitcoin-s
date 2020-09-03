@@ -12,6 +12,7 @@ import org.bitcoins.crypto.{
   ECAdaptorSignature,
   ECDigitalSignature,
   SchnorrDigitalSignature,
+  Sha256Digest,
   Sha256DigestBE
 }
 
@@ -181,7 +182,7 @@ object DLCStatus {
       val preCommittedR = offer.oracleInfo.rValue
 
       def sigFromMsgAndSigs(
-          msg: Sha256DigestBE,
+          msg: Sha256Digest,
           adaptorSig: ECAdaptorSignature,
           cetSig: ECDigitalSignature): SchnorrDigitalSignature = {
         val sigPubKey = oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
