@@ -416,6 +416,14 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                                          accept.cetSigs.refundSig)
 
         for {
+          isCETSigsValid <- verifyCETSigs(accept)
+          _ = if (!isCETSigsValid)
+            throw new IllegalArgumentException(
+              s"CET sigs provided are not valid! got ${accept.cetSigs.outcomeSigs}")
+          isRefundSigValid <- verifyRefundSig(accept)
+          _ = if (!isRefundSigValid)
+            throw new IllegalArgumentException(
+              s"Refund sig provided is not valid! got ${accept.cetSigs.refundSig}")
           _ <- dlcInputsDAO.upsertAll(acceptInputs)
           _ <- dlcSigsDAO.upsertAll(sigsDbs)
           _ <- dlcRefundSigDAO.upsert(refundSigDb)
@@ -451,6 +459,18 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
+  def verifyCETSigs(accept: DLCAccept): Future[Boolean] = {
+    verifierFromAccept(accept).map { verifier =>
+      val correctNumberOfSigs =
+        accept.cetSigs.outcomeSigs.size == verifier.builder.offerOutcomes.size
+
+      correctNumberOfSigs && accept.cetSigs.outcomeSigs.foldLeft(true) {
+        case (ret, (outcome, sig)) =>
+          ret && verifier.verifyCETSig(outcome, sig)
+      }
+    }
+  }
+
   def verifyCETSigs(sign: DLCSign): Future[Boolean] = {
     verifierFromDb(sign.eventId).map { verifier =>
       val correctNumberOfSigs =
@@ -460,6 +480,12 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         case (ret, (outcome, sig)) =>
           ret && verifier.verifyCETSig(outcome, sig)
       }
+    }
+  }
+
+  def verifyRefundSig(accept: DLCAccept): Future[Boolean] = {
+    verifierFromAccept(accept).map { verifier =>
+      verifier.verifyRefundSig(accept.cetSigs.refundSig)
     }
   }
 
@@ -585,6 +611,26 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               utxo.toUTXOInfo(keyManager, txOpt.get.transaction) +: accum)
         }
     } yield scriptSigParams
+  }
+
+  private def verifierFromAccept(
+      accept: DLCAccept): Future[DLCSignatureVerifier] = {
+    for {
+      dlcDbOpt <- dlcDAO.findByEventId(accept.eventId)
+      dlcDb = dlcDbOpt.get
+      dlcOfferOpt <- dlcOfferDAO.findByEventId(accept.eventId)
+      dlcOffer = dlcOfferOpt.get
+      fundingInputsDb <- dlcInputsDAO.findByEventId(accept.eventId)
+    } yield {
+      val offerFundingInputs =
+        fundingInputsDb.filter(_.isInitiator).map(_.toOutputReference)
+
+      val builder =
+        DLCTxBuilder(dlcOffer.toDLCOffer(offerFundingInputs),
+                     accept.withoutSigs)
+
+      DLCSignatureVerifier(builder, dlcDb.isInitiator)
+    }
   }
 
   private def verifierFromDb(
