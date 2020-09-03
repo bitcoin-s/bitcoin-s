@@ -338,13 +338,16 @@ trait ChainUnitTest
   /** Builds two competing headers that are built from the same parent */
   private def buildCompetingHeaders(
       parent: BlockHeaderDb): (BlockHeader, BlockHeader) = {
-    val newHeaderB =
+    val newHeaderCandidate1 =
       BlockHeaderHelper.buildNextHeader(parent)
 
-    val newHeaderC =
+    val newHeaderCandidate2 =
       BlockHeaderHelper.buildNextHeader(parent)
-
-    (newHeaderB.blockHeader, newHeaderC.blockHeader)
+    if (newHeaderCandidate1.chainWork >= newHeaderCandidate2.chainWork) {
+      (newHeaderCandidate1.blockHeader, newHeaderCandidate2.blockHeader)
+    } else {
+      (newHeaderCandidate2.blockHeader, newHeaderCandidate1.blockHeader)
+    }
   }
 
   case class ReorgFixture(

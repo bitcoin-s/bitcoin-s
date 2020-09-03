@@ -150,46 +150,64 @@ case class ChainHandler(
   override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
-    val startHeaderF = if (prevStopHash == DoubleSha256DigestBE.empty) {
-      blockHeaderDAO
-        .getAtHeight(0)
-        .map(_.head)
-    } else {
+    val prevBlockHeaderOptF: Future[Option[BlockHeaderDb]] = {
       for {
         prevStopHeaderOpt <- getHeader(prevStopHash)
-        prevStopHeader = prevStopHeaderOpt.getOrElse(
-          throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
-      } yield prevStopHeader
+      } yield prevStopHeaderOpt
     }
 
     for {
-      startHeader <- startHeaderF
+      prevBlockHeaderOpt <- prevBlockHeaderOptF
       inMemoryBlockchains = {
-        blockchains.filter(
-          _.exists(_.previousBlockHashBE == startHeader.previousBlockHashBE))
+        prevBlockHeaderOpt match {
+          case Some(prevBlockHeader) =>
+            blockchains.filter(
+              _.exists(
+                _.previousBlockHashBE == prevBlockHeader.previousBlockHashBE))
+          case None =>
+            Vector.empty
+        }
       }
 
       headerOpt <- {
         val resultF: Future[Option[(Int, DoubleSha256Digest)]] = {
           if (inMemoryBlockchains.nonEmpty) {
-            val hashHeightOpt =
-              getBestChainAtHeight(startHeader.height + 1, inMemoryBlockchains)
+            val hashHeightOpt = prevBlockHeaderOpt.flatMap { prevBlockHeader =>
+              getBestChainAtHeight(prevBlockHeader.height + 1,
+                                   inMemoryBlockchains)
+            }
+
             Future.successful(hashHeightOpt)
           } else {
             //fetch from database
-            val chainsF = blockHeaderDAO.getBlockchainsBetweenHeights(
-              from = startHeader.height,
-              to = startHeader.height + batchSize)
-
-            val hashHeightOptF = for {
-              chains <- chainsF
-            } yield getBestChainAtHeight(startHeader.height + 1, chains)
-            hashHeightOptF
+            val hashHeightOpt = prevBlockHeaderOpt match {
+              case None =>
+                val genesisOpt = {
+                  if (prevStopHash == DoubleSha256DigestBE.empty) {
+                    Some((0, chainConfig.chain.genesisBlock.blockHeader.hash))
+                  } else {
+                    None
+                  }
+                }
+                Future.successful(genesisOpt)
+              case Some(prevBlockHeader) =>
+                val chainsF = blockHeaderDAO.getBlockchainsBetweenHeights(
+                  from = prevBlockHeader.height,
+                  to = prevBlockHeader.height + batchSize)
+                for {
+                  chains <- chainsF
+                } yield {
+                  getBestChainAtHeight(prevBlockHeader.height + 1, chains)
+                }
+            }
+            hashHeightOpt
           }
         }
         resultF
       }
-    } yield headerOpt
+    } yield {
+      headerOpt
+    }
   }
 
   /** Given a vector of blockchains, this method finds the chain with the most chain work

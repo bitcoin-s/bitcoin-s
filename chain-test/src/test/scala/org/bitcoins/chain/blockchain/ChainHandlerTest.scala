@@ -310,14 +310,14 @@ class ChainHandlerTest extends ChainDbUnitTest {
   it must "generate a range for a block filter query" in {
     chainHandler: ChainHandler =>
       for {
-        bestBlock <- chainHandler.getBestBlockHeader()
-        bestBlockHashBE = bestBlock.hashBE
         rangeOpt <-
           chainHandler.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
       } yield {
+        val genesisHash =
+          chainHandler.chainConfig.chain.genesisBlock.blockHeader.hash
         assert(rangeOpt.nonEmpty)
         assert(rangeOpt.get._1 == 0)
-        assert(rangeOpt.get._2 == bestBlockHashBE.flip)
+        assert(rangeOpt.get._2 == genesisHash)
       }
   }
 
@@ -334,6 +334,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val assert1F = for {
         chainHandler <- chainHandlerF
         newHeaderB <- newHeaderBF
+        newHeaderC <- newHeaderCF
         blockHeaderBatchOpt <- chainHandler.nextBlockHeaderBatchRange(
           prevStopHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
           batchSize = batchSize)
