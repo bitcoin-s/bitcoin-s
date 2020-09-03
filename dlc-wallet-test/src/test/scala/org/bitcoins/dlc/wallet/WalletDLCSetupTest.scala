@@ -1,6 +1,10 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCOffer, DLCSign}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+  DLCAccept,
+  DLCOffer,
+  DLCSign
+}
 import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, DLCMessage}
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
@@ -97,6 +101,16 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       walletB: DLCWallet,
       offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer): Future[DLCSign] = {
     for {
+      accept <- getDLCReadyToSign(walletA, walletB, offerData)
+      sign <- walletA.signDLC(accept)
+    } yield sign
+  }
+
+  def getDLCReadyToSign(
+      walletA: DLCWallet,
+      walletB: DLCWallet,
+      offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer): Future[DLCAccept] = {
+    for {
       offer <- walletA.createDLCOffer(
         offerData.oracleInfo,
         offerData.contractInfo,
@@ -107,8 +121,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       )
 
       accept <- walletB.acceptDLCOffer(offer)
-      sign <- walletA.signDLC(accept)
-    } yield sign
+    } yield accept
   }
 
   def testDLCSignVerification(
@@ -119,6 +132,19 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       sign <- getDLCReadyToAddSigs(walletA, walletB)
       invalidSign = makeDLCSignInvalid(sign)
       dlcDb <- walletB.addDLCSigs(invalidSign)
+    } yield dlcDb
+
+    recoverToSucceededIf[IllegalArgumentException](failedAddSigsF)
+  }
+
+  def testDLCAcceptVerification(
+      walletA: DLCWallet,
+      walletB: DLCWallet,
+      makeDLCAcceptInvalid: DLCAccept => DLCAccept): Future[Assertion] = {
+    val failedAddSigsF = for {
+      accept <- getDLCReadyToSign(walletA, walletB)
+      invalidSign = makeDLCAcceptInvalid(accept)
+      dlcDb <- walletA.signDLC(invalidSign)
     } yield dlcDb
 
     recoverToSucceededIf[IllegalArgumentException](failedAddSigsF)
@@ -161,6 +187,34 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         (sign: DLCSign) =>
           sign.copy(
             cetSigs = CETSignatures(sign.cetSigs.outcomeSigs,
+                                    DLCWalletUtil.dummyPartialSig)))
+  }
+
+  it must "fail to sign dlc with cet sigs that are invalid" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+
+      testDLCAcceptVerification(
+        walletA,
+        walletB,
+        (accept: DLCAccept) =>
+          accept.copy(
+            cetSigs = CETSignatures(DLCWalletUtil.dummyOutcomeSigs,
+                                    accept.cetSigs.refundSig)))
+  }
+
+  it must "fail to sign dlc with an invalid refund sig" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+
+      testDLCAcceptVerification(
+        walletA,
+        walletB,
+        (accept: DLCAccept) =>
+          accept.copy(
+            cetSigs = CETSignatures(accept.cetSigs.outcomeSigs,
                                     DLCWalletUtil.dummyPartialSig)))
   }
 }
