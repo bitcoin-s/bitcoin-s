@@ -158,55 +158,48 @@ case class ChainHandler(
 
     for {
       prevBlockHeaderOpt <- prevBlockHeaderOptF
-      inMemoryBlockchains = {
-        prevBlockHeaderOpt match {
-          case Some(prevBlockHeader) =>
-            blockchains.filter(
-              _.exists(
-                _.previousBlockHashBE == prevBlockHeader.previousBlockHashBE))
-          case None =>
-            Vector.empty
-        }
-      }
 
-      headerOpt <- {
-        val resultF: Future[Option[(Int, DoubleSha256Digest)]] = {
-          if (inMemoryBlockchains.nonEmpty) {
-            val hashHeightOpt = prevBlockHeaderOpt.flatMap { prevBlockHeader =>
-              getBestChainAtHeight(prevBlockHeader.height + 1,
-                                   inMemoryBlockchains)
-            }
-
-            Future.successful(hashHeightOpt)
+      headerOpt <- prevBlockHeaderOpt match {
+        case Some(prevBlockHeader) => findNextHeader(prevBlockHeader, batchSize)
+        case None =>
+          val result = if (prevStopHash == DoubleSha256DigestBE.empty) {
+            Some((0, chainConfig.chain.genesisBlock.blockHeader.hash))
           } else {
-            //fetch from database
-            val hashHeightOpt = prevBlockHeaderOpt match {
-              case None =>
-                val genesisOpt = {
-                  if (prevStopHash == DoubleSha256DigestBE.empty) {
-                    Some((0, chainConfig.chain.genesisBlock.blockHeader.hash))
-                  } else {
-                    None
-                  }
-                }
-                Future.successful(genesisOpt)
-              case Some(prevBlockHeader) =>
-                val chainsF = blockHeaderDAO.getBlockchainsBetweenHeights(
-                  from = prevBlockHeader.height,
-                  to = prevBlockHeader.height + batchSize)
-                for {
-                  chains <- chainsF
-                } yield {
-                  getBestChainAtHeight(prevBlockHeader.height + 1, chains)
-                }
-            }
-            hashHeightOpt
+            None
           }
-        }
-        resultF
+          Future.successful(result)
       }
     } yield {
       headerOpt
+    }
+  }
+
+  private def findNextHeader(
+      prevBlockHeader: BlockHeaderDb,
+      batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
+    val inMemoryBlockchains = {
+      blockchains.filter(
+        _.exists(_.previousBlockHashBE == prevBlockHeader.hashBE))
+    }
+
+    if (inMemoryBlockchains.nonEmpty) {
+      val hashHeightOpt = {
+        getBestChainAtHeight(prevBlockHeader.height + 1, inMemoryBlockchains)
+      }
+      Future.successful(hashHeightOpt)
+    } else {
+      //fetch from database
+      val hashHeightOpt = {
+        val chainsF = blockHeaderDAO.getBlockchainsBetweenHeights(
+          from = prevBlockHeader.height,
+          to = prevBlockHeader.height + batchSize)
+        for {
+          chains <- chainsF
+        } yield {
+          getBestChainAtHeight(prevBlockHeader.height + 1, chains)
+        }
+      }
+      hashHeightOpt
     }
   }
 
