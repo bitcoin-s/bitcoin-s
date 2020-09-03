@@ -9,9 +9,8 @@ import org.bitcoins.commons.jsonmodels.eclair.WebSocketEvent.{
   PaymentSent
 }
 import org.bitcoins.commons.jsonmodels.eclair.{PaymentId, WebSocketEvent}
-import org.bitcoins.core.seqUtil
 import org.bitcoins.crypto.Sha256Digest
-
+import org.bitcoins.core.seqUtil
 import scala.concurrent.Promise
 
 object PaymentLog {
@@ -42,7 +41,7 @@ object PaymentLog {
         case Some(e) =>
           e match {
             case PaymentReceived(_, parts) =>
-              parts.maxByOption(_.timestamp) match {
+              seqUtil(parts).maxByOption(_.timestamp) match {
                 case Some(part) =>
                   part.timestamp.toEpochMilli
                 case None =>
