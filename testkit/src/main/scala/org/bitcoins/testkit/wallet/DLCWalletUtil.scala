@@ -88,8 +88,10 @@ trait DLCWalletUtil {
     dummyTimeouts
   )
 
-  lazy val sampleDLCEventId: Sha256Digest =
-    DLCMessage.calcEventId(sampleOracleInfo, sampleContractInfo, dummyTimeouts)
+  lazy val sampleDLCParamHash: Sha256DigestBE =
+    DLCMessage.calcParamHash(sampleOracleInfo,
+                             sampleContractInfo,
+                             dummyTimeouts)
 
   lazy val dummyOutcomeSigs: Map[Sha256Digest, ECAdaptorSignature] =
     Map(winHash -> ECAdaptorSignature.dummy,
@@ -104,7 +106,7 @@ trait DLCWalletUtil {
     Vector(dummyOutputRefs.last),
     dummyAddress,
     dummyCETSigs,
-    sampleDLCEventId
+    sampleDLCParamHash
   )
 
   lazy val dummyFundingSignatures: FundingSignatures = FundingSignatures(
@@ -113,10 +115,12 @@ trait DLCWalletUtil {
        Vector(dummyPartialSig))))
 
   lazy val sampleDLCSign: DLCSign =
-    DLCSign(dummyCETSigs, dummyFundingSignatures, sampleDLCEventId)
+    DLCSign(dummyCETSigs, dummyFundingSignatures, ByteVector.empty)
 
   lazy val sampleDLCDb: DLCDb = DLCDb(
-    eventId = sampleDLCEventId,
+    paramHash = sampleDLCParamHash,
+    tempContractIdOpt = None,
+    contractIdOpt = None,
     state = DLCState.Offered,
     isInitiator = true,
     account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,

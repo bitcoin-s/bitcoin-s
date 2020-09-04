@@ -242,7 +242,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi, node: Node)(implicit
           complete {
             wallet.addDLCSigs(sigs).map { _ =>
               Server.httpSuccess(
-                s"Successfully added sigs to DLC ${sigs.eventId.hex}")
+                s"Successfully added sigs to DLC ${sigs.contractId.toHex}")
             }
           }
       }

@@ -9,6 +9,7 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.dlc.wallet.DLCAppConfig
+import scodec.bits.ByteVector
 import slick.lifted.{PrimaryKey, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -16,8 +17,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCDb, Sha256Digest]
-    with SlickUtil[DLCDb, Sha256Digest] {
+    extends CRUD[DLCDb, Sha256DigestBE]
+    with SlickUtil[DLCDb, Sha256DigestBE] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -28,20 +29,21 @@ case class DLCDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[Sha256Digest]): Query[DLCTable, DLCDb, Seq] =
-    table.filter(_.eventId.inSet(ids))
+      ids: Vector[Sha256DigestBE]): Query[DLCTable, DLCDb, Seq] =
+    table.filter(_.paramHash.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256Digest): Query[DLCTable, DLCDb, Seq] = {
+      id: Sha256DigestBE): Query[DLCTable, DLCDb, Seq] = {
     table
-      .filter(_.eventId === id)
+      .filter(_.paramHash === id)
   }
 
   override def findAll(dlcs: Vector[DLCDb]): Query[DLCTable, DLCDb, Seq] =
-    findByPrimaryKeys(dlcs.map(_.eventId))
+    findByPrimaryKeys(dlcs.map(_.paramHash))
 
-  def findByEventId(eventId: Sha256Digest): Future[Option[DLCDb]] = {
-    val q = table.filter(_.eventId === eventId)
+  def findByTempContractId(
+      tempContractId: Sha256DigestBE): Future[Option[DLCDb]] = {
+    val q = table.filter(_.tempContractId === tempContractId)
 
     safeDatabase.run(q.result).map {
       case h +: Vector() =>
@@ -50,16 +52,54 @@ case class DLCDAO()(implicit
         None
       case dlcs: Vector[DLCDb] =>
         throw new RuntimeException(
-          s"More than one DLC per eventId ($eventId), got: $dlcs")
+          s"More than one DLC per tempContractId (${tempContractId.hex}), got: $dlcs")
     }
   }
 
-  def findByEventId(eventId: Sha256DigestBE): Future[Option[DLCDb]] =
-    findByEventId(eventId.flip)
+  def findByTempContractId(
+      tempContractId: Sha256Digest): Future[Option[DLCDb]] =
+    findByTempContractId(tempContractId.flip)
+
+  def findByContractId(contractId: ByteVector): Future[Option[DLCDb]] = {
+    val q = table.filter(_.contractId === contractId)
+
+    safeDatabase.run(q.result).map {
+      case h +: Vector() =>
+        Some(h)
+      case Vector() =>
+        None
+      case dlcs: Vector[DLCDb] =>
+        throw new RuntimeException(
+          s"More than one DLC per contractId (${contractId.toHex}), got: $dlcs")
+    }
+  }
+
+  def findByParamHash(paramHash: Sha256DigestBE): Future[Option[DLCDb]] = {
+    val q = table.filter(_.paramHash === paramHash)
+
+    safeDatabase.run(q.result).map {
+      case h +: Vector() =>
+        Some(h)
+      case Vector() =>
+        None
+      case dlcs: Vector[DLCDb] =>
+        throw new RuntimeException(
+          s"More than one DLC per paramHash (${paramHash.hex}), got: $dlcs")
+    }
+  }
+
+  def findByParamHash(paramHash: Sha256Digest): Future[Option[DLCDb]] =
+    findByParamHash(paramHash.flip)
 
   class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
 
-    def eventId: Rep[Sha256Digest] = column("event_id", O.Unique)
+    def paramHash: Rep[Sha256DigestBE] = column("param_hash", O.PrimaryKey)
+
+    def tempContractId: Rep[Option[Sha256DigestBE]] =
+      column("temp_contract_id", O.Unique)
+
+    def contractId: Rep[Option[ByteVector]] =
+      column("contract_id", O.Unique)
 
     def state: Rep[DLCState] = column("state")
 
@@ -73,7 +113,9 @@ case class DLCDAO()(implicit
       column("oracle_sig")
 
     def * : ProvenShape[DLCDb] =
-      (eventId,
+      (paramHash,
+       tempContractId,
+       contractId,
        state,
        isInitiator,
        account,
@@ -81,6 +123,6 @@ case class DLCDAO()(implicit
        oracleSigOpt) <> (DLCDb.tupled, DLCDb.unapply)
 
     def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_dlc", sourceColumns = eventId)
+      primaryKey(name = "pk_dlc", sourceColumns = paramHash)
   }
 }

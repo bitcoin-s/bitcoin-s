@@ -688,8 +688,11 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val dummyDLCKeys =
       DLCPublicKeys(dummyKey, BitcoinAddress(dummyAddress))
 
-    val eventId = Sha256Digest(
+    val paramHash = Sha256DigestBE(
       "de462f212d95ca4cf5db54eee08f14be0ee934e9ecfc6e9b7014ecfa51ba7b66")
+
+    val contractId = ByteVector.fromValidHex(
+      "4c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919")
 
     "create a dlc offer" in {
 
@@ -758,7 +761,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
               Bech32Address
                 .fromString(dummyAddress),
               CETSignatures(dummyOutcomeSigs, dummyPartialSig),
-              eventId
+              paramHash
             ))
         )
 
@@ -768,13 +771,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         contentType == `application/json`
         responseAs[
-          String] == s"""{"result":"\\"{\\\\\\"totalCollateral\\\\\\":${sats.toLong},\\\\\\"pubKeys\\\\\\":{\\\\\\"fundingKey\\\\\\":\\\\\\"${dummyKey.hex}\\\\\\",\\\\\\"payoutAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\"},\\\\\\"fundingInputs\\\\\\":[{\\\\\\"outpoint\\\\\\":\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\",\\\\\\"output\\\\\\":\\\\\\"${EmptyTransactionOutput.hex}\\\\\\"}],\\\\\\"changeAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\",\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"eventId\\\\\\":\\\\\\"${eventId.hex}\\\\\\"}\\"","error":null}"""
+          String] == s"""{"result":"\\"{\\\\\\"totalCollateral\\\\\\":${sats.toLong},\\\\\\"pubKeys\\\\\\":{\\\\\\"fundingKey\\\\\\":\\\\\\"${dummyKey.hex}\\\\\\",\\\\\\"payoutAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\"},\\\\\\"fundingInputs\\\\\\":[{\\\\\\"outpoint\\\\\\":\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\",\\\\\\"output\\\\\\":\\\\\\"${EmptyTransactionOutput.hex}\\\\\\"}],\\\\\\"changeAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\",\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"eventId\\\\\\":\\\\\\"${paramHash.hex}\\\\\\"}\\"","error":null}"""
       }
     }
 
     "sign a dlc" in {
       val acceptStr =
-        s"""{"totalCollateral":10000000000,"pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"fundingInputs":[{"outpoint":"${EmptyTransactionOutPoint.hex}","output":"${EmptyTransactionOutput.hex}"}],"changeAddress":"$dummyAddress","cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"eventId":"${eventId.hex}"}"""
+        s"""{"totalCollateral":10000000000,"pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"fundingInputs":[{"outpoint":"${EmptyTransactionOutPoint.hex}","output":"${EmptyTransactionOutput.hex}"}],"changeAddress":"$dummyAddress","cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"eventId":"${paramHash.hex}"}"""
 
       (mockWalletApi
         .signDLC(_: DLCAccept))
@@ -785,7 +788,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
               CETSignatures(dummyOutcomeSigs, dummyPartialSig),
               FundingSignatures(Vector(
                 (EmptyTransactionOutPoint, Vector(dummyPartialSig))).toMap),
-              eventId
+              paramHash.bytes
             )))
 
       val route = walletRoutes.handleCommand(
@@ -794,27 +797,27 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         contentType == `application/json`
         responseAs[
-          String] == s"""{"result":"\\"{\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"fundingSigs\\\\\\":{\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\":[\\\\\\"${dummyPartialSig.hex}\\\\\\"]},\\\\\\"eventId\\\\\\":\\\\\\"${eventId.hex}\\\\\\"}\\"","error":null}"""
+          String] == s"""{"result":"\\"{\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"fundingSigs\\\\\\":{\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\":[\\\\\\"${dummyPartialSig.hex}\\\\\\"]},\\\\\\"eventId\\\\\\":\\\\\\"${paramHash.hex}\\\\\\"}\\"","error":null}"""
       }
     }
 
     "add dlc sigs" in {
       val sigsStr =
-        s"""{"cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"fundingSigs":{"${EmptyTransactionOutPoint.hex}":["${dummyPartialSig.hex}"]},"eventId":"${eventId.hex}"}"""
+        s"""{"cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"fundingSigs":{"${EmptyTransactionOutPoint.hex}":["${dummyPartialSig.hex}"]},"eventId":"${paramHash.hex}"}"""
 
       (mockWalletApi
         .addDLCSigs(_: DLCSign))
         .expects(DLCSign.fromJson(ujson.read(sigsStr)))
-        .returning(
-          Future.successful(
-            DLCDb(
-              eventId = eventId,
-              state = DLCState.Signed,
-              isInitiator = false,
-              account = HDAccount(HDCoin(HDPurpose(89), HDCoinType.Testnet), 0),
-              keyIndex = 0,
-              oracleSigOpt = None
-            )))
+        .returning(Future.successful(DLCDb(
+          paramHash = paramHash,
+          tempContractIdOpt = None,
+          contractIdOpt = None,
+          state = DLCState.Signed,
+          isInitiator = false,
+          account = HDAccount(HDCoin(HDPurpose(89), HDCoinType.Testnet), 0),
+          keyIndex = 0,
+          oracleSigOpt = None
+        )))
 
       val route = walletRoutes.handleCommand(
         ServerCommand("adddlcsigs", Arr(Str(sigsStr))))
@@ -822,18 +825,18 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         contentType == `application/json`
         responseAs[
-          String] == s"""{"result":"Successfully added sigs to DLC ${eventId.hex}","error":null}"""
+          String] == s"""{"result":"Successfully added sigs to DLC ${paramHash.hex}","error":null}"""
       }
     }
 
     "get dlc funding tx" in {
       (mockWalletApi
-        .getDLCFundingTx(_: Sha256Digest))
-        .expects(eventId)
+        .getDLCFundingTx(_: ByteVector))
+        .expects(contractId)
         .returning(Future.successful(EmptyTransaction))
 
       val route = walletRoutes.handleCommand(
-        ServerCommand("getdlcfundingtx", Arr(Str(eventId.hex))))
+        ServerCommand("getdlcfundingtx", Arr(Str(paramHash.hex))))
 
       Post() ~> route ~> check {
         contentType == `application/json`
@@ -844,12 +847,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "broadcast dlc funding tx" in {
       (mockWalletApi
-        .broadcastDLCFundingTx(_: Sha256Digest))
-        .expects(eventId)
+        .broadcastDLCFundingTx(_: ByteVector))
+        .expects(contractId)
         .returning(Future.successful(EmptyTransaction))
 
       val route = walletRoutes.handleCommand(
-        ServerCommand("broadcastdlcfundingtx", Arr(Str(eventId.hex))))
+        ServerCommand("broadcastdlcfundingtx", Arr(Str(paramHash.hex))))
 
       Post() ~> route ~> check {
         contentType == `application/json`

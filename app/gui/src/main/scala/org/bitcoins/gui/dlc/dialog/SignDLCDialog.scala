@@ -13,7 +13,7 @@ object SignDLCDialog
 
   override def constructFromInput(inputs: Map[String, String]): SignDLC = {
     val accept = DLCAccept.fromJson(ujson.read(inputs(dlcAcceptStr)))
-    GlobalDLCData.lastEventId = accept.eventId.hex
+    GlobalDLCData.lastEventId = accept.tempContractId.hex
     SignDLC(accept, escaped = false)
   }
 }

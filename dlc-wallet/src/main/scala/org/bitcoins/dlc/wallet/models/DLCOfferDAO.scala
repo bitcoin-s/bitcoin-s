@@ -14,8 +14,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCOfferDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCOfferDb, Sha256Digest]
-    with SlickUtil[DLCOfferDb, Sha256Digest] {
+    extends CRUD[DLCOfferDb, Sha256DigestBE]
+    with SlickUtil[DLCOfferDb, Sha256DigestBE] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -30,21 +30,21 @@ case class DLCOfferDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[Sha256Digest]): Query[DLCOfferTable, DLCOfferDb, Seq] =
-    table.filter(_.eventId.inSet(ids))
+      ids: Vector[Sha256DigestBE]): Query[DLCOfferTable, DLCOfferDb, Seq] =
+    table.filter(_.paramHash.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256Digest): Query[DLCOfferTable, DLCOfferDb, Seq] = {
+      id: Sha256DigestBE): Query[DLCOfferTable, DLCOfferDb, Seq] = {
     table
-      .filter(_.eventId === id)
+      .filter(_.paramHash === id)
   }
 
   override def findAll(
       dlcs: Vector[DLCOfferDb]): Query[DLCOfferTable, DLCOfferDb, Seq] =
-    findByPrimaryKeys(dlcs.map(_.eventId))
+    findByPrimaryKeys(dlcs.map(_.paramHash))
 
-  def findByEventId(eventId: Sha256Digest): Future[Option[DLCOfferDb]] = {
-    val q = table.filter(_.eventId === eventId)
+  def findByParamHash(paramHash: Sha256DigestBE): Future[Option[DLCOfferDb]] = {
+    val q = table.filter(_.paramHash === paramHash)
 
     safeDatabase.run(q.result).map {
       case h +: Vector() =>
@@ -53,17 +53,17 @@ case class DLCOfferDAO()(implicit
         None
       case dlcs: Vector[DLCOfferDb] =>
         throw new RuntimeException(
-          s"More than one DLCOffer per eventId ($eventId), got: $dlcs")
+          s"More than one DLCOffer per paramHash ($paramHash), got: $dlcs")
     }
   }
 
-  def findByEventId(eventId: Sha256DigestBE): Future[Option[DLCOfferDb]] =
-    findByEventId(eventId.flip)
+  def findByParamHash(paramHash: Sha256Digest): Future[Option[DLCOfferDb]] =
+    findByParamHash(paramHash.flip)
 
   class DLCOfferTable(tag: Tag)
       extends Table[DLCOfferDb](tag, "wallet_dlc_offers") {
 
-    def eventId: Rep[Sha256Digest] = column("event_id", O.Unique)
+    def paramHash: Rep[Sha256DigestBE] = column("param_hash", O.Unique)
 
     def oraclePubKey: Rep[SchnorrPublicKey] = column("oracle_pub_key")
 
@@ -86,7 +86,7 @@ case class DLCOfferDAO()(implicit
     def changeAddress: Rep[BitcoinAddress] = column("change_address")
 
     def * : ProvenShape[DLCOfferDb] =
-      (eventId,
+      (paramHash,
        oraclePubKey,
        oracleRValue,
        contractInfo,
@@ -99,11 +99,11 @@ case class DLCOfferDAO()(implicit
        changeAddress) <> (DLCOfferDb.tupled, DLCOfferDb.unapply)
 
     def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_dlc_offer", sourceColumns = eventId)
+      primaryKey(name = "pk_dlc_offer", sourceColumns = paramHash)
 
     def fk: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_eventId",
-                 sourceColumns = eventId,
-                 targetTableQuery = dlcTable)(_.eventId)
+      foreignKey("fk_paramHash",
+                 sourceColumns = paramHash,
+                 targetTableQuery = dlcTable)(_.paramHash)
   }
 }

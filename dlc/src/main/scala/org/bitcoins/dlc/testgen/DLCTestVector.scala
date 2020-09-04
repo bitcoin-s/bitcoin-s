@@ -18,14 +18,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
-import org.bitcoins.crypto.{
-  ECPrivateKey,
-  Factory,
-  NetworkElement,
-  SchnorrNonce,
-  SchnorrPublicKey,
-  Sha256DigestBE
-}
+import org.bitcoins.crypto._
 import play.api.libs.json._
 
 sealed trait DLCTestVector
@@ -136,7 +129,7 @@ object SuccessTestVector {
       {
         _.validate[Map[String, Long]]
           .map(_.map {
-            case (outcome, amt) => Sha256DigestBE(outcome) -> Satoshis(amt)
+            case (outcome, amt) => Sha256Digest(outcome) -> Satoshis(amt)
           })
           .map(ContractInfo.apply)
       },

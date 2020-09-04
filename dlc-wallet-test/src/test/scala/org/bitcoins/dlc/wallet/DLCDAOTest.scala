@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest}
+import org.bitcoins.crypto.{ECAdaptorSignature, Sha256DigestBE}
 import org.bitcoins.db.CRUD
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.testkit.fixtures.DLCDAOFixture
@@ -22,7 +22,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
 
   val dlcDb: DLCDb = DLCWalletUtil.sampleDLCDb
 
-  val eventId: Sha256Digest = dlcDb.eventId
+  val paramHash: Sha256DigestBE = dlcDb.paramHash
 
   def verifyDatabaseInsertion[ElementType, KeyType](
       element: ElementType,
@@ -41,7 +41,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
 
   it should "correctly insert a DLC into the database" in { daos =>
     val dlcDAO = daos.dlcDAO
-    verifyDatabaseInsertion(dlcDb, eventId, dlcDAO, dlcDAO)
+    verifyDatabaseInsertion(dlcDb, paramHash, dlcDAO, dlcDAO)
   }
 
   it should "correctly insert a DLCOffer into the database" in { daos =>
@@ -51,7 +51,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val offerDb =
       DLCOfferDbHelper.fromDLCOffer(DLCWalletUtil.sampleDLCOffer)
 
-    verifyDatabaseInsertion(offerDb, eventId, offerDAO, dlcDAO)
+    verifyDatabaseInsertion(offerDb, paramHash, offerDAO, dlcDAO)
   }
 
   it should "correctly insert a DLCAccept into the database" in { daos =>
@@ -59,9 +59,9 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val acceptDAO = daos.dlcAcceptDAO
 
     val acceptDb =
-      DLCAcceptDbHelper.fromDLCAccept(DLCWalletUtil.sampleDLCAccept)
+      DLCAcceptDbHelper.fromDLCAccept(paramHash, DLCWalletUtil.sampleDLCAccept)
 
-    verifyDatabaseInsertion(acceptDb, eventId, acceptDAO, dlcDAO)
+    verifyDatabaseInsertion(acceptDb, paramHash, acceptDAO, dlcDAO)
   }
 
   it should "correctly insert funding inputs into the database" in { daos =>
@@ -69,7 +69,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val inputsDAO = daos.dlcInputsDAO
 
     val input = DLCFundingInputDb(
-      eventId = eventId,
+      paramHash = paramHash,
       isInitiator = true,
       outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
       output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
@@ -88,7 +88,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
 
       val inputs = Vector(
         DLCFundingInputDb(
-          eventId = eventId,
+          paramHash = paramHash,
           isInitiator = true,
           outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
@@ -97,7 +97,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           sigs = Vector(DLCWalletUtil.dummyPartialSig)
         ),
         DLCFundingInputDb(
-          eventId = eventId,
+          paramHash = paramHash,
           isInitiator = false,
           outPoint = TransactionOutPoint(testBlockHash, UInt32.one),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
@@ -106,7 +106,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           sigs = Vector(DLCWalletUtil.dummyPartialSig)
         ),
         DLCFundingInputDb(
-          eventId = eventId,
+          paramHash = paramHash,
           isInitiator = true,
           outPoint = TransactionOutPoint(testBlockHash, UInt32(3)),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
@@ -120,7 +120,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
         _ <- dlcDAO.create(dlcDb)
         _ <- inputsDAO.createAll(inputs)
 
-        readInput <- inputsDAO.findByEventId(eventId, isInitiator = true)
+        readInput <- inputsDAO.findByParamHash(paramHash, isInitiator = true)
       } yield assert(readInput.size == 2)
   }
 
@@ -129,13 +129,13 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val sigsDAO = daos.dlcSigsDAO
 
     val sig = DLCCETSignatureDb(
-      eventId = eventId,
+      paramHash = paramHash,
       outcomeHash = DLCWalletUtil.winHash,
       signature = ECAdaptorSignature.dummy
     )
 
     verifyDatabaseInsertion(sig,
-                            (sig.eventId, sig.outcomeHash),
+                            (sig.paramHash, sig.outcomeHash),
                             sigsDAO,
                             dlcDAO)
   }
@@ -146,12 +146,12 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
 
     val sigs = Vector(
       DLCCETSignatureDb(
-        eventId = eventId,
+        paramHash = paramHash,
         outcomeHash = DLCWalletUtil.winHash,
         signature = ECAdaptorSignature.dummy
       ),
       DLCCETSignatureDb(
-        eventId = eventId,
+        paramHash = paramHash,
         outcomeHash = DLCWalletUtil.loseHash,
         signature = ECAdaptorSignature.dummy
       )
@@ -161,7 +161,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       _ <- dlcDAO.create(dlcDb)
       _ <- sigsDAO.createAll(sigs)
 
-      readInput <- sigsDAO.findByEventId(eventId)
+      readInput <- sigsDAO.findByParamHash(paramHash)
     } yield {
       assert(readInput.size == 2)
       // Do it this way so ordering doesn't matter

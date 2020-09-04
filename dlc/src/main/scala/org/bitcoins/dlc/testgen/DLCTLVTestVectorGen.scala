@@ -31,7 +31,7 @@ object DLCTLVTestVectorGen {
   }
 
   def genContractInfo(
-      outcomes: Vector[Sha256DigestBE] = DLCTestUtil.genOutcomes(3),
+      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3),
       totalInput: CurrencyUnit = defaultAmt * 2): ContractInfo = {
     DLCTestUtil.genContractInfos(outcomes, totalInput)._1
   }
@@ -110,7 +110,7 @@ object DLCTLVTestVectorGen {
   }
 
   def cetSigs(
-      outcomes: Vector[Sha256DigestBE] = DLCTestUtil.genOutcomes(3),
+      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3),
       fundingPubKey: ECPublicKey =
         ECPublicKey.freshPublicKey): CETSignatures = {
     CETSignatures(outcomes.map(outcome => outcome -> adaptorSig).toMap,

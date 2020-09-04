@@ -23,6 +23,7 @@ import org.bitcoins.core.wallet.utxo.{
   ScriptSignatureParams
 }
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.execution._
 import org.bitcoins.dlc.testgen.{DLCTestUtil, TestDLCClient}
 import org.bitcoins.dlc.verify.DLCSignatureVerifier
@@ -458,14 +459,18 @@ class DLCClientTest extends BitcoinSAsyncTest {
             dlcOffer.executeDLC(offerSetup, Future.successful(oracleSig))
           acceptOutcome <-
             dlcAccept.executeDLC(acceptSetup, Future.successful(oracleSig))
+
+          builder = DLCTxBuilder(dlcOffer.offer, dlcAccept.accept)
+          contractId <- builder.buildFundingTx.map(
+            _.txIdBE.bytes.xor(dlcAccept.accept.tempContractId.bytes))
         } yield {
           val offer = dlcOffer.offer
-          val eventId = offer.eventId
+          val paramHash = offer.paramHash
           val accept = dlcOffer.accept.withSigs(acceptCETSigs)
-          val sign = DLCSign(offerCETSigs, offerFundingSigs, eventId)
+          val sign = DLCSign(offerCETSigs, offerFundingSigs, contractId)
 
           val offerRemoteClaimed =
-            DLCStatus.RemoteClaimed(eventId,
+            DLCStatus.RemoteClaimed(paramHash.flip,
                                     isInitiator = true,
                                     offer,
                                     accept,
@@ -473,7 +478,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
                                     offerOutcome.fundingTx,
                                     acceptOutcome.cet)
           val acceptRemoteClaimed =
-            DLCStatus.RemoteClaimed(eventId,
+            DLCStatus.RemoteClaimed(paramHash.flip,
                                     isInitiator = false,
                                     offer,
                                     accept,

@@ -38,6 +38,15 @@ sealed trait DLCMessage {
 
 object DLCMessage {
 
+  def calcParamHash(
+      oracleInfo: OracleInfo,
+      contractInfo: ContractInfo,
+      timeouts: DLCTimeouts): Sha256DigestBE = {
+    CryptoUtil
+      .sha256(oracleInfo.bytes ++ contractInfo.bytes ++ timeouts.bytes)
+      .flip
+  }
+
   private def getValue(key: String)(implicit
       obj: mutable.LinkedHashMap[String, Value]): Value = {
     val index = obj.keys.toList.indexOf(key)
@@ -138,6 +147,9 @@ object DLCMessage {
       feeRate: SatoshisPerVirtualByte,
       timeouts: DLCTimeouts)
       extends DLCSetupMessage {
+
+    lazy val paramHash: Sha256DigestBE =
+      calcParamHash(oracleInfo, contractInfo, timeouts)
 
     val tempContractId: Sha256DigestBE =
       CryptoUtil.sha256(toTLV.bytes).flip
