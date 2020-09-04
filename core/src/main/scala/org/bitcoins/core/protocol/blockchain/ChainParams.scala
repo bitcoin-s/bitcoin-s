@@ -3,13 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import java.math.BigInteger
 import java.nio.charset.StandardCharsets
 
-import org.bitcoins.core.config.{
-  BitcoinNetwork,
-  MainNet,
-  NetworkParameters,
-  RegTest,
-  TestNet3
-}
+import org.bitcoins.core.config._
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32}
@@ -18,7 +12,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_CHECKSIG
 import org.bitcoins.core.util.{BitcoinScriptUtil, NumberUtil}
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import scodec.bits.{ByteVector, _}
 
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -47,6 +41,10 @@ sealed abstract class ChainParams {
 
   /** The Genesis [[org.bitcoins.core.protocol.blockchain.Block Block]] in the blockchain. */
   def genesisBlock: Block
+
+  def genesisHash: DoubleSha256Digest = genesisBlock.blockHeader.hash
+
+  def genesisHashBE: DoubleSha256DigestBE = genesisHash.flip
 
   /**
     * Filter transactions that do not match well-defined patterns
