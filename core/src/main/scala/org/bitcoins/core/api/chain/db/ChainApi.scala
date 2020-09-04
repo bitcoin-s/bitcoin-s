@@ -67,7 +67,7 @@ trait ChainApi extends ChainQueryApi {
   /**
     * Generates a block range in form of (startHeight, stopHash) by the given stop hash.
     */
-  def nextHeaderBatchRange(
+  def nextBlockHeaderBatchRange(
       stopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]]
 

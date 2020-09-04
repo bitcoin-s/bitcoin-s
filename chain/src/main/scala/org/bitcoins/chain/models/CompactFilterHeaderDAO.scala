@@ -129,10 +129,20 @@ case class CompactFilterHeaderDAO()(implicit
     * @see https://github.com/bitcoin-s/bitcoin-s/issues/1919#issuecomment-682041737
     */
   def getBestFilterHeader: Future[Option[CompactFilterHeaderDb]] = {
-    val blockHeaderDAO = BlockHeaderDAO()
-    val blockchainsF = blockHeaderDAO.getBlockchains()
-    blockchainsF.flatMap(blockchains =>
-      getBestFilterHeaderForHeaders(blockchains.flatten))
+    val join = table
+      .join(blockHeaderTable)
+      .on(_.blockHash === _.hash)
+
+    val maxQuery = join.map(_._2.chainWork).max
+
+    val query = join.filter(_._2.chainWork === maxQuery).take(1).map(_._1)
+
+    for {
+      filterOpt <-
+        safeDatabase
+          .run(query.result)
+          .map(_.headOption)
+    } yield filterOpt
   }
 
   /** This looks for best filter headers whose [[CompactFilterHeaderDb.blockHashBE]] are associated with the given
@@ -145,14 +155,16 @@ case class CompactFilterHeaderDAO()(implicit
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
 
-    val query = join
+    val joinedWithHashes = join
       .filter {
         case (filterTable, _) =>
           filterTable.blockHash.inSet(hashes)
       }
-      .sortBy(_._2.chainWork.desc)
-      .take(1)
-      .map(_._1)
+
+    val maxQuery = joinedWithHashes.map(_._2.chainWork).max
+
+    val query =
+      joinedWithHashes.filter(_._2.chainWork === maxQuery).take(1).map(_._1)
 
     for {
       filterOpt <-

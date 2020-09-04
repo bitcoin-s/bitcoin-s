@@ -104,7 +104,7 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
         stopHash: DoubleSha256DigestBE): Future[ChainApi] =
       Future.successful(this)
 
-    override def nextHeaderBatchRange(
+    override def nextBlockHeaderBatchRange(
         stopHash: DoubleSha256DigestBE,
         batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] =
       Future.successful(None)

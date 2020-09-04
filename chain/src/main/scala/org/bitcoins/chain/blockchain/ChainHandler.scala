@@ -147,7 +147,7 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def nextHeaderBatchRange(
+  override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
@@ -257,11 +257,19 @@ case class ChainHandler(
         } else FutureUtil.unit
       _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
     } yield {
-      val minHeight = filterHeadersToCreate.minBy(_.height)
-      val maxHeight = filterHeadersToCreate.maxBy(_.height)
-      logger.info(
-        s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE}")
-      this
+      val minHeightOpt = filterHeadersToCreate.minByOption(_.height)
+      val maxHeightOpt = filterHeadersToCreate.maxByOption(_.height)
+
+      (minHeightOpt, maxHeightOpt) match {
+        case (Some(minHeight), Some(maxHeight)) =>
+          logger.info(
+            s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE.hex}")
+          this
+        // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
+        case (_, _) =>
+          logger.warn("Was unable to process any filters headers")
+          this
+      }
     }
   }
 
@@ -295,11 +303,19 @@ case class ChainHandler(
       }
       _ <- filterDAO.createAll(compactFilterDbs)
     } yield {
-      val minHeight = compactFilterDbs.minBy(_.height)
-      val maxHeight = compactFilterDbs.maxBy(_.height)
-      logger.info(
-        s"Processed filters from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE}")
-      this
+      val minHeightOpt = compactFilterDbs.minByOption(_.height)
+      val maxHeightOpt = compactFilterDbs.maxByOption(_.height)
+
+      (minHeightOpt, maxHeightOpt) match {
+        case (Some(minHeight), Some(maxHeight)) =>
+          logger.info(
+            s"Processed filters from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE.hex}")
+          this
+        // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
+        case (_, _) =>
+          logger.warn("Was unable to process any filters")
+          this
+      }
     }
   }
 
@@ -386,25 +402,22 @@ case class ChainHandler(
 
   /** @inheritdoc */
   override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] = {
-    val bestFilterHeadersInChains: Vector[
-      Future[Option[CompactFilterHeaderDb]]] = {
-      blockchains.map { blockchain =>
-        filterHeaderDAO.getBestFilterHeaderForHeaders(blockchain.toVector)
+    val bestFilterHeadersInChain: Future[Option[CompactFilterHeaderDb]] = {
+      val bestChainOpt = blockchains.maxByOption(_.tip.chainWork)
+      bestChainOpt match {
+        case Some(bestChain) =>
+          filterHeaderDAO.getBestFilterHeaderForHeaders(bestChain.toVector)
+        case None => Future.successful(None)
       }
     }
 
-    val filterHeadersOptF: Future[Vector[Option[CompactFilterHeaderDb]]] = {
-      Future.sequence(bestFilterHeadersInChains)
-    }
-
     for {
-      filterHeaders <- filterHeadersOptF
-      flattened = filterHeaders.flatten
+      filterHeaderOpt <- bestFilterHeadersInChain
       result <-
-        if (flattened.isEmpty) {
+        if (filterHeaderOpt.isEmpty) {
           bestFilterHeaderSearch()
         } else {
-          Future.successful(Some(flattened.maxBy(_.height)))
+          Future.successful(filterHeaderOpt)
         }
     } yield {
       result
@@ -444,7 +457,7 @@ case class ChainHandler(
         if (blockchains.isEmpty) {
           None
         } else {
-          Some(blockchains.maxBy(_.tip.chainWork))
+          blockchains.maxByOption(_.tip.chainWork)
         }
       }
     }
