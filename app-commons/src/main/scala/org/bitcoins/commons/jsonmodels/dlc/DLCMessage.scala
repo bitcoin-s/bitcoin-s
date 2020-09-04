@@ -173,7 +173,8 @@ object DLCMessage {
           "fundingInputs" -> fundingInputsJson,
           "changeAddress" -> Str(changeAddress.value),
           "feeRate" -> Num(feeRate.toLong.toDouble),
-          "timeouts" -> timeoutsJson
+          "timeouts" -> timeoutsJson,
+          "eventId" -> Str(eventId.hex)
         )
       )
     }

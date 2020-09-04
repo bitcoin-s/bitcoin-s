@@ -437,7 +437,22 @@ object SubtractFeeFromOutputsFinalizer {
       feeRate: FeeUnit,
       spks: Vector[ScriptPubKey]): Vector[TransactionOutput] = {
     val fee = feeRate.calc(tx)
+    subtractFees(tx, fee, spks)
+  }
 
+  def subtractFees(
+      tx: Transaction,
+      vbytes: Long,
+      feeRate: FeeUnit,
+      spks: Vector[ScriptPubKey]): Vector[TransactionOutput] = {
+    val fee = feeRate * vbytes
+    subtractFees(tx, fee, spks)
+  }
+
+  def subtractFees(
+      tx: Transaction,
+      fee: CurrencyUnit,
+      spks: Vector[ScriptPubKey]): Vector[TransactionOutput] = {
     val (outputs, unchangedOutputs) =
       tx.outputs.zipWithIndex.toVector.partition {
         case (output, _) => spks.contains(output.scriptPubKey)
@@ -480,7 +495,10 @@ case class P2WPKHSubtractFeesFromOutputsFinalizer(
     val wtx = txBuilderResult.toWitnessTransaction(dummyTxWit)
 
     val outputsAfterFee =
-      SubtractFeeFromOutputsFinalizer.subtractFees(wtx, feeRate, spks)
+      SubtractFeeFromOutputsFinalizer.subtractFees(wtx,
+                                                   vbytes = 700L,
+                                                   feeRate,
+                                                   spks)
 
     Future.successful(
       txBuilderResult.toBaseTransaction.copy(outputs = outputsAfterFee))
