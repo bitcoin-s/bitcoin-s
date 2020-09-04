@@ -65,6 +65,9 @@ case class DLCOfferDAO()(implicit
 
     def paramHash: Rep[Sha256DigestBE] = column("param_hash", O.Unique)
 
+    def tempContractId: Rep[Sha256DigestBE] =
+      column("temp_contract_id", O.Unique)
+
     def oraclePubKey: Rep[SchnorrPublicKey] = column("oracle_pub_key")
 
     def oracleRValue: Rep[SchnorrNonce] = column("oracle_r_value")
@@ -87,6 +90,7 @@ case class DLCOfferDAO()(implicit
 
     def * : ProvenShape[DLCOfferDb] =
       (paramHash,
+       tempContractId,
        oraclePubKey,
        oracleRValue,
        contractInfo,
@@ -105,5 +109,10 @@ case class DLCOfferDAO()(implicit
       foreignKey("fk_paramHash",
                  sourceColumns = paramHash,
                  targetTableQuery = dlcTable)(_.paramHash)
+
+    def fkTempContractId: ForeignKeyQuery[_, DLCDb] =
+      foreignKey("fk_temp_contract_id",
+                 sourceColumns = tempContractId,
+                 targetTableQuery = dlcTable)(_.tempContractId)
   }
 }

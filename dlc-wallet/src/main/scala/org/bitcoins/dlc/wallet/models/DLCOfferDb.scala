@@ -14,6 +14,7 @@ import org.bitcoins.crypto._
 
 case class DLCOfferDb(
     paramHash: Sha256DigestBE,
+    tempContractId: Sha256DigestBE,
     oraclePubKey: SchnorrPublicKey,
     oracleRValue: SchnorrNonce,
     contractInfo: ContractInfo,
@@ -52,6 +53,7 @@ object DLCOfferDbHelper {
   def fromDLCOffer(offer: DLCOffer): DLCOfferDb = {
     DLCOfferDb(
       offer.paramHash,
+      offer.tempContractId,
       offer.oracleInfo.pubKey,
       offer.oracleInfo.rValue,
       offer.contractInfo,

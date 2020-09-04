@@ -48,7 +48,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi, node: Node)(implicit
     if (noBroadcast) {
       Future.successful(tx)
     } else {
-      node.broadcastTransaction(tx).map(_ => tx.txIdBE)
+      wallet.broadcastTransaction(tx).map(_ => tx.txIdBE)
     }
   }
 
@@ -251,9 +251,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi, node: Node)(implicit
       GetDLCFundingTx.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetDLCFundingTx(eventId)) =>
+        case Success(GetDLCFundingTx(contractId)) =>
           complete {
-            wallet.getDLCFundingTx(eventId).map { tx =>
+            wallet.getDLCFundingTx(contractId).map { tx =>
               Server.httpSuccess(tx.hex)
             }
           }
@@ -263,9 +263,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi, node: Node)(implicit
       BroadcastDLCFundingTx.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(BroadcastDLCFundingTx(eventId)) =>
+        case Success(BroadcastDLCFundingTx(contractId)) =>
           complete {
-            wallet.broadcastDLCFundingTx(eventId).map { tx =>
+            wallet.broadcastDLCFundingTx(contractId).map { tx =>
               Server.httpSuccess(tx.txIdBE.hex)
             }
           }
@@ -276,10 +276,10 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi, node: Node)(implicit
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-              ExecuteDLCUnilateralClose(eventId, oracleSig, noBroadcast)) =>
+              ExecuteDLCUnilateralClose(contractId, oracleSig, noBroadcast)) =>
           complete {
             for {
-              tx <- wallet.executeDLC(eventId, oracleSig)
+              tx <- wallet.executeDLC(contractId, oracleSig)
               retStr <- handleBroadcastable(tx, noBroadcast)
             } yield {
               Server.httpSuccess(retStr.hex)
@@ -291,10 +291,10 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi, node: Node)(implicit
       ExecuteDLCRefund.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(ExecuteDLCRefund(eventId, noBroadcast)) =>
+        case Success(ExecuteDLCRefund(contractId, noBroadcast)) =>
           complete {
             for {
-              tx <- wallet.executeDLCRefund(eventId)
+              tx <- wallet.executeDLCRefund(contractId)
               retStr <- handleBroadcastable(tx, noBroadcast)
             } yield {
               Server.httpSuccess(retStr.hex)

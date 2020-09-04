@@ -8,12 +8,12 @@ object RefundDLCDialog
     extends DLCDialog[ExecuteDLCRefund](
       "DLC Refund",
       "Enter DLC event ID",
-      Vector(DLCDialog.dlcEventIdStr -> new TextField())) {
+      Vector(DLCDialog.dlcContractIdStr -> new TextField())) {
   import DLCDialog._
 
   override def constructFromInput(
       inputs: Map[String, String]): ExecuteDLCRefund = {
-    val eventId = Sha256Digest(inputs(dlcEventIdStr))
+    val eventId = Sha256Digest(inputs(dlcContractIdStr))
     ExecuteDLCRefund(eventId, noBroadcast = false)
   }
 }

@@ -8,12 +8,12 @@ object GetFundingDLCDialog
     extends DLCDialog[GetDLCFundingTx](
       "DLC Funding Transaction",
       "Enter DLC event ID",
-      Vector(DLCDialog.dlcEventIdStr -> new TextField())) {
+      Vector(DLCDialog.dlcContractIdStr -> new TextField())) {
   import DLCDialog._
 
   override def constructFromInput(
       inputs: Map[String, String]): GetDLCFundingTx = {
-    val eventId = Sha256Digest(inputs(dlcEventIdStr))
+    val eventId = Sha256Digest(inputs(dlcContractIdStr))
     GetDLCFundingTx(eventId)
   }
 }

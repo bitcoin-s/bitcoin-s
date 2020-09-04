@@ -95,7 +95,7 @@ case class DLCDAO()(implicit
 
     def paramHash: Rep[Sha256DigestBE] = column("param_hash", O.PrimaryKey)
 
-    def tempContractId: Rep[Option[Sha256DigestBE]] =
+    def tempContractId: Rep[Sha256DigestBE] =
       column("temp_contract_id", O.Unique)
 
     def contractId: Rep[Option[ByteVector]] =

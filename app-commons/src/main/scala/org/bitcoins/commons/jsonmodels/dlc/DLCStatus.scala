@@ -8,12 +8,8 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
-import org.bitcoins.crypto.{
-  ECAdaptorSignature,
-  ECDigitalSignature,
-  SchnorrDigitalSignature,
-  Sha256Digest
-}
+import org.bitcoins.crypto._
+import scodec.bits.ByteVector
 
 /** Represents the state of specific DLC for a given party.
   * This state is made up of all messages that have been
@@ -21,16 +17,21 @@ import org.bitcoins.crypto.{
   * transactions and oracle signatures.
   */
 sealed trait DLCStatus {
-  def eventId: Sha256Digest
   def isInitiator: Boolean
   def offer: DLCOffer
   def state: DLCState
+  val tempContractId: Sha256DigestBE = offer.tempContractId
   val statusString: String = state.toString
 }
 
 /** All states other than Offered contain an accept message. */
 sealed trait AcceptedDLCStatus extends DLCStatus {
   def accept: DLCAccept
+}
+
+sealed trait SignedDLCStatus extends DLCStatus {
+  def sign: DLCSign
+  val contractId: ByteVector = sign.contractId
 }
 
 object DLCStatus {
@@ -77,7 +78,7 @@ object DLCStatus {
       offer: DLCOffer,
       accept: DLCAccept,
       sign: DLCSign)
-      extends AcceptedDLCStatus {
+      extends SignedDLCStatus {
     override def state: DLCState = DLCState.Signed
 
     def toBroadcasted(fundingTx: Transaction): Broadcasted = {
@@ -100,7 +101,7 @@ object DLCStatus {
       accept: DLCAccept,
       sign: DLCSign,
       fundingTx: Transaction)
-      extends AcceptedDLCStatus {
+      extends SignedDLCStatus {
     override def state: DLCState = DLCState.Broadcasted
 
     def toConfirmed: Confirmed = {
@@ -119,7 +120,7 @@ object DLCStatus {
       accept: DLCAccept,
       sign: DLCSign,
       fundingTx: Transaction)
-      extends AcceptedDLCStatus {
+      extends SignedDLCStatus {
     override def state: DLCState = DLCState.Confirmed
 
     def toClaimed(
@@ -152,7 +153,7 @@ object DLCStatus {
       fundingTx: Transaction,
       oracleSig: SchnorrDigitalSignature,
       cet: Transaction)
-      extends AcceptedDLCStatus {
+      extends SignedDLCStatus {
     override def state: DLCState = DLCState.Claimed
   }
 
@@ -167,7 +168,7 @@ object DLCStatus {
       sign: DLCSign,
       fundingTx: Transaction,
       cet: Transaction)
-      extends AcceptedDLCStatus {
+      extends SignedDLCStatus {
     override def state: DLCState = DLCState.RemoteClaimed
 
     val oracleSig: SchnorrDigitalSignature = {
@@ -226,7 +227,7 @@ object DLCStatus {
           sigFromMsgAndSigs(msg, adaptorSig, cetSig)
         case None =>
           throw new IllegalArgumentException(
-            "No Oracle Siganture found from CET")
+            "No Oracle Signature found from CET")
       }
     }
   }
@@ -242,7 +243,7 @@ object DLCStatus {
       sign: DLCSign,
       fundingTx: Transaction,
       refundTx: Transaction)
-      extends AcceptedDLCStatus {
+      extends SignedDLCStatus {
     override def state: DLCState = DLCState.Refunded
   }
 }

@@ -64,6 +64,9 @@ case class DLCAcceptDAO()(implicit
 
     def paramHash: Rep[Sha256DigestBE] = column("Param_hash", O.PrimaryKey)
 
+    def tempContractId: Rep[Sha256DigestBE] =
+      column("temp_contract_id", O.Unique)
+
     def fundingKey: Rep[ECPublicKey] = column("funding_key")
 
     def payoutAddress: Rep[BitcoinAddress] = column("payout_address")
@@ -74,6 +77,7 @@ case class DLCAcceptDAO()(implicit
 
     def * : ProvenShape[DLCAcceptDb] =
       (paramHash,
+       tempContractId,
        fundingKey,
        payoutAddress,
        totalCollateral,
@@ -86,5 +90,10 @@ case class DLCAcceptDAO()(implicit
       foreignKey("fk_param_hash",
                  sourceColumns = paramHash,
                  targetTableQuery = dlcTable)(_.paramHash)
+
+    def fkTempContractId: ForeignKeyQuery[_, DLCDb] =
+      foreignKey("fk_temp_contract_id",
+                 sourceColumns = tempContractId,
+                 targetTableQuery = dlcTable)(_.tempContractId)
   }
 }

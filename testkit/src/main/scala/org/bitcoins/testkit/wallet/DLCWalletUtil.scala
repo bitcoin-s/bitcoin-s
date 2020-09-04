@@ -119,7 +119,7 @@ trait DLCWalletUtil {
 
   lazy val sampleDLCDb: DLCDb = DLCDb(
     paramHash = sampleDLCParamHash,
-    tempContractIdOpt = None,
+    tempContractId = sampleDLCOffer.tempContractId,
     contractIdOpt = None,
     state = DLCState.Offered,
     isInitiator = true,

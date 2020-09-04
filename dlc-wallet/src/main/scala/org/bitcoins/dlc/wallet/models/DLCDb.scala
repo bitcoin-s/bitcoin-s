@@ -7,7 +7,7 @@ import scodec.bits.ByteVector
 
 case class DLCDb(
     paramHash: Sha256DigestBE,
-    tempContractIdOpt: Option[Sha256DigestBE],
+    tempContractId: Sha256DigestBE,
     contractIdOpt: Option[ByteVector],
     state: DLCState,
     isInitiator: Boolean,

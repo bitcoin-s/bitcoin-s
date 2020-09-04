@@ -18,13 +18,13 @@ import org.bitcoins.crypto.{
 
 case class DLCAcceptDb(
     paramHash: Sha256DigestBE,
+    tempContractId: Sha256DigestBE,
     fundingKey: ECPublicKey,
     finalAddress: BitcoinAddress,
     totalCollateral: CurrencyUnit,
     changeAddress: BitcoinAddress) {
 
   def toDLCAccept(
-      tempContractId: Sha256DigestBE,
       fundingInputs: Vector[OutputReference],
       outcomeSigs: Map[Sha256Digest, ECAdaptorSignature],
       refundSig: PartialSignature): DLCAccept = {
@@ -60,6 +60,7 @@ object DLCAcceptDbHelper {
       accept: DLCAccept): DLCAcceptDb = {
     DLCAcceptDb(
       paramHash,
+      accept.tempContractId,
       accept.pubKeys.fundingKey,
       accept.pubKeys.payoutAddress,
       accept.totalCollateral,
