@@ -42,9 +42,9 @@ sealed abstract class ChainParams {
   /** The Genesis [[org.bitcoins.core.protocol.blockchain.Block Block]] in the blockchain. */
   def genesisBlock: Block
 
-  def chainHash: DoubleSha256Digest = genesisBlock.blockHeader.hash
+  def genesisHash: DoubleSha256Digest = genesisBlock.blockHeader.hash
 
-  def chainHashBE: DoubleSha256DigestBE = chainHash.flip
+  def genesisHashBE: DoubleSha256DigestBE = genesisHash.flip
 
   /**
     * Filter transactions that do not match well-defined patterns
