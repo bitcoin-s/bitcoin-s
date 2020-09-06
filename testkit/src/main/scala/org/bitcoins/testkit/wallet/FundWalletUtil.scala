@@ -8,6 +8,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.util.TransactionTestUtil
@@ -42,7 +43,8 @@ trait FundWalletUtil {
     }
 
     val fundedWalletF =
-      txsF.flatMap(txs => wallet.processTransactions(txs, None))
+      txsF.flatMap(txs =>
+        wallet.processTransactions(txs, Some(DoubleSha256DigestBE.empty)))
 
     fundedWalletF.map(_.asInstanceOf[Wallet])
   }
