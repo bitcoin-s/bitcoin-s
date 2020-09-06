@@ -85,21 +85,27 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
             listUtxos(fromAccount.hdAccount, tag)
         }
 
+        utxoWithTxs <- FutureUtil.sequentially(utxos) { utxo =>
+          transactionDAO
+            .findByOutPoint(utxo.outPoint)
+            .map(tx => (utxo, tx.get.transaction))
+        }
+
         // Need to remove immature coinbase inputs
-        coinbaseUtxos = utxos.filter(_.outPoint == EmptyTransactionOutPoint)
+        coinbaseUtxos = utxoWithTxs.filter(_._2.isCoinbase)
         confFs = coinbaseUtxos.map(utxo =>
           chainQueryApi
-            .getNumberOfConfirmations(utxo.blockHash.get)
+            .getNumberOfConfirmations(utxo._1.blockHash.get)
             .map((utxo, _)))
         confs <- FutureUtil.collect(confFs)
         immatureCoinbases =
           confs
             .filter {
               case (_, confsOpt) =>
-                confsOpt.isDefined && confsOpt.get > Consensus.coinbaseMaturity
+                confsOpt.isDefined && confsOpt.get < Consensus.coinbaseMaturity
             }
             .map(_._1)
-      } yield utxos.diff(immatureCoinbases)
+      } yield utxos.filter(utxo => !immatureCoinbases.exists(_._1 == utxo))
 
     val selectedUtxosF: Future[Vector[SpendingInfoDb]] =
       for {

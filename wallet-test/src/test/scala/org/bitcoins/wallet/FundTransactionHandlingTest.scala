@@ -181,7 +181,13 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
         account2 = accounts.find(_.hdAccount.index == 2).get
 
         addr <- wallet.getNewAddress(account2)
-        _ <- bitcoind.generateToAddress(1, addr)
+
+        hash <- bitcoind.generateToAddress(1, addr).map(_.head)
+        block <- bitcoind.getBlockRaw(hash)
+        _ <- wallet.processBlock(block)
+
+        utxos <- wallet.listUtxos(account2.hdAccount)
+        _ = assert(utxos.size == 1)
 
         fundedTx <-
           wallet.fundRawTransaction(Vector(destination), feeRate, account2)
