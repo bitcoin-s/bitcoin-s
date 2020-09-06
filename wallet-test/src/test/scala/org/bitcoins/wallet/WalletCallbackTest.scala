@@ -128,12 +128,12 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onReservedUtxos(callback)
 
-      for {
-        utxos <- fundedWallet.wallet.listUtxos()
-        reserved <- fundedWallet.wallet.markUTXOsAsReserved(Vector(utxos.head))
-        _ = fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+      val wallet = fundedWallet.wallet
 
-        wallet = fundedWallet.wallet
+      for {
+        utxos <- wallet.listUtxos()
+        reserved <- wallet.markUTXOsAsReserved(Vector(utxos.head))
+        _ = fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
 
         _ <- wallet.unmarkUTXOsAsReserved(reserved)
         result <- resultP.future
