@@ -105,7 +105,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           case None =>
             logger.warn(
               s"Given txos exist in block (${blockHash.hex}) that we do not have! $txos")
-            Vector.empty
+            txos
           case Some(confs) =>
             txos.map { txo =>
               txo.state match {
@@ -133,7 +133,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         }
       case (None, txos) =>
         logger.debug(s"Currently have ${txos.size} transactions in the mempool")
-        Future.successful(Vector.empty)
+        Future.successful(txos)
     }
 
     for {
@@ -142,8 +142,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         if (toUpdate.nonEmpty)
           logger.info(s"${toUpdate.size} txos are now confirmed!")
         else logger.info("No txos to be confirmed")
-      updated <-
-        spendingInfoDAO.upsertAllSpendingInfoDb(toUpdate.toVector.flatten)
+      updated <- spendingInfoDAO.upsertAllSpendingInfoDb(toUpdate.flatten)
     } yield updated
   }
 
