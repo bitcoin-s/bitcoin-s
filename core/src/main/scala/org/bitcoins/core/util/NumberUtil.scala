@@ -369,6 +369,12 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     }
     offset + scala.util.Random.nextInt(_bound.toInt)
   }
+
+  def randomBytes(num: Int): ByteVector = {
+    val bytes = new Array[Byte](0 max num)
+    scala.util.Random.self.nextBytes(bytes)
+    ByteVector(bytes)
+  }
 }
 
 object NumberUtil extends NumberUtil

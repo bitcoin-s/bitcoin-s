@@ -12,6 +12,7 @@ import org.bitcoins.crypto.{
   AesPassword,
   CryptoUtil,
   DoubleSha256Digest,
+  DoubleSha256DigestBE,
   ECAdaptorSignature,
   ECDigitalSignature,
   ECPrivateKey,
@@ -223,6 +224,15 @@ sealed abstract class CryptoGenerators {
       hash <- CryptoGenerators.doubleSha256Digest
     } yield privKey.sign(hash)
 
+  def digitalSignatureWithSigHash: Gen[ECDigitalSignature] = {
+    for {
+      sig <- digitalSignature
+      sigHash <- hashType
+    } yield {
+      ECDigitalSignature(sig.bytes :+ sigHash.byte)
+    }
+  }
+
   def schnorrDigitalSignature: Gen[SchnorrDigitalSignature] = {
     for {
       privKey <- privateKey
@@ -258,6 +268,10 @@ sealed abstract class CryptoGenerators {
       key <- privateKey
       digest = CryptoUtil.doubleSHA256(key.bytes)
     } yield digest
+
+  def doubleSha256DigestBE: Gen[DoubleSha256DigestBE] = {
+    doubleSha256Digest.map(_.flip)
+  }
 
   /**
     * Generates a sequence of [[DoubleSha256Digest DoubleSha256Digest]]

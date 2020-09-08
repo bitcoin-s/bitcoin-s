@@ -2,25 +2,24 @@ package org.bitcoins.testkit.util
 
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto.{ECAdaptorSignature, ECDigitalSignature}
+import org.bitcoins.dlc.testgen.DLCTestUtil
 import scodec.bits.ByteVector
 
 object BytesUtil {
 
   def flipAtIndex(bytes: ByteVector, byteIndex: Int): ByteVector = {
-    val (front, backWithToFlip) = bytes.splitAt(byteIndex)
-    val (toFlip, back) = backWithToFlip.splitAt(1)
-    front ++ toFlip.xor(ByteVector.fromByte(1)) ++ back
+    DLCTestUtil.flipAtIndex(bytes, byteIndex)
   }
 
   def flipBit(signature: ECDigitalSignature): ECDigitalSignature = {
-    ECDigitalSignature(flipAtIndex(signature.bytes, 60))
+    DLCTestUtil.flipBit(signature)
   }
 
   def flipBit(partialSignature: PartialSignature): PartialSignature = {
-    partialSignature.copy(signature = flipBit(partialSignature.signature))
+    DLCTestUtil.flipBit(partialSignature)
   }
 
   def flipBit(adaptorSignature: ECAdaptorSignature): ECAdaptorSignature = {
-    ECAdaptorSignature(flipAtIndex(adaptorSignature.bytes, 40))
+    DLCTestUtil.flipBit(adaptorSignature)
   }
 }

@@ -9,8 +9,9 @@ import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   TransactionOutPoint
 }
-import org.bitcoins.core.wallet.fee.SatoshisPerKW
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
   ECAdaptorSignature,
   ECDigitalSignature,
   ECPublicKey,
@@ -18,8 +19,7 @@ import org.bitcoins.crypto.{
   NetworkElement,
   SchnorrNonce,
   SchnorrPublicKey,
-  Sha256Digest,
-  Sha256DigestBE
+  Sha256Digest
 }
 import scodec.bits.ByteVector
 
@@ -330,7 +330,7 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
 
     while (iter.index < value.length) {
       val outPoint = TransactionOutPoint(iter.take(36))
-      val sig = ECDigitalSignature.fromFrontOfBytes(iter.current)
+      val sig = ECDigitalSignature.fromFrontOfBytesWithSigHash(iter.current)
       iter.skip(sig)
       builder.+=(outPoint -> sig)
     }
@@ -341,7 +341,7 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
 
 case class DLCOfferTLV(
     contractFlags: Byte,
-    chainHash: Sha256DigestBE,
+    chainHash: DoubleSha256DigestBE,
     contractInfo: ContractInfoTLV,
     oracleInfo: OracleInfoTLV,
     fundingPubKey: ECPublicKey,
@@ -349,7 +349,7 @@ case class DLCOfferTLV(
     totalCollateralSatoshis: Satoshis,
     fundingInputs: Vector[FundingInputTLV],
     changeSPK: ScriptPubKey,
-    feeRatePerKW: SatoshisPerKW,
+    feeRate: SatoshisPerVirtualByte,
     contractMaturityBound: BlockTimeStamp,
     contractTimeout: BlockTimeStamp)
     extends TLV {
@@ -366,7 +366,7 @@ case class DLCOfferTLV(
       UInt16(fundingInputs.length).bytes ++
       fundingInputs.foldLeft(ByteVector.empty)(_ ++ _.bytes) ++
       changeSPK.bytes ++
-      feeRatePerKW.currencyUnit.satoshis.toUInt64.bytes ++
+      feeRate.currencyUnit.satoshis.toUInt64.bytes ++
       contractMaturityBound.toUInt32.bytes ++
       contractTimeout.toUInt32.bytes
   }
@@ -379,7 +379,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
     val iter = ValueIterator(value)
 
     val contractFlags = iter.take(1).head
-    val chainHash = Sha256DigestBE(iter.take(32))
+    val chainHash = DoubleSha256DigestBE(iter.take(32))
     val contractInfo = ContractInfoV0TLV.fromBytes(iter.current)
     iter.skip(contractInfo)
     val oracleInfo = OracleInfoV0TLV.fromBytes(iter.current)
@@ -396,7 +396,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
     }
     val changeSPK = ScriptPubKey(iter.current)
     iter.skip(changeSPK)
-    val feeRatePerKW = SatoshisPerKW(Satoshis(UInt64(iter.takeBits(64))))
+    val feeRate = SatoshisPerVirtualByte(Satoshis(UInt64(iter.takeBits(64))))
     val contractMaturityBound = BlockTimeStamp(UInt32(iter.takeBits(32)))
     val contractTimeout = BlockTimeStamp(UInt32(iter.takeBits(32)))
 
@@ -410,7 +410,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
       totalCollateralSatoshis,
       fundingInputs,
       changeSPK,
-      feeRatePerKW,
+      feeRate,
       contractMaturityBound,
       contractTimeout
     )
@@ -418,7 +418,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
 }
 
 case class DLCAcceptTLV(
-    tempContractId: Sha256DigestBE,
+    tempContractId: Sha256Digest,
     totalCollateralSatoshis: Satoshis,
     fundingPubKey: ECPublicKey,
     payoutSPK: ScriptPubKey,
@@ -448,7 +448,7 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
   override def fromTLVValue(value: ByteVector): DLCAcceptTLV = {
     val iter = ValueIterator(value)
 
-    val tempContractId = Sha256DigestBE(iter.take(32))
+    val tempContractId = Sha256Digest(iter.take(32))
     val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)))
     val fundingPubKey = ECPublicKey(iter.take(33))
     val payoutSPK = ScriptPubKey(iter.current)
@@ -478,7 +478,7 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
 }
 
 case class DLCSignTLV(
-    contractId: Sha256DigestBE,
+    contractId: ByteVector,
     cetSignatures: CETSignaturesTLV,
     refundSignature: ECDigitalSignature,
     fundingSignatures: FundingSignaturesTLV)
@@ -486,7 +486,7 @@ case class DLCSignTLV(
   override val tpe: BigSizeUInt = DLCSignTLV.tpe
 
   override val value: ByteVector = {
-    contractId.bytes ++
+    contractId ++
       cetSignatures.bytes ++
       refundSignature.bytes ++
       fundingSignatures.bytes
@@ -499,7 +499,7 @@ object DLCSignTLV extends TLVFactory[DLCSignTLV] {
   override def fromTLVValue(value: ByteVector): DLCSignTLV = {
     val iter = ValueIterator(value)
 
-    val contractId = Sha256DigestBE(iter.take(32))
+    val contractId = iter.take(32)
     val cetSignatures = CETSignaturesV0TLV.fromBytes(iter.current)
     iter.skip(cetSignatures)
     val refundSignature = ECDigitalSignature.fromFrontOfBytes(iter.current)
