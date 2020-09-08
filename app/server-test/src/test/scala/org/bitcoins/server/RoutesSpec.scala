@@ -85,9 +85,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         Arr(Arr(Str(psbt1.base64), Str(psbt2.base64)))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == s"""{"result":"${expected.base64}","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${expected.base64}","error":null}""")
       }
 
       val joinRoute =
@@ -96,9 +97,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         Arr(Arr(Str(psbt1.base64), Str(psbt2.base64)))))
 
       Get() ~> joinRoute ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == s"""{"result":"${expected.base64}","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${expected.base64}","error":null}""")
       }
     }
 
@@ -113,9 +115,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("finalizepsbt", Arr(Str(psbt.hex))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == s"""{"result":"${expected.base64}","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${expected.base64}","error":null}""")
 
       }
     }
@@ -131,9 +134,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("extractfrompsbt", Arr(Str(psbt.hex))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == s"""{"result":"${expected.hex}","error":null}"""
-
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${expected.hex}","error":null}""")
       }
     }
 
@@ -148,9 +152,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("converttopsbt", Arr(Str(tx.hex))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == s"""{"result":"${expected.base64}","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${expected.base64}","error":null}""")
 
       }
     }
@@ -164,8 +169,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         chainRoutes.handleCommand(ServerCommand("getblockcount", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":1234567890,"error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":1234567890,"error":null}""")
       }
     }
 
@@ -178,8 +183,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         chainRoutes.handleCommand(ServerCommand("getfiltercount", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":1234567890,"error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":1234567890,"error":null}""")
       }
     }
 
@@ -192,8 +197,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         chainRoutes.handleCommand(ServerCommand("getfilterheadercount", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":1234567890,"error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":1234567890,"error":null}""")
       }
     }
 
@@ -206,8 +211,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         chainRoutes.handleCommand(ServerCommand("getbestblockhash", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
       }
     }
 
@@ -222,8 +228,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getbalance", Arr(Bool(false))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"50.00000000 BTC","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"50.00000000 BTC","error":null}""")
       }
     }
 
@@ -237,8 +244,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getbalance", Arr(Bool(true))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"5000000000 sats","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"5000000000 sats","error":null}""")
       }
     }
 
@@ -252,8 +260,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getconfirmedbalance", Arr(Bool(false))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"50.00000000 BTC","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"50.00000000 BTC","error":null}""")
       }
     }
 
@@ -267,8 +276,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getconfirmedbalance", Arr(Bool(true))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"5000000000 sats","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"5000000000 sats","error":null}""")
       }
     }
 
@@ -282,8 +292,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getunconfirmedbalance", Arr(Bool(false))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"50.00000000 BTC","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"50.00000000 BTC","error":null}""")
       }
     }
 
@@ -297,8 +308,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getunconfirmedbalance", Arr(Bool(true))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"5000000000 sats","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"5000000000 sats","error":null}""")
       }
     }
 
@@ -311,8 +323,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("isempty", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":true,"error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":true,"error":null}""")
       }
     }
 
@@ -336,8 +348,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getutxos", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000ffffffff -1 sats\n","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000ffffffff -1 sats\n","error":null}""")
       }
     }
 
@@ -358,8 +371,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}""")
       }
     }
 
@@ -380,8 +394,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getspentaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}""")
       }
     }
 
@@ -404,9 +419,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getfundedaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] ==
-          s"""{"result":["$testAddressStr ${Satoshis.zero}"],"error":null}""".stripMargin
+        assert(contentType == `application/json`)
+        assert(responseAs[String] ==
+          s"""{"result":["$testAddressStr ${Satoshis.zero}"],"error":null}""".stripMargin)
       }
     }
 
@@ -427,8 +442,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getunusedaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}""")
       }
     }
 
@@ -450,9 +466,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getaccounts", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":["""" + xpub.toString + """"],"error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":["""" + xpub.toString + """"],"error":null}""")
       }
     }
 
@@ -467,9 +483,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getnewaddress", Arr(ujson.Null)))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":"""" + testAddressStr + """","error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + testAddressStr + """","error":null}""")
       }
     }
 
@@ -488,9 +504,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getaddressinfo", Arr(Str(testAddressStr))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":"""" + key.hex + " " + hdPath.toString + """","error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + key.hex + " " + hdPath.toString + """","error":null}""")
       }
     }
 
@@ -505,9 +521,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getnewaddress", Arr(Str(testLabel.name))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":"""" + testAddressStr + """","error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + testAddressStr + """","error":null}""")
       }
     }
 
@@ -523,9 +539,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         Arr(Str(testAddressStr), Str(testLabel.name))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":"""" + s"Added label \'${testLabel.name}\' to $testAddressStr" + """","error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + s"Added label \'${testLabel.name}\' to $testAddressStr" + """","error":null}""")
       }
     }
 
@@ -541,9 +557,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getaddresstags", Arr(Str(testAddressStr))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":"""" + testLabel.name + """","error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + testLabel.name + """","error":null}""")
       }
     }
 
@@ -559,9 +575,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getaddresslabels", Arr(Str(testAddressStr))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":"""" + testLabel.name + """","error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + testLabel.name + """","error":null}""")
       }
     }
 
@@ -569,15 +585,16 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       (mockWalletApi
         .dropAddressTagType(_: BitcoinAddress, _: AddressTagType))
         .expects(testAddress, AddressLabelTagType)
-        .returning(Future.successful(2))
+        .returning(Future.successful(0))
 
       val route =
         walletRoutes.handleCommand(
           ServerCommand("dropaddresslabels", Arr(Str(testAddressStr))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"""" + "Address had no labels" + """","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"""" + "Address had no labels" + """","error":null}""")
       }
     }
 
@@ -592,8 +609,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("dropaddresslabels", Arr(Str(testAddressStr))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"""" + "1 label dropped" + """","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"""" + "1 label dropped" + """","error":null}""")
       }
     }
 
@@ -608,8 +626,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("dropaddresslabels", Arr(Str(testAddressStr))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"""" + "2 labels dropped" + """","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"""" + "2 labels dropped" + """","error":null}""")
       }
     }
 
@@ -628,8 +647,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("sendrawtransaction", Arr(Str(tx.hex))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == s"""{"result":"${tx.txIdBE.hex}","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${tx.txIdBE.hex}","error":null}""")
       }
     }
 
@@ -652,8 +673,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Str(testAddressStr), Num(100), Num(4), Bool(true))))
 
       Post() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
       }
 
       // negative cases
@@ -723,8 +745,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Arr(), Str(testAddressStr), Num(100), Num(4))))
 
       Post() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
       }
 
       // negative cases
@@ -806,8 +829,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                           Str("AccumulateSmallestViable"))))
 
       Post() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
       }
 
       // negative cases
@@ -880,8 +904,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         ServerCommand("opreturncommit", Arr(message, Bool(false), Num(4))))
 
       Post() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
       }
     }
 
@@ -890,9 +915,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         nodeRoutes.handleCommand(ServerCommand("getpeers", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":"TODO implement getpeers","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == """{"result":"TODO implement getpeers","error":null}""")
       }
     }
 
@@ -919,8 +945,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("rescan", Arr(Arr(), Null, Null, true, true)))
 
       Post() ~> route1 ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"scheduled","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
@@ -947,8 +974,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             Arr(Arr(), Str("2018-10-27T12:34:56Z"), Null, true, true)))
 
       Post() ~> route2 ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"scheduled","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
@@ -973,8 +1001,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             Arr(Null, Null, Str(DoubleSha256DigestBE.empty.hex), true, true)))
 
       Post() ~> route3 ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"scheduled","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
@@ -998,8 +1027,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         Arr(Arr(), Str("12345"), Num(67890), true, true)))
 
       Post() ~> route4 ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"scheduled","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
 
       // negative cases
@@ -1053,8 +1083,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         Arr(Arr(55), Arr(), Arr(), Bool(true), Bool(true))))
 
       Post() ~> route8 ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"scheduled","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
     }
 
