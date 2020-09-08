@@ -178,7 +178,7 @@ trait TLVGen {
 
   def dlcAcceptTLV: Gen[DLCAcceptTLV] = {
     for {
-      tempContractId <- CryptoGenerators.sha256DigestBE
+      tempContractId <- CryptoGenerators.sha256Digest
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress

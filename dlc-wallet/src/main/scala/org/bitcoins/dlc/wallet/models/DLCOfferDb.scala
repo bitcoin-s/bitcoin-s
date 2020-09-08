@@ -14,7 +14,7 @@ import org.bitcoins.crypto._
 
 case class DLCOfferDb(
     paramHash: Sha256DigestBE,
-    tempContractId: Sha256DigestBE,
+    tempContractId: Sha256Digest,
     oraclePubKey: SchnorrPublicKey,
     oracleRValue: SchnorrNonce,
     contractInfo: ContractInfo,

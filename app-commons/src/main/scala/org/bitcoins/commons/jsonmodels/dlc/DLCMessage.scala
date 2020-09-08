@@ -151,8 +151,8 @@ object DLCMessage {
     lazy val paramHash: Sha256DigestBE =
       calcParamHash(oracleInfo, contractInfo, timeouts)
 
-    val tempContractId: Sha256DigestBE =
-      CryptoUtil.sha256(toTLV.bytes).flip
+    val tempContractId: Sha256Digest =
+      CryptoUtil.sha256(toTLV.bytes)
 
     def toTLV: DLCOfferTLV = {
       val chainHash =
@@ -355,7 +355,7 @@ object DLCMessage {
       pubKeys: DLCPublicKeys,
       fundingInputs: Vector[OutputReference],
       changeAddress: BitcoinAddress,
-      tempContractId: Sha256DigestBE) {
+      tempContractId: Sha256Digest) {
 
     def withSigs(cetSigs: CETSignatures): DLCAccept = {
       DLCAccept(totalCollateral = totalCollateral,
@@ -373,7 +373,7 @@ object DLCMessage {
       fundingInputs: Vector[OutputReference],
       changeAddress: BitcoinAddress,
       cetSigs: CETSignatures,
-      tempContractId: Sha256DigestBE)
+      tempContractId: Sha256Digest)
       extends DLCSetupMessage {
 
     def toTLV: DLCAcceptTLV = {
@@ -543,7 +543,7 @@ object DLCMessage {
       val tempContractId =
         vec
           .find(_._1 == "tempContractId")
-          .map(obj => Sha256DigestBE(obj._2.str))
+          .map(obj => Sha256Digest(obj._2.str))
           .get
 
       DLCAccept(totalCollateral,

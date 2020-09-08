@@ -20,13 +20,14 @@ sealed trait DLCStatus {
   def isInitiator: Boolean
   def offer: DLCOffer
   def state: DLCState
-  val tempContractId: Sha256DigestBE = offer.tempContractId
+  val tempContractId: Sha256Digest = offer.tempContractId
   val statusString: String = state.toString
 }
 
 /** All states other than Offered contain an accept message. */
 sealed trait AcceptedDLCStatus extends DLCStatus {
   def accept: DLCAccept
+  // TODO: add contractId when we can calc, currently cannot because app-commons doesn't depend on DLC
 }
 
 sealed trait SignedDLCStatus extends AcceptedDLCStatus {

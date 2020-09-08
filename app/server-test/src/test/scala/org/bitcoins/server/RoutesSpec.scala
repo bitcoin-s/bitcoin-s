@@ -754,16 +754,15 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .acceptDLCOffer(_: DLCOffer))
         .expects(DLCOffer.fromJson(ujson.read(offerStr)))
         .returning(
-          Future.successful(
-            DLCAccept(
-              sats,
-              dummyDLCKeys,
-              Vector(EmptyOutputReference),
-              Bech32Address
-                .fromString(dummyAddress),
-              CETSignatures(dummyOutcomeSigs, dummyPartialSig),
-              paramHash
-            ))
+          Future.successful(DLCAccept(
+            sats,
+            dummyDLCKeys,
+            Vector(EmptyOutputReference),
+            Bech32Address
+              .fromString(dummyAddress),
+            CETSignatures(dummyOutcomeSigs, dummyPartialSig),
+            Sha256Digest.empty
+          ))
         )
 
       val route = walletRoutes.handleCommand(
@@ -811,7 +810,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(DLCSign.fromJson(ujson.read(sigsStr)))
         .returning(Future.successful(DLCDb(
           paramHash = paramHash,
-          tempContractId = Sha256DigestBE.empty,
+          tempContractId = Sha256Digest.empty,
           contractIdOpt = Some(contractId),
           state = DLCState.Signed,
           isInitiator = false,

@@ -19,8 +19,7 @@ import org.bitcoins.crypto.{
   NetworkElement,
   SchnorrNonce,
   SchnorrPublicKey,
-  Sha256Digest,
-  Sha256DigestBE
+  Sha256Digest
 }
 import scodec.bits.ByteVector
 
@@ -419,7 +418,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
 }
 
 case class DLCAcceptTLV(
-    tempContractId: Sha256DigestBE,
+    tempContractId: Sha256Digest,
     totalCollateralSatoshis: Satoshis,
     fundingPubKey: ECPublicKey,
     payoutSPK: ScriptPubKey,
@@ -449,7 +448,7 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
   override def fromTLVValue(value: ByteVector): DLCAcceptTLV = {
     val iter = ValueIterator(value)
 
-    val tempContractId = Sha256DigestBE(iter.take(32))
+    val tempContractId = Sha256Digest(iter.take(32))
     val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)))
     val fundingPubKey = ECPublicKey(iter.take(33))
     val payoutSPK = ScriptPubKey(iter.current)

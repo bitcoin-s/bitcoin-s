@@ -25,8 +25,8 @@ object DLCTLVTestVectorGen {
 
   val defaultAmt: Satoshis = CurrencyUnits.oneBTC.satoshis
 
-  def hash(bytes: ByteVector = NumberUtil.randomBytes(32)): Sha256DigestBE = {
-    CryptoUtil.sha256(bytes).flip
+  def hash(bytes: ByteVector = NumberUtil.randomBytes(32)): Sha256Digest = {
+    CryptoUtil.sha256(bytes)
   }
 
   def genContractInfo(
@@ -176,7 +176,7 @@ object DLCTLVTestVectorGen {
       fundingInputs: Vector[OutputReference] = Vector(outputReference()),
       changeAddress: BitcoinAddress = address(),
       cetSignatures: CETSignatures = cetSigs(),
-      tempContractId: Sha256DigestBE = hash()): DLCAccept = {
+      tempContractId: Sha256Digest = hash()): DLCAccept = {
     DLCAccept(totalCollateral,
               DLCPublicKeys(fundingPubKey, payoutAddress),
               fundingInputs,
@@ -192,7 +192,7 @@ object DLCTLVTestVectorGen {
       fundingInputs: Vector[OutputReference] = Vector(outputReference()),
       changeAddress: BitcoinAddress = address(),
       cetSignatures: CETSignatures = cetSigs(),
-      tempContractId: Sha256DigestBE = hash()): DLCAcceptTLV = {
+      tempContractId: Sha256Digest = hash()): DLCAcceptTLV = {
     dlcAccept(totalCollateral,
               fundingPubKey,
               payoutAddress,

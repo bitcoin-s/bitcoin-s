@@ -18,7 +18,7 @@ import org.bitcoins.crypto.{
 
 case class DLCAcceptDb(
     paramHash: Sha256DigestBE,
-    tempContractId: Sha256DigestBE,
+    tempContractId: Sha256Digest,
     fundingKey: ECPublicKey,
     finalAddress: BitcoinAddress,
     totalCollateral: CurrencyUnit,
@@ -40,7 +40,7 @@ case class DLCAcceptDb(
   }
 
   def toDLCAcceptWithoutSigs(
-      tempContractId: Sha256DigestBE,
+      tempContractId: Sha256Digest,
       fundingInputs: Vector[OutputReference]): DLCAcceptWithoutSigs = {
     val pubKeys =
       DLCPublicKeys(fundingKey, finalAddress)

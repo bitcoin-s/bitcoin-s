@@ -106,7 +106,7 @@ trait DLCWalletUtil {
     Vector(dummyOutputRefs.last),
     dummyAddress,
     dummyCETSigs,
-    sampleDLCParamHash
+    sampleDLCOffer.tempContractId
   )
 
   lazy val dummyFundingSignatures: FundingSignatures = FundingSignatures(
@@ -139,19 +139,15 @@ trait DLCWalletUtil {
     val (contractInfo, _) =
       DLCTestUtil.genContractInfos(outcomeHashes, Satoshis(10000))
 
-    val generatedOffer = DLCOffer(
-      contractInfo,
-      sampleOracleInfo,
-      dummyDLCKeys,
-      Satoshis(5000),
-      Vector(dummyOutputRefs.head),
-      dummyAddress,
-      SatoshisPerVirtualByte(Satoshis(3)),
-      dummyTimeouts
-    )
-
     for {
-      offer <- walletA.registerDLCOffer(generatedOffer)
+      offer <- walletA.createDLCOffer(
+        oracleInfo = sampleOracleInfo,
+        contractInfo = contractInfo,
+        collateral = Satoshis(5000),
+        feeRateOpt = None,
+        locktime = dummyTimeouts.contractMaturity.toUInt32,
+        refundLocktime = dummyTimeouts.contractTimeout.toUInt32
+      )
       accept <- walletB.acceptDLCOffer(offer)
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)

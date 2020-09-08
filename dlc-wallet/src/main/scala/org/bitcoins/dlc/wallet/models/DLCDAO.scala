@@ -42,7 +42,7 @@ case class DLCDAO()(implicit
     findByPrimaryKeys(dlcs.map(_.paramHash))
 
   def findByTempContractId(
-      tempContractId: Sha256DigestBE): Future[Option[DLCDb]] = {
+      tempContractId: Sha256Digest): Future[Option[DLCDb]] = {
     val q = table.filter(_.tempContractId === tempContractId)
 
     safeDatabase.run(q.result).map {
@@ -57,7 +57,7 @@ case class DLCDAO()(implicit
   }
 
   def findByTempContractId(
-      tempContractId: Sha256Digest): Future[Option[DLCDb]] =
+      tempContractId: Sha256DigestBE): Future[Option[DLCDb]] =
     findByTempContractId(tempContractId.flip)
 
   def findByContractId(contractId: ByteVector): Future[Option[DLCDb]] = {
@@ -95,7 +95,7 @@ case class DLCDAO()(implicit
 
     def paramHash: Rep[Sha256DigestBE] = column("param_hash", O.PrimaryKey)
 
-    def tempContractId: Rep[Sha256DigestBE] =
+    def tempContractId: Rep[Sha256Digest] =
       column("temp_contract_id", O.Unique)
 
     def contractId: Rep[Option[ByteVector]] =

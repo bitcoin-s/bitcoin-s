@@ -64,7 +64,7 @@ case class DLCAcceptDAO()(implicit
 
     def paramHash: Rep[Sha256DigestBE] = column("Param_hash", O.PrimaryKey)
 
-    def tempContractId: Rep[Sha256DigestBE] =
+    def tempContractId: Rep[Sha256Digest] =
       column("temp_contract_id", O.Unique)
 
     def fundingKey: Rep[ECPublicKey] = column("funding_key")
