@@ -452,7 +452,6 @@ abstract class Wallet
         destinations = Vector(destination),
         feeRate = feeRate,
         fromAccount = fromAccount,
-        keyManagerOpt = Some(keyManager),
         coinSelectionAlgo = algo,
         fromTagOpt = None)
 
@@ -544,7 +543,6 @@ abstract class Wallet
         destinations = outputs,
         feeRate = feeRate,
         fromAccount = fromAccount,
-        keyManagerOpt = Some(keyManager),
         fromTagOpt = None)
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
       tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, newTags)
