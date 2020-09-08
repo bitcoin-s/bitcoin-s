@@ -1,12 +1,16 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCAccept, DLCOffer}
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.config.Networks
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.protocol.transaction.{
+  OutputReference,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.testgen.DLCTestUtil
 import org.scalacheck.Gen
@@ -74,7 +78,30 @@ trait TLVGen {
   }
 
   def fundingInputTempTLV: Gen[FundingInputTempTLV] = {
-    TransactionGenerators.outputReference.map(FundingInputTempTLV.apply)
+    TransactionGenerators.realisticOutputReference.map(
+      FundingInputTempTLV.apply)
+  }
+
+  def fundingInputTempTLVs(
+      collateralNeeded: CurrencyUnit): Gen[Vector[FundingInputTempTLV]] = {
+    for {
+      numInputs <- Gen.choose(0, 5)
+      inputs <- Gen.listOfN(numInputs, fundingInputTempTLV)
+      outpoint <- TransactionGenerators.outPoint
+      (spk, _) <- ScriptGenerators.scriptPubKey
+    } yield {
+      val totalFunding = inputs.foldLeft[CurrencyUnit](Satoshis.zero)(
+        _ + _.outputRef.output.value)
+      if (totalFunding <= collateralNeeded) {
+        val newFundingInput = OutputReference(
+          outpoint,
+          TransactionOutput(collateralNeeded - totalFunding + Bitcoins.one,
+                            spk))
+        inputs.toVector :+ FundingInputTempTLV(newFundingInput)
+      } else {
+        inputs.toVector
+      }
+    }
   }
 
   def cetSignaturesV0TLV: Gen[CETSignaturesV0TLV] = {
@@ -111,30 +138,37 @@ trait TLVGen {
 
   def dlcOfferTLV: Gen[DLCOfferTLV] = {
     for {
-      contractFlags <- NumberGenerator.byte
-      chainHash <- CryptoGenerators.doubleSha256DigestBE
+      chainHash <- Gen.oneOf(
+        Networks.knownNetworks.map(
+          _.chainParams.genesisBlock.blockHeader.hashBE))
       contractInfo <- contractInfoV0TLV
       oracleInfo <- oracleInfoV0TLV
       fundingPubKey <- CryptoGenerators.publicKey
-      (payoutSPK, _) <- ScriptGenerators.scriptPubKey
-      totalCollateralSatoshis <- CurrencyUnitGenerator.positiveSatoshis
-      fundingInputs <- Gen.listOf(fundingInputTempTLV)
-      (changeSPK, _) <- ScriptGenerators.scriptPubKey
-      feeRate <-
-        CurrencyUnitGenerator.positiveSatoshis.map(SatoshisPerVirtualByte.apply)
-      contractMaturityBound <- NumberGenerator.uInt32s.map(BlockTimeStamp.apply)
-      contractTimeout <- NumberGenerator.uInt32s.map(BlockTimeStamp.apply)
+      payoutAddress <- AddressGenerator.bitcoinAddress
+      totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
+      fundingInputs <- fundingInputTempTLVs(totalCollateralSatoshis)
+      changeAddress <- AddressGenerator.bitcoinAddress
+      feeRate <- CurrencyUnitGenerator.positiveRealistic.map(
+        SatoshisPerVirtualByte.apply)
+      timeout1 <- NumberGenerator.uInt32s
+      timeout2 <- NumberGenerator.uInt32s
     } yield {
+      val (contractMaturityBound, contractTimeout) = if (timeout1 < timeout2) {
+        (BlockTimeStamp(timeout1), BlockTimeStamp(timeout2))
+      } else {
+        (BlockTimeStamp(timeout2), BlockTimeStamp(timeout1))
+      }
+
       DLCOfferTLV(
-        contractFlags,
+        0.toByte,
         chainHash,
         contractInfo,
         oracleInfo,
         fundingPubKey,
-        payoutSPK,
+        payoutAddress.scriptPubKey,
         totalCollateralSatoshis,
-        fundingInputs.toVector,
-        changeSPK,
+        fundingInputs,
+        changeAddress.scriptPubKey,
         feeRate,
         contractMaturityBound,
         contractTimeout
@@ -145,20 +179,20 @@ trait TLVGen {
   def dlcAcceptTLV: Gen[DLCAcceptTLV] = {
     for {
       tempContractId <- CryptoGenerators.sha256DigestBE
-      totalCollateralSatoshis <- CurrencyUnitGenerator.positiveSatoshis
+      totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       fundingPubKey <- CryptoGenerators.publicKey
-      (payoutSPK, _) <- ScriptGenerators.scriptPubKey
-      fundingInputs <- Gen.listOf(fundingInputTempTLV)
-      (changeSPK, _) <- ScriptGenerators.scriptPubKey
+      payoutAddress <- AddressGenerator.bitcoinAddress
+      fundingInputs <- fundingInputTempTLVs(totalCollateralSatoshis)
+      changeAddress <- AddressGenerator.bitcoinAddress
       cetSigs <- cetSignaturesV0TLV
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
       DLCAcceptTLV(tempContractId,
                    totalCollateralSatoshis,
                    fundingPubKey,
-                   payoutSPK,
-                   fundingInputs.toVector,
-                   changeSPK,
+                   payoutAddress.scriptPubKey,
+                   fundingInputs,
+                   changeAddress.scriptPubKey,
                    cetSigs,
                    refundSig)
     }
@@ -171,22 +205,26 @@ trait TLVGen {
 
     for {
       fundingPubKey <- CryptoGenerators.publicKey
-      (payoutSPK, _) <- ScriptGenerators.scriptPubKey
-      fundingInputs <- Gen.listOf(fundingInputTempTLV)
-      (changeSPK, _) <- ScriptGenerators.scriptPubKey
+      payoutAddress <- AddressGenerator.bitcoinAddress
+      totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
+      totalCollateral = scala.math.max(
+        (outcomes.values.max - offer.totalCollateralSatoshis).satoshis.toLong,
+        totalCollateralSatoshis.toLong)
+      fundingInputs <- fundingInputTempTLVs(Satoshis(totalCollateral))
+      changeAddress <- AddressGenerator.bitcoinAddress
       cetSigs <- cetSignaturesV0TLV(outcomes.size)
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
-      val totalCollateral = outcomes.values.max - offer.totalCollateralSatoshis
-
-      DLCAcceptTLV(CryptoUtil.sha256(offer.bytes).flip,
-                   totalCollateral.satoshis,
-                   fundingPubKey,
-                   payoutSPK,
-                   fundingInputs.toVector,
-                   changeSPK,
-                   cetSigs,
-                   refundSig)
+      DLCAcceptTLV(
+        DLCOffer.fromTLV(offer).tempContractId,
+        Satoshis(totalCollateral),
+        fundingPubKey,
+        payoutAddress.scriptPubKey,
+        fundingInputs,
+        changeAddress.scriptPubKey,
+        cetSigs,
+        refundSig
+      )
     }
   }
 
