@@ -102,7 +102,8 @@ trait TLVGen {
   def fundingSignaturesV0TLV(
       outPoints: Vector[TransactionOutPoint]): Gen[FundingSignaturesV0TLV] = {
     for {
-      sigs <- Gen.listOfN(outPoints.length, CryptoGenerators.digitalSignature)
+      sigs <- Gen.listOfN(outPoints.length,
+                          CryptoGenerators.digitalSignatureWithSigHash)
     } yield {
       FundingSignaturesV0TLV(outPoints.zip(sigs).toMap)
     }

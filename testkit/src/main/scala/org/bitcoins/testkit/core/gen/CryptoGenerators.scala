@@ -224,6 +224,15 @@ sealed abstract class CryptoGenerators {
       hash <- CryptoGenerators.doubleSha256Digest
     } yield privKey.sign(hash)
 
+  def digitalSignatureWithSigHash: Gen[ECDigitalSignature] = {
+    for {
+      sig <- digitalSignature
+      sigHash <- hashType
+    } yield {
+      ECDigitalSignature(sig.bytes :+ sigHash.byte)
+    }
+  }
+
   def schnorrDigitalSignature: Gen[SchnorrDigitalSignature] = {
     for {
       privKey <- privateKey
