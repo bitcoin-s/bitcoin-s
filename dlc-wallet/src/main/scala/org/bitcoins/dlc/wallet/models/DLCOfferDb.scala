@@ -5,11 +5,7 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   DLCOffer,
   OracleInfo
 }
-import org.bitcoins.commons.jsonmodels.dlc.{
-  DLCMessage,
-  DLCPublicKeys,
-  DLCTimeouts
-}
+import org.bitcoins.commons.jsonmodels.dlc.{DLCPublicKeys, DLCTimeouts}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.transaction.OutputReference
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
@@ -17,7 +13,8 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 
 case class DLCOfferDb(
-    eventId: Sha256Digest,
+    paramHash: Sha256DigestBE,
+    tempContractId: Sha256Digest,
     oraclePubKey: SchnorrPublicKey,
     oracleRValue: SchnorrNonce,
     contractInfo: ContractInfo,
@@ -29,19 +26,24 @@ case class DLCOfferDb(
     feeRate: SatoshisPerVirtualByte,
     changeAddress: BitcoinAddress) {
 
+  lazy val oracleInfo: OracleInfo = OracleInfo(oraclePubKey, oracleRValue)
+
+  lazy val dlcPubKeys: DLCPublicKeys = DLCPublicKeys(fundingKey, payoutAddress)
+
+  lazy val dlcTimeouts: DLCTimeouts =
+    DLCTimeouts(contractMaturity, contractTimeout)
+
   def toDLCOffer(fundingInputs: Vector[OutputReference]): DLCOffer = {
-    val oracleInfo = OracleInfo(oraclePubKey, oracleRValue)
-    val pubKeys = DLCPublicKeys(fundingKey, payoutAddress)
-    val timeouts = DLCTimeouts(contractMaturity, contractTimeout)
+
     DLCOffer(
       contractInfo,
       oracleInfo,
-      pubKeys,
+      dlcPubKeys,
       totalCollateral.satoshis,
       fundingInputs,
       changeAddress,
       feeRate,
-      timeouts
+      dlcTimeouts
     )
   }
 }
@@ -49,11 +51,9 @@ case class DLCOfferDb(
 object DLCOfferDbHelper {
 
   def fromDLCOffer(offer: DLCOffer): DLCOfferDb = {
-    val eventId = DLCMessage.calcEventId(offer.oracleInfo,
-                                         offer.contractInfo,
-                                         offer.timeouts)
     DLCOfferDb(
-      eventId,
+      offer.paramHash,
+      offer.tempContractId,
       offer.oracleInfo.pubKey,
       offer.oracleInfo.rValue,
       offer.contractInfo,

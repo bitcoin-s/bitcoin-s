@@ -1,11 +1,6 @@
 package org.bitcoins.commons.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAccept,
-  DLCOffer,
-  OracleInfo
-}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.{
   CETSignatures,
   DLCPublicKeys,
@@ -15,9 +10,11 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
+import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
+import org.bitcoins.testkit.core.gen.TLVGen
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits.ByteVector
 
@@ -65,8 +62,29 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         Vector.empty,
         dummyAddress,
         CETSignatures(Map(dummyHash -> ECAdaptorSignature.dummy), dummySig),
-        Sha256Digest(ByteVector.low(32))
+        Sha256Digest.empty
       )
     )
+  }
+
+  it must "be able to go back and forth between TLV and deserialized" in {
+    forAll(TLVGen.dlcOfferTLVAcceptTLVSignTLV) {
+      case (offerTLV, acceptTLV, signTLV) =>
+        val offer = DLCOffer.fromTLV(offerTLV)
+        val accept = DLCAccept.fromTLV(acceptTLV, offer)
+
+        val outPoints = signTLV.fundingSignatures match {
+          case FundingSignaturesV0TLV(sigs) => sigs.keys.toVector
+        }
+        val fundingPubKeys = outPoints
+          .map(outpoint => outpoint -> ECPublicKey.freshPublicKey)
+          .toMap
+
+        val sign = DLCSign.fromTLV(signTLV, offer, fundingPubKeys)
+
+        assert(offer.toTLV == offerTLV)
+        assert(accept.toTLV == acceptTLV)
+        assert(sign.toTLV == signTLV)
+    }
   }
 }

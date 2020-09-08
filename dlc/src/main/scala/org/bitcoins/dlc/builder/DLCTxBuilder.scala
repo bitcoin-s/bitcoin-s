@@ -46,7 +46,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
                                          acceptFinalAddress: BitcoinAddress),
                            acceptFundingInputs: Vector[OutputReference],
                            acceptChangeAddress: BitcoinAddress,
-                           eventId: Sha256Digest) = accept
+                           tempContractId: Sha256Digest) = accept
 
   val totalInput: CurrencyUnit = offerTotalCollateral + acceptTotalCollateral
 
@@ -56,7 +56,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   val acceptTotalFunding: CurrencyUnit =
     acceptFundingInputs.map(_.output.value).sum
 
-  require(offer.eventId == eventId,
+  require(offer.tempContractId == tempContractId,
           "Offer and accept (without sigs) must refer to same event")
   require(acceptFinalAddress.networkParameters == network,
           "Offer and accept (without sigs) must be on the same network")

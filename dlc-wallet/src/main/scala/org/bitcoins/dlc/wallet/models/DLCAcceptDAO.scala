@@ -12,8 +12,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCAcceptDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCAcceptDb, Sha256Digest]
-    with SlickUtil[DLCAcceptDb, Sha256Digest] {
+    extends CRUD[DLCAcceptDb, Sha256DigestBE]
+    with SlickUtil[DLCAcceptDb, Sha256DigestBE] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -28,21 +28,22 @@ case class DLCAcceptDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[Sha256Digest]): Query[DLCAcceptTable, DLCAcceptDb, Seq] =
-    table.filter(_.eventId.inSet(ids))
+      ids: Vector[Sha256DigestBE]): Query[DLCAcceptTable, DLCAcceptDb, Seq] =
+    table.filter(_.paramHash.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256Digest): Query[DLCAcceptTable, DLCAcceptDb, Seq] = {
+      id: Sha256DigestBE): Query[DLCAcceptTable, DLCAcceptDb, Seq] = {
     table
-      .filter(_.eventId === id)
+      .filter(_.paramHash === id)
   }
 
   override def findAll(
       dlcs: Vector[DLCAcceptDb]): Query[DLCAcceptTable, DLCAcceptDb, Seq] =
-    findByPrimaryKeys(dlcs.map(_.eventId))
+    findByPrimaryKeys(dlcs.map(_.paramHash))
 
-  def findByEventId(eventId: Sha256Digest): Future[Option[DLCAcceptDb]] = {
-    val q = table.filter(_.eventId === eventId)
+  def findByParamHash(
+      paramHash: Sha256DigestBE): Future[Option[DLCAcceptDb]] = {
+    val q = table.filter(_.paramHash === paramHash)
 
     safeDatabase.run(q.result).map {
       case h +: Vector() =>
@@ -51,17 +52,20 @@ case class DLCAcceptDAO()(implicit
         None
       case dlcs: Vector[DLCAcceptDb] =>
         throw new RuntimeException(
-          s"More than one DLCAccept per eventId ($eventId), got: $dlcs")
+          s"More than one DLCAccept per paramHash ($paramHash), got: $dlcs")
     }
   }
 
-  def findByEventId(eventId: Sha256DigestBE): Future[Option[DLCAcceptDb]] =
-    findByEventId(eventId.flip)
+  def findByParamHash(paramHash: Sha256Digest): Future[Option[DLCAcceptDb]] =
+    findByParamHash(paramHash.flip)
 
   class DLCAcceptTable(tag: Tag)
       extends Table[DLCAcceptDb](tag, "wallet_dlc_accepts") {
 
-    def eventId: Rep[Sha256Digest] = column("event_id", O.PrimaryKey)
+    def paramHash: Rep[Sha256DigestBE] = column("Param_hash", O.PrimaryKey)
+
+    def tempContractId: Rep[Sha256Digest] =
+      column("temp_contract_id", O.Unique)
 
     def fundingKey: Rep[ECPublicKey] = column("funding_key")
 
@@ -72,18 +76,24 @@ case class DLCAcceptDAO()(implicit
     def changeAddress: Rep[BitcoinAddress] = column("change_address")
 
     def * : ProvenShape[DLCAcceptDb] =
-      (eventId,
+      (paramHash,
+       tempContractId,
        fundingKey,
        payoutAddress,
        totalCollateral,
        changeAddress) <> (DLCAcceptDb.tupled, DLCAcceptDb.unapply)
 
     def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_dlc_accept", sourceColumns = eventId)
+      primaryKey(name = "pk_dlc_accept", sourceColumns = paramHash)
 
     def fk: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_eventId",
-                 sourceColumns = eventId,
-                 targetTableQuery = dlcTable)(_.eventId)
+      foreignKey("fk_param_hash",
+                 sourceColumns = paramHash,
+                 targetTableQuery = dlcTable)(_.paramHash)
+
+    def fkTempContractId: ForeignKeyQuery[_, DLCDb] =
+      foreignKey("fk_temp_contract_id",
+                 sourceColumns = tempContractId,
+                 targetTableQuery = dlcTable)(_.tempContractId)
   }
 }

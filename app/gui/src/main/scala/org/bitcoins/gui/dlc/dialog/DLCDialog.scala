@@ -23,7 +23,7 @@ abstract class DLCDialog[T <: CliCommand](
       .foreach(_._2.text = value)
   }
 
-  readCachedValue(DLCDialog.dlcEventIdStr, GlobalDLCData.lastEventId)
+  readCachedValue(DLCDialog.dlcContractIdStr, GlobalDLCData.lastContractId)
   readCachedValue(DLCDialog.dlcOracleSigStr, GlobalDLCData.lastOracleSig)
   readCachedValue(DLCDialog.oracleInfoStr, GlobalDLCData.lastOracleInfo)
   readCachedValue(DLCDialog.contractInfoStr, GlobalDLCData.lastContractInfo)
@@ -82,9 +82,9 @@ abstract class DLCDialog[T <: CliCommand](
       if (dialogButton == ButtonType.OK) {
         val inputs = fields.map { case (key, input) => (key, input.text()) }
 
-        writeCachedValue(DLCDialog.dlcEventIdStr,
+        writeCachedValue(DLCDialog.dlcContractIdStr,
                          inputs,
-                         GlobalDLCData.lastEventId = _)
+                         GlobalDLCData.lastContractId = _)
         writeCachedValue(DLCDialog.dlcOracleSigStr,
                          inputs,
                          GlobalDLCData.lastOracleSig = _)
@@ -146,7 +146,7 @@ object DLCDialog {
 
   val dlcSigStr = "DLC Signatures"
 
-  val dlcEventIdStr = "Event ID"
+  val dlcContractIdStr = "Contract ID"
 
   val dlcOracleSigStr = "Oracle Signature"
 

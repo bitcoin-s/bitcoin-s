@@ -1,5 +1,6 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
+import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.MapWrapper
@@ -25,6 +26,12 @@ case class FundingSignatures(
     }
 
     FundingSignatures(combinedSigs.toMap)
+  }
+
+  def toTLV: FundingSignaturesV0TLV = {
+    FundingSignaturesV0TLV(sigs.map {
+      case (outPoint, sigs) => (outPoint, sigs.head.signature)
+    })
   }
 }
 
