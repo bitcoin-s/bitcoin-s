@@ -157,6 +157,13 @@ object TransactionGenerators extends BitcoinSLogger {
     } yield OutputReference(outPoint, output)
   }
 
+  def realisticOutputReference: Gen[OutputReference] = {
+    for {
+      outPoint <- outPoint
+      output <- realisticOutput
+    } yield OutputReference(outPoint, output)
+  }
+
   /**
     * Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction Transaction]]
     * This transaction's [[org.bitcoins.core.protocol.transaction.TransactionInput TransactionInput]]s

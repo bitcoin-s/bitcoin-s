@@ -11,8 +11,9 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
+import org.bitcoins.crypto.SchnorrDigitalSignature
 import org.bitcoins.dlc.wallet.models.DLCDb
+import scodec.bits.ByteVector
 
 import scala.concurrent.Future
 
@@ -43,17 +44,17 @@ trait DLCWalletApi { self: WalletApi =>
 
   def addDLCSigs(sigs: DLCSign): Future[DLCDb]
 
-  def getDLCFundingTx(eventId: Sha256Digest): Future[Transaction]
+  def getDLCFundingTx(contractId: ByteVector): Future[Transaction]
 
-  def broadcastDLCFundingTx(eventId: Sha256Digest): Future[Transaction]
+  def broadcastDLCFundingTx(contractId: ByteVector): Future[Transaction]
 
-  /** Creates the CET for the given eventId and oracle signature, does not broadcast it */
+  /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
   def executeDLC(
-      eventId: Sha256Digest,
+      contractId: ByteVector,
       oracleSig: SchnorrDigitalSignature): Future[Transaction]
 
-  /** Creates the refund transaction for the given eventId, does not broadcast it */
-  def executeDLCRefund(eventId: Sha256Digest): Future[Transaction]
+  /** Creates the refund transaction for the given contractId, does not broadcast it */
+  def executeDLCRefund(contractId: ByteVector): Future[Transaction]
 
 }
 

@@ -7,10 +7,10 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.crypto.Sha256DigestBE
 
 case class DLCFundingInputDb(
-    eventId: Sha256Digest,
+    paramHash: Sha256DigestBE,
     isInitiator: Boolean,
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
@@ -18,6 +18,6 @@ case class DLCFundingInputDb(
     witnessScriptOpt: Option[ScriptWitness],
     sigs: Vector[PartialSignature]) {
 
-  def toOutputReference: OutputReference =
+  lazy val toOutputReference: OutputReference =
     OutputReference(outPoint, output)
 }

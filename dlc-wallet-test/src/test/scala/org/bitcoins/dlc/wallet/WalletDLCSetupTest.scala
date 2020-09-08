@@ -27,9 +27,9 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletB = FundedDLCWallets._2.wallet
 
       val offerData = DLCWalletUtil.sampleDLCOffer
-      val eventId = DLCMessage.calcEventId(offerData.oracleInfo,
-                                           offerData.contractInfo,
-                                           offerData.timeouts)
+      val paramHash = DLCMessage.calcParamHash(offerData.oracleInfo,
+                                               offerData.contractInfo,
+                                               offerData.timeouts)
 
       for {
         offer <- walletA.createDLCOffer(
@@ -53,7 +53,6 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         accept <- walletB.acceptDLCOffer(offer)
         _ = {
           assert(accept.fundingInputs.nonEmpty)
-          assert(accept.eventId == eventId)
           assert(
             accept.totalCollateral == offer.contractInfo.values.max - offer.totalCollateral)
           assert(accept.changeAddress.value.nonEmpty)
@@ -61,17 +60,20 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         sign <- walletA.signDLC(accept)
         _ = {
-          assert(sign.eventId == accept.eventId)
           assert(sign.fundingSigs.keys.size == offerData.fundingInputs.size)
         }
 
         dlcDb <- walletB.addDLCSigs(sign)
-        outcomeSigs <- walletB.dlcSigsDAO.findByEventId(sign.eventId)
+        outcomeSigs <- walletB.dlcSigsDAO.findByParamHash(offer.paramHash)
 
         refundSigsA <-
-          walletA.dlcRefundSigDAO.findByEventId(eventId).map(_.map(_.refundSig))
+          walletA.dlcRefundSigDAO
+            .findByParamHash(paramHash)
+            .map(_.map(_.refundSig))
         refundSigsB <-
-          walletB.dlcRefundSigDAO.findByEventId(eventId).map(_.map(_.refundSig))
+          walletB.dlcRefundSigDAO
+            .findByParamHash(paramHash)
+            .map(_.map(_.refundSig))
 
         walletAChange <- walletA.addressDAO.read(offer.changeAddress)
         walletAFinal <- walletA.addressDAO.read(offer.pubKeys.payoutAddress)
@@ -80,7 +82,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         walletBFinal <- walletB.addressDAO.read(accept.pubKeys.payoutAddress)
 
       } yield {
-        assert(dlcDb.eventId == sign.eventId)
+        assert(dlcDb.contractIdOpt.get == sign.contractId)
 
         assert(refundSigsA.size == 2)
         assert(refundSigsA.forall(refundSigsB.contains))

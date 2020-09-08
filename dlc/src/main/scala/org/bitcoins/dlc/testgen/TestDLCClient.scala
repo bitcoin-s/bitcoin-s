@@ -203,7 +203,8 @@ object TestDLCClient {
       pubKeys = acceptPubKeys,
       fundingInputs = acceptFundingInputs,
       changeAddress = acceptChangeAddress,
-      eventId = offer.eventId)
+      tempContractId = offer.tempContractId
+    )
 
     TestDLCClient(offer,
                   accept,

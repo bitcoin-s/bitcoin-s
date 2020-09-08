@@ -1,11 +1,16 @@
-package org.bitcoins.testkit.dlc
+package org.bitcoins.dlc.testgen
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, FundingSignatures}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.crypto.{CryptoUtil, Sha256Digest}
-import org.bitcoins.testkit.util.BytesUtil
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  ECAdaptorSignature,
+  ECDigitalSignature,
+  Sha256Digest
+}
 import scodec.bits.ByteVector
 
 object DLCTestUtil {
@@ -48,18 +53,36 @@ object DLCTestUtil {
     (ContractInfo(outcomeMap), ContractInfo(otherOutcomeMap))
   }
 
+  def flipAtIndex(bytes: ByteVector, byteIndex: Int): ByteVector = {
+    val (front, backWithToFlip) = bytes.splitAt(byteIndex)
+    val (toFlip, back) = backWithToFlip.splitAt(1)
+    front ++ toFlip.xor(ByteVector.fromByte(1)) ++ back
+  }
+
+  def flipBit(signature: ECDigitalSignature): ECDigitalSignature = {
+    ECDigitalSignature(flipAtIndex(signature.bytes, 60))
+  }
+
+  def flipBit(partialSignature: PartialSignature): PartialSignature = {
+    partialSignature.copy(signature = flipBit(partialSignature.signature))
+  }
+
+  def flipBit(adaptorSignature: ECAdaptorSignature): ECAdaptorSignature = {
+    ECAdaptorSignature(flipAtIndex(adaptorSignature.bytes, 40))
+  }
+
   def flipBit(fundingSigs: FundingSignatures): FundingSignatures = {
     val (firstOutPoint, sigs) = fundingSigs.head
-    val badSig = BytesUtil.flipBit(sigs.head)
+    val badSig = flipBit(sigs.head)
     val badSigs = sigs.tail.+:(badSig)
     FundingSignatures(fundingSigs.tail.+(firstOutPoint -> badSigs))
   }
 
   def flipBit(cetSigs: CETSignatures): CETSignatures = {
     val badOutcomeSigs = cetSigs.outcomeSigs.map {
-      case (outcome, sig) => outcome -> BytesUtil.flipBit(sig)
+      case (outcome, sig) => outcome -> flipBit(sig)
     }
-    val badRefundSig = BytesUtil.flipBit(cetSigs.refundSig)
+    val badRefundSig = flipBit(cetSigs.refundSig)
     CETSignatures(badOutcomeSigs, badRefundSig)
   }
 }
