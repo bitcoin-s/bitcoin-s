@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{DLCAcceptTLV, DLCOfferTLV, DLCSignTLV}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
@@ -24,9 +25,7 @@ object DLCTLVTestVectorGen {
 
   val defaultAmt: Satoshis = CurrencyUnits.oneBTC.satoshis
 
-  def hash(
-      bytes: ByteVector =
-        ByteVector(scala.util.Random.nextBytes(32))): Sha256DigestBE = {
+  def hash(bytes: ByteVector = NumberUtil.randomBytes(32)): Sha256DigestBE = {
     CryptoUtil.sha256(bytes).flip
   }
 
