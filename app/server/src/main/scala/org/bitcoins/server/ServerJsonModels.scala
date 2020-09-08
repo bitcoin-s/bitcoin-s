@@ -10,7 +10,8 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
+import org.bitcoins.crypto.SchnorrDigitalSignature
+import scodec.bits.ByteVector
 import ujson._
 import upickle.default._
 
@@ -479,19 +480,19 @@ object AddDLCSigs extends ServerJsonModels {
   }
 }
 
-case class GetDLCFundingTx(eventId: Sha256Digest)
+case class GetDLCFundingTx(contractId: ByteVector)
 
 object GetDLCFundingTx extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetDLCFundingTx] = {
     jsArr.arr.toList match {
-      case eventIdJs :: Nil =>
+      case contractIdJs :: Nil =>
         Try {
-          val eventId = Sha256Digest(eventIdJs.str)
-          GetDLCFundingTx(eventId)
+          val contractId = ByteVector.fromValidHex(contractIdJs.str)
+          GetDLCFundingTx(contractId)
         }
       case Nil =>
-        Failure(new IllegalArgumentException("Missing eventId argument"))
+        Failure(new IllegalArgumentException("Missing contractId argument"))
       case other =>
         Failure(
           new IllegalArgumentException(
@@ -500,19 +501,19 @@ object GetDLCFundingTx extends ServerJsonModels {
   }
 }
 
-case class BroadcastDLCFundingTx(eventId: Sha256Digest)
+case class BroadcastDLCFundingTx(contractId: ByteVector)
 
 object BroadcastDLCFundingTx extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[BroadcastDLCFundingTx] = {
     jsArr.arr.toList match {
-      case eventIdJs :: Nil =>
+      case contractIdJs :: Nil =>
         Try {
-          val eventId = Sha256Digest(eventIdJs.str)
-          BroadcastDLCFundingTx(eventId)
+          val contractId = ByteVector.fromValidHex(contractIdJs.str)
+          BroadcastDLCFundingTx(contractId)
         }
       case Nil =>
-        Failure(new IllegalArgumentException("Missing eventId argument"))
+        Failure(new IllegalArgumentException("Missing contractId argument"))
       case other =>
         Failure(
           new IllegalArgumentException(
@@ -522,7 +523,7 @@ object BroadcastDLCFundingTx extends ServerJsonModels {
 }
 
 case class ExecuteDLCUnilateralClose(
-    eventId: Sha256Digest,
+    contractId: ByteVector,
     oracleSig: SchnorrDigitalSignature,
     noBroadcast: Boolean)
     extends Broadcastable
@@ -531,18 +532,18 @@ object ExecuteDLCUnilateralClose extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCUnilateralClose] = {
     jsArr.arr.toList match {
-      case eventIdJs :: oracleSigJs :: noBroadcastJs :: Nil =>
+      case contractIdJs :: oracleSigJs :: noBroadcastJs :: Nil =>
         Try {
-          val eventId = Sha256Digest(eventIdJs.str)
+          val contractId = ByteVector.fromValidHex(contractIdJs.str)
           val oracleSig = jsToSchnorrDigitalSignature(oracleSigJs)
           val noBroadcast = noBroadcastJs.bool
 
-          ExecuteDLCUnilateralClose(eventId, oracleSig, noBroadcast)
+          ExecuteDLCUnilateralClose(contractId, oracleSig, noBroadcast)
         }
       case Nil =>
         Failure(
           new IllegalArgumentException(
-            "Missing eventId and oracleSig arguments"))
+            "Missing contractId and oracleSig arguments"))
       case other =>
         Failure(
           new IllegalArgumentException(
@@ -551,22 +552,22 @@ object ExecuteDLCUnilateralClose extends ServerJsonModels {
   }
 }
 
-case class ExecuteDLCRefund(eventId: Sha256Digest, noBroadcast: Boolean)
+case class ExecuteDLCRefund(contractId: ByteVector, noBroadcast: Boolean)
     extends Broadcastable
 
 object ExecuteDLCRefund extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCRefund] = {
     jsArr.arr.toList match {
-      case eventIdJs :: noBroadcastJs :: Nil =>
+      case contractIdJs :: noBroadcastJs :: Nil =>
         Try {
-          val eventId = Sha256Digest(eventIdJs.str)
+          val contractId = ByteVector.fromValidHex(contractIdJs.str)
           val noBroadcast = noBroadcastJs.bool
 
-          ExecuteDLCRefund(eventId, noBroadcast)
+          ExecuteDLCRefund(contractId, noBroadcast)
         }
       case Nil =>
-        Failure(new IllegalArgumentException("Missing eventId argument"))
+        Failure(new IllegalArgumentException("Missing contractId argument"))
       case other =>
         Failure(
           new IllegalArgumentException(

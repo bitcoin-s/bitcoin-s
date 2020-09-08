@@ -105,6 +105,8 @@ object Sha256DigestBE extends Factory[Sha256DigestBE] {
             "Sha256Digest must be 32 bytes in size, got: " + bytes.length)
     Sha256DigestBEImpl(bytes)
   }
+
+  lazy val empty: Sha256DigestBE = Sha256DigestBE(ByteVector.low(32))
 }
 
 /**

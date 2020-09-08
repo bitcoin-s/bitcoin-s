@@ -54,36 +54,36 @@ case class DLCFundingInputDAO()(implicit
     Seq] =
     findByPrimaryKeys(dlcs.map(_.outPoint))
 
-  def findByEventId(
-      eventId: Sha256Digest): Future[Vector[DLCFundingInputDb]] = {
-    val q = table.filter(_.eventId === eventId)
+  def findByParamHash(
+      paramHash: Sha256DigestBE): Future[Vector[DLCFundingInputDb]] = {
+    val q = table.filter(_.paramHash === paramHash)
 
     safeDatabase.run(q.result).map(_.toVector)
   }
 
-  def findByEventId(
-      eventId: Sha256DigestBE): Future[Vector[DLCFundingInputDb]] =
-    findByEventId(eventId.flip)
+  def findByParamHash(
+      paramHash: Sha256Digest): Future[Vector[DLCFundingInputDb]] =
+    findByParamHash(paramHash.flip)
 
-  def findByEventId(
-      eventId: Sha256Digest,
+  def findByParamHash(
+      paramHash: Sha256DigestBE,
       isInitiator: Boolean): Future[Vector[DLCFundingInputDb]] = {
     val q = table
-      .filter(_.eventId === eventId)
+      .filter(_.paramHash === paramHash)
       .filter(_.isInitiator === isInitiator)
 
     safeDatabase.run(q.result).map(_.toVector)
   }
 
-  def findByEventId(
-      eventId: Sha256DigestBE,
+  def findByParamHash(
+      paramHash: Sha256Digest,
       isInitiator: Boolean): Future[Vector[DLCFundingInputDb]] =
-    findByEventId(eventId.flip, isInitiator)
+    findByParamHash(paramHash.flip, isInitiator)
 
   class DLCFundingInputsTable(tag: Tag)
       extends Table[DLCFundingInputDb](tag, "wallet_dlc_funding_inputs") {
 
-    def eventId: Rep[Sha256Digest] = column("event_id")
+    def paramHash: Rep[Sha256DigestBE] = column("param_hash")
 
     def isInitiator: Rep[Boolean] = column("is_initiator")
 
@@ -99,7 +99,7 @@ case class DLCFundingInputDAO()(implicit
     def sigs: Rep[Vector[PartialSignature]] = column("sigs")
 
     def * : ProvenShape[DLCFundingInputDb] =
-      (eventId,
+      (paramHash,
        isInitiator,
        outPoint,
        output,
@@ -111,8 +111,8 @@ case class DLCFundingInputDAO()(implicit
       primaryKey(name = "pk_dlc_input", sourceColumns = outPoint)
 
     def fk: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_event_id",
-                 sourceColumns = eventId,
-                 targetTableQuery = dlcTable)(_.eventId)
+      foreignKey("fk_param_hash",
+                 sourceColumns = paramHash,
+                 targetTableQuery = dlcTable)(_.paramHash)
   }
 }

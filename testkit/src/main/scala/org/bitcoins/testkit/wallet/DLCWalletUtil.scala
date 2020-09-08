@@ -15,9 +15,9 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.testgen.DLCTestUtil
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import scodec.bits.ByteVector
@@ -88,8 +88,10 @@ trait DLCWalletUtil {
     dummyTimeouts
   )
 
-  lazy val sampleDLCEventId: Sha256Digest =
-    DLCMessage.calcEventId(sampleOracleInfo, sampleContractInfo, dummyTimeouts)
+  lazy val sampleDLCParamHash: Sha256DigestBE =
+    DLCMessage.calcParamHash(sampleOracleInfo,
+                             sampleContractInfo,
+                             dummyTimeouts)
 
   lazy val dummyOutcomeSigs: Map[Sha256Digest, ECAdaptorSignature] =
     Map(winHash -> ECAdaptorSignature.dummy,
@@ -104,7 +106,7 @@ trait DLCWalletUtil {
     Vector(dummyOutputRefs.last),
     dummyAddress,
     dummyCETSigs,
-    sampleDLCEventId
+    sampleDLCOffer.tempContractId
   )
 
   lazy val dummyFundingSignatures: FundingSignatures = FundingSignatures(
@@ -113,10 +115,12 @@ trait DLCWalletUtil {
        Vector(dummyPartialSig))))
 
   lazy val sampleDLCSign: DLCSign =
-    DLCSign(dummyCETSigs, dummyFundingSignatures, sampleDLCEventId)
+    DLCSign(dummyCETSigs, dummyFundingSignatures, ByteVector.empty)
 
   lazy val sampleDLCDb: DLCDb = DLCDb(
-    eventId = sampleDLCEventId,
+    paramHash = sampleDLCParamHash,
+    tempContractId = sampleDLCOffer.tempContractId,
+    contractIdOpt = None,
     state = DLCState.Offered,
     isInitiator = true,
     account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,
@@ -135,19 +139,15 @@ trait DLCWalletUtil {
     val (contractInfo, _) =
       DLCTestUtil.genContractInfos(outcomeHashes, Satoshis(10000))
 
-    val generatedOffer = DLCOffer(
-      contractInfo,
-      sampleOracleInfo,
-      dummyDLCKeys,
-      Satoshis(5000),
-      Vector(dummyOutputRefs.head),
-      dummyAddress,
-      SatoshisPerVirtualByte(Satoshis(3)),
-      dummyTimeouts
-    )
-
     for {
-      offer <- walletA.registerDLCOffer(generatedOffer)
+      offer <- walletA.createDLCOffer(
+        oracleInfo = sampleOracleInfo,
+        contractInfo = contractInfo,
+        collateral = Satoshis(5000),
+        feeRateOpt = None,
+        locktime = dummyTimeouts.contractMaturity.toUInt32,
+        refundLocktime = dummyTimeouts.contractTimeout.toUInt32
+      )
       accept <- walletB.acceptDLCOffer(offer)
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)

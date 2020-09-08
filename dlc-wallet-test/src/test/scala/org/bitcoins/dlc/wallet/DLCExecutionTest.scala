@@ -17,6 +17,7 @@ import org.bitcoins.dlc.wallet.models.DLCOfferDb
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.{Assertion, FutureOutcome}
+import scodec.bits.ByteVector
 
 import scala.concurrent.Future
 import scala.math.Ordering
@@ -34,6 +35,13 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     wallet.dlcOfferDAO.findAll().map { all =>
       require(all.size == 1, "There should only be one dlc initialized")
       all.head
+    }
+  }
+
+  def getContractId(wallet: DLCWallet): Future[ByteVector] = {
+    wallet.dlcDAO.findAll().map { all =>
+      require(all.size == 1, "There should only be one dlc initialized")
+      all.head.contractIdOpt.get
     }
   }
 
@@ -85,8 +93,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     val dlcB = wallets._2.wallet
 
     for {
-      offer <- getInitialOffer(dlcA)
-      fundingTx <- dlcB.getDLCFundingTx(offer.eventId)
+      contractId <- getContractId(dlcA)
+      fundingTx <- dlcB.getDLCFundingTx(contractId)
       tx <- if (asInitiator) func(dlcA) else func(dlcB)
     } yield {
       assert(tx.inputs.size == 1)
@@ -101,15 +109,16 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     val dlcB = wallets._2.wallet
 
     for {
+      contractId <- getContractId(dlcA)
       offerDb <- getInitialOffer(dlcA)
-      eventId = offerDb.eventId
-      offerOpt <- dlcA.dlcOfferDAO.findByEventId(eventId)
-      acceptOpt <- dlcB.dlcAcceptDAO.findByEventId(eventId)
+      paramHash = offerDb.paramHash
+      offerOpt <- dlcA.dlcOfferDAO.findByParamHash(paramHash)
+      acceptOpt <- dlcB.dlcAcceptDAO.findByParamHash(paramHash)
 
-      inputsA <- dlcA.dlcInputsDAO.findByEventId(eventId)
-      inputsB <- dlcB.dlcInputsDAO.findByEventId(eventId)
+      inputsA <- dlcA.dlcInputsDAO.findByParamHash(paramHash)
+      inputsB <- dlcB.dlcInputsDAO.findByParamHash(paramHash)
 
-      fundingTx <- dlcB.getDLCFundingTx(eventId)
+      fundingTx <- dlcB.getDLCFundingTx(contractId)
     } yield {
       assert(offerOpt.isDefined)
       assert(acceptOpt.isDefined)
@@ -162,9 +171,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
   it must "do a unilateral close as the initiator" in { wallets =>
     for {
+      contractId <- getContractId(wallets._1.wallet)
       offer <- getInitialOffer(wallets._1.wallet)
       (sig, _) = getSigs(offer.contractInfo)
-      func = (wallet: DLCWallet) => wallet.executeDLC(offer.eventId, sig)
+      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = true,
@@ -175,9 +185,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
   it must "do a unilateral close as the recipient" in { wallets =>
     for {
+      contractId <- getContractId(wallets._1.wallet)
       offer <- getInitialOffer(wallets._2.wallet)
       (_, sig) = getSigs(offer.contractInfo)
-      func = (wallet: DLCWallet) => wallet.executeDLC(offer.eventId, sig)
+      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = false,
@@ -190,10 +201,11 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     val dlcA = wallets._1.wallet
 
     val executeDLCForceCloseF = for {
+      contractId <- getContractId(wallets._1.wallet)
       offer <- getInitialOffer(dlcA)
       (_, sig) = getSigs(offer.contractInfo)
 
-      tx <- dlcA.executeDLC(offer.eventId, sig)
+      tx <- dlcA.executeDLC(contractId, sig)
     } yield tx
 
     recoverToSucceededIf[UnsupportedOperationException](executeDLCForceCloseF)
@@ -201,8 +213,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
   it must "do a refund on a dlc as the initiator" in { wallets =>
     for {
-      offer <- getInitialOffer(wallets._1.wallet)
-      func = (wallet: DLCWallet) => wallet.executeDLCRefund(offer.eventId)
+      contractId <- getContractId(wallets._1.wallet)
+      func = (wallet: DLCWallet) => wallet.executeDLCRefund(contractId)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = true,
@@ -213,8 +225,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
   it must "do a refund on a dlc as the recipient" in { wallets =>
     for {
-      offer <- getInitialOffer(wallets._2.wallet)
-      func = (wallet: DLCWallet) => wallet.executeDLCRefund(offer.eventId)
+      contractId <- getContractId(wallets._1.wallet)
+      func = (wallet: DLCWallet) => wallet.executeDLCRefund(contractId)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = false,
