@@ -29,7 +29,7 @@ sealed trait AcceptedDLCStatus extends DLCStatus {
   def accept: DLCAccept
 }
 
-sealed trait SignedDLCStatus extends DLCStatus {
+sealed trait SignedDLCStatus extends AcceptedDLCStatus {
   def sign: DLCSign
   val contractId: ByteVector = sign.contractId
 }
