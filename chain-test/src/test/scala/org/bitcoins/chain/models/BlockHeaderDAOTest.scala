@@ -115,10 +115,12 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val createdF = blockHeaderDAO.create(blockHeader)
 
       val headerDbsF = createdF.flatMap(_ =>
-        blockHeaderDAO.findAllBeforeTime(UInt32(TimeUtil.currentEpochSecond)))
+        blockHeaderDAO.findClosestBeforeTime(
+          UInt32(TimeUtil.currentEpochSecond)))
 
-      headerDbsF.map { headerDbs =>
-        assert(headerDbs.size == 2)
+      headerDbsF.map { headerDbOpt =>
+        assert(headerDbOpt.isDefined)
+        assert(headerDbOpt.get.hashBE == blockHeader.hashBE)
       }
   }
 
