@@ -180,9 +180,6 @@ case class DataMessageHandler(
         Future.successful(this)
       case HeadersMessage(count, headers) =>
         logger.info(s"Received headers message with ${count.toInt} headers")
-        if (count.toInt == 0) {
-          Try(initialSyncDone.map(_.success(Done)))
-        }
         logger.trace(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainApi.processHeaders(headers)
@@ -226,11 +223,15 @@ case class DataMessageHandler(
                   filterHeightOpt.isEmpty))
                 )
                   sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
-                else
+                else {
+                  Try(initialSyncDone.map(_.success(Done)))
                   Future.successful(syncing)
+                }
               }
-            } else
+            } else {
+              Try(initialSyncDone.map(_.success(Done)))
               Future.successful(syncing)
+            }
           }
 
         getHeadersF.failed.map { err =>
