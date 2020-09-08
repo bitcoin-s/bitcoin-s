@@ -23,8 +23,6 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
 
   behavior of "Address Tag - integration test"
 
-  val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
-
   val exampleTag: InternalAddressTag = StorageLocationTag.HotStorage
 
   it should "correctly keep tagged utxos separated" in { walletWithBitcoind =>
@@ -77,6 +75,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
           .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
 
       account <- wallet.getDefaultAccount()
+      feeRate <- wallet.feeRateApi.getFeeRate
       (txBuilder, utxoInfos) <- bitcoind.getNewAddress.flatMap { addr =>
         val output = TransactionOutput(valueToBitcoind, addr.scriptPubKey)
         wallet
@@ -107,9 +106,12 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       assert(tagBalancePostSend > 0.sats)
       assert(tagBalancePostSend < valueFromBitcoind)
 
+      val feePaid =
+        utxoInfos.map(_.output.value).sum - signedTx.outputs.map(_.value).sum
       assert(
         WalletTestUtil.isCloseEnough(tagBalancePostSend,
-                                     valueFromBitcoind - valueToBitcoind))
+                                     valueFromBitcoind - valueToBitcoind,
+                                     delta = feePaid))
     }
   }
 }

@@ -306,8 +306,6 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     testAccountType(HDPurposes.SegWit)
   }
 
-  // TODO: implement this when nested segwit addresses are implemented
-  // in the wallet
   it must "act the same way as Trezor for nested segwit accounts" in { _ =>
     testAccountType(HDPurposes.NestedSegWit)
   }

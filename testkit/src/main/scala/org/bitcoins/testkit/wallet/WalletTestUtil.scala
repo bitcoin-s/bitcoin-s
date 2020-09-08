@@ -12,12 +12,7 @@ import org.bitcoins.core.protocol.blockchain.{
   RegTestNetChainParams
 }
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{
-  EmptyTransaction,
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.utxo._
@@ -85,7 +80,15 @@ object WalletTestUtil {
       second: CurrencyUnit,
       delta: CurrencyUnit = 300.sats): Boolean = {
     Math.abs(
-      first.satoshis.toLong - second.satoshis.toLong) < delta.satoshis.toLong
+      first.satoshis.toLong - second.satoshis.toLong) <= delta.satoshis.toLong
+  }
+
+  def isFeeRateCloseEnough(outgoingTx: OutgoingTransactionDb): Boolean = {
+    TxUtil
+      .isValidFeeRange(outgoingTx.expectedFee,
+                       outgoingTx.actualFee,
+                       outgoingTx.feeRate)
+      .isSuccess
   }
 
   val defaultHdAccount: HDAccount =

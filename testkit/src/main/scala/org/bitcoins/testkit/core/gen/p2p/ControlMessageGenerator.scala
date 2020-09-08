@@ -32,8 +32,8 @@ object ControlMessageGenerator {
 
   def feeFilterMessage: Gen[FeeFilterMessage] = {
     for {
-      fee <- CurrencyUnitGenerator.feeUnit.suchThat(
-        !_.isInstanceOf[SatoshisPerVirtualByte])
+      fee <-
+        FeeUnitGen.feeUnit.suchThat(!_.isInstanceOf[SatoshisPerVirtualByte])
     } yield fee match {
       case fee: SatoshisPerByte     => FeeFilterMessage(fee)
       case fee: SatoshisPerKiloByte => FeeFilterMessage(fee)

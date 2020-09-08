@@ -9,6 +9,7 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.testkit.core.gen.{CurrencyUnitGenerator, FeeUnitGen}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.scalatest.{Assertion, FutureOutcome}
@@ -30,11 +31,13 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   val amountToSend: Bitcoins = Bitcoins(0.5)
 
-  val feeRateOpt: Some[SatoshisPerByte] = Some(SatoshisPerByte(Satoshis.one))
+  def getFeeRateOpt: Option[SatoshisPerByte] = {
+    FeeUnitGen.satsPerByte.sample
+  }
 
   it should "correctly send to an address" in { fundedWallet =>
     val wallet = fundedWallet.wallet
-
+    val feeRateOpt = getFeeRateOpt
     for {
       tx <- wallet.sendToAddress(testAddress, amountToSend, feeRateOpt)
     } yield {
@@ -60,7 +63,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   it should "correctly send to multiple addresses" in { fundedWallet =>
     val wallet = fundedWallet.wallet
-
+    val feeRateOpt = getFeeRateOpt
     for {
       tx <- wallet.sendToAddresses(addresses, amounts, feeRateOpt)
     } yield {
@@ -74,7 +77,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   it should "fail to send to multiple addresses with an incomplete amount of amounts" in {
     fundedWallet =>
       val wallet = fundedWallet.wallet
-
+      val feeRateOpt = getFeeRateOpt
       val sendToAddressesF =
         wallet.sendToAddresses(addresses, amounts.tail, feeRateOpt)
 
@@ -86,7 +89,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   it should "fail to send to multiple addresses with an incomplete amount of addresses" in {
     fundedWallet =>
       val wallet = fundedWallet.wallet
-
+      val feeRateOpt = getFeeRateOpt
       val sendToAddressesF =
         wallet.sendToAddresses(addresses.tail, amounts, feeRateOpt)
 
@@ -97,7 +100,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   it should "correctly send to multiple outputs" in { fundedWallet =>
     val wallet = fundedWallet.wallet
-
+    val feeRateOpt = getFeeRateOpt
     val expectedOutputs = addresses.zip(amounts).map {
       case (addr, amount) => TransactionOutput(amount, addr.scriptPubKey)
     }
@@ -113,7 +116,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       wallet: Wallet,
       hashMessage: Boolean): Future[Assertion] = {
     val message = "ben was here"
-
+    val feeRateOpt = getFeeRateOpt
     for {
       tx <- wallet.makeOpReturnCommitment(message,
                                           hashMessage = hashMessage,
@@ -160,7 +163,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   it should "fail to make an OP_RETURN commitment that is too long" in {
     fundedWallet =>
       val wallet = fundedWallet.wallet
-
+      val feeRateOpt = getFeeRateOpt
       recoverToSucceededIf[IllegalArgumentException] {
         wallet.makeOpReturnCommitment(
           "This message is much too long and is over 80 bytes, the limit for OP_RETURN. It should cause an error.",
@@ -171,7 +174,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   it should "fail to send to a different network address" in { fundedWallet =>
     val wallet = fundedWallet.wallet
-
+    val feeRateOpt = getFeeRateOpt
     val sendToAddressesF =
       wallet.sendToAddress(BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
                            Satoshis(1000),
@@ -184,7 +187,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   it should "fail to send to different network addresses" in { fundedWallet =>
     val wallet = fundedWallet.wallet
-
+    val feeRateOpt = getFeeRateOpt
     val addrs = Vector(
       BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
       BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
@@ -202,6 +205,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   it should "correctly send from outpoints" in { fundedWallet =>
     val wallet = fundedWallet.wallet
+    val feeRateOpt = getFeeRateOpt
     for {
       allOutPoints <- wallet.spendingInfoDAO.findAllOutpoints()
       // use half of them
@@ -226,6 +230,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   it should "fail to send from outpoints when already spent" in {
     fundedWallet =>
       val wallet = fundedWallet.wallet
+      val feeRateOpt = getFeeRateOpt
       for {
         allUtxos <- wallet.listUtxos()
         // Make one already spent
@@ -244,6 +249,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       algo: CoinSelectionAlgo): Future[Assertion] = {
     for {
       account <- wallet.getDefaultAccount()
+      feeRateOpt = getFeeRateOpt
       allUtxos <- wallet.listUtxos(account.hdAccount)
       output = TransactionOutput(amountToSend, testAddress.scriptPubKey)
       expectedUtxos = CoinSelector.selectByAlgo(algo,
