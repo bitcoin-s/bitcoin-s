@@ -9,10 +9,16 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.OutputReference
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey, Sha256Digest}
+import org.bitcoins.crypto.{
+  ECAdaptorSignature,
+  ECPublicKey,
+  Sha256Digest,
+  Sha256DigestBE
+}
 
 case class DLCAcceptDb(
-    eventId: Sha256Digest,
+    paramHash: Sha256DigestBE,
+    tempContractId: Sha256Digest,
     fundingKey: ECPublicKey,
     finalAddress: BitcoinAddress,
     totalCollateral: CurrencyUnit,
@@ -30,10 +36,11 @@ case class DLCAcceptDb(
               fundingInputs,
               changeAddress,
               cetSigs,
-              eventId)
+              tempContractId)
   }
 
   def toDLCAcceptWithoutSigs(
+      tempContractId: Sha256Digest,
       fundingInputs: Vector[OutputReference]): DLCAcceptWithoutSigs = {
     val pubKeys =
       DLCPublicKeys(fundingKey, finalAddress)
@@ -42,15 +49,18 @@ case class DLCAcceptDb(
                          pubKeys,
                          fundingInputs,
                          changeAddress,
-                         eventId)
+                         tempContractId)
   }
 }
 
 object DLCAcceptDbHelper {
 
-  def fromDLCAccept(accept: DLCAccept): DLCAcceptDb = {
+  def fromDLCAccept(
+      paramHash: Sha256DigestBE,
+      accept: DLCAccept): DLCAcceptDb = {
     DLCAcceptDb(
-      accept.eventId,
+      paramHash,
+      accept.tempContractId,
       accept.pubKeys.fundingKey,
       accept.pubKeys.payoutAddress,
       accept.totalCollateral,

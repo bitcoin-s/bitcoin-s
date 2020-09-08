@@ -10,8 +10,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCCETSignatureDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCCETSignatureDb, (Sha256Digest, Sha256Digest)]
-    with SlickUtil[DLCCETSignatureDb, (Sha256Digest, Sha256Digest)] {
+    extends CRUD[DLCCETSignatureDb, (Sha256DigestBE, Sha256Digest)]
+    with SlickUtil[DLCCETSignatureDb, (Sha256DigestBE, Sha256Digest)] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -28,18 +28,18 @@ case class DLCCETSignatureDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(ids: Vector[(
-      Sha256Digest,
+      Sha256DigestBE,
       Sha256Digest)]): Query[DLCCETSignatureTable, DLCCETSignatureDb, Seq] =
     table
-      .filter(_.eventId.inSet(ids.map(_._1)))
+      .filter(_.paramHash.inSet(ids.map(_._1)))
       .filter(_.outcomeHash.inSet(ids.map(_._2)))
 
-  override def findByPrimaryKey(id: (Sha256Digest, Sha256Digest)): Query[
+  override def findByPrimaryKey(id: (Sha256DigestBE, Sha256Digest)): Query[
     DLCCETSignatureTable,
     DLCCETSignatureDb,
     Seq] = {
     table
-      .filter(_.eventId === id._1)
+      .filter(_.paramHash === id._1)
       .filter(_.outcomeHash === id._2)
   }
 
@@ -47,39 +47,39 @@ case class DLCCETSignatureDAO()(implicit
     DLCCETSignatureTable,
     DLCCETSignatureDb,
     Seq] =
-    findByPrimaryKeys(dlcs.map(sig => (sig.eventId, sig.outcomeHash)))
+    findByPrimaryKeys(dlcs.map(sig => (sig.paramHash, sig.outcomeHash)))
 
-  def findByEventId(
-      eventId: Sha256Digest): Future[Vector[DLCCETSignatureDb]] = {
-    val q = table.filter(_.eventId === eventId)
+  def findByParamHash(
+      paramHash: Sha256DigestBE): Future[Vector[DLCCETSignatureDb]] = {
+    val q = table.filter(_.paramHash === paramHash)
     safeDatabase.run(q.result).map(_.toVector)
   }
 
-  def findByEventId(
-      eventId: Sha256DigestBE): Future[Vector[DLCCETSignatureDb]] =
-    findByEventId(eventId.flip)
+  def findByParamHash(
+      paramHash: Sha256Digest): Future[Vector[DLCCETSignatureDb]] =
+    findByParamHash(paramHash.flip)
 
   class DLCCETSignatureTable(tag: Tag)
       extends Table[DLCCETSignatureDb](tag, "wallet_dlc_cet_sigs") {
 
-    def eventId: Rep[Sha256Digest] = column("event_id")
+    def paramHash: Rep[Sha256DigestBE] = column("param_hash")
 
     def outcomeHash: Rep[Sha256Digest] = column("outcome_hash")
 
     def signature: Rep[ECAdaptorSignature] = column("signature")
 
     def * : ProvenShape[DLCCETSignatureDb] =
-      (eventId,
+      (paramHash,
        outcomeHash,
        signature) <> (DLCCETSignatureDb.tupled, DLCCETSignatureDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_cet_sigs",
-                 sourceColumns = (eventId, outcomeHash))
+                 sourceColumns = (paramHash, outcomeHash))
 
     def fk: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_eventId",
-                 sourceColumns = eventId,
-                 targetTableQuery = dlcTable)(_.eventId)
+      foreignKey("fk_param_hash",
+                 sourceColumns = paramHash,
+                 targetTableQuery = dlcTable)(_.paramHash)
   }
 }

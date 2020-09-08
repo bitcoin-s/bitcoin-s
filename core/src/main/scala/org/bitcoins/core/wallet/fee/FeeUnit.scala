@@ -96,6 +96,8 @@ case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
   override def txSizeForCalc(tx: Transaction): Long = tx.vsize
 
   override def scaleFactor: Long = 1
+
+  def toSatoshisPerKW: SatoshisPerKW = SatoshisPerKW(currencyUnit * 4000)
 }
 
 object SatoshisPerVirtualByte {

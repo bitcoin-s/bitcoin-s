@@ -8,12 +8,12 @@ object ForceCloseDLCDialog
     extends DLCDialog[ExecuteDLC](
       "DLC Close",
       "Enter DLC closing info",
-      Vector(DLCDialog.dlcEventIdStr -> new TextField(),
+      Vector(DLCDialog.dlcContractIdStr -> new TextField(),
              DLCDialog.dlcOracleSigStr -> new TextField())) {
   import DLCDialog._
 
   override def constructFromInput(inputs: Map[String, String]): ExecuteDLC = {
-    val eventId = Sha256Digest(inputs(dlcEventIdStr))
+    val eventId = Sha256Digest(inputs(dlcContractIdStr))
     val oracleSig = SchnorrDigitalSignature(inputs(dlcOracleSigStr))
     ExecuteDLC(eventId, oracleSig, noBroadcast = false)
   }

@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCRefundSigDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCRefundSigDb, (Sha256Digest, Boolean)]
-    with SlickUtil[DLCRefundSigDb, (Sha256Digest, Boolean)] {
+    extends CRUD[DLCRefundSigDb, (Sha256DigestBE, Boolean)]
+    with SlickUtil[DLCRefundSigDb, (Sha256DigestBE, Boolean)] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -29,16 +29,16 @@ case class DLCRefundSigDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(ids: Vector[
-    (Sha256Digest, Boolean)]): Query[DLCRefundSigTable, DLCRefundSigDb, Seq] =
-    table.filter(_.eventId.inSet(ids.map(_._1)))
+    (Sha256DigestBE, Boolean)]): Query[DLCRefundSigTable, DLCRefundSigDb, Seq] =
+    table.filter(_.paramHash.inSet(ids.map(_._1)))
 
-  override def findByPrimaryKey(id: (Sha256Digest, Boolean)): Query[
+  override def findByPrimaryKey(id: (Sha256DigestBE, Boolean)): Query[
     DLCRefundSigTable,
     DLCRefundSigDb,
     Seq] = {
-    val (eventId, isInit) = id
+    val (paramHash, isInit) = id
     table
-      .filter(_.eventId === eventId)
+      .filter(_.paramHash === paramHash)
       .filter(_.isInitiator === isInit)
   }
 
@@ -46,38 +46,39 @@ case class DLCRefundSigDAO()(implicit
     DLCRefundSigTable,
     DLCRefundSigDb,
     Seq] =
-    findByPrimaryKeys(dlcs.map(dlc => (dlc.eventId, dlc.isInitiator)))
+    findByPrimaryKeys(dlcs.map(dlc => (dlc.paramHash, dlc.isInitiator)))
 
-  def findByEventId(eventId: Sha256Digest): Future[Vector[DLCRefundSigDb]] = {
-    val q = table.filter(_.eventId === eventId)
+  def findByParamHash(
+      paramHash: Sha256DigestBE): Future[Vector[DLCRefundSigDb]] = {
+    val q = table.filter(_.paramHash === paramHash)
 
     safeDatabase.runVec(q.result)
   }
 
-  def findByEventId(eventId: Sha256DigestBE): Future[Vector[DLCRefundSigDb]] =
-    findByEventId(eventId.flip)
+  def findByParamHash(paramHash: Sha256Digest): Future[Vector[DLCRefundSigDb]] =
+    findByParamHash(paramHash.flip)
 
   class DLCRefundSigTable(tag: Tag)
       extends Table[DLCRefundSigDb](tag, "wallet_dlc_refund_sigs") {
 
-    def eventId: Rep[Sha256Digest] = column("event_id")
+    def paramHash: Rep[Sha256DigestBE] = column("param_hash")
 
     def isInitiator: Rep[Boolean] = column("is_initiator")
 
     def refundSig: Rep[PartialSignature] = column("refund_sig")
 
     def * : ProvenShape[DLCRefundSigDb] =
-      (eventId,
+      (paramHash,
        isInitiator,
        refundSig) <> (DLCRefundSigDb.tupled, DLCRefundSigDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_refund_sig",
-                 sourceColumns = (eventId, isInitiator))
+                 sourceColumns = (paramHash, isInitiator))
 
     def fk: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_eventId",
-                 sourceColumns = eventId,
-                 targetTableQuery = dlcTable)(_.eventId)
+      foreignKey("fk_param_hash",
+                 sourceColumns = paramHash,
+                 targetTableQuery = dlcTable)(_.paramHash)
   }
 }
