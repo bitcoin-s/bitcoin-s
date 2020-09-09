@@ -265,7 +265,9 @@ case class ChainHandler(
   override def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
       stopHash: DoubleSha256DigestBE): Future[ChainApi] = {
-
+    filterHeaders.foreach { header =>
+      println(s"Processing filter header=$header")
+    }
     val filterHeadersToCreateF: Future[Vector[CompactFilterHeaderDb]] = for {
       blockHeaders <-
         blockHeaderDAO

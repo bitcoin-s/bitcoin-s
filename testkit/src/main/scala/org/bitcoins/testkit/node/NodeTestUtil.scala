@@ -125,6 +125,7 @@ abstract class NodeTestUtil extends P2PLogger {
       filterCount <- node.chainApiFromDb().flatMap(_.getFilterCount)
       blockCount <- rpcCountF
     } yield {
+      println(s"filterCount=${filterCount} blockCount=${blockCount}")
       blockCount == filterCount
     }
   }
@@ -136,6 +137,8 @@ abstract class NodeTestUtil extends P2PLogger {
       filterHeaderCount <- node.chainApiFromDb().flatMap(_.getFilterHeaderCount)
       blockCount <- rpcCountF
     } yield {
+      println(
+        s"blockCount=${blockCount} filterHeaderCount=${filterHeaderCount}")
       blockCount == filterHeaderCount
     }
   }
@@ -149,7 +152,9 @@ abstract class NodeTestUtil extends P2PLogger {
     for {
       count <- node.chainApiFromDb().flatMap(_.getBlockCount)
       rpcCount <- rpcCountF
-    } yield rpcCount == count
+    } yield {
+      rpcCount == count
+    }
   }
 
   /** Awaits sync between the given node and bitcoind client */

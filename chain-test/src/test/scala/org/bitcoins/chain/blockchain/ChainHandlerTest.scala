@@ -307,18 +307,49 @@ class ChainHandlerTest extends ChainDbUnitTest {
     }
   }
 
-  it must "generate a range for a block filter query" in {
+  it must "generate a range for a block filter query for the genesis block" in {
     chainHandler: ChainHandler =>
-      for {
+      val genesisHeader =
+        chainHandler.chainConfig.chain.genesisBlock.blockHeader
+      val assert1F = for {
         rangeOpt <-
           chainHandler.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
       } yield {
-        val genesisHash =
-          chainHandler.chainConfig.chain.genesisBlock.blockHeader.hash
+        println(s"Checking range=${rangeOpt}")
+        assert(rangeOpt.nonEmpty)
+        println(s"Checking range2=${rangeOpt}")
+        assert(rangeOpt.get._1 == 0)
+        println(s"Checking range3=${rangeOpt}")
+        assert(rangeOpt.get._2 == genesisHeader.hash)
+        println(s"Checking range4=${rangeOpt}")
+        succeed
+      }
+
+      //let's process a block header, and then be able to fetch that header as the last stopHash
+      val blockHeaderDb = {
+        BlockHeaderDbHelper.fromBlockHeader(height = 0,
+                                            chainWork =
+                                              Pow.getBlockProof(genesisHeader),
+                                            bh = genesisHeader)
+      }
+
+      val blockHeader = BlockHeaderHelper.buildNextHeader(blockHeaderDb)
+      val chainApi2 = assert1F.flatMap { _ =>
+        println(s"assert1 done")
+        chainHandler.processHeader(blockHeader.blockHeader)
+      }(scala.concurrent.ExecutionContext.Implicits.global)
+
+      for {
+        chainApi <- chainApi2
+        _ = println(s"assert2")
+        rangeOpt <-
+          chainApi.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 2)
+      } yield {
         assert(rangeOpt.nonEmpty)
         assert(rangeOpt.get._1 == 0)
-        assert(rangeOpt.get._2 == genesisHash)
+        assert(rangeOpt.get._2 == blockHeader.hash)
       }
+
   }
 
   it must "generate the correct range of block filters if a header is reorged" in {

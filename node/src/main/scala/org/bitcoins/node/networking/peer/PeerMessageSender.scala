@@ -176,6 +176,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     val message =
       GetCompactFilterHeadersMessage(if (startHeight < 0) 0 else startHeight,
                                      stopHash)
+    println(s"startHeight=${startHeight} stopHash=${stopHash}")
     logger.debug(s"Sending getcfheaders=$message to peer ${client.peer}")
     sendMsg(message)
   }
@@ -214,10 +215,19 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       stopHash: DoubleSha256DigestBE)(implicit
       ec: ExecutionContext): Future[Boolean] = {
     for {
-      nextRangeOpt <-
-        chainApi.nextBlockHeaderBatchRange(stopHash, filterHeaderBatchSize)
+      nextRangeOpt <- chainApi.nextBlockHeaderBatchRange(
+        prevStopHash = DoubleSha256Digest.empty.flip,
+        batchSize = filterHeaderBatchSize)
+      _ = stopHash.flip
       res <- nextRangeOpt match {
         case Some((startHeight, stopHash)) =>
+          println(s"startHeight=${startHeight} stopHash=${stopHash.flip}")
+          chainApi.getHeader(stopHash.flip).map { header =>
+            println(s"stophash.header=${header}")
+          }
+          chainApi.getFilterHeaderCount().map { count =>
+            println(s"filterHeader.count=${count}")
+          }
           logger.info(
             s"Requesting compact filter headers from=$startHeight to=${stopHash.flip}")
           sendGetCompactFilterHeadersMessage(startHeight, stopHash)
