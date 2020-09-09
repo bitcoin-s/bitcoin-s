@@ -21,7 +21,16 @@ import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import play.api.libs.json._
 
-sealed trait DLCTestVector
+sealed trait DLCTestVector {
+  def toJson: JsValue
+}
+
+object DLCTestVector {
+
+  def fromJson(json: JsValue): JsResult[DLCTestVector] = {
+    SuccessTestVector.fromJson(json)
+  }
+}
 
 case class FundingInputTx(tx: Transaction, idx: Int, inputKey: ECPrivateKey) {
 
@@ -84,6 +93,7 @@ case class ValidTestInputs(
   lazy val calcOffer: DLCOffer = offerParams.toOffer(params)
 }
 
+// TODO: Add realOutcome, oracleSignature, offerSignedCET, acceptSignedCET fields
 case class SuccessTestVector(
     testInputs: ValidTestInputs,
     offer: DLCOfferTLV,
@@ -94,7 +104,7 @@ case class SuccessTestVector(
     refundTx: Transaction)
     extends DLCTestVector {
 
-  def toJson: JsValue = {
+  override def toJson: JsValue = {
     Json.toJson(this)(SuccessTestVector.successTestVectorFormat)
   }
 
