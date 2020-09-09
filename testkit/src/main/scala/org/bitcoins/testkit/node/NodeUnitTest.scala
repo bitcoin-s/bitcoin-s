@@ -325,7 +325,8 @@ object NodeUnitTest extends P2PLogger {
       PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
                           chainApi = chainApi,
                           peer = peer,
-                          callbacks = NodeCallbacks.empty)
+                          callbacks = NodeCallbacks.empty,
+                          initialSyncDone = None)
     Future.successful(receiver)
   }
 
@@ -336,7 +337,7 @@ object NodeUnitTest extends P2PLogger {
     import system.dispatcher
     val chainApiF = ChainUnitTest.createChainHandler()
     val peerMsgReceiverF = chainApiF.flatMap { _ =>
-      PeerMessageReceiver.preConnection(peer, NodeCallbacks.empty)
+      PeerMessageReceiver.preConnection(peer, NodeCallbacks.empty, None)
     }
     //the problem here is the 'self', this needs to be an ordinary peer message handler
     //that can handle the handshake
@@ -465,7 +466,8 @@ object NodeUnitTest extends P2PLogger {
       PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
                           chainApi = chainApi,
                           peer = peer,
-                          callbacks = NodeCallbacks.empty)
+                          callbacks = NodeCallbacks.empty,
+                          initialSyncDone = None)
     Future.successful(receiver)
   }
 
@@ -506,7 +508,8 @@ object NodeUnitTest extends P2PLogger {
         nodePeer = peer,
         nodeConfig = nodeAppConfig,
         chainConfig = chainAppConfig,
-        actorSystem = system
+        actorSystem = system,
+        initialSyncDone = None
       ).setBloomFilter(NodeTestUtil.emptyBloomFilter)
     }
 
@@ -539,7 +542,8 @@ object NodeUnitTest extends P2PLogger {
       NeutrinoNode(nodePeer = peer,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
-                   actorSystem = system)
+                   actorSystem = system,
+                   initialSyncDone = None)
     }
 
     nodeF.flatMap(_.start()).flatMap(_ => nodeF)

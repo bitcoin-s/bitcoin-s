@@ -9,7 +9,7 @@ import org.bitcoins.testkit.core.gen.{
   BlockchainElementsGenerator,
   TransactionGenerators
 }
-import org.bitcoins.testkit.node.{CachedAppConfig, CachedBitcoinSAppConfig}
+import org.bitcoins.testkit.node.CachedBitcoinSAppConfig
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 

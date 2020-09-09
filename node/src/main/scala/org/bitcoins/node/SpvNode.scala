@@ -1,5 +1,6 @@
 package org.bitcoins.node
 
+import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
@@ -10,12 +11,13 @@ import org.bitcoins.core.util.Mutable
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 case class SpvNode(
     nodePeer: Peer,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
+    initialSyncDone: Option[Promise[Done]],
     actorSystem: ActorSystem)
     extends Node {
   require(nodeConfig.nodeType == NodeType.SpvNode,
