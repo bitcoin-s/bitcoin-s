@@ -12,6 +12,7 @@ import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
@@ -20,6 +21,7 @@ import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.CachedChainAppConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.util.ScalaTestUtil
 import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
 import org.scalatest._
@@ -282,6 +284,90 @@ trait ChainUnitTest
     }
     makeDependentFixture(builder, ChainUnitTest.destroyBitcoindV19ChainApi)(
       test)
+  }
+
+  final def processHeaders(
+      processorF: Future[ChainApi],
+      headers: Vector[BlockHeader],
+      height: Int): Future[Assertion] = {
+
+    def processedHeadersF =
+      for {
+        chainApi <- processorF
+        chainApiWithHeaders <-
+          FutureUtil.foldLeftAsync(chainApi, headers.grouped(2000).toVector)(
+            (chainApi, headers) => chainApi.processHeaders(headers))
+      } yield {
+        FutureUtil.foldLeftAsync((Option.empty[BlockHeaderDb],
+                                  height,
+                                  Vector.empty[Future[Assertion]]),
+                                 headers) {
+          case ((prevHeaderDbOpt, height, assertions), header) =>
+            for {
+              headerOpt <- chainApiWithHeaders.getHeader(header.hashBE)
+            } yield {
+              val chainWork = prevHeaderDbOpt match {
+                case None => Pow.getBlockProof(header)
+                case Some(prevHeader) =>
+                  prevHeader.chainWork + Pow.getBlockProof(header)
+              }
+
+              val expectedBlockHeaderDb =
+                BlockHeaderDbHelper.fromBlockHeader(height, chainWork, header)
+
+              val newHeight = height + 1
+
+              val newAssertions = assertions :+ Future(
+                assert(headerOpt.contains(expectedBlockHeaderDb)))
+
+              (Some(expectedBlockHeaderDb), newHeight, newAssertions)
+            }
+        }
+      }
+
+    for {
+      processedHeaders <- processedHeadersF
+      (_, _, vecFutAssert) <- processedHeaders
+      assertion <- ScalaTestUtil.toAssertF(vecFutAssert)
+    } yield {
+      assertion
+    }
+
+  }
+
+  /** Builds two competing headers that are built from the same parent */
+  private def buildCompetingHeaders(
+      parent: BlockHeaderDb): (BlockHeader, BlockHeader) = {
+    val newHeaderB =
+      BlockHeaderHelper.buildNextHeader(parent)
+
+    val newHeaderC =
+      BlockHeaderHelper.buildNextHeader(parent)
+
+    (newHeaderB.blockHeader, newHeaderC.blockHeader)
+  }
+
+  case class ReorgFixture(
+      chainApi: ChainApi,
+      headerDb1: BlockHeaderDb,
+      headerDb2: BlockHeaderDb,
+      oldBestBlockHeader: BlockHeaderDb) {
+    lazy val header1: BlockHeader = headerDb1.blockHeader
+    lazy val header2: BlockHeader = headerDb2.blockHeader
+  }
+
+  /** Builds two competing headers off of the [[ChainHandler.getBestBlockHash best chain tip]] */
+  def buildChainHandlerCompetingHeaders(
+      chainHandler: ChainHandler): Future[ReorgFixture] = {
+    for {
+      oldBestTip <- chainHandler.getBestBlockHeader()
+      (newHeaderB, newHeaderC) = buildCompetingHeaders(oldBestTip)
+      newChainApi <- chainHandler.processHeaders(Vector(newHeaderB, newHeaderC))
+      newHeaderDbB <- newChainApi.getHeader(newHeaderB.hashBE)
+      newHeaderDbC <- newChainApi.getHeader(newHeaderC.hashBE)
+    } yield {
+      ReorgFixture(newChainApi, newHeaderDbB.get, newHeaderDbC.get, oldBestTip)
+    }
   }
 }
 
