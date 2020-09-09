@@ -21,7 +21,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
-object DLCTLVTestVectorGen {
+object DLCTLVGen {
 
   val defaultAmt: Satoshis = CurrencyUnits.oneBTC.satoshis
 
