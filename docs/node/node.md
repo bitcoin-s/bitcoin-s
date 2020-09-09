@@ -108,7 +108,8 @@ val nodeF = for {
     NeutrinoNode(nodePeer = peer,
                nodeConfig = nodeConfig,
                chainConfig = chainConfig,
-               actorSystem = system)
+               actorSystem = system,
+               initialSyncDone = None)
 }
 
 //let's start it
