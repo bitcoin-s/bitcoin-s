@@ -83,7 +83,6 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
           .fundRawTransactionInternal(destinations = Vector(output),
                                       feeRate = feeRate,
                                       fromAccount = account,
-                                      keyManagerOpt = Some(wallet.keyManager),
                                       fromTagOpt = Some(exampleTag))
       }
       utx <- txBuilder.buildTx()
