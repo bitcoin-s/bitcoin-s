@@ -24,8 +24,8 @@ import org.bitcoins.dlc.sign.DLCTxSigner
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object DLCTxTestVectorGen {
-  import DLCTLVTestVectorGen._
+object DLCTxGen {
+  import DLCTLVGen._
 
   def dlcParams(
       oracleInfo: OracleInfo = genOracleInfo(),
@@ -128,5 +128,13 @@ object DLCTxTestVectorGen {
                         cets,
                         refundTx)
     }
+  }
+
+  def randomSuccessTestVector(numOutcomes: Int)(implicit
+      ec: ExecutionContext): Future[SuccessTestVector] = {
+    val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
+    val contractInfo = genContractInfo(outcomes)
+
+    successTestVector(validTestInputs(dlcParams(contractInfo = contractInfo)))
   }
 }
