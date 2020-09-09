@@ -2,7 +2,7 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
   WalletTestUtil,
@@ -19,8 +19,6 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
     withNewWalletAndBitcoind(test)
 
   behavior of "Wallet - integration test"
-
-  val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 
   it should ("create an address, receive funds to it from bitcoind, import the"
     + " UTXO and construct a valid, signed transaction that's"
@@ -92,8 +90,11 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
           .map(unconfirmed => assert(unconfirmed == 0.satoshis))
 
       signedTx <- bitcoind.getNewAddress.flatMap {
-        wallet.sendToAddress(_, valueToBitcoind, Some(feeRate))
+        wallet.sendToAddress(_, valueToBitcoind, None)
       }
+
+      feeRate =
+        wallet.feeRateApi.asInstanceOf[RandomFeeProvider].lastFeeRate.get
 
       txid <- bitcoind.sendRawTransaction(signedTx)
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
@@ -110,28 +111,28 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       _ = assert(outgoingTx.isDefined)
       _ = assert(outgoingTx.get.inputAmount == valueFromBitcoind)
       _ = assert(outgoingTx.get.sentAmount == valueToBitcoind)
-      _ = assert(outgoingTx.get.feeRate == feeRate)
-      _ = assert(outgoingTx.get.expectedFee == feeRate.calc(signedTx))
       _ = assert(
-        WalletTestUtil.isCloseEnough(feeRate.calc(signedTx),
-                                     outgoingTx.get.actualFee,
-                                     3.satoshi))
+        WalletTestUtil.isFeeRateCloseEnough(outgoingTx.get),
+        s"Actual fee=${outgoingTx.get.feeRate} expectedFeeRate=$feeRate"
+      )
+      balancePostSend <- wallet.getBalance()
+    } yield {
+      assert(outgoingTx.get.expectedFee == feeRate.calc(signedTx))
+      assert(
+        outgoingTx.get.expectedFee === outgoingTx.get.actualFee +- feeRate.currencyUnit, // could be off by one due to rounding
+        s"Expected fee rate not close enough, $feeRate"
+      )
       // Safe to use utxos.head because we've already asserted that we only have our change output
-      _ = assert(
+      assert(
         outgoingTx.get.actualFee + outgoingTx.get.sentAmount == outgoingTx.get.inputAmount - utxos.head.output.value)
 
-      balancePostSend <- wallet.getBalance()
-      _ = {
-        // change UTXO should be smaller than what we had, but still have money in it
-        assert(balancePostSend > 0.sats)
-        assert(balancePostSend < valueFromBitcoind)
-
-        assert(
-          WalletTestUtil.isCloseEnough(balancePostSend,
-                                       valueFromBitcoind - valueToBitcoind))
-      }
-
-    } yield {
+      // change UTXO should be smaller than what we had, but still have money in it
+      assert(balancePostSend > 0.sats)
+      assert(balancePostSend < valueFromBitcoind)
+      assert(
+        WalletTestUtil.isCloseEnough(balancePostSend,
+                                     valueFromBitcoind - valueToBitcoind,
+                                     delta = outgoingTx.get.actualFee))
       assert(tx.confirmations.exists(_ > 0))
     }
   }

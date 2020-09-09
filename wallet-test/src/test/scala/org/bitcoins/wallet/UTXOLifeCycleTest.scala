@@ -34,9 +34,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
     for {
       oldTransactions <- wallet.listTransactions()
-      tx <- wallet.sendToAddress(testAddr,
-                                 Satoshis(3000),
-                                 Some(SatoshisPerByte(Satoshis(3))))
+      tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
 
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       newTransactions <- wallet.listTransactions()
@@ -52,9 +50,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
     for {
       oldTransactions <- wallet.listTransactions()
-      tx <- wallet.sendToAddress(testAddr,
-                                 Satoshis(3000),
-                                 Some(SatoshisPerByte(Satoshis(3))))
+      tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
 
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       newTransactions <- wallet.listTransactions()
@@ -149,8 +145,9 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
     for {
       oldTransactions <- wallet.listTransactions()
+      feeRate <- wallet.getFeeRate
       tx <- wallet.fundRawTransaction(Vector(dummyOutput),
-                                      SatoshisPerVirtualByte.one,
+                                      feeRate,
                                       fromTagOpt = None,
                                       markAsReserved = true)
 
@@ -174,8 +171,9 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       for {
         oldTransactions <- wallet.listTransactions()
+        feeRate <- wallet.getFeeRate
         tx <- wallet.fundRawTransaction(Vector(dummyOutput),
-                                        SatoshisPerVirtualByte.one,
+                                        feeRate,
                                         fromTagOpt = None,
                                         markAsReserved = true)
 
@@ -203,8 +201,9 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       for {
         oldTransactions <- wallet.listTransactions()
+        feeRate <- wallet.getFeeRate
         tx <- wallet.fundRawTransaction(Vector(dummyOutput),
-                                        SatoshisPerVirtualByte.one,
+                                        feeRate,
                                         fromTagOpt = None,
                                         markAsReserved = true)
         allReserved <- wallet.listUtxos(TxoState.Reserved)
@@ -232,8 +231,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       for {
         oldTransactions <- wallet.listTransactions()
-        tx <- wallet.sendToOutputs(Vector(dummyOutput),
-                                   Some(SatoshisPerVirtualByte.one))
+        tx <- wallet.sendToOutputs(Vector(dummyOutput), None)
         _ <- wallet.processTransaction(tx, None)
         _ <- wallet.markUTXOsAsReserved(tx)
 

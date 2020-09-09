@@ -42,6 +42,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
+  def getFeeRate: Future[FeeUnit] = feeRateApi.getFeeRate
+
   def start(): Future[WalletApi]
 
   def stop(): Future[WalletApi]

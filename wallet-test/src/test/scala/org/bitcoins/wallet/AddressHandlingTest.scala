@@ -3,7 +3,6 @@ package org.bitcoins.wallet
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
 import org.bitcoins.core.wallet.utxo.{
   AddressLabelTag,
@@ -70,9 +69,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         _ = assert(exists, s"Wallet must contain address after generating it")
         address2 <- wallet.getUnusedAddress
         _ = assert(address1 == address2, "Must generate same address")
-        _ <- wallet.sendToAddress(address1,
-                                  Satoshis(10000),
-                                  Some(SatoshisPerVirtualByte.one))
+        _ <- wallet.sendToAddress(address1, Satoshis(10000), None)
         address3 <- wallet.getUnusedAddress
       } yield {
         assert(address1 != address3, "Must generate a new address")
@@ -132,9 +129,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         s"Wallet did not start with empty spent addresses, got $emptySpentAddresses")
 
       tempAddress <- wallet.getNewAddress()
-      tx <- wallet.sendToAddress(tempAddress,
-                                 Bitcoins(1),
-                                 Some(SatoshisPerVirtualByte(Satoshis(3))))
+      tx <- wallet.sendToAddress(tempAddress, Bitcoins(1), None)
       spentDbs <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       spentAddresses <- wallet.listSpentAddresses()
     } yield {
