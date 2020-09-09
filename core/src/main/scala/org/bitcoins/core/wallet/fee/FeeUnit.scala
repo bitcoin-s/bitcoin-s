@@ -50,6 +50,8 @@ trait FeeUnitFactory[+T <: FeeUnit] {
     */
   def txSizeForCalc(tx: Transaction): Long
 
+  /** Creates an instance T where the value given is the numerator of the fee unit
+    */
   def fromLong(long: Long): T
 
   def calc(inputAmount: CurrencyUnit, tx: Transaction): T = {
