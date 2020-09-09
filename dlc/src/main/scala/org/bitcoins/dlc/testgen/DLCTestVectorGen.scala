@@ -8,7 +8,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 
 object DLCTestVectorGen {
-  //import DLCTLVGen._
   import DLCTxGen._
 
   implicit private val ec: ExecutionContext = ExecutionContext.global

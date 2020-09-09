@@ -25,7 +25,7 @@ class DLCTestVectorTest extends BitcoinSAsyncTest {
     }
   }
 
-  it should "pass dlc_tests" in {
+  it should "pass dlc_test" in {
     val vecResult = DLCTestVectorGen.readFromDefaultTestFile()
     assert(vecResult.isSuccess)
 
