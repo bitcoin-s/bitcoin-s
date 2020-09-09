@@ -62,6 +62,8 @@ case class DataMessageHandler(
             if (filterHeaders.size == chainConfig.filterHeaderBatchSize) {
               logger.info(
                 s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
+              println(
+                s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
               sendNextGetCompactFilterHeadersCommand(
                 peerMsgSender,
                 filterHeader.stopHash.flip).map(_ => syncing)
@@ -69,9 +71,11 @@ case class DataMessageHandler(
               logger.debug(
                 s"Received filter headers=${filterHeaders.size} in one message, " +
                   "which is less than max. This means we are synced.")
-              sendFirstGetCompactFilterCommand(peerMsgSender).map { syncing =>
-                if (!syncing)
-                  logger.info("We are synced")
+              println(
+                s"Received filter headers=${filterHeaders.size} in one message, " +
+                  "which is less than max. This means we are synced.")
+              sendFirstGetCompactFilterCommand(peerMsgSender).map { synced =>
+                if (!synced) logger.info("We are synced")
                 syncing
               }
             }
@@ -317,12 +321,22 @@ case class DataMessageHandler(
       bestFilterHeaderOpt <-
         chainApi
           .getBestFilterHeader()
-      highestFilterBlockHash =
-        bestFilterHeaderOpt
-          .map(_.blockHashBE)
-          .getOrElse(DoubleSha256DigestBE.empty)
-      res <- sendNextGetCompactFilterHeadersCommand(peerMsgSender,
-                                                    highestFilterBlockHash)
+      blockHash = bestFilterHeaderOpt match {
+        case Some(filterHeaderDb) =>
+          filterHeaderDb.blockHashBE
+        case None =>
+          DoubleSha256DigestBE.empty
+      }
+      hashHeightOpt <- chainApi.nextBlockHeaderBatchRange(
+        prevStopHash = blockHash,
+        batchSize = chainConfig.filterHeaderBatchSize)
+      res <- hashHeightOpt match {
+        case Some((_, hash)) =>
+          sendNextGetCompactFilterHeadersCommand(peerMsgSender, hash.flip)
+        case None =>
+          sys.error(
+            s"Could not find block header in database to sync filter headers from!")
+      }
     } yield res
   }
 

@@ -239,7 +239,7 @@ case class ChainHandler(
       blockchains: Vector[Blockchain]): Option[(Int, DoubleSha256Digest)] = {
     //ok, we need to select the header that is contained in the chain
     //with the most chain work
-    val targetHeight = startHeight + batchSize
+    val targetHeight = startHeight + batchSize - 1
     val mostWorkChainOpt = org.bitcoins.core
       .seqUtil(blockchains)
       .maxByOption(_.tip.chainWork)

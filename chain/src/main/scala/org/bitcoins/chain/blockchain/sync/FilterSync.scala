@@ -43,18 +43,11 @@ abstract class FilterSync extends ChainVerificationLogger {
       oursOpt <- ourBestFilterHeaderOptF
       ourBestBlockHeader <- ourBestBlockHeaderF
       syncedChainApi <- {
-        oursOpt match {
-          case Some(ours) =>
-            syncFiltersToTip(chainApi = chainApi,
-                             ourBestHeader = ourBestBlockHeader,
-                             ourBestFilterHeader = ours,
-                             getFilterFunc = getFilterFunc,
-                             batchSize)
-          case None =>
-            Future.failed(
-              new RuntimeException(
-                s"Cannot sync filters, we don't have any in the database"))
-        }
+        syncFiltersToTip(chainApi = chainApi,
+                         ourBestHeader = ourBestBlockHeader,
+                         ourBestFilterHeaderOpt = oursOpt,
+                         getFilterFunc = getFilterFunc,
+                         batchSize)
       }
     } yield {
       syncedChainApi
@@ -78,21 +71,29 @@ abstract class FilterSync extends ChainVerificationLogger {
   private def syncFiltersToTip(
       chainApi: ChainApi,
       ourBestHeader: BlockHeaderDb,
-      ourBestFilterHeader: CompactFilterHeaderDb,
+      ourBestFilterHeaderOpt: Option[CompactFilterHeaderDb],
       getFilterFunc: BlockHeader => Future[FilterWithHeaderHash],
       batchSize: Int)(implicit
       ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[ChainApi] = {
-    if (ourBestFilterHeader.blockHashBE == ourBestHeader.hashBE) {
+    if (
+      ourBestFilterHeaderOpt.isDefined && ourBestFilterHeaderOpt.get.blockHashBE == ourBestHeader.hashBE
+    ) {
       logger.info(
-        s"Our filters are synced with our peers filters, both at blockHash=${ourBestFilterHeader.blockHashBE}")
+        s"Our filters are synced with our peers filters, both at blockHash=${ourBestFilterHeaderOpt.get.blockHashBE}")
       Future.successful(chainApi)
     } else {
       logger.info(
-        s"Beginning sync for filters from filterheader=${ourBestFilterHeader} to blockheader=${ourBestHeader.hashBE}")
+        s"Beginning sync for filters from filterheader=${ourBestFilterHeaderOpt} to blockheader=${ourBestHeader.hashBE}")
       //let's fetch all missing filter headers first
-      val bestFilterBlockHeaderF =
-        chainApi.getHeader(ourBestFilterHeader.blockHashBE)
+      val bestFilterBlockHeaderF = ourBestFilterHeaderOpt match {
+        case Some(ourBestFilterHeader) =>
+          chainApi.getHeader(ourBestFilterHeader.blockHashBE)
+        case None =>
+          chainApi
+            .getHeadersAtHeight(0)
+            .map(_.headOption)
+      }
 
       val headersMissingFiltersF = for {
         bestFilterBlockHeader <- bestFilterBlockHeaderF

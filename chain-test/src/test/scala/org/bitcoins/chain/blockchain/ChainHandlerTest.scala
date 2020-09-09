@@ -17,6 +17,7 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPrivateKey
 }
+import org.bitcoins.testkit.chain
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
@@ -34,10 +35,11 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   override type FixtureParam = ChainHandler
 
-  override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
+  override val defaultTag: ChainFixtureTag =
+    ChainFixtureTag.GenesisChainHandlerWithFilter
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withChainHandler(test)
+    withChainHandlerGenesisFilter(test)
 
   val genesis: BlockHeaderDb = ChainUnitTest.genesisHeaderDb
   behavior of "ChainHandler"
@@ -336,7 +338,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       for {
         chainApi <- chainApi2
         rangeOpt <-
-          chainApi.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
+          chainApi.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 2)
       } yield {
         assert(rangeOpt.nonEmpty)
         assert(rangeOpt.get._1 == 0)
@@ -357,13 +359,11 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val assert1F = for {
         chainHandler <- chainHandlerF
         newHeaderB <- newHeaderBF
-        newHeaderC <- newHeaderCF
         blockHeaderBatchOpt <- chainHandler.nextBlockHeaderBatchRange(
           prevStopHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
           batchSize = batchSize)
         count <- chainHandler.getBlockCount()
       } yield {
-        assert(count == 1)
         assert(blockHeaderBatchOpt.isDefined)
         val Some((height, hash)) = blockHeaderBatchOpt
         assert(newHeaderB.hash == hash)
@@ -476,10 +476,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
     chainHandler: ChainHandler =>
       val noChainsChainHandler = chainHandler.copy(blockchains = Vector.empty)
 
-      val filterHeaderF = noChainsChainHandler.getBestFilterHeader()
-
       for {
-        filterHeaderOpt <- filterHeaderF
+        filterHeaderOpt <- noChainsChainHandler.getBestFilterHeader()
       } yield {
         assert(filterHeaderOpt.isDefined)
         assert(filterHeaderOpt.get == ChainUnitTest.genesisFilterHeaderDb)

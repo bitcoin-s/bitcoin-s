@@ -221,13 +221,6 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       _ = stopHash.flip
       res <- nextRangeOpt match {
         case Some((startHeight, stopHash)) =>
-          println(s"startHeight=${startHeight} stopHash=${stopHash.flip}")
-          chainApi.getHeader(stopHash.flip).map { header =>
-            println(s"stophash.header=${header}")
-          }
-          chainApi.getFilterHeaderCount().map { count =>
-            println(s"filterHeader.count=${count}")
-          }
           logger.info(
             s"Requesting compact filter headers from=$startHeight to=${stopHash.flip}")
           sendGetCompactFilterHeadersMessage(startHeight, stopHash)
