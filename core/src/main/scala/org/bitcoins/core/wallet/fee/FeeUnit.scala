@@ -15,10 +15,12 @@ sealed abstract class FeeUnit {
   final def *(long: Long): CurrencyUnit = Satoshis(toLong * long / scaleFactor)
   def *(tx: Transaction): CurrencyUnit = calc(tx)
 
+  def factory: FeeUnitFactory[FeeUnit]
+
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  def scaleFactor: Long
+  def scaleFactor: Long = factory.scaleFactor
 
   require(scaleFactor > 0,
           s"Scale factor cannot be less than or equal to 0, got $scaleFactor")
@@ -26,14 +28,14 @@ sealed abstract class FeeUnit {
   /** Takes the given transaction returns a size that will be used for calculating the fee rate.
     * This is generally the denominator in the unit, ie sats/byte
     */
-  def txSizeForCalc(tx: Transaction): Long
+  def txSizeForCalc(tx: Transaction): Long = factory.txSizeForCalc(tx)
 
   /** Calculates the fee for the transaction using this fee rate, rounds down satoshis */
   final def calc(tx: Transaction): CurrencyUnit = this * txSizeForCalc(tx)
   def toLong: Long = currencyUnit.satoshis.toLong
 }
 
-trait FeeUnitFactory[T <: FeeUnit] {
+trait FeeUnitFactory[+T <: FeeUnit] {
 
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
@@ -66,14 +68,11 @@ sealed abstract class BitcoinFeeUnit extends FeeUnit
 
 case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
 
-  def toSatPerKb: SatoshisPerKiloByte = {
+  lazy val toSatPerKb: SatoshisPerKiloByte = {
     SatoshisPerKiloByte(currencyUnit.satoshis * Satoshis(1000))
   }
 
-  override def txSizeForCalc(tx: Transaction): Long =
-    SatoshisPerByte.txSizeForCalc(tx)
-
-  override def scaleFactor: Long = SatoshisPerByte.scaleFactor
+  override def factory: FeeUnitFactory[SatoshisPerByte] = SatoshisPerByte
 }
 
 object SatoshisPerByte extends FeeUnitFactory[SatoshisPerByte] {
@@ -87,15 +86,6 @@ object SatoshisPerByte extends FeeUnitFactory[SatoshisPerByte] {
     * This is generally the denominator in the unit, ie sats/byte
     */
   override def txSizeForCalc(tx: Transaction): Long = tx.byteSize
-
-  override def calc(
-      inputAmount: CurrencyUnit,
-      tx: Transaction): SatoshisPerByte = {
-    val feePaid = inputAmount - tx.totalOutput
-    val feeRate = feePaid.satoshis.toLong / txSizeForCalc(tx).toDouble
-
-    fromLong(Math.round(feeRate))
-  }
 
   override def fromLong(sats: Long): SatoshisPerByte =
     SatoshisPerByte(Satoshis(sats))
@@ -130,10 +120,8 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
 
   lazy val toSatPerByte: SatoshisPerByte = toSatPerByteExact
 
-  override def txSizeForCalc(tx: Transaction): Long =
-    SatoshisPerKiloByte.txSizeForCalc(tx)
-
-  override def scaleFactor: Long = SatoshisPerKiloByte.scaleFactor
+  override def factory: FeeUnitFactory[SatoshisPerKiloByte] =
+    SatoshisPerKiloByte
 }
 
 object SatoshisPerKiloByte extends FeeUnitFactory[SatoshisPerKiloByte] {
@@ -164,10 +152,8 @@ object SatoshisPerKiloByte extends FeeUnitFactory[SatoshisPerKiloByte] {
 case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
     extends BitcoinFeeUnit {
 
-  override def txSizeForCalc(tx: Transaction): Long =
-    SatoshisPerVirtualByte.txSizeForCalc(tx)
-
-  override def scaleFactor: Long = SatoshisPerVirtualByte.scaleFactor
+  override def factory: FeeUnitFactory[SatoshisPerVirtualByte] =
+    SatoshisPerVirtualByte
 }
 
 object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
@@ -202,10 +188,7 @@ object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
   */
 case class SatoshisPerKW(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
 
-  override def txSizeForCalc(tx: Transaction): Long =
-    SatoshisPerKW.txSizeForCalc(tx)
-
-  override def scaleFactor: Long = SatoshisPerKW.scaleFactor
+  override def factory: FeeUnitFactory[SatoshisPerKW] = SatoshisPerKW
 }
 
 object SatoshisPerKW extends FeeUnitFactory[SatoshisPerKW] {
