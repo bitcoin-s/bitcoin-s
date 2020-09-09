@@ -1,5 +1,6 @@
 package org.bitcoins.node
 
+import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -28,7 +29,7 @@ import org.bitcoins.node.networking.peer.{
 import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
 /**
@@ -45,6 +46,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   implicit def executionContext: ExecutionContext = system.dispatcher
 
   val peer: Peer
+
+  protected val initialSyncDone: Option[Promise[Done]]
 
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
 
@@ -72,7 +75,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       val peerMsgRecv: PeerMessageReceiver =
         PeerMessageReceiver.newReceiver(chainApi = chainApi,
                                         peer = peer,
-                                        callbacks = nodeCallbacks)
+                                        callbacks = nodeCallbacks,
+                                        initialSyncDone = initialSyncDone)
       val p2p = P2PClient(context = system,
                           peer = peer,
                           peerMessageReceiver = peerMsgRecv)

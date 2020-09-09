@@ -1,5 +1,6 @@
 package org.bitcoins.node.networking.peer
 
+import akka.Done
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.db.ChainApi
 import org.bitcoins.core.gcs.BlockFilter
@@ -9,7 +10,8 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeCallbacks, NodeType, P2PLogger}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Try
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -21,6 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DataMessageHandler(
     chainApi: ChainApi,
     callbacks: NodeCallbacks,
+    initialSyncDone: Option[Promise[Done]] = None,
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     filterHeaderHeightOpt: Option[Int] = None,
     filterHeightOpt: Option[Int] = None,
@@ -66,10 +69,10 @@ case class DataMessageHandler(
               logger.debug(
                 s"Received filter headers=${filterHeaders.size} in one message, " +
                   "which is less than max. This means we are synced.")
-              sendFirstGetCompactFilterCommand(peerMsgSender).map { synced =>
-                if (!synced)
+              sendFirstGetCompactFilterCommand(peerMsgSender).map { syncing =>
+                if (!syncing)
                   logger.info("We are synced")
-                synced
+                syncing
               }
             }
           newFilterHeaderHeight <- filterHeaderHeightOpt match {
@@ -110,6 +113,7 @@ case class DataMessageHandler(
               val syncing = newFilterHeight < newFilterHeaderHeight
               if (!syncing) {
                 logger.info(s"We are synced")
+                Try(initialSyncDone.map(_.success(Done)))
               }
               Future.successful(syncing)
             }
@@ -219,11 +223,15 @@ case class DataMessageHandler(
                   filterHeightOpt.isEmpty))
                 )
                   sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
-                else
+                else {
+                  Try(initialSyncDone.map(_.success(Done)))
                   Future.successful(syncing)
+                }
               }
-            } else
+            } else {
+              Try(initialSyncDone.map(_.success(Done)))
               Future.successful(syncing)
+            }
           }
 
         getHeadersF.failed.map { err =>

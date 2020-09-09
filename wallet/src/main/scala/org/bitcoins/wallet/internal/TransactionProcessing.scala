@@ -42,16 +42,17 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
   override def processBlock(block: Block): Future[Wallet] = {
     logger.info(s"Processing block=${block.blockHeader.hash.flip}")
-    val res = block.transactions.foldLeft(Future.successful(this)) {
-      (acc, transaction) =>
-        for {
-          _ <- acc
-          newWallet <-
-            processTransaction(transaction, Some(block.blockHeader.hash.flip))
-        } yield {
-          newWallet
-        }
-    }
+    val res =
+      block.transactions.foldLeft(Future.successful(this)) {
+        (acc, transaction) =>
+          for {
+            _ <- acc
+            newWallet <-
+              processTransaction(transaction, Some(block.blockHeader.hash.flip))
+          } yield {
+            newWallet
+          }
+      }
     res.onComplete(failure =>
       signalBlockProcessingCompletion(block.blockHeader.hash, failure))
     res.foreach(_ =>

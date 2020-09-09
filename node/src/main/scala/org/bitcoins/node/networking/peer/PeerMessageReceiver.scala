@@ -1,5 +1,6 @@
 package org.bitcoins.node.networking.peer
 
+import akka.Done
 import akka.actor.ActorRefFactory
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -21,7 +22,7 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
 }
 import org.bitcoins.node.{NodeCallbacks, NodeType, P2PLogger}
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 /**
   * Responsible for receiving messages from a peer on the
@@ -253,13 +254,14 @@ object PeerMessageReceiver {
       state: PeerMessageReceiverState,
       chainApi: ChainApi,
       peer: Peer,
-      callbacks: NodeCallbacks)(implicit
+      callbacks: NodeCallbacks,
+      initialSyncDone: Option[Promise[Done]])(implicit
       ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
   ): PeerMessageReceiver = {
     import ref.dispatcher
-    val dataHandler = new DataMessageHandler(chainApi, callbacks)
+    val dataHandler = DataMessageHandler(chainApi, callbacks, initialSyncDone)
     new PeerMessageReceiver(dataMessageHandler = dataHandler,
                             state = state,
                             peer = peer,
@@ -271,7 +273,10 @@ object PeerMessageReceiver {
     * to be connected to a peer. This can be given to [[org.bitcoins.node.networking.P2PClient.props() P2PClient]]
     * to connect to a peer on the network
     */
-  def preConnection(peer: Peer, callbacks: NodeCallbacks)(implicit
+  def preConnection(
+      peer: Peer,
+      callbacks: NodeCallbacks,
+      initialSyncDone: Option[Promise[Done]])(implicit
       ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
@@ -288,18 +293,23 @@ object PeerMessageReceiver {
       PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
                           chainApi = chainHandler,
                           peer = peer,
-                          callbacks = callbacks)
+                          callbacks = callbacks,
+                          initialSyncDone = initialSyncDone)
     }
   }
 
-  def newReceiver(chainApi: ChainApi, peer: Peer, callbacks: NodeCallbacks)(
-      implicit
+  def newReceiver(
+      chainApi: ChainApi,
+      peer: Peer,
+      callbacks: NodeCallbacks,
+      initialSyncDone: Option[Promise[Done]])(implicit
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
       ref: ActorRefFactory): PeerMessageReceiver = {
     PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
                         chainApi = chainApi,
                         peer = peer,
-                        callbacks = callbacks)
+                        callbacks = callbacks,
+                        initialSyncDone = initialSyncDone)
   }
 }

@@ -2,6 +2,7 @@ package org.bitcoins.node.config
 
 import java.nio.file.Path
 
+import akka.Done
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
@@ -11,7 +12,7 @@ import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /** Configuration for the Bitcoin-S node
   * @param directory The data directory of the node
@@ -71,10 +72,10 @@ case class NodeAppConfig(
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(
+  def createNode(peer: Peer, initialSyncDone: Option[Promise[Done]])(
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
-    NodeAppConfig.createNode(peer)(this, chainConf, system)
+    NodeAppConfig.createNode(peer, initialSyncDone)(this, chainConf, system)
   }
 }
 
@@ -88,15 +89,17 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
     NodeAppConfig(datadir, confs: _*)
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(implicit
+  def createNode(peer: Peer, initialSyncDone: Option[Promise[Done]])(implicit
       nodeConf: NodeAppConfig,
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
     nodeConf.nodeType match {
       case NodeType.SpvNode =>
-        Future.successful(SpvNode(peer, nodeConf, chainConf, system))
+        Future.successful(
+          SpvNode(peer, nodeConf, chainConf, initialSyncDone, system))
       case NodeType.NeutrinoNode =>
-        Future.successful(NeutrinoNode(peer, nodeConf, chainConf, system))
+        Future.successful(
+          NeutrinoNode(peer, nodeConf, chainConf, initialSyncDone, system))
       case NodeType.FullNode =>
         Future.failed(new RuntimeException("Not implemented"))
     }

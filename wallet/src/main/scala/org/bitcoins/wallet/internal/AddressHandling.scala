@@ -109,7 +109,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
 
   override def watchScriptPubKey(
       scriptPubKey: ScriptPubKey): Future[ScriptPubKeyDb] =
-    scriptPubKeyDAO.create(ScriptPubKeyDb(scriptPubKey = scriptPubKey))
+    scriptPubKeyDAO.createIfNotExists(
+      ScriptPubKeyDb(scriptPubKey = scriptPubKey))
 
   /** Enumerates the public keys in this wallet */
   protected[wallet] def listPubkeys(): Future[Vector[ECPublicKey]] =
