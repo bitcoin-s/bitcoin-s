@@ -20,7 +20,7 @@ sealed abstract class FeeUnit {
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  def scaleFactor: Long = factory.scaleFactor
+  val scaleFactor: Long = factory.scaleFactor
 
   require(scaleFactor > 0,
           s"Scale factor cannot be less than or equal to 0, got $scaleFactor")
@@ -54,8 +54,14 @@ trait FeeUnitFactory[+T <: FeeUnit] {
     */
   def fromLong(long: Long): T
 
-  def calc(inputAmount: CurrencyUnit, tx: Transaction): T = {
-    val feePaid = inputAmount - tx.totalOutput
+  /**
+    * Calculates the fee rate from the given Transaction.
+    * Uses Math.round for rounding up, which returns the closest long to the argument
+    * @param totalInputAmount Total amount being spent by the transaction's inputs
+    * @param tx Transaction to calculate the fee rate of
+    */
+  def calc(totalInputAmount: CurrencyUnit, tx: Transaction): T = {
+    val feePaid = totalInputAmount - tx.totalOutput
     val feeRate = feePaid.satoshis.toLong / txSizeForCalc(tx).toDouble
 
     fromLong(Math.round(feeRate * scaleFactor))
@@ -82,7 +88,7 @@ object SatoshisPerByte extends FeeUnitFactory[SatoshisPerByte] {
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  override def scaleFactor: Long = 1
+  override val scaleFactor: Long = 1
 
   /** Takes the given transaction returns a size that will be used for calculating the fee rate.
     * This is generally the denominator in the unit, ie sats/byte
@@ -131,7 +137,7 @@ object SatoshisPerKiloByte extends FeeUnitFactory[SatoshisPerKiloByte] {
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  override def scaleFactor: Long = 1000
+  override val scaleFactor: Long = 1000
 
   /** Takes the given transaction returns a size that will be used for calculating the fee rate.
     * This is generally the denominator in the unit, ie sats/byte
@@ -163,7 +169,7 @@ object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  override def scaleFactor: Long = 1
+  override val scaleFactor: Long = 1
 
   /** Takes the given transaction returns a size that will be used for calculating the fee rate.
     * This is generally the denominator in the unit, ie sats/byte
@@ -198,7 +204,7 @@ object SatoshisPerKW extends FeeUnitFactory[SatoshisPerKW] {
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  override def scaleFactor: Long = 1000
+  override val scaleFactor: Long = 1000
 
   /** Takes the given transaction returns a size that will be used for calculating the fee rate.
     * This is generally the denominator in the unit, ie sats/byte
