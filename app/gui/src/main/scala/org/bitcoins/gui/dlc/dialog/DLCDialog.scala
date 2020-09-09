@@ -116,6 +116,8 @@ object DLCDialog {
   }
 
   val oracleInfoStr = "Oracle Info"
+  val oraclePubKeyStr = "Oracle Pub Key"
+  val oracleNonceStr = "Oracle Nonce"
   val contractInfoStr = "Contract Info"
   val collateralStr = "Collateral"
   val feeRateStr = "Fee Rate"
@@ -123,7 +125,8 @@ object DLCDialog {
   val refundLocktimeStr = "Refund Locktime"
 
   val allOfferFields: Map[String, String] = Map[String, String](
-    oracleInfoStr -> "",
+    oraclePubKeyStr -> "",
+    oracleNonceStr -> "",
     contractInfoStr -> "",
     collateralStr -> "Satoshis",
     feeRateStr -> "sats/vbyte (optional)",

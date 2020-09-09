@@ -7,10 +7,11 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 
 object OfferDLCDialog
-    extends DLCDialog[CreateDLCOffer]("Create DLC Offer",
-                                      "Enter DLC details",
-                                      DLCDialog.constructOfferFields(),
-                                      Vector(DLCDialog.feeRateStr)) {
+    extends DLCDialog[CreateDLCOffer](dialogTitle = "Create DLC Offer",
+                                      header = "Enter DLC details",
+                                      fields = DLCDialog.constructOfferFields(),
+                                      optionalFields = Vector(
+                                        DLCDialog.feeRateStr)) {
   import DLCDialog._
 
   override def constructFromInput(
@@ -25,8 +26,10 @@ object OfferDLCDialog
       )
     }
 
+    val oracleInfoHex = inputs(oraclePubKeyStr) ++ inputs(oracleNonceStr)
+
     CreateDLCOffer(
-      oracleInfo = DLCMessage.OracleInfo.fromHex(inputs(oracleInfoStr)),
+      oracleInfo = DLCMessage.OracleInfo.fromHex(oracleInfoHex),
       contractInfo = DLCMessage.ContractInfo.fromHex(inputs(contractInfoStr)),
       collateral = Satoshis(BigInt(inputs(collateralStr))),
       feeRateOpt = feeRate,
