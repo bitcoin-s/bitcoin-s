@@ -8,31 +8,31 @@ abstract class FeeUnitGen {
 
   def satsPerByte: Gen[SatoshisPerByte] = {
     for {
-      curr <- fee
+      curr <- realisticFee
     } yield SatoshisPerByte(curr)
   }
 
   def satsPerKiloByte: Gen[SatoshisPerKiloByte] = {
     for {
-      curr <- fee
+      curr <- realisticFee
     } yield SatoshisPerKiloByte(curr * 1000)
   }
 
   def satsPerKiloWeight: Gen[SatoshisPerKW] = {
     for {
-      curr <- fee
+      curr <- realisticFee
     } yield SatoshisPerKW(curr * 1000)
   }
 
   def satsPerVirtualByte: Gen[SatoshisPerVirtualByte] = {
     for {
-      curr <- fee
+      curr <- realisticFee
     } yield SatoshisPerVirtualByte(curr)
   }
 
   /** Choose between different sets of Satoshi sizes so we get a better distribution */
-  private def fee: Gen[Satoshis] = {
-    Gen.oneOf(realisticFee, highFee, exorbitantFee)
+  private def realisticFee: Gen[Satoshis] = {
+    Gen.oneOf(lowFee, highFee, exorbitantFee)
   }
 
   /** Max fee between 101 - 100 sats. So we can have
@@ -40,7 +40,7 @@ abstract class FeeUnitGen {
     * 2. 100 sats/vbyte
     * 3. 100 sats/kb
     */
-  private def realisticFee: Gen[Satoshis] = {
+  private def lowFee: Gen[Satoshis] = {
     Gen
       .choose(0, 100)
       .map(Satoshis(_))

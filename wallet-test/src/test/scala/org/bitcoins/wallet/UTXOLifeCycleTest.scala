@@ -145,7 +145,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
     for {
       oldTransactions <- wallet.listTransactions()
-      feeRate <- wallet.feeRateApi.getFeeRate
+      feeRate <- wallet.getFeeRate
       tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                       feeRate,
                                       fromTagOpt = None,
@@ -171,7 +171,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       for {
         oldTransactions <- wallet.listTransactions()
-        feeRate <- wallet.feeRateApi.getFeeRate
+        feeRate <- wallet.getFeeRate
         tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                         feeRate,
                                         fromTagOpt = None,
@@ -201,7 +201,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       for {
         oldTransactions <- wallet.listTransactions()
-        feeRate <- wallet.feeRateApi.getFeeRate
+        feeRate <- wallet.getFeeRate
         tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                         feeRate,
                                         fromTagOpt = None,

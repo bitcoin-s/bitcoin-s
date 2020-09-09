@@ -4,7 +4,6 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.builder.RawTxSigner
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.{InternalAddressTag, StorageLocationTag}
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
@@ -75,7 +74,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
           .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
 
       account <- wallet.getDefaultAccount()
-      feeRate <- wallet.feeRateApi.getFeeRate
+      feeRate <- wallet.getFeeRate
       (txBuilder, utxoInfos) <- bitcoind.getNewAddress.flatMap { addr =>
         val output = TransactionOutput(valueToBitcoind, addr.scriptPubKey)
         wallet
