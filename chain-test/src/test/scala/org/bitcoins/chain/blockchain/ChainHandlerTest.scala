@@ -315,14 +315,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
         rangeOpt <-
           chainHandler.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
       } yield {
-        println(s"Checking range=${rangeOpt}")
         assert(rangeOpt.nonEmpty)
-        println(s"Checking range2=${rangeOpt}")
         assert(rangeOpt.get._1 == 0)
-        println(s"Checking range3=${rangeOpt}")
         assert(rangeOpt.get._2 == genesisHeader.hash)
-        println(s"Checking range4=${rangeOpt}")
-        succeed
       }
 
       //let's process a block header, and then be able to fetch that header as the last stopHash
@@ -335,21 +330,18 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
       val blockHeader = BlockHeaderHelper.buildNextHeader(blockHeaderDb)
       val chainApi2 = assert1F.flatMap { _ =>
-        println(s"assert1 done")
         chainHandler.processHeader(blockHeader.blockHeader)
-      }(scala.concurrent.ExecutionContext.Implicits.global)
+      }
 
       for {
         chainApi <- chainApi2
-        _ = println(s"assert2")
         rangeOpt <-
-          chainApi.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 2)
+          chainApi.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
       } yield {
         assert(rangeOpt.nonEmpty)
         assert(rangeOpt.get._1 == 0)
         assert(rangeOpt.get._2 == blockHeader.hash)
       }
-
   }
 
   it must "generate the correct range of block filters if a header is reorged" in {
@@ -396,7 +388,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(blockHeaderBatchOpt.isDefined)
         val Some((height, hash)) = blockHeaderBatchOpt
         assert(headerC.height == height)
-        assert(headerC.hash == hash)
+        assert(headerD.hash == hash)
       }
 
   }
