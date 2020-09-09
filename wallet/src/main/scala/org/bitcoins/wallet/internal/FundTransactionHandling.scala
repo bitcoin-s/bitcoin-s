@@ -1,11 +1,7 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
-import org.bitcoins.core.api.wallet.{
-  AddressInfo,
-  CoinSelectionAlgo,
-  CoinSelector
-}
+import org.bitcoins.core.api.wallet.{CoinSelectionAlgo, CoinSelector}
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil
@@ -16,8 +12,6 @@ import org.bitcoins.core.wallet.builder.{
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.Sign
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future
@@ -49,7 +43,6 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
     fundRawTransactionInternal(destinations = destinations,
                                feeRate = feeRate,
                                fromAccount = fromAccount,
-                               keyManagerOpt = None,
                                fromTagOpt = fromTagOpt,
                                markAsReserved = markAsReserved)
       .flatMap(_._1.buildTx())
@@ -69,14 +62,13 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      keyManagerOpt: Option[BIP39KeyManager],
       coinSelectionAlgo: CoinSelectionAlgo =
         CoinSelectionAlgo.AccumulateLargest,
       fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean = false): Future[(
       RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       Vector[ScriptSignatureParams[InputInfo]])] = {
-    def utxosF: Future[Vector[SpendingInfoDb]] =
+    def utxosF: Future[Vector[(SpendingInfoDb, Transaction)]] =
       for {
         utxos <- fromTagOpt match {
           case None =>
@@ -105,53 +97,30 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                 confsOpt.isDefined && confsOpt.get < Consensus.coinbaseMaturity
             }
             .map(_._1)
-      } yield utxos.filter(utxo => !immatureCoinbases.exists(_._1 == utxo))
+      } yield utxoWithTxs.filter(utxo =>
+        !immatureCoinbases.exists(_._1 == utxo._1))
 
-    val selectedUtxosF: Future[Vector[SpendingInfoDb]] =
+    val selectedUtxosF: Future[Vector[(SpendingInfoDb, Transaction)]] =
       for {
         walletUtxos <- utxosF
         utxos = CoinSelector.selectByAlgo(coinSelectionAlgo = coinSelectionAlgo,
-                                          walletUtxos = walletUtxos,
+                                          walletUtxos = walletUtxos.map(_._1),
                                           outputs = destinations,
                                           feeRate = feeRate)
-      } yield utxos
 
-    val addrInfosWithUtxoF: Future[
-      Vector[(SpendingInfoDb, Transaction, AddressInfo)]] =
-      for {
-        selectedUtxos <- selectedUtxosF
-        _ = selectedUtxosF.failed.foreach(err =>
-          logger.error("Error selecting utxos to fund transaction ", err))
-        addrInfoOptF = selectedUtxos.map { utxo =>
-          // .gets should be safe here because of foreign key at the database level
-          for {
-            addrInfo <- getAddressInfo(utxo, networkParameters).map(_.get)
-            prevTx <-
-              transactionDAO
-                .findByOutPoint(utxo.outPoint)
-                .map(_.get.transaction)
-          } yield (utxo, prevTx, addrInfo)
-        }
-        vec <- FutureUtil.collect(addrInfoOptF).map(_.toVector)
-      } yield vec
+      } yield walletUtxos.filter(utxo => utxos.contains(utxo._1))
 
     val resultF = for {
-      addrInfosWithUtxo <- addrInfosWithUtxoF
+      selectedUtxos <- selectedUtxosF
       change <- getNewChangeAddress(fromAccount)
       utxoSpendingInfos = {
-        addrInfosWithUtxo.map {
-          case (utxo, prevTx, addrInfo) =>
-            keyManagerOpt match {
-              case Some(km) =>
-                utxo.toUTXOInfo(keyManager = km, prevTx)
-              case None =>
-                utxo.toUTXOInfo(sign = Sign.dummySign(addrInfo.pubkey), prevTx)
-            }
-
+        selectedUtxos.map {
+          case (utxo, prevTx) =>
+            utxo.toUTXOInfo(keyManager = self.keyManager, prevTx)
         }
       }
       _ <-
-        if (markAsReserved) markUTXOsAsReserved(addrInfosWithUtxo.map(_._1))
+        if (markAsReserved) markUTXOsAsReserved(selectedUtxos.map(_._1))
         else FutureUtil.unit
     } yield {
       logger.info {
@@ -191,7 +160,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         if (markAsReserved) {
           for {
             utxos <- selectedUtxosF
-            _ <- unmarkUTXOsAsReserved(utxos)
+            _ <- unmarkUTXOsAsReserved(utxos.map(_._1))
           } yield error
         } else Future.failed(error)
     }

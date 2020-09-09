@@ -235,7 +235,6 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
             destinations = Vector(destination),
             feeRate = feeRate,
             fromAccount = account,
-            keyManagerOpt = Some(wallet.keyManager),
             fromTagOpt = Some(tag),
             markAsReserved = true
           )
