@@ -181,7 +181,7 @@ class PSBTTest extends BitcoinSAsyncTest {
           creditingTxsInfo.foldLeft(0L)(_ + _.amount.satoshis.toLong)
         val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
         val maxFee = crediting - spending
-        val fee = GenUtil.sample(CurrencyUnitGenerator.feeUnit(maxFee))
+        val fee = GenUtil.sample(FeeUnitGen.feeUnit(maxFee))
         for {
           (psbt, _, _) <-
             PSBTGenerators.psbtAndBuilderFromInputs(finalized = false,

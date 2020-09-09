@@ -3,9 +3,11 @@ package org.bitcoins.wallet
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.builder.RawTxSigner
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
 import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.testkit.Implicits.GeneratorOps
+import org.bitcoins.testkit.core.gen.{CurrencyUnitGenerator, FeeUnitGen}
 import org.bitcoins.testkit.util.TestUtil
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
@@ -26,18 +28,17 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
 
   val destination: TransactionOutput =
     TransactionOutput(Bitcoins(0.5), TestUtil.p2pkhScriptPubKey)
-  val feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte.one
 
   it must "fund a simple raw transaction that requires one utxo" in {
     fundedWallet: WalletWithBitcoind =>
       val wallet = fundedWallet.wallet
-      val fundedTxF = wallet.fundRawTransaction(destinations =
-                                                  Vector(destination),
-                                                feeRate = feeRate,
-                                                fromTagOpt = None,
-                                                markAsReserved = false)
       for {
-        fundedTx <- fundedTxF
+        feeRate <- wallet.getFeeRate
+        fundedTx <- wallet.fundRawTransaction(destinations =
+                                                Vector(destination),
+                                              feeRate = feeRate,
+                                              fromTagOpt = None,
+                                              markAsReserved = false)
       } yield {
         assert(fundedTx.inputs.length == 1,
                s"We should only need one input to fund this tx")
@@ -52,13 +53,13 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val amt = Bitcoins(5.5)
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet
-      val fundedTxF = wallet.fundRawTransaction(destinations =
-                                                  Vector(newDestination),
-                                                feeRate = feeRate,
-                                                fromTagOpt = None,
-                                                markAsReserved = false)
       for {
-        fundedTx <- fundedTxF
+        feeRate <- wallet.getFeeRate
+        fundedTx <- wallet.fundRawTransaction(destinations =
+                                                Vector(newDestination),
+                                              feeRate = feeRate,
+                                              fromTagOpt = None,
+                                              markAsReserved = false)
       } yield {
         assert(fundedTx.inputs.length == 3,
                s"We should need 3 inputs to fund this tx")
@@ -71,14 +72,14 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
   it must "not care about the number of destinations" in {
     fundedWallet: WalletWithBitcoind =>
       val destinations = Vector.fill(5)(destination)
-
       val wallet = fundedWallet.wallet
-      val fundedTxF = wallet.fundRawTransaction(destinations = destinations,
-                                                feeRate = feeRate,
-                                                fromTagOpt = None,
-                                                markAsReserved = false)
+
       for {
-        fundedTx <- fundedTxF
+        feeRate <- wallet.getFeeRate
+        fundedTx <- wallet.fundRawTransaction(destinations = destinations,
+                                              feeRate = feeRate,
+                                              fromTagOpt = None,
+                                              markAsReserved = false)
       } yield {
         assert(fundedTx.inputs.length == 1,
                s"We should only need one input to fund this tx")
@@ -96,11 +97,15 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val tooMuchMoney = Bitcoins(10)
       val tooBigOutput = destination.copy(value = tooMuchMoney)
       val wallet = fundedWallet.wallet
-      val fundedTxF = wallet.fundRawTransaction(destinations =
-                                                  Vector(tooBigOutput),
-                                                feeRate = feeRate,
-                                                fromTagOpt = None,
-                                                markAsReserved = false)
+
+      val fundedTxF = for {
+        feeRate <- wallet.getFeeRate
+        fundedTx <- wallet.fundRawTransaction(destinations =
+                                                Vector(tooBigOutput),
+                                              feeRate = feeRate,
+                                              fromTagOpt = None,
+                                              markAsReserved = false)
+      } yield fundedTx
 
       recoverToSucceededIf[RuntimeException] {
         fundedTxF
@@ -114,13 +119,14 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val tooBigOutput = destination.copy(value = tooMuchMoney)
       val wallet = fundedWallet.wallet
 
-      //6 bitcoin destination + 1 sat/vbyte fee means we should
-      //not have enough money for this
-      val fundedTxF = wallet.fundRawTransaction(destinations =
-                                                  Vector(tooBigOutput),
-                                                feeRate = feeRate,
-                                                fromTagOpt = None,
-                                                markAsReserved = false)
+      val fundedTxF = for {
+        feeRate <- wallet.getFeeRate
+        fundedTx <- wallet.fundRawTransaction(destinations =
+                                                Vector(tooBigOutput),
+                                              feeRate = feeRate,
+                                              fromTagOpt = None,
+                                              markAsReserved = false)
+      } yield fundedTx
 
       recoverToSucceededIf[RuntimeException] {
         fundedTxF
@@ -132,12 +138,12 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       //we want to fund from account 1, not hte default account
       //account 1 has 1 btc in it
       val amt = Bitcoins(0.1)
-
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet
       val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
       val account1DbF = wallet.accountDAO.findByAccount(account1)
       for {
+        feeRate <- wallet.getFeeRate
         account1DbOpt <- account1DbF
         fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
                                               feeRate,
@@ -153,12 +159,12 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
     fundedWallet: WalletWithBitcoind =>
       //account 1 should only have 1 btc in it
       val amt = Bitcoins(1.1)
-
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet
       val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
       val account1DbF = wallet.accountDAO.findByAccount(account1)
       val fundedTxF = for {
+        feeRate <- wallet.getFeeRate
         account1DbOpt <- account1DbF
         fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
                                               feeRate,
@@ -174,8 +180,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
     fundedWallet: WalletWithBitcoind =>
       val wallet = fundedWallet.wallet
       val bitcoind = fundedWallet.bitcoind
-
       val fundedTxF = for {
+        feeRate <- wallet.getFeeRate
         _ <- wallet.createNewAccount(wallet.keyManager.kmParams)
         accounts <- wallet.accountDAO.findAll()
         account2 = accounts.find(_.hdAccount.index == 2).get
@@ -201,13 +207,14 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
   it must "mark utxos as reserved after building a transaction" in {
     fundedWallet: WalletWithBitcoind =>
       val wallet = fundedWallet.wallet
-      val fundedTxF = wallet.fundRawTransaction(destinations =
-                                                  Vector(destination),
-                                                feeRate = feeRate,
-                                                fromTagOpt = None,
-                                                markAsReserved = true)
       for {
-        fundedTx <- fundedTxF
+        feeRate <- wallet.getFeeRate
+        fundedTx <- wallet.fundRawTransaction(destinations =
+                                                Vector(destination),
+                                              feeRate = feeRate,
+                                              fromTagOpt = None,
+                                              markAsReserved = true)
+
         spendingInfos <- wallet.spendingInfoDAO.findOutputsBeingSpent(fundedTx)
         reserved <- wallet.spendingInfoDAO.findByTxoState(TxoState.Reserved)
       } yield {
@@ -221,7 +228,7 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       tag: AddressTag): Future[Assertion] = {
     for {
       account <- wallet.getDefaultAccount()
-
+      feeRate <- wallet.getFeeRate
       taggedAddr <- wallet.getNewAddress(Vector(tag))
       _ <-
         wallet.sendToAddress(taggedAddr, destination.value * 2, Some(feeRate))

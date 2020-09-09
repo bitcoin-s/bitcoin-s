@@ -39,14 +39,16 @@ object OutgoingTransactionDb {
       s"sentAmount ($sentAmount) cannot be greater than the amount the wallet input ($inputAmount)")
 
     val feePaid = inputAmount - totalOutput
-    val feeRate = feePaid.satoshis.toLong / tx.baseSize.toDouble
+
+    // Calculate fee rate in satoshis per byte
+    val feeRate = feePaid.satoshis.toLong / tx.byteSize.toDouble
     OutgoingTransactionDb(
       tx.txIdBE,
       inputAmount,
       sentAmount,
       feePaid,
       expectedFee,
-      SatoshisPerByte.fromLong(feeRate.toLong)
+      SatoshisPerByte.fromLong(Math.round(feeRate))
     )
   }
 }

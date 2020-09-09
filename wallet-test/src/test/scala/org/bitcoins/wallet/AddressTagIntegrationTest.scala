@@ -4,7 +4,6 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.builder.RawTxSigner
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.{InternalAddressTag, StorageLocationTag}
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
@@ -22,8 +21,6 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
     withNewWalletAndBitcoind(test)
 
   behavior of "Address Tag - integration test"
-
-  val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 
   val exampleTag: InternalAddressTag = StorageLocationTag.HotStorage
 
@@ -77,6 +74,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
           .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
 
       account <- wallet.getDefaultAccount()
+      feeRate <- wallet.getFeeRate
       (txBuilder, utxoInfos) <- bitcoind.getNewAddress.flatMap { addr =>
         val output = TransactionOutput(valueToBitcoind, addr.scriptPubKey)
         wallet
@@ -106,9 +104,12 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       assert(tagBalancePostSend > 0.sats)
       assert(tagBalancePostSend < valueFromBitcoind)
 
+      val feePaid =
+        utxoInfos.map(_.output.value).sum - signedTx.outputs.map(_.value).sum
       assert(
         WalletTestUtil.isCloseEnough(tagBalancePostSend,
-                                     valueFromBitcoind - valueToBitcoind))
+                                     valueFromBitcoind - valueToBitcoind,
+                                     delta = feePaid))
     }
   }
 }
