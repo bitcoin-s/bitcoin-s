@@ -20,7 +20,7 @@ sealed abstract class FeeUnit {
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  val scaleFactor: Long = factory.scaleFactor
+  def scaleFactor: Long = factory.scaleFactor
 
   require(scaleFactor > 0,
           s"Scale factor cannot be less than or equal to 0, got $scaleFactor")
@@ -88,7 +88,7 @@ object SatoshisPerByte extends FeeUnitFactory[SatoshisPerByte] {
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  override val scaleFactor: Long = 1
+  override lazy val scaleFactor: Long = 1
 
   /** Takes the given transaction returns a size that will be used for calculating the fee rate.
     * This is generally the denominator in the unit, ie sats/byte
@@ -137,7 +137,7 @@ object SatoshisPerKiloByte extends FeeUnitFactory[SatoshisPerKiloByte] {
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  override val scaleFactor: Long = 1000
+  override lazy val scaleFactor: Long = 1000
 
   /** Takes the given transaction returns a size that will be used for calculating the fee rate.
     * This is generally the denominator in the unit, ie sats/byte
@@ -169,7 +169,7 @@ object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  override val scaleFactor: Long = 1
+  override lazy val scaleFactor: Long = 1
 
   /** Takes the given transaction returns a size that will be used for calculating the fee rate.
     * This is generally the denominator in the unit, ie sats/byte
@@ -204,7 +204,7 @@ object SatoshisPerKW extends FeeUnitFactory[SatoshisPerKW] {
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
     */
-  override val scaleFactor: Long = 1000
+  override lazy val scaleFactor: Long = 1000
 
   /** Takes the given transaction returns a size that will be used for calculating the fee rate.
     * This is generally the denominator in the unit, ie sats/byte
