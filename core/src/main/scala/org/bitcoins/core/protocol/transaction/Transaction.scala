@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.{EmptyScriptWitness, ScriptWitness}
 import org.bitcoins.core.util.BytesUtil
@@ -103,6 +104,8 @@ sealed abstract class Transaction extends NetworkElement {
                            wtx.witness)
     }
   }
+
+  lazy val totalOutput: CurrencyUnit = outputs.map(_.value).sum
 }
 
 object Transaction extends Factory[Transaction] {
