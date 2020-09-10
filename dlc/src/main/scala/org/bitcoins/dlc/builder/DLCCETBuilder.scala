@@ -50,11 +50,13 @@ case class DLCCETBuilder(
 
   private val fundingOutPoint = fundingOutputRef.outPoint
 
+  private val fundingKeys =
+    Vector(offerFundingKey, acceptFundingKey).sortBy(_.hex)
+
   private val fundingInfo = P2WSHV0InputInfo(
     outPoint = fundingOutPoint,
     amount = fundingOutputRef.output.value,
-    scriptWitness = P2WSHWitnessV0(
-      MultiSignatureScriptPubKey(2, Vector(offerFundingKey, acceptFundingKey))),
+    scriptWitness = P2WSHWitnessV0(MultiSignatureScriptPubKey(2, fundingKeys)),
     conditionalPath = ConditionalPath.NoCondition
   )
 
