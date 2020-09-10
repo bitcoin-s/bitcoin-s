@@ -28,11 +28,13 @@ case class DLCRefundTxBuilder(
     feeRate: FeeUnit) {
   private val OutputReference(fundingOutPoint, fundingOutput) = fundingOutputRef
 
+  private val fundingKeys =
+    Vector(offerFundingKey, acceptFundingKey).sortBy(_.hex)
+
   private val fundingInfo = P2WSHV0InputInfo(
     outPoint = fundingOutPoint,
     amount = fundingOutput.value,
-    scriptWitness = P2WSHWitnessV0(
-      MultiSignatureScriptPubKey(2, Vector(offerFundingKey, acceptFundingKey))),
+    scriptWitness = P2WSHWitnessV0(MultiSignatureScriptPubKey(2, fundingKeys)),
     conditionalPath = ConditionalPath.NoCondition
   )
 

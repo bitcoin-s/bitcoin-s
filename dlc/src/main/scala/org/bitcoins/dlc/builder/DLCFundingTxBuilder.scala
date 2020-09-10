@@ -49,9 +49,12 @@ case class DLCFundingTxBuilder(
     acceptTotalFunding >= acceptInput,
     "Accept funding inputs must add up to at least accept's total collateral")
 
+  private val fundingKeys =
+    Vector(offerFundingKey, acceptFundingKey).sortBy(_.hex)
+
   /** The 2-of-2 MultiSignatureScriptPubKey to be wrapped in P2WSH and used as the funding output */
   val fundingMultiSig: MultiSignatureScriptPubKey =
-    MultiSignatureScriptPubKey(2, Vector(offerFundingKey, acceptFundingKey))
+    MultiSignatureScriptPubKey(2, fundingKeys)
 
   /** The funding output's P2WSH(MultiSig) ScriptPubKey */
   val fundingSPK: P2WSHWitnessSPKV0 = P2WSHWitnessSPKV0(fundingMultiSig)
