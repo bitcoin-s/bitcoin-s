@@ -91,8 +91,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
                             acceptOutcomes)
   }
 
-  /** Constructs the unsigned funding transaction */
-  lazy val buildFundingTx: Future[Transaction] = {
+  lazy val fundingTxBuilder: DLCFundingTxBuilder = {
     DLCFundingTxBuilder(
       offerFundingKey = offerFundingKey,
       acceptFundingKey = acceptFundingKey,
@@ -103,7 +102,12 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
       acceptFundingInputs = acceptFundingInputs,
       offerChangeSPK = offerChangeAddress.scriptPubKey,
       acceptChangeSPK = acceptChangeAddress.scriptPubKey
-    ).buildFundingTx()
+    )
+  }
+
+  /** Constructs the unsigned funding transaction */
+  lazy val buildFundingTx: Future[Transaction] = {
+    fundingTxBuilder.buildFundingTx()
   }
 
   private lazy val cetBuilderF = {
