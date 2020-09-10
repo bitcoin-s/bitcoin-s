@@ -196,7 +196,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
       P2WSHV0InputInfo(
         TransactionOutPoint(fundingTx.txId, UInt32.zero),
         fundingTx.outputs.head.value,
-        P2WSHWitnessV0(MultiSignatureScriptPubKey(2, signers.map(_.publicKey))),
+        P2WSHWitnessV0(
+          MultiSignatureScriptPubKey(2,
+                                     signers.map(_.publicKey).sortBy(_.hex))),
         ConditionalPath.NoCondition
       ),
       fundingTx,

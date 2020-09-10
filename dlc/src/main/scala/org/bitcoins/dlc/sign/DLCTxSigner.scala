@@ -5,7 +5,6 @@ import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.TransactionSignatureSerializer
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   P2WPKHWitnessSPKV0,
@@ -17,6 +16,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TxUtil
 }
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
@@ -47,10 +47,8 @@ case class DLCTxSigner(
     offer.pubKeys.fundingKey
   }
 
-  private val fundingSPK = MultiSignatureScriptPubKey(
-    2,
-    Vector(offer.pubKeys.fundingKey, accept.pubKeys.fundingKey)
-  )
+  private val fundingSPK: MultiSignatureScriptPubKey =
+    builder.fundingTxBuilder.fundingMultiSig
 
   if (isInitiator) {
     require(fundingKey.publicKey == offer.pubKeys.fundingKey &&
