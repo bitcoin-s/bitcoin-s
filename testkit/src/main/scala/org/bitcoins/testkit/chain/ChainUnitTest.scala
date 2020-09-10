@@ -614,8 +614,6 @@ object ChainUnitTest extends ChainVerificationLogger {
       for {
         chainHandler <- chainHandlerF
         genHeader <- chainHandler.blockHeaderDAO.create(genesisHeaderDb)
-        //_ <- chainHandler.filterHeaderDAO.create(genesisFilterHeaderDb)
-        //_ <- chainHandler.filterDAO.create(genesisFilterDb)
       } yield genHeader
     }
 
