@@ -30,7 +30,7 @@ import scala.util.Properties
 
 object Main extends App with BitcoinSLogger {
 
-  private def runMain(): Unit = {
+  def runMain(args: Vector[String]): Future[Unit] = {
     val argsWithIndex = args.zipWithIndex
 
     val dataDirIndexOpt = {
@@ -188,16 +188,21 @@ object Main extends App with BitcoinSLogger {
             logger.info(s"Stopped ${nodeConf.nodeType.shortName} node"))
         system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
       }
-
-      binding
+      ()
     }
     startFut.failed.foreach { err =>
       logger.error(s"Error on server startup!", err)
+      err.printStackTrace()
+      throw err
     }
+    startFut
   }
 
   //start everything!
-  runMain()
+  val run = runMain(args.toVector)
+
+  run.failed.foreach(_ => sys.exit(1))(
+    scala.concurrent.ExecutionContext.Implicits.global)
 
   private def createCallbacks(wallet: Wallet)(implicit
       nodeConf: NodeAppConfig,
