@@ -152,6 +152,10 @@ cache:
     - $HOME/build/bitcoin-s/bitcoin-s/crypto-test/target
     - $HOME/build/bitcoin-s/bitcoin-s/db-commons/target
     - $HOME/build/bitcoin-s/bitcoin-s/db-commons-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/dlc/target
+    - $HOME/build/bitcoin-s/bitcoin-s/dlc-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/dlc-wallet-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/dlc-wallet/target
     - $HOME/build/bitcoin-s/bitcoin-s/eclair-rpc/target
     - $HOME/build/bitcoin-s/bitcoin-s/eclair-rpc-test/target
     - $HOME/build/bitcoin-s/bitcoin-s/fee-provider/target
