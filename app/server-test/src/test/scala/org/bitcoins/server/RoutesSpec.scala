@@ -5,9 +5,18 @@ import java.time.{ZoneId, ZonedDateTime}
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.Core
+import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
+import org.bitcoins.core.api.chain.db.ChainApi
+import org.bitcoins.core.api.wallet.db.{
+  AccountDb,
+  AddressDb,
+  AddressTagDb,
+  LegacyAddressDb,
+  SegwitV0SpendingInfo,
+  SpendingInfoDb
+}
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd._
@@ -23,7 +32,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
-import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPublicKey,
@@ -31,7 +40,6 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockWalletApi
-import org.bitcoins.wallet.models._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 import scodec.bits.ByteVector
@@ -45,6 +53,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   // the genesis address
   val testAddressStr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
   val testAddress = BitcoinAddress.fromString(testAddressStr)
+  val testLabel: AddressLabelTag = AddressLabelTag("test")
 
   val mockWalletApi = mock[MockWalletApi]
 
@@ -76,9 +85,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         Arr(Arr(Str(psbt1.base64), Str(psbt2.base64)))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == s"""{"result":"${expected.base64}","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${expected.base64}","error":null}""")
       }
 
       val joinRoute =
@@ -87,9 +97,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         Arr(Arr(Str(psbt1.base64), Str(psbt2.base64)))))
 
       Get() ~> joinRoute ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == s"""{"result":"${expected.base64}","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${expected.base64}","error":null}""")
       }
     }
 
@@ -104,9 +115,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("finalizepsbt", Arr(Str(psbt.hex))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == s"""{"result":"${expected.base64}","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${expected.base64}","error":null}""")
 
       }
     }
@@ -122,9 +134,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("extractfrompsbt", Arr(Str(psbt.hex))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == s"""{"result":"${expected.hex}","error":null}"""
-
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${expected.hex}","error":null}""")
       }
     }
 
@@ -139,9 +152,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("converttopsbt", Arr(Str(tx.hex))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == s"""{"result":"${expected.base64}","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${expected.base64}","error":null}""")
 
       }
     }
@@ -155,8 +169,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         chainRoutes.handleCommand(ServerCommand("getblockcount", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":1234567890,"error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":1234567890,"error":null}""")
       }
     }
 
@@ -169,8 +183,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         chainRoutes.handleCommand(ServerCommand("getfiltercount", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":1234567890,"error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":1234567890,"error":null}""")
       }
     }
 
@@ -183,8 +197,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         chainRoutes.handleCommand(ServerCommand("getfilterheadercount", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":1234567890,"error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":1234567890,"error":null}""")
       }
     }
 
@@ -197,8 +211,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         chainRoutes.handleCommand(ServerCommand("getbestblockhash", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
       }
     }
 
@@ -213,8 +228,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getbalance", Arr(Bool(false))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"50.00000000 BTC","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"50.00000000 BTC","error":null}""")
       }
     }
 
@@ -228,8 +244,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getbalance", Arr(Bool(true))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"5000000000 sats","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"5000000000 sats","error":null}""")
       }
     }
 
@@ -243,8 +260,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getconfirmedbalance", Arr(Bool(false))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"50.00000000 BTC","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"50.00000000 BTC","error":null}""")
       }
     }
 
@@ -258,8 +276,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getconfirmedbalance", Arr(Bool(true))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"5000000000 sats","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"5000000000 sats","error":null}""")
       }
     }
 
@@ -273,8 +292,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getunconfirmedbalance", Arr(Bool(false))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"50.00000000 BTC","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"50.00000000 BTC","error":null}""")
       }
     }
 
@@ -288,8 +308,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("getunconfirmedbalance", Arr(Bool(true))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"5000000000 sats","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"5000000000 sats","error":null}""")
       }
     }
 
@@ -302,8 +323,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("isempty", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":true,"error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":true,"error":null}""")
       }
     }
 
@@ -327,8 +348,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getutxos", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000ffffffff -1 sats\n","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000ffffffff -1 sats\n","error":null}""")
       }
     }
 
@@ -349,8 +371,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}""")
       }
     }
 
@@ -371,8 +394,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getspentaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}""")
       }
     }
 
@@ -395,9 +419,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getfundedaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] ==
-          s"""{"result":["$testAddressStr ${Satoshis.zero}"],"error":null}""".stripMargin
+        assert(contentType == `application/json`)
+        assert(responseAs[String] ==
+          s"""{"result":["$testAddressStr ${Satoshis.zero}"],"error":null}""".stripMargin)
       }
     }
 
@@ -418,8 +442,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getunusedaddresses", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":["""" + testAddressStr + """"],"error":null}""")
       }
     }
 
@@ -427,7 +452,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       val xpub = ExtPublicKey
         .fromString(
           "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8")
-        .get
 
       val accountDb =
         AccountDb(xpub = xpub,
@@ -442,24 +466,169 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         walletRoutes.handleCommand(ServerCommand("getaccounts", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":["""" + xpub.toString + """"],"error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":["""" + xpub.toString + """"],"error":null}""")
       }
     }
 
     "return a new address" in {
-      (mockWalletApi.getNewAddress: () => Future[BitcoinAddress])
-        .expects()
+      (mockWalletApi
+        .getNewAddress(_: Vector[AddressTag]))
+        .expects(Vector.empty)
         .returning(Future.successful(testAddress))
 
       val route =
-        walletRoutes.handleCommand(ServerCommand("getnewaddress", Arr()))
+        walletRoutes.handleCommand(
+          ServerCommand("getnewaddress", Arr(ujson.Null)))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":"""" + testAddressStr + """","error":null}"""
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + testAddressStr + """","error":null}""")
+      }
+    }
+
+    "get address info" in {
+
+      val key = ECPublicKey.freshPublicKey
+      val hdPath = HDPath.fromString("m/84'/1'/0'/0/0")
+
+      (mockWalletApi
+        .getAddressInfo(_: BitcoinAddress))
+        .expects(testAddress)
+        .returning(Future.successful(Some(AddressInfo(key, RegTest, hdPath))))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getaddressinfo", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + key.hex + " " + hdPath.toString + """","error":null}""")
+      }
+    }
+
+    "return a new address with a label" in {
+      (mockWalletApi
+        .getNewAddress(_: Vector[AddressTag]))
+        .expects(Vector(testLabel))
+        .returning(Future.successful(testAddress))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getnewaddress", Arr(Str(testLabel.name))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + testAddressStr + """","error":null}""")
+      }
+    }
+
+    "label an address" in {
+      (mockWalletApi
+        .tagAddress(_: BitcoinAddress, _: AddressTag))
+        .expects(testAddress, testLabel)
+        .returning(Future.successful(AddressTagDb(testAddress, testLabel)))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("labeladdress",
+                        Arr(Str(testAddressStr), Str(testLabel.name))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + s"Added label \'${testLabel.name}\' to $testAddressStr" + """","error":null}""")
+      }
+    }
+
+    "get address tags" in {
+      (mockWalletApi
+        .getAddressTags(_: BitcoinAddress))
+        .expects(testAddress)
+        .returning(
+          Future.successful(Vector(AddressTagDb(testAddress, testLabel))))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getaddresstags", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + testLabel.name + """","error":null}""")
+      }
+    }
+
+    "get address labels" in {
+      (mockWalletApi
+        .getAddressTags(_: BitcoinAddress, _: AddressTagType))
+        .expects(testAddress, AddressLabelTagType)
+        .returning(
+          Future.successful(Vector(AddressTagDb(testAddress, testLabel))))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getaddresslabels", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == """{"result":"""" + testLabel.name + """","error":null}""")
+      }
+    }
+
+    "drop address labels with no labels" in {
+      (mockWalletApi
+        .dropAddressTagType(_: BitcoinAddress, _: AddressTagType))
+        .expects(testAddress, AddressLabelTagType)
+        .returning(Future.successful(0))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("dropaddresslabels", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"""" + "Address had no labels" + """","error":null}""")
+      }
+    }
+
+    "drop address labels with 1 label" in {
+      (mockWalletApi
+        .dropAddressTagType(_: BitcoinAddress, _: AddressTagType))
+        .expects(testAddress, AddressLabelTagType)
+        .returning(Future.successful(1))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("dropaddresslabels", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"""" + "1 label dropped" + """","error":null}""")
+      }
+    }
+
+    "drop address labels with 2 labels" in {
+      (mockWalletApi
+        .dropAddressTagType(_: BitcoinAddress, _: AddressTagType))
+        .expects(testAddress, AddressLabelTagType)
+        .returning(Future.successful(2))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("dropaddresslabels", Arr(Str(testAddressStr))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"""" + "2 labels dropped" + """","error":null}""")
       }
     }
 
@@ -478,8 +647,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("sendrawtransaction", Arr(Str(tx.hex))))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == s"""{"result":"${tx.txIdBE.hex}","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == s"""{"result":"${tx.txIdBE.hex}","error":null}""")
       }
     }
 
@@ -499,17 +670,18 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val route = walletRoutes.handleCommand(
         ServerCommand("sendtoaddress",
-                      Arr(Str(testAddressStr), Num(100), Num(4))))
+                      Arr(Str(testAddressStr), Num(100), Num(4), Bool(true))))
 
       Post() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
       }
 
       // negative cases
 
       val route1 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr(Null, Null, Null)))
+        ServerCommand("sendtoaddress", Arr(Null, Null, Null, Bool(false))))
 
       Post() ~> route1 ~> check {
         rejection == ValidationRejection(
@@ -518,7 +690,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
 
       val route2 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr("Null", Null, Null)))
+        ServerCommand("sendtoaddress", Arr("Null", Null, Null, Bool(false))))
 
       Post() ~> route2 ~> check {
         rejection == ValidationRejection(
@@ -527,7 +699,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
 
       val route3 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Null, Null)))
+        ServerCommand("sendtoaddress",
+                      Arr(Str(testAddressStr), Null, Null, Bool(false))))
 
       Post() ~> route3 ~> check {
         rejection == ValidationRejection(
@@ -537,7 +710,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val route4 = walletRoutes.handleCommand(
         ServerCommand("sendtoaddress",
-                      Arr(Str(testAddressStr), Str("abc"), Null)))
+                      Arr(Str(testAddressStr), Str("abc"), Null, Bool(false))))
 
       Post() ~> route4 ~> check {
         rejection == ValidationRejection(
@@ -572,8 +745,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Arr(), Str(testAddressStr), Num(100), Num(4))))
 
       Post() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
       }
 
       // negative cases
@@ -655,8 +829,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                           Str("AccumulateSmallestViable"))))
 
       Post() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
       }
 
       // negative cases
@@ -729,8 +904,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         ServerCommand("opreturncommit", Arr(message, Bool(false), Num(4))))
 
       Post() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
       }
     }
 
@@ -739,9 +915,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         nodeRoutes.handleCommand(ServerCommand("getpeers", Arr()))
 
       Get() ~> route ~> check {
-        contentType == `application/json`
-        responseAs[
-          String] == """{"result":"TODO implement getpeers","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String] == """{"result":"TODO implement getpeers","error":null}""")
       }
     }
 
@@ -768,8 +945,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("rescan", Arr(Arr(), Null, Null, true, true)))
 
       Post() ~> route1 ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"scheduled","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
@@ -796,8 +974,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             Arr(Arr(), Str("2018-10-27T12:34:56Z"), Null, true, true)))
 
       Post() ~> route2 ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"scheduled","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
@@ -822,8 +1001,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             Arr(Null, Null, Str(DoubleSha256DigestBE.empty.hex), true, true)))
 
       Post() ~> route3 ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"scheduled","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
@@ -847,8 +1027,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         Arr(Arr(), Str("12345"), Num(67890), true, true)))
 
       Post() ~> route4 ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"scheduled","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
 
       // negative cases
@@ -902,8 +1083,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         Arr(Arr(55), Arr(), Arr(), Bool(true), Bool(true))))
 
       Post() ~> route8 ~> check {
-        contentType == `application/json`
-        responseAs[String] == """{"result":"scheduled","error":null}"""
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
     }
 

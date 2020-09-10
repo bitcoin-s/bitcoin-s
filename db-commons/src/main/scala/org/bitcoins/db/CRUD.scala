@@ -90,12 +90,10 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     def oldUpdateAll(ts: Vector[T]): Future[Vector[T]] = {
       val query = findAll(ts)
       val actions = ts.map(query.update)
-      val affectedRows: Future[Vector[Int]] =
-        safeDatabase.runVec(DBIO.sequence(actions).transactionally)
-      val updatedTs = findAll(ts)
-      affectedRows.flatMap { _ =>
-        safeDatabase.runVec(updatedTs.result)
-      }
+      for {
+        _ <- safeDatabase.runVec(DBIO.sequence(actions).transactionally)
+        result <- safeDatabase.runVec(findAll(ts).result)
+      } yield result
     }
 
     FutureUtil.foldLeftAsync(Vector.empty[T], ts) { (accum, t) =>
@@ -128,21 +126,29 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     * @return t - the record that has been inserted / updated
     */
   def upsert(t: T): Future[T] = {
-    upsertAll(Vector(t)).map { ts =>
+    upsertAll(Vector(t)).flatMap { ts =>
       ts.headOption match {
-        case Some(updated) => updated
-        case None          => throw UpsertFailedException("Upsert failed for: " + t)
+        case Some(updated) => Future.successful(updated)
+        case None =>
+          Future.failed(UpsertFailedException("Upsert failed for: " + t))
       }
     }
   }
 
   /** Upserts all of the given ts in the database, then returns the upserted values */
   def upsertAll(ts: Vector[T]): Future[Vector[T]] = {
-    val actions = ts.map(t => table.insertOrUpdate(t))
-    val result: Future[Vector[Int]] =
-      safeDatabase.run(DBIO.sequence(actions).transactionally)
-    val findQueryFuture = result.map(_ => findAll(ts).result)
-    findQueryFuture.flatMap(safeDatabase.runVec(_))
+    def oldUpsertAll(ts: Vector[T]): Future[Vector[T]] = {
+      val actions = ts.map(t => table.insertOrUpdate(t))
+      for {
+        _ <- safeDatabase.run(DBIO.sequence(actions).transactionally)
+        result <- safeDatabase.runVec(findAll(ts).result)
+      } yield result
+
+    }
+
+    FutureUtil.foldLeftAsync(Vector.empty[T], ts) { (accum, t) =>
+      oldUpsertAll(Vector(t)).map(accum ++ _)
+    }
   }
 
   /**

@@ -1,11 +1,11 @@
 package org.bitcoins.rpc.v18
 
-import org.bitcoins.chain.models.BlockHeaderDbHelper
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   AddressInfoResultPostV18,
   AddressInfoResultPreV18
 }
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
+import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient

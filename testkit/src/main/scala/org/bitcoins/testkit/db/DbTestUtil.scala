@@ -4,7 +4,6 @@ import java.nio.file.{Files, Path}
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
 import scodec.bits.ByteVector
 import slick.lifted.ProvenShape
@@ -59,7 +58,7 @@ case class TestAppConfig(
 
   override def appConfig: TestAppConfig = this
 
-  override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
+  override def start(): Future[Unit] = {
     logger.debug(s"Initializing test setup")
 
     if (Files.notExists(datadir)) {
@@ -68,9 +67,6 @@ case class TestAppConfig(
 
     createTable(TestDAO()(ec, this).table)
   }
-
-  /** Starts the associated application */
-  override def start(): Future[Unit] = FutureUtil.unit
 }
 
 case class TestDb(pk: String, data: ByteVector)

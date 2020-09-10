@@ -1,20 +1,21 @@
 package org.bitcoins.node
 
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BitcoinSUnitTest}
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.config.TestNet3
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.config.MainNet
 import ch.qos.logback.classic.Level
 import java.nio.file.Files
 
+import scala.concurrent.Await
+
 class NodeAppConfigTest extends BitcoinSAsyncTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
 
   val config: NodeAppConfig =
-    NodeAppConfig(directory = tempDir, useLogbackConf = false)
+    NodeAppConfig(directory = tempDir)
 
   it must "be overridable" in {
     assert(config.network == RegTest)
@@ -26,6 +27,12 @@ class NodeAppConfigTest extends BitcoinSAsyncTest {
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val mainnet: NodeAppConfig = withOther.withOverrides(mainnetConf)
     assert(mainnet.network == MainNet)
+    for {
+      _ <- withOther.stop()
+      _ <- mainnet.stop()
+    } yield {
+      succeed
+    }
   }
 
   it must "be overridable with multiple levels" in {
@@ -53,11 +60,16 @@ class NodeAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig = NodeAppConfig(directory = tempDir, useLogbackConf = false)
+    val appConfig = NodeAppConfig(directory = tempDir)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)
     assert(appConfig.logLevel == Level.OFF)
     assert(appConfig.p2pLogLevel == Level.WARN)
+  }
+
+  override def afterAll(): Unit = {
+    Await.result(config.stop(), akkaTimeout.duration)
+    super.afterAll()
   }
 }

@@ -1,17 +1,16 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.wallet.Wallet
-import scala.concurrent.Future
-import org.bitcoins.wallet.models.AccountDb
-import org.bitcoins.core.hd.HDCoinType
-import org.bitcoins.core.hd.HDCoin
-import org.bitcoins.core.protocol.blockchain.TestNetChainParams
-import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
-import org.bitcoins.core.protocol.blockchain.MainNetChainParams
-import org.bitcoins.core.hd.HDPurpose
+import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.hd.AddressType._
-import org.bitcoins.core.hd.AddressType
-import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.core.hd._
+import org.bitcoins.core.protocol.blockchain.{
+  MainNetChainParams,
+  RegTestNetChainParams,
+  TestNetChainParams
+}
+import org.bitcoins.wallet.Wallet
+
+import scala.concurrent.Future
 
 /**
   * Provides functionality related enumerating accounts. Account
@@ -30,7 +29,7 @@ private[wallet] trait AccountHandling { self: Wallet =>
           s"purpose field and ${DEFAULT_HD_COIN.coinType.toInt} coin field"))
 
   /** @inheritdoc */
-  override protected[wallet] def getDefaultAccount(): Future[AccountDb] = {
+  override def getDefaultAccount(): Future[AccountDb] = {
     for {
       account <- accountDAO.read((DEFAULT_HD_COIN, 0))
     } yield {
@@ -46,7 +45,7 @@ private[wallet] trait AccountHandling { self: Wallet =>
   }
 
   /** @inheritdoc */
-  override protected[wallet] def getDefaultAccountForType(
+  override def getDefaultAccountForType(
       addressType: AddressType): Future[AccountDb] = {
     val hdCoin = addressType match {
       case Legacy       => HDCoin(HDPurposes.Legacy, DEFAULT_HD_COIN_TYPE)

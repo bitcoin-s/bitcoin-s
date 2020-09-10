@@ -13,15 +13,11 @@ This wallet is currently only released as a library, and not as a binary.
 This is because it (nor the documentation) is not deemed production
 ready. Use at your own risk, and without too much money depending on it.
 
-### Disclaimer 
-The wallet api will changing significantly in the next release of bitcoin-s. EXPECT API BREAKING CHANGES and
-surprising behavior from the current wallet..
-
 ### How is the bitcoin-s wallet implemented
 
 The bitcoin-s wallet is a scalable way for individuals up to large bitcoin exchanges to safely and securely store their bitcoin in a scalable way.
 
-All key interactions are delegated to the [key-manager](key-manager.md) which is a minimal dependecy library to store and use key material.
+All key interactions are delegated to the [key-manager](../key-manager/key-manager.md) which is a minimal dependecy library to store and use key material.
 
 By default, we store the encrypted root key in `$HOME/.bitcoin-s/encrypted-bitcoin-s-seed.json`. This is the seed that is used for each of the wallets on each bitcoin network.
 
@@ -49,11 +45,13 @@ on regtest.
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.core.api.chain.db.ChainApi
 import org.bitcoins.chain.models._
 
 import org.bitcoins.core.api._
-import ChainQueryApi._
+import chain._
+import chain.ChainQueryApi.FilterResponse
+import node._
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.transaction._
@@ -64,7 +62,7 @@ import org.bitcoins.keymanager.bip39._
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.api.WalletApi
+import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.wallet.Wallet
 
 import com.typesafe.config.ConfigFactory
@@ -89,18 +87,18 @@ val config = ConfigFactory.parseString {
 val datadir = Files.createTempDirectory("bitcoin-s-wallet")
 
 
-implicit val walletConfig = WalletAppConfig(datadir, false, config)
+implicit val walletConfig = WalletAppConfig(datadir, config)
 
 // we also need to store chain state for syncing purposes
-implicit val chainConfig = ChainAppConfig(datadir, false, config)
+implicit val chainConfig = ChainAppConfig(datadir, config)
 
 // when this future completes, we have
 // created the necessary directories and
 // databases for managing both chain state
 // and wallet state
 val configF: Future[Unit] = for {
-    _ <- walletConfig.initialize()
-    _ <- chainConfig.initialize()
+    _ <- walletConfig.start()
+    _ <- chainConfig.start()
 } yield ()
 
 val bitcoindInstance = BitcoindInstance.fromDatadir()

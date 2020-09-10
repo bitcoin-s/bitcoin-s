@@ -5,20 +5,23 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.ChainVerificationLogger
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
+import org.bitcoins.testkit.node.CachedChainAppConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.util.ScalaTestUtil
 import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
 import org.scalatest._
@@ -31,7 +34,8 @@ import scala.concurrent.{ExecutionContext, Future}
 trait ChainUnitTest
     extends BitcoinSFixture
     with ChainFixtureHelper
-    with ChainVerificationLogger {
+    with ChainVerificationLogger
+    with CachedChainAppConfig {
 
   implicit lazy val appConfig: ChainAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
@@ -49,6 +53,11 @@ trait ChainUnitTest
     AppConfig.throwIfDefaultDatadir(appConfig)
   }
 
+  override def afterAll(): Unit = {
+    super[CachedChainAppConfig].afterAll()
+    super[BitcoinSFixture].afterAll()
+  }
+
   /**
     * All untagged tests will be given this tag. Override this if you are using
     * ChainFixture and the plurality of tests use some fixture other than Empty.
@@ -61,19 +70,8 @@ trait ChainUnitTest
 
     val fixtureTag: ChainFixtureTag = ChainFixtureTag.from(stringTag)
 
-    val fixtureF: Future[ChainFixture] = createFixture(fixtureTag)
-
-    val outcomeF = fixtureF.flatMap(fixture =>
-      test(fixture.asInstanceOf[FixtureParam]).toFuture)
-
-    val fixtureTakeDownF = outcomeF.flatMap { outcome =>
-      val destroyedF =
-        fixtureF.flatMap(fixture => destroyFixture(fixture))
-
-      destroyedF.map(_ => outcome)
-    }
-
-    new FutureOutcome(fixtureTakeDownF)
+    makeDependentFixture(build = () => createFixture(fixtureTag),
+                         destroy = destroyFixture)(test)
   }
 
   /**
@@ -287,6 +285,90 @@ trait ChainUnitTest
     makeDependentFixture(builder, ChainUnitTest.destroyBitcoindV19ChainApi)(
       test)
   }
+
+  final def processHeaders(
+      processorF: Future[ChainApi],
+      headers: Vector[BlockHeader],
+      height: Int): Future[Assertion] = {
+
+    def processedHeadersF =
+      for {
+        chainApi <- processorF
+        chainApiWithHeaders <-
+          FutureUtil.foldLeftAsync(chainApi, headers.grouped(2000).toVector)(
+            (chainApi, headers) => chainApi.processHeaders(headers))
+      } yield {
+        FutureUtil.foldLeftAsync((Option.empty[BlockHeaderDb],
+                                  height,
+                                  Vector.empty[Future[Assertion]]),
+                                 headers) {
+          case ((prevHeaderDbOpt, height, assertions), header) =>
+            for {
+              headerOpt <- chainApiWithHeaders.getHeader(header.hashBE)
+            } yield {
+              val chainWork = prevHeaderDbOpt match {
+                case None => Pow.getBlockProof(header)
+                case Some(prevHeader) =>
+                  prevHeader.chainWork + Pow.getBlockProof(header)
+              }
+
+              val expectedBlockHeaderDb =
+                BlockHeaderDbHelper.fromBlockHeader(height, chainWork, header)
+
+              val newHeight = height + 1
+
+              val newAssertions = assertions :+ Future(
+                assert(headerOpt.contains(expectedBlockHeaderDb)))
+
+              (Some(expectedBlockHeaderDb), newHeight, newAssertions)
+            }
+        }
+      }
+
+    for {
+      processedHeaders <- processedHeadersF
+      (_, _, vecFutAssert) <- processedHeaders
+      assertion <- ScalaTestUtil.toAssertF(vecFutAssert)
+    } yield {
+      assertion
+    }
+
+  }
+
+  /** Builds two competing headers that are built from the same parent */
+  private def buildCompetingHeaders(
+      parent: BlockHeaderDb): (BlockHeader, BlockHeader) = {
+    val newHeaderB =
+      BlockHeaderHelper.buildNextHeader(parent)
+
+    val newHeaderC =
+      BlockHeaderHelper.buildNextHeader(parent)
+
+    (newHeaderB.blockHeader, newHeaderC.blockHeader)
+  }
+
+  case class ReorgFixture(
+      chainApi: ChainApi,
+      headerDb1: BlockHeaderDb,
+      headerDb2: BlockHeaderDb,
+      oldBestBlockHeader: BlockHeaderDb) {
+    lazy val header1: BlockHeader = headerDb1.blockHeader
+    lazy val header2: BlockHeader = headerDb2.blockHeader
+  }
+
+  /** Builds two competing headers off of the [[ChainHandler.getBestBlockHash best chain tip]] */
+  def buildChainHandlerCompetingHeaders(
+      chainHandler: ChainHandler): Future[ReorgFixture] = {
+    for {
+      oldBestTip <- chainHandler.getBestBlockHeader()
+      (newHeaderB, newHeaderC) = buildCompetingHeaders(oldBestTip)
+      newChainApi <- chainHandler.processHeaders(Vector(newHeaderB, newHeaderC))
+      newHeaderDbB <- newChainApi.getHeader(newHeaderB.hashBE)
+      newHeaderDbC <- newChainApi.getHeader(newHeaderC.hashBE)
+    } yield {
+      ReorgFixture(newChainApi, newHeaderDbB.get, newHeaderDbC.get, oldBestTip)
+    }
+  }
 }
 
 object ChainUnitTest extends ChainVerificationLogger {
@@ -357,8 +439,6 @@ object ChainUnitTest extends ChainVerificationLogger {
     // The height of the first block in the json file
     val OFFSET: Int = FIRST_BLOCK_HEIGHT
 
-    val tableSetupF = ChainUnitTest.setupHeaderTable()
-
     val source =
       scala.io.Source.fromURL(getClass.getResource("/block_headers.json"))
     val arrStr = source.getLines.next
@@ -410,21 +490,20 @@ object ChainUnitTest extends ChainVerificationLogger {
                                                 dbHeaders = dbHeaders,
                                                 batchesSoFar = Vector.empty)
 
-        val chainHandlerF = ChainUnitTest.makeChainHandler()
-
-        val insertedF = tableSetupF.flatMap { _ =>
-          batchedDbHeaders.foldLeft(
+        for {
+          _ <- ChainUnitTest.setupAllTables()
+          chainHandler <- ChainUnitTest.makeChainHandler()
+          _ <- batchedDbHeaders.foldLeft(
             Future.successful[Vector[BlockHeaderDb]](Vector.empty)) {
             case (fut, batch) =>
               for {
                 _ <- fut
-                chainHandler <- chainHandlerF
                 headers <- chainHandler.blockHeaderDAO.createAll(batch)
               } yield headers
           }
+        } yield {
+          chainHandler.blockHeaderDAO
         }
-
-        insertedF.flatMap(_ => chainHandlerF.map(_.blockHeaderDAO))
     }
   }
 
@@ -479,12 +558,6 @@ object ChainUnitTest extends ChainVerificationLogger {
   def destroyBitcoind(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem): Future[Unit] = {
     BitcoindRpcTestUtil.stopServer(bitcoind)
-  }
-
-  /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
-  private def setupHeaderTable()(implicit
-      appConfig: ChainAppConfig): Future[Unit] = {
-    appConfig.createHeaderTable(createIfNotExists = true)
   }
 
   def setupAllTables()(implicit

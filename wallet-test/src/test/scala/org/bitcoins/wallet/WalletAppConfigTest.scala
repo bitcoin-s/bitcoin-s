@@ -1,16 +1,13 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest}
-import org.bitcoins.core.config.TestNet3
-import com.typesafe.config.ConfigFactory
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.wallet.config.WalletAppConfig
-
-import org.bitcoins.core.hd.HDPurposes
 import java.nio.file.Files
 
 import ch.qos.logback.classic.Level
+import com.typesafe.config.ConfigFactory
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.util.Properties
 
@@ -19,7 +16,7 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
 
   val config: WalletAppConfig =
-    WalletAppConfig(directory = tempDir, useLogbackConf = false)
+    WalletAppConfig(directory = tempDir)
 
   it must "resolve DB connections correctly " in {
     assert(config.dbPath.startsWith(Properties.tmpDir))
@@ -44,13 +41,12 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
                                                  |}
                                                  |""".stripMargin)
 
-    val throughConstuctor =
-      WalletAppConfig(tempDir, useLogbackConf = false, overrider)
+    val throughConstructor = WalletAppConfig(tempDir, overrider)
     val throughWithOverrides = config.withOverrides(overrider)
     assert(throughWithOverrides.network == MainNet)
-    assert(throughWithOverrides.network == throughConstuctor.network)
+    assert(throughWithOverrides.network == throughConstructor.network)
 
-    assert(throughWithOverrides.datadir == throughConstuctor.datadir)
+    assert(throughWithOverrides.datadir == throughConstructor.datadir)
 
   }
 
@@ -96,7 +92,7 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig = WalletAppConfig(directory = tempDir, useLogbackConf = false)
+    val appConfig = WalletAppConfig(directory = tempDir)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)

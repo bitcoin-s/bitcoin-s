@@ -7,7 +7,7 @@ The `chain` module has the ability to store [BIP157](https://github.com/bitcoin/
 for doing wallet rescans. The idea is you can generate a list of script pubkeys you are interested in and see if
 the block filter matches the scriptPubKey.
 
-As we demonstrated in [chain.md](chain.md) with block headers, you can sync block filters from an external data source
+As we demonstrated in [the chain docs](chain.md) with block headers, you can sync block filters from an external data source
 as well. We are going to use bitcoind as an example of an external data source to sync filters against. It is important
 that the bitcoind version you are using is >= `v19` as the [`getblockfilter`](https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.19.0.1.md#new-rpcs)
 rpc is implemented there. You need to make sure bitcoind is started with the `-blockfilterindex` flag. This makes it

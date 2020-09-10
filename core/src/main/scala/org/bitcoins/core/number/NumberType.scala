@@ -129,6 +129,16 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
 }
 
 /**
+  * Represents a uint16_t in C
+  */
+sealed abstract class UInt16 extends UnsignedNumber[UInt16] {
+  override def apply: A => UInt16 = UInt16(_)
+  override def hex: String = BytesUtil.encodeHex(toInt.toShort)
+
+  override def andMask = 0xffffL
+}
+
+/**
   * Represents a uint32_t in C
   */
 sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
@@ -307,6 +317,57 @@ object UInt8
 
   def toUInt8s(bytes: ByteVector): Vector[UInt8] = {
     bytes.toArray.map(toUInt8).toVector
+  }
+}
+
+object UInt16
+    extends Factory[UInt16]
+    with NumberObject[UInt16]
+    with Bounded[UInt16] {
+
+  private case class UInt16Impl(underlying: BigInt) extends UInt16 {
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
+  }
+
+  /** Cache from 0 to 128 UInt16 */
+  private val cached: Vector[UInt16] = {
+    0.until(128).map(i => UInt16(BigInt(i))).toVector
+  }
+
+  lazy val zero = cached(0)
+  lazy val one = cached(1)
+
+  private lazy val minUnderlying: A = 0
+  private lazy val maxUnderlying: A = BigInt(65535L)
+
+  lazy val min = zero
+  lazy val max = UInt16(maxUnderlying)
+
+  override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying
+
+  override def fromBytes(bytes: ByteVector): UInt16 = {
+    require(
+      bytes.size <= 2,
+      "UInt16 byte array was too large, got: " + BytesUtil.encodeHex(bytes))
+    UInt16(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
+  }
+
+  def apply(long: Long): UInt16 = {
+    checkCached(long)
+  }
+
+  def apply(bigInt: BigInt): UInt16 = {
+    UInt16Impl(bigInt)
+  }
+
+  /** Checks if we have the number cached, if not allocates a new object to represent the number */
+  private def checkCached(long: Long): UInt16 = {
+    if (long < 128 && long >= 0) cached(long.toInt)
+    else {
+      UInt16(BigInt(long))
+    }
   }
 }
 

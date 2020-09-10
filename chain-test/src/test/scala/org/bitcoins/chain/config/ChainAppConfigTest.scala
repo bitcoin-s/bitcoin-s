@@ -2,7 +2,6 @@ package org.bitcoins.chain.config
 
 import java.nio.file.Files
 
-import akka.actor.ActorSystem
 import ch.qos.logback.classic.Level
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
@@ -10,9 +9,11 @@ import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.util.FileUtil
 import org.scalatest.FutureOutcome
 
+import scala.concurrent.Await
+
 class ChainAppConfigTest extends ChainUnitTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
-  val config = ChainAppConfig(directory = tempDir, useLogbackConf = false)
+  val config = ChainAppConfig(directory = tempDir)
 
   //if we don't turn off logging here, isInitF a few lines down will
   //produce some nasty error logs since we are testing initialization
@@ -26,13 +27,13 @@ class ChainAppConfigTest extends ChainUnitTest {
     withChainFixture(test)
 
   it must "initialize our chain project" in { _ =>
-    val isInitF = chainAppConfig.isInitialized()
+    val isInitF = chainAppConfig.isStarted()
 
     for {
       isInit <- isInitF
       _ = assert(!isInit)
-      _ <- chainAppConfig.initialize()
-      isInitAgain <- chainAppConfig.isInitialized()
+      _ <- chainAppConfig.start()
+      isInitAgain <- chainAppConfig.isStarted()
     } yield assert(isInitAgain)
   }
 
@@ -72,7 +73,7 @@ class ChainAppConfigTest extends ChainUnitTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig = ChainAppConfig(directory = tempDir, useLogbackConf = false)
+    val appConfig = ChainAppConfig(directory = tempDir)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)
@@ -81,7 +82,12 @@ class ChainAppConfigTest extends ChainUnitTest {
   }
 
   override def afterAll: Unit = {
-
     FileUtil.deleteTmpDir(chainAppConfig.baseDatadir)
+    val stopF = for {
+      _ <- config.stop()
+      _ <- chainAppConfig.stop()
+    } yield ()
+    Await.result(stopF, akkaTimeout.duration)
+    super.afterAll()
   }
 }

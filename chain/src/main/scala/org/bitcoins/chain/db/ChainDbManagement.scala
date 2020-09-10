@@ -8,7 +8,7 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 /**
   * Responsible for creating and destroying database
@@ -33,9 +33,4 @@ trait ChainDbManagement extends DbManagement {
 
   override lazy val allTables: List[TableQuery[Table[_]]] =
     List(chainTable, filterHeaderTable, filterTable)
-
-  def createHeaderTable(createIfNotExists: Boolean = true): Future[Unit] = {
-    createTable(chainTable, createIfNotExists)(ec)
-  }
-
 }

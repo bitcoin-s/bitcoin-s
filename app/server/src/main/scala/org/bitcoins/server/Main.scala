@@ -1,11 +1,11 @@
 package org.bitcoins.server
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
-import org.bitcoins.chain.api.ChainApi
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -14,8 +14,10 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.Core
+import org.bitcoins.core.api.chain.db.ChainApi
+import org.bitcoins.core.config.{BitcoinNetworks, MainNet, RegTest, TestNet3}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NetworkUtil}
-import org.bitcoins.db.AppConfig
+import org.bitcoins.db._
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
@@ -24,26 +26,73 @@ import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Properties
 
 object Main extends App with BitcoinSLogger {
 
   private def runMain(): Unit = {
-    implicit val system: ActorSystem = ActorSystem("bitcoin-s")
-    implicit val ec: ExecutionContext = system.dispatcher
     val argsWithIndex = args.zipWithIndex
 
-    implicit val conf: BitcoinSAppConfig = {
+    val dataDirIndexOpt = {
+      argsWithIndex.find(_._1.toLowerCase == "--datadir")
+    }
+    val datadirPathOpt = dataDirIndexOpt match {
+      case None => None
+      case Some((_, dataDirIndex)) =>
+        val str = args(dataDirIndex + 1)
+        val usableStr = str.replace("~", Properties.userHome)
+        Some(Paths.get(usableStr))
+    }
 
-      val dataDirIndexOpt = {
-        argsWithIndex.find(_._1.toLowerCase == "--datadir")
+    val configIndexOpt = {
+      argsWithIndex.find(_._1.toLowerCase == "--conf")
+    }
+    val baseConfig = configIndexOpt match {
+      case None =>
+        val configPath =
+          datadirPathOpt.getOrElse(AppConfig.DEFAULT_BITCOIN_S_DATADIR)
+        AppConfig.getBaseConfig(configPath)
+      case Some((_, configIndex)) =>
+        val str = args(configIndex + 1)
+        val usableStr = str.replace("~", Properties.userHome)
+        val path = Paths.get(usableStr)
+        ConfigFactory.parseFile(path.toFile).resolve()
+    }
+
+    val configDataDir = Paths.get(
+      baseConfig.getStringOrElse("bitcoin-s.datadir",
+                                 AppConfig.DEFAULT_BITCOIN_S_DATADIR.toString))
+    val datadirPath = datadirPathOpt.getOrElse(configDataDir)
+
+    val networkStr = baseConfig.getString("bitcoin-s.network")
+    val network = BitcoinNetworks.fromString(networkStr)
+
+    val datadir: Path = {
+      val lastDirname = network match {
+        case MainNet  => "mainnet"
+        case TestNet3 => "testnet3"
+        case RegTest  => "regtest"
       }
-      val datadirPath = dataDirIndexOpt match {
-        case None => AppConfig.DEFAULT_BITCOIN_S_DATADIR
-        case Some((_, dataDirIndex)) =>
-          val str = args(dataDirIndex + 1)
-          Paths.get(str)
+      datadirPath.resolve(lastDirname)
+    }
+
+    System.setProperty("bitcoins.log.location", datadir.toAbsolutePath.toString)
+
+    implicit val system: ActorSystem = ActorSystem("bitcoin-s", baseConfig)
+    implicit val ec: ExecutionContext = system.dispatcher
+
+    system.log.info("Akka logger started")
+
+    implicit val conf: BitcoinSAppConfig = {
+      val dataDirOverrideOpt = datadirPathOpt.map(dir =>
+        ConfigFactory.parseString(s"bitcoin-s.datadir = $dir"))
+
+      dataDirOverrideOpt match {
+        case Some(dataDirOverride) =>
+          BitcoinSAppConfig(datadirPath, baseConfig, dataDirOverride)
+        case None =>
+          BitcoinSAppConfig(datadirPath, baseConfig)
       }
-      BitcoinSAppConfig(datadirPath)
     }
 
     val rpcPortOpt: Option[Int] = {
@@ -60,8 +109,6 @@ object Main extends App with BitcoinSLogger {
 
     implicit val walletConf: WalletAppConfig = conf.walletConf
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
-    require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled,
-            "Either Neutrino or SPV mode should be enabled")
     implicit val chainConf: ChainAppConfig = conf.chainConf
 
     if (nodeConf.peers.isEmpty) {
@@ -76,7 +123,7 @@ object Main extends App with BitcoinSLogger {
     val bip39PasswordOpt = None //todo need to prompt user for this
 
     //initialize the config, run migrations
-    val configInitializedF = conf.initialize()
+    val configInitializedF = conf.start()
 
     //run chain work migration
     val chainApiF = configInitializedF.flatMap { _ =>
@@ -85,7 +132,7 @@ object Main extends App with BitcoinSLogger {
 
     //get a node that isn't started
     val nodeF = configInitializedF.flatMap { _ =>
-      nodeConf.createNode(peer)(chainConf, system)
+      nodeConf.createNode(peer, None)(chainConf, system)
     }
 
     //get our wallet
@@ -123,13 +170,7 @@ object Main extends App with BitcoinSLogger {
       _ <- wallet.start()
       binding <- startHttpServer(node, wallet, rpcPortOpt)
       _ = {
-        if (nodeConf.isSPVEnabled) {
-          logger.info(s"Starting SPV node sync")
-        } else if (nodeConf.isNeutrinoEnabled) {
-          logger.info(s"Starting neutrino node sync")
-        } else {
-          logger.info(s"Starting unknown type of node sync")
-        }
+        logger.info(s"Starting ${nodeConf.nodeType.shortName} node sync")
       }
       _ = BitcoinSServer.startedFP.success(Future.successful(binding))
 
@@ -144,13 +185,7 @@ object Main extends App with BitcoinSLogger {
         node
           .stop()
           .foreach(_ =>
-            if (nodeConf.isSPVEnabled) {
-              logger.info(s"Stopped SPV node")
-            } else if (nodeConf.isNeutrinoEnabled) {
-              logger.info(s"Stopped neutrino node")
-            } else {
-              logger.info(s"Stopped unknown type of node")
-            })
+            logger.info(s"Stopped ${nodeConf.nodeType.shortName} node"))
         system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
       }
 
@@ -182,20 +217,21 @@ object Main extends App with BitcoinSLogger {
       if (headers.isEmpty) {
         FutureUtil.unit
       } else {
-        wallet.updateUtxoPendingStates(headers.last).map(_ => ())
+        wallet.updateUtxoPendingStates().map(_ => ())
       }
     }
-    if (nodeConf.isSPVEnabled) {
-      Future.successful(
-        NodeCallbacks(onTxReceived = Vector(onTx),
-                      onBlockHeadersReceived = Vector(onHeaders)))
-    } else if (nodeConf.isNeutrinoEnabled) {
-      Future.successful(
-        NodeCallbacks(onBlockReceived = Vector(onBlock),
-                      onCompactFiltersReceived = Vector(onCompactFilters),
-                      onBlockHeadersReceived = Vector(onHeaders)))
-    } else {
-      Future.failed(new RuntimeException("Unexpected node type"))
+    nodeConf.nodeType match {
+      case NodeType.SpvNode =>
+        Future.successful(
+          NodeCallbacks(onTxReceived = Vector(onTx),
+                        onBlockHeadersReceived = Vector(onHeaders)))
+      case NodeType.NeutrinoNode =>
+        Future.successful(
+          NodeCallbacks(onBlockReceived = Vector(onBlock),
+                        onCompactFiltersReceived = Vector(onCompactFilters),
+                        onBlockHeadersReceived = Vector(onHeaders)))
+      case NodeType.FullNode =>
+        Future.failed(new RuntimeException("Not yet implemented"))
     }
   }
 

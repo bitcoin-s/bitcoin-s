@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.currency._
-import org.bitcoins.wallet.models.AccountDb
+import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.wallet._
 
 val ExampleAddressTag = UnknownAddressTag("name", "tagType")
@@ -127,13 +127,21 @@ object UserIdTags extends AddressTagFactory[UserIdTag] {
 
   override val tagNames = Vector(CompanyTagName, InsuranceFundTagName)
 
-  override def fromString(str: String): Option[UserIdTag] = {
+  override def fromStringOpt(str: String): Option[UserIdTag] = {
     all.find(tag => str.toLowerCase() == tag.toString.toLowerCase) match {
       case Some(tag) =>
         Some(tag)
       case None =>
         Some(UserId(str))
     }
+  }
+
+  override def fromString(str: String): UserIdTag = {
+    fromStringOpt(str) match {
+      case Some(tag) => tag
+      case None => sys.error(s"Could not find tag=$str")
+    }
+
   }
 
   def fromUID(uid: Long): UserIdTag = {

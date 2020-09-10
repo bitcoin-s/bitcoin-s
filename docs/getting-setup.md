@@ -104,37 +104,27 @@ In order to run the Bitcoin-S server with DLCs enabled, you will have to checkou
 
 ```bashrc
 git fetch origin
-git checkout dlc
+git checkout adaptor-dlc
 git submodule update
-```
-
-If you want to use the end-to-end DLC client you will need to checkout a separate branch instead:
-
-```bashrc
-git fetch origin pull/1389/head:end-to-end-dlc
-git checkout end-to-end-dlc
-git submodule update
-```
-
-if you are using the end-to-end DLC client you will need to make sure eclair is correctly paired with your bitcoind.
-You will also need to add an eclair section to your `bitcoin-s.conf`, this needs to be placed inside of the `bitcoin-s` module.
-
-```
-eclair {
-	enabled = true
-        datadir = ${HOME}/.eclair
-        bitcoind {
-            version = "v0.18.99" #needs to be v0.18.99 for neutrino
-            datadir = ${HOME}/.bitcoin
-        }
-    }
 ```
 
 and then finally test that `Secp256k1Context.isEnabled()` as in Step 2.
 
 ## Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)
 
-We are finally ready to start running some programs! Follow the [instructions here](applications/server#building-the-server) to build the server. Then, follow [these instructions](applications/cli) to setup the CLI (note that this will require you install some graalvm things as detailed in the instructions).
+We are finally ready to start running some programs! Follow the [instructions here](applications/server#building-the-server) to build the server. Then, follow [these instructions](applications/cli) to setup the CLI.
+
+If you wish to use the GUI instead of the CLI, the setup process is the same as building the server but for the project `gui`. That is, you must run
+
+```bashrc
+sbt gui/universal:stage
+```
+
+to build and then the following (once setup is complete) to run:
+
+```bashrc
+./app/gui/target/universal/stage/bin/bitcoin-s-gui
+```
 
 Now, you want to run your `bitcoind` in regtest by doing the following command:
 
@@ -151,7 +141,7 @@ Once the node is running, you should be able to start your bitcoin-s server with
 and once this is done, you should be able to communicate with the server using
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli getnewaddress
+./app/cli/target/universal/stage/bitcoin-s-cli getnewaddress
 ```
 
 To fund your wallet, you should use the CLI's `getnewaddress` command and then run

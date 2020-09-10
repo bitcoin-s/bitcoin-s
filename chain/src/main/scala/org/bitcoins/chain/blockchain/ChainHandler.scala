@@ -1,11 +1,11 @@
 package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.ChainVerificationLogger
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
-import org.bitcoins.core.api.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -23,7 +23,7 @@ import scala.concurrent._
 
 /**
   * Chain Handler is meant to be the reference implementation
-  * of [[org.bitcoins.chain.api.ChainApi ChainApi]], this is the entry point in to the
+  * of [[ChainApi ChainApi]], this is the entry point in to the
   * chain project.
   *
   * @param blockHeaderDAO block header DB
@@ -104,7 +104,11 @@ case class ChainHandler(
       }
 
       val headersToBeCreated = {
-        blockchainUpdates.flatMap(_.successfulHeaders).distinct
+        // During reorgs, we can be sent a header twice
+        blockchainUpdates
+          .flatMap(_.successfulHeaders)
+          .distinct
+          .filterNot(blockchains.flatMap(_.headers).contains)
       }
 
       val chains = blockchainUpdates.map(_.blockchain)
@@ -113,7 +117,19 @@ case class ChainHandler(
 
       val newChainHandler = this.copy(blockchains = chains)
 
-      createdF.map { _ =>
+      createdF.map { headers =>
+        if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
+          headers.reverseIterator.foldLeft(FutureUtil.unit) { (acc, header) =>
+            for {
+              _ <- acc
+              _ <-
+                chainConfig.chainCallbacks
+                  .executeOnBlockHeaderConnectedCallbacks(logger,
+                                                          header.height,
+                                                          header.blockHeader)
+            } yield ()
+          }
+        }
         chains.foreach { c =>
           logger.info(
             s"Processed headers from height=${c.height - headers.length} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
@@ -131,7 +147,7 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def nextHeaderBatchRange(
+  override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
@@ -143,10 +159,9 @@ case class ChainHandler(
           throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
-    val blockCountF = getBlockCount()
     for {
       startHeight <- startHeightF
-      blockCount <- blockCountF
+      blockCount <- getBlockCount
       stopHeight =
         if (startHeight - 1 + batchSize > blockCount) blockCount
         else startHeight - 1 + batchSize
@@ -165,7 +180,6 @@ case class ChainHandler(
   override def nextFilterHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
-    val filterHeaderCountF = getFilterHeaderCount
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
     } else {
@@ -178,7 +192,7 @@ case class ChainHandler(
 
     for {
       startHeight <- startHeightF
-      filterHeaderCount <- filterHeaderCountF
+      filterHeaderCount <- getFilterHeaderCount
       stopHeight =
         if (startHeight - 1 + batchSize > filterHeaderCount)
           filterHeaderCount
@@ -234,25 +248,28 @@ case class ChainHandler(
                 s"Unexpected previous header's height: ${prevHeader.height} != ${filterHeadersToCreate.head.height - 1}"
               )
             case None =>
-              if (
-                firstFilter.previousFilterHeaderBE == DoubleSha256DigestBE.empty && firstFilter.height == 0
-              ) {
-                //we are ok, according to BIP157 the previous the genesis filter's prev hash should
-                //be the empty hash
-                ()
-              } else {
-                sys.error(
-                  s"Previous filter header does not exist: $firstFilter")
-              }
+              // If the previous filter header doesn't exist it must be for the genesis block
+              require(
+                firstFilter.previousFilterHeaderBE == DoubleSha256DigestBE.empty && firstFilter.height == 0,
+                s"Previous filter header does not exist: $firstFilter"
+              )
           }
         } else FutureUtil.unit
       _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
     } yield {
-      val minHeight = filterHeadersToCreate.minBy(_.height)
-      val maxHeight = filterHeadersToCreate.maxBy(_.height)
-      logger.info(
-        s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE}")
-      this
+      val minHeightOpt = filterHeadersToCreate.minByOption(_.height)
+      val maxHeightOpt = filterHeadersToCreate.maxByOption(_.height)
+
+      (minHeightOpt, maxHeightOpt) match {
+        case (Some(minHeight), Some(maxHeight)) =>
+          logger.info(
+            s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE.hex}")
+          this
+        // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
+        case (_, _) =>
+          logger.warn("Was unable to process any filters headers")
+          this
+      }
     }
   }
 
@@ -273,22 +290,12 @@ case class ChainHandler(
           (blockHash, messages.head)
       }
 
-    val sizeCheckF = for {
-      filterHeaders <- filterHeadersF
-      _ = logger.debug(s"processFilters: filterHeaders=${filterHeaders}")
-
-      _ <-
-        if (filterHeaders.size != messages.size) {
-          Future.failed(new UnknownBlockHash(
-            s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}"))
-        } else {
-          FutureUtil.unit
-        }
-    } yield ()
-
     for {
       filterHeaders <- filterHeadersF
-      _ <- sizeCheckF
+      _ = logger.debug(s"processFilters: filterHeaders=$filterHeaders")
+      _ = require(
+        filterHeaders.size == messages.size,
+        s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}")
       compactFilterDbs <- Future {
         filterHeaders.map { filterHeader =>
           findFilterDbFromMessage(filterHeader, messagesByBlockHash)
@@ -296,11 +303,19 @@ case class ChainHandler(
       }
       _ <- filterDAO.createAll(compactFilterDbs)
     } yield {
-      val minHeight = compactFilterDbs.minBy(_.height)
-      val maxHeight = compactFilterDbs.maxBy(_.height)
-      logger.info(
-        s"Processed filters from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE}")
-      this
+      val minHeightOpt = compactFilterDbs.minByOption(_.height)
+      val maxHeightOpt = compactFilterDbs.maxByOption(_.height)
+
+      (minHeightOpt, maxHeightOpt) match {
+        case (Some(minHeight), Some(maxHeight)) =>
+          logger.info(
+            s"Processed filters from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE.hex}")
+          this
+        // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
+        case (_, _) =>
+          logger.warn("Was unable to process any filters")
+          this
+      }
     }
   }
 
@@ -373,7 +388,7 @@ case class ChainHandler(
     filterHeaderDAO.getBestFilterHeader.map {
       case Some(filterHeader) =>
         val height = filterHeader.height
-        logger.debug(s"getFilterCount result: count=$height")
+        logger.debug(s"getFilterHeaderCount result: count=$height")
         height
       case None =>
         0
@@ -387,7 +402,81 @@ case class ChainHandler(
 
   /** @inheritdoc */
   override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] = {
-    filterHeaderDAO.getBestFilterHeader
+    val bestFilterHeadersInChain: Future[Option[CompactFilterHeaderDb]] = {
+      val bestChainOpt = blockchains.maxByOption(_.tip.chainWork)
+      bestChainOpt match {
+        case Some(bestChain) =>
+          filterHeaderDAO.getBestFilterHeaderForHeaders(bestChain.toVector)
+        case None => Future.successful(None)
+      }
+    }
+
+    for {
+      filterHeaderOpt <- bestFilterHeadersInChain
+      result <-
+        if (filterHeaderOpt.isEmpty) {
+          bestFilterHeaderSearch()
+        } else {
+          Future.successful(filterHeaderOpt)
+        }
+    } yield {
+      result
+    }
+  }
+
+  /**
+    * This method retrieves the best [[CompactFilterHeaderDb]] from the database
+    * without any blockchain context, and then uses the [[CompactFilterHeaderDb.blockHashBE]]
+    * to query our block headers database looking for a filter header that is in the best chain
+    * @return
+    */
+  private def bestFilterHeaderSearch(): Future[
+    Option[CompactFilterHeaderDb]] = {
+    val bestFilterHeaderOptF = filterHeaderDAO.getBestFilterHeader
+
+    //get best blockchain around our latest filter header
+    val blockchainOptF: Future[Option[Blockchain]] = {
+      for {
+        bestFilterHeaderOpt <- bestFilterHeaderOptF
+        blockchains <- {
+          bestFilterHeaderOpt match {
+            case Some(bestFilterHeader) =>
+              //get blockchains from our current best filter header to
+              //the next POW of interval, this should be enough to determine
+              //what is the best chain!
+              blockHeaderDAO.getBlockchainsBetweenHeights(
+                from =
+                  bestFilterHeader.height - chainConfig.chain.difficultyChangeInterval,
+                to =
+                  bestFilterHeader.height + chainConfig.chain.difficultyChangeInterval)
+            case None =>
+              Future.successful(Vector.empty)
+          }
+        }
+      } yield {
+        if (blockchains.isEmpty) {
+          None
+        } else {
+          blockchains.maxByOption(_.tip.chainWork)
+        }
+      }
+    }
+
+    val filterHeadersOptF: Future[Option[CompactFilterHeaderDb]] = {
+      for {
+        blockchainOpt <- blockchainOptF
+        bestHeadersForChainFOpt = {
+          blockchainOpt.map(b =>
+            filterHeaderDAO.getBestFilterHeaderForHeaders(b.toVector))
+        }
+        bestHeadersForChain <- bestHeadersForChainFOpt match {
+          case Some(f) => f
+          case None    => Future.successful(None)
+        }
+      } yield bestHeadersForChain
+    }
+
+    filterHeadersOptF
   }
 
   /** @inheritdoc */
@@ -443,10 +532,21 @@ case class ChainHandler(
       case None => FutureUtil.none
       case Some(blockHeight) =>
         for {
-          tipHash <- getBestBlockHash()
-          tipHeightOpt <- getBlockHeight(tipHash)
+          tips <- blockHeaderDAO.chainTips
+          getNAncestorsFs = tips.map { tip =>
+            blockHeaderDAO.getNAncestors(tip.hashBE, tip.height - blockHeight)
+          }
+          ancestorChains <- Future.sequence(getNAncestorsFs)
         } yield {
-          tipHeightOpt.map(tipHeight => tipHeight - blockHeight + 1)
+          val confs = ancestorChains.flatMap { chain =>
+            if (chain.last.hashBE == blockHash) {
+              Some(chain.head.height - blockHeight + 1)
+            } else None
+          }
+
+          if (confs.nonEmpty) {
+            Some(confs.max)
+          } else None
         }
     }
   }
@@ -549,7 +649,8 @@ case class ChainHandler(
 
   /** Creates [[numBatches]] of requests to the database fetching [[batchSize]] headers
     * starting at [[batchStartHeight]]. These are executed in parallel. After all are fetched
-    * we join them into one future and return it. */
+    * we join them into one future and return it.
+    */
   private def batchAndGetBlockchains(
       batchSize: Int,
       batchStartHeight: Int,

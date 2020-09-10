@@ -1,8 +1,14 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
+import org.bitcoins.core.wallet.utxo.{
+  AddressLabelTag,
+  AddressLabelTagType,
+  StorageLocationTagType
+}
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
@@ -63,9 +69,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         _ = assert(exists, s"Wallet must contain address after generating it")
         address2 <- wallet.getUnusedAddress
         _ = assert(address1 == address2, "Must generate same address")
-        _ <- wallet.sendToAddress(address1,
-                                  Satoshis(10000),
-                                  Some(SatoshisPerVirtualByte.one))
+        _ <- wallet.sendToAddress(address1, Satoshis(10000), None)
         address3 <- wallet.getUnusedAddress
       } yield {
         assert(address1 != address3, "Must generate a new address")
@@ -125,9 +129,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         s"Wallet did not start with empty spent addresses, got $emptySpentAddresses")
 
       tempAddress <- wallet.getNewAddress()
-      tx <- wallet.sendToAddress(tempAddress,
-                                 Bitcoins(1),
-                                 Some(SatoshisPerVirtualByte(Satoshis(3))))
+      tx <- wallet.sendToAddress(tempAddress, Bitcoins(1), None)
       spentDbs <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       spentAddresses <- wallet.listSpentAddresses()
     } yield {
@@ -157,13 +159,101 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
 
     for {
-      addrDbs <- wallet.spendingInfoDAO.findAll()
+      addrDbs <- wallet.spendingInfoDAO.findAllSpendingInfos()
       fundedAddresses <- wallet.listUnusedAddresses()
     } yield {
       val intersect = addrDbs
         .map(_.output.scriptPubKey)
         .intersect(fundedAddresses.map(_.scriptPubKey))
       assert(intersect.isEmpty, s"Returned used addresses $intersect")
+    }
+  }
+
+  it must "tag an address" in { fundedWallet: FundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    for {
+      addr <- wallet.getNewAddress()
+      initTags <- wallet.getAddressTags(addr)
+      _ = assert(initTags.isEmpty)
+
+      tag = AddressLabelTag("for test")
+      _ <- wallet.tagAddress(addr, tag)
+      tags <- wallet.getAddressTags(addr)
+    } yield {
+      assert(tags.size == 1)
+      val tagDb = tags.head
+      assert(tagDb.address == addr)
+      assert(tagDb.addressTag == tag)
+    }
+  }
+
+  it must "drop an address tag" in { fundedWallet: FundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    for {
+      addr <- wallet.getNewAddress()
+      initTags <- wallet.getAddressTags(addr)
+      _ = assert(initTags.isEmpty)
+
+      tag = AddressLabelTag("no one knows the supply of eth")
+      _ <- wallet.tagAddress(addr, tag)
+      tags <- wallet.getAddressTags(addr)
+      _ = assert(tags.size == 1)
+      tagDb = tags.head
+      _ = assert(tagDb.address == addr)
+      _ = assert(tagDb.addressTag == tag)
+
+      num <- wallet.dropAddressTag(tagDb)
+    } yield assert(num == 1)
+  }
+
+  it must "drop an address tag type" in { fundedWallet: FundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    for {
+      addr <- wallet.getNewAddress()
+      addr1 <- wallet.getNewAddress()
+      initTags <- wallet.getAddressTags(addr)
+      initTags1 <- wallet.getAddressTags(addr1)
+      _ = assert(initTags.isEmpty)
+      _ = assert(initTags1.isEmpty)
+
+      tag = AddressLabelTag("no one knows the supply of eth")
+      _ <- wallet.tagAddress(addr, tag)
+      _ <- wallet.tagAddress(addr, HotStorage)
+      _ <- wallet.tagAddress(addr1, tag)
+      tags <- wallet.getAddressTags(AddressLabelTagType)
+      _ = assert(tags.size == 2)
+      tagDb = tags.head
+      _ = assert(tagDb.address == addr)
+      _ = assert(tagDb.addressTag == tag)
+      tagDb1 = tags.last
+      _ = assert(tagDb1.address == addr1)
+      _ = assert(tagDb1.addressTag == tag)
+
+      numDropped <- wallet.dropAddressTagType(AddressLabelTagType)
+      hotStorageTags <- wallet.getAddressTags(StorageLocationTagType)
+    } yield {
+      assert(numDropped == 2)
+      assert(hotStorageTags.size == 1)
+      assert(hotStorageTags.head.address == addr)
+    }
+  }
+
+  it must "add public key scripts to watch" in { fundedWallet: FundedWallet =>
+    val wallet = fundedWallet.wallet
+    val spk = EmptyScriptPubKey
+    for {
+      before <- wallet.listScriptPubKeys()
+      spkDb <- wallet.watchScriptPubKey(spk)
+      after <- wallet.listScriptPubKeys()
+    } yield {
+      assert(before.size + 1 == after.size)
+      assert(spkDb.scriptPubKey == spk)
+      assert(spkDb.id.nonEmpty)
+      assert(!before.contains(spkDb))
+      assert(after.contains(spkDb))
     }
   }
 }

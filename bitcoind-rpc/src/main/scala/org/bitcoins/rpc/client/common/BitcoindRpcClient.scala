@@ -3,7 +3,9 @@ package org.bitcoins.rpc.client.common
 import java.io.File
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
+import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
@@ -116,7 +118,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
 object BitcoindRpcClient {
 
   /** The name we give to actor systems we create. We use this
-    * information to know which actor systems to shut down */
+    * information to know which actor systems to shut down
+    */
   private[rpc] val ActorSystemName = "bitcoind-rpc-client-created-by-bitcoin-s"
 
   /**

@@ -1,7 +1,9 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterHeaderDb}
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db.{CRUD, SlickUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -16,14 +18,13 @@ case class CompactFilterHeaderDAO()(implicit
   import mappers.doubleSha256DigestBEMapper
 
   implicit private val bigIntMapper: BaseColumnType[BigInt] =
-    if (appConfig.driverName == "postgresql") {
-      mappers.bigIntPostgresMapper
-    } else {
-      mappers.bigIntMapper
+    appConfig.driver match {
+      case SQLite     => mappers.bigIntMapper
+      case PostgreSQL => mappers.bigIntPostgresMapper
     }
 
   class CompactFilterHeaderTable(tag: Tag)
-      extends Table[CompactFilterHeaderDb](tag, "cfheaders") {
+      extends Table[CompactFilterHeaderDb](tag, schemaName, "cfheaders") {
 
     def hash = column[DoubleSha256DigestBE]("hash", O.PrimaryKey)
 
@@ -122,6 +123,11 @@ case class CompactFilterHeaderDAO()(implicit
     query
   }
 
+  /** Fetches the best filter header from the database _without_ context
+    * that it's actually in our best blockchain. For instance, this filter header could be
+    * reorged out for whatever reason.
+    * @see https://github.com/bitcoin-s/bitcoin-s/issues/1919#issuecomment-682041737
+    */
   def getBestFilterHeader: Future[Option[CompactFilterHeaderDb]] = {
     val join = table
       .join(blockHeaderTable)
@@ -137,6 +143,51 @@ case class CompactFilterHeaderDAO()(implicit
           .run(query.result)
           .map(_.headOption)
     } yield filterOpt
+  }
+
+  /** This looks for best filter headers whose [[CompactFilterHeaderDb.blockHashBE]] are associated with the given
+    * [[BlockHeaderDb.hashBE]] given as a parameter.
+    */
+  def getBestFilterHeaderForHeaders(
+      headers: Vector[BlockHeaderDb]): Future[Option[CompactFilterHeaderDb]] = {
+    val hashes = headers.map(_.hashBE)
+    val join = table
+      .join(blockHeaderTable)
+      .on(_.blockHash === _.hash)
+
+    val joinedWithHashes = join
+      .filter {
+        case (filterTable, _) =>
+          filterTable.blockHash.inSet(hashes)
+      }
+
+    val maxQuery = joinedWithHashes.map(_._2.chainWork).max
+
+    val query =
+      joinedWithHashes.filter(_._2.chainWork === maxQuery).take(1).map(_._1)
+
+    for {
+      filterOpt <-
+        safeDatabase
+          .run(query.result)
+          .map(_.headOption)
+    } yield filterOpt
+  }
+
+  def getBetweenHeights(
+      from: Int,
+      to: Int): Future[Vector[CompactFilterHeaderDb]] = {
+    val query = getBetweenHeightsQuery(from, to)
+    safeDatabase.runVec(query)
+  }
+
+  def getBetweenHeightsQuery(
+      from: Int,
+      to: Int): profile.StreamingProfileAction[
+    Seq[CompactFilterHeaderDb],
+    CompactFilterHeaderDb,
+    Effect.Read] = {
+    table.filter(header => header.height >= from && header.height <= to).result
   }
 
 }

@@ -14,7 +14,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStop}
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStopAsync}
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
@@ -38,7 +38,7 @@ import scala.util.{Failure, Success, Try}
   * client, like data directories, log files
   * and whether or not the client is started.
   */
-trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
+trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
   def version: BitcoindVersion
   protected val instance: BitcoindInstance
 

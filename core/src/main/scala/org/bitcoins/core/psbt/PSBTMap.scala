@@ -149,10 +149,6 @@ object GlobalPSBTMap extends PSBTMapFactory[GlobalPSBTRecord, GlobalPSBTMap] {
 case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     extends SeqWrapper[InputPSBTRecord]
     with PSBTMap[InputPSBTRecord] {
-  require(
-    this.witnessUTXOOpt.isEmpty || this.nonWitnessOrUnknownUTXOOpt.isEmpty,
-    "InputPSBTMap cannot have both a NonWitnessOrUnknownUTXO and a WitnessUTXO"
-  )
   override protected val wrapped: Vector[InputPSBTRecord] = elements
 
   import org.bitcoins.core.psbt.InputPSBTRecord._

@@ -203,7 +203,7 @@ object LnInvoice extends StringFactory[LnInvoice] with BitcoinSLogger {
         throw new IllegalArgumentException("Data part is too short")
       } else {
 
-        val hrpValid = LnHumanReadablePart.fromString(hrp)
+        val hrpValid = LnHumanReadablePart.fromStringT(hrp)
 
         val dataValid = Bech32.checkDataValidity(data)
 

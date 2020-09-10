@@ -60,10 +60,10 @@ val config = ConfigFactory.parseString {
     |""".stripMargin
 }
 
-implicit val chainConfig = ChainAppConfig(datadir, false, config)
+implicit val chainConfig = ChainAppConfig(datadir, config)
 
 // Initialize the needed database tables if they don't exist:
-val chainProjectInitF = chainConfig.initialize()
+val chainProjectInitF = chainConfig.start()
 val blockHeaderDAO = BlockHeaderDAO()
 val compactFilterHeaderDAO = CompactFilterHeaderDAO()
 val compactFilterDAO = CompactFilterDAO()

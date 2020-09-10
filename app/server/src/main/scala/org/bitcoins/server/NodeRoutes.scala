@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.node.Node
 
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 case class NodeRoutes(node: Node)(implicit system: ActorSystem)
@@ -22,7 +23,8 @@ case class NodeRoutes(node: Node)(implicit system: ActorSystem)
         val nodeStopping = node.stop().map { _ =>
           Server.httpSuccess("Node shutting down")
         }
-        system.terminate()
+
+        system.scheduler.scheduleOnce(7.seconds)(sys.exit())
         nodeStopping
       }
 

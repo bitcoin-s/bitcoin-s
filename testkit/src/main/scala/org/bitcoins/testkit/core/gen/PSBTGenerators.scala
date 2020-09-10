@@ -226,7 +226,7 @@ object PSBTGenerators {
         val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
         crediting - spending
       }
-      fee <- CurrencyUnitGenerator.feeUnit(maxFee)
+      fee <- FeeUnitGen.feeUnit(maxFee)
     } yield {
       psbtAndBuilderFromInputs(finalized = finalized,
                                creditingTxsInfo = creditingTxsInfo,
@@ -253,7 +253,7 @@ object PSBTGenerators {
         val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
         crediting - spending
       }
-      fee <- CurrencyUnitGenerator.feeUnit(maxFee)
+      fee <- FeeUnitGen.feeUnit(maxFee)
     } yield {
       val pAndB = psbtAndBuilderFromInputs(finalized = finalized,
                                            creditingTxsInfo = creditingTxsInfo,

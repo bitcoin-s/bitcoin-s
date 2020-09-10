@@ -1,6 +1,7 @@
 package org.bitcoins.eclair.rpc.network
 
 import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.crypto.StringFactory
 
 import scala.util.{Failure, Success, Try}
 
@@ -8,11 +9,11 @@ case class NodeUri(nodeId: NodeId, host: String, port: Int) {
   override def toString = s"$nodeId@$host:$port"
 }
 
-object NodeUri {
+object NodeUri extends StringFactory[NodeUri] {
 
   private val defaultPort = ":9735"
 
-  def fromString(uri: String): Try[NodeUri] = {
+  override def fromStringT(uri: String): Try[NodeUri] = {
     val patternWithPort = """(\w+)@([\w.]+(\w+)):(\d{2,5})""".r
 
     val isUriWithPort = patternWithPort.findFirstIn(uri)
@@ -27,8 +28,15 @@ object NodeUri {
     nodeUriT
   }
 
+  override def fromString(string: String): NodeUri = {
+    fromStringT(string) match {
+      case Success(uri) => uri
+      case Failure(exn) => throw exn
+    }
+  }
+
   def fromStringNoPort(uri: String): Try[NodeUri] = {
-    fromString(uri + defaultPort)
+    fromStringT(uri + defaultPort)
   }
 
   /**

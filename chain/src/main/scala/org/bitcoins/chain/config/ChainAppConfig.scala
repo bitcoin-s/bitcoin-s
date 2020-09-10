@@ -3,10 +3,12 @@ package org.bitcoins.chain.config
 import java.nio.file.Path
 
 import com.typesafe.config.{Config, ConfigException}
+import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDbHelper}
+import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
+import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.db._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,7 +19,6 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class ChainAppConfig(
     private val directory: Path,
-    override val useLogbackConf: Boolean,
     private val confs: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with ChainDbManagement
@@ -29,17 +30,25 @@ case class ChainAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): ChainAppConfig =
-    ChainAppConfig(directory, useLogbackConf, configs: _*)
+    ChainAppConfig(directory, configs: _*)
   protected[bitcoins] def baseDatadir: Path = directory
 
   override lazy val appConfig: ChainAppConfig = this
+
+  private val callbacks = new Mutable(ChainCallbacks.empty)
+
+  def chainCallbacks: ChainCallbacks = callbacks.atomicGet
+
+  def addCallbacks(newCallbacks: ChainCallbacks): ChainCallbacks = {
+    callbacks.atomicUpdate(newCallbacks)(_ + _)
+  }
 
   /**
     * Checks whether or not the chain project is initialized by
     * trying to read the genesis block header from our block
     * header table
     */
-  def isInitialized()(implicit ec: ExecutionContext): Future[Boolean] = {
+  def isStarted(): Future[Boolean] = {
     val bhDAO = BlockHeaderDAO()(ec, appConfig)
     val isDefinedOptF = {
       bhDAO.read(chain.genesisBlock.blockHeader.hashBE).map(_.isDefined)
@@ -58,12 +67,12 @@ case class ChainAppConfig(
     * This creates the necessary tables for the chain project
     * and inserts preliminary data like the genesis block header
     */
-  override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
+  override def start(): Future[Unit] = {
     val numMigrations = migrate()
 
     logger.info(s"Applied ${numMigrations} to chain project")
 
-    val isInitF = isInitialized()
+    val isInitF = isStarted()
     isInitF.flatMap { isInit =>
       if (isInit) {
         FutureUtil.unit
@@ -91,7 +100,7 @@ case class ChainAppConfig(
         s"$moduleName.neutrino.filter-header-batch-size.${chain.network.chainParams.networkId}")
     } catch {
       case _: ConfigException.Missing | _: ConfigException.WrongType =>
-        config.getInt(s"$moduleName.neutrino.filter-header-batch-size")
+        config.getInt(s"$moduleName.neutrino.filter-header-batch-size.default")
     }
   }
 
@@ -101,9 +110,6 @@ case class ChainAppConfig(
   lazy val forceRecalcChainWork: Boolean =
     config.getBooleanOrElse(s"$moduleName.force-recalc-chainwork",
                             default = false)
-
-  /** Starts the associated application */
-  override def start(): Future[Unit] = FutureUtil.unit
 }
 
 object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {
@@ -111,9 +117,7 @@ object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {
   /** Constructs a chain verification configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  override def fromDatadir(
-      datadir: Path,
-      useLogbackConf: Boolean,
-      confs: Vector[Config])(implicit ec: ExecutionContext): ChainAppConfig =
-    ChainAppConfig(datadir, useLogbackConf, confs: _*)
+  override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
+      ec: ExecutionContext): ChainAppConfig =
+    ChainAppConfig(datadir, confs: _*)
 }

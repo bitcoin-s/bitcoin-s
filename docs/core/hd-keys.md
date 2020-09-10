@@ -130,4 +130,4 @@ val nextAddressPath: SegWitHDPath = firstAddressPath.next
 
 ### Signing things with HD keys
 
-Please see [sign.md](sign.md) for information on how to sign things with HD keys.
+Please see [sign.md](../crypto/sign.md) for information on how to sign things with HD keys.

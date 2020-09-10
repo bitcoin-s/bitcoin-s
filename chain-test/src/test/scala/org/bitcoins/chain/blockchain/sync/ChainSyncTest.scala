@@ -1,8 +1,8 @@
 package org.bitcoins.chain.blockchain.sync
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.core.api.chain.db.ChainApi
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.chain.fixture.BitcoindChainHandlerViaRpc
 import org.bitcoins.testkit.chain.{ChainDbUnitTest, SyncUtil}
@@ -34,7 +34,7 @@ class ChainSyncTest extends ChainDbUnitTest {
       //let's generate a block on bitcoind
       val block1F =
         bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
-      val newChainHandlerF: Future[ChainApi] = block1F.flatMap { hashes =>
+      val newChainHandlerF: Future[ChainApi] = block1F.flatMap { _ =>
         ChainSync.sync(chainHandler = chainHandler,
                        getBlockHeaderFunc = getBlockHeaderFunc,
                        getBestBlockHashFunc = getBestBlockHashFunc)

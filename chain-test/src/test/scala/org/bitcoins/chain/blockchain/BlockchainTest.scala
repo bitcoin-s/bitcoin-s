@@ -1,7 +1,7 @@
 package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.models.BlockHeaderDb
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.testkit.chain.fixture.ChainFixture
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.FutureOutcome
@@ -34,7 +34,7 @@ class BlockchainTest extends ChainUnitTest {
         case ConnectTipResult.ExtendChain(_, newChain) =>
           assert(newHeader == newChain.tip)
 
-        case fail @ (_: ConnectTipResult.Reorg | _: ConnectTipResult.BadTip) =>
+        case _ @(_: ConnectTipResult.Reorg | _: ConnectTipResult.BadTip) =>
           assert(false)
       }
   }

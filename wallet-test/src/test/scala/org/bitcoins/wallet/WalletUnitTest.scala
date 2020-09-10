@@ -2,16 +2,17 @@ package org.bitcoins.wallet
 
 import java.nio.file.Files
 
+import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
+import org.bitcoins.core.api.wallet.db.AddressDb
 import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError
+import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError.MnemonicNotFound
 import org.bitcoins.crypto.AesPassword
-import org.bitcoins.keymanager.KeyManagerUnlockError.MnemonicNotFound
-import org.bitcoins.keymanager.{KeyManagerUnlockError, WalletStorage}
+import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.NeutrinoWalletApi.BlockMatchingResponse
-import org.bitcoins.wallet.models.AddressDb
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 

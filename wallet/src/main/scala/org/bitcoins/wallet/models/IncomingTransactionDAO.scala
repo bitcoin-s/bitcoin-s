@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.{IncomingTransactionDb, TransactionDb}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.config._
@@ -23,7 +24,9 @@ case class IncomingTransactionDAO()(implicit
   }
 
   class IncomingTransactionTable(tag: Tag)
-      extends TxTable[IncomingTransactionDb](tag, "wallet_incoming_txs") {
+      extends TxTable[IncomingTransactionDb](tag,
+                                             schemaName,
+                                             "wallet_incoming_txs") {
 
     private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
     import mappers._

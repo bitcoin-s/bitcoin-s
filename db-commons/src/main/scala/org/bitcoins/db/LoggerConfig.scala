@@ -7,7 +7,7 @@ import ch.qos.logback.classic.Level
 abstract class LoggerConfig {
 
   /** Where logs are written to */
-  def logFile: Path
+  def logLocation: Path
 
   /** The logging level for P2P logger */
   def p2pLogLevel: Level

@@ -1,8 +1,9 @@
 package org.bitcoins.chain.validation
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDbHelper}
+import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
 import org.scalatest.{Assertion, FutureOutcome}
@@ -28,7 +29,7 @@ class TipValidationTest extends ChainDbUnitTest {
   val currentTipDb = BlockHeaderHelper.header2Db
   val blockchain = Blockchain.fromHeaders(Vector(currentTipDb))
 
-  it must "connect two blocks with that are valid" in { bhDAO =>
+  it must "connect two blocks with that are valid" in { _ =>
     val newValidTipDb =
       BlockHeaderDbHelper.fromBlockHeader(
         566093,
@@ -40,7 +41,7 @@ class TipValidationTest extends ChainDbUnitTest {
   }
 
   it must "fail to connect two blocks that do not reference prev block hash correctly" in {
-    bhDAO =>
+    _ =>
       val badPrevHash = BlockHeaderHelper.badPrevHash
 
       val expected = TipUpdateResult.BadPreviousBlockHash(badPrevHash)
@@ -49,13 +50,13 @@ class TipValidationTest extends ChainDbUnitTest {
   }
 
   it must "fail to connect two blocks with two different POW requirements at the wrong interval" in {
-    bhDAO =>
+    _ =>
       val badPOW = BlockHeaderHelper.badNBits
       val expected = TipUpdateResult.BadPOW(badPOW)
       runTest(badPOW, expected, blockchain)
   }
 
-  it must "fail to connect two blocks with a bad nonce" in { bhDAO =>
+  it must "fail to connect two blocks with a bad nonce" in { _ =>
     val badNonce = BlockHeaderHelper.badNonce
     val expected = TipUpdateResult.BadNonce(badNonce)
     runTest(badNonce, expected, blockchain)

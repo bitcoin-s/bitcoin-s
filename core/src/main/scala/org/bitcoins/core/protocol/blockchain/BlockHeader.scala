@@ -116,7 +116,7 @@ sealed trait BlockHeader extends NetworkElement {
   def nonce: UInt32
 
   /** Returns the block's hash in the protocol level little endian encoding */
-  def hash: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
+  lazy val hash: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
   /**
     * Returns the block hash in big endian format, this is useful for rpc
@@ -125,7 +125,7 @@ sealed trait BlockHeader extends NetworkElement {
     * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
     * @return
     */
-  def hashBE: DoubleSha256DigestBE = hash.flip
+  lazy val hashBE: DoubleSha256DigestBE = hash.flip
 
   override def bytes: ByteVector = RawBlockHeaderSerializer.write(this)
 

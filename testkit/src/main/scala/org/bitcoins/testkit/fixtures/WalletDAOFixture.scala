@@ -4,7 +4,6 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
 import org.scalatest._
-import org.scalatest.flatspec.FixtureAsyncFlatSpec
 
 import scala.concurrent.Future
 
@@ -15,9 +14,10 @@ case class WalletDAOs(
     utxoDAO: SpendingInfoDAO,
     transactionDAO: TransactionDAO,
     incomingTxDAO: IncomingTransactionDAO,
-    outgoingTxDAO: OutgoingTransactionDAO)
+    outgoingTxDAO: OutgoingTransactionDAO,
+    scriptPubKeyDAO: ScriptPubKeyDAO)
 
-trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
+trait WalletDAOFixture extends BitcoinSWalletTest {
 
   private lazy val daos: WalletDAOs = {
     val account = AccountDAO()
@@ -27,7 +27,15 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
     val tx = TransactionDAO()
     val incomingTx = IncomingTransactionDAO()
     val outgoingTx = OutgoingTransactionDAO()
-    WalletDAOs(account, address, tags, utxo, tx, incomingTx, outgoingTx)
+    val scriptPubKey = ScriptPubKeyDAO()
+    WalletDAOs(account,
+               address,
+               tags,
+               utxo,
+               tx,
+               incomingTx,
+               outgoingTx,
+               scriptPubKey)
   }
 
   final override type FixtureParam = WalletDAOs
@@ -36,17 +44,21 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
 
   override def afterAll(): Unit = {
     super.afterAll()
-    walletConfig.stop()
-    ()
   }
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
     makeFixture(build = () => Future(walletConfig.migrate()).map(_ => daos),
                 destroy = () => dropAll())(test)
 
-  def dropAll(): Future[Unit] =
-    for {
+  def dropAll(): Future[Unit] = {
+    val res = for {
       _ <- walletConfig.dropTable("flyway_schema_history")
       _ <- walletConfig.dropAll()
     } yield ()
+    res.failed.foreach { ex =>
+      ex.printStackTrace()
+    }
+    res
+  }
+
 }

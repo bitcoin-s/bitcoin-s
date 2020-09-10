@@ -20,7 +20,8 @@ sealed trait ScriptProgram {
   def txSignatureComponent: TxSigComponent
 
   /** The current state of the stack for execution of the
-    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]. */
+    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]].
+    */
   def stack: List[ScriptToken]
 
   /** The script operations that need to still be executed. */
@@ -177,7 +178,8 @@ case class ConditionalCounter(trueCount: Int, falseAndIgnoreCount: Int) {
 
   /** Should be called on for every OP_ELSE.
     *
-    * It is assumed that !noConditionEncountered */
+    * It is assumed that !noConditionEncountered
+    */
   def invertCondition(): ConditionalCounter = {
     if (falseAndIgnoreCount > 1) {
       // Do nothing, we aren't in an execution now branch anyway
@@ -191,7 +193,8 @@ case class ConditionalCounter(trueCount: Int, falseAndIgnoreCount: Int) {
 
   /** Should be called on for every OP_ENDIF.
     *
-    * It is assumed that !noConditionEncountered */
+    * It is assumed that !noConditionEncountered
+    */
   def removeCondition(): ConditionalCounter = {
     if (falseAndIgnoreCount > 0) {
       this.copy(falseAndIgnoreCount = falseAndIgnoreCount - 1)

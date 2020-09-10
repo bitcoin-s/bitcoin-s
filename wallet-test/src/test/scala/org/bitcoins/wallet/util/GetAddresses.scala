@@ -2,6 +2,7 @@ package org.bitcoins.wallet.util
 
 import org.bitcoins.core.hd._
 import play.api.libs.json._
+
 import scala.sys.process._
 
 /** This program connects to a running Trezor, and gets

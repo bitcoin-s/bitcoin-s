@@ -1,9 +1,12 @@
 package org.bitcoins.chain.blockchain.sync
 
 import org.bitcoins.chain.ChainVerificationLogger
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDb, CompactFilterHeaderDb}
+import org.bitcoins.core.api.chain.db.{
+  BlockHeaderDb,
+  ChainApi,
+  CompactFilterHeaderDb
+}
 import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader

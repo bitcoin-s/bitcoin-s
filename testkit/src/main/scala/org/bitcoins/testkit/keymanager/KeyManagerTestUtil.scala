@@ -4,9 +4,10 @@ import java.nio.file.Path
 
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.keymanager.{KeyManagerParams, WalletStorage}
+import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalacheck.Gen

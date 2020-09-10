@@ -1,11 +1,14 @@
 package org.bitcoins.node.networking.peer
 
+import java.net.InetAddress
+
 import akka.actor.ActorRef
 import akka.io.Tcp
 import akka.util.Timeout
-import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.core.api.chain.db.ChainApi
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.p2p.{NetworkMessage, _}
+import org.bitcoins.core.number.Int32
+import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{
@@ -66,6 +69,22 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(versionMsg)
   }
 
+  def sendVersionMessage(chainApi: ChainApi)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    chainApi.getBestHashBlockHeight().flatMap { height =>
+      val transmittingIpAddress = InetAddress.getLocalHost
+      val receivingIpAddress = client.peer.socket.getAddress
+      val versionMsg = VersionMessage(conf.network,
+                                      "/Bitcoin-S:0.4.0/",
+                                      Int32(height),
+                                      receivingIpAddress,
+                                      transmittingIpAddress)
+
+      logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
+      sendMsg(versionMsg)
+    }
+  }
+
   def sendVerackMessage(): Future[Unit] = {
     val verackMsg = VerAckMessage
     sendMsg(verackMsg)
@@ -80,6 +99,14 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
 
   def sendGetHeadersMessage(lastHash: DoubleSha256Digest): Future[Unit] = {
     val headersMsg = GetHeadersMessage(lastHash)
+    logger.trace(s"Sending getheaders=$headersMsg to peer=${client.peer}")
+    sendMsg(headersMsg)
+  }
+
+  def sendGetHeadersMessage(
+      hashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+    // GetHeadersMessage has a max of 101 hashes
+    val headersMsg = GetHeadersMessage(hashes.distinct.take(101))
     logger.trace(s"Sending getheaders=$headersMsg to peer=${client.peer}")
     sendMsg(headersMsg)
   }
@@ -188,7 +215,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       ec: ExecutionContext): Future[Boolean] = {
     for {
       nextRangeOpt <-
-        chainApi.nextHeaderBatchRange(stopHash, filterHeaderBatchSize)
+        chainApi.nextBlockHeaderBatchRange(stopHash, filterHeaderBatchSize)
       res <- nextRangeOpt match {
         case Some((startHeight, stopHash)) =>
           logger.info(

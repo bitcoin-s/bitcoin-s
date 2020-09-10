@@ -2,7 +2,7 @@ package org.bitcoins.node.models
 
 import java.net.InetSocketAddress
 
-import org.bitcoins.db.DbRowAutoInc
+import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.rpc.config.BitcoindInstance
 
 case class Peer(socket: InetSocketAddress, id: Option[Long] = None)

@@ -1,12 +1,13 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.{TransactionDb, TransactionDbHelper}
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 
 class TransactionDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
   val txDb: TransactionDb =
-    TransactionDb.fromTransaction(WalletTestUtil.sampleTransaction)
+    TransactionDbHelper.fromTransaction(WalletTestUtil.sampleTransaction)
 
   it should "insert and read an transaction into the database" in { daos =>
     val txDAO = daos.transactionDAO

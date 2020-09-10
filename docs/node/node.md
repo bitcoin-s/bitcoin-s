@@ -91,7 +91,7 @@ implicit val appConfig = BitcoinSAppConfig(datadir, config)
 implicit val chainConfig = appConfig.chainConf
 implicit val nodeConfig = appConfig.nodeConf
 
-val initNodeF = nodeConfig.initialize()
+val initNodeF = nodeConfig.start()
 
 //the node requires a chainHandler to store block information
 //use a helper method in our testkit to create the chain project
@@ -108,7 +108,8 @@ val nodeF = for {
     NeutrinoNode(nodePeer = peer,
                nodeConfig = nodeConfig,
                chainConfig = chainConfig,
-               actorSystem = system)
+               actorSystem = system,
+               initialSyncDone = None)
 }
 
 //let's start it

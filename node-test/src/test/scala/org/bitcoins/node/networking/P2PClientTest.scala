@@ -2,7 +2,6 @@ package org.bitcoins.node.networking
 
 import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestProbe}
-import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.p2p.{HeadersMessage, NetworkMessage, VersionMessage}
@@ -12,10 +11,8 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
-import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeTestUtil
+import org.bitcoins.testkit.node.{CachedBitcoinSAppConfig, NodeTestUtil}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest._
@@ -24,10 +21,7 @@ import scodec.bits._
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class P2PClientTest extends BitcoindRpcTest {
-
-  implicit private val config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
@@ -119,15 +113,22 @@ class P2PClientTest extends BitcoindRpcTest {
   override def beforeAll(): Unit = {
     implicit val chainConf = config.chainConf
     chainConf.migrate()
+    ()
   }
 
   override def afterAll(): Unit = {
     implicit val chainConf = config.chainConf
-    for {
+    val shutdownConfigF = for {
       _ <- chainConf.dropTable("flyway_schema_history")
       _ <- chainConf.dropAll()
-    } yield ()
-    super.afterAll()
+    } yield {
+      super[CachedBitcoinSAppConfig].afterAll()
+    }
+
+    shutdownConfigF.onComplete { _ =>
+      super[BitcoindRpcTest].afterAll()
+    }
+
   }
 
   it must "establish a tcp connection with a bitcoin node" in {
@@ -159,7 +160,7 @@ class P2PClientTest extends BitcoindRpcTest {
     val probe = TestProbe()
     val remote = peer.socket
     val peerMessageReceiverF =
-      PeerMessageReceiver.preConnection(peer, NodeCallbacks.empty)
+      PeerMessageReceiver.preConnection(peer, NodeCallbacks.empty, None)
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>

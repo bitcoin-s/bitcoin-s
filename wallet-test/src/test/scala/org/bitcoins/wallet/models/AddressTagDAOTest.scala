@@ -2,6 +2,7 @@ package org.bitcoins.wallet.models
 
 import java.sql.SQLException
 
+import org.bitcoins.core.api.wallet.db.AddressTagDb
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
 import org.bitcoins.core.wallet.utxo.{
   AddressTag,
@@ -53,7 +54,8 @@ class AddressTagDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
           AddressTagDb(createdAddress.address, tag)
         addressTagDAO.create(tagDb)
       }
-      readAddressTagOpt <- addressTagDAO.read(createdAddressTag.address)
+      readAddressTagOpt <-
+        addressTagDAO.findByAddress(createdAddressTag.address).map(_.headOption)
     } yield {
       assert(readAddressTagOpt.isDefined)
       val readAddressTag = readAddressTagOpt.get

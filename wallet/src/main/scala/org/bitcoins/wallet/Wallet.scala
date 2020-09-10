@@ -2,37 +2,39 @@ package org.bitcoins.wallet
 
 import java.time.Instant
 
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
-import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
+import org.bitcoins.core.api.wallet.{AnyHDWalletApi, CoinSelectionAlgo}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
-import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
+import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurpose, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
+import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
 import org.bitcoins.core.wallet.builder.{
   RawTxBuilderWithFinalizer,
   RawTxSigner,
   ShufflingNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.keymanagement.{
+  KeyManagerParams,
+  KeyManagerUnlockError
+}
 import org.bitcoins.core.wallet.utxo.TxoState.{
   ConfirmedReceived,
   PendingConfirmationsReceived
 }
-import org.bitcoins.core.wallet.utxo.{
-  AddressTag,
-  InputInfo,
-  ScriptSignatureParams,
-  TxoState
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{
   AesPassword,
   CryptoUtil,
@@ -40,12 +42,9 @@ import org.bitcoins.crypto.{
   ECPublicKey
 }
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
-import org.bitcoins.keymanager.util.HDUtil
-import org.bitcoins.keymanager.{KeyManagerParams, KeyManagerUnlockError}
-import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
-import org.bitcoins.wallet.models.{SpendingInfoDb, _}
+import org.bitcoins.wallet.models._
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -58,7 +57,10 @@ abstract class Wallet
     with AccountHandling
     with FundTransactionHandling
     with TransactionProcessing
-    with RescanHandling {
+    with RescanHandling
+    with WalletLogger {
+
+  override def keyManager: BIP39KeyManager
 
   implicit val ec: ExecutionContext
 
@@ -74,6 +76,7 @@ abstract class Wallet
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
   private[wallet] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
   private[wallet] val transactionDAO: TransactionDAO = TransactionDAO()
+  private[wallet] val scriptPubKeyDAO: ScriptPubKeyDAO = ScriptPubKeyDAO()
 
   private[wallet] val incomingTxDAO: IncomingTransactionDAO =
     IncomingTransactionDAO()
@@ -90,7 +93,7 @@ abstract class Wallet
 
   private def utxosWithMissingTx: Future[Vector[SpendingInfoDb]] = {
     for {
-      utxos <- spendingInfoDAO.findAllUnspent()
+      utxos <- spendingInfoDAO.findAllSpendingInfos()
       hasTxs <- FutureUtil.foldLeftAsync(Vector.empty[SpendingInfoDb], utxos) {
         (accum, utxo) =>
           // If we don't have tx in our transactionDAO, add it to the list
@@ -108,40 +111,64 @@ abstract class Wallet
       // Download the block the tx is from so we process the block and subsequent txs
       _ <-
         if (blockHashes.nonEmpty) {
+          logger.info(
+            s"Missing relevant ${utxos.size} wallet transactions, fetching their blocks..")
           nodeApi.downloadBlocks(blockHashes.distinct)
         } else FutureUtil.unit
     } yield ()
 
-  override def start(): Future[Unit] = {
-    for {
-      _ <- walletConfig.start()
-      _ <- downloadMissingUtxos
-    } yield {
-      startWalletThread()
+  private def checkRootAccount: Future[Unit] = {
+    val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
+    val coin =
+      HDCoin(purpose = keyManager.kmParams.purpose, coinType = coinType)
+    val account = HDAccount(coin = coin, index = 0)
+    // safe since we're deriving from a priv
+    val xpub = keyManager.deriveXPub(account).get
+
+    accountDAO.read(account.coin, account.index).flatMap {
+      case Some(account) =>
+        if (account.xpub != xpub) {
+          val errorMsg =
+            s"Divergent xpubs for account=$account. Existing database xpub=${account.xpub}, key manager's xpub=$xpub. " +
+              s"It is possible we have a different key manager being used than expected, key manager=$keyManager"
+          Future.failed(new RuntimeException(errorMsg))
+        } else {
+          FutureUtil.unit
+        }
+      case None =>
+        val errorMsg = s"Missing root xpub for account $account in database"
+        Future.failed(new RuntimeException(errorMsg))
     }
   }
 
-  override def stop(): Unit = {
+  override def start(): Future[Wallet] = {
+    for {
+      _ <- walletConfig.start()
+      _ <- checkRootAccount
+      _ <- downloadMissingUtxos
+    } yield {
+      startWalletThread()
+      this
+    }
+  }
+
+  override def stop(): Future[Wallet] = {
     for {
       _ <- walletConfig.stop()
     } yield {
       stopWalletThread()
+      this
     }
-    ()
   }
 
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
     Wallet] = {
-    val utxosF = listUtxos()
-    val addressesF = listAddresses()
     for {
-      utxos <- utxosF
-      addresses <- addressesF
+      utxos <- listUtxos()
+      scripts <- listScriptPubKeys()
       scriptPubKeys =
-        utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
-          .map(_.scriptPubKey)
-          .toSet
+        utxos.flatMap(_.redeemScriptOpt).toSet ++ scripts.map(_.scriptPubKey)
       _ <- FutureUtil.sequentially(blockFilters) {
         case (blockHash, blockFilter) =>
           val matcher = SimpleFilterMatcher(blockFilter)
@@ -191,10 +218,10 @@ abstract class Wallet
     for {
       accountUtxos <- spendingInfoDAO.findAllForAccount(account)
       deleteUtxoFs = accountUtxos.map(spendingInfoDAO.delete)
-      _ <- Future.sequence(deleteUtxoFs)
+      _ <- FutureUtil.collect(deleteUtxoFs)
       accountAddresses <- addressDAO.findAllForAccount(account)
       deleteAddrFs = accountAddresses.map(addressDAO.delete)
-      _ <- Future.sequence(deleteAddrFs)
+      _ <- FutureUtil.collect(deleteAddrFs)
     } yield this
   }
 
@@ -202,11 +229,13 @@ abstract class Wallet
     for {
       _ <- spendingInfoDAO.deleteAll()
       _ <- addressDAO.deleteAll()
+      _ <- scriptPubKeyDAO.deleteAll()
     } yield this
   }
 
   /** Sums up the value of all unspent
-    * TXOs in the wallet, filtered by the given predicate */
+    * TXOs in the wallet, filtered by the given predicate
+    */
   private def filterThenSum(
       predicate: SpendingInfoDb => Boolean): Future[CurrencyUnit] = {
     for (
@@ -216,16 +245,15 @@ abstract class Wallet
       yield {
         val filtered = utxos
           .filter(predicate)
-          .map {
-            case txo: SpendingInfoDb =>
-              txo.state match {
-                case TxoState.PendingConfirmationsReceived |
-                    TxoState.ConfirmedReceived =>
-                  txo.output.value
-                case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
-                    TxoState.ConfirmedSpent | TxoState.DoesNotExist =>
-                  CurrencyUnits.zero
-              }
+          .map { txo =>
+            txo.state match {
+              case TxoState.PendingConfirmationsReceived |
+                  TxoState.ConfirmedReceived =>
+                txo.output.value
+              case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
+                  TxoState.ConfirmedSpent | TxoState.DoesNotExist =>
+                CurrencyUnits.zero
+            }
           }
 
         filtered.fold(0.sats)(_ + _)
@@ -233,24 +261,22 @@ abstract class Wallet
   }
 
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
-    val confirmed = filterThenSum(_.state == ConfirmedReceived)
-    confirmed.foreach(balance =>
-      logger.trace(s"Confirmed balance=${balance.satoshis}"))
-    confirmed
+    filterThenSum(_.state == ConfirmedReceived).map { balance =>
+      logger.trace(s"Confirmed balance=${balance.satoshis}")
+      balance
+    }
   }
 
   override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] = {
-    val allUnspentF = spendingInfoDAO.findAllUnspent()
-    val unspentInAccountF = for {
-      allUnspent <- allUnspentF
+    for {
+      allUnspent <- spendingInfoDAO.findAllUnspent()
     } yield {
-      allUnspent.filter { utxo =>
+      val confirmedUtxos = allUnspent.filter { utxo =>
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
         utxo.state == ConfirmedReceived
       }
+      confirmedUtxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
-
-    unspentInAccountF.map(_.foldLeft(CurrencyUnits.zero)(_ + _.output.value))
   }
 
   override def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
@@ -261,26 +287,23 @@ abstract class Wallet
   }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
-    val unconfirmed = filterThenSum(_.state == PendingConfirmationsReceived)
-    unconfirmed.foreach(balance =>
-      logger.trace(s"Unconfirmed balance=${balance.satoshis}"))
-    unconfirmed
-
+    filterThenSum(_.state == PendingConfirmationsReceived).map { balance =>
+      logger.trace(s"Unconfirmed balance=${balance.satoshis}")
+      balance
+    }
   }
 
   override def getUnconfirmedBalance(
       account: HDAccount): Future[CurrencyUnit] = {
-    val allUnspentF = spendingInfoDAO.findAllUnspent()
-    val unspentInAccountF = for {
-      allUnspent <- allUnspentF
+    for {
+      allUnspent <- spendingInfoDAO.findAllUnspent()
     } yield {
-      allUnspent.filter { utxo =>
+      val confirmedUtxos = allUnspent.filter { utxo =>
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
         utxo.state == PendingConfirmationsReceived
       }
+      confirmedUtxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
-
-    unspentInAccountF.map(_.foldLeft(CurrencyUnits.zero)(_ + _.output.value))
   }
 
   override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
@@ -383,10 +406,15 @@ abstract class Wallet
       diff = utxoDbs.map(_.outPoint).diff(outPoints)
       _ = require(diff.isEmpty,
                   s"Not all OutPoints belong to this wallet, diff $diff")
+      spentUtxos =
+        utxoDbs.filterNot(utxo => TxoState.receivedStates.contains(utxo.state))
+      _ = require(
+        spentUtxos.isEmpty,
+        s"Some out points given have already been spent, ${spentUtxos.map(_.outPoint)}")
 
       prevTxFs = utxoDbs.map(utxo =>
         transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
-      prevTxs <- Future.sequence(prevTxFs)
+      prevTxs <- FutureUtil.collect(prevTxFs)
       utxos =
         utxoDbs
           .zip(prevTxs)
@@ -424,7 +452,6 @@ abstract class Wallet
         destinations = Vector(destination),
         feeRate = feeRate,
         fromAccount = fromAccount,
-        keyManagerOpt = Some(keyManager),
         coinSelectionAlgo = algo,
         fromTagOpt = None)
 
@@ -516,11 +543,22 @@ abstract class Wallet
         destinations = outputs,
         feeRate = feeRate,
         fromAccount = fromAccount,
-        keyManagerOpt = Some(keyManager),
         fromTagOpt = None)
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
       tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, newTags)
     } yield tx
+  }
+
+  protected def getLastAccountOpt(
+      purpose: HDPurpose): Future[Option[AccountDb]] = {
+    accountDAO
+      .findAll()
+      .map(_.filter(_.hdAccount.purpose == purpose))
+      .map(_.sortBy(_.hdAccount.index))
+      // we want to the most recently created account,
+      // to know what the index of our new account
+      // should be.
+      .map(_.lastOption)
   }
 
   /** Creates a new account my reading from our account database, finding the last account,
@@ -529,16 +567,7 @@ abstract class Wallet
     * @return
     */
   override def createNewAccount(kmParams: KeyManagerParams): Future[Wallet] = {
-    val lastAccountOptF = accountDAO
-      .findAll()
-      .map(_.filter(_.hdAccount.purpose == kmParams.purpose))
-      .map(_.sortBy(_.hdAccount.index))
-      // we want to the most recently created account,
-      // to know what the index of our new account
-      // should be.
-      .map(_.lastOption)
-
-    lastAccountOptF.flatMap {
+    getLastAccountOpt(kmParams.purpose).flatMap {
       case Some(accountDb) =>
         val hdAccount = accountDb.hdAccount
         val newAccount = hdAccount.copy(index = hdAccount.index + 1)
@@ -567,10 +596,10 @@ abstract class Wallet
       }
     }
     val newAccountDb = AccountDb(xpub, hdAccount)
-    val accountCreationF = accountDAO.create(newAccountDb)
-    accountCreationF.map(created =>
-      logger.debug(s"Created new account ${created.hdAccount}"))
-    accountCreationF.map(_ => this)
+    accountDAO.create(newAccountDb).map { created =>
+      logger.debug(s"Created new account ${created.hdAccount}")
+      this
+    }
   }
 }
 
@@ -611,7 +640,6 @@ object Wallet extends WalletLogger {
     // safe since we're deriving from a priv
     val xpub = keyManager.deriveXPub(account).get
     val accountDb = AccountDb(xpub, account)
-    val accountDAO = wallet.accountDAO
 
     //see if we already have this account in our database
     //Three possible cases:
@@ -619,8 +647,7 @@ object Wallet extends WalletLogger {
     //2. We already have this account in our database, so we do nothing
     //3. We have this account in our database, with a DIFFERENT xpub. This is bad. Fail with an exception
     //   this most likely means that we have a different key manager than we expected
-    val accountOptF = accountDAO.read(account.coin, account.index)
-    accountOptF.flatMap {
+    wallet.accountDAO.read(account.coin, account.index).flatMap {
       case Some(account) =>
         if (account.xpub != xpub) {
           val errorMsg =
@@ -649,44 +676,35 @@ object Wallet extends WalletLogger {
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later
     // and still have their wallet work
-    val initConfigF = walletAppConfig.initialize()
-    val createAccountFutures = for {
-      _ <- initConfigF
-      accounts = HDPurposes.all.map { purpose =>
-        //we need to create key manager params for each purpose
-        //and then initialize a key manager to derive the correct xpub
-        val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
-        val kmE = {
-          BIP39KeyManager.fromParams(kmParams = kmParams,
-                                     password = BIP39KeyManager.badPassphrase,
-                                     bip39PasswordOpt = bip39PasswordOpt)
-        }
-        kmE match {
-          case Right(km) => createRootAccount(wallet = wallet, keyManager = km)
-          case Left(err) =>
-            //probably means you haven't initialized the key manager via the
-            //'CreateKeyManagerApi'
-            Future.failed(
-              new RuntimeException(
+    def createAccountFutures =
+      for {
+        _ <- walletAppConfig.start()
+        accounts = HDPurposes.all.map { purpose =>
+          //we need to create key manager params for each purpose
+          //and then initialize a key manager to derive the correct xpub
+          val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
+          val kmE = {
+            BIP39KeyManager.fromParams(kmParams = kmParams,
+                                       password = BIP39KeyManager.badPassphrase,
+                                       bip39PasswordOpt = bip39PasswordOpt)
+          }
+          kmE match {
+            case Right(km) =>
+              createRootAccount(wallet = wallet, keyManager = km)
+            case Left(err) =>
+              //probably means you haven't initialized the key manager via the
+              //'CreateKeyManagerApi'
+              Future.failed(new RuntimeException(
                 s"Failed to create keymanager with params=$kmParams err=$err"))
+          }
+
         }
+      } yield accounts
 
-      }
-    } yield accounts
-
-    val accountCreationF =
-      createAccountFutures.flatMap(accounts => Future.sequence(accounts))
-
-    accountCreationF.foreach { _ =>
-      logger.debug(s"Created root level accounts for wallet")
+    createAccountFutures.flatMap(accounts => FutureUtil.collect(accounts)).map {
+      _ =>
+        logger.debug(s"Created root level accounts for wallet")
+        wallet
     }
-
-    accountCreationF.failed.foreach { err =>
-      err.printStackTrace()
-      logger.error(s"Failed to create root level accounts: $err")
-    }
-
-    accountCreationF.map(_ => wallet)
   }
-
 }

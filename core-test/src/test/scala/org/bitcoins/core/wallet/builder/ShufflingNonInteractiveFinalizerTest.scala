@@ -18,6 +18,7 @@ import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{
   CreditingTxGen,
   CurrencyUnitGenerator,
+  FeeUnitGen,
   ScriptGenerators
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
@@ -194,7 +195,7 @@ class ShufflingNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
 
   it must "create a shuffled transaction with a ShufflingNonInteractiveFinalizer" in {
     forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                CurrencyUnitGenerator.feeUnit(100),
+                FeeUnitGen.feeUnit(100),
                 ScriptGenerators.scriptPubKey) {
       case ((inputs, outputs), feeRate, (changeSpk, _)) =>
         val txsF =

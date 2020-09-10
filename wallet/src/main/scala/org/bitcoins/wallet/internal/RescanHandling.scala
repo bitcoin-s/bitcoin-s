@@ -2,7 +2,11 @@ package org.bitcoins.wallet.internal
 
 import java.util.concurrent.Executors
 
-import org.bitcoins.core.api.ChainQueryApi.{FilterResponse, InvalidBlockRange}
+import org.bitcoins.core.api.chain.ChainQueryApi.{
+  FilterResponse,
+  InvalidBlockRange
+}
+import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.gcs.SimpleFilterMatcher
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
@@ -10,7 +14,6 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.wallet.api.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -104,10 +107,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
         _ = logger.info(
           s"Beginning to search for matches between ${startHeight}:${endHeight} against ${scripts.length} spks")
         range = startHeight.to(endHeight)
-        matched <- FutureUtil.batchExecute(
+        matched <- FutureUtil.batchAndSyncExecute(
           elements = range.toVector,
           f = fetchFiltersInRange(scripts, parallelismLevel),
-          init = Vector.empty,
           batchSize = batchSize)
       } yield {
         logger.info(s"Matched ${matched.length} blocks on rescan")
@@ -130,8 +132,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
                             endOpt = endOpt,
                             startOpt = startOpt)
       _ <- downloadAndProcessBlocks(blocks)
-      externalGap <- calcAddressGap(HDChainType.External)
-      changeGap <- calcAddressGap(HDChainType.Change)
+      externalGap <- calcAddressGap(HDChainType.External, account)
+      changeGap <- calcAddressGap(HDChainType.Change, account)
       res <-
         if (
           externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
@@ -153,7 +155,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         for {
           _ <- prevF
           spendingInfoDbs <-
-            spendingInfoDAO.findByScriptPubKey(addressDb.scriptPubKey)
+            spendingInfoDAO.findByScriptPubKeyId(addressDb.scriptPubKeyId)
           _ <-
             if (spendingInfoDbs.isEmpty) addressDAO.delete(addressDb)
             else FutureUtil.unit
@@ -162,21 +164,23 @@ private[wallet] trait RescanHandling extends WalletLogger {
     } yield ()
   }
 
-  private def calcAddressGap(chainType: HDChainType): Future[Int] = {
+  private def calcAddressGap(
+      chainType: HDChainType,
+      account: HDAccount): Future[Int] = {
     for {
-      addressDbs <- addressDAO.findAll()
+      addressDbs <- addressDAO.findAllForAccount(account)
       addressGap <-
         addressDbs
-        //make sure all addressDb are of the correct chainType
-        //and they are sorted according to their index so we can
-        //calculate the gap accurately
-          .filter(_.path.chain.chainType == chainType)
-          .sortBy(_.path.address.index)
+          //make sure all addressDb are of the correct chainType
+          //and they are sorted according to their index so we can
+          //calculate the gap accurately
+          .filter(_.accountChain == chainType)
+          .sortBy(_.addressIndex)
           .foldLeft(Future.successful(0)) { (prevNF, addressDb) =>
             for {
               prevN <- prevNF
               spendingInfoDbs <-
-                spendingInfoDAO.findByScriptPubKey(addressDb.scriptPubKey)
+                spendingInfoDAO.findByScriptPubKeyId(addressDb.scriptPubKeyId)
             } yield {
               if (spendingInfoDbs.isEmpty) prevN + 1 else 0
             }
@@ -213,6 +217,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         startOpt = startOpt,
         endOpt = endOpt)(ExecutionContext.fromExecutor(threadPool))
     } yield {
+      threadPool.shutdown()
       blocks.sortBy(_.blockHeight).map(_.blockHash.flip)
     }
 
@@ -258,20 +263,28 @@ private[wallet] trait RescanHandling extends WalletLogger {
         startHeight = startHeight,
         endHeight = endHeight)
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)
-    } yield filtered.toVector
+    } yield {
+      logger.info(
+        s"Found ${filtered.length} matches from start=$startHeight to end=$endHeight")
+      filtered
+    }
   }
 
   private def findMatches(
       filters: Vector[FilterResponse],
       scripts: Vector[ScriptPubKey],
-      parallelismLevel: Int): Future[Iterator[BlockMatchingResponse]] = {
-    if (filters.isEmpty)
-      Future.successful(Iterator.empty)
-    else {
+      parallelismLevel: Int): Future[Vector[BlockMatchingResponse]] = {
+    if (filters.isEmpty) {
+      logger.info("No Filters to check against")
+      Future.successful(Vector.empty)
+    } else if (scripts.isEmpty) {
+      logger.info("No scripts to check against")
+      Future.successful(Vector.empty)
+    } else {
       val bytes = scripts.map(_.asmBytes)
       /* Iterates over the grouped vector of filters to find matches with the given [[bytes]]. */
       val groupSize = calcGroupSize(filters.size, parallelismLevel)
-      val filterGroups = filters.grouped(groupSize)
+      val filterGroups = filters.grouped(groupSize).toVector
       // Sequence on the filter groups making sure the number of threads doesn't exceed [[parallelismLevel]].
       Future
         .sequence(filterGroups.map { filterGroup =>
@@ -284,6 +297,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
                 (blocks, filter) =>
                   val matcher = SimpleFilterMatcher(filter.compactFilter)
                   if (matcher.matchesAny(bytes)) {
+                    logger.info(s"Found a match in block ${filter.blockHeight}")
                     blocks :+ BlockMatchingResponse(filter.blockHash,
                                                     filter.blockHeight)
                   } else {
@@ -297,7 +311,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
   }
 
   /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
-    * It's needed to limit number of threads required to run the matching */
+    * It's needed to limit number of threads required to run the matching
+    */
   private def calcGroupSize(vectorSize: Int, parallelismLevel: Int): Int = {
     if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
       vectorSize / parallelismLevel + 1

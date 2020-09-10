@@ -10,8 +10,8 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
-import org.bitcoins.core.api.ChainQueryApi
-import org.bitcoins.core.api.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType

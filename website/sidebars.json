@@ -1,7 +1,11 @@
 {
   "docs": {
-    "Getting Started": ["getting-started"],
-    "Getting Setup": ["getting-setup"],
+    "Getting Started": [
+      "getting-started"
+    ],
+    "Getting Setup": [
+      "getting-setup"
+    ],
     "Applications": [
       "applications/cli",
       "applications/server",
@@ -9,7 +13,8 @@
     ],
     "Chain": [
       "chain/chain",
-      "chain/filter-sync"
+      "chain/filter-sync",
+      "chain/chain-query-api"
     ],
     "Configuration": [
       "config/configuration"
@@ -35,15 +40,14 @@
       "key-manager/key-manager"
     ],
     "Node": [
-      "node/node"
+      "node/node",
+      "node/node-api"
     ],
     "Wallet": [
       "wallet/wallet",
       "wallet/wallet-callbacks",
       "wallet/wallet-get-address",
       "wallet/address-tagging",
-      "wallet/chain-query-api",
-      "wallet/node-api",
       "wallet/dlc",
       "wallet/wallet-rescan"
     ],
@@ -59,7 +63,12 @@
     "Testkit": [
       "testkit/testkit"
     ],
-    "Contributing": ["contributing", "contributing-website"],
-    "Security": ["security"]
+    "Contributing": [
+      "contributing",
+      "contributing-website"
+    ],
+    "Security": [
+      "security"
+    ]
   }
 }

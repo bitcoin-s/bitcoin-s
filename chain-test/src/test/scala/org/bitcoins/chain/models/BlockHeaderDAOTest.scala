@@ -2,6 +2,7 @@ package org.bitcoins.chain.models
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.Blockchain
+import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.TimeUtil
@@ -114,10 +115,12 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val createdF = blockHeaderDAO.create(blockHeader)
 
       val headerDbsF = createdF.flatMap(_ =>
-        blockHeaderDAO.findAllBeforeTime(UInt32(TimeUtil.currentEpochSecond)))
+        blockHeaderDAO.findClosestBeforeTime(
+          UInt32(TimeUtil.currentEpochSecond)))
 
-      headerDbsF.map { headerDbs =>
-        assert(headerDbs.size == 2)
+      headerDbsF.map { headerDbOpt =>
+        assert(headerDbOpt.isDefined)
+        assert(headerDbOpt.get.hashBE == blockHeader.hashBE)
       }
   }
 
@@ -243,7 +246,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       bh.height == 1
     }
 
-    val foundF = createdF.flatMap(created => blockHeaderDAO.find(f))
+    val foundF = createdF.flatMap(_ => blockHeaderDAO.find(f))
 
     for {
       created <- createdF

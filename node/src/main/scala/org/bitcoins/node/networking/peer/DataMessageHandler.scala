@@ -1,15 +1,17 @@
 package org.bitcoins.node.networking.peer
 
-import org.bitcoins.chain.api.ChainApi
+import akka.Done
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.chain.db.ChainApi
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.bitcoins.node.{NodeCallbacks, P2PLogger}
+import org.bitcoins.node.{NodeCallbacks, NodeType, P2PLogger}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Try
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -21,6 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DataMessageHandler(
     chainApi: ChainApi,
     callbacks: NodeCallbacks,
+    initialSyncDone: Option[Promise[Done]] = None,
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     filterHeaderHeightOpt: Option[Int] = None,
     filterHeightOpt: Option[Int] = None,
@@ -36,7 +39,7 @@ case class DataMessageHandler(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
 
-    payload match {
+    val resultF = payload match {
       case checkpoint: CompactFilterCheckPointMessage =>
         logger.debug(
           s"Got ${checkpoint.filterHeaders.size} checkpoints ${checkpoint}")
@@ -66,10 +69,10 @@ case class DataMessageHandler(
               logger.debug(
                 s"Received filter headers=${filterHeaders.size} in one message, " +
                   "which is less than max. This means we are synced.")
-              sendFirstGetCompactFilterCommand(peerMsgSender).map { synced =>
-                if (!synced)
+              sendFirstGetCompactFilterCommand(peerMsgSender).map { syncing =>
+                if (!syncing)
                   logger.info("We are synced")
-                synced
+                syncing
               }
             }
           newFilterHeaderHeight <- filterHeaderHeightOpt match {
@@ -110,6 +113,7 @@ case class DataMessageHandler(
               val syncing = newFilterHeight < newFilterHeaderHeight
               if (!syncing) {
                 logger.info(s"We are synced")
+                Try(initialSyncDone.map(_.success(Done)))
               }
               Future.successful(syncing)
             }
@@ -180,7 +184,7 @@ case class DataMessageHandler(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainApi.processHeaders(headers)
 
-        if (appConfig.isSPVEnabled) {
+        if (appConfig.nodeType == NodeType.SpvNode) {
           logger.trace(s"Requesting data for headers=${headers.length}")
           peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgFilteredBlock,
                                            headers.map(_.hash): _*)
@@ -209,13 +213,25 @@ case class DataMessageHandler(
                        "which is less than max. This means we are synced,",
                        "not requesting more.")
                     .mkString(" "))
-                if (appConfig.isNeutrinoEnabled && !syncing)
+                // If we are in neutrino mode, we might need to start fetching filters and their headers
+                // if we are syncing we should do this, however, sometimes syncing isn't a good enough check,
+                // so we also check if our cached filter heights have been set as well, if they haven't then
+                // we probably need to sync filters
+                if (
+                  appConfig.nodeType == NodeType.NeutrinoNode && (!syncing ||
+                  (filterHeaderHeightOpt.isEmpty &&
+                  filterHeightOpt.isEmpty))
+                )
                   sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
-                else
+                else {
+                  Try(initialSyncDone.map(_.success(Done)))
                   Future.successful(syncing)
+                }
               }
-            } else
+            } else {
+              Try(initialSyncDone.map(_.success(Done)))
               Future.successful(syncing)
+            }
           }
 
         getHeadersF.failed.map { err =>
@@ -230,11 +246,34 @@ case class DataMessageHandler(
           this.copy(chainApi = newApi, syncing = newSyncing)
         }
       case msg: BlockMessage =>
+        val block = msg.block
         logger.info(
-          s"Received block message with hash ${msg.block.blockHeader.hash.flip}")
-        callbacks
-          .executeOnBlockReceivedCallbacks(logger, msg.block)
-          .map(_ => this)
+          s"Received block message with hash ${block.blockHeader.hash.flip.hex}")
+
+        val newApiF = {
+          chainApi
+            .getHeader(block.blockHeader.hashBE)
+            .flatMap { headerOpt =>
+              if (headerOpt.isEmpty) {
+                logger.debug("Processing block's header...")
+                for {
+                  processedApi <- chainApi.processHeader(block.blockHeader)
+                  _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(
+                    logger,
+                    Vector(block.blockHeader))
+                } yield processedApi
+              } else Future.successful(chainApi)
+            }
+        }
+
+        for {
+          newApi <- newApiF
+          _ <-
+            callbacks
+              .executeOnBlockReceivedCallbacks(logger, block)
+        } yield {
+          this.copy(chainApi = newApi)
+        }
       case TransactionMessage(tx) =>
         MerkleBuffers.putTx(tx, callbacks).flatMap { belongsToMerkle =>
           if (belongsToMerkle) {
@@ -255,6 +294,13 @@ case class DataMessageHandler(
       case invMsg: InventoryMessage =>
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
     }
+
+    resultF.failed.foreach {
+      case err =>
+        logger.error(s"Failed to handle data payload=${payload}", err)
+    }
+
+    resultF
   }
 
   private def sendNextGetCompactFilterHeadersCommand(
@@ -266,20 +312,19 @@ case class DataMessageHandler(
       stopHash = stopHash)
 
   private def sendFirstGetCompactFilterHeadersCommand(
-      peerMsgSender: PeerMessageSender): Future[Boolean] =
+      peerMsgSender: PeerMessageSender): Future[Boolean] = {
     for {
-      filterHeaderCount <- chainApi.getFilterHeaderCount()
-      highestFilterHeaderOpt <-
+      bestFilterHeaderOpt <-
         chainApi
-          .getFilterHeadersAtHeight(filterHeaderCount)
-          .map(_.headOption)
+          .getBestFilterHeader()
       highestFilterBlockHash =
-        highestFilterHeaderOpt
+        bestFilterHeaderOpt
           .map(_.blockHashBE)
           .getOrElse(DoubleSha256DigestBE.empty)
       res <- sendNextGetCompactFilterHeadersCommand(peerMsgSender,
                                                     highestFilterBlockHash)
     } yield res
+  }
 
   private def sendNextGetCompactFilterCommand(
       peerMsgSender: PeerMessageSender,
@@ -312,13 +357,14 @@ case class DataMessageHandler(
     val getData = GetDataMessage(invMsg.inventories.map {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
         // only request the merkle block if we are spv enabled
-        if (appConfig.isSPVEnabled) {
-          Inventory(TypeIdentifier.MsgFilteredBlock, hash)
-        } else Inventory(TypeIdentifier.MsgBlock, hash)
+        appConfig.nodeType match {
+          case NodeType.SpvNode =>
+            Inventory(TypeIdentifier.MsgFilteredBlock, hash)
+          case NodeType.NeutrinoNode | NodeType.FullNode =>
+            Inventory(TypeIdentifier.MsgBlock, hash)
+        }
       case other: Inventory => other
     })
-    peerMsgSender.sendMsg(getData)
-    Future.successful(this)
-
+    peerMsgSender.sendMsg(getData).map(_ => this)
   }
 }

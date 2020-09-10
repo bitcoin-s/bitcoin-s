@@ -11,14 +11,25 @@ object FutureUtil {
     * @param fun A function that transforms each element into a future
     * @return The processed elements
     */
-  def sequentially[T, U](items: Seq[T])(fun: T => Future[U])(implicit
-      ec: ExecutionContext): Future[List[U]] = {
-    val init = Future.successful(List.empty[U])
+  def sequentially[T, U](items: Iterable[T])(fun: T => Future[U])(implicit
+      ec: ExecutionContext): Future[Vector[U]] = {
+    val init = Future.successful(Vector.empty[U])
     items.foldLeft(init) { (f, item) =>
       f.flatMap { x =>
-        fun(item).map(_ :: x)
+        fun(item).map(_ +: x)
       }
     } map (_.reverse)
+  }
+
+  /**
+    * Executes a series of futures sequentially. It's similar to [[FutureUtil.sequentially()]],
+    * but it accepts a collection of futures and executes them one by one.
+    * @param items The collection of futures
+    * @return The processed elements
+    */
+  def collect[T](items: Iterable[Future[T]])(implicit
+      ec: ExecutionContext): Future[Vector[T]] = {
+    FutureUtil.sequentially(items)(x => x)
   }
 
   val unit: Future[Unit] = Future.successful(())
@@ -43,7 +54,8 @@ object FutureUtil {
   }
 
   /** Takes elements, groups them into batches of 'batchSize' and then calls f on them.
-    * The next batch does not start executing until the first batch is finished
+    * The next batch does not start executing until the first batch is finished. This does
+    * not aggregate result over batches, rather just returns the result of the last batch
     */
   def batchExecute[T, U](
       elements: Vector[T],
@@ -65,7 +77,31 @@ object FutureUtil {
     } yield batchExecution
   }
 
-  /** Batches the [[elements]] by [[batchSize]] and then calls [[f]] on them in parallel */
+  /** Batches the elements by batchSize, executes f, and then aggregates all of the results
+    * into a vector and returns it. This is is the synchronous version of [[batchAndParallelExecute()]]
+    */
+  def batchAndSyncExecute[T, U](
+      elements: Vector[T],
+      f: Vector[T] => Future[Vector[U]],
+      batchSize: Int)(implicit ec: ExecutionContext): Future[Vector[U]] = {
+    val initF = Future.successful(Vector.empty)
+    val batches = elements.grouped(batchSize)
+    for {
+      batchExecution <- {
+        batches.foldLeft(initF) {
+          case (accumF: Future[Vector[U]], batch: Vector[T]) =>
+            for {
+              accum <- accumF
+              executed <- f(batch)
+            } yield accum ++ executed
+        }
+      }
+    } yield batchExecution
+  }
+
+  /** Batches the [[elements]] by [[batchSize]] and then calls [[f]] on them in parallel
+    * This is the parallel version of [[batchAndSyncExecute()]]
+    */
   def batchAndParallelExecute[T, U](
       elements: Vector[T],
       f: Vector[T] => Future[U],

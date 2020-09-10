@@ -2,8 +2,8 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 
 // INTERNAL NOTE: Due to changes in the Scala collections in 2.13 this
 // class and its companion object
-// has to be implemented separetely for the different Scala versions.
+// has to be implemented separately for the different Scala versions.
 // The general idea is that all three implement a collection, but slightly
 // different ones (the one that the 2.12 and 2.11 versions implement got
 // removed in 2.13). The most interesting method is `compObjectFromHeaders`.
@@ -39,7 +39,8 @@ private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
 
   val tip: BlockHeaderDb = headers.head
 
-  require(headers.size <= 1 || headers(1).height == tip.height - 1)
+  require(headers.size <= 1 || headers(1).height == tip.height - 1,
+          s"Headers must be in descending order, got ${headers.take(5)}")
 
   /** The height of the chain */
   val height: Int = tip.height
@@ -87,6 +88,10 @@ private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
 
     loop(0)
   }
+
+  override def toString: String = {
+    s"BaseBlockchain(tip=${tip},last=${last},length=${length})"
+  }
 }
 
 private[blockchain] trait BaseBlockChainCompObject
@@ -118,7 +123,7 @@ private[blockchain] trait BaseBlockChainCompObject
           //found a header to connect to!
           val prevBlockHeader = blockchain.headers(prevHeaderIdx)
           logger.debug(
-            s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain of ${blockchain.length} headers")
+            s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain of ${blockchain.length} headers with tip ${blockchain.tip.hashBE.hex}")
           val chain = blockchain.fromValidHeader(prevBlockHeader)
           val tipResult =
             TipValidation.checkNewTip(newPotentialTip = header, chain)
@@ -238,22 +243,33 @@ private[blockchain] trait BaseBlockChainCompObject
   /** Walks backwards from the current header searching through ancestors if [[current.previousBlockHashBE]] is in [[ancestors]]
     * This does not validate other things such as POW.
     */
-  @tailrec
   final def connectWalkBackwards(
       current: BlockHeaderDb,
-      ancestors: Vector[BlockHeaderDb],
-      accum: Vector[BlockHeaderDb] = Vector.empty)(implicit
-      chainAppConfig: ChainAppConfig): Vector[BlockHeaderDb] = {
-    val prevHeaderOpt = ancestors.find(_.hashBE == current.previousBlockHashBE)
-    prevHeaderOpt match {
-      case Some(h) =>
-        connectWalkBackwards(current = h,
-                             accum = current +: accum,
-                             ancestors = ancestors)
-      case None =>
-        logger.debug(s"No prev found for $current hashBE=${current.hashBE}")
-        current +: accum
+      ancestors: Vector[BlockHeaderDb]): Vector[BlockHeaderDb] = {
+    val groupByHeight: Map[Int, Vector[BlockHeaderDb]] = {
+      ancestors.groupBy(_.height)
     }
+
+    @tailrec
+    def loop(
+        current: BlockHeaderDb,
+        accum: Vector[BlockHeaderDb]): Vector[BlockHeaderDb] = {
+      val prevHeight = current.height - 1
+      val possibleHeadersOpt: Option[Vector[BlockHeaderDb]] =
+        groupByHeight.get(prevHeight)
+
+      val prevHeaderOpt = possibleHeadersOpt.flatMap(
+        _.find(_.hashBE == current.previousBlockHashBE)
+      )
+      prevHeaderOpt match {
+        case Some(prevHeader) =>
+          loop(prevHeader, current +: accum)
+        case None =>
+          current +: accum
+      }
+    }
+
+    loop(current, Vector.empty)
   }
 
   /** Walks backwards from a child header reconstructing a blockchain
@@ -265,9 +281,8 @@ private[blockchain] trait BaseBlockChainCompObject
       chainAppConfig: ChainAppConfig): Vector[Blockchain] = {
     //now all hashes are connected correctly forming a
     //valid blockchain in term of hashes connected to each other
-    val orderedHeaders = connectWalkBackwards(current = childHeader,
-                                              accum = Vector.empty,
-                                              ancestors = ancestors)
+    val orderedHeaders =
+      connectWalkBackwards(current = childHeader, ancestors = ancestors)
 
     val initBlockchainOpt = orderedHeaders match {
       case Vector() | _ +: Vector() =>

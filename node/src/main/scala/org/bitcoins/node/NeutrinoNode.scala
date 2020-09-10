@@ -1,22 +1,24 @@
 package org.bitcoins.node
 
+import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 case class NeutrinoNode(
     nodePeer: Peer,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
+    initialSyncDone: Option[Promise[Done]],
     actorSystem: ActorSystem)
     extends Node {
   require(
-    nodeConfig.isNeutrinoEnabled,
+    nodeConfig.nodeType == NodeType.NeutrinoNode,
     s"We need our Neutrino mode enabled to be able to construct a Neutrino node!")
 
   implicit override def system: ActorSystem = actorSystem
@@ -59,7 +61,10 @@ case class NeutrinoNode(
       filterCount <- chainApi.getFilterCount
       peerMsgSender <- peerMsgSenderF
     } yield {
-      peerMsgSender.sendGetHeadersMessage(header.hashBE.flip)
+      // Get all of our cached headers in case of a reorg
+      val cachedHeaders =
+        chainApi.blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      peerMsgSender.sendGetHeadersMessage(cachedHeaders)
 
       // If we have started syncing filters headers
       if (filterHeaderCount != 0) {

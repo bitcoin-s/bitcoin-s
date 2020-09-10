@@ -34,7 +34,7 @@ object BitcoinSTestAppConfig {
   }
 
   def getSpvWithEmbeddedDbTestConfig(
-      pgUrl: ProjectType => Option[String],
+      pgUrl: () => Option[String],
       config: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
@@ -67,7 +67,7 @@ object BitcoinSTestAppConfig {
   }
 
   def getNeutrinoWithEmbeddedDbTestConfig(
-      pgUrl: ProjectType => Option[String],
+      pgUrl: () => Option[String],
       config: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
@@ -102,24 +102,24 @@ object BitcoinSTestAppConfig {
     */
   def configWithEmbeddedDb(
       project: Option[ProjectType],
-      pgUrl: ProjectType => Option[String]): Config = {
+      pgUrl: () => Option[String]): Config = {
 
     def pgConfigForProject(project: ProjectType): String = {
       val name = project.toString().toLowerCase()
       s""" $name.profile = "slick.jdbc.PostgresProfile$$"
          | $name.db {
-         |   url = "${pgUrl(project).getOrElse(
+         |   url = "${pgUrl().getOrElse(
         throw new RuntimeException(s"Cannot get db url for $project"))}"
          |   driver = "org.postgresql.Driver"
          |   username = "postgres"
          |   password = ""
-         |   connectionPool = disabled
+         |   numThreads = 10
          |   keepAliveConnection = true
          | }""".stripMargin
     }
 
     def configForProject(project: ProjectType) =
-      if (pgUrl(project).isDefined)
+      if (pgUrl().isDefined)
         pgConfigForProject(project)
       else
         ""

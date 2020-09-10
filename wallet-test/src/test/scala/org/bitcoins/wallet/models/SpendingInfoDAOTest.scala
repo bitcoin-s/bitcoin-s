@@ -1,11 +1,16 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.{
+  LegacySpendingInfo,
+  NestedSegwitV0SpendingInfo,
+  SegwitV0SpendingInfo
+}
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   TransactionInput
 }
-import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.fixtures.{WalletDAOFixture, WalletDAOs}
@@ -15,8 +20,42 @@ import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   behavior of "SpendingInfoDAO"
 
+  it should "preserve public key scripts" in { daos =>
+    val addressDAO = daos.addressDAO
+    val spendingInfoDAO = daos.utxoDAO
+
+    val addr1 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
+                                            addressIndex = 0)
+    val addr2 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
+                                            addressIndex = 1)
+    assert(addr1.scriptPubKey != addr2.scriptPubKey)
+
+    for {
+      createdAddr1 <- addressDAO.create(addr1)
+      createdAddr2 <- addressDAO.create(addr2)
+
+      u1 = sampleLegacyUTXO(addr1.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, u1)
+      utxo1 <- daos.utxoDAO.create(u1)
+
+      u2 = WalletTestUtil.sampleSegwitUTXO(addr2.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, u2)
+      utxo2 <- daos.utxoDAO.create(u2)
+
+      utxos = Vector(utxo1, utxo2)
+      changed = utxos.map(_.copyWithState(TxoState.DoesNotExist))
+      updated <- spendingInfoDAO.updateAllSpendingInfoDb(changed)
+    } yield {
+      assert(updated == changed)
+      assert(addr1 == createdAddr1)
+      assert(addr2 == createdAddr2)
+      assert(addr1.scriptPubKey == utxo1.output.scriptPubKey)
+      assert(addr2.scriptPubKey == utxo2.output.scriptPubKey)
+    }
+  }
+
   it must "be able to update multiple utxos" in { daos =>
-    val WalletDAOs(_, addressDAO, _, spendingInfoDAO, _, _, _) = daos
+    val WalletDAOs(_, addressDAO, _, spendingInfoDAO, _, _, _, _) = daos
 
     for {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
@@ -32,7 +71,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
       utxos = Vector(utxo1, utxo2)
       changed = utxos.map(_.copyWithState(TxoState.DoesNotExist))
-      updated <- spendingInfoDAO.updateAll(changed)
+      updated <- spendingInfoDAO.updateAllSpendingInfoDb(changed)
     } yield assert(updated == changed)
   }
 
@@ -41,7 +80,8 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
     for {
       created <- WalletTestUtil.insertSegWitUTXO(daos)
-      read <- utxoDAO.read(created.id.get)
+      spk = created.output.scriptPubKey
+      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(spk)))
     } yield read match {
       case None                          => fail(s"Did not read back a UTXO")
       case Some(_: SegwitV0SpendingInfo) => succeed
@@ -53,7 +93,8 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val utxoDAO = daos.utxoDAO
     for {
       created <- WalletTestUtil.insertLegacyUTXO(daos)
-      read <- utxoDAO.read(created.id.get)
+      spk = created.output.scriptPubKey
+      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(spk)))
     } yield read match {
       case None                        => fail(s"Did not read back a UTXO")
       case Some(_: LegacySpendingInfo) => succeed
@@ -154,7 +195,8 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val utxoDAO = daos.utxoDAO
     for {
       created <- WalletTestUtil.insertNestedSegWitUTXO(daos)
-      read <- utxoDAO.read(created.id.get)
+      spk = created.output.scriptPubKey
+      read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(spk)))
     } yield read match {
       case None                                => fail(s"Did not read back a UTXO")
       case Some(_: NestedSegwitV0SpendingInfo) => succeed

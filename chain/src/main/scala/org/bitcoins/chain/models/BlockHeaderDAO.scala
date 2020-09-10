@@ -2,8 +2,10 @@ package org.bitcoins.chain.models
 
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 
 import scala.annotation.tailrec
@@ -25,10 +27,9 @@ case class BlockHeaderDAO()(implicit
   import mappers.{doubleSha256DigestBEMapper, int32Mapper, uInt32Mapper}
 
   implicit private val bigIntMapper: BaseColumnType[BigInt] =
-    if (appConfig.driverName == "postgresql") {
-      mappers.bigIntPostgresMapper
-    } else {
-      mappers.bigIntMapper
+    appConfig.driver match {
+      case SQLite     => mappers.bigIntMapper
+      case PostgreSQL => mappers.bigIntPostgresMapper
     }
 
   override val table =
@@ -206,10 +207,14 @@ case class BlockHeaderDAO()(implicit
     table.filter(header => header.height >= from && header.height <= to).result
   }
 
-  def findAllBeforeTime(time: UInt32): Future[Vector[BlockHeaderDb]] = {
-    val query = table.filter(_.time < time)
+  def findClosestBeforeTime(time: UInt32): Future[Option[BlockHeaderDb]] = {
+    val beforeTime = table.filter(_.time < time)
 
-    database.run(query.result).map(_.toVector)
+    val maxTime = beforeTime.map(_.time).max
+
+    val query = table.filter(_.time === maxTime)
+
+    safeDatabase.run(query.result).map(_.headOption)
   }
 
   def findClosestToTime(time: UInt32): Future[BlockHeaderDb] = {
@@ -222,7 +227,12 @@ case class BlockHeaderDAO()(implicit
 
     opt.flatMap {
       case None =>
-        findAllBeforeTime(time).map(_.maxBy(_.time))
+        findClosestBeforeTime(time).flatMap {
+          case None =>
+            Future.failed(new RuntimeException("No block headers in database."))
+          case Some(header) =>
+            Future.successful(header)
+        }
       case Some(header) =>
         Future.successful(header)
     }
@@ -259,7 +269,9 @@ case class BlockHeaderDAO()(implicit
 
   /** Returns the block height of the block with the most work from our database */
   def bestHeight: Future[Int] = {
-    chainTips.map(_.maxBy(_.chainWork).height)
+    chainTips.map { tips =>
+      tips.maxByOption(_.chainWork).map(_.height).getOrElse(0)
+    }
   }
 
   private val maxWorkQuery: profile.ProfileAction[
@@ -318,10 +330,10 @@ case class BlockHeaderDAO()(implicit
       ec: ExecutionContext): Future[Vector[Blockchain]] = {
     val chainTipsF = chainTips
     chainTipsF.flatMap { tips =>
-      val nestedFuture: Vector[Future[Blockchain]] = tips.map { tip =>
-        getBlockchainFrom(tip)
+      val nestedFuture: Vector[Future[Vector[Blockchain]]] = tips.map { tip =>
+        getBlockchainsFrom(tip)
       }
-      Future.sequence(nestedFuture)
+      Future.sequence(nestedFuture).map(_.flatten)
     }
   }
 
@@ -333,6 +345,14 @@ case class BlockHeaderDAO()(implicit
     val headersF = getBetweenHeights(from = height, to = header.height)
     headersF.map(headers =>
       Blockchain.fromHeaders(headers.sortBy(_.height)(Ordering.Int.reverse)))
+  }
+
+  def getBlockchainsFrom(header: BlockHeaderDb)(implicit
+      ec: ExecutionContext): Future[Vector[Blockchain]] = {
+    val diffInterval = appConfig.chain.difficultyChangeInterval
+    val height = Math.max(0, header.height - diffInterval)
+
+    getBlockchainsBetweenHeights(from = height, to = header.height)
   }
 
   @tailrec
@@ -366,16 +386,21 @@ case class BlockHeaderDAO()(implicit
       } else {
         val headersByHeight: Vector[(Int, Vector[BlockHeaderDb])] =
           headers.groupBy(_.height).toVector
-        val tips: Vector[BlockHeaderDb] = headersByHeight.maxBy(_._1)._2
+        val tipsOpt = headersByHeight.maxByOption(_._1).map(_._2)
 
-        val chains = tips.map { tip =>
-          Blockchain
-            .connectWalkBackwards(tip, headers)
-            .sortBy(_.height)(Ordering.Int.reverse)
+        tipsOpt match {
+          case None =>
+            Vector.empty
+          case Some(tips) =>
+            val chains = tips.map { tip =>
+              Blockchain
+                .connectWalkBackwards(tip, headers)
+                .sortBy(_.height)(Ordering.Int.reverse)
+            }
+            val init = chains.map(Blockchain(_))
+
+            loop(init, headers).distinct
         }
-        val init = chains.map(Blockchain(_))
-
-        loop(init, headers).distinct
       }
     }
   }
@@ -407,7 +432,7 @@ case class BlockHeaderDAO()(implicit
 
   /** A table that stores block headers related to a blockchain */
   class BlockHeaderTable(tag: Tag)
-      extends Table[BlockHeaderDb](tag, "block_headers") {
+      extends Table[BlockHeaderDb](tag, schemaName, "block_headers") {
 
     def height = column[Int]("height")
 

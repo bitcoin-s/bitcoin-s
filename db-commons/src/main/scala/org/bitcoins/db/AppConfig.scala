@@ -6,11 +6,11 @@ import ch.qos.logback.classic.Level
 import com.typesafe.config._
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.core.util.{BitcoinSLogger, StartStop}
+import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Future}
 import scala.util.matching.Regex
 import scala.util.{Failure, Properties, Success, Try}
 
@@ -21,22 +21,19 @@ import scala.util.{Failure, Properties, Success, Try}
   * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
   *      for more information.
   */
-abstract class AppConfig extends LoggerConfig with StartStop[Unit] {
+abstract class AppConfig extends LoggerConfig with StartStopAsync[Unit] {
 
   private val logger = BitcoinSLogger.logger
 
   /**
-    * Initializes this project.
+    * Starts this project.
     * After this future resolves, all operations should be
     * able to be performed correctly.
     *
-    * Initializing may include creating database tables,
-    * making directories or files needed latern or
+    * Starting may include creating database tables,
+    * making directories or files needed later or
     * something else entirely.
     */
-  def initialize()(implicit ec: ExecutionContext): Future[Unit]
-
-  /** Starts the associated application */
   override def start(): Future[Unit]
 
   /** Releases the thread pool associated with this AppConfig's DB */
@@ -135,90 +132,17 @@ abstract class AppConfig extends LoggerConfig with StartStop[Unit] {
     * The underlying config that we derive the
     * rest of the fields in this class from
     */
+  private[bitcoins] lazy val baseConfig: Config = {
+    AppConfig.getBaseConfig(baseDatadir, configOverrides)
+  }
+
   private[bitcoins] lazy val config: Config = {
-
-    val datadirConfig = {
-      val file = baseDatadir.resolve("bitcoin-s.conf")
-      val config = if (Files.isReadable(file)) {
-        ConfigFactory.parseFile(file.toFile())
-      } else {
-        ConfigFactory.empty()
-      }
-
-      val withDatadir =
-        ConfigFactory.parseString(s"bitcoin-s.datadir = $baseDatadir")
-      withDatadir.withFallback(config)
-    }
-
-    logger.trace(s"Data directory config:")
-    if (datadirConfig.hasPath("bitcoin-s")) {
-      logger.trace(datadirConfig.getConfig("bitcoin-s").asReadableJson)
-    } else {
-      logger.trace(ConfigFactory.empty().asReadableJson)
-    }
-
-    // `load` tries to resolve substitions,
-    // `parseResources` does not
-    val dbConfig = ConfigFactory
-      .parseResources("db.conf")
-
-    logger.trace(
-      s"DB config: ${dbConfig.getConfig("bitcoin-s").asReadableJson}")
-
-    // we want to NOT resolve substitutions in the configuraton until the user
-    // provided configs also has been loaded. .parseResources() does not do that
-    // whereas .load() does
-    val classPathConfig = {
-      val applicationConf = ConfigFactory.parseResources("application.conf")
-      val referenceConf = ConfigFactory.parseResources("reference.conf")
-      applicationConf.withFallback(referenceConf)
-    }
-
-    logger.trace(
-      s"Classpath config: ${classPathConfig.getConfig("bitcoin-s").asReadableJson}")
-
-    // we want the data directory configuration
-    // to take preference over any bundled (classpath)
-    // configurations
-    // loads reference.conf (provided by Bitcoin-S)
-    val unresolvedConfig = datadirConfig
-      .withFallback(classPathConfig)
-      .withFallback(dbConfig)
-
-    logger.trace(s"Unresolved bitcoin-s config:")
-    logger.trace(unresolvedConfig.getConfig("bitcoin-s").asReadableJson)
-
-    val withOverrides =
-      if (configOverrides.nonEmpty) {
-        val overrides =
-          configOverrides
-          // we reverse to make the configs specified last take precedent
-          .reverse
-            .reduce(_.withFallback(_))
-
-        val interestingOverrides = overrides.getConfig("bitcoin-s")
-        logger.trace(
-          s"${configOverrides.length} user-overrides for bitcoin-s config:")
-        logger.trace(interestingOverrides.asReadableJson)
-
-        // to make the overrides actually override
-        // the default setings we have to do it
-        // in this order
-        overrides.withFallback(unresolvedConfig)
-      } else {
-        logger.trace(s"No user-provided overrides")
-        unresolvedConfig
-      }
-
-    val finalConfig = withOverrides
-      .resolve()
-      .getConfig("bitcoin-s")
+    val finalConfig = baseConfig.getConfig("bitcoin-s")
 
     logger.debug(s"Resolved bitcoin-s config:")
     logger.debug(finalConfig.asReadableJson)
 
     finalConfig
-
   }
 
   /** The base data directory. This is where we look for a configuration file */
@@ -234,7 +158,12 @@ abstract class AppConfig extends LoggerConfig with StartStop[Unit] {
     baseDatadir.resolve(lastDirname)
   }
 
-  override val logFile: Path = datadir.resolve("bitcoin-s.log")
+  override val logLocation: Path = {
+    val path = datadir
+    // Set property for loggers
+    System.setProperty("bitcoins.log.location", path.toAbsolutePath.toString)
+    path
+  }
 
   private def stringToLogLevel(str: String): Option[Level] =
     str.toLowerCase() match {
@@ -314,6 +243,64 @@ abstract class AppConfig extends LoggerConfig with StartStop[Unit] {
 }
 
 object AppConfig extends BitcoinSLogger {
+
+  def getBaseConfig(
+      baseDatadir: Path,
+      configOverrides: List[Config] = List.empty): Config = {
+    val datadirConfig = {
+      val file = baseDatadir.resolve("bitcoin-s.conf")
+      val config = if (Files.isReadable(file)) {
+        ConfigFactory.parseFile(file.toFile)
+      } else {
+        ConfigFactory.empty()
+      }
+
+      val withDatadir =
+        ConfigFactory.parseString(s"bitcoin-s.datadir = $baseDatadir")
+      withDatadir.withFallback(config)
+    }
+
+    // `load` tries to resolve substitutions,
+    // `parseResources` does not
+    val dbConfig = ConfigFactory
+      .parseResources("db.conf")
+
+    // we want to NOT resolve substitutions in the configuration until the user
+    // provided configs also has been loaded. .parseResources() does not do that
+    // whereas .load() does
+    val classPathConfig = {
+      val applicationConf = ConfigFactory.parseResources("application.conf")
+      val referenceConf = ConfigFactory.parseResources("reference.conf")
+      applicationConf.withFallback(referenceConf)
+    }
+
+    // we want the data directory configuration
+    // to take preference over any bundled (classpath)
+    // configurations
+    // loads reference.conf (provided by Bitcoin-S)
+    val unresolvedConfig = datadirConfig
+      .withFallback(classPathConfig)
+      .withFallback(dbConfig)
+
+    val withOverrides =
+      if (configOverrides.nonEmpty) {
+        val overrides =
+          configOverrides
+            // we reverse to make the configs specified last take precedent
+            .reverse
+            .reduce(_.withFallback(_))
+
+        // to make the overrides actually override
+        // the default settings we have to do it
+        // in this order
+        overrides.withFallback(unresolvedConfig)
+      } else {
+        unresolvedConfig
+      }
+
+    withOverrides
+      .resolve()
+  }
 
   /** The default data directory
     *

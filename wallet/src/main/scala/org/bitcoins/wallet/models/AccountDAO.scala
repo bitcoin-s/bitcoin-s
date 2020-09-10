@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.hd._
 import org.bitcoins.db.{CRUD, SlickUtil}
@@ -58,7 +59,7 @@ case class AccountDAO()(implicit
   }
 
   class AccountTable(tag: Tag)
-      extends Table[AccountDb](tag, "wallet_accounts") {
+      extends Table[AccountDb](tag, schemaName, "wallet_accounts") {
 
     def xpub: Rep[ExtPublicKey] = column[ExtPublicKey]("xpub")
 

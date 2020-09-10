@@ -3,7 +3,7 @@ package org.bitcoins.core.hd
 import org.bitcoins.core.crypto.ExtKey
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.SeqWrapper
-import org.bitcoins.crypto.Factory
+import org.bitcoins.crypto.{Factory, StringFactory}
 import scodec.bits.ByteVector
 
 abstract class BIP32Path extends SeqWrapper[BIP32Node] {
@@ -93,7 +93,7 @@ abstract class BIP32Path extends SeqWrapper[BIP32Node] {
 
 }
 
-object BIP32Path extends Factory[BIP32Path] {
+object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
   private case class BIP32PathImpl(path: Vector[BIP32Node]) extends BIP32Path
 
   /**
@@ -125,7 +125,7 @@ object BIP32Path extends Factory[BIP32Path] {
     *     and [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
     *     for examples of this notation.
     */
-  def fromString(string: String): BIP32Path = {
+  override def fromString(string: String): BIP32Path = {
     val parts = string
       .split("/")
       .toVector
@@ -167,7 +167,7 @@ object BIP32Path extends Factory[BIP32Path] {
     BIP32Path(path)
   }
 
-  def fromBytes(bytes: ByteVector): BIP32Path =
+  override def fromBytes(bytes: ByteVector): BIP32Path =
     fromBytes(bytes, littleEndian = false)
 
   override def fromBytesLE(bytes: ByteVector): BIP32Path =

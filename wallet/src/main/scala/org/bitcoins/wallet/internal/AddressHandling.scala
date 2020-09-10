@@ -2,6 +2,9 @@ package org.bitcoins.wallet.internal
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import org.bitcoins.core.api.wallet
+import org.bitcoins.core.api.wallet.AddressInfo
+import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
@@ -12,16 +15,9 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.wallet.utxo.AddressTag
+import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType}
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.wallet._
-import org.bitcoins.wallet.api.AddressInfo
-import org.bitcoins.wallet.models.{
-  AccountDb,
-  AddressDb,
-  AddressDbHelper,
-  AddressTagDb
-}
 
 import scala.concurrent.{Await, Future, Promise, TimeoutException}
 import scala.util.{Failure, Success}
@@ -49,7 +45,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   override def listAddresses(): Future[Vector[AddressDb]] =
-    addressDAO.findAll()
+    addressDAO.findAllAddresses()
 
   override def listAddresses(account: HDAccount): Future[Vector[AddressDb]] = {
     val allAddressesF: Future[Vector[AddressDb]] = listAddresses()
@@ -108,6 +104,14 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  override def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]] =
+    scriptPubKeyDAO.findAll()
+
+  override def watchScriptPubKey(
+      scriptPubKey: ScriptPubKey): Future[ScriptPubKeyDb] =
+    scriptPubKeyDAO.createIfNotExists(
+      ScriptPubKeyDb(scriptPubKey = scriptPubKey))
+
   /** Enumerates the public keys in this wallet */
   protected[wallet] def listPubkeys(): Future[Vector[ECPublicKey]] =
     addressDAO.findAllPubkeys()
@@ -117,7 +121,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
     addressDAO.findAllSPKs()
 
   /** Given a transaction, returns the outputs (with their corresponding outpoints)
-    * that pay to this wallet */
+    * that pay to this wallet
+    */
   def findOurOuts(transaction: Transaction): Future[
     Vector[(TransactionOutput, TransactionOutPoint)]] =
     for {
@@ -235,24 +240,18 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
-    val addrF =
-      getNewAddressHelper(account, HDChainType.External)
-    addrF
+    getNewAddressHelper(account, HDChainType.External)
   }
 
   /** @inheritdoc */
   override def getNewAddress(): Future[BitcoinAddress] = {
-    for {
-      address <- getNewAddress(walletConfig.defaultAddressType)
-    } yield address
+    getNewAddress(walletConfig.defaultAddressType)
   }
 
   /** @inheritdoc */
   override def getNewAddress(
       tags: Vector[AddressTag]): Future[BitcoinAddress] = {
-    for {
-      address <- getNewAddress(walletConfig.defaultAddressType, tags)
-    } yield address
+    getNewAddress(walletConfig.defaultAddressType, tags)
   }
 
   /** @inheritdoc */
@@ -376,7 +375,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   /** Generates a new change address */
-  override protected[wallet] def getNewChangeAddress(
+  override def getNewChangeAddress(
       account: AccountDb): Future[BitcoinAddress] = {
     getNewAddressHelper(account, HDChainType.Change)
   }
@@ -395,15 +394,54 @@ private[wallet] trait AddressHandling extends WalletLogger {
   /** @inheritdoc */
   override def getAddressInfo(
       address: BitcoinAddress): Future[Option[AddressInfo]] = {
-
-    val addressOptF = addressDAO.findAddress(address)
-    addressOptF.map { addressOpt =>
+    addressDAO.findAddress(address).map { addressOpt =>
       addressOpt.map { address =>
-        AddressInfo(pubkey = address.ecPublicKey,
-                    network = address.address.networkParameters,
-                    path = address.path)
+        wallet.AddressInfo(pubkey = address.ecPublicKey,
+                           network = address.address.networkParameters,
+                           path = address.path)
       }
     }
+  }
+
+  override def tagAddress(
+      address: BitcoinAddress,
+      tag: AddressTag): Future[AddressTagDb] = {
+    val addressTagDb = AddressTagDb(address, tag)
+    val f = addressTagDAO.create(addressTagDb)
+    f
+  }
+
+  def getAddressTags(address: BitcoinAddress): Future[Vector[AddressTagDb]] = {
+    addressTagDAO.findByAddress(address)
+  }
+
+  override def getAddressTags(
+      address: BitcoinAddress,
+      tagType: AddressTagType): Future[Vector[AddressTagDb]] = {
+    addressTagDAO.findByAddressAndTag(address, tagType)
+  }
+
+  def getAddressTags: Future[Vector[AddressTagDb]] = {
+    addressTagDAO.findAll()
+  }
+
+  def getAddressTags(tagType: AddressTagType): Future[Vector[AddressTagDb]] = {
+    addressTagDAO.findByTagType(tagType)
+  }
+
+  override def dropAddressTag(addressTagDb: AddressTagDb): Future[Int] = {
+    addressTagDAO.delete(addressTagDb)
+  }
+
+  override def dropAddressTagType(
+      addressTagType: AddressTagType): Future[Int] = {
+    addressTagDAO.dropByTagType(addressTagType)
+  }
+
+  override def dropAddressTagType(
+      address: BitcoinAddress,
+      addressTagType: AddressTagType): Future[Int] = {
+    addressTagDAO.dropByAddressAndTag(address, addressTagType)
   }
 
   private val threadStarted = new AtomicBoolean(false)
@@ -412,7 +450,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * We to ensure independent calls to getNewAddress don't result in a race condition
     * to the database that would generate the same address and cause an error.
     * With this background thread, we poll the [[addressRequestQueue]] seeing if there
-    * are any elements in it, if there are, we process them and complete the Promise in the queue. */
+    * are any elements in it, if there are, we process them and complete the Promise in the queue.
+    */
   lazy val walletThread = new Thread(AddressQueueRunnable)
 
   lazy val addressRequestQueue = {
@@ -462,18 +501,12 @@ private[wallet] trait AddressHandling extends WalletLogger {
         logger.debug(
           s"Processing $account $chainType in our address request queue")
 
-        val addressDbF = getNewAddressDb(account, chainType)
-        val resultF: Future[BitcoinAddress] = addressDbF.flatMap { addressDb =>
-          val writeF = addressDAO.create(addressDb)
-
-          val addrF = writeF.map { w =>
-            promise.success(w)
-            w.address
-          }
-          addrF.failed.foreach { exn =>
-            promise.failure(exn)
-          }
-          addrF
+        val resultF = for {
+          addressDb <- getNewAddressDb(account, chainType)
+          writtenAddressDb <- addressDAO.create(addressDb)
+        } yield {
+          promise.success(writtenAddressDb)
+          writtenAddressDb
         }
         //make sure this is completed before we iterate to the next one
         //otherwise we will possibly have a race condition

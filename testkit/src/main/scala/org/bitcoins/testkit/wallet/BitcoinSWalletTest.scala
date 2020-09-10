@@ -2,14 +2,16 @@ package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.core.api.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.{FutureUtil, TimeUtil}
-import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
@@ -17,22 +19,20 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
+import org.bitcoins.testkit.Implicits.GeneratorOps
 import org.bitcoins.testkit.chain.SyncUtil
+import org.bitcoins.testkit.core.gen.FeeUnitGen
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 import org.scalatest._
 
-import scala.concurrent.{
-  ExecutionContext,
-  ExecutionContextExecutor,
-  Future,
-  Promise
-}
+import scala.concurrent._
+import scala.concurrent.duration._
 
 trait BitcoinSWalletTest
     extends BitcoinSFixture
@@ -51,6 +51,13 @@ trait BitcoinSWalletTest
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
     super[EmbeddedPg].beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    Await.result(config.chainConf.stop(), 1.minute)
+    Await.result(config.nodeConf.stop(), 1.minute)
+    Await.result(config.walletConf.stop(), 1.minute)
+    super[EmbeddedPg].afterAll()
   }
 
   def nodeApi: NodeApi = MockNodeApi
@@ -156,7 +163,8 @@ trait BitcoinSWalletTest
 
   /** Creates a wallet that is funded with some bitcoin, this wallet is NOT
     * peered with a bitcoind so the funds in the wallet are not tied to an
-    * underlying blockchain */
+    * underlying blockchain
+    */
   def withFundedWallet(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String]): FutureOutcome = {
@@ -290,7 +298,7 @@ trait BitcoinSWalletTest
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {
       val walletConf = config.walletConf
-      walletConf.initialize().map(_ => walletConf)
+      walletConf.start().map(_ => walletConf)
     }
 
     val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
@@ -369,14 +377,15 @@ object BitcoinSWalletTest extends WalletLogger {
     }
   }
 
-  private[testkit] class RandomFeeProvider extends FeeRateApi {
-    private val rnd = new scala.util.Random(TimeUtil.now.toEpochMilli)
-    private val start = 2
-    private val end = 100
+  private[bitcoins] class RandomFeeProvider extends FeeRateApi {
+    // Useful for tests
+    var lastFeeRate: Option[FeeUnit] = None
 
-    def getFeeRate: Future[FeeUnit] = {
-      val satoshis = Satoshis(start + rnd.nextInt((end - start) + 1))
-      Future.successful(SatoshisPerVirtualByte(satoshis))
+    override def getFeeRate: Future[FeeUnit] = {
+      val feeRate = FeeUnitGen.feeUnit.sampleSome
+
+      lastFeeRate = Some(feeRate)
+      Future.successful(feeRate)
     }
   }
 
@@ -405,7 +414,7 @@ object BitcoinSWalletTest extends WalletLogger {
       // any user data
       AppConfig.throwIfDefaultDatadir(walletConfig)
 
-      walletConfig.initialize().flatMap { _ =>
+      walletConfig.start().flatMap { _ =>
         val wallet =
           Wallet(keyManager,
                  nodeApi,
@@ -441,7 +450,8 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   /** Creates a default wallet with bitcoind where the [[ChainQueryApi]] fed to the wallet
-    * is implemented by bitcoind */
+    * is implemented by bitcoind
+    */
   def createWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
       bip39PasswordOpt: Option[String],
@@ -468,7 +478,7 @@ object BitcoinSWalletTest extends WalletLogger {
         nodeApi =
           SyncUtil.getNodeApiWalletCallback(bitcoind, walletCallbackP.future),
         chainQueryApi = SyncUtil.getTestChainQueryApi(bitcoind),
-        feeRateApi = bitcoind,
+        feeRateApi = new RandomFeeProvider,
         creationTime = wallet.keyManager.creationTime
       )(wallet.walletConfig, wallet.ec)
       //complete the walletCallbackP so we can handle the callbacks when they are
@@ -562,10 +572,12 @@ object BitcoinSWalletTest extends WalletLogger {
       versionOpt: Option[BitcoindVersion],
       nodeApi: NodeApi,
       bip39PasswordOpt: Option[String],
-      chainQueryApi: ChainQueryApi)(implicit
+      chainQueryApi: ChainQueryApi,
+      walletCallbacks: WalletCallbacks)(implicit
       config: BitcoinSAppConfig,
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
+    config.walletConf.addCallbacks(walletCallbacks)
     for {
       wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi,
                                                          chainQueryApi,
@@ -579,10 +591,12 @@ object BitcoinSWalletTest extends WalletLogger {
       bitcoindRpcClient: BitcoindRpcClient,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      bip39PasswordOpt: Option[String])(implicit
+      bip39PasswordOpt: Option[String],
+      walletCallbacks: WalletCallbacks)(implicit
       config: BitcoinSAppConfig,
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
+    config.walletConf.addCallbacks(walletCallbacks)
     for {
       wallet <- BitcoinSWalletTest.createWallet2Accounts(
         nodeApi = nodeApi,
@@ -654,7 +668,8 @@ object BitcoinSWalletTest extends WalletLogger {
 
       _ <- wallet.walletConfig.dropTable("flyway_schema_history")
       _ <- wallet.walletConfig.dropAll()
-    } yield wallet.stop()
+      _ <- wallet.stop()
+    } yield ()
   }
 
 }

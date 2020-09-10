@@ -1,7 +1,7 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.chain.validation.TipUpdateResult
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 /** Represens the state of a batch of [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeaders]] being added to our blockchain

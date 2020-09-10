@@ -47,7 +47,8 @@ sealed abstract class BitwiseInterpreter {
   }
 
   /** Same as [[org.bitcoins.core.script.bitwise.OP_EQUAL OP_EQUAL]], but runs
-    * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterward. */
+    * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterward.
+    */
   def opEqualVerify(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_EQUALVERIFY),

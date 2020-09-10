@@ -1,10 +1,16 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.core.api.wallet.AddUtxoError._
+import org.bitcoins.core.api.wallet.db._
+import org.bitcoins.core.api.wallet.{
+  AddUtxoError,
+  AddUtxoResult,
+  AddUtxoSuccess
+}
 import org.bitcoins.core.compat._
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.{
   P2WPKHWitnessSPKV0,
   P2WPKHWitnessV0,
@@ -16,10 +22,8 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.util.{EitherUtil, FutureUtil}
-import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoResult, AddUtxoSuccess}
-import org.bitcoins.wallet.models._
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future
@@ -27,7 +31,7 @@ import scala.util.{Failure, Success, Try}
 
 /**
   * Provides functionality related to handling UTXOs in our wallet.
-  * The most notable examples of functioanlity here are enumerating
+  * The most notable examples of functionality here are enumerating
   * UTXOs in the wallet and importing a UTXO into the wallet for later
   * spending.
   */
@@ -52,7 +56,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   def listUtxos(outPoints: Vector[TransactionOutPoint]): Future[
     Vector[SpendingInfoDb]] = {
     spendingInfoDAO
-      .findAll()
+      .findAllSpendingInfos()
       .map(_.filter(spendingInfo => outPoints.contains(spendingInfo.outPoint)))
   }
 
@@ -85,29 +89,31 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   }
 
   protected def updateUtxoConfirmedState(
-      txo: SpendingInfoDb,
-      blockHash: DoubleSha256DigestBE): Future[SpendingInfoDb] = {
-    updateUtxoConfirmedStates(Vector(txo), blockHash).map(_.head)
+      txo: SpendingInfoDb): Future[SpendingInfoDb] = {
+    updateUtxoConfirmedStates(Vector(txo)).map(_.head)
   }
 
   protected def updateUtxoConfirmedStates(
-      txos: Vector[SpendingInfoDb],
-      blockHash: DoubleSha256DigestBE): Future[Vector[SpendingInfoDb]] = {
-    for {
-      confsOpt <- chainQueryApi.getNumberOfConfirmations(blockHash)
-      stateChanges <- {
-        confsOpt match {
+      spendingInfoDbs: Vector[SpendingInfoDb]): Future[
+    Vector[SpendingInfoDb]] = {
+
+    val byBlock = spendingInfoDbs.groupBy(_.blockHash)
+
+    val toUpdateFs = byBlock.map {
+      case (Some(blockHash), txos) =>
+        chainQueryApi.getNumberOfConfirmations(blockHash).map {
           case None =>
-            Future.successful(txos)
+            logger.warn(
+              s"Given txos exist in block (${blockHash.hex}) that we do not have! $txos")
+            txos
           case Some(confs) =>
-            val updatedTxos = txos.map { txo =>
+            txos.map { txo =>
               txo.state match {
-                case TxoState.PendingConfirmationsReceived |
-                    TxoState.DoesNotExist =>
+                case TxoState.PendingConfirmationsReceived =>
                   if (confs >= walletConfig.requiredConfirmations) {
                     txo.copyWithState(TxoState.ConfirmedReceived)
                   } else {
-                    txo.copyWithState(TxoState.PendingConfirmationsReceived)
+                    txo
                   }
                 case TxoState.PendingConfirmationsSpent =>
                   if (confs >= walletConfig.requiredConfirmations) {
@@ -119,14 +125,25 @@ private[wallet] trait UtxoHandling extends WalletLogger {
                   // We should keep the utxo as reserved so it is not used in
                   // a future transaction that it should not be in
                   txo
-                case TxoState.ConfirmedReceived | TxoState.ConfirmedSpent =>
+                case TxoState.DoesNotExist | TxoState.ConfirmedReceived |
+                    TxoState.ConfirmedSpent =>
                   txo
               }
             }
-            spendingInfoDAO.upsertAll(updatedTxos)
         }
-      }
-    } yield stateChanges
+      case (None, txos) =>
+        logger.debug(s"Currently have ${txos.size} transactions in the mempool")
+        Future.successful(txos)
+    }
+
+    for {
+      toUpdate <- FutureUtil.collect(toUpdateFs)
+      _ =
+        if (toUpdate.nonEmpty)
+          logger.info(s"${toUpdate.size} txos are now confirmed!")
+        else logger.info("No txos to be confirmed")
+      updated <- spendingInfoDAO.upsertAllSpendingInfoDb(toUpdate.flatten)
+    } yield updated
   }
 
   /**
@@ -204,7 +221,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       vout: UInt32,
       state: TxoState,
       blockHash: Option[DoubleSha256DigestBE]): Future[AddUtxoResult] = {
-    import AddUtxoError._
 
     logger.info(s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt}")
 
@@ -228,19 +244,20 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
       // second check: do we have an address associated with the provided
       // output in our DB?
-      val addressDbEitherF: Future[CompatEither[AddUtxoError, AddressDb]] =
+      def addressDbEitherF: Future[CompatEither[AddUtxoError, AddressDb]] =
         findAddress(output.scriptPubKey)
 
       // insert the UTXO into the DB
       addressDbEitherF.flatMap { addressDbE =>
-        val biasedE: CompatEither[AddUtxoError, Future[SpendingInfoDb]] = for {
-          addressDb <- addressDbE
-        } yield writeUtxo(tx = transaction,
-                          state = state,
-                          output = output,
-                          outPoint = outPoint,
-                          addressDb = addressDb,
-                          blockHash = blockHash)
+        def biasedE: CompatEither[AddUtxoError, Future[SpendingInfoDb]] =
+          for {
+            addressDb <- addressDbE
+          } yield writeUtxo(tx = transaction,
+                            state = state,
+                            output = output,
+                            outPoint = outPoint,
+                            addressDb = addressDb,
+                            blockHash = blockHash)
 
         EitherUtil.liftRightBiasedFutureE(biasedE)
       } map {
@@ -254,7 +271,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
     for {
-      utxos <- spendingInfoDAO.updateAll(updated)
+      utxos <- spendingInfoDAO.updateAllSpendingInfoDb(updated)
       _ <- walletCallbacks.executeOnReservedUtxos(logger, utxos)
     } yield utxos
   }
@@ -281,23 +298,19 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     val mempoolUtxos = Try(groupedUtxos(None)).getOrElse(Vector.empty)
 
     // get the ones in blocks
-    val utxosInBlocks = groupedUtxos.map {
-      case (Some(hash), utxos) =>
-        Some(hash, utxos)
+    val utxosInBlocks = groupedUtxos.flatMap {
+      case (Some(_), utxos) =>
+        utxos
       case (None, _) =>
         None
-    }.flatten
+    }.toVector
 
     for {
-      updatedMempoolUtxos <- spendingInfoDAO.updateAll(mempoolUtxos)
+      updatedMempoolUtxos <-
+        spendingInfoDAO.updateAllSpendingInfoDb(mempoolUtxos)
       // update the confirmed ones
-      updatedBlockUtxos <-
-        FutureUtil
-          .sequentially(utxosInBlocks.toVector) {
-            case (hash, utxos) =>
-              updateUtxoConfirmedStates(utxos, hash)
-          }
-      updated = updatedMempoolUtxos ++ updatedBlockUtxos.flatten
+      updatedBlockUtxos <- updateUtxoConfirmedStates(utxosInBlocks)
+      updated = updatedMempoolUtxos ++ updatedBlockUtxos
       _ <- walletCallbacks.executeOnReservedUtxos(logger, updated)
     } yield updated
   }
@@ -305,22 +318,19 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   /** @inheritdoc */
   override def unmarkUTXOsAsReserved(
       tx: Transaction): Future[Vector[SpendingInfoDb]] = {
-    val utxosF = listUtxos()
-    val utxosInTxF = for {
-      utxos <- utxosF
-    } yield {
-      val txOutPoints = tx.inputs.map(_.previousOutput)
-      utxos.filter(si => txOutPoints.contains(si.outPoint))
-    }
-    utxosInTxF.flatMap(unmarkUTXOsAsReserved)
+    for {
+      utxos <- spendingInfoDAO.findOutputsBeingSpent(tx)
+      reserved = utxos.filter(_.state == TxoState.Reserved)
+      updated <- unmarkUTXOsAsReserved(reserved.toVector)
+    } yield updated
   }
 
   /** @inheritdoc */
-  override def updateUtxoPendingStates(
-      blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]] = {
+  override def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]] = {
     for {
       infos <- spendingInfoDAO.findAllPendingConfirmation
-      updatedInfos <- updateUtxoConfirmedStates(infos, blockHeader.hashBE)
+      _ = logger.debug(s"Updating states of ${infos.size} pending utxos...")
+      updatedInfos <- updateUtxoConfirmedStates(infos)
     } yield updatedInfos
   }
 }

@@ -3,6 +3,7 @@ package org.bitcoins.db
 import java.nio.file.{Files, Path, Paths}
 
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.db.DatabaseDriver._
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -37,6 +38,15 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
             s"`${jdbcUrl}` must be a valid JDBC URL")
     parts(1)
   }
+
+  lazy val schemaName: Option[String] = driver match {
+    case PostgreSQL =>
+      Some(appConfig.moduleName)
+    case SQLite =>
+      None
+  }
+
+  lazy val driver: DatabaseDriver = DatabaseDriver.fromString(driverName)
 
   lazy val username: String = dbConfig.config.getString("db.username")
 

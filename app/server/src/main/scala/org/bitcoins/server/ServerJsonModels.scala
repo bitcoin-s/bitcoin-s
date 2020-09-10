@@ -1,12 +1,13 @@
 package org.bitcoins.server
 
-import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
+import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import ujson._
 import upickle.default._
 
@@ -17,6 +18,106 @@ case class ServerCommand(method: String, params: ujson.Arr)
 
 object ServerCommand {
   implicit val rw: ReadWriter[ServerCommand] = macroRW
+}
+
+case class GetNewAddress(labelOpt: Option[AddressLabelTag])
+
+object GetNewAddress extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetNewAddress] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    val labelOpt = nullToOpt(jsArr.arr.head).map {
+      case Str(str) =>
+        AddressLabelTag(str)
+      case value: Value =>
+        throw Value.InvalidData(value, "Expected a String")
+    }
+
+    Try(GetNewAddress(labelOpt))
+  }
+}
+
+case class LabelAddress(address: BitcoinAddress, label: AddressLabelTag)
+
+object LabelAddress extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[LabelAddress] = {
+    jsArr.arr.toList match {
+      case addrJs :: labelJs :: Nil =>
+        Try {
+          val addr = jsToBitcoinAddress(addrJs)
+          val label = AddressLabelTag(labelJs.str)
+
+          LabelAddress(addr, label)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class GetAddressTags(address: BitcoinAddress)
+
+object GetAddressTags extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetAddressTags] = {
+    jsArr.arr.toList match {
+      case addrJs :: Nil =>
+        Try {
+          val addr = jsToBitcoinAddress(addrJs)
+
+          GetAddressTags(addr)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class GetAddressLabels(address: BitcoinAddress)
+
+object GetAddressLabels extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetAddressLabels] = {
+    jsArr.arr.toList match {
+      case addrJs :: Nil =>
+        Try {
+          val addr = jsToBitcoinAddress(addrJs)
+
+          GetAddressLabels(addr)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class DropAddressLabels(address: BitcoinAddress)
+
+object DropAddressLabels extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DropAddressLabels] = {
+    jsArr.arr.toList match {
+      case addrJs :: Nil =>
+        Try {
+          val addr = jsToBitcoinAddress(addrJs)
+
+          DropAddressLabels(addr)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
 }
 
 case class GetBalance(isSats: Boolean)
@@ -224,7 +325,8 @@ object Rescan extends ServerJsonModels {
 case class SendToAddress(
     address: BitcoinAddress,
     amount: Bitcoins,
-    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
+    noBroadcast: Boolean)
 
 object SendToAddress extends ServerJsonModels {
 
@@ -232,14 +334,15 @@ object SendToAddress extends ServerJsonModels {
   // custom akka-http directive?
   def fromJsArr(jsArr: ujson.Arr): Try[SendToAddress] = {
     jsArr.arr.toList match {
-      case addrJs :: bitcoinsJs :: satsPerVBytesJs :: Nil =>
+      case addrJs :: bitcoinsJs :: satsPerVBytesJs :: noBroadcastJs :: Nil =>
         Try {
           val address = jsToBitcoinAddress(addrJs)
           val bitcoins = Bitcoins(bitcoinsJs.num)
           val satoshisPerVirtualByte =
             nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
               SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
-          SendToAddress(address, bitcoins, satoshisPerVirtualByte)
+          val noBroadcast = noBroadcastJs.bool
+          SendToAddress(address, bitcoins, satoshisPerVirtualByte, noBroadcast)
         }
       case Nil =>
         Failure(
@@ -249,7 +352,7 @@ object SendToAddress extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 3"))
+            s"Bad number of arguments: ${other.length}. Expected: 4"))
     }
   }
 
@@ -363,7 +466,7 @@ trait ServerJsonModels {
 
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
     try {
-      BitcoinAddress.fromStringExn(js.str)
+      BitcoinAddress.fromString(js.str)
     } catch {
       case _: IllegalArgumentException =>
         throw Value.InvalidData(js, "Expected a valid address")
@@ -387,8 +490,6 @@ trait ServerJsonModels {
   def jsToCoinSelectionAlgo(js: Value): CoinSelectionAlgo =
     CoinSelectionAlgo
       .fromString(js.str)
-      .getOrElse(
-        throw new IllegalArgumentException("Invalid CoinSelectionAlgo"))
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 

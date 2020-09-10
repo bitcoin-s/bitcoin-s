@@ -4,16 +4,19 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.Config
-import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.{FutureUtil, Mutable}
-import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
-import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
-import org.bitcoins.keymanager.{
+import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
-  KeyManagerParams,
-  WalletStorage
+  KeyManagerParams
 }
+import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
+import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
+import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
@@ -27,7 +30,6 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class WalletAppConfig(
     private val directory: Path,
-    override val useLogbackConf: Boolean,
     private val conf: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with WalletDbManagement
@@ -38,7 +40,7 @@ case class WalletAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): WalletAppConfig =
-    WalletAppConfig(directory, useLogbackConf, configs: _*)
+    WalletAppConfig(directory, configs: _*)
 
   protected[bitcoins] def baseDatadir: Path = directory
 
@@ -93,7 +95,7 @@ case class WalletAppConfig(
     requiredConfirmations >= 1,
     s"requiredConfirmations cannot be less than 1, got: $requiredConfirmations")
 
-  override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
+  override def start(): Future[Unit] = {
     logger.debug(s"Initializing wallet setup")
 
     if (Files.notExists(datadir)) {
@@ -123,7 +125,8 @@ case class WalletAppConfig(
     KeyManagerParams(seedPath, defaultAccountKind, network)
 
   /** How much elements we can have in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
-    * before we throw an exception */
+    * before we throw an exception
+    */
   def addressQueueSize: Int = {
     if (config.hasPath("wallet.addressQueueSize")) {
       config.getInt("wallet.addressQueueSize")
@@ -133,7 +136,8 @@ case class WalletAppConfig(
   }
 
   /** How long we wait while generating an address in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
-    * before we timeout */
+    * before we timeout
+    */
   def addressQueueTimeout: scala.concurrent.duration.Duration = {
     if (config.hasPath("wallet.addressQueueTimeout")) {
       val javaDuration = config.getDuration("wallet.addressQueueTimeout")
@@ -146,17 +150,21 @@ case class WalletAppConfig(
   /** Checks if the following exist
     *  1. A seed exists
     *  2. wallet exists
-    *  3. The account exists */
+    *  3. The account exists
+    */
   private def hasWallet()(implicit
       walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Boolean] = {
     if (walletConf.seedExists()) {
       val hdCoin = walletConf.defaultAccount.coin
       val walletDB = walletConf.dbPath resolve walletConf.dbName
-      if (walletConf.driverName == "postgresql" || Files.exists(walletDB)) {
-        AccountDAO().read((hdCoin, 0)).map(_.isDefined)
-      } else {
-        Future.successful(false)
+      walletConf.driver match {
+        case PostgreSQL =>
+          AccountDAO().read((hdCoin, 0)).map(_.isDefined)
+        case SQLite =>
+          if (Files.exists(walletDB))
+            AccountDAO().read((hdCoin, 0)).map(_.isDefined)
+          else Future.successful(false)
       }
     } else {
       Future.successful(false)
@@ -177,8 +185,6 @@ case class WalletAppConfig(
       bip39PasswordOpt = bip39PasswordOpt)(this, ec)
   }
 
-  /** Starts the associated application */
-  override def start(): Future[Unit] = FutureUtil.unit
 }
 
 object WalletAppConfig
@@ -188,11 +194,9 @@ object WalletAppConfig
   /** Constructs a wallet configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  override def fromDatadir(
-      datadir: Path,
-      useLogbackConf: Boolean,
-      confs: Vector[Config])(implicit ec: ExecutionContext): WalletAppConfig =
-    WalletAppConfig(datadir, useLogbackConf, confs: _*)
+  override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
+      ec: ExecutionContext): WalletAppConfig =
+    WalletAppConfig(datadir, confs: _*)
 
   /** Creates a wallet based on the given [[WalletAppConfig]] */
   def createHDWallet(

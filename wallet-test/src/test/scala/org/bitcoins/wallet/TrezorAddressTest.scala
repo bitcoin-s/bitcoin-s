@@ -2,13 +2,14 @@ package org.bitcoins.wallet
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.feeprovider.ConstantFeeRateProvider
-import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
@@ -18,7 +19,6 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   MockNodeApi
 }
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{AccountDb, AddressDb}
 import org.scalatest.compatible.Assertion
 import play.api.libs.json._
 
@@ -62,7 +62,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     override def reads(json: JsValue): JsResult[HDPath] =
       json
         .validate[String]
-        .flatMap(HDPath.fromString(_) match {
+        .flatMap(HDPath.fromStringOpt(_) match {
           case None        => JsError(s"Could not read $json")
           case Some(value) => JsSuccess(value)
         })
@@ -306,8 +306,6 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     testAccountType(HDPurposes.SegWit)
   }
 
-  // TODO: implement this when nested segwit addresses are implemented
-  // in the wallet
   it must "act the same way as Trezor for nested segwit accounts" in { _ =>
     testAccountType(HDPurposes.NestedSegWit)
   }

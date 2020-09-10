@@ -15,7 +15,7 @@ bitcoin-s, the values there take precedence over the ones found in our
 Bitcoin-S data directory.
 
 The resolved configuration gets parsed by
-[`AppConfig`](../../db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala).
+[`AppConfig`](api/org/bitcoins/db/AppConfig).
 `AppConfig` is an abstract class that's implemented by corresponding case
 classes in the `wallet`, `chain` and `node` projects. Here's some examples of how to
 construct a wallet configuration:
@@ -28,16 +28,16 @@ import scala.util.Properties
 import scala.concurrent.ExecutionContext.Implicits.global
 
 // reads $HOME/.bitcoin-s/
-val defaultConfig = WalletAppConfig.fromDefaultDatadir(false)
+val defaultConfig = WalletAppConfig.fromDefaultDatadir()
 
 
 // reads a custom data directory
 val customDirectory = Paths.get(Properties.userHome, "custom-bitcoin-s-directory")
-val configFromCustomDatadir = WalletAppConfig(customDirectory, false)
+val configFromCustomDatadir = WalletAppConfig(customDirectory)
 
 // reads a custom data directory and overrides the network to be testnet3
 val customOverride = ConfigFactory.parseString("bitcoin-s.network = testnet3")
-val configFromCustomDirAndOverride = WalletAppConfig(customDirectory, false, customOverride)
+val configFromCustomDirAndOverride = WalletAppConfig(customDirectory, customOverride)
 ```
 
 You can pass as many `com.typesafe.config.Config`s as you'd like. If any
@@ -63,7 +63,7 @@ There are a few command line options available that take precedence over configu
 ## Internal configuration
 
 Database connections are also configured by using HOCON. This is done in
-[`db.conf`](../../db-commons/src/main/resources/db.conf). The options
+[`db.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/db.conf). The options
 exposed here are **not** intended to
 be used by users of Bitcoin-S, and are internal only.
 
@@ -75,14 +75,14 @@ called [flyway](https://flywaydb.org/). To find your projects migraitons, you ne
 the path `chain/src/main/resources/chaindb/migration/V1__chain_db_baseline.sql`.
 
 Migrations can be executed by calling the [`DbManagement.migrate()`](https://github.com/bitcoin-s/bitcoin-s/blob/e387d075b0ff2e0a0fec15788fcb48e4ddc4d9d5/db-commons/src/main/scala/org/bitcoins/db/DbManagement.scala#L92) 
-method. Migrations are applied by default on server startup, via the [`AppConfig.initialize()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49) 
+method. Migrations are applied by default on server startup, via the [`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
 method. 
 
 These migrations are setup so that project's databases and migrations are independent of each other. Therefore if you
 want to use the `bitcoin-s-chain` project, but not the `bitcoin-s-wallet` project, wallet migrations are not applied. 
 It should be noted if you are using a module as a library, you are responsible for configuring the database via 
 [slick's configuration](https://scala-slick.org/doc/3.3.1/database.html#using-typesafe-config) and calling 
-[`AppConfig.initialize()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49) 
+[`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
 to ensure the entire module is initialized correctly.
 
 ## Example Configuration File
@@ -141,7 +141,7 @@ bitcoin-s {
     chain {
         force-recalc-chainwork = false
         neutrino {
-            filter-header-batch-size = 2000
+            filter-header-batch-size.default = 2000
             filter-header-batch-size.regtest = 10
             # You can set a network specific filter-header-batch-size
             # by adding a trailing `.networkId` (main, test, regtest)
@@ -230,14 +230,26 @@ bitcoin-s {
     common {
         profile = "slick.jdbc.PostgresProfile$"
         db {
+            driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/database"
-            driver = "org.postgresql.Driver"
             username = "user"
             password = "topsecret"
+            numThreads = 5
         }
     }
+
+    chain.profile = ${bitcoin-s.common.profile}
+    chain.db = ${bitcoin-s.common.db}
+ 
+    node.profile = ${bitcoin-s.common.profile}
+    node.db = ${bitcoin-s.common.db}
+    
+    wallet.profile = ${bitcoin-s.common.profile}
+    wallet.db = ${bitcoin-s.common.db}
 }
 ```
+
+The database driver will create a separate SQL namespace for each sub-project: `chain`, `node` and `wallet`.
 
 Also you can use mix databases and drivers in one configuration. For example,
 This configuration file enables Sqlite for `node` project (it's default, so its configuration 
@@ -248,8 +260,8 @@ bitcoin-s {
     chain {
         profile = "slick.jdbc.PostgresProfile$"
         db {
+            driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/chaindb"
-            driver = "org.postgresql.Driver"
             username = "user"
             password = "topsecret"
         }
@@ -257,8 +269,8 @@ bitcoin-s {
     wallet {
         profile = "slick.jdbc.PostgresProfile$"
         db {
+            driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/walletdb"
-            driver = "org.postgresql.Driver"
             username = "user"
             password = "topsecret"
         }

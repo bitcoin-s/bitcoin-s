@@ -1,8 +1,9 @@
 package org.bitcoins.node
 
+import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -10,15 +11,16 @@ import org.bitcoins.core.util.Mutable
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 case class SpvNode(
     nodePeer: Peer,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
+    initialSyncDone: Option[Promise[Done]],
     actorSystem: ActorSystem)
     extends Node {
-  require(nodeConfig.isSPVEnabled,
+  require(nodeConfig.nodeType == NodeType.SpvNode,
           s"We need our SPV mode enabled to be able to construct a SPV node!")
 
   implicit override def system: ActorSystem = actorSystem
@@ -66,7 +68,7 @@ case class SpvNode(
     val hash = address.hash
     _bloomFilter.atomicUpdate(hash)(_.insert(_))
 
-    val sentFilterAddF = peerMsgSenderF.map(_.sendFilterAddMessage(hash))
+    val sentFilterAddF = peerMsgSenderF.flatMap(_.sendFilterAddMessage(hash))
 
     sentFilterAddF.map(_ => this)
   }

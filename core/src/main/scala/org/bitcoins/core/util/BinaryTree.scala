@@ -51,7 +51,8 @@ trait BinaryTree[+T] {
   }
 
   /** A function to find the first occurrence of a predicate inside a
-    * [[org.bitcoins.core.util.BinaryTree BinaryTree]]. */
+    * [[org.bitcoins.core.util.BinaryTree BinaryTree]].
+    */
   def findFirstDFS[T](t: T)(f: T => Boolean = (x: T) => x == t)(implicit
       tree: BinaryTree[T] = this): Option[BinaryTree[T]] = {
     @tailrec

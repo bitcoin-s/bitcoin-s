@@ -3,11 +3,12 @@ package org.bitcoins.db
 import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
+import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.db.NodeDbManagement
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BitcoinSUnitTest}
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
 
@@ -44,31 +45,37 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for chain db" in {
     val chainAppConfig = ChainAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                                        useLogbackConf = false,
                                         dbConfig(ProjectType.Chain))
     val chainDbManagement = createChainDbManagement(chainAppConfig)
     val result = chainDbManagement.migrate()
-    val expected = if (chainAppConfig.driverName == "postgresql") 4 else 5
+    val expected = chainAppConfig.driver match {
+      case SQLite     => 5
+      case PostgreSQL => 4
+    }
     assert(result == expected)
   }
 
   it must "run migrations for wallet db" in {
     val walletAppConfig = WalletAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                                          useLogbackConf = false,
                                           dbConfig(ProjectType.Wallet))
     val walletDbManagement = createWalletDbManagement(walletAppConfig)
     val result = walletDbManagement.migrate()
-    val expected = if (walletAppConfig.driverName == "postgresql") 4 else 6
+    val expected = walletAppConfig.driver match {
+      case SQLite     => 8
+      case PostgreSQL => 6
+    }
     assert(result == expected)
   }
 
   it must "run migrations for node db" in {
     val nodeAppConfig =
-      NodeAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                    useLogbackConf = false,
-                    dbConfig(ProjectType.Node))
+      NodeAppConfig(BitcoinSTestAppConfig.tmpDir(), dbConfig(ProjectType.Node))
     val nodeDbManagement = createNodeDbManagement(nodeAppConfig)
     val result = nodeDbManagement.migrate()
-    assert(result == 2)
+    val expected = nodeAppConfig.driver match {
+      case SQLite     => 2
+      case PostgreSQL => 2
+    }
+    assert(result == expected)
   }
 }

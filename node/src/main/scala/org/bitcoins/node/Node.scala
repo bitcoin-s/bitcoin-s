@@ -1,5 +1,6 @@
 package org.bitcoins.node
 
+import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -8,7 +9,8 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.api.chain._
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
@@ -27,7 +29,7 @@ import org.bitcoins.node.networking.peer.{
 import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
 /**
@@ -45,9 +47,11 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   val peer: Peer
 
+  protected val initialSyncDone: Option[Promise[Done]]
+
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
 
-  lazy val txDAO = BroadcastAbleTransactionDAO()
+  lazy val txDAO: BroadcastAbleTransactionDAO = BroadcastAbleTransactionDAO()
 
   /** This is constructing a chain api from disk every time we call this method
     * This involves database calls which can be slow and expensive to construct
@@ -62,7 +66,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   /** Unlike our chain api, this is cached inside our node
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
-    * the [[org.bitcoins.chain.api.ChainApi chain api]] is updated inside of the p2p client
+    * the [[ChainApi chain api]] is updated inside of the p2p client
     */
   lazy val clientF: Future[P2PClient] = {
     for {
@@ -71,7 +75,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       val peerMsgRecv: PeerMessageReceiver =
         PeerMessageReceiver.newReceiver(chainApi = chainApi,
                                         peer = peer,
-                                        callbacks = nodeCallbacks)
+                                        callbacks = nodeCallbacks,
+                                        initialSyncDone = initialSyncDone)
       val p2p = P2PClient(context = system,
                           peer = peer,
                           peerMessageReceiver = peerMsgRecv)
@@ -113,14 +118,14 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val start = System.currentTimeMillis()
 
     for {
-      _ <- nodeAppConfig.initialize()
       _ <- nodeAppConfig.start()
       // get chainApi so we don't need to call chainApiFromDb on every call
       chainApi <- chainApiFromDb
       node <- {
         val isInitializedF = for {
           _ <- peerMsgSenderF.map(_.connect())
-          _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized)
+          _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized,
+                                              duration = 250.millis)
         } yield ()
 
         isInitializedF.failed.foreach(err =>
@@ -151,6 +156,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     logger.info(s"Stopping node")
     val disconnectF = for {
       _ <- nodeAppConfig.stop()
+      _ <- chainAppConfig.stop()
       p <- peerMsgSenderF
       disconnect <- p.disconnect()
     } yield disconnect
@@ -185,7 +191,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
     } yield {
-      peerMsgSenderF.map(_.sendGetHeadersMessage(header.hashBE.flip))
+      // Get all of our cached headers in case of a reorg
+      val cachedHeaders =
+        chainApi.blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      peerMsgSenderF.map(_.sendGetHeadersMessage(cachedHeaders))
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE}")
     }
@@ -195,16 +204,30 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
     val broadcastTx = BroadcastAbleTransaction(transaction)
 
-    txDAO.upsert(broadcastTx).onComplete {
+    val addToDbF = txDAO.upsert(broadcastTx)
+
+    addToDbF.onComplete {
       case Failure(exception) =>
         logger.error(s"Error when writing broadcastable TX to DB", exception)
       case Success(written) =>
         logger.debug(
-          s"Wrote tx=${written.transaction.txIdBE} to broadcastable table")
+          s"Wrote tx=${written.transaction.txIdBE.hex} to broadcastable table")
     }
 
-    logger.info(s"Sending out inv for tx=${transaction.txIdBE}")
-    peerMsgSenderF.flatMap(_.sendInventoryMessage(transaction))
+    for {
+      _ <- addToDbF
+      peerMsgSender <- peerMsgSenderF
+
+      // Note: This is a privacy leak and should be fixed in the future. Ideally, we should
+      // be using an inventory message to broadcast the transaction to help hide the fact that
+      // this transaction belongs to us. However, currently it is okay for us to use a transaction
+      // message because a Bitcoin-S node currently doesn't have a mempool and only
+      // broadcasts/relays transactions from its own wallet.
+      // See https://developer.bitcoin.org/reference/p2p_networking.html#tx
+      _ =
+        logger.info(s"Sending out tx message for tx=${transaction.txIdBE.hex}")
+      _ <- peerMsgSender.sendTransactionMessage(transaction)
+    } yield ()
   }
 
   /**

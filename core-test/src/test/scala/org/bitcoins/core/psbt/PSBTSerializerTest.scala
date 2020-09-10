@@ -60,7 +60,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     val xpub1 = ExtPublicKey
       .fromString(
         "tpubDBkJeJo2X94Yq3RVz65DoUgyLUkaDrkfyrn2VcgyCRSKCRonvKvCF2FpYDGJWDkdRHBajXJGpc63GnumUt63ySvqCu2XaTRGVTKMYGuFk9H")
-      .get
+
     val finger1 = hex"d90c6a4f"
     val path1 = BIP32Path.fromString("m/174'/0'")
 
@@ -69,7 +69,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     val xpub2 = ExtPublicKey
       .fromString(
         "tpubDBkJeJo2X94YsvtBEU1eKoibEWiNv51nW5iHhs6VZp59jsE6nen8KZMFyGHuGbCvqjRqirgeMcfpVBkttpUUT6brm4duzSGoZeTbhqCNUu6")
-      .get
+
     val finger2 = hex"d90c6a4f"
     val path2 = BIP32Path.fromString("m/174'/1'")
 

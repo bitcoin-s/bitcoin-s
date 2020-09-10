@@ -5,7 +5,7 @@ title: Eclair
 
 This is a RPC client for [Eclair](https://github.com/acinq/eclair). It assumes that a bitcoind instance is running.
 
-Currently this RPC client is written for [v0.3.3](https://github.com/ACINQ/eclair/releases/tag/v0.3.3) version of Eclair.
+Currently this RPC client is written for [v0.4.1](https://github.com/ACINQ/eclair/releases/tag/v0.4.1) version of Eclair.
 
 ## Configuration of Eclair
 
@@ -14,14 +14,14 @@ Please see the configuration secion of the
 
 You can find the configuration we use for our testing infrastrture for eclair [here](https://github.com/bitcoin-s/bitcoin-s/blob/a043d3858ef33da51229ee59c478d2a6c9d5a46f/testkit/src/main/scala/org/bitcoins/testkit/eclair/rpc/EclairRpcTestUtil.scala#L98).
 
-## Starting the jar
+## Starting Eclair
 
-You need to download the jar from the [eclair's github](https://github.com/ACINQ/eclair/releases/tag/v0.3.3).
+You need to download the jar from the [eclair's github](https://github.com/ACINQ/eclair/releases/tag/v0.4.1).
 
-To run Eclair you can use this command:
+To run Eclair by unzipping the `eclair-node-0.4.1-e5fb281-bin.zip` and then running
 
 ```bash
-$ java -jar eclair-node-0.3.3-12ac145.jar &
+$ ./eclair-node-0.4-69c538e/bin/eclair-node.sh
 ```
 
 If you wish to start Eclair from the RPC client, you can do one of the following:
