@@ -86,8 +86,6 @@ jobs:
     - stage: test
       os: osx
       osx_image: xcode12u
-      jdk:
-        - oraclejdk11
       name: "macOS crypto, core, bitcoind, and eclair rpc tests"
       env:
         - TEST_COMMAND="cryptoTest/test coreTest/test appCommonsTest/test bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
@@ -98,8 +96,6 @@ jobs:
     - stage: test
       os: osx
       osx_image: xcode12u
-      jdk:
-        - oraclejdk11
       name: "macOS wallet and node tests"
       env:
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
