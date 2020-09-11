@@ -62,16 +62,11 @@ case class DataMessageHandler(
             if (filterHeaders.size == chainConfig.filterHeaderBatchSize) {
               logger.info(
                 s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
-              println(
-                s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
               sendNextGetCompactFilterHeadersCommand(
                 peerMsgSender,
                 filterHeader.stopHash.flip).map(_ => syncing)
             } else {
               logger.debug(
-                s"Received filter headers=${filterHeaders.size} in one message, " +
-                  "which is less than max. This means we are synced.")
-              println(
                 s"Received filter headers=${filterHeaders.size} in one message, " +
                   "which is less than max. This means we are synced.")
               sendFirstGetCompactFilterCommand(peerMsgSender).map { synced =>
@@ -225,9 +220,9 @@ case class DataMessageHandler(
                   appConfig.nodeType == NodeType.NeutrinoNode && (!syncing ||
                   (filterHeaderHeightOpt.isEmpty &&
                   filterHeightOpt.isEmpty))
-                )
+                ) {
                   sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
-                else {
+                } else {
                   Try(initialSyncDone.map(_.success(Done)))
                   Future.successful(syncing)
                 }
@@ -309,14 +304,15 @@ case class DataMessageHandler(
 
   private def sendNextGetCompactFilterHeadersCommand(
       peerMsgSender: PeerMessageSender,
-      stopHash: DoubleSha256DigestBE): Future[Boolean] =
+      prevStopHash: DoubleSha256DigestBE): Future[Boolean] =
     peerMsgSender.sendNextGetCompactFilterHeadersCommand(
       chainApi = chainApi,
       filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
-      stopHash = stopHash)
+      prevStopHash = prevStopHash)
 
   private def sendFirstGetCompactFilterHeadersCommand(
       peerMsgSender: PeerMessageSender): Future[Boolean] = {
+
     for {
       bestFilterHeaderOpt <-
         chainApi
@@ -331,8 +327,11 @@ case class DataMessageHandler(
         prevStopHash = blockHash,
         batchSize = chainConfig.filterHeaderBatchSize)
       res <- hashHeightOpt match {
-        case Some((_, hash)) =>
-          sendNextGetCompactFilterHeadersCommand(peerMsgSender, hash.flip)
+        case Some((height, hash)) =>
+          peerMsgSender
+            .sendGetCompactFilterHeadersMessage(startHeight = height,
+                                                stopHash = hash)
+            .map(_ => true)
         case None =>
           sys.error(
             s"Could not find block header in database to sync filter headers from!")

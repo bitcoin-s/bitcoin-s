@@ -186,9 +186,10 @@ case class ChainHandler(
     prevBlockHeaderOpt match {
       case None =>
         val hashHeightOpt = {
-          val chainsF = blockHeaderDAO.getBlockchainsBetweenHeights(from = 0,
-                                                                    to =
-                                                                      batchSize)
+          val chainsF = blockHeaderDAO.getBlockchainsBetweenHeights(
+            from = 0,
+            to =
+              batchSize - 1)
           for {
             chains <- chainsF
           } yield {
@@ -253,7 +254,6 @@ case class ChainHandler(
           .map(h => (startHeight, h.hash))
       }
     }
-
     hashHeightOpt
   }
 
