@@ -40,7 +40,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
   it should "complete immediately if condition is true" in {
     AsyncUtil
       .retryUntilSatisfiedF(conditionF = () => Future.successful(true),
-                            duration = 0.millis)
+                            interval = 0.millis)
       .map { _ =>
         succeed
       }
@@ -50,7 +50,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
     recoverToSucceededIf[RpcRetryException] {
       AsyncUtil.retryUntilSatisfiedF(conditionF =
                                        () => Future.successful(false),
-                                     duration = 0.millis)
+                                     interval = 0.millis)
     }
   }
 
@@ -71,7 +71,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
   it should "timeout if condition is false" in {
     recoverToSucceededIf[RpcRetryException] {
       AsyncUtil
-        .awaitCondition(condition = () => false, duration = 0.millis)
+        .awaitCondition(condition = () => false, interval = 0.millis)
         .map(_ => succeed)
     }
   }

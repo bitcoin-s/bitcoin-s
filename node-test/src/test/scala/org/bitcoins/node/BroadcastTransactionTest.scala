@@ -72,7 +72,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
           txOpt.isDefined,
           "Transaction was not added to BroadcastableTransaction database")
         _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
-                                           duration = 1.second,
+                                           interval = 1.second,
                                            maxTries = 25)
       } yield ()
     }

@@ -113,13 +113,13 @@ object EclairBench extends App with EclairRpcTestUtil {
       _ <- sendPayments(network, PaymentAmount, PaymentCount)
       _ <- TestAsyncUtil.retryUntilSatisfied(
         condition = paymentLog.size() == NetworkSize * PaymentCount,
-        duration = 1.second,
+        interval = 1.second,
         maxTries = 100)
       _ <-
         TestAsyncUtil
           .retryUntilSatisfied(
             condition = EclairBenchUtil.paymentLogValues().forall(_.completed),
-            duration = 1.second,
+            interval = 1.second,
             maxTries = 100)
           .recover { case ex: Throwable => ex.printStackTrace() }
       _ = println("\nDone!")

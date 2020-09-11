@@ -1,13 +1,12 @@
 package org.bitcoins.rpc.util
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 abstract class AsyncUtil extends BitcoinSLogger {
-  import AsyncUtil.DEFAULT_INTERNVAL
   import AsyncUtil.DEFAULT_MAX_TRIES
 
   private def retryRunnable(
@@ -23,11 +22,11 @@ abstract class AsyncUtil extends BitcoinSLogger {
 
   def retryUntilSatisfied(
       condition: => Boolean,
-      duration: FiniteDuration = DEFAULT_INTERNVAL,
+      interval: FiniteDuration = AsyncUtil.DEFAULT_INTERVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(implicit
       system: ActorSystem): Future[Unit] = {
     val f = () => Future.successful(condition)
-    retryUntilSatisfiedF(f, duration, maxTries)
+    retryUntilSatisfiedF(f, interval, maxTries)
   }
 
   /**
@@ -40,14 +39,14 @@ abstract class AsyncUtil extends BitcoinSLogger {
     */
   def retryUntilSatisfiedF(
       conditionF: () => Future[Boolean],
-      duration: FiniteDuration = DEFAULT_INTERNVAL,
+      interval: FiniteDuration = AsyncUtil.DEFAULT_INTERVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(implicit
       system: ActorSystem): Future[Unit] = {
     val stackTrace: Array[StackTraceElement] =
       Thread.currentThread().getStackTrace
 
     retryUntilSatisfiedWithCounter(conditionF = conditionF,
-                                   duration = duration,
+                                   interval = interval,
                                    maxTries = maxTries,
                                    stackTrace = stackTrace)
   }
@@ -79,7 +78,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
   // Has a different name so that default values are permitted
   protected def retryUntilSatisfiedWithCounter(
       conditionF: () => Future[Boolean],
-      duration: FiniteDuration,
+      interval: FiniteDuration,
       counter: Int = 0,
       maxTries: Int,
       stackTrace: Array[StackTraceElement])(implicit
@@ -89,26 +88,25 @@ abstract class AsyncUtil extends BitcoinSLogger {
 
     conditionF().flatMap { condition =>
       if (condition) {
-        Future.successful(())
+        FutureUtil.unit
       } else if (counter == maxTries) {
-        Future.failed(
-          RpcRetryException(
-            s"Condition timed out after $maxTries attempts with $duration waiting periods",
-            stackTrace))
+        Future.failed(RpcRetryException(
+          s"Condition timed out after $maxTries attempts with interval=$interval waiting periods",
+          stackTrace))
       } else {
         val p = Promise[Boolean]()
         val runnable = retryRunnable(condition, p)
 
-        system.scheduler.scheduleOnce(duration, runnable)
+        system.scheduler.scheduleOnce(delay = interval, runnable = runnable)
 
         p.future.flatMap {
-          case true => Future.successful(())
+          case true => FutureUtil.unit
           case false =>
-            retryUntilSatisfiedWithCounter(conditionF,
-                                           duration,
-                                           counter + 1,
-                                           maxTries,
-                                           stackTrace)
+            retryUntilSatisfiedWithCounter(conditionF = conditionF,
+                                           interval = interval,
+                                           counter = counter + 1,
+                                           maxTries = maxTries,
+                                           stackTrace = stackTrace)
         }
       }
     }
@@ -124,7 +122,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
     */
   def awaitCondition(
       condition: () => Boolean,
-      duration: FiniteDuration = DEFAULT_INTERNVAL,
+      interval: FiniteDuration = AsyncUtil.DEFAULT_INTERVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(implicit
       system: ActorSystem): Future[Unit] = {
 
@@ -134,17 +132,17 @@ abstract class AsyncUtil extends BitcoinSLogger {
     val conditionF: () => Future[Boolean] = () =>
       Future.successful(conditionDef)
 
-    awaitConditionF(conditionF, duration, maxTries)
+    awaitConditionF(conditionF, interval, maxTries)
   }
 
   def awaitConditionF(
       conditionF: () => Future[Boolean],
-      duration: FiniteDuration = DEFAULT_INTERNVAL,
+      interval: FiniteDuration = AsyncUtil.DEFAULT_INTERVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(implicit
       system: ActorSystem): Future[Unit] = {
 
     retryUntilSatisfiedF(conditionF = conditionF,
-                         duration = duration,
+                         interval = interval,
                          maxTries = maxTries)
 
   }
@@ -155,7 +153,7 @@ object AsyncUtil extends AsyncUtil {
   /**
     * The default interval between async attempts
     */
-  private[bitcoins] val DEFAULT_INTERNVAL: FiniteDuration = 100.milliseconds
+  private[bitcoins] val DEFAULT_INTERVAL: FiniteDuration = 100.milliseconds
 
   /**
     * The default number of async attempts before timing out

@@ -36,7 +36,7 @@ class PeerMessageHandlerTest extends NodeUnitTest {
 
     val isConnectedF = TestAsyncUtil.retryUntilSatisfiedF(
       () => p2pClientF.flatMap(_.isConnected),
-      duration = 500.millis
+      interval = 500.millis
     )
 
     val isInitF = isConnectedF.flatMap { _ =>

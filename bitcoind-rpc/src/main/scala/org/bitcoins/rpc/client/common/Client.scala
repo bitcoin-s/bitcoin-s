@@ -142,7 +142,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
       for {
         _ <- awaitCookie(instance.authCredentials)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
-                                            duration = 1.seconds,
+                                            interval = 1.seconds,
                                             maxTries = 60)
       } yield this.asInstanceOf[BitcoindRpcClient]
     }
