@@ -86,11 +86,11 @@ abstract class FilterSync extends ChainVerificationLogger {
     }
     if (firstBlockHash == ourBestHeader.hashBE) {
       logger.info(
-        s"Our filters are synced with our peers filters, both at blockHash=${firstBlockHash}")
+        s"Our filters are synced with our peers filters, both at blockHash=${firstBlockHash.hex}")
       Future.successful(chainApi)
     } else {
       logger.info(
-        s"Beginning sync for filters from filterheader=${firstBlockHash} to blockheader=${ourBestHeader.hashBE}")
+        s"Beginning sync for filters from filterheader=${firstBlockHash.hex} to blockheader=${ourBestHeader.hashBE.hex}")
       //let's fetch all missing filter headers first
       val bestFilterBlockHeaderF =
         chainApi.getHeader(firstBlockHash)

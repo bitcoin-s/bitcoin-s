@@ -334,7 +334,7 @@ case class DataMessageHandler(
             .map(_ => true)
         case None =>
           sys.error(
-            s"Could not find block header in database to sync filter headers from!")
+            s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted")
       }
     } yield res
   }

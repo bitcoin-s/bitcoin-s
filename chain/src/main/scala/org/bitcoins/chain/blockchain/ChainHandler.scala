@@ -150,27 +150,20 @@ case class ChainHandler(
   override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
-    val prevBlockHeaderOptF: Future[Option[BlockHeaderDb]] = {
-      for {
-        prevStopHeaderOpt <- getHeader(prevStopHash)
-      } yield prevStopHeaderOpt
-    }
 
     for {
-      prevBlockHeaderOpt <- prevBlockHeaderOptF
-
+      prevBlockHeaderOpt <- getHeader(prevStopHash)
       headerOpt <- prevBlockHeaderOpt match {
         case Some(_) =>
           findNextHeader(prevBlockHeaderOpt, batchSize)
         case None =>
-          val result = if (prevStopHash == DoubleSha256DigestBE.empty) {
+          if (prevStopHash == DoubleSha256DigestBE.empty) {
             for {
               next <- findNextHeader(None, batchSize)
             } yield next
           } else {
             Future.successful(None)
           }
-          result
       }
     } yield {
       headerOpt
