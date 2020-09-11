@@ -45,7 +45,7 @@ on regtest.
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.chain.db.ChainApi
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.chain.models._
 
 import org.bitcoins.core.api._
