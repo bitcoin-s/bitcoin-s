@@ -131,7 +131,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
                 .chainApiFromDb()
                 .flatMap(_.getBlockCount.map(_ == ExpectedCount))
             },
-            duration = 1000.millis)
+            interval = 1000.millis)
 
         def hasFilterHeadersF =
           RpcUtil.retryUntilSatisfiedF(
@@ -140,7 +140,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
                 .chainApiFromDb()
                 .flatMap(_.getFilterHeaderCount.map(_ == ExpectedCount))
             },
-            duration = 1000.millis)
+            interval = 1000.millis)
 
         def hasFiltersF =
           RpcUtil.retryUntilSatisfiedF(
@@ -149,7 +149,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
                 .chainApiFromDb()
                 .flatMap(_.getFilterCount.map(_ == ExpectedCount))
             },
-            duration = 1000.millis)
+            interval = 1000.millis)
 
         for {
           _ <- hasBlocksF
