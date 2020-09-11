@@ -626,7 +626,7 @@ case class ChainHandler(
         currentF: Future[BlockHeaderDb],
         accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
       currentF.flatMap { current =>
-        if (current == from) {
+        if (current.hashBE == from.hashBE) {
           Future.successful(current +: accum)
         } else {
           val nextOptF = getHeader(current.previousBlockHashBE)
