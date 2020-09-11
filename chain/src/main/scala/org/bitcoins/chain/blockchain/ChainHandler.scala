@@ -162,8 +162,7 @@ case class ChainHandler(
           }
       }
     } yield {
-      <<<<<<< HEAD
-        headerOpt
+      headerOpt
     }
   }
 
@@ -214,7 +213,7 @@ case class ChainHandler(
   private def getBestChainAtHeight(
       startHeight: Int,
       batchSize: Int,
-      blockchains: Vector[Blockchain]): Option[(Int, DoubleSha256Digest)] = {
+      blockchains: Vector[Blockchain]): Option[FilterSyncMarker] = {
     //ok, we need to select the header that is contained in the chain
     //with the most chain work
     val targetHeight = startHeight + batchSize - 1
@@ -224,11 +223,12 @@ case class ChainHandler(
     val hashHeightOpt = mostWorkChainOpt.flatMap { mostWorkChain =>
       val maxHeight = mostWorkChain.tip.height
       if (targetHeight >= maxHeight) {
-        Some((startHeight, mostWorkChain.tip.hash))
+        val marker = FilterSyncMarker(startHeight, mostWorkChain.tip.hash)
+        Some(marker)
       } else {
         mostWorkChain
           .find(_.height == targetHeight)
-          .map(h => (startHeight, h.hash))
+          .map(h => FilterSyncMarker(startHeight, h.hash))
       }
     }
     hashHeightOpt

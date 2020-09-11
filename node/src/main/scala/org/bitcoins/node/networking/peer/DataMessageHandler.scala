@@ -327,10 +327,9 @@ case class DataMessageHandler(
         prevStopHash = blockHash,
         batchSize = chainConfig.filterHeaderBatchSize)
       res <- hashHeightOpt match {
-        case Some((height, hash)) =>
+        case Some(filterSyncMarker) =>
           peerMsgSender
-            .sendGetCompactFilterHeadersMessage(startHeight = height,
-                                                stopHash = hash)
+            .sendGetCompactFilterHeadersMessage(filterSyncMarker)
             .map(_ => true)
         case None =>
           sys.error(
