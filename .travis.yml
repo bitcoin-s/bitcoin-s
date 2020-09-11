@@ -99,6 +99,13 @@ jobs:
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
       scala: 2.13.2
 
+    - stage: test
+      os: windows
+      name: "Windows wallet and node tests"
+      env:
+        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
+      scala: 2.13.2
+
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
     - stage: release
