@@ -9,7 +9,7 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.core.api.chain.db.ChainApi
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.p2p.{NetworkMessage, _}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer

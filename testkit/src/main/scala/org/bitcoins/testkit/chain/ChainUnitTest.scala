@@ -10,6 +10,7 @@ import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
