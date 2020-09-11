@@ -5,6 +5,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   LabelPurpose,
   SignRawTransactionOutputParameter
 }
+import org.bitcoins.commons.util.AsyncUtil
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.Bitcoins
@@ -14,7 +15,6 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionInput
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
-import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 

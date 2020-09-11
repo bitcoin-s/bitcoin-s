@@ -12,6 +12,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   RpcOpts,
   SignRawTransactionResult
 }
+import org.bitcoins.commons.util.AsyncUtil
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
@@ -42,7 +43,7 @@ import org.bitcoins.rpc.config.{
   BitcoindInstance,
   ZmqConfig
 }
-import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.util.{FileUtil, TestkitBinaries}
 import org.bitcoins.util.ListUtil
 

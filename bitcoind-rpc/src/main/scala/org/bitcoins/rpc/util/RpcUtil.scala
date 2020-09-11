@@ -3,6 +3,7 @@ package org.bitcoins.rpc.util
 import java.net.ServerSocket
 
 import akka.actor.ActorSystem
+import org.bitcoins.commons.util.AsyncUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 import scala.annotation.tailrec

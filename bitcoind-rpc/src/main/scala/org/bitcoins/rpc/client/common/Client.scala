@@ -12,6 +12,7 @@ import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonParseException
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.util.AsyncUtil
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStopAsync}
@@ -22,7 +23,6 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
   PasswordBased
 }
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
-import org.bitcoins.rpc.util.AsyncUtil
 import play.api.libs.json._
 
 import scala.concurrent._

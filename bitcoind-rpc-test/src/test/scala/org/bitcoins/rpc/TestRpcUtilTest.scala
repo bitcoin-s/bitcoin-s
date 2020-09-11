@@ -2,10 +2,10 @@ package org.bitcoins.rpc
 
 import java.io.File
 
+import org.bitcoins.commons.util.{AsyncUtil, RpcRetryException}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.util.AsyncUtil.RpcRetryException
-import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{BitcoindRpcTest, FileUtil}
 

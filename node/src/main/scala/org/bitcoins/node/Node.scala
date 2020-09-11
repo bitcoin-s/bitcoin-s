@@ -9,6 +9,7 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
+import org.bitcoins.commons.util.AsyncUtil
 import org.bitcoins.core.api.chain._
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
@@ -26,7 +27,6 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageSender
 }
-import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}

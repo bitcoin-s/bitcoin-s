@@ -1,14 +1,13 @@
 package org.bitcoins.testkit.async
 
 import akka.actor.ActorSystem
+import org.bitcoins.commons.util.{AsyncUtil, RpcRetryException}
 import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 
-abstract class TestAsyncUtil
-    extends org.bitcoins.rpc.util.AsyncUtil
-    with Serializable {
+abstract class TestAsyncUtil extends AsyncUtil with Serializable {
 
   override protected def retryUntilSatisfiedWithCounter(
       conditionF: () => Future[Boolean],
@@ -40,25 +39,26 @@ object TestAsyncUtil extends TestAsyncUtil {
   def transformRetryToTestFailure[T](fut: Future[T])(implicit
       ec: ExecutionContext): Future[T] = {
     def transformRetry(err: Throwable): Throwable = {
-      if (err.isInstanceOf[RpcRetryException]) {
-        val retryErr = err.asInstanceOf[RpcRetryException]
-        val relevantStackTrace = retryErr.caller.tail
-          .dropWhile(elem => retryErr.internalFiles.contains(elem.getFileName))
-          .takeWhile(!_.getFileName.contains("TestSuite"))
-        val stackElement = relevantStackTrace.head
-        val file = stackElement.getFileName
-        val path = stackElement.getClassName
-        val line = stackElement.getLineNumber
-        val pos = org.scalactic.source.Position(file, path, line)
-        val newErr = new TestFailedException({ _: StackDepthException =>
-                                               Some(retryErr.message)
-                                             },
-                                             None,
-                                             pos)
-        newErr.setStackTrace(relevantStackTrace)
-        newErr
-      } else {
-        err
+      err match {
+        case retryErr: RpcRetryException =>
+          val relevantStackTrace = retryErr.caller.tail
+            .dropWhile(elem =>
+              retryErr.internalFiles.contains(elem.getFileName))
+            .takeWhile(!_.getFileName.contains("TestSuite"))
+          val stackElement = relevantStackTrace.head
+          val file = stackElement.getFileName
+          val path = stackElement.getClassName
+          val line = stackElement.getLineNumber
+          val pos = org.scalactic.source.Position(file, path, line)
+          val newErr = new TestFailedException({ _: StackDepthException =>
+                                                 Some(retryErr.message)
+                                               },
+                                               None,
+                                               pos)
+          newErr.setStackTrace(relevantStackTrace)
+          newErr
+        case _ =>
+          err
       }
     }
 

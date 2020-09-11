@@ -10,6 +10,7 @@ flywayClean / aggregate := false
 Test / flywayClean / aggregate := true
 
 lazy val Benchmark = config("bench") extend Test
+
 lazy val benchSettings: Seq[Def.SettingsDefinition] = {
   //for scalameter
   //https://scalameter.github.io/home/download/

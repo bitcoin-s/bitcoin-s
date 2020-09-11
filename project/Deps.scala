@@ -209,8 +209,10 @@ object Deps {
     Test.pgEmbedded
   )
 
-  def appCommons(scalaVersion: String) =
+  val appCommons =
     List(
+      Compile.akkaHttp,
+      Compile.akkaStream,
       Compile.newMicroPickle,
       Compile.playJson,
       Compile.slf4j
