@@ -31,8 +31,10 @@ case class BlockHeaderDb(
   lazy val hash: DoubleSha256Digest = hashBE.flip
 
   override def toString: String = {
-    s"BlockHeaderDb(height=$height,hashBE=$hashBE,version=$version,prevBlockHashBE=${previousBlockHashBE}" +
-      s"merkleRootHashBE=$merkleRootHashBE,time=$time,nBits=$nBits,nonce=$nonce,chainWork=$chainWork)"
+    s"BlockHeaderDb(height=$height,hashBE=${hashBE.hex},version=$version," +
+      s"prevBlockHashBE=${previousBlockHashBE.hex}" +
+      s"merkleRootHashBE=${merkleRootHashBE.hex}," +
+      s"time=$time,nBits=$nBits,nonce=$nonce,chainWork=$chainWork)"
   }
 }
 
