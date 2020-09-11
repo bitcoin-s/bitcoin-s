@@ -211,16 +211,18 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   private[node] def sendNextGetCompactFilterHeadersCommand(
       chainApi: ChainApi,
       filterHeaderBatchSize: Int,
-      stopHash: DoubleSha256DigestBE)(implicit
+      prevStopHash: DoubleSha256DigestBE)(implicit
       ec: ExecutionContext): Future[Boolean] = {
     for {
-      nextRangeOpt <-
-        chainApi.nextBlockHeaderBatchRange(stopHash, filterHeaderBatchSize)
+      nextRangeOpt <- chainApi.nextBlockHeaderBatchRange(
+        prevStopHash = prevStopHash,
+        batchSize = filterHeaderBatchSize)
       res <- nextRangeOpt match {
-        case Some((startHeight, stopHash)) =>
+        case Some((startHeight, newStopHash)) =>
           logger.info(
-            s"Requesting compact filter headers from=$startHeight to=${stopHash.flip}")
-          sendGetCompactFilterHeadersMessage(startHeight, stopHash)
+            s"Requesting next compact filter headers from=$startHeight to=${newStopHash.flip}")
+          sendGetCompactFilterHeadersMessage(startHeight = startHeight,
+                                             stopHash = newStopHash)
             .map(_ => true)
         case None =>
           Future.successful(false)

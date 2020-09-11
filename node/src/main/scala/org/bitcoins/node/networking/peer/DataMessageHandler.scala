@@ -69,9 +69,8 @@ case class DataMessageHandler(
               logger.debug(
                 s"Received filter headers=${filterHeaders.size} in one message, " +
                   "which is less than max. This means we are synced.")
-              sendFirstGetCompactFilterCommand(peerMsgSender).map { syncing =>
-                if (!syncing)
-                  logger.info("We are synced")
+              sendFirstGetCompactFilterCommand(peerMsgSender).map { synced =>
+                if (!synced) logger.info("We are synced")
                 syncing
               }
             }
@@ -221,9 +220,9 @@ case class DataMessageHandler(
                   appConfig.nodeType == NodeType.NeutrinoNode && (!syncing ||
                   (filterHeaderHeightOpt.isEmpty &&
                   filterHeightOpt.isEmpty))
-                )
+                ) {
                   sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
-                else {
+                } else {
                   Try(initialSyncDone.map(_.success(Done)))
                   Future.successful(syncing)
                 }
@@ -305,24 +304,38 @@ case class DataMessageHandler(
 
   private def sendNextGetCompactFilterHeadersCommand(
       peerMsgSender: PeerMessageSender,
-      stopHash: DoubleSha256DigestBE): Future[Boolean] =
+      prevStopHash: DoubleSha256DigestBE): Future[Boolean] =
     peerMsgSender.sendNextGetCompactFilterHeadersCommand(
       chainApi = chainApi,
       filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
-      stopHash = stopHash)
+      prevStopHash = prevStopHash)
 
   private def sendFirstGetCompactFilterHeadersCommand(
       peerMsgSender: PeerMessageSender): Future[Boolean] = {
+
     for {
       bestFilterHeaderOpt <-
         chainApi
           .getBestFilterHeader()
-      highestFilterBlockHash =
-        bestFilterHeaderOpt
-          .map(_.blockHashBE)
-          .getOrElse(DoubleSha256DigestBE.empty)
-      res <- sendNextGetCompactFilterHeadersCommand(peerMsgSender,
-                                                    highestFilterBlockHash)
+      blockHash = bestFilterHeaderOpt match {
+        case Some(filterHeaderDb) =>
+          filterHeaderDb.blockHashBE
+        case None =>
+          DoubleSha256DigestBE.empty
+      }
+      hashHeightOpt <- chainApi.nextBlockHeaderBatchRange(
+        prevStopHash = blockHash,
+        batchSize = chainConfig.filterHeaderBatchSize)
+      res <- hashHeightOpt match {
+        case Some((height, hash)) =>
+          peerMsgSender
+            .sendGetCompactFilterHeadersMessage(startHeight = height,
+                                                stopHash = hash)
+            .map(_ => true)
+        case None =>
+          sys.error(
+            s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted")
+      }
     } yield res
   }
 

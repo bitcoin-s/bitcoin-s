@@ -21,6 +21,12 @@ object ChainFixtureTag {
 
   case object GenisisChainHandler extends ChainFixtureTag("GenisisChainHandler")
 
+  /** Creates the genesis block header and genesis [[org.bitcoins.core.api.chain.db.CompactFilterHeaderDb]]
+    * and [[org.bitcoins.core.api.chain.db.CompactFilterDb]]
+    */
+  case object GenesisChainHandlerWithFilter
+      extends ChainFixtureTag("GenesisChainHandlerWithFilter")
+
   case object PopulatedChainHandler
       extends ChainFixtureTag("PopulatedChainHandler")
 

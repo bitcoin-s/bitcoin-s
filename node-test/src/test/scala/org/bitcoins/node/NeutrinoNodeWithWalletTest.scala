@@ -125,9 +125,12 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         )
       }
 
+      val countF = node.chainApiFromDb().flatMap(_.getFilterHeaderCount)
       for {
+        count <- countF
         _ <- node.sync()
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
+        _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
         // send
@@ -201,7 +204,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       } yield assert(txs.exists(_.txIdBE == txSent.txIdBE))
   }
 
-  it must "rescan and receive information about received payments" taggedAs UsesExperimentalBitcoind in {
+  it must "rescan information about received payments" taggedAs UsesExperimentalBitcoind in {
     param =>
       val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 

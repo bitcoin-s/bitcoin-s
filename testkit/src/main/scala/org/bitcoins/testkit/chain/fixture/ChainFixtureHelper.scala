@@ -4,6 +4,7 @@ import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.chain.fixture.ChainFixture.{
   BitcoindZmqChainHandlerWithBlock,
   Empty,
+  GenesisChainHandlerWithGenesisFilters,
   GenisisBlockHeaderDAO,
   GenisisChainHandler,
   PopulatedBlockHeaderDAO,
@@ -19,6 +20,7 @@ trait ChainFixtureHelper { this: ChainUnitTest =>
       case ChainFixtureTag.Empty => Future.successful(ChainFixture.Empty)
       case ChainFixtureTag.GenisisBlockHeaderDAO =>
         ChainUnitTest.createBlockHeaderDAO().map(GenisisBlockHeaderDAO.apply)
+
       case ChainFixtureTag.PopulatedBlockHeaderDAO =>
         ChainUnitTest
           .createPopulatedBlockHeaderDAO()
@@ -28,6 +30,9 @@ trait ChainFixtureHelper { this: ChainUnitTest =>
       case ChainFixtureTag.PopulatedChainHandler =>
         createPopulatedChainHandler().map(
           ChainFixture.PopulatedChainHandler.apply)
+      case ChainFixtureTag.GenesisChainHandlerWithFilter =>
+        createChainHandlerWithGenesisFilter()
+          .map(ChainFixture.GenesisChainHandlerWithGenesisFilters(_))
       case ChainFixtureTag.BitcoindZmqChainHandlerWithBlock =>
         createBitcoindChainHandlerViaZmq().map(
           BitcoindZmqChainHandlerWithBlock.apply)
@@ -40,7 +45,9 @@ trait ChainFixtureHelper { this: ChainUnitTest =>
       case GenisisBlockHeaderDAO(_)   => ChainUnitTest.destroyAllTables()
       case PopulatedBlockHeaderDAO(_) => ChainUnitTest.destroyAllTables()
       case GenisisChainHandler(_)     => ChainUnitTest.destroyAllTables()
-      case PopulatedChainHandler(_)   => ChainUnitTest.destroyAllTables()
+      case GenesisChainHandlerWithGenesisFilters(_) =>
+        ChainUnitTest.destroyAllTables()
+      case PopulatedChainHandler(_) => ChainUnitTest.destroyAllTables()
       case BitcoindZmqChainHandlerWithBlock(bitcoindHandler) =>
         destroyBitcoindChainHandlerViaZmq(bitcoindHandler)
     }

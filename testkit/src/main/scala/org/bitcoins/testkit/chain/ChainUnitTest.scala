@@ -11,12 +11,14 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db._
+import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.testkit.chain.ChainUnitTest.createChainHandler
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.CachedChainAppConfig
@@ -177,6 +179,11 @@ trait ChainUnitTest
                 () => ChainUnitTest.destroyAllTables)(test)
   }
 
+  def withChainHandlerGenesisFilter(test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(() => createChainHandlerWithGenesisFilter(),
+                () => ChainUnitTest.destroyAllTables())(test)
+  }
+
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
   def createPopulatedChainHandler(): Future[ChainHandler] = {
     for {
@@ -188,6 +195,17 @@ trait ChainUnitTest
                                                   filterHeaderDAO,
                                                 filterDAO = filterDAO)
     } yield chainHandler
+  }
+
+  def createChainHandlerWithGenesisFilter(): Future[ChainHandler] = {
+    for {
+      chainHandler <- createChainHandler()
+      filterHeaderChainApi <- chainHandler.processFilterHeader(
+        ChainUnitTest.genesisFilterHeaderDb.filterHeader,
+        ChainUnitTest.genesisHeaderDb.hashBE)
+      filterChainApi <-
+        filterHeaderChainApi.processFilter(ChainUnitTest.genesisFilterMessage)
+    } yield filterChainApi.asInstanceOf[ChainHandler]
   }
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
@@ -338,13 +356,16 @@ trait ChainUnitTest
   /** Builds two competing headers that are built from the same parent */
   private def buildCompetingHeaders(
       parent: BlockHeaderDb): (BlockHeader, BlockHeader) = {
-    val newHeaderB =
+    val newHeaderCandidate1 =
       BlockHeaderHelper.buildNextHeader(parent)
 
-    val newHeaderC =
+    val newHeaderCandidate2 =
       BlockHeaderHelper.buildNextHeader(parent)
-
-    (newHeaderB.blockHeader, newHeaderC.blockHeader)
+    if (newHeaderCandidate1.chainWork >= newHeaderCandidate2.chainWork) {
+      (newHeaderCandidate1.blockHeader, newHeaderCandidate2.blockHeader)
+    } else {
+      (newHeaderCandidate2.blockHeader, newHeaderCandidate1.blockHeader)
+    }
   }
 
   case class ReorgFixture(
@@ -385,6 +406,12 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   val genesisFilterHeaderDb: CompactFilterHeaderDb =
     ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb
+
+  val genesisFilterMessage: CompactFilterMessage = {
+    CompactFilterMessage(filterType = genesisFilterDb.filterType,
+                         blockHash = genesisFilterDb.blockHashBE.flip,
+                         filterBytes = genesisFilterDb.golombFilter.bytes)
+  }
 
   def createChainHandler()(implicit
       ec: ExecutionContext,
@@ -587,8 +614,6 @@ object ChainUnitTest extends ChainVerificationLogger {
       for {
         chainHandler <- chainHandlerF
         genHeader <- chainHandler.blockHeaderDAO.create(genesisHeaderDb)
-        _ <- chainHandler.filterHeaderDAO.create(genesisFilterHeaderDb)
-        _ <- chainHandler.filterDAO.create(genesisFilterDb)
       } yield genHeader
     }
 
