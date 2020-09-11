@@ -169,24 +169,28 @@ before_script:
 stages:
   - name: docs
     if:
-      commit_message =~ /(?i)^docs:/ AND NOT
+      commit_message =~ /(?i)^docs:/ AND
+      commit_message !~ /(?i)^trivial:/ AND NOT
       ((branch = master AND type = push) OR (tag IS present))
 
   - name: trivial
     if:
-      commit_message =~ /(?i)^trivial:/ AND NOT
+      commit_message =~ /(?i)^trivial:/ AND
+      commit_message !~ /(?i)^docs:/ AND NOT
       ((branch = master AND type = push) OR (tag IS present))
     # don't run tests on merge builds, just publish library
     # and website
   - name: compile
     if:
-      commit_message !~ /(?i)^docs:/ AND NOT
+      commit_message !~ /(?i)^docs:/ AND
+      commit_message !~ /(?i)^trivial:/ AND NOT
       ((branch = master AND type = push) OR (tag IS present))
     # don't run tests on merge builds, just publish library
     # and website
   - name: test
     if:
-      commit_message !~ /(?i)^docs:/ AND NOT
+      commit_message !~ /(?i)^docs:/ AND
+      commit_message !~ /(?i)^trivial:/ AND NOT
       ((branch = master AND type = push) OR (tag IS present))
     # don't run tests on merge builds, just publish library
     # and website
