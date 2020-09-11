@@ -183,49 +183,36 @@ case class ChainHandler(
   private def findNextHeader(
       prevBlockHeaderOpt: Option[BlockHeaderDb],
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
-    prevBlockHeaderOpt match {
+
+    val chainsF = prevBlockHeaderOpt match {
       case None =>
-        val hashHeightOpt = {
-          val chainsF = blockHeaderDAO.getBlockchainsBetweenHeights(
-            from = 0,
-            to =
-              batchSize - 1)
-          for {
-            chains <- chainsF
-          } yield {
-            getBestChainAtHeight(0, batchSize, chains)
-          }
-        }
-        hashHeightOpt
+        blockHeaderDAO.getBlockchainsBetweenHeights(from = 0,
+                                                    to = batchSize - 1)
       case Some(prevBlockHeader) =>
         val inMemoryBlockchains = {
           blockchains.filter(
             _.exists(_.previousBlockHashBE == prevBlockHeader.hashBE))
         }
-
-        val startHeight = prevBlockHeader.height + 1
         if (inMemoryBlockchains.nonEmpty) {
-          val hashHeightOpt = {
-            getBestChainAtHeight(startHeight = startHeight,
-                                 batchSize = batchSize,
-                                 blockchains = inMemoryBlockchains)
-          }
-          Future.successful(hashHeightOpt)
+          Future.successful(inMemoryBlockchains)
         } else {
-          //fetch from database
-          val hashHeightOpt = {
-            val chainsF = blockHeaderDAO.getBlockchainsBetweenHeights(
-              from = prevBlockHeader.height,
-              to = prevBlockHeader.height + batchSize)
-            for {
-              chains <- chainsF
-            } yield {
-              getBestChainAtHeight(startHeight, batchSize, chains)
-            }
-          }
-          hashHeightOpt
+          blockHeaderDAO.getBlockchainsBetweenHeights(
+            from = prevBlockHeader.height,
+            to = prevBlockHeader.height + batchSize)
         }
     }
+
+    val startHeight = prevBlockHeaderOpt match {
+      case None => 0
+      case Some(prevBlockHeader) =>
+        prevBlockHeader.height + 1
+    }
+
+    for {
+      chains <- chainsF
+    } yield getBestChainAtHeight(startHeight = startHeight,
+                                 batchSize = batchSize,
+                                 blockchains = chains)
   }
 
   /** Given a vector of blockchains, this method finds the chain with the most chain work
