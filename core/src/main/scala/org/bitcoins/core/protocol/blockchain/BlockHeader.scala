@@ -129,6 +129,12 @@ sealed trait BlockHeader extends NetworkElement {
 
   override def bytes: ByteVector = RawBlockHeaderSerializer.write(this)
 
+  override def toString: String = {
+    s"BlockHeader(hashBE=${hashBE.hex},version=$version," +
+      s"prevBlockHashBE=${previousBlockHashBE.hex}," +
+      s"merkleRootHashBE=${merkleRootHashBE.hex}," +
+      s"time=$time,nBits=$nBits,nonce=$nonce)"
+  }
 }
 
 /**
