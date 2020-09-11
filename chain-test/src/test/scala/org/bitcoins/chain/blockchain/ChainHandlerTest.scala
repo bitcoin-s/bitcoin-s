@@ -1,11 +1,8 @@
 package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.pow.Pow
-import org.bitcoins.core.api.chain.db.{
-  BlockHeaderDb,
-  BlockHeaderDbHelper,
-  ChainApi
-}
+import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -317,9 +314,10 @@ class ChainHandlerTest extends ChainDbUnitTest {
         rangeOpt <-
           chainHandler.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
       } yield {
+        val marker = rangeOpt.get
         assert(rangeOpt.nonEmpty)
-        assert(rangeOpt.get._1 == 0)
-        assert(rangeOpt.get._2 == genesisHeader.hash)
+        assert(marker.startHeight == 0)
+        assert(marker.stopBlockHash == genesisHeader.hash)
       }
 
       //let's process a block header, and then be able to fetch that header as the last stopHash
@@ -340,9 +338,10 @@ class ChainHandlerTest extends ChainDbUnitTest {
         rangeOpt <-
           chainApi.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 2)
       } yield {
+        val marker = rangeOpt.get
         assert(rangeOpt.nonEmpty)
-        assert(rangeOpt.get._1 == 0)
-        assert(rangeOpt.get._2 == blockHeader.hash)
+        assert(marker.startHeight == 0)
+        assert(marker.stopBlockHash == blockHeader.hash)
       }
   }
 
@@ -365,9 +364,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
         count <- chainHandler.getBlockCount()
       } yield {
         assert(blockHeaderBatchOpt.isDefined)
-        val Some((height, hash)) = blockHeaderBatchOpt
-        assert(newHeaderB.hash == hash)
-        assert(newHeaderB.height == height)
+        val marker = blockHeaderBatchOpt.get
+        assert(newHeaderB.hash == marker.stopBlockHash)
+        assert(newHeaderB.height == marker.startHeight)
       }
 
       //now let's build a new block header ontop of C and process it
@@ -386,9 +385,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
       } yield {
         assert(count == 2)
         assert(blockHeaderBatchOpt.isDefined)
-        val Some((height, hash)) = blockHeaderBatchOpt
-        assert(headerC.height == height)
-        assert(headerD.hash == hash)
+        val marker = blockHeaderBatchOpt.get
+        assert(headerC.height == marker.startHeight)
+        assert(headerD.hash == marker.stopBlockHash)
       }
 
   }
@@ -401,9 +400,10 @@ class ChainHandlerTest extends ChainDbUnitTest {
         rangeOpt <-
           chainHandler.nextFilterHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
       } yield {
+        val marker = rangeOpt.get
         assert(rangeOpt.nonEmpty)
-        assert(rangeOpt.get._1 == 0)
-        assert(rangeOpt.get._2 == bestBlockHashBE.flip)
+        assert(marker.startHeight == 0)
+        assert(marker.stopBlockHash == bestBlockHashBE.flip)
       }
   }
 

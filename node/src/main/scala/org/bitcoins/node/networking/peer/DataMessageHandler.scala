@@ -2,7 +2,7 @@ package org.bitcoins.node.networking.peer
 
 import akka.Done
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.chain.db.ChainApi
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -327,10 +327,9 @@ case class DataMessageHandler(
         prevStopHash = blockHash,
         batchSize = chainConfig.filterHeaderBatchSize)
       res <- hashHeightOpt match {
-        case Some((height, hash)) =>
+        case Some(filterSyncMarker) =>
           peerMsgSender
-            .sendGetCompactFilterHeadersMessage(startHeight = height,
-                                                stopHash = hash)
+            .sendGetCompactFilterHeadersMessage(filterSyncMarker)
             .map(_ => true)
         case None =>
           sys.error(

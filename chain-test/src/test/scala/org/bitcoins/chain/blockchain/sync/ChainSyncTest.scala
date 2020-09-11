@@ -2,7 +2,7 @@ package org.bitcoins.chain.blockchain.sync
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.core.api.chain.db.ChainApi
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.chain.fixture.BitcoindChainHandlerViaRpc
 import org.bitcoins.testkit.chain.{ChainDbUnitTest, SyncUtil}

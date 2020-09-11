@@ -14,7 +14,7 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.Core
-import org.bitcoins.core.api.chain.db.ChainApi
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.config.{BitcoinNetworks, MainNet, RegTest, TestNet3}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NetworkUtil}
 import org.bitcoins.db._

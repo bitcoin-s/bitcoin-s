@@ -4,10 +4,9 @@ import java.net.InetSocketAddress
 
 import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
-  ChainApi,
   CompactFilterDb,
   CompactFilterHeaderDb
 }
@@ -16,7 +15,7 @@ import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
@@ -106,12 +105,12 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
     override def nextBlockHeaderBatchRange(
         stopHash: DoubleSha256DigestBE,
-        batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] =
+        batchSize: Int): Future[Option[FilterSyncMarker]] =
       Future.successful(None)
 
     override def nextFilterHeaderBatchRange(
         stopHash: DoubleSha256DigestBE,
-        batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] =
+        batchSize: Int): Future[Option[FilterSyncMarker]] =
       Future.successful(None)
 
     override def processFilters(
