@@ -4,6 +4,7 @@ import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.gcs.FilterHeader
@@ -12,11 +13,7 @@ import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  DoubleSha256Digest,
-  DoubleSha256DigestBE
-}
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
 
 import scala.annotation.tailrec
 import scala.concurrent._
@@ -149,8 +146,7 @@ case class ChainHandler(
   /** @inheritdoc */
   override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
-      batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
-
+      batchSize: Int): Future[Option[FilterSyncMarker]] = {
     for {
       prevBlockHeaderOpt <- getHeader(prevStopHash)
       headerOpt <- prevBlockHeaderOpt match {
@@ -166,7 +162,8 @@ case class ChainHandler(
           }
       }
     } yield {
-      headerOpt
+      <<<<<<< HEAD
+        headerOpt
     }
   }
 
@@ -175,7 +172,7 @@ case class ChainHandler(
     */
   private def findNextHeader(
       prevBlockHeaderOpt: Option[BlockHeaderDb],
-      batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
+      batchSize: Int): Future[Option[FilterSyncMarker]] = {
 
     val chainsF = prevBlockHeaderOpt match {
       case None =>
@@ -240,7 +237,7 @@ case class ChainHandler(
   /** @inheritdoc */
   override def nextFilterHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
-      batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
+      batchSize: Int): Future[Option[FilterSyncMarker]] = {
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
     } else {
@@ -265,7 +262,7 @@ case class ChainHandler(
       if (startHeight > stopHeight)
         None
       else
-        Some((startHeight, stopBlock.blockHashBE.flip))
+        Some(FilterSyncMarker(startHeight, stopBlock.blockHashBE.flip))
     }
   }
 

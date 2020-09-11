@@ -1,11 +1,15 @@
-package org.bitcoins.core.api.chain.db
+package org.bitcoins.core.api.chain
 
-import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.chain.db.{
+  BlockHeaderDb,
+  CompactFilterDb,
+  CompactFilterHeaderDb
+}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.concurrent.Future
 
@@ -69,14 +73,14 @@ trait ChainApi extends ChainQueryApi {
     */
   def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
-      batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]]
+      batchSize: Int): Future[Option[FilterSyncMarker]]
 
   /**
     * Generates a filter header range in form of (startHeight, stopHash) by the given stop hash.
     */
   def nextFilterHeaderBatchRange(
       stopHash: DoubleSha256DigestBE,
-      batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]]
+      batchSize: Int): Future[Option[FilterSyncMarker]]
 
   /**
     * Adds a compact filter into the filter database.

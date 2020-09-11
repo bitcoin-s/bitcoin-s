@@ -5,7 +5,7 @@ import java.net.InetAddress
 import akka.actor.ActorRef
 import akka.io.Tcp
 import akka.util.Timeout
-import org.bitcoins.core.api.chain.db.ChainApi
+import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
@@ -161,21 +161,21 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   }
 
   def sendGetCompactFiltersMessage(
-      startHeight: Int,
-      stopHash: DoubleSha256Digest): Future[Unit] = {
+      filterSyncMarker: FilterSyncMarker): Future[Unit] = {
     val message =
-      GetCompactFiltersMessage(if (startHeight < 0) 0 else startHeight,
-                               stopHash)
+      GetCompactFiltersMessage(if (filterSyncMarker.startHeight < 0) 0
+                               else filterSyncMarker.startHeight,
+                               filterSyncMarker.stopBlockHash)
     logger.debug(s"Sending getcfilters=$message to peer ${client.peer}")
     sendMsg(message)
   }
 
   def sendGetCompactFilterHeadersMessage(
-      startHeight: Int,
-      stopHash: DoubleSha256Digest): Future[Unit] = {
+      filterSyncMarker: FilterSyncMarker): Future[Unit] = {
     val message =
-      GetCompactFilterHeadersMessage(if (startHeight < 0) 0 else startHeight,
-                                     stopHash)
+      GetCompactFilterHeadersMessage(if (filterSyncMarker.startHeight < 0) 0
+                                     else filterSyncMarker.startHeight,
+                                     filterSyncMarker.stopBlockHash)
     logger.debug(s"Sending getcfheaders=$message to peer ${client.peer}")
     sendMsg(message)
   }
@@ -193,14 +193,14 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       stopHash: DoubleSha256DigestBE)(implicit
       ec: ExecutionContext): Future[Boolean] = {
     for {
-      nextRangeOpt <-
+      filterSyncMarkerOpt <-
         chainApi.nextFilterHeaderBatchRange(stopHash, filterBatchSize)
-      res <- nextRangeOpt match {
-        case Some((startHeight, stopHash)) =>
+      res <- filterSyncMarkerOpt match {
+        case Some(filterSyncMarker) =>
           logger.info(
-            s"Requesting compact filters from=$startHeight to=${stopHash.flip}")
+            s"Requesting compact filters from=${filterSyncMarker.startHeight} to=${filterSyncMarker.stopBlockHash}")
 
-          sendGetCompactFiltersMessage(startHeight, stopHash)
+          sendGetCompactFiltersMessage(filterSyncMarker)
             .map(_ => true)
         case None =>
           Future.successful(false)
@@ -214,15 +214,14 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       prevStopHash: DoubleSha256DigestBE)(implicit
       ec: ExecutionContext): Future[Boolean] = {
     for {
-      nextRangeOpt <- chainApi.nextBlockHeaderBatchRange(
+      filterSyncMarkerOpt <- chainApi.nextBlockHeaderBatchRange(
         prevStopHash = prevStopHash,
         batchSize = filterHeaderBatchSize)
-      res <- nextRangeOpt match {
-        case Some((startHeight, newStopHash)) =>
+      res <- filterSyncMarkerOpt match {
+        case Some(filterSyncMarker) =>
           logger.info(
-            s"Requesting next compact filter headers from=$startHeight to=${newStopHash.flip}")
-          sendGetCompactFilterHeadersMessage(startHeight = startHeight,
-                                             stopHash = newStopHash)
+            s"Requesting next compact filter headers from=${filterSyncMarker.startHeight} to=${filterSyncMarker.stopBlockHash.flip}")
+          sendGetCompactFilterHeadersMessage(filterSyncMarker)
             .map(_ => true)
         case None =>
           Future.successful(false)
