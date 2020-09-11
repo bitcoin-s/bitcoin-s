@@ -273,7 +273,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isState(),
-                                       duration = 1.seconds)
+                                       interval = 1.seconds)
   }
 
   def awaitUntilPaymentSucceeded(
@@ -305,7 +305,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   private def awaitUntilOutgoingPaymentStatus[T <: OutgoingPaymentStatus](
       client: EclairApi,
       paymentId: PaymentId,
-      duration: FiniteDuration,
+      interval: FiniteDuration,
       maxTries: Int,
       failFast: Boolean)(implicit
       system: ActorSystem,
@@ -341,14 +341,14 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isInState(),
-                                       duration = duration,
+                                       interval = interval,
                                        maxTries = maxTries)
   }
 
   def awaitUntilIncomingPaymentStatus[T <: IncomingPaymentStatus](
       client: EclairApi,
       paymentHash: Sha256Digest,
-      duration: FiniteDuration = 1.second,
+      interval: FiniteDuration = 1.second,
       maxTries: Int = 60)(implicit
       system: ActorSystem,
       tag: ClassTag[T]): Future[Unit] = {
@@ -374,7 +374,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isInState(),
-                                       duration = duration,
+                                       interval = interval,
                                        maxTries = maxTries)
   }
 
@@ -609,7 +609,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     logger.debug(s"Awaiting connection between clients")
     val connected = TestRpcUtil.retryUntilSatisfiedF(conditionF =
                                                        () => isConnected(),
-                                                     duration = 1.second)
+                                                     interval = 1.second)
 
     connected.map(_ => logger.debug(s"Successfully connected two clients"))
 
@@ -751,7 +751,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
     TestAsyncUtil.retryUntilSatisfiedF(conditionF =
                                          () => clientInSync(eclair, bitcoind),
-                                       duration = 1.seconds)
+                                       interval = 1.seconds)
   }
 
   /** Shuts down an eclair daemon and the bitcoind daemon it is associated with

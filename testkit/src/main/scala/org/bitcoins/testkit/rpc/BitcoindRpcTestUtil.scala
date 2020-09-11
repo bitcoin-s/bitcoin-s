@@ -55,7 +55,6 @@ import scala.util._
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
-  import BitcoindRpcTestUtil.DEFAULT_LONG_DURATION
 
   type RpcClientAccum =
     mutable.Builder[BitcoindRpcClient, Vector[BitcoindRpcClient]]
@@ -344,7 +343,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def awaitConnection(
       from: BitcoindRpcClient,
       to: BitcoindRpcClient,
-      duration: FiniteDuration = 100.milliseconds,
+      interval: FiniteDuration = 100.milliseconds,
       maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
 
@@ -357,7 +356,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     AsyncUtil.retryUntilSatisfiedF(conditionF = isConnected,
-                                   duration = duration,
+                                   interval = interval,
                                    maxTries = maxTries)
   }
 
@@ -442,7 +441,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def awaitSynced(
       client1: BitcoindRpcClient,
       client2: BitcoindRpcClient,
-      duration: FiniteDuration = DEFAULT_LONG_DURATION,
+      interval: FiniteDuration = BitcoindRpcTestUtil.DEFAULT_LONG_INTERVAL,
       maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
 
@@ -455,14 +454,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     AsyncUtil.retryUntilSatisfiedF(conditionF = () => isSynced(),
-                                   duration = duration,
+                                   interval = interval,
                                    maxTries = maxTries)
   }
 
   def awaitSameBlockHeight(
       client1: BitcoindRpcClient,
       client2: BitcoindRpcClient,
-      duration: FiniteDuration = DEFAULT_LONG_DURATION,
+      interval: FiniteDuration = BitcoindRpcTestUtil.DEFAULT_LONG_INTERVAL,
       maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
 
@@ -475,14 +474,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     AsyncUtil.retryUntilSatisfiedF(conditionF = () => isSameBlockHeight(),
-                                   duration = duration,
+                                   interval = interval,
                                    maxTries = maxTries)
   }
 
   def awaitDisconnected(
       from: BitcoindRpcClient,
       to: BitcoindRpcClient,
-      duration: FiniteDuration = 100.milliseconds,
+      interval: FiniteDuration = 100.milliseconds,
       maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
 
@@ -500,7 +499,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     AsyncUtil.retryUntilSatisfiedF(conditionF = () => isDisconnected(),
-                                   duration = duration,
+                                   interval = interval,
                                    maxTries = maxTries)
   }
 
@@ -559,7 +558,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       val futures = pairs.map {
         case (first, second) =>
           BitcoindRpcTestUtil
-            .awaitConnection(first, second, duration = 10.second)
+            .awaitConnection(first, second, interval = 10.second)
       }
       Future.sequence(futures)
     }
@@ -984,7 +983,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     val blocksGeneratedF = generatedF.flatMap { _ =>
       AsyncUtil.retryUntilSatisfiedF(
         () => areBlocksGenerated(),
-        duration = DEFAULT_LONG_DURATION
+        interval = BitcoindRpcTestUtil.DEFAULT_LONG_INTERVAL
       )
     }
 
@@ -999,7 +998,7 @@ object BitcoindRpcTestUtil extends BitcoindRpcTestUtil {
   /**
     * Used for long running async tasks
     */
-  private val DEFAULT_LONG_DURATION = {
+  private val DEFAULT_LONG_INTERVAL = {
     if (EnvUtil.isMac && EnvUtil.isCI) 10.seconds
     else 3.seconds
   }

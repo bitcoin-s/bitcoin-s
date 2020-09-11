@@ -90,7 +90,7 @@ class SpvNodeTest extends NodeUnitTest {
         val has6BlocksF = RpcUtil.retryUntilSatisfiedF(
           conditionF =
             () => spvNode.chainApiFromDb().flatMap(_.getBlockCount.map(_ == 6)),
-          duration = 250.millis)
+          interval = 250.millis)
 
         has6BlocksF.map { _ =>
           val isCanceled = cancel.cancel()

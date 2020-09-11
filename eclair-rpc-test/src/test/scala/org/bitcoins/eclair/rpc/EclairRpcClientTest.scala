@@ -188,7 +188,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     AsyncUtil
-      .awaitConditionF(hasRoute, duration = 1.second, maxTries = 60)
+      .awaitConditionF(hasRoute, interval = 1.second, maxTries = 60)
       .map(_ => succeed)
   }
 
@@ -207,7 +207,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     AsyncUtil
-      .awaitConditionF(hasRoute, duration = 1.second, maxTries = 60)
+      .awaitConditionF(hasRoute, interval = 1.second, maxTries = 60)
       .map(_ => succeed)
   }
 
@@ -228,7 +228,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           .awaitUntilIncomingPaymentStatus[IncomingPaymentStatus.Received](
             client4,
             invoice.lnTags.paymentHash.hash,
-            duration = 1.second)
+            interval = 1.second)
 
       _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1,
                                                         paymentId,
@@ -417,13 +417,13 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       }
       _ <- TestAsyncUtil.retryUntilSatisfiedF(conditionF =
                                                 () => eclair.isStarted(),
-                                              duration = 1.second,
+                                              interval = 1.second,
                                               maxTries = 60)
       _ = EclairRpcTestUtil.shutdown(eclair)
       _ <-
         TestAsyncUtil.retryUntilSatisfiedF(conditionF =
                                              () => eclair.isStarted().map(!_),
-                                           duration = 1.second,
+                                           interval = 1.second,
                                            maxTries = 60)
     } yield succeed
   }
@@ -1127,7 +1127,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
           AsyncUtil
             .retryUntilSatisfiedF((() => checkUpdates()),
-                                  duration = 1.second,
+                                  interval = 1.second,
                                   maxTries = 60)
             .transform(_ => succeed, ex => ex)
         }

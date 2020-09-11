@@ -183,7 +183,7 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
         _ = p2pClient.actor ! Tcp.Abort
         isDisconnected <-
           TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isDisconnected,
-                                             duration = 1.seconds)
+                                             interval = 1.seconds)
       } yield isDisconnected
 
       isDisconnectedF.map { _ =>
