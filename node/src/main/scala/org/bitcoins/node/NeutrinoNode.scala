@@ -71,7 +71,7 @@ case class NeutrinoNode(
         peerMsgSender.sendNextGetCompactFilterHeadersCommand(
           chainApi = chainApi,
           filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
-          stopHash = header.hashBE)
+          prevStopHash = header.hashBE)
 
         // If we have started syncing filters
         if (filterCount != filterHeaderCount)

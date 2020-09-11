@@ -150,30 +150,91 @@ case class ChainHandler(
   override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
-    val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
-      Future.successful(0)
-    } else {
-      for {
-        prevStopHeaderOpt <- getHeader(prevStopHash)
-        prevStopHeader = prevStopHeaderOpt.getOrElse(
-          throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
-      } yield prevStopHeader.height + 1
-    }
+
     for {
-      startHeight <- startHeightF
-      blockCount <- getBlockCount
-      stopHeight =
-        if (startHeight - 1 + batchSize > blockCount) blockCount
-        else startHeight - 1 + batchSize
-      stopBlockOpt <- getHeadersAtHeight(stopHeight).map(_.headOption)
-      stopBlock = stopBlockOpt.getOrElse(
-        throw UnknownBlockHeight(s"Unknown header height ${stopHeight}"))
+      prevBlockHeaderOpt <- getHeader(prevStopHash)
+      headerOpt <- prevBlockHeaderOpt match {
+        case Some(_) =>
+          findNextHeader(prevBlockHeaderOpt, batchSize)
+        case None =>
+          if (prevStopHash == DoubleSha256DigestBE.empty) {
+            for {
+              next <- findNextHeader(None, batchSize)
+            } yield next
+          } else {
+            Future.successful(None)
+          }
+      }
     } yield {
-      if (startHeight > stopHeight)
-        None
-      else
-        Some((startHeight, stopBlock.hashBE.flip))
+      headerOpt
     }
+  }
+
+  /** Finds the next header in the chain. Uses chain work to break ties
+    * returning only the header in the chain with the most work
+    */
+  private def findNextHeader(
+      prevBlockHeaderOpt: Option[BlockHeaderDb],
+      batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
+
+    val chainsF = prevBlockHeaderOpt match {
+      case None =>
+        blockHeaderDAO.getBlockchainsBetweenHeights(from = 0,
+                                                    to = batchSize - 1)
+      case Some(prevBlockHeader) =>
+        val inMemoryBlockchains = {
+          blockchains.filter(
+            _.exists(_.previousBlockHashBE == prevBlockHeader.hashBE))
+        }
+        if (inMemoryBlockchains.nonEmpty) {
+          Future.successful(inMemoryBlockchains)
+        } else {
+          blockHeaderDAO.getBlockchainsBetweenHeights(
+            from = prevBlockHeader.height,
+            to = prevBlockHeader.height + batchSize)
+        }
+    }
+
+    val startHeight = prevBlockHeaderOpt match {
+      case None => 0
+      case Some(prevBlockHeader) =>
+        prevBlockHeader.height + 1
+    }
+
+    for {
+      chains <- chainsF
+    } yield getBestChainAtHeight(startHeight = startHeight,
+                                 batchSize = batchSize,
+                                 blockchains = chains)
+  }
+
+  /** Given a vector of blockchains, this method finds the chain with the most chain work
+    * and then returns the given height and hash of the block header included in that chain
+    * This is useful for reorg situations where you aren't sure what header is included in a chain
+    * at a specific height
+    * @see https://github.com/bitcoin-s/bitcoin-s/issues/1919
+    */
+  private def getBestChainAtHeight(
+      startHeight: Int,
+      batchSize: Int,
+      blockchains: Vector[Blockchain]): Option[(Int, DoubleSha256Digest)] = {
+    //ok, we need to select the header that is contained in the chain
+    //with the most chain work
+    val targetHeight = startHeight + batchSize - 1
+    val mostWorkChainOpt = org.bitcoins.core
+      .seqUtil(blockchains)
+      .maxByOption(_.tip.chainWork)
+    val hashHeightOpt = mostWorkChainOpt.flatMap { mostWorkChain =>
+      val maxHeight = mostWorkChain.tip.height
+      if (targetHeight >= maxHeight) {
+        Some((startHeight, mostWorkChain.tip.hash))
+      } else {
+        mostWorkChain
+          .find(_.height == targetHeight)
+          .map(h => (startHeight, h.hash))
+      }
+    }
+    hashHeightOpt
   }
 
   /** @inheritdoc */
@@ -212,7 +273,6 @@ case class ChainHandler(
   override def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
       stopHash: DoubleSha256DigestBE): Future[ChainApi] = {
-
     val filterHeadersToCreateF: Future[Vector[CompactFilterHeaderDb]] = for {
       blockHeaders <-
         blockHeaderDAO

@@ -2,7 +2,7 @@ package org.bitcoins.core.api.chain.db
 
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 case class BlockHeaderDb(
     height: Int,
@@ -27,6 +27,8 @@ case class BlockHeaderDb(
 
     blockHeader
   }
+
+  lazy val hash: DoubleSha256Digest = hashBE.flip
 }
 
 object BlockHeaderDbHelper {

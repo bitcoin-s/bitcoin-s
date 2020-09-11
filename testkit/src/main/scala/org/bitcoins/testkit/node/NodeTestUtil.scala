@@ -149,7 +149,9 @@ abstract class NodeTestUtil extends P2PLogger {
     for {
       count <- node.chainApiFromDb().flatMap(_.getBlockCount)
       rpcCount <- rpcCountF
-    } yield rpcCount == count
+    } yield {
+      rpcCount == count
+    }
   }
 
   /** Awaits sync between the given node and bitcoind client */

@@ -22,6 +22,12 @@ object ChainFixture {
   case class GenisisChainHandler(chainHandler: ChainHandler)
       extends ChainFixture
 
+  /** Genesis chain handler, but has both genesis [[org.bitcoins.core.api.chain.db.CompactFilterHeaderDb]] and
+    * [[org.bitcoins.core.api.chain.db.CompactFilterDb]] inserted into their respective tables
+    */
+  case class GenesisChainHandlerWithGenesisFilters(chainHandler: ChainHandler)
+      extends ChainFixture
+
   case class PopulatedChainHandler(chainHandler: ChainHandler)
       extends ChainFixture
 
