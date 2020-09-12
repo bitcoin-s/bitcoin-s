@@ -7,7 +7,7 @@ import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterHeaderDb}
 import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256Digest
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -96,18 +96,8 @@ abstract class FilterSync extends ChainVerificationLogger {
         bestFilterBlockHeader <- bestFilterBlockHeaderF
         missing <- chainApi.getHeadersBetween(from = bestFilterBlockHeader.get,
                                               to = ourBestHeader)
-        genesis <- {
-          //need this until we fix https://github.com/bitcoin-s/bitcoin-s/issues/1996
-          if (
-            bestFilterBlockHeader.get.previousBlockHashBE == DoubleSha256DigestBE.empty
-          ) {
-            chainApi.getHeadersAtHeight(0)
-          } else {
-            Future.successful(Vector.empty)
-          }
-        }
       } yield {
-        genesis ++ missing
+        missing
       }
 
       //because filters can be really large, we don't want to process too many

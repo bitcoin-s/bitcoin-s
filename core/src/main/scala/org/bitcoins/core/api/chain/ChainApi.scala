@@ -148,7 +148,7 @@ trait ChainApi extends ChainQueryApi {
   /** Returns the block height of the given block stamp */
   def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int]
 
-  /** Fetchs the block headers between from (exclusive) and to (inclusive) */
+  /** Fetchs the block headers between from and to (inclusive). */
   def getHeadersBetween(
       from: BlockHeaderDb,
       to: BlockHeaderDb): Future[Vector[BlockHeaderDb]]
