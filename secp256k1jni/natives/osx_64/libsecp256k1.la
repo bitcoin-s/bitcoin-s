@@ -28,7 +28,7 @@ age=0
 revision=0
 
 # Is this an already installed library?
-installed=yes
+installed=no
 
 # Should we warn about portability when linking against -modules?
 shouldnotlink=no
@@ -38,4 +38,4 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/Users/roman/1/libsecp256k1/lib'
+libdir='/usr/local/lib'
