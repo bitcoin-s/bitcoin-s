@@ -94,7 +94,7 @@ jobs:
       os: osx
       name: "macOS bitcoind and eclair tests"
       env:
-        - TEST_COMMAND="appCommonsTest/test bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
+        - TEST_COMMAND="cryptoTest/test coreTest/test appCommonsTest/test bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
       scala: 2.13.2
 
     # skip all test tagged as UsesExperimentalBitcoind
