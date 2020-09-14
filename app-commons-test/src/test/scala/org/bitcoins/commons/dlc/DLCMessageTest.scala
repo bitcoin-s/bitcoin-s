@@ -10,7 +10,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
-import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
+import org.bitcoins.core.protocol.tlv.FundingSignaturesTempTLV
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -73,7 +73,7 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         val accept = DLCAccept.fromTLV(acceptTLV, offer)
 
         val outPoints = signTLV.fundingSignatures match {
-          case FundingSignaturesV0TLV(sigs) => sigs.keys.toVector
+          case FundingSignaturesTempTLV(sigs) => sigs.keys.toVector
         }
         val fundingPubKeys = outPoints
           .map(outpoint => outpoint -> ECPublicKey.freshPublicKey)

@@ -5,8 +5,11 @@ import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
+  EmptyScriptWitness,
   P2SHScriptSignature,
   ScriptPubKey,
+  ScriptWitness,
+  ScriptWitnessV0,
   WitnessScriptPubKey
 }
 import org.bitcoins.core.protocol.tlv.TLV.DecodeTLVResult
@@ -75,6 +78,7 @@ object TLV extends Factory[TLV] {
       FundingInputTempTLV,
       FundingInputV0TLV,
       CETSignaturesV0TLV,
+      FundingSignaturesTempTLV,
       FundingSignaturesV0TLV,
       DLCOfferTLV,
       DLCAcceptTLV,
@@ -383,10 +387,10 @@ object CETSignaturesV0TLV extends TLVFactory[CETSignaturesV0TLV] {
 
 sealed trait FundingSignaturesTLV extends TLV
 
-case class FundingSignaturesV0TLV(
+case class FundingSignaturesTempTLV(
     sigs: Map[TransactionOutPoint, ECDigitalSignature])
     extends FundingSignaturesTLV {
-  override val tpe: BigSizeUInt = FundingSignaturesV0TLV.tpe
+  override val tpe: BigSizeUInt = FundingSignaturesTempTLV.tpe
 
   override val value: ByteVector = {
     sigs.foldLeft(ByteVector.empty) {
@@ -396,10 +400,10 @@ case class FundingSignaturesV0TLV(
   }
 }
 
-object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
-  override val tpe: BigSizeUInt = BigSizeUInt(42776)
+object FundingSignaturesTempTLV extends TLVFactory[FundingSignaturesTempTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(422)
 
-  override def fromTLVValue(value: ByteVector): FundingSignaturesV0TLV = {
+  override def fromTLVValue(value: ByteVector): FundingSignaturesTempTLV = {
     val iter = ValueIterator(value)
 
     val builder = Map.newBuilder[TransactionOutPoint, ECDigitalSignature]
@@ -411,7 +415,46 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
       builder.+=(outPoint -> sig)
     }
 
-    FundingSignaturesV0TLV(builder.result())
+    FundingSignaturesTempTLV(builder.result())
+  }
+}
+
+case class FundingSignaturesV0TLV(witnesses: Vector[ScriptWitnessV0])
+    extends FundingSignaturesTLV {
+  override val tpe: BigSizeUInt = FundingSignaturesV0TLV.tpe
+
+  override val value: ByteVector = {
+    witnesses.foldLeft(UInt16(witnesses.length).bytes) {
+      case (bytes, witness) =>
+        witness.stack.foldLeft(bytes ++ UInt16(witness.stack.length).bytes) {
+          case (bytes, stackElem) =>
+            bytes ++ UInt16(stackElem.length).bytes ++ stackElem
+        }
+    }
+  }
+}
+
+object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42776)
+
+  override def fromTLVValue(value: ByteVector): FundingSignaturesV0TLV = {
+    val iter = ValueIterator(value)
+
+    val numWitnesses = UInt16(iter.takeBits(16))
+    val witnesses = (0 until numWitnesses.toInt).toVector.map { _ =>
+      val numStackElements = UInt16(iter.takeBits(16))
+      val stack = (0 until numStackElements.toInt).toVector.map { _ =>
+        val stackElemLength = UInt16(iter.takeBits(16))
+        iter.take(stackElemLength.toInt)
+      }
+      ScriptWitness(stack) match {
+        case EmptyScriptWitness =>
+          throw new IllegalArgumentException(s"Invalid witness: $stack")
+        case witness: ScriptWitnessV0 => witness
+      }
+    }
+
+    FundingSignaturesV0TLV(witnesses)
   }
 }
 

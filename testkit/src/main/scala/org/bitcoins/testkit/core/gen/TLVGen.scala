@@ -4,6 +4,7 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCAccept, DLCOffer}
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.ScriptWitnessV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
@@ -162,24 +163,37 @@ trait TLVGen {
       .map(sigs => CETSignaturesV0TLV(sigs.toVector))
   }
 
-  def fundingSignaturesV0TLV: Gen[FundingSignaturesV0TLV] = {
+  def fundingSignaturesTempTLV: Gen[FundingSignaturesTempTLV] = {
     for {
       numInputs <- Gen.choose(1, 10)
       outPoints <- Gen.listOfN(numInputs, TransactionGenerators.outPoint)
-      sigs <- fundingSignaturesV0TLV(outPoints.toVector)
+      sigs <- fundingSignaturesTempTLV(outPoints.toVector)
     } yield {
       sigs
     }
   }
 
-  def fundingSignaturesV0TLV(
-      outPoints: Vector[TransactionOutPoint]): Gen[FundingSignaturesV0TLV] = {
+  def fundingSignaturesTempTLV(
+      outPoints: Vector[TransactionOutPoint]): Gen[FundingSignaturesTempTLV] = {
     for {
       sigs <- Gen.listOfN(outPoints.length,
                           CryptoGenerators.digitalSignatureWithSigHash)
     } yield {
-      FundingSignaturesV0TLV(outPoints.zip(sigs).toMap)
+      FundingSignaturesTempTLV(outPoints.zip(sigs).toMap)
     }
+  }
+
+  def fundingSignaturesV0TLV: Gen[FundingSignaturesV0TLV] = {
+    Gen.choose(1, 10).flatMap(fundingSignaturesV0TLV)
+  }
+
+  def fundingSignaturesV0TLV(numWitnesses: Int): Gen[FundingSignaturesV0TLV] = {
+    Gen
+      .listOfN(
+        numWitnesses,
+        WitnessGenerators.scriptWitness.map(_.asInstanceOf[ScriptWitnessV0])
+      )
+      .map(witnesses => FundingSignaturesV0TLV(witnesses.toVector))
   }
 
   def dlcOfferTLV: Gen[DLCOfferTLV] = {
@@ -297,15 +311,10 @@ trait TLVGen {
       case ContractInfoV0TLV(outcomes) => outcomes
     }
 
-    val outPoints = offer.fundingInputs.map {
-      case FundingInputTempTLV(outputRef) => outputRef.outPoint
-      case input: FundingInputV0TLV       => input.outPoint
-    }
-
     for {
       cetSigs <- cetSignaturesV0TLV(outcomes.size)
       refundSig <- CryptoGenerators.digitalSignature
-      fundingSigs <- fundingSignaturesV0TLV(outPoints)
+      fundingSigs <- fundingSignaturesV0TLV(offer.fundingInputs.length)
     } yield {
       val deserOffer = DLCOffer.fromTLV(offer)
       val builder =
@@ -338,6 +347,7 @@ trait TLVGen {
       fundingInputTempTLV,
       fundingInputV0TLV,
       cetSignaturesV0TLV,
+      fundingSignaturesTempTLV,
       fundingSignaturesV0TLV,
       dlcOfferTLV,
       dlcAcceptTLV,

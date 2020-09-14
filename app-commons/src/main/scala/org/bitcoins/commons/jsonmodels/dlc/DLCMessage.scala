@@ -5,6 +5,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
+import org.bitcoins.core.protocol.script.{P2WPKHWitnessV0, P2WSHWitnessV0}
 import org.bitcoins.core.protocol.tlv.{
   CETSignaturesV0TLV,
   ContractInfoV0TLV,
@@ -13,6 +14,7 @@ import org.bitcoins.core.protocol.tlv.{
   DLCSignTLV,
   FundingInputTempTLV,
   FundingInputV0TLV,
+  FundingSignaturesTempTLV,
   FundingSignaturesV0TLV,
   OracleInfoV0TLV
 }
@@ -618,11 +620,29 @@ object DLCMessage {
       }
 
       val fundingSigMap = sign.fundingSignatures match {
-        case FundingSignaturesV0TLV(sigs) =>
+        case FundingSignaturesTempTLV(sigs) =>
           sigs.map {
             case (outPoint, sig) =>
               outPoint -> Vector(PartialSignature(inputPubKeys(outPoint), sig))
           }
+        case FundingSignaturesV0TLV(witnesses) =>
+          val sigs = witnesses.map {
+            case p2wpkh: P2WPKHWitnessV0 =>
+              Vector(PartialSignature(p2wpkh.pubKey, p2wpkh.signature))
+            case _: P2WSHWitnessV0 =>
+              throw new IllegalArgumentException(
+                "Only P2WPKH is currently supported.")
+          }
+
+          inputPubKeys
+            .zip(sigs)
+            .map {
+              case ((outPoint, pubKey), sigs) =>
+                require(sigs.map(_.pubKey).contains(pubKey),
+                        "inputPubKeys do not match signatures")
+                outPoint -> sigs
+            }
+            .toMap
       }
 
       DLCSign(
