@@ -16,7 +16,6 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.core.gen.TLVGen
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import scodec.bits.ByteVector
 
 class DLCMessageTest extends BitcoinSAsyncTest {
   behavior of "DLCMessage"

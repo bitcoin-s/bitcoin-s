@@ -3,11 +3,19 @@ package org.bitcoins.core.protocol.tlv
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptSignature,
+  P2SHScriptSignature,
+  ScriptPubKey,
+  WitnessScriptPubKey
+}
 import org.bitcoins.core.protocol.tlv.TLV.DecodeTLVResult
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
-  TransactionOutPoint
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint,
+  TransactionOutput
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.{
@@ -65,6 +73,7 @@ object TLV extends Factory[TLV] {
       ContractInfoV0TLV,
       OracleInfoV0TLV,
       FundingInputTempTLV,
+      FundingInputV0TLV,
       CETSignaturesV0TLV,
       FundingSignaturesV0TLV,
       DLCOfferTLV,
@@ -270,10 +279,77 @@ case class FundingInputTempTLV(outputRef: OutputReference)
 }
 
 object FundingInputTempTLV extends TLVFactory[FundingInputTempTLV] {
-  override val tpe: BigSizeUInt = BigSizeUInt(42772)
+  override val tpe: BigSizeUInt = BigSizeUInt(420)
 
   override def fromTLVValue(value: ByteVector): FundingInputTempTLV = {
     FundingInputTempTLV(OutputReference(value))
+  }
+}
+
+case class FundingInputV0TLV(
+    prevTx: Transaction,
+    prevTxVout: UInt32,
+    sequence: UInt32,
+    maxWitnessLen: UInt16,
+    redeemScriptOpt: Option[WitnessScriptPubKey])
+    extends FundingInputTLV {
+  override val tpe: BigSizeUInt = FundingInputV0TLV.tpe
+
+  lazy val output: TransactionOutput = prevTx.outputs(prevTxVout.toInt)
+
+  lazy val outPoint: TransactionOutPoint =
+    TransactionOutPoint(prevTx.txId, prevTxVout)
+
+  lazy val input: TransactionInput = {
+    val scriptSig = redeemScriptOpt match {
+      case Some(redeemScript) => P2SHScriptSignature(redeemScript)
+      case None               => EmptyScriptSignature
+    }
+
+    TransactionInput(outPoint, scriptSig, sequence)
+  }
+
+  lazy val outputReference: OutputReference = OutputReference(outPoint, output)
+
+  override val value: ByteVector = {
+    val redeemScriptBytes =
+      redeemScriptOpt.map(_.asmBytes).getOrElse(ByteVector.empty)
+
+    UInt16(prevTx.byteSize).bytes ++
+      prevTx.bytes ++
+      prevTxVout.bytes ++
+      sequence.bytes ++
+      maxWitnessLen.bytes ++
+      UInt16(redeemScriptBytes.length).bytes ++
+      redeemScriptBytes
+  }
+}
+
+object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42772)
+
+  override def fromTLVValue(value: ByteVector): FundingInputV0TLV = {
+    val iter = ValueIterator(value)
+
+    val prevTxLen = UInt16(iter.takeBits(16))
+    val prevTx = Transaction(iter.take(prevTxLen.toInt))
+    val prevTxVout = UInt32(iter.takeBits(32))
+    val sequence = UInt32(iter.takeBits(32))
+    val maxWitnessLen = UInt16(iter.takeBits(16))
+    val redeemScriptLen = UInt16(iter.takeBits(16))
+    val redeemScriptOpt = if (redeemScriptLen == UInt16.zero) {
+      None
+    } else {
+      Some(
+        WitnessScriptPubKey.fromAsmBytes(iter.take(redeemScriptLen.toInt))
+      )
+    }
+
+    FundingInputV0TLV(prevTx,
+                      prevTxVout,
+                      sequence,
+                      maxWitnessLen,
+                      redeemScriptOpt)
   }
 }
 
@@ -390,7 +466,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
     val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)))
     val numFundingInputs = UInt16(iter.takeBits(16))
     val fundingInputs = (0 until numFundingInputs.toInt).toVector.map { _ =>
-      val fundingInput = FundingInputTempTLV.fromBytes(iter.current)
+      val fundingInput = FundingInputV0TLV.fromBytes(iter.current)
       iter.skip(fundingInput)
       fundingInput
     }
@@ -455,7 +531,7 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
     iter.skip(payoutSPK)
     val numFundingInputs = UInt16(iter.takeBits(16))
     val fundingInputs = (0 until numFundingInputs.toInt).toVector.map { _ =>
-      val fundingInput = FundingInputTempTLV.fromBytes(iter.current)
+      val fundingInput = FundingInputV0TLV.fromBytes(iter.current)
       iter.skip(fundingInput)
       fundingInput
     }

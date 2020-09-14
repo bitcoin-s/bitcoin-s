@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.tlv.{
   DLCOfferTLV,
   DLCSignTLV,
   FundingInputTempTLV,
+  FundingInputV0TLV,
   FundingSignaturesV0TLV,
   OracleInfoV0TLV
 }
@@ -237,6 +238,7 @@ object DLCMessage {
         totalCollateral = offer.totalCollateralSatoshis,
         fundingInputs = offer.fundingInputs.map {
           case FundingInputTempTLV(outputRef) => outputRef
+          case input: FundingInputV0TLV       => input.outputReference
         },
         changeAddress =
           BitcoinAddress.fromScriptPubKey(offer.changeSPK, network),
@@ -449,6 +451,7 @@ object DLCMessage {
           BitcoinAddress.fromScriptPubKey(accept.payoutSPK, network)),
         fundingInputs = accept.fundingInputs.map {
           case FundingInputTempTLV(outputRef) => outputRef
+          case input: FundingInputV0TLV       => input.outputReference
         },
         changeAddress =
           BitcoinAddress.fromScriptPubKey(accept.changeSPK, network),
