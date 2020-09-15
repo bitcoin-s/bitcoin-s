@@ -1,6 +1,7 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
-import org.bitcoins.core.protocol.tlv.FundingSignaturesTempTLV
+import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
+import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.MapWrapper
@@ -28,9 +29,11 @@ case class FundingSignatures(
     FundingSignatures(combinedSigs.toMap)
   }
 
-  def toTLV: FundingSignaturesTempTLV = {
-    FundingSignaturesTempTLV(sigs.map {
-      case (outPoint, sigs) => (outPoint, sigs.head.signature)
+  def toTLV: FundingSignaturesV0TLV = {
+    FundingSignaturesV0TLV(sigs.toVector.map {
+      case (_, sigs) =>
+        val PartialSignature(pubKey, sig) = sigs.head
+        P2WPKHWitnessV0(pubKey, sig)
     })
   }
 }

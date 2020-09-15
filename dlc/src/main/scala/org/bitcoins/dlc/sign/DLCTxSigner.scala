@@ -11,7 +11,6 @@ import org.bitcoins.core.protocol.script.{
   P2WSHWitnessV0
 }
 import org.bitcoins.core.protocol.transaction.{
-  OutputReference,
   Transaction,
   TransactionOutPoint,
   TxUtil
@@ -116,12 +115,12 @@ case class DLCTxSigner(
       fundingTx <- builder.buildFundingTx
     } yield {
       fundingInputs.zipWithIndex.foldLeft(PSBT.fromUnsignedTx(fundingTx)) {
-        case (psbt, (OutputReference(outPoint, output), index)) =>
-          val sigs = allSigs(outPoint)
+        case (psbt, (fundingInput, index)) =>
+          val sigs = allSigs(fundingInput.outPoint)
 
           psbt
             .addSignatures(sigs, index)
-            .addWitnessUTXOToInput(output, index)
+            .addWitnessUTXOToInput(fundingInput.output, index)
       }
     }
 

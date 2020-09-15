@@ -5,13 +5,19 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   DLCOffer,
   OracleInfo
 }
-import org.bitcoins.commons.jsonmodels.dlc.{DLCPublicKeys, DLCTimeouts}
+import org.bitcoins.commons.jsonmodels.dlc.{
+  DLCFundingInput,
+  DLCFundingInputP2WPKHV0,
+  DLCPublicKeys,
+  DLCTimeouts
+}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv.{DLCAcceptTLV, DLCOfferTLV, DLCSignTLV}
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
+  TransactionConstants,
   TransactionOutPoint
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
@@ -36,6 +42,9 @@ case class FundingInputTx(tx: Transaction, idx: Int, inputKey: ECPrivateKey) {
 
   val outputRef: OutputReference =
     OutputReference(TransactionOutPoint(tx.txId, UInt32(idx)), tx.outputs(idx))
+
+  def toFundingInput: DLCFundingInput =
+    DLCFundingInputP2WPKHV0(tx, UInt32(idx), TransactionConstants.sequence)
 }
 
 // Currently only supports P2WPKH inputs
@@ -46,8 +55,8 @@ case class DLCPartyParams(
     fundingPrivKey: ECPrivateKey,
     payoutAddress: BitcoinAddress) {
 
-  lazy val fundingInputs: Vector[OutputReference] =
-    fundingInputTxs.map(_.outputRef)
+  lazy val fundingInputs: Vector[DLCFundingInput] =
+    fundingInputTxs.map(_.toFundingInput)
 
   lazy val fundingScriptSigParams: Vector[
     ScriptSignatureParams[P2WPKHV0InputInfo]] = {
