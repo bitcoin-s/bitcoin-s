@@ -1,6 +1,10 @@
 package org.bitcoins.dlc.sign
 
-import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, FundingSignatures}
+import org.bitcoins.commons.jsonmodels.dlc.{
+  CETSignatures,
+  DLCFundingInput,
+  FundingSignatures
+}
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.TransactionSignatureSerializer
 import org.bitcoins.core.currency.CurrencyUnit
@@ -53,7 +57,8 @@ case class DLCTxSigner(
     require(fundingKey.publicKey == offer.pubKeys.fundingKey &&
               finalAddress == offer.pubKeys.payoutAddress,
             "Given keys do not match public key and address in offer")
-    require(fundingUtxos.map(_.outputReference) == offer.fundingInputs,
+    require(fundingUtxos.map(
+              DLCFundingInput.fromInputSigningInfo(_)) == offer.fundingInputs,
             "Funding ScriptSignatureParams did not match offer funding inputs")
   } else {
     require(
@@ -61,7 +66,8 @@ case class DLCTxSigner(
         finalAddress == accept.pubKeys.payoutAddress,
       "Given keys do not match public key and address in accept"
     )
-    require(fundingUtxos.map(_.outputReference) == accept.fundingInputs,
+    require(fundingUtxos.map(
+              DLCFundingInput.fromInputSigningInfo(_)) == accept.fundingInputs,
             "Funding ScriptSignatureParams did not match accept funding inputs")
   }
 

@@ -425,12 +425,12 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
       dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(offer)
 
-      offerInputs = offer.fundingInputs.map(outRef =>
+      offerInputs = offer.fundingInputs.map(funding =>
         DLCFundingInputDb(
           paramHash = dlc.paramHash,
           isInitiator = true,
-          outPoint = outRef.outPoint,
-          output = outRef.output,
+          outPoint = funding.outPoint,
+          output = funding.output,
           redeemScriptOpt = None, // todo negotiate these
           witnessScriptOpt = None,
           sigs = Vector.empty
@@ -474,12 +474,12 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
         val paramHash = dlc.paramHash
         val dlcAcceptDb = DLCAcceptDbHelper.fromDLCAccept(paramHash, accept)
-        val acceptInputs = accept.fundingInputs.map(outRef =>
+        val acceptInputs = accept.fundingInputs.map(funding =>
           DLCFundingInputDb(
             paramHash = paramHash,
             isInitiator = false,
-            outPoint = outRef.outPoint,
-            output = outRef.output,
+            outPoint = funding.outPoint,
+            output = funding.output,
             redeemScriptOpt = None, // todo negotiate these
             witnessScriptOpt = None,
             sigs = Vector.empty
