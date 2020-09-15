@@ -630,9 +630,7 @@ object Wallet extends WalletLogger {
 
   /** Creates the level 0 account for the given HD purpose, if the root account exists do nothing */
   private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
-      implicit
-      walletAppConfig: WalletAppConfig,
-      ec: ExecutionContext): Future[AccountDb] = {
+      implicit ec: ExecutionContext): Future[AccountDb] = {
     val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
     val coin =
       HDCoin(purpose = keyManager.kmParams.purpose, coinType = coinType)

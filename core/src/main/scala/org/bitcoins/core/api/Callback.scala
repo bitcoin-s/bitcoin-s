@@ -1,7 +1,7 @@
 package org.bitcoins.core.api
 
+import grizzled.slf4j.Logger
 import org.bitcoins.core.util.{FutureUtil, SeqWrapper}
-import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal

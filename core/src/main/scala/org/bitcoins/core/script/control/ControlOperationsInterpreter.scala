@@ -1,20 +1,19 @@
 package org.bitcoins.core.script.control
 
 import org.bitcoins.core.protocol.script.{SigVersionWitnessV0, SignatureVersion}
+import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.flag.ScriptFlagUtil
+import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
-import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.flag.ScriptFlagUtil
-import org.bitcoins.core.script.result._
 import org.bitcoins.core.util._
 
 /**
   * Created by chris on 1/6/16.
   */
-sealed abstract class ControlOperationsInterpreter {
-  private def logger = BitcoinSLogger.logger
+sealed abstract class ControlOperationsInterpreter extends BitcoinSLogger {
 
   /** Factors out the similarities between OP_IF and OP_NOTIF */
   private def opConditional(conditional: ConditionalOperation)(

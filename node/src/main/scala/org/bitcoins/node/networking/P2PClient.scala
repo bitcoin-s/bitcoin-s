@@ -354,8 +354,8 @@ object P2PClient extends P2PLogger {
     * @param bytes the bytes that need to be parsed into individual messages
     * @return the parsed [[NetworkMessage]]'s and the unaligned bytes that did not parse to a message
     */
-  private[bitcoins] def parseIndividualMessages(bytes: ByteVector)(implicit
-      conf: NodeAppConfig): (List[NetworkMessage], ByteVector) = {
+  private[bitcoins] def parseIndividualMessages(
+      bytes: ByteVector): (List[NetworkMessage], ByteVector) = {
     @tailrec
     def loop(
         remainingBytes: ByteVector,

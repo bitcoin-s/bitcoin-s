@@ -363,8 +363,7 @@ object NodeUnitTest extends P2PLogger {
       nodeConnectedWithBitcoind: NodeConnectedWithBitcoind)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
-    logger(appConfig.nodeConf)
-      .debug(s"Beggining tear down of node connected with bitcoind")
+    logger.debug(s"Beginning tear down of node connected with bitcoind")
     import system.dispatcher
     val node = nodeConnectedWithBitcoind.node
     val bitcoind = nodeConnectedWithBitcoind.bitcoind
@@ -372,8 +371,7 @@ object NodeUnitTest extends P2PLogger {
       _ <- destroyNode(node)
       _ <- ChainUnitTest.destroyBitcoind(bitcoind)
     } yield {
-      logger(appConfig.nodeConf)
-        .debug(s"Done with teardown of node connected with bitcoind!")
+      logger.debug(s"Done with teardown of node connected with bitcoind!")
       ()
     }
 

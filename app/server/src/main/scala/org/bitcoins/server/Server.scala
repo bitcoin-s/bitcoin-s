@@ -18,7 +18,6 @@ case class Server(
     handlers: Seq[ServerRoute],
     rpcport: Int = 9999)(implicit system: ActorSystem)
     extends HttpLogger {
-  implicit private val config: AppConfig = conf
 
   import system.dispatcher
 

@@ -19,8 +19,7 @@ import scala.annotation.tailrec
 /**
   * Created by chris on 1/25/16.
   */
-sealed abstract class ArithmeticInterpreter {
-  private def logger = BitcoinSLogger.logger
+sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
 
   /** a is added to b. */
   def opAdd(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {

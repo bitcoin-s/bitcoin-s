@@ -1,12 +1,10 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.core.protocol.blockchain.MerkleBlock
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.{NodeCallbacks, P2PLogger}
 
 import scala.collection.mutable
-import org.bitcoins.core.protocol.blockchain.MerkleBlock
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.node.config.NodeAppConfig
-
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -28,7 +26,7 @@ private[peer] object MerkleBuffers extends P2PLogger {
   private val underlyingMap: MerkleBlocksWithTransactions = mutable.Map.empty
 
   /** Adds the given merkleblock to the buffer */
-  def putMerkle(merkle: MerkleBlock)(implicit config: NodeAppConfig): Unit = {
+  def putMerkle(merkle: MerkleBlock): Unit = {
     val tree = merkle.partialMerkleTree
     val matches = tree.extractMatches
 
@@ -60,8 +58,7 @@ private[peer] object MerkleBuffers extends P2PLogger {
     *         Otherwise, false.
     */
   def putTx(tx: Transaction, callbacks: NodeCallbacks)(implicit
-      ec: ExecutionContext,
-      config: NodeAppConfig): Future[Boolean] = {
+      ec: ExecutionContext): Future[Boolean] = {
     val blocksInBuffer = underlyingMap.keys.toList
     logger.trace(s"Looking for transaction=${tx.txIdBE} in merkleblock buffer")
     logger.trace(s"Merkleblocks in buffer: ${blocksInBuffer.length}")
@@ -87,8 +84,7 @@ private[peer] object MerkleBuffers extends P2PLogger {
       transaction: Transaction,
       merkleBlock: MerkleBlock,
       callbacks: NodeCallbacks)(implicit
-      ec: ExecutionContext,
-      config: NodeAppConfig): Future[Boolean] = {
+      ec: ExecutionContext): Future[Boolean] = {
     val merkleBlockMatches = merkleBlock.partialMerkleTree.extractMatches
     val merkleHash = merkleBlock.blockHeader.hashBE
 

@@ -79,8 +79,7 @@ case class SpvNode(
       peerMsgSender <- peerMsgSenderF
       _ <- peerMsgSender.sendFilterLoadMessage(bloomFilter)
     } yield {
-      logger(nodeAppConfig).info(
-        s"Sending bloomfilter=${bloomFilter.hex} to $peer")
+      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
       logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
       node
     }

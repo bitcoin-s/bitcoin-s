@@ -16,7 +16,7 @@ import org.bitcoins.chain.models.{
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.config.{BitcoinNetworks, MainNet, RegTest, TestNet3}
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NetworkUtil}
+import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.db._
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.node._
@@ -28,7 +28,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Properties
 
-object Main extends App with BitcoinSLogger {
+object Main extends App with HttpLogger {
 
   def runMain(args: Vector[String]): Future[Unit] = {
     val argsWithIndex = args.zipWithIndex
@@ -104,8 +104,6 @@ object Main extends App with BitcoinSLogger {
 
     val forceChainWorkRecalc: Boolean =
       args.exists(_.toLowerCase == "--force-recalc-chainwork")
-
-    val logger = HttpLoggerImpl(conf.nodeConf).getLogger
 
     implicit val walletConf: WalletAppConfig = conf.walletConf
     implicit val nodeConf: NodeAppConfig = conf.nodeConf

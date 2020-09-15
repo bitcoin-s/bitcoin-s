@@ -133,8 +133,7 @@ abstract class FilterSync extends ChainVerificationLogger {
       missingHeaders: Vector[BlockHeaderDb],
       ourBestFilterHeaderOpt: Option[CompactFilterHeaderDb],
       getFilterFunc: BlockHeader => Future[FilterWithHeaderHash])(implicit
-      ec: ExecutionContext,
-      chainAppConfig: ChainAppConfig): Future[ChainApi] = {
+      ec: ExecutionContext): Future[ChainApi] = {
     //now that we have headers that are missing filters, let's fetch the filters
 
     val fetchNested = missingHeaders.map { b =>

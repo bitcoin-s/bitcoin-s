@@ -1,12 +1,10 @@
 package org.bitcoins.core.util
 
-import org.slf4j.{Logger, LoggerFactory}
+import grizzled.slf4j.Logging
 
 /**
   * Created by chris on 3/11/16.
   */
-trait BitcoinSLogger {
-  lazy val logger: Logger = LoggerFactory.getLogger(getClass)
-}
+trait BitcoinSLogger extends Logging
 
 object BitcoinSLogger extends BitcoinSLogger

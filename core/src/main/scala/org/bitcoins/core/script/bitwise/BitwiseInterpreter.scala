@@ -16,8 +16,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 /**
   * Created by chris on 1/6/16.
   */
-sealed abstract class BitwiseInterpreter {
-  private def logger = BitcoinSLogger.logger
+sealed abstract class BitwiseInterpreter extends BitcoinSLogger {
 
   /** Returns 1 if the inputs are exactly equal, 0 otherwise. */
   def opEqual(

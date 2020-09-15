@@ -13,9 +13,7 @@ import spray.json._
 /**
   * Created by chris on 1/18/16.
   */
-object CoreTestCaseProtocol extends DefaultJsonProtocol {
-
-  private def logger = BitcoinSLogger.logger
+object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
 
   implicit object CoreTestCaseFormatter
       extends RootJsonFormat[Option[CoreTestCase]] {

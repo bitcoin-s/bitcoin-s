@@ -11,9 +11,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 /**
   * Created by chris on 2/4/16.
   */
-sealed abstract class SpliceInterpreter {
-
-  private def logger = BitcoinSLogger.logger
+sealed abstract class SpliceInterpreter extends BitcoinSLogger {
 
   /** Pushes the string length of the top element of the stack (without popping it). */
   def opSize(
