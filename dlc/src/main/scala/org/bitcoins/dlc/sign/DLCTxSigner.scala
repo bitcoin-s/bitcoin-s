@@ -101,7 +101,17 @@ case class DLCTxSigner(
           outPoint -> outPointAndSigs.map(_._2)
       }
 
-      FundingSignatures(sigsMap)
+      val fundingInputs = if (isInitiator) {
+        offer.fundingInputs
+      } else {
+        accept.fundingInputs
+      }
+
+      val sigsVec = fundingInputs.map { input =>
+        input.outPoint -> sigsMap(input.outPoint)
+      }
+
+      FundingSignatures(sigsVec)
     }
   }
 

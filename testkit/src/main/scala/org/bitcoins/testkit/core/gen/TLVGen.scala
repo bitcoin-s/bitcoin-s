@@ -1,10 +1,10 @@
 package org.bitcoins.testkit.core.gen
 
+import org.bitcoins.commons.jsonmodels.dlc.DLCFundingInputP2WPKHV0
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCAccept, DLCOffer}
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.ScriptWitnessV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
@@ -102,22 +102,29 @@ trait TLVGen {
     }
   }
 
-  def fundingInputV0TLV: Gen[FundingInputV0TLV] = {
+  def fundingInputP2WPKHTLV: Gen[FundingInputV0TLV] = {
     for {
-      prevTx <- TransactionGenerators.realisticTransaction
+      prevTx <- TransactionGenerators.realisticTransactionWitnessOut
       prevTxVout <- Gen.choose(0, prevTx.outputs.length - 1)
       sequence <- NumberGenerator.uInt32s
-      maxWitnessLen <- NumberGenerator.uInt16
-      redeemScriptOpt <- Gen.oneOf(
-        ScriptGenerators.witnessScriptPubKey.map(_._1).map(Some(_)),
-        Gen.const(None))
+      (spk, _) <- ScriptGenerators.p2wpkhSPKV0
+      newOutput = prevTx.outputs(prevTxVout).copy(scriptPubKey = spk)
+      newPrevTx = prevTx match {
+        case transaction: NonWitnessTransaction =>
+          BaseTransaction(transaction.version,
+                          transaction.inputs,
+                          transaction.outputs.updated(prevTxVout, newOutput),
+                          transaction.lockTime)
+        case wtx: WitnessTransaction =>
+          wtx.copy(outputs = wtx.outputs.updated(prevTxVout, newOutput))
+      }
     } yield {
-      FundingInputV0TLV(prevTx,
-                        UInt32(prevTxVout),
-                        sequence,
-                        maxWitnessLen,
-                        redeemScriptOpt)
+      DLCFundingInputP2WPKHV0(newPrevTx, UInt32(prevTxVout), sequence).toTLV
     }
+  }
+
+  def fundingInputV0TLV: Gen[FundingInputV0TLV] = {
+    fundingInputP2WPKHTLV // Soon to be Gen.oneOf
   }
 
   def fundingInputV0TLVs(
@@ -191,7 +198,7 @@ trait TLVGen {
     Gen
       .listOfN(
         numWitnesses,
-        WitnessGenerators.scriptWitness.map(_.asInstanceOf[ScriptWitnessV0])
+        WitnessGenerators.p2wpkhWitnessV0
       )
       .map(witnesses => FundingSignaturesV0TLV(witnesses.toVector))
   }

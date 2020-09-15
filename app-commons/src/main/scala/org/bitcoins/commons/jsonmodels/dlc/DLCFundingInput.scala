@@ -69,8 +69,8 @@ object DLCFundingInput {
         DLCFundingInputP2WSHV0(prevTx, prevTxVout, sequence, maxWitnessLen)
       case spk: UnassignedWitnessScriptPubKey =>
         throw new IllegalArgumentException(s"Unknown segwit version: $spk")
-      case _: RawScriptPubKey =>
-        throw new IllegalArgumentException("Segwit input required")
+      case spk: RawScriptPubKey =>
+        throw new IllegalArgumentException(s"Segwit input required: $spk")
     }
   }
 

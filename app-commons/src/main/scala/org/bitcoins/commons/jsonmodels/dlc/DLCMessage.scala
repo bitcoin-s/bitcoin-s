@@ -5,11 +5,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
-import org.bitcoins.core.protocol.script.{
-  P2WPKHWitnessV0,
-  P2WSHWitnessV0,
-  WitnessScriptPubKey
-}
+import org.bitcoins.core.protocol.script.{P2WPKHWitnessV0, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -645,37 +641,23 @@ object DLCMessage {
         sign: DLCSignTLV,
         fundingPubKey: ECPublicKey,
         outcomes: Vector[Sha256Digest],
-        inputPubKeys: Map[TransactionOutPoint, ECPublicKey]): DLCSign = {
+        fundingOutPoints: Vector[TransactionOutPoint]): DLCSign = {
       val outcomeSigs = sign.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
           outcomes.zip(sigs).toMap
       }
 
-      val fundingSigMap = sign.fundingSignatures match {
-        case FundingSignaturesTempTLV(sigs) =>
-          sigs.map {
-            case (outPoint, sig) =>
-              outPoint -> Vector(PartialSignature(inputPubKeys(outPoint), sig))
-          }
+      val sigs = sign.fundingSignatures match {
+        case FundingSignaturesTempTLV(_) => ???
         case FundingSignaturesV0TLV(witnesses) =>
-          val sigs = witnesses.map {
+          witnesses.map {
             case p2wpkh: P2WPKHWitnessV0 =>
               Vector(PartialSignature(p2wpkh.pubKey, p2wpkh.signature))
-            case _: P2WSHWitnessV0 =>
-              throw new IllegalArgumentException(
-                "Only P2WPKH is currently supported.")
+            case _ => ???
           }
-
-          inputPubKeys
-            .zip(sigs)
-            .map {
-              case ((outPoint, pubKey), sigs) =>
-                require(sigs.map(_.pubKey).contains(pubKey),
-                        "inputPubKeys do not match signatures")
-                outPoint -> sigs
-            }
-            .toMap
       }
+
+      val fundingSigs = fundingOutPoints.zip(sigs)
 
       DLCSign(
         cetSigs = CETSignatures(
@@ -684,19 +666,16 @@ object DLCMessage {
             fundingPubKey,
             ECDigitalSignature(
               sign.refundSignature.bytes :+ HashType.sigHashAll.byte))),
-        fundingSigs = FundingSignatures(fundingSigMap),
+        fundingSigs = FundingSignatures(fundingSigs),
         contractId = sign.contractId
       )
     }
 
-    def fromTLV(
-        sign: DLCSignTLV,
-        offer: DLCOffer,
-        inputPubKeys: Map[TransactionOutPoint, ECPublicKey]): DLCSign = {
+    def fromTLV(sign: DLCSignTLV, offer: DLCOffer): DLCSign = {
       fromTLV(sign,
               offer.pubKeys.fundingKey,
               offer.contractInfo.outcomeValueMap.keys.toVector,
-              inputPubKeys)
+              offer.fundingInputs.map(_.outPoint))
     }
 
     def fromJson(js: Value): DLCSign = {
@@ -745,7 +724,6 @@ object DLCMessage {
               }
           }
           .get
-          .toMap
 
       val contractId =
         vec

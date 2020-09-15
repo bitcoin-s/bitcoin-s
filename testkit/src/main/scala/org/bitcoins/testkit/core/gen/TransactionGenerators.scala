@@ -56,6 +56,17 @@ object TransactionGenerators extends BitcoinSLogger {
   def realisticOutputs: Gen[Seq[TransactionOutput]] =
     Gen.choose(1, 5).flatMap(n => Gen.listOfN(n, realisticOutput))
 
+  def realisticWitnessOutput: Gen[TransactionOutput] = {
+    CurrencyUnitGenerator.positiveRealistic.flatMap { amt =>
+      ScriptGenerators.witnessScriptPubKeyV0.map(spk =>
+        TransactionOutput(amt, spk._1))
+    }
+  }
+
+  def realisticWitnessOutputs: Gen[Seq[TransactionOutput]] = {
+    Gen.choose(1, 5).flatMap(n => Gen.listOfN(n, realisticWitnessOutput))
+  }
+
   /** Generates a small list of TX outputs paying to the given SPK */
   def smallOutputsTo(spk: ScriptPubKey): Gen[Seq[TransactionOutput]] =
     Gen.choose(1, 5).flatMap(i => Gen.listOfN(i, outputTo(spk)))
@@ -186,6 +197,10 @@ object TransactionGenerators extends BitcoinSLogger {
   def realisticTransaction: Gen[Transaction] =
     Gen.oneOf(realisticBaseTransaction, realisiticWitnessTransaction)
 
+  def realisticTransactionWitnessOut: Gen[Transaction] =
+    Gen.oneOf(realisticBaseTransactionWitnessOut,
+              realisiticWitnessTransactionWitnessOut)
+
   /** Generates a transaction where at least one output pays to the given SPK */
   def transactionTo(spk: ScriptPubKey) =
     Gen.oneOf(baseTransactionTo(spk), witnessTransactionTo(spk))
@@ -207,6 +222,15 @@ object TransactionGenerators extends BitcoinSLogger {
       version <- NumberGenerator.int32s
       is <- smallInputs
       os <- realisticOutputs
+      lockTime <- NumberGenerator.uInt32s
+    } yield BaseTransaction(version, is, os, lockTime)
+  }
+
+  def realisticBaseTransactionWitnessOut: Gen[BaseTransaction] = {
+    for {
+      version <- NumberGenerator.int32s
+      is <- smallInputs
+      os <- realisticWitnessOutputs
       lockTime <- NumberGenerator.uInt32s
     } yield BaseTransaction(version, is, os, lockTime)
   }
@@ -250,6 +274,12 @@ object TransactionGenerators extends BitcoinSLogger {
   def realisiticWitnessTransaction: Gen[WitnessTransaction] =
     for {
       os <- realisticOutputs
+      tx <- witnessTxHelper(os)
+    } yield tx
+
+  def realisiticWitnessTransactionWitnessOut: Gen[WitnessTransaction] =
+    for {
+      os <- realisticWitnessOutputs
       tx <- witnessTxHelper(os)
     } yield tx
 

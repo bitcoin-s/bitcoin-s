@@ -134,7 +134,7 @@ object DLCTLVGen {
       outPoints: Vector[TransactionOutPoint] = Vector(
         outputReference().outPoint)): FundingSignatures = {
     FundingSignatures(
-      outPoints.map(outpoint => outpoint -> Vector(partialSig())).toMap)
+      outPoints.map(outpoint => outpoint -> Vector(partialSig())))
   }
 
   def dlcOffer(

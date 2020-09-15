@@ -4,10 +4,13 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   DLCAccept,
   DLCAcceptWithoutSigs
 }
-import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, DLCPublicKeys}
+import org.bitcoins.commons.jsonmodels.dlc.{
+  CETSignatures,
+  DLCFundingInput,
+  DLCPublicKeys
+}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.transaction.OutputReference
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto.{
   ECAdaptorSignature,
@@ -25,7 +28,7 @@ case class DLCAcceptDb(
     changeAddress: BitcoinAddress) {
 
   def toDLCAccept(
-      fundingInputs: Vector[OutputReference],
+      fundingInputs: Vector[DLCFundingInput],
       outcomeSigs: Map[Sha256Digest, ECAdaptorSignature],
       refundSig: PartialSignature): DLCAccept = {
     val pubKeys =
@@ -41,7 +44,7 @@ case class DLCAcceptDb(
 
   def toDLCAcceptWithoutSigs(
       tempContractId: Sha256Digest,
-      fundingInputs: Vector[OutputReference]): DLCAcceptWithoutSigs = {
+      fundingInputs: Vector[DLCFundingInput]): DLCAcceptWithoutSigs = {
     val pubKeys =
       DLCPublicKeys(fundingKey, finalAddress)
 

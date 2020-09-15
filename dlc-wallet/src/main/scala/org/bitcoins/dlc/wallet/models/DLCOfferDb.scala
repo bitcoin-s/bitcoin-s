@@ -5,9 +5,12 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   DLCOffer,
   OracleInfo
 }
-import org.bitcoins.commons.jsonmodels.dlc.{DLCPublicKeys, DLCTimeouts}
+import org.bitcoins.commons.jsonmodels.dlc.{
+  DLCFundingInput,
+  DLCPublicKeys,
+  DLCTimeouts
+}
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.transaction.OutputReference
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -33,7 +36,7 @@ case class DLCOfferDb(
   lazy val dlcTimeouts: DLCTimeouts =
     DLCTimeouts(contractMaturity, contractTimeout)
 
-  def toDLCOffer(fundingInputs: Vector[OutputReference]): DLCOffer = {
+  def toDLCOffer(fundingInputs: Vector[DLCFundingInput]): DLCOffer = {
 
     DLCOffer(
       contractInfo,

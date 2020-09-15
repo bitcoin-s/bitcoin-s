@@ -108,15 +108,17 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
   val acceptPayoutPrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
 
-  val localFundingInputs: Vector[OutputReference] =
+  val localFundingInputs: Vector[DLCFundingInput] =
     Vector(
-      OutputReference(TransactionOutPoint(localFundingTx.txIdBE, UInt32.zero),
-                      localFundingTx.outputs.head))
+      DLCFundingInputP2WPKHV0(localFundingTx,
+                              UInt32.zero,
+                              TransactionConstants.sequence))
 
-  val remoteFundingInputs: Vector[OutputReference] =
+  val remoteFundingInputs: Vector[DLCFundingInput] =
     Vector(
-      OutputReference(TransactionOutPoint(remoteFundingTx.txIdBE, UInt32.zero),
-                      remoteFundingTx.outputs.head))
+      DLCFundingInputP2WPKHV0(remoteFundingTx,
+                              UInt32.zero,
+                              TransactionConstants.sequence))
 
   val timeouts: DLCTimeouts =
     DLCTimeouts(blockTimeToday,

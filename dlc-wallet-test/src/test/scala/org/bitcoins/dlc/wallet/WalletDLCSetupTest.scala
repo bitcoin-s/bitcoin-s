@@ -73,7 +73,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         sign <- walletA.signDLC(accept)
         _ = {
-          assert(sign.fundingSigs.keys.size == offerData.fundingInputs.size)
+          assert(sign.fundingSigs.length == offerData.fundingInputs.size)
         }
 
         dlcDb <- walletB.addDLCSigs(sign)

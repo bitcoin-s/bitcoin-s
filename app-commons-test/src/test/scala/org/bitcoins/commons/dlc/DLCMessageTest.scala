@@ -10,7 +10,11 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
-import org.bitcoins.core.protocol.tlv.FundingSignaturesTempTLV
+import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
+import org.bitcoins.core.protocol.tlv.{
+  FundingSignaturesTempTLV,
+  FundingSignaturesV0TLV
+}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -71,15 +75,14 @@ class DLCMessageTest extends BitcoinSAsyncTest {
       case (offerTLV, acceptTLV, signTLV) =>
         val offer = DLCOffer.fromTLV(offerTLV)
         val accept = DLCAccept.fromTLV(acceptTLV, offer)
+        val sign = DLCSign.fromTLV(signTLV, offer)
 
-        val outPoints = signTLV.fundingSignatures match {
-          case FundingSignaturesTempTLV(sigs) => sigs.keys.toVector
+        val pubKeys = signTLV.fundingSignatures match {
+          case FundingSignaturesTempTLV(_) => ???
+          case FundingSignaturesV0TLV(witnesses) =>
+            witnesses.map(_.asInstanceOf[P2WPKHWitnessV0].pubKey)
         }
-        val fundingPubKeys = outPoints
-          .map(outpoint => outpoint -> ECPublicKey.freshPublicKey)
-          .toMap
-
-        val sign = DLCSign.fromTLV(signTLV, offer, fundingPubKeys)
+        assert(sign.fundingSigs.toVector.map(_._2.head.pubKey) == pubKeys)
 
         assert(offer.toTLV == offerTLV)
         assert(accept.toTLV == acceptTLV)

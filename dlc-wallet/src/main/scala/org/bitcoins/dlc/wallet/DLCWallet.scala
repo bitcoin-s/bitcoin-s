@@ -27,6 +27,7 @@ import org.bitcoins.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 
@@ -42,6 +43,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   private[bitcoins] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
   private[bitcoins] val dlcSigsDAO: DLCCETSignatureDAO = DLCCETSignatureDAO()
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigDAO = DLCRefundSigDAO()
+
+  private[bitcoins] val txDAO: TransactionDAO = TransactionDAO()
+  private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
   private def calcContractId(
       offer: DLCOffer,
@@ -182,10 +186,15 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           logger.debug(
             s"DLC Offer (${paramHash.hex}) has already been made, returning offer")
 
-          dlcInputsDAO.findByParamHash(paramHash, isInitiator = true).map {
-            fundingInputs =>
-              val inputRefs = fundingInputs.map(_.toOutputReference)
-              dlcOfferDb.toDLCOffer(inputRefs)
+          for {
+            fundingInputs <-
+              dlcInputsDAO.findByParamHash(paramHash, isInitiator = true)
+            prevTxs <- txDAO.findByTxIdBEs(fundingInputs.map(_.outPoint.txIdBE))
+          } yield {
+            val inputRefs = fundingInputs.zip(prevTxs).map {
+              case (input, tx) => input.toFundingInput(tx.transaction)
+            }
+            dlcOfferDb.toDLCOffer(inputRefs)
           }
         case None =>
           createNewDLCOffer(
@@ -219,7 +228,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         fromTagOpt = None,
         markAsReserved = true
       )
-      utxos = spendingInfos.map(_.outputReference)
+      utxos = spendingInfos.map(DLCFundingInput.fromInputSigningInfo(_))
 
       changeSPK =
         txBuilder.finalizer.changeSPK
@@ -324,10 +333,14 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           for {
             fundingInputs <-
               dlcInputsDAO.findByParamHash(paramHash, isInitiator = false)
+            prevTxs <-
+              transactionDAO.findByTxIdBEs(fundingInputs.map(_.outPoint.txIdBE))
             outcomeSigDbs <- dlcSigsDAO.findByParamHash(paramHash)
             refundSigDb <- dlcRefundSigDAO.read(paramHash, false)
           } yield {
-            val inputRefs = fundingInputs.map(_.toOutputReference)
+            val inputRefs = fundingInputs.zip(prevTxs).map {
+              case (input, tx) => input.toFundingInput(tx.transaction)
+            }
             val outcomeSigs = outcomeSigDbs.map(_.toTuple).toMap
 
             dlcAcceptDb.toDLCAccept(inputRefs,
@@ -355,7 +368,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       )
       network = networkParameters.asInstanceOf[BitcoinNetwork]
 
-      utxos = spendingInfos.map(_.outputReference)
+      utxos = spendingInfos.map(DLCFundingInput.fromInputSigningInfo(_))
 
       changeSPK = txBuilder.finalizer.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
       changeAddr = Bech32Address(changeSPK, network)
@@ -498,7 +511,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           offerDb <- dlcOfferDAO.findByParamHash(dlc.paramHash).map(_.get)
           offerInputs <-
             dlcInputsDAO.findByParamHash(dlc.paramHash, isInitiator = true)
-          offer = offerDb.toDLCOffer(offerInputs.map(_.toOutputReference))
+          prevTxs <- txDAO.findByTxIdBEs(offerInputs.map(_.outPoint.txIdBE))
+          offer = offerDb.toDLCOffer(offerInputs.zip(prevTxs).map {
+            case (input, tx) => input.toFundingInput(tx.transaction)
+          })
 
           updatedDLCDb <- updateDLCContractIds(offer, accept)
         } yield updatedDLCDb
@@ -571,7 +587,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   def verifyFundingSigs(
       inputs: Vector[DLCFundingInputDb],
       sign: DLCSign): Future[Boolean] = {
-    if (inputs.count(!_.isInitiator) == sign.fundingSigs.keys.size) {
+    if (inputs.count(!_.isInitiator) == sign.fundingSigs.length) {
       verifierFromDb(sign.contractId).map { verifier =>
         verifier.verifyRemoteFundingSigs(sign.fundingSigs)
       }
@@ -713,9 +729,13 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       dlcOfferOpt <- dlcOfferDAO.findByParamHash(dlcDb.paramHash)
       dlcOffer = dlcOfferOpt.get
       fundingInputsDb <- dlcInputsDAO.findByParamHash(dlcDb.paramHash)
+      localFundingInputs = fundingInputsDb.filter(_.isInitiator)
+      prevTxs <- txDAO.findByTxIdBEs(localFundingInputs.map(_.outPoint.txIdBE))
     } yield {
       val offerFundingInputs =
-        fundingInputsDb.filter(_.isInitiator).map(_.toOutputReference)
+        localFundingInputs.zip(prevTxs).map {
+          case (input, tx) => input.toFundingInput(tx.transaction)
+        }
 
       val builder =
         DLCTxBuilder(dlcOffer.toDLCOffer(offerFundingInputs),
@@ -727,36 +747,62 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
   private def verifierFromDb(
       contractId: ByteVector): Future[DLCSignatureVerifier] = {
-    getAllDLCData(contractId).map {
+    getAllDLCData(contractId).flatMap {
       case (dlcDb, dlcOffer, dlcAccept, _, fundingInputsDb, _) =>
         verifierFromDbData(dlcDb, dlcOffer, dlcAccept, fundingInputsDb)
     }
   }
 
   private def builderFromDbData(
+      dlcDb: DLCDb,
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
-      fundingInputsDb: Vector[DLCFundingInputDb]): DLCTxBuilder = {
-    val offerFundingInputs =
-      fundingInputsDb.filter(_.isInitiator).map(_.toOutputReference)
-    val acceptFundingInputs =
-      fundingInputsDb.filterNot(_.isInitiator).map(_.toOutputReference)
+      fundingInputsDb: Vector[DLCFundingInputDb]): Future[DLCTxBuilder] = {
+    val (offerDbFundingInputs, acceptDbFundingInputs) =
+      fundingInputsDb.partition(_.isInitiator)
+    val (localDbFundingInputs, remoteDbFundingInputs) = if (dlcDb.isInitiator) {
+      (offerDbFundingInputs, acceptDbFundingInputs)
+    } else {
+      (acceptDbFundingInputs, offerDbFundingInputs)
+    }
 
-    val offer = dlcOffer.toDLCOffer(offerFundingInputs)
-    val accept = dlcAccept.toDLCAcceptWithoutSigs(offer.tempContractId,
-                                                  acceptFundingInputs)
+    for {
+      localPrevTxs <-
+        txDAO.findByTxIdBEs(localDbFundingInputs.map(_.outPoint.txIdBE))
+      remotePrevTxs <-
+        remoteTxDAO.findByTxIdBEs(remoteDbFundingInputs.map(_.outPoint.txIdBE))
+    } yield {
+      val localFundingInputs = localDbFundingInputs.zip(localPrevTxs).map {
+        case (input, tx) => input.toFundingInput(tx.transaction)
+      }
+      val remoteFundingInputs = remoteDbFundingInputs.zip(remotePrevTxs).map {
+        case (input, tx) => input.toFundingInput(tx.transaction)
+      }
 
-    DLCTxBuilder(offer, accept)
+      val (offerFundingInputs, acceptFundingInputs) = if (dlcDb.isInitiator) {
+        (localFundingInputs, remoteFundingInputs)
+      } else {
+        (remoteFundingInputs, localFundingInputs)
+      }
+
+      val offer = dlcOffer.toDLCOffer(offerFundingInputs)
+      val accept = dlcAccept.toDLCAcceptWithoutSigs(offer.tempContractId,
+                                                    acceptFundingInputs)
+
+      DLCTxBuilder(offer, accept)
+    }
   }
 
   private def verifierFromDbData(
       dlcDb: DLCDb,
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
-      fundingInputsDb: Vector[DLCFundingInputDb]): DLCSignatureVerifier = {
-    val builder = builderFromDbData(dlcOffer, dlcAccept, fundingInputsDb)
+      fundingInputsDb: Vector[DLCFundingInputDb]): Future[
+    DLCSignatureVerifier] = {
+    val builderF =
+      builderFromDbData(dlcDb, dlcOffer, dlcAccept, fundingInputsDb)
 
-    DLCSignatureVerifier(builder, dlcDb.isInitiator)
+    builderF.map(DLCSignatureVerifier(_, dlcDb.isInitiator))
   }
 
   private def signerFromDb(paramHash: Sha256DigestBE): Future[DLCTxSigner] = {
@@ -772,10 +818,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
       fundingInputsDb: Vector[DLCFundingInputDb]): Future[DLCTxSigner] = {
-    fundingUtxosFromDb(dlcDb, fundingInputsDb).map { fundingUtxos =>
-      val builder =
-        builderFromDbData(dlcOffer, dlcAccept, fundingInputsDb)
-
+    for {
+      fundingUtxos <- fundingUtxosFromDb(dlcDb, fundingInputsDb)
+      builder <- builderFromDbData(dlcDb, dlcOffer, dlcAccept, fundingInputsDb)
+    } yield {
       val extPrivKey =
         keyManager.rootExtPrivKey.deriveChildPrivKey(dlcDb.account)
 
@@ -852,7 +898,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             fundingInputs
               .filter(_.isInitiator)
               .map(input => (input.outPoint, input.sigs))
-              .toMap
           executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs))
         }
 
@@ -874,7 +919,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           val remoteSigs = fundingInputs
             .filter(_.isInitiator)
             .map(input => (input.outPoint, input.sigs))
-            .toMap
           signer.signFundingTx(FundingSignatures(remoteSigs))
         }
       }
