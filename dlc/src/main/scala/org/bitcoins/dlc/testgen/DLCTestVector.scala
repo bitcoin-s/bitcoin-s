@@ -102,6 +102,13 @@ case class ValidTestInputs(
   lazy val calcOffer: DLCOffer = offerParams.toOffer(params)
 }
 
+object ValidTestInputs {
+
+  def fromJson(json: JsValue): JsResult[ValidTestInputs] = {
+    Json.fromJson(json)(SuccessTestVector.validTestInputsFormat)
+  }
+}
+
 // TODO: Add realOutcome, oracleSignature, offerSignedCET, acceptSignedCET fields
 case class SuccessTestVector(
     testInputs: ValidTestInputs,
