@@ -190,7 +190,8 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
                                           ChainTestUtil.blockHeader562462)
     )
 
-    val blockchain = Blockchain(headersWithNoWork :+ genesis)
+    val blockchain =
+      Blockchain(headersWithNoWork :+ genesis.copy(chainWork = BigInt(0)))
 
     val chainHandler = tempHandler.copy(blockchains = Vector(blockchain))
 

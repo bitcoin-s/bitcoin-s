@@ -356,7 +356,8 @@ case class ChainHandler(
       messages.groupBy(_.blockHash.flip).map {
         case (blockHash, messages) =>
           if (messages.size > 1)
-            throw DuplicateFilters("Attempt to process duplicate filters")
+            return Future.failed(
+              DuplicateFilters("Attempt to process duplicate filters"))
           (blockHash, messages.head)
       }
 
@@ -785,9 +786,9 @@ case class ChainHandler(
         //so while it looks like we are executing in parallel
         //in reality there is only one thread that can write to the db
         //at a single time
-        _ = logger.trace(
-          s"Upserting from height=${headersWithWork.headOption.map(_.height)} " +
-            s"to height=${headersWithWork.lastOption.map(_.height)}")
+        _ =
+          logger.trace(s"Upserting from height=${headersWithWork.headOption.map(
+            _.height)} to height=${headersWithWork.lastOption.map(_.height)}")
         _ <- FutureUtil.batchExecute(
           headersWithWork,
           blockHeaderDAO.upsertAll,

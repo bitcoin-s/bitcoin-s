@@ -37,13 +37,13 @@ private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
   protected[blockchain] def compObjectfromHeaders(
       headers: scala.collection.immutable.Seq[BlockHeaderDb]): Blockchain
 
-  val tip: BlockHeaderDb = headers.head
+  lazy val tip: BlockHeaderDb = headers.head
 
   require(headers.size <= 1 || headers(1).height == tip.height - 1,
           s"Headers must be in descending order, got ${headers.take(5)}")
 
   /** The height of the chain */
-  val height: Int = tip.height
+  lazy val height: Int = tip.height
 
   def headers: Vector[BlockHeaderDb]
 

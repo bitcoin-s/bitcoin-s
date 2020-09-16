@@ -1,7 +1,10 @@
 package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.fixture.ChainFixture
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.FutureOutcome
@@ -35,7 +38,7 @@ class BlockchainTest extends ChainUnitTest {
           assert(newHeader == newChain.tip)
 
         case _ @(_: ConnectTipResult.Reorg | _: ConnectTipResult.BadTip) =>
-          assert(false)
+          fail()
       }
   }
 
@@ -76,5 +79,50 @@ class BlockchainTest extends ChainUnitTest {
                                           Vector(ChainUnitTest.genesisHeaderDb))
 
       assert(reconstructed.isEmpty)
+  }
+
+  it must "fail to create a BlockchainUpdate.Failed with incompatible successful headers" inFixtured {
+    case ChainFixture.Empty =>
+      val genesis = ChainUnitTest.genesisHeaderDb
+      val second = BlockHeaderHelper.buildNextHeader(genesis)
+      val chain = Blockchain(Vector(second, genesis))
+
+      assertThrows[IllegalArgumentException] {
+        BlockchainUpdate.Failed(chain,
+                                Vector(genesis),
+                                second.blockHeader,
+                                TipUpdateResult.BadNonce(second.blockHeader))
+      }
+  }
+
+  it must "correctly calculate a BlockchainUpdate.Success's height" inFixtured {
+    case ChainFixture.Empty =>
+      val genesis = ChainUnitTest.genesisHeaderDb
+      val second = BlockHeaderHelper.buildNextHeader(genesis)
+      val chain = Blockchain(Vector(second, genesis))
+
+      val updated = BlockchainUpdate.Successful(chain, chain.toVector)
+
+      assert(updated.height == chain.height)
+  }
+
+  it must "correctly identify a bad tip" inFixtured {
+    case ChainFixture.Empty =>
+      val genesis = ChainUnitTest.genesisHeaderDb
+      val chain = Blockchain(Vector(genesis))
+
+      val goodHeader = BlockHeaderHelper.buildNextHeader(genesis).blockHeader
+      val badHeader = BlockHeader(
+        version = goodHeader.version,
+        previousBlockHash = goodHeader.previousBlockHash,
+        merkleRootHash = goodHeader.merkleRootHash,
+        time = goodHeader.time,
+        nBits = UInt32.zero,
+        nonce = goodHeader.nonce
+      )
+
+      val result = Blockchain.connectTip(badHeader, chain)
+
+      assert(result.isInstanceOf[ConnectTipResult.BadTip])
   }
 }
