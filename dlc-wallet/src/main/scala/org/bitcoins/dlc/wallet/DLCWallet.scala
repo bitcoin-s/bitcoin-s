@@ -216,7 +216,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
         feeRate = feeRate,
         fromAccount = account,
-        keyManagerOpt = Some(keyManager),
         fromTagOpt = None,
         markAsReserved = true
       )
@@ -351,7 +350,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
         feeRate = offer.feeRate,
         fromAccount = account,
-        keyManagerOpt = Some(keyManager),
         fromTagOpt = None,
         markAsReserved = true
       )
