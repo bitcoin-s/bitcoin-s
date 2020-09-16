@@ -392,6 +392,20 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   }
 
+  it must "return None for ChainHandler.nextBlockHeaderBatchRange if we are synced" in {
+    chainHandler: ChainHandler =>
+      val genesisHeader =
+        chainHandler.chainConfig.chain.genesisBlock.blockHeader
+      val assert1F = for {
+        rangeOpt <-
+          chainHandler.nextBlockHeaderBatchRange(genesisHeader.hashBE, 1)
+        count <- chainHandler.getBlockCount()
+      } yield {
+        assert(rangeOpt.isEmpty)
+      }
+      assert1F
+  }
+
   it must "generate a range for a block filter header query" in {
     chainHandler: ChainHandler =>
       for {
