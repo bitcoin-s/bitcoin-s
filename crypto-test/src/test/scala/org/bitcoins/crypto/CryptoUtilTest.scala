@@ -1,6 +1,6 @@
-package org.bitcoins.core.util
+package org.bitcoins.crypto
 
-import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
@@ -97,13 +97,13 @@ class CryptoUtilTest extends BitcoinSUnitTest {
     forAll(NumberGenerator.bytevector) { bytes =>
       assert(
         CryptoUtil.sha256SchnorrChallenge(bytes) == CryptoUtil
-          .taggedSha256(bytes, "BIP340/challenge"))
+          .taggedSha256(bytes, "BIP0340/challenge"))
       assert(
         CryptoUtil.sha256SchnorrNonce(bytes) == CryptoUtil
-          .taggedSha256(bytes, "BIP340/nonce"))
+          .taggedSha256(bytes, "BIP0340/nonce"))
       assert(
         CryptoUtil.sha256SchnorrAuxRand(bytes) == CryptoUtil
-          .taggedSha256(bytes, "BIP340/aux"))
+          .taggedSha256(bytes, "BIP0340/aux"))
     }
   }
 

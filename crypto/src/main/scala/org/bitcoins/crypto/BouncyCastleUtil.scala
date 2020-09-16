@@ -189,7 +189,7 @@ object BouncyCastleUtil {
         val computedR = challengePoint.add(sigPoint)
         val yCoord = computedR.toPoint.getRawYCoord
 
-        yCoord != null && yCoord.sqrt() != null && computedR.schnorrNonce == rx
+        yCoord != null && !yCoord.testBitZero() && computedR.schnorrNonce == rx
       case Failure(_) => false
     }
   }

@@ -43,11 +43,11 @@ trait CryptoUtil {
     sha256(tagBytes ++ bytes)
   }
 
-  // The tag "BIP340/challenge"
+  // The tag "BIP0340/challenge"
   private val schnorrChallengeTagBytes = {
     ByteVector
       .fromValidHex(
-        "07e00dcd3055c1b36ee93effe4d7f266024cdef4116982ff5dfdc1a97e77062907e00dcd3055c1b36ee93effe4d7f266024cdef4116982ff5dfdc1a97e770629"
+        "7bb52d7a9fef58323eb1bf7a407db382d2f3f2d81bb1224f49fe518f6d48d37c7bb52d7a9fef58323eb1bf7a407db382d2f3f2d81bb1224f49fe518f6d48d37c"
       )
   }
 
@@ -55,11 +55,11 @@ trait CryptoUtil {
     sha256(schnorrChallengeTagBytes ++ bytes)
   }
 
-  // The tag "BIP340/nonce"
+  // The tag "BIP0340/nonce"
   private val schnorrNonceTagBytes = {
     ByteVector
       .fromValidHex(
-        "a2ba14a6b39c1c505260bf3aceb07febde3ab34c35c9259d25bd6972f15e6564a2ba14a6b39c1c505260bf3aceb07febde3ab34c35c9259d25bd6972f15e6564"
+        "07497734a79bcb355b9b8c7d034f121cf434d73ef72dda19870061fb52bfeb2f07497734a79bcb355b9b8c7d034f121cf434d73ef72dda19870061fb52bfeb2f"
       )
   }
 
@@ -67,11 +67,11 @@ trait CryptoUtil {
     sha256(schnorrNonceTagBytes ++ bytes)
   }
 
-  // The tag "BIP340/aux"
+  // The tag "BIP0340/aux"
   private val schnorrAuxTagBytes = {
     ByteVector
       .fromValidHex(
-        "4b07426ad8630dcdbadf8dee1e94f09ac2df4e7ee2629e5e6b27c8666c8cf31e4b07426ad8630dcdbadf8dee1e94f09ac2df4e7ee2629e5e6b27c8666c8cf31e"
+        "f1ef4e5ec063cada6d94cafa9d987ea069265839ecc11f972d77a52ed8c1cc90f1ef4e5ec063cada6d94cafa9d987ea069265839ecc11f972d77a52ed8c1cc90"
       )
   }
 
