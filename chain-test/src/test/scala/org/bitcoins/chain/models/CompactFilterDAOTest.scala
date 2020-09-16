@@ -29,15 +29,14 @@ class CompactFilterDAOTest extends ChainDbUnitTest {
   it must "create and read a filter from the database" in { compactFilterDAO =>
     val blockHeaderDAO = BlockHeaderDAO()
     val filterHeaderDAO = CompactFilterHeaderDAO()
-    val blockHeaderDb =
-      BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
+    val blockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
     val filterHeaderDb = ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb
     val original = ChainTestUtil.regTestGenesisHeaderCompactFilterDb
 
     for {
       _ <- blockHeaderDAO.create(blockHeaderDb)
       _ <- filterHeaderDAO.create(filterHeaderDb)
-      headerDb <- compactFilterDAO.create(original)
+      _ <- compactFilterDAO.create(original)
       fromDbOpt <- compactFilterDAO.read(original.blockHashBE)
     } yield assert(fromDbOpt.contains(original))
   }
