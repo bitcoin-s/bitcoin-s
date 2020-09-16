@@ -75,10 +75,8 @@ object TLV extends Factory[TLV] {
       PongTLV,
       ContractInfoV0TLV,
       OracleInfoV0TLV,
-      FundingInputTempTLV,
       FundingInputV0TLV,
       CETSignaturesV0TLV,
-      FundingSignaturesTempTLV,
       FundingSignaturesV0TLV,
       DLCOfferTLV,
       DLCAcceptTLV,
@@ -275,21 +273,6 @@ object OracleInfoV0TLV extends TLVFactory[OracleInfoV0TLV] {
 
 sealed trait FundingInputTLV extends TLV
 
-case class FundingInputTempTLV(outputRef: OutputReference)
-    extends FundingInputTLV {
-  override val tpe: BigSizeUInt = FundingInputTempTLV.tpe
-
-  override val value: ByteVector = outputRef.bytes
-}
-
-object FundingInputTempTLV extends TLVFactory[FundingInputTempTLV] {
-  override val tpe: BigSizeUInt = BigSizeUInt(420)
-
-  override def fromTLVValue(value: ByteVector): FundingInputTempTLV = {
-    FundingInputTempTLV(OutputReference(value))
-  }
-}
-
 case class FundingInputV0TLV(
     prevTx: Transaction,
     prevTxVout: UInt32,
@@ -386,38 +369,6 @@ object CETSignaturesV0TLV extends TLVFactory[CETSignaturesV0TLV] {
 }
 
 sealed trait FundingSignaturesTLV extends TLV
-
-case class FundingSignaturesTempTLV(
-    sigs: Map[TransactionOutPoint, ECDigitalSignature])
-    extends FundingSignaturesTLV {
-  override val tpe: BigSizeUInt = FundingSignaturesTempTLV.tpe
-
-  override val value: ByteVector = {
-    sigs.foldLeft(ByteVector.empty) {
-      case (bytes, (outPoint, sig)) =>
-        bytes ++ outPoint.bytes ++ sig.bytes
-    }
-  }
-}
-
-object FundingSignaturesTempTLV extends TLVFactory[FundingSignaturesTempTLV] {
-  override val tpe: BigSizeUInt = BigSizeUInt(422)
-
-  override def fromTLVValue(value: ByteVector): FundingSignaturesTempTLV = {
-    val iter = ValueIterator(value)
-
-    val builder = Map.newBuilder[TransactionOutPoint, ECDigitalSignature]
-
-    while (iter.index < value.length) {
-      val outPoint = TransactionOutPoint(iter.take(36))
-      val sig = ECDigitalSignature.fromFrontOfBytesWithSigHash(iter.current)
-      iter.skip(sig)
-      builder.+=(outPoint -> sig)
-    }
-
-    FundingSignaturesTempTLV(builder.result())
-  }
-}
 
 case class FundingSignaturesV0TLV(witnesses: Vector[ScriptWitnessV0])
     extends FundingSignaturesTLV {

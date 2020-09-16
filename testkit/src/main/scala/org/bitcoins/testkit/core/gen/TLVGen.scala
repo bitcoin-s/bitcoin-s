@@ -75,33 +75,6 @@ trait TLVGen {
     } yield OracleInfoV0TLV(pubKey, rValue)
   }
 
-  def fundingInputTempTLV: Gen[FundingInputTempTLV] = {
-    TransactionGenerators.realisticOutputReference.map(
-      FundingInputTempTLV.apply)
-  }
-
-  def fundingInputTempTLVs(
-      collateralNeeded: CurrencyUnit): Gen[Vector[FundingInputTempTLV]] = {
-    for {
-      numInputs <- Gen.choose(0, 5)
-      inputs <- Gen.listOfN(numInputs, fundingInputTempTLV)
-      outpoint <- TransactionGenerators.outPoint
-      (spk, _) <- ScriptGenerators.scriptPubKey
-    } yield {
-      val totalFunding = inputs.foldLeft[CurrencyUnit](Satoshis.zero)(
-        _ + _.outputRef.output.value)
-      if (totalFunding <= collateralNeeded) {
-        val newFundingInput = OutputReference(
-          outpoint,
-          TransactionOutput(collateralNeeded - totalFunding + Bitcoins.one,
-                            spk))
-        inputs.toVector :+ FundingInputTempTLV(newFundingInput)
-      } else {
-        inputs.toVector
-      }
-    }
-  }
-
   def fundingInputP2WPKHTLV: Gen[FundingInputV0TLV] = {
     for {
       prevTx <- TransactionGenerators.realisticTransactionWitnessOut
@@ -168,26 +141,6 @@ trait TLVGen {
     Gen
       .listOfN(numCETs, CryptoGenerators.adaptorSignature)
       .map(sigs => CETSignaturesV0TLV(sigs.toVector))
-  }
-
-  def fundingSignaturesTempTLV: Gen[FundingSignaturesTempTLV] = {
-    for {
-      numInputs <- Gen.choose(1, 10)
-      outPoints <- Gen.listOfN(numInputs, TransactionGenerators.outPoint)
-      sigs <- fundingSignaturesTempTLV(outPoints.toVector)
-    } yield {
-      sigs
-    }
-  }
-
-  def fundingSignaturesTempTLV(
-      outPoints: Vector[TransactionOutPoint]): Gen[FundingSignaturesTempTLV] = {
-    for {
-      sigs <- Gen.listOfN(outPoints.length,
-                          CryptoGenerators.digitalSignatureWithSigHash)
-    } yield {
-      FundingSignaturesTempTLV(outPoints.zip(sigs).toMap)
-    }
   }
 
   def fundingSignaturesV0TLV: Gen[FundingSignaturesV0TLV] = {
@@ -351,10 +304,8 @@ trait TLVGen {
       pongTLV,
       contractInfoV0TLV,
       oracleInfoV0TLV,
-      fundingInputTempTLV,
       fundingInputV0TLV,
       cetSignaturesV0TLV,
-      fundingSignaturesTempTLV,
       fundingSignaturesV0TLV,
       dlcOfferTLV,
       dlcAcceptTLV,

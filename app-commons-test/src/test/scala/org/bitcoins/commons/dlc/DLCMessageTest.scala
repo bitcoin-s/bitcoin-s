@@ -11,10 +11,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
 import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
-import org.bitcoins.core.protocol.tlv.{
-  FundingSignaturesTempTLV,
-  FundingSignaturesV0TLV
-}
+import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -78,7 +75,6 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         val sign = DLCSign.fromTLV(signTLV, offer)
 
         val pubKeys = signTLV.fundingSignatures match {
-          case FundingSignaturesTempTLV(_) => ???
           case FundingSignaturesV0TLV(witnesses) =>
             witnesses.map(_.asInstanceOf[P2WPKHWitnessV0].pubKey)
         }

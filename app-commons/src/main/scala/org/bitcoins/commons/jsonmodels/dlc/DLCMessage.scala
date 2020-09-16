@@ -234,8 +234,6 @@ object DLCMessage {
           BitcoinAddress.fromScriptPubKey(offer.payoutSPK, network)),
         totalCollateral = offer.totalCollateralSatoshis,
         fundingInputs = offer.fundingInputs.map {
-          case FundingInputTempTLV(_) =>
-            throw new IllegalArgumentException("Need to get rid of this")
           case input: FundingInputV0TLV => DLCFundingInput.fromTLV(input)
         },
         changeAddress =
@@ -469,8 +467,6 @@ object DLCMessage {
           accept.fundingPubKey,
           BitcoinAddress.fromScriptPubKey(accept.payoutSPK, network)),
         fundingInputs = accept.fundingInputs.map {
-          case FundingInputTempTLV(_) =>
-            throw new IllegalArgumentException("Need to get rid of this")
           case input: FundingInputV0TLV => DLCFundingInput.fromTLV(input)
         },
         changeAddress =
@@ -648,12 +644,13 @@ object DLCMessage {
       }
 
       val sigs = sign.fundingSignatures match {
-        case FundingSignaturesTempTLV(_) => ???
         case FundingSignaturesV0TLV(witnesses) =>
           witnesses.map {
             case p2wpkh: P2WPKHWitnessV0 =>
               Vector(PartialSignature(p2wpkh.pubKey, p2wpkh.signature))
-            case _ => ???
+            case _ =>
+              throw new IllegalArgumentException(
+                "Only P2WPKH currently supported.")
           }
       }
 
