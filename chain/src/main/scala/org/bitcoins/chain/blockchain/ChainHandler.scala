@@ -199,9 +199,22 @@ case class ChainHandler(
 
     for {
       chains <- chainsF
-    } yield getBestChainAtHeight(startHeight = startHeight,
-                                 batchSize = batchSize,
-                                 blockchains = chains)
+    } yield {
+      val nextBlockHeaderOpt = getBestChainAtHeight(startHeight = startHeight,
+                                                    batchSize = batchSize,
+                                                    blockchains = chains)
+      (nextBlockHeaderOpt, prevBlockHeaderOpt) match {
+        case (Some(next), Some(prev)) =>
+          //this means we are synced, so return None
+          if (next.stopBlockHash == prev.hash) {
+            None
+          } else {
+            nextBlockHeaderOpt
+          }
+        case (Some(_), None) | (None, Some(_)) | (None, None) =>
+          nextBlockHeaderOpt
+      }
+    }
   }
 
   /** Given a vector of blockchains, this method finds the chain with the most chain work
