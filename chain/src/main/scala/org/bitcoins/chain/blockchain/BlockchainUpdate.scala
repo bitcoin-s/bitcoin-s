@@ -38,7 +38,7 @@ object BlockchainUpdate {
         s"Tip did not equal last successful header, tip=${blockchain.tip.hashBE} lastSuccessfulHeader=${successfulHeaders.head.hashBE}"
       )
     }
-    def height: Long = blockchain.height
+    lazy val height: Long = blockchain.height
   }
 
   /**
