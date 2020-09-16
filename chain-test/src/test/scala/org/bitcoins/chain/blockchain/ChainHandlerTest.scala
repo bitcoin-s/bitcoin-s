@@ -1,5 +1,6 @@
 package org.bitcoins.chain.blockchain
 
+import org.bitcoins.chain.{ChainCallbacks, OnBlockHeaderConnected}
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
@@ -26,7 +27,7 @@ import org.bitcoins.testkit.util.{FileUtil, ScalaTestUtil}
 import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 class ChainHandlerTest extends ChainDbUnitTest {
 
@@ -50,6 +51,25 @@ class ChainHandlerTest extends ChainDbUnitTest {
       nBits = UInt32(545259519),
       nonce = UInt32(2083236893)
     )
+
+  it must "throw an error when we have no chains" in {
+    chainHandler: ChainHandler =>
+      val handler = chainHandler.copy(blockchains = Vector.empty)
+
+      recoverToSucceededIf[RuntimeException] {
+        handler.getBestBlockHeader()
+      }
+  }
+
+  it must "throw an error when we have no headers" in {
+    chainHandler: ChainHandler =>
+      val handler =
+        chainHandler.copy(blockchains = Vector(Blockchain(Vector.empty)))
+
+      recoverToSucceededIf[RuntimeException] {
+        handler.getBestBlockHeader()
+      }
+  }
 
   it must "process a new valid block header, and then be able to fetch that header" in {
     chainHandler: ChainHandler =>
@@ -460,6 +480,40 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
   }
 
+  it must "return none for the number of confirmations for a non-existent block" in {
+    chainHandler: ChainHandler =>
+      chainHandler.getNumberOfConfirmations(DoubleSha256DigestBE.empty).map {
+        result =>
+          assert(result.isEmpty)
+      }
+  }
+
+  // G -> A -> B
+  // G -> C -> D -> E
+  it must "return none for the number of confirmations for a reorged block" in {
+    chainHandler: ChainHandler =>
+      for {
+        genesis <- chainHandler.getBestBlockHeader()
+
+        oldFirst = BlockHeaderHelper.buildNextHeader(genesis)
+        oldSecond = BlockHeaderHelper.buildNextHeader(oldFirst)
+        startChain = Vector(oldFirst, oldSecond)
+
+        toBeReorged <-
+          chainHandler.processHeaders(startChain.map(_.blockHeader))
+        oldTip <- toBeReorged.getBestBlockHeader()
+        _ = assert(oldTip.hashBE == oldSecond.hashBE)
+
+        newFirst = BlockHeaderHelper.buildNextHeader(genesis)
+        newSecond = BlockHeaderHelper.buildNextHeader(newFirst)
+        third = BlockHeaderHelper.buildNextHeader(newSecond)
+        newChain = Vector(newFirst, newSecond, third)
+
+        reorged <- chainHandler.processHeaders(newChain.map(_.blockHeader))
+        confs <- reorged.getNumberOfConfirmations(oldSecond.hashBE)
+      } yield assert(confs.isEmpty)
+  }
+
   it must "return the height by block stamp" in { chainHandler: ChainHandler =>
     for {
       bestBlock <- chainHandler.getBestBlockHeader()
@@ -496,5 +550,43 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(filterHeaderOpt.isDefined)
         assert(filterHeaderOpt.get == ChainUnitTest.genesisFilterHeaderDb)
       }
+  }
+
+  it must "fail when processing duplicate filters" in {
+    chainHandler: ChainHandler =>
+      recoverToSucceededIf[DuplicateFilters] {
+        val filters = Vector.fill(2)(ChainUnitTest.genesisFilterMessage)
+
+        chainHandler.processFilters(filters)
+      }
+  }
+
+  it must "process no filters" in { chainHandler: ChainHandler =>
+    chainHandler.processFilters(Vector.empty).map { newHandler =>
+      assert(chainHandler == newHandler)
+    }
+  }
+
+  it must "process a new valid block header with a callback" in {
+    chainHandler: ChainHandler =>
+      val resultP: Promise[Boolean] = Promise()
+
+      val callback: OnBlockHeaderConnected = (_: Int, _: BlockHeader) => {
+        Future {
+          resultP.success(true)
+          ()
+        }
+      }
+
+      val callbacks = ChainCallbacks(Vector(callback))
+      chainHandler.chainConfig.addCallbacks(callbacks)
+
+      val newValidHeader =
+        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+
+      for {
+        _ <- chainHandler.processHeader(newValidHeader.blockHeader)
+        result <- resultP.future
+      } yield assert(result)
   }
 }
