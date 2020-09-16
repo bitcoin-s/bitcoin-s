@@ -205,16 +205,26 @@ object DLCStatus {
             .sorted == outcomeValues
       }.keys
 
+      val (offerCETSig, acceptCETSig) =
+        if (
+          offer.pubKeys.fundingKey.hex.compareTo(
+            accept.pubKeys.fundingKey.hex) > 0
+        ) {
+          (cetSigs.last, cetSigs.head)
+        } else {
+          (cetSigs.head, cetSigs.last)
+        }
+
       val (cetSig, outcomeSigs) = if (isInitiator) {
         val possibleOutcomeSigs = sign.cetSigs.outcomeSigs.filter {
           case (msg, _) => possibleMessages.exists(_ == msg)
         }
-        (cetSigs.last, possibleOutcomeSigs)
+        (acceptCETSig, possibleOutcomeSigs)
       } else {
         val possibleOutcomeSigs = accept.cetSigs.outcomeSigs.filter {
           case (msg, _) => possibleMessages.exists(_ == msg)
         }
-        (cetSigs.head, possibleOutcomeSigs)
+        (offerCETSig, possibleOutcomeSigs)
       }
 
       val sigOpt = outcomeSigs.find {
