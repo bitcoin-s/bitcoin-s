@@ -2,14 +2,17 @@ package org.bitcoins.keymanager.bip39
 
 import java.nio.file.Files
 
+import org.bitcoins.core.api.keymanager.KeyManagerApi
 import org.bitcoins.core.config.{MainNet, RegTest}
 import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.keymanagement
+import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError.JsonParsingError
 import org.bitcoins.core.wallet.keymanagement.{
   InitializeKeyManagerError,
-  KeyManagerParams
+  KeyManagerParams,
+  KeyManagerUnlockError
 }
 import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE}
 import org.bitcoins.keymanager._
@@ -32,6 +35,14 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
   val path: HDPath =
     LegacyHDPath(coin.coinType, coin.purpose.constant, HDChainType.External, 0)
+
+  it must "compare key managers correctly" in {
+    val km = withInitializedKeyManager()
+    val dummy = new KeyManagerApi {}
+
+    assert(km == km)
+    assert(km != dummy)
+  }
 
   it must "initialize the key manager" in {
     val entropy = MnemonicCode.getEntropy256Bits
@@ -173,7 +184,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
     assert(
       withPasswordXpub != noPwXpub,
-      s"A key manager with a BIP39 passwrod should not generate the same xpub as a key manager without a password!")
+      s"A key manager with a BIP39 password should not generate the same xpub as a key manager without a password!")
 
   }
 
@@ -229,6 +240,41 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
         fail(s"Must have been able to intiialize the key manager for test")
       case Right(km2) =>
         assert(km2.getRootXPub == firstXpub)
+    }
+
+  }
+
+  it must "fail read an existing seed from disk if it is malformed" in {
+    val seedPath = KeyManagerTestUtil.tmpSeedPath
+    val kmParams =
+      keymanagement.KeyManagerParams(seedPath, HDPurposes.SegWit, RegTest)
+    val entropy = MnemonicCode.getEntropy256Bits
+    val passwordOpt = Some(KeyManagerTestUtil.bip39Password)
+    val keyManager = withInitializedKeyManager(kmParams = kmParams,
+                                               entropy = entropy,
+                                               bip39PasswordOpt = passwordOpt)
+
+    assert(Files.exists(keyManager.kmParams.seedPath),
+           s"Seed path must exist after calling withInitializedKeyManager")
+
+    // change the data to not be json format
+    Files.write(kmParams.seedPath, "now this is the wrong format".getBytes)
+
+    //now let's try to initialize again, it should fail with a JsonParsingError
+    val keyManager2E =
+      BIP39KeyManager.initialize(kmParams, bip39PasswordOpt = passwordOpt)
+    keyManager2E match {
+      case Left(InitializeKeyManagerError.FailedToReadWrittenSeed(unlockErr)) =>
+        unlockErr match {
+          case JsonParsingError(_) => succeed
+          case result @ (KeyManagerUnlockError.BadPassword |
+              KeyManagerUnlockError.MnemonicNotFound) =>
+            fail(
+              s"Expected to fail test with ${KeyManagerUnlockError.JsonParsingError} got $result")
+        }
+      case result @ (Left(_) | Right(_)) =>
+        fail(
+          s"Expected to fail test with ${KeyManagerUnlockError.JsonParsingError} got $result")
     }
 
   }
