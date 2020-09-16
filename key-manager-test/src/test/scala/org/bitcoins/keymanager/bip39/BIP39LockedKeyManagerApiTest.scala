@@ -1,5 +1,7 @@
 package org.bitcoins.keymanager.bip39
 
+import java.nio.file.Files
+
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.testkit.keymanager.{
@@ -55,6 +57,21 @@ class BIP39LockedKeyManagerApiTest extends KeyManagerApiUnitTest {
       case result @ (Left(_) | Right(_)) =>
         fail(
           s"Expected to fail test with ${KeyManagerUnlockError.MnemonicNotFound} got ${result}")
+    }
+  }
+
+  it must "fail if the data is in an invalid format" in {
+    val km = withInitializedKeyManager()
+
+    val badPassword = KeyManagerTestUtil.badPassphrase
+    Files.write(km.kmParams.seedPath, "now this is the wrong format".getBytes)
+    val unlockedE = BIP39LockedKeyManager.unlock(badPassword, None, km.kmParams)
+
+    unlockedE match {
+      case Left(KeyManagerUnlockError.JsonParsingError(_)) => succeed
+      case result @ (Left(_) | Right(_)) =>
+        fail(
+          s"Expected to fail test with ${KeyManagerUnlockError.JsonParsingError} got $result")
     }
   }
 }
