@@ -1,4 +1,4 @@
-<configuration>
+<configuration scan="true" scanPeriod="15 seconds" >
     <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%date{yyyy-MM-dd'T'HH:mm:ss,SSXXX} %level [%logger{0}] %msg%n</pattern>
@@ -93,6 +93,7 @@
 
     <!-- Disable slick logging in server -->
     <logger name="slick" level="OFF"/>
+    <logger name="com.zaxxer" level="OFF"/>
 
     <!-- Get rid of messages like this:
     Connection attempt failed. Backing off new connection
