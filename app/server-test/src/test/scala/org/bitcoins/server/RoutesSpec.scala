@@ -8,6 +8,7 @@ import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.{
   CETSignatures,
+  DLCFundingInputP2WPKHV0,
   DLCPublicKeys,
   DLCState,
   DLCTimeouts,
@@ -716,6 +717,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val contractId = ByteVector.fromValidHex(
       "4c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919")
 
+    val fundingInput =
+      DLCFundingInputP2WPKHV0(EmptyTransaction, UInt32.zero, UInt32.zero)
+
     "create a dlc offer" in {
 
       (mockWalletApi
@@ -738,7 +742,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           OracleInfo(oracleInfoStr),
           dummyDLCKeys,
           Satoshis(2500),
-          Vector(EmptyOutputReference, EmptyOutputReference),
+          Vector(fundingInput, fundingInput),
           Bech32Address.fromString(dummyAddress),
           SatoshisPerVirtualByte.one,
           DLCTimeouts(BlockStamp(contractMaturity), BlockStamp(contractTimeout))
@@ -769,21 +773,25 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       val offerStr =
         s"""{"contractInfo":[{"sha256":"${contractInfoDigests.head}","sats":5},{"sha256":"${contractInfoDigests.last}","sats":4}],"oracleInfo":"$oracleInfoStr","pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"totalCollateral":10000000000,"fundingInputs":[{"outpoint":"0000000000000000000000000000000000000000000000000000000000000000ffffffff","output":"ffffffffffffffff00"},{"outpoint":"0000000000000000000000000000000000000000000000000000000000000000ffffffff","output":"ffffffffffffffff00"}],"changeAddress":"$dummyAddress","feeRate":1,"timeouts":{"contractMaturity":$contractMaturity,"contractTimeout":$contractTimeout}}"""
 
+      val fundingInput =
+        DLCFundingInputP2WPKHV0(EmptyTransaction, UInt32.zero, UInt32.zero)
+
       val sats = Satoshis.max
 
       (mockWalletApi
         .acceptDLCOffer(_: DLCOffer))
         .expects(DLCOffer.fromJson(ujson.read(offerStr)))
         .returning(
-          Future.successful(DLCAccept(
-            sats,
-            dummyDLCKeys,
-            Vector(EmptyOutputReference),
-            Bech32Address
-              .fromString(dummyAddress),
-            CETSignatures(dummyOutcomeSigs, dummyPartialSig),
-            Sha256Digest.empty
-          ))
+          Future.successful(
+            DLCAccept(
+              sats,
+              dummyDLCKeys,
+              Vector(fundingInput),
+              Bech32Address
+                .fromString(dummyAddress),
+              CETSignatures(dummyOutcomeSigs, dummyPartialSig),
+              Sha256Digest.empty
+            ))
         )
 
       val route = walletRoutes.handleCommand(
@@ -807,8 +815,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           Future.successful(
             DLCSign(
               CETSignatures(dummyOutcomeSigs, dummyPartialSig),
-              FundingSignatures(Vector(
-                (EmptyTransactionOutPoint, Vector(dummyPartialSig))).toMap),
+              FundingSignatures(
+                Vector((EmptyTransactionOutPoint, Vector(dummyPartialSig)))),
               paramHash.bytes
             )))
 

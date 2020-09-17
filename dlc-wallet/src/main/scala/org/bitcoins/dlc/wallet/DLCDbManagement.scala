@@ -36,6 +36,10 @@ trait DLCDbManagement extends DbManagement {
     DLCRefundSigDAO()(ec, appConfig).table
   }
 
+  private lazy val dlcRemoteTxTable: TableQuery[Table[_]] = {
+    DLCRemoteTxDAO()(ec, appConfig).table
+  }
+
   // Ordering matters here, tables with a foreign key should be listed after
   // the table that key references
   override lazy val allTables: List[TableQuery[Table[_]]] = {
@@ -45,7 +49,8 @@ trait DLCDbManagement extends DbManagement {
       dlcAcceptTable,
       dlcFundingInputsTable,
       dlcCETSigTable,
-      dlcRefundSigTable
+      dlcRefundSigTable,
+      dlcRemoteTxTable
     )
   }
 

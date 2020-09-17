@@ -1,9 +1,11 @@
 package org.bitcoins.dlc.wallet
 
+import org.bitcoins.core.api.wallet.db.{TransactionDb, TransactionDbHelper}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
+  EmptyTransaction,
   TransactionOutPoint,
   TransactionOutput
 }
@@ -164,5 +166,13 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       assert(readInput.contains(sigs.head))
       assert(readInput.contains(sigs.last))
     }
+  }
+
+  it should "correctly insert txs into the database" in { daos =>
+    val remoteTxDAO = daos.dlcRemoteTxDAO
+
+    val tx = TransactionDbHelper.fromTransaction(EmptyTransaction)
+
+    verifyDatabaseInsertion(tx, tx.txIdBE, remoteTxDAO, daos.dlcDAO)
   }
 }
