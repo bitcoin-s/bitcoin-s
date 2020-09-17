@@ -2,36 +2,12 @@ package org.bitcoins.core.protocol.tlv
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
-import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptSignature,
-  EmptyScriptWitness,
-  P2SHScriptSignature,
-  ScriptPubKey,
-  ScriptWitness,
-  ScriptWitnessV0,
-  WitnessScriptPubKey
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.TLV.DecodeTLVResult
-import org.bitcoins.core.protocol.transaction.{
-  OutputReference,
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto.{
-  DoubleSha256DigestBE,
-  ECAdaptorSignature,
-  ECDigitalSignature,
-  ECPublicKey,
-  Factory,
-  NetworkElement,
-  SchnorrNonce,
-  SchnorrPublicKey,
-  Sha256Digest
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 sealed trait TLV extends NetworkElement {

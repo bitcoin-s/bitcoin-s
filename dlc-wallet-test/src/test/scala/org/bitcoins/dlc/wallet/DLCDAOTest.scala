@@ -1,11 +1,10 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.core.api.wallet.db.{TransactionDb, TransactionDbHelper}
+import org.bitcoins.core.api.wallet.db.TransactionDbHelper
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
-  EmptyTransaction,
   TransactionOutPoint,
   TransactionOutput
 }

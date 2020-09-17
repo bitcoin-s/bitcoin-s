@@ -63,7 +63,7 @@ object DLCFundingInput {
         }
       case _: P2WPKHWitnessSPKV0 =>
         require(maxWitnessLen == UInt16(108),
-                "P2WPKH max witness length must be 108")
+                s"P2WPKH max witness length must be 108, got $maxWitnessLen")
         DLCFundingInputP2WPKHV0(prevTx, prevTxVout, sequence)
       case _: P2WSHWitnessSPKV0 =>
         DLCFundingInputP2WSHV0(prevTx, prevTxVout, sequence, maxWitnessLen)

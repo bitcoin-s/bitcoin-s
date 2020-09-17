@@ -264,14 +264,14 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
       dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(offer)
 
-      dlcInputs = utxos.map(funding =>
+      dlcInputs = spendingInfos.map(funding =>
         DLCFundingInputDb(
           paramHash = dlc.paramHash,
           isInitiator = true,
           outPoint = funding.outPoint,
           output = funding.output,
-          redeemScriptOpt = funding.redeemScriptOpt,
-          witnessScriptOpt = None
+          redeemScriptOpt = InputInfo.getRedeemScript(funding.inputInfo),
+          witnessScriptOpt = InputInfo.getScriptWitness(funding.inputInfo)
         ))
 
       _ <- dlcInputsDAO.createAll(dlcInputs)

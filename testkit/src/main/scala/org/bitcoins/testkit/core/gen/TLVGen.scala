@@ -151,7 +151,7 @@ trait TLVGen {
     Gen
       .listOfN(
         numWitnesses,
-        WitnessGenerators.p2wpkhWitnessV0
+        WitnessGenerators.p2wpkhWitnessV0 // TODO: make more general
       )
       .map(witnesses => FundingSignaturesV0TLV(witnesses.toVector))
   }
