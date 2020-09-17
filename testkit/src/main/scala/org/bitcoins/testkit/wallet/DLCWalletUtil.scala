@@ -2,17 +2,23 @@ package org.bitcoins.testkit.wallet
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc._
+import org.bitcoins.core.crypto.WitnessTxSigComponent
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{BIP32Path, HDAccount}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
+  Transaction,
   TransactionOutPoint,
-  TransactionOutput
+  TransactionOutput,
+  WitnessTransaction
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.script.PreExecutionScriptProgram
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.testgen.DLCTestUtil
@@ -170,5 +176,62 @@ object DLCWalletUtil extends DLCWalletUtil {
     (InitializedDLCWallet, InitializedDLCWallet)] = {
 
     initDLC(fundedWalletA, fundedWalletB)
+  }
+
+  def getInitialOffer(wallet: DLCWallet)(implicit
+      ec: ExecutionContext): Future[DLCOfferDb] = {
+    wallet.dlcOfferDAO.findAll().map { all =>
+      require(all.size == 1, "There should only be one dlc initialized")
+      all.head
+    }
+  }
+
+  def getContractId(wallet: DLCWallet)(implicit
+      ec: ExecutionContext): Future[ByteVector] = {
+    wallet.dlcDAO.findAll().map { all =>
+      require(all.size == 1, "There should only be one dlc initialized")
+      all.head.contractIdOpt.get
+    }
+  }
+
+  def verifyInput(
+      transaction: Transaction,
+      inputIndex: Long,
+      prevOut: TransactionOutput): Boolean = {
+    val sigComponent = WitnessTxSigComponent(
+      transaction.asInstanceOf[WitnessTransaction],
+      UInt32(inputIndex),
+      prevOut,
+      Policy.standardFlags
+    )
+    ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent))
+  }
+
+  def dlcExecutionTest(
+      wallets: (InitializedDLCWallet, InitializedDLCWallet),
+      asInitiator: Boolean,
+      func: DLCWallet => Future[Transaction],
+      expectedOutputs: Int)(implicit ec: ExecutionContext): Future[Boolean] = {
+    val dlcA = wallets._1.wallet
+    val dlcB = wallets._2.wallet
+    dlcExecutionTest(dlcA, dlcB, asInitiator, func, expectedOutputs)
+  }
+
+  def dlcExecutionTest(
+      dlcA: DLCWallet,
+      dlcB: DLCWallet,
+      asInitiator: Boolean,
+      func: DLCWallet => Future[Transaction],
+      expectedOutputs: Int)(implicit ec: ExecutionContext): Future[Boolean] = {
+    for {
+      contractId <- getContractId(dlcA)
+      fundingTx <- dlcB.getDLCFundingTx(contractId)
+      tx <- if (asInitiator) func(dlcA) else func(dlcB)
+    } yield {
+      assert(tx.inputs.size == 1)
+      assert(tx.outputs.size == expectedOutputs)
+      assert(ScriptInterpreter.checkTransaction(tx))
+      verifyInput(tx, 0, fundingTx.outputs.head)
+    }
   }
 }
