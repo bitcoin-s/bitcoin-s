@@ -56,7 +56,6 @@ CREATE TABLE "wallet_dlc_funding_inputs"
     "output"             TEXT         NOT NULL,
     "redeem_script_opt"  TEXT,
     "witness_script_opt" TEXT,
-    "sigs"               TEXT,
     constraint "pk_dlc_input" primary key ("out_point"),
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
 );
@@ -78,3 +77,17 @@ CREATE TABLE "wallet_dlc_refund_sigs"
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
 );
 CREATE INDEX "wallet_dlc_refund_sigs_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
+
+CREATE TABLE tx_table
+(
+    "txIdBE"         TEXT    NOT NULL,
+    "transaction"    TEXT    NOT NULL,
+    "unsignedTxIdBE" TEXT    NOT NULL,
+    "unsignedTx"     TEXT    NOT NULL,
+    "wTxIdBE"        TEXT,
+    "totalOutput"    BIGINT  NOT NULL,
+    "numInputs"      INTEGER NOT NULL,
+    "numOutputs"     INTEGER NOT NULL,
+    locktime         BIGINT  NOT NULL,
+    constraint pk_tx primary key ("txIdBE")
+);

@@ -1,6 +1,10 @@
 package org.bitcoins.dlc.sign
 
-import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, FundingSignatures}
+import org.bitcoins.commons.jsonmodels.dlc.{
+  CETSignatures,
+  DLCFundingInput,
+  FundingSignatures
+}
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.TransactionSignatureSerializer
 import org.bitcoins.core.currency.CurrencyUnit
@@ -11,7 +15,6 @@ import org.bitcoins.core.protocol.script.{
   P2WSHWitnessV0
 }
 import org.bitcoins.core.protocol.transaction.{
-  OutputReference,
   Transaction,
   TransactionOutPoint,
   TxUtil
@@ -54,7 +57,8 @@ case class DLCTxSigner(
     require(fundingKey.publicKey == offer.pubKeys.fundingKey &&
               finalAddress == offer.pubKeys.payoutAddress,
             "Given keys do not match public key and address in offer")
-    require(fundingUtxos.map(_.outputReference) == offer.fundingInputs,
+    require(fundingUtxos.map(
+              DLCFundingInput.fromInputSigningInfo(_)) == offer.fundingInputs,
             "Funding ScriptSignatureParams did not match offer funding inputs")
   } else {
     require(
@@ -62,7 +66,8 @@ case class DLCTxSigner(
         finalAddress == accept.pubKeys.payoutAddress,
       "Given keys do not match public key and address in accept"
     )
-    require(fundingUtxos.map(_.outputReference) == accept.fundingInputs,
+    require(fundingUtxos.map(
+              DLCFundingInput.fromInputSigningInfo(_)) == accept.fundingInputs,
             "Funding ScriptSignatureParams did not match accept funding inputs")
   }
 
@@ -102,7 +107,17 @@ case class DLCTxSigner(
           outPoint -> outPointAndSigs.map(_._2)
       }
 
-      FundingSignatures(sigsMap)
+      val fundingInputs = if (isInitiator) {
+        offer.fundingInputs
+      } else {
+        accept.fundingInputs
+      }
+
+      val sigsVec = fundingInputs.map { input =>
+        input.outPoint -> sigsMap(input.outPoint)
+      }
+
+      FundingSignatures(sigsVec)
     }
   }
 
@@ -116,12 +131,12 @@ case class DLCTxSigner(
       fundingTx <- builder.buildFundingTx
     } yield {
       fundingInputs.zipWithIndex.foldLeft(PSBT.fromUnsignedTx(fundingTx)) {
-        case (psbt, (OutputReference(outPoint, output), index)) =>
-          val sigs = allSigs(outPoint)
+        case (psbt, (fundingInput, index)) =>
+          val sigs = allSigs(fundingInput.outPoint)
 
           psbt
             .addSignatures(sigs, index)
-            .addWitnessUTXOToInput(output, index)
+            .addWitnessUTXOToInput(fundingInput.output, index)
       }
     }
 

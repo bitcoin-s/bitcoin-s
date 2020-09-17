@@ -7,14 +7,8 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{BIP32Path, HDAccount}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.EmptyScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  OutputReference,
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.PreExecutionScriptProgram
@@ -67,6 +61,10 @@ trait DLCWalletUtil {
   lazy val dummyPartialSig: PartialSignature =
     PartialSignature(dummyKey, DummyECDigitalSignature)
 
+  lazy val dummyScriptWitness: P2WPKHWitnessV0 = {
+    P2WPKHWitnessV0(dummyPartialSig.pubKey, dummyPartialSig.signature)
+  }
+
   lazy val dummyAddress: BitcoinAddress = BitcoinAddress(
     "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2")
 
@@ -76,11 +74,20 @@ trait DLCWalletUtil {
   lazy val dummyBlockHash: DoubleSha256DigestBE = DoubleSha256DigestBE(
     "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75")
 
-  val dummyOutputRefs = Vector(
-    OutputReference(TransactionOutPoint(dummyBlockHash, UInt32.zero),
-                    TransactionOutput(Satoshis(5000), EmptyScriptPubKey)),
-    OutputReference(TransactionOutPoint(dummyBlockHash, UInt32.one),
-                    TransactionOutput(Satoshis(5000), EmptyScriptPubKey))
+  val dummyPrevTx: BaseTransaction = BaseTransaction(
+    TransactionConstants.validLockVersion,
+    Vector.empty,
+    Vector.fill(2)(
+      TransactionOutput(Satoshis(5000), P2WPKHWitnessSPKV0(dummyKey))),
+    UInt32.zero)
+
+  val dummyFundingInputs = Vector(
+    DLCFundingInputP2WPKHV0(dummyPrevTx,
+                            UInt32.zero,
+                            TransactionConstants.sequence),
+    DLCFundingInputP2WPKHV0(dummyPrevTx,
+                            UInt32.one,
+                            TransactionConstants.sequence)
   )
 
   lazy val sampleDLCOffer: DLCOffer = DLCOffer(
@@ -88,7 +95,7 @@ trait DLCWalletUtil {
     sampleOracleInfo,
     dummyDLCKeys,
     Satoshis(5000),
-    Vector(dummyOutputRefs.head),
+    Vector(dummyFundingInputs.head),
     dummyAddress,
     SatoshisPerVirtualByte(Satoshis(3)),
     dummyTimeouts
@@ -109,14 +116,14 @@ trait DLCWalletUtil {
   lazy val sampleDLCAccept: DLCAccept = DLCAccept(
     Satoshis(5000),
     dummyDLCKeys,
-    Vector(dummyOutputRefs.last),
+    Vector(dummyFundingInputs.last),
     dummyAddress,
     dummyCETSigs,
     sampleDLCOffer.tempContractId
   )
 
   lazy val dummyFundingSignatures: FundingSignatures = FundingSignatures(
-    Map(
+    Vector(
       (TransactionOutPoint(dummyBlockHash, UInt32.zero),
        Vector(dummyPartialSig))))
 

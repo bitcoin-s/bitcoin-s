@@ -5,7 +5,6 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto.{Sha256Digest, Sha256DigestBE}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.dlc.wallet.DLCAppConfig
@@ -96,16 +95,13 @@ case class DLCFundingInputDAO()(implicit
     def witnessScriptOpt: Rep[Option[ScriptWitness]] =
       column("witness_script_opt")
 
-    def sigs: Rep[Vector[PartialSignature]] = column("sigs")
-
     def * : ProvenShape[DLCFundingInputDb] =
       (paramHash,
        isInitiator,
        outPoint,
        output,
        redeemScriptOpt,
-       witnessScriptOpt,
-       sigs) <> (DLCFundingInputDb.tupled, DLCFundingInputDb.unapply)
+       witnessScriptOpt) <> (DLCFundingInputDb.tupled, DLCFundingInputDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_input", sourceColumns = outPoint)

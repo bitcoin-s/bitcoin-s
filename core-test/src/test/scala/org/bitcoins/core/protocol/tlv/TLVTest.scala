@@ -53,9 +53,9 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
-  "FundingInputTempTLV" must "have serialization symmetry" in {
-    forAll(TLVGen.fundingInputTempTLV) { fundingInput =>
-      assert(FundingInputTempTLV(fundingInput.bytes) == fundingInput)
+  "FundingInputV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.fundingInputV0TLV) { fundingInput =>
+      assert(FundingInputV0TLV(fundingInput.bytes) == fundingInput)
       assert(TLV(fundingInput.bytes) == fundingInput)
     }
   }

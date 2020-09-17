@@ -6,6 +6,7 @@ import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 object DLCTestVectorGen {
   import DLCTxGen._
@@ -46,19 +47,42 @@ object DLCTestVectorGen {
     }
   }
 
+  def readInputsFromDefaultTestFile(): JsResult[Vector[ValidTestInputs]] = {
+    val source = Source.fromFile(defaultTestFile)
+    val str = source.getLines().reduce(_ ++ _)
+    source.close()
+
+    Json.parse(str).validate[JsArray].flatMap { arr =>
+      arr.value
+        .foldLeft[JsResult[Vector[ValidTestInputs]]](JsSuccess(Vector.empty)) {
+          case (jsResultAccum, json) =>
+            jsResultAccum.flatMap { accum =>
+              ValidTestInputs.fromJson((json \ "testInputs").get).map {
+                testVec =>
+                  accum :+ testVec
+              }
+            }
+        }
+    }
+  }
+
   /** Returns true if anything has changed, false otherwise */
   def regenerateTestFile(): Future[Boolean] = {
-    val testVecResult = readFromDefaultTestFile()
+    val testVecInputs = readInputsFromDefaultTestFile()
+    val testVecResultT = Try(readFromDefaultTestFile())
 
-    testVecResult match {
-      case JsSuccess(testVecs, _) =>
-        val newTestVecsF = Future.sequence(testVecs.map {
-          case vec: SuccessTestVector => successTestVector(vec.testInputs)
-        })
+    testVecInputs match {
+      case JsSuccess(inputs, _) =>
+        val newTestVecsF =
+          Future.sequence(inputs.map(input => successTestVector(input)))
         newTestVecsF.flatMap { newTestVecs =>
-          val noChange = newTestVecs.zip(testVecs).foldLeft(true) {
-            case (sameSoFar, (oldVec, newVec)) =>
-              sameSoFar && (oldVec == newVec)
+          val noChange = testVecResultT match {
+            case Failure(_) | Success(JsError(_)) => false
+            case Success(JsSuccess(testVecs, _)) =>
+              newTestVecs.zip(testVecs).foldLeft(true) {
+                case (sameSoFar, (oldVec, newVec)) =>
+                  sameSoFar && (oldVec == newVec)
+              }
           }
 
           if (noChange) {

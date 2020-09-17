@@ -3,13 +3,14 @@ package org.bitcoins.dlc.testgen
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.{
   CETSignatures,
+  DLCFundingInput,
   DLCPublicKeys,
   DLCTimeouts,
   FundingSignatures
 }
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{DLCAcceptTLV, DLCOfferTLV, DLCSignTLV}
@@ -80,6 +81,19 @@ object DLCTLVGen {
                     tx.outputs.head)
   }
 
+  def fundingInput(
+      prevTx: Transaction = inputTransaction(),
+      prevTxVout: UInt32 = UInt32.zero,
+      sequence: UInt32 = TransactionConstants.sequence,
+      maxWitnessLen: UInt16 = UInt16(108),
+      redeemScriptOpt: Option[WitnessScriptPubKey] = None): DLCFundingInput = {
+    DLCFundingInput(prevTx,
+                    prevTxVout,
+                    sequence,
+                    maxWitnessLen,
+                    redeemScriptOpt)
+  }
+
   def adaptorSig: ECAdaptorSignature = {
     ECAdaptorSignature(
       ECPublicKey.freshPublicKey,
@@ -120,7 +134,7 @@ object DLCTLVGen {
       outPoints: Vector[TransactionOutPoint] = Vector(
         outputReference().outPoint)): FundingSignatures = {
     FundingSignatures(
-      outPoints.map(outpoint => outpoint -> Vector(partialSig())).toMap)
+      outPoints.map(outpoint => outpoint -> Vector(partialSig())))
   }
 
   def dlcOffer(
@@ -129,7 +143,7 @@ object DLCTLVGen {
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
       totalCollateral: Satoshis = defaultAmt,
-      fundingInputs: Vector[OutputReference] = Vector(outputReference()),
+      fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
       feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte.one,
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
@@ -152,7 +166,7 @@ object DLCTLVGen {
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
       totalCollateral: Satoshis = defaultAmt,
-      fundingInputs: Vector[OutputReference] = Vector(outputReference()),
+      fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
       feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte.one,
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
@@ -173,7 +187,7 @@ object DLCTLVGen {
       totalCollateral: Satoshis = defaultAmt,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
-      fundingInputs: Vector[OutputReference] = Vector(outputReference()),
+      fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
       cetSignatures: CETSignatures = cetSigs(),
       tempContractId: Sha256Digest = hash()): DLCAccept = {
@@ -189,7 +203,7 @@ object DLCTLVGen {
       totalCollateral: Satoshis = defaultAmt,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
-      fundingInputs: Vector[OutputReference] = Vector(outputReference()),
+      fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
       cetSignatures: CETSignatures = cetSigs(),
       tempContractId: Sha256Digest = hash()): DLCAcceptTLV = {
@@ -207,7 +221,7 @@ object DLCTLVGen {
       overCollateral: Satoshis = Satoshis.zero,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
-      fundingInputs: Vector[OutputReference] = Vector(outputReference()),
+      fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address()): DLCAccept = {
     val totalCollateral =
       offer.contractInfo.values.max - offer.totalCollateral + overCollateral
@@ -230,7 +244,7 @@ object DLCTLVGen {
       overCollateral: Satoshis = Satoshis.zero,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
-      fundingInputs: Vector[OutputReference] = Vector(outputReference()),
+      fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address()): DLCAcceptTLV = {
     dlcAcceptFromOffer(offer,
                        overCollateral,
