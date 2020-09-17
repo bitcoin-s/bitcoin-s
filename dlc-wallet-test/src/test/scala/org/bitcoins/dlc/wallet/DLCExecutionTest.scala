@@ -1,25 +1,13 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
-import org.bitcoins.core.crypto.WitnessTxSigComponent
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutput,
-  WitnessTransaction
-}
-import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
-import org.bitcoins.dlc.wallet.models.DLCOfferDb
-import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
+import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
-import org.scalatest.{Assertion, FutureOutcome}
-import scodec.bits.ByteVector
+import org.scalatest.FutureOutcome
 
-import scala.concurrent.Future
 import scala.math.Ordering
 
 class DLCExecutionTest extends BitcoinSDualWalletTest {
@@ -30,20 +18,6 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   }
 
   behavior of "DLCWallet"
-
-  def getInitialOffer(wallet: DLCWallet): Future[DLCOfferDb] = {
-    wallet.dlcOfferDAO.findAll().map { all =>
-      require(all.size == 1, "There should only be one dlc initialized")
-      all.head
-    }
-  }
-
-  def getContractId(wallet: DLCWallet): Future[ByteVector] = {
-    wallet.dlcDAO.findAll().map { all =>
-      require(all.size == 1, "There should only be one dlc initialized")
-      all.head.contractIdOpt.get
-    }
-  }
 
   def getSigs(contractInfo: ContractInfo): (
       SchnorrDigitalSignature,
@@ -69,39 +43,6 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       .schnorrSignWithNonce(recipientWinHash.bytes, DLCWalletUtil.kValue)
 
     (initiatorWinSig, recipientWinSig)
-  }
-
-  def verifyInput(
-      transaction: Transaction,
-      inputIndex: Long,
-      prevOut: TransactionOutput): Boolean = {
-    val sigComponent = WitnessTxSigComponent(
-      transaction.asInstanceOf[WitnessTransaction],
-      UInt32(inputIndex),
-      prevOut,
-      Policy.standardFlags
-    )
-    ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent))
-  }
-
-  def dlcExecutionTest(
-      wallets: FixtureParam,
-      asInitiator: Boolean,
-      func: DLCWallet => Future[Transaction],
-      expectedOutputs: Int): Future[Assertion] = {
-    val dlcA = wallets._1.wallet
-    val dlcB = wallets._2.wallet
-
-    for {
-      contractId <- getContractId(dlcA)
-      fundingTx <- dlcB.getDLCFundingTx(contractId)
-      tx <- if (asInitiator) func(dlcA) else func(dlcB)
-    } yield {
-      assert(tx.inputs.size == 1)
-      assert(tx.outputs.size == expectedOutputs)
-      assert(ScriptInterpreter.checkTransaction(tx))
-      assert(verifyInput(tx, 0, fundingTx.outputs.head))
-    }
   }
 
   it must "get the correct funding transaction" in { wallets =>
@@ -180,7 +121,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                  asInitiator = true,
                                  func = func,
                                  expectedOutputs = 1)
-    } yield result
+    } yield assert(result)
   }
 
   it must "do a unilateral close as the recipient" in { wallets =>
@@ -194,7 +135,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                  asInitiator = false,
                                  func = func,
                                  expectedOutputs = 1)
-    } yield result
+    } yield assert(result)
   }
 
   it must "fail to do losing unilateral close" in { wallets =>
@@ -220,7 +161,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                  asInitiator = true,
                                  func = func,
                                  expectedOutputs = 2)
-    } yield result
+    } yield assert(result)
   }
 
   it must "do a refund on a dlc as the recipient" in { wallets =>
@@ -232,6 +173,6 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                  asInitiator = false,
                                  func = func,
                                  expectedOutputs = 2)
-    } yield result
+    } yield assert(result)
   }
 }
