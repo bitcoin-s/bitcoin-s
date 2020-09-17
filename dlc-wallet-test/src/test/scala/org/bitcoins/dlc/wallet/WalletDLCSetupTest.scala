@@ -250,7 +250,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val oracleNonce = SchnorrNonce(
         "ea3a68d8749b81682513b0479418d289d17e24d4820df2ce979f1a56a63ca525")
       val attestation = FieldElement(
-        "de6000e2946e37af04f104db54066f560b88a353adc106c5b61bb52f34bc17af")
+        "77a5aabd716936411bbe19219bd0b261fae8f0524367268feb264e0a3b215766")
 
       val oracleInfo = OracleInfo(oraclePubKey, oracleNonce)
 
@@ -340,7 +340,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           (wallet: DLCWallet) => wallet.executeDLC(sign.contractId, oracleSig)
         result <- dlcExecutionTest(dlcA = walletA,
                                    dlcB = walletB,
-                                   asInitiator = false,
+                                   asInitiator = true,
                                    func = func,
                                    expectedOutputs = 1)
       } yield assert(result)
