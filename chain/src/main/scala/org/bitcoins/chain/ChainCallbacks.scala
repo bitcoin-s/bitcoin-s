@@ -37,11 +37,11 @@ object ChainCallbacks {
     override def +(other: ChainCallbacks): ChainCallbacks =
       copy(onBlockHeaderConnected =
         onBlockHeaderConnected ++ other.onBlockHeaderConnected)
-
-    /** Constructs a set of callbacks that only acts on block headers connected */
-    def onBlockHeaderConnected(f: OnBlockHeaderConnected): ChainCallbacks =
-      ChainCallbacks(onBlockHeaderConnected = Vector(f))
   }
+
+  /** Constructs a set of callbacks that only acts on block headers connected */
+  def onBlockHeaderConnected(f: OnBlockHeaderConnected): ChainCallbacks =
+    ChainCallbacks(onBlockHeaderConnected = Vector(f))
 
   lazy val empty: ChainCallbacks =
     ChainCallbacks(onBlockHeaderConnected = Vector.empty)
