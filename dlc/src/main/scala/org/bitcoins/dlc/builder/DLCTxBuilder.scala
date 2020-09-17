@@ -6,7 +6,11 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   DLCOffer,
   OracleInfo
 }
-import org.bitcoins.commons.jsonmodels.dlc.{DLCPublicKeys, DLCTimeouts}
+import org.bitcoins.commons.jsonmodels.dlc.{
+  DLCFundingInput,
+  DLCPublicKeys,
+  DLCTimeouts
+}
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -31,7 +35,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     DLCPublicKeys(offerFundingKey: ECPublicKey,
                   offerFinalAddress: BitcoinAddress),
     offerTotalCollateral: Satoshis,
-    offerFundingInputs: Vector[OutputReference],
+    offerFundingInputs: Vector[DLCFundingInput],
     offerChangeAddress: BitcoinAddress,
     feeRate: SatoshisPerVirtualByte,
     DLCTimeouts(contractMaturity: BlockTimeStamp,
@@ -44,7 +48,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   val DLCAcceptWithoutSigs(acceptTotalCollateral: Satoshis,
                            DLCPublicKeys(acceptFundingKey: ECPublicKey,
                                          acceptFinalAddress: BitcoinAddress),
-                           acceptFundingInputs: Vector[OutputReference],
+                           acceptFundingInputs: Vector[DLCFundingInput],
                            acceptChangeAddress: BitcoinAddress,
                            tempContractId: Sha256Digest) = accept
 

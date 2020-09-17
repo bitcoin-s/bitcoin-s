@@ -2,6 +2,7 @@ package org.bitcoins.dlc
 
 import org.bitcoins.commons.jsonmodels.dlc.{
   CETSignatures,
+  DLCFundingInputP2WPKHV0,
   DLCPublicKeys,
   DLCTimeouts,
   FundingSignatures
@@ -17,8 +18,8 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2WPKHWitnessSPKV0}
 import org.bitcoins.core.protocol.transaction.{
-  OutputReference,
   Transaction,
+  TransactionConstants,
   TransactionOutPoint
 }
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -224,8 +225,9 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         remoteInput = remoteInput,
         fundingUtxos = localFundingUtxos,
         remoteFundingInputs = Vector(
-          OutputReference(TransactionOutPoint(fundingTx.txIdBE, remoteVout),
-                          fundingTx.outputs(remoteVout.toInt))),
+          DLCFundingInputP2WPKHV0(fundingTx,
+                                  remoteVout,
+                                  TransactionConstants.sequence)),
         timeouts = DLCTimeouts(tomorrowInBlocks, twoDaysInBlocks),
         feeRate = feeRate,
         changeSPK = localChangeSPK,
@@ -247,8 +249,9 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         remoteInput = localInput,
         fundingUtxos = remoteFundingUtxos,
         remoteFundingInputs = Vector(
-          OutputReference(TransactionOutPoint(fundingTx.txIdBE, localVout),
-                          fundingTx.outputs(localVout.toInt))),
+          DLCFundingInputP2WPKHV0(fundingTx,
+                                  localVout,
+                                  TransactionConstants.sequence)),
         timeouts = DLCTimeouts(tomorrowInBlocks, twoDaysInBlocks),
         feeRate = feeRate,
         changeSPK = remoteChangeSPK,

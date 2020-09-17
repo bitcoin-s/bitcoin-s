@@ -6,7 +6,7 @@ import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{OutputReference, Transaction}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
@@ -137,7 +137,7 @@ object TestDLCClient {
       input: CurrencyUnit,
       remoteInput: CurrencyUnit,
       fundingUtxos: Vector[ScriptSignatureParams[InputInfo]],
-      remoteFundingInputs: Vector[OutputReference],
+      remoteFundingInputs: Vector[DLCFundingInput],
       timeouts: DLCTimeouts,
       feeRate: SatoshisPerVirtualByte,
       changeSPK: ScriptPubKey,
@@ -169,7 +169,7 @@ object TestDLCClient {
       (outcomes,
        pubKeys,
        input,
-       fundingUtxos.map(_.outputReference),
+       fundingUtxos.map(DLCFundingInput.fromInputSigningInfo(_)),
        changeAddress,
        remotePubKeys,
        remoteInput,
@@ -183,7 +183,7 @@ object TestDLCClient {
        remoteChangeAddress,
        pubKeys,
        input,
-       fundingUtxos.map(_.outputReference),
+       fundingUtxos.map(DLCFundingInput.fromInputSigningInfo(_)),
        changeAddress)
     }
 

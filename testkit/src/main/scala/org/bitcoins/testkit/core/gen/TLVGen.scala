@@ -1,15 +1,13 @@
 package org.bitcoins.testkit.core.gen
 
+import org.bitcoins.commons.jsonmodels.dlc.DLCFundingInputP2WPKHV0
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCAccept, DLCOffer}
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
-import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.{
-  OutputReference,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.testgen.DLCTestUtil
@@ -77,27 +75,56 @@ trait TLVGen {
     } yield OracleInfoV0TLV(pubKey, rValue)
   }
 
-  def fundingInputTempTLV: Gen[FundingInputTempTLV] = {
-    TransactionGenerators.realisticOutputReference.map(
-      FundingInputTempTLV.apply)
+  def fundingInputP2WPKHTLV: Gen[FundingInputV0TLV] = {
+    for {
+      prevTx <- TransactionGenerators.realisticTransactionWitnessOut
+      prevTxVout <- Gen.choose(0, prevTx.outputs.length - 1)
+      sequence <- NumberGenerator.uInt32s
+      (spk, _) <- ScriptGenerators.p2wpkhSPKV0
+      newOutput = prevTx.outputs(prevTxVout).copy(scriptPubKey = spk)
+      newPrevTx = prevTx match {
+        case transaction: NonWitnessTransaction =>
+          BaseTransaction(transaction.version,
+                          transaction.inputs,
+                          transaction.outputs.updated(prevTxVout, newOutput),
+                          transaction.lockTime)
+        case wtx: WitnessTransaction =>
+          wtx.copy(outputs = wtx.outputs.updated(prevTxVout, newOutput))
+      }
+    } yield {
+      DLCFundingInputP2WPKHV0(newPrevTx, UInt32(prevTxVout), sequence).toTLV
+    }
   }
 
-  def fundingInputTempTLVs(
-      collateralNeeded: CurrencyUnit): Gen[Vector[FundingInputTempTLV]] = {
+  def fundingInputV0TLV: Gen[FundingInputV0TLV] = {
+    fundingInputP2WPKHTLV // Soon to be Gen.oneOf
+  }
+
+  def fundingInputV0TLVs(
+      collateralNeeded: CurrencyUnit): Gen[Vector[FundingInputV0TLV]] = {
     for {
       numInputs <- Gen.choose(0, 5)
-      inputs <- Gen.listOfN(numInputs, fundingInputTempTLV)
-      outpoint <- TransactionGenerators.outPoint
-      (spk, _) <- ScriptGenerators.scriptPubKey
+      inputs <- Gen.listOfN(numInputs, fundingInputV0TLV)
+      input <- fundingInputV0TLV
     } yield {
-      val totalFunding = inputs.foldLeft[CurrencyUnit](Satoshis.zero)(
-        _ + _.outputRef.output.value)
+      val totalFunding =
+        inputs.foldLeft[CurrencyUnit](Satoshis.zero)(_ + _.output.value)
       if (totalFunding <= collateralNeeded) {
-        val newFundingInput = OutputReference(
-          outpoint,
-          TransactionOutput(collateralNeeded - totalFunding + Bitcoins.one,
-                            spk))
-        inputs.toVector :+ FundingInputTempTLV(newFundingInput)
+        val output = input.prevTx.outputs(input.prevTxVout.toInt)
+        val newOutput =
+          output.copy(value = collateralNeeded - totalFunding + Bitcoins.one)
+        val newOutputs =
+          input.prevTx.outputs.updated(input.prevTxVout.toInt, newOutput)
+        val newPrevTx = input.prevTx match {
+          case tx: BaseTransaction =>
+            tx.copy(outputs = newOutputs)
+          case wtx: WitnessTransaction =>
+            wtx.copy(outputs = newOutputs)
+          case EmptyTransaction =>
+            throw new RuntimeException(
+              "FundingInputV0TLV generator malfunction")
+        }
+        inputs.toVector :+ input.copy(prevTx = newPrevTx)
       } else {
         inputs.toVector
       }
@@ -117,23 +144,16 @@ trait TLVGen {
   }
 
   def fundingSignaturesV0TLV: Gen[FundingSignaturesV0TLV] = {
-    for {
-      numInputs <- Gen.choose(1, 10)
-      outPoints <- Gen.listOfN(numInputs, TransactionGenerators.outPoint)
-      sigs <- fundingSignaturesV0TLV(outPoints.toVector)
-    } yield {
-      sigs
-    }
+    Gen.choose(1, 10).flatMap(fundingSignaturesV0TLV)
   }
 
-  def fundingSignaturesV0TLV(
-      outPoints: Vector[TransactionOutPoint]): Gen[FundingSignaturesV0TLV] = {
-    for {
-      sigs <- Gen.listOfN(outPoints.length,
-                          CryptoGenerators.digitalSignatureWithSigHash)
-    } yield {
-      FundingSignaturesV0TLV(outPoints.zip(sigs).toMap)
-    }
+  def fundingSignaturesV0TLV(numWitnesses: Int): Gen[FundingSignaturesV0TLV] = {
+    Gen
+      .listOfN(
+        numWitnesses,
+        WitnessGenerators.p2wpkhWitnessV0 // TODO: make more general
+      )
+      .map(witnesses => FundingSignaturesV0TLV(witnesses.toVector))
   }
 
   def dlcOfferTLV: Gen[DLCOfferTLV] = {
@@ -146,7 +166,7 @@ trait TLVGen {
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
-      fundingInputs <- fundingInputTempTLVs(totalCollateralSatoshis)
+      fundingInputs <- fundingInputV0TLVs(totalCollateralSatoshis)
       changeAddress <- AddressGenerator.bitcoinAddress
       feeRate <- CurrencyUnitGenerator.positiveRealistic.map(
         SatoshisPerVirtualByte.apply)
@@ -182,7 +202,7 @@ trait TLVGen {
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
-      fundingInputs <- fundingInputTempTLVs(totalCollateralSatoshis)
+      fundingInputs <- fundingInputV0TLVs(totalCollateralSatoshis)
       changeAddress <- AddressGenerator.bitcoinAddress
       cetSigs <- cetSignaturesV0TLV
       refundSig <- CryptoGenerators.digitalSignature
@@ -210,7 +230,7 @@ trait TLVGen {
       totalCollateral = scala.math.max(
         (outcomes.values.max - offer.totalCollateralSatoshis).satoshis.toLong,
         totalCollateralSatoshis.toLong)
-      fundingInputs <- fundingInputTempTLVs(Satoshis(totalCollateral))
+      fundingInputs <- fundingInputV0TLVs(Satoshis(totalCollateral))
       changeAddress <- AddressGenerator.bitcoinAddress
       cetSigs <- cetSignaturesV0TLV(outcomes.size)
       refundSig <- CryptoGenerators.digitalSignature
@@ -251,14 +271,10 @@ trait TLVGen {
       case ContractInfoV0TLV(outcomes) => outcomes
     }
 
-    val outPoints = offer.fundingInputs.map {
-      case FundingInputTempTLV(outputRef) => outputRef.outPoint
-    }
-
     for {
       cetSigs <- cetSignaturesV0TLV(outcomes.size)
       refundSig <- CryptoGenerators.digitalSignature
-      fundingSigs <- fundingSignaturesV0TLV(outPoints)
+      fundingSigs <- fundingSignaturesV0TLV(offer.fundingInputs.length)
     } yield {
       val deserOffer = DLCOffer.fromTLV(offer)
       val builder =
@@ -288,7 +304,7 @@ trait TLVGen {
       pongTLV,
       contractInfoV0TLV,
       oracleInfoV0TLV,
-      fundingInputTempTLV,
+      fundingInputV0TLV,
       cetSignaturesV0TLV,
       fundingSignaturesV0TLV,
       dlcOfferTLV,
