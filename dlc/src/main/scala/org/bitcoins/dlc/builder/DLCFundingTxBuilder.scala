@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.builder
 
+import org.bitcoins.commons.jsonmodels.dlc.DLCFundingInput
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
@@ -26,8 +27,8 @@ case class DLCFundingTxBuilder(
     feeRate: FeeUnit,
     offerInput: CurrencyUnit,
     acceptInput: CurrencyUnit,
-    offerFundingInputs: Vector[OutputReference],
-    acceptFundingInputs: Vector[OutputReference],
+    offerFundingInputs: Vector[DLCFundingInput],
+    acceptFundingInputs: Vector[DLCFundingInput],
     offerChangeSPK: ScriptPubKey,
     acceptChangeSPK: ScriptPubKey) {
 

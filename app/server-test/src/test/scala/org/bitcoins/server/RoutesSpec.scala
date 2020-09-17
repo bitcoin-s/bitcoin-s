@@ -8,6 +8,7 @@ import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.{
   CETSignatures,
+  DLCFundingInputP2WPKHV0,
   DLCPublicKeys,
   DLCState,
   DLCTimeouts,
@@ -778,6 +779,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val contractId = ByteVector.fromValidHex(
       "4c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919")
 
+    val wtx: WitnessTransaction = WitnessTransaction(
+      "02000000000101a2619b5d58b209439c937e563018efcf174063ca011e4f177a5b14e5ba76211c0100000017160014614e9b96cbc7477eda98f0936385ded6b636f74efeffffff024e3f57c4000000001600147cf00288c2c1b3c5cdf275db532a1c15c514bb2fae1112000000000016001440efb02597b9e9d9bc968f12cec3347e2e264c570247304402205768c2ac8178539fd44721e2a7541bedd6b55654f095143514624203c133f7e8022060d51f33fc2b5c1f51f26c7f703de21be6246dbb5fb7e1c6919aae6d442610c6012102b99a63f166ef53ca67a5c55ae969e80c33456e07189f8457e3438f000be42c19307d1900")
+
+    val fundingInput: DLCFundingInputP2WPKHV0 =
+      DLCFundingInputP2WPKHV0(wtx, UInt32.zero, UInt32.zero)
+
     "create a dlc offer" in {
 
       (mockWalletApi
@@ -800,7 +807,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           OracleInfo(oracleInfoStr),
           dummyDLCKeys,
           Satoshis(2500),
-          Vector(EmptyOutputReference, EmptyOutputReference),
+          Vector(fundingInput, fundingInput),
           Bech32Address.fromString(dummyAddress),
           SatoshisPerVirtualByte.one,
           DLCTimeouts(BlockStamp(contractMaturity), BlockStamp(contractTimeout))
@@ -823,13 +830,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"\\"{\\\\\\"contractInfo\\\\\\":[{\\\\\\"sha256\\\\\\":\\\\\\"${contractInfo.keys.head.hex}\\\\\\",\\\\\\"sats\\\\\\":${contractInfo.values.head.toLong}},{\\\\\\"sha256\\\\\\":\\\\\\"${contractInfo.keys.last.hex}\\\\\\",\\\\\\"sats\\\\\\":${contractInfo.values.last.toLong}}],\\\\\\"oracleInfo\\\\\\":\\\\\\"$oracleInfoStr\\\\\\",\\\\\\"pubKeys\\\\\\":{\\\\\\"fundingKey\\\\\\":\\\\\\"${dummyKey.hex}\\\\\\",\\\\\\"payoutAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\"},\\\\\\"totalCollateral\\\\\\":2500,\\\\\\"fundingInputs\\\\\\":[{\\\\\\"outpoint\\\\\\":\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\",\\\\\\"output\\\\\\":\\\\\\"${EmptyTransactionOutput.hex}\\\\\\"},{\\\\\\"outpoint\\\\\\":\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\",\\\\\\"output\\\\\\":\\\\\\"${EmptyTransactionOutput.hex}\\\\\\"}],\\\\\\"changeAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\",\\\\\\"feeRate\\\\\\":1,\\\\\\"timeouts\\\\\\":{\\\\\\"contractMaturity\\\\\\":$contractMaturity,\\\\\\"contractTimeout\\\\\\":$contractTimeout}}\\"","error":null}""")
+          String] == s"""{"result":"\\"{\\\\\\"contractInfo\\\\\\":[{\\\\\\"sha256\\\\\\":\\\\\\"${contractInfo.keys.head.hex}\\\\\\",\\\\\\"sats\\\\\\":${contractInfo.values.head.toLong}},{\\\\\\"sha256\\\\\\":\\\\\\"${contractInfo.keys.last.hex}\\\\\\",\\\\\\"sats\\\\\\":${contractInfo.values.last.toLong}}],\\\\\\"oracleInfo\\\\\\":\\\\\\"$oracleInfoStr\\\\\\",\\\\\\"pubKeys\\\\\\":{\\\\\\"fundingKey\\\\\\":\\\\\\"${dummyKey.hex}\\\\\\",\\\\\\"payoutAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\"},\\\\\\"totalCollateral\\\\\\":2500,\\\\\\"fundingInputs\\\\\\":[{\\\\\\"prevTx\\\\\\":\\\\\\"${fundingInput.prevTx.hex}\\\\\\",\\\\\\"prevTxVout\\\\\\":${fundingInput.prevTxVout.toInt},\\\\\\"sequence\\\\\\":${fundingInput.sequence.toInt},\\\\\\"maxWitnessLength\\\\\\":${fundingInput.maxWitnessLen.toInt}},{\\\\\\"prevTx\\\\\\":\\\\\\"${fundingInput.prevTx.hex}\\\\\\",\\\\\\"prevTxVout\\\\\\":${fundingInput.prevTxVout.toInt},\\\\\\"sequence\\\\\\":${fundingInput.sequence.toInt},\\\\\\"maxWitnessLength\\\\\\":${fundingInput.maxWitnessLen.toInt}}],\\\\\\"changeAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\",\\\\\\"feeRate\\\\\\":1,\\\\\\"timeouts\\\\\\":{\\\\\\"contractMaturity\\\\\\":$contractMaturity,\\\\\\"contractTimeout\\\\\\":$contractTimeout}}\\"","error":null}""")
       }
     }
 
     "accept a dlc offer" in {
       val offerStr =
-        s"""{"contractInfo":[{"sha256":"${contractInfoDigests.head}","sats":5},{"sha256":"${contractInfoDigests.last}","sats":4}],"oracleInfo":"$oracleInfoStr","pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"totalCollateral":10000000000,"fundingInputs":[{"outpoint":"0000000000000000000000000000000000000000000000000000000000000000ffffffff","output":"ffffffffffffffff00"},{"outpoint":"0000000000000000000000000000000000000000000000000000000000000000ffffffff","output":"ffffffffffffffff00"}],"changeAddress":"$dummyAddress","feeRate":1,"timeouts":{"contractMaturity":$contractMaturity,"contractTimeout":$contractTimeout}}"""
+        s"""{"contractInfo":[{"sha256":"${contractInfoDigests.head}","sats":5},{"sha256":"${contractInfoDigests.last}","sats":4}],"oracleInfo":"$oracleInfoStr","pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"totalCollateral":10000000000,"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","feeRate":1,"timeouts":{"contractMaturity":$contractMaturity,"contractTimeout":$contractTimeout}}"""
 
       val sats = Satoshis.max
 
@@ -837,15 +844,16 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .acceptDLCOffer(_: DLCOffer))
         .expects(DLCOffer.fromJson(ujson.read(offerStr)))
         .returning(
-          Future.successful(DLCAccept(
-            sats,
-            dummyDLCKeys,
-            Vector(EmptyOutputReference),
-            Bech32Address
-              .fromString(dummyAddress),
-            CETSignatures(dummyOutcomeSigs, dummyPartialSig),
-            Sha256Digest.empty
-          ))
+          Future.successful(
+            DLCAccept(
+              sats,
+              dummyDLCKeys,
+              Vector(fundingInput),
+              Bech32Address
+                .fromString(dummyAddress),
+              CETSignatures(dummyOutcomeSigs, dummyPartialSig),
+              Sha256Digest.empty
+            ))
         )
 
       val route = walletRoutes.handleCommand(
@@ -854,13 +862,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"\\"{\\\\\\"totalCollateral\\\\\\":${sats.toLong},\\\\\\"pubKeys\\\\\\":{\\\\\\"fundingKey\\\\\\":\\\\\\"${dummyKey.hex}\\\\\\",\\\\\\"payoutAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\"},\\\\\\"fundingInputs\\\\\\":[{\\\\\\"outpoint\\\\\\":\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\",\\\\\\"output\\\\\\":\\\\\\"${EmptyTransactionOutput.hex}\\\\\\"}],\\\\\\"changeAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\",\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"tempContractId\\\\\\":\\\\\\"${Sha256Digest.empty.hex}\\\\\\"}\\"","error":null}""")
+          String] == s"""{"result":"\\"{\\\\\\"totalCollateral\\\\\\":${sats.toLong},\\\\\\"pubKeys\\\\\\":{\\\\\\"fundingKey\\\\\\":\\\\\\"${dummyKey.hex}\\\\\\",\\\\\\"payoutAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\"},\\\\\\"fundingInputs\\\\\\":[{\\\\\\"prevTx\\\\\\":\\\\\\"${fundingInput.prevTx.hex}\\\\\\",\\\\\\"prevTxVout\\\\\\":${fundingInput.prevTxVout.toInt},\\\\\\"sequence\\\\\\":${fundingInput.sequence.toInt},\\\\\\"maxWitnessLength\\\\\\":${fundingInput.maxWitnessLen.toInt}}],\\\\\\"changeAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\",\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"tempContractId\\\\\\":\\\\\\"${Sha256Digest.empty.hex}\\\\\\"}\\"","error":null}""")
       }
     }
 
     "sign a dlc" in {
       val acceptStr =
-        s"""{"totalCollateral":10000000000,"pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"fundingInputs":[{"outpoint":"${EmptyTransactionOutPoint.hex}","output":"${EmptyTransactionOutput.hex}"}],"changeAddress":"$dummyAddress","cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"tempContractId":"${paramHash.hex}"}"""
+        s"""{"totalCollateral":10000000000,"pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"tempContractId":"${paramHash.hex}"}"""
 
       (mockWalletApi
         .signDLC(_: DLCAccept))
@@ -869,8 +877,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           Future.successful(
             DLCSign(
               CETSignatures(dummyOutcomeSigs, dummyPartialSig),
-              FundingSignatures(Vector(
-                (EmptyTransactionOutPoint, Vector(dummyPartialSig))).toMap),
+              FundingSignatures(
+                Vector((EmptyTransactionOutPoint, Vector(dummyPartialSig)))),
               paramHash.bytes
             )))
 
@@ -1043,7 +1051,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val route = walletRoutes.handleCommand(
         ServerCommand("sendtoaddress",
-                      Arr(Str(testAddressStr), Num(100), Num(4), Bool(true))))
+                      Arr(Str(testAddressStr), Num(100), Num(4), Bool(false))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)

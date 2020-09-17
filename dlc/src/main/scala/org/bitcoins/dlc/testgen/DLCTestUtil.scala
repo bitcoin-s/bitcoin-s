@@ -75,7 +75,7 @@ object DLCTestUtil {
     val (firstOutPoint, sigs) = fundingSigs.head
     val badSig = flipBit(sigs.head)
     val badSigs = sigs.tail.+:(badSig)
-    FundingSignatures(fundingSigs.tail.+(firstOutPoint -> badSigs))
+    FundingSignatures(fundingSigs.tail.toVector.+:(firstOutPoint -> badSigs))
   }
 
   def flipBit(cetSigs: CETSignatures): CETSignatures = {

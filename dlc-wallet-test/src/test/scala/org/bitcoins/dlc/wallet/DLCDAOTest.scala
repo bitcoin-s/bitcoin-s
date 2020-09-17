@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet
 
+import org.bitcoins.core.api.wallet.db.TransactionDbHelper
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
@@ -74,8 +75,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
       output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
       redeemScriptOpt = None,
-      witnessScriptOpt = None,
-      sigs = Vector(DLCWalletUtil.dummyPartialSig)
+      witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
     )
 
     verifyDatabaseInsertion(input, input.outPoint, inputsDAO, dlcDAO)
@@ -93,8 +93,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           redeemScriptOpt = None,
-          witnessScriptOpt = None,
-          sigs = Vector(DLCWalletUtil.dummyPartialSig)
+          witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
         ),
         DLCFundingInputDb(
           paramHash = paramHash,
@@ -102,8 +101,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           outPoint = TransactionOutPoint(testBlockHash, UInt32.one),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           redeemScriptOpt = None,
-          witnessScriptOpt = None,
-          sigs = Vector(DLCWalletUtil.dummyPartialSig)
+          witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
         ),
         DLCFundingInputDb(
           paramHash = paramHash,
@@ -111,8 +109,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           outPoint = TransactionOutPoint(testBlockHash, UInt32(3)),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           redeemScriptOpt = None,
-          witnessScriptOpt = None,
-          sigs = Vector(DLCWalletUtil.dummyPartialSig)
+          witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
         )
       )
 
@@ -168,5 +165,13 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       assert(readInput.contains(sigs.head))
       assert(readInput.contains(sigs.last))
     }
+  }
+
+  it should "correctly insert txs into the database" in { daos =>
+    val remoteTxDAO = daos.dlcRemoteTxDAO
+
+    val tx = TransactionDbHelper.fromTransaction(DLCWalletUtil.dummyPrevTx)
+
+    verifyDatabaseInsertion(tx, tx.txIdBE, remoteTxDAO, daos.dlcDAO)
   }
 }
