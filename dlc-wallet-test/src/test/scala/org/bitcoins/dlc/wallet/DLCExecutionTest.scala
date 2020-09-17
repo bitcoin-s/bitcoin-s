@@ -67,7 +67,9 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       val offer = offerOpt.get
       val accept = acceptOpt.get
 
-      val comparableInputsA = inputsA.sortBy(_.outPoint.hex)
+      val comparableInputsA = inputsA
+        .sortBy(_.outPoint.hex)
+        .map(_.copy(redeemScriptOpt = None, witnessScriptOpt = None))
       val comparableInputsB =
         inputsB
           .sortBy(_.outPoint.hex)
