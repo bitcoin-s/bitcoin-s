@@ -433,6 +433,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           witnessScriptOpt = None
         ))
 
+      offerPrevTxs = offer.fundingInputs.map(funding =>
+        TransactionDbHelper.fromTransaction(funding.prevTx))
+
       acceptInputs = spendingInfos.map(utxo =>
         DLCFundingInputDb(
           paramHash = dlc.paramHash,
@@ -449,6 +452,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ = require(accept.tempContractId == offer.tempContractId,
                   "Offer and Accept have differing tempContractIds!")
 
+      _ <- remoteTxDAO.upsertAll(offerPrevTxs)
       _ <- dlcInputsDAO.createAll(offerInputs ++ acceptInputs)
       _ <- dlcOfferDAO.create(dlcOfferDb)
       _ <- dlcAcceptDAO.create(dlcAcceptDb)
@@ -479,6 +483,11 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             redeemScriptOpt = funding.redeemScriptOpt,
             witnessScriptOpt = None
           ))
+
+        val acceptPrevTxs = accept.fundingInputs.map { funding =>
+          TransactionDbHelper.fromTransaction(funding.prevTx)
+        }
+
         val sigsDbs = accept.cetSigs.outcomeSigs
           .map(sig => DLCCETSignatureDb(paramHash, sig._1, sig._2))
           .toVector
@@ -496,6 +505,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           _ = if (!isRefundSigValid)
             throw new IllegalArgumentException(
               s"Refund sig provided is not valid! got ${accept.cetSigs.refundSig}")
+          _ <- remoteTxDAO.upsertAll(acceptPrevTxs)
           _ <- dlcInputsDAO.upsertAll(acceptInputs)
           _ <- dlcSigsDAO.upsertAll(sigsDbs)
           _ <- dlcRefundSigDAO.upsert(refundSigDb)

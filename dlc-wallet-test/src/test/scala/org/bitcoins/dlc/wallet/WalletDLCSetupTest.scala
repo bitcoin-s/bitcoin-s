@@ -67,6 +67,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ = {
           assert(accept.fundingInputs.nonEmpty)
           assert(
+            accept.fundingInputs
+              .map(_.output.value)
+              .sum >= accept.totalCollateral)
+          assert(
             accept.totalCollateral == offer.contractInfo.values.max - offer.totalCollateral)
           assert(accept.changeAddress.value.nonEmpty)
         }

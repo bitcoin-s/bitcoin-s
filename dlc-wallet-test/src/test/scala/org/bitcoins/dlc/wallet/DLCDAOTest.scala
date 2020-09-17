@@ -171,7 +171,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
   it should "correctly insert txs into the database" in { daos =>
     val remoteTxDAO = daos.dlcRemoteTxDAO
 
-    val tx = TransactionDbHelper.fromTransaction(EmptyTransaction)
+    val tx = TransactionDbHelper.fromTransaction(DLCWalletUtil.dummyPrevTx)
 
     verifyDatabaseInsertion(tx, tx.txIdBE, remoteTxDAO, daos.dlcDAO)
   }
