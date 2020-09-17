@@ -190,13 +190,18 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
                                           ChainTestUtil.blockHeader562462)
     )
 
+    val noWorkGenesis = genesis.copy(chainWork = BigInt(0))
+
     val blockchain =
-      Blockchain(headersWithNoWork :+ genesis.copy(chainWork = BigInt(0)))
+      Blockchain(headersWithNoWork :+ noWorkGenesis)
 
     val chainHandler = tempHandler.copy(blockchains = Vector(blockchain))
 
     for {
+      _ <- chainHandler.blockHeaderDAO.update(noWorkGenesis)
       _ <- chainHandler.blockHeaderDAO.createAll(headersWithNoWork)
+      lowestNoWork <- chainHandler.blockHeaderDAO.getLowestNoWorkHeight
+      _ = assert(lowestNoWork == 0)
       isMissingWork <- chainHandler.isMissingChainWork
       _ = assert(isMissingWork)
       newHandler <- chainHandler.recalculateChainWork

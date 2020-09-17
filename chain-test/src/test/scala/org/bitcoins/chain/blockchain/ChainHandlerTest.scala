@@ -3,6 +3,7 @@ package org.bitcoins.chain.blockchain
 import org.bitcoins.chain.{ChainCallbacks, OnBlockHeaderConnected}
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
 import org.bitcoins.core.number.{Int32, UInt32}
@@ -519,14 +520,40 @@ class ChainHandlerTest extends ChainDbUnitTest {
       bestBlock <- chainHandler.getBestBlockHeader()
       stamp1 = BlockStamp.BlockHash(bestBlock.hashBE)
       stamp2 = BlockStamp.BlockHeight(bestBlock.height)
-      stamp3 = BlockStamp.BlockTime(bestBlock.time)
       height1 <- chainHandler.getHeightByBlockStamp(stamp1)
       height2 <- chainHandler.getHeightByBlockStamp(stamp2)
-      // TODO implement BlockTime
-//      height3 <- chainHandler.getHeightByBlockStamp(stamp3)
     } yield {
       assert(height1 == height2)
-//      assert(height1 == height3)
+    }
+  }
+
+  it must "fail to return the height by block time" in {
+    chainHandler: ChainHandler =>
+      recoverToSucceededIf[RuntimeException] {
+        for {
+          bestBlock <- chainHandler.getBestBlockHeader()
+          stamp = BlockStamp.BlockTime(bestBlock.time)
+          height <- chainHandler.getHeightByBlockStamp(stamp)
+        } yield height
+      }
+  }
+
+  it must "fail to return the height by block stamp with an unknown hash" in {
+    chainHandler: ChainHandler =>
+      recoverToSucceededIf[UnknownBlockHash] {
+        val stamp = BlockStamp.BlockHash(DoubleSha256DigestBE.empty)
+        chainHandler.getHeightByBlockStamp(stamp)
+      }
+  }
+
+  it must "find filters between heights" in { chainHandler: ChainHandler =>
+    chainHandler.getFiltersBetweenHeights(0, 1).map { filters =>
+      val genesis = ChainUnitTest.genesisFilterDb
+      val genesisFilterResponse = FilterResponse(genesis.golombFilter,
+                                                 genesis.blockHashBE,
+                                                 genesis.height)
+
+      assert(filters == Vector(genesisFilterResponse))
     }
   }
 
@@ -567,6 +594,27 @@ class ChainHandlerTest extends ChainDbUnitTest {
     }
   }
 
+  it must "check isMissingChainWork when there is over a 100 headers" in {
+    chainHandler: ChainHandler =>
+      val genesis = ChainUnitTest.genesisHeaderDb
+      val headers = 0.to(101).foldLeft(Vector(genesis)) { (accum, _) =>
+        val next = BlockHeaderHelper.buildNextHeader(accum.last)
+        accum :+ next
+      }
+
+      val noWork = BlockHeaderHelper
+        .buildNextHeader(headers.last)
+        .copy(chainWork = BigInt(0))
+
+      for {
+        _ <- chainHandler.blockHeaderDAO.upsertAll(headers)
+        isMissingFirst100 <- chainHandler.isMissingChainWork
+        _ = assert(!isMissingFirst100)
+        _ <- chainHandler.blockHeaderDAO.create(noWork)
+        isMissingLast100 <- chainHandler.isMissingChainWork
+      } yield assert(isMissingLast100)
+  }
+
   it must "process a new valid block header with a callback" in {
     chainHandler: ChainHandler =>
       val resultP: Promise[Boolean] = Promise()
@@ -578,7 +626,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         }
       }
 
-      val callbacks = ChainCallbacks(Vector(callback))
+      val callbacks = ChainCallbacks.onBlockHeaderConnected(callback)
       chainHandler.chainConfig.addCallbacks(callbacks)
 
       val newValidHeader =

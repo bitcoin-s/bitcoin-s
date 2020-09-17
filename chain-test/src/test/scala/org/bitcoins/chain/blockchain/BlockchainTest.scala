@@ -21,6 +21,17 @@ class BlockchainTest extends ChainUnitTest {
 
   behavior of "Blockchain"
 
+  it must "have the correct toString" inFixtured {
+    case ChainFixture.Empty =>
+      val genesis = ChainUnitTest.genesisHeaderDb
+      val headerDb =
+        BlockHeaderHelper.buildNextHeader(genesis)
+      val chain = Blockchain(Vector(headerDb, genesis))
+
+      assert(
+        chain.toString == s"BaseBlockchain(tip=$headerDb,last=$genesis,length=2)")
+  }
+
   it must "connect a new header to the current tip of a blockchain" inFixtured {
     case ChainFixture.Empty =>
       val blockchain = Blockchain.fromHeaders(
