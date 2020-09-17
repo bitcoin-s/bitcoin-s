@@ -5,14 +5,7 @@ import org.bitcoins.commons.jsonmodels.dlc.{
   DLCFundingInputP2WPKHV0
 }
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
-import org.bitcoins.core.protocol.transaction.{
-  OutputReference,
-  Transaction,
-  TransactionConstants,
-  TransactionOutPoint,
-  TransactionOutput
-}
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.crypto.Sha256DigestBE
 
 case class DLCFundingInputDb(
@@ -21,8 +14,7 @@ case class DLCFundingInputDb(
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
     redeemScriptOpt: Option[ScriptPubKey],
-    witnessScriptOpt: Option[ScriptWitness],
-    sigs: Vector[PartialSignature]) {
+    witnessScriptOpt: Option[ScriptWitness]) {
 
   lazy val toOutputReference: OutputReference =
     OutputReference(outPoint, output)

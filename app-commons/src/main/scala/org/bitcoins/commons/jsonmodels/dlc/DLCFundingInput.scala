@@ -13,12 +13,12 @@ sealed trait DLCFundingInput {
   def maxWitnessLen: UInt16
   def redeemScriptOpt: Option[WitnessScriptPubKey]
 
-  def output: TransactionOutput = prevTx.outputs(prevTxVout.toInt)
+  lazy val output: TransactionOutput = prevTx.outputs(prevTxVout.toInt)
 
-  def outPoint: TransactionOutPoint =
+  lazy val outPoint: TransactionOutPoint =
     TransactionOutPoint(prevTx.txId, prevTxVout)
 
-  def input: TransactionInput = {
+  lazy val input: TransactionInput = {
     val scriptSig = redeemScriptOpt match {
       case Some(redeemScript) => P2SHScriptSignature(redeemScript)
       case None               => EmptyScriptSignature
@@ -27,9 +27,9 @@ sealed trait DLCFundingInput {
     TransactionInput(outPoint, scriptSig, sequence)
   }
 
-  def outputReference: OutputReference = OutputReference(outPoint, output)
+  lazy val outputReference: OutputReference = OutputReference(outPoint, output)
 
-  def toTLV: FundingInputV0TLV = {
+  lazy val toTLV: FundingInputV0TLV = {
     FundingInputV0TLV(
       prevTx,
       prevTxVout,

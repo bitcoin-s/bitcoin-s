@@ -7,17 +7,8 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{BIP32Path, HDAccount}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.EmptyScriptPubKey
-import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  OutputReference,
-  Transaction,
-  TransactionConstants,
-  TransactionOutPoint,
-  TransactionOutput,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.PreExecutionScriptProgram
@@ -69,6 +60,10 @@ trait DLCWalletUtil {
 
   lazy val dummyPartialSig: PartialSignature =
     PartialSignature(dummyKey, DummyECDigitalSignature)
+
+  lazy val dummyScriptWitness: P2WPKHWitnessV0 = {
+    P2WPKHWitnessV0(dummyPartialSig.pubKey, dummyPartialSig.signature)
+  }
 
   lazy val dummyAddress: BitcoinAddress = BitcoinAddress(
     "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2")

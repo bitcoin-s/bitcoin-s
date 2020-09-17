@@ -72,10 +72,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         inputsB
           .sortBy(_.outPoint.hex)
           .map(
-            _.copy(sigs = Vector.empty,
-                   redeemScriptOpt = None,
-                   witnessScriptOpt = None
-            )
+            _.copy(redeemScriptOpt = None, witnessScriptOpt = None)
           ) // initiator will not have funding sigs
 
       assert(comparableInputsA == comparableInputsB)

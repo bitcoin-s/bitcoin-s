@@ -74,8 +74,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
       output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
       redeemScriptOpt = None,
-      witnessScriptOpt = None,
-      sigs = Vector(DLCWalletUtil.dummyPartialSig)
+      witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
     )
 
     verifyDatabaseInsertion(input, input.outPoint, inputsDAO, dlcDAO)
@@ -93,8 +92,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           redeemScriptOpt = None,
-          witnessScriptOpt = None,
-          sigs = Vector(DLCWalletUtil.dummyPartialSig)
+          witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
         ),
         DLCFundingInputDb(
           paramHash = paramHash,
@@ -102,8 +100,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           outPoint = TransactionOutPoint(testBlockHash, UInt32.one),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           redeemScriptOpt = None,
-          witnessScriptOpt = None,
-          sigs = Vector(DLCWalletUtil.dummyPartialSig)
+          witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
         ),
         DLCFundingInputDb(
           paramHash = paramHash,
@@ -111,8 +108,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           outPoint = TransactionOutPoint(testBlockHash, UInt32(3)),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           redeemScriptOpt = None,
-          witnessScriptOpt = None,
-          sigs = Vector(DLCWalletUtil.dummyPartialSig)
+          witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
         )
       )
 

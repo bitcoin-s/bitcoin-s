@@ -16,6 +16,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
@@ -27,7 +28,6 @@ import org.bitcoins.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 
@@ -43,8 +43,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   private[bitcoins] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
   private[bitcoins] val dlcSigsDAO: DLCCETSignatureDAO = DLCCETSignatureDAO()
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigDAO = DLCRefundSigDAO()
-
-  private[bitcoins] val txDAO: TransactionDAO = TransactionDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
   private def calcContractId(
@@ -189,7 +187,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           for {
             fundingInputs <-
               dlcInputsDAO.findByParamHash(paramHash, isInitiator = true)
-            prevTxs <- txDAO.findByTxIdBEs(fundingInputs.map(_.outPoint.txIdBE))
+            prevTxs <-
+              transactionDAO.findByTxIdBEs(fundingInputs.map(_.outPoint.txIdBE))
           } yield {
             val inputRefs = fundingInputs.zip(prevTxs).map {
               case (input, tx) => input.toFundingInput(tx.transaction)
@@ -265,15 +264,14 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
       dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(offer)
 
-      dlcInputs = utxos.map(outRef =>
+      dlcInputs = utxos.map(funding =>
         DLCFundingInputDb(
           paramHash = dlc.paramHash,
           isInitiator = true,
-          outPoint = outRef.outPoint,
-          output = outRef.output,
-          redeemScriptOpt = None, // todo negotiate these
-          witnessScriptOpt = None,
-          sigs = Vector.empty
+          outPoint = funding.outPoint,
+          output = funding.output,
+          redeemScriptOpt = funding.redeemScriptOpt,
+          witnessScriptOpt = None
         ))
 
       _ <- dlcInputsDAO.createAll(dlcInputs)
@@ -431,9 +429,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           isInitiator = true,
           outPoint = funding.outPoint,
           output = funding.output,
-          redeemScriptOpt = None, // todo negotiate these
-          witnessScriptOpt = None,
-          sigs = Vector.empty
+          redeemScriptOpt = funding.redeemScriptOpt,
+          witnessScriptOpt = None
         ))
 
       acceptInputs = spendingInfos.map(utxo =>
@@ -443,8 +440,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           outPoint = utxo.outPoint,
           output = utxo.output,
           redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
-          witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo),
-          sigs = Vector.empty
+          witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
         ))
 
       accept =
@@ -480,9 +476,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             isInitiator = false,
             outPoint = funding.outPoint,
             output = funding.output,
-            redeemScriptOpt = None, // todo negotiate these
-            witnessScriptOpt = None,
-            sigs = Vector.empty
+            redeemScriptOpt = funding.redeemScriptOpt,
+            witnessScriptOpt = None
           ))
         val sigsDbs = accept.cetSigs.outcomeSigs
           .map(sig => DLCCETSignatureDb(paramHash, sig._1, sig._2))
@@ -511,7 +506,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           offerDb <- dlcOfferDAO.findByParamHash(dlc.paramHash).map(_.get)
           offerInputs <-
             dlcInputsDAO.findByParamHash(dlc.paramHash, isInitiator = true)
-          prevTxs <- txDAO.findByTxIdBEs(offerInputs.map(_.outPoint.txIdBE))
+          prevTxs <-
+            transactionDAO.findByTxIdBEs(offerInputs.map(_.outPoint.txIdBE))
           offer = offerDb.toDLCOffer(offerInputs.zip(prevTxs).map {
             case (input, tx) => input.toFundingInput(tx.transaction)
           })
@@ -617,7 +613,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         case (outPoint, sigs) =>
           inputs.find(_.outPoint == outPoint) match {
             case Some(inputDb) =>
-              inputDb.copy(sigs = sigs)
+              inputDb.copy(witnessScriptOpt =
+                Some(P2WPKHWitnessV0(sigs.head.pubKey, sigs.head.signature)))
             case None =>
               throw new NoSuchElementException(
                 s"Received signature for outPoint (${outPoint.hex}) that does not correspond to this contractId (${sign.contractId.toHex})")
@@ -730,7 +727,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       dlcOffer = dlcOfferOpt.get
       fundingInputsDb <- dlcInputsDAO.findByParamHash(dlcDb.paramHash)
       localFundingInputs = fundingInputsDb.filter(_.isInitiator)
-      prevTxs <- txDAO.findByTxIdBEs(localFundingInputs.map(_.outPoint.txIdBE))
+      prevTxs <-
+        transactionDAO.findByTxIdBEs(localFundingInputs.map(_.outPoint.txIdBE))
     } yield {
       val offerFundingInputs =
         localFundingInputs.zip(prevTxs).map {
@@ -767,8 +765,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
 
     for {
-      localPrevTxs <-
-        txDAO.findByTxIdBEs(localDbFundingInputs.map(_.outPoint.txIdBE))
+      localPrevTxs <- transactionDAO.findByTxIdBEs(
+        localDbFundingInputs.map(_.outPoint.txIdBE))
       remotePrevTxs <-
         remoteTxDAO.findByTxIdBEs(remoteDbFundingInputs.map(_.outPoint.txIdBE))
     } yield {
@@ -897,7 +895,23 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           val fundingSigs =
             fundingInputs
               .filter(_.isInitiator)
-              .map(input => (input.outPoint, input.sigs))
+              .map { input =>
+                input.witnessScriptOpt match {
+                  case Some(witnessScript) =>
+                    witnessScript match {
+                      case EmptyScriptWitness =>
+                        throw new RuntimeException(
+                          "Script witness cannot be empty")
+                      case p2wpkh: P2WPKHWitnessV0 =>
+                        val sig =
+                          PartialSignature(p2wpkh.pubKey, p2wpkh.signature)
+                        (input.outPoint, Vector(sig))
+                      case _: P2WSHWitnessV0 =>
+                        throw new RuntimeException("P2WSH not yet supported")
+                    }
+                  case None => throw new RuntimeException("")
+                }
+              }
           executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs))
         }
 
@@ -918,7 +932,23 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         } else {
           val remoteSigs = fundingInputs
             .filter(_.isInitiator)
-            .map(input => (input.outPoint, input.sigs))
+            .map { input =>
+              input.witnessScriptOpt match {
+                case Some(witnessScript) =>
+                  witnessScript match {
+                    case EmptyScriptWitness =>
+                      throw new RuntimeException(
+                        "Script witness cannot be empty")
+                    case p2wpkh: P2WPKHWitnessV0 =>
+                      val sig =
+                        PartialSignature(p2wpkh.pubKey, p2wpkh.signature)
+                      (input.outPoint, Vector(sig))
+                    case _: P2WSHWitnessV0 =>
+                      throw new RuntimeException("P2WSH not yet supported")
+                  }
+                case None => throw new RuntimeException("")
+              }
+            }
           signer.signFundingTx(FundingSignatures(remoteSigs))
         }
       }
