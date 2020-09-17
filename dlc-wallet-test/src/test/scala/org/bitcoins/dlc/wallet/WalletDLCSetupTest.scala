@@ -9,9 +9,14 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
 }
 import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, DLCMessage}
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto.{CryptoUtil, FieldElement, SchnorrDigitalSignature}
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  FieldElement,
+  SchnorrDigitalSignature,
+  SchnorrNonce,
+  SchnorrPublicKey
+}
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
@@ -240,8 +245,14 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         10000).bytes ++ loseHash.bytes ++ Satoshis.zero.bytes ++ drawHash.bytes ++ Satoshis(
         5000).bytes)
 
-      val oracleInfo = OracleInfo(
-        "156c7d1c7922f0aa1168d9e21ac77ea88bbbe05e24e70a08bbe0519778f2e5daea3a68d8749b81682513b0479418d289d17e24d4820df2ce979f1a56a63ca525")
+      val oraclePubKey = SchnorrPublicKey(
+        "156c7d1c7922f0aa1168d9e21ac77ea88bbbe05e24e70a08bbe0519778f2e5da")
+      val oracleNonce = SchnorrNonce(
+        "ea3a68d8749b81682513b0479418d289d17e24d4820df2ce979f1a56a63ca525")
+      val attestation = FieldElement(
+        "de6000e2946e37af04f104db54066f560b88a353adc106c5b61bb52f34bc17af")
+
+      val oracleInfo = OracleInfo(oraclePubKey, oracleNonce)
 
       val offerData = DLCOffer(
         contractInfo,
@@ -254,11 +265,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         dummyTimeouts
       )
 
-      val oracleSig =
-        SchnorrDigitalSignature(
-          oracleInfo.rValue,
-          FieldElement(
-            "de6000e2946e37af04f104db54066f560b88a353adc106c5b61bb52f34bc17af"))
+      val oracleSig = SchnorrDigitalSignature(oracleNonce, attestation)
 
       val paramHash = DLCMessage.calcParamHash(offerData.oracleInfo,
                                                offerData.contractInfo,
