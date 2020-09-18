@@ -112,7 +112,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
   }
 
   def expandHrp: Vector[UInt5] = {
-    Bech32.hrpExpand(hrp)
+    hrp.expand
   }
 }
 
@@ -151,7 +151,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   def createChecksum(
       hrp: BtcHumanReadablePart,
       bytes: Vector[UInt5]): Vector[UInt5] = {
-    val values = Bech32.hrpExpand(hrp) ++ bytes
+    val values = hrp.expand ++ bytes
     Bech32.createChecksum(values)
   }
 
@@ -191,7 +191,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   override def fromString(bech32: String): Bech32Address = {
     val bech32T = for {
       (hrp, data) <- Bech32.splitToHrpAndData(bech32)
-      btcHrp <- BtcHumanReadablePart(hrp)
+      btcHrp = BtcHumanReadablePart.fromString(hrp)
     } yield Bech32Address(btcHrp, data)
 
     bech32T match {
