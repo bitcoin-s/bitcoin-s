@@ -38,7 +38,7 @@ object BtcHumanReadablePart extends StringFactory[BtcHumanReadablePart] {
     override def chars: String = "bcrt"
   }
 
-  def fromString(str: String): BtcHumanReadablePart =
+  override def fromString(str: String): BtcHumanReadablePart =
     str match {
       case "bc"   => bc
       case "tb"   => tb
