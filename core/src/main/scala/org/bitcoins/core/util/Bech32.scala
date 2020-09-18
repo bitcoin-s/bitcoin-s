@@ -261,6 +261,18 @@ sealed abstract class Bech32 {
     }
   }
 
+  def splitToHrpAndData[T <: Bech32HumanReadablePart](
+      bech32: String,
+      factory: StringFactory[T]): Try[(T, Vector[UInt5])] = {
+
+    splitToHrpAndData(bech32).flatMap {
+      case (hrpString, data) =>
+        factory
+          .fromStringT(hrpString)
+          .map(hrp => (hrp, data))
+    }
+  }
+
   def verifyChecksum(hrp: Seq[UInt5], u5s: Seq[UInt5]): Boolean = {
     val data = hrp ++ u5s
     val checksum = Bech32.polyMod(data.toVector)
