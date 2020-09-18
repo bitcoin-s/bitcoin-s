@@ -108,8 +108,8 @@ sealed abstract class Bech32 {
 
     hrpT.flatMap { chars =>
       val str = chars.mkString
-      val lnT = LnHumanReadablePart(str)
-      val btcT = BtcHumanReadablePart(str)
+      val lnT = LnHumanReadablePart.fromStringT(str)
+      val btcT = BtcHumanReadablePart.fromStringT(str)
 
       lnT
         .orElse(btcT)

@@ -191,7 +191,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   override def fromString(bech32: String): Bech32Address = {
     val bech32T = for {
       (hrp, data) <- Bech32.splitToHrpAndData(bech32)
-      btcHrp <- BtcHumanReadablePart(hrp)
+      btcHrp = BtcHumanReadablePart(hrp)
     } yield Bech32Address(btcHrp, data)
 
     bech32T match {
