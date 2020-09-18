@@ -2,8 +2,7 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config._
 import org.bitcoins.core.util.Bech32HumanReadablePart
-
-import scala.util.{Failure, Success, Try}
+import org.bitcoins.crypto.StringFactory
 
 /**
   * Represents the HumanReadablePart of a Bech32 address
@@ -13,7 +12,7 @@ sealed abstract class BtcHumanReadablePart extends Bech32HumanReadablePart {
   def network: BitcoinNetwork
 }
 
-object BtcHumanReadablePart {
+object BtcHumanReadablePart extends StringFactory[BtcHumanReadablePart] {
 
   /** Represents the HumanReadablePart for a bitcoin mainnet bech32 address */
   case object bc extends BtcHumanReadablePart {
@@ -39,15 +38,14 @@ object BtcHumanReadablePart {
     override def chars: String = "bcrt"
   }
 
-  def apply(str: String): Try[BtcHumanReadablePart] =
+  override def fromString(str: String): BtcHumanReadablePart =
     str match {
-      case "bc"   => Success(bc)
-      case "tb"   => Success(tb)
-      case "bcrt" => Success(bcrt) // Bitcoin Core specific
+      case "bc"   => bc
+      case "tb"   => tb
+      case "bcrt" => bcrt // Bitcoin Core specific
       case _ =>
-        Failure(
-          new IllegalArgumentException(
-            s"Could not construct BTC HRP from $str"))
+        throw new IllegalArgumentException(
+          s"Could not construct BTC HRP from $str")
     }
 
   def apply(network: NetworkParameters): BtcHumanReadablePart =
@@ -57,6 +55,6 @@ object BtcHumanReadablePart {
       case _: RegTest  => bcrt
     }
 
-  def apply(hrp: Bech32HumanReadablePart): Try[BtcHumanReadablePart] =
-    BtcHumanReadablePart(hrp.chars)
+  def apply(hrp: Bech32HumanReadablePart): BtcHumanReadablePart =
+    BtcHumanReadablePart.fromString(hrp.chars)
 }

@@ -9,9 +9,9 @@ class BtcHumanReadablePartTest extends BitcoinSUnitTest {
   import BtcHumanReadablePart._
 
   "HumanReadablePart" must "match the correct hrp with the correct string" in {
-    BtcHumanReadablePart("tb") must be(Success(tb))
-    BtcHumanReadablePart("bc") must be(Success(bc))
-    BtcHumanReadablePart("bcrt") must be(Success(bcrt))
+    BtcHumanReadablePart.fromStringT("tb") must be(Success(tb))
+    BtcHumanReadablePart.fromStringT("bc") must be(Success(bc))
+    BtcHumanReadablePart.fromStringT("bcrt") must be(Success(bcrt))
   }
 
   it must "match the correct hrp with the correct network" in {
