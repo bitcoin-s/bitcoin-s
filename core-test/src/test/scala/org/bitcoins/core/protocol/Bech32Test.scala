@@ -25,7 +25,7 @@ class Bech32Test extends BitcoinSUnitTest {
     val addrT = Address.fromStringT(addrStr)
     addrT match {
       case Success(addr: Bech32Address) => assert(addr.value == addrStr)
-      case Failure(err)                 => fail(err)
+      case _                            => fail()
     }
   }
 

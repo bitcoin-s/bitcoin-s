@@ -1,6 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.number.{UInt5, UInt8}
+import org.bitcoins.crypto.StringFactory
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -108,6 +109,14 @@ sealed abstract class Bech32 {
       val str = chars.mkString
       str
     }
+  }
+
+  /** Checks the validity of the HRP against bech32 and the given [[StringFactory]] */
+  def checkHrpValidity[T <: Bech32HumanReadablePart](
+      hrp: String,
+      factory: StringFactory[T]): Try[T] = {
+    checkHrpValidity(hrp)
+      .flatMap(str => factory.fromStringT(str))
   }
 
   def isInHrpRange(char: Char): Boolean = char >= 33 && char <= 126
