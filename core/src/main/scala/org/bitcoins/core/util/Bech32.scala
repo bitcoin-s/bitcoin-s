@@ -1,8 +1,6 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.number.{UInt5, UInt8}
-import org.bitcoins.core.protocol.BtcHumanReadablePart
-import org.bitcoins.core.protocol.ln.LnHumanReadablePart
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -41,8 +39,8 @@ sealed abstract class Bech32 {
     * Expands the human readable part of a bech32 address as per
     * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
     */
-  def hrpExpand(hrp: Bech32HumanReadablePart): Vector[UInt5] = {
-    val lowerchars = hrp.chars.toLowerCase
+  def hrpExpand(string: String): Vector[UInt5] = {
+    val lowerchars = string.toLowerCase
 
     val x: Vector[UInt5] = lowerchars.map { c =>
       UInt5(c >> 5)
@@ -75,7 +73,7 @@ sealed abstract class Bech32 {
     * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
     * rules
     */
-  def checkHrpValidity(hrp: String): Try[Bech32HumanReadablePart] = {
+  def checkHrpValidity(hrp: String): Try[String] = {
     @tailrec
     def loop(
         remaining: List[Char],
@@ -106,15 +104,9 @@ sealed abstract class Bech32 {
     val hrpT =
       loop(hrp.toCharArray.toList, Nil, isLower = false, isUpper = false)
 
-    hrpT.flatMap { chars =>
+    hrpT.map { chars =>
       val str = chars.mkString
-      val lnT = LnHumanReadablePart.fromStringT(str)
-      val btcT = BtcHumanReadablePart.fromStringT(str)
-
-      lnT
-        .orElse(btcT)
-        .orElse(Failure(new IllegalArgumentException(
-          s"Could not construct valid LN or BTC HRP from $str ")))
+      str
     }
   }
 
@@ -210,8 +202,7 @@ sealed abstract class Bech32 {
     *      [[https://github.com/sipa/bech32/blob/master/ref/python/segwit_addr.py#L62 this function]]
     *      by Sipa
     */
-  def splitToHrpAndData(
-      bech32: String): Try[(Bech32HumanReadablePart, Vector[UInt5])] = {
+  def splitToHrpAndData(bech32: String): Try[(String, Vector[UInt5])] = {
     val sepIndexes = bech32.zipWithIndex.filter {
       case (sep, _) => sep == Bech32.separator
     }
@@ -245,25 +236,25 @@ sealed abstract class Bech32 {
         Failure(new IllegalArgumentException("Hrp/data too short"))
       } else {
         for {
-          hrp <- checkHrpValidity(hrpStr)
+          hrpString <- checkHrpValidity(hrpStr)
           dataWithCheck <- Bech32.checkDataValidity(dataStr)
+          hrpU5s = hrpExpand(hrpStr)
           dataNoCheck <- {
-            if (verifyChecksum(hrp, dataWithCheck)) {
+            if (verifyChecksum(hrpU5s, dataWithCheck)) {
               Success(dataWithCheck.take(dataWithCheck.size - 6))
             } else
               Failure(
                 new IllegalArgumentException(
                   s"Checksum was invalid on bech32 string $bech32"))
           }
-        } yield (hrp, dataNoCheck)
+        } yield (hrpString, dataNoCheck)
       }
     }
   }
 
-  def verifyChecksum(hrp: Bech32HumanReadablePart, u5s: Seq[UInt5]): Boolean = {
-    val expandedHrp = hrpExpand(hrp)
-    val data = expandedHrp ++ u5s
-    val checksum = Bech32.polyMod(data)
+  def verifyChecksum(hrp: Seq[UInt5], u5s: Seq[UInt5]): Boolean = {
+    val data = hrp ++ u5s
+    val checksum = Bech32.polyMod(data.toVector)
     checksum == 1
   }
 
@@ -302,5 +293,5 @@ abstract class Bech32HumanReadablePart {
   def chars: String
 
   /** Expands this HRP into a vector of UInt5s, in accordance with the Bech32 spec */
-  def expand: Vector[UInt5] = Bech32.hrpExpand(this)
+  def expand: Vector[UInt5] = Bech32.hrpExpand(chars)
 }
