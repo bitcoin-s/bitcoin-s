@@ -114,12 +114,12 @@ println(<span class="hljs-string">s"Verified with NativeSecp256k1 again=<span cl
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> privKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
 <span class="hljs-comment">// privKey: ECPrivateKey = Masked(ECPrivateKeyImpl)</span>
 <span class="hljs-keyword">val</span> publicKey = privKey.publicKeyWithBouncyCastle
-<span class="hljs-comment">// publicKey: ECPublicKey = ECPublicKey(03ec33661881ac878f075695fed4d7ed68919f43ab7f407753c80e524aadeb1ec2)</span>
+<span class="hljs-comment">// publicKey: ECPublicKey = ECPublicKey(027cea26bef846a7bb4007351a8b51c34e24cc3a47c008a7b6f33f003e6aa1eacc)</span>
 <span class="hljs-keyword">val</span> dataToSign = <span class="hljs-type">DoubleSha256Digest</span>.empty
 <span class="hljs-comment">// dataToSign: DoubleSha256Digest = DoubleSha256Digest(0000000000000000000000000000000000000000000000000000000000000000)</span>
 
 <span class="hljs-keyword">val</span> signature = privKey.signWithBouncyCastle(dataToSign.bytes)
-<span class="hljs-comment">// signature: ECDigitalSignature = ECDigitalSignature(304402202c453d70833aa898261c8b622add89b98471fe50b0b99b32c2485f1a3cbf688302200f2fa93aa76f359491e39d6c692506aa473e7a16fd24b210738158be84d52994)</span>
+<span class="hljs-comment">// signature: ECDigitalSignature = ECDigitalSignature(3045022100cfd6d0bcc5eaf04a46ea2c9c53422cfd117761169ca3fb451c90fd02419236aa0220433406d10d38362a5f65054b5875ac0309c78d3ece51000287d8d9a20f99edb6)</span>
 
 <span class="hljs-keyword">val</span> verified = publicKey.verifyWithBouncyCastle(dataToSign.bytes, signature)
 <span class="hljs-comment">// verified: Boolean = true</span>
