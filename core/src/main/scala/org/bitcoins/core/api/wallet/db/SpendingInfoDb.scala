@@ -128,7 +128,8 @@ case class NestedSegwitV0SpendingInfo(
 sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
 
   state match {
-    case TxoState.ConfirmedSpent | TxoState.ConfirmedReceived =>
+    case TxoState.ConfirmedSpent | TxoState.ConfirmedReceived |
+        TxoState.ImmatureCoinbase =>
       require(blockHash.isDefined,
               "Transaction cannot be confirmed without a blockHash")
     case TxoState.DoesNotExist | TxoState.PendingConfirmationsSpent |

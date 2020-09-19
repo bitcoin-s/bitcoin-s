@@ -14,6 +14,8 @@ object TxoState extends StringFactory[TxoState] {
   /** Means that no funds have been sent to this utxo EVER */
   final case object DoesNotExist extends TxoState
 
+  final case object ImmatureCoinbase extends TxoState
+
   /** Means we have received funds to this utxo, but they are not confirmed */
   final case object PendingConfirmationsReceived extends ReceivedState
 
@@ -43,6 +45,7 @@ object TxoState extends StringFactory[TxoState] {
     Set(PendingConfirmationsSpent, TxoState.ConfirmedSpent, Reserved)
 
   val all: Vector[TxoState] = Vector(DoesNotExist,
+                                     ImmatureCoinbase,
                                      PendingConfirmationsReceived,
                                      ConfirmedReceived,
                                      Reserved,
