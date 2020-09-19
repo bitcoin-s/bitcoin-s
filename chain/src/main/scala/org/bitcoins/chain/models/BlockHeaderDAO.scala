@@ -286,7 +286,7 @@ case class BlockHeaderDAO()(implicit
     * This should only be used if the chain work has not been calculated
     */
   def chainTipsByHeight: Future[Vector[BlockHeaderDb]] = {
-    logger.debug(s"Getting chain tips from: ${dbConfig.config}")
+    logger.debug(s"Getting chain tips from database")
     val aggregate = {
       maxHeightQuery.flatMap { height =>
         logger.debug(s"Max block height: $height")
@@ -302,7 +302,7 @@ case class BlockHeaderDAO()(implicit
   }
 
   def chainTips: Future[Vector[BlockHeaderDb]] = {
-    logger.debug(s"Getting chain tips from: ${dbConfig.config}")
+    logger.debug(s"Getting chain tips from database")
     val aggregate = {
       maxWorkQuery.flatMap { work =>
         logger.debug(s"Max block work: $work")

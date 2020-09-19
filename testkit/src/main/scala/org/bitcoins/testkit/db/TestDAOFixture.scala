@@ -20,7 +20,6 @@ sealed trait TestDAOFixture
 
   implicit private val testConfig: TestAppConfig = TestAppConfig(
     BitcoinSTestAppConfig.tmpDir(),
-    useLogbackConf = true,
     BitcoinSTestAppConfig.configWithEmbeddedDb(Some(ProjectType.Test), pgUrl))
 
   override def beforeAll(): Unit = {

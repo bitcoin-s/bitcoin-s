@@ -50,14 +50,14 @@ jobs:
       name: Linux 2.13.2 App, Chain, Node, and Core Tests
       os: linux
       env:
-        - TEST_COMMAND="appCommonsTest/test appServerTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
+        - TEST_COMMAND="chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test"
       scala: 2.13.2
 
     - stage: test
       name: Linux 2.12.12 App, Chain, Node, and Core Tests
       os: linux
       env:
-        - TEST_COMMAND="appCommonsTest/test appServerTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
+        - TEST_COMMAND="chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test"
       scala: 2.12.12
 
     - stage: test

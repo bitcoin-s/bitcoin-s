@@ -6,7 +6,6 @@ import org.bitcoins.core.config.TestNet3
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.config.MainNet
-import ch.qos.logback.classic.Level
 import java.nio.file.Files
 
 import scala.concurrent.Await
@@ -64,8 +63,6 @@ class NodeAppConfigTest extends BitcoinSAsyncTest {
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)
-    assert(appConfig.logLevel == Level.OFF)
-    assert(appConfig.p2pLogLevel == Level.WARN)
   }
 
   override def afterAll(): Unit = {

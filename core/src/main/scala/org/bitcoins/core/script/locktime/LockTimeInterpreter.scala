@@ -20,9 +20,7 @@ import scala.annotation.tailrec
 /**
   * Created by chris on 2/8/16.
   */
-sealed abstract class LockTimeInterpreter {
-
-  private def logger = BitcoinSLogger.logger
+sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
 
   /**
     * Marks transaction as invalid if the top stack item is greater than the transaction's `nLockTime` field,

@@ -5,6 +5,7 @@ object Deps {
   object V {
     val bouncyCastle = "1.66"
     val logback = "1.2.3"
+    val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.14.3"
     val scalaTest = "3.2.2"
 
@@ -129,6 +130,10 @@ object Deps {
 
     val logback =
       "ch.qos.logback" % "logback-classic" % V.logback withSources () withJavadoc ()
+
+    val grizzledSlf4j =
+      "org.clapper" %% "grizzled-slf4j" % V.grizzledSlf4j withSources () withJavadoc ()
+
     val codehaus = "org.codehaus.janino" % "janino" % V.codehausV
 
     //for loading secp256k1 natively
@@ -177,6 +182,7 @@ object Deps {
     val junitInterface =
       "com.novocode" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
     val logback = Compile.logback % "test"
+    val grizzledSlf4j = Compile.grizzledSlf4j % "test"
     val scalacheck = Compile.scalacheck % "test"
     val scalaTest = Compile.scalaTest % "test"
     val scalaMock = "org.scalamock" %% "scalamock" % V.scalamockV
@@ -219,7 +225,8 @@ object Deps {
   val core = List(
     Compile.bouncycastle,
     Compile.scodec,
-    Compile.slf4j
+    Compile.slf4j,
+    Compile.grizzledSlf4j
   )
 
   val crypto = List(

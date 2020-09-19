@@ -1,10 +1,10 @@
 package org.bitcoins.wallet
 
+import grizzled.slf4j.Logger
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 

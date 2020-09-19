@@ -13,8 +13,7 @@ import scala.annotation.tailrec
 /**
   * Created by chris on 1/24/16.
   */
-sealed abstract class ConstantInterpreter {
-  private def logger = BitcoinSLogger.logger
+sealed abstract class ConstantInterpreter extends BitcoinSLogger {
 
   /** The next byte contains the number of bytes to be pushed onto the stack. */
   def opPushData1(

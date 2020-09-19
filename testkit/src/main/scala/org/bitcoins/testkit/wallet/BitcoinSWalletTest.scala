@@ -34,10 +34,7 @@ import org.scalatest._
 import scala.concurrent._
 import scala.concurrent.duration._
 
-trait BitcoinSWalletTest
-    extends BitcoinSFixture
-    with WalletLogger
-    with EmbeddedPg {
+trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
   import BitcoinSWalletTest._
 
   /** Wallet config with data directory set to user temp directory */

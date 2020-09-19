@@ -60,7 +60,7 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
   /** Logs the result of [[org.bitcoins.chain.validation.TipValidation.checkNewTip() checkNewTip]] */
   private def logTipResult(
       connectTipResult: TipUpdateResult,
-      currentTip: BlockHeaderDb)(implicit conf: ChainAppConfig): Unit = {
+      currentTip: BlockHeaderDb): Unit = {
     connectTipResult match {
       case TipUpdateResult.Success(tipDb) =>
         logger.trace(

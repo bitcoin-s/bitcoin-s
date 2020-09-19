@@ -2,7 +2,6 @@ package org.bitcoins.chain.config
 
 import java.nio.file.Files
 
-import ch.qos.logback.classic.Level
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.testkit.chain.ChainUnitTest
@@ -77,8 +76,6 @@ class ChainAppConfigTest extends ChainUnitTest {
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)
-    assert(appConfig.logLevel == Level.OFF)
-    assert(appConfig.p2pLogLevel == Level.WARN)
   }
 
   override def afterAll: Unit = {

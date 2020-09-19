@@ -1,8 +1,8 @@
 package org.bitcoins.chain
 
+import grizzled.slf4j.Logger
 import org.bitcoins.core.api.{Callback2, CallbackHandler}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 

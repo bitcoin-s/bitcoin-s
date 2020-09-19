@@ -4,8 +4,10 @@ import org.bitcoins.testkit.core.gen.{ScriptGenerators, WitnessGenerators}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Prop, Properties}
 
-class ScriptWitnessSpec extends Properties("ScriptWitnessSpec") {
-  private val logger = BitcoinSLogger.logger
+class ScriptWitnessSpec
+    extends Properties("ScriptWitnessSpec")
+    with BitcoinSLogger {
+
   property("serialization symmetry") = {
     Prop.forAll(WitnessGenerators.scriptWitness) { scriptWit =>
       val x = ScriptWitness(scriptWit.stack)

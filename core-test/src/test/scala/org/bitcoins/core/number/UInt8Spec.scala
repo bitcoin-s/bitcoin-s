@@ -6,8 +6,8 @@ import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.util.Try
 
-class UInt8Spec extends Properties("UInt8Spec") {
-  private val logger = BitcoinSLogger.logger
+class UInt8Spec extends Properties("UInt8Spec") with BitcoinSLogger {
+
   property("convert uint8 -> byte -> uint8") = {
     Prop.forAll(NumberGenerator.uInt8) {
       case u8: UInt8 =>

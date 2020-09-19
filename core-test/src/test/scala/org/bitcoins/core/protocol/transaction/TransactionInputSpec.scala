@@ -7,8 +7,10 @@ import org.scalacheck.{Prop, Properties}
 /**
   * Created by chris on 6/24/16.
   */
-class TransactionInputSpec extends Properties("TranactionInputSpec") {
-  private val logger = BitcoinSLogger.logger
+class TransactionInputSpec
+    extends Properties("TranactionInputSpec")
+    with BitcoinSLogger {
+
   property("Serialization symmetry") = {
     Prop.forAllNoShrink(TransactionGenerators.input) { input =>
       val result = TransactionInput(input.hex) == input
