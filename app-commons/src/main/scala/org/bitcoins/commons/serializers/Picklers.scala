@@ -1,5 +1,6 @@
 package org.bitcoins.commons.serializers
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -92,4 +93,9 @@ object Picklers {
 
   implicit val addressLabelTagPickler: ReadWriter[AddressLabelTag] =
     readwriter[String].bimap(_.name, AddressLabelTag)
+
+  implicit val lockUnspentOutputParameterPickler: ReadWriter[
+    LockUnspentOutputParameter] =
+    readwriter[String].bimap(_.toJson.render(),
+                             LockUnspentOutputParameter.fromJsonString)
 }

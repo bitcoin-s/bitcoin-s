@@ -20,6 +20,7 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.{
   BlockHash,
   BlockHeight,
@@ -46,6 +47,7 @@ import scodec.bits.ByteVector
 import ujson.Value.InvalidData
 import ujson._
 
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
@@ -328,17 +330,18 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    val spendingInfoDb = SegwitV0SpendingInfo(
+      TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+      EmptyTransactionOutput,
+      SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+      EmptyScriptWitness,
+      DoubleSha256DigestBE.empty,
+      TxoState.PendingConfirmationsSpent,
+      None,
+      None
+    )
+
     "return the wallet utxos" in {
-      val spendingInfoDb = SegwitV0SpendingInfo(
-        EmptyTransactionOutPoint,
-        EmptyTransactionOutput,
-        SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
-        EmptyScriptWitness,
-        DoubleSha256DigestBE.empty,
-        TxoState.PendingConfirmationsSpent,
-        None,
-        None
-      )
 
       (mockWalletApi.listUtxos: () => Future[Vector[SpendingInfoDb]])
         .expects()
@@ -350,7 +353,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000ffffffff -1 sats\n","error":null}""")
+          responseAs[String] == """{"result":"000000000000000000000000000000000000000000000000000000000000000000000000 -1 sats\n","error":null}""")
       }
     }
 
@@ -524,6 +527,66 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(contentType == `application/json`)
         assert(responseAs[
           String] == """{"result":"""" + testAddressStr + """","error":null}""")
+      }
+    }
+
+    "lock unspent" in {
+      (mockWalletApi.listUtxos: () => Future[Vector[SpendingInfoDb]])
+        .expects()
+        .returning(Future.successful(Vector(spendingInfoDb)))
+        .anyNumberOfTimes()
+
+      (mockWalletApi
+        .markUTXOsAsReserved(_: Vector[SpendingInfoDb]))
+        .expects(Vector(spendingInfoDb))
+        .returning(Future.successful(Vector(spendingInfoDb)))
+        .anyNumberOfTimes()
+
+      (mockWalletApi
+        .unmarkUTXOsAsReserved(_: Vector[SpendingInfoDb]))
+        .expects(Vector(spendingInfoDb))
+        .returning(Future.successful(Vector(spendingInfoDb)))
+        .anyNumberOfTimes()
+
+      val route1 =
+        walletRoutes.handleCommand(
+          ServerCommand("lockunspent", Arr(Bool(false), Arr())))
+
+      Get() ~> route1 ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":true,"error":null}""")
+      }
+
+      val route2 =
+        walletRoutes.handleCommand(
+          ServerCommand("lockunspent", Arr(Bool(true), Arr())))
+
+      Get() ~> route2 ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":true,"error":null}""")
+      }
+
+      val obj = mutable.LinkedHashMap(
+        "txid" -> Str(spendingInfoDb.outPoint.txIdBE.hex),
+        "vout" -> Num(spendingInfoDb.outPoint.vout.toInt)
+      )
+
+      val route3 =
+        walletRoutes.handleCommand(
+          ServerCommand("lockunspent", Arr(Bool(true), Arr(obj))))
+
+      Get() ~> route3 ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":true,"error":null}""")
+      }
+
+      val route4 =
+        walletRoutes.handleCommand(
+          ServerCommand("lockunspent", Arr(Bool(true), Arr(obj))))
+
+      Get() ~> route4 ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":true,"error":null}""")
       }
     }
 
