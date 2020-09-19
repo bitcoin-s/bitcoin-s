@@ -37,7 +37,6 @@ import scala.concurrent.{ExecutionContext, Future}
 trait ChainUnitTest
     extends BitcoinSFixture
     with ChainFixtureHelper
-    with ChainVerificationLogger
     with CachedChainAppConfig {
 
   implicit lazy val appConfig: ChainAppConfig =
@@ -639,9 +638,7 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   /** Syncs the given chain handler to the given bitcoind */
   def syncFromBitcoind(bitcoind: BitcoindRpcClient, chainHandler: ChainHandler)(
-      implicit
-      ec: ExecutionContext,
-      chainAppConfig: ChainAppConfig): Future[ChainApi] = {
+      implicit ec: ExecutionContext): Future[ChainApi] = {
     //sync headers
     //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
     val getBestBlockHashFunc = { () =>

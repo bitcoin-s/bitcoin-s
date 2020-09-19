@@ -4,8 +4,8 @@ import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Prop, Properties}
 
-class HashTypeSpec extends Properties("HashTypeSpec") {
-  private val logger = BitcoinSLogger.logger
+class HashTypeSpec extends Properties("HashTypeSpec") with BitcoinSLogger {
+
   property("serialization symmetry") = {
     Prop.forAll(NumberGenerator.int32s) { i32 =>
       val hashType = HashType.fromBytes(i32.bytes)

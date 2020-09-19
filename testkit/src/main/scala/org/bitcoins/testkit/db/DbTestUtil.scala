@@ -39,7 +39,6 @@ trait TestDbManagement extends DbManagement {
 
 case class TestAppConfig(
     private val directory: Path,
-    override val useLogbackConf: Boolean,
     private val conf: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with TestDbManagement
@@ -52,7 +51,7 @@ case class TestAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): TestAppConfig =
-    TestAppConfig(directory, useLogbackConf, configs: _*)
+    TestAppConfig(directory, configs: _*)
 
   protected[bitcoins] def baseDatadir: Path = directory
 

@@ -21,9 +21,7 @@ import scodec.bits.ByteVector
   * bitcoinj version of this
   * [[https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008]]
   */
-sealed abstract class TransactionSignatureSerializer {
-
-  private val logger = BitcoinSLogger.logger
+sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
 
   /**
     * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it

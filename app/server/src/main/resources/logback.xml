@@ -1,16 +1,4 @@
-<configuration>  
-    <!-- see how long statements took to execute by setting to DEBUG -->
-    <logger name="slick.jdbc.JdbcBackend.benchmark" level="INFO"/>
-
-    <!-- see what statements are executed by setting to DEBUG -->
-    <logger name="slick.jdbc.JdbcBackend.statement" level="INFO"/>
-
-    <!-- see what slick is compiling to in sql -->
-    <logger name="slick.compiler" level="INFO"/>
-
-    <!-- see what's returned by Slick -->
-    <logger name="slick.jdbc.StatementInvoker.result" level="INFO"/>
-
+<configuration scan="true" scanPeriod="15 seconds" >
     <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%date{yyyy-MM-dd'T'HH:mm:ss,SSXXX} %level [%logger{0}] %msg%n</pattern>
@@ -43,4 +31,79 @@
         <appender-ref ref="ASYNC"/>
         <appender-ref ref="FILE"/>
     </root>
+
+    <!-- ╔═══════════════════════╗ -->
+    <!-- ║   Bitcoin-S logging   ║-->
+    <!-- ╚═══════════════════════╝ -->
+
+    <!-- ╔═══════════════════╗ -->
+    <!-- ║   Configuration   ║ -->
+    <!-- ╚═══════════════════╝ -->
+
+    <!-- inspect resolved DB connection -->
+    <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
+
+    <!-- inspect resolved config -->
+    <logger name="org.bitcoins.chain.config" level="WARN"/>
+    <logger name="org.bitcoins.node.config" level="WARN"/>
+    <logger name="org.bitcoins.wallet.config" level="WARN"/>
+
+    <!-- inspect table creation, etc -->
+    <logger name="org.bitcoins.chain.db" level="WARN" />
+    <logger name="org.bitcoins.node.db" level="WARN" />
+    <logger name="org.bitcoins.wallet.db" level="WARN" />
+
+    <!-- ╔═════════════════╗ -->
+    <!-- ║   Node module   ║ -->
+    <!-- ╚═════════════════╝ -->
+
+    <!-- See incoming message names and the peer it's sent from -->
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO"/>
+
+    <!-- See outgoing message names and the peer it's sent to -->
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="INFO"/>
+
+    <!-- Inspect handling of headers and inventory messages  -->
+    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
+
+    <!-- inspect TCP details -->
+    <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
+
+    <!-- ╔════════════════════╗ -->
+    <!-- ║   Chain module     ║ -->
+    <!-- ╚════════════════════╝ -->
+
+    <!-- See queries received by chain handler, as well as result of  -->
+    <!-- connecting new block headers to chain -->
+    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="WARN"/>
+
+    <logger name="org.bitcoins.chain.validation" level="WARN"/>
+
+    <!-- ╔═════════════════════╗ -->
+    <!-- ║   Wallet module     ║ -->
+    <!-- ╚═════════════════════╝ -->
+
+    <!-- ╔═══════════════════════════╗ -->
+    <!-- ║   Bitcoin-S logging end   ║-->
+    <!-- ╚═══════════════════════════╝ -->
+
+    <!-- ╔═════════════════════════╗ -->
+    <!-- ║   External libraries    ║ -->
+    <!-- ╚═════════════════════════╝ -->
+
+    <!-- Disable slick logging in server -->
+    <logger name="slick" level="OFF"/>
+    <logger name="com.zaxxer" level="OFF"/>
+
+    <!-- Get rid of messages like this:
+    Connection attempt failed. Backing off new connection
+    attempts for at least 800 milliseconds. -->
+    <logger name="akka.http.impl.engine.client.PoolGateway" level="OFF"/>
+
+    <!-- get rid of "Slf4jLogger started" messages -->
+    <logger name="akka.event.slf4j.Slf4jLogger" level="OFF"/>
+
+    <!-- get rid of "Running CoordinatedShutdown Phase" messages -->
+    <logger name="akka.actor.slf4j.CoordinatedShutdown" level="OFF"/>
+
 </configuration>

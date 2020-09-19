@@ -2,7 +2,6 @@ package org.bitcoins.chain.blockchain.sync
 
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -25,8 +24,7 @@ abstract class ChainSync extends ChainVerificationLogger {
       chainHandler: ChainHandler,
       getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader],
       getBestBlockHashFunc: () => Future[DoubleSha256DigestBE])(implicit
-      ec: ExecutionContext,
-      conf: ChainAppConfig): Future[ChainApi] = {
+      ec: ExecutionContext): Future[ChainApi] = {
     val currentTipsF: Future[Vector[BlockHeaderDb]] = {
       chainHandler.blockHeaderDAO.chainTips
     }
@@ -69,8 +67,7 @@ abstract class ChainSync extends ChainVerificationLogger {
       tips: Vector[BlockHeaderDb],
       bestBlockHash: DoubleSha256DigestBE,
       getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader])(implicit
-      ec: ExecutionContext,
-      conf: ChainAppConfig): Future[ChainApi] = {
+      ec: ExecutionContext): Future[ChainApi] = {
     require(tips.nonEmpty, s"Cannot sync without the genesis block")
 
     //we need to walk backwards on the chain until we get to one of our tips

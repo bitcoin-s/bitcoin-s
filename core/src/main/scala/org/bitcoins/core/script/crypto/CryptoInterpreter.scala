@@ -22,9 +22,7 @@ import scodec.bits.ByteVector
 /**
   * Created by chris on 1/6/16.
   */
-sealed abstract class CryptoInterpreter {
-
-  private def logger = BitcoinSLogger.logger
+sealed abstract class CryptoInterpreter extends BitcoinSLogger {
 
   /** The input is hashed twice: first with SHA-256 and then with RIPEMD-160. */
   def opHash160(

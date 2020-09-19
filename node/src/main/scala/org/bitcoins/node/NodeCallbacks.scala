@@ -1,11 +1,11 @@
 package org.bitcoins.node
 
+import grizzled.slf4j.Logger
 import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 

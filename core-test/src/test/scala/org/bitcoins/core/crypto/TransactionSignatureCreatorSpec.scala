@@ -11,8 +11,8 @@ import org.scalacheck.{Prop, Properties}
   * Created by chris on 7/25/16.
   */
 class TransactionSignatureCreatorSpec
-    extends Properties("TransactionSignatureCreatorSpec") {
-  private val logger = BitcoinSLogger.logger
+    extends Properties("TransactionSignatureCreatorSpec")
+    with BitcoinSLogger {
 
   property("Must generate a valid signature for a p2pk transaction") =
     Prop.forAll(TransactionGenerators.signedP2PKTransaction) {

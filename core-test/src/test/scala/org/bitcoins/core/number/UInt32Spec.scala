@@ -9,8 +9,7 @@ import scala.util.Try
 /**
   * Created by chris on 6/16/16.
   */
-class UInt32Spec extends Properties("UInt32") {
-  private val logger = BitcoinSLogger.logger
+class UInt32Spec extends Properties("UInt32") with BitcoinSLogger {
 
   property("serialization symmetry") = {
     Prop.forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>

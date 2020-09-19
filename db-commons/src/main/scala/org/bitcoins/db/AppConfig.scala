@@ -2,7 +2,6 @@ package org.bitcoins.db
 
 import java.nio.file.{Files, Path, Paths}
 
-import ch.qos.logback.classic.Level
 import com.typesafe.config._
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.ChainParams
@@ -10,7 +9,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import scala.concurrent.{Future}
+import scala.concurrent.Future
 import scala.util.matching.Regex
 import scala.util.{Failure, Properties, Success, Try}
 
@@ -21,9 +20,7 @@ import scala.util.{Failure, Properties, Success, Try}
   * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
   *      for more information.
   */
-abstract class AppConfig extends LoggerConfig with StartStopAsync[Unit] {
-
-  private val logger = BitcoinSLogger.logger
+abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
   /**
     * Starts this project.
@@ -73,7 +70,7 @@ abstract class AppConfig extends LoggerConfig with StartStopAsync[Unit] {
 
     val numOverrides = configs.length + 1
 
-    if (logger.isDebugEnabled()) {
+    if (logger.logger.isDebugEnabled()) {
       // force lazy evaluation before we print
       // our lines
       val oldConfStr = this.config.asReadableJson
@@ -84,7 +81,7 @@ abstract class AppConfig extends LoggerConfig with StartStopAsync[Unit] {
     }
 
     val configOverrides = firstOverride +: configs
-    if (logger.isTraceEnabled()) {
+    if (logger.logger.isTraceEnabled()) {
       configOverrides.zipWithIndex.foreach {
         case (c, idx) => logger.trace(s"Override no. $idx: ${c.asReadableJson}")
       }
@@ -102,7 +99,7 @@ abstract class AppConfig extends LoggerConfig with StartStopAsync[Unit] {
     }
 
     // to avoid non-necessary lazy load
-    if (logger.isDebugEnabled()) {
+    if (logger.logger.isDebugEnabled()) {
       // force lazy load before we print
       val newConfStr = newConf.config.asReadableJson
 
@@ -157,76 +154,6 @@ abstract class AppConfig extends LoggerConfig with StartStopAsync[Unit] {
     }
     baseDatadir.resolve(lastDirname)
   }
-
-  override val logLocation: Path = {
-    val path = datadir
-    // Set property for loggers
-    System.setProperty("bitcoins.log.location", path.toAbsolutePath.toString)
-    path
-  }
-
-  private def stringToLogLevel(str: String): Option[Level] =
-    str.toLowerCase() match {
-      case "trace"   => Some(Level.TRACE)
-      case "debug"   => Some(Level.DEBUG)
-      case "info"    => Some(Level.INFO)
-      case "warn"    => Some(Level.WARN)
-      case "error"   => Some(Level.ERROR)
-      case "off"     => Some(Level.OFF)
-      case _: String => None
-    }
-
-  /** The default logging level */
-  lazy val logLevel: Level = {
-    val levelString = config.getString("logging.level")
-    stringToLogLevel(levelString).getOrElse(
-      throw new ConfigException.WrongType(
-        config.origin(),
-        s"logging.level ($levelString) is not a valid logging level"))
-  }
-
-  /** Whether or not we should log to file */
-  lazy val disableFileLogging = config.getBoolean("logging.disable-file")
-
-  /** Whether or not we should log to stdout */
-  lazy val disableConsoleLogging = config.getBoolean("logging.disable-console")
-
-  private def levelOrDefault(key: String): Level =
-    config
-      .getStringOrNone(key) match {
-      case None => logLevel
-      case Some(levelStr) =>
-        stringToLogLevel(levelStr).getOrElse {
-          throw new ConfigException.WrongType(
-            config.origin(),
-            s"$key ($levelStr) is not a valid logging level")
-        }
-    }
-
-  /** The logging level for our P2P logger */
-  override lazy val p2pLogLevel: Level = levelOrDefault("logging.p2p")
-
-  /** The logging level for our chain verification logger */
-  override lazy val verificationLogLevel: Level =
-    levelOrDefault("logging.chain-verification")
-
-  /** The logging level for our key handling logger */
-  override lazy val keyHandlingLogLevel: Level =
-    levelOrDefault("logging.key-handling")
-
-  /** Logging level for wallet */
-  override lazy val walletLogLevel: Level =
-    levelOrDefault("logging.wallet")
-
-  /** Logging level for HTTP RPC server */
-  override lazy val httpLogLevel: Level = levelOrDefault("logging.http")
-
-  /** Logging level for database interactions */
-  override lazy val databaseLogLevel: Level = levelOrDefault("logging.database")
-
-  /** Use logback config instead */
-  override val useLogbackConf: Boolean =
-    config.getBooleanOrElse("logging.logback", default = false)
 
   lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
     Try {
