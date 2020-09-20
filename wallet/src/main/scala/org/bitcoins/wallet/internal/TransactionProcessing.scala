@@ -2,6 +2,7 @@ package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.api.wallet.{AddUtxoError, AddUtxoSuccess}
 import org.bitcoins.core.api.wallet.db._
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -226,7 +227,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   private def markAsPendingSpent(
       out: SpendingInfoDb): Future[Option[SpendingInfoDb]] = {
     out.state match {
-      case TxoState.ConfirmedReceived | TxoState.PendingConfirmationsReceived =>
+      case TxoState.ConfirmedReceived | TxoState.PendingConfirmationsReceived |
+          TxoState.ImmatureCoinbase =>
         val updated =
           out.copyWithState(state = TxoState.PendingConfirmationsSpent)
         val updatedF =
@@ -297,7 +299,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             case TxoState.PendingConfirmationsReceived |
                 TxoState.ConfirmedReceived |
                 TxoState.PendingConfirmationsSpent | TxoState.ConfirmedSpent |
-                TxoState.DoesNotExist =>
+                TxoState.DoesNotExist | TxoState.ImmatureCoinbase =>
               txoWithHash
           }
 
@@ -355,7 +357,9 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           case None =>
             TxoState.PendingConfirmationsReceived
           case Some(confs) =>
-            if (confs >= walletConfig.requiredConfirmations) {
+            if (transaction.isCoinbase && confs <= Consensus.coinbaseMaturity) {
+              TxoState.ImmatureCoinbase
+            } else if (confs >= walletConfig.requiredConfirmations) {
               TxoState.ConfirmedReceived
             } else {
               TxoState.PendingConfirmationsReceived

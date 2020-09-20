@@ -8,6 +8,7 @@ import org.bitcoins.core.api.wallet.{
   AddUtxoSuccess
 }
 import org.bitcoins.core.compat._
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -109,6 +110,16 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           case Some(confs) =>
             txos.map { txo =>
               txo.state match {
+                case TxoState.ImmatureCoinbase =>
+                  if (confs > Consensus.coinbaseMaturity) {
+                    if (confs >= walletConfig.requiredConfirmations) {
+                      txo.copyWithState(TxoState.ConfirmedReceived)
+                    } else {
+                      txo.copyWithState(TxoState.PendingConfirmationsReceived)
+                    }
+                  } else {
+                    txo
+                  }
                 case TxoState.PendingConfirmationsReceived =>
                   if (confs >= walletConfig.requiredConfirmations) {
                     txo.copyWithState(TxoState.ConfirmedReceived)
