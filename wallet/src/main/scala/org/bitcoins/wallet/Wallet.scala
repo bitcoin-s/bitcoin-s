@@ -251,7 +251,8 @@ abstract class Wallet
                   TxoState.ConfirmedReceived =>
                 txo.output.value
               case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
-                  TxoState.ConfirmedSpent | TxoState.DoesNotExist =>
+                  TxoState.ConfirmedSpent | TxoState.DoesNotExist |
+                  TxoState.ImmatureCoinbase =>
                 CurrencyUnits.zero
             }
           }
