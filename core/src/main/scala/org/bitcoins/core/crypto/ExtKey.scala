@@ -15,6 +15,7 @@ import org.bitcoins.crypto.{
   FieldElement,
   MaskedToString,
   NetworkElement,
+  SchnorrDigitalSignature,
   StringFactory
 }
 import scodec.bits.{ByteVector, HexStringSyntax}
@@ -263,6 +264,9 @@ sealed abstract class ExtPrivateKey
       ByteVector) => Future[ECDigitalSignature] = {
     key.signWithEntropyFunction
   }
+
+  override def schnorrSignFunction: ByteVector => Future[
+    SchnorrDigitalSignature] = key.schnorrSignFunction
 
   /** Signs the given bytes with the given [[BIP32Path path]] */
   override def deriveAndSignFuture: (

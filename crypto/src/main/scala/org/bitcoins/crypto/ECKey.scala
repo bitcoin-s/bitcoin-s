@@ -112,10 +112,12 @@ sealed abstract class ECPrivateKey
       Future(signWithEntropy(bytes, entropy))
   }
 
-  def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
-    val auxRand = ECPrivateKey.freshPrivateKey.bytes
-    schnorrSign(dataToSign, auxRand)
-  }
+  override def schnorrSignFunction: ByteVector => Future[
+    SchnorrDigitalSignature] =
+    dataToSign => {
+      val auxRand = ECPrivateKey.freshPrivateKey.bytes
+      Future.successful(schnorrSign(dataToSign, auxRand))
+    }
 
   // TODO: match on CryptoContext once secp version is added
   def schnorrSign(

@@ -11,7 +11,7 @@ import org.bitcoins.core.wallet.builder.TxBuilderError
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{DummyECDigitalSignature, Sign}
+import org.bitcoins.crypto.Sign
 
 import scala.annotation.tailrec
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -138,9 +138,7 @@ object TxUtil {
       case (inputInfo, index) =>
         val mockSigners =
           inputInfo.pubKeys.take(inputInfo.requiredSigs).map { pubKey =>
-            Sign(_ => Future.successful(DummyECDigitalSignature),
-                 (_, _) => Future.successful(DummyECDigitalSignature),
-                 pubKey)
+            Sign.dummySign(pubKey)
           }
 
         val mockSpendingInfo =

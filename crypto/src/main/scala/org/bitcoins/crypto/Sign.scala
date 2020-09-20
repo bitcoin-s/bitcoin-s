@@ -51,6 +51,11 @@ trait Sign {
       entropy: ByteVector): Future[ECDigitalSignature] =
     signWithEntropyFunction(bytes, entropy)
 
+  def schnorrSignFunction: ByteVector => Future[SchnorrDigitalSignature]
+
+  def schnorrSignFuture(bytes: ByteVector): Future[SchnorrDigitalSignature] =
+    schnorrSignFunction(bytes)
+
   private def signLowRFuture(bytes: ByteVector, startAt: Long)(implicit
       ec: ExecutionContext): Future[ECDigitalSignature] = {
     val startBytes = ByteVector.fromLong(startAt).padLeft(32)
@@ -87,6 +92,10 @@ trait Sign {
     Await.result(signWithEntropyFuture(bytes, entropy), 30.seconds)
   }
 
+  def schnorrSign(bytes: ByteVector): SchnorrDigitalSignature = {
+    Await.result(schnorrSignFuture(bytes), 30.seconds)
+  }
+
   def publicKey: ECPublicKey
 }
 
@@ -97,6 +106,7 @@ object Sign {
       signWithEntropyFunction: (
           ByteVector,
           ByteVector) => Future[ECDigitalSignature],
+      schnorrSignFunction: ByteVector => Future[SchnorrDigitalSignature],
       publicKey: ECPublicKey)
       extends Sign
 
@@ -105,13 +115,18 @@ object Sign {
       signWithEntropyFunction: (
           ByteVector,
           ByteVector) => Future[ECDigitalSignature],
+      schnorrSignFunction: ByteVector => Future[SchnorrDigitalSignature],
       pubKey: ECPublicKey): Sign = {
-    SignImpl(signFunction, signWithEntropyFunction, pubKey)
+    SignImpl(signFunction, signWithEntropyFunction, schnorrSignFunction, pubKey)
   }
 
-  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): Sign = {
+  def constant(
+      sig: ECDigitalSignature,
+      schnorrSig: SchnorrDigitalSignature,
+      pubKey: ECPublicKey): Sign = {
     SignImpl(_ => Future.successful(sig),
              (_, _) => Future.successful(sig),
+             _ => Future.successful(schnorrSig),
              pubKey)
   }
 
@@ -124,6 +139,6 @@ object Sign {
     * a specific private key on another server
     */
   def dummySign(publicKey: ECPublicKey): Sign = {
-    constant(EmptyDigitalSignature, publicKey)
+    constant(EmptyDigitalSignature, SchnorrDigitalSignature.dummy, publicKey)
   }
 }

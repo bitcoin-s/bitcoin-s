@@ -9,6 +9,9 @@ case class SchnorrDigitalSignature(rx: SchnorrNonce, sig: FieldElement)
 
 object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
 
+  val dummy: SchnorrDigitalSignature =
+    SchnorrDigitalSignature(SchnorrNonce(FieldElement.one), FieldElement.one)
+
   override def fromBytes(bytes: ByteVector): SchnorrDigitalSignature = {
     require(bytes.length == 64,
             s"SchnorrDigitalSignature must be exactly 64 bytes, got $bytes")
