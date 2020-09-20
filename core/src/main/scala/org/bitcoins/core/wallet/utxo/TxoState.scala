@@ -14,6 +14,9 @@ object TxoState extends StringFactory[TxoState] {
   /** Means that no funds have been sent to this utxo EVER */
   final case object DoesNotExist extends TxoState
 
+  /** A coinbase output that has not reached maturity and cannot be spent yet.
+    * https://bitcoin.stackexchange.com/questions/1991/what-is-the-block-maturation-time
+    */
   final case object ImmatureCoinbase extends TxoState
 
   /** Means we have received funds to this utxo, but they are not confirmed */

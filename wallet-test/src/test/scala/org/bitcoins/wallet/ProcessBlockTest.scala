@@ -44,13 +44,19 @@ class ProcessBlockTest extends BitcoinSWalletTest {
     val WalletWithBitcoindV19(wallet, bitcoind) = param
     for {
       startingUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
+      startingBalance <- wallet.getBalance()
       _ = assert(startingUtxos.isEmpty)
+      _ = assert(startingBalance == Satoshis.zero)
       addr <- wallet.getNewAddress()
       hashes <- bitcoind.generateToAddress(101, addr)
       blocks <- FutureUtil.sequentially(hashes)(bitcoind.getBlockRaw)
       _ <- FutureUtil.sequentially(blocks)(wallet.processBlock)
       utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
-    } yield assert(utxos.size == 100)
+      balance <- wallet.getBalance()
+    } yield {
+      assert(utxos.size == 100)
+      assert(balance == Bitcoins(50))
+    }
   }
 
   it must "process coinbase txs using filters" in { param =>
@@ -58,7 +64,9 @@ class ProcessBlockTest extends BitcoinSWalletTest {
 
     for {
       startingUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
+      startingBalance <- wallet.getBalance()
       _ = assert(startingUtxos.isEmpty)
+      _ = assert(startingBalance == Satoshis.zero)
       addr <- wallet.getNewAddress()
       hashes <- bitcoind.generateToAddress(101, addr)
       filters <- FutureUtil.sequentially(hashes)(
@@ -66,6 +74,10 @@ class ProcessBlockTest extends BitcoinSWalletTest {
       filtersWithBlockHash = hashes.map(_.flip).zip(filters.map(_.filter))
       _ <- wallet.processCompactFilters(filtersWithBlockHash)
       utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
-    } yield assert(utxos.size == 100)
+      balance <- wallet.getBalance()
+    } yield {
+      assert(utxos.size == 100)
+      assert(balance == Bitcoins(50))
+    }
   }
 }
