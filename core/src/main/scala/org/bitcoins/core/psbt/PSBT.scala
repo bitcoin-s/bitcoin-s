@@ -565,8 +565,31 @@ case class PSBT(
     val inputMap = inputMaps(index)
     require(inputMap.isFinalized, "Input must be finalized to verify")
 
-    val wUtxoOpt = inputMap.witnessUTXOOpt
     val utxoOpt = inputMap.nonWitnessOrUnknownUTXOOpt
+    val wUtxoOpt = inputMap.witnessUTXOOpt match {
+      case Some(wutxo) => Some(wutxo)
+      case None =>
+        utxoOpt match {
+          case Some(utxo) =>
+            val output = utxo.transactionSpent.outputs(
+              transaction.inputs(index).previousOutput.vout.toInt)
+            output.scriptPubKey match {
+              case _: RawScriptPubKey => None
+              case _: P2SHScriptPubKey =>
+                inputMap.finalizedScriptSigOpt match {
+                  case Some(
+                        FinalizedScriptSig(scriptSig: P2SHScriptSignature)) =>
+                    scriptSig.redeemScript match {
+                      case _: NonWitnessScriptPubKey => None
+                      case _: WitnessScriptPubKey    => Some(WitnessUTXO(output))
+                    }
+                  case None | Some(_) => None
+                }
+              case _: WitnessScriptPubKey => Some(WitnessUTXO(output))
+            }
+          case None => None
+        }
+    }
 
     val newInput = {
       val input = transaction.inputs(index)
@@ -583,7 +606,7 @@ case class PSBT(
         inputMap.finalizedScriptWitnessOpt match {
           case Some(scriptWit) =>
             val wtx = {
-              val wtx = WitnessTransaction.toWitnessTx(transaction)
+              val wtx = WitnessTransaction.toWitnessTx(tx)
               wtx.updateWitness(index, scriptWit.scriptWitness)
             }
             val output = wUtxo.witnessUTXO
