@@ -105,7 +105,9 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
       offerFundingInputs = offerFundingInputs,
       acceptFundingInputs = acceptFundingInputs,
       offerChangeSPK = offerChangeAddress.scriptPubKey,
-      acceptChangeSPK = acceptChangeAddress.scriptPubKey
+      acceptChangeSPK = acceptChangeAddress.scriptPubKey,
+      offerPayoutSPK = offerFinalAddress.scriptPubKey,
+      acceptPayoutSPK = acceptFinalAddress.scriptPubKey
     )
   }
 
