@@ -106,6 +106,10 @@ For more information on how to use our built in `cli` to interact with the serve
     - `message` - message to put into OP_RETURN commitment
     - `--hashMessage` - should the message be hashed before commitment
     - `--feerate <value>` - Fee rate in sats per virtual byte
+ - `lockunspent` `unlock` `transactions` - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.
+    - `unlock` - Whether to unlock (true) or lock (false) the specified transactions
+    - `transactions` - The transaction outpoints to unlock/lock
+
 
 #### Network
  - `getpeers` - List the connected peers

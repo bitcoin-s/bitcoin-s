@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.AnyHDWalletApi
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.AddressLabelTagType
@@ -101,6 +102,40 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
             val labelVec = Vector(labelOpt).flatten
             wallet.getNewAddress(labelVec).map { address =>
               Server.httpSuccess(address)
+            }
+          }
+      }
+
+    case ServerCommand("lockunspent", arr) =>
+      LockUnspent.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(LockUnspent(unlock, outputParams)) =>
+          complete {
+            val func: Vector[SpendingInfoDb] => Future[Vector[SpendingInfoDb]] =
+              utxos => {
+                if (unlock) wallet.unmarkUTXOsAsReserved(utxos)
+                else wallet.markUTXOsAsReserved(utxos)
+              }
+
+            for {
+              utxos <- {
+                if (outputParams.nonEmpty) {
+                  wallet
+                    .listUtxos()
+                    .map(_.filter(utxo =>
+                      outputParams.exists(_.outPoint == utxo.outPoint)))
+                } else {
+                  wallet.listUtxos()
+                }
+              }
+              reserved <- func(utxos)
+            } yield {
+              if (reserved.nonEmpty) {
+                Server.httpSuccess(true)
+              } else {
+                Server.httpSuccess(false)
+              }
             }
           }
       }

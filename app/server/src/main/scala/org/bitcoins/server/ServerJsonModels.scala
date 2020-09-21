@@ -1,5 +1,6 @@
 package org.bitcoins.server
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
@@ -36,6 +37,29 @@ object GetNewAddress extends ServerJsonModels {
     }
 
     Try(GetNewAddress(labelOpt))
+  }
+}
+
+case class LockUnspent(
+    unlock: Boolean,
+    outputParam: Vector[LockUnspentOutputParameter])
+
+object LockUnspent extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[LockUnspent] = {
+    jsArr.arr.toList match {
+      case unlockJs :: outPointsJs :: Nil =>
+        Try {
+          val unlock = unlockJs.bool
+          val outPoints = jsToLockUnspentOutputParameters(outPointsJs).toVector
+
+          LockUnspent(unlock, outPoints)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
   }
 }
 
@@ -486,6 +510,15 @@ trait ServerJsonModels {
 
   def jsToTransactionOutPoint(js: Value): TransactionOutPoint =
     TransactionOutPoint(js.str)
+
+  def jsToLockUnspentOutputParameter(js: Value): LockUnspentOutputParameter =
+    LockUnspentOutputParameter.fromJson(js)
+
+  def jsToLockUnspentOutputParameters(
+      js: Value): Seq[LockUnspentOutputParameter] = {
+    js.arr.foldLeft(Seq.empty[LockUnspentOutputParameter])((seq, outPoint) =>
+      seq :+ jsToLockUnspentOutputParameter(outPoint))
+  }
 
   def jsToCoinSelectionAlgo(js: Value): CoinSelectionAlgo =
     CoinSelectionAlgo

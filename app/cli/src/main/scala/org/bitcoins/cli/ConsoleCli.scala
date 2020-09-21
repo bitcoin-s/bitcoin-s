@@ -2,6 +2,7 @@ package org.bitcoins.cli
 
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
@@ -823,6 +824,31 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("lockunspent")
+        .action((_, conf) =>
+          conf.copy(command = LockUnspent(unlock = false, Vector.empty)))
+        .text("Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs." +
+          "\nIf no transaction outputs are specified when unlocking then all current locked transaction outputs are unlocked.")
+        .children(
+          arg[Boolean]("unlock")
+            .text("Whether to unlock (true) or lock (false) the specified transactions")
+            .required()
+            .action((unlock, conf) =>
+              conf.copy(command = conf.command match {
+                case lockUnspent: LockUnspent =>
+                  lockUnspent.copy(unlock = unlock)
+                case other => other
+              })),
+          arg[Seq[LockUnspentOutputParameter]]("transactions")
+            .text("The transaction outpoints to unlock/lock")
+            .required()
+            .action((outPoints, conf) =>
+              conf.copy(command = conf.command match {
+                case lockUnspent: LockUnspent =>
+                  lockUnspent.copy(outPoints = outPoints.toVector)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
@@ -1042,6 +1068,9 @@ object ConsoleCli {
         RequestParam("getaddressinfo", Seq(up.writeJs(address)))
       case GetNewAddress(labelOpt) =>
         RequestParam("getnewaddress", Seq(up.writeJs(labelOpt)))
+      case LockUnspent(unlock, outPoints) =>
+        RequestParam("lockunspent",
+                     Seq(up.writeJs(unlock), up.writeJs(outPoints)))
       case LabelAddress(address, label) =>
         RequestParam("labeladdress",
                      Seq(up.writeJs(address), up.writeJs(label)))
@@ -1326,6 +1355,11 @@ object CliCommand {
       message: String,
       hashMessage: Boolean,
       feeRateOpt: Option[SatoshisPerVirtualByte])
+      extends CliCommand
+
+  case class LockUnspent(
+      unlock: Boolean,
+      outPoints: Vector[LockUnspentOutputParameter])
       extends CliCommand
 
   case class LabelAddress(address: BitcoinAddress, label: AddressLabelTag)
