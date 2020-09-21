@@ -4,10 +4,16 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
-import org.bitcoins.core.protocol.transaction.TransactionInput
+import org.bitcoins.core.protocol.transaction.{
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import play.api.libs.json.{Json, Writes}
+import ujson.{Num, Str, Value}
+
+import scala.collection.mutable
 
 object RpcOpts {
 
@@ -109,10 +115,37 @@ object RpcOpts {
 
   case class ImportMultiAddress(address: BitcoinAddress)
 
-  case class LockUnspentOutputParameter(txid: DoubleSha256DigestBE, vout: Int)
+  case class LockUnspentOutputParameter(txid: DoubleSha256DigestBE, vout: Int) {
+
+    lazy val outPoint: TransactionOutPoint =
+      TransactionOutPoint(txid, UInt32(vout))
+
+    lazy val toJson: Value = {
+      mutable.LinkedHashMap(
+        "txid" -> Str(txid.hex),
+        "vout" -> Num(vout)
+      )
+    }
+  }
 
   implicit val lockUnspentParameterWrites: Writes[LockUnspentOutputParameter] =
     Json.writes[LockUnspentOutputParameter]
+
+  object LockUnspentOutputParameter {
+
+    def fromJsonString(str: String): LockUnspentOutputParameter = {
+      val json = ujson.read(str)
+      fromJson(json)
+    }
+
+    def fromJson(json: Value): LockUnspentOutputParameter = {
+      val obj = json.obj
+      val txId = DoubleSha256DigestBE(obj("txid").str)
+      val vout = obj("vout").num.toInt
+
+      LockUnspentOutputParameter(txId, vout)
+    }
+  }
 
   sealed trait AddNodeArgument
 

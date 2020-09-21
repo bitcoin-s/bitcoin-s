@@ -2,6 +2,7 @@ package org.bitcoins.cli
 
 import java.time.{ZoneId, ZonedDateTime}
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
@@ -160,6 +161,15 @@ object CliReaders {
       val arity: Int = 1
 
       val reads: String => Sha256DigestBE = Sha256DigestBE.fromHex
+    }
+
+  implicit val lockUnspentOutputParameterReads: Read[
+    LockUnspentOutputParameter] =
+    new Read[LockUnspentOutputParameter] {
+      val arity: Int = 1
+
+      val reads: String => LockUnspentOutputParameter =
+        LockUnspentOutputParameter.fromJsonString
     }
 
   implicit val dlcOfferReads: Read[DLCOffer] = new Read[DLCOffer] {
