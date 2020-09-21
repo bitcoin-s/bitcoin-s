@@ -355,6 +355,37 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
+  def addFinalizedScriptWitnessToInput(
+      scriptSignature: ScriptSignature,
+      scriptWitness: ScriptWitness,
+      index: Int): PSBT = {
+    require(index >= 0,
+            s"index must be greater than or equal to 0, got: $index")
+    require(
+      index < inputMaps.size,
+      s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
+    require(!inputMaps(index).isFinalized,
+            s"Cannot update an InputPSBTMap that is finalized, index: $index")
+
+    val prevInput = inputMaps(index)
+
+    require(
+      prevInput.elements.forall {
+        case _: NonWitnessOrUnknownUTXO | _: WitnessUTXO | _: Unknown => true
+        case _: InputPSBTRecord                                       => false
+      },
+      s"Input already contains fields: ${prevInput.elements}"
+    )
+
+    val finalizedScripts = Vector(FinalizedScriptSig(scriptSignature),
+                                  FinalizedScriptWitness(scriptWitness))
+
+    val records = prevInput.elements ++ finalizedScripts
+    val newMap = InputPSBTMap(records)
+    val newInputMaps = inputMaps.updated(index, newMap)
+    PSBT(globalMap, newInputMaps, outputMaps)
+  }
+
   /**
     * Adds script to the indexed OutputPSBTMap to either the RedeemScript
     * or WitnessScript field depending on the script and available information in the PSBT
