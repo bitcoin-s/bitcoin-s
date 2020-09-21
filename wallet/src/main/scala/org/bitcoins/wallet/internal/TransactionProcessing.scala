@@ -304,10 +304,14 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           }
 
           // Update Txo State
-          updateUtxoConfirmedState(unreservedTxo).map { txo =>
-            logger.debug(
-              s"Updated block_hash of txo=${txo.txid.hex} new block hash=${blockHash.hex}")
-            txo
+          updateUtxoConfirmedState(unreservedTxo).flatMap {
+            case Some(txo) =>
+              logger.debug(
+                s"Updated block_hash of txo=${txo.txid.hex} new block hash=${blockHash.hex}")
+              Future.successful(txo)
+            case None =>
+              // State was not updated so we need to update it so it's block hash is in the database
+              spendingInfoDAO.update(unreservedTxo)
           }
         case (Some(oldBlockHash), Some(newBlockHash)) =>
           if (oldBlockHash == newBlockHash) {
