@@ -500,46 +500,48 @@ case class DualFundingTxFinalizer(
     feeRate: SatoshisPerVirtualByte,
     fundingSPK: ScriptPubKey)
     extends RawTxFinalizer {
+  private val sharedFutureFee = (feeRate * 125).satoshis.toLong
+
+  private val commonFutureFee = if (sharedFutureFee % 2 == 0) {
+    Satoshis(sharedFutureFee / 2)
+  } else {
+    Satoshis(sharedFutureFee / 2 + 1)
+  }
+
+  private val sharedFundingFee = (feeRate * 53).satoshis.toLong
+
+  private val commonFundingFee = if (sharedFundingFee % 2 == 0) {
+    Satoshis(sharedFundingFee / 2)
+  } else {
+    Satoshis(sharedFundingFee / 2 + 1)
+  }
+
+  private def computeFees(
+      inputs: Vector[DualFundingInput],
+      payoutSPK: ScriptPubKey,
+      changeSPK: ScriptPubKey): (CurrencyUnit, CurrencyUnit) = {
+    val futureFee = feeRate * payoutSPK.asmBytes.length + commonFutureFee
+
+    val inputWeight =
+      inputs.foldLeft(1L) { // Start at 1 to cover witness header
+        case (weight, DualFundingInput(scriptSignature, maxWitnessLen)) =>
+          weight + 4 * (41 + scriptSignature.asm.length) + maxWitnessLen.toInt
+      }
+    val outputWeight = 4 * (9 + changeSPK.asm.length)
+    val fundingFee =
+      feeRate * Math
+        .ceil((inputWeight + outputWeight) / 4.0)
+        .toLong + commonFundingFee
+
+    (futureFee, fundingFee)
+  }
 
   override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
       ec: ExecutionContext): Future[Transaction] = {
-    val sharedFutureFee = (feeRate * 125).satoshis.toLong
-    val commonFutureFee = if (sharedFutureFee % 2 == 0) {
-      Satoshis(sharedFutureFee / 2)
-    } else {
-      Satoshis(sharedFutureFee / 2 + 1)
-    }
-    val offerFutureFee =
-      feeRate * offerPayoutSPK.asmBytes.length + commonFutureFee
-    val acceptFutureFee =
-      feeRate * acceptPayoutSPK.asmBytes.length + commonFutureFee
-
-    val sharedFundingFee = (feeRate * 53).satoshis.toLong
-    val commonFundingFee = if (sharedFundingFee % 2 == 0) {
-      Satoshis(sharedFundingFee / 2)
-    } else {
-      Satoshis(sharedFundingFee / 2 + 1)
-    }
-    val offerInputWeight =
-      offerInputs.foldLeft(1L) { // Start at 1 to cover witness header
-        case (weight, DualFundingInput(scriptSignature, maxWitnessLen)) =>
-          weight + 4 * (41 + scriptSignature.asm.length) + maxWitnessLen.toInt
-      }
-    val offerOutputWeight = 4 * (9 + offerChangeSPK.asm.length)
-    val offerFundingFee =
-      feeRate * Math
-        .ceil((offerInputWeight + offerOutputWeight) / 4.0)
-        .toLong + commonFundingFee
-    val acceptInputWeight =
-      acceptInputs.foldLeft(1L) { // Start at 1 to cover witness header
-        case (weight, DualFundingInput(scriptSignature, maxWitnessLen)) =>
-          weight + 4 * (41 + scriptSignature.asm.length) + maxWitnessLen.toInt
-      }
-    val acceptOutputWeight = 4 * (9 + acceptChangeSPK.asm.length)
-    val acceptFundingFee =
-      feeRate * Math
-        .ceil((acceptInputWeight + acceptOutputWeight) / 4.0)
-        .toLong + commonFundingFee
+    val (offerFutureFee, offerFundingFee) =
+      computeFees(offerInputs, offerPayoutSPK, offerChangeSPK)
+    val (acceptFutureFee, acceptFundingFee) =
+      computeFees(acceptInputs, acceptPayoutSPK, acceptChangeSPK)
 
     val addOfferFutureFee =
       AddFutureFeeFinalizer(fundingSPK, offerFutureFee, Vector(offerChangeSPK))
