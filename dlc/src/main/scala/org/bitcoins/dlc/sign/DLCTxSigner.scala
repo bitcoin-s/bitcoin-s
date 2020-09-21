@@ -135,7 +135,7 @@ case class DLCTxSigner(
           val witness = allSigs(fundingInput.outPoint)
 
           psbt
-            //.addUTXOToInput(fundingInput.prevTx, index)
+            .addUTXOToInput(fundingInput.prevTx, index)
             .addFinalizedScriptWitnessToInput(fundingInput.scriptSignature,
                                               witness,
                                               index)

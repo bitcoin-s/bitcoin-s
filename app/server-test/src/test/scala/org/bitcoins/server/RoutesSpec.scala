@@ -830,13 +830,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"\\"{\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"fundingSigs\\\\\\":{\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\":[\\\\\\"${dummyPartialSig.hex}\\\\\\"]},\\\\\\"contractId\\\\\\":\\\\\\"${paramHash.hex}\\\\\\"}\\"","error":null}""")
+          String] == s"""{"result":"\\"{\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"fundingSigs\\\\\\":{\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\":\\\\\\"${dummyScriptWitness.hex}\\\\\\"},\\\\\\"contractId\\\\\\":\\\\\\"${paramHash.hex}\\\\\\"}\\"","error":null}""")
       }
     }
 
     "add dlc sigs" in {
       val sigsStr =
-        s"""{"cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"fundingSigs":{"${EmptyTransactionOutPoint.hex}":["${dummyPartialSig.hex}"]},"contractId":"${contractId.toHex}"}"""
+        s"""{"cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"fundingSigs":{"${EmptyTransactionOutPoint.hex}":"${dummyScriptWitness.hex}"},"contractId":"${contractId.toHex}"}"""
 
       (mockWalletApi
         .addDLCSigs(_: DLCSign))

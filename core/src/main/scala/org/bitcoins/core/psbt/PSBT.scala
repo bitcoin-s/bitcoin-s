@@ -377,15 +377,12 @@ case class PSBT(
       s"Input already contains fields: ${prevInput.elements}"
     )
 
-    val utxos = Vector(prevInput.witnessUTXOOpt,
-                       prevInput.nonWitnessOrUnknownUTXOOpt).flatten
-    val unknowns = prevInput.filterRecords(UnknownKeyId)
-
     val finalizedScripts = Vector(FinalizedScriptSig(scriptSignature),
                                   FinalizedScriptWitness(scriptWitness))
 
-    val records = utxos ++ finalizedScripts ++ unknowns
-    val newInputMaps = inputMaps.updated(index, InputPSBTMap(records))
+    val records = prevInput.elements ++ finalizedScripts
+    val newMap = InputPSBTMap(records)
+    val newInputMaps = inputMaps.updated(index, newMap)
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
@@ -599,8 +596,21 @@ case class PSBT(
     val inputMap = inputMaps(index)
     require(inputMap.isFinalized, "Input must be finalized to verify")
 
-    val wUtxoOpt = inputMap.witnessUTXOOpt
     val utxoOpt = inputMap.nonWitnessOrUnknownUTXOOpt
+    val wUtxoOpt = inputMap.witnessUTXOOpt match {
+      case Some(wutxo) => Some(wutxo)
+      case None =>
+        utxoOpt match {
+          case Some(utxo) =>
+            val output = utxo.transactionSpent.outputs(
+              transaction.inputs(index).previousOutput.vout.toInt)
+            output.scriptPubKey match {
+              case _: NonWitnessScriptPubKey => None
+              case _: WitnessScriptPubKey    => Some(WitnessUTXO(output))
+            }
+          case None => None
+        }
+    }
 
     val newInput = {
       val input = transaction.inputs(index)
