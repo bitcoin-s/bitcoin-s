@@ -840,7 +840,7 @@ object ConsoleCli {
                 case other => other
               })),
           arg[Seq[LockUnspentOutputParameter]]("transactions")
-            .text("The transaction outputs and within each, the txid and vout")
+            .text("The transaction outpoints to unlock/lock")
             .required()
             .action((outPoints, conf) =>
               conf.copy(command = conf.command match {

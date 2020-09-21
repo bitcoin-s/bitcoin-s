@@ -108,7 +108,7 @@ For more information on how to use our built in `cli` to interact with the serve
     - `--feerate <value>` - Fee rate in sats per virtual byte
  - `lockunspent` `unlock` `transactions` - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.
     - `unlock` - Whether to unlock (true) or lock (false) the specified transactions
-    - `transactions` - The transaction outputs and within each, the txid and vout
+    - `transactions` - The transaction outpoints to unlock/lock
 
 
 #### Network
