@@ -12,6 +12,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   P2WPKHWitnessSPKV0,
+  P2WPKHWitnessV0,
   P2WSHWitnessV0
 }
 import org.bitcoins.core.protocol.transaction.{
@@ -29,6 +30,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 
 /** Responsible for constructing all DLC signatures
   * and signed transactions
@@ -84,7 +86,7 @@ case class DLCTxSigner(
   /** Creates this party's FundingSignatures */
   def createFundingTxSigs(): Future[FundingSignatures] = {
     val sigFs =
-      Vector.newBuilder[Future[(TransactionOutPoint, PartialSignature)]]
+      Vector.newBuilder[Future[(TransactionOutPoint, P2WPKHWitnessV0)]]
 
     for {
       fundingTx <- builder.buildFundingTx
@@ -95,17 +97,15 @@ case class DLCTxSigner(
             val sigF = BitcoinSigner.signSingle(utxoSingle,
                                                 fundingTx,
                                                 isDummySignature = false)
-            sigFs += sigF.map((utxo.outPoint, _))
+            sigFs += sigF.map(sig =>
+              (utxo.outPoint, P2WPKHWitnessV0(sig.pubKey, sig.signature)))
           }
         }
       }
 
       sigs <- Future.sequence(sigFs.result())
     } yield {
-      val sigsMap = sigs.groupBy(_._1).map {
-        case (outPoint, outPointAndSigs) =>
-          outPoint -> outPointAndSigs.map(_._2)
-      }
+      val sigsMap = sigs.toMap
 
       val fundingInputs = if (isInitiator) {
         offer.fundingInputs
@@ -132,16 +132,24 @@ case class DLCTxSigner(
     } yield {
       fundingInputs.zipWithIndex.foldLeft(PSBT.fromUnsignedTx(fundingTx)) {
         case (psbt, (fundingInput, index)) =>
-          val sigs = allSigs(fundingInput.outPoint)
+          val witness = allSigs(fundingInput.outPoint)
 
           psbt
-            .addSignatures(sigs, index)
-            .addWitnessUTXOToInput(fundingInput.output, index)
+            .addUTXOToInput(fundingInput.prevTx, index)
+            .addFinalizedScriptWitnessToInput(fundingInput.scriptSignature,
+                                              witness,
+                                              index)
       }
     }
 
     psbtF.flatMap { psbt =>
-      val txT = psbt.finalizePSBT.flatMap(_.extractTransactionAndValidate)
+      val finalizedT = if (psbt.isFinalized) {
+        Success(psbt)
+      } else {
+        psbt.finalizePSBT
+      }
+
+      val txT = finalizedT.flatMap(_.extractTransactionAndValidate)
       Future.fromTry(txT)
     }
   }

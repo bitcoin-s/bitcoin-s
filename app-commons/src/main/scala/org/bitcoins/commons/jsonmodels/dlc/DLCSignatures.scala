@@ -1,6 +1,6 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
-import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
+import org.bitcoins.core.protocol.script.ScriptWitnessV0
 import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -10,42 +10,27 @@ import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest}
 sealed trait DLCSignatures
 
 case class FundingSignatures(
-    sigs: Vector[(TransactionOutPoint, Vector[PartialSignature])])
-    extends SeqWrapper[(TransactionOutPoint, Vector[PartialSignature])]
+    sigs: Vector[(TransactionOutPoint, ScriptWitnessV0)])
+    extends SeqWrapper[(TransactionOutPoint, ScriptWitnessV0)]
     with DLCSignatures {
 
   override protected def wrapped: Vector[
-    (TransactionOutPoint, Vector[PartialSignature])] = sigs
+    (TransactionOutPoint, ScriptWitnessV0)] = sigs
 
-  def get(outPoint: TransactionOutPoint): Option[Vector[PartialSignature]] = {
+  def get(outPoint: TransactionOutPoint): Option[ScriptWitnessV0] = {
     sigs.find(_._1 == outPoint).map(_._2)
   }
 
-  def apply(outPoint: TransactionOutPoint): Vector[PartialSignature] = {
+  def apply(outPoint: TransactionOutPoint): ScriptWitnessV0 = {
     get(outPoint).get
   }
 
-  /** Note that this function does not preserver order */
   def merge(other: FundingSignatures): FundingSignatures = {
-    val local = sigs.toMap
-    val remote = other.toMap
-
-    val outPoints = local.keys ++ remote.keys
-    val combinedSigs = outPoints.map { outPoint =>
-      val thisSigs = local.get(outPoint).toVector.flatten
-      val remoteSigs = remote.get(outPoint).toVector.flatten
-      outPoint -> (thisSigs ++ remoteSigs)
-    }
-
-    FundingSignatures(combinedSigs.toVector)
+    FundingSignatures(sigs ++ other.sigs)
   }
 
   def toTLV: FundingSignaturesV0TLV = {
-    FundingSignaturesV0TLV(sigs.map {
-      case (_, sigs) =>
-        val PartialSignature(pubKey, sig) = sigs.head
-        P2WPKHWitnessV0(pubKey, sig)
-    })
+    FundingSignaturesV0TLV(sigs.map(_._2))
   }
 }
 

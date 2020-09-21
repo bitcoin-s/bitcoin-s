@@ -36,7 +36,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
 
     remoteSigs.zipWithIndex
       .foldLeft(true) {
-        case (ret, ((outPoint, sigs), index)) =>
+        case (ret, ((outPoint, witness), index)) =>
           val idx = index + remoteTweak
           if (ret) {
             if (psbt.transaction.inputs(idx).previousOutput != outPoint) {
@@ -44,9 +44,13 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
 
               false
             } else {
+              val fundingInput = remoteFundingInputs(index)
+
               psbt
-                .addSignatures(sigs, idx)
-                .addWitnessUTXOToInput(remoteFundingInputs(index).output, idx)
+                .addUTXOToInput(fundingInput.prevTx, idx)
+                .addFinalizedScriptWitnessToInput(fundingInput.scriptSignature,
+                                                  witness,
+                                                  idx)
                 .finalizeInput(idx) match {
                 case Success(finalized) =>
                   finalized.verifyFinalizedInput(idx)
