@@ -124,8 +124,7 @@ trait DLCWalletUtil {
 
   lazy val dummyFundingSignatures: FundingSignatures = FundingSignatures(
     Vector(
-      (TransactionOutPoint(dummyBlockHash, UInt32.zero),
-       Vector(dummyPartialSig))))
+      (TransactionOutPoint(dummyBlockHash, UInt32.zero), dummyScriptWitness)))
 
   lazy val sampleDLCSign: DLCSign =
     DLCSign(dummyCETSigs, dummyFundingSignatures, ByteVector.empty)

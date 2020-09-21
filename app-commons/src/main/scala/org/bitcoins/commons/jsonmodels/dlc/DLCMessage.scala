@@ -5,11 +5,12 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
-import org.bitcoins.core.protocol.script.{P2WPKHWitnessV0, WitnessScriptPubKey}
+import org.bitcoins.core.protocol.script.{ScriptWitnessV0, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.MapWrapper
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -602,9 +603,10 @@ object DLCMessage {
 
     def toJson: Value = {
 
-      val fundingSigsMap = fundingSigs.map(outPointAndSig =>
-        (outPointAndSig._1.hex,
-         Arr.from(outPointAndSig._2.map(sig => Str(sig.hex)))))
+      val fundingSigsMap = fundingSigs.map {
+        case (outPoint, scriptWitness) =>
+          (outPoint.hex, Str(scriptWitness.hex))
+      }
 
       val fundingSigsJson = fundingSigsMap
         .foldLeft(mutable.LinkedHashMap.newBuilder[String, Value])(
@@ -644,14 +646,7 @@ object DLCMessage {
       }
 
       val sigs = sign.fundingSignatures match {
-        case FundingSignaturesV0TLV(witnesses) =>
-          witnesses.map {
-            case p2wpkh: P2WPKHWitnessV0 =>
-              Vector(PartialSignature(p2wpkh.pubKey, p2wpkh.signature))
-            case _ =>
-              throw new IllegalArgumentException(
-                "Only P2WPKH currently supported.")
-          }
+        case FundingSignaturesV0TLV(witnesses) => witnesses
       }
 
       val fundingSigs = fundingOutPoints.zip(sigs)
@@ -712,11 +707,11 @@ object DLCMessage {
                   s"DLC Sign cannot have empty fundingSigs, got $js")
               } else {
                 value.obj.toVector.map {
-                  case (outPoint, sigs) =>
+                  case (outPoint, scriptWitness) =>
                     (TransactionOutPoint(outPoint),
-                     sigs.arr
-                       .map(sig => PartialSignature(sig.str))
-                       .toVector)
+                     RawScriptWitnessParser
+                       .read(scriptWitness.str)
+                       .asInstanceOf[ScriptWitnessV0])
                 }
               }
           }
