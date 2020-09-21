@@ -122,6 +122,12 @@ object DLCTLVGen {
     PartialSignature(pubKey, ecdsaSig(sigHashByte))
   }
 
+  def p2wpkhWitnessV0(
+      pubKey: ECPublicKey = ECPublicKey.freshPublicKey,
+      sigHashByte: Boolean = true): P2WPKHWitnessV0 = {
+    P2WPKHWitnessV0(pubKey, ecdsaSig(sigHashByte))
+  }
+
   def cetSigs(
       outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3),
       fundingPubKey: ECPublicKey =
@@ -133,8 +139,7 @@ object DLCTLVGen {
   def fundingSigs(
       outPoints: Vector[TransactionOutPoint] = Vector(
         outputReference().outPoint)): FundingSignatures = {
-    FundingSignatures(
-      outPoints.map(outpoint => outpoint -> Vector(partialSig())))
+    FundingSignatures(outPoints.map(outpoint => outpoint -> p2wpkhWitnessV0()))
   }
 
   def dlcOffer(

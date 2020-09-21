@@ -36,7 +36,7 @@ import org.bitcoins.core.protocol.BlockStamp.{
   BlockTime,
   InvalidBlockStamp
 }
-import org.bitcoins.core.protocol.script.EmptyScriptWitness
+import org.bitcoins.core.protocol.script.{EmptyScriptWitness, P2WPKHWitnessV0}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{
   Bech32Address,
@@ -691,6 +691,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919"),
       DummyECDigitalSignature)
 
+    val dummyScriptWitness: P2WPKHWitnessV0 = {
+      P2WPKHWitnessV0(dummyPartialSig.pubKey, dummyPartialSig.signature)
+    }
+
     val dummyAdaptorSig = ECAdaptorSignature.dummy
 
     val dummyOracleSig = SchnorrDigitalSignature(
@@ -816,7 +820,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             DLCSign(
               CETSignatures(dummyOutcomeSigs, dummyPartialSig),
               FundingSignatures(
-                Vector((EmptyTransactionOutPoint, Vector(dummyPartialSig)))),
+                Vector((EmptyTransactionOutPoint, dummyScriptWitness))),
               paramHash.bytes
             )))
 

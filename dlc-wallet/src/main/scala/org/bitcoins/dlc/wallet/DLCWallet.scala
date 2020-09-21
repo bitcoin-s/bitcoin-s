@@ -16,7 +16,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
@@ -620,11 +619,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       }
 
       updatedInputs = sign.fundingSigs.map {
-        case (outPoint, sigs) =>
+        case (outPoint, witness) =>
           inputs.find(_.outPoint == outPoint) match {
             case Some(inputDb) =>
-              inputDb.copy(witnessScriptOpt =
-                Some(P2WPKHWitnessV0(sigs.head.pubKey, sigs.head.signature)))
+              inputDb.copy(witnessScriptOpt = Some(witness))
             case None =>
               throw new NoSuchElementException(
                 s"Received signature for outPoint (${outPoint.hex}) that does not correspond to this contractId (${sign.contractId.toHex})")
@@ -912,12 +910,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                       case EmptyScriptWitness =>
                         throw new RuntimeException(
                           "Script witness cannot be empty")
-                      case p2wpkh: P2WPKHWitnessV0 =>
-                        val sig =
-                          PartialSignature(p2wpkh.pubKey, p2wpkh.signature)
-                        (input.outPoint, Vector(sig))
-                      case _: P2WSHWitnessV0 =>
-                        throw new RuntimeException("P2WSH not yet supported")
+                      case witness: ScriptWitnessV0 => (input.outPoint, witness)
                     }
                   case None => throw new RuntimeException("")
                 }
@@ -949,12 +942,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                     case EmptyScriptWitness =>
                       throw new RuntimeException(
                         "Script witness cannot be empty")
-                    case p2wpkh: P2WPKHWitnessV0 =>
-                      val sig =
-                        PartialSignature(p2wpkh.pubKey, p2wpkh.signature)
-                      (input.outPoint, Vector(sig))
-                    case _: P2WSHWitnessV0 =>
-                      throw new RuntimeException("P2WSH not yet supported")
+                    case witness: ScriptWitnessV0 => (input.outPoint, witness)
                   }
                 case None => throw new RuntimeException("")
               }

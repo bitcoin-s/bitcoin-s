@@ -74,12 +74,6 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         val accept = DLCAccept.fromTLV(acceptTLV, offer)
         val sign = DLCSign.fromTLV(signTLV, offer)
 
-        val pubKeys = signTLV.fundingSignatures match {
-          case FundingSignaturesV0TLV(witnesses) =>
-            witnesses.map(_.asInstanceOf[P2WPKHWitnessV0].pubKey)
-        }
-        assert(sign.fundingSigs.toVector.map(_._2.head.pubKey) == pubKeys)
-
         assert(offer.toTLV == offerTLV)
         assert(accept.toTLV == acceptTLV)
         assert(sign.toTLV == signTLV)
