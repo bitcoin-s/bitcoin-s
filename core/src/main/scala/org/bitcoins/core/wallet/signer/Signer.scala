@@ -71,7 +71,7 @@ sealed abstract class SignerUtils {
     val signatureF = doSign(
       unsignedTx = tx,
       signingInfo = spendingInfo,
-      sign = spendingInfo.signer.signFunction,
+      sign = spendingInfo.signer.signLowRFuture,
       hashType = spendingInfo.hashType,
       isDummySignature = isDummySignature
     )
@@ -575,7 +575,7 @@ sealed abstract class P2WPKHSigner extends Signer[P2WPKHV0InputInfo] {
             val signature =
               doSign(unsignedTx,
                      spendingInfo,
-                     signer.signFunction,
+                     signer.signLowRFuture,
                      hashType,
                      isDummySignature)
 
