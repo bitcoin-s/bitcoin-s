@@ -90,8 +90,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   }
 
   protected def updateUtxoConfirmedState(
-      txo: SpendingInfoDb): Future[SpendingInfoDb] = {
-    updateUtxoConfirmedStates(Vector(txo)).map(_.head)
+      txo: SpendingInfoDb): Future[Option[SpendingInfoDb]] = {
+    updateUtxoConfirmedStates(Vector(txo)).map(_.headOption)
   }
 
   protected def updateUtxoConfirmedStates(
@@ -105,46 +105,48 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         chainQueryApi.getNumberOfConfirmations(blockHash).map {
           case None =>
             logger.warn(
-              s"Given txos exist in block (${blockHash.hex}) that we do not have! $txos")
-            txos
+              s"Given txos exist in block (${blockHash.hex}) that we do not have or that has been reorged! $txos")
+            Vector.empty
           case Some(confs) =>
-            txos.map { txo =>
+            txos.flatMap { txo =>
               txo.state match {
                 case TxoState.ImmatureCoinbase =>
                   if (confs > Consensus.coinbaseMaturity) {
                     if (confs >= walletConfig.requiredConfirmations) {
-                      txo.copyWithState(TxoState.ConfirmedReceived)
+                      Some(txo.copyWithState(TxoState.ConfirmedReceived))
                     } else {
-                      txo.copyWithState(TxoState.PendingConfirmationsReceived)
+                      Some(
+                        txo.copyWithState(
+                          TxoState.PendingConfirmationsReceived))
                     }
                   } else {
-                    txo
+                    None
                   }
                 case TxoState.PendingConfirmationsReceived =>
                   if (confs >= walletConfig.requiredConfirmations) {
-                    txo.copyWithState(TxoState.ConfirmedReceived)
+                    Some(txo.copyWithState(TxoState.ConfirmedReceived))
                   } else {
-                    txo
+                    None
                   }
                 case TxoState.PendingConfirmationsSpent =>
                   if (confs >= walletConfig.requiredConfirmations) {
-                    txo.copyWithState(TxoState.ConfirmedSpent)
+                    Some(txo.copyWithState(TxoState.ConfirmedSpent))
                   } else {
-                    txo
+                    None
                   }
                 case TxoState.Reserved =>
                   // We should keep the utxo as reserved so it is not used in
                   // a future transaction that it should not be in
-                  txo
+                  None
                 case TxoState.DoesNotExist | TxoState.ConfirmedReceived |
                     TxoState.ConfirmedSpent =>
-                  txo
+                  None
               }
             }
         }
       case (None, txos) =>
         logger.debug(s"Currently have ${txos.size} transactions in the mempool")
-        Future.successful(txos)
+        Future.successful(Vector.empty)
     }
 
     for {
@@ -317,11 +319,20 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }.toVector
 
     for {
+      // update utxos in the mempool
       updatedMempoolUtxos <-
         spendingInfoDAO.updateAllSpendingInfoDb(mempoolUtxos)
-      // update the confirmed ones
-      updatedBlockUtxos <- updateUtxoConfirmedStates(utxosInBlocks)
-      updated = updatedMempoolUtxos ++ updatedBlockUtxos
+
+      // update the confirmed utxos
+      updatedConfirmed <- updateUtxoConfirmedStates(utxosInBlocks)
+
+      // update the utxos that are in blocks but not considered confirmed yet
+      pendingConf = utxosInBlocks.filterNot(utxo =>
+        updatedConfirmed.exists(_.outPoint == utxo.outPoint))
+      updatedPendingConf <- spendingInfoDAO.updateAllSpendingInfoDb(pendingConf)
+
+      // Return all utxos that were updated
+      updated = updatedMempoolUtxos ++ updatedConfirmed ++ updatedPendingConf
       _ <- walletCallbacks.executeOnReservedUtxos(logger, updated)
     } yield updated
   }
