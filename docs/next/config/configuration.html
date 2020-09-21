@@ -130,44 +130,6 @@ to ensure the entire module is initialized correctly.</p>
     datadir = <span class="hljs-variable">${HOME}</span>/.bitcoin-s
    <span class="hljs-built_in"> network </span>= regtest # regtest, testnet3, mainnet
 
-   <span class="hljs-built_in"> logging </span>{
-        # Ignore bitcoin-s<span class="hljs-built_in"> logging config </span><span class="hljs-keyword">and</span> use a logback<span class="hljs-built_in"> config
-</span>        logback = <span class="hljs-literal">false</span>
-
-        level = WARN # trace, debug, info, warn, error, off
-
-        # You can also tune specific module loggers.
-        # They each take the same levels as above.
-        # <span class="hljs-keyword">If</span> they are commented out (as they are
-        # by default), `logging.level` gets used
-        # instead. 
-        # The available loggers are: 
-
-        #<span class="hljs-built_in"> incoming </span><span class="hljs-keyword">and</span> outgoing P2P messages
-        # p2p = <span class="hljs-builtin-name">info</span>
-
-        # verification of block headers, merkle trees
-        # chain-verification = <span class="hljs-builtin-name">info</span>
-
-        # generation of addresses, signing of TXs
-        # key-handling = <span class="hljs-builtin-name">info</span>
-
-        # wallet operations <span class="hljs-keyword">not</span> related <span class="hljs-keyword">to</span> key management
-        # wallet = <span class="hljs-builtin-name">info</span>
-
-        # HTTP RPC<span class="hljs-built_in"> server
-</span>        # http = <span class="hljs-builtin-name">info</span>
-
-        # Database interactions
-        # database = <span class="hljs-builtin-name">info</span>
-
-        # whether <span class="hljs-keyword">or</span> <span class="hljs-keyword">not</span> <span class="hljs-keyword">to</span> write <span class="hljs-keyword">to</span> the log file
-        disable-file = <span class="hljs-literal">false</span>
-
-        # whether <span class="hljs-keyword">or</span> <span class="hljs-keyword">not</span> <span class="hljs-keyword">to</span> log <span class="hljs-keyword">to</span> stdout 
-        disable-console = <span class="hljs-literal">false</span>
-    }
-
     node {
         mode = neutrino # neutrino, spv
 
