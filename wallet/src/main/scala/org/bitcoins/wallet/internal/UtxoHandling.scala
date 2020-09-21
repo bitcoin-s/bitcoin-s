@@ -105,7 +105,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         chainQueryApi.getNumberOfConfirmations(blockHash).map {
           case None =>
             logger.warn(
-              s"Given txos exist in block (${blockHash.hex}) that we do not have! $txos")
+              s"Given txos exist in block (${blockHash.hex}) that we do not have or that has been reorged! $txos")
             Vector.empty
           case Some(confs) =>
             txos.flatMap { txo =>
@@ -319,14 +319,20 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }.toVector
 
     for {
+      // update utxos in the mempool
       updatedMempoolUtxos <-
         spendingInfoDAO.updateAllSpendingInfoDb(mempoolUtxos)
-      // update the confirmed ones
-      updatedBlockUtxos <- updateUtxoConfirmedStates(utxosInBlocks)
+
+      // update the confirmed utxos
+      updatedConfirmed <- updateUtxoConfirmedStates(utxosInBlocks)
+
+      // update the utxos that are in blocks but not considered confirmed yet
       pendingConf = utxosInBlocks.filterNot(utxo =>
-        updatedBlockUtxos.exists(_.outPoint == utxo.outPoint))
+        updatedConfirmed.exists(_.outPoint == utxo.outPoint))
       updatedPendingConf <- spendingInfoDAO.updateAllSpendingInfoDb(pendingConf)
-      updated = updatedMempoolUtxos ++ updatedBlockUtxos ++ updatedPendingConf
+
+      // Return all utxos that were updated
+      updated = updatedMempoolUtxos ++ updatedConfirmed ++ updatedPendingConf
       _ <- walletCallbacks.executeOnReservedUtxos(logger, updated)
     } yield updated
   }
