@@ -483,14 +483,12 @@ case class DualFundingInput(
     scriptSignature: ScriptSignature,
     maxWitnessLen: Int)
 
-/** Finalizes a dual-funded transaction given the InputInfos
-  * from both parties and the non-change output ScriptPubKey.
+/** Finalizes a dual-funded transaction given the DualFundingInputs
+  * from both parties, their change spks and the non-change spk.
   *
   * This includes adding the future fee of spending transactions
   * to the non-change output as well as subtracting relevant fees
   * from the change outputs. This finalizer filters dust outputs.
-  *
-  * Note: spendingVBytes may be 0
   */
 case class DualFundingTxFinalizer(
     offerInputs: Vector[DualFundingInput],
