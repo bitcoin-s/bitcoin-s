@@ -574,8 +574,18 @@ case class PSBT(
             val output = utxo.transactionSpent.outputs(
               transaction.inputs(index).previousOutput.vout.toInt)
             output.scriptPubKey match {
-              case _: NonWitnessScriptPubKey => None
-              case _: WitnessScriptPubKey    => Some(WitnessUTXO(output))
+              case _: RawScriptPubKey => None
+              case _: P2SHScriptPubKey =>
+                inputMap.finalizedScriptSigOpt match {
+                  case Some(
+                        FinalizedScriptSig(scriptSig: P2SHScriptSignature)) =>
+                    scriptSig.redeemScript match {
+                      case _: NonWitnessScriptPubKey => None
+                      case _: WitnessScriptPubKey    => Some(WitnessUTXO(output))
+                    }
+                  case None | Some(_) => None
+                }
+              case _: WitnessScriptPubKey => Some(WitnessUTXO(output))
             }
           case None => None
         }
@@ -596,7 +606,7 @@ case class PSBT(
         inputMap.finalizedScriptWitnessOpt match {
           case Some(scriptWit) =>
             val wtx = {
-              val wtx = WitnessTransaction.toWitnessTx(transaction)
+              val wtx = WitnessTransaction.toWitnessTx(tx)
               wtx.updateWitness(index, scriptWit.scriptWitness)
             }
             val output = wUtxo.witnessUTXO
