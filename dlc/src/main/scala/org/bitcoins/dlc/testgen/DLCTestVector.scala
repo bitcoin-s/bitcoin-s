@@ -82,7 +82,7 @@ case class DLCPartyParams(
       collateral.satoshis,
       fundingInputs,
       changeAddress,
-      SatoshisPerVirtualByte(Satoshis(params.feeRate.toLong / 250)),
+      params.feeRate,
       DLCTimeouts(params.contractMaturityBound, params.contractTimeout)
     )
   }
