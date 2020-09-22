@@ -93,7 +93,9 @@ case class DLCParams(
     contractInfo: ContractInfo,
     contractMaturityBound: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
-    feeRate: SatoshisPerVirtualByte)
+    feeRate: SatoshisPerVirtualByte,
+    realOutcome: Sha256Digest,
+    oracleSignature: SchnorrDigitalSignature)
 
 case class ValidTestInputs(
     params: DLCParams,
@@ -109,15 +111,18 @@ object ValidTestInputs {
   }
 }
 
-// TODO: Add realOutcome, oracleSignature, offerSignedCET, acceptSignedCET fields
+case class DLCTransactions(
+    fundingTx: Transaction,
+    cets: Vector[Transaction],
+    refundTx: Transaction)
+
 case class SuccessTestVector(
     testInputs: ValidTestInputs,
     offer: DLCOfferTLV,
     accept: DLCAcceptTLV,
     sign: DLCSignTLV,
-    fundingTx: Transaction,
-    cets: Vector[Transaction],
-    refundTx: Transaction)
+    unsignedTxs: DLCTransactions,
+    signedTxs: DLCTransactions)
     extends DLCTestVector {
 
   override def toJson: JsValue = {
@@ -181,6 +186,12 @@ object SuccessTestVector {
       { satsPerVB => JsNumber(satsPerVB.toLong) }
     )
 
+  implicit val sha256DigestFormat: Format[Sha256Digest] = hexFormat(
+    Sha256Digest)
+
+  implicit val schnorrDigitalSignatureFormat: Format[SchnorrDigitalSignature] =
+    hexFormat(SchnorrDigitalSignature)
+
   implicit val currencyUnitFormat: Format[CurrencyUnit] =
     Format[CurrencyUnit](
       { _.validate[Long].map(Satoshis.apply) },
@@ -208,6 +219,9 @@ object SuccessTestVector {
 
   implicit val validTestInputsFormat: Format[ValidTestInputs] =
     Json.format[ValidTestInputs]
+
+  implicit val dlcTransactionsFormat: Format[DLCTransactions] =
+    Json.format[DLCTransactions]
 
   implicit val successTestVectorFormat: Format[SuccessTestVector] =
     Json.format[SuccessTestVector]

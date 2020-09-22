@@ -28,17 +28,23 @@ object DLCTxGen {
   import DLCTLVGen._
 
   def dlcParams(
-      oracleInfo: OracleInfo = genOracleInfo(),
       contractInfo: ContractInfo = genContractInfo(),
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200),
       feeRate: SatoshisPerVirtualByte =
         SatoshisPerVirtualByte(Satoshis(5))): DLCParams = {
+    val privKey = ECPrivateKey.freshPrivateKey
+    val kVal = ECPrivateKey.freshPrivateKey
+    val oracleInfo = OracleInfo(privKey.schnorrPublicKey, kVal.schnorrNonce)
+    val realOutcome = contractInfo.keys.toVector(contractInfo.size / 2)
+    val sig = privKey.schnorrSignWithNonce(realOutcome.bytes, kVal)
     DLCParams(oracleInfo,
               contractInfo,
               contractMaturityBound,
               contractTimeout,
-              feeRate)
+              feeRate,
+              realOutcome,
+              sig)
   }
 
   def fundingInputTx(
@@ -105,6 +111,8 @@ object DLCTxGen {
                                    inputs.acceptParams.payoutAddress,
                                    inputs.acceptParams.fundingScriptSigParams)
 
+    val outcome = inputs.params.realOutcome
+
     for {
       accpetCETSigs <- acceptSigner.createCETSigs()
       offerCETSigs <- offerSigner.createCETSigs()
@@ -114,19 +122,31 @@ object DLCTxGen {
       cetFs = inputs.params.contractInfo.keys.toVector.map(builder.buildCET)
       cets <- Future.sequence(cetFs)
       refundTx <- builder.buildRefundTx
+
+      signedFundingTx <- acceptSigner.signFundingTx(offerFundingSigs)
+      signedRefundTx <- offerSigner.signRefundTx(accpetCETSigs.refundSig)
+      offerSignedCET <- offerSigner.signCET(outcome,
+                                            accpetCETSigs.outcomeSigs(outcome),
+                                            inputs.params.oracleSignature)
+      acceptSignedCET <- acceptSigner.signCET(outcome,
+                                              offerCETSigs.outcomeSigs(outcome),
+                                              inputs.params.oracleSignature)
     } yield {
       val accept = acceptWithoutSigs.withSigs(accpetCETSigs)
 
       val contractId = fundingTx.txIdBE.bytes.xor(accept.tempContractId.bytes)
       val sign = DLCSign(offerCETSigs, offerFundingSigs, contractId)
 
-      SuccessTestVector(inputs,
-                        offer.toTLV,
-                        accept.toTLV,
-                        sign.toTLV,
-                        fundingTx,
-                        cets,
-                        refundTx)
+      SuccessTestVector(
+        inputs,
+        offer.toTLV,
+        accept.toTLV,
+        sign.toTLV,
+        DLCTransactions(fundingTx, cets, refundTx),
+        DLCTransactions(signedFundingTx,
+                        Vector(offerSignedCET, acceptSignedCET),
+                        signedRefundTx)
+      )
     }
   }
 
