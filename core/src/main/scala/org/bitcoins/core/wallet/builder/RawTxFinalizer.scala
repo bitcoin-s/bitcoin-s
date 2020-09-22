@@ -500,38 +500,24 @@ case class DualFundingTxFinalizer(
     feeRate: SatoshisPerVirtualByte,
     fundingSPK: ScriptPubKey)
     extends RawTxFinalizer {
-  private val sharedFutureFee = (feeRate * 125).satoshis.toLong
-
-  private val commonFutureFee = if (sharedFutureFee % 2 == 0) {
-    Satoshis(sharedFutureFee / 2)
-  } else {
-    Satoshis(sharedFutureFee / 2 + 1)
-  }
-
-  private val sharedFundingFee = (feeRate * 53).satoshis.toLong
-
-  private val commonFundingFee = if (sharedFundingFee % 2 == 0) {
-    Satoshis(sharedFundingFee / 2)
-  } else {
-    Satoshis(sharedFundingFee / 2 + 1)
-  }
 
   private def computeFees(
       inputs: Vector[DualFundingInput],
       payoutSPK: ScriptPubKey,
       changeSPK: ScriptPubKey): (CurrencyUnit, CurrencyUnit) = {
-    val futureFee = feeRate * payoutSPK.asmBytes.length + commonFutureFee
+    val futureFeeWeight = 250 + 4 * payoutSPK.asmBytes.length
+    val futureFeeVBytes = Math.ceil(futureFeeWeight / 4.0).toLong
+    val futureFee = feeRate * futureFeeVBytes
 
     val inputWeight =
-      inputs.foldLeft(1L) { // Start at 1 to cover witness header
+      inputs.foldLeft(0L) {
         case (weight, DualFundingInput(scriptSignature, maxWitnessLen)) =>
-          weight + 4 * (41 + scriptSignature.asm.length) + maxWitnessLen.toInt
+          weight + 164 + 4 * scriptSignature.asm.length + maxWitnessLen.toInt
       }
-    val outputWeight = 4 * (9 + changeSPK.asm.length)
-    val fundingFee =
-      feeRate * Math
-        .ceil((inputWeight + outputWeight) / 4.0)
-        .toLong + commonFundingFee
+    val outputWeight = 36 + 4 * changeSPK.asm.length
+    val weight = 107 + outputWeight + inputWeight
+    val vbytes = Math.ceil(weight / 4.0).toLong
+    val fundingFee = feeRate * vbytes
 
     (futureFee, fundingFee)
   }
