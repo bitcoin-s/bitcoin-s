@@ -17,13 +17,13 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
     */
   val dbConfig: DatabaseConfig[JdbcProfile] = {
     val slickDbConfig = appConfig.slickDbConfig
-
-    logger.debug(s"Resolved DB config: ${slickDbConfig.config.asReadableJson}")
-
     val _ = createDbFileIfDNE()
 
     slickDbConfig
   }
+
+  logger.debug(
+    s"Resolved DB config: ${appConfig.slickDbConfig.config.asReadableJson}")
 
   val profile: JdbcProfile = dbConfig.profile
   import profile.api._
@@ -61,9 +61,10 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
   lazy val dbPath: Path = {
     val pathStr = appConfig.config.getString(s"${appConfig.moduleName}.db.path")
     val path = Paths.get(pathStr)
-    logger.debug(s"DB path: $path")
     path
   }
+
+  logger.debug(s"DB path: $dbPath")
 
   /** The name of our database */
   // todo: what happens to this if we
