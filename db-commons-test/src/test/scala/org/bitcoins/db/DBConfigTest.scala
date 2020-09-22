@@ -34,18 +34,21 @@ class DBConfigTest extends AnyFlatSpec with Matchers {
       assert(slickChainConfig.profileName == "slick.jdbc.SQLiteProfile")
       assert(slickChainConfig.config.hasPath("db.numThreads"))
       assert(slickChainConfig.config.getInt("db.numThreads") == 1)
+      assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
 
       val nodeConfig = NodeAppConfig(dataDir)
       val slickNodeConfig = nodeConfig.slickDbConfig
       assert(slickNodeConfig.profileName == "slick.jdbc.SQLiteProfile")
       assert(slickNodeConfig.config.hasPath("db.numThreads"))
       assert(slickNodeConfig.config.getInt("db.numThreads") == 1)
+      assert(slickNodeConfig.config.getInt("db.queueSize") == 5000)
 
       val walletConfig = WalletAppConfig(dataDir)
       val slickWalletConfig = walletConfig.slickDbConfig
       assert(slickWalletConfig.profileName == "slick.jdbc.SQLiteProfile")
       assert(slickWalletConfig.config.hasPath("db.numThreads"))
       assert(slickWalletConfig.config.getInt("db.numThreads") == 1)
+      assert(slickWalletConfig.config.getInt("db.queueSize") == 5000)
     }
   }
 
@@ -58,6 +61,7 @@ class DBConfigTest extends AnyFlatSpec with Matchers {
       assert(slickChainConfig.config.getInt("db.numThreads") == 3)
       assert(
         slickChainConfig.config.getString("db.connectionPool") == "disabled")
+      assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
 
       val nodeConfig = NodeAppConfig(dataDir)
       val slickNodeConfig = nodeConfig.slickDbConfig
@@ -66,6 +70,7 @@ class DBConfigTest extends AnyFlatSpec with Matchers {
       assert(slickNodeConfig.config.getInt("db.numThreads") == 3)
       assert(
         slickNodeConfig.config.getString("db.connectionPool") == "disabled")
+      assert(slickNodeConfig.config.getInt("db.queueSize") == 5000)
 
       val walletConfig = WalletAppConfig(dataDir)
       val slickWalletConfig = walletConfig.slickDbConfig
@@ -74,6 +79,7 @@ class DBConfigTest extends AnyFlatSpec with Matchers {
       assert(slickWalletConfig.config.getInt("db.numThreads") == 3)
       assert(
         slickWalletConfig.config.getString("db.connectionPool") == "disabled")
+      assert(slickWalletConfig.config.getInt("db.queueSize") == 5000)
     }
   }
 
