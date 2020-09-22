@@ -158,16 +158,17 @@ object SuccessTestVector {
   implicit val contractInfoFormat: Format[ContractInfo] =
     Format[ContractInfo](
       {
-        _.validate[Map[String, Long]]
-          .map(_.map {
-            case (outcome, amt) => Sha256Digest(outcome) -> Satoshis(amt)
-          })
+        _.validate[Vector[Map[String, Long]]]
+          .map(_.map { outcomeToAmt =>
+            val (outcome, amt) = outcomeToAmt.head
+            Sha256Digest(outcome) -> Satoshis(amt)
+          }.toMap)
           .map(ContractInfo.apply)
       },
       { info =>
-        Json.toJson(info.outcomeValueMap.map {
+        Json.toJson(info.outcomeValueMap.toVector.map {
           case (outcome, amt) =>
-            outcome.hex -> amt.toLong
+            JsObject(Map(outcome.hex -> JsNumber(amt.toLong)))
         })
       }
     )

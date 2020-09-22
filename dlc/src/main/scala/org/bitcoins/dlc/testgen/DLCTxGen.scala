@@ -9,18 +9,18 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
 import org.bitcoins.commons.jsonmodels.dlc.DLCPublicKeys
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2WPKHWitnessSPKV0}
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  TransactionConstants,
-  TransactionInput,
-  TransactionOutput
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptPubKey,
+  EmptyScriptSignature,
+  P2WPKHWitnessSPKV0
 }
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -47,8 +47,14 @@ object DLCTxGen {
               sig)
   }
 
+  private val dummyTransactionInput = TransactionInput(
+    TransactionOutPoint(CryptoUtil.doubleSHA256(ByteVector("DLC".getBytes)),
+                        UInt32.zero),
+    EmptyScriptSignature,
+    UInt32.zero)
+
   def fundingInputTx(
-      inputs: Vector[TransactionInput] = Vector.empty,
+      inputs: Vector[TransactionInput] = Vector(dummyTransactionInput),
       idx: Int = 0,
       privKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
       amt: CurrencyUnit = defaultAmt * 2,
