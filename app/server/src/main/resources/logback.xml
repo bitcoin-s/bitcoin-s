@@ -1,7 +1,7 @@
 <configuration scan="true" scanPeriod="15 seconds" >
     <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%date{yyyy-MM-dd'T'HH:mm:ss,SSXXX} %level [%logger{0}] %msg%n</pattern>
+            <pattern>%date{yyyy-MM-dd'T'HH:mm:ss,SSXXX, UTC}UTC %level [%logger{0}] %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -23,7 +23,7 @@
             <totalSizeCap>2GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>%date{yyyy-MM-dd'T'HH:mm:ss,SSXXX} %level [%logger{0}] %msg%n</pattern>
+            <pattern>%date{yyyy-MM-dd'T'HH:mm:ss,SSXXX, UTC}UTC %level [%logger{0}] %msg%n</pattern>
         </encoder>
     </appender>
 
