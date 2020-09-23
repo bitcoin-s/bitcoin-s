@@ -7,7 +7,7 @@ import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 sealed trait TLV extends NetworkElement {
-  def tpe: BigSizeUInt
+  def tpe: UInt16
   def value: ByteVector
 
   def length: BigSizeUInt = {
@@ -22,14 +22,14 @@ sealed trait TLV extends NetworkElement {
 object TLV extends Factory[TLV] {
 
   case class DecodeTLVResult(
-      tpe: BigSizeUInt,
+      tpe: UInt16,
       length: BigSizeUInt,
       value: ByteVector)
 
   def decodeTLV(bytes: ByteVector): DecodeTLVResult = {
-    val tpe = BigSizeUInt(bytes)
-    val length = BigSizeUInt(bytes.drop(tpe.byteSize))
-    val prefixSize = tpe.byteSize + length.byteSize
+    val tpe = UInt16(bytes.take(2))
+    val length = BigSizeUInt(bytes.drop(2))
+    val prefixSize = 2 + length.byteSize
 
     require(
       bytes.length >= prefixSize + length.num.toLong,
@@ -43,7 +43,7 @@ object TLV extends Factory[TLV] {
   private val allFactories: Vector[TLVFactory[TLV]] =
     Vector(ErrorTLV, PingTLV, PongTLV)
 
-  val knownTypes: Vector[BigSizeUInt] = allFactories.map(_.tpe)
+  val knownTypes: Vector[UInt16] = allFactories.map(_.tpe)
 
   def fromBytes(bytes: ByteVector): TLV = {
     val DecodeTLVResult(tpe, _, value) = decodeTLV(bytes)
@@ -56,7 +56,7 @@ object TLV extends Factory[TLV] {
 }
 
 sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
-  def tpe: BigSizeUInt
+  def tpe: UInt16
   def fromTLVValue(value: ByteVector): T
 
   override def fromBytes(bytes: ByteVector): T = {
@@ -68,7 +68,7 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
   }
 }
 
-case class UnknownTLV(tpe: BigSizeUInt, value: ByteVector) extends TLV {
+case class UnknownTLV(tpe: UInt16, value: ByteVector) extends TLV {
   require(!TLV.knownTypes.contains(tpe), s"Type $tpe is known")
 }
 
@@ -85,7 +85,7 @@ object UnknownTLV extends Factory[UnknownTLV] {
 case class ErrorTLV(id: ByteVector, data: ByteVector) extends TLV {
   require(id.length == 32, s"ID associated with error is incorrect length: $id")
 
-  override val tpe: BigSizeUInt = ErrorTLV.tpe
+  override val tpe: UInt16 = ErrorTLV.tpe
 
   override val value: ByteVector = {
     id ++ UInt16(data.length).bytes ++ data
@@ -93,7 +93,7 @@ case class ErrorTLV(id: ByteVector, data: ByteVector) extends TLV {
 }
 
 object ErrorTLV extends TLVFactory[ErrorTLV] {
-  override val tpe: BigSizeUInt = BigSizeUInt(17)
+  override val tpe: UInt16 = UInt16(17)
 
   override def fromTLVValue(value: ByteVector): ErrorTLV = {
     val id = value.take(32)
@@ -105,7 +105,7 @@ object ErrorTLV extends TLVFactory[ErrorTLV] {
 }
 
 case class PingTLV(numPongBytes: UInt16, ignored: ByteVector) extends TLV {
-  override val tpe: BigSizeUInt = PingTLV.tpe
+  override val tpe: UInt16 = PingTLV.tpe
 
   override val value: ByteVector = {
     numPongBytes.bytes ++ UInt16(ignored.length).bytes ++ ignored
@@ -113,7 +113,7 @@ case class PingTLV(numPongBytes: UInt16, ignored: ByteVector) extends TLV {
 }
 
 object PingTLV extends TLVFactory[PingTLV] {
-  override val tpe: BigSizeUInt = BigSizeUInt(18)
+  override val tpe: UInt16 = UInt16(18)
 
   override def fromTLVValue(value: ByteVector): PingTLV = {
     val numPongBytes = UInt16(value.take(2))
@@ -125,7 +125,7 @@ object PingTLV extends TLVFactory[PingTLV] {
 }
 
 case class PongTLV(ignored: ByteVector) extends TLV {
-  override val tpe: BigSizeUInt = PongTLV.tpe
+  override val tpe: UInt16 = PongTLV.tpe
 
   override val value: ByteVector = {
     UInt16(ignored.length).bytes ++ ignored
@@ -133,7 +133,7 @@ case class PongTLV(ignored: ByteVector) extends TLV {
 }
 
 object PongTLV extends TLVFactory[PongTLV] {
-  override val tpe: BigSizeUInt = BigSizeUInt(19)
+  override val tpe: UInt16 = UInt16(19)
 
   override def fromTLVValue(value: ByteVector): PongTLV = {
     val numIgnored = UInt16(value.take(2))

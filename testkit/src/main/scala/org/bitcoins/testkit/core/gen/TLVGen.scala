@@ -1,13 +1,13 @@
 package org.bitcoins.testkit.core.gen
 
-import org.bitcoins.core.protocol.BigSizeUInt
+import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.protocol.tlv._
 import org.scalacheck.Gen
 
 trait TLVGen {
 
-  def unknownTpe: Gen[BigSizeUInt] = {
-    NumberGenerator.bigSizeUInt.suchThat(num => !TLV.knownTypes.contains(num))
+  def unknownTpe: Gen[UInt16] = {
+    NumberGenerator.uInt16.suchThat(num => !TLV.knownTypes.contains(num))
   }
 
   def unknownTLV: Gen[UnknownTLV] = {
