@@ -8,4 +8,10 @@ import org.bitcoins.crypto.DoubleSha256Digest
   * of filters sent back to us by our peer
   * @see https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfheaders
   */
-case class FilterSyncMarker(startHeight: Int, stopBlockHash: DoubleSha256Digest)
+case class FilterSyncMarker(
+    startHeight: Int,
+    stopBlockHash: DoubleSha256Digest) {
+
+  override def toString: String =
+    s"FilterSyncMarker(startHeight = $stopBlockHash, stopBlockHash=${stopBlockHash.flip.hex})"
+}

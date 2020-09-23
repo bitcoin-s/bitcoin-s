@@ -197,8 +197,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
         chainApi.nextFilterHeaderBatchRange(stopHash, filterBatchSize)
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
-          logger.info(
-            s"Requesting compact filters from=${filterSyncMarker.startHeight} to=${filterSyncMarker.stopBlockHash}")
+          logger.info(s"Requesting compact filters from $filterSyncMarker")
 
           sendGetCompactFiltersMessage(filterSyncMarker)
             .map(_ => true)
@@ -220,7 +219,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
           logger.info(
-            s"Requesting next compact filter headers from=${filterSyncMarker.startHeight} to=${filterSyncMarker.stopBlockHash.flip}")
+            s"Requesting next compact filter headers from $filterSyncMarker")
           sendGetCompactFilterHeadersMessage(filterSyncMarker)
             .map(_ => true)
         case None =>
