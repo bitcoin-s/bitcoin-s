@@ -73,7 +73,7 @@ trait CoinSelector {
         alreadyAdded
       } else if (utxosLeft.isEmpty) {
         throw new RuntimeException(
-          s"Not enough value in given outputs ($valueSoFar) to make transaction spending $totalValue")
+          s"Not enough value in given outputs ($valueSoFar) to make transaction spending $totalValue plus fees $fee")
       } else {
         val nextUtxo = utxosLeft.head
         val approxUtxoSize = CoinSelector.approximateUtxoSize(nextUtxo)
