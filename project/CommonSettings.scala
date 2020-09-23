@@ -1,6 +1,7 @@
 // these two imports are needed for sbt syntax to work
 import java.nio.file.Paths
 
+import com.typesafe.sbt.packager.Keys.maintainer
 import sbt._
 import sbt.Keys._
 
@@ -17,6 +18,7 @@ object CommonSettings {
   lazy val settings: Seq[Setting[_]] = List(
     organization := "org.bitcoin-s",
     homepage := Some(url("https://bitcoin-s.org")),
+    maintainer := "Chris Stewart <stewart.chris1234@gmail.com>",
     developers := List(
       Developer(
         "christewart",
