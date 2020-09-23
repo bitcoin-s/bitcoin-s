@@ -10,7 +10,6 @@ mainClass := Some("org.bitcoins.server.Main")
 
 graalVMNativeImageOptions ++= Seq(
   "-H:EnableURLProtocols=http",
-
   "-H:+ReportExceptionStackTraces",
   // builds a stand-alone image or reports a failure
   "--no-fallback",
@@ -20,5 +19,10 @@ graalVMNativeImageOptions ++= Seq(
   "--report-unsupported-elements-at-runtime",
   "--verbose"
 )
+
+packageSummary := "A Bitcoin neutrino node and wallet"
+
+packageDescription := "Runs a Bitcoin neutrino node and wallet, has functionality " +
+  "for many different modes and configuration options, see more at https://bitcoin-s.org/docs/applications/server"
 
 enablePlugins(JavaAppPackaging, GraalVMNativeImagePlugin)
