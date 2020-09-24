@@ -1,0 +1,200 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Security · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="The Bitcoin-S developers take security very seriously. This library has"/><meta name="docsearch:version" content="0.3.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Security · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="The Bitcoin-S developers take security very seriously. This library has"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+              (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+              (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+              m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+              })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+              ga('create', 'UA-61958686-2', 'auto');
+              ga('send', 'pageview');
+            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>0.3.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/0.3.0/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Security</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/getting-started">Intro and Getting Started</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/applications/cli">bitcoin-s cli</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/applications/server">Application Server</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/chain/filter-sync">Syncing Blockfilters</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/core/hd-keys">HD Key Generation</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/core/sign">Sign API</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/core/txbuilder">TxBuilder Example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/node/node">Light Client</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/wallet/chain-query-api">Chain Query API</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/wallet/node-api">Node API</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/wallet/wallet-rescan">Wallet Rescans</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/secp256k1/secp256k1">Secp256k1</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/testkit/testkit">Testkit</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.3.0/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/0.3.0/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/0.3.0/security">Security</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/security.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Security</h1></header><article><div><span><p>The Bitcoin-S developers take security very seriously. This library has
+very few dependencies (at least in the <code>core</code> module), which is for
+security reasons.</p>
+<h2><a class="anchor" aria-hidden="true" id="disclosure"></a><a href="#disclosure" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Disclosure</h2>
+<p>If you have any security disclosures related to Bitcoin-S, please send an
+email to either <a href="mailto:stewart.chris1234@gmail.com?subject=Bitcoin-S%20Security%20Disclosure">stewart.chris1234@gmail.com</a>,
+<a href="mailto:nadavk25@gmail.com?subject=Bitcoin-S%20Security%20Disclosure">nadavk25@gmail.com</a>,
+or <a href="mailto:benthecarman@live.com?subject=Bitcoin-S%20Security%20Disclosure">benthecarman@live.com</a>.</p>
+<p>If you want to encrypt said email (which you should), Ben's key is available on <a href="https://keybase.io/benthecarman/pgp_keys.asc?fingerprint=0ad83877c1f0cd1ee9bd660ad7cc770b81fd22a8">his Keybase</a>, and Chris and Nadav's
+are posted below:</p>
+<p>Chris:</p>
+<pre><code class="hljs">-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1
+
+mQINBFku8rYBEACub6cz6nAy/MHK2TlTztkSJbNpc2B3tZoVCKRz987yLX578JiO
+EDYosAsD4b4nIjY1O6kD5FUjoJttQO+7IR8RwkmBFRsPqXaryrGr69FqaPlGSMLi
+uNVlawe0qMY79DPNw03Pu2tdgiq94sWplmOnuyQqcg2lkoK1+8/DXX3801s164wq
+4ZCCmkAAxJDhoLTyXB6LNI586vJhQ5+SVh8z/kAtp6NVXU5v2LcnkrqlX4oaakbt
+nY2FYpAZgEI8T+Fg+btGbt3muajhM9ooq0LBtaIMwgcTC4JPyFg6acWaluMGCOtW
+k1j8eu2/J4ly27YGCtWoDwrDen5qzHF6mm1HI4ko9fG2L4SxxXkl7DpGgtR71D1R
+mSA9yot8oPwWW1NRncIct188uRuhy4CJIylNU88iqgpUZfYRqwaDl2KCrEbetGMT
+yZSBVyilXdNjzFUJFtOPAxKmYPztUcEL1hEyGOu03YFt3FQr7QHhNR8+v688DdH4
+QHpwcrXkB0x/wq18tCO6gNTbnt94VR4PJUvz3BjP7XrHGn3ljKt5PPHO7cmPkDH5
+/iP928VC1U5FjAJh6dpsGgFb7k51CKx9bUJRDmL3GUMxFvmo+4YZpTKS5G+Ighs3
+vLIzO1X0aV5b4mltn4Fz4o/Cp+CSVqK//YnetezkmrvwQ2u/iOGeqRKhXwARAQAB
+tCtDaHJpcyBTdGV3YXJ0IDxzdGV3YXJ0LmNocmlzMTIzNEBnbWFpbC5jb20+iQI+
+BBMBAgAoAhsDBgsJCAcDAgYVCAIJCgsEFgIDAQIeAQIXgAUCWxW1AAUJBakpQwAK
+CRCYRuzvvweIvijkD/0RQzQAWcJY5XJ503vj0CidzKym4ueykxhgISiZ+hmjr+u5
+/Poceo5z3nXj1zI8/yMIb//7WRiX61+JGFKwN/OsM07KHa/J8Rf3NCASO2hYCGjq
+ev0UOWUeSqHwN8zr4kAY9hKZJVR7byKmYV/iqmuAFTB4Nrs8567CzqKaPezB1mKv
+JMTxx4XiL4M6cFiBSbCBi0qGYS6M0zBETJvFAmSh3H3PtUUdGz0kAyE2Ju11qhPh
+yZVCjILnzHbsguqPSPsj3Cba6+WcbGzm7HIBPdZDjIvcnuw3Mq8kjtcpOWTMoGP1
+q9xHioP97Gh+E+z7iFo8g2NszZ1wEzL4k3TnO0keknOmfOVn5zSINp6M8CHCTbzr
+ls+qqHjcbAfs5BbNRMXxapO78kvSQSDenRjpC7JCl3FIwWqoMMi7T3PIYVFQfMG+
+EyC3UMVOGmIDavw6yDCCdILcGeMdafEuzZmmV3Qvtt3LsqQjjm+TyBhWazRR+9sJ
+kRgSdvBkF8XgqyOpaLffWPoKxnaQtJwylQnYuUM8kLP52aH2C9ctKxLChu1BDmZm
+aWZNpm8h9jySeybQSBlMeDd8TrscuGJ8qBEOfREuv7fqYxsIi+G74+9h5kjiOe+y
+hkIkSI440mAHRIoCyAkBx4EFZN5lRdYShRGRQrCWD/RrFssABmXhBik707V0nLkC
+DQRZLvK2ARAA1gn4P9fm9KJpYuwYfxwrl0VfDPMNct5dDY6zbdQGV3djBTcuyeVU
+EL6w4rRfF1aPFFEXGhT2zn2tPY410fswTNANLKuP/sFEiGEfaMjmYu0DucCMyznK
+KMbE5FGD/ue0SHAN2K+A13OkPVv6kabu7XiK2QzYBrw1Lk7kGhSqMb8t3hVs0A9B
+iAqWFhSIBfmnd5SKyJKNksv7DuBcgK9Xjszlbr2gV0v1kc0aMHGdZH4omB5qmq8I
+aFkgZcY3MbA1zmetd1YauwzhZCFyTFcebm9trTn4D5htHGgXSehP3DMc4y9HVaLL
+rANAi0Ykk7Bi+BmYHkjsvt7FZj2/V/KWkwgiPjEBvnKX3iWpbJdqU2os9VZM3ctB
+WaE4pwsXt1kpiEgc/qUJ2xQL3po0dTO8q5heE6iZUNlD+xBLwpUxGjS8rN+V0LCt
+muqtZ8N8lSZD5U1XVVEpEdfe8lPKQ0wvjZZUTjix1j18mhiwE+cC66JNyM3mlMUx
+GKHg6M8nnXxTSbv2ogj7wXmqPF5dq5uGzCeDhdnR5tRmNQCpW/QUq8AJzV7VXRJl
++qZXar7DgbGUeRBY4M3LJptYUYqJ3LdxYPAO0AeKdlO0e843BaeG1ASGlhCZRGOn
+Z0xYL7wBiVgwtx57y7D1zpQE1a9Mh7+jnUnH4tplYv70TsQ9wF5yuRsAEQEAAYkC
+JQQYAQIADwIbDAUCWxW0LAUJBakobgAKCRCYRuzvvweIvhSvD/0RlNWzls+OlLqc
+6NT/ZGGpECntrfTpQqA0MakuuIkf6/RgBU4OfHqqcBrG8onV1vuu0hH0KnYvv658
+01PHRthIZN1K/+jcaIdNkOLbl9k9rWaDxKkHzH+IcIF61b6oCW86ffZ1yzZE2nxY
+zjO0MVM4IlUxtHbrItVj5Itfj7QxPf1YdmLxO/xH2NRbmVwwTSKe4/xK3v1LSxlH
+R5vknUWIT69VJoINB7jye/aSpBYpJgxXXiGbdYyt6fLyLxds7HXLJ6v6SfBKLuvm
+qXsDWX5Jyv7EWzzHgl7iCIkCe9tr8ic9IyyWiRn5bjoo5vVFVMYWU/ZtGpYerAh/
+sp8M09q7OeJbtbYkh9Nqz78ALt7ldT+PeAmqBVqb188F3tG8yG9lQNy43bk90Q8N
+o7ZpjxlpKFYoSq/Ow7TZgMCdMPkGbcCaSkGDv/McGsaOa7IYf+7n/yE0xMSb0x5A
+wyaXSLZjScTPiKGAP4fAf6hb0H1Je/69DOJynaODONAYfmlM+9WQjuVlQ3J0rlcK
+Cgvon6XyxrZ4q1tKheAxOmyM0OSuPYyeXSqCYu5bt7MzNEDUChydZM3v1QvEB9iG
+6eLX7fq2ipGGDoVl8y1yVRe4BWa3cJfCPC7jT+9VtD/qdlpHSwotYTWj5metYgqB
+LTIbdd7r9XCGoKIxMJRqNFXc8kylUg==
+=J0NH
+-----END PGP PUBLIC KEY BLOCK-----
+</code></pre>
+<p>Nadav:</p>
+<pre><code class="hljs">-----BEGIN PGP PUBLIC KEY BLOCK-----
+mQINBFsSA9kBEACfC4nxfmQAw8bepv4uE3v9I9hOJ63bH/DKcrslkSmxEUW6e+A9
+LLqvejlRclXVcYz6D6GxHTeS1PVVqHK3++CG2QfeTIsRdG3gMt8LhamJ/m4hmPYu
+<span class="hljs-number">5</span>JRVjMvY2ORvO4owQcT5YSNWPMEUdK4Y6NRXPK/<span class="hljs-number">9</span>mVvTIsGaiqxAoeGRgZ5TXCVV
+bEPRBGY2PsVPCq4QPmw+jqQfh8tLtLj7r44kbjTGj8tO5+KDnZpM7Ed4A41LTmbR
+zYmxPApRfgEZrHy5GpnvYI/EcpEBrftda1KRVCX1uhPuvHKcFy0mJ/ctJX4ocIBc
+<span class="hljs-number">7</span>sPbrf2WIU/FgrZgtdEjC4smRuIe/oeryuQDcHThImMLe/iehrVoYY/dgVJ05Kpq
+/No/mDGpN/<span class="hljs-number">7</span>S+Nylj9FZaCzbjrg3xlm/gxmwxZBRBoxH0r7MQrY8XkYKw/j+<span class="hljs-number">804</span>o
+fZmoWNW/aCrHpRHm+yd88AdlYEAKJv8l2AFgnXfszO0b5ax6ArZXI/zTVIFLebwn
+msqCkgeZptQpzV2moMAHQiUsshyhdu8SVx6f9alRyhLbUxYyrm82Rp+<span class="hljs-number">4</span>XhZxNf0w
+rJUMAe7uq8c85RWhWml46jIIasx7oaG0VBRjaRlbqvfu2ST5RowKAGs36aF089MM
+DHH751MSPQlTR+lCP+nxHM7t2+kFJ4VfuIy6/aOyVGLlNqEeMr/fYlQdpwARAQAB
+tChOYWRhdiBLb2hlbiAoTGludXgpIDxuYWRhdmsyNUBnbWFpbC5jb20+iQJOBBMB
+CgA4FiEE2HuwjJv2Vb/j2Shhnqz5XGuw42IFAlsSA9kCGwMFCwkIBwIGFQoJCAsC
+BBYCAwECHgECF4AACgkQnqz5XGuw42JyUw/<span class="hljs-number">9</span>HNAdcCx0ji02rBmrfVNc2EYaV5v6
+t+fcHxEC4NJB2ilmtE9bxxQgLof0Yb27DTxFvG3AHfds6Xwgzh0W8caZFguaGk8m
+kEIdi33lK1H3VGBzuJzIfNqd08iZppTZ+hV8gxdq5APrY3AFjQM3jNAdmVjPn6P5
+GkiOWaVdqS7OnrpZmqOblQGjyB8WrIBP17lrQRN487NtaCbRTSxzqnUAyaKKzY8u
+<span class="hljs-number">4</span>ZHDTfogdgAaSqtJO2MLSqs/b/vwk22pThgCy0dt99eaXbrtYTP4S4OPFFPuV/<span class="hljs-number">23</span>
+e6BJFfSqugDPcZxE4ms0QzfZDmFS5WZrvNa03pUa4Ch8rXH7tkdpMxdKNKLL6uqy
+<span class="hljs-number">9</span>PA732gOxGPJLZ9ZiDcrTQX1fApnTEtUuu5pLX1U9y81+fv04wB0SRR5sggtwg2a
+x+<span class="hljs-number">6</span>rwvdwtx/<span class="hljs-number">7</span>rM4WbqATvo1MDkA8SkbWGur06tm4yQrLI7YhNrEC91H3l8SXnIQZ
+o7/LDhoW3FvvzpPfQMnNwyPV9VoKCnsS7w40rwiLTuS0xvYNZY8eSY3SgM8EtpG2
+iLgW8Fnavs8lyCTrl9NFnFw7W2OEan0xpc0/N9pEC6+O+zp3Td9Qr0yhk8g7kMU/
+FghEgDZay2LyiefHqQy1R/YV/GNjLJvOIADH3x7mLI/Wyk9TQvQHgnLO9ksDsp/Y
+eqeDoRHfy8a8IEe5Ag0EWxID2QEQAOpM8Jz7W1sdsO7nDw29skfGG/<span class="hljs-number">6</span>YX+<span class="hljs-number">2</span>n/hIr
+w2GgHoV5LrN3rCo/wYkfZBQK/cnHdlG7n1E1Ih5XnNIsvGb8riAeX0C6htm44QZW
+XcQs1pfaOSXMjuTzRDW37lQFJDZcTPouber6jWWLuwBLu6gKHT8ihBRQxUuPoanX
+NCQxGdim4MgW3PT+<span class="hljs-number">2</span>BCmkoviuTDSrDlW7IY1+g5EuQTR7a5R54sEFE3evE8r92OI
+HnfekX0+be9w89jZqiLZZQfgmgTBWkb/yt26AQ1StST/JsoAUkLjT3EaAhXnd9gf
+bAPl5q62bqFBgis5n2GRvI+MMV6qBtscskZTp7eYHDvl4jCOebp7Yx9gXJuWiuKK
+g/fQQJuQgDA6eop1BJYJdNWUUy/fA4avegDg6ZTyYhU3gckyT/<span class="hljs-number">84</span>jYvDRj82SerN
+<span class="hljs-number">3</span>oKWjtJ03QtInlxJ/BvndibhrZKUKrGtX1BzkFGzuvehKoYdKcZcgF4ryeVY5TTB
+<span class="hljs-number">08</span>NoAQQ/Iy5RKdbHJg/<span class="hljs-number">1</span>jMxp2z0UrND51akGpxXbfV4UBZzmJzLb7RB9SvpUe0xb
+NqJT1lAiE6biybHG9O5MtpG9SjCRnXtM7Cvd1kn1o+cuF3vvxDvFmvCRJCV/s1tj
+sJU6bPTusT5HZ4VWQuXD5zEBA7bvPQR89S1WjadfFOL8/cVGiMJ0567HBxg1B0yo
+<span class="hljs-number">6</span>XX36q59ABEBAAGJAjYEGAEKACAWIQTYe7CMm/ZVv+PZKGGerPlca7DjYgUCWxID
+<span class="hljs-number">2</span>QIbDAAKCRCerPlca7DjYpFhD/<span class="hljs-number">41</span>PIalkLWols5959nMAxbwLS3wnSbHg6n713Df
+<span class="hljs-number">2</span>jdnXr7NdfJiI6Pb3aCphOcTQ8F1H9AbZlCBo9AwzzCrL9MBZNdeMF5RySYdNQS4
+nlpdgaqN53zWfjewz8e9Nr8SMVeQgDhE/+wgMvxGd2NxXgtEJHQvFOOicgR+osAR
+AJnQ/ajdxm57zzsTStXMt5DTAah2nCj42A5T6fcRXhOsTF3V8QVJ2T7xZLt8rjwD
+Iw03W3Z/<span class="hljs-number">0</span>MefvQKPHk8ywPXwbdQ7CWDq5AK3JtZtQO+uHYOhObucoJJLXXHuehRb
+geJA1gW50d6iDqC7f0t+Wm2U6paNNwpIhhE8NHBHRUSIC1fFe3XYlzBieQessr7L
+ilfYEo7V+<span class="hljs-number">5</span>Ez6Kgjvtb7zwgN6GNv0IsilJ0lJyZ6Dj02BP8qCBY5t+<span class="hljs-number">0</span>Asuc6qUVM
+pIxM+DD9PAesSrzJPLwwTXRvgjfDtKjGTz5bOpF6mzMP7WcPRDbplRay+j2ta8ig
+szLZeLuBGc0i9X9vliEWKbJq3aubCboQDTpYXhNzi0LiHoeDdXlBtnQiRHTU80oT
+<span class="hljs-number">57</span>EwGJOjD9VkyN0vhwi7fKBmpTZjR2mqVNRuQTtkW4VpUDQ74RvQTY5CmHbh9kli
+LyHFHMU7bblbIp7Jc9z6qzXEHd39fAbexXtRsWKM8GiylGOLS1xotfHAPxfWaze3
+yCLXAg==
+=fx/l
+-----END PGP PUBLIC KEY BLOCK-----
+</code></pre>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-9-3 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/0.3.0/contributing-website"><span class="arrow-prev">← </span><span>Contributing to the website</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#disclosure">Disclosure</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '0a510688bf8448e19aeb380377d328d3',
+                indexName: 'bitcoin-s',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>
