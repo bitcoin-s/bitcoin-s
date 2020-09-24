@@ -184,9 +184,10 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val hdPurposeMapper: BaseColumnType[HDPurpose] =
     MappedColumnType
-      .base[HDPurpose, Int](_.constant,
-                            HDPurposes.fromConstant(_).get
-      ) // hm rething .get
+      .base[HDPurpose, Int](
+        _.constant,
+        purpose =>
+          HDPurposes.fromConstant(purpose).getOrElse(HDPurpose(purpose)))
 
   implicit val bitcoinAddressMapper: BaseColumnType[BitcoinAddress] =
     MappedColumnType
