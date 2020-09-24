@@ -208,11 +208,88 @@ class DLCClientTest extends BitcoinSAsyncTest {
       HashType.sigHashAll
     )
 
+    def validateFees(
+        fundingTx: Transaction,
+        closingTx: Transaction): Assertion = {
+      val builder = dlcOffer.dlcTxBuilder
+      val finalizer = builder.fundingTxBuilder.fundingTxFinalizer
+      val expectedFundingFee =
+        finalizer.offerFundingFee + finalizer.acceptFundingFee
+      val expectedClosingFee =
+        finalizer.offerFutureFee + finalizer.acceptFutureFee
+
+      val fundingInput =
+        (builder.offerFundingInputs ++ builder.acceptFundingInputs)
+          .map(_.output.value)
+          .sum
+      val fundingOutput = fundingTx.outputs.map(_.value).sum
+      val actualFundingFee = fundingInput - fundingOutput
+
+      val closingInput = fundingTx.outputs.head.value
+      val closingOutput = closingTx.outputs.map(_.value).sum
+      val actualClosingFee = closingInput - closingOutput
+
+      def feeRateBounds(
+          tx: Transaction,
+          actualFee: CurrencyUnit,
+          missingOutputBytes: Long = 0): (Double, Double) = {
+        val vbytesLower = Math.ceil(tx.weight / 4.0) + missingOutputBytes
+        val vbytesUpper =
+          vbytesLower + 2 // Have to add 2 to account for two parties rounding up
+
+        // Upper VBytes => Lower fee rate
+        val lowerBound = actualFee.satoshis.toLong / vbytesUpper
+        // Lower VBytes => Upper fee rate
+        val upperBound = actualFee.satoshis.toLong / vbytesLower
+        (lowerBound, upperBound)
+      }
+
+      val (actualFundingFeeRateLower, actualFundingFeeRateUpper) =
+        feeRateBounds(fundingTx, actualFundingFee)
+
+      val (actualClosingFeeRateLower, actualClosingFeeRateUpper) =
+        feeRateBounds(closingTx, actualClosingFee)
+
+      val offerOutputBytes =
+        9 + builder.offerFinalAddress.scriptPubKey.asmBytes.length
+      val acceptOutputBytes =
+        9 + builder.acceptFinalAddress.scriptPubKey.asmBytes.length
+
+      val (actualClosingFeeRateWithoutOfferLower,
+           actualClosingFeeRateWithoutOfferUpper) =
+        feeRateBounds(closingTx, actualClosingFee, offerOutputBytes)
+
+      val (actualClosingFeeRateWithoutAcceptLower,
+           actualClosingFeeRateWithoutAcceptUpper) =
+        feeRateBounds(closingTx, actualClosingFee, acceptOutputBytes)
+
+      def feeRateBetweenBounds(
+          lowerBound: Double,
+          upperBound: Double): Boolean = {
+        feeRate.toLong >= lowerBound && feeRate.toLong <= upperBound
+      }
+
+      assert(actualFundingFee == expectedFundingFee)
+      assert(actualClosingFee == expectedClosingFee)
+      assert(
+        feeRateBetweenBounds(actualFundingFeeRateLower,
+                             actualFundingFeeRateUpper))
+      assert(
+        feeRateBetweenBounds(actualClosingFeeRateLower,
+                             actualClosingFeeRateUpper) ||
+          feeRateBetweenBounds(actualClosingFeeRateWithoutOfferLower,
+                               actualClosingFeeRateWithoutOfferUpper) ||
+          feeRateBetweenBounds(actualClosingFeeRateWithoutAcceptLower,
+                               actualClosingFeeRateWithoutAcceptUpper))
+    }
+
     outcome match {
-      case ExecutedDLCOutcome(_, cet) =>
+      case ExecutedDLCOutcome(fundingTx, cet) =>
+        validateFees(fundingTx, cet)
         assert(noEmptySPKOutputs(cet))
         assert(BitcoinScriptUtil.verifyScript(cet, Vector(closingSpendingInfo)))
-      case RefundDLCOutcome(_, refundTx) =>
+      case RefundDLCOutcome(fundingTx, refundTx) =>
+        validateFees(fundingTx, refundTx)
         assert(noEmptySPKOutputs(refundTx))
         assert(
           BitcoinScriptUtil.verifyScript(refundTx, Vector(closingSpendingInfo)))

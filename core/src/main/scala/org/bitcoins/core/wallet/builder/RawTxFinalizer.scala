@@ -505,16 +505,16 @@ case class DualFundingTxFinalizer(
       inputs: Vector[DualFundingInput],
       payoutSPK: ScriptPubKey,
       changeSPK: ScriptPubKey): (CurrencyUnit, CurrencyUnit) = {
-    val futureFeeWeight = 250 + 4 * payoutSPK.asmBytes.length
+    val futureFeeWeight = 249 + 4 * payoutSPK.asmBytes.length
     val futureFeeVBytes = Math.ceil(futureFeeWeight / 4.0).toLong
     val futureFee = feeRate * futureFeeVBytes
 
     val inputWeight =
       inputs.foldLeft(0L) {
         case (weight, DualFundingInput(scriptSignature, maxWitnessLen)) =>
-          weight + 164 + 4 * scriptSignature.asm.length + maxWitnessLen.toInt
+          weight + 164 + 4 * scriptSignature.asmBytes.length + maxWitnessLen.toInt
       }
-    val outputWeight = 36 + 4 * changeSPK.asm.length
+    val outputWeight = 36 + 4 * changeSPK.asmBytes.length
     val weight = 107 + outputWeight + inputWeight
     val vbytes = Math.ceil(weight / 4.0).toLong
     val fundingFee = feeRate * vbytes
@@ -522,13 +522,14 @@ case class DualFundingTxFinalizer(
     (futureFee, fundingFee)
   }
 
+  lazy val (offerFutureFee, offerFundingFee) =
+    computeFees(offerInputs, offerPayoutSPK, offerChangeSPK)
+
+  lazy val (acceptFutureFee, acceptFundingFee) =
+    computeFees(acceptInputs, acceptPayoutSPK, acceptChangeSPK)
+
   override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
       ec: ExecutionContext): Future[Transaction] = {
-    val (offerFutureFee, offerFundingFee) =
-      computeFees(offerInputs, offerPayoutSPK, offerChangeSPK)
-    val (acceptFutureFee, acceptFundingFee) =
-      computeFees(acceptInputs, acceptPayoutSPK, acceptChangeSPK)
-
     val addOfferFutureFee =
       AddFutureFeeFinalizer(fundingSPK, offerFutureFee, Vector(offerChangeSPK))
     val addAcceptFutureFee = AddFutureFeeFinalizer(fundingSPK,
