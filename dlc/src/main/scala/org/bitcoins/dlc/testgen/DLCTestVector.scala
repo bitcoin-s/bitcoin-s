@@ -13,7 +13,13 @@ import org.bitcoins.commons.jsonmodels.dlc.{
 }
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.tlv.{DLCAcceptTLV, DLCOfferTLV, DLCSignTLV}
+import org.bitcoins.core.protocol.tlv.{
+  DLCAcceptTLV,
+  DLCOfferTLV,
+  DLCSignTLV,
+  LnMessage,
+  LnMessageFactory
+}
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
@@ -82,7 +88,7 @@ case class DLCPartyParams(
       collateral.satoshis,
       fundingInputs,
       changeAddress,
-      SatoshisPerVirtualByte(Satoshis(params.feeRate.toLong / 250)),
+      params.feeRate,
       DLCTimeouts(params.contractMaturityBound, params.contractTimeout)
     )
   }
@@ -93,7 +99,9 @@ case class DLCParams(
     contractInfo: ContractInfo,
     contractMaturityBound: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
-    feeRate: SatoshisPerVirtualByte)
+    feeRate: SatoshisPerVirtualByte,
+    realOutcome: Sha256Digest,
+    oracleSignature: SchnorrDigitalSignature)
 
 case class ValidTestInputs(
     params: DLCParams,
@@ -109,15 +117,18 @@ object ValidTestInputs {
   }
 }
 
-// TODO: Add realOutcome, oracleSignature, offerSignedCET, acceptSignedCET fields
-case class SuccessTestVector(
-    testInputs: ValidTestInputs,
-    offer: DLCOfferTLV,
-    accept: DLCAcceptTLV,
-    sign: DLCSignTLV,
+case class DLCTransactions(
     fundingTx: Transaction,
     cets: Vector[Transaction],
     refundTx: Transaction)
+
+case class SuccessTestVector(
+    testInputs: ValidTestInputs,
+    offer: LnMessage[DLCOfferTLV],
+    accept: LnMessage[DLCAcceptTLV],
+    sign: LnMessage[DLCSignTLV],
+    unsignedTxs: DLCTransactions,
+    signedTxs: DLCTransactions)
     extends DLCTestVector {
 
   override def toJson: JsValue = {
@@ -153,16 +164,17 @@ object SuccessTestVector {
   implicit val contractInfoFormat: Format[ContractInfo] =
     Format[ContractInfo](
       {
-        _.validate[Map[String, Long]]
-          .map(_.map {
-            case (outcome, amt) => Sha256Digest(outcome) -> Satoshis(amt)
-          })
+        _.validate[Vector[Map[String, Long]]]
+          .map(_.map { outcomeToAmt =>
+            val (outcome, amt) = outcomeToAmt.head
+            Sha256Digest(outcome) -> Satoshis(amt)
+          }.toMap)
           .map(ContractInfo.apply)
       },
       { info =>
-        Json.toJson(info.outcomeValueMap.map {
+        Json.toJson(info.outcomeValueMap.toVector.map {
           case (outcome, amt) =>
-            outcome.hex -> amt.toLong
+            JsObject(Map(outcome.hex -> JsNumber(amt.toLong)))
         })
       }
     )
@@ -180,6 +192,12 @@ object SuccessTestVector {
       },
       { satsPerVB => JsNumber(satsPerVB.toLong) }
     )
+
+  implicit val sha256DigestFormat: Format[Sha256Digest] = hexFormat(
+    Sha256Digest)
+
+  implicit val schnorrDigitalSignatureFormat: Format[SchnorrDigitalSignature] =
+    hexFormat(SchnorrDigitalSignature)
 
   implicit val currencyUnitFormat: Format[CurrencyUnit] =
     Format[CurrencyUnit](
@@ -202,12 +220,20 @@ object SuccessTestVector {
   implicit val DLCPartyParamsFormat: Format[DLCPartyParams] =
     Json.format[DLCPartyParams]
 
-  implicit val offerTLVFormat: Format[DLCOfferTLV] = hexFormat(DLCOfferTLV)
-  implicit val acceptTLVFormat: Format[DLCAcceptTLV] = hexFormat(DLCAcceptTLV)
-  implicit val signTLVFormat: Format[DLCSignTLV] = hexFormat(DLCSignTLV)
+  implicit val offerMsgFormat: Format[LnMessage[DLCOfferTLV]] = hexFormat(
+    LnMessageFactory(DLCOfferTLV))
+
+  implicit val acceptMsgFormat: Format[LnMessage[DLCAcceptTLV]] = hexFormat(
+    LnMessageFactory(DLCAcceptTLV))
+
+  implicit val signMsgFormat: Format[LnMessage[DLCSignTLV]] = hexFormat(
+    LnMessageFactory(DLCSignTLV))
 
   implicit val validTestInputsFormat: Format[ValidTestInputs] =
     Json.format[ValidTestInputs]
+
+  implicit val dlcTransactionsFormat: Format[DLCTransactions] =
+    Json.format[DLCTransactions]
 
   implicit val successTestVectorFormat: Format[SuccessTestVector] =
     Json.format[SuccessTestVector]

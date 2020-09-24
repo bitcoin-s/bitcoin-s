@@ -209,10 +209,12 @@ class DLCClientTest extends BitcoinSAsyncTest {
     )
 
     outcome match {
-      case ExecutedDLCOutcome(_, cet) =>
+      case ExecutedDLCOutcome(fundingTx, cet) =>
+        DLCFeeTestUtil.validateFees(dlcOffer.dlcTxBuilder, fundingTx, cet)
         assert(noEmptySPKOutputs(cet))
         assert(BitcoinScriptUtil.verifyScript(cet, Vector(closingSpendingInfo)))
-      case RefundDLCOutcome(_, refundTx) =>
+      case RefundDLCOutcome(fundingTx, refundTx) =>
+        DLCFeeTestUtil.validateFees(dlcOffer.dlcTxBuilder, fundingTx, refundTx)
         assert(noEmptySPKOutputs(refundTx))
         assert(
           BitcoinScriptUtil.verifyScript(refundTx, Vector(closingSpendingInfo)))

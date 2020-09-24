@@ -4,6 +4,7 @@ import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.FundingInputV0TLV
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.wallet.builder.DualFundingInput
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 
 sealed trait DLCFundingInput {
@@ -45,6 +46,9 @@ sealed trait DLCFundingInput {
       redeemScriptOpt
     )
   }
+
+  lazy val toDualFundingInput: DualFundingInput =
+    DualFundingInput(scriptSignature, maxWitnessLen.toInt)
 }
 
 object DLCFundingInput {

@@ -28,6 +28,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.execution.{
   DLCOutcome,
   ExecutedDLCOutcome,
@@ -267,7 +268,9 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
   }
 
-  def validateOutcome(outcome: DLCOutcome): Future[Assertion] = {
+  def validateOutcome(
+      outcome: DLCOutcome,
+      builder: DLCTxBuilder): Future[Assertion] = {
     val fundingTx = outcome.fundingTx
     val closingTx = outcome match {
       case ExecutedDLCOutcome(_, cet)    => cet
@@ -279,6 +282,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       regtestFundingTx <- client.getRawTransaction(fundingTx.txIdBE)
       regtestClosingTx <- client.getRawTransaction(closingTx.txIdBE)
     } yield {
+      DLCFeeTestUtil.validateFees(builder, fundingTx, closingTx)
       assert(noEmptySPKOutputs(fundingTx))
       assert(regtestFundingTx.hex == fundingTx)
       assert(regtestFundingTx.confirmations.isDefined)
@@ -412,7 +416,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       _ <- waitUntilBlock(
         unilateralDLC.timeouts.contractMaturity.toUInt32.toInt)
       _ <- publishTransaction(unilateralOutcome.cet)
-      _ <- validateOutcome(unilateralOutcome)
+      _ <- validateOutcome(unilateralOutcome, offerDLC.dlcTxBuilder)
     } yield {
       assert(unilateralOutcome.fundingTx == otherOutcome.fundingTx)
       assert(unilateralOutcome.cet.txIdBE == otherOutcome.cet.txIdBE)
@@ -436,8 +440,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       _ <- recoverToSucceededIf[BitcoindException](publishTransaction(refundTx))
       _ <- waitUntilBlock(timeout)
       _ <- publishTransaction(refundTx)
-      _ <- validateOutcome(offerOutcome)
-      _ <- validateOutcome(acceptOutcome)
+      _ <- validateOutcome(offerOutcome, offerDLC.dlcTxBuilder)
+      _ <- validateOutcome(acceptOutcome, acceptDLC.dlcTxBuilder)
     } yield {
       assert(acceptOutcome.fundingTx == offerOutcome.fundingTx)
     }
