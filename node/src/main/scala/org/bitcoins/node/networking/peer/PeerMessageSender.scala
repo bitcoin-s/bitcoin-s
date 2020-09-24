@@ -75,7 +75,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       val transmittingIpAddress = InetAddress.getLocalHost
       val receivingIpAddress = client.peer.socket.getAddress
       val versionMsg = VersionMessage(conf.network,
-                                      "/Bitcoin-S:0.4.0/",
+                                      "/Bitcoin-S:0.5.0/",
                                       Int32(height),
                                       receivingIpAddress,
                                       transmittingIpAddress)
