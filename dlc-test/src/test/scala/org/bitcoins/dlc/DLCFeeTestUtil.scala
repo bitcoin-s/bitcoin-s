@@ -44,9 +44,10 @@ object DLCFeeTestUtil extends Assertions {
       * Lower Bound Fee Rate = Actual Fee / (Ceil((Actual Weight + #sigs)/4.0) + 1)
       * Upper Bound Fee Rate = Actual Fee / Ceil((Actual Weight + #sigs)/4.0)
       *
-      * So that these two fee rates correspond to vbyte amounts 1 apart and allowing for signature
-      * size variation. This function asserts:
-      * Lower Bound Fee Rate <= Actual Fee Rate <= Upper Bound Fee Rate
+      * So that these two fee rates correspond to vbyte amounts 1 apart and represent the
+      * actual fee rate but allowing for signature size variation after which we should match
+      * the expected fee rate. This function asserts:
+      * Lower Bound Fee Rate <= Expected Fee Rate <= Upper Bound Fee Rate
       */
     def feeRateBounds(
         tx: Transaction,
