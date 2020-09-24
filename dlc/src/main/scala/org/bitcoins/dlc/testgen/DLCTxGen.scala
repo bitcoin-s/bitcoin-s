@@ -145,9 +145,9 @@ object DLCTxGen {
 
       SuccessTestVector(
         inputs,
-        offer.toTLV,
-        accept.toTLV,
-        sign.toTLV,
+        offer.toMessage,
+        accept.toMessage,
+        sign.toMessage,
         DLCTransactions(fundingTx, cets, refundTx),
         DLCTransactions(signedFundingTx,
                         Vector(offerSignedCET, acceptSignedCET),

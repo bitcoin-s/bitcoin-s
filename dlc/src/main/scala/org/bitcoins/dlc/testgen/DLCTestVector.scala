@@ -13,7 +13,13 @@ import org.bitcoins.commons.jsonmodels.dlc.{
 }
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.tlv.{DLCAcceptTLV, DLCOfferTLV, DLCSignTLV}
+import org.bitcoins.core.protocol.tlv.{
+  DLCAcceptTLV,
+  DLCOfferTLV,
+  DLCSignTLV,
+  LnMessage,
+  LnMessageFactory
+}
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
@@ -118,9 +124,9 @@ case class DLCTransactions(
 
 case class SuccessTestVector(
     testInputs: ValidTestInputs,
-    offer: DLCOfferTLV,
-    accept: DLCAcceptTLV,
-    sign: DLCSignTLV,
+    offer: LnMessage[DLCOfferTLV],
+    accept: LnMessage[DLCAcceptTLV],
+    sign: LnMessage[DLCSignTLV],
     unsignedTxs: DLCTransactions,
     signedTxs: DLCTransactions)
     extends DLCTestVector {
@@ -214,9 +220,14 @@ object SuccessTestVector {
   implicit val DLCPartyParamsFormat: Format[DLCPartyParams] =
     Json.format[DLCPartyParams]
 
-  implicit val offerTLVFormat: Format[DLCOfferTLV] = hexFormat(DLCOfferTLV)
-  implicit val acceptTLVFormat: Format[DLCAcceptTLV] = hexFormat(DLCAcceptTLV)
-  implicit val signTLVFormat: Format[DLCSignTLV] = hexFormat(DLCSignTLV)
+  implicit val offerMsgFormat: Format[LnMessage[DLCOfferTLV]] = hexFormat(
+    LnMessageFactory(DLCOfferTLV))
+
+  implicit val acceptMsgFormat: Format[LnMessage[DLCAcceptTLV]] = hexFormat(
+    LnMessageFactory(DLCAcceptTLV))
+
+  implicit val signMsgFormat: Format[LnMessage[DLCSignTLV]] = hexFormat(
+    LnMessageFactory(DLCSignTLV))
 
   implicit val validTestInputsFormat: Format[ValidTestInputs] =
     Json.format[ValidTestInputs]
