@@ -163,6 +163,10 @@ object DLCMessage {
       )
     }
 
+    def toMessage: LnMessage[DLCOfferTLV] = {
+      LnMessage(this.toTLV)
+    }
+
     override def toJson: Value = {
       val contractInfosJson =
         contractInfo
@@ -243,6 +247,10 @@ object DLCMessage {
         timeouts =
           DLCTimeouts(offer.contractMaturityBound, offer.contractTimeout)
       )
+    }
+
+    def fromMessage(offer: LnMessage[DLCOfferTLV]): DLCOffer = {
+      fromTLV(offer.tlv)
     }
 
     def fromJson(js: Value): DLCOffer = {
@@ -398,6 +406,10 @@ object DLCMessage {
       )
     }
 
+    def toMessage: LnMessage[DLCAcceptTLV] = {
+      LnMessage(this.toTLV)
+    }
+
     def toJson: Value = {
       val fundingInputsJson =
         fundingInputs.map { input =>
@@ -483,6 +495,12 @@ object DLCMessage {
       fromTLV(accept,
               offer.changeAddress.networkParameters,
               offer.contractInfo.outcomeValueMap.keys.toVector)
+    }
+
+    def fromMessage(
+        accept: LnMessage[DLCAcceptTLV],
+        offer: DLCOffer): DLCAccept = {
+      fromTLV(accept.tlv, offer)
     }
 
     def fromJson(js: Value): DLCAccept = {
@@ -601,6 +619,10 @@ object DLCMessage {
       )
     }
 
+    def toMessage: LnMessage[DLCSignTLV] = {
+      LnMessage(this.toTLV)
+    }
+
     def toJson: Value = {
 
       val fundingSigsMap = fundingSigs.map {
@@ -668,6 +690,10 @@ object DLCMessage {
               offer.pubKeys.fundingKey,
               offer.contractInfo.outcomeValueMap.keys.toVector,
               offer.fundingInputs.map(_.outPoint))
+    }
+
+    def fromMessage(sign: LnMessage[DLCSignTLV], offer: DLCOffer): DLCSign = {
+      fromTLV(sign.tlv, offer)
     }
 
     def fromJson(js: Value): DLCSign = {

@@ -15,7 +15,7 @@ import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
-import org.bitcoins.testkit.core.gen.TLVGen
+import org.bitcoins.testkit.core.gen.{LnMessageGen, TLVGen}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class DLCMessageTest extends BitcoinSAsyncTest {
@@ -77,6 +77,19 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         assert(offer.toTLV == offerTLV)
         assert(accept.toTLV == acceptTLV)
         assert(sign.toTLV == signTLV)
+    }
+  }
+
+  it must "be able to go back and forth between LN Message and deserialized" in {
+    forAll(LnMessageGen.dlcOfferMessageAcceptMessageSignMessage) {
+      case (offerMsg, acceptMsg, signMsg) =>
+        val offer = DLCOffer.fromMessage(offerMsg)
+        val accept = DLCAccept.fromMessage(acceptMsg, offer)
+        val sign = DLCSign.fromMessage(signMsg, offer)
+
+        assert(offer.toMessage == offerMsg)
+        assert(accept.toMessage == acceptMsg)
+        assert(sign.toMessage == signMsg)
     }
   }
 }

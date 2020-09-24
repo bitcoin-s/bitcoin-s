@@ -10,10 +10,10 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.{
-  P2WPKHDualFundingTxFinalizer,
+  DualFundingTxFinalizer,
   RawTxBuilderWithFinalizer
 }
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.ECPublicKey
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,13 +24,15 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCFundingTxBuilder(
     offerFundingKey: ECPublicKey,
     acceptFundingKey: ECPublicKey,
-    feeRate: FeeUnit,
+    feeRate: SatoshisPerVirtualByte,
     offerInput: CurrencyUnit,
     acceptInput: CurrencyUnit,
     offerFundingInputs: Vector[DLCFundingInput],
     acceptFundingInputs: Vector[DLCFundingInput],
     offerChangeSPK: ScriptPubKey,
-    acceptChangeSPK: ScriptPubKey) {
+    acceptChangeSPK: ScriptPubKey,
+    offerPayoutSPK: ScriptPubKey,
+    acceptPayoutSPK: ScriptPubKey) {
 
   /** The total collateral of both parties combined */
   val totalInput: CurrencyUnit = offerInput + acceptInput
@@ -60,10 +62,16 @@ case class DLCFundingTxBuilder(
   /** The funding output's P2WSH(MultiSig) ScriptPubKey */
   val fundingSPK: P2WSHWitnessSPKV0 = P2WSHWitnessSPKV0(fundingMultiSig)
 
-  val fundingTxFinalizer: P2WPKHDualFundingTxFinalizer =
-    P2WPKHDualFundingTxFinalizer(DLCTxBuilder.approxClosingVBytes,
-                                 feeRate,
-                                 fundingSPK)
+  val fundingTxFinalizer: DualFundingTxFinalizer = DualFundingTxFinalizer(
+    offerInputs = offerFundingInputs.map(_.toDualFundingInput),
+    offerPayoutSPK = offerPayoutSPK,
+    offerChangeSPK = offerChangeSPK,
+    acceptInputs = acceptFundingInputs.map(_.toDualFundingInput),
+    acceptPayoutSPK = acceptPayoutSPK,
+    acceptChangeSPK = acceptChangeSPK,
+    feeRate = feeRate,
+    fundingSPK = fundingSPK
+  )
 
   def buildFundingTx()(implicit ec: ExecutionContext): Future[Transaction] = {
     val builder = RawTxBuilderWithFinalizer(fundingTxFinalizer)
