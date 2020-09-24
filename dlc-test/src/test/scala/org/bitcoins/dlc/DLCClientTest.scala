@@ -232,10 +232,12 @@ class DLCClientTest extends BitcoinSAsyncTest {
       def feeRateBounds(
           tx: Transaction,
           actualFee: CurrencyUnit,
-          missingOutputBytes: Long = 0): (Double, Double) = {
-        val vbytesLower = Math.ceil(tx.weight / 4.0) + missingOutputBytes
+          missingOutputBytes: Long = 0,
+          numSignatures: Int = 2): (Double, Double) = {
+        val vbytesLower =
+          Math.ceil((tx.weight + numSignatures) / 4.0) + missingOutputBytes
         val vbytesUpper =
-          vbytesLower + 2 // Have to add 2 to account for two parties rounding up
+          vbytesLower + 1
 
         // Upper VBytes => Lower fee rate
         val lowerBound = actualFee.satoshis.toLong / vbytesUpper
