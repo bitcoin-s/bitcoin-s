@@ -125,7 +125,7 @@ object DLCTxGen {
       offerFundingSigs <- offerSigner.createFundingTxSigs()
 
       fundingTx <- builder.buildFundingTx
-      cetFs = inputs.params.contractInfo.keys.toVector.map(builder.buildCET)
+      cetFs = inputs.params.contractInfo.map(_.outcome).map(builder.buildCET)
       cets <- Future.sequence(cetFs)
       refundTx <- builder.buildRefundTx
 
