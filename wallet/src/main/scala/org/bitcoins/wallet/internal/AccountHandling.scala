@@ -6,6 +6,7 @@ import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.blockchain.{
   MainNetChainParams,
   RegTestNetChainParams,
+  SigNetChainParams,
   TestNetChainParams
 }
 import org.bitcoins.wallet.Wallet
@@ -68,8 +69,9 @@ private[wallet] trait AccountHandling { self: Wallet =>
     */
   protected[wallet] lazy val DEFAULT_HD_COIN_TYPE: HDCoinType = {
     chainParams match {
-      case MainNetChainParams                         => HDCoinType.Bitcoin
-      case RegTestNetChainParams | TestNetChainParams => HDCoinType.Testnet
+      case MainNetChainParams => HDCoinType.Bitcoin
+      case RegTestNetChainParams | TestNetChainParams | SigNetChainParams(_) =>
+        HDCoinType.Testnet
 
     }
 

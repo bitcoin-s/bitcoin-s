@@ -12,7 +12,13 @@ import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonParseException
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.config.{
+  MainNet,
+  NetworkParameters,
+  RegTest,
+  SigNet,
+  TestNet3
+}
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStopAsync}
 import org.bitcoins.crypto.ECPrivateKey
@@ -51,6 +57,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
       case MainNet  => ""
       case TestNet3 => "testnet"
       case RegTest  => "regtest"
+      case SigNet   => "signet"
     }
     instance.datadir.toPath.resolve(prefix).resolve("debug.log")
   }

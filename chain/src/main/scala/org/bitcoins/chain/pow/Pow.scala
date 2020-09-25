@@ -48,7 +48,8 @@ sealed abstract class Pow {
                 config.chain match {
                   case RegTestNetChainParams =>
                     RegTestNetChainParams.compressedPowLimit
-                  case TestNetChainParams | MainNetChainParams =>
+                  case TestNetChainParams | MainNetChainParams |
+                      SigNetChainParams(_) =>
                     //if we can't find a non min difficulty block, let's just fail
                     throw new RuntimeException(
                       s"Could not find non mindifficulty block in chain of size=${blockchain.length}! hash=${tip.hashBE.hex} height=${currentHeight}")

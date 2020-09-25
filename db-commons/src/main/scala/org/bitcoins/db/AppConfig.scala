@@ -151,6 +151,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
       case MainNet  => "mainnet"
       case TestNet3 => "testnet3"
       case RegTest  => "regtest"
+      case SigNet   => "signet"
     }
     baseDatadir.resolve(lastDirname)
   }

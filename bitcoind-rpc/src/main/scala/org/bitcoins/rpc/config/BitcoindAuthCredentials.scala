@@ -1,13 +1,10 @@
 package org.bitcoins.rpc.config
 
 import java.io.File
+import java.nio.file.{Files, Paths}
+
+import org.bitcoins.core.config._
 import org.bitcoins.core.util.BitcoinSLogger
-import java.nio.file.Paths
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.config.RegTest
-import java.nio.file.Files
-import org.bitcoins.core.config.NetworkParameters
 
 /**
   * This trait contains the information we need to authenticate
@@ -60,9 +57,10 @@ object BitcoindAuthCredentials extends BitcoinSLogger {
 
     private[bitcoins] lazy val cookiePath = {
       val middleSegment = network match {
-        case TestNet3 => "testnet3"
         case MainNet  => ""
+        case TestNet3 => "testnet3"
         case RegTest  => "regtest"
+        case SigNet   => "signet"
 
       }
       Paths.get(datadir.toString, middleSegment, ".cookie")
