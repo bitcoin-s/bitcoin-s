@@ -70,10 +70,8 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
         network match {
           case MainNet =>
             assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == network)
-          case TestNet3 | RegTest =>
+          case TestNet3 | RegTest | SigNet =>
             assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == TestNet3)
-          case SigNet =>
-            assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == SigNet)
         }
         assert(ECPrivateKeyUtil.fromWIFToPrivateKey(wif) == privKey)
     }

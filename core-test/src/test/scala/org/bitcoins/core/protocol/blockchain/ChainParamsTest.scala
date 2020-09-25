@@ -4,13 +4,18 @@ import java.math.BigInteger
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.Int64
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.script.{
+  MultiSignatureScriptPubKey,
+  ScriptPubKey,
+  ScriptSignature
+}
 import org.bitcoins.core.protocol.transaction.{
   CoinbaseInput,
   TransactionConstants,
   TransactionOutput
 }
 import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -212,8 +217,15 @@ class ChainParamsTest extends BitcoinSUnitTest {
 
   it must "generate the correct default signet challenge" in {
     val challenge = SigNetChainParams().signetChallenge
-    println(challenge)
-    succeed
+    val pubKeys = Vector(
+      ECPublicKey(
+        "03ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430"),
+      ECPublicKey(
+        "0x0359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c4")
+    )
+    val expected = MultiSignatureScriptPubKey(1, pubKeys)
+
+    assert(challenge == expected)
   }
 
   it must "compute the correct pow limits" in {

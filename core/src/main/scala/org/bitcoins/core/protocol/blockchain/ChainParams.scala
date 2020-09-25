@@ -460,7 +460,7 @@ case class SigNetChainParams(
 
   /**
     * Pow limit on signet
-    * [[https://github.com/bitcoin/bitcoin/blob/006d9ab9e59a00fa02b8d5f32919f9d57567fa65/src/chainparams.cpp#L316 signet pow limit]]
+    * [[https://github.com/bitcoin/bitcoin/blob/e8990f121405af8cd539b904ef082439261e6c93/src/chainparams.cpp#L296 signet pow limit]]
     */
   override lazy val powLimit: BigInteger = {
     val bytes =
@@ -469,21 +469,21 @@ case class SigNetChainParams(
   }
 
   /**
-    * Minimum amount of chain work on the test network
+    * Minimum amount of chain work on signet
     */
   override lazy val minimumChainWork: BigInteger = {
     BigInteger.valueOf(0)
   }
 
   /**
-    * Regtest allows trivial difficulty blocks
-    * [[https://github.com/bitcoin/bitcoin/blob/006d9ab9e59a00fa02b8d5f32919f9d57567fa65/src/chainparams.cpp#L312 regtest min difficulty]]
+    * Signet does not allow trivial difficulty blocks
+    * [[https://github.com/bitcoin/bitcoin/blob/e8990f121405af8cd539b904ef082439261e6c93/src/chainparams.cpp#L292 signet min difficulty]]
     */
   override lazy val allowMinDifficultyBlocks: Boolean = false
 
   /**
-    * Regtest allows pow retargetting
-    * [[https://github.com/bitcoin/bitcoin/blob/006d9ab9e59a00fa02b8d5f32919f9d57567fa65/src/chainparams.cpp#L313 signet pow retargetting]]
+    * Signet allows pow re targeting
+    * [[https://github.com/bitcoin/bitcoin/blob/e8990f121405af8cd539b904ef082439261e6c93/src/chainparams.cpp#L293 signet pow retargeting]]
     */
   override lazy val noRetargeting: Boolean = false
 
