@@ -204,7 +204,11 @@ object JsonSerializers {
     (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
     (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(Peer)
 
-  implicit val nodeBanReads: Reads[NodeBan] = Json.reads[NodeBan]
+  implicit val nodeBanPostV20Reads: Reads[NodeBanPostV20] =
+    Json.reads[NodeBanPostV20]
+
+  implicit val nodeBanPreV20Reads: Reads[NodeBanPreV20] =
+    Json.reads[NodeBanPreV20]
 
   // Blockchain Models
   implicit val getBlockResultReads: Reads[GetBlockResult] =

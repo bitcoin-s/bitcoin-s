@@ -31,8 +31,8 @@ trait BlockchainRpc { self: Client =>
     self.version match {
       case BitcoindVersion.V16 | BitcoindVersion.V17 | BitcoindVersion.V18 =>
         bitcoindCall[GetBlockChainInfoResultPreV19]("getblockchaininfo")
-      case BitcoindVersion.V19 | BitcoindVersion.Experimental |
-          BitcoindVersion.Unknown =>
+      case BitcoindVersion.V20 | BitcoindVersion.V19 |
+          BitcoindVersion.Experimental | BitcoindVersion.Unknown =>
         bitcoindCall[GetBlockChainInfoResultPostV19]("getblockchaininfo")
     }
   }

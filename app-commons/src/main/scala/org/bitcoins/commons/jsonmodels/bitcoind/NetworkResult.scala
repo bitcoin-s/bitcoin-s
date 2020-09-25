@@ -99,12 +99,24 @@ case class PeerNetworkInfo(
     pingwait: Option[BigDecimal])
     extends NetworkResult
 
-case class NodeBan(
+trait NodeBan extends NetworkResult {
+  def address: URI
+  def banned_until: UInt32
+  def ban_created: UInt32
+}
+
+case class NodeBanPreV20(
     address: URI,
     banned_until: UInt32,
     ban_created: UInt32,
     ban_reason: String)
-    extends NetworkResult
+    extends NodeBan
+
+case class NodeBanPostV20(
+    address: URI,
+    banned_until: UInt32,
+    ban_created: UInt32)
+    extends NodeBan
 
 final case class GetNodeAddressesResult(
     time: FiniteDuration,
