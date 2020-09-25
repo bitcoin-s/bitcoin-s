@@ -3,9 +3,9 @@ package org.bitcoins.rpc.client.common
 import java.io.File
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
@@ -15,6 +15,7 @@ import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
 
 import scala.concurrent.Future
@@ -164,6 +165,7 @@ object BitcoindRpcClient {
       case BitcoindVersion.V17 => BitcoindV17RpcClient.withActorSystem(instance)
       case BitcoindVersion.V18 => BitcoindV18RpcClient.withActorSystem(instance)
       case BitcoindVersion.V19 => BitcoindV19RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V20 => BitcoindV20RpcClient.withActorSystem(instance)
       case BitcoindVersion.Experimental =>
         BitcoindV18RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
@@ -180,7 +182,7 @@ sealed trait BitcoindVersion
 object BitcoindVersion {
 
   /** The newest version of `bitcoind` we support */
-  val newest = V19
+  val newest: BitcoindVersion = V20
 
   case object V16 extends BitcoindVersion {
     override def toString: String = "v0.16"
@@ -196,6 +198,10 @@ object BitcoindVersion {
 
   case object V19 extends BitcoindVersion {
     override def toString: String = "v0.19"
+  }
+
+  case object V20 extends BitcoindVersion {
+    override def toString: String = "v0.20"
   }
 
   case object Experimental extends BitcoindVersion {
