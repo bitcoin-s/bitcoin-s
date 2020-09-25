@@ -245,6 +245,6 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
       TestNet3.p2shNetworkByte -> TestNet3,
       TestNet3.privateKey -> TestNet3
 
-      //omitting regtest and signet as it has the same network bytes as testnet3
+      // Omitting regtest and signet as they have the same network bytes as testnet3
     )
 }
