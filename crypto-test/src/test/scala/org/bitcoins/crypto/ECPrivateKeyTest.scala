@@ -1,6 +1,6 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.testkit.core.gen.{ChainParamsGenerator, CryptoGenerators}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
@@ -63,14 +63,14 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
       "045b81f0017e2091e2edcd5eecf10d5bdd120a5514cb3ee65b8447ec18bfc4575c6d5bf415e54e03b1067934a0f0ba76b01c6b9ab227142ee1d543764b69d901e0")
   }
 
-  it must "have serialization symmetri for WIF format" in {
+  it must "have serialization symmetry for WIF format" in {
     forAll(CryptoGenerators.privateKey, ChainParamsGenerator.networkParams) {
       (privKey, network) =>
         val wif = ECPrivateKeyUtil.toWIF(privKey, network)
         network match {
           case MainNet =>
             assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == network)
-          case TestNet3 | RegTest =>
+          case TestNet3 | RegTest | SigNet =>
             assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == TestNet3)
         }
         assert(ECPrivateKeyUtil.fromWIFToPrivateKey(wif) == privKey)

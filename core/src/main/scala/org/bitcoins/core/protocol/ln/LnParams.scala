@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.ChainParams
 
 sealed abstract class LnParams {
@@ -57,6 +57,7 @@ object LnParams {
       case MainNet  => LnBitcoinMainNet
       case TestNet3 => LnBitcoinTestNet
       case RegTest  => LnBitcoinRegTest
+      case SigNet   => LnBitcoinTestNet
     }
 
   private val allNetworks: Vector[LnParams] =

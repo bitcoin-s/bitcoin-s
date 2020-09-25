@@ -5,9 +5,13 @@ import java.nio.charset.StandardCharsets
 
 import org.bitcoins.core.config._
 import org.bitcoins.core.consensus.Merkle
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptPubKey,
+  ScriptPubKey,
+  ScriptSignature
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_CHECKSIG
@@ -206,6 +210,12 @@ sealed abstract class ChainParams {
     */
   def noRetargeting: Boolean
 
+  /** Uses signet blocks that require checking the signet challenge */
+  def signetBlocks: Boolean
+
+  /** Blocks must satisfy the given script to be considered valid (only for signet networks) */
+  def signetChallenge: ScriptPubKey
+
   /** The [[org.bitcoins.core.config.BitcoinNetwork network]] that corresponds to this chain param */
   def network: NetworkParameters
 }
@@ -296,6 +306,12 @@ object MainNetChainParams extends BitcoinChainParams {
     * @inheritdoc
     */
   override lazy val network: BitcoinNetwork = MainNet
+
+  /** @inheritdoc */
+  override def signetBlocks: Boolean = false
+
+  /** @inheritdoc */
+  override def signetChallenge: ScriptPubKey = EmptyScriptPubKey
 }
 
 object TestNetChainParams extends BitcoinChainParams {
@@ -349,6 +365,12 @@ object TestNetChainParams extends BitcoinChainParams {
     * @inheritdoc
     */
   override lazy val network: BitcoinNetwork = TestNet3
+
+  /** @inheritdoc */
+  override def signetBlocks: Boolean = false
+
+  /** @inheritdoc */
+  override def signetChallenge: ScriptPubKey = EmptyScriptPubKey
 }
 
 object RegTestNetChainParams extends BitcoinChainParams {
@@ -398,6 +420,80 @@ object RegTestNetChainParams extends BitcoinChainParams {
     * @inheritdoc
     */
   override lazy val network: BitcoinNetwork = RegTest
+
+  /** Uses signet blocks that require checking the signet challenge */
+  override def signetBlocks: Boolean = false
+
+  /** Blocks must satisfy the given script to be considered valid (only for signet networks) */
+  override def signetChallenge: ScriptPubKey = EmptyScriptPubKey
+}
+
+case class SigNetChainParams(
+    signetChallenge: ScriptPubKey = ScriptPubKey.fromAsmHex(
+      "512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae"))
+    extends BitcoinChainParams {
+  override lazy val networkId = "signet"
+
+  override lazy val genesisBlock: Block =
+    createGenesisBlock(UInt32(1598918400),
+                       UInt32(52613770),
+                       UInt32(0x1e0377ae),
+                       Int32.one,
+                       Bitcoins(50))
+
+  require(
+    genesisBlock.blockHeader.hashBE == DoubleSha256DigestBE(
+      "00000008819873e925422c1ff0f99f7cc9bbb232af63a077a480a3633bee1ef6"))
+
+  require(
+    genesisBlock.blockHeader.merkleRootHashBE == DoubleSha256DigestBE(
+      "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
+
+  override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
+    Map(
+      Base58Type.PubKeyAddress -> hex"6f",
+      Base58Type.ScriptAddress -> hex"c4",
+      Base58Type.SecretKey -> hex"ef",
+      Base58Type.ExtPublicKey -> hex"043587cf",
+      Base58Type.ExtSecretKey -> hex"04358394"
+    )
+
+  /**
+    * Pow limit on signet
+    * [[https://github.com/bitcoin/bitcoin/blob/e8990f121405af8cd539b904ef082439261e6c93/src/chainparams.cpp#L296 signet pow limit]]
+    */
+  override lazy val powLimit: BigInteger = {
+    val bytes =
+      hex"00000377ae000000000000000000000000000000000000000000000000000000".toArray
+    new BigInteger(1, bytes)
+  }
+
+  /**
+    * Minimum amount of chain work on signet
+    */
+  override lazy val minimumChainWork: BigInteger = {
+    BigInteger.valueOf(0)
+  }
+
+  /**
+    * Signet does not allow trivial difficulty blocks
+    * [[https://github.com/bitcoin/bitcoin/blob/e8990f121405af8cd539b904ef082439261e6c93/src/chainparams.cpp#L292 signet min difficulty]]
+    */
+  override lazy val allowMinDifficultyBlocks: Boolean = false
+
+  /**
+    * Signet allows pow re targeting
+    * [[https://github.com/bitcoin/bitcoin/blob/e8990f121405af8cd539b904ef082439261e6c93/src/chainparams.cpp#L293 signet pow retargeting]]
+    */
+  override lazy val noRetargeting: Boolean = false
+
+  /**
+    * @inheritdoc
+    */
+  override lazy val network: BitcoinNetwork = SigNet
+
+  /** @inheritdoc */
+  override def signetBlocks: Boolean = true
 }
 
 sealed abstract class Base58Type

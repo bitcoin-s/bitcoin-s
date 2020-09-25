@@ -15,7 +15,13 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.config.{BitcoinNetworks, MainNet, RegTest, TestNet3}
+import org.bitcoins.core.config.{
+  BitcoinNetworks,
+  MainNet,
+  RegTest,
+  SigNet,
+  TestNet3
+}
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.db._
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
@@ -72,6 +78,7 @@ object Main extends App with HttpLogger {
         case MainNet  => "mainnet"
         case TestNet3 => "testnet3"
         case RegTest  => "regtest"
+        case SigNet   => "signet"
       }
       datadirPath.resolve(lastDirname)
     }

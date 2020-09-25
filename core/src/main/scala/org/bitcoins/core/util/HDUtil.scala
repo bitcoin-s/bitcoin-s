@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.config._
 import org.bitcoins.core.crypto.{ExtKeyPrivVersion, ExtKeyPubVersion}
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 
@@ -14,12 +14,13 @@ object HDUtil {
     import org.bitcoins.core.hd.HDPurposes._
 
     (hdPurpose, network) match {
-      case (SegWit, MainNet)                  => SegWitMainNetPriv
-      case (SegWit, TestNet3 | RegTest)       => SegWitTestNet3Priv
-      case (NestedSegWit, MainNet)            => NestedSegWitMainNetPriv
-      case (NestedSegWit, TestNet3 | RegTest) => NestedSegWitTestNet3Priv
-      case (Legacy, MainNet)                  => LegacyMainNetPriv
-      case (Legacy, TestNet3 | RegTest)       => LegacyTestNet3Priv
+      case (SegWit, MainNet)                     => SegWitMainNetPriv
+      case (SegWit, TestNet3 | RegTest | SigNet) => SegWitTestNet3Priv
+      case (NestedSegWit, MainNet)               => NestedSegWitMainNetPriv
+      case (NestedSegWit, TestNet3 | RegTest | SigNet) =>
+        NestedSegWitTestNet3Priv
+      case (Legacy, MainNet)                     => LegacyMainNetPriv
+      case (Legacy, TestNet3 | RegTest | SigNet) => LegacyTestNet3Priv
       case (unknown: HDPurpose, _) =>
         throw new IllegalArgumentException(s"Got unknown HD purpose $unknown")
     }
@@ -33,12 +34,13 @@ object HDUtil {
     import org.bitcoins.core.hd.HDPurposes._
 
     (hdPurpose, network) match {
-      case (SegWit, MainNet)                  => SegWitMainNetPub
-      case (SegWit, TestNet3 | RegTest)       => SegWitTestNet3Pub
-      case (NestedSegWit, MainNet)            => NestedSegWitMainNetPub
-      case (NestedSegWit, TestNet3 | RegTest) => NestedSegWitTestNet3Pub
-      case (Legacy, MainNet)                  => LegacyMainNetPub
-      case (Legacy, TestNet3 | RegTest)       => LegacyTestNet3Pub
+      case (SegWit, MainNet | SigNet)            => SegWitMainNetPub
+      case (SegWit, TestNet3 | RegTest | SigNet) => SegWitTestNet3Pub
+      case (NestedSegWit, MainNet)               => NestedSegWitMainNetPub
+      case (NestedSegWit, TestNet3 | RegTest | SigNet) =>
+        NestedSegWitTestNet3Pub
+      case (Legacy, MainNet)                     => LegacyMainNetPub
+      case (Legacy, TestNet3 | RegTest | SigNet) => LegacyTestNet3Pub
       case (unknown: HDPurpose, _) =>
         throw new IllegalArgumentException(s"Got unknown HD purpose $unknown")
     }
