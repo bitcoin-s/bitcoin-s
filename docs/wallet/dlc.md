@@ -59,9 +59,9 @@ val kValue = ECPrivateKey.freshPrivateKey
 val rValue = kValue.schnorrNonce
 
 //the hash the oracle will sign when the bitcoin price is over $9,000
-val winHash = CryptoUtil.sha256(ByteVector("BTC_OVER_9000".getBytes)).flip
+val winHash = CryptoUtil.sha256(ByteVector("BTC_OVER_9000".getBytes))
 //the hash the oracle with sign when the bitcoin price is under $9,000
-val loseHash = CryptoUtil.sha256(ByteVector("BTC_UNDER_9000".getBytes)).flip
+val loseHash = CryptoUtil.sha256(ByteVector("BTC_UNDER_9000".getBytes))
 
 //the amounts received in the case the oracle signs hash of message "BTC_OVER_9000"
 val amtReceivedOnWin = Satoshis(100000)
