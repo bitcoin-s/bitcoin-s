@@ -82,7 +82,7 @@ case class DLCPartyParams(
 
   def toOffer(params: DLCParams): DLCOffer = {
     DLCOffer(
-      params.contractInfo,
+      ContractInfo(params.contractInfo.map(_.toMapEntry).toMap),
       params.oracleInfo,
       DLCPublicKeys(fundingPrivKey.publicKey, payoutAddress),
       collateral.satoshis,
@@ -94,14 +94,48 @@ case class DLCPartyParams(
   }
 }
 
+case class SerializedContractInfoEntry(
+    outcome: Sha256Digest,
+    localPayout: CurrencyUnit) {
+
+  def toMapEntry: (Sha256Digest, Satoshis) = {
+    outcome -> localPayout.satoshis
+  }
+}
+
 case class DLCParams(
     oracleInfo: OracleInfo,
-    contractInfo: ContractInfo,
+    contractInfo: Vector[SerializedContractInfoEntry],
     contractMaturityBound: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
     feeRate: SatoshisPerVirtualByte,
     realOutcome: Sha256Digest,
     oracleSignature: SchnorrDigitalSignature)
+
+object DLCParams {
+
+  def apply(
+      oracleInfo: OracleInfo,
+      contractInfo: ContractInfo,
+      contractMaturityBound: BlockTimeStamp,
+      contractTimeout: BlockTimeStamp,
+      feeRate: SatoshisPerVirtualByte,
+      realOutcome: Sha256Digest,
+      oracleSignature: SchnorrDigitalSignature): DLCParams = {
+    val serializedContractInfo = contractInfo.toVector.map {
+      case (outcome, amt) =>
+        SerializedContractInfoEntry(outcome, amt)
+    }
+
+    DLCParams(oracleInfo,
+              serializedContractInfo,
+              contractMaturityBound,
+              contractTimeout,
+              feeRate,
+              realOutcome,
+              oracleSignature)
+  }
+}
 
 case class ValidTestInputs(
     params: DLCParams,
@@ -161,24 +195,6 @@ object SuccessTestVector {
     }
   )
 
-  implicit val contractInfoFormat: Format[ContractInfo] =
-    Format[ContractInfo](
-      {
-        _.validate[Vector[Map[String, Long]]]
-          .map(_.map { outcomeToAmt =>
-            val (outcome, amt) = outcomeToAmt.head
-            Sha256Digest(outcome) -> Satoshis(amt)
-          }.toMap)
-          .map(ContractInfo.apply)
-      },
-      { info =>
-        Json.toJson(info.outcomeValueMap.toVector.map {
-          case (outcome, amt) =>
-            JsObject(Map(outcome.hex -> JsNumber(amt.toLong)))
-        })
-      }
-    )
-
   implicit val blockTimeStampFormat: Format[BlockTimeStamp] =
     Format[BlockTimeStamp](
       { _.validate[Long].map(UInt32.apply).map(BlockTimeStamp.apply) },
@@ -215,6 +231,10 @@ object SuccessTestVector {
       { _.validate[String].map(BitcoinAddress.fromString) },
       { address => JsString(address.toString) }
     )
+
+  implicit val contractInfoFormat: Format[SerializedContractInfoEntry] =
+    Json.format[SerializedContractInfoEntry]
+
   implicit val dlcParamFormat: Format[DLCParams] = Json.format[DLCParams]
 
   implicit val DLCPartyParamsFormat: Format[DLCPartyParams] =
