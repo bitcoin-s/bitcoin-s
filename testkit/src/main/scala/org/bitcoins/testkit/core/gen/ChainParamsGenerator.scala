@@ -12,7 +12,7 @@ sealed abstract class ChainParamsGenerator {
   def networkParams: Gen[NetworkParameters] = bitcoinNetworkParams
 
   def bitcoinNetworkParams: Gen[BitcoinNetwork] =
-    Gen.oneOf(MainNet, TestNet3, RegTest)
+    Gen.oneOf(MainNet, TestNet3, RegTest, SigNet)
 
   def lnNetworkParams: Gen[LnParams] = {
     Gen.oneOf(LnParams.LnBitcoinMainNet,

@@ -137,6 +137,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     val hrp = networkParameters match {
       case _: MainNet  => BtcHumanReadablePart.bc
       case _: TestNet3 => BtcHumanReadablePart.tb
+      case _: SigNet   => BtcHumanReadablePart.tb
       case _: RegTest  => BtcHumanReadablePart.bcrt
     }
     val witVersion = witSPK.witnessVersion.version.toInt.toByte

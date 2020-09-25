@@ -1,6 +1,6 @@
 package org.bitcoins.core.hd
 
-import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.config._
 
 /**
   * Represents a
@@ -38,8 +38,9 @@ object HDCoinType {
 
   def fromNetwork(np: NetworkParameters): HDCoinType = {
     np match {
-      case MainNet            => Bitcoin
-      case TestNet3 | RegTest => Testnet
+      case MainNet => Bitcoin
+      case TestNet3 | RegTest | SigNet =>
+        Testnet
     }
   }
 

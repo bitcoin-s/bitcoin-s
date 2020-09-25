@@ -1,7 +1,7 @@
 package org.bitcoins.core.config
 
 import org.bitcoins.core.protocol.blockchain._
-import org.bitcoins.crypto.StringFactory
+import org.bitcoins.crypto.{CryptoUtil, StringFactory}
 import scodec.bits.ByteVector
 
 sealed abstract class NetworkParameters {
@@ -151,6 +151,41 @@ sealed abstract class RegTest extends BitcoinNetwork {
 }
 
 final case object RegTest extends RegTest
+
+sealed abstract class SigNet extends BitcoinNetwork {
+  override def chainParams: SigNetChainParams = SigNetChainParams()
+
+  /**
+    * @inheritdoc
+    */
+  override def port = 38333
+
+  /**
+    * @inheritdoc
+    */
+  override def rpcPort = 38332
+
+  /**
+    * @inheritdoc
+    */
+  override def dnsSeeds: Seq[String] =
+    Seq("178.128.221.177",
+        "2a01:7c8:d005:390::5",
+        "ntv3mtqw5wt63red.onion:38333")
+
+  /**
+    * @inheritdoc
+    */
+  override def magicBytes: ByteVector = {
+    CryptoUtil
+      .doubleSHA256(chainParams.signetChallenge.bytes)
+      .bytes
+      .take(4)
+  }
+
+}
+
+final case object SigNet extends SigNet
 // $COVERAGE-ON$
 
 object Networks extends StringFactory[NetworkParameters] {
@@ -170,7 +205,9 @@ object Networks extends StringFactory[NetworkParameters] {
 }
 
 object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
-  val knownNetworks: Seq[NetworkParameters] = Seq(MainNet, TestNet3, RegTest)
+
+  val knownNetworks: Seq[NetworkParameters] =
+    Seq(MainNet, TestNet3, RegTest, SigNet)
   val secretKeyBytes: Seq[ByteVector] = knownNetworks.map(_.privateKey)
   val p2pkhNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2pkhNetworkByte)
   val p2shNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2shNetworkByte)
@@ -184,6 +221,8 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
       case "testnet"  => TestNet3
       case "test"     => TestNet3
       case "regtest"  => RegTest
+      case "signet"   => SigNet
+      case "sig"      => SigNet
       case _: String =>
         throw new IllegalArgumentException(s"Invalid network $string")
     }
@@ -193,7 +232,8 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
     Map(
       MainNet.magicBytes -> MainNet,
       TestNet3.magicBytes -> TestNet3,
-      RegTest.magicBytes -> RegTest
+      RegTest.magicBytes -> RegTest,
+      SigNet.magicBytes -> SigNet
     )
 
   def bytesToNetwork: Map[ByteVector, NetworkParameters] =
@@ -205,6 +245,6 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
       TestNet3.p2shNetworkByte -> TestNet3,
       TestNet3.privateKey -> TestNet3
 
-      //ommitting regtest as it has the same network bytes as testnet3
+      // Omitting regtest and signet as they have the same network bytes as testnet3
     )
 }

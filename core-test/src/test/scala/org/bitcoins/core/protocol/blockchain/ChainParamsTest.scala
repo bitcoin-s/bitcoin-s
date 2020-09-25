@@ -3,14 +3,15 @@ package org.bitcoins.core.protocol.blockchain
 import java.math.BigInteger
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.Int64
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.script.constant._
 import org.bitcoins.core.protocol.transaction.{
   CoinbaseInput,
   TransactionConstants,
   TransactionOutput
 }
 import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -101,6 +102,29 @@ class ChainParamsTest extends BitcoinSUnitTest {
         "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
   }
 
+  it must "generate the correct merkle root for the signet genesis block" in {
+    SigNetChainParams().genesisBlock.blockHeader.merkleRootHashBE.hex must be(
+      "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+  }
+
+  it must "generate the correct merkle root for the signet genesis block with different challenge spks" in {
+    val default = ScriptPubKey.fromAsmHex(
+      "512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae")
+    SigNetChainParams(
+      default).genesisBlock.blockHeader.merkleRootHashBE.hex must be(
+      "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+
+    val p2pkh = P2PKHScriptPubKey(ECPublicKey.freshPublicKey)
+    SigNetChainParams(
+      p2pkh).genesisBlock.blockHeader.merkleRootHashBE.hex must be(
+      "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+
+    val trivialTrue = ScriptPubKey.fromAsm(Seq(OP_TRUE))
+    SigNetChainParams(
+      trivialTrue).genesisBlock.blockHeader.merkleRootHashBE.hex must be(
+      "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+  }
+
   it must "generate the correct block header hex for the regtest genesis block" in {
     val regtestGenesisBlockHex =
       "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff7f20020000000101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000"
@@ -169,22 +193,54 @@ class ChainParamsTest extends BitcoinSUnitTest {
       "04358394".toLowerCase)
   }
 
+  it must "have the correct base58 prefix for SigNet" in {
+    import Base58Type._
+    BytesUtil.encodeHex(
+      SigNetChainParams().base58Prefixes(PubKeyAddress)) must be("6f")
+    BytesUtil.encodeHex(
+      SigNetChainParams().base58Prefixes(ScriptAddress)) must be("c4")
+    BytesUtil.encodeHex(SigNetChainParams().base58Prefixes(SecretKey)) must be(
+      "ef")
+    BytesUtil.encodeHex(
+      SigNetChainParams().base58Prefixes(ExtPublicKey)) must be(
+      "043587CF".toLowerCase)
+    BytesUtil.encodeHex(
+      SigNetChainParams().base58Prefixes(ExtSecretKey)) must be(
+      "04358394".toLowerCase)
+  }
+
   it must "determine the correct POW intervals for bitcoin networks" in {
     MainNetChainParams.difficultyChangeInterval must be(2016)
     TestNetChainParams.difficultyChangeInterval must be(2016)
     RegTestNetChainParams.difficultyChangeInterval must be(2016)
+    SigNetChainParams().difficultyChangeInterval must be(2016)
   }
 
   it must "determine what networks allow retargeting of proof of work" in {
     MainNetChainParams.noRetargeting must be(false)
     TestNetChainParams.noRetargeting must be(false)
     RegTestNetChainParams.noRetargeting must be(true)
+    SigNetChainParams().noRetargeting must be(false)
   }
 
   it must "allow/not allow minimum difficulty blocks on certain networks" in {
     MainNetChainParams.allowMinDifficultyBlocks must be(false)
     TestNetChainParams.allowMinDifficultyBlocks must be(true)
     RegTestNetChainParams.allowMinDifficultyBlocks must be(true)
+    SigNetChainParams().allowMinDifficultyBlocks must be(false)
+  }
+
+  it must "generate the correct default signet challenge" in {
+    val challenge = SigNetChainParams().signetChallenge
+    val pubKeys = Vector(
+      ECPublicKey(
+        "03ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430"),
+      ECPublicKey(
+        "0x0359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c4")
+    )
+    val expected = MultiSignatureScriptPubKey(1, pubKeys)
+
+    assert(challenge == expected)
   }
 
   it must "compute the correct pow limits" in {

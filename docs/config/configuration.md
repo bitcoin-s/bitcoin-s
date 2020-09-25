@@ -89,7 +89,7 @@ to ensure the entire module is initialized correctly.
 ```$xslt
 bitcoin-s {
     datadir = ${HOME}/.bitcoin-s
-    network = regtest # regtest, testnet3, mainnet
+    network = regtest # regtest, testnet3, mainnet, signet
 
     node {
         mode = neutrino # neutrino, spv
