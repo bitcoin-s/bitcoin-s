@@ -57,10 +57,7 @@ object LnParams {
       case MainNet  => LnBitcoinMainNet
       case TestNet3 => LnBitcoinTestNet
       case RegTest  => LnBitcoinRegTest
-      case SigNet   =>
-        // todo, I dm'ed kalle
-        throw new IllegalArgumentException(
-          "SigNet is not yet supported as a LnParam")
+      case SigNet   => LnBitcoinTestNet
     }
 
   private val allNetworks: Vector[LnParams] =
