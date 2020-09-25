@@ -208,7 +208,7 @@ trait WalletRpc { self: Client =>
       blank: Boolean = false,
       passphrase: String = ""): Future[CreateWalletResult] =
     self.version match {
-      case V19 | Experimental | Unknown =>
+      case V20 | V19 | Experimental | Unknown =>
         bitcoindCall[CreateWalletResult]("createwallet",
                                          List(JsString(walletName),
                                               JsBoolean(disablePrivateKeys),
@@ -227,7 +227,7 @@ trait WalletRpc { self: Client =>
       case V16 | V17 =>
         bitcoindCall[AddressInfoResultPreV18]("getaddressinfo",
                                               List(JsString(address.value)))
-      case V18 | V19 | Experimental | Unknown =>
+      case V18 | V19 | V20 | Experimental | Unknown =>
         bitcoindCall[AddressInfoResultPostV18]("getaddressinfo",
                                                List(JsString(address.value)))
     }

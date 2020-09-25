@@ -106,6 +106,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                   |debug=1
                   |walletbroadcast=1
                   |peerbloomfilters=1
+                  |fallbackfee=0.0002
                   |txindex=${if (pruneMode) 0
     else 1 /* pruning and txindex are not compatible */}
                   |zmqpubhashtx=tcp://127.0.0.1:$zmqPort
@@ -157,7 +158,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     version match {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest)
-      case known @ (Experimental | V16 | V17 | V18 | V19) =>
+      case known @ (Experimental | V16 | V17 | V18 | V19 | V20) =>
         val fileList = Files
           .list(binaryDirectory)
           .iterator()
@@ -201,9 +202,12 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       versionOpt: Option[BitcoindVersion] = None): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    val hasNeutrinoSupport =
-      versionOpt.contains(BitcoindVersion.V19) || versionOpt
-        .contains(BitcoindVersion.Experimental)
+    val hasNeutrinoSupport = versionOpt match {
+      case Some(V16) | Some(V17) | Some(V18) =>
+        false
+      case Some(V19) | Some(V20) | Some(Experimental) | Some(Unknown) | None =>
+        true
+    }
     val configFile =
       writtenConfig(uri,
                     rpcUri,
@@ -215,11 +219,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     val binary: File = versionOpt match {
       case Some(version) => getBinary(version)
       case None =>
-        if (
-          Files.exists(
-            BitcoindRpcTestUtil.binaryDirectory
-          )
-        ) {
+        if (Files.exists(BitcoindRpcTestUtil.binaryDirectory)) {
           newestBitcoindBinary
         } else {
           throw new RuntimeException(
@@ -286,6 +286,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
              zmqPort = zmqPort,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V19))
+
+  def v20Instance(
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqPort: Int = RpcUtil.randomPort,
+      pruneMode: Boolean = false
+  ): BitcoindInstance =
+    instance(port = port,
+             rpcPort = rpcPort,
+             zmqPort = zmqPort,
+             pruneMode = pruneMode,
+             versionOpt = Some(BitcoindVersion.V20))
 
   def vExperimentalInstance(
       port: Int = RpcUtil.randomPort,
@@ -593,6 +605,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         case BitcoindVersion.V19 =>
           BitcoindV19RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v19Instance())
+        case BitcoindVersion.V20 =>
+          BitcoindV19RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.v20Instance())
         case BitcoindVersion.Experimental =>
           BitcoindV19RpcClient.withActorSystem(
             BitcoindRpcTestUtil.vExperimentalInstance())
