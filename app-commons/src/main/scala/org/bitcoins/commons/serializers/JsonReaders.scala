@@ -2,6 +2,7 @@ package org.bitcoins.commons.serializers
 
 import java.io.File
 import java.net.{InetAddress, InetSocketAddress, URI}
+import java.nio.file.Path
 import java.time._
 import java.util.UUID
 
@@ -605,6 +606,12 @@ object JsonReaders {
 
     override def reads(json: JsValue): JsResult[File] =
       SerializerUtil.processJsString[File](new File(_))(json)
+  }
+
+  implicit object PathReads extends Reads[Path] {
+
+    override def reads(json: JsValue): JsResult[Path] =
+      SerializerUtil.processJsString[Path](new File(_).toPath)(json)
   }
 
   implicit object URIReads extends Reads[URI] {

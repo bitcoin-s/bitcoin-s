@@ -1,16 +1,13 @@
-package org.bitcoins.rpc.client.common
+package org.bitcoins.rpc.client.v20
 
+import org.bitcoins.commons.jsonmodels.bitcoind.MultiSigResultPostV20
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
-import org.bitcoins.commons.jsonmodels.bitcoind.{
-  MultiSigResult,
-  MultiSigResultPostV20,
-  MultiSigResultPreV20
-}
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.rpc.client.common.BitcoindVersion._
+import org.bitcoins.rpc.client.common.{Client, MultisigRpc}
 import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import scala.concurrent.Future
@@ -22,13 +19,13 @@ import scala.concurrent.Future
   * @see [[https://en.bitcoin.it/wiki/Multisignature Bitcoin Wiki]]
   *     article on multisignature.
   */
-trait MultisigRpc { self: Client =>
+trait V20MultisigRpc extends MultisigRpc { self: Client =>
 
   private def addMultiSigAddress(
       minSignatures: Int,
       keys: Vector[Either[ECPublicKey, P2PKHAddress]],
       account: String = "",
-      addressType: Option[AddressType]): Future[MultiSigResult] = {
+      addressType: Option[AddressType]): Future[MultiSigResultPostV20] = {
     def keyToString(key: Either[ECPublicKey, P2PKHAddress]): JsString =
       key match {
         case Right(k) => JsString(k.value)
@@ -43,47 +40,48 @@ trait MultisigRpc { self: Client =>
     self.version match {
       case V20 | Unknown =>
         bitcoindCall[MultiSigResultPostV20]("addmultisigaddress", params)
-      case V16 | V17 | V18 | V19 | Experimental =>
-        bitcoindCall[MultiSigResultPreV20]("addmultisigaddress", params)
+      case version @ (V16 | V17 | V18 | V19 | Experimental) =>
+        throw new RuntimeException(
+          s"Cannot use v20MultisigRpc on an older version, got $version")
     }
   }
 
-  def addMultiSigAddress(
+  override def addMultiSigAddress(
       minSignatures: Int,
-      keys: Vector[Either[ECPublicKey, P2PKHAddress]]): Future[MultiSigResult] =
+      keys: Vector[Either[ECPublicKey, P2PKHAddress]]): Future[
+    MultiSigResultPostV20] =
     addMultiSigAddress(minSignatures, keys, addressType = None)
 
-  def addMultiSigAddress(
+  override def addMultiSigAddress(
       minSignatures: Int,
       keys: Vector[Either[ECPublicKey, P2PKHAddress]],
-      account: String): Future[MultiSigResult] =
+      account: String): Future[MultiSigResultPostV20] =
     addMultiSigAddress(minSignatures, keys, account, None)
 
-  def addMultiSigAddress(
+  override def addMultiSigAddress(
       minSignatures: Int,
       keys: Vector[Either[ECPublicKey, P2PKHAddress]],
-      addressType: AddressType): Future[MultiSigResult] =
+      addressType: AddressType): Future[MultiSigResultPostV20] =
     addMultiSigAddress(minSignatures, keys, addressType = Some(addressType))
 
-  def addMultiSigAddress(
+  override def addMultiSigAddress(
       minSignatures: Int,
       keys: Vector[Either[ECPublicKey, P2PKHAddress]],
       account: String,
-      addressType: AddressType): Future[MultiSigResult] =
+      addressType: AddressType): Future[MultiSigResultPostV20] =
     addMultiSigAddress(minSignatures, keys, account, Some(addressType))
 
-  def createMultiSig(
+  override def createMultiSig(
       minSignatures: Int,
-      keys: Vector[ECPublicKey]): Future[MultiSigResult] = {
+      keys: Vector[ECPublicKey]): Future[MultiSigResultPostV20] = {
     self.version match {
       case V20 | Unknown =>
         bitcoindCall[MultiSigResultPostV20](
           "createmultisig",
           List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))))
-      case V16 | V17 | V18 | V19 | Experimental =>
-        bitcoindCall[MultiSigResultPreV20](
-          "createmultisig",
-          List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))))
+      case version @ (V16 | V17 | V18 | V19 | Experimental) =>
+        throw new RuntimeException(
+          s"Cannot use v20MultisigRpc on an older version, got $version")
     }
   }
 }

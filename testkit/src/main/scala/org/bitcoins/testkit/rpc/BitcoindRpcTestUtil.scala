@@ -36,6 +36,7 @@ import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
   BitcoindConfig,
@@ -606,7 +607,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
           BitcoindV19RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v19Instance())
         case BitcoindVersion.V20 =>
-          BitcoindV19RpcClient.withActorSystem(
+          BitcoindV20RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v20Instance())
         case BitcoindVersion.Experimental =>
           BitcoindV19RpcClient.withActorSystem(
@@ -692,6 +693,15 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
   system: ActorSystem): Future[(BitcoindV19RpcClient, BitcoindV19RpcClient)] =
     createNodePairInternal(BitcoindVersion.V19, clientAccum)
+
+  /**
+    * Returns a pair of [[org.bitcoins.rpc.client.v20.BitcoindV20RpcClient BitcoindV20RpcClient]]
+    * that are connected with some blocks in the chain
+    */
+  def createNodePairV20(
+      clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
+  system: ActorSystem): Future[(BitcoindV20RpcClient, BitcoindV20RpcClient)] =
+    createNodePairInternal(BitcoindVersion.V20, clientAccum)
 
   /**
     * Returns a triple of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
