@@ -166,7 +166,7 @@ class BitcoindV20RpcClientTest extends BitcoindRpcTest {
   it should "correct generate to a descriptor" in {
     // 2-of-2 multisig descriptor
     val descriptor =
-      "sh(multi(2,023f720438186fbdfde0c0a403e770a0f32a2d198623a8a982c47b621f8b307640,03ed261094d609d5e02ba6553c2d91e4fd056006ce2fe64aace72b69cb5be3ab9c))#79xhudm2"
+      "sh(sortedmulti(2,023f720438186fbdfde0c0a403e770a0f32a2d198623a8a982c47b621f8b307640,03ed261094d609d5e02ba6553c2d91e4fd056006ce2fe64aace72b69cb5be3ab9c))#nj9wx7up"
     val numBlocks = 10
     for {
       client <- clientF
