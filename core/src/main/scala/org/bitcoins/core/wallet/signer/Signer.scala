@@ -11,12 +11,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.wallet.builder.TxBuilderError
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{
-  DummyECDigitalSignature,
-  ECDigitalSignature,
-  ECPublicKey,
-  Sign
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -45,7 +40,7 @@ sealed abstract class SignerUtils {
       isDummySignature: Boolean)(implicit
       ec: ExecutionContext): Future[ECDigitalSignature] = {
     if (isDummySignature) {
-      Future.successful(DummyECDigitalSignature)
+      Future.successful(LowRDummyECDigitalSignature)
     } else {
       TransactionSignatureCreator.createSig(unsignedTx,
                                             signingInfo,

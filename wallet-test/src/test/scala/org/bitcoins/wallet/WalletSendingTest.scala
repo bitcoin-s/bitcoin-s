@@ -6,11 +6,12 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.core.gen.{CurrencyUnitGenerator, FeeUnitGen}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.scalatest.{Assertion, FutureOutcome}
 import scodec.bits.ByteVector
@@ -207,6 +208,51 @@ class WalletSendingTest extends BitcoinSWalletTest {
         TransactionOutput(amountToSend, testAddress.scriptPubKey)
       assert(tx.outputs.contains(expectedOutput),
              "Did not contain expected output")
+    }
+  }
+
+  it should "correctly send entire outpoints" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+    for {
+      allUtxos <- wallet.listUtxos()
+      // use half of them
+      utxos = allUtxos.drop(allUtxos.size / 2)
+      outPoints = utxos.map(_.outPoint)
+      tx <- wallet.sendFromOutPoints(outPoints, testAddress, None)
+    } yield {
+      val expectedFeeRate =
+        wallet.feeRateApi.asInstanceOf[RandomFeeProvider].lastFeeRate.get
+      assert(outPoints.forall(outPoint =>
+               tx.inputs.exists(_.previousOutput == outPoint)),
+             "Every outpoint was not included included")
+      assert(tx.inputs.size == outPoints.size, "An extra input was added")
+
+      val inputAmount = utxos.map(_.output.value).sum
+      val numInputs = outPoints.size
+
+      val defaultRange = expectedFeeRate.scaleFactor * numInputs
+
+      val (actualFeeRate, range) = expectedFeeRate match {
+        case _: SatoshisPerByte =>
+          (SatoshisPerByte.calc(inputAmount, tx), defaultRange)
+        case _: SatoshisPerVirtualByte =>
+          (SatoshisPerVirtualByte.calc(inputAmount, tx), defaultRange)
+        case _: SatoshisPerKiloByte =>
+          (SatoshisPerKiloByte.calc(inputAmount, tx), defaultRange)
+        case _: SatoshisPerKW =>
+          // multiply range by 4 because an extra byte on a sig counts as 4 weight units
+          (SatoshisPerKW.calc(inputAmount, tx), defaultRange * 4)
+      }
+
+      // +- range in case of rounding or unexpected signature sizes
+      assert(
+        actualFeeRate.toLong === expectedFeeRate.toLong +- range,
+        s"Expected fee rate: $expectedFeeRate, inputs: $numInputs input: $inputAmount, tx bytes: ${tx.byteSize} " +
+          s"vsize: ${tx.vsize} weight ${tx.weight}"
+      )
+
+      assert(tx.outputs.size == 1)
+      assert(tx.outputs.head.scriptPubKey == testAddress.scriptPubKey)
     }
   }
 
