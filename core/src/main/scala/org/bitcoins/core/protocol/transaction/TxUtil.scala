@@ -7,7 +7,12 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.builder.TxBuilderError
+import org.bitcoins.core.wallet.builder.{
+  AddWitnessDataFinalizer,
+  RawTxBuilder,
+  RawTxSigner,
+  TxBuilderError
+}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
@@ -122,6 +127,37 @@ object TxUtil extends BitcoinSLogger {
     */
   def calcLockTime(utxos: Seq[InputSigningInfo[InputInfo]]): Try[UInt32] = {
     calcLockTimeForInfos(utxos.map(_.inputInfo))
+  }
+
+  def buildDummyTx(
+      utxos: Vector[InputInfo],
+      outputs: Vector[TransactionOutput])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    val dummySpendingInfos = utxos.map { inputInfo =>
+      val mockSigners =
+        inputInfo.pubKeys.take(inputInfo.requiredSigs).map(Sign.dummySign)
+
+      inputInfo.toSpendingInfo(EmptyTransaction,
+                               mockSigners,
+                               HashType.sigHashAll)
+    }
+
+    val dummyInputs = utxos.map { inputInfo =>
+      TransactionInput(inputInfo.outPoint,
+                       EmptyScriptSignature,
+                       Policy.sequence)
+    }
+
+    val txBuilder = RawTxBuilder() ++= dummyInputs ++= outputs
+    val withFinalizer = txBuilder.setFinalizer(AddWitnessDataFinalizer(utxos))
+
+    for {
+      utx <- withFinalizer.buildTx()
+      signed <- RawTxSigner.sign(utx,
+                                 dummySpendingInfos,
+                                 RawTxSigner.emptyInvariant,
+                                 dummySign = true)
+    } yield signed
   }
 
   /** Inserts script signatures and (potentially) witness data to a given
