@@ -410,13 +410,12 @@ abstract class Wallet
         spentUtxos.isEmpty,
         s"Some out points given have already been spent, ${spentUtxos.map(_.outPoint)}")
 
-      prevTxFs = utxoDbs.map(utxo =>
-        transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
-      prevTxs <- FutureUtil.collect(prevTxFs)
-      utxos =
-        utxoDbs
-          .zip(prevTxs)
-          .map(info => info._1.toUTXOInfo(keyManager, info._2))
+      utxos <- Future.sequence {
+        utxoDbs.map(utxo =>
+          transactionDAO
+            .findByOutPoint(utxo.outPoint)
+            .map(txDb => utxo.toUTXOInfo(keyManager, txDb.get.transaction)))
+      }
 
       utxoAmount = utxoDbs.map(_.output.value).sum
       dummyOutput = TransactionOutput(utxoAmount, address.scriptPubKey)

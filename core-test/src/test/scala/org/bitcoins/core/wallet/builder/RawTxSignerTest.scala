@@ -6,7 +6,6 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{
@@ -17,8 +16,8 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
-  DummyECDigitalSignature,
   ECPrivateKey,
+  LowRDummyECDigitalSignature,
   Sign
 }
 import org.bitcoins.testkit.Implicits._
@@ -344,14 +343,14 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
           case btx: BaseTransaction =>
             assert(
               btx.inputs.forall(_.scriptSignature.signatures.forall(
-                _ == DummyECDigitalSignature)))
+                _ == LowRDummyECDigitalSignature)))
           case wtx: WitnessTransaction =>
             assert(
               wtx.witness.witnesses.forall {
                 case p2wsh: P2WSHWitnessV0 =>
-                  p2wsh.signatures.forall(_ == DummyECDigitalSignature)
+                  p2wsh.signatures.forall(_ == LowRDummyECDigitalSignature)
                 case p2wpkh: P2WPKHWitnessV0 =>
-                  p2wpkh.signature == DummyECDigitalSignature
+                  p2wpkh.signature == LowRDummyECDigitalSignature
                 case EmptyScriptWitness =>
                   true
               }
