@@ -60,7 +60,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
   val TestAmount = 1.bitcoin
   val FeeRate = SatoshisPerByte(10.sats)
-  val TestFees = 2240.sats
+  val TestFees: Satoshis = 2230.sats
 
   def nodeCallbacks: NodeCallbacks = {
     val onBlock: OnBlockReceived = { block =>
@@ -99,8 +99,9 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
           addresses <- wallet.listAddresses()
           utxos <- wallet.listDefaultAccountUtxos()
         } yield {
-          (expectedConfirmedAmount == confirmedBalance) &&
-          (expectedUnconfirmedAmount == unconfirmedBalance) &&
+          // +- fee rate because signatures could vary in size
+          (expectedConfirmedAmount === confirmedBalance +- FeeRate.currencyUnit) &&
+          (expectedUnconfirmedAmount === unconfirmedBalance +- FeeRate.currencyUnit) &&
           (expectedAddresses == addresses.size) &&
           (expectedUtxos == utxos.size)
         }

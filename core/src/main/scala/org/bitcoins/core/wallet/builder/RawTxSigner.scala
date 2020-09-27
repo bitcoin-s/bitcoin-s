@@ -2,13 +2,7 @@ package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.crypto.TxSigComponent
 import org.bitcoins.core.protocol.script.ScriptWitness
-import org.bitcoins.core.protocol.transaction.{
-  EmptyWitness,
-  Transaction,
-  TransactionWitness,
-  TxUtil,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSigner
@@ -19,7 +13,7 @@ import org.bitcoins.core.wallet.utxo.{
 }
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 /** Transactions that have been finalized by a RawTxFinalizer are passed as inputs
   * to a sign function here in order to generate fully signed transactions.
@@ -28,6 +22,40 @@ import scala.util.{Failure, Success, Try}
   * here to support PSBT and signed transaction construction between multiple parties.
   */
 object RawTxSigner extends BitcoinSLogger {
+
+  val emptyInvariant: (
+      Vector[ScriptSignatureParams[InputInfo]],
+      Transaction) => Boolean = (_, _) => true
+
+  def feeInvariant(expectedFeeRate: FeeUnit): (
+      Vector[ScriptSignatureParams[InputInfo]],
+      Transaction) => Boolean =
+    addFeeRateInvariant(expectedFeeRate, emptyInvariant)
+
+  private def addFeeRateInvariant(
+      expectedFeeRate: FeeUnit,
+      userInvariants: (
+          Vector[ScriptSignatureParams[InputInfo]],
+          Transaction) => Boolean): (
+      Vector[ScriptSignatureParams[InputInfo]],
+      Transaction) => Boolean = { (utxoInfos, signedTx) =>
+    {
+      userInvariants(utxoInfos, signedTx) &&
+      TxUtil
+        .sanityChecks(isSigned = true,
+                      inputInfos = utxoInfos.map(_.inputInfo),
+                      expectedFeeRate = expectedFeeRate,
+                      tx = signedTx)
+        .isSuccess
+    }
+  }
+
+  def sign(
+      utx: Transaction,
+      utxoInfos: Vector[ScriptSignatureParams[InputInfo]])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    sign(utx, utxoInfos, emptyInvariant, dummySign = false)
+  }
 
   def sign(txWithInfo: FinalizedTxWithSigningInfo, expectedFeeRate: FeeUnit)(
       implicit ec: ExecutionContext): Future[Transaction] = {
@@ -39,29 +67,53 @@ object RawTxSigner extends BitcoinSLogger {
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
       expectedFeeRate: FeeUnit)(implicit
       ec: ExecutionContext): Future[Transaction] = {
-    sign(utx, utxoInfos, expectedFeeRate, (_, _) => true)
-  }
 
-  def sign(
-      txWithInfo: FinalizedTxWithSigningInfo,
-      expectedFeeRate: FeeUnit,
-      invariants: (
-          Vector[ScriptSignatureParams[InputInfo]],
-          Transaction) => Boolean)(implicit
-      ec: ExecutionContext): Future[Transaction] = {
-    sign(txWithInfo.finalizedTx, txWithInfo.infos, expectedFeeRate, invariants)
+    val invariants = feeInvariant(expectedFeeRate)
+
+    sign(utx, utxoInfos, invariants, dummySign = false)
   }
 
   def sign(
       utx: Transaction,
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
       expectedFeeRate: FeeUnit,
-      invariants: (
+      userInvariants: (
           Vector[ScriptSignatureParams[InputInfo]],
           Transaction) => Boolean)(implicit
       ec: ExecutionContext): Future[Transaction] = {
-    require(utxoInfos.length == utx.inputs.length,
-            "Must provide exactly one UTXOSatisfyingInfo per input.")
+
+    val invariants = addFeeRateInvariant(expectedFeeRate, userInvariants)
+
+    sign(utx, utxoInfos, invariants, dummySign = false)
+  }
+
+  def sign(
+      txWithInfo: FinalizedTxWithSigningInfo,
+      expectedFeeRate: FeeUnit,
+      userInvariants: (
+          Vector[ScriptSignatureParams[InputInfo]],
+          Transaction) => Boolean)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+
+    val invariants = addFeeRateInvariant(expectedFeeRate, userInvariants)
+
+    sign(txWithInfo.finalizedTx,
+         txWithInfo.infos,
+         invariants,
+         dummySign = false)
+  }
+
+  def sign(
+      utx: Transaction,
+      utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
+      invariants: (
+          Vector[ScriptSignatureParams[InputInfo]],
+          Transaction) => Boolean,
+      dummySign: Boolean)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    require(
+      utxoInfos.length == utx.inputs.length,
+      s"Must provide exactly one UTXOSatisfyingInfo per input, ${utxoInfos.length} != ${utx.inputs.length}")
     require(utxoInfos.distinct.length == utxoInfos.length,
             "All UTXOSatisfyingInfos must be unique. ")
     require(utxoInfos.forall(utxo =>
@@ -81,7 +133,7 @@ object RawTxSigner extends BitcoinSLogger {
 
         val inputAndWitnessFs = utxoInfos.map { utxo =>
           val txSigCompF =
-            BitcoinSigner.sign(utxo, utx, isDummySignature = false)
+            BitcoinSigner.sign(utxo, utx, isDummySignature = dummySign)
           txSigCompF.map { txSigComp =>
             val scriptWitnessOpt = TxSigComponent.getScriptWitness(txSigComp)
 
@@ -125,14 +177,7 @@ object RawTxSigner extends BitcoinSLogger {
     signedTxF.flatMap { signedTx =>
       val txT: Try[Transaction] = {
         if (invariants(utxoInfos, signedTx)) {
-          //final sanity checks
-          TxUtil.sanityChecks(isSigned = true,
-                              inputInfos = utxoInfos.map(_.inputInfo),
-                              expectedFeeRate = expectedFeeRate,
-                              tx = signedTx) match {
-            case Success(_)   => Success(signedTx)
-            case Failure(err) => Failure(err)
-          }
+          Success(signedTx)
         } else {
           TxBuilderError.FailedUserInvariants
         }
