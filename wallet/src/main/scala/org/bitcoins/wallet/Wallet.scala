@@ -13,9 +13,10 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurpose, HDPurposes}
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
@@ -25,7 +26,7 @@ import org.bitcoins.core.wallet.builder.{
   RawTxSigner,
   ShufflingNonInteractiveFinalizer
 }
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerParams,
   KeyManagerUnlockError
@@ -387,6 +388,57 @@ abstract class Wallet
       }
       signed
     }
+  }
+
+  def sendFromOutPoints(
+      outPoints: Vector[TransactionOutPoint],
+      address: BitcoinAddress,
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction] = {
+    require(
+      address.networkParameters.isSameNetworkBytes(networkParameters),
+      s"Cannot send to address on other network, got ${address.networkParameters}"
+    )
+    logger.info(s"Sending to $address at feerate $feeRate")
+    for {
+      utxoDbs <- spendingInfoDAO.findByOutPoints(outPoints)
+      diff = utxoDbs.map(_.outPoint).diff(outPoints)
+      _ = require(diff.isEmpty,
+                  s"Not all OutPoints belong to this wallet, diff $diff")
+      spentUtxos =
+        utxoDbs.filterNot(utxo => TxoState.receivedStates.contains(utxo.state))
+      _ = require(
+        spentUtxos.isEmpty,
+        s"Some out points given have already been spent, ${spentUtxos.map(_.outPoint)}")
+
+      utxos <- Future.sequence {
+        utxoDbs.map(utxo =>
+          transactionDAO
+            .findByOutPoint(utxo.outPoint)
+            .map(txDb => utxo.toUTXOInfo(keyManager, txDb.get.transaction)))
+      }
+
+      utxoAmount = utxoDbs.map(_.output.value).sum
+      dummyOutput = TransactionOutput(utxoAmount, address.scriptPubKey)
+
+      dummyTx <-
+        TxUtil.buildDummyTx(utxos.map(_.inputInfo), Vector(dummyOutput))
+
+      fee = feeRate * dummyTx
+      amount = utxoAmount - fee
+
+      _ = require(amount > Policy.dustThreshold,
+                  "Utxos are not large enough to send at this fee rate")
+
+      output = TransactionOutput(amount, address.scriptPubKey)
+      txBuilder = ShufflingNonInteractiveFinalizer.txBuilderFrom(
+        Vector(output),
+        utxos,
+        feeRate,
+        EmptyScriptPubKey // There will be no change
+      )
+
+      tx <- finishSend(txBuilder, utxos, amount, feeRate, Vector.empty)
+    } yield tx
   }
 
   override def sendFromOutPoints(

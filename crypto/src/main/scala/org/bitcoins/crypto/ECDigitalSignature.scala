@@ -103,6 +103,17 @@ case object DummyECDigitalSignature extends ECDigitalSignature {
   override def s: BigInt = r
 }
 
+/**
+  * The point of this case object is to help with fee estimation
+  * when using low r signing. Technically this number can vary,
+  * 71 bytes is the most likely when using low r signing
+  */
+case object LowRDummyECDigitalSignature extends ECDigitalSignature {
+  override val bytes: ByteVector = ByteVector(Array.fill(71)(0.toByte))
+  override def r: BigInt = EmptyDigitalSignature.r
+  override def s: BigInt = r
+}
+
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
 
   private case class ECDigitalSignatureImpl(bytes: ByteVector)
@@ -111,7 +122,12 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
   override def fromBytes(bytes: ByteVector): ECDigitalSignature = {
     //this represents the empty signature
     if (bytes.size == 1 && bytes.head == 0x0) EmptyDigitalSignature
-    else if (bytes.size == 0) EmptyDigitalSignature
+    else if (bytes.size == 0)
+      EmptyDigitalSignature
+    else if (bytes == DummyECDigitalSignature.bytes)
+      DummyECDigitalSignature
+    else if (bytes == LowRDummyECDigitalSignature.bytes)
+      LowRDummyECDigitalSignature
     else {
       //make sure the signature follows BIP62's low-s value
       //https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures

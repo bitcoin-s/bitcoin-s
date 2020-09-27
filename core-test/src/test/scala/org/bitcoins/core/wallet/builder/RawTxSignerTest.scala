@@ -14,7 +14,12 @@ import org.bitcoins.core.wallet.utxo.{
   LockTimeInputInfo,
   ScriptSignatureParams
 }
-import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
+import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
+  ECPrivateKey,
+  LowRDummyECDigitalSignature,
+  Sign
+}
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
@@ -299,6 +304,57 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
 
         txF.map { tx =>
           assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
+        }
+    }
+  }
+
+  it should "dummy sign a mix of spks in a tx and then have fail verification" in {
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
+                ScriptGenerators.scriptPubKey) {
+      case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
+        val fee = SatoshisPerVirtualByte(Satoshis(1000))
+
+        val dummySpendingInfos = creditingTxsInfo.map { spendingInfo =>
+          val inputInfo = spendingInfo.inputInfo
+          val mockSigners =
+            inputInfo.pubKeys.take(inputInfo.requiredSigs).map(Sign.dummySign)
+
+          inputInfo.toSpendingInfo(EmptyTransaction,
+                                   mockSigners,
+                                   HashType.sigHashAll)
+        }
+
+        val utxF =
+          StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
+                                                 utxos = dummySpendingInfos,
+                                                 feeRate = fee,
+                                                 changeSPK = changeSPK)
+        val txF = utxF.flatMap(utx =>
+          RawTxSigner.sign(utx,
+                           dummySpendingInfos.toVector,
+                           RawTxSigner.emptyInvariant,
+                           dummySign = true))
+
+        // Can't use BitcoinScriptUtil.verifyScript because it will pass for things
+        // with EmptyScriptPubKeys or Multisig with 0 required sigs
+        txF.map {
+          case EmptyTransaction =>
+            succeed
+          case btx: BaseTransaction =>
+            assert(
+              btx.inputs.forall(_.scriptSignature.signatures.forall(
+                _ == LowRDummyECDigitalSignature)))
+          case wtx: WitnessTransaction =>
+            assert(
+              wtx.witness.witnesses.forall {
+                case p2wsh: P2WSHWitnessV0 =>
+                  p2wsh.signatures.forall(_ == LowRDummyECDigitalSignature)
+                case p2wpkh: P2WPKHWitnessV0 =>
+                  p2wpkh.signature == LowRDummyECDigitalSignature
+                case EmptyScriptWitness =>
+                  true
+              }
+            )
         }
     }
   }
