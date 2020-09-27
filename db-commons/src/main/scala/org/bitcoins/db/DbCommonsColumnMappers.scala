@@ -102,6 +102,9 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val ecPublicKeyMapper: BaseColumnType[ECPublicKey] =
     MappedColumnType.base[ECPublicKey, String](_.hex, ECPublicKey.fromHex)
 
+  implicit val fieldElementMapper: BaseColumnType[FieldElement] =
+    MappedColumnType.base[FieldElement, String](_.hex, FieldElement.fromHex)
+
   implicit val schnorrPublicKeyMapper: BaseColumnType[SchnorrPublicKey] =
     MappedColumnType
       .base[SchnorrPublicKey, String](_.hex, SchnorrPublicKey.fromHex)

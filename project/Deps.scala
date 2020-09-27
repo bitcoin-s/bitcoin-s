@@ -417,4 +417,9 @@ object Deps {
     Test.akkaTestkit
   )
 
+  val dlcOracle =
+    List(
+      Compile.newMicroJson,
+      Compile.logback
+    )
 }

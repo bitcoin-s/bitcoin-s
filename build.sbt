@@ -63,6 +63,7 @@ lazy val `bitcoin-s` = project
     dlcTest,
     dlcWallet,
     dlcWalletTest,
+    dlcOracle,
     dlcSuredbitsClient,
     dlcSuredbitsClientTest,
     bitcoindRpc,
@@ -542,6 +543,15 @@ lazy val dlcWallet = project
     libraryDependencies ++= Deps.dlcWallet
   )
   .dependsOn(wallet, dlc)
+
+lazy val dlcOracle = project
+  .in(file("dlc-oracle"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-oracle",
+    libraryDependencies ++= Deps.dlcWallet
+  )
+  .dependsOn(core, keyManager, dbCommons)
 
 lazy val dlcWalletTest = project
   .in(file("dlc-wallet-test"))
