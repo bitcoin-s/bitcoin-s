@@ -64,7 +64,7 @@ jobs:
       name: Linux 2.13.2 DLC Tests
       os: linux
       env:
-        - TEST_COMMAND="dlcTest/test dlcWalletTest/test"
+        - TEST_COMMAND="dlcTest/test dlcWalletTest/test dlcOracleTest/test"
       scala: 2.13.2
     - stage: test
       name: Linux 2.13.2 KeyManager and Wallet tests
@@ -115,7 +115,7 @@ jobs:
       os: osx
       name: "macOS dlc tests"
       env:
-        - TEST_COMMAND="dlcTest/test dlc/coverageReport dlc/coverageAggregate dlc/coveralls dlcWalletTest/test"
+        - TEST_COMMAND="dlcTest/test dlc/coverageReport dlc/coverageAggregate dlc/coveralls dlcWalletTest/test dlcOracleTest/test"
       scala: 2.13.2
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
