@@ -7,6 +7,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.{AppConfig, DbManagement, JdbcProfileComponent}
 import org.bitcoins.dlc.oracle.storage._
+import org.bitcoins.keymanager.WalletStorage
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -37,12 +38,12 @@ case class DLCOracleAppConfig(
 
   /** The path to our encrypted mnemonic seed */
   lazy val seedPath: Path = {
-    baseDatadir.resolve(SeedStorage.ENCRYPTED_SEED_FILE_NAME)
+    baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
   }
 
   /** Checks if our oracle as a mnemonic seed associated with it */
   def seedExists(): Boolean = {
-    SeedStorage.seedExists(seedPath)
+    WalletStorage.seedExists(seedPath)
   }
 
   def exists(): Boolean = {

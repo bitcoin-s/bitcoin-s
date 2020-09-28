@@ -2,6 +2,8 @@ package org.bitcoins.keymanager
 
 import java.nio.file.{Files, Path}
 
+import org.bitcoins.core.crypto.BIP39Seed
+import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.ReadMnemonicError.{
@@ -112,4 +114,28 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       }
   }
 
+  it must "write and read an ExtPrivateKey from disk" in {
+    walletConf: WalletAppConfig =>
+      assert(!walletConf.seedExists())
+
+      val password = getBIP39PasswordOpt().getOrElse(BIP39Seed.EMPTY_PASSWORD)
+      val keyVersion = SegWitMainNetPriv
+
+      val writtenMnemonic = getAndWriteMnemonic(walletConf)
+      val expected = BIP39Seed
+        .fromMnemonic(mnemonic = writtenMnemonic.mnemonicCode,
+                      password = password)
+        .toExtPrivateKey(keyVersion)
+
+      // should have been written by now
+      assert(walletConf.seedExists())
+      val seedPath = getSeedPath(walletConf)
+      val read =
+        WalletStorage.getPrivateKeyFromDisk(seedPath,
+                                            keyVersion,
+                                            passphrase,
+                                            Some(password))
+
+      assert(read == expected)
+  }
 }
