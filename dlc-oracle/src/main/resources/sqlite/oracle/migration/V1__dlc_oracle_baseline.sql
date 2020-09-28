@@ -1,12 +1,13 @@
 CREATE TABLE `r_values`
 (
-    `nonce`         VARCHAR(254) NOT NULL,
-    `label`         VARCHAR(254) NOT NULL UNIQUE,
-    `hd_purpose`    INTEGER      NOT NULL,
-    `coin`          INTEGER      NOT NULL,
-    `account_index` INTEGER      NOT NULL,
-    `chain_type`    INTEGER      NOT NULL,
-    `key_index`     INTEGER      NOT NULL,
+    `nonce`                VARCHAR(254) NOT NULL,
+    `label`                VARCHAR(254) NOT NULL UNIQUE,
+    `hd_purpose`           INTEGER      NOT NULL,
+    `coin`                 INTEGER      NOT NULL,
+    `account_index`        INTEGER      NOT NULL,
+    `chain_type`           INTEGER      NOT NULL,
+    `key_index`            INTEGER      NOT NULL,
+    `commitment_signature` VARCHAR(254) NOT NULL,
     PRIMARY KEY (`nonce`)
 );
 
