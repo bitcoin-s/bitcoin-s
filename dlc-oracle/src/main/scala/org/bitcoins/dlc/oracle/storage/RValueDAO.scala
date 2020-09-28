@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.oracle.storage
 
-import org.bitcoins.core.hd.{HDChainType, HDCoinType, HDPurpose}
+import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.crypto.SchnorrNonce
 import org.bitcoins.db.{AppConfig, CRUD, DbCommonsColumnMappers, SlickUtil}
 import slick.lifted.ProvenShape
@@ -32,12 +32,10 @@ case class RValueDAO()(implicit
       ts: Vector[RValueDb]): Query[RValueTable, RValueDb, Seq] =
     findByPrimaryKeys(ts.map(_.nonce))
 
-  def findMostRecent: Future[Option[RValueDb]] = {
-    val query = table
-      .sortBy(_.keyIndex.desc)
-      .take(1)
+  def maxKeyIndex: Future[Option[Int]] = {
+    val query = table.map(_.keyIndex).max
 
-    safeDatabase.run(query.result.headOption)
+    safeDatabase.run(query.result.transactionally)
   }
 
   class RValueTable(tag: Tag)
@@ -45,18 +43,21 @@ case class RValueDAO()(implicit
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.PrimaryKey)
 
+    def label: Rep[String] = column("label", O.Unique)
+
     def purpose: Rep[HDPurpose] = column("hd_purpose")
 
     def coinType: Rep[HDCoinType] = column("coin")
 
     def accountIndex: Rep[Int] = column("account_index")
 
-    def chainType: Rep[HDChainType] = column("chain_type")
+    def chainType: Rep[Int] = column("chain_type")
 
     def keyIndex: Rep[Int] = column("key_index")
 
     def * : ProvenShape[RValueDb] =
       (nonce,
+       label,
        purpose,
        coinType,
        accountIndex,

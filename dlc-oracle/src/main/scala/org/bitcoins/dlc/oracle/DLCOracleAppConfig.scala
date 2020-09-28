@@ -17,8 +17,6 @@ case class DLCOracleAppConfig(
     with DbManagement
     with JdbcProfileComponent[DLCOracleAppConfig] {
 
-  System.setProperty("krystal.bull.datadir", directory.toAbsolutePath.toString)
-
   import profile.api._
 
   override def start(): Future[Unit] = FutureUtil.unit
@@ -66,5 +64,4 @@ case class DLCOracleAppConfig(
 
   override def allTables: List[TableQuery[Table[_]]] =
     List(rValueTable, eventTable, eventOutcomeTable)
-
 }

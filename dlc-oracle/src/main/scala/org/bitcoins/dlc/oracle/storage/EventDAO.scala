@@ -67,5 +67,11 @@ case class EventDAO()(implicit
                  sourceColumns = nonce,
                  targetTableQuery = rValueTable)(_.nonce)
     }
+
+    def fkLabel: ForeignKeyQuery[_, RValueDb] = {
+      foreignKey("fk_label",
+                 sourceColumns = label,
+                 targetTableQuery = rValueTable)(_.label)
+    }
   }
 }

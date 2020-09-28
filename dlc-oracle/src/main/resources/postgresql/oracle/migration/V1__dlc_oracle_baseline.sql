@@ -1,27 +1,31 @@
-CREATE TABLE "r_values"
+CREATE TABLE r_values
 (
-    "nonce"         TEXT PRIMARY KEY,
-    "hd_purpose"    INTEGER NOT NULL,
-    "coin"          INTEGER NOT NULL,
-    "account_index" INTEGER NOT NULL,
-    "chain_type"    INTEGER NOT NULL,
-    "key_index"     INTEGER NOT NULL
+    nonce         TEXT    NOT NULL,
+    label         TEXT    NOT NULL UNIQUE,
+    hd_purpose    INTEGER NOT NULL,
+    coin          INTEGER NOT NULL,
+    account_index INTEGER NOT NULL,
+    chain_type    INTEGER NOT NULL,
+    key_index     INTEGER NOT NULL,
+    PRIMARY KEY (nonce)
 );
 
-CREATE TABLE "events"
+CREATE TABLE events
 (
-    "nonce"           TEXT PRIMARY KEY,
-    "label"           TEXT UNIQUE NOT NULL,
-    "num_outcomes"    INTEGER     NOT NULL,
-    "signing_version" INTEGER     NOT NULL,
-    "attestation"     TEXT,
-    constraint "fk_nonce" foreign key ("nonce") references "r_values" ("nonce")
+    nonce           TEXT    NOT NULL,
+    label           TEXT    NOT NULL UNIQUE,
+    num_outcomes    INTEGER NOT NULL,
+    signing_version TEXT    NOT NULL,
+    attestation     TEXT,
+    CONSTRAINT fk_label FOREIGN KEY (label) REFERENCES r_values (label) on update NO ACTION on delete NO ACTION,
+    PRIMARY KEY (nonce),
+    CONSTRAINT fk_nonce FOREIGN KEY (nonce) REFERENCES r_values (nonce) on update NO ACTION on delete NO ACTION
 );
 
-CREATE TABLE "event_outcomes"
+CREATE TABLE event_outcomes
 (
-    "nonce"          TEXT PRIMARY KEY,
-    "message"        TEXT NOT NULL,
-    "hashed_message" TEXT NOT NULL,
-    constraint "fk_nonce" foreign key ("nonce") references "r_values" ("nonce")
+    nonce          TEXT NOT NULL,
+    message        TEXT NOT NULL,
+    hashed_message TEXT NOT NULL,
+    CONSTRAINT fk_nonce FOREIGN KEY (nonce) REFERENCES events (nonce) on update NO ACTION on delete NO ACTION
 );
