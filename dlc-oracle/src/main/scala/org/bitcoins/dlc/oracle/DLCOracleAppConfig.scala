@@ -20,8 +20,6 @@ case class DLCOracleAppConfig(
 
   import profile.api._
 
-  override def start(): Future[Unit] = FutureUtil.unit
-
   override def appConfig: DLCOracleAppConfig = this
 
   override type ConfigType = DLCOracleAppConfig
@@ -39,6 +37,22 @@ case class DLCOracleAppConfig(
   /** The path to our encrypted mnemonic seed */
   lazy val seedPath: Path = {
     baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+  }
+
+  override def start(): Future[Unit] = {
+    logger.debug(s"Initializing wallet setup")
+
+    if (Files.notExists(datadir)) {
+      Files.createDirectories(datadir)
+    }
+
+    val numMigrations = {
+      migrate()
+    }
+
+    logger.info(s"Applied $numMigrations to the wallet project")
+
+    FutureUtil.unit
   }
 
   /** Checks if our oracle as a mnemonic seed associated with it */
