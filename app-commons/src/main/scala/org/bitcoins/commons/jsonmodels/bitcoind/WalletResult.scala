@@ -21,8 +21,21 @@ import org.bitcoins.crypto.{
 
 sealed abstract class WalletResult
 
-case class MultiSigResult(address: BitcoinAddress, redeemScript: ScriptPubKey)
-    extends WalletResult
+trait MultiSigResult extends WalletResult {
+  def address: BitcoinAddress
+  def redeemScript: ScriptPubKey
+}
+
+case class MultiSigResultPreV20(
+    address: BitcoinAddress,
+    redeemScript: ScriptPubKey)
+    extends MultiSigResult
+
+case class MultiSigResultPostV20(
+    address: BitcoinAddress,
+    redeemScript: ScriptPubKey,
+    descriptor: String)
+    extends MultiSigResult
 
 case class BumpFeeResult(
     txid: DoubleSha256DigestBE,

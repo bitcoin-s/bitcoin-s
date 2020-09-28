@@ -211,6 +211,9 @@ object JsonSerializers {
     Json.reads[NodeBanPreV20]
 
   // Blockchain Models
+  implicit val dumpTxOutSetResultReads: Reads[DumpTxOutSetResult] =
+    Json.reads[DumpTxOutSetResult]
+
   implicit val getBlockResultReads: Reads[GetBlockResult] =
     Json.reads[GetBlockResult]
 
@@ -288,8 +291,11 @@ object JsonSerializers {
   }
 
   // Wallet Models
-  implicit val multiSigReads: Reads[MultiSigResult] =
-    Json.reads[MultiSigResult]
+  implicit val multiSigPreV20Reads: Reads[MultiSigResultPreV20] =
+    Json.reads[MultiSigResultPreV20]
+
+  implicit val multiSigPostV20Reads: Reads[MultiSigResultPostV20] =
+    Json.reads[MultiSigResultPostV20]
 
   implicit val bumpFeeReads: Reads[BumpFeeResult] = Json.reads[BumpFeeResult]
 

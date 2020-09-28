@@ -1,5 +1,7 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
+import java.nio.file.Path
+
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.GolombFilter
@@ -9,6 +11,13 @@ import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 sealed abstract class BlockchainResult
+
+case class DumpTxOutSetResult(
+    coins_written: Int,
+    base_hash: DoubleSha256DigestBE,
+    base_height: Int,
+    path: Path)
+    extends BlockchainResult
 
 case class GetBlockResult(
     hash: DoubleSha256DigestBE,

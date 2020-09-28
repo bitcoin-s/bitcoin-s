@@ -2,12 +2,7 @@ package org.bitcoins.rpc.client.v20
 
 import akka.actor.ActorSystem
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
-import org.bitcoins.commons.jsonmodels.bitcoind.{
-  GetBalancesResult,
-  RpcOpts,
-  SetWalletFlagResult,
-  SignRawTransactionResult
-}
+import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.api.chain.ChainQueryApi
@@ -38,7 +33,9 @@ class BitcoindV20RpcClient(override val instance: BitcoindInstance)(implicit
     extends BitcoindRpcClient(instance)
     with DescriptorRpc
     with PsbtRpc
-    with V19BlockFilterRpc {
+    with V19BlockFilterRpc
+    with V20MultisigRpc
+    with V20AssortedRpc {
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
