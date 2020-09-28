@@ -250,7 +250,16 @@ case class AddWitnessDataFinalizer(inputInfos: Vector[InputInfo])
 
   override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
       ec: ExecutionContext): Future[Transaction] = {
-    val witnesses = inputInfos.map(InputInfo.getScriptWitness)
+
+    val result = txBuilderResult.toBaseTransaction
+
+    val sortedInputInfos = result.inputs
+      .flatMap(input => inputInfos.find(_.outPoint == input.previousOutput))
+      .toVector
+
+    require(sortedInputInfos.size == inputInfos.size, "Missing input infos")
+
+    val witnesses = sortedInputInfos.map(InputInfo.getScriptWitness)
     TransactionWitness.fromWitOpt(witnesses) match {
       case _: EmptyWitness =>
         Future.successful(txBuilderResult.toBaseTransaction)

@@ -13,19 +13,14 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurpose, HDPurposes}
-import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptPubKey}
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
-import org.bitcoins.core.wallet.builder.{
-  RawTxBuilderWithFinalizer,
-  RawTxSigner,
-  ShufflingNonInteractiveFinalizer
-}
+import org.bitcoins.core.wallet.builder._
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerParams,
@@ -361,8 +356,8 @@ abstract class Wallet
   /** Takes a [[RawTxBuilderWithFinalizer]] for a transaction to be sent, and completes it by:
     * finalizing and signing the transaction, then correctly processing and logging it
     */
-  private def finishSend(
-      txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
+  private def finishSend[F <: RawTxFinalizer](
+      txBuilder: RawTxBuilderWithFinalizer[F],
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
       sentAmount: CurrencyUnit,
       feeRate: FeeUnit,
@@ -416,28 +411,30 @@ abstract class Wallet
             .findByOutPoint(utxo.outPoint)
             .map(txDb => utxo.toUTXOInfo(keyManager, txDb.get.transaction)))
       }
+      inputInfos = utxos.map(_.inputInfo)
 
       utxoAmount = utxoDbs.map(_.output.value).sum
       dummyOutput = TransactionOutput(utxoAmount, address.scriptPubKey)
+      inputs = InputUtil.calcSequenceForInputs(utxos)
 
-      dummyTx <-
-        TxUtil.buildDummyTx(utxos.map(_.inputInfo), Vector(dummyOutput))
+      txBuilder = RawTxBuilder() ++= inputs += dummyOutput
+      finalizer = SubtractFeeFromOutputsFinalizer(inputInfos, feeRate)
+        .andThen(ShuffleFinalizer)
+        .andThen(AddWitnessDataFinalizer(inputInfos))
 
-      fee = feeRate * dummyTx
-      amount = utxoAmount - fee
+      withFinalizer = txBuilder.setFinalizer(finalizer)
 
-      _ = require(amount > Policy.dustThreshold,
-                  "Utxos are not large enough to send at this fee rate")
+      tmp <- withFinalizer.buildTx()
 
-      output = TransactionOutput(amount, address.scriptPubKey)
-      txBuilder = ShufflingNonInteractiveFinalizer.txBuilderFrom(
-        Vector(output),
-        utxos,
-        feeRate,
-        EmptyScriptPubKey // There will be no change
-      )
+      _ = require(
+        tmp.outputs.size == 1,
+        s"Created tx is not as expected, does not have 1 output, got $tmp")
 
-      tx <- finishSend(txBuilder, utxos, amount, feeRate, Vector.empty)
+      tx <- finishSend(withFinalizer,
+                       utxos,
+                       tmp.outputs.head.value,
+                       feeRate,
+                       Vector.empty)
     } yield tx
   }
 
