@@ -141,7 +141,7 @@ object DLCMessage {
       calcParamHash(oracleInfo, contractInfo, timeouts)
 
     val tempContractId: Sha256Digest =
-      CryptoUtil.sha256(toTLV.bytes)
+      CryptoUtil.sha256(toMessage.bytes)
 
     def toTLV: DLCOfferTLV = {
       val chainHash =
