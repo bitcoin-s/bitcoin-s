@@ -1,17 +1,11 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.config.{MainNet, TestNet3, _}
+import org.bitcoins.core.config._
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.util._
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  ECPublicKey,
-  HashDigest,
-  Sha256Digest,
-  Sha256Hash160Digest
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
@@ -79,11 +73,9 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
   */
 sealed abstract class Bech32Address extends BitcoinAddress {
 
-  def hrp: BtcHumanReadablePart
+  lazy val hrp: BtcHumanReadablePart = BtcHumanReadablePart(networkParameters)
 
   def data: Vector[UInt5]
-
-  override def networkParameters: NetworkParameters = hrp.network
 
   override def value: String = {
     val all: Vector[UInt5] = data ++ checksum
@@ -119,7 +111,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
 object Bech32Address extends AddressFactory[Bech32Address] {
 
   private case class Bech32AddressImpl(
-      hrp: BtcHumanReadablePart,
+      networkParameters: NetworkParameters,
       data: Vector[UInt5])
       extends Bech32Address {
     //require(verifyChecksum(hrp, data), "checksum did not pass")
@@ -134,18 +126,14 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     //we don't encode the wit version or pushop for program into base5
     val prog = UInt8.toUInt8s(witSPK.asmBytes.tail.tail)
     val encoded = Bech32.from8bitTo5bit(prog)
-    val hrp = networkParameters match {
-      case _: MainNet  => BtcHumanReadablePart.bc
-      case _: TestNet3 => BtcHumanReadablePart.tb
-      case _: SigNet   => BtcHumanReadablePart.tb
-      case _: RegTest  => BtcHumanReadablePart.bcrt
-    }
     val witVersion = witSPK.witnessVersion.version.toInt.toByte
-    Bech32Address(hrp, Vector(UInt5(witVersion)) ++ encoded)
+    Bech32Address(networkParameters, Vector(UInt5(witVersion)) ++ encoded)
   }
 
-  def apply(hrp: BtcHumanReadablePart, data: Vector[UInt5]): Bech32Address = {
-    Bech32AddressImpl(hrp, data)
+  def apply(
+      networkParameters: NetworkParameters,
+      data: Vector[UInt5]): Bech32Address = {
+    Bech32AddressImpl(networkParameters, data)
   }
 
   /** Returns a base 5 checksum as specified by BIP173 */
@@ -192,8 +180,8 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   override def fromString(bech32: String): Bech32Address = {
     val bech32T = for {
       (hrp, data) <- Bech32.splitToHrpAndData(bech32)
-      btcHrp = BtcHumanReadablePart.fromString(hrp)
-    } yield Bech32Address(btcHrp, data)
+      network = BtcHumanReadablePart.fromString(hrp).network
+    } yield Bech32Address(network, data)
 
     bech32T match {
       case Success(bech32) => bech32
