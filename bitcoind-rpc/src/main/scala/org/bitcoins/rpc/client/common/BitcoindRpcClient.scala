@@ -103,9 +103,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
 
   /** Gets the block height of the closest block to the given time */
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
-    Future.failed(
-      new UnsupportedOperationException(
-        "epochSecondToBlockHeight is not supported by bitcoind"))
+    Future.successful(0)
 
   // Node Api
 

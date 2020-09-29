@@ -1,51 +1,41 @@
 package org.bitcoins.server
 
-import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /** Useful utilities to use in the wallet project for syncing things against bitcoind */
 object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
-  def getChainQueryApi(bitcoind: BitcoindRpcClient): ChainQueryApi = {
-    new ChainQueryApi {
+  def createWalletWithBitcoindCallbacks(
+      bitcoind: BitcoindRpcClient,
+      wallet: Wallet)(implicit ec: ExecutionContext): Wallet = {
+    // Kill the old wallet
+    wallet.stopWalletThread()
 
-      override def getBlockHeight(
-          blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
-        bitcoind.getBlockHeight(blockHash)
+    // We need to create a promise so we can inject the wallet with the callback
+    // after we have created it into SyncUtil.getNodeApiWalletCallback
+    // so we don't lose the internal state of the wallet
+    val walletCallbackP = Promise[Wallet]()
 
-      override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
-        bitcoind.getBestBlockHash
-      }
+    val pairedWallet = Wallet(
+      keyManager = wallet.keyManager,
+      nodeApi =
+        BitcoindRpcBackendUtil.getNodeApiWalletCallback(bitcoind,
+                                                        walletCallbackP.future),
+      chainQueryApi = bitcoind,
+      feeRateApi = wallet.feeRateApi,
+      creationTime = wallet.keyManager.creationTime
+    )(wallet.walletConfig, wallet.ec)
 
-      override def getNumberOfConfirmations(
-          blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = {
-        bitcoind.getNumberOfConfirmations(blockHashOpt)
-      }
+    walletCallbackP.success(pairedWallet)
 
-      override def getFilterCount: Future[Int] = {
-        bitcoind.getFilterCount
-      }
-
-      override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
-        bitcoind.getHeightByBlockStamp(blockStamp)
-
-      override def epochSecondToBlockHeight(time: Long): Future[Int] =
-        Future.successful(0)
-
-      override def getFiltersBetweenHeights(
-          startHeight: Int,
-          endHeight: Int): Future[Vector[FilterResponse]] =
-        bitcoind.getFiltersBetweenHeights(startHeight, endHeight)
-    }
+    pairedWallet
   }
 
   def getNodeApiWalletCallback(
