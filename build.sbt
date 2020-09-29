@@ -65,6 +65,8 @@ lazy val `bitcoin-s` = project
     dlcTest,
     dlcWallet,
     dlcWalletTest,
+    dlcOracle,
+    dlcOracleTest,
     dlcSuredbitsClient,
     dlcSuredbitsClientTest,
     bitcoindRpc,
