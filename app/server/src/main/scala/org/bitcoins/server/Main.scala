@@ -28,6 +28,7 @@ import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -321,6 +322,32 @@ object Main extends App with HttpLogger {
     } yield {
       start
     }
+  }
+
+  def createWalletWithBitcoindCallbacks(
+      bitcoind: BitcoindRpcClient,
+      wallet: Wallet)(implicit ec: ExecutionContext): Wallet = {
+    // Kill the old wallet
+    wallet.stopWalletThread()
+
+    // We need to create a promise so we can inject the wallet with the callback
+    // after we have created it into SyncUtil.getNodeApiWalletCallback
+    // so we don't lose the internal state of the wallet
+    val walletCallbackP = Promise[Wallet]()
+
+    val pairedWallet = Wallet(
+      keyManager = wallet.keyManager,
+      nodeApi =
+        BitcoindRpcBackendUtil.getNodeApiWalletCallback(bitcoind,
+                                                        walletCallbackP.future),
+      chainQueryApi = BitcoindRpcBackendUtil.getChainQueryApi(bitcoind),
+      feeRateApi = wallet.feeRateApi,
+      creationTime = wallet.keyManager.creationTime
+    )(wallet.walletConfig, wallet.ec)
+
+    walletCallbackP.success(pairedWallet)
+
+    pairedWallet
   }
 }
 
