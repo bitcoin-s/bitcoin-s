@@ -211,6 +211,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
         .fromMnemonic(mnemonic = writtenMnemonic.mnemonicCode,
                       password = password)
         .toExtPrivateKey(keyVersion)
+        .toHardened
 
       // should have been written by now
       assert(walletConf.seedExists())

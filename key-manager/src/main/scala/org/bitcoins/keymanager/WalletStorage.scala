@@ -5,7 +5,7 @@ import java.time.Instant
 import java.util.NoSuchElementException
 
 import org.bitcoins.core.compat._
-import org.bitcoins.core.crypto.{BIP39Seed, ExtKeyPrivVersion, ExtPrivateKey}
+import org.bitcoins.core.crypto._
 import org.bitcoins.crypto.{AesEncryptedData, AesIV, AesPassword, AesSalt}
 import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
@@ -200,7 +200,7 @@ object WalletStorage {
       seedPath: Path,
       privKeyVersion: ExtKeyPrivVersion,
       passphrase: AesPassword,
-      bip39PasswordOpt: Option[String]): ExtPrivateKey = {
+      bip39PasswordOpt: Option[String]): ExtPrivateKeyHardened = {
     val mnemonicCode = decryptMnemonicFromDisk(seedPath, passphrase) match {
       case Left(error)     => sys.error(error.toString)
       case Right(mnemonic) => mnemonic.mnemonicCode
@@ -213,7 +213,7 @@ object WalletStorage {
                                password = BIP39Seed.EMPTY_PASSWORD)
     }
 
-    seed.toExtPrivateKey(privKeyVersion)
+    seed.toExtPrivateKey(privKeyVersion).toHardened
   }
 }
 
