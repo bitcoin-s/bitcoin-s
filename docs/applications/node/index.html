@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Light Client · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Bitcoin-s has node module that allows you to connect to the p2p network."/><meta name="docsearch:version" content="0.3.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Light Client · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="Bitcoin-s has node module that allows you to connect to the p2p network."/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Light Client · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Bitcoin-S comes bundled with a light client Bitcoin node. this client"/><meta name="docsearch:version" content="v0.4"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Light Client · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="Bitcoin-S comes bundled with a light client Bitcoin node. this client"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
               (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
               (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
               m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -6,124 +6,14 @@
 
               ga('create', 'UA-61958686-2', 'auto');
               ga('send', 'pageview');
-            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>0.3.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/docs/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/applications/node.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Light Client</h1></header><article><div><span><p>Bitcoin-s has node module that allows you to connect to the p2p network.</p>
-<h3><a class="anchor" aria-hidden="true" id="neutrino-node"></a><a href="#neutrino-node" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Neutrino Node</h3>
-<p>Bitcoin-s has experimental support for neutrino which is a new lite client proposal on the bitcoin p2p network. You can
-read more about how neutrino works <a href="https://suredbits.com/neutrino-what-is-it-and-why-we-need-it/">here</a>.</p>
-<h4><a class="anchor" aria-hidden="true" id="callbacks"></a><a href="#callbacks" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Callbacks</h4>
-<p>Bitcoin-S support call backs for the following events that happen on the bitcoin p2p network:</p>
-<ol>
-<li>onTxReceived</li>
-<li>onBlockReceived</li>
-<li>onMerkleBlockReceived</li>
-<li>onCompactFilterReceived</li>
-</ol>
-<p>That means every time one of these events happens on the p2p network, we will call your callback
-so that you can be notified of the event. Let's make a easy one</p>
-<h4><a class="anchor" aria-hidden="true" id="example"></a><a href="#example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Example</h4>
-<p>Here is an example of constructing a neutrino node and registering a callback so you can be notified of an event.</p>
-<p>To run the example, we need a bitcoind binary that has neutrino support. Unforunately bitcoin core has not merged neutrino
-p2p network support yet (<a href="https://github.com/bitcoin/bitcoin/pull/16442">pr here</a>) which means that we have built a custom binary and host it ourselves. You need
-to make sure to run <code>sbt downloadBitcoind</code> and then look for the <code>bitcoind</code> binary with neutrino support in
-<code>$HOME/.bitcoin-s/binaries/bitcoind/bitcoin-0.18.99/</code>. This binary is built from the open PR on bitcoin core.</p>
-<pre><code class="hljs css language-scala">implicit val system = ActorSystem(s"node-example")
-implicit val ec = system.dispatcher
-
-//we also require a bitcoind instance to connect to
-//so let's start one (make sure you ran 'sbt downloadBitcoind')
-val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.Experimental))
-val p2pPort = instance.p2pPort
-val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
-
-//contains information on how to connect to bitcoin's p2p info
-val peerF = bitcoindF.map(b =&gt; NodeUnitTest.createPeer(b))
-
-// set a data directory
-val prefix = s"node-example-${System.currentTimeMillis()}"
-val datadir = Files.createTempDirectory(prefix)
-
-val tmpDir = BitcoinSTestAppConfig.tmpDir()
-// set the current network to regtest
-val config = ConfigFactory.parseString {
-    s"""
-    | bitcoin-s {
-    |   network = regtest
-    |   node {
-    |        mode = neutrino # neutrino, spv
-    |
-    |        peers = ["127.0.0.1:$p2pPort"] # a list of peer addresses in form "hostname:portnumber"
-    |        # (e.g. "neutrino.testnet3.suredbits.com:18333")
-    |        # Port number is optional, the default value is 8333 for mainnet,
-    |        # 18333 for testnet and 18444 for regtest.
-    |   }
-    | }
-    |""".stripMargin
-}
-
-implicit val appConfig = BitcoinSAppConfig(datadir, config)
-implicit val chainConfig = appConfig.chainConf
-implicit val nodeConfig = appConfig.nodeConf
-
-val initNodeF = nodeConfig.initialize()
-
-//the node requires a chainHandler to store block information
-//use a helper method in our testkit to create the chain project
-val chainApiF = for {
-  chainHandler &lt;- ChainUnitTest.createChainHandler()
-} yield chainHandler
-
-
-//yay! All setup done, let's create a node and then start it!
-val nodeF = for {
-  _ &lt;- chainApiF
-  peer &lt;- peerF
-} yield {
-    NeutrinoNode(nodePeer = peer,
-               nodeConfig = nodeConfig,
-               chainConfig = chainConfig,
-               actorSystem = system)
-}
-
-//let's start it
-val startedNodeF = nodeF.flatMap(_.start())
-
-//let's make a simple callback that print's the
-//blockhash everytime we receive a block on the network
-val blockReceivedFunc = { block: Block =&gt;
-  println(s"Received blockhash=${block.blockHeader.hashBE}")
-}
-
-val nodeCallbacks = NodeCallbacks.onBlockReceived(blockReceivedFunc)
-
-//ok, now we need to add this allback to our running node
-val nodeWithCallbackF = for {
-  node &lt;- startedNodeF
-  withCallback = node.addCallbacks(nodeCallbacks)
-} yield withCallback
-
-//let's test it out by generating a block with bitcoind!
-
-val genBlockF = for {
-  bitcoind &lt;- bitcoindF
-  addr &lt;- bitcoind.getNewAddress
-  hashes &lt;- bitcoind.generateToAddress(1,addr)
-} yield ()
-
-//you should see our callback print a block hash
-//when running this code
-
-//cleanup
-val cleanupF = for {
-  _ &lt;- genBlockF
-  bitcoind &lt;- bitcoindF
-  node &lt;- nodeWithCallbackF
-  x = NeutrinoNodeConnectedWithBitcoind(node.asInstanceOf[NeutrinoNode],bitcoind)
-  _ &lt;- NodeUnitTest.destroyNodeConnectedWithBitcoind(x)
-} yield ()
-
-Await.result(cleanupF, 60.seconds)
-</code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-9-3 by Chris Stewart</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>v0.4</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/docs/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/applications/node.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Light Client</h1></header><article><div><span><p>Bitcoin-S comes bundled with a light client Bitcoin node. this client
+is capable of doing verification of some parts of the blockchain,
+and can act as a starting point for building Bitcoin applications
+that need to connect to the P2P network.</p>
+<p>This node is currently only released as a library, and not as a binary.
+This is because it (nor the documentation) is not deemed production
+ready. Use at your own risk, and without too much money depending on it.</p>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-9-10 by Scala Steward</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
