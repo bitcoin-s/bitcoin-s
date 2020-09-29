@@ -127,7 +127,7 @@ sealed abstract class ExtKey extends NetworkElement {
 }
 
 object ExtKey extends Factory[ExtKey] with StringFactory[ExtKey] {
-  val hardenedIdx = UInt32(NumberUtil.pow2(31).toLong)
+  val hardenedIdx: UInt32 = UInt32(NumberUtil.pow2(31).toLong)
 
   val masterFingerprint: ByteVector = hex"00000000"
 
@@ -275,6 +275,10 @@ sealed abstract class ExtPrivateKey
   override def toStringSensitive: String = {
     ExtKey.toString(this)
   }
+
+  def toHardened: ExtPrivateKeyHardened = {
+    ExtPrivateKeyHardened(version, depth, fingerprint, childNum, chainCode, key)
+  }
 }
 
 object ExtPrivateKey
@@ -394,8 +398,91 @@ object ExtPrivateKey
   def fromBIP39Seed(
       version: ExtKeyPrivVersion,
       seed: BIP39Seed,
-      path: BIP32Path = BIP32Path.empty) =
+      path: BIP32Path = BIP32Path.empty): ExtPrivateKey =
     ExtPrivateKey(version, Some(seed.bytes), path)
+}
+
+case class ExtPrivateKeyHardened(
+    version: ExtKeyPrivVersion,
+    depth: UInt8,
+    fingerprint: ByteVector,
+    childNum: UInt32,
+    chainCode: ChainCode,
+    key: ECPrivateKey)
+    extends ExtPrivateKey {
+  require(fingerprint.size == 4,
+          "Fingerprint must be 4 bytes in size, got: " + fingerprint)
+
+  /** @inheritdoc */
+  override def deriveChildPrivKey(path: BIP32Path): ExtPrivateKeyHardened = {
+    require(path.forall(_.hardened))
+    super.deriveChildPrivKey(path).toHardened
+  }
+
+  /** @inheritdoc */
+  override def deriveChildPrivKey(idx: UInt32): ExtPrivateKeyHardened = {
+    require(idx >= ExtKey.hardenedIdx, s"idx must be hardened, got $idx")
+    super.deriveChildPrivKey(idx).toHardened
+  }
+
+  /** @inheritdoc */
+  override def deriveChildPrivKey(idx: Long): Try[ExtPrivateKeyHardened] = {
+    require(idx >= ExtKey.hardenedIdx.toLong, s"idx must be hardened, got $idx")
+    super.deriveChildPrivKey(idx).map(_.toHardened)
+  }
+}
+
+object ExtPrivateKeyHardened
+    extends Factory[ExtPrivateKeyHardened]
+    with StringFactory[ExtPrivateKeyHardened] {
+
+  def freshRootKey(version: ExtKeyPrivVersion): ExtPrivateKeyHardened = {
+    val privKey = ECPrivateKey.freshPrivateKey
+    val chainCode = ChainCode.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
+
+    ExtPrivateKeyHardened(
+      version,
+      UInt8.zero,
+      UInt32.zero.bytes,
+      UInt32.zero,
+      chainCode,
+      privKey
+    )
+  }
+
+  /** Takes in a base58 string and tries to convert it to an extended private key */
+  override def fromStringT(base58: String): Try[ExtPrivateKeyHardened] =
+    ExtPrivateKey.fromStringT(base58).map(_.toHardened)
+
+  override def fromString(base58: String): ExtPrivateKeyHardened = {
+    fromStringT(base58) match {
+      case Success(key) => key
+      case Failure(exn) => throw exn
+    }
+  }
+
+  override def fromBytes(bytes: ByteVector): ExtPrivateKeyHardened = {
+    require(bytes.size == 78, "ExtPrivateKeyHardened can only be 78 bytes")
+    ExtPrivateKey.fromBytes(bytes).toHardened
+  }
+
+  /**
+    * Generates a master private key
+    * https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#master-key-generation
+    */
+  def apply(
+      version: ExtKeyPrivVersion,
+      seedOpt: Option[ByteVector] = None,
+      path: BIP32Path = BIP32Path.empty): ExtPrivateKeyHardened = {
+    ExtPrivateKey(version, seedOpt, path).toHardened
+  }
+
+  /** Generates a extended private key from the provided seed and version */
+  def fromBIP39Seed(
+      version: ExtKeyPrivVersion,
+      seed: BIP39Seed,
+      path: BIP32Path = BIP32Path.empty): ExtPrivateKeyHardened =
+    ExtPrivateKey(version, Some(seed.bytes), path).toHardened
 }
 
 sealed abstract class ExtPublicKey extends ExtKey {
