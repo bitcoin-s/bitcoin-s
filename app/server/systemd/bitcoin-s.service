@@ -1,0 +1,15 @@
+[Unit]
+Description=Bitcoin-S Node
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bitcoin-s-server/bin/bitcoin-s-server
+User=bitcoin
+Group=bitcoin
+Type=simple
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+
