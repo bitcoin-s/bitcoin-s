@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Adding New Script Types · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="# Adding a New ScriptPubKey Type"/><meta name="docsearch:version" content="0.3.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Adding New Script Types · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="# Adding a New ScriptPubKey Type"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Adding New Script Types · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="&lt;!-- START doctoc generated TOC please keep comment here to allow auto update --&gt;"/><meta name="docsearch:version" content="v0.4"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Adding New Script Types · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="&lt;!-- START doctoc generated TOC please keep comment here to allow auto update --&gt;"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
               (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
               (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
               m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -6,7 +6,7 @@
 
               ga('create', 'UA-61958686-2', 'auto');
               ga('send', 'pageview');
-            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>0.3.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Core Module</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-started">Intro and Getting Started</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/applications/cli">bitcoin-s cli</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/server">Application Server</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/chain/filter-sync">Syncing Blockfilters</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/core/hd-keys">HD Key Generation</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/sign">Sign API</a></li><li class="navListItem"><a class="navItem" href="/docs/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/txbuilder">TxBuilder Example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/node/node">Light Client</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/chain-query-api">Chain Query API</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/node-api">Node API</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-rescan">Wallet Rescans</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/secp256k1/secp256k1">Secp256k1</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/testkit/testkit">Testkit</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/security">Security</a></li></ul></div></div></section></div><script>
+            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>v0.4</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Core Module</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-started">Intro and Getting Started</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/applications/cli">CLI</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/server">Application Server</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/gui">GUI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/chain/filter-sync">Syncing Blockfilters</a></li><li class="navListItem"><a class="navItem" href="/docs/chain/chain-query-api">Chain Query API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/core/hd-keys">HD Key Generation</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/txbuilder">TxBuilder Example</a></li><li class="navListItem"><a class="navItem" href="/docs/core/lightning-network">Lightning Network Data Types</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Crypto Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/crypto/crypto-intro">Crypto Module</a></li><li class="navListItem"><a class="navItem" href="/docs/crypto/sign">Sign API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Fee Provider</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/fee-provider/fee-provider">Fee Provider</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/node/node">Light Client</a></li><li class="navListItem"><a class="navItem" href="/docs/node/node-api">Node API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-callbacks">Wallet Callbacks</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-get-address">Wallet Get Address APIs</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/address-tagging">Address and UTXO tagging</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-rescan">Wallet Rescans</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/secp256k1/secp256k1">Secp256k1</a></li><li class="navListItem"><a class="navItem" href="/docs/secp256k1/jni-modify">Adding to Secp256k1 JNI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/testkit/testkit">Testkit</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/security">Security</a></li></ul></div></div></section></div><script>
             var coll = document.getElementsByClassName('collapsible');
             var checkActiveCategory = true;
             for (var i = 0; i < coll.length; i++) {
@@ -62,7 +62,45 @@
                 };
               }
             });
-        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/core/adding-spks.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Adding New Script Types</h1></header><article><div><span><h1><a class="anchor" aria-hidden="true" id="adding-a-new-scriptpubkey-type"></a><a href="#adding-a-new-scriptpubkey-type" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Adding a New ScriptPubKey Type</h1>
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/core/adding-spks.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Adding New Script Types</h1></header><article><div><span><!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<!-- END doctoc -->
+<ul>
+<li><a href="#adding-a-new-scriptpubkey-type">Adding a New ScriptPubKey Type</a>
+<ul>
+<li><a href="#step-0-design-philosophy">Step 0: Design Philosophy</a></li>
+<li><a href="#step-1-create-a-new-scriptpubkey-trait">Step 1: Create a New ScriptPubKey Trait</a></li>
+<li><a href="#step-2-create-companion-object">Step 2: Create Companion Object</a></li>
+<li><a href="#step-3-add-to-relevant-fromasm-methods">Step 3: Add to Relevant fromAsm Methods</a></li>
+<li><a href="#step-4-create-a-scriptsignature-if-necessary">Step 4: Create a ScriptSignature If Necessary</a></li>
+<li><a href="#step-5-add-to-scriptsignaturefromasm-if-applicable">Step 5: Add to ScriptSignature.fromAsm If Applicable</a></li>
+<li><a href="#step-6-create-relevant-bitcoinutxospendinginfo">Step 6: Create Relevant BitcoinUTXOSpendingInfo</a>
+<ul>
+<li><a href="#non-nested-single-key-spending-info">Non-Nested Single-Key Spending Info</a></li>
+<li><a href="#non-nested-multi-key-spending-info">Non-Nested Multi-Key Spending Info</a></li>
+<li><a href="#nested-spending-info">Nested Spending Info</a></li>
+</ul></li>
+<li><a href="#step-7-add-to-relevant-apply-methods">Step 7: Add to Relevant Apply Methods</a></li>
+<li><a href="#step-8-create-a-signer">Step 8: Create a Signer</a>
+<ul>
+<li><a href="#non-nested-single-key-spending-info-1">Non-Nested Single-Key Spending Info</a></li>
+<li><a href="#non-nested-multi-key-spending-info-1">Non-Nested Multi-Key Spending Info</a></li>
+<li><a href="#nested-spending-info-1">Nested Spending Info</a></li>
+</ul></li>
+<li><a href="#step-9-add-to-bitcoinsignersign">Step 9: Add to BitcoinSigner.sign</a></li>
+<li><a href="#step-10-add-to-scriptgenerators">Step 10: Add to ScriptGenerators</a>
+<ul>
+<li><a href="#scriptpubkey-generator">ScriptPubKey Generator</a></li>
+<li><a href="#scriptsignature-generator">ScriptSignature Generator</a></li>
+<li><a href="#scriptpubkey-with-paired-scriptsignature-generator">ScriptPubKey with Paired ScriptSignature Generator</a></li>
+</ul></li>
+<li><a href="#step-11-add-to-creditingtxgen">Step 11: Add to CreditingTxGen</a></li>
+<li><a href="#step-12-fix-all-non-exhaustive-matches">Step 12: Fix all Non-Exhaustive Matches</a></li>
+<li><a href="#step-13-run-tests-and-debug">Step 13: Run tests and debug</a></li>
+</ul></li>
+</ul>
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<h1><a class="anchor" aria-hidden="true" id="adding-a-new-scriptpubkey-type"></a><a href="#adding-a-new-scriptpubkey-type" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Adding a New ScriptPubKey Type</h1>
 <p>In this document, we will describe how to add new script implementations and types in Bitcoin-S. We will use the following script template example which we have called P2PK with Timeout to illustrate the process:</p>
 <pre><code class="hljs"><span class="hljs-attribute">OP_IF</span>
     <span class="hljs-section">&lt;Public Key&gt;</span>
@@ -267,201 +305,99 @@
   <span class="hljs-comment">//...</span>
 }
 </code></pre>
-<h2><a class="anchor" aria-hidden="true" id="step-6-create-relevant-bitcoinutxospendinginfo"></a><a href="#step-6-create-relevant-bitcoinutxospendinginfo" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 6: Create Relevant BitcoinUTXOSpendingInfo</h2>
-<p><code>BitcoinUTXOSpendingInfo</code> is the Bitcoin-S data structure for the information required to spend from a given <code>ScriptPubKey</code>. Hence, when defining new script types, it is important to define how they are spent as well so that they can be useful.</p>
-<p>There are three distinct kinds of scripts when it comes to signing in Bitcoin-S: scripts that have nesting (such as <code>ConditionalScriptPubKey</code>, <code>LockTimeScriptPubKey</code>), scripts without nesting but which involve multiple signing keys (such as <code>MultiSignatureScriptPubKey</code>), and scripts without nesting and which require only one key for signing (such as <code>P2PKWithTimeoutScriptPubKey</code>, <code>P2PKHScriptPubKey</code>). We will cover each of these cases in turn, starting with the last case as it applies to our example of <code>P2PKWithTimeout</code>.</p>
-<h3><a class="anchor" aria-hidden="true" id="non-nested-single-key-spending-info"></a><a href="#non-nested-single-key-spending-info" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Non-Nested Single-Key Spending Info</h3>
-<p>This is the easiest case and only requires creating a new <code>case class</code> in <code>UTXOSpendingInfo.scala</code> which extends <code>RawScriptUTXOSpendingInfoFull with RawScriptUTXOSpendingInfoSingle</code> and which contains in its parameters, all of the info required for spending. Make sure to also validate any data in these parameters using <code>require</code> statements. Make sure to <code>override</code> both <code>requiredSigs: Int = 1</code> and <code>conditionalPath: ConditionalPath</code> to be either whatever is needed based on your parameters, or <code>ConditionalPath.NoConditionsLeft</code> if your script does not use any conditionals. Here is what this looks like for <code>P2PKWithTimeout</code>:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">P2PKWithTimeoutSpendingInfo</span>(<span class="hljs-params">
+<h2><a class="anchor" aria-hidden="true" id="step-6-create-relevant-inputinfo"></a><a href="#step-6-create-relevant-inputinfo" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 6: Create Relevant InputInfo</h2>
+<p><code>InputInfo</code> is the Bitcoin-S data structure for the information required to spend from a specific condition of a given <code>ScriptPubKey</code> other than private keys. Hence, when defining new script types, it is important to define how they are spent as well so that they can be useful.</p>
+<p>There are two distinct kinds of scripts when it comes to signing in Bitcoin-S: scripts that have nesting (such as <code>ConditionalScriptPubKey</code>, <code>P2SHScriptPubKey</code>) and scripts without nesting (such as <code>MultiSignatureScriptPubKey</code>, <code>P2PKWithTimeoutScriptPubKey</code>, <code>P2PKHScriptPubKey</code>). We will cover each of these cases in turn, starting with the latter case as it applies to our example of <code>P2PKWithTimeout</code>. In both cases, please make sure to validate any parameter data using <code>require</code> statements when necessary, but make things correct by construction instead whenever possible. For example, if there is a redeem script and a <code>ScriptPubKey</code> which must wrap this redeem script, take as a parameter only the redeem script and construct the <code>ScriptPubKey</code> internally so that it is sure to be consistent.</p>
+<h3><a class="anchor" aria-hidden="true" id="non-nesting-input-info"></a><a href="#non-nesting-input-info" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Non-Nesting Input Info</h3>
+<p>We create a new <code>case class</code> in <code>InputInfo.scala</code> which extends <code>RawInputInfo</code> and which contains in its parameters, all of the info required for spending a specific condition other than private keys and <code>HashType</code>. Here is what this looks like for <code>P2PKWithTimeout</code>:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">P2PKWithTimeoutInputInfo</span>(<span class="hljs-params">
     outPoint: <span class="hljs-type">TransactionOutPoint</span>,
     amount: <span class="hljs-type">CurrencyUnit</span>,
     scriptPubKey: <span class="hljs-type">P2PKWithTimeoutScriptPubKey</span>,
-    override val signer: <span class="hljs-type">Sign</span>,
-    hashType: <span class="hljs-type">HashType</span>,
     isBeforeTimeout: <span class="hljs-type">Boolean</span></span>)</span>
-    <span class="hljs-keyword">extends</span> <span class="hljs-type">RawScriptUTXOSpendingInfoFull</span>
-    <span class="hljs-keyword">with</span> <span class="hljs-type">RawScriptUTXOSpendingInfoSingle</span> {
-  require(
-    scriptPubKey.pubKey == signer.publicKey || scriptPubKey.timeoutPubKey == signer.publicKey,
-    <span class="hljs-string">"Signer pubkey must match ScriptPubKey"</span>)
-
-  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> requiredSigs: <span class="hljs-type">Int</span> = <span class="hljs-number">1</span>
-
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">conditionalPath</span></span>: <span class="hljs-type">ConditionalPath</span> =
+    <span class="hljs-keyword">extends</span> <span class="hljs-type">RawInputInfo</span> {
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">conditionalPath</span></span>: <span class="hljs-type">ConditionalPath</span> = {
     <span class="hljs-keyword">if</span> (isBeforeTimeout) {
       <span class="hljs-type">ConditionalPath</span>.nonNestedTrue
     } <span class="hljs-keyword">else</span> {
       <span class="hljs-type">ConditionalPath</span>.nonNestedFalse
     }
-}
-</code></pre>
-<h3><a class="anchor" aria-hidden="true" id="non-nested-multi-key-spending-info"></a><a href="#non-nested-multi-key-spending-info" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Non-Nested Multi-Key Spending Info</h3>
-<p>For new script types which require multiple keys to spend, we must make two separate <code>case class</code>es, one for normal spending (which extends <code>RawScriptUTXOSpendingInfoFull</code>) and one for signing a transaction with a single key (which extends <code>RawScriptUTXOSpendingInfoSingle</code>). We then make a <code>sealed trait</code> for the both of them to extend. In this <code>trait</code>, you want to make sure to <code>override def scriptPubKey</code> to have your new <code>ScriptPubKey</code> type as well as overriding any other members of <code>RawScriptUTXOSpendingInfo</code> which are common to both classes. In total, this all works out to the following for <code>MutliSignatureScriptPubKey</code>:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">sealed</span> <span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">MultiSignatureSpendingInfo</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">RawScriptUTXOSpendingInfo</span> </span>{
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">conditionalPath</span></span>: <span class="hljs-type">ConditionalPath</span> =
-    <span class="hljs-type">ConditionalPath</span>.<span class="hljs-type">NoConditionsLeft</span>
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">scriptPubKey</span></span>: <span class="hljs-type">MultiSignatureScriptPubKey</span>
-}
-
-<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MultiSignatureSpendingInfoSingle</span>(<span class="hljs-params">
-    outPoint: <span class="hljs-type">TransactionOutPoint</span>,
-    amount: <span class="hljs-type">CurrencyUnit</span>,
-    scriptPubKey: <span class="hljs-type">MultiSignatureScriptPubKey</span>,
-    signer: <span class="hljs-type">Sign</span>,
-    hashType: <span class="hljs-type">HashType</span>
-</span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">MultiSignatureSpendingInfo</span></span>
-    <span class="hljs-keyword">with</span> <span class="hljs-type">RawScriptUTXOSpendingInfoSingle</span>
-
-<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MultiSignatureSpendingInfoFull</span>(<span class="hljs-params">
-    outPoint: <span class="hljs-type">TransactionOutPoint</span>,
-    amount: <span class="hljs-type">CurrencyUnit</span>,
-    scriptPubKey: <span class="hljs-type">MultiSignatureScriptPubKey</span>,
-    private val signersWithPossibleExtra: <span class="hljs-type">Vector</span>[<span class="hljs-type">Sign</span>],
-    hashType: <span class="hljs-type">HashType</span>
-</span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">RawScriptUTXOSpendingInfoFull</span></span>
-    <span class="hljs-keyword">with</span> <span class="hljs-type">MultiSignatureSpendingInfo</span> {
-  require(signersWithPossibleExtra.length &gt;= scriptPubKey.requiredSigs,
-          <span class="hljs-string">s"Not enough signers!: <span class="hljs-subst">$this</span>"</span>)
-
-  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> requiredSigs: <span class="hljs-type">Int</span> = scriptPubKey.requiredSigs
-
-  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> signers: <span class="hljs-type">Vector</span>[<span class="hljs-type">Sign</span>] =
-    signersWithPossibleExtra.take(requiredSigs)
-
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">toSingle</span></span>(signerIndex: <span class="hljs-type">Int</span>): <span class="hljs-type">MultiSignatureSpendingInfoSingle</span> = {
-    <span class="hljs-type">MultiSignatureSpendingInfoSingle</span>(outPoint,
-                                     amount,
-                                     scriptPubKey,
-                                     signers(signerIndex),
-                                     hashType)
   }
 
-  <span class="hljs-comment">/** @inheritdoc */</span>
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">toSingles</span></span>: <span class="hljs-type">Vector</span>[<span class="hljs-type">MultiSignatureSpendingInfoSingle</span>] = {
-    signers.map { signer =&gt;
-      <span class="hljs-type">MultiSignatureSpendingInfoSingle</span>(outPoint,
-                                       amount,
-                                       scriptPubKey,
-                                       signer,
-                                       hashType)
-    }
-  }
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">pubKeys</span></span>: <span class="hljs-type">Vector</span>[<span class="hljs-type">ECPublicKey</span>] =
+    <span class="hljs-type">Vector</span>(scriptPubKey.pubKey, scriptPubKey.timeoutPubKey)
 }
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" id="nested-spending-info"></a><a href="#nested-spending-info" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Nested Spending Info</h3>
-<p>This case is very similar to the above where we need to create two case classes one for normal spending (which extends <code>RawScriptUTXOSpendingInfoFull</code>) and one for signing a transaction with a single key (which extends <code>RawScriptUTXOSpendingInfoSingle</code>). As well as needing to create a <code>sealed trait</code> for them both to extend which overrides <code>scriptPubKey</code> as well as any other commonalities from the sub-classes. The one new thing in the nested case is that we must create a <code>def nestedSpendingInfo: RawScriptUTXOSpendingInfo</code> in our <code>trait</code> and make sure to override <code>signers</code> and <code>requiredSigs</code> from this <code>nestedSpendingInfo</code> in the subclass extending <code>RawScriptUTXOSpendingInfoFull</code>. For the case of spending <code>LockTimeScriptPubKey</code>s, this looks like the following:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">sealed</span> <span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">LockTimeSpendingInfo</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">RawScriptUTXOSpendingInfo</span> </span>{
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">scriptPubKey</span></span>: <span class="hljs-type">LockTimeScriptPubKey</span>
-
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">nestedSpendingInfo</span></span>: <span class="hljs-type">RawScriptUTXOSpendingInfo</span>
-}
-
-<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">LockTimeSpendingInfoSingle</span>(<span class="hljs-params">
+<p>The one new thing in the nested case is that we must create a <code>val nestedSpendingInfo: RawInputInfo</code> and make sure to pass on <code>hashPreImages: Vector[NetworkElement]</code> to the nested <code>InputInfo</code>, and pull public keys from the <code>nestedInputInfo</code>. For the case of spending <code>LockTimeScriptPubKey</code>s, this looks like the following:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">LockTimeInputInfo</span>(<span class="hljs-params">
     outPoint: <span class="hljs-type">TransactionOutPoint</span>,
     amount: <span class="hljs-type">CurrencyUnit</span>,
     scriptPubKey: <span class="hljs-type">LockTimeScriptPubKey</span>,
-    signer: <span class="hljs-type">Sign</span>,
-    hashType: <span class="hljs-type">HashType</span>,
-    conditionalPath: <span class="hljs-type">ConditionalPath</span>
-</span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">LockTimeSpendingInfo</span></span>
-    <span class="hljs-keyword">with</span> <span class="hljs-type">RawScriptUTXOSpendingInfoSingle</span> {
-  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> nestedSpendingInfo: <span class="hljs-type">RawScriptUTXOSpendingInfoSingle</span> = {
-    <span class="hljs-type">RawScriptUTXOSpendingInfoSingle</span>(outPoint,
-                                    amount,
-                                    scriptPubKey.nestedScriptPubKey,
-                                    signer,
-                                    hashType,
-                                    conditionalPath)
-  }
-}
+    conditionalPath: <span class="hljs-type">ConditionalPath</span>,
+    hashPreImages: <span class="hljs-type">Vector</span>[<span class="hljs-type">NetworkElement</span>] = <span class="hljs-type">Vector</span>.empty
+</span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">RawInputInfo</span> </span>{
 
-<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">LockTimeSpendingInfoFull</span>(<span class="hljs-params">
-    outPoint: <span class="hljs-type">TransactionOutPoint</span>,
-    amount: <span class="hljs-type">CurrencyUnit</span>,
-    scriptPubKey: <span class="hljs-type">LockTimeScriptPubKey</span>,
-    private val signersWithPossibleExtra: <span class="hljs-type">Vector</span>[<span class="hljs-type">Sign</span>],
-    hashType: <span class="hljs-type">HashType</span>,
-    conditionalPath: <span class="hljs-type">ConditionalPath</span>
-</span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">RawScriptUTXOSpendingInfoFull</span></span>
-    <span class="hljs-keyword">with</span> <span class="hljs-type">LockTimeSpendingInfo</span> {
+  <span class="hljs-keyword">val</span> nestedInputInfo: <span class="hljs-type">RawInputInfo</span> = <span class="hljs-type">RawInputInfo</span>(
+    outPoint,
+    amount,
+    scriptPubKey.nestedScriptPubKey,
+    conditionalPath,
+    hashPreImages)
 
-  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> nestedSpendingInfo: <span class="hljs-type">RawScriptUTXOSpendingInfoFull</span> = {
-    <span class="hljs-type">RawScriptUTXOSpendingInfoFull</span>(outPoint,
-                                  amount,
-                                  scriptPubKey.nestedScriptPubKey,
-                                  signersWithPossibleExtra,
-                                  hashType,
-                                  conditionalPath)
-  }
-
-  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> signers: <span class="hljs-type">Vector</span>[<span class="hljs-type">Sign</span>] = nestedSpendingInfo.signers
-
-  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> requiredSigs: <span class="hljs-type">Int</span> = nestedSpendingInfo.requiredSigs
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">pubKeys</span></span>: <span class="hljs-type">Vector</span>[<span class="hljs-type">ECPublicKey</span>] = nestedInputInfo.pubKeys
 }
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="step-7-add-to-relevant-apply-methods"></a><a href="#step-7-add-to-relevant-apply-methods" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 7: Add to Relevant Apply Methods</h2>
-<p>Now that we have created our new <code>RawScriptUTXOSpendingInfoFull</code> and <code>RawScriptUTXOSpendingInfoSingle</code>, possibly in the same class, we need to add them to the general-purpose spending info constructors. This means adding a <code>case</code> to both <code>RawScriptUTXOSpendingInfoSingle.apply</code> and <code>RawScriptUTXOSpendingInfoFull.apply</code> for your new <code>ScriptPubKey</code> type which constructs your relevant <code>RawScriptUTXOSpendingInfoSingle</code> and <code>RawScriptUTXOSpendingInfoFull</code> from generic types (given as parameters in the <code>apply</code> methods). For <code>P2PKWithTimeout</code>, both of these cases look like the following:</p>
+<p>Now that we have created our new <code>RawInputInfo</code>, we need to add them to the general-purpose input info constructors. This means adding a <code>case</code> to <code>RawInputInfo.apply</code> for your new <code>ScriptPubKey</code> type which constructs your relevant <code>RawInputInfo</code> from generic types (given as parameters in the <code>apply</code> methods). For <code>P2PKWithTimeout</code>, this looks like the following:</p>
 <pre><code class="hljs css language-scala">scriptPubKey <span class="hljs-keyword">match</span> {
       <span class="hljs-comment">//...</span>
       <span class="hljs-keyword">case</span> p2pkWithTimeout: <span class="hljs-type">P2PKWithTimeoutScriptPubKey</span> =&gt;
-        conditionalPath.headOption <span class="hljs-keyword">match</span> {
-          <span class="hljs-keyword">case</span> <span class="hljs-type">None</span> =&gt;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-type">IllegalArgumentException</span>(
-              <span class="hljs-string">"ConditionalPath must be specified for P2PKWithTimeout"</span>)
-          <span class="hljs-keyword">case</span> <span class="hljs-type">Some</span>(beforeTimeout) =&gt;
-            <span class="hljs-type">P2PKWithTimeoutSpendingInfo</span>(outPoint,
-                                        amount,
-                                        p2pkWithTimeout,
-                                        signer,
-                                        hashType,
-                                        beforeTimeout)
-        }
+              conditionalPath.headOption <span class="hljs-keyword">match</span> {
+                <span class="hljs-keyword">case</span> <span class="hljs-type">None</span> =&gt;
+                  <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-type">IllegalArgumentException</span>(
+                    <span class="hljs-string">"ConditionalPath must be specified for P2PKWithTimeout"</span>)
+                <span class="hljs-keyword">case</span> <span class="hljs-type">Some</span>(beforeTimeout) =&gt;
+                  <span class="hljs-type">P2PKWithTimeoutInputInfo</span>(outPoint,
+                                           amount,
+                                           p2pkWithTimeout,
+                                           beforeTimeout)
+              }
       <span class="hljs-comment">//...</span>
     }
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="step-8-create-a-signer"></a><a href="#step-8-create-a-signer" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 8: Create a Signer</h2>
-<p>We must now add signing functionality for our new script type within <code>Signer.scala</code>. Once again, we have three different cases depending on your new script type.</p>
-<h3><a class="anchor" aria-hidden="true" id="non-nested-single-key-spending-info-1"></a><a href="#non-nested-single-key-spending-info-1" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Non-Nested Single-Key Spending Info</h3>
-<p>For this case, all we must do is create a new class which extends <code>RawSingleKeyBitcoinSigner</code> and implements <code>keyAndSigToScriptSig</code>. For <code>P2PKWithTimeout</code> this looks like the following:</p>
+<p>We must now add signing functionality for our new script type within <code>Signer.scala</code>. This time, we have three different cases depending on your new script type.</p>
+<h3><a class="anchor" aria-hidden="true" id="non-nested-single-key-spending-info"></a><a href="#non-nested-single-key-spending-info" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Non-Nested Single-Key Spending Info</h3>
+<p>For the non-nested case where only a single key is required, all we must do is create a new class which extends <code>RawSingleKeyBitcoinSigner</code> and implements <code>keyAndSigToScriptSig</code>. For <code>P2PKWithTimeout</code> this looks like the following:</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">sealed</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">P2PKWithTimeoutSigner</span></span>
-    <span class="hljs-keyword">extends</span> <span class="hljs-type">RawSingleKeyBitcoinSigner</span>[<span class="hljs-type">P2PKWithTimeoutSpendingInfo</span>] {
+    <span class="hljs-keyword">extends</span> <span class="hljs-type">RawSingleKeyBitcoinSigner</span>[<span class="hljs-type">P2PKWithTimeoutInputInfo</span>] {
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">keyAndSigToScriptSig</span></span>(
       key: <span class="hljs-type">ECPublicKey</span>,
       sig: <span class="hljs-type">ECDigitalSignature</span>,
-      spendingInfo: <span class="hljs-type">P2PKWithTimeoutSpendingInfo</span>): <span class="hljs-type">ScriptSignature</span> = {
-    <span class="hljs-type">P2PKWithTimeoutScriptSignature</span>(spendingInfo.isBeforeTimeout, sig)
+      spendingInfo: <span class="hljs-type">UTXOInfo</span>[<span class="hljs-type">P2PKWithTimeoutInputInfo</span>]): <span class="hljs-type">ScriptSignature</span> = {
+    <span class="hljs-type">P2PKWithTimeoutScriptSignature</span>(spendingInfo.inputInfo.isBeforeTimeout, sig)
   }
 }
 
 <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">P2PKWithTimeoutSigner</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">P2PKWithTimeoutSigner</span></span>
 </code></pre>
-<h3><a class="anchor" aria-hidden="true" id="non-nested-multi-key-spending-info-1"></a><a href="#non-nested-multi-key-spending-info-1" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Non-Nested Multi-Key Spending Info</h3>
-<p>In this case we must create a new <code>BitcoinSignerSingle</code> and a normal <code>BitcoinSignerFull</code>, the latter of which requires implementing the <code>sign</code> function. For <code>MultiSignature</code> this looks like the following:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">sealed</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MultiSigSignerSingle</span></span>
-    <span class="hljs-keyword">extends</span> <span class="hljs-type">BitcoinSignerSingle</span>[<span class="hljs-type">MultiSignatureSpendingInfoSingle</span>]
-
-<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">MultiSigSignerSingle</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">MultiSigSignerSingle</span></span>
-
-<span class="hljs-keyword">sealed</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MultiSigSigner</span></span>
-    <span class="hljs-keyword">extends</span> <span class="hljs-type">BitcoinSignerFull</span>[<span class="hljs-type">MultiSignatureSpendingInfoFull</span>] {
+<h3><a class="anchor" aria-hidden="true" id="non-nested-multi-key-spending-info"></a><a href="#non-nested-multi-key-spending-info" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Non-Nested Multi-Key Spending Info</h3>
+<p>In the non-nested case where multiple keys are required, we must create a new <code>Signer</code>, which requires implementing the <code>sign</code> function. For <code>MultiSignature</code> this looks like the following:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">sealed</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MultiSigSigner</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Signer</span>[<span class="hljs-type">MultiSignatureInputInfo</span>] </span>{
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">sign</span></span>(
-      spendingInfo: <span class="hljs-type">UTXOSpendingInfoFull</span>,
+      spendingInfo: <span class="hljs-type">UTXOSatisfyingInfo</span>[<span class="hljs-type">InputInfo</span>],
       unsignedTx: <span class="hljs-type">Transaction</span>,
       isDummySignature: <span class="hljs-type">Boolean</span>,
-      spendingInfoToSatisfy: <span class="hljs-type">MultiSignatureSpendingInfoFull</span>)(
+      spendingInfoToSatisfy: <span class="hljs-type">UTXOSatisfyingInfo</span>[<span class="hljs-type">MultiSignatureInputInfo</span>])(
       <span class="hljs-keyword">implicit</span> ec: <span class="hljs-type">ExecutionContext</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">TxSigComponent</span>] = {
     <span class="hljs-keyword">val</span> (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
 
-    <span class="hljs-keyword">val</span> keysAndSigsF: <span class="hljs-type">Seq</span>[<span class="hljs-type">Future</span>[<span class="hljs-type">PartialSignature</span>]] = spendingInfoToSatisfy.toSingles.zipWithIndex.map {
-      <span class="hljs-keyword">case</span> (infoSingle, index) =&gt;
-        <span class="hljs-type">MultiSigSignerSingle</span>
-          .signSingle(spendingInfo.toSingle(index),
-                      unsignedTx,
-                      isDummySignature,
-                      infoSingle)
+    <span class="hljs-keyword">val</span> keysAndSigsF = spendingInfo.toSingles.map { spendingInfoSingle =&gt;
+      signSingle(spendingInfoSingle, unsignedTx, isDummySignature)
     }
 
     <span class="hljs-keyword">val</span> signaturesF = <span class="hljs-type">Future</span>.sequence(keysAndSigsF).map(_.map(_.signature))
@@ -480,48 +416,31 @@
 <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">MultiSigSigner</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">MultiSigSigner</span></span>
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" id="nested-spending-info-1"></a><a href="#nested-spending-info-1" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Nested Spending Info</h3>
-<p>When signing for a nested script structure, we must create a new <code>BitcoinSignerSingle</code> and a normal <code>BitcoinSignerFull</code>. For the single signer, you will likely only need to delegate with a call to <code>BitcoinSignerSingle.signSingle</code> because we only need a signature which will not likely require anything other than doing the signing on <code>spendingInfoToSatisfy.nestedSpendingInfo</code>. For the full signer, you will also need to make a delegating call with the <code>nestedSpendingInfo</code> to <code>BitcoinSigner.sign</code>, but you may also need to do whatever else is needed with the nested result to construct a correct <code>ScriptSignature</code>. For <code>ConditionalScriptSignature</code>, this all looks like:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">sealed</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConditionalSignerSingle</span></span>
-    <span class="hljs-keyword">extends</span> <span class="hljs-type">BitcoinSignerSingle</span>[<span class="hljs-type">ConditionalSpendingInfoSingle</span>] {
-
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">signSingle</span></span>(
-      spendingInfo: <span class="hljs-type">UTXOSpendingInfoSingle</span>,
-      unsignedTx: <span class="hljs-type">Transaction</span>,
-      isDummySignature: <span class="hljs-type">Boolean</span>,
-      spendingInfoToSatisfy: <span class="hljs-type">ConditionalSpendingInfoSingle</span>)(
-      <span class="hljs-keyword">implicit</span> ec: <span class="hljs-type">ExecutionContext</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">PartialSignature</span>] = {
-    <span class="hljs-type">BitcoinSignerSingle</span>.signSingle(spendingInfo,
-                                   unsignedTx,
-                                   isDummySignature,
-                                   spendingInfoToSatisfy.nestedSpendingInfo)
-  }
-}
-
-<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">ConditionalSignerSingle</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ConditionalSignerSingle</span></span>
-
-<span class="hljs-comment">/** Delegates to get a ScriptSignature for the case being
+<p>When signing for a nested script structure, we must create a new <code>Signer</code>. You will need to make a delegating call with the <code>nestedSpendingInfo</code> to <code>BitcoinSigner.sign</code>, but you may also need to do whatever else is needed with the nested result to construct a correct <code>ScriptSignature</code>. For <code>ConditionalScriptSignature</code>, this all looks like:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-comment">/** Delegates to get a ScriptSignature for the case being
   * spent and then adds an OP_TRUE or OP_FALSE
   */</span>
-<span class="hljs-keyword">sealed</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConditionalSigner</span></span>
-    <span class="hljs-keyword">extends</span> <span class="hljs-type">BitcoinSignerFull</span>[<span class="hljs-type">ConditionalSpendingInfoFull</span>] {
+<span class="hljs-keyword">sealed</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConditionalSigner</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Signer</span>[<span class="hljs-type">ConditionalInputInfo</span>] </span>{
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">sign</span></span>(
-      spendingInfo: <span class="hljs-type">UTXOSpendingInfoFull</span>,
+      spendingInfo: <span class="hljs-type">UTXOSatisfyingInfo</span>[<span class="hljs-type">InputInfo</span>],
       unsignedTx: <span class="hljs-type">Transaction</span>,
       isDummySignature: <span class="hljs-type">Boolean</span>,
-      spendingInfoToSatisfy: <span class="hljs-type">ConditionalSpendingInfoFull</span>)(
+      spendingInfoToSatisfy: <span class="hljs-type">UTXOSatisfyingInfo</span>[<span class="hljs-type">ConditionalInputInfo</span>])(
       <span class="hljs-keyword">implicit</span> ec: <span class="hljs-type">ExecutionContext</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">TxSigComponent</span>] = {
     <span class="hljs-keyword">val</span> (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
-    <span class="hljs-keyword">val</span> missingOpSigComponentF = <span class="hljs-type">BitcoinSigner</span>.sign(
-      spendingInfo,
-      unsignedTx,
-      isDummySignature,
-      spendingInfoToSatisfy.nestedSpendingInfo)
+    <span class="hljs-keyword">val</span> nestedSpendingInfo = spendingInfoToSatisfy.copy(
+      inputInfo = spendingInfoToSatisfy.inputInfo.nestedInputInfo)
+
+    <span class="hljs-keyword">val</span> missingOpSigComponentF = <span class="hljs-type">BitcoinSigner</span>.sign(spendingInfo,
+                                                    unsignedTx,
+                                                    isDummySignature,
+                                                    nestedSpendingInfo)
 
     <span class="hljs-keyword">val</span> scriptSigF = missingOpSigComponentF.map { sigComponent =&gt;
       <span class="hljs-type">ConditionalScriptSignature</span>(sigComponent.scriptSignature,
-                                 spendingInfoToSatisfy.condition)
+                                 spendingInfoToSatisfy.inputInfo.condition)
     }
 
     updateScriptSigInSigComponent(unsignedTx,
@@ -533,14 +452,14 @@
 <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">ConditionalSigner</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ConditionalSigner</span></span>
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="step-9-add-to-bitcoinsignersign"></a><a href="#step-9-add-to-bitcoinsignersign" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 9: Add to BitcoinSigner.sign</h2>
-<p>We must now add the new signing functionality from the previous step to the general-purpose signing functions by adding a new <code>case</code> for your new <code>ScriptPubKey</code> type in the <code>match</code> within <code>BitcoinSigner.sign</code>. In the case of <code>P2PKWithTimeout</code>, this looks like:</p>
+<p>We must now add the new signing functionality from the previous step to the general-purpose signing functions by adding a new <code>case</code> for your new <code>InputInfo</code> type in the <code>match</code> within <code>BitcoinSigner.sign</code>. In the case of <code>P2PKWithTimeout</code>, this looks like:</p>
 <pre><code class="hljs css language-scala">spendingInfoToSatisfy <span class="hljs-keyword">match</span> {
       <span class="hljs-comment">//...</span>
-      <span class="hljs-keyword">case</span> p2pKWithTimeout: <span class="hljs-type">P2PKWithTimeoutSpendingInfo</span> =&gt;
-        <span class="hljs-type">P2PKWithTimeoutSigner</span>.sign(spendingInfo,
-                                   unsignedTx,
-                                   isDummySignature,
-                                   p2pKWithTimeout)
+      <span class="hljs-keyword">case</span> p2pKWithTimeout: <span class="hljs-type">P2PKWithTimeoutInputInfo</span> =&gt;
+              <span class="hljs-type">P2PKWithTimeoutSigner</span>.sign(spendingInfo,
+                                         unsignedTx,
+                                         isDummySignature,
+                                         spendingFrom(p2pKWithTimeout))
       <span class="hljs-comment">//...</span>
     }
 </code></pre>
@@ -579,27 +498,28 @@
 </code></pre>
 <p>We now add this <code>Gen</code> to <code>scriptSignature: Gen[ScriptSignature]</code> as well as adding a case for our new <code>ScriptPubKey</code> type in <code>pickCorrespondingScriptSignature</code> which should return our new <code>ScriptSignature</code> generator.  If our <code>ScriptPubKey</code> does not have any lock times, you should also add this script signature <code>Gen</code> to <code>nonLockTimeConditionalScriptSignature</code> and <code>randomNonLockTimeScriptSig</code>.</p>
 <h3><a class="anchor" aria-hidden="true" id="scriptpubkey-with-paired-scriptsignature-generator"></a><a href="#scriptpubkey-with-paired-scriptsignature-generator" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>ScriptPubKey with Paired ScriptSignature Generator</h3>
-<p>Lastly, we need to construct a generator that returns both a <code>ScriptPubKey</code> and a <code>ScriptSignature</code> signing that that <code>ScriptPubKey</code>. All keys used in signing should also be returned. This all should be done by using the above <code>ScriptPubKey</code> generator, then constructing an <code>ScriptSignature</code> for your type where all actual signatures are <code>EmptyDigitalSignature</code>s. A <code>SpendingInfoFull</code> should then be constructed for the generated <code>ScriptPubKey</code> (using the private keys generated in the same line). Finally, a <code>TxSignatureComponent</code> should be created by using the new <code>Signer</code> for our script type. From this <code>TxSignatureComponent</code>, a <code>ScriptSignature</code> is readily available. For <code>P2PKWithTimeout</code>, this generator looks like:</p>
+<p>Lastly, we need to construct a generator that returns both a <code>ScriptPubKey</code> and a <code>ScriptSignature</code> signing that that <code>ScriptPubKey</code>. All keys used in signing should also be returned. This all should be done by using the above <code>ScriptPubKey</code> generator, then constructing an <code>ScriptSignature</code> for your type where all actual signatures are <code>EmptyDigitalSignature</code>s. A <code>UTXOSatisfyingInfo</code> should then be constructed for the generated <code>ScriptPubKey</code> (using the private keys generated in the same line). Finally, a <code>TxSignatureComponent</code> should be created by using the new <code>Signer</code> for our script type. From this <code>TxSignatureComponent</code>, a <code>ScriptSignature</code> is readily available. For <code>P2PKWithTimeout</code>, this generator looks like:</p>
 <pre><code class="hljs css language-scala"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">signedP2PKWithTimeoutScriptSignature</span></span>: <span class="hljs-type">Gen</span>[
     (<span class="hljs-type">ConditionalScriptSignature</span>, <span class="hljs-type">P2PKWithTimeoutScriptPubKey</span>, <span class="hljs-type">ECPrivateKey</span>)] =
     <span class="hljs-keyword">for</span> {
       (spk, privKeys) &lt;- p2pkWithTimeoutScriptPubKey
       hashType &lt;- <span class="hljs-type">CryptoGenerators</span>.hashType
     } <span class="hljs-keyword">yield</span> {
-      <span class="hljs-keyword">val</span> privKey = privKeys.head
       <span class="hljs-keyword">val</span> emptyScriptSig = <span class="hljs-type">P2PKWithTimeoutScriptSignature</span>(beforeTimeout = <span class="hljs-literal">true</span>,
                                                           <span class="hljs-type">EmptyDigitalSignature</span>)
       <span class="hljs-keyword">val</span> (creditingTx, outputIndex) =
         <span class="hljs-type">TransactionGenerators</span>.buildCreditingTransaction(spk)
       <span class="hljs-keyword">val</span> (spendingTx, inputIndex) = <span class="hljs-type">TransactionGenerators</span>
         .buildSpendingTransaction(creditingTx, emptyScriptSig, outputIndex)
-      <span class="hljs-keyword">val</span> spendingInfo = <span class="hljs-type">P2PKWithTimeoutSpendingInfo</span>(
-        <span class="hljs-type">TransactionOutPoint</span>(creditingTx.txIdBE, inputIndex),
-        creditingTx.outputs(outputIndex.toInt).value,
-        spk,
-        privKey,
-        hashType,
-        isBeforeTimeout = <span class="hljs-literal">true</span>)
+      <span class="hljs-keyword">val</span> spendingInfo = <span class="hljs-type">UTXOSatisfyingInfo</span>(
+        <span class="hljs-type">P2PKWithTimeoutInputInfo</span>(
+          <span class="hljs-type">TransactionOutPoint</span>(creditingTx.txIdBE, inputIndex),
+          creditingTx.outputs(outputIndex.toInt).value,
+          spk,
+          isBeforeTimeout = <span class="hljs-literal">true</span>),
+        privKeys.toVector,
+        hashType
+      )
       <span class="hljs-keyword">val</span> txSigComponentF = <span class="hljs-type">P2PKWithTimeoutSigner</span>.sign(spendingInfo,
                                                        spendingTx,
                                                        isDummySignature = <span class="hljs-literal">false</span>)
@@ -607,19 +527,19 @@
       <span class="hljs-keyword">val</span> signedScriptSig =
         txSigComponent.scriptSignature.asInstanceOf[<span class="hljs-type">ConditionalScriptSignature</span>]
 
-      (signedScriptSig, spk, privKey)
+      (signedScriptSig, spk, privKeys.head)
     }
 </code></pre>
 <p>I strongly advise you also look at at least one other <code>Gen</code> of this kind before writing your own.</p>
 <h2><a class="anchor" aria-hidden="true" id="step-11-add-to-creditingtxgen"></a><a href="#step-11-add-to-creditingtxgen" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 11: Add to CreditingTxGen</h2>
 <p>Now that we have generators constructed for <code>ScriptPubKey</code>s, <code>ScriptSignature</code>s and their pairings completed, we will create a generator for our type's <code>SpendingInfoFull</code>. This should usually be as simple as mapping on the <code>ScriptPubKey</code> generator in <code>ScriptGenerators</code> and calling <code>build</code> (within <code>CreditinTxGen.scala</code>). We then also create another generator which returns lists of <code>SpendingInfo</code>s generated by the previous <code>Gen</code>. For <code>P2PKWithTimeout</code>, this looks like:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">p2pkWithTimeoutOutput</span></span>: <span class="hljs-type">Gen</span>[<span class="hljs-type">BitcoinUTXOSpendingInfoFull</span>] = {
+<pre><code class="hljs css language-scala"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">p2pkWithTimeoutOutput</span></span>: <span class="hljs-type">Gen</span>[<span class="hljs-type">UTXOSatisfyingInfo</span>[<span class="hljs-type">InputInfo</span>]] = {
     <span class="hljs-type">ScriptGenerators</span>.p2pkWithTimeoutScriptPubKey.flatMap { p2pkWithTimeout =&gt;
       build(p2pkWithTimeout._1, <span class="hljs-type">Seq</span>(p2pkWithTimeout._2.head), <span class="hljs-type">None</span>, <span class="hljs-type">None</span>)
     }
   }
 
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">p2pkWithTimeoutOutputs</span></span>: <span class="hljs-type">Gen</span>[<span class="hljs-type">Seq</span>[<span class="hljs-type">BitcoinUTXOSpendingInfoFull</span>]] = {
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">p2pkWithTimeoutOutputs</span></span>: <span class="hljs-type">Gen</span>[<span class="hljs-type">Seq</span>[<span class="hljs-type">UTXOSatisfyingInfo</span>[<span class="hljs-type">InputInfo</span>]]] = {
     <span class="hljs-type">Gen</span>.choose(min, max).flatMap(n =&gt; <span class="hljs-type">Gen</span>.listOfN(n, p2pkWithTimeoutOutput))
   }
 </code></pre>
@@ -645,7 +565,7 @@
 <span class="hljs-keyword">test
 </span></code></pre>
 <p>If all tests pass we are all done! If you encounter any test failures, you can re-run individual tests using the <code>testOnly</code> command which must be given the full name of the test you wish to run (these names should be at the bottom of the testing output and look something like <code>org.bitcoins.core.script.interpreter.ScriptInterpreterTest</code>).</p>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-9-3 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/core/hd-keys"><span class="arrow-prev">← </span><span>HD Key Generation</span></a><a class="docs-next button" href="/docs/core/spending-info"><span>Signing Transactions</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#step-0-design-philosophy">Step 0: Design Philosophy</a></li><li><a href="#step-1-create-a-new-scriptpubkey-trait">Step 1: Create a New ScriptPubKey Trait</a></li><li><a href="#step-2-create-companion-object">Step 2: Create Companion Object</a></li><li><a href="#step-3-add-to-relevant-fromasm-methods">Step 3: Add to Relevant fromAsm Methods</a></li><li><a href="#step-4-create-a-scriptsignature-if-necessary">Step 4: Create a ScriptSignature If Necessary</a></li><li><a href="#step-5-add-to-scriptsignaturefromasm-if-applicable">Step 5: Add to ScriptSignature.fromAsm If Applicable</a></li><li><a href="#step-6-create-relevant-bitcoinutxospendinginfo">Step 6: Create Relevant BitcoinUTXOSpendingInfo</a><ul class="toc-headings"><li><a href="#non-nested-single-key-spending-info">Non-Nested Single-Key Spending Info</a></li><li><a href="#non-nested-multi-key-spending-info">Non-Nested Multi-Key Spending Info</a></li><li><a href="#nested-spending-info">Nested Spending Info</a></li></ul></li><li><a href="#step-7-add-to-relevant-apply-methods">Step 7: Add to Relevant Apply Methods</a></li><li><a href="#step-8-create-a-signer">Step 8: Create a Signer</a><ul class="toc-headings"><li><a href="#non-nested-single-key-spending-info-1">Non-Nested Single-Key Spending Info</a></li><li><a href="#non-nested-multi-key-spending-info-1">Non-Nested Multi-Key Spending Info</a></li><li><a href="#nested-spending-info-1">Nested Spending Info</a></li></ul></li><li><a href="#step-9-add-to-bitcoinsignersign">Step 9: Add to BitcoinSigner.sign</a></li><li><a href="#step-10-add-to-scriptgenerators">Step 10: Add to ScriptGenerators</a><ul class="toc-headings"><li><a href="#scriptpubkey-generator">ScriptPubKey Generator</a></li><li><a href="#scriptsignature-generator">ScriptSignature Generator</a></li><li><a href="#scriptpubkey-with-paired-scriptsignature-generator">ScriptPubKey with Paired ScriptSignature Generator</a></li></ul></li><li><a href="#step-11-add-to-creditingtxgen">Step 11: Add to CreditingTxGen</a></li><li><a href="#step-12-fix-all-non-exhaustive-matches">Step 12: Fix all Non-Exhaustive Matches</a></li><li><a href="#step-13-run-tests-and-debug">Step 13: Run tests and debug</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-9-9 by rorp</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/core/hd-keys"><span class="arrow-prev">← </span><span>HD Key Generation</span></a><a class="docs-next button" href="/docs/core/spending-info"><span>Signing Transactions</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#step-0-design-philosophy">Step 0: Design Philosophy</a></li><li><a href="#step-1-create-a-new-scriptpubkey-trait">Step 1: Create a New ScriptPubKey Trait</a></li><li><a href="#step-2-create-companion-object">Step 2: Create Companion Object</a></li><li><a href="#step-3-add-to-relevant-fromasm-methods">Step 3: Add to Relevant fromAsm Methods</a></li><li><a href="#step-4-create-a-scriptsignature-if-necessary">Step 4: Create a ScriptSignature If Necessary</a></li><li><a href="#step-5-add-to-scriptsignaturefromasm-if-applicable">Step 5: Add to ScriptSignature.fromAsm If Applicable</a></li><li><a href="#step-6-create-relevant-inputinfo">Step 6: Create Relevant InputInfo</a><ul class="toc-headings"><li><a href="#non-nesting-input-info">Non-Nesting Input Info</a></li><li><a href="#nested-spending-info">Nested Spending Info</a></li></ul></li><li><a href="#step-7-add-to-relevant-apply-methods">Step 7: Add to Relevant Apply Methods</a></li><li><a href="#step-8-create-a-signer">Step 8: Create a Signer</a><ul class="toc-headings"><li><a href="#non-nested-single-key-spending-info">Non-Nested Single-Key Spending Info</a></li><li><a href="#non-nested-multi-key-spending-info">Non-Nested Multi-Key Spending Info</a></li><li><a href="#nested-spending-info-1">Nested Spending Info</a></li></ul></li><li><a href="#step-9-add-to-bitcoinsignersign">Step 9: Add to BitcoinSigner.sign</a></li><li><a href="#step-10-add-to-scriptgenerators">Step 10: Add to ScriptGenerators</a><ul class="toc-headings"><li><a href="#scriptpubkey-generator">ScriptPubKey Generator</a></li><li><a href="#scriptsignature-generator">ScriptSignature Generator</a></li><li><a href="#scriptpubkey-with-paired-scriptsignature-generator">ScriptPubKey with Paired ScriptSignature Generator</a></li></ul></li><li><a href="#step-11-add-to-creditingtxgen">Step 11: Add to CreditingTxGen</a></li><li><a href="#step-12-fix-all-non-exhaustive-matches">Step 12: Fix all Non-Exhaustive Matches</a></li><li><a href="#step-13-run-tests-and-debug">Step 13: Run tests and debug</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
