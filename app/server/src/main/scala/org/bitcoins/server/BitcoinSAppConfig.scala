@@ -1,16 +1,15 @@
 package org.bitcoins.server
 
-import com.typesafe.config.Config
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.chain.config.ChainAppConfig
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
 import java.nio.file.Path
 
+import com.typesafe.config.Config
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.wallet.config.WalletAppConfig
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * A unified config class for all submodules of Bitcoin-S
@@ -30,9 +29,15 @@ case class BitcoinSAppConfig(
   val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
   val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
 
+  val bitcoindRpcConf: BitcoindRpcAppConfig =
+    BitcoindRpcAppConfig(directory, confs: _*)
+
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[Unit] = {
-    val futures = List(walletConf.start(), nodeConf.start(), chainConf.start())
+    val futures = List(walletConf.start(),
+                       nodeConf.start(),
+                       chainConf.start(),
+                       bitcoindRpcConf.start())
 
     Future.sequence(futures).map(_ => ())
   }
@@ -42,6 +47,7 @@ case class BitcoinSAppConfig(
       _ <- nodeConf.stop()
       _ <- walletConf.stop()
       _ <- chainConf.stop()
+      _ <- bitcoindRpcConf.stop()
     } yield ()
   }
 
@@ -49,6 +55,7 @@ case class BitcoinSAppConfig(
   lazy val config: Config = {
     assert(chainConf.config == nodeConf.config)
     assert(nodeConf.config == walletConf.config)
+    assert(bitcoindRpcConf.config == walletConf.config)
 
     // there's nothing special about nodeConf, they should all
     // be equal
@@ -109,5 +116,15 @@ object BitcoinSAppConfig {
   /** Converts the given config to a node config */
   implicit def toNodeConf(conf: BitcoinSAppConfig): NodeAppConfig =
     conf.nodeConf
+
+  /** Converts the given implicit config to a bitcoind rpc config */
+  implicit def implicitToBitcoindRpcConf(implicit
+      conf: BitcoinSAppConfig): BitcoindRpcAppConfig =
+    conf.bitcoindRpcConf
+
+  /** Converts the given config to a bitcoind rpc config */
+  implicit def toBitcoindRpcConf(
+      conf: BitcoinSAppConfig): BitcoindRpcAppConfig =
+    conf.bitcoindRpcConf
 
 }
