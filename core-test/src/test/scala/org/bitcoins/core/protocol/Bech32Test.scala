@@ -11,7 +11,7 @@ import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 class Bech32Test extends BitcoinSUnitTest {
 
@@ -154,7 +154,8 @@ class Bech32Test extends BitcoinSUnitTest {
   }
 
   it must "encode 0 byte correctly" in {
-    val addr = Bech32Address(BtcHumanReadablePart.bc, Vector(UInt5.zero))
+    val addr =
+      Bech32Address(BtcHumanReadablePart.bc.network, Vector(UInt5.zero))
     addr.value must be("bc1q9zpgru")
   }
 
