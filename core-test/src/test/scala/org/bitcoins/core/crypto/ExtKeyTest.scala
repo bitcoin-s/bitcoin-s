@@ -1,9 +1,8 @@
 package org.bitcoins.core.crypto
 
-import ExtKeyVersion._
+import org.bitcoins.core.crypto.ExtKeyVersion._
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.crypto
 import org.bitcoins.testkit.core.gen.{
   CryptoGenerators,
   HDGenerators,
@@ -79,6 +78,21 @@ class ExtKeyTest extends BitcoinSUnitTest {
           case Success(_)   => fail
           case Failure(exc) => assert(exc.getMessage.contains("hardened"))
         }
+    }
+  }
+
+  it must "fail to derive a unhardened child key from a ExtPrivateKeyHardened" in {
+    forAll(CryptoGenerators.extPrivateKey, HDGenerators.hdAddress) {
+      (priv, path) =>
+        val hardened: ExtPrivateKeyHardened = priv.toHardened
+
+        assertThrows[IllegalArgumentException](hardened.deriveChildPrivKey(0))
+
+        assertThrows[IllegalArgumentException](
+          hardened.deriveChildPrivKey(UInt32.one))
+
+        assertThrows[IllegalArgumentException](
+          hardened.deriveChildPrivKey(path))
     }
   }
 
