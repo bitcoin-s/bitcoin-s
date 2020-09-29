@@ -79,7 +79,7 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
   */
 sealed abstract class Bech32Address extends BitcoinAddress {
 
-  val hrp: BtcHumanReadablePart = BtcHumanReadablePart(networkParameters)
+  lazy val hrp: BtcHumanReadablePart = BtcHumanReadablePart(networkParameters)
 
   def data: Vector[UInt5]
 
