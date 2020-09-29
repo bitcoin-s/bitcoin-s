@@ -10,6 +10,7 @@ flywayClean / aggregate := false
 Test / flywayClean / aggregate := true
 
 lazy val Benchmark = config("bench") extend Test
+
 lazy val benchSettings: Seq[Def.SettingsDefinition] = {
   //for scalameter
   //https://scalameter.github.io/home/download/
@@ -31,6 +32,7 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
 import Projects._
 lazy val crypto = project in file("crypto")
 lazy val core = project in file("core") dependsOn crypto
+
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(CommonSettings.prodSettings: _*)
@@ -57,6 +59,8 @@ lazy val `bitcoin-s` = project
     dbCommonsTest,
     feeProvider,
     feeProviderTest,
+    dlcOracle,
+    dlcOracleTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -285,6 +289,7 @@ lazy val gui = project
   )
 
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
+
 lazy val chain = project
   .in(file("chain"))
   .settings(CommonSettings.prodSettings: _*)
@@ -375,6 +380,7 @@ lazy val eclairRpcTest = project
   .dependsOn(core % testAndCompile, testkit)
 
 lazy val nodeDbSettings = dbFlywaySettings("nodedb")
+
 lazy val node =
   project
     .in(file("node"))
@@ -461,6 +467,7 @@ lazy val keyManagerTest = project
   .dependsOn(keyManager, testkit)
 
 lazy val walletDbSettings = dbFlywaySettings("walletdb")
+
 lazy val wallet = project
   .in(file("wallet"))
   .settings(CommonSettings.prodSettings: _*)
@@ -483,8 +490,27 @@ lazy val walletTest = project
   .dependsOn(core % testAndCompile, testkit, wallet)
   .enablePlugins(FlywayPlugin)
 
+lazy val dlcOracle = project
+  .in(file("dlc-oracle"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-oracle",
+    libraryDependencies ++= Deps.dlcOracle
+  )
+  .dependsOn(core, keyManager, dbCommons)
+
+lazy val dlcOracleTest = project
+  .in(file("dlc-oracle-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-oracle-test",
+    libraryDependencies ++= Deps.dlcOracleTest
+  )
+  .dependsOn(core % testAndCompile, dlcOracle, testkit)
+
 /** Given a database name, returns the appropriate
-  * Flyway settings we apply to a project (chain, node, wallet) */
+  * Flyway settings we apply to a project (chain, node, wallet)
+  */
 def dbFlywaySettings(dbName: String): List[Setting[_]] = {
   lazy val DB_HOST = "localhost"
   lazy val DB_NAME = s"${dbName}.sqlite"
@@ -505,15 +531,16 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
     db.createNewFile()
   }
 
-  def makeNetworkSettings(directoryPath: String): List[Setting[_]] = List(
-    Test / flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
-    Test / flywayLocations := List("nodedb/migration"),
-    Test / flywayUser := "nodedb",
-    Test / flywayPassword := "",
-    flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
-    flywayUser := "nodedb",
-    flywayPassword := ""
-  )
+  def makeNetworkSettings(directoryPath: String): List[Setting[_]] =
+    List(
+      Test / flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
+      Test / flywayLocations := List("nodedb/migration"),
+      Test / flywayUser := "nodedb",
+      Test / flywayPassword := "",
+      flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
+      flywayUser := "nodedb",
+      flywayPassword := ""
+    )
 
   lazy val mainnet = makeNetworkSettings(mainnetDir)
 
