@@ -422,4 +422,10 @@ object Deps {
       Compile.newMicroJson,
       Compile.logback
     )
+
+  val dlcOracleTest =
+    List(
+      Compile.newMicroJson,
+      Compile.logback
+    )
 }

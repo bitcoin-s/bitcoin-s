@@ -559,7 +559,7 @@ lazy val dlcOracleTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-oracle-test",
-    libraryDependencies ++= Deps.dlcWallet
+    libraryDependencies ++= Deps.dlcOracle
   )
   .dependsOn(core % testAndCompile, dlcOracle, testkit)
 
@@ -568,7 +568,7 @@ lazy val dlcWalletTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-wallet-test",
-    libraryDependencies ++= Deps.dlcWalletTest
+    libraryDependencies ++= Deps.dlcOracleTest
   )
   .dependsOn(core % testAndCompile, dlcWallet, testkit)
 
