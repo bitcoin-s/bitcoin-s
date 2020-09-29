@@ -31,6 +31,8 @@ case class BitcoindRpcAppConfig(
 
   override def start(): Future[Unit] = FutureUtil.unit
 
+  override def stop(): Future[Unit] = FutureUtil.unit
+
   lazy val DEFAULT_BINARY_PATH: File =
     BitcoindInstance.DEFAULT_BITCOIND_LOCATION
 
