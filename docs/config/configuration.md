@@ -91,6 +91,27 @@ bitcoin-s {
     datadir = ${HOME}/.bitcoin-s
     network = regtest # regtest, testnet3, mainnet, signet
 
+    bitcoind-rpc {
+        # Binary location of bitcoind
+        binary = ${HOME}/.bitcoin-s/binaries/bitcoind/bitcoin-0.20.1/bin/bitcoind
+        # bitcoind datadir
+        datadir = ${HOME}/.bitcoin
+        # bitcoind network binding
+        bind = localhost
+        # bitcoind p2p port
+        port = 8333
+        # bitcoind rpc binding
+        rpcbind = localhost
+        # bitcoind rpc port
+        rpcport = 8332
+        # bitcoind rpc username
+        rpcuser = user
+        # bitcoind rpc password
+        rpcpassword = password
+        # bitcoind zmq port for all services
+        zmqport = 29000
+    }
+
     node {
         mode = neutrino # neutrino, spv
 
