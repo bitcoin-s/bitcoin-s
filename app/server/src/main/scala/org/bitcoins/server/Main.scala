@@ -214,6 +214,10 @@ object Main extends App with HttpLogger {
           bitcoind,
           tmpWallet)
         _ = logger.info("Starting wallet")
+
+        zmq = BitcoindRpcBackendUtil.createZMQWalletCallbacks(wallet)
+
+        _ = zmq.start()
         _ <- wallet.start()
         binding <- startHttpServer(bitcoind, bitcoind, wallet, rpcPortOpt)
         _ = BitcoinSServer.startedFP.success(Future.successful(binding))

@@ -84,12 +84,9 @@ case class BitcoindRpcAppConfig(
   lazy val authCredentials: BitcoindAuthCredentials =
     BitcoindAuthCredentials.PasswordBased(rpcUser, rpcPassword)
 
-  lazy val zmqPortOpt: Option[Int] = config.getIntOpt("bitcoind-rpc.zmqport")
+  lazy val zmqPort: Int = config.getIntOrElse("bitcoind-rpc.zmqport", 29000)
 
-  lazy val zmqConfig: ZmqConfig = zmqPortOpt match {
-    case Some(port) => ZmqConfig.fromPort(port)
-    case None       => ZmqConfig()
-  }
+  lazy val zmqConfig: ZmqConfig = ZmqConfig.fromPort(zmqPort)
 
   lazy val bitcoindInstance: BitcoindInstance =
     BitcoindInstance(network = network,
