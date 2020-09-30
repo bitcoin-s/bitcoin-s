@@ -1,7 +1,6 @@
 package org.bitcoins
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigRenderOptions
+import com.typesafe.config.{Config, ConfigRenderOptions}
 
 package object db {
 
@@ -38,6 +37,19 @@ package object db {
         default
       }
     }
-  }
 
+    /** Returns the int at key or the given default value */
+    def getIntOrElse(key: String, default: => Int): Int = {
+      getIntOpt(key).getOrElse(default)
+    }
+
+    /** Returns an option of the int at key */
+    def getIntOpt(key: String): Option[Int] = {
+      if (config.hasPath(key)) {
+        Some(config.getInt(key))
+      } else {
+        None
+      }
+    }
+  }
 }
