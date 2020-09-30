@@ -33,11 +33,9 @@ import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import play.api.libs.json._
 
-sealed trait DLCTestVector {
-  def toJson: JsValue
-}
+sealed trait DLCTestVector extends TestVector
 
-object DLCTestVector {
+object DLCTestVector extends TestVectorParser[DLCTestVector] {
 
   def fromJson(json: JsValue): JsResult[DLCTestVector] = {
     SuccessTestVector.fromJson(json)
