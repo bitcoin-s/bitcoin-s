@@ -145,7 +145,7 @@ object DLCMessage {
 
     def toTLV: DLCOfferTLV = {
       val chainHash =
-        changeAddress.networkParameters.chainParams.genesisBlock.blockHeader.hashBE
+        changeAddress.networkParameters.chainParams.genesisBlock.blockHeader.hash
 
       DLCOfferTLV(
         contractFlags = 0x00,
@@ -222,7 +222,7 @@ object DLCMessage {
   object DLCOffer {
 
     def fromTLV(offer: DLCOfferTLV): DLCOffer = {
-      val network = Networks.fromChainHash(offer.chainHash)
+      val network = Networks.fromChainHash(offer.chainHash.flip)
 
       val contractInfo = offer.contractInfo match {
         case ContractInfoV0TLV(outcomes) => ContractInfo(outcomes)

@@ -275,16 +275,15 @@ case class FundingInputV0TLV(
   lazy val outputReference: OutputReference = OutputReference(outPoint, output)
 
   override val value: ByteVector = {
-    val redeemScriptBytes =
-      redeemScriptOpt.map(_.asmBytes).getOrElse(ByteVector.empty)
+    val redeemScript =
+      redeemScriptOpt.getOrElse(EmptyScriptPubKey)
 
     UInt16(prevTx.byteSize).bytes ++
       prevTx.bytes ++
       prevTxVout.bytes ++
       sequence.bytes ++
       maxWitnessLen.bytes ++
-      UInt16(redeemScriptBytes.length).bytes ++
-      redeemScriptBytes
+      redeemScript.bytes
   }
 }
 
@@ -299,13 +298,14 @@ object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
     val prevTxVout = UInt32(iter.takeBits(32))
     val sequence = UInt32(iter.takeBits(32))
     val maxWitnessLen = UInt16(iter.takeBits(16))
-    val redeemScriptLen = UInt16(iter.takeBits(16))
-    val redeemScriptOpt = if (redeemScriptLen == UInt16.zero) {
-      None
-    } else {
-      Some(
-        WitnessScriptPubKey.fromAsmBytes(iter.take(redeemScriptLen.toInt))
-      )
+    val redeemScript = ScriptPubKey(iter.current)
+    iter.skip(redeemScript)
+    val redeemScriptOpt = redeemScript match {
+      case EmptyScriptPubKey         => None
+      case wspk: WitnessScriptPubKey => Some(wspk)
+      case _: NonWitnessScriptPubKey =>
+        throw new IllegalArgumentException(
+          s"Redeem Script must be Segwith SPK: $redeemScript")
     }
 
     FundingInputV0TLV(prevTx,
@@ -387,7 +387,7 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
 
 case class DLCOfferTLV(
     contractFlags: Byte,
-    chainHash: DoubleSha256DigestBE,
+    chainHash: DoubleSha256Digest,
     contractInfo: ContractInfoTLV,
     oracleInfo: OracleInfoTLV,
     fundingPubKey: ECPublicKey,
@@ -425,7 +425,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
     val iter = ValueIterator(value)
 
     val contractFlags = iter.take(1).head
-    val chainHash = DoubleSha256DigestBE(iter.take(32))
+    val chainHash = DoubleSha256Digest(iter.take(32))
     val contractInfo = ContractInfoV0TLV.fromBytes(iter.current)
     iter.skip(contractInfo)
     val oracleInfo = OracleInfoV0TLV.fromBytes(iter.current)
