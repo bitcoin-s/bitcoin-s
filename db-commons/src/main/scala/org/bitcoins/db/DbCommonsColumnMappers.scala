@@ -1,6 +1,7 @@
 package org.bitcoins.db
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
+import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.core.config.{BitcoinNetwork, BitcoinNetworks}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
@@ -95,8 +96,18 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val sha256DigestBEMapper: BaseColumnType[Sha256DigestBE] =
     MappedColumnType.base[Sha256DigestBE, String](_.hex, Sha256DigestBE.fromHex)
 
+  implicit val sha256DigestMapper: BaseColumnType[Sha256Digest] =
+    MappedColumnType.base[Sha256Digest, String](_.hex, Sha256Digest.fromHex)
+
   implicit val ecPublicKeyMapper: BaseColumnType[ECPublicKey] =
     MappedColumnType.base[ECPublicKey, String](_.hex, ECPublicKey.fromHex)
+
+  implicit val fieldElementMapper: BaseColumnType[FieldElement] =
+    MappedColumnType.base[FieldElement, String](_.hex, FieldElement.fromHex)
+
+  implicit val signingVersionMapper: BaseColumnType[SigningVersion] =
+    MappedColumnType.base[SigningVersion, String](_.toString,
+                                                  SigningVersion.fromString)
 
   implicit val schnorrPublicKeyMapper: BaseColumnType[SchnorrPublicKey] =
     MappedColumnType
