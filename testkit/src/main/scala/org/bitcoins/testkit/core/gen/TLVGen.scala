@@ -159,8 +159,7 @@ trait TLVGen {
   def dlcOfferTLV: Gen[DLCOfferTLV] = {
     for {
       chainHash <- Gen.oneOf(
-        Networks.knownNetworks.map(
-          _.chainParams.genesisBlock.blockHeader.hashBE))
+        Networks.knownNetworks.map(_.chainParams.genesisBlock.blockHeader.hash))
       contractInfo <- contractInfoV0TLV
       oracleInfo <- oracleInfoV0TLV
       fundingPubKey <- CryptoGenerators.publicKey

@@ -387,7 +387,7 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
 
 case class DLCOfferTLV(
     contractFlags: Byte,
-    chainHash: DoubleSha256DigestBE,
+    chainHash: DoubleSha256Digest,
     contractInfo: ContractInfoTLV,
     oracleInfo: OracleInfoTLV,
     fundingPubKey: ECPublicKey,
@@ -425,7 +425,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
     val iter = ValueIterator(value)
 
     val contractFlags = iter.take(1).head
-    val chainHash = DoubleSha256DigestBE(iter.take(32))
+    val chainHash = DoubleSha256Digest(iter.take(32))
     val contractInfo = ContractInfoV0TLV.fromBytes(iter.current)
     iter.skip(contractInfo)
     val oracleInfo = OracleInfoV0TLV.fromBytes(iter.current)
