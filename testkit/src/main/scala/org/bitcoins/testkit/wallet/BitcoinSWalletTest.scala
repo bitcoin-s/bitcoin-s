@@ -474,7 +474,7 @@ object BitcoinSWalletTest extends WalletLogger {
         keyManager = wallet.keyManager,
         nodeApi =
           SyncUtil.getNodeApiWalletCallback(bitcoind, walletCallbackP.future),
-        chainQueryApi = SyncUtil.getTestChainQueryApi(bitcoind),
+        chainQueryApi = bitcoind,
         feeRateApi = new RandomFeeProvider,
         creationTime = wallet.keyManager.creationTime
       )(wallet.walletConfig, wallet.ec)
