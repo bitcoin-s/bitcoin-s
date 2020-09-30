@@ -200,7 +200,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "totalCollateralSatoshis" -> Element(
             totalCollateralSatoshis.toUInt64),
           "fundingInputsLen" -> Element(UInt16(fundingInputs.length)),
-          "fundingInputs" -> new MultiElement(fundingInputs.map(_.bytes)),
+          "fundingInputs" -> new MultiElement(
+            fundingInputs.map(input => Element(input.bytes))),
           "changeSPK" -> Element(changeSPK),
           "feeRate" -> Element(feeRate.currencyUnit.satoshis.toUInt64),
           "contractMaturityBound" -> Element(contractMaturityBound.toUInt32),
@@ -223,7 +224,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "fundingPubKey" -> Element(fundingPubKey),
           "payoutSPK" -> Element(payoutSPK),
           "fundingInputsLen" -> Element(UInt16(fundingInputs.length)),
-          "fundingInputs" -> new MultiElement(fundingInputs.map(_.bytes)),
+          "fundingInputs" -> new MultiElement(
+            fundingInputs.map(input => Element(input.bytes))),
           "changeSPK" -> Element(changeSPK),
           "cetSignatures" -> Element(cetSignatures),
           "refundSignature" -> Element(refundSignature)
