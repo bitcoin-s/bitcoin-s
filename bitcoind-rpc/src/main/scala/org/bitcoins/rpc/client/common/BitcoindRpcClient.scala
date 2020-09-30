@@ -182,25 +182,31 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
   override def getFilterHeaderCount(): Future[Int] = ???
 
   override def getFilterHeadersAtHeight(
-      height: Int): Future[Vector[CompactFilterHeaderDb]] = ???
+      height: Int): Future[Vector[CompactFilterHeaderDb]] =
+    filterHeadersUnsupported
 
   override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] =
-    ???
+    filterHeadersUnsupported
 
   override def getFilterHeader(
       blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] =
-    ???
+    filterHeadersUnsupported
 
   override def getFilter(
       hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = ???
 
   override def getFiltersAtHeight(
-      height: Int): Future[Vector[CompactFilterDb]] = ???
+      height: Int): Future[Vector[CompactFilterDb]] = filterHeadersUnsupported
 
   protected def filtersUnsupported: Future[Nothing] = {
     Future.failed(
       new UnsupportedOperationException(
         s"bitcoind ${instance.getVersion} does not support block filters"))
+  }
+
+  protected def filterHeadersUnsupported: Future[Nothing] = {
+    Future.failed(new UnsupportedOperationException(
+      s"bitcoind ${instance.getVersion} does not support block filters headers through the rpc"))
   }
 }
 

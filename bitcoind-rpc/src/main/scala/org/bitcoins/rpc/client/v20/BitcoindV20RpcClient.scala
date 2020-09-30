@@ -81,18 +81,6 @@ class BitcoindV20RpcClient(override val instance: BitcoindInstance)(implicit
     } yield Vector(filter.filterDb(height))
   }
 
-  // Cannot get the filter headers from the RPC
-
-  override def getFilterHeadersAtHeight(
-      height: Int): Future[Vector[CompactFilterHeaderDb]] = FutureUtil.emptyVec
-
-  override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] =
-    FutureUtil.none
-
-  override def getFilterHeader(
-      blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] =
-    FutureUtil.none
-
   override lazy val version: BitcoindVersion = BitcoindVersion.V20
 
   /**
