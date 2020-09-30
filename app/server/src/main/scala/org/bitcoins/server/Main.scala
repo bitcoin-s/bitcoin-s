@@ -15,20 +15,13 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.config.{
-  BitcoinNetworks,
-  MainNet,
-  RegTest,
-  SigNet,
-  TestNet3
-}
+import org.bitcoins.core.config._
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.db._
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
