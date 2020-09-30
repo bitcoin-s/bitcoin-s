@@ -2,12 +2,9 @@ package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
-import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.node.{NodeApi, NodeChainQueryApi}
-import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node
+import org.bitcoins.core.api.node.{NodeApi, NodeChainQueryApi}
 import org.bitcoins.core.gcs.FilterType
-import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
@@ -46,44 +43,6 @@ abstract class SyncUtil extends BitcoinSLogger {
         case GetBlockFilterResult(filter, header) =>
           FilterWithHeaderHash(filter, header)
       }
-  }
-
-  def getTestChainQueryApi(bitcoind: BitcoindRpcClient): ChainQueryApi = {
-    new ChainQueryApi {
-
-      /** Gets the height of the given block */
-      override def getBlockHeight(
-          blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
-        bitcoind.getBlockHeight(blockHash)
-
-      /** Gets the hash of the block that is what we consider "best" */
-      override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
-        bitcoind.getBestBlockHash
-      }
-
-      /** Gets number of confirmations for the given block hash */
-      override def getNumberOfConfirmations(
-          blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = {
-        bitcoind.getNumberOfConfirmations(blockHashOpt)
-      }
-
-      /** Gets the number of compact filters in the database */
-      override def getFilterCount: Future[Int] = {
-        bitcoind.getFilterCount
-      }
-
-      /** Returns the block height of the given block stamp */
-      override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
-        bitcoind.getHeightByBlockStamp(blockStamp)
-
-      override def epochSecondToBlockHeight(time: Long): Future[Int] =
-        Future.successful(0)
-
-      override def getFiltersBetweenHeights(
-          startHeight: Int,
-          endHeight: Int): Future[Vector[FilterResponse]] =
-        bitcoind.getFiltersBetweenHeights(startHeight, endHeight)
-    }
   }
 
   def getNodeApi(bitcoindRpcClient: BitcoindRpcClient)(implicit
@@ -180,7 +139,7 @@ abstract class SyncUtil extends BitcoinSLogger {
 
   def getNodeChainQueryApi(bitcoind: BitcoindRpcClient)(implicit
       ec: ExecutionContext): NodeChainQueryApi = {
-    val chainQuery = SyncUtil.getTestChainQueryApi(bitcoind)
+    val chainQuery = bitcoind
     val nodeApi = SyncUtil.getNodeApi(bitcoind)
     node.NodeChainQueryApi(nodeApi, chainQuery)
   }
@@ -189,7 +148,7 @@ abstract class SyncUtil extends BitcoinSLogger {
       bitcoind: BitcoindRpcClient,
       walletF: Future[Wallet])(implicit
       ec: ExecutionContext): NodeChainQueryApi = {
-    val chainQuery = SyncUtil.getTestChainQueryApi(bitcoind)
+    val chainQuery = bitcoind
     val nodeApi =
       SyncUtil.getNodeApiWalletCallback(bitcoind, walletF)
     node.NodeChainQueryApi(nodeApi, chainQuery)
