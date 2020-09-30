@@ -3,10 +3,18 @@ package org.bitcoins.rpc.client.common
 import java.io.File
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.chain.db.{
+  BlockHeaderDb,
+  CompactFilterDb,
+  CompactFilterHeaderDb
+}
+import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -39,7 +47,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
     extends Client
     with FeeRateApi
     with NodeApi
-    with ChainQueryApi
+    with ChainApi
     with BlockchainRpc
     with MessageRpc
     with MempoolRpc
@@ -68,7 +76,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
             new RuntimeException("Unexpected error when getting fee rate"))
       }
     }
-  // Chain Query Api
+  // Chain Api
 
   /** Gets the height of the given block */
   override def getBlockHeight(
@@ -112,6 +120,82 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
 
   override def downloadBlocks(
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = FutureUtil.unit
+
+  override def processHeaders(headers: Vector[BlockHeader]): Future[ChainApi] =
+    Future.successful(this)
+
+  override def processFilterHeaders(
+      filterHeaders: Vector[FilterHeader],
+      stopHash: DoubleSha256DigestBE): Future[ChainApi] =
+    Future.successful(this)
+
+  override def getHeader(
+      hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] =
+    getBlockHeader(hash).map(header => Some(header.blockHeaderDb))
+
+  override def getHeadersBetween(
+      from: BlockHeaderDb,
+      to: BlockHeaderDb): Future[Vector[BlockHeaderDb]] = {
+    val headerFs =
+      from.height.to(to.height).map(height => getHeaderAtHeight(height))
+    Future.sequence(headerFs).map(_.toVector)
+  }
+
+  private def getHeaderAtHeight(height: Int): Future[BlockHeaderDb] =
+    for {
+      hash <- getBlockHash(height)
+      header <- getBlockHeader(hash)
+    } yield header.blockHeaderDb
+
+  override def getHeadersAtHeight(height: Int): Future[Vector[BlockHeaderDb]] =
+    getHeaderAtHeight(height).map(header => Vector(header))
+
+  override def getBestBlockHeader(): Future[BlockHeaderDb] =
+    for {
+      hash <- getBestBlockHash
+      header <- getBlockHeader(hash)
+    } yield header.blockHeaderDb
+
+  override def nextBlockHeaderBatchRange(
+      prevStopHash: DoubleSha256DigestBE,
+      batchSize: Int): Future[Option[FilterSyncMarker]] = FutureUtil.none
+
+  override def nextFilterHeaderBatchRange(
+      stopHash: DoubleSha256DigestBE,
+      batchSize: Int): Future[Option[FilterSyncMarker]] = FutureUtil.none
+
+  override def processFilters(
+      message: Vector[CompactFilterMessage]): Future[ChainApi] =
+    Future.successful(this)
+
+  override def processCheckpoints(
+      checkpoints: Vector[DoubleSha256DigestBE],
+      blockHash: DoubleSha256DigestBE): Future[ChainApi] =
+    Future.successful(this)
+
+  override def getFilterHeaderCount(): Future[Int] = ???
+
+  override def getFilterHeadersAtHeight(
+      height: Int): Future[Vector[CompactFilterHeaderDb]] = ???
+
+  override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] =
+    ???
+
+  override def getFilterHeader(
+      blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] =
+    ???
+
+  override def getFilter(
+      hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = ???
+
+  override def getFiltersAtHeight(
+      height: Int): Future[Vector[CompactFilterDb]] = ???
+
+  protected def filtersUnsupported: Future[Nothing] = {
+    Future.failed(
+      new UnsupportedOperationException(
+        s"bitcoind ${instance.getVersion} does not support block filters"))
+  }
 }
 
 object BitcoindRpcClient {
