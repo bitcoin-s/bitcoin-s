@@ -1,11 +1,5 @@
-package org.bitcoins.dlc
+package org.bitcoins.dlc.testgen
 
-import org.bitcoins.dlc.testgen.{
-  DLCTestVector,
-  DLCTestVectorGen,
-  DLCTxGen,
-  SuccessTestVector
-}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 

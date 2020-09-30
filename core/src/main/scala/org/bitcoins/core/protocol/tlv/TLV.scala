@@ -275,16 +275,15 @@ case class FundingInputV0TLV(
   lazy val outputReference: OutputReference = OutputReference(outPoint, output)
 
   override val value: ByteVector = {
-    val redeemScriptBytes =
-      redeemScriptOpt.map(_.asmBytes).getOrElse(ByteVector.empty)
+    val redeemScript =
+      redeemScriptOpt.getOrElse(EmptyScriptPubKey)
 
     UInt16(prevTx.byteSize).bytes ++
       prevTx.bytes ++
       prevTxVout.bytes ++
       sequence.bytes ++
       maxWitnessLen.bytes ++
-      UInt16(redeemScriptBytes.length).bytes ++
-      redeemScriptBytes
+      redeemScript.bytes
   }
 }
 
@@ -299,13 +298,14 @@ object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
     val prevTxVout = UInt32(iter.takeBits(32))
     val sequence = UInt32(iter.takeBits(32))
     val maxWitnessLen = UInt16(iter.takeBits(16))
-    val redeemScriptLen = UInt16(iter.takeBits(16))
-    val redeemScriptOpt = if (redeemScriptLen == UInt16.zero) {
-      None
-    } else {
-      Some(
-        WitnessScriptPubKey.fromAsmBytes(iter.take(redeemScriptLen.toInt))
-      )
+    val redeemScript = ScriptPubKey(iter.current)
+    iter.skip(redeemScript)
+    val redeemScriptOpt = redeemScript match {
+      case EmptyScriptPubKey         => None
+      case wspk: WitnessScriptPubKey => Some(wspk)
+      case _: NonWitnessScriptPubKey =>
+        throw new IllegalArgumentException(
+          s"Redeem Script must be Segwith SPK: $redeemScript")
     }
 
     FundingInputV0TLV(prevTx,
