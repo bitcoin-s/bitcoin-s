@@ -7,6 +7,9 @@ import java.nio.file._
 import com.typesafe.config.Config
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
+import org.bitcoins.node.NodeType
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class BitcoindRpcAppConfig(
     private val directory: Path,
-    private val confs: Config*)
+    private val confs: Config*)(implicit val ec: ExecutionContext)
     extends AppConfig {
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
   override protected[bitcoins] def moduleName: String = "bitcoind"
@@ -29,7 +32,16 @@ case class BitcoindRpcAppConfig(
 
   protected[bitcoins] def baseDatadir: Path = directory
 
-  override def start(): Future[Unit] = FutureUtil.unit
+  lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
+
+  override def start(): Future[Unit] = {
+    nodeConf.nodeType match {
+      case NodeType.BitcoindBackend =>
+        client.start().map(_ => ())
+      case NodeType.SpvNode | NodeType.NeutrinoNode | NodeType.FullNode =>
+        FutureUtil.unit
+    }
+  }
 
   override def stop(): Future[Unit] = FutureUtil.unit
 
@@ -87,6 +99,9 @@ case class BitcoindRpcAppConfig(
                      zmqConfig = zmqConfig,
                      binary = binary,
                      datadir = bitcoindDataDir)
+
+  lazy val client: BitcoindRpcClient = BitcoindRpcClient(bitcoindInstance)
+
 }
 
 object BitcoindRpcAppConfig extends AppConfigFactory[BitcoindRpcAppConfig] {
