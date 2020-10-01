@@ -31,7 +31,9 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.testgen.DLCTLVGen.PreImageContractInfo
 import play.api.libs.json._
+import scodec.bits.ByteVector
 
 sealed trait DLCTestVector extends TestVector
 
@@ -93,6 +95,7 @@ case class DLCPartyParams(
 }
 
 case class SerializedContractInfoEntry(
+    preImage: String,
     outcome: Sha256Digest,
     localPayout: CurrencyUnit) {
 
@@ -114,15 +117,16 @@ object DLCParams {
 
   def apply(
       oracleInfo: OracleInfo,
-      contractInfo: ContractInfo,
+      contractInfo: PreImageContractInfo,
       contractMaturityBound: BlockTimeStamp,
       contractTimeout: BlockTimeStamp,
       feeRate: SatoshisPerVirtualByte,
       realOutcome: Sha256Digest,
       oracleSignature: SchnorrDigitalSignature): DLCParams = {
     val serializedContractInfo = contractInfo.toVector.map {
-      case (outcome, amt) =>
-        SerializedContractInfoEntry(outcome, amt)
+      case (preImage, amt) =>
+        val outcome = CryptoUtil.sha256(ByteVector(preImage.getBytes))
+        SerializedContractInfoEntry(preImage, outcome, amt)
     }
 
     DLCParams(oracleInfo,

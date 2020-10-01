@@ -207,7 +207,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       val localVout = localFundingUtxos.head.outPoint.vout
       val remoteVout = remoteFundingUtxos.head.outPoint.vout
 
-      val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
+      val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes).map(_._2)
 
       val (outcomes, otherOutcomes) =
         DLCTestUtil.genContractInfos(outcomeHashes, totalInput)

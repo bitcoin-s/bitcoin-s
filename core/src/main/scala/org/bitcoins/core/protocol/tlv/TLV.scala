@@ -69,6 +69,10 @@ object TLV extends Factory[TLV] {
       case None             => UnknownTLV(tpe, value)
     }
   }
+
+  def encodeScript(script: Script): ByteVector = {
+    UInt16(script.asmBytes.length).bytes ++ script.asmBytes
+  }
 }
 
 sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
@@ -109,6 +113,11 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
               s"Must take a round byte number of bits, got $numBits")
 
       take(numBytes = numBits / 8)
+    }
+
+    def takeSPK(): ScriptPubKey = {
+      val len = UInt16(takeBits(16)).toInt
+      ScriptPubKey.fromAsmBytes(take(len))
     }
   }
 }
@@ -283,7 +292,7 @@ case class FundingInputV0TLV(
       prevTxVout.bytes ++
       sequence.bytes ++
       maxWitnessLen.bytes ++
-      redeemScript.bytes
+      TLV.encodeScript(redeemScript)
   }
 }
 
@@ -298,8 +307,7 @@ object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
     val prevTxVout = UInt32(iter.takeBits(32))
     val sequence = UInt32(iter.takeBits(32))
     val maxWitnessLen = UInt16(iter.takeBits(16))
-    val redeemScript = ScriptPubKey(iter.current)
-    iter.skip(redeemScript)
+    val redeemScript = iter.takeSPK()
     val redeemScriptOpt = redeemScript match {
       case EmptyScriptPubKey         => None
       case wspk: WitnessScriptPubKey => Some(wspk)
@@ -407,11 +415,11 @@ case class DLCOfferTLV(
       contractInfo.bytes ++
       oracleInfo.bytes ++
       fundingPubKey.bytes ++
-      payoutSPK.bytes ++
+      TLV.encodeScript(payoutSPK) ++
       totalCollateralSatoshis.toUInt64.bytes ++
       UInt16(fundingInputs.length).bytes ++
       fundingInputs.foldLeft(ByteVector.empty)(_ ++ _.bytes) ++
-      changeSPK.bytes ++
+      TLV.encodeScript(changeSPK) ++
       feeRate.currencyUnit.satoshis.toUInt64.bytes ++
       contractMaturityBound.toUInt32.bytes ++
       contractTimeout.toUInt32.bytes
@@ -431,8 +439,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
     val oracleInfo = OracleInfoV0TLV.fromBytes(iter.current)
     iter.skip(oracleInfo)
     val fundingPubKey = ECPublicKey(iter.take(33))
-    val payoutSPK = ScriptPubKey(iter.current)
-    iter.skip(payoutSPK)
+    val payoutSPK = iter.takeSPK()
     val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)))
     val numFundingInputs = UInt16(iter.takeBits(16))
     val fundingInputs = (0 until numFundingInputs.toInt).toVector.map { _ =>
@@ -440,8 +447,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
       iter.skip(fundingInput)
       fundingInput
     }
-    val changeSPK = ScriptPubKey(iter.current)
-    iter.skip(changeSPK)
+    val changeSPK = iter.takeSPK()
     val feeRate = SatoshisPerVirtualByte(Satoshis(UInt64(iter.takeBits(64))))
     val contractMaturityBound = BlockTimeStamp(UInt32(iter.takeBits(32)))
     val contractTimeout = BlockTimeStamp(UInt32(iter.takeBits(32)))
@@ -479,10 +485,10 @@ case class DLCAcceptTLV(
     tempContractId.bytes ++
       totalCollateralSatoshis.toUInt64.bytes ++
       fundingPubKey.bytes ++
-      payoutSPK.bytes ++
+      TLV.encodeScript(payoutSPK) ++
       UInt16(fundingInputs.length).bytes ++
       fundingInputs.foldLeft(ByteVector.empty)(_ ++ _.bytes) ++
-      changeSPK.bytes ++
+      TLV.encodeScript(changeSPK) ++
       cetSignatures.bytes ++
       refundSignature.bytes
   }
@@ -497,16 +503,14 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
     val tempContractId = Sha256Digest(iter.take(32))
     val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)))
     val fundingPubKey = ECPublicKey(iter.take(33))
-    val payoutSPK = ScriptPubKey(iter.current)
-    iter.skip(payoutSPK)
+    val payoutSPK = iter.takeSPK()
     val numFundingInputs = UInt16(iter.takeBits(16))
     val fundingInputs = (0 until numFundingInputs.toInt).toVector.map { _ =>
       val fundingInput = FundingInputV0TLV.fromBytes(iter.current)
       iter.skip(fundingInput)
       fundingInput
     }
-    val changeSPK = ScriptPubKey(iter.current)
-    iter.skip(changeSPK)
+    val changeSPK = iter.takeSPK()
     val cetSignatures = CETSignaturesV0TLV.fromBytes(iter.current)
     iter.skip(cetSignatures)
     val refundSignature = ECDigitalSignature(iter.current)

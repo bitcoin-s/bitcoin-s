@@ -21,7 +21,7 @@ import org.bitcoins.core.protocol.tlv.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.util.NumberUtil
+import org.bitcoins.core.util.{MapWrapper, NumberUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
@@ -35,14 +35,43 @@ object DLCTLVGen {
     CryptoUtil.sha256(bytes)
   }
 
+  case class PreImageContractInfo(outcomeValueMap: Map[String, Satoshis])
+      extends MapWrapper[String, Satoshis] {
+    override def wrapped: Map[String, Satoshis] = outcomeValueMap
+
+    def toContractInfo: ContractInfo = {
+      ContractInfo(outcomeValueMap.map {
+        case (str, amt) =>
+          CryptoUtil.sha256(ByteVector(str.getBytes)) -> amt
+      })
+    }
+  }
+
+  def genPreImageContractInfo(
+      strOutcomes: Vector[String] = DLCTestUtil.genOutcomes(3).map(_._1),
+      totalInput: CurrencyUnit =
+        defaultAmt * 2): PreImageContractInfo = {
+    val outcomes =
+      strOutcomes.map(str => CryptoUtil.sha256(ByteVector(str.getBytes)))
+    val contractInfo = genContractInfo(outcomes, totalInput)
+    PreImageContractInfo(
+      contractInfo
+        .zip(strOutcomes)
+        .map {
+          case ((_, amt), preImage) =>
+            preImage -> amt
+        }
+        .toMap)
+  }
+
   def genContractInfo(
-      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3),
+      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3).map(_._2),
       totalInput: CurrencyUnit = defaultAmt * 2): ContractInfo = {
     DLCTestUtil.genContractInfos(outcomes, totalInput)._1
   }
 
   def contractInfoParsingTestVector(
-      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3),
+      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3).map(_._2),
       totalInput: CurrencyUnit = defaultAmt * 2): DLCParsingTestVector = {
     DLCParsingTestVector(genContractInfo(outcomes, totalInput).toTLV)
   }
@@ -163,7 +192,7 @@ object DLCTLVGen {
   }
 
   def cetSigs(
-      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3),
+      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3).map(_._2),
       fundingPubKey: ECPublicKey =
         ECPublicKey.freshPublicKey): CETSignatures = {
     CETSignatures(outcomes.map(outcome => outcome -> adaptorSig).toMap,

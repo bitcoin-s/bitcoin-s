@@ -184,7 +184,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "prevTxVout" -> Element(prevTxVout),
           "sequence" -> Element(sequence),
           "maxWitnessLen" -> Element(maxWitnessLen),
-          "redeemScript" -> Element(redeemScript)
+          "redeemScriptLen" -> Element(UInt16(redeemScript.asmBytes.length)),
+          "redeemScript" -> Element(redeemScript.asmBytes)
         )
         DLCTLVTestVector(tlv, "funding_input_v0", fields)
       case CETSignaturesV0TLV(sigs) =>
@@ -233,13 +234,15 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "contractInfo" -> Element(contractInfo),
           "oracleInfo" -> Element(oracleInfo),
           "fundingPubKey" -> Element(fundingPubKey),
-          "payoutSPK" -> Element(payoutSPK),
+          "payoutSPKLen" -> Element(UInt16(payoutSPK.asmBytes.length)),
+          "payoutSPK" -> Element(payoutSPK.asmBytes),
           "totalCollateralSatoshis" -> Element(
             totalCollateralSatoshis.toUInt64),
           "fundingInputsLen" -> Element(UInt16(fundingInputs.length)),
           "fundingInputs" -> new MultiElement(
             fundingInputs.map(input => Element(input.bytes))),
-          "changeSPK" -> Element(changeSPK),
+          "changeSPKLen" -> Element(UInt16(changeSPK.asmBytes.length)),
+          "changeSPK" -> Element(changeSPK.asmBytes),
           "feeRate" -> Element(feeRate.currencyUnit.satoshis.toUInt64),
           "contractMaturityBound" -> Element(contractMaturityBound.toUInt32),
           "contractTimeout" -> Element(contractTimeout.toUInt32)
@@ -259,11 +262,13 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "totalCollateralSatoshis" -> Element(
             totalCollateralSatoshis.toUInt64),
           "fundingPubKey" -> Element(fundingPubKey),
-          "payoutSPK" -> Element(payoutSPK),
+          "payoutSPKLen" -> Element(UInt16(payoutSPK.asmBytes.length)),
+          "payoutSPK" -> Element(payoutSPK.asmBytes),
           "fundingInputsLen" -> Element(UInt16(fundingInputs.length)),
           "fundingInputs" -> new MultiElement(
             fundingInputs.map(input => Element(input.bytes))),
-          "changeSPK" -> Element(changeSPK),
+          "changeSPKLen" -> Element(UInt16(changeSPK.asmBytes.length)),
+          "changeSPK" -> Element(changeSPK.asmBytes),
           "cetSignatures" -> Element(cetSignatures),
           "refundSignature" -> Element(refundSignature)
         )
