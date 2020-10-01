@@ -308,7 +308,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     }
   }
 
-  it should "dummy sign a mix of spks in a tx and then have fail verification" in {
+  it should "dummy sign a mix of spks in a tx and fill it with dummy signatures" in {
     forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
