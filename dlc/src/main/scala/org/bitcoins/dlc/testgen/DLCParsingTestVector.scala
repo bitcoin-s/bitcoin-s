@@ -87,6 +87,27 @@ object ByteVectorWrapper {
     }
   }
 
+  case class NamedMultiElement(elements: Vector[(String, ByteVectorWrapper)])
+      extends ByteVectorWrapper {
+
+    override def toString: String = {
+      s"NamedMultiElement(${elements
+        .map { case (name, bytes) => s"$name -> $bytes" }
+        .mkString(",")})"
+    }
+
+    override def toJson: JsValue = {
+      JsObject(elements.map { case (name, element) => name -> element.toJson })
+    }
+  }
+
+  object NamedMultiElement {
+
+    def apply(elements: (String, ByteVectorWrapper)*): NamedMultiElement = {
+      new NamedMultiElement(elements.toVector)
+    }
+  }
+
   def fromJson(json: JsValue): JsResult[ByteVectorWrapper] = {
     json.validate[String] match {
       case JsSuccess(hex, _) => JsSuccess(ByteVector.fromValidHex(hex))
@@ -96,7 +117,17 @@ object ByteVectorWrapper {
             val nestedResult =
               DLCParsingTestVector.flattenJsResult(vec.map(fromJson))
             nestedResult.map(MultiElement(_))
-          case JsError(_) => JsError("Couldn't parse field bytes")
+          case JsError(_) =>
+            json.validate[Map[String, JsValue]] match {
+              case JsSuccess(obj, _) =>
+                val jsResults = obj.map {
+                  case (name, nestedJson) => fromJson(nestedJson).map(name -> _)
+                }.toVector
+                val nestedResult =
+                  DLCParsingTestVector.flattenJsResult(jsResults)
+                nestedResult.map(NamedMultiElement(_))
+              case JsError(_) => JsError("Couldn't parse field bytes")
+            }
         }
     }
   }
@@ -124,7 +155,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "length" -> Element(tlv.length),
           "outcomes" -> MultiElement(outcomes.toVector.map {
             case (outcome, amt) =>
-              MultiElement(outcome.bytes, amt.toUInt64.bytes)
+              NamedMultiElement("outcome" -> outcome.bytes,
+                                "localPayout" -> amt.toUInt64.bytes)
           })
         )
         DLCTLVTestVector(tlv, "contract_info_v0", fields)

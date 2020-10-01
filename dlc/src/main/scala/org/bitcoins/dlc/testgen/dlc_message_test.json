@@ -4,7 +4,16 @@
   "fields" : {
     "tpe" : "fda710",
     "length" : "78",
-    "outcomes" : [ [ "b9e47a173c18b7d4a6f6a35cf03b88a90579270ce3b99c251c60fd4be244968a", "00000000040b9d30" ], [ "07cd7d01e426136c2c0a1a773bc530ae3e8e06a87d6e198ffd75b7ecb10ffed6", "0000000000000000" ], [ "e0acb3797e223df526aff69dc18adc88ab9f01a8fc2d5374864d0a2347594308", "000000000bebc200" ] ]
+    "outcomes" : [ {
+      "outcome" : "b9e47a173c18b7d4a6f6a35cf03b88a90579270ce3b99c251c60fd4be244968a",
+      "localPayout" : "00000000040b9d30"
+    }, {
+      "outcome" : "07cd7d01e426136c2c0a1a773bc530ae3e8e06a87d6e198ffd75b7ecb10ffed6",
+      "localPayout" : "0000000000000000"
+    }, {
+      "outcome" : "e0acb3797e223df526aff69dc18adc88ab9f01a8fc2d5374864d0a2347594308",
+      "localPayout" : "000000000bebc200"
+    } ]
   }
 }, {
   "tpeName" : "oracle_info_v0",
