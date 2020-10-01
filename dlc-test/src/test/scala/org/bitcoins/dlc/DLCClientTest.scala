@@ -130,7 +130,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
       TestDLCClient,
       TestDLCClient,
       Vector[Sha256Digest]) = {
-    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
+    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes).map(_._2)
 
     val (outcomes, remoteOutcomes) =
       DLCTestUtil.genContractInfos(outcomeHashes, totalInput)

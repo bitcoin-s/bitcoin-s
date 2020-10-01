@@ -21,11 +21,11 @@ import scodec.bits.ByteVector
 
 object DLCTestUtil {
 
-  def genOutcomes(size: Int): Vector[Sha256Digest] = {
+  def genOutcomes(size: Int): Vector[(String, Sha256Digest)] = {
     val strs =
       (0 until size).map(_ => scala.util.Random.nextLong().toString).toVector
 
-    strs.map(str => CryptoUtil.sha256(ByteVector(str.getBytes)))
+    strs.map(str => str -> CryptoUtil.sha256(ByteVector(str.getBytes)))
   }
 
   def genValues(size: Int, totalAmount: CurrencyUnit): Vector[Satoshis] = {

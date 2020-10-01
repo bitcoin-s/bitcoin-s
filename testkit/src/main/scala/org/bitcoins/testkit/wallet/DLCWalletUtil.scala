@@ -147,7 +147,7 @@ trait DLCWalletUtil {
     val walletB = fundedWalletB.wallet
 
     val numOutcomes = 8
-    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
+    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes).map(_._2)
     val (contractInfo, _) =
       DLCTestUtil.genContractInfos(outcomeHashes, Satoshis(10000))
 

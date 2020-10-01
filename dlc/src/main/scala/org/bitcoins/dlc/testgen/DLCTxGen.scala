@@ -1,7 +1,6 @@
 package org.bitcoins.dlc.testgen
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  ContractInfo,
   DLCAcceptWithoutSigs,
   DLCSign,
   OracleInfo
@@ -28,7 +27,7 @@ object DLCTxGen {
   import DLCTLVGen._
 
   def dlcParams(
-      contractInfo: ContractInfo = genContractInfo(),
+      preImageContractInfo: PreImageContractInfo = genPreImageContractInfo(),
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200),
       feeRate: SatoshisPerVirtualByte =
@@ -36,10 +35,11 @@ object DLCTxGen {
     val privKey = ECPrivateKey.freshPrivateKey
     val kVal = ECPrivateKey.freshPrivateKey
     val oracleInfo = OracleInfo(privKey.schnorrPublicKey, kVal.schnorrNonce)
+    val contractInfo = preImageContractInfo.toContractInfo
     val realOutcome = contractInfo.keys.toVector(contractInfo.size / 2)
     val sig = privKey.schnorrSignWithNonce(realOutcome.bytes, kVal)
     DLCParams(oracleInfo,
-              contractInfo,
+              preImageContractInfo,
               contractMaturityBound,
               contractTimeout,
               feeRate,
@@ -159,8 +159,9 @@ object DLCTxGen {
   def randomSuccessTestVector(numOutcomes: Int)(implicit
       ec: ExecutionContext): Future[SuccessTestVector] = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
-    val contractInfo = genContractInfo(outcomes)
+    val contractInfo = genPreImageContractInfo(outcomes.map(_._1))
 
-    successTestVector(validTestInputs(dlcParams(contractInfo = contractInfo)))
+    successTestVector(
+      validTestInputs(dlcParams(preImageContractInfo = contractInfo)))
   }
 }
