@@ -192,7 +192,9 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "tpe" -> Element(CETSignaturesV0TLV.tpe),
           "length" -> Element(tlv.length),
           "sigs" -> MultiElement(
-            sigs.map(sig => MultiElement(sig.adaptedSig, sig.dleqProof)))
+            sigs.map(sig =>
+              NamedMultiElement("encryptedSig" -> sig.adaptedSig,
+                                "dleqProof" -> sig.dleqProof)))
         )
         DLCTLVTestVector(tlv, "cet_adaptor_signatures_v0", fields)
       case FundingSignaturesV0TLV(witnesses) =>
@@ -201,11 +203,14 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "length" -> Element(tlv.length),
           "numWitnesses" -> Element(UInt16(witnesses.length)),
           "witnesses" -> MultiElement(witnesses.map { witness =>
-            MultiElement(Element(UInt16(witness.stack.length)),
-                         MultiElement(witness.stack.toVector.map { stackElem =>
-                           MultiElement(Element(UInt16(stackElem.length)),
-                                        stackElem)
-                         }))
+            NamedMultiElement(
+              "stackLen" -> Element(UInt16(witness.stack.length)),
+              "stack" -> MultiElement(witness.stack.toVector.map { stackElem =>
+                NamedMultiElement(
+                  "stackElementLen" -> Element(UInt16(stackElem.length)),
+                  "stackElement" -> stackElem)
+              })
+            )
           })
         )
         DLCTLVTestVector(tlv, "funding_signatures_v0", fields)
