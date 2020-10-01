@@ -9,7 +9,6 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.CryptoUtil
-import org.bitcoins.testkit.core.gen.{CurrencyUnitGenerator, FeeUnitGen}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
