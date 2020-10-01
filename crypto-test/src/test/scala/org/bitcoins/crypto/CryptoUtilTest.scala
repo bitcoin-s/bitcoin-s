@@ -3,6 +3,7 @@ package org.bitcoins.crypto
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.scalacheck.Gen
 import scodec.bits._
 
 /**
@@ -107,4 +108,121 @@ class CryptoUtilTest extends BitcoinSUnitTest {
     }
   }
 
+  // From https://github.com/dgarage/NDLC/blob/d816c0c517611b336f09ceaa43d400ecb5ab909b/NDLC.Tests/Data/normalization_tests.json
+  it must "normalize and serialize strings correctly" in {
+    val singletons = Vector("\u00c5", "\u212b", "\u0041\u030a")
+    assert(
+      singletons
+        .map(CryptoUtil.normalize)
+        .forall(_ == "\u00c5")
+    )
+    assert(
+      CryptoUtil.serializeForHash("\u00c5") == ByteVector.fromValidHex("c385")
+    )
+
+    val canonicalComposites = Vector("\u00f4", "\u006f\u0302")
+    assert(
+      canonicalComposites
+        .map(CryptoUtil.normalize)
+        .forall(_ == "\u00f4")
+    )
+    assert(
+      CryptoUtil.serializeForHash("\u00f4") == ByteVector.fromValidHex("c3b4")
+    )
+
+    val multipleCombiningMarks = Vector("\u1e69", "\u0073\u0323\u0307")
+    assert(
+      multipleCombiningMarks.map(CryptoUtil.normalize).forall(_ == "\u1e69")
+    )
+    assert(
+      CryptoUtil.serializeForHash("\u1e69") == ByteVector.fromValidHex("e1b9a9")
+    )
+
+    val compatibilityComposite = "\ufb01"
+    assert(
+      CryptoUtil.serializeForHash(compatibilityComposite) == ByteVector
+        .fromValidHex("efac81")
+    )
+
+    val nonComposite = "fi"
+    assert(
+      CryptoUtil.serializeForHash(nonComposite) == ByteVector.fromValidHex(
+        "6669")
+    )
+
+    val accentString = "éléphant"
+    assert(
+      CryptoUtil.serializeForHash(accentString) == ByteVector.fromValidHex(
+        "c3a96cc3a97068616e74")
+    )
+  }
+
+  // From https://github.com/dgarage/NDLC/blob/d816c0c517611b336f09ceaa43d400ecb5ab909b/NDLC.Tests/Data/normalization_tests.json
+  it must "sha256 unicode strings correctly" in {
+    val singletons = Vector("\u00c5", "\u212b", "\u0041\u030a")
+    assert(
+      singletons
+        .map(CryptoUtil.sha256)
+        .forall(_ == Sha256Digest(
+          "0a94dc9d420d1142d6b71de60f9bf7e2f345a4d62c9f141b091539769ddf3075"))
+    )
+
+    val canonicalComposites = Vector("\u00f4", "\u006f\u0302")
+    assert(
+      canonicalComposites
+        .map(CryptoUtil.sha256)
+        .forall(_ == Sha256Digest(
+          "cc912dbca598fd80ca7f5d98ece5d846b447f4a9ae3f73c352e2687eb293eef5"))
+    )
+
+    val multipleCombiningMarks = Vector("\u1e69", "\u0073\u0323\u0307")
+    assert(
+      multipleCombiningMarks
+        .map(CryptoUtil.sha256)
+        .forall(_ == Sha256Digest(
+          "ceca1ea456e95ee498463622915209bb08a018e8ee9741b46b64ef1a08fb56ab"))
+    )
+
+    val compatibilityComposite = "\ufb01"
+    assert(
+      CryptoUtil.sha256(compatibilityComposite) == Sha256Digest(
+        "b6554cce8a93f1c8818280e2a768116a79216ad5501a85357d233409db87d340"))
+
+    val nonComposite = "fi"
+    assert(
+      CryptoUtil.sha256(nonComposite) == Sha256Digest(
+        "b4bdc848109722a383d0a972c6eb859f2abd29565b8c4cc7199e7c9eb708f1b7"))
+
+    val accentString = "éléphant"
+    assert(
+      CryptoUtil.sha256(accentString) == Sha256Digest(
+        "c941ae685f62cbe7bb47d0791af7154788fd9e873e5c57fd2449d1454ed5b16f"))
+  }
+
+  it must "encode strings correctly when hashing" in {
+    forAll(Gen.alphaStr) { str =>
+      val serialized = CryptoUtil.serializeForHash(str)
+      val strHashFuncs: Vector[String => HashDigest] =
+        Vector(
+          CryptoUtil.sha256Hash160,
+          CryptoUtil.sha256,
+          CryptoUtil.taggedSha256(_, "test"),
+          CryptoUtil.sha1,
+          CryptoUtil.ripeMd160
+        )
+      val byteHashFuncs: Vector[ByteVector => HashDigest] =
+        Vector(
+          CryptoUtil.sha256Hash160,
+          CryptoUtil.sha256,
+          CryptoUtil.taggedSha256(_, "test"),
+          CryptoUtil.sha1,
+          CryptoUtil.ripeMd160
+        )
+      val hashFuncs = strHashFuncs.zip(byteHashFuncs)
+      assert(hashFuncs.forall {
+        case (strHash, byteHash) =>
+          strHash(str) == byteHash(serialized)
+      })
+    }
+  }
 }
