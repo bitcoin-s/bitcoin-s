@@ -4,10 +4,14 @@ import java.nio.file.{Files, Path}
 
 import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
+import org.bitcoins.core.crypto.MnemonicCode
+import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.crypto.AesPassword
+import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db.{AppConfig, DbManagement, JdbcProfileComponent}
 import org.bitcoins.dlc.oracle.storage._
-import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -61,8 +65,41 @@ case class DLCOracleAppConfig(
   }
 
   def exists(): Boolean = {
-    seedExists() &&
-    Files.exists(baseDatadir.resolve("oracle.sqlite"))
+    lazy val hasDb = this.driver match {
+      case PostgreSQL => true
+      case SQLite =>
+        Files.exists(baseDatadir.resolve("oracle.sqlite"))
+    }
+    seedExists() && hasDb
+  }
+
+  def initialize(oracle: DLCOracle): Future[DLCOracle] = {
+    val result =
+      FutureUtil.foldLeftAsync((), allTables)((_, table) => createTable(table))
+
+    result.failed.foreach(_.printStackTrace())
+
+    result.map(_ => oracle)
+  }
+
+  def initialize(
+      password: AesPassword,
+      bip39PasswordOpt: Option[String] = None): Future[DLCOracle] = {
+    if (!seedExists()) {
+      val entropy = MnemonicCode.getEntropy256Bits
+      val mnemonicCode = MnemonicCode.fromEntropy(entropy)
+      val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
+      val encrypted = decryptedMnemonic.encrypt(password)
+      WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
+    }
+
+    val key =
+      WalletStorage.getPrivateKeyFromDisk(seedPath,
+                                          SegWitMainNetPriv,
+                                          password,
+                                          bip39PasswordOpt)
+    val oracle = DLCOracle(key)(this)
+    initialize(oracle)
   }
 
   private val rValueTable: TableQuery[Table[_]] = {
