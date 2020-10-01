@@ -70,10 +70,12 @@ class HDPathTest extends BitcoinSUnitTest {
   behavior of "HDCoinType"
 
   it must "correctly represent Bitcoin and Testnet coins" in {
-    HDCoinType.fromInt(0) must be(HDCoinType.Bitcoin)
-    HDCoinType.fromInt(1) must be(HDCoinType.Testnet)
-    forAll(NumberGenerator.ints.suchThat(i => i != 1 && i != 0)) { i =>
-      assertThrows[IllegalArgumentException](HDCoinType.fromInt(i))
+    HDCoinType(0) must be(HDCoinType.Bitcoin)
+    HDCoinType(1) must be(HDCoinType.Testnet)
+    forAll(NumberGenerator.ints.suchThat(i =>
+      !HDCoinType.all.map(_.toInt).contains(i))) { i =>
+      HDCoinType(i).toInt must be(i)
+      HDCoinType.fromKnown(i) must be(None)
     }
   }
 
