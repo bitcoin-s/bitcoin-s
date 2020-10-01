@@ -87,6 +87,27 @@ object ByteVectorWrapper {
     }
   }
 
+  case class NamedMultiElement(elements: Vector[(String, ByteVectorWrapper)])
+      extends ByteVectorWrapper {
+
+    override def toString: String = {
+      s"NamedMultiElement(${elements
+        .map { case (name, bytes) => s"$name -> $bytes" }
+        .mkString(",")})"
+    }
+
+    override def toJson: JsValue = {
+      JsObject(elements.map { case (name, element) => name -> element.toJson })
+    }
+  }
+
+  object NamedMultiElement {
+
+    def apply(elements: (String, ByteVectorWrapper)*): NamedMultiElement = {
+      new NamedMultiElement(elements.toVector)
+    }
+  }
+
   def fromJson(json: JsValue): JsResult[ByteVectorWrapper] = {
     json.validate[String] match {
       case JsSuccess(hex, _) => JsSuccess(ByteVector.fromValidHex(hex))
@@ -96,7 +117,17 @@ object ByteVectorWrapper {
             val nestedResult =
               DLCParsingTestVector.flattenJsResult(vec.map(fromJson))
             nestedResult.map(MultiElement(_))
-          case JsError(_) => JsError("Couldn't parse field bytes")
+          case JsError(_) =>
+            json.validate[Map[String, JsValue]] match {
+              case JsSuccess(obj, _) =>
+                val jsResults = obj.map {
+                  case (name, nestedJson) => fromJson(nestedJson).map(name -> _)
+                }.toVector
+                val nestedResult =
+                  DLCParsingTestVector.flattenJsResult(jsResults)
+                nestedResult.map(NamedMultiElement(_))
+              case JsError(_) => JsError("Couldn't parse field bytes")
+            }
         }
     }
   }
@@ -124,7 +155,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "length" -> Element(tlv.length),
           "outcomes" -> MultiElement(outcomes.toVector.map {
             case (outcome, amt) =>
-              MultiElement(outcome.bytes, amt.toUInt64.bytes)
+              NamedMultiElement("outcome" -> outcome.bytes,
+                                "localPayout" -> amt.toUInt64.bytes)
           })
         )
         DLCTLVTestVector(tlv, "contract_info_v0", fields)
@@ -160,7 +192,9 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "tpe" -> Element(CETSignaturesV0TLV.tpe),
           "length" -> Element(tlv.length),
           "sigs" -> MultiElement(
-            sigs.map(sig => MultiElement(sig.adaptedSig, sig.dleqProof)))
+            sigs.map(sig =>
+              NamedMultiElement("encryptedSig" -> sig.adaptedSig,
+                                "dleqProof" -> sig.dleqProof)))
         )
         DLCTLVTestVector(tlv, "cet_adaptor_signatures_v0", fields)
       case FundingSignaturesV0TLV(witnesses) =>
@@ -169,11 +203,14 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "length" -> Element(tlv.length),
           "numWitnesses" -> Element(UInt16(witnesses.length)),
           "witnesses" -> MultiElement(witnesses.map { witness =>
-            MultiElement(Element(UInt16(witness.stack.length)),
-                         MultiElement(witness.stack.toVector.map { stackElem =>
-                           MultiElement(Element(UInt16(stackElem.length)),
-                                        stackElem)
-                         }))
+            NamedMultiElement(
+              "stackLen" -> Element(UInt16(witness.stack.length)),
+              "stack" -> MultiElement(witness.stack.toVector.map { stackElem =>
+                NamedMultiElement(
+                  "stackElementLen" -> Element(UInt16(stackElem.length)),
+                  "stackElement" -> stackElem)
+              })
+            )
           })
         )
         DLCTLVTestVector(tlv, "funding_signatures_v0", fields)
