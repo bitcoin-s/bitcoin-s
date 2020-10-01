@@ -14,7 +14,7 @@ case class SchnorrSigPointTestVector(
           s"Signature ($signature) does not match Signature Point ($sigPoint)")
 
   def privKey: ECPrivateKey = inputs.privKey
-  def privNonce: ECPrivateKey = inputs.privKey
+  def privNonce: ECPrivateKey = inputs.privNonce
   def msgHash: Sha256Digest = inputs.msgHash
 
   override def toJson: JsValue = {

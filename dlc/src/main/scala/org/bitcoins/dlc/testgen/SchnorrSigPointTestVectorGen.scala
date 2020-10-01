@@ -40,13 +40,7 @@ object SchnorrSigPointTestVectorGen
     }
 
     Future.successful(
-      Vector(
-        generateTest,
-        generateTest,
-        generateTest,
-        generateTest,
-        generateTest
-      )
+      Vector.fill(5)(generateTest)
     )
   }
 }
