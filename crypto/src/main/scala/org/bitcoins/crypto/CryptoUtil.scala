@@ -14,16 +14,32 @@ import scodec.bits.{BitVector, ByteVector}
   */
 trait CryptoUtil {
 
+  def normalize(str: String): String = {
+    java.text.Normalizer.normalize(str, java.text.Normalizer.Form.NFC)
+  }
+
+  def serializeForHash(str: String): ByteVector = {
+    ByteVector(normalize(str).getBytes("UTF-8"))
+  }
+
   /** Does the following computation: RIPEMD160(SHA256(hex)). */
   def sha256Hash160(bytes: ByteVector): Sha256Hash160Digest = {
     val hash = ripeMd160(sha256(bytes).bytes).bytes
     Sha256Hash160Digest(hash)
   }
 
+  def sha256Hash160(str: String): Sha256Hash160Digest = {
+    sha256Hash160(serializeForHash(str))
+  }
+
   /** Performs sha256(sha256(bytes)). */
   def doubleSHA256(bytes: ByteVector): DoubleSha256Digest = {
     val hash: ByteVector = sha256(sha256(bytes).bytes).bytes
     DoubleSha256Digest(hash)
+  }
+
+  def doubleSHA256(str: String): DoubleSha256Digest = {
+    doubleSHA256(serializeForHash(str))
   }
 
   /** Takes sha256(bytes). */
@@ -37,10 +53,18 @@ trait CryptoUtil {
     sha256(bits.toByteVector)
   }
 
+  def sha256(str: String): Sha256Digest = {
+    sha256(serializeForHash(str))
+  }
+
   def taggedSha256(bytes: ByteVector, tag: String): Sha256Digest = {
-    val tagHash = sha256(ByteVector(tag.getBytes()))
+    val tagHash = sha256(tag)
     val tagBytes = tagHash.bytes ++ tagHash.bytes
     sha256(tagBytes ++ bytes)
+  }
+
+  def taggedSha256(str: String, tag: String): Sha256Digest = {
+    taggedSha256(serializeForHash(str), tag)
   }
 
   // The tag "BIP0340/challenge"
@@ -85,6 +109,10 @@ trait CryptoUtil {
     Sha1Digest(ByteVector(hash))
   }
 
+  def sha1(str: String): Sha1Digest = {
+    sha1(serializeForHash(str))
+  }
+
   /** Performs RIPEMD160(bytes). */
   def ripeMd160(bytes: ByteVector): RipeMd160Digest = {
     //from this tutorial http://rosettacode.org/wiki/RIPEMD-160#Scala
@@ -94,6 +122,10 @@ trait CryptoUtil {
     val out = Array.fill[Byte](messageDigest.getDigestSize)(0)
     messageDigest.doFinal(out, 0)
     RipeMd160Digest(ByteVector(out))
+  }
+
+  def ripeMd160(str: String): RipeMd160Digest = {
+    ripeMd160(serializeForHash(str))
   }
 
   /**
