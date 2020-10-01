@@ -25,7 +25,7 @@ object DLCTestUtil {
     val strs =
       (0 until size).map(_ => scala.util.Random.nextLong().toString).toVector
 
-    strs.map(str => str -> CryptoUtil.sha256(ByteVector(str.getBytes)))
+    strs.map(str => str -> CryptoUtil.sha256(str))
   }
 
   def genValues(size: Int, totalAmount: CurrencyUnit): Vector[Satoshis] = {

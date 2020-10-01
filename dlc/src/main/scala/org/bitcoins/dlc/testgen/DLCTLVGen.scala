@@ -42,7 +42,7 @@ object DLCTLVGen {
     def toContractInfo: ContractInfo = {
       ContractInfo(outcomeValueMap.map {
         case (str, amt) =>
-          CryptoUtil.sha256(ByteVector(str.getBytes)) -> amt
+          CryptoUtil.sha256(str) -> amt
       })
     }
   }
@@ -52,7 +52,7 @@ object DLCTLVGen {
       totalInput: CurrencyUnit =
         defaultAmt * 2): PreImageContractInfo = {
     val outcomes =
-      strOutcomes.map(str => CryptoUtil.sha256(ByteVector(str.getBytes)))
+      strOutcomes.map(str => CryptoUtil.sha256(str))
     val contractInfo = genContractInfo(outcomes, totalInput)
     PreImageContractInfo(
       contractInfo

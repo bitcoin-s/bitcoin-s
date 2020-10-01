@@ -33,7 +33,6 @@ import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.testgen.DLCTLVGen.PreImageContractInfo
 import play.api.libs.json._
-import scodec.bits.ByteVector
 
 sealed trait DLCTestVector extends TestVector
 
@@ -125,7 +124,7 @@ object DLCParams {
       oracleSignature: SchnorrDigitalSignature): DLCParams = {
     val serializedContractInfo = contractInfo.toVector.map {
       case (preImage, amt) =>
-        val outcome = CryptoUtil.sha256(ByteVector(preImage.getBytes))
+        val outcome = CryptoUtil.sha256(preImage)
         SerializedContractInfoEntry(preImage, outcome, amt)
     }
 
