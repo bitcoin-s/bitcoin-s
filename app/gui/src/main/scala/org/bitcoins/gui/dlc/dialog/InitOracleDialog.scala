@@ -9,7 +9,6 @@ import scalafx.geometry.Insets
 import scalafx.scene.control.{ButtonType, Dialog, Label, TextField}
 import scalafx.scene.layout.GridPane
 import scalafx.stage.Window
-import scodec.bits.ByteVector
 
 object InitOracleDialog {
 
@@ -67,7 +66,7 @@ object InitOracleDialog {
         }
         val contractMap = inputs.map {
           case (str, value) =>
-            val hash = CryptoUtil.sha256(ByteVector(str.getBytes))
+            val hash = CryptoUtil.sha256(str)
             hash -> Satoshis(BigInt(value))
         }.toMap
 

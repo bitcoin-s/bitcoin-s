@@ -30,10 +30,10 @@ trait DLCWalletUtil {
   lazy val rValue: SchnorrNonce = kValue.schnorrNonce
 
   lazy val winHash: Sha256Digest =
-    CryptoUtil.sha256(ByteVector("WIN".getBytes))
+    CryptoUtil.sha256("WIN")
 
   lazy val loseHash: Sha256Digest =
-    CryptoUtil.sha256(ByteVector("LOSE".getBytes))
+    CryptoUtil.sha256("LOSE")
 
   lazy val sampleOracleInfo: OracleInfo = OracleInfo(
     oraclePrivKey.schnorrPublicKey.bytes ++ rValue.bytes)

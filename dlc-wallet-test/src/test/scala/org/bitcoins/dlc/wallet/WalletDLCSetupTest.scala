@@ -242,9 +242,9 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
-      val winHash = CryptoUtil.sha256(ByteVector("Democrat_win".getBytes))
-      val loseHash = CryptoUtil.sha256(ByteVector("Republican_win".getBytes))
-      val drawHash = CryptoUtil.sha256(ByteVector("other".getBytes))
+      val winHash = CryptoUtil.sha256("Democrat_win")
+      val loseHash = CryptoUtil.sha256("Republican_win")
+      val drawHash = CryptoUtil.sha256("other")
       val contractInfo = ContractInfo(winHash.bytes ++ Satoshis(
         10000).bytes ++ loseHash.bytes ++ Satoshis.zero.bytes ++ drawHash.bytes ++ Satoshis(
         5000).bytes)

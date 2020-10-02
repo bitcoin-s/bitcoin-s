@@ -114,9 +114,7 @@ class SbClientTest extends BitcoinSAsyncTest {
           .getPublicKey(exchange, pair, server.endpoint)
           .map { response =>
             val hash = CryptoUtil.sha256(
-              ByteVector(
-                s"${exchange.toLongString}|${pair.toLowerString}|pubkey"
-                  .getBytes()))
+              s"${exchange.toLongString}|${pair.toLowerString}|pubkey")
             val expected = ECPrivateKey(hash.bytes).schnorrPublicKey
 
             assert(response == expected)

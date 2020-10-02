@@ -59,9 +59,7 @@ class MockServer()(implicit ec: ExecutionContext) {
     path(exchangeRegex / tradingPairRegex / requestTypeRegex) {
       case (exchangeStr, pairStr, requestTypeStr) =>
         if (requestTypeStr.toLowerCase == "publickey") {
-          val hash = CryptoUtil.sha256(
-            ByteVector(s"$exchangeStr|$pairStr|pubkey"
-              .getBytes()))
+          val hash = CryptoUtil.sha256(s"$exchangeStr|$pairStr|pubkey")
           val pubKey = ECPrivateKey(hash.bytes).schnorrPublicKey
 
           complete {
