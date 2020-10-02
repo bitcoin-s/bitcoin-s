@@ -12,6 +12,7 @@ import org.bitcoins.crypto.{
   AesPassword,
   CryptoUtil,
   DoubleSha256Digest,
+  ECAdaptorSignature,
   ECDigitalSignature,
   ECPrivateKey,
   ECPublicKey,
@@ -226,6 +227,18 @@ sealed abstract class CryptoGenerators {
       privKey <- privateKey
       hash <- CryptoGenerators.doubleSha256Digest
     } yield privKey.schnorrSign(hash.bytes)
+  }
+
+  def adaptorSignature: Gen[ECAdaptorSignature] = {
+    for {
+      tweakedNonce <- publicKey
+      untweakedNonce <- publicKey
+      adaptedS <- fieldElement
+      proofS <- fieldElement
+      proofE <- fieldElement
+    } yield {
+      ECAdaptorSignature(tweakedNonce, adaptedS, untweakedNonce, proofS, proofE)
+    }
   }
 
   def sha256Digest: Gen[Sha256Digest] =
