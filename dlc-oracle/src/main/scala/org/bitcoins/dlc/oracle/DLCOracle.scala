@@ -22,19 +22,12 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
   implicit val ec: ExecutionContext = conf.ec
 
-  // what was previously used so we other wallets could find funds
-  //  private val signingKeyHDAddress = {
-//    val coin = HDCoin(HDPurposes.SegWit, HDCoinType.fromNetwork(conf.network))
-//    val account = HDAccount(coin, 0)
-//    val chain = HDChain(HDChainType.External, account)
-//    HDAddress(chain, 0)
-//  }
-
   // 585 is a random one I picked, unclaimed in https://github.com/satoshilabs/slips/blob/master/slip-0044.md
-  private val PURPOSE = 585
+  private val R_VALUE_PURPOSE = 585
 
-  private val account: HDAccount = {
-    val coin = HDCoin(HDPurpose(PURPOSE), HDCoinType.fromNetwork(conf.network))
+  private val rValAccount: HDAccount = {
+    val coin =
+      HDCoin(HDPurpose(R_VALUE_PURPOSE), HDCoinType.fromNetwork(conf.network))
     HDAccount(coin, 0)
   }
 
@@ -42,20 +35,14 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
   private val rValueChainIndex = 0
 
   private def signingKey: ECPrivateKey = {
-    val accountIndex = account.index
-    val coin = account.coin
+    val coin = HDCoin(HDPurposes.SegWit, HDCoinType.fromNetwork(conf.network))
+    val account = HDAccount(coin, 0)
     val purpose = coin.purpose
-    val chain = 1
-    require(chain != rValueChainIndex,
-            "Cannot use same chain index as R values")
+    val chain = HDChainType.External
+    val index = 0
 
     val path = BIP32Path.fromString(
-      s"m/${purpose.constant}'/${coin.coinType.toInt}'/$accountIndex'/$chain'/0'")
-
-    // what was previously used so we other wallets could find funds
-//    extPrivateKey
-//      .deriveChildPrivKey(SegWitHDPath(signingKeyHDAddress))
-//      .key
+      s"m/${purpose.constant}'/${coin.coinType.toInt}'/${account.index}'/${chain.index}'/$index'")
 
     extPrivateKey.deriveChildPrivKey(path).key
   }
@@ -70,8 +57,8 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
   protected[bitcoins] val eventOutcomeDAO: EventOutcomeDAO = EventOutcomeDAO()
 
   private def getPath(keyIndex: Int): BIP32Path = {
-    val accountIndex = account.index
-    val coin = account.coin
+    val accountIndex = rValAccount.index
+    val coin = rValAccount.coin
     val purpose = coin.purpose
 
     BIP32Path.fromString(
@@ -154,7 +141,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
       rValueDb = RValueDbHelper(nonce = nonce,
                                 eventName = eventName,
-                                account = account,
+                                account = rValAccount,
                                 chainType = rValueChainIndex,
                                 keyIndex = index,
                                 commitmentSignature = commitmentSig)
