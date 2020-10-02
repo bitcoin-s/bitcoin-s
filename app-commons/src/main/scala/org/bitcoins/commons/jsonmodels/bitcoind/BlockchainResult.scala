@@ -2,6 +2,12 @@ package org.bitcoins.commons.jsonmodels.bitcoind
 
 import java.nio.file.Path
 
+import org.bitcoins.core.api.chain.db.{
+  BlockHeaderDb,
+  BlockHeaderDbHelper,
+  CompactFilterDb,
+  CompactFilterDbHelper
+}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.GolombFilter
@@ -9,6 +15,7 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import scodec.bits.ByteVector
 
 sealed abstract class BlockchainResult
 
@@ -166,6 +173,12 @@ case class GetBlockHeaderResult(
     previousblockhash: Option[DoubleSha256DigestBE],
     nextblockhash: Option[DoubleSha256DigestBE])
     extends BlockchainResult {
+
+  lazy val blockHeaderDb: BlockHeaderDb = {
+    val bytes = ByteVector.fromValidHex(chainwork).dropWhile(_ == 0x00).toArray
+    val chainWork = BigInt(1, bytes)
+    BlockHeaderDbHelper.fromBlockHeader(height, chainWork, blockHeader)
+  }
 
   def blockHeader: BlockHeader = {
 
@@ -349,4 +362,9 @@ case class GetTxOutSetInfoResult(
 case class GetBlockFilterResult(
     filter: GolombFilter,
     header: DoubleSha256DigestBE)
-    extends BlockchainResult
+    extends BlockchainResult {
+
+  def filterDb(height: Int): CompactFilterDb = {
+    CompactFilterDbHelper.fromGolombFilter(filter, header, height)
+  }
+}

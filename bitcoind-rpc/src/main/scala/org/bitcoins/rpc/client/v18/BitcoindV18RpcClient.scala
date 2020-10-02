@@ -8,9 +8,10 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
   BitcoindVersion,
@@ -37,19 +38,31 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(implicit
 
   override lazy val version: BitcoindVersion = BitcoindVersion.V18
 
-  override def getFilterCount: Future[Int] = {
-    Future.failed(
-      new UnsupportedOperationException(
-        s"bitcoind ${instance.getVersion} does not support block filters"))
-  }
+  override def getFilterCount: Future[Int] = filtersUnsupported
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
-    Future.failed(
-      new UnsupportedOperationException(
-        s"bitcoind ${instance.getVersion} does not support block filters"))
-  }
+      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] =
+    filtersUnsupported
+
+  override def getFilterHeaderCount(): Future[Int] = filtersUnsupported
+
+  override def getFilterHeadersAtHeight(
+      height: Int): Future[Vector[CompactFilterHeaderDb]] = filtersUnsupported
+
+  override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] =
+    filtersUnsupported
+
+  override def getFilterHeader(
+      blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] =
+    filtersUnsupported
+
+  override def getFilter(
+      hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] =
+    filtersUnsupported
+
+  override def getFiltersAtHeight(
+      height: Int): Future[Vector[CompactFilterDb]] = filtersUnsupported
 
   /**
     * $signRawTx

@@ -10,13 +10,14 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
-import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.db.CompactFilterDb
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
   BitcoindVersion,
@@ -63,6 +64,24 @@ class BitcoindV19RpcClient(override val instance: BitcoindInstance)(implicit
   }
 
   override def getFilterCount: Future[Int] = getBlockCount
+
+  override def getFilterHeaderCount(): Future[Int] = getBlockCount
+
+  override def getFilter(
+      hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = {
+    for {
+      header <- getBlockHeader(hash)
+      filter <- getBlockFilter(hash, FilterType.Basic)
+    } yield Some(filter.filterDb(header.height))
+  }
+
+  override def getFiltersAtHeight(
+      height: Int): Future[Vector[CompactFilterDb]] = {
+    for {
+      hash <- getBlockHash(height)
+      filter <- getBlockFilter(hash, FilterType.Basic)
+    } yield Vector(filter.filterDb(height))
+  }
 
   override lazy val version: BitcoindVersion = BitcoindVersion.V19
 
