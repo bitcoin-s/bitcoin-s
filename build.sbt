@@ -519,9 +519,11 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
   lazy val mainnetDir = s"${System.getenv("HOME")}/.bitcoin-s/mainnet/"
   lazy val testnetDir = s"${System.getenv("HOME")}/.bitcoin-s/testnet3/"
   lazy val regtestDir = s"${System.getenv("HOME")}/.bitcoin-s/regtest/"
+  lazy val signetDir = s"${System.getenv("HOME")}/.bitcoin-s/signet/"
   lazy val unittestDir = s"${System.getenv("HOME")}/.bitcoin-s/unittest/"
 
-  lazy val dirs = List(mainnetDir, testnetDir, regtestDir, unittestDir)
+  lazy val dirs =
+    List(mainnetDir, testnetDir, regtestDir, signetDir, unittestDir)
 
   //create directies if they DNE
   dirs.foreach { d =>
@@ -548,12 +550,15 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
 
   lazy val regtest = makeNetworkSettings(regtestDir)
 
+  lazy val signet = makeNetworkSettings(signetDir)
+
   lazy val unittest = makeNetworkSettings(unittestDir)
 
   network match {
     case "mainnet"  => mainnet
     case "testnet3" => testnet3
     case "regtest"  => regtest
+    case "signet"   => signet
     case "unittest" => unittest
     case unknown: String =>
       throw new IllegalArgumentException(s"Unknown network=${unknown}")
