@@ -53,7 +53,7 @@ case class RValueDAO()(implicit
 
     def chainType: Rep[Int] = column("chain_type")
 
-    def keyIndex: Rep[Int] = column("key_index")
+    def keyIndex: Rep[Int] = column("key_index", O.Unique)
 
     def commitmentSignature: Rep[SchnorrDigitalSignature] =
       column("commitment_signature")

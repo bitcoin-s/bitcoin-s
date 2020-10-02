@@ -14,7 +14,7 @@ import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class DLCOracle(extPrivateKey: ExtPrivateKeyHardened)(implicit
+case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     val conf: DLCOracleAppConfig) {
 
   implicit val ec: ExecutionContext = conf.ec
@@ -37,7 +37,7 @@ case class DLCOracle(extPrivateKey: ExtPrivateKeyHardened)(implicit
 
   private val chainIndex = 0
 
-  private val signingKey: ECPrivateKey = {
+  private def signingKey: ECPrivateKey = {
     val accountIndex = rValueAccount.index
     val coin = rValueAccount.coin
     val purpose = coin.purpose
@@ -138,9 +138,7 @@ case class DLCOracle(extPrivateKey: ExtPrivateKeyHardened)(implicit
     } yield eventDb
   }
 
-  def signEvent(
-      nonce: SchnorrNonce,
-      outcome: String): Future[SchnorrDigitalSignature] = {
+  def signEvent(nonce: SchnorrNonce, outcome: String): Future[EventDb] = {
     for {
       rValDbOpt <- rValueDAO.read(nonce)
       rValDb = rValDbOpt match {
@@ -181,7 +179,7 @@ case class DLCOracle(extPrivateKey: ExtPrivateKeyHardened)(implicit
 
       updated = eventDb.copy(attestationOpt = Some(sig.sig))
       _ <- eventDAO.update(updated)
-    } yield updated.sigOpt.get
+    } yield updated
   }
 }
 
@@ -194,7 +192,9 @@ object DLCOracle {
       conf: DLCOracleAppConfig): DLCOracle = {
     val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
     val encrypted = decryptedMnemonic.encrypt(password)
-    WalletStorage.writeMnemonicToDisk(conf.seedPath, encrypted)
+    if (!conf.seedExists()) {
+      WalletStorage.writeMnemonicToDisk(conf.seedPath, encrypted)
+    }
 
     val key =
       WalletStorage.getPrivateKeyFromDisk(conf.seedPath,

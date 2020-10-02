@@ -6,7 +6,7 @@ CREATE TABLE r_values
     coin                 INTEGER NOT NULL,
     account_index        INTEGER NOT NULL,
     chain_type           INTEGER NOT NULL,
-    key_index            INTEGER NOT NULL,
+    key_index            INTEGER NOT NULL UNIQUE,
     commitment_signature TEXT    NOT NULL,
     PRIMARY KEY (nonce)
 );

@@ -98,11 +98,13 @@ class DLCOracleTest extends BitcoinSFixture {
     val outcome = testOutcomes.head
     for {
       eventDb <- dlcOracle.createNewEvent("test", testOutcomes)
-      sig <- dlcOracle.signEvent(eventDb.nonce, outcome)
+      signedEventDb <- dlcOracle.signEvent(eventDb.nonce, outcome)
       outcomeDbs <- dlcOracle.eventOutcomeDAO.findByNonce(eventDb.nonce)
       outcomeDb = outcomeDbs.find(_.message == outcome).get
       signedEvent <- dlcOracle.eventDAO.read(eventDb.nonce)
     } yield {
+      val sig = signedEventDb.sigOpt.get
+
       assert(signedEvent.isDefined)
       assert(signedEvent.get.attestationOpt.contains(sig.sig))
       assert(dlcOracle.publicKey.verify(outcomeDb.hashedMessage.bytes, sig))
