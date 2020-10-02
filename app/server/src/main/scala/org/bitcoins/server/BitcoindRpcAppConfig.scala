@@ -4,6 +4,7 @@ import java.io.File
 import java.net.URI
 import java.nio.file._
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
@@ -97,7 +98,12 @@ case class BitcoindRpcAppConfig(
                      binary = binary,
                      datadir = bitcoindDataDir)
 
-  lazy val client: BitcoindRpcClient = BitcoindRpcClient(bitcoindInstance)
+  lazy val client: BitcoindRpcClient = {
+    val version = bitcoindInstance.getVersion
+    implicit val system: ActorSystem =
+      ActorSystem.create("bitcoind-rpc-client-created-by-bitcoin-s")
+    BitcoindRpcClient.fromVersion(version, bitcoindInstance)
+  }
 
 }
 
