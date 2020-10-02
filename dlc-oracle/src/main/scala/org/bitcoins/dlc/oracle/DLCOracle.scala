@@ -1,5 +1,7 @@
 package org.bitcoins.dlc.oracle
 
+import java.time.Instant
+
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
@@ -122,6 +124,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
   def createNewEvent(
       eventName: String,
+      maturationTime: Instant,
       outcomes: Vector[String]): Future[EventDb] = {
     for {
       indexOpt <- rValueDAO.maxKeyIndex
@@ -144,7 +147,8 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
                                 keyIndex = index,
                                 commitmentSignature = commitmentSig)
 
-      eventDb = EventDb(nonce, eventName, outcomes.size, Mock, None)
+      eventDb =
+        EventDb(nonce, eventName, outcomes.size, Mock, maturationTime, None)
       eventOutcomeDbs = outcomes.map { outcome =>
         val hash = CryptoUtil.sha256(outcome)
         EventOutcomeDb(nonce, outcome, hash)

@@ -1,5 +1,7 @@
 package org.bitcoins.dlc.oracle
 
+import java.time.Instant
+
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.crypto.{FieldElement, SchnorrDigitalSignature, SchnorrNonce}
 import org.bitcoins.dlc.oracle.storage._
@@ -18,6 +20,9 @@ sealed trait Event {
   /** The version of signing for this event */
   def signingVersion: SigningVersion
 
+  /** The earliest expected time an outcome will be signed */
+  def maturationTime: Instant
+
   /** A signature by the oracle of the hash of nonce */
   def commitmentSignature: SchnorrDigitalSignature
 
@@ -29,6 +34,7 @@ case class PendingEvent(
     nonce: SchnorrNonce,
     eventName: String,
     signingVersion: SigningVersion,
+    maturationTime: Instant,
     commitmentSignature: SchnorrDigitalSignature,
     outcomes: Vector[String])
     extends Event
@@ -37,6 +43,7 @@ case class CompletedEvent(
     nonce: SchnorrNonce,
     eventName: String,
     signingVersion: SigningVersion,
+    maturationTime: Instant,
     commitmentSignature: SchnorrDigitalSignature,
     outcomes: Vector[String],
     attestation: FieldElement)
@@ -59,6 +66,7 @@ object Event {
         CompletedEvent(eventDb.nonce,
                        eventDb.eventName,
                        eventDb.signingVersion,
+                       eventDb.maturationTime,
                        rValDb.commitmentSignature,
                        outcomes,
                        sig)
@@ -66,6 +74,7 @@ object Event {
         PendingEvent(eventDb.nonce,
                      eventDb.eventName,
                      eventDb.signingVersion,
+                     eventDb.maturationTime,
                      rValDb.commitmentSignature,
                      outcomes)
     }

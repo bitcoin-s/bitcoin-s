@@ -2,6 +2,7 @@ package org.bitcoins.dlc.oracle
 
 import java.sql.SQLException
 
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.BitcoinSTestAppConfig.tmpDir
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
@@ -52,19 +53,24 @@ class DLCOracleTest extends BitcoinSFixture {
 
   it must "create a new event and list it with pending" in {
     dlcOracle: DLCOracle =>
+      val time = TimeUtil.now
       for {
-        testEventDb <- dlcOracle.createNewEvent("test", testOutcomes)
+        testEventDb <- dlcOracle.createNewEvent("test", time, testOutcomes)
         pendingEvents <- dlcOracle.listPendingEventDbs()
       } yield {
         assert(pendingEvents.size == 1)
-        assert(pendingEvents.contains(testEventDb))
+        // encoding of the time can make them unequal
+        val comparable =
+          pendingEvents.head.copy(maturationTime = testEventDb.maturationTime)
+        assert(comparable == testEventDb)
       }
   }
 
   it must "create a new event with a valid commitment signature" in {
     dlcOracle: DLCOracle =>
       for {
-        testEventDb <- dlcOracle.createNewEvent("test", testOutcomes)
+        testEventDb <-
+          dlcOracle.createNewEvent("test", TimeUtil.now, testOutcomes)
         rValDbOpt <- dlcOracle.rValueDAO.read(testEventDb.nonce)
       } yield {
         assert(rValDbOpt.isDefined)
@@ -79,8 +85,8 @@ class DLCOracleTest extends BitcoinSFixture {
   it must "create multiple events with different names" in {
     dlcOracle: DLCOracle =>
       for {
-        _ <- dlcOracle.createNewEvent("test", testOutcomes)
-        _ <- dlcOracle.createNewEvent("test1", testOutcomes)
+        _ <- dlcOracle.createNewEvent("test", TimeUtil.now, testOutcomes)
+        _ <- dlcOracle.createNewEvent("test1", TimeUtil.now, testOutcomes)
       } yield succeed
   }
 
@@ -88,8 +94,8 @@ class DLCOracleTest extends BitcoinSFixture {
     dlcOracle: DLCOracle =>
       recoverToSucceededIf[SQLException] {
         for {
-          _ <- dlcOracle.createNewEvent("test", testOutcomes)
-          _ <- dlcOracle.createNewEvent("test", testOutcomes)
+          _ <- dlcOracle.createNewEvent("test", TimeUtil.now, testOutcomes)
+          _ <- dlcOracle.createNewEvent("test", TimeUtil.now, testOutcomes)
         } yield ()
       }
   }
@@ -97,7 +103,7 @@ class DLCOracleTest extends BitcoinSFixture {
   it must "create and sign a event" in { dlcOracle: DLCOracle =>
     val outcome = testOutcomes.head
     for {
-      eventDb <- dlcOracle.createNewEvent("test", testOutcomes)
+      eventDb <- dlcOracle.createNewEvent("test", TimeUtil.now, testOutcomes)
       signedEventDb <- dlcOracle.signEvent(eventDb.nonce, outcome)
       outcomeDbs <- dlcOracle.eventOutcomeDAO.findByNonce(eventDb.nonce)
       outcomeDb = outcomeDbs.find(_.message == outcome).get

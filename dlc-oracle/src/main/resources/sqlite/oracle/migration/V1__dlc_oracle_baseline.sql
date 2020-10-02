@@ -17,10 +17,11 @@ CREATE TABLE `events`
     `event_name`      VARCHAR(254) NOT NULL UNIQUE,
     `num_outcomes`    INTEGER      NOT NULL,
     `signing_version` VARCHAR(254) NOT NULL,
+    `maturation_time` TIMESTAMP    NOT NULL,
     `attestation`     VARCHAR(254),
-    CONSTRAINT `fk_label` FOREIGN KEY (`event_name`) REFERENCES `r_values` (`event_name`) on update NO ACTION on delete NO ACTION,
     PRIMARY KEY (`nonce`),
-    CONSTRAINT `fk_nonce` FOREIGN KEY (`nonce`) REFERENCES `r_values` (`nonce`) on update NO ACTION on delete NO ACTION
+    CONSTRAINT `fk_nonce` FOREIGN KEY (`nonce`) REFERENCES `r_values` (`nonce`) on update NO ACTION on delete NO ACTION,
+    CONSTRAINT `fk_label` FOREIGN KEY (`event_name`) REFERENCES `r_values` (`event_name`) on update NO ACTION on delete NO ACTION
 );
 
 CREATE TABLE `event_outcomes`
