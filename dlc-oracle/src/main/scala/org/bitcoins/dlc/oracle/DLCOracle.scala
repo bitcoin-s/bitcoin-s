@@ -2,6 +2,7 @@ package org.bitcoins.dlc.oracle
 
 import java.time.Instant
 
+import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
@@ -37,14 +38,16 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     HDAccount(coin, 0)
   }
 
-  private val chainIndex = 0
+  /** The chain index used in the bip32 paths for generating R values */
+  private val rValueChainIndex = 0
 
   private def signingKey: ECPrivateKey = {
     val accountIndex = account.index
     val coin = account.coin
     val purpose = coin.purpose
-    // Use a different chain index so we don't reuse a key
-    val chain = chainIndex + 1
+    val chain = 1
+    require(chain != rValueChainIndex,
+            "Cannot use same chain index as R values")
 
     val path = BIP32Path.fromString(
       s"m/${purpose.constant}'/${coin.coinType.toInt}'/$accountIndex'/$chain'/0'")
@@ -72,20 +75,25 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     val purpose = coin.purpose
 
     BIP32Path.fromString(
-      s"m/${purpose.constant}'/${coin.coinType.toInt}'/$accountIndex'/$chainIndex'/$keyIndex'")
+      s"m/${purpose.constant}'/${coin.coinType.toInt}'/$accountIndex'/$rValueChainIndex'/$keyIndex'")
   }
 
-  private def getKValue(rValDb: RValueDb): ECPrivateKey =
-    getKValue(rValDb.eventName, rValDb.path)
+  private def getKValue(
+      rValDb: RValueDb,
+      signingVersion: SigningVersion): ECPrivateKey =
+    getKValue(rValDb.eventName, rValDb.path, signingVersion)
 
-  private def getKValue(label: String, path: BIP32Path): ECPrivateKey = {
+  private def getKValue(
+      label: String,
+      path: BIP32Path,
+      signingVersion: SigningVersion): ECPrivateKey = {
     require(path.forall(_.hardened),
             s"Cannot use a BIP32Path with unhardened nodes, got $path")
     val priv = extPrivateKey.deriveChildPrivKey(path).key
     val hash =
       CryptoUtil.taggedSha256(
         priv.schnorrNonce.bytes ++ CryptoUtil.serializeForHash(label),
-        "DLC/Nonce")
+        signingVersion.nonceTag)
     val tweak = ECPrivateKey(hash.bytes)
 
     priv.add(tweak)
@@ -134,25 +142,31 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
         case None        => 0
       }
 
+      signingVersion = SigningVersion.latest
+
       path = getPath(index)
-      nonce = getKValue(eventName, path).schnorrNonce
+      nonce = getKValue(eventName, path, signingVersion).schnorrNonce
 
       hash = CryptoUtil.taggedSha256(
         nonce.bytes ++ CryptoUtil.serializeForHash(eventName),
-        "DLC/Commitment")
+        signingVersion.commitmentTag)
       commitmentSig = signingKey.schnorrSign(hash.bytes)
 
       rValueDb = RValueDbHelper(nonce = nonce,
                                 eventName = eventName,
                                 account = account,
-                                chainType = chainIndex,
+                                chainType = rValueChainIndex,
                                 keyIndex = index,
                                 commitmentSignature = commitmentSig)
 
-      eventDb =
-        EventDb(nonce, eventName, outcomes.size, Mock, maturationTime, None)
+      eventDb = EventDb(nonce,
+                        eventName,
+                        outcomes.size,
+                        signingVersion,
+                        maturationTime,
+                        None)
       eventOutcomeDbs = outcomes.map { outcome =>
-        val hash = CryptoUtil.taggedSha256(outcome, "DLC/Outcome")
+        val hash = CryptoUtil.taggedSha256(outcome, signingVersion.outcomeTag)
         EventOutcomeDb(nonce, outcome, hash)
       }
 
@@ -196,7 +210,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
       sig = eventDb.signingVersion match {
         case Mock =>
-          val kVal = getKValue(rValDb)
+          val kVal = getKValue(rValDb, Mock)
           require(kVal.schnorrNonce == rValDb.nonce,
                   "The nonce from derived seed did not match database")
           signingKey.schnorrSignWithNonce(eventOutcomeDb.hashedMessage.bytes,

@@ -54,7 +54,7 @@ class DLCOracleTest extends DLCOracleFixture {
         val rValDb = rValDbOpt.get
         val hash = CryptoUtil.taggedSha256(
           rValDb.nonce.bytes ++ CryptoUtil.serializeForHash(rValDb.eventName),
-          "DLC/Commitment")
+          "DLCv0/Commitment")
         assert(
           dlcOracle.publicKey.verify(hash.bytes, rValDb.commitmentSignature))
       }
@@ -111,8 +111,7 @@ class DLCOracleTest extends DLCOracleFixture {
         for {
           eventDb <-
             dlcOracle.createNewEvent("test", TimeUtil.now, testOutcomes)
-          signedEventDb <-
-            dlcOracle.signEvent(eventDb.nonce, "not a real outcome")
+          _ <- dlcOracle.signEvent(eventDb.nonce, "not a real outcome")
         } yield ()
       }
   }
