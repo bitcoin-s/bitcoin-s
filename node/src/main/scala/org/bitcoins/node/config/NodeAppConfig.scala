@@ -102,6 +102,8 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
           NeutrinoNode(peer, nodeConf, chainConf, initialSyncDone, system))
       case NodeType.FullNode =>
         Future.failed(new RuntimeException("Not implemented"))
+      case NodeType.BitcoindBackend =>
+        Future.failed(new RuntimeException("Use a BitcoindRpcClient instead"))
     }
   }
 }

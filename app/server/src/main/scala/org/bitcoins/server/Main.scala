@@ -15,6 +15,7 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.config._
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.db._
@@ -106,89 +107,142 @@ object Main extends App with HttpLogger {
     val forceChainWorkRecalc: Boolean =
       args.exists(_.toLowerCase == "--force-recalc-chainwork")
 
+    val bip39PasswordOpt = None //todo need to prompt user for this
+
     implicit val walletConf: WalletAppConfig = conf.walletConf
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
     implicit val chainConf: ChainAppConfig = conf.chainConf
+    implicit val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
 
-    if (nodeConf.peers.isEmpty) {
-      throw new IllegalArgumentException(
-        "No peers specified, unable to start node")
-    }
-
-    val peerSocket =
-      NetworkUtil.parseInetSocketAddress(nodeConf.peers.head,
-                                         nodeConf.network.port)
-    val peer = Peer.fromSocket(peerSocket)
-    val bip39PasswordOpt = None //todo need to prompt user for this
-
-    //initialize the config, run migrations
-    val configInitializedF = conf.start()
-
-    //run chain work migration
-    val chainApiF = configInitializedF.flatMap { _ =>
-      runChainWorkCalc(forceChainWorkRecalc || chainConf.forceRecalcChainWork)
-    }
-
-    //get a node that isn't started
-    val nodeF = configInitializedF.flatMap { _ =>
-      nodeConf.createNode(peer, None)(chainConf, system)
-    }
-
-    //get our wallet
-    val configuredWalletF = for {
-      _ <- configInitializedF
-      node <- nodeF
-      chainApi <- chainApiF
-      _ = logger.info("Initialized chain api")
-      wallet <- walletConf.createHDWallet(node,
-                                          chainApi,
-                                          BitcoinerLiveFeeRateProvider(60),
-                                          bip39PasswordOpt)
-      callbacks <- createCallbacks(wallet)
-      _ = nodeConf.addCallbacks(callbacks)
-    } yield {
-      logger.info(s"Done configuring wallet")
-      wallet
-    }
-
-    //add callbacks to our uninitialized node
-    val configuredNodeF = for {
-      node <- nodeF
-      wallet <- configuredWalletF
-      initNode <- setBloomFilter(node, wallet)
-    } yield {
-      logger.info(s"Done configuring node")
-      initNode
-    }
-
-    //start our http server now that we are synced
-    val startFut = for {
-      node <- configuredNodeF
-      wallet <- configuredWalletF
-      _ <- node.start()
-      _ <- wallet.start()
-      binding <- startHttpServer(node, wallet, rpcPortOpt)
-      _ = {
-        logger.info(s"Starting ${nodeConf.nodeType.shortName} node sync")
+    def startBitcoinSBackend(): Future[Unit] = {
+      if (nodeConf.peers.isEmpty) {
+        throw new IllegalArgumentException(
+          "No peers specified, unable to start node")
       }
-      _ = BitcoinSServer.startedFP.success(Future.successful(binding))
 
-      _ <- node.sync()
-    } yield {
-      logger.info(s"Done starting Main!")
-      sys.addShutdownHook {
-        logger.error(s"Exiting process")
+      val peerSocket =
+        NetworkUtil.parseInetSocketAddress(nodeConf.peers.head,
+                                           nodeConf.network.port)
+      val peer = Peer.fromSocket(peerSocket)
 
-        wallet.stop()
+      //initialize the config, run migrations
+      val configInitializedF = conf.start()
 
-        node
-          .stop()
-          .foreach(_ =>
-            logger.info(s"Stopped ${nodeConf.nodeType.shortName} node"))
-        system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
+      //run chain work migration
+      val chainApiF = configInitializedF.flatMap { _ =>
+        runChainWorkCalc(forceChainWorkRecalc || chainConf.forceRecalcChainWork)
       }
-      ()
+
+      //get a node that isn't started
+      val nodeF = configInitializedF.flatMap { _ =>
+        nodeConf.createNode(peer, None)(chainConf, system)
+      }
+
+      //get our wallet
+      val configuredWalletF = for {
+        _ <- configInitializedF
+        node <- nodeF
+        chainApi <- chainApiF
+        _ = logger.info("Initialized chain api")
+        wallet <- walletConf.createHDWallet(node,
+                                            chainApi,
+                                            BitcoinerLiveFeeRateProvider(60),
+                                            bip39PasswordOpt)
+        callbacks <- createCallbacks(wallet)
+        _ = nodeConf.addCallbacks(callbacks)
+      } yield {
+        logger.info(s"Done configuring wallet")
+        wallet
+      }
+
+      //add callbacks to our uninitialized node
+      val configuredNodeF = for {
+        node <- nodeF
+        wallet <- configuredWalletF
+        initNode <- setBloomFilter(node, wallet)
+      } yield {
+        logger.info(s"Done configuring node")
+        initNode
+      }
+
+      //start our http server now that we are synced
+      for {
+        node <- configuredNodeF
+        wallet <- configuredWalletF
+        _ <- node.start()
+        _ <- wallet.start()
+        chainApi <- node.chainApiFromDb()
+        binding <- startHttpServer(node, chainApi, wallet, rpcPortOpt)
+        _ = {
+          logger.info(s"Starting ${nodeConf.nodeType.shortName} node sync")
+        }
+        _ = BitcoinSServer.startedFP.success(Future.successful(binding))
+
+        _ <- node.sync()
+      } yield {
+        logger.info(s"Done starting Main!")
+        sys.addShutdownHook {
+          logger.error(s"Exiting process")
+
+          wallet.stop()
+
+          node
+            .stop()
+            .foreach(_ =>
+              logger.info(s"Stopped ${nodeConf.nodeType.shortName} node"))
+          system
+            .terminate()
+            .foreach(_ => logger.info(s"Actor system terminated"))
+        }
+        ()
+      }
     }
+
+    def startBitcoindBackend(): Future[Unit] = {
+      val bitcoind = bitcoindRpcConf.client
+
+      for {
+        _ <- conf.start()
+        _ = logger.info("Starting bitcoind")
+        _ <- bitcoindRpcConf.start()
+        _ = logger.info("Creating wallet")
+        tmpWallet <- walletConf.createHDWallet(bitcoind,
+                                               bitcoind,
+                                               bitcoind,
+                                               bip39PasswordOpt)
+        wallet = BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
+          bitcoind,
+          tmpWallet)
+        _ = logger.info("Starting wallet")
+
+        zmq = BitcoindRpcBackendUtil.createZMQWalletCallbacks(wallet)
+
+        _ = zmq.start()
+        _ <- wallet.start()
+        binding <- startHttpServer(bitcoind, bitcoind, wallet, rpcPortOpt)
+        _ = BitcoinSServer.startedFP.success(Future.successful(binding))
+      } yield {
+        logger.info(s"Done starting Main!")
+        sys.addShutdownHook {
+          logger.error(s"Exiting process")
+
+          wallet.stop()
+
+          system
+            .terminate()
+            .foreach(_ => logger.info(s"Actor system terminated"))
+        }
+        ()
+      }
+    }
+
+    val startFut = nodeConf.nodeType match {
+      case _: InternalImplementationNodeType =>
+        startBitcoinSBackend()
+      case NodeType.BitcoindBackend =>
+        startBitcoindBackend()
+    }
+
     startFut.failed.foreach { err =>
       logger.error(s"Error on server startup!", err)
       err.printStackTrace()
@@ -236,6 +290,10 @@ object Main extends App with HttpLogger {
                         onBlockHeadersReceived = Vector(onHeaders)))
       case NodeType.FullNode =>
         Future.failed(new RuntimeException("Not yet implemented"))
+      case _: ExternalImplementationNodeType =>
+        Future.failed(
+          new RuntimeException(
+            "Cannot create callbacks for an external implementation"))
     }
   }
 
@@ -280,41 +338,36 @@ object Main extends App with HttpLogger {
   }
 
   private def startHttpServer(
-      node: Node,
+      nodeApi: NodeApi,
+      chainApi: ChainApi,
       wallet: Wallet,
       rpcPortOpt: Option[Int])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
-    import system.dispatcher
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
-    for {
-      syncedChainApi <- node.chainApiFromDb()
-      walletRoutes = WalletRoutes(wallet, node)
-      nodeRoutes = NodeRoutes(node)
-      chainRoutes = ChainRoutes(syncedChainApi)
-      coreRoutes = CoreRoutes(Core)
-      server = {
-        rpcPortOpt match {
-          case Some(rpcport) =>
-            Server(nodeConf,
-                   Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                   rpcport = rpcport)
-          case None =>
-            conf.rpcPortOpt match {
-              case Some(rpcport) =>
-                Server(nodeConf,
-                       Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                       rpcport)
-              case None =>
-                Server(nodeConf,
-                       Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
-            }
-        }
+    val walletRoutes = WalletRoutes(wallet)
+    val nodeRoutes = NodeRoutes(nodeApi)
+    val chainRoutes = ChainRoutes(chainApi)
+    val coreRoutes = CoreRoutes(Core)
+    val server = {
+      rpcPortOpt match {
+        case Some(rpcport) =>
+          Server(nodeConf,
+                 Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                 rpcport = rpcport)
+        case None =>
+          conf.rpcPortOpt match {
+            case Some(rpcport) =>
+              Server(nodeConf,
+                     Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                     rpcport)
+            case None =>
+              Server(nodeConf,
+                     Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
+          }
       }
-      start <- server.start()
-    } yield {
-      start
     }
+    server.start()
   }
 }
 

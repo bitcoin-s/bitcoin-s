@@ -10,13 +10,11 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.AddressLabelTagType
 import org.bitcoins.crypto.NetworkElement
-import org.bitcoins.node.Node
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
-    system: ActorSystem)
+case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
@@ -26,7 +24,7 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
     if (noBroadcast) {
       Future.successful(tx)
     } else {
-      node.broadcastTransaction(tx).map(_ => tx.txIdBE)
+      wallet.broadcastTransaction(tx).map(_ => tx.txIdBE)
     }
   }
 
