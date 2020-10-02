@@ -249,7 +249,8 @@ lazy val appServer = project
     chain,
     wallet,
     bitcoindRpc,
-    feeProvider
+    feeProvider,
+    zmq
   )
 
 lazy val appServerTest = project

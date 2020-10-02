@@ -1,11 +1,16 @@
 package org.bitcoins.server
 
+import java.net.InetSocketAddress
+
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
+import org.bitcoins.zmq.ZMQSubscriber
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
@@ -38,7 +43,37 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     pairedWallet
   }
 
-  def getNodeApiWalletCallback(
+  def createZMQWalletCallbacks(wallet: Wallet)(implicit
+      bitcoindRpcConf: BitcoindRpcAppConfig): ZMQSubscriber = {
+    val zmqSocket =
+      new InetSocketAddress("tcp://127.0.0.1", bitcoindRpcConf.zmqPort)
+
+    val rawTxListener: Option[ByteVector => Unit] = Some {
+      { bytes: ByteVector =>
+        val tx = Transaction(bytes)
+        logger.debug(s"Received tx ${tx.txIdBE}, processing")
+        wallet.processTransaction(tx, None)
+        ()
+      }
+    }
+
+    val rawBlockListener: Option[ByteVector => Unit] = Some {
+      { bytes: ByteVector =>
+        val block = Block(bytes)
+        logger.debug(s"Received block ${block.blockHeader.hashBE}, processing")
+        wallet.processBlock(block)
+        ()
+      }
+    }
+
+    new ZMQSubscriber(socket = zmqSocket,
+                      hashTxListener = None,
+                      hashBlockListener = None,
+                      rawTxListener = rawTxListener,
+                      rawBlockListener = rawBlockListener)
+  }
+
+  private def getNodeApiWalletCallback(
       bitcoindRpcClient: BitcoindRpcClient,
       walletF: Future[Wallet])(implicit ec: ExecutionContext): NodeApi = {
     new NodeApi {

@@ -43,6 +43,9 @@ class PeerMessageReceiver(
     extends P2PLogger {
   import ref.dispatcher
 
+  require(nodeAppConfig.nodeType != NodeType.BitcoindBackend,
+          "Bitcoind should handle the P2P interactions")
+
   /** This method is called when we have received
     * a [[akka.io.Tcp.Connected]] message from our peer
     * This means we have opened a Tcp connection,
@@ -182,6 +185,8 @@ class PeerMessageReceiver(
                 }
               case NodeType.FullNode =>
                 sys.error("Not yet implemented.")
+              case NodeType.BitcoindBackend =>
+                throw new RuntimeException("This is impossible")
             }
 
             sender.sendVerackMessage()

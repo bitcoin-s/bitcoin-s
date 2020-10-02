@@ -4,9 +4,13 @@ import java.io.File
 import java.net.URI
 import java.nio.file._
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
+import org.bitcoins.node.NodeType
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class BitcoindRpcAppConfig(
     private val directory: Path,
-    private val confs: Config*)
+    private val confs: Config*)(implicit val ec: ExecutionContext)
     extends AppConfig {
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
   override protected[bitcoins] def moduleName: String = "bitcoind"
@@ -29,7 +33,16 @@ case class BitcoindRpcAppConfig(
 
   protected[bitcoins] def baseDatadir: Path = directory
 
-  override def start(): Future[Unit] = FutureUtil.unit
+  lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
+
+  override def start(): Future[Unit] = {
+    nodeConf.nodeType match {
+      case NodeType.BitcoindBackend =>
+        client.start().map(_ => ())
+      case NodeType.SpvNode | NodeType.NeutrinoNode | NodeType.FullNode =>
+        FutureUtil.unit
+    }
+  }
 
   override def stop(): Future[Unit] = FutureUtil.unit
 
@@ -72,12 +85,9 @@ case class BitcoindRpcAppConfig(
   lazy val authCredentials: BitcoindAuthCredentials =
     BitcoindAuthCredentials.PasswordBased(rpcUser, rpcPassword)
 
-  lazy val zmqPortOpt: Option[Int] = config.getIntOpt("bitcoind-rpc.zmqport")
+  lazy val zmqPort: Int = config.getIntOrElse("bitcoind-rpc.zmqport", 29000)
 
-  lazy val zmqConfig: ZmqConfig = zmqPortOpt match {
-    case Some(port) => ZmqConfig.fromPort(port)
-    case None       => ZmqConfig()
-  }
+  lazy val zmqConfig: ZmqConfig = ZmqConfig.fromPort(zmqPort)
 
   lazy val bitcoindInstance: BitcoindInstance =
     BitcoindInstance(network = network,
@@ -87,6 +97,14 @@ case class BitcoindRpcAppConfig(
                      zmqConfig = zmqConfig,
                      binary = binary,
                      datadir = bitcoindDataDir)
+
+  lazy val client: BitcoindRpcClient = {
+    val version = bitcoindInstance.getVersion
+    implicit val system: ActorSystem =
+      ActorSystem.create("bitcoind-rpc-client-created-by-bitcoin-s")
+    BitcoindRpcClient.fromVersion(version, bitcoindInstance)
+  }
+
 }
 
 object BitcoindRpcAppConfig extends AppConfigFactory[BitcoindRpcAppConfig] {

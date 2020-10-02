@@ -6,21 +6,29 @@ sealed abstract class NodeType {
   def shortName: String
 }
 
+sealed abstract class InternalImplementationNodeType extends NodeType
+sealed abstract class ExternalImplementationNodeType extends NodeType
+
 object NodeType extends StringFactory[NodeType] {
 
-  final case object FullNode extends NodeType {
+  final case object FullNode extends InternalImplementationNodeType {
     override def shortName: String = "full"
   }
 
-  final case object NeutrinoNode extends NodeType {
+  final case object NeutrinoNode extends InternalImplementationNodeType {
     override def shortName: String = "neutrino"
   }
 
-  final case object SpvNode extends NodeType {
+  final case object SpvNode extends InternalImplementationNodeType {
     override def shortName: String = "spv"
   }
 
-  val all: Vector[NodeType] = Vector(FullNode, NeutrinoNode, SpvNode)
+  final case object BitcoindBackend extends ExternalImplementationNodeType {
+    override def shortName: String = "bitcoind"
+  }
+
+  val all: Vector[NodeType] =
+    Vector(FullNode, NeutrinoNode, SpvNode, BitcoindBackend)
 
   override def fromStringOpt(str: String): Option[NodeType] = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase) match {
