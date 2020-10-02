@@ -43,7 +43,7 @@ case class EventDAO()(implicit
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.PrimaryKey)
 
-    def label: Rep[String] = column("label", O.Unique)
+    def eventName: Rep[String] = column("event_name", O.Unique)
 
     def numOutcomes: Rep[Long] = column("num_outcomes")
 
@@ -53,7 +53,7 @@ case class EventDAO()(implicit
 
     def * : ProvenShape[EventDb] =
       (nonce,
-       label,
+       eventName,
        numOutcomes,
        signingVersion,
        attestationOpt) <> (EventDb.tupled, EventDb.unapply)
@@ -66,8 +66,8 @@ case class EventDAO()(implicit
 
     def fkLabel: ForeignKeyQuery[_, RValueDb] = {
       foreignKey("fk_label",
-                 sourceColumns = label,
-                 targetTableQuery = rValueTable)(_.label)
+                 sourceColumns = eventName,
+                 targetTableQuery = rValueTable)(_.eventName)
     }
   }
 }

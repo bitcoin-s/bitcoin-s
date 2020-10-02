@@ -74,7 +74,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
   }
 
   private def getKValue(rValDb: RValueDb): ECPrivateKey =
-    getKValue(rValDb.label, rValDb.path)
+    getKValue(rValDb.eventName, rValDb.path)
 
   private def getKValue(label: String, path: BIP32Path): ECPrivateKey = {
     require(path.forall(_.hardened),
@@ -94,16 +94,34 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
   def listEvents(): Future[Vector[Event]] = {
     for {
+      rValDbs <- rValueDAO.findAll()
       eventDbs <- eventDAO.findAll()
       outcomes <- eventOutcomeDAO.findAll()
     } yield {
+      val rValDbsByNonce = rValDbs.groupBy(_.nonce)
       val outcomesByNonce = outcomes.groupBy(_.nonce)
-      eventDbs.map(db => Event(db, outcomesByNonce(db.nonce)))
+      eventDbs.map(db =>
+        Event(rValDbsByNonce(db.nonce).head, db, outcomesByNonce(db.nonce)))
+    }
+  }
+
+  def getEvent(nonce: SchnorrNonce): Future[Option[Event]] = {
+    for {
+      rValDbOpt <- rValueDAO.read(nonce)
+      eventDbOpt <- eventDAO.read(nonce)
+      outcomes <- eventOutcomeDAO.findByNonce(nonce)
+    } yield {
+      (rValDbOpt, eventDbOpt) match {
+        case (Some(rValDb), Some(eventDb)) =>
+          Some(Event(rValDb, eventDb, outcomes))
+        case (None, None) | (Some(_), None) | (None, Some(_)) =>
+          None
+      }
     }
   }
 
   def createNewEvent(
-      label: String,
+      eventName: String,
       outcomes: Vector[String]): Future[EventDb] = {
     for {
       indexOpt <- rValueDAO.maxKeyIndex
@@ -113,20 +131,20 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       }
 
       path = getPath(index)
-      nonce = getKValue(label, path).schnorrNonce
+      nonce = getKValue(eventName, path).schnorrNonce
 
       hash =
-        CryptoUtil.sha256(nonce.bytes ++ CryptoUtil.serializeForHash(label))
+        CryptoUtil.sha256(nonce.bytes ++ CryptoUtil.serializeForHash(eventName))
       commitmentSig = signingKey.schnorrSign(hash.bytes)
 
       rValueDb = RValueDbHelper(nonce = nonce,
-                                label = label,
+                                eventName = eventName,
                                 account = rValueAccount,
                                 chainType = chainIndex,
                                 keyIndex = index,
                                 commitmentSignature = commitmentSig)
 
-      eventDb = EventDb(nonce, label, outcomes.size, Mock, None)
+      eventDb = EventDb(nonce, eventName, outcomes.size, Mock, None)
       eventOutcomeDbs = outcomes.map { outcome =>
         val hash = CryptoUtil.sha256(outcome)
         EventOutcomeDb(nonce, outcome, hash)

@@ -70,7 +70,7 @@ class DLCOracleTest extends BitcoinSFixture {
         assert(rValDbOpt.isDefined)
         val rValDb = rValDbOpt.get
         val hash = CryptoUtil.sha256(
-          rValDb.nonce.bytes ++ CryptoUtil.serializeForHash(rValDb.label))
+          rValDb.nonce.bytes ++ CryptoUtil.serializeForHash(rValDb.eventName))
         assert(
           dlcOracle.publicKey.verify(hash.bytes, rValDb.commitmentSignature))
       }
