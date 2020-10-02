@@ -179,7 +179,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   }
 
   implicit val hdCoinTypeMapper: BaseColumnType[HDCoinType] = {
-    MappedColumnType.base[HDCoinType, Int](_.toInt, HDCoinType.fromInt)
+    MappedColumnType.base[HDCoinType, Int](_.toInt, HDCoinType(_))
   }
 
   implicit val hdPathMappper: BaseColumnType[HDPath] =

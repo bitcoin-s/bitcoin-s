@@ -10,9 +10,7 @@ import org.bitcoins.core.config._
   * [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
   * coin type.
   */
-sealed trait HDCoinType {
-  def toInt: Int
-}
+case class HDCoinType(toInt: Int)
 
 /**
   * @see [[https://github.com/satoshilabs/slips/blob/master/slip-0044.md SLIP-0044]]
@@ -20,21 +18,12 @@ sealed trait HDCoinType {
   */
 object HDCoinType {
 
-  final case object Bitcoin extends HDCoinType {
-    override val toInt: Int = 0
-  }
+  final val Bitcoin = HDCoinType(0)
+  final val Testnet = HDCoinType(1)
 
-  final case object Testnet extends HDCoinType {
-    override val toInt: Int = 1
-  }
+  lazy val all: Vector[HDCoinType] = Vector(Bitcoin, Testnet)
 
-  def fromInt(int: Int): HDCoinType =
-    int match {
-      case Bitcoin.toInt => Bitcoin
-      case Testnet.toInt => Testnet
-      case _: Int =>
-        throw new IllegalArgumentException(s"$int is not valid coin type!")
-    }
+  def fromKnown(int: Int): Option[HDCoinType] = all.find(_.toInt == int)
 
   def fromNetwork(np: NetworkParameters): HDCoinType = {
     np match {
@@ -48,6 +37,6 @@ object HDCoinType {
     require(node.hardened,
             s"Cannot construct HDCoinType from un-hardened node: $node")
 
-    fromInt(node.index)
+    HDCoinType(node.index)
   }
 }
