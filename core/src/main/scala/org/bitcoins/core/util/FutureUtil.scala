@@ -36,6 +36,8 @@ object FutureUtil {
 
   def none[T]: Future[Option[T]] = Future.successful(Option.empty[T])
 
+  def emptyVec[T]: Future[Vector[T]] = Future.successful(Vector.empty[T])
+
   /**
     * Folds over the given elements sequentially in a non-blocking async way
     * @param init the initialized value for the accumulator
