@@ -551,6 +551,28 @@ class HDPathTest extends BitcoinSUnitTest {
         "vpub5dPYfuw6xbHfLiUh7kCoZUi1TxgCpKpkVqud5bf9JGHPUovtypqGULcWuUAwmSGx7bt5TmmWeCJnhqc3Xjchn35VJgZWcxBBws3Yy6zYa7G")
       assert(xpub == expectedXpub)
     }
+
+    // multisig mainnet
+    {
+      val rootXpriv =
+        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyMainNetPriv, seed)
+      val path = MultisigHDPath.fromString("m/45'/0'/0'/0/0")
+      val Success(xpub) = rootXpriv.deriveChildPubKey(path)
+      val Success(expectedXpub) = ExtPublicKey.fromStringT(
+        "xpub6GqDvL47MZ2baAovXNzG6UuZa7LR37JDG9Qt6nbns4L1q4owu8wnvkiZgTkYgbeyW6EmMjqe5B7TFKb8JvueU9T73pTW4RWf7gEoXFCqMKv")
+      assert(xpub == expectedXpub)
+    }
+
+    // multisig testnet
+    {
+      val rootXpriv =
+        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyTestNet3Priv, seed)
+      val path = MultisigHDPath.fromString("m/45'/0'/0'/0/0")
+      val Success(xpub) = rootXpriv.deriveChildPubKey(path)
+      val Success(expectedXpub) = ExtPublicKey.fromStringT(
+        "tpubDHCrSZso4pz3qxzmyZyMJQEvuES52VoGon1BTLewCy5uaMUeyMnt5CPPvVqLD6cDHzmfyKMWcGwVwW5jhnktMauQ7RCojxAthdqDHJNNVUx")
+      assert(xpub == expectedXpub)
+    }
   }
 
   // https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki#test-vectors

@@ -727,7 +727,7 @@ object Wallet extends WalletLogger {
     def createAccountFutures =
       for {
         _ <- walletAppConfig.start()
-        accounts = HDPurposes.all.map { purpose =>
+        accounts = HDPurposes.singleSigPurposes.map { purpose =>
           //we need to create key manager params for each purpose
           //and then initialize a key manager to derive the correct xpub
           val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
