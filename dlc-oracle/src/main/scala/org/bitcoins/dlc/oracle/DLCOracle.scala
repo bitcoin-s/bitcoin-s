@@ -32,7 +32,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
   // 585 is a random one I picked, unclaimed in https://github.com/satoshilabs/slips/blob/master/slip-0044.md
   private val PURPOSE = 585
 
-  private val rValueAccount: HDAccount = {
+  private val account: HDAccount = {
     val coin = HDCoin(HDPurpose(PURPOSE), HDCoinType.fromNetwork(conf.network))
     HDAccount(coin, 0)
   }
@@ -40,8 +40,8 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
   private val chainIndex = 0
 
   private def signingKey: ECPrivateKey = {
-    val accountIndex = rValueAccount.index
-    val coin = rValueAccount.coin
+    val accountIndex = account.index
+    val coin = account.coin
     val purpose = coin.purpose
     // Use a different chain index so we don't reuse a key
     val chain = chainIndex + 1
@@ -67,8 +67,8 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
   protected[bitcoins] val eventOutcomeDAO: EventOutcomeDAO = EventOutcomeDAO()
 
   private def getPath(keyIndex: Int): BIP32Path = {
-    val accountIndex = rValueAccount.index
-    val coin = rValueAccount.coin
+    val accountIndex = account.index
+    val coin = account.coin
     val purpose = coin.purpose
 
     BIP32Path.fromString(
@@ -83,8 +83,9 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
             s"Cannot use a BIP32Path with unhardened nodes, got $path")
     val priv = extPrivateKey.deriveChildPrivKey(path).key
     val hash =
-      CryptoUtil.sha256(
-        priv.schnorrNonce.bytes ++ CryptoUtil.serializeForHash(label))
+      CryptoUtil.taggedSha256(
+        priv.schnorrNonce.bytes ++ CryptoUtil.serializeForHash(label),
+        "DLC/Nonce")
     val tweak = ECPrivateKey(hash.bytes)
 
     priv.add(tweak)
@@ -136,13 +137,14 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       path = getPath(index)
       nonce = getKValue(eventName, path).schnorrNonce
 
-      hash =
-        CryptoUtil.sha256(nonce.bytes ++ CryptoUtil.serializeForHash(eventName))
+      hash = CryptoUtil.taggedSha256(
+        nonce.bytes ++ CryptoUtil.serializeForHash(eventName),
+        "DLC/Commitment")
       commitmentSig = signingKey.schnorrSign(hash.bytes)
 
       rValueDb = RValueDbHelper(nonce = nonce,
                                 eventName = eventName,
-                                account = rValueAccount,
+                                account = account,
                                 chainType = chainIndex,
                                 keyIndex = index,
                                 commitmentSignature = commitmentSig)
@@ -150,7 +152,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       eventDb =
         EventDb(nonce, eventName, outcomes.size, Mock, maturationTime, None)
       eventOutcomeDbs = outcomes.map { outcome =>
-        val hash = CryptoUtil.sha256(outcome)
+        val hash = CryptoUtil.taggedSha256(outcome, "DLC/Outcome")
         EventOutcomeDb(nonce, outcome, hash)
       }
 
@@ -163,31 +165,33 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
   def signEvent(nonce: SchnorrNonce, outcome: String): Future[EventDb] = {
     for {
       rValDbOpt <- rValueDAO.read(nonce)
-      rValDb = rValDbOpt match {
-        case Some(value) => value
+      rValDb <- rValDbOpt match {
+        case Some(value) => Future.successful(value)
         case None =>
-          throw new RuntimeException(
-            s"Nonce not found from this oracle ${nonce.hex}")
+          Future.failed(
+            new RuntimeException(
+              s"Nonce not found from this oracle ${nonce.hex}"))
       }
 
       eventOpt <- eventDAO.read(nonce)
-      eventDb = eventOpt match {
+      eventDb <- eventOpt match {
         case Some(value) =>
           require(
             value.attestationOpt.isEmpty,
             s"Event already has been signed, attestation: ${value.attestationOpt.get}")
-          value
+          Future.successful(value)
         case None =>
-          throw new RuntimeException(
-            s"No event saved with nonce ${nonce.hex} $outcome")
+          Future.failed(
+            new RuntimeException(
+              s"No event saved with nonce ${nonce.hex} $outcome"))
       }
 
       eventOutcomeOpt <- eventOutcomeDAO.read((nonce, outcome))
-      eventOutcomeDb = eventOutcomeOpt match {
-        case Some(value) => value
+      eventOutcomeDb <- eventOutcomeOpt match {
+        case Some(value) => Future.successful(value)
         case None =>
-          throw new RuntimeException(
-            s"No event outcome saved with nonce and message ${nonce.hex} $outcome")
+          Future.failed(new RuntimeException(
+            s"No event outcome saved with nonce and message ${nonce.hex} $outcome"))
       }
 
       sig = eventDb.signingVersion match {
