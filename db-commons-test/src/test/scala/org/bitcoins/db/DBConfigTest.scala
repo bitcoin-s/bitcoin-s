@@ -23,7 +23,7 @@ class DBConfigTest extends AnyFlatSpec with Matchers {
   it should "use sqlite as default database and set its connection pool size to 1" in {
     withTempDir { dataDir =>
       val bytes = Files.readAllBytes(
-        new File("db-commons/src/main/resources/db.conf").toPath)
+        new File("db-commons/src/main/resources/reference.conf").toPath)
       Files.write(dataDir.resolve("bitcoin-s.conf"),
                   bytes,
                   StandardOpenOption.CREATE_NEW,
@@ -58,7 +58,7 @@ class DBConfigTest extends AnyFlatSpec with Matchers {
       val slickChainConfig = chainConfig.slickDbConfig
       assert(slickChainConfig.profileName == "slick.jdbc.SQLiteProfile")
       assert(slickChainConfig.config.hasPath("db.numThreads"))
-      assert(slickChainConfig.config.getInt("db.numThreads") == 3)
+      assert(slickChainConfig.config.getInt("db.numThreads") == 1)
       assert(
         slickChainConfig.config.getString("db.connectionPool") == "disabled")
       assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
@@ -67,7 +67,7 @@ class DBConfigTest extends AnyFlatSpec with Matchers {
       val slickNodeConfig = nodeConfig.slickDbConfig
       assert(slickNodeConfig.profileName == "slick.jdbc.SQLiteProfile")
       assert(slickNodeConfig.config.hasPath("db.numThreads"))
-      assert(slickNodeConfig.config.getInt("db.numThreads") == 3)
+      assert(slickNodeConfig.config.getInt("db.numThreads") == 1)
       assert(
         slickNodeConfig.config.getString("db.connectionPool") == "disabled")
       assert(slickNodeConfig.config.getInt("db.queueSize") == 5000)
@@ -76,7 +76,7 @@ class DBConfigTest extends AnyFlatSpec with Matchers {
       val slickWalletConfig = walletConfig.slickDbConfig
       assert(slickWalletConfig.profileName == "slick.jdbc.SQLiteProfile")
       assert(slickWalletConfig.config.hasPath("db.numThreads"))
-      assert(slickWalletConfig.config.getInt("db.numThreads") == 3)
+      assert(slickWalletConfig.config.getInt("db.numThreads") == 1)
       assert(
         slickWalletConfig.config.getString("db.connectionPool") == "disabled")
       assert(slickWalletConfig.config.getInt("db.queueSize") == 5000)
