@@ -1,5 +1,7 @@
 package org.bitcoins.cli
 
+import java.time.Instant
+
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
@@ -18,7 +20,11 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{
+  SchnorrDigitalSignature,
+  SchnorrNonce,
+  Sha256DigestBE
+}
 import scopt.OParser
 import ujson.{Num, Str}
 import upickle.{default => up}
@@ -943,6 +949,100 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      note(sys.props("line.separator") + "=== Oracle ==="),
+      cmd("getpublickey")
+        .action((_, conf) => conf.copy(command = GetPublicKey))
+        .text(s"Get oracle's public key"),
+      cmd("getstakingaddress")
+        .action((_, conf) => conf.copy(command = GetStakingAddress))
+        .text(s"Get oracle's staking address"),
+      cmd("listevents")
+        .action((_, conf) => conf.copy(command = ListEvents))
+        .text(s"Lists all event nonces"),
+      cmd("createevent")
+        .action((_, conf) =>
+          conf.copy(command = CreateEvent("", Instant.MIN, Seq.empty)))
+        .text("Registers an oracle event")
+        .children(
+          arg[String]("label")
+            .text("Label for this event")
+            .required()
+            .action((label, conf) =>
+              conf.copy(command = conf.command match {
+                case createEvent: CreateEvent =>
+                  createEvent.copy(label = label)
+                case other => other
+              })),
+          arg[Instant]("maturationtime")
+            .text("The earliest expected time an outcome will be signed, given in epoch second")
+            .required()
+            .action((time, conf) =>
+              conf.copy(command = conf.command match {
+                case createEvent: CreateEvent =>
+                  createEvent.copy(maturationTime = time)
+                case other => other
+              })),
+          arg[Seq[String]]("outcomes")
+            .text("Possible outcomes for this event")
+            .required()
+            .action((outcomes, conf) =>
+              conf.copy(command = conf.command match {
+                case createEvent: CreateEvent =>
+                  createEvent.copy(outcomes = outcomes)
+                case other => other
+              }))
+        ),
+      cmd("getevent")
+        .action((_, conf) => conf.copy(command = GetEvent(null)))
+        .text("Get an event's details")
+        .children(
+          arg[SchnorrNonce]("nonce")
+            .text("Nonce associated with the event")
+            .required()
+            .action((nonce, conf) =>
+              conf.copy(command = conf.command match {
+                case getEvent: GetEvent =>
+                  getEvent.copy(nonce = nonce)
+                case other => other
+              }))
+        ),
+      cmd("signevent")
+        .action((_, conf) => conf.copy(command = SignEvent(null, "")))
+        .text("Signs an event")
+        .children(
+          arg[SchnorrNonce]("nonce")
+            .text("Nonce associated with the event to sign")
+            .required()
+            .action((nonce, conf) =>
+              conf.copy(command = conf.command match {
+                case signEvent: SignEvent =>
+                  signEvent.copy(nonce = nonce)
+                case other => other
+              })),
+          arg[String]("outcome")
+            .text("Outcome to sign for this event")
+            .required()
+            .action((outcome, conf) =>
+              conf.copy(command = conf.command match {
+                case signEvent: SignEvent =>
+                  signEvent.copy(outcome = outcome)
+                case other => other
+              }))
+        ),
+      cmd("getsignature")
+        .action((_, conf) => conf.copy(command = GetSignature(null)))
+        .text("Get the signature from a signed event")
+        .children(
+          arg[SchnorrNonce]("nonce")
+            .text("Nonce associated with the signed event")
+            .required()
+            .action((nonce, conf) =>
+              conf.copy(command = conf.command match {
+                case getSignature: GetSignature =>
+                  getSignature.copy(nonce = nonce)
+                case other => other
+              }))
+        ),
       checkConfig {
         case Config(NoCommand, _, _, _) =>
           failure("You need to provide a command!")
@@ -1145,6 +1245,24 @@ object ConsoleCli {
 
       case DecodeRawTransaction(tx) =>
         RequestParam("decoderawtransaction", Seq(up.writeJs(tx)))
+
+      // Oracle
+      case GetPublicKey =>
+        RequestParam("getpublickey")
+      case GetStakingAddress =>
+        RequestParam("getstakingaddress")
+      case ListEvents =>
+        RequestParam("listevents")
+      case GetEvent(nonce) =>
+        RequestParam("getevent", Seq(up.writeJs(nonce)))
+      case CreateEvent(label, time, outcomes) =>
+        RequestParam(
+          "createevent",
+          Seq(up.writeJs(label), up.writeJs(time), up.writeJs(outcomes)))
+      case SignEvent(nonce, outcome) =>
+        RequestParam("signevent", Seq(up.writeJs(nonce), up.writeJs(outcome)))
+      case GetSignature(nonce) =>
+        RequestParam("getsignature", Seq(up.writeJs(nonce)))
 
       case NoCommand => ???
     }
@@ -1411,4 +1529,19 @@ object CliCommand {
   case class FinalizePSBT(psbt: PSBT) extends CliCommand
   case class ExtractFromPSBT(psbt: PSBT) extends CliCommand
   case class ConvertToPSBT(transaction: Transaction) extends CliCommand
+
+  // Oracle
+  case object GetPublicKey extends CliCommand
+  case object GetStakingAddress extends CliCommand
+  case object ListEvents extends CliCommand
+
+  case class GetEvent(nonce: SchnorrNonce) extends CliCommand
+
+  case class CreateEvent(
+      label: String,
+      maturationTime: Instant,
+      outcomes: Seq[String])
+      extends CliCommand
+  case class SignEvent(nonce: SchnorrNonce, outcome: String) extends CliCommand
+  case class GetSignature(nonce: SchnorrNonce) extends CliCommand
 }

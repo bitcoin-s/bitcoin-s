@@ -1,5 +1,7 @@
 package org.bitcoins.commons.serializers
 
+import java.time.Instant
+
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
@@ -12,7 +14,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto._
 import upickle.default._
 
 object Picklers {
@@ -28,6 +30,12 @@ object Picklers {
 
   implicit val satoshisPickler: ReadWriter[Satoshis] =
     readwriter[Long].bimap(_.toLong, Satoshis.apply)
+
+  implicit val schnorrNoncePickler: ReadWriter[SchnorrNonce] =
+    readwriter[String].bimap(_.hex, SchnorrNonce.fromHex)
+
+  implicit val instantPickler: ReadWriter[Instant] =
+    readwriter[Long].bimap(_.getEpochSecond, Instant.ofEpochSecond)
 
   implicit val sha256DigestBEPickler: ReadWriter[Sha256DigestBE] =
     readwriter[String].bimap(_.hex, Sha256DigestBE.fromHex)

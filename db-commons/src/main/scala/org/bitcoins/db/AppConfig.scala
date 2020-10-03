@@ -4,7 +4,7 @@ import java.nio.file.{Files, Path, Paths}
 
 import com.typesafe.config._
 import org.bitcoins.core.config._
-import org.bitcoins.core.protocol.blockchain.ChainParams
+import org.bitcoins.core.protocol.blockchain.BitcoinChainParams
 import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -116,14 +116,14 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
   protected[bitcoins] def moduleName: String
 
   /** Chain parameters for the blockchain we're on */
-  lazy val chain: ChainParams = {
+  lazy val chain: BitcoinChainParams = {
     val networkStr = config.getString("network")
 
     BitcoinNetworks.fromString(networkStr).chainParams
   }
 
   /** The blockchain network we're on */
-  lazy val network: NetworkParameters = chain.network
+  lazy val network: BitcoinNetwork = chain.network
 
   /**
     * The underlying config that we derive the

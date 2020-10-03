@@ -180,7 +180,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
         case Some(value) =>
           require(
             value.attestationOpt.isEmpty,
-            s"Event already has been signed, attestation: ${value.attestationOpt.get}")
+            s"Event already has been signed, attestation: ${value.sigOpt.get.hex}")
           Future.successful(value)
         case None =>
           Future.failed(

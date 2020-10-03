@@ -1,6 +1,6 @@
 package org.bitcoins.cli
 
-import java.time.{ZoneId, ZonedDateTime}
+import java.time.{Instant, ZoneId, ZonedDateTime}
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
@@ -15,7 +15,11 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{
+  SchnorrDigitalSignature,
+  SchnorrNonce,
+  Sha256DigestBE
+}
 import scopt._
 
 /** scopt readers for parsing CLI params and options */
@@ -37,6 +41,21 @@ object CliReaders {
               s"$str is not a valid network! Valid networks: $networks"
             sys.error(msg)
           }
+    }
+
+  implicit val schnorrNonceReads: Read[SchnorrNonce] =
+    new Read[SchnorrNonce] {
+      override def arity: Int = 1
+
+      override def reads: String => SchnorrNonce = SchnorrNonce.fromHex
+    }
+
+  implicit val instantReads: Read[Instant] =
+    new Read[Instant] {
+      override def arity: Int = 1
+
+      override def reads: String => Instant =
+        str => Instant.ofEpochSecond(str.toLong)
     }
 
   implicit val bitcoinAddressReads: Read[BitcoinAddress] =
