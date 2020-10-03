@@ -43,7 +43,7 @@ case class RValueDAO()(implicit
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.PrimaryKey)
 
-    def label: Rep[String] = column("label", O.Unique)
+    def eventName: Rep[String] = column("event_name", O.Unique)
 
     def purpose: Rep[HDPurpose] = column("hd_purpose")
 
@@ -53,14 +53,14 @@ case class RValueDAO()(implicit
 
     def chainType: Rep[Int] = column("chain_type")
 
-    def keyIndex: Rep[Int] = column("key_index")
+    def keyIndex: Rep[Int] = column("key_index", O.Unique)
 
     def commitmentSignature: Rep[SchnorrDigitalSignature] =
       column("commitment_signature")
 
     def * : ProvenShape[RValueDb] =
       (nonce,
-       label,
+       eventName,
        purpose,
        coinType,
        accountIndex,

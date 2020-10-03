@@ -1,7 +1,9 @@
 package org.bitcoins.dlc.oracle.storage
 
+import java.time.Instant
+
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
-import org.bitcoins.crypto.{FieldElement, SchnorrNonce}
+import org.bitcoins.crypto._
 import org.bitcoins.db.{AppConfig, CRUD, DbCommonsColumnMappers, SlickUtil}
 import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
@@ -43,19 +45,25 @@ case class EventDAO()(implicit
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.PrimaryKey)
 
-    def label: Rep[String] = column("label", O.Unique)
+    def pubkey: Rep[SchnorrPublicKey] = column("pubkey")
+
+    def eventName: Rep[String] = column("event_name", O.Unique)
 
     def numOutcomes: Rep[Long] = column("num_outcomes")
 
     def signingVersion: Rep[SigningVersion] = column("signing_version")
 
+    def maturationTime: Rep[Instant] = column("maturation_time")
+
     def attestationOpt: Rep[Option[FieldElement]] = column("attestation")
 
     def * : ProvenShape[EventDb] =
       (nonce,
-       label,
+       pubkey,
+       eventName,
        numOutcomes,
        signingVersion,
+       maturationTime,
        attestationOpt) <> (EventDb.tupled, EventDb.unapply)
 
     def fk: ForeignKeyQuery[_, RValueDb] = {
@@ -66,8 +74,8 @@ case class EventDAO()(implicit
 
     def fkLabel: ForeignKeyQuery[_, RValueDb] = {
       foreignKey("fk_label",
-                 sourceColumns = label,
-                 targetTableQuery = rValueTable)(_.label)
+                 sourceColumns = eventName,
+                 targetTableQuery = rValueTable)(_.eventName)
     }
   }
 }

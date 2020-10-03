@@ -5,7 +5,7 @@ import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce}
 
 case class RValueDb(
     nonce: SchnorrNonce,
-    label: String,
+    eventName: String,
     purpose: HDPurpose,
     accountCoin: HDCoinType,
     accountIndex: Int,
@@ -21,13 +21,13 @@ object RValueDbHelper {
 
   def apply(
       nonce: SchnorrNonce,
-      label: String,
+      eventName: String,
       account: HDAccount,
       chainType: Int,
       keyIndex: Int,
       commitmentSignature: SchnorrDigitalSignature): RValueDb = {
     RValueDb(nonce,
-             label,
+             eventName,
              account.purpose,
              account.coin.coinType,
              account.index,
