@@ -1,5 +1,7 @@
 package org.bitcoins.server
 
+import java.time.Instant
+
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -9,6 +11,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
+import org.bitcoins.crypto.SchnorrNonce
 import ujson._
 import upickle.default._
 
@@ -483,7 +486,76 @@ object OpReturnCommit extends ServerJsonModels {
             s"Bad number of arguments: ${other.length}. Expected: 3"))
     }
   }
+}
 
+// Oracle Models
+
+case class CreateEvent(
+    label: String,
+    maturationTime: Instant,
+    outcomes: Vector[String])
+
+object CreateEvent extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateEvent] = {
+    jsArr.arr.toList match {
+      case labelJs :: maturationTimeJs :: outcomesJs :: Nil =>
+        Try {
+          val label = labelJs.str
+          val maturationTime: Instant =
+            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
+          val outcomes = outcomesJs.arr.map(_.str).toVector
+
+          CreateEvent(label, maturationTime, outcomes)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException("Missing label and outcome arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class SignEvent(nonce: SchnorrNonce, outcome: String)
+
+object SignEvent extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SignEvent] = {
+    jsArr.arr.toList match {
+      case nonceJs :: outcomeJs :: Nil =>
+        Try {
+          val nonce = SchnorrNonce(nonceJs.str)
+          val outcome = outcomeJs.str
+
+          SignEvent(nonce, outcome)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException("Missing nonce and outcome arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class GetEvent(nonce: SchnorrNonce)
+
+object GetEvent extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetEvent] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+    Try {
+      val nonce = SchnorrNonce(jsArr.arr.head.str)
+
+      GetEvent(nonce)
+    }
+  }
 }
 
 trait ServerJsonModels {

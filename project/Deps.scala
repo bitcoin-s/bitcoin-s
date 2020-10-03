@@ -315,6 +315,15 @@ object Deps {
       Compile.akkaSlf4j
     )
 
+  val oracleServer =
+    List(
+      Compile.newMicroPickle,
+      Compile.logback,
+      Compile.akkaActor,
+      Compile.akkaHttp,
+      Compile.akkaSlf4j
+    )
+
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
