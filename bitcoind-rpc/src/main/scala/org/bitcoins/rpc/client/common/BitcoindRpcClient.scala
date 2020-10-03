@@ -91,7 +91,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
   }
 
   /** Gets the number of compact filters in the database */
-  override def getFilterCount: Future[Int] = ???
+  override def getFilterCount(): Future[Int] = ???
 
   /** Returns the block height of the given block stamp */
   override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =

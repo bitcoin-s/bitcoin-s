@@ -194,7 +194,7 @@ class PeerMessageHandlerTest extends NodeUnitTest {
           probe.expectMsg(Tcp.Closed)
         }*/
 
-  override def afterAll = {
+  override def afterAll(): Unit = {
     startedBitcoindF.flatMap(_.stop())
     super.afterAll
   }

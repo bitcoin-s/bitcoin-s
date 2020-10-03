@@ -277,7 +277,7 @@ object MnemonicCode {
     val resourceStream = getClass.getResourceAsStream(ENGLISH_WORDS_FILE)
     val source = Source.fromInputStream(resourceStream)
 
-    val lines = source.getLines
+    val lines = source.getLines()
     val linesVec = lines.toVector
     source.close()
     linesVec

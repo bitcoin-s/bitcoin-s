@@ -84,7 +84,7 @@ case class AccountDAO()(implicit
          account.hdAccount.index))
 
     def * : ProvenShape[AccountDb] =
-      (purpose, xpub, coinType, index) <> (fromTuple, toTuple)
+      (purpose, xpub, coinType, index).<>(fromTuple, toTuple)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_account", sourceColumns = (purpose, coinType, index))

@@ -91,7 +91,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
         else FutureUtil.none
 
       /** Gets the number of compact filters in the database */
-      override def getFilterCount: Future[Int] = Future.successful(1)
+      override def getFilterCount(): Future[Int] = Future.successful(1)
 
       /** Returns the block height of the given block stamp */
       override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
@@ -350,7 +350,7 @@ object BitcoinSWalletTest extends WalletLogger {
     override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
       Future.successful(0)
 
-    override def getFilterCount: Future[Int] = Future.successful(0)
+    override def getFilterCount(): Future[Int] = Future.successful(0)
 
     override def getFiltersBetweenHeights(
         startHeight: Int,

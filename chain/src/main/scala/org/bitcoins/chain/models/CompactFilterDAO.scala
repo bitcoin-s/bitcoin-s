@@ -47,11 +47,8 @@ case class CompactFilterDAO()(implicit
     def hashIndex = index("cfilters_hash_index", hash)
 
     override def * = {
-      (hash,
-       filterType,
-       bytes,
-       height,
-       blockHash) <> (CompactFilterDb.tupled, CompactFilterDb.unapply)
+      (hash, filterType, bytes, height, blockHash).<>(CompactFilterDb.tupled,
+                                                      CompactFilterDb.unapply)
     }
   }
 

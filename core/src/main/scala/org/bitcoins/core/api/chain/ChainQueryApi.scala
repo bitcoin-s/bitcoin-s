@@ -30,7 +30,7 @@ trait ChainQueryApi {
       blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]]
 
   /** Gets the number of compact filters in the database */
-  def getFilterCount: Future[Int]
+  def getFilterCount(): Future[Int]
 
   /** Returns the block height of the given block stamp */
   def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int]

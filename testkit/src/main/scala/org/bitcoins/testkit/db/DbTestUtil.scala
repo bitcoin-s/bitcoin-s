@@ -106,6 +106,6 @@ case class TestDAO()(implicit
     def data: Rep[ByteVector] = column[ByteVector]("data")
 
     def * : ProvenShape[TestDb] =
-      (pk, data) <> (TestDb.tupled, TestDb.unapply)
+      (pk, data).<>(TestDb.tupled, TestDb.unapply)
   }
 }
