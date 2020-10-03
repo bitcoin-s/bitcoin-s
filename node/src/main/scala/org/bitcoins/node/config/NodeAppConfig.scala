@@ -6,7 +6,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.util.{FutureUtil, Mutable}
+import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
@@ -49,22 +49,24 @@ case class NodeAppConfig(
     * place for our node.
     */
   override def start(): Future[Unit] = {
-    logger.debug(s"Initializing node setup")
-    val numMigrations = migrate()
+    for {
+      _ <- super.start()
+    } yield {
+      logger.debug(s"Initializing node setup")
+      val numMigrations = migrate()
 
-    logger.info(s"Applied $numMigrations migrations fro the node project")
-
-    FutureUtil.unit
+      logger.info(s"Applied $numMigrations migrations fro the node project")
+    }
   }
 
   lazy val nodeType: NodeType =
-    NodeType.fromString(config.getString("node.mode"))
+    NodeType.fromString(config.getString("bitcoin-s.node.mode"))
 
   /**
     * List of peers
     */
   lazy val peers: Vector[String] = {
-    val list = config.getStringList("node.peers")
+    val list = config.getStringList("bitcoin-s.node.peers")
     val strs = 0
       .until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))

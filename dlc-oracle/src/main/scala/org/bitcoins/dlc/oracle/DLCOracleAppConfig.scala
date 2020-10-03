@@ -45,16 +45,27 @@ case class DLCOracleAppConfig(
 
   override def start(): Future[Unit] = {
     logger.debug(s"Initializing wallet setup")
+<<<<<<< HEAD
 
     if (Files.notExists(datadir)) {
       Files.createDirectories(datadir)
     }
 
     val numMigrations = migrate()
+=======
+    for {
+      _ <- super.start()
+    } yield {
+      if (Files.notExists(datadir)) {
+        Files.createDirectories(datadir)
+      }
+      val numMigrations = {
+        migrate()
+      }
+      logger.info(s"Applied $numMigrations to the wallet project")
+    }
+>>>>>>> 7a6482c92bd... Use absolute paths for resolving configurations
 
-    logger.info(s"Applied $numMigrations to the wallet project")
-
-    FutureUtil.unit
   }
 
   def serverConf: Config = {

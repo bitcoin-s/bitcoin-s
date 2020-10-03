@@ -15,7 +15,7 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
     * The configuration details for connecting/using the database for our projects
     * that require datbase connections
     */
-  val dbConfig: DatabaseConfig[JdbcProfile] = {
+  lazy val dbConfig: DatabaseConfig[JdbcProfile] = {
     val slickDbConfig = appConfig.slickDbConfig
     val _ = createDbFileIfDNE()
 
@@ -25,7 +25,7 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
   logger.debug(
     s"Resolved DB config: ${appConfig.slickDbConfig.config.asReadableJson}")
 
-  val profile: JdbcProfile = dbConfig.profile
+  lazy val profile: JdbcProfile = dbConfig.profile
   import profile.api._
 
   lazy val jdbcUrl: String = {
@@ -59,18 +59,30 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
 
   /** The path where our DB is located */
   lazy val dbPath: Path = {
-    val pathStr = appConfig.config.getString(s"${appConfig.moduleName}.db.path")
-    val path = Paths.get(pathStr)
-    path
-  }
+    val pathStrOpt =
+      appConfig.getConfigStringOpt(s"bitcoin-s.${appConfig.moduleName}.db.path")
+    pathStrOpt match {
+      case Some(pathStr) =>
+        val path = Paths.get(pathStr)
+        path
+      case None =>
+        sys.error(s"Could not find dbPath for ${appConfig.moduleName}.db.path")
+    }
 
-  logger.debug(s"DB path: $dbPath")
+  }
 
   /** The name of our database */
   // todo: what happens to this if we
   // dont use SQLite?
   lazy val dbName: String = {
-    appConfig.config.getString(s"${appConfig.moduleName}.db.name")
+    val path = s"bitcoin-s.${appConfig.moduleName}.db.name"
+    val dbNameOpt =
+      appConfig.getConfigStringOpt(path)
+    dbNameOpt match {
+      case Some(dbName) => dbName
+      case None =>
+        sys.error(s"Could not find dbname with path=$path")
+    }
   }
 
   private def createDbFileIfDNE(): Unit = {
