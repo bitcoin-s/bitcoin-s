@@ -57,6 +57,18 @@ case class DLCOracleAppConfig(
     FutureUtil.unit
   }
 
+  def serverConf: Config = {
+    config.getConfig("server")
+  }
+
+  def rpcPortOpt: Option[Int] = {
+    if (serverConf.hasPath("rpcport")) {
+      Some(serverConf.getInt("rpcport"))
+    } else {
+      None
+    }
+  }
+
   /** Checks if our oracle as a mnemonic seed associated with it */
   def seedExists(): Boolean = {
     WalletStorage.seedExists(seedPath)

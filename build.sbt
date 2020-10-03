@@ -79,7 +79,8 @@ lazy val `bitcoin-s` = project
     appCommons,
     appCommonsTest,
     testkit,
-    zmq
+    zmq,
+    oracleServer
   )
   .settings(CommonSettings.settings: _*)
   // crossScalaVersions must be set to Nil on the aggregating project
@@ -239,6 +240,14 @@ lazy val appCommonsTest = project
   .in(file("app-commons-test"))
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(appCommons, testkit)
+
+lazy val oracleServer = project
+  .in(file("app/oracle-server"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(
+    dlcOracle,
+    appServer
+  )
 
 lazy val appServer = project
   .in(file("app/server"))
