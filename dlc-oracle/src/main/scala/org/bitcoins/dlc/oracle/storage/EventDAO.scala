@@ -3,7 +3,7 @@ package org.bitcoins.dlc.oracle.storage
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
-import org.bitcoins.crypto.{FieldElement, SchnorrNonce}
+import org.bitcoins.crypto._
 import org.bitcoins.db.{AppConfig, CRUD, DbCommonsColumnMappers, SlickUtil}
 import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
@@ -45,6 +45,8 @@ case class EventDAO()(implicit
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.PrimaryKey)
 
+    def pubkey: Rep[SchnorrPublicKey] = column("pubkey")
+
     def eventName: Rep[String] = column("event_name", O.Unique)
 
     def numOutcomes: Rep[Long] = column("num_outcomes")
@@ -57,6 +59,7 @@ case class EventDAO()(implicit
 
     def * : ProvenShape[EventDb] =
       (nonce,
+       pubkey,
        eventName,
        numOutcomes,
        signingVersion,

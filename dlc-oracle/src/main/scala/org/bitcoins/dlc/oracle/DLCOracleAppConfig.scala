@@ -50,9 +50,7 @@ case class DLCOracleAppConfig(
       Files.createDirectories(datadir)
     }
 
-    val numMigrations = {
-      migrate()
-    }
+    val numMigrations = migrate()
 
     logger.info(s"Applied $numMigrations to the wallet project")
 
@@ -74,12 +72,7 @@ case class DLCOracleAppConfig(
   }
 
   def initialize(oracle: DLCOracle): Future[DLCOracle] = {
-    val result =
-      FutureUtil.foldLeftAsync((), allTables)((_, table) => createTable(table))
-
-    result.failed.foreach(_.printStackTrace())
-
-    result.map(_ => oracle)
+    start().map(_ => oracle)
   }
 
   def initialize(

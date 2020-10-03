@@ -14,6 +14,7 @@ CREATE TABLE r_values
 CREATE TABLE events
 (
     nonce           TEXT      NOT NULL,
+    pubkey          TEXT      NOT NULL,
     event_name      TEXT      NOT NULL UNIQUE,
     num_outcomes    INTEGER   NOT NULL,
     signing_version TEXT      NOT NULL,

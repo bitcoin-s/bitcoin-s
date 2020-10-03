@@ -14,6 +14,7 @@ CREATE TABLE `r_values`
 CREATE TABLE `events`
 (
     `nonce`           VARCHAR(254) NOT NULL,
+    `pubkey`          VARCHAR(254) NOT NULL,
     `event_name`      VARCHAR(254) NOT NULL UNIQUE,
     `num_outcomes`    INTEGER      NOT NULL,
     `signing_version` VARCHAR(254) NOT NULL,

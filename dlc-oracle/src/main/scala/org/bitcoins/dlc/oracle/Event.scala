@@ -3,13 +3,16 @@ package org.bitcoins.dlc.oracle
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
-import org.bitcoins.crypto.{FieldElement, SchnorrDigitalSignature, SchnorrNonce}
+import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.storage._
 
 sealed trait Event {
 
   /** The nonce the oracle is committing to for this event */
   def nonce: SchnorrNonce
+
+  /** The oracle's public key */
+  def pubkey: SchnorrPublicKey
 
   /** The name given to this event, may be a URI */
   def eventName: String
@@ -23,7 +26,7 @@ sealed trait Event {
   /** The earliest expected time an outcome will be signed */
   def maturationTime: Instant
 
-  /** A signature by the oracle of the hash of nonce */
+  /** A signature by the oracle of the hash of nonce and event name */
   def commitmentSignature: SchnorrDigitalSignature
 
   /** The list of the possible outcomes */
@@ -32,6 +35,7 @@ sealed trait Event {
 
 case class PendingEvent(
     nonce: SchnorrNonce,
+    pubkey: SchnorrPublicKey,
     eventName: String,
     signingVersion: SigningVersion,
     maturationTime: Instant,
@@ -41,6 +45,7 @@ case class PendingEvent(
 
 case class CompletedEvent(
     nonce: SchnorrNonce,
+    pubkey: SchnorrPublicKey,
     eventName: String,
     signingVersion: SigningVersion,
     maturationTime: Instant,
@@ -64,6 +69,7 @@ object Event {
     eventDb.attestationOpt match {
       case Some(sig) =>
         CompletedEvent(eventDb.nonce,
+                       eventDb.pubkey,
                        eventDb.eventName,
                        eventDb.signingVersion,
                        eventDb.maturationTime,
@@ -72,6 +78,7 @@ object Event {
                        sig)
       case None =>
         PendingEvent(eventDb.nonce,
+                     eventDb.pubkey,
                      eventDb.eventName,
                      eventDb.signingVersion,
                      eventDb.maturationTime,

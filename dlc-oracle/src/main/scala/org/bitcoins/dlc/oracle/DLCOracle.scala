@@ -147,6 +147,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
                                 commitmentSignature = commitmentSig)
 
       eventDb = EventDb(nonce,
+                        publicKey,
                         eventName,
                         outcomes.size,
                         signingVersion,
