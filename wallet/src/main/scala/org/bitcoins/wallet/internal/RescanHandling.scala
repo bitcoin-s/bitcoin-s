@@ -99,7 +99,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
           chainQueryApi.getHeightByBlockStamp)
         _ = if (startHeight < 0)
           throw InvalidBlockRange(s"Start position cannot negative")
-        endHeight <- endOpt.fold(chainQueryApi.getFilterCount)(
+        endHeight <- endOpt.fold(chainQueryApi.getFilterCount())(
           chainQueryApi.getHeightByBlockStamp)
         _ = if (startHeight > endHeight)
           throw InvalidBlockRange(

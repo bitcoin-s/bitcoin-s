@@ -20,7 +20,7 @@ class EclairRpcTestUtilTest extends BitcoinSAsyncTest {
   private val clients =
     Vector.newBuilder[EclairRpcClient]
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     clients.result().foreach(EclairRpcTestUtil.shutdown)
     super.afterAll()
   }

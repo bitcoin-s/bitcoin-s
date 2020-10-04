@@ -63,7 +63,7 @@ class BitcoindV19RpcClient(override val instance: BitcoindInstance)(implicit
                             batchSize = 25)
   }
 
-  override def getFilterCount: Future[Int] = getBlockCount
+  override def getFilterCount(): Future[Int] = getBlockCount
 
   override def getFilterHeaderCount(): Future[Int] = getBlockCount
 

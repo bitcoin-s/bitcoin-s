@@ -111,7 +111,7 @@ abstract class NodeTestUtil extends P2PLogger {
     val hashF = rpc.getBestBlockHash
     for {
       chainApi <- node.chainApiFromDb()
-      bestHash <- chainApi.getBestBlockHash
+      bestHash <- chainApi.getBestBlockHash()
       hash <- hashF
     } yield {
       bestHash == hash
@@ -122,7 +122,7 @@ abstract class NodeTestUtil extends P2PLogger {
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
-      filterCount <- node.chainApiFromDb().flatMap(_.getFilterCount)
+      filterCount <- node.chainApiFromDb().flatMap(_.getFilterCount())
       blockCount <- rpcCountF
     } yield {
       blockCount == filterCount
@@ -133,7 +133,8 @@ abstract class NodeTestUtil extends P2PLogger {
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
-      filterHeaderCount <- node.chainApiFromDb().flatMap(_.getFilterHeaderCount)
+      filterHeaderCount <-
+        node.chainApiFromDb().flatMap(_.getFilterHeaderCount())
       blockCount <- rpcCountF
     } yield {
       blockCount == filterHeaderCount
@@ -147,7 +148,7 @@ abstract class NodeTestUtil extends P2PLogger {
       ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
-      count <- node.chainApiFromDb().flatMap(_.getBlockCount)
+      count <- node.chainApiFromDb().flatMap(_.getBlockCount())
       rpcCount <- rpcCountF
     } yield {
       rpcCount == count
@@ -187,7 +188,7 @@ abstract class NodeTestUtil extends P2PLogger {
       system: ActorSystem): Future[Unit] = {
     import system.dispatcher
     def bestHashF: Future[DoubleSha256DigestBE] = {
-      node.chainApiFromDb().flatMap(_.getBestBlockHash)
+      node.chainApiFromDb().flatMap(_.getBestBlockHash())
     }
     TestAsyncUtil.retryUntilSatisfiedF(() => bestHashF.map(_ == hash))
   }

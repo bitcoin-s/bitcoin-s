@@ -153,30 +153,30 @@ trait ChainUnitTest
     * genesis block
     */
   def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(build = () => ChainUnitTest.createBlockHeaderDAO,
-                destroy = () => ChainUnitTest.destroyAllTables)(test)
+    makeFixture(build = () => ChainUnitTest.createBlockHeaderDAO(),
+                destroy = () => ChainUnitTest.destroyAllTables())(test)
   }
 
   /** Creates a compact filter DAO with zero rows in it */
   def withCompactFilterHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createFilterHeaderDAO(),
-                destroy = ChainUnitTest.destroyAllTables)(test)
+                destroy = () => ChainUnitTest.destroyAllTables())(test)
   }
 
   /** Creates a compact filter DAO with zero rows in it */
   def withCompactFilterDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createFilterDAO(),
-                destroy = ChainUnitTest.destroyAllTables)(test)
+                destroy = () => ChainUnitTest.destroyAllTables())(test)
   }
 
   def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(build = () => ChainUnitTest.createPopulatedBlockHeaderDAO,
-                destroy = () => ChainUnitTest.destroyAllTables)(test)
+    makeFixture(build = () => ChainUnitTest.createPopulatedBlockHeaderDAO(),
+                destroy = () => ChainUnitTest.destroyAllTables())(test)
   }
 
   def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(() => ChainUnitTest.createChainHandler,
-                () => ChainUnitTest.destroyAllTables)(test)
+    makeFixture(() => ChainUnitTest.createChainHandler(),
+                () => ChainUnitTest.destroyAllTables())(test)
   }
 
   def withChainHandlerGenesisFilter(test: OneArgAsyncTest): FutureOutcome = {
@@ -209,8 +209,8 @@ trait ChainUnitTest
   }
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(() => createPopulatedChainHandler,
-                () => ChainUnitTest.destroyAllTables)(test)
+    makeFixture(() => createPopulatedChainHandler(),
+                () => ChainUnitTest.destroyAllTables())(test)
   }
 
   def createChainHandlerWithBitcoindZmq(
@@ -260,7 +260,7 @@ trait ChainUnitTest
       bitcoindChainHandler.chainHandler)
 
     ChainUnitTest.destroyBitcoindChainApiViaRpc(rpc).map { _ =>
-      bitcoindChainHandler.zmqSubscriber.stop
+      bitcoindChainHandler.zmqSubscriber.stop()
     }
   }
 
@@ -468,7 +468,7 @@ object ChainUnitTest extends ChainVerificationLogger {
 
     val source =
       scala.io.Source.fromURL(getClass.getResource("/block_headers.json"))
-    val arrStr = source.getLines.next
+    val arrStr = source.getLines().next()
     source.close()
 
     import org.bitcoins.commons.serializers.JsonReaders.BlockHeaderReads

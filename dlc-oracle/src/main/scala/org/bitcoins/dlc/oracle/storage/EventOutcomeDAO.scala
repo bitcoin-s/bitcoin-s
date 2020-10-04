@@ -58,9 +58,8 @@ case class EventOutcomeDAO()(implicit
     def hashedMessage: Rep[Sha256Digest] = column("hashed_message")
 
     def * : ProvenShape[EventOutcomeDb] =
-      (nonce,
-       message,
-       hashedMessage) <> (EventOutcomeDb.tupled, EventOutcomeDb.unapply)
+      (nonce, message, hashedMessage).<>(EventOutcomeDb.tupled,
+                                         EventOutcomeDb.unapply)
 
     def fk: ForeignKeyQuery[_, EventDb] = {
       foreignKey("fk_nonce",

@@ -215,7 +215,8 @@ object ConsoleCli {
           conf.copy(command = AcceptDLCOffer(null, escaped = false)))
         .text("Accepts a DLC offer given from another party")
         .children(
-          opt[DLCOffer]("offer").required
+          opt[DLCOffer]("offer")
+            .required()
             .action((offer, conf) =>
               conf.copy(command = conf.command match {
                 case accept: AcceptDLCOffer =>
@@ -236,7 +237,8 @@ object ConsoleCli {
           conf.copy(command = SignDLC(null, escaped = false)))
         .text("Signs a DLC")
         .children(
-          opt[DLCAccept]("accept").required
+          opt[DLCAccept]("accept")
+            .required()
             .action((accept, conf) =>
               conf.copy(command = conf.command match {
                 case signDLC: SignDLC =>
@@ -256,7 +258,8 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = AddDLCSigs(null)))
         .text("Adds DLC Signatures into the database")
         .children(
-          opt[DLCSign]("sigs").required
+          opt[DLCSign]("sigs")
+            .required()
             .action((sigs, conf) =>
               conf.copy(command = conf.command match {
                 case addDLCSigs: AddDLCSigs =>
@@ -270,14 +273,16 @@ object ConsoleCli {
           conf.copy(command = InitDLCMutualClose(null, null, escaped = false)))
         .text("Sign Mutual Close Tx for given oracle event")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case initClose: InitDLCMutualClose =>
                   initClose.copy(eventId = eventId)
                 case other => other
               })),
-          opt[SchnorrDigitalSignature]("oraclesig").required
+          opt[SchnorrDigitalSignature]("oraclesig")
+            .required()
             .action((sig, conf) =>
               conf.copy(command = conf.command match {
                 case initClose: InitDLCMutualClose =>
@@ -298,14 +303,16 @@ object ConsoleCli {
           conf.copy(command = AcceptDLCMutualClose(null, noBroadcast = false)))
         .text("Sign Mutual Close Tx for given oracle event")
         .children(
-          opt[DLCMutualCloseSig]("closesig").required
+          opt[DLCMutualCloseSig]("closesig")
+            .required()
             .action((closeSig, conf) =>
               conf.copy(command = conf.command match {
                 case acceptClose: AcceptDLCMutualClose =>
                   acceptClose.copy(mutualCloseSig = closeSig)
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case acceptClose: AcceptDLCMutualClose =>
@@ -318,7 +325,8 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetDLCFundingTx(null)))
         .text("Returns the Funding Tx corresponding to the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case getDLCFundingTx: GetDLCFundingTx =>
@@ -331,7 +339,8 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = BroadcastDLCFundingTx(null)))
         .text("Broadcasts the funding Tx corresponding to the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case broadcastDLCFundingTx: BroadcastDLCFundingTx =>
@@ -346,21 +355,24 @@ object ConsoleCli {
             ExecuteDLCUnilateralClose(null, null, noBroadcast = false)))
         .text("Executes a unilateral close for the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
                   executeDLCUnilateralClose.copy(eventId = eventId)
                 case other => other
               })),
-          opt[SchnorrDigitalSignature]("oraclesig").required
+          opt[SchnorrDigitalSignature]("oraclesig")
+            .required()
             .action((sig, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
                   executeDLCUnilateralClose.copy(oracleSig = sig)
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
@@ -377,21 +389,24 @@ object ConsoleCli {
                                                       noBroadcast = false)))
         .text("Executes a unilateral close for the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>
                   executeDLCRemoteUnilateralClose.copy(eventId = eventId)
                 case other => other
               })),
-          opt[Transaction]("forceCloseTx").required
+          opt[Transaction]("forceCloseTx")
+            .required()
             .action((cet, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>
                   executeDLCRemoteUnilateralClose.copy(cet = cet)
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>
@@ -406,21 +421,24 @@ object ConsoleCli {
             command = ExecuteDLCForceClose(null, null, noBroadcast = false)))
         .text("Executes a force close for the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCForceClose: ExecuteDLCForceClose =>
                   executeDLCForceClose.copy(eventId = eventId)
                 case other => other
               })),
-          opt[SchnorrDigitalSignature]("oraclesig").required
+          opt[SchnorrDigitalSignature]("oraclesig")
+            .required()
             .action((sig, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCForceClose: ExecuteDLCForceClose =>
                   executeDLCForceClose.copy(oracleSig = sig)
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCForceClose: ExecuteDLCForceClose =>
@@ -435,7 +453,8 @@ object ConsoleCli {
             ClaimDLCRemoteFunds(null, EmptyTransaction, noBroadcast = false)))
         .text("Claims the remote funds for the corresponding DLC")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case claimDLCRemoteFunds: ClaimDLCRemoteFunds =>
@@ -465,14 +484,16 @@ object ConsoleCli {
           conf.copy(command = ExecuteDLCRefund(null, noBroadcast = false)))
         .text("Executes the Refund transaction for the given DLC")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRefund: ExecuteDLCRefund =>
                   executeDLCRefund.copy(eventId = eventId)
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRefund: ExecuteDLCRefund =>
@@ -487,7 +508,8 @@ object ConsoleCli {
             ClaimDLCPenaltyFunds(null, EmptyTransaction, noBroadcast = false)))
         .text("Claims the penalty funds for the corresponding DLC")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case claimDLCPenaltyFunds: ClaimDLCPenaltyFunds =>
@@ -703,7 +725,8 @@ object ConsoleCli {
                   send.copy(satoshisPerVirtualByte = Some(feeRate))
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case send: SendToAddress =>

@@ -42,11 +42,9 @@ case class CompactFilterHeaderDAO()(implicit
     def blockHashIndex = index("cfheaders_block_hash_index", blockHash)
 
     override def * = {
-      (hash,
-       filterHash,
-       previousFilterHeader,
-       blockHash,
-       height) <> (CompactFilterHeaderDb.tupled, CompactFilterHeaderDb.unapply)
+      (hash, filterHash, previousFilterHeader, blockHash, height).<>(
+        CompactFilterHeaderDb.tupled,
+        CompactFilterHeaderDb.unapply)
     }
   }
 

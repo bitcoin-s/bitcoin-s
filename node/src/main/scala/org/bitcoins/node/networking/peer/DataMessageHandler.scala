@@ -198,7 +198,7 @@ case class DataMessageHandler(
 
               val lastHeader = headers.last
               val lastHash = lastHeader.hash
-              newApi.getBlockCount.map { count =>
+              newApi.getBlockCount().map { count =>
                 logger.trace(
                   s"Processed headers, most recent has height=$count and hash=$lastHash.")
               }

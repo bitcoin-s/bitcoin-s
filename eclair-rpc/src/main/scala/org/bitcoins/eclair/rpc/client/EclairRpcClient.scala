@@ -777,7 +777,7 @@ class EclairRpcClient(
 
     val started: Future[EclairRpcClient] = {
       for {
-        _ <- AsyncUtil.retryUntilSatisfiedF(() => isStarted,
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => isStarted(),
                                             interval = 1.seconds,
                                             maxTries = 60)
       } yield this
@@ -824,7 +824,7 @@ class EclairRpcClient(
     * @return
     */
   def isStopped: Future[Boolean] = {
-    isStarted.map(started => !started)
+    isStarted().map(started => !started)
   }
 
   /**

@@ -78,7 +78,7 @@ class ChainAppConfigTest extends ChainUnitTest {
     assert(appConfig.network == TestNet3)
   }
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     FileUtil.deleteTmpDir(chainAppConfig.baseDatadir)
     val stopF = for {
       _ <- config.stop()

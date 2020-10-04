@@ -9,7 +9,7 @@ jobs:
       name: Compile Website
       env:
         - TEST_COMMAND="docs/mdoc"
-      scala: 2.13.2
+      scala: 2.13.3
 
     - stage: trivial
       os: linux
@@ -30,14 +30,14 @@ jobs:
       name: Compile website
       env:
         - TEST_COMMAND="docs/mdoc"
-      scala: 2.13.2
+      scala: 2.13.3
 
     - stage: test
-      name: Linux 2.13.2 bitcoind and eclair rpc tests
+      name: Linux 2.13.3 bitcoind and eclair rpc tests
       os: linux
       env:
         - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
-      scala: 2.13.2
+      scala: 2.13.3
 
     - stage: test
       name: Linux 2.12.12 bitcoind and eclair rpc tests
@@ -47,11 +47,11 @@ jobs:
       scala: 2.12.12
 
     - stage: test
-      name: Linux 2.13.2 App, Chain, Node, and Core Tests
+      name: Linux 2.13.3 App, Chain, Node, and Core Tests
       os: linux
       env:
         - TEST_COMMAND="chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test"
-      scala: 2.13.2
+      scala: 2.13.3
 
     - stage: test
       name: Linux 2.12.12 App, Chain, Node, and Core Tests
@@ -61,17 +61,17 @@ jobs:
       scala: 2.12.12
       # In the future these should be removed as the tests will be broken up and put in other projects
     - stage: test
-      name: Linux 2.13.2 DLC Tests
+      name: Linux 2.13.3 DLC Tests
       os: linux
       env:
         - TEST_COMMAND="dlcOracleTest/test"
-      scala: 2.13.2
+      scala: 2.13.3
     - stage: test
-      name: Linux 2.13.2 KeyManager and Wallet tests
+      name: Linux 2.13.3 KeyManager and Wallet tests
       os: linux
       env:
         - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
-      scala: 2.13.2
+      scala: 2.13.3
 
     - stage: test
       name: Linux 2.12.12 KeyManager and Wallet tests
@@ -86,7 +86,7 @@ jobs:
       env:
         - DISABLE_SECP256K1="true"
         - TEST_COMMAND="coreTest/test cryptoTest/test"
-      scala: 2.13.2
+      scala: 2.13.3
 
     - stage: test
       os: linux
@@ -94,14 +94,14 @@ jobs:
       env:
         - PG_ENABLED="1"
         - TEST_COMMAND="dbCommonsTest/test chainTest/test nodeTest/test walletTest/test"
-      scala: 2.13.2
+      scala: 2.13.3
 
     - stage: test
       os: osx
       name: "macOS bitcoind and eclair tests"
       env:
         - TEST_COMMAND="cryptoTest/test coreTest/test appCommonsTest/test bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
-      scala: 2.13.2
+      scala: 2.13.3
 
     # skip all test tagged as UsesExperimentalBitcoind
     # TODO remove this condition once we have a neutrino enabled bitcoind binary for OSX
@@ -110,13 +110,13 @@ jobs:
       name: "macOS wallet and node tests"
       env:
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
-      scala: 2.13.2
+      scala: 2.13.3
     - stage: test
       os: osx
       name: "macOS dlc tests"
       env:
         - TEST_COMMAND="dlcOracleTest/test"
-      scala: 2.13.2
+      scala: 2.13.3
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
     - stage: release

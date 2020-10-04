@@ -156,7 +156,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       cannonicalDatadir
     } else {
       //creates a random eclair datadir, but still assumes that a bitcoind instance is running right now
-      val datadir = randomEclairDatadir
+      val datadir = randomEclairDatadir()
       datadir.mkdirs()
       logger.trace(s"Creating temp eclair dir ${datadir.getAbsolutePath}")
 

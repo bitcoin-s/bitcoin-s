@@ -120,7 +120,7 @@ case class TransactionDAO()(implicit
        totalOutput,
        numInputs,
        numOutputs,
-       locktime) <> (TransactionDb.tupled, TransactionDb.unapply)
+       locktime).<>(TransactionDb.tupled, TransactionDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)

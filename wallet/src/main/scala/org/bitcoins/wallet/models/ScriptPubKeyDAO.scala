@@ -67,7 +67,7 @@ case class ScriptPubKeyDAO()(implicit
     }
 
     override def * =
-      (id.?, scriptPubKey, scriptType) <> (fromTuple, toTuple)
+      (id.?, scriptPubKey, scriptType).<>(fromTuple, toTuple)
   }
 
 }

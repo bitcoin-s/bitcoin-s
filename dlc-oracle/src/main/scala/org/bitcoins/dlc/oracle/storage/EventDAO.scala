@@ -64,7 +64,7 @@ case class EventDAO()(implicit
        numOutcomes,
        signingVersion,
        maturationTime,
-       attestationOpt) <> (EventDb.tupled, EventDb.unapply)
+       attestationOpt).<>(EventDb.tupled, EventDb.unapply)
 
     def fk: ForeignKeyQuery[_, RValueDb] = {
       foreignKey("fk_nonce",
