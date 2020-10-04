@@ -101,16 +101,17 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   }
 
   /** Checks if we have a tcp connection with our peer */
-  def isConnected: Future[Boolean] = peerMsgSenderF.flatMap(_.isConnected)
+  def isConnected: Future[Boolean] = peerMsgSenderF.flatMap(_.isConnected())
 
   /** Checks if we are fully initialized with our peer and have executed the handshake
     * This means we can now send arbitrary messages to our peer
     *
     * @return
     */
-  def isInitialized: Future[Boolean] = peerMsgSenderF.flatMap(_.isInitialized)
+  def isInitialized: Future[Boolean] = peerMsgSenderF.flatMap(_.isInitialized())
 
-  def isDisconnected: Future[Boolean] = peerMsgSenderF.flatMap(_.isDisconnected)
+  def isDisconnected: Future[Boolean] =
+    peerMsgSenderF.flatMap(_.isDisconnected())
 
   /** Starts our node */
   def start(): Future[Node] = {
@@ -120,7 +121,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     for {
       _ <- nodeAppConfig.start()
       // get chainApi so we don't need to call chainApiFromDb on every call
-      chainApi <- chainApiFromDb
+      chainApi <- chainApiFromDb()
       node <- {
         val isInitializedF = for {
           _ <- peerMsgSenderF.map(_.connect())
@@ -142,8 +143,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       _ = logger.trace("Fetching node starting point")
       bestHash <- chainApi.getBestBlockHash()
       bestHeight <- chainApi.getBestHashBlockHeight()
-      filterCount <- chainApi.getFilterCount
-      filterHeaderCount <- chainApi.getFilterHeaderCount
+      filterCount <- chainApi.getFilterCount()
+      filterHeaderCount <- chainApi.getFilterHeaderCount()
     } yield {
       logger.info(
         s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filters")

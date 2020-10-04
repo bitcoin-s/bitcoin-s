@@ -92,7 +92,7 @@ case class P2PClientActor(
           handleTcpMessage(message, Some(peer), unalignedBytes)
         context.become(awaitNetworkRequest(peer, newUnalignedBytes))
       case metaMsg: P2PClient.MetaMsg =>
-        sender ! handleMetaMsg(metaMsg)
+        sender() ! handleMetaMsg(metaMsg)
     }
 
   /** This context is responsible for initializing a tcp connection with a peer on the bitcoin p2p network */
@@ -115,7 +115,7 @@ case class P2PClientActor(
           s"Cannot send a message to our peer when we are not connected! payload=${payload} peer=${peer}")
 
       case metaMsg: P2PClient.MetaMsg =>
-        sender ! handleMetaMsg(metaMsg)
+        sender() ! handleMetaMsg(metaMsg)
     }
 
   /**
@@ -161,11 +161,11 @@ case class P2PClientActor(
         //this is what registers a actor to send all byte messages to that is
         //received from our peer. Since we are using 'self' that means
         //our bitcoin peer will send all messages to this actor.
-        sender ! Tcp.Register(self)
+        sender() ! Tcp.Register(self)
 
         currentPeerMsgHandlerRecv =
           currentPeerMsgHandlerRecv.connect(P2PClient(self, peer))
-        context.become(awaitNetworkRequest(sender, unalignedBytes))
+        context.become(awaitNetworkRequest(sender(), unalignedBytes))
         unalignedBytes
 
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |

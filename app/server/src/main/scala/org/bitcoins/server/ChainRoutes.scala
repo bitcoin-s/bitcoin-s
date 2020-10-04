@@ -13,7 +13,7 @@ case class ChainRoutes(chain: ChainApi)(implicit system: ActorSystem)
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
     case ServerCommand("getblockcount", _) =>
       complete {
-        chain.getBlockCount.map { count =>
+        chain.getBlockCount().map { count =>
           Server.httpSuccess(count)
         }
       }
@@ -31,7 +31,7 @@ case class ChainRoutes(chain: ChainApi)(implicit system: ActorSystem)
       }
     case ServerCommand("getbestblockhash", _) =>
       complete {
-        chain.getBestBlockHash.map { hash =>
+        chain.getBestBlockHash().map { hash =>
           Server.httpSuccess(hash)
         }
       }

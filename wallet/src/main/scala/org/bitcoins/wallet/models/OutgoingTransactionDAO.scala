@@ -74,12 +74,9 @@ case class OutgoingTransactionDAO()(implicit
          tx.feeRate))
 
     def * : ProvenShape[OutgoingTransactionDb] =
-      (txIdBE,
-       inputAmount,
-       sentAmount,
-       actualFee,
-       expectedFee,
-       feeRate) <> (fromTuple, toTuple)
+      (txIdBE, inputAmount, sentAmount, actualFee, expectedFee, feeRate).<>(
+        fromTuple,
+        toTuple)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_out_tx", sourceColumns = txIdBE)

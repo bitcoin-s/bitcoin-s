@@ -57,8 +57,8 @@ case class NeutrinoNode(
     for {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
-      filterHeaderCount <- chainApi.getFilterHeaderCount
-      filterCount <- chainApi.getFilterCount
+      filterHeaderCount <- chainApi.getFilterHeaderCount()
+      filterCount <- chainApi.getFilterCount()
       peerMsgSender <- peerMsgSenderF
     } yield {
       // Get all of our cached headers in case of a reorg
@@ -87,8 +87,8 @@ case class NeutrinoNode(
   }
 
   /** Gets the number of compact filters in the database */
-  override def getFilterCount: Future[Int] =
-    chainApiFromDb().flatMap(_.getFilterCount)
+  override def getFilterCount(): Future[Int] =
+    chainApiFromDb().flatMap(_.getFilterCount())
 
   /** Returns the block height of the given block stamp */
   override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =

@@ -42,7 +42,7 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
     Vector[BitcoindRpcClient]] = Vector.newBuilder
 
   override def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(clientAccum.result)
-    super.afterAll
+    BitcoindRpcTestUtil.stopServers(clientAccum.result())
+    super.afterAll()
   }
 }

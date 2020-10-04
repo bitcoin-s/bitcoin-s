@@ -1,7 +1,7 @@
 import scala.util.Properties
 
 val scala2_12 = "2.12.12"
-val scala2_13 = "2.13.2"
+val scala2_13 = "2.13.3"
 
 scalafmtOnCompile in ThisBuild := !Properties.envOrNone("CI").contains("true")
 

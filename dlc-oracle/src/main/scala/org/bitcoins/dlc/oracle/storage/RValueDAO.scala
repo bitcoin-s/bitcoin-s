@@ -66,6 +66,6 @@ case class RValueDAO()(implicit
        accountIndex,
        chainType,
        keyIndex,
-       commitmentSignature) <> (RValueDb.tupled, RValueDb.unapply)
+       commitmentSignature).<>(RValueDb.tupled, RValueDb.unapply)
   }
 }

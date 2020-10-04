@@ -186,7 +186,7 @@ case class AddressTagDAO()(implicit
       addrTag => Some((addrTag.address, addrTag.tagName, addrTag.tagType))
 
     override def * : ProvenShape[AddressTagDb] =
-      (address, tagName, tagType) <> (fromTuple, toTuple)
+      (address, tagName, tagType).<>(fromTuple, toTuple)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_address_tags", sourceColumns = (address, tagType))
