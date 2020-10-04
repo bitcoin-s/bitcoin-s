@@ -27,7 +27,7 @@ sealed trait Event {
   def maturationTime: Instant
 
   /** A signature by the oracle of the hash of nonce and event name */
-  def commitmentSignature: SchnorrDigitalSignature
+  def announcementSignature: SchnorrDigitalSignature
 
   /** The list of the possible outcomes */
   def outcomes: Vector[String]
@@ -39,7 +39,7 @@ case class PendingEvent(
     eventName: String,
     signingVersion: SigningVersion,
     maturationTime: Instant,
-    commitmentSignature: SchnorrDigitalSignature,
+    announcementSignature: SchnorrDigitalSignature,
     outcomes: Vector[String])
     extends Event
 
@@ -49,7 +49,7 @@ case class CompletedEvent(
     eventName: String,
     signingVersion: SigningVersion,
     maturationTime: Instant,
-    commitmentSignature: SchnorrDigitalSignature,
+    announcementSignature: SchnorrDigitalSignature,
     outcomes: Vector[String],
     attestation: FieldElement)
     extends Event {
@@ -73,7 +73,7 @@ object Event {
                        eventDb.eventName,
                        eventDb.signingVersion,
                        eventDb.maturationTime,
-                       rValDb.commitmentSignature,
+                       rValDb.announcementSignature,
                        outcomes,
                        sig)
       case None =>
@@ -82,7 +82,7 @@ object Event {
                      eventDb.eventName,
                      eventDb.signingVersion,
                      eventDb.maturationTime,
-                     rValDb.commitmentSignature,
+                     rValDb.announcementSignature,
                      outcomes)
     }
   }
