@@ -6,7 +6,7 @@ import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.core.util.{TimeUtil}
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db.{AppConfig, DbManagement, JdbcProfileComponent}
@@ -45,14 +45,6 @@ case class DLCOracleAppConfig(
 
   override def start(): Future[Unit] = {
     logger.debug(s"Initializing wallet setup")
-<<<<<<< HEAD
-
-    if (Files.notExists(datadir)) {
-      Files.createDirectories(datadir)
-    }
-
-    val numMigrations = migrate()
-=======
     for {
       _ <- super.start()
     } yield {
@@ -64,8 +56,6 @@ case class DLCOracleAppConfig(
       }
       logger.info(s"Applied $numMigrations to the wallet project")
     }
->>>>>>> 7a6482c92bd... Use absolute paths for resolving configurations
-
   }
 
   def serverConf: Config = {
