@@ -234,7 +234,7 @@ sealed trait GetMemPoolResult extends BlockchainResult {
   def depends: Vector[DoubleSha256DigestBE]
 }
 
-case class GetMemPoolResultPreV19(
+case class GetMemPoolResultPreV18(
     size: Int,
     fee: Option[Bitcoins],
     modifiedfee: Option[Bitcoins],
@@ -251,7 +251,7 @@ case class GetMemPoolResultPreV19(
     depends: Vector[DoubleSha256DigestBE])
     extends GetMemPoolResult
 
-case class GetMemPoolResultPostV19(
+case class GetMemPoolResultPostV18(
     vsize: Int,
     fee: Option[Bitcoins],
     modifiedfee: Option[Bitcoins],
@@ -294,7 +294,7 @@ sealed trait GetMemPoolEntryResult extends BlockchainResult {
   def depends: Option[Vector[DoubleSha256DigestBE]]
 }
 
-case class GetMemPoolEntryResultPreV19(
+case class GetMemPoolEntryResultPreV18(
     size: Int,
     fee: Bitcoins,
     modifiedfee: Bitcoins,
@@ -311,7 +311,26 @@ case class GetMemPoolEntryResultPreV19(
     depends: Option[Vector[DoubleSha256DigestBE]])
     extends GetMemPoolEntryResult
 
-case class GetMemPoolEntryResultPostV19(
+case class GetMemPoolEntryResultV18(
+    vsize: Int,
+    fee: Bitcoins,
+    modifiedfee: Bitcoins,
+    time: UInt32,
+    height: Int,
+    descendantcount: Int,
+    descendantsize: Int,
+    descendantfees: BitcoinFeeUnit,
+    ancestorcount: Int,
+    ancestorsize: Int,
+    ancestorfees: BitcoinFeeUnit,
+    wtxid: DoubleSha256DigestBE,
+    fees: FeeInfo,
+    depends: Option[Vector[DoubleSha256DigestBE]])
+    extends GetMemPoolEntryResult {
+  override def size: Int = vsize
+}
+
+case class GetMemPoolEntryResultPostV18(
     vsize: Int,
     fee: Bitcoins,
     weight: Int,

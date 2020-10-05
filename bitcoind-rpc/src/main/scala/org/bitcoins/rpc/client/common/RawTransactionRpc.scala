@@ -98,9 +98,9 @@ trait RawTransactionRpc { self: Client =>
       maxfeerate: Double = 0.10): Future[DoubleSha256DigestBE] = {
 
     val feeParameter = self.version match {
-      case V20 | V19 | Experimental | Unknown =>
+      case V20 | V19 | Experimental | V18 | Unknown =>
         JsNumber(maxfeerate)
-      case V16 | V17 | V18 =>
+      case V16 | V17 =>
         JsBoolean(maxfeerate == 0)
     }
 

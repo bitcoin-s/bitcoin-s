@@ -33,12 +33,12 @@ trait MempoolRpc { self: Client =>
     Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
 
     self.version match {
-      case V20 | V19 | Experimental | Unknown =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV19]](
+      case V20 | V19 | Experimental | V18 | Unknown =>
+        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV18]](
           "getmempoolancestors",
           List(JsString(txid.hex), JsBoolean(true)))
-      case V16 | V17 | V18 =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPreV19]](
+      case V16 | V17 =>
+        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPreV18]](
           "getmempoolancestors",
           List(JsString(txid.hex), JsBoolean(true)))
     }
@@ -64,12 +64,12 @@ trait MempoolRpc { self: Client =>
   def getMemPoolDescendantsVerbose(txid: DoubleSha256DigestBE): Future[
     Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
     self.version match {
-      case V20 | V19 | Experimental | Unknown =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV19]](
+      case V20 | V19 | Experimental | V18 | Unknown =>
+        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV18]](
           "getmempooldescendants",
           List(JsString(txid.hex), JsBoolean(true)))
-      case V16 | V17 | V18 =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPreV19]](
+      case V16 | V17 =>
+        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPreV18]](
           "getmempooldescendants",
           List(JsString(txid.hex), JsBoolean(true)))
     }
@@ -85,10 +85,13 @@ trait MempoolRpc { self: Client =>
 
     self.version match {
       case V20 | V19 | Experimental | Unknown =>
-        bitcoindCall[GetMemPoolEntryResultPostV19]("getmempoolentry",
+        bitcoindCall[GetMemPoolEntryResultPostV18]("getmempoolentry",
                                                    List(JsString(txid.hex)))
-      case V16 | V17 | V18 =>
-        bitcoindCall[GetMemPoolEntryResultPreV19]("getmempoolentry",
+      case V18 =>
+        bitcoindCall[GetMemPoolEntryResultV18]("getmempoolentry",
+                                               List(JsString(txid.hex)))
+      case V16 | V17 =>
+        bitcoindCall[GetMemPoolEntryResultPreV18]("getmempoolentry",
                                                   List(JsString(txid.hex)))
     }
 
@@ -127,12 +130,12 @@ trait MempoolRpc { self: Client =>
     Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
 
     self.version match {
-      case V20 | V19 | Experimental | Unknown =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV19]](
+      case V20 | V19 | Experimental | V18 | Unknown =>
+        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV18]](
           "getrawmempool",
           List(JsBoolean(true)))
-      case V16 | V17 | V18 =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPreV19]](
+      case V16 | V17 =>
+        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPreV18]](
           "getrawmempool",
           List(JsBoolean(true)))
     }
