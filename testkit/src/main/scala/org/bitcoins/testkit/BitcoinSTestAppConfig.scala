@@ -3,6 +3,7 @@ package org.bitcoins.testkit
 import java.nio.file._
 
 import com.typesafe.config._
+import org.bitcoins.dlc.oracle.DLCOracleAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.util.FileUtil
 
@@ -82,6 +83,14 @@ object BitcoinSTestAppConfig {
       tmpDir(),
       (overrideConf +: configWithEmbeddedDb(project = None,
                                             pgUrl) +: config): _*)
+  }
+
+  def getDLCOracleWithEmbeddedDbTestConfig(
+      pgUrl: () => Option[String],
+      config: Config*)(implicit ec: ExecutionContext): DLCOracleAppConfig = {
+    DLCOracleAppConfig(
+      tmpDir(),
+      configWithEmbeddedDb(project = None, pgUrl) +: config: _*)
   }
 
   sealed trait ProjectType
