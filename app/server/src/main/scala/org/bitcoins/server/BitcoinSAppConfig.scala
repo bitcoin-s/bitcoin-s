@@ -2,7 +2,7 @@ package org.bitcoins.server
 
 import java.nio.file.Path
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
@@ -25,11 +25,11 @@ case class BitcoinSAppConfig(
     private val directory: Path,
     private val confs: Config*)(implicit ec: ExecutionContext)
     extends StartStopAsync[Unit] {
-  val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
-  val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
-  val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
+  lazy val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
+  lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
+  lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
 
-  val bitcoindRpcConf: BitcoindRpcAppConfig =
+  lazy val bitcoindRpcConf: BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(directory, confs: _*)
 
   /** Initializes the wallet, node and chain projects */
@@ -53,22 +53,22 @@ case class BitcoinSAppConfig(
 
   /** The underlying config the result of our fields derive from */
   lazy val config: Config = {
-    assert(chainConf.config == nodeConf.config)
-    assert(nodeConf.config == walletConf.config)
-    assert(bitcoindRpcConf.config == walletConf.config)
+    val finalConfig =
+      AppConfig.getBaseConfig(baseDatadir = directory, confs.toList)
+    val resolved = finalConfig.resolve()
 
-    // there's nothing special about nodeConf, they should all
-    // be equal
-    nodeConf.config
+    resolved.checkValid(ConfigFactory.defaultReference(), "bitcoin-s")
+
+    resolved
   }
 
   def serverConf: Config = {
-    config.getConfig("server")
+    config.getConfig("bitcoin-s.server")
   }
 
   def rpcPortOpt: Option[Int] = {
-    if (serverConf.hasPath("rpcport")) {
-      Some(serverConf.getInt("rpcport"))
+    if (serverConf.hasPath("bitcoin-s.server.rpcport")) {
+      Some(serverConf.getInt("bitcoin-s.server.rpcport"))
     } else {
       None
     }

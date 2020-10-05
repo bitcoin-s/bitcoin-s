@@ -52,12 +52,16 @@ object Main extends App with HttpLogger {
       case None =>
         val configPath =
           datadirPathOpt.getOrElse(AppConfig.DEFAULT_BITCOIN_S_DATADIR)
-        AppConfig.getBaseConfig(configPath)
+        AppConfig
+          .getBaseConfig(configPath)
+          .resolve()
       case Some((_, configIndex)) =>
         val str = args(configIndex + 1)
         val usableStr = str.replace("~", Properties.userHome)
         val path = Paths.get(usableStr)
-        ConfigFactory.parseFile(path.toFile).resolve()
+        ConfigFactory
+          .parseFile(path.toFile)
+          .resolve()
     }
 
     val configDataDir = Paths.get(
@@ -254,8 +258,10 @@ object Main extends App with HttpLogger {
   //start everything!
   val run = runMain(args.toVector)
 
-  run.failed.foreach(_ => sys.exit(1))(
-    scala.concurrent.ExecutionContext.Implicits.global)
+  run.failed.foreach { err =>
+    logger.error(s"Failed to startup server!", err)
+    sys.exit(1)
+  }(scala.concurrent.ExecutionContext.Implicits.global)
 
   private def createCallbacks(wallet: Wallet)(implicit
       nodeConf: NodeAppConfig,
