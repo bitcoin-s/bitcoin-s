@@ -55,20 +55,20 @@ case class BitcoinSAppConfig(
   lazy val config: Config = {
     val finalConfig =
       AppConfig.getBaseConfig(baseDatadir = directory, confs.toList)
-
-    finalConfig.checkValid(ConfigFactory.defaultReference(), "bitcoin-s")
     val resolved = finalConfig.resolve()
+
+    resolved.checkValid(ConfigFactory.defaultReference(), "bitcoin-s")
 
     resolved
   }
 
   def serverConf: Config = {
-    config.getConfig("server")
+    config.getConfig("bitcoin-s.server")
   }
 
   def rpcPortOpt: Option[Int] = {
-    if (serverConf.hasPath("rpcport")) {
-      Some(serverConf.getInt("rpcport"))
+    if (serverConf.hasPath("bitcoin-s.server.rpcport")) {
+      Some(serverConf.getInt("bitcoin-s.server.rpcport"))
     } else {
       None
     }
