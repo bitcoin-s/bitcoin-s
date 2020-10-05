@@ -33,7 +33,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
           val nonceStrs = eventDbs.map(_.nonce.hex)
           val json = Arr.from(nonceStrs)
 
-          Server.httpSuccess(json.render(indent = 2))
+          Server.httpSuccess(json)
         }
       }
 
