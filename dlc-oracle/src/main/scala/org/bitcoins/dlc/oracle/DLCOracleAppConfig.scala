@@ -54,7 +54,7 @@ case class DLCOracleAppConfig(
       val numMigrations = {
         migrate()
       }
-      logger.info(s"Applied $numMigrations to the wallet project")
+      logger.info(s"Applied $numMigrations to the dlc oracle project")
     }
   }
 

@@ -90,17 +90,16 @@ case class WalletAppConfig(
   lazy val discoveryBatchSize: Int =
     config.getInt("bitcoin-s.wallet.discoveryBatchSize")
 
-  lazy val requiredConfirmations: Int =
-    config.getInt("bitcoin-s.wallet.requiredConfirmations")
+  lazy val requiredConfirmations: Int = {
+    val confs = config.getInt("bitcoin-s.wallet.requiredConfirmations")
+    require(confs >= 1,
+            s"requiredConfirmations cannot be less than 1, got: $confs")
+    confs
+  }
 
   override def start(): Future[Unit] = {
     for {
       _ <- super.start()
-      //moved out of main class body because we need lazy behavior when loading configs
-      _ = require(
-        requiredConfirmations >= 1,
-        s"requiredConfirmations cannot be less than 1, got: $requiredConfirmations")
-
     } yield {
       logger.debug(s"Initializing wallet setup")
 
