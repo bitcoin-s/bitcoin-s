@@ -120,6 +120,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       if (blockFilterIndex)
         conf + """
                  |blockfilterindex=1
+                 |peerblockfilters=1
                  |""".stripMargin
       else
         conf

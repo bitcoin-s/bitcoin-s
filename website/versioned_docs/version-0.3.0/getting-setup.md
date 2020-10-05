@@ -80,6 +80,7 @@ rpcport=18332
 daemon=1
 deprecatedrpc=signrawtransaction
 blockfilterindex=1
+peerblockfilters=1
 debug=1
 ```
 

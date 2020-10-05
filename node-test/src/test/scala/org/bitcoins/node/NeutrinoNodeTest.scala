@@ -129,7 +129,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
             conditionF = () => {
               node
                 .chainApiFromDb()
-                .flatMap(_.getBlockCount.map(_ == ExpectedCount))
+                .flatMap(_.getBlockCount().map(_ == ExpectedCount))
             },
             interval = 1000.millis)
 
@@ -138,7 +138,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
             conditionF = () => {
               node
                 .chainApiFromDb()
-                .flatMap(_.getFilterHeaderCount.map(_ == ExpectedCount))
+                .flatMap(_.getFilterHeaderCount().map(_ == ExpectedCount))
             },
             interval = 1000.millis)
 
@@ -147,7 +147,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
             conditionF = () => {
               node
                 .chainApiFromDb()
-                .flatMap(_.getFilterCount.map(_ == ExpectedCount))
+                .flatMap(_.getFilterCount().map(_ == ExpectedCount))
             },
             interval = 1000.millis)
 

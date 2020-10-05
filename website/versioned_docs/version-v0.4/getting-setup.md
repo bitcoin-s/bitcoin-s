@@ -93,6 +93,7 @@ rpcport=18332
 daemon=1
 deprecatedrpc=signrawtransaction
 blockfilterindex=1
+peerblockfilters=1
 debug=1
 txindex=1
 zmqpubrawblock=tcp://127.0.0.1:29000

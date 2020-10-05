@@ -41,9 +41,9 @@ trait MultisigRpc { self: Client =>
            JsString(account)) ++ addressType.map(Json.toJson(_)).toList
 
     self.version match {
-      case V20 | Unknown =>
+      case V20 | Experimental | Unknown =>
         bitcoindCall[MultiSigResultPostV20]("addmultisigaddress", params)
-      case V16 | V17 | V18 | V19 | Experimental =>
+      case V16 | V17 | V18 | V19 =>
         bitcoindCall[MultiSigResultPreV20]("addmultisigaddress", params)
     }
   }
@@ -76,11 +76,11 @@ trait MultisigRpc { self: Client =>
       minSignatures: Int,
       keys: Vector[ECPublicKey]): Future[MultiSigResult] = {
     self.version match {
-      case V20 | Unknown =>
+      case V20 | Experimental | Unknown =>
         bitcoindCall[MultiSigResultPostV20](
           "createmultisig",
           List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))))
-      case V16 | V17 | V18 | V19 | Experimental =>
+      case V16 | V17 | V18 | V19 =>
         bitcoindCall[MultiSigResultPreV20](
           "createmultisig",
           List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))))

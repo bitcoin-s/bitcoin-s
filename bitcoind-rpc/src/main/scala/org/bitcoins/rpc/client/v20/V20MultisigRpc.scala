@@ -38,9 +38,9 @@ trait V20MultisigRpc extends MultisigRpc { self: Client =>
            JsString(account)) ++ addressType.map(Json.toJson(_)).toList
 
     self.version match {
-      case V20 | Unknown =>
+      case V20 | Experimental | Unknown =>
         bitcoindCall[MultiSigResultPostV20]("addmultisigaddress", params)
-      case version @ (V16 | V17 | V18 | V19 | Experimental) =>
+      case version @ (V16 | V17 | V18 | V19) =>
         throw new RuntimeException(
           s"Cannot use v20MultisigRpc on an older version, got $version")
     }

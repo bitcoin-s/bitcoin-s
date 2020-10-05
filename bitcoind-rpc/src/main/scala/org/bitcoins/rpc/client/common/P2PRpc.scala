@@ -67,9 +67,9 @@ trait P2PRpc { self: Client =>
 
   def listBanned: Future[Vector[NodeBan]] = {
     self.version match {
-      case V20 | Unknown =>
+      case V20 | Experimental | Unknown =>
         bitcoindCall[Vector[NodeBanPostV20]]("listbanned")
-      case V16 | V17 | V18 | V19 | Experimental =>
+      case V16 | V17 | V18 | V19 =>
         bitcoindCall[Vector[NodeBanPreV20]]("listbanned")
 
     }

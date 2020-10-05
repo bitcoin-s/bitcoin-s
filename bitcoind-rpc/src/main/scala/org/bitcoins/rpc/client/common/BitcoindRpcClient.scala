@@ -261,7 +261,7 @@ object BitcoindRpcClient {
       case BitcoindVersion.V19 => BitcoindV19RpcClient.withActorSystem(instance)
       case BitcoindVersion.V20 => BitcoindV20RpcClient.withActorSystem(instance)
       case BitcoindVersion.Experimental =>
-        BitcoindV18RpcClient.withActorSystem(instance)
+        BitcoindV20RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a bitcoind from a unknown or experimental version")
@@ -299,7 +299,7 @@ object BitcoindVersion {
   }
 
   case object Experimental extends BitcoindVersion {
-    override def toString: String = "v0.18.99"
+    override def toString: String = "v0.20.99"
   }
 
   case object Unknown extends BitcoindVersion {

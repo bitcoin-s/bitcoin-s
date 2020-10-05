@@ -126,7 +126,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         )
       }
 
-      val countF = node.chainApiFromDb().flatMap(_.getFilterHeaderCount)
+      val countF = node.chainApiFromDb().flatMap(_.getFilterHeaderCount())
       for {
         count <- countF
         _ <- node.sync()
