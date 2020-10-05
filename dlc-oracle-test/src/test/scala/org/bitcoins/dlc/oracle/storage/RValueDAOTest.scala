@@ -12,9 +12,6 @@ import org.bitcoins.testkit.fixtures.DLCOracleDAOFixture
 
 class RValueDAOTest extends DLCOracleDAOFixture {
 
-  implicit override protected def config: DLCOracleAppConfig =
-    BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(pgUrl)
-
   behavior of "RValueDAO"
 
   val ecKey: ECPublicKey = ECPublicKey.freshPublicKey

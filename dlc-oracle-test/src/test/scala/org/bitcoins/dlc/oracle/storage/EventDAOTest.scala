@@ -12,9 +12,6 @@ import org.bitcoins.testkit.fixtures.DLCOracleDAOFixture
 
 class EventDAOTest extends DLCOracleDAOFixture {
 
-  implicit override protected def config: DLCOracleAppConfig =
-    BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(pgUrl)
-
   behavior of "EventDAO"
 
   val ecKey: ECPublicKey = ECPublicKey.freshPublicKey

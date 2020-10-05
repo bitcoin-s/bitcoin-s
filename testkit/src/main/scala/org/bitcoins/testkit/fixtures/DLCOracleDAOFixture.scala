@@ -3,8 +3,8 @@ package org.bitcoins.testkit.fixtures
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.dlc.oracle.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
-import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil.bip39PasswordOpt
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest._
 
 import scala.concurrent.Future
@@ -16,7 +16,8 @@ case class DLCOracleDAOs(
 
 trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
-  implicit protected def config: DLCOracleAppConfig
+  implicit protected def config: DLCOracleAppConfig =
+    BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = DLCOracleDAOs
 
