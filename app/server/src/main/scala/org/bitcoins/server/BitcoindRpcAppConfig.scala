@@ -51,41 +51,47 @@ case class BitcoindRpcAppConfig(
 
   lazy val binary: File =
     new File(
-      config.getStringOrElse("bitcoind-rpc.binary",
+      config.getStringOrElse("bitcoin-s.bitcoind-rpc.binary",
                              DEFAULT_BINARY_PATH.toString))
 
   lazy val bitcoindDataDir = new File(
-    config.getStringOrElse("bitcoind-rpc.datadir",
+    config.getStringOrElse("bitcoin-s.bitcoind-rpc.datadir",
                            BitcoindConfig.DEFAULT_DATADIR.toString))
 
   lazy val bind = new URI({
-    val baseUrl = config.getStringOrElse("bitcoind-rpc.bind", "localhost")
+    val baseUrl =
+      config.getStringOrElse("bitcoin-s.bitcoind-rpc.bind", "localhost")
     if (baseUrl.startsWith("http")) baseUrl
     else "http://" + baseUrl
   })
 
-  lazy val port: Int = config.getIntOrElse("bitcoind-rpc.port", network.port)
+  lazy val port: Int =
+    config.getIntOrElse("bitcoin-s.bitcoind-rpc.port", network.port)
 
   lazy val uri: URI = new URI(s"$bind:$port")
 
   lazy val rpcBind = new URI({
-    val baseUrl = config.getStringOrElse("bitcoind-rpc.rpcbind", "localhost")
+    val baseUrl =
+      config.getStringOrElse("bitcoin-s.bitcoind-rpc.rpcbind", "localhost")
     if (baseUrl.startsWith("http")) baseUrl
     else "http://" + baseUrl
   })
 
   lazy val rpcPort: Int =
-    config.getIntOrElse("bitcoind-rpc.rpcport", network.rpcPort)
+    config.getIntOrElse("bitcoin-s.bitcoind-rpc.rpcport", network.rpcPort)
 
   lazy val rpcUri: URI = new URI(s"$rpcBind:$rpcPort")
 
-  lazy val rpcUser: String = config.getString("bitcoind-rpc.rpcuser")
-  lazy val rpcPassword: String = config.getString("bitcoind-rpc.rpcpassword")
+  lazy val rpcUser: String = config.getString("bitcoin-s.bitcoind-rpc.rpcuser")
+
+  lazy val rpcPassword: String =
+    config.getString("bitcoin-s.bitcoind-rpc.rpcpassword")
 
   lazy val authCredentials: BitcoindAuthCredentials =
     BitcoindAuthCredentials.PasswordBased(rpcUser, rpcPassword)
 
-  lazy val zmqPort: Int = config.getIntOrElse("bitcoind-rpc.zmqport", 29000)
+  lazy val zmqPort: Int =
+    config.getIntOrElse("bitcoin-s.bitcoind-rpc.zmqport", 29000)
 
   lazy val zmqConfig: ZmqConfig = ZmqConfig.fromPort(zmqPort)
 
