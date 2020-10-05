@@ -79,7 +79,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
                   "signature" -> signatureJson,
                   "outcomes" -> outcomesJson
                 )
-                Server.httpSuccess(json.render(indent = 2))
+                Server.httpSuccess(json)
               case None =>
                 Server.httpSuccess("[]")
             }

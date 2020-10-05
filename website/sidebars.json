@@ -63,6 +63,9 @@
     "Testkit": [
       "testkit/testkit"
     ],
+    "DLC Oracle": [
+      "oracle/oracle-server"
+    ],
     "Contributing": [
       "contributing",
       "contributing-website"
