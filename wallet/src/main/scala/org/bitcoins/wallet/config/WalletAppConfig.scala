@@ -8,7 +8,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
-import org.bitcoins.core.util.{FutureUtil, Mutable}
+import org.bitcoins.core.util.Mutable
 import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
   KeyManagerParams
@@ -55,7 +55,7 @@ case class WalletAppConfig(
   }
 
   lazy val defaultAccountKind: HDPurpose =
-    config.getString("wallet.defaultAccountType") match {
+    config.getString("bitcoin-s.wallet.defaultAccountType") match {
       case "legacy"        => HDPurposes.Legacy
       case "segwit"        => HDPurposes.SegWit
       case "nested-segwit" => HDPurposes.NestedSegWit
@@ -82,33 +82,37 @@ case class WalletAppConfig(
   }
 
   lazy val bloomFalsePositiveRate: Double =
-    config.getDouble("wallet.bloomFalsePositiveRate")
+    config.getDouble("bitcoin-s.wallet.bloomFalsePositiveRate")
 
-  lazy val addressGapLimit: Int = config.getInt("wallet.addressGapLimit")
+  lazy val addressGapLimit: Int =
+    config.getInt("bitcoin-s.wallet.addressGapLimit")
 
-  lazy val discoveryBatchSize: Int = config.getInt("wallet.discoveryBatchSize")
+  lazy val discoveryBatchSize: Int =
+    config.getInt("bitcoin-s.wallet.discoveryBatchSize")
 
-  lazy val requiredConfirmations: Int =
-    config.getInt("wallet.requiredConfirmations")
-
-  require(
-    requiredConfirmations >= 1,
-    s"requiredConfirmations cannot be less than 1, got: $requiredConfirmations")
+  lazy val requiredConfirmations: Int = {
+    val confs = config.getInt("bitcoin-s.wallet.requiredConfirmations")
+    require(confs >= 1,
+            s"requiredConfirmations cannot be less than 1, got: $confs")
+    confs
+  }
 
   override def start(): Future[Unit] = {
-    logger.debug(s"Initializing wallet setup")
+    for {
+      _ <- super.start()
+    } yield {
+      logger.debug(s"Initializing wallet setup")
 
-    if (Files.notExists(datadir)) {
-      Files.createDirectories(datadir)
+      if (Files.notExists(datadir)) {
+        Files.createDirectories(datadir)
+      }
+
+      val numMigrations = {
+        migrate()
+      }
+
+      logger.info(s"Applied $numMigrations to the wallet project")
     }
-
-    val numMigrations = {
-      migrate()
-    }
-
-    logger.info(s"Applied $numMigrations to the wallet project")
-
-    FutureUtil.unit
   }
 
   /** The path to our encrypted mnemonic seed */
@@ -128,8 +132,8 @@ case class WalletAppConfig(
     * before we throw an exception
     */
   def addressQueueSize: Int = {
-    if (config.hasPath("wallet.addressQueueSize")) {
-      config.getInt("wallet.addressQueueSize")
+    if (config.hasPath("bitcoin-s.wallet.addressQueueSize")) {
+      config.getInt("bitcoin-s.wallet.addressQueueSize")
     } else {
       100
     }
@@ -139,8 +143,9 @@ case class WalletAppConfig(
     * before we timeout
     */
   def addressQueueTimeout: scala.concurrent.duration.Duration = {
-    if (config.hasPath("wallet.addressQueueTimeout")) {
-      val javaDuration = config.getDuration("wallet.addressQueueTimeout")
+    if (config.hasPath("bitcoin-s.wallet.addressQueueTimeout")) {
+      val javaDuration =
+        config.getDuration("bitcoin-s.wallet.addressQueueTimeout")
       new FiniteDuration(javaDuration.toNanos, TimeUnit.NANOSECONDS)
     } else {
       5.second

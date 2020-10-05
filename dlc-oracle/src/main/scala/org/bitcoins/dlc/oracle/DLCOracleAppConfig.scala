@@ -6,7 +6,7 @@ import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.core.util.{TimeUtil}
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db.{AppConfig, DbManagement, JdbcProfileComponent}
@@ -45,25 +45,26 @@ case class DLCOracleAppConfig(
 
   override def start(): Future[Unit] = {
     logger.debug(s"Initializing wallet setup")
-
-    if (Files.notExists(datadir)) {
-      Files.createDirectories(datadir)
+    for {
+      _ <- super.start()
+    } yield {
+      if (Files.notExists(datadir)) {
+        Files.createDirectories(datadir)
+      }
+      val numMigrations = {
+        migrate()
+      }
+      logger.info(s"Applied $numMigrations to the dlc oracle project")
     }
-
-    val numMigrations = migrate()
-
-    logger.info(s"Applied $numMigrations to the wallet project")
-
-    FutureUtil.unit
   }
 
   def serverConf: Config = {
-    config.getConfig("server")
+    config.getConfig("bitcoin-s.server")
   }
 
   def rpcPortOpt: Option[Int] = {
-    if (serverConf.hasPath("rpcport")) {
-      Some(serverConf.getInt("rpcport"))
+    if (serverConf.hasPath("bitcoin-s.server.rpcport")) {
+      Some(serverConf.getInt("bitcoin-s.server.rpcport"))
     } else {
       None
     }

@@ -58,13 +58,14 @@ case class TestAppConfig(
   override def appConfig: TestAppConfig = this
 
   override def start(): Future[Unit] = {
-    logger.debug(s"Initializing test setup")
-
     if (Files.notExists(datadir)) {
       Files.createDirectories(datadir)
     }
-
-    createTable(TestDAO()(ec, this).table)
+    for {
+      _ <- super.start()
+      _ = logger.debug(s"Initializing test setup")
+      _ <- createTable(TestDAO()(ec, this).table)
+    } yield ()
   }
 }
 

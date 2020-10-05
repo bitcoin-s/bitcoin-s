@@ -5,7 +5,7 @@ import java.nio.file.{Files, Path, Paths}
 import com.typesafe.config._
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.BitcoinChainParams
-import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStopAsync}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -31,7 +31,9 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
     * making directories or files needed later or
     * something else entirely.
     */
-  override def start(): Future[Unit]
+  override def start(): Future[Unit] = {
+    FutureUtil.unit
+  }
 
   /** Releases the thread pool associated with this AppConfig's DB */
   override def stop(): Future[Unit] = {
@@ -92,7 +94,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
       // that as our config. here we have to do the reverse, to
       // get the keys to resolve correctly
       val reconstructedStr = s"""
-      "bitcoin-s": ${this.config.asReadableJson}
+      "bitcoin-s": ${this.config.getConfig("bitcoin-s").asReadableJson}
       """
       val reconstructed = ConfigFactory.parseString(reconstructedStr)
       newConfigOfType(reconstructed +: configOverrides)
@@ -117,7 +119,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
   /** Chain parameters for the blockchain we're on */
   lazy val chain: BitcoinChainParams = {
-    val networkStr = config.getString("network")
+    val networkStr = config.getString("bitcoin-s.network")
 
     BitcoinNetworks.fromString(networkStr).chainParams
   }
@@ -125,28 +127,24 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
   /** The blockchain network we're on */
   lazy val network: BitcoinNetwork = chain.network
 
-  /**
-    * The underlying config that we derive the
-    * rest of the fields in this class from
-    */
-  private[bitcoins] lazy val baseConfig: Config = {
-    AppConfig.getBaseConfig(baseDatadir, configOverrides)
-  }
-
-  private[bitcoins] lazy val config: Config = {
-    val finalConfig = baseConfig.getConfig("bitcoin-s")
+  protected lazy val config: Config = {
+    val finalConfig = AppConfig.getBaseConfig(baseDatadir, configOverrides)
 
     logger.debug(s"Resolved bitcoin-s config:")
     logger.debug(finalConfig.asReadableJson)
 
-    finalConfig
+    val resolved = finalConfig.resolve()
+
+    resolved.checkValid(ConfigFactory.defaultReference(), "bitcoin-s")
+
+    resolved
   }
 
   /** The base data directory. This is where we look for a configuration file */
   protected[bitcoins] def baseDatadir: Path
 
   /** The network specific data directory. */
-  val datadir: Path = {
+  lazy val datadir: Path = {
     val lastDirname = network match {
       case MainNet  => "mainnet"
       case TestNet3 => "testnet3"
@@ -158,7 +156,8 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
   lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
     Try {
-      DatabaseConfig.forConfig[JdbcProfile](path = moduleName, config = config)
+      DatabaseConfig.forConfig[JdbcProfile](path = s"bitcoin-s.$moduleName",
+                                            config = config)
     } match {
       case Success(value) =>
         value
@@ -166,6 +165,16 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
         logger.error(s"Error when loading database from config: $exception")
         logger.error(s"Configuration: ${config.asReadableJson}")
         throw exception
+    }
+  }
+
+  def getConfigStringOpt(path: String): Option[String] = {
+
+    Try(config.getString(path)).toOption match {
+      case Some(str) =>
+        Some(str)
+      case None =>
+        None
     }
   }
 }
@@ -188,11 +197,6 @@ object AppConfig extends BitcoinSLogger {
       withDatadir.withFallback(config)
     }
 
-    // `load` tries to resolve substitutions,
-    // `parseResources` does not
-    val dbConfig = ConfigFactory
-      .parseResources("db.conf")
-
     // we want to NOT resolve substitutions in the configuration until the user
     // provided configs also has been loaded. .parseResources() does not do that
     // whereas .load() does
@@ -208,7 +212,6 @@ object AppConfig extends BitcoinSLogger {
     // loads reference.conf (provided by Bitcoin-S)
     val unresolvedConfig = datadirConfig
       .withFallback(classPathConfig)
-      .withFallback(dbConfig)
 
     val withOverrides =
       if (configOverrides.nonEmpty) {
@@ -227,7 +230,6 @@ object AppConfig extends BitcoinSLogger {
       }
 
     withOverrides
-      .resolve()
   }
 
   /** The default data directory

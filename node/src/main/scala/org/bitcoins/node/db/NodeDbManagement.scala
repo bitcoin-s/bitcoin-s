@@ -17,6 +17,6 @@ trait NodeDbManagement extends DbManagement {
     BroadcastAbleTransactionDAO()(appConfig, ec).table
   }
 
-  override val allTables: List[TableQuery[Table[_]]] = List(txTable)
+  override lazy val allTables: List[TableQuery[Table[_]]] = List(txTable)
 
 }

@@ -55,7 +55,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     * @return the inserted record
     */
   def create(t: T): Future[T] = {
-    logger.trace(s"Writing $t to DB with config: ${appConfig.config}")
+    logger.trace(s"Writing $t to DB with config: $appConfig")
     createAll(Vector(t)).map(_.head)
   }
 
@@ -68,7 +68,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     * @return Option[T] - the record if found, else none
     */
   def read(id: PrimaryKeyType): Future[Option[T]] = {
-    logger.trace(s"Reading from DB with config: ${appConfig.config}")
+    logger.trace(s"Reading from DB with config: ${appConfig}")
     val query = findByPrimaryKey(id)
     val rows: Future[Seq[T]] = safeDatabase.run(query.result)
     rows.map(_.headOption)
