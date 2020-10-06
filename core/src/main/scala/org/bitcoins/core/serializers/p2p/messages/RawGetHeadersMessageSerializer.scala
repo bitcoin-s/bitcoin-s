@@ -1,8 +1,8 @@
 package org.bitcoins.core.serializers.p2p.messages
 
+import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSerializerHelper}
-import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 
@@ -17,7 +17,7 @@ trait RawGetHeadersMessageSerializer
       CompactSizeUInt.parseCompactSizeUInt(bytes.slice(4, bytes.length))
     val hashesStartIndex = (hashCount.byteSize + 4).toInt
     val (hashes, remainingBytes) =
-      parseHashes(bytes.slice(hashesStartIndex, bytes.length), hashCount)
+      parseHashes(bytes.drop(hashesStartIndex), hashCount)
     val hashStop = DoubleSha256Digest(remainingBytes.take(32))
     GetHeadersMessage(version, hashCount, hashes, hashStop)
   }
@@ -46,12 +46,10 @@ trait RawGetHeadersMessageSerializer
         accum: List[DoubleSha256Digest]): (
         List[DoubleSha256Digest],
         ByteVector) = {
-      if (remainingHashes <= 0) (accum.reverse, remainingBytes)
+      if (remainingHashes <= 0) (accum, remainingBytes)
       else {
         val hash = DoubleSha256Digest(remainingBytes.take(32))
-        loop(remainingBytes.slice(32, remainingBytes.length),
-             remainingHashes - 1,
-             hash :: accum)
+        loop(remainingBytes.drop(32), remainingHashes - 1, accum :+ hash)
       }
     }
 
