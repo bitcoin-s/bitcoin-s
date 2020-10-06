@@ -122,6 +122,9 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       eventName: String,
       maturationTime: Instant,
       outcomes: Vector[String]): Future[EventDb] = {
+    require(outcomes.nonEmpty, "Cannot make an event with no outcomes")
+    require(outcomes.distinct.size == outcomes.size,
+            s"Cannot have duplicate outcomes, got $outcomes")
     for {
       indexOpt <- rValueDAO.maxKeyIndex
       index = indexOpt match {
