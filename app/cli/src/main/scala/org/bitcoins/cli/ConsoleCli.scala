@@ -26,7 +26,7 @@ import org.bitcoins.crypto.{
   Sha256DigestBE
 }
 import scopt.OParser
-import ujson.{Num, Str}
+import ujson._
 import upickle.{default => up}
 
 import scala.collection.mutable
@@ -1340,7 +1340,7 @@ object ConsoleCli {
           case Str(string)             => string
           case Num(num) if num.isWhole => num.toLong.toString
           case Num(num)                => num.toString
-          case rest: ujson.Value       => rest.toString()
+          case rest: ujson.Value       => rest.render(2)
         }
 
       (getKey("result"), getKey("error")) match {
