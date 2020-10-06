@@ -131,6 +131,11 @@ to ensure the entire module is initialized correctly.</p>
    <span class="hljs-built_in"> network </span>= regtest # regtest, testnet3, mainnet, signet
 
     bitcoind-rpc {
+        # bitcoind rpc username
+        rpcuser =<span class="hljs-built_in"> user
+</span>        # bitcoind rpc password
+        rpcpassword = password
+
         # Binary location of bitcoind
         binary = <span class="hljs-variable">${HOME}</span>/.bitcoin-s/binaries/bitcoind/bitcoin-0.20.1/bin/bitcoind
         # bitcoind datadir
@@ -143,16 +148,12 @@ to ensure the entire module is initialized correctly.</p>
         rpcbind = localhost
         # bitcoind rpc<span class="hljs-built_in"> port
 </span>        rpcport = 8332
-        # bitcoind rpc username
-        rpcuser =<span class="hljs-built_in"> user
-</span>        # bitcoind rpc password
-        rpcpassword = password
         # bitcoind zmq<span class="hljs-built_in"> port </span><span class="hljs-keyword">for</span> all services
         zmqport = 29000
     }
 
     node {
-        mode = neutrino # neutrino, spv
+        mode = neutrino # neutrino, spv, bitcoind
 
         peers = [] # a list of<span class="hljs-built_in"> peer </span>addresses <span class="hljs-keyword">in</span> form <span class="hljs-string">"hostname:portnumber"</span>
         # (e.g. <span class="hljs-string">"neutrino.testnet3.suredbits.com:18333"</span>)
