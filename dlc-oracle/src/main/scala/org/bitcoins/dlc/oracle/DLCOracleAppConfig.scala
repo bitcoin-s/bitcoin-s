@@ -79,7 +79,7 @@ case class DLCOracleAppConfig(
     lazy val hasDb = this.driver match {
       case PostgreSQL => true
       case SQLite =>
-        Files.exists(baseDatadir.resolve("oracle.sqlite"))
+        Files.exists(datadir.resolve("oracle.sqlite"))
     }
     seedExists() && hasDb
   }

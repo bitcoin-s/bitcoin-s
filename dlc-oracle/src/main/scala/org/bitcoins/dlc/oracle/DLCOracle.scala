@@ -50,7 +50,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
   val publicKey: SchnorrPublicKey = signingKey.schnorrPublicKey
 
   def stakingAddress(network: BitcoinNetwork): Bech32Address =
-    Bech32Address(P2WPKHWitnessSPKV0(signingKey.publicKey), network)
+    Bech32Address(P2WPKHWitnessSPKV0(publicKey.publicKey), network)
 
   protected[bitcoins] val rValueDAO: RValueDAO = RValueDAO()
   protected[bitcoins] val eventDAO: EventDAO = EventDAO()
