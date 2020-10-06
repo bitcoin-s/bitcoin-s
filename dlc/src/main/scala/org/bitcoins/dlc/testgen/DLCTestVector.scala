@@ -2,6 +2,7 @@ package org.bitcoins.dlc.testgen
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   ContractInfo,
+  DLCAcceptWithoutSigs,
   DLCOffer,
   OracleInfo
 }
@@ -31,8 +32,11 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.testgen.DLCTLVGen.PreImageContractInfo
 import play.api.libs.json._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 sealed trait DLCTestVector extends TestVector
 
@@ -142,7 +146,30 @@ case class ValidTestInputs(
     params: DLCParams,
     offerParams: DLCPartyParams,
     acceptParams: DLCPartyParams) {
-  lazy val calcOffer: DLCOffer = offerParams.toOffer(params)
+  lazy val offer: DLCOffer = offerParams.toOffer(params)
+
+  lazy val accept: DLCAcceptWithoutSigs = DLCAcceptWithoutSigs(
+    acceptParams.collateral.satoshis,
+    DLCPublicKeys(acceptParams.fundingPrivKey.publicKey,
+                  acceptParams.payoutAddress),
+    acceptParams.fundingInputs,
+    acceptParams.changeAddress,
+    offer.tempContractId
+  )
+
+  def builder(implicit ec: ExecutionContext): DLCTxBuilder =
+    DLCTxBuilder(offer, accept)
+
+  def buildTransactions(implicit
+      ec: ExecutionContext): Future[DLCTransactions] = {
+    val builder = this.builder
+    for {
+      fundingTx <- builder.buildFundingTx
+      cetFs = params.contractInfo.map(_.outcome).map(builder.buildCET)
+      cets <- Future.sequence(cetFs)
+      refundTx <- builder.buildRefundTx
+    } yield DLCTransactions(fundingTx, cets, refundTx)
+  }
 }
 
 object ValidTestInputs {

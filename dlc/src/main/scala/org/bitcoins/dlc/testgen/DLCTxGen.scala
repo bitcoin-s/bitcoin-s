@@ -1,11 +1,6 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  DLCAcceptWithoutSigs,
-  DLCSign,
-  OracleInfo
-}
-import org.bitcoins.commons.jsonmodels.dlc.DLCPublicKeys
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCSign, OracleInfo}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
@@ -17,7 +12,6 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
-import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
 import scodec.bits.ByteVector
 
@@ -93,19 +87,26 @@ object DLCTxGen {
     ValidTestInputs(params, offerParams, acceptParams)
   }
 
+  def dlcTxTestVector(inputs: ValidTestInputs = validTestInputs())(implicit
+      ec: ExecutionContext): Future[DLCTxTestVector] = {
+    DLCTxTestVector.fromInputs(inputs)
+  }
+
+  def randomTxTestVector(numOutcomes: Int)(implicit
+      ec: ExecutionContext): Future[DLCTxTestVector] = {
+    val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
+    val contractInfo = genPreImageContractInfo(outcomes.map(_._1))
+
+    dlcTxTestVector(
+      validTestInputs(dlcParams(preImageContractInfo = contractInfo)))
+  }
+
   def successTestVector(inputs: ValidTestInputs = validTestInputs())(implicit
       ec: ExecutionContext): Future[SuccessTestVector] = {
-    val offer = inputs.calcOffer
-    val acceptWithoutSigs = DLCAcceptWithoutSigs(
-      inputs.acceptParams.collateral.satoshis,
-      DLCPublicKeys(inputs.acceptParams.fundingPrivKey.publicKey,
-                    inputs.acceptParams.payoutAddress),
-      inputs.acceptParams.fundingInputs,
-      inputs.acceptParams.changeAddress,
-      inputs.calcOffer.tempContractId
-    )
+    val offer = inputs.offer
+    val acceptWithoutSigs = inputs.accept
 
-    val builder = DLCTxBuilder(offer, acceptWithoutSigs)
+    val builder = inputs.builder
     val offerSigner = DLCTxSigner(builder,
                                   isInitiator = true,
                                   inputs.offerParams.fundingPrivKey,
@@ -124,10 +125,7 @@ object DLCTxGen {
       offerCETSigs <- offerSigner.createCETSigs()
       offerFundingSigs <- offerSigner.createFundingTxSigs()
 
-      fundingTx <- builder.buildFundingTx
-      cetFs = inputs.params.contractInfo.map(_.outcome).map(builder.buildCET)
-      cets <- Future.sequence(cetFs)
-      refundTx <- builder.buildRefundTx
+      DLCTransactions(fundingTx, cets, refundTx) <- inputs.buildTransactions
 
       signedFundingTx <- acceptSigner.signFundingTx(offerFundingSigs)
       signedRefundTx <- offerSigner.signRefundTx(accpetCETSigs.refundSig)
