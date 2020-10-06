@@ -14,6 +14,7 @@ import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -138,16 +139,17 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       nonce = getKValue(eventName, path, signingVersion).schnorrNonce
 
       hash = CryptoUtil.taggedSha256(
-        nonce.bytes ++ CryptoUtil.serializeForHash(eventName),
-        signingVersion.commitmentTag)
-      commitmentSig = signingKey.schnorrSign(hash.bytes)
+        nonce.bytes ++ CryptoUtil.serializeForHash(eventName) ++ ByteVector
+          .fromLong(maturationTime.getEpochSecond),
+        signingVersion.announcementTag)
+      announcementSignature = signingKey.schnorrSign(hash.bytes)
 
       rValueDb = RValueDbHelper(nonce = nonce,
                                 eventName = eventName,
                                 account = rValAccount,
                                 chainType = rValueChainIndex,
                                 keyIndex = index,
-                                commitmentSignature = commitmentSig)
+                                announcementSignature = announcementSignature)
 
       eventDb = EventDb(nonce,
                         publicKey,

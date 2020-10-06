@@ -74,7 +74,8 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
                   "numOutcomes" -> Num(event.numOutcomes.toDouble),
                   "signingVersion" -> Str(event.signingVersion.toString),
                   "maturationTime" -> Str(event.maturationTime.toString),
-                  "commitmentSignature" -> Str(event.commitmentSignature.hex),
+                  "announcementSignature" -> Str(
+                    event.announcementSignature.hex),
                   "attestation" -> attestationJson,
                   "signature" -> signatureJson,
                   "outcomes" -> outcomesJson
