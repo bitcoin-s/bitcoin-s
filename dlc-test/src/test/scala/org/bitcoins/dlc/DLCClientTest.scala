@@ -4,12 +4,17 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.DLCSign
 import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
+  IfConditionalScriptPubKey,
   MultiSignatureScriptPubKey,
+  NonStandardIfConditionalScriptPubKey,
+  P2PKScriptPubKey,
+  P2SHScriptPubKey,
   P2WPKHWitnessSPKV0,
+  P2WSHWitnessSPKV0,
   P2WSHWitnessV0
 }
 import org.bitcoins.core.protocol.transaction._
@@ -18,6 +23,7 @@ import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
+  P2SHNestedSegwitV0InputInfo,
   P2WPKHV0InputInfo,
   P2WSHV0InputInfo,
   ScriptSignatureParams
@@ -46,8 +52,16 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
   val inputPrivKeyLocal: ECPrivateKey = ECPrivateKey.freshPrivateKey
   val inputPubKeyLocal: ECPublicKey = inputPrivKeyLocal.publicKey
+  val inputPrivKeyLocal2A: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val inputPrivKeyLocal2B: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val inputPubKeyLocal2A: ECPublicKey = inputPrivKeyLocal2A.publicKey
+  val inputPubKeyLocal2B: ECPublicKey = inputPrivKeyLocal2B.publicKey
   val inputPrivKeyRemote: ECPrivateKey = ECPrivateKey.freshPrivateKey
   val inputPubKeyRemote: ECPublicKey = inputPrivKeyRemote.publicKey
+  val inputPrivKeyRemote2A: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val inputPrivKeyRemote2B: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val inputPubKeyRemote2A: ECPublicKey = inputPrivKeyRemote2A.publicKey
+  val inputPubKeyRemote2B: ECPublicKey = inputPrivKeyRemote2B.publicKey
 
   val blockTimeToday: BlockTime = BlockTime(
     UInt32(System.currentTimeMillis() / 1000))
@@ -56,8 +70,19 @@ class DLCClientTest extends BitcoinSAsyncTest {
     TransactionConstants.validLockVersion,
     Vector.empty,
     Vector(
-      TransactionOutput(localInput * 2,
+      TransactionOutput(localInput,
                         P2WPKHWitnessSPKV0(inputPrivKeyLocal.publicKey))),
+    UInt32.zero
+  )
+
+  val localNestedSPK: IfConditionalScriptPubKey =
+    NonStandardIfConditionalScriptPubKey(P2PKScriptPubKey(inputPubKeyLocal2A),
+                                         P2PKScriptPubKey(inputPubKeyLocal2B))
+
+  val localFundingTx2: Transaction = BaseTransaction(
+    TransactionConstants.validLockVersion,
+    Vector.empty,
+    Vector(TransactionOutput(localInput, P2WSHWitnessSPKV0(localNestedSPK))),
     UInt32.zero
   )
 
@@ -65,20 +90,56 @@ class DLCClientTest extends BitcoinSAsyncTest {
     ScriptSignatureParams(
       P2WPKHV0InputInfo(outPoint =
                           TransactionOutPoint(localFundingTx.txId, UInt32.zero),
-                        amount = localInput * 2,
+                        amount = localInput,
                         pubKey = inputPubKeyLocal),
       prevTransaction = localFundingTx,
       signer = inputPrivKeyLocal,
       hashType = HashType.sigHashAll
+    ),
+    ScriptSignatureParams(
+      P2WSHV0InputInfo(
+        outPoint = TransactionOutPoint(localFundingTx2.txId, UInt32.zero),
+        amount = localInput,
+        scriptWitness = P2WSHWitnessV0(localNestedSPK),
+        ConditionalPath.nonNestedTrue
+      ),
+      prevTransaction = localFundingTx2,
+      signer = inputPrivKeyLocal2A,
+      hashType = HashType.sigHashAll
     )
   )
+
+  val localFundingInputs: Vector[DLCFundingInput] =
+    Vector(
+      DLCFundingInputP2WPKHV0(localFundingTx,
+                              UInt32.zero,
+                              TransactionConstants.sequence),
+      DLCFundingInputP2WSHV0(localFundingTx2,
+                             UInt32.zero,
+                             TransactionConstants.sequence,
+                             maxWitnessLen =
+                               UInt16(localFundingUtxos.last.maxWitnessLen))
+    )
 
   val remoteFundingTx: Transaction = BaseTransaction(
     TransactionConstants.validLockVersion,
     Vector.empty,
     Vector(
-      TransactionOutput(remoteInput * 2,
+      TransactionOutput(remoteInput,
                         P2WPKHWitnessSPKV0(inputPrivKeyRemote.publicKey))),
+    UInt32.zero
+  )
+
+  val remoteNestedSPK: IfConditionalScriptPubKey =
+    NonStandardIfConditionalScriptPubKey(P2PKScriptPubKey(inputPubKeyRemote2A),
+                                         P2PKScriptPubKey(inputPubKeyRemote2B))
+
+  val remoteFundingTx2: Transaction = BaseTransaction(
+    TransactionConstants.validLockVersion,
+    Vector.empty,
+    Vector(
+      TransactionOutput(remoteInput,
+                        P2SHScriptPubKey(P2WSHWitnessSPKV0(remoteNestedSPK)))),
     UInt32.zero
   )
 
@@ -86,13 +147,38 @@ class DLCClientTest extends BitcoinSAsyncTest {
     ScriptSignatureParams(
       P2WPKHV0InputInfo(outPoint = TransactionOutPoint(remoteFundingTx.txId,
                                                        UInt32.zero),
-                        amount = remoteInput * 2,
+                        amount = remoteInput,
                         pubKey = inputPubKeyRemote),
       prevTransaction = remoteFundingTx,
       signer = inputPrivKeyRemote,
       hashType = HashType.sigHashAll
+    ),
+    ScriptSignatureParams(
+      P2SHNestedSegwitV0InputInfo(
+        outPoint = TransactionOutPoint(remoteFundingTx2.txId, UInt32.zero),
+        amount = remoteInput,
+        scriptWitness = P2WSHWitnessV0(remoteNestedSPK),
+        ConditionalPath.nonNestedTrue
+      ),
+      prevTransaction = remoteFundingTx2,
+      signer = inputPrivKeyRemote2A,
+      hashType = HashType.sigHashAll
     )
   )
+
+  val remoteFundingInputs: Vector[DLCFundingInput] =
+    Vector(
+      DLCFundingInputP2WPKHV0(remoteFundingTx,
+                              UInt32.zero,
+                              TransactionConstants.sequence),
+      DLCFundingInputP2SHSegwit(
+        prevTx = remoteFundingTx2,
+        prevTxVout = UInt32.zero,
+        sequence = TransactionConstants.sequence,
+        maxWitnessLen = UInt16(remoteFundingUtxos.last.maxWitnessLen),
+        redeemScript = P2WSHWitnessSPKV0(remoteNestedSPK)
+      )
+    )
 
   val localChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
     ECPublicKey.freshPublicKey)
@@ -107,18 +193,6 @@ class DLCClientTest extends BitcoinSAsyncTest {
   val acceptFundingPrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
 
   val acceptPayoutPrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
-
-  val localFundingInputs: Vector[DLCFundingInput] =
-    Vector(
-      DLCFundingInputP2WPKHV0(localFundingTx,
-                              UInt32.zero,
-                              TransactionConstants.sequence))
-
-  val remoteFundingInputs: Vector[DLCFundingInput] =
-    Vector(
-      DLCFundingInputP2WPKHV0(remoteFundingTx,
-                              UInt32.zero,
-                              TransactionConstants.sequence))
 
   val timeouts: DLCTimeouts =
     DLCTimeouts(blockTimeToday,

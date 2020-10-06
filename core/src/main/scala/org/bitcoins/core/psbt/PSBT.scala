@@ -211,8 +211,13 @@ case class PSBT(
           inputMap.redeemScriptOpt.isDefined && WitnessScriptPubKey
             .isWitnessScriptPubKey(
               inputMap.redeemScriptOpt.get.redeemScript.asm)
-        val notBIP143Vulnerable =
-          !out.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV0]
+        val notBIP143Vulnerable = {
+          !out.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV0] && !(
+            hasWitRedeemScript &&
+              inputMap.redeemScriptOpt.get.redeemScript
+                .isInstanceOf[WitnessScriptPubKeyV0]
+          )
+        }
 
         if (
           (outIsWitnessScript || hasWitScript || hasWitRedeemScript) && notBIP143Vulnerable
@@ -372,7 +377,14 @@ case class PSBT(
     require(
       prevInput.elements.forall {
         case _: NonWitnessOrUnknownUTXO | _: WitnessUTXO | _: Unknown => true
-        case _: InputPSBTRecord                                       => false
+        case redeemScript: RedeemScript                               =>
+          // RedeemScript is okay if it matches the script signature given
+          redeemScript.redeemScript match {
+            case _: NonWitnessScriptPubKey => false
+            case wspk: WitnessScriptPubKey =>
+              P2SHScriptSignature(wspk) == scriptSignature
+          }
+        case _: InputPSBTRecord => false
       },
       s"Input already contains fields: ${prevInput.elements}"
     )
@@ -380,7 +392,9 @@ case class PSBT(
     val finalizedScripts = Vector(FinalizedScriptSig(scriptSignature),
                                   FinalizedScriptWitness(scriptWitness))
 
-    val records = prevInput.elements ++ finalizedScripts
+    // Replace RedeemScripts with FinalizedScriptSignatures and add FinalizedScriptWitnesses
+    val records = prevInput.elements.filterNot(
+      _.isInstanceOf[RedeemScript]) ++ finalizedScripts
     val newMap = InputPSBTMap(records)
     val newInputMaps = inputMaps.updated(index, newMap)
     PSBT(globalMap, newInputMaps, outputMaps)
@@ -831,6 +845,30 @@ object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
     val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
 
     PSBT(globalMap, inputMaps, outputMaps)
+  }
+
+  def fromUnsignedTxWithP2SHScript(tx: Transaction): PSBT = {
+    val inputs = tx.inputs.toVector
+    val utxInputs = inputs.map { input =>
+      TransactionInput(input.previousOutput,
+                       EmptyScriptSignature,
+                       input.sequence)
+    }
+    val utx = BaseTransaction(tx.version, utxInputs, tx.outputs, tx.lockTime)
+    val psbt = fromUnsignedTx(utx)
+
+    val p2shScriptSigs = inputs
+      .map(_.scriptSignature)
+      .zipWithIndex
+      .collect {
+        case (p2sh: P2SHScriptSignature, index) => (p2sh, index)
+      }
+      .filter(_._1.scriptSignatureNoRedeemScript == EmptyScriptSignature)
+
+    p2shScriptSigs.foldLeft(psbt) {
+      case (psbtSoFar, (p2sh, index)) =>
+        psbtSoFar.addRedeemOrWitnessScriptToInput(p2sh.redeemScript, index)
+    }
   }
 
   /** Constructs a full (ready to be finalized) but unfinalized PSBT from an

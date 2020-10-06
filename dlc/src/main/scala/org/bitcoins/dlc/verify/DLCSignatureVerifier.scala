@@ -32,7 +32,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
       (0, builder.offerFundingInputs)
     }
 
-    val psbt = PSBT.fromUnsignedTx(fundingTx)
+    val psbt = PSBT.fromUnsignedTxWithP2SHScript(fundingTx)
 
     remoteSigs.zipWithIndex
       .foldLeft(true) {

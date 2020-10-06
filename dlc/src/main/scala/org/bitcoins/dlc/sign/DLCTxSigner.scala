@@ -9,17 +9,8 @@ import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.TransactionSignatureSerializer
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{
-  MultiSignatureScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WPKHWitnessV0,
-  P2WSHWitnessV0
-}
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TxUtil
-}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
@@ -86,19 +77,38 @@ case class DLCTxSigner(
   /** Creates this party's FundingSignatures */
   def createFundingTxSigs(): Future[FundingSignatures] = {
     val sigFs =
-      Vector.newBuilder[Future[(TransactionOutPoint, P2WPKHWitnessV0)]]
+      Vector.newBuilder[Future[(TransactionOutPoint, ScriptWitnessV0)]]
 
     for {
       fundingTx <- builder.buildFundingTx
 
       _ = {
         fundingUtxos.foreach { utxo =>
-          utxo.toSingles.foreach { utxoSingle =>
-            val sigF = BitcoinSigner.signSingle(utxoSingle,
-                                                fundingTx,
-                                                isDummySignature = false)
-            sigFs += sigF.map(sig =>
-              (utxo.outPoint, P2WPKHWitnessV0(sig.pubKey, sig.signature)))
+          val sigComponentF =
+            BitcoinSigner.sign(utxo, fundingTx, isDummySignature = false)
+          val witnessF = sigComponentF.flatMap { sigComponent =>
+            sigComponent.transaction match {
+              case wtx: WitnessTransaction =>
+                val witness = wtx.witness(sigComponent.inputIndex.toInt)
+                if (witness == EmptyScriptWitness) {
+                  Future.failed(
+                    new RuntimeException(
+                      s"Funding Inputs must be SegWit: $utxo"))
+                } else {
+                  Future.successful(witness)
+                }
+              case _: NonWitnessTransaction =>
+                Future.failed(
+                  new RuntimeException(s"Funding Inputs must be SegWit: $utxo"))
+            }
+          }
+
+          sigFs += witnessF.flatMap {
+            case witness: ScriptWitnessV0 =>
+              Future.successful((utxo.outPoint, witness))
+            case witness: ScriptWitness =>
+              Future.failed(
+                new RuntimeException(s"Unrecognized script witness: $witness"))
           }
         }
       }
@@ -130,7 +140,8 @@ case class DLCTxSigner(
       allSigs = localSigs.merge(remoteSigs)
       fundingTx <- builder.buildFundingTx
     } yield {
-      fundingInputs.zipWithIndex.foldLeft(PSBT.fromUnsignedTx(fundingTx)) {
+      fundingInputs.zipWithIndex.foldLeft(
+        PSBT.fromUnsignedTxWithP2SHScript(fundingTx)) {
         case (psbt, (fundingInput, index)) =>
           val witness = allSigs(fundingInput.outPoint)
 

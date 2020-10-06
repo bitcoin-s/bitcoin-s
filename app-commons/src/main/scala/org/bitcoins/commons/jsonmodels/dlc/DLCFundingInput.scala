@@ -5,7 +5,9 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.FundingInputV0TLV
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.DualFundingInput
-import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
+import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
+
+import scala.concurrent.ExecutionContext
 
 sealed trait DLCFundingInput {
   def prevTx: Transaction
@@ -73,8 +75,8 @@ object DLCFundingInput {
               "P2SH input requires a redeem script")
         }
       case _: P2WPKHWitnessSPKV0 =>
-        require(maxWitnessLen == UInt16(108),
-                s"P2WPKH max witness length must be 108, got $maxWitnessLen")
+        require(maxWitnessLen == UInt16(107),
+                s"P2WPKH max witness length must be 107, got $maxWitnessLen")
         DLCFundingInputP2WPKHV0(prevTx, prevTxVout, sequence)
       case _: P2WSHWitnessSPKV0 =>
         DLCFundingInputP2WSHV0(prevTx, prevTxVout, sequence, maxWitnessLen)
@@ -96,13 +98,14 @@ object DLCFundingInput {
   }
 
   def fromInputSigningInfo(
-      info: InputSigningInfo[InputInfo],
-      sequence: UInt32 = TransactionConstants.sequence): DLCFundingInput = {
+      info: ScriptSignatureParams[InputInfo],
+      sequence: UInt32 = TransactionConstants.sequence)(implicit
+      ec: ExecutionContext): DLCFundingInput = {
     DLCFundingInput(
       info.prevTransaction,
       info.outPoint.vout,
       sequence,
-      maxWitnessLen = UInt16(108),
+      maxWitnessLen = UInt16(info.maxWitnessLen),
       InputInfo
         .getRedeemScript(info.inputInfo)
         .asInstanceOf[Option[WitnessScriptPubKey]]
@@ -118,7 +121,7 @@ case class DLCFundingInputP2WPKHV0(
   require(output.scriptPubKey.isInstanceOf[P2WPKHWitnessSPKV0],
           s"Funding input not P2WPKH: ${output.scriptPubKey}")
 
-  override val maxWitnessLen: UInt16 = UInt16(108)
+  override val maxWitnessLen: UInt16 = UInt16(107)
   override val redeemScriptOpt: Option[WitnessScriptPubKey] = None
 }
 
