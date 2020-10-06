@@ -113,7 +113,7 @@ case class ScriptSignatureParams[+InputType <: InputInfo](
         case _: NonWitnessTransaction => 0
       }
 
-    Await.result(maxWitnessLenF, 5.seconds)
+    Await.result(maxWitnessLenF, 10.seconds)
   }
 }
 
