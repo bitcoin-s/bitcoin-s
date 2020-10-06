@@ -1,4 +1,4 @@
-package org.bitcoins.dlc.oracle
+package org.bitcoins.commons.dlc
 
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.testkit.util.BitcoinSUnitTest
