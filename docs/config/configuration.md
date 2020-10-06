@@ -92,6 +92,11 @@ bitcoin-s {
     network = regtest # regtest, testnet3, mainnet, signet
 
     bitcoind-rpc {
+        # bitcoind rpc username
+        rpcuser = user
+        # bitcoind rpc password
+        rpcpassword = password
+
         # Binary location of bitcoind
         binary = ${HOME}/.bitcoin-s/binaries/bitcoind/bitcoin-0.20.1/bin/bitcoind
         # bitcoind datadir
@@ -104,16 +109,12 @@ bitcoin-s {
         rpcbind = localhost
         # bitcoind rpc port
         rpcport = 8332
-        # bitcoind rpc username
-        rpcuser = user
-        # bitcoind rpc password
-        rpcpassword = password
         # bitcoind zmq port for all services
         zmqport = 29000
     }
 
     node {
-        mode = neutrino # neutrino, spv
+        mode = neutrino # neutrino, spv, bitcoind
 
         peers = [] # a list of peer addresses in form "hostname:portnumber"
         # (e.g. "neutrino.testnet3.suredbits.com:18333")
