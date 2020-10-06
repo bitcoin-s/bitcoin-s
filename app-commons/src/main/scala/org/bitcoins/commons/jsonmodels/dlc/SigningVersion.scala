@@ -4,17 +4,17 @@ import org.bitcoins.crypto.StringFactory
 
 sealed abstract class SigningVersion {
   def nonceTag: String
-  def commitmentTag: String
+  def announcementTag: String
   def outcomeTag: String
 }
 
 object SigningVersion extends StringFactory[SigningVersion] {
 
-  /** Initial signing version that was created with krystal bull, not a part of any spec */
+  /** Initial signing version that was created, not a part of any spec */
   final case object Mock extends SigningVersion {
     override def nonceTag: String = "DLCv0/Nonce"
 
-    override def commitmentTag: String = "DLCv0/Commitment"
+    override def announcementTag: String = "DLCv0/Announcement"
 
     override def outcomeTag: String = "DLCv0/Outcome"
   }

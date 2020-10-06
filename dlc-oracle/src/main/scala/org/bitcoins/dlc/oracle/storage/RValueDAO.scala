@@ -55,8 +55,8 @@ case class RValueDAO()(implicit
 
     def keyIndex: Rep[Int] = column("key_index", O.Unique)
 
-    def commitmentSignature: Rep[SchnorrDigitalSignature] =
-      column("commitment_signature")
+    def announcementSignature: Rep[SchnorrDigitalSignature] =
+      column("announcement_signature")
 
     def * : ProvenShape[RValueDb] =
       (nonce,
@@ -66,6 +66,6 @@ case class RValueDAO()(implicit
        accountIndex,
        chainType,
        keyIndex,
-       commitmentSignature).<>(RValueDb.tupled, RValueDb.unapply)
+       announcementSignature).<>(RValueDb.tupled, RValueDb.unapply)
   }
 }

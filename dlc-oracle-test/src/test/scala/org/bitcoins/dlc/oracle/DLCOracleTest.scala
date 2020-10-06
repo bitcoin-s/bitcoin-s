@@ -11,6 +11,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.testkit.core.gen.ChainParamsGenerator
 import org.bitcoins.testkit.fixtures.DLCOracleFixture
+import scodec.bits.ByteVector
 
 class DLCOracleTest extends DLCOracleFixture {
 
@@ -88,7 +89,7 @@ class DLCOracleTest extends DLCOracleFixture {
     }
   }
 
-  it must "create a new event with a valid commitment signature" in {
+  it must "create a new event with a valid announcement signature" in {
     dlcOracle: DLCOracle =>
       for {
         testEventDb <-
@@ -98,10 +99,13 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(rValDbOpt.isDefined)
         val rValDb = rValDbOpt.get
         val hash = CryptoUtil.taggedSha256(
-          rValDb.nonce.bytes ++ CryptoUtil.serializeForHash(rValDb.eventName),
-          "DLCv0/Commitment")
+          rValDb.nonce.bytes ++ CryptoUtil.serializeForHash(
+            rValDb.eventName) ++ ByteVector.fromLong(
+            testEventDb.maturationTime.getEpochSecond),
+          SigningVersion.latest.announcementTag
+        )
         assert(
-          dlcOracle.publicKey.verify(hash.bytes, rValDb.commitmentSignature))
+          dlcOracle.publicKey.verify(hash.bytes, rValDb.announcementSignature))
       }
   }
 

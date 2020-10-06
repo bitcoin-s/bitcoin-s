@@ -11,7 +11,7 @@ case class RValueDb(
     accountIndex: Int,
     chainType: Int,
     keyIndex: Int,
-    commitmentSignature: SchnorrDigitalSignature) {
+    announcementSignature: SchnorrDigitalSignature) {
 
   val path: BIP32Path = BIP32Path.fromString(
     s"m/${purpose.constant}'/${accountCoin.toInt}'/$accountIndex'/$chainType'/$keyIndex'")
@@ -25,7 +25,7 @@ object RValueDbHelper {
       account: HDAccount,
       chainType: Int,
       keyIndex: Int,
-      commitmentSignature: SchnorrDigitalSignature): RValueDb = {
+      announcementSignature: SchnorrDigitalSignature): RValueDb = {
     RValueDb(nonce,
              eventName,
              account.purpose,
@@ -33,6 +33,6 @@ object RValueDbHelper {
              account.index,
              chainType,
              keyIndex,
-             commitmentSignature)
+             announcementSignature)
   }
 }
