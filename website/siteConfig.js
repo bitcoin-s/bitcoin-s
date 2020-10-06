@@ -167,7 +167,7 @@ const siteConfig = {
   // custom keys begin
   repoUrl: "https://github.com/bitcoin-s/bitcoin-s",
   suredbitsSlack:
-    "https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM",
+    "https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw",
   gitterUrl: "https://gitter.im/bitcoin-s-core/",
   // avoid showing "root" as default Scaladoc page
   scaladocUrl
