@@ -226,4 +226,19 @@ class DLCOracleTest extends DLCOracleFixture {
         } yield ()
       }
   }
+
+  it must "fail to create an event with no outcomes" in {
+    dlcOracle: DLCOracle =>
+      assertThrows[IllegalArgumentException] {
+        dlcOracle.createNewEvent("test", TimeUtil.now, Vector.empty)
+      }
+  }
+
+  it must "fail to create an event with duplicate outcomes" in {
+    dlcOracle: DLCOracle =>
+      val outcomes = testOutcomes :+ testOutcomes.head
+      assertThrows[IllegalArgumentException] {
+        dlcOracle.createNewEvent("test", TimeUtil.now, outcomes)
+      }
+  }
 }
