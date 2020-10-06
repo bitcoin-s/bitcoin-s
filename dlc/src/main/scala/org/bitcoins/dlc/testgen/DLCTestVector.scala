@@ -169,13 +169,9 @@ case class SuccessTestVector(
   override def toJson: JsValue = {
     Json.toJson(this)(SuccessTestVector.successTestVectorFormat)
   }
-
-  def toJsonStr: String = {
-    Json.prettyPrint(toJson)
-  }
 }
 
-object SuccessTestVector {
+object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
 
   def hexFormat[T <: NetworkElement](factory: Factory[T]): Format[T] =
     Format[T](
@@ -259,11 +255,7 @@ object SuccessTestVector {
   implicit val successTestVectorFormat: Format[SuccessTestVector] =
     Json.format[SuccessTestVector]
 
-  def fromJson(json: JsValue): JsResult[SuccessTestVector] = {
+  override def fromJson(json: JsValue): JsResult[SuccessTestVector] = {
     json.validate[SuccessTestVector]
-  }
-
-  def fromString(str: String): JsResult[SuccessTestVector] = {
-    fromJson(Json.parse(str))
   }
 }
