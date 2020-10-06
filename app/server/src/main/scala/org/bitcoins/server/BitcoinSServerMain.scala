@@ -21,6 +21,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val args: Array[String])
@@ -141,9 +142,35 @@ class BitcoinSServerMain(override val args: Array[String])
           tmpWallet)
         _ = logger.info("Starting wallet")
 
-        zmq = BitcoindRpcBackendUtil.createZMQWalletCallbacks(wallet)
+        blockCount <- bitcoind.getBlockCount
+        // Create callbacks for processing new blocks
+        _ = bitcoindRpcConf.zmqPortOpt match {
+          case Some(_) =>
+            val zmq = BitcoindRpcBackendUtil.createZMQWalletCallbacks(wallet)
+            zmq.start()
+          case None =>
+            var prevCount = blockCount
+            system.scheduler.scheduleWithFixedDelay(0.seconds, 10.seconds) {
+              () =>
+                {
+                  bitcoind.getBlockCount.flatMap { count =>
+                    if (prevCount != count) {
+                      val range = prevCount.to(count)
 
-        _ = zmq.start()
+                      val hashFs =
+                        range.map(bitcoind.getBlockHash(_).map(_.flip))
+                      prevCount = count
+                      for {
+                        hashes <- Future.sequence(hashFs)
+                        _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
+                      } yield ()
+                    } else FutureUtil.unit
+                  }
+                  ()
+                }
+            }
+        }
+
         _ <- wallet.start()
         binding <- startHttpServer(bitcoind, bitcoind, wallet, rpcPortOpt)
         _ = BitcoinSServer.startedFP.success(Future.successful(binding))

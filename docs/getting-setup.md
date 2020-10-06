@@ -149,7 +149,7 @@ and once this is done, you should be able to communicate with the server using
 If you already have a bitcoind node running and would like to connect your bitcoin-s server to it you can set your node's mode to `bitcoind`.
 
 You will need to configure bitcoin-s to be able to find your bitcoind.
-If you would only like bitcoin-s to connect to bitcoind and start it itself then you only need to properly set the `rpcuser`, `rpcpassword`, and `zmqport` options.
+If you would only like bitcoin-s to connect to bitcoind and start it itself then you only need to properly set the `rpcuser`, and `rpcpassword` options.
 If you would like bitcoin-s to launch bitcoind on start up you will need to set the other configuration options.
 These options should default to use the latest bitcoind downloaded from `sbt downloadBitcoind`.
 

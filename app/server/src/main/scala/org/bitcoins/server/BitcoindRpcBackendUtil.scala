@@ -44,8 +44,10 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
   def createZMQWalletCallbacks(wallet: Wallet)(implicit
       bitcoindRpcConf: BitcoindRpcAppConfig): ZMQSubscriber = {
+    require(bitcoindRpcConf.zmqPortOpt.isDefined,
+            "Must have the zmq port defined to setup ZMQ callbacks")
     val zmqSocket =
-      new InetSocketAddress("tcp://127.0.0.1", bitcoindRpcConf.zmqPort)
+      new InetSocketAddress("tcp://127.0.0.1", bitcoindRpcConf.zmqPortOpt.get)
 
     val rawTxListener: Option[Transaction => Unit] = Some {
       { tx: Transaction =>
