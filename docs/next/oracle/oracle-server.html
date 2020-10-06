@@ -1,0 +1,175 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Oracle Server · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="The Oracle Server is a DLC Oracle with functionality for creating events and attesting to them."/><meta name="docsearch:version" content="next"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Oracle Server · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="The Oracle Server is a DLC Oracle with functionality for creating events and attesting to them."/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+              (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+              (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+              m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+              })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+              ga('create', 'UA-61958686-2', 'auto');
+              ga('send', 'pageview');
+            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>next</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/next/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>DLC Oracle</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/getting-started">Intro and Getting Started</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/applications/cli">CLI</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/server">Application Server</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/gui">GUI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/next/chain/filter-sync">Syncing Blockfilters</a></li><li class="navListItem"><a class="navItem" href="/docs/next/chain/chain-query-api">Chain Query API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/hd-keys">HD Key Generation</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/txbuilder">TxBuilder Example</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/lightning-network">Lightning Network Data Types</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Crypto Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/crypto/crypto-intro">Crypto Module</a></li><li class="navListItem"><a class="navItem" href="/docs/next/crypto/sign">Sign API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Fee Provider</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/fee-provider/fee-provider">Fee Provider</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/node/node">Light Client</a></li><li class="navListItem"><a class="navItem" href="/docs/next/node/node-api">Node API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/next/wallet/wallet-callbacks">Wallet Callbacks</a></li><li class="navListItem"><a class="navItem" href="/docs/next/wallet/wallet-get-address">Wallet Get Address APIs</a></li><li class="navListItem"><a class="navItem" href="/docs/next/wallet/address-tagging">Address and UTXO tagging</a></li><li class="navListItem"><a class="navItem" href="/docs/next/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/next/wallet/wallet-rescan">Wallet Rescans</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/secp256k1/secp256k1">Secp256k1</a></li><li class="navListItem"><a class="navItem" href="/docs/next/secp256k1/jni-modify">Adding to Secp256k1 JNI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/testkit/testkit">Testkit</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">DLC Oracle</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/next/oracle/oracle-server">Oracle Server</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/next/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/security">Security</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/oracle/oracle-server.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Oracle Server</h1></header><article><div><span><p>The Oracle Server is a DLC Oracle with functionality for creating events and attesting to them.
+It also provides data to be able to set up your staking address.</p>
+<h3><a class="anchor" aria-hidden="true" id="building-the-oracle-server"></a><a href="#building-the-oracle-server" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Building the Oracle Server</h3>
+<p>You can build the oracle server with the <a href="https://github.com/sbt/sbt-native-packager">sbt native packager</a>.
+The native packager offers <a href="https://github.com/sbt/sbt-native-packager#examples">numerous ways to package the project</a>.</p>
+<p>In this example we are going to use <code>stage</code> which will produce bash scripts we can easily execute. You can stage the server with the following command.</p>
+<pre><code class="hljs css language-bash">sbt oracleServer/universal:stage
+</code></pre>
+<p>This will produce a script to execute bitcoin-s which you can start with</p>
+<pre><code class="hljs css language-bash">./app/oracle-server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-oracle-server
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="configuration"></a><a href="#configuration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Configuration</h3>
+<p>If you would like to pass in a custom datadir for your server, you can do</p>
+<pre><code class="hljs css language-bash">./app/oracle-server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-oracle-server --datadir /path/to/datadir/
+</code></pre>
+<p>To use a config file that is not the <code>bitcoin-s.conf</code> file in your datadir, you can do</p>
+<pre><code class="hljs css language-bash">./app/oracle-server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-oracle-server --conf /path/to/file.conf
+</code></pre>
+<p>You can also pass in a custom <code>rpcport</code> to bind to</p>
+<pre><code class="hljs css language-bash">./app/oracle-server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-oracle-server --rpcport 12345
+</code></pre>
+<p>For more information on configuring the server please see our <a href="/docs/next/config/configuration">configuration</a> document</p>
+<p>For more information on how to use our built in <code>cli</code> to interact with the server please see <a href="/docs/next/applications/cli">cli.md</a></p>
+<h3><a class="anchor" aria-hidden="true" id="server-endpoints"></a><a href="#server-endpoints" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Server Endpoints</h3>
+<ul>
+<li><code>getpublickey</code> - Get oracle's public key</li>
+<li><code>getstakingaddress</code> - Get oracle's staking address</li>
+<li><code>listevents</code> - Lists all event nonces</li>
+<li><code>createevent</code> <code>label</code> <code>maturationtime</code> <code>outcomes</code> - Registers an oracle event
+<ul>
+<li><code>label</code> - Label for this event</li>
+<li><code>maturationtime</code> - The earliest expected time an outcome will be signed, given in epoch second</li>
+<li><code>outcomes</code> - Possible outcomes for this event</li>
+</ul></li>
+<li><code>getevent</code> <code>nonce</code> - Get an event's details
+<ul>
+<li><code>nonce</code> - Nonce associated with the event</li>
+</ul></li>
+<li><code>signevent</code> <code>nonce</code> <code>outcome</code> - Signs an event
+<ul>
+<li><code>nonce</code> - Nonce associated with the event to sign</li>
+<li><code>outcome</code>- Outcome to sign for this event</li>
+</ul></li>
+<li><code>getsignature</code> <code>nonce</code> - Get the signature from a signed event
+<ul>
+<li><code>nonce</code> - Nonce associated with the signed event</li>
+</ul></li>
+</ul>
+<h4><a class="anchor" aria-hidden="true" id="create-event-example"></a><a href="#create-event-example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Create Event Example</h4>
+<p>Bitcoin-S CLI:</p>
+<pre><code class="hljs css language-bash">$ bitcoin<span class="hljs-_">-s</span>-cli createevent testevent 1601917137 <span class="hljs-string">"outcome 1,outcome 2,outcome 3"</span>
+a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa
+
+$ bitcoin<span class="hljs-_">-s</span>-cli getevent a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa
+{
+  <span class="hljs-string">"nonce"</span>: <span class="hljs-string">"a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa"</span>,
+  <span class="hljs-string">"eventName"</span>: <span class="hljs-string">"testevent"</span>,
+  <span class="hljs-string">"numOutcomes"</span>: 3,
+  <span class="hljs-string">"signingVersion"</span>: <span class="hljs-string">"Mock"</span>,
+  <span class="hljs-string">"maturationTime"</span>: <span class="hljs-string">"2020-10-05T16:58:57Z"</span>,
+  <span class="hljs-string">"announcementSignature"</span>: <span class="hljs-string">"1533265899006003fa79dc0d480061c3378bc634ec041efc97fc70827f3a1c9f30e05373f36c2e2dd9d2ad64d8aaee17fef724af2284b87724b949d48846920c"</span>,
+  <span class="hljs-string">"attestation"</span>: <span class="hljs-string">""</span>,
+  <span class="hljs-string">"signature"</span>: <span class="hljs-string">""</span>,
+  <span class="hljs-string">"outcomes"</span>: [
+    <span class="hljs-string">"outcome 1"</span>,
+    <span class="hljs-string">"outcome 2"</span>,
+    <span class="hljs-string">"outcome 3"</span>
+  ]
+}
+</code></pre>
+<p>CURL:</p>
+<pre><code class="hljs css language-bash">$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "createevent", "params": ["testEvent", 1601917137, ["outcome 1", "outcome 2", "outcome 3"]]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
+{<span class="hljs-string">"result"</span>:<span class="hljs-string">"28592661c78a3c2e0a568e92122e146022cb018b6b0ac888cdffc70a506e9ad2"</span>,<span class="hljs-string">"error"</span>:null}
+
+$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "getevent", "params": ["28592661c78a3c2e0a568e92122e146022cb018b6b0ac888cdffc70a506e9ad2"]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
+{<span class="hljs-string">"result"</span>:{<span class="hljs-string">"nonce"</span>:<span class="hljs-string">"28592661c78a3c2e0a568e92122e146022cb018b6b0ac888cdffc70a506e9ad2"</span>,<span class="hljs-string">"eventName"</span>:<span class="hljs-string">"testEvent"</span>,<span class="hljs-string">"numOutcomes"</span>:3,<span class="hljs-string">"signingVersion"</span>:<span class="hljs-string">"Mock"</span>,<span class="hljs-string">"maturationTime"</span>:<span class="hljs-string">"2020-10-05T16:58:57Z"</span>,<span class="hljs-string">"commitmentSignature"</span>:<span class="hljs-string">"a91499fa83ca607b06bb919284e002452d6c8f396295495586886b1f7e6d6f094c7d1504f35ee2210a036313569c1951aada6b3d52248f77c7e2c5836a970dd7"</span>,<span class="hljs-string">"attestation"</span>:<span class="hljs-string">""</span>,<span class="hljs-string">"signature"</span>:<span class="hljs-string">""</span>,<span class="hljs-string">"outcomes"</span>:[<span class="hljs-string">"outcome 1"</span>,<span class="hljs-string">"outcome 2"</span>,<span class="hljs-string">"outcome 3"</span>]},<span class="hljs-string">"error"</span>:null}
+</code></pre>
+<h4><a class="anchor" aria-hidden="true" id="sign-event-example"></a><a href="#sign-event-example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Sign Event Example</h4>
+<p>Bitcoin-S CLI:</p>
+<pre><code class="hljs css language-bash">$ bitcoin<span class="hljs-_">-s</span>-cli signevent a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa <span class="hljs-string">"outcome 1"</span>
+a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aabddd069a3295eb8e02a8a89de4b50b063ffeb290e5d1c6ea3e4e21efb2ad208f
+
+$ bitcoin<span class="hljs-_">-s</span>-cli getsignature a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa
+a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aabddd069a3295eb8e02a8a89de4b50b063ffeb290e5d1c6ea3e4e21efb2ad208f
+</code></pre>
+<p>CURL:</p>
+<pre><code class="hljs css language-bash">$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "signevent", "params": ["a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa", "outcome 1"]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
+{<span class="hljs-string">"result"</span>:<span class="hljs-string">"a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aabddd069a3295eb8e02a8a89de4b50b063ffeb290e5d1c6ea3e4e21efb2ad208f"</span>,<span class="hljs-string">"error"</span>:null}
+
+$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "getsignature", "params": ["a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa"]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
+{<span class="hljs-string">"result"</span>:<span class="hljs-string">"a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aabddd069a3295eb8e02a8a89de4b50b063ffeb290e5d1c6ea3e4e21efb2ad208f"</span>,<span class="hljs-string">"error"</span>:null}
+</code></pre>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/testkit/testkit"><span class="arrow-prev">← </span><span>Testkit</span></a><a class="docs-next button" href="/docs/next/contributing"><span>Contributing</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '0a510688bf8448e19aeb380377d328d3',
+                indexName: 'bitcoin-s',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>
