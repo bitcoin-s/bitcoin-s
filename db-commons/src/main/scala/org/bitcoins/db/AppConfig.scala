@@ -184,16 +184,21 @@ object AppConfig extends BitcoinSLogger {
   def getBaseConfig(
       baseDatadir: Path,
       configOverrides: List[Config] = List.empty): Config = {
+    val configOptions =
+      ConfigParseOptions
+        .defaults()
+        .setClassLoader(getClass().getClassLoader())
     val datadirConfig = {
       val file = baseDatadir.resolve("bitcoin-s.conf")
       val config = if (Files.isReadable(file)) {
-        ConfigFactory.parseFile(file.toFile)
+        ConfigFactory.parseFile(file.toFile, configOptions)
       } else {
         ConfigFactory.empty()
       }
 
       val withDatadir =
-        ConfigFactory.parseString(s"bitcoin-s.datadir = $baseDatadir")
+        ConfigFactory.parseString(s"bitcoin-s.datadir = $baseDatadir",
+                                  configOptions)
       withDatadir.withFallback(config)
     }
 
@@ -201,8 +206,10 @@ object AppConfig extends BitcoinSLogger {
     // provided configs also has been loaded. .parseResources() does not do that
     // whereas .load() does
     val classPathConfig = {
-      val applicationConf = ConfigFactory.parseResources("application.conf")
-      val referenceConf = ConfigFactory.parseResources("reference.conf")
+      val applicationConf =
+        ConfigFactory.parseResources("application.conf", configOptions)
+      val referenceConf =
+        ConfigFactory.parseResources("reference.conf", configOptions)
       applicationConf.withFallback(referenceConf)
     }
 
