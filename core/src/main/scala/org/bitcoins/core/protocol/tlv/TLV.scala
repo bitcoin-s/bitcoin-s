@@ -3,7 +3,12 @@ package org.bitcoins.core.protocol.tlv
 import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.tlv.TLV.DecodeTLVResult
-import org.bitcoins.crypto.{Factory, NetworkElement}
+import org.bitcoins.crypto.{
+  Factory,
+  NetworkElement,
+  SchnorrNonce,
+  SchnorrPublicKey
+}
 import scodec.bits.ByteVector
 
 sealed trait TLV extends NetworkElement {
@@ -144,5 +149,28 @@ object PongTLV extends TLVFactory[PongTLV] {
 
   def forIgnored(ignored: ByteVector): PongTLV = {
     new PongTLV(ignored)
+  }
+}
+
+sealed trait OracleInfoTLV extends TLV
+
+case class OracleInfoV0TLV(pubKey: SchnorrPublicKey, rValue: SchnorrNonce)
+    extends OracleInfoTLV {
+  override def tpe: BigSizeUInt = OracleInfoV0TLV.tpe
+
+  override val value: ByteVector = {
+    pubKey.bytes ++ rValue.bytes
+  }
+}
+
+object OracleInfoV0TLV extends TLVFactory[OracleInfoV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42770)
+
+  override def fromTLVValue(value: ByteVector): OracleInfoV0TLV = {
+    val (pubKeyBytes, rBytes) = value.splitAt(32)
+    val pubKey = SchnorrPublicKey(pubKeyBytes)
+    val rValue = SchnorrNonce(rBytes)
+
+    OracleInfoV0TLV(pubKey, rValue)
   }
 }
