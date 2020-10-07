@@ -52,6 +52,8 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
 
   lazy val password: String = dbConfig.config.getString("db.password")
 
+  lazy val numThreads: Int = dbConfig.config.getInt("db.numThreads")
+
   /** The database we are connecting to */
   lazy val database: Database = {
     dbConfig.db

@@ -133,7 +133,12 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
     logger.debug(s"Resolved bitcoin-s config:")
     logger.debug(finalConfig.asReadableJson)
 
-    val resolved = finalConfig.resolve()
+    val resolved = {
+      ConfigFactory
+        .defaultOverrides()
+        .withFallback(finalConfig)
+        .resolve()
+    }
 
     resolved.checkValid(ConfigFactory.defaultReference(), "bitcoin-s")
 
@@ -156,8 +161,10 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
   lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
     Try {
-      DatabaseConfig.forConfig[JdbcProfile](path = s"bitcoin-s.$moduleName",
-                                            config = config)
+      val c = DatabaseConfig.forConfig[JdbcProfile](path =
+                                                      s"bitcoin-s.$moduleName",
+                                                    config = config)
+      c
     } match {
       case Success(value) =>
         value
@@ -235,7 +242,6 @@ object AppConfig extends BitcoinSLogger {
       } else {
         unresolvedConfig
       }
-
     withOverrides
   }
 
