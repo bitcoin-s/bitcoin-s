@@ -1,9 +1,12 @@
 package org.bitcoins.core.protocol.tlv
 
-import org.bitcoins.core.number.UInt16
+import java.nio.charset.StandardCharsets
+
+import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol.BigSizeUInt
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.tlv.TLV.DecodeTLVResult
-import org.bitcoins.crypto.{Factory, NetworkElement}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 sealed trait TLV extends NetworkElement {
@@ -41,7 +44,11 @@ object TLV extends Factory[TLV] {
   }
 
   private val allFactories: Vector[TLVFactory[TLV]] =
-    Vector(ErrorTLV, PingTLV, PongTLV)
+    Vector(ErrorTLV,
+           PingTLV,
+           PongTLV,
+           OracleEventV0TLV,
+           OracleAnnouncementV0TLV)
 
   val knownTypes: Vector[BigSizeUInt] = allFactories.map(_.tpe)
 
@@ -65,6 +72,39 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
     require(tpe == this.tpe, s"Invalid type $tpe when expecting ${this.tpe}")
 
     fromTLVValue(value)
+  }
+
+  protected case class ValueIterator(value: ByteVector, var index: Int = 0) {
+
+    def current: ByteVector = {
+      value.drop(index)
+    }
+
+    def skip(numBytes: Long): Unit = {
+      index += numBytes.toInt
+      ()
+    }
+
+    def skip(bytes: NetworkElement): Unit = {
+      skip(bytes.byteSize)
+    }
+
+    def take(numBytes: Int): ByteVector = {
+      val bytes = current.take(numBytes)
+      skip(numBytes)
+      bytes
+    }
+
+    def takeBits(numBits: Int): ByteVector = {
+      require(numBits % 8 == 0,
+              s"Must take a round byte number of bits, got $numBits")
+      take(numBytes = numBits / 8)
+    }
+
+    def takeSPK(): ScriptPubKey = {
+      val len = UInt16(takeBits(16)).toInt
+      ScriptPubKey.fromAsmBytes(take(len))
+    }
   }
 }
 
@@ -144,5 +184,58 @@ object PongTLV extends TLVFactory[PongTLV] {
 
   def forIgnored(ignored: ByteVector): PongTLV = {
     new PongTLV(ignored)
+  }
+}
+
+sealed trait OracleEventTLV extends TLV
+
+case class OracleEventV0TLV(
+    nonce: SchnorrNonce,
+    eventMaturity: UInt32,
+    eventName: String)
+    extends OracleEventTLV {
+  override def tpe: BigSizeUInt = OracleEventV0TLV.tpe
+
+  override val value: ByteVector = {
+    val eventNameBytes = CryptoUtil.serializeForHash(eventName)
+    nonce.bytes ++ eventMaturity.bytes ++ eventNameBytes
+  }
+}
+
+object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(55330)
+
+  override def fromTLVValue(value: ByteVector): OracleEventV0TLV = {
+    val iter = ValueIterator(value, 0)
+
+    val nonce = SchnorrNonce(iter.take(32))
+    val eventMaturity = UInt32(iter.takeBits(32))
+    val eventName = new String(iter.current.toArray, StandardCharsets.UTF_8)
+
+    OracleEventV0TLV(nonce, eventMaturity, eventName)
+  }
+}
+
+sealed trait OracleAnnouncementTLV extends TLV
+
+case class OracleAnnouncementV0TLV(
+    signature: SchnorrDigitalSignature,
+    eventTLV: OracleEventV0TLV)
+    extends OracleAnnouncementTLV {
+  override def tpe: BigSizeUInt = OracleAnnouncementV0TLV.tpe
+
+  override val value: ByteVector = signature.bytes ++ eventTLV.bytes
+}
+
+object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(55332)
+
+  override def fromTLVValue(value: ByteVector): OracleAnnouncementV0TLV = {
+    val iter = ValueIterator(value, 0)
+
+    val sig = SchnorrDigitalSignature(iter.take(64))
+    val eventTLV = OracleEventV0TLV(iter.current)
+
+    OracleAnnouncementV0TLV(sig, eventTLV)
   }
 }

@@ -8,7 +8,7 @@ class TLVTest extends BitcoinSUnitTest {
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
-  "TLV" must "have serizliation symmetry" in {
+  "TLV" must "have serialization symmetry" in {
     forAll(TLVGen.tlv) { tlv =>
       assert(TLV(tlv.bytes) == tlv)
     }
@@ -39,6 +39,20 @@ class TLVTest extends BitcoinSUnitTest {
     forAll(TLVGen.pongTLV) { pong =>
       assert(PongTLV(pong.bytes) == pong)
       assert(TLV(pong.bytes) == pong)
+    }
+  }
+
+  "OracleEventV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.oracleEventV0TLV) { tlv =>
+      assert(OracleEventV0TLV(tlv.bytes) == tlv)
+      assert(TLV(tlv.bytes) == tlv)
+    }
+  }
+
+  "OracleAnnouncementV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.oracleAnnouncementV0TLV) { tlv =>
+      assert(OracleAnnouncementV0TLV(tlv.bytes) == tlv)
+      assert(TLV(tlv.bytes) == tlv)
     }
   }
 }

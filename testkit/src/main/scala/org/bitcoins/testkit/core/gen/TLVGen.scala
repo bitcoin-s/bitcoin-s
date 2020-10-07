@@ -41,12 +41,28 @@ trait TLVGen {
     NumberGenerator.bytevector.map(PongTLV.forIgnored)
   }
 
+  def oracleEventV0TLV: Gen[OracleEventV0TLV] = {
+    for {
+      nonce <- CryptoGenerators.schnorrNonce
+      maturity <- NumberGenerator.uInt32s
+      name <- StringGenerators.genString
+    } yield OracleEventV0TLV(nonce, maturity, name)
+  }
+
+  def oracleAnnouncementV0TLV: Gen[OracleAnnouncementV0TLV] = {
+    for {
+      sig <- CryptoGenerators.schnorrDigitalSignature
+      eventTLV <- oracleEventV0TLV
+    } yield OracleAnnouncementV0TLV(sig, eventTLV)
+  }
+
   def tlv: Gen[TLV] = {
     Gen.oneOf(
       unknownTLV,
       errorTLV,
       pingTLV,
-      pongTLV
+      pongTLV,
+      oracleEventV0TLV
     )
   }
 }
