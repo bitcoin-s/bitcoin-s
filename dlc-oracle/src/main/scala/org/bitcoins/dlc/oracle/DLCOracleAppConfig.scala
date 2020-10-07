@@ -108,15 +108,15 @@ case class DLCOracleAppConfig(
     initialize(oracle)
   }
 
-  private val rValueTable: TableQuery[Table[_]] = {
+  private lazy val rValueTable: TableQuery[Table[_]] = {
     RValueDAO()(ec, appConfig).table
   }
 
-  private val eventTable: TableQuery[Table[_]] = {
+  private lazy val eventTable: TableQuery[Table[_]] = {
     EventDAO()(ec, appConfig).table
   }
 
-  private val eventOutcomeTable: TableQuery[Table[_]] = {
+  private lazy val eventOutcomeTable: TableQuery[Table[_]] = {
     EventOutcomeDAO()(ec, appConfig).table
   }
 

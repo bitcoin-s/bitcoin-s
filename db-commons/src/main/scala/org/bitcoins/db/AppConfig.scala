@@ -133,7 +133,12 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
     logger.debug(s"Resolved bitcoin-s config:")
     logger.debug(finalConfig.asReadableJson)
 
-    val resolved = finalConfig.resolve()
+    val resolved = {
+      ConfigFactory
+        .defaultOverrides()
+        .withFallback(finalConfig)
+        .resolve()
+    }
 
     resolved.checkValid(ConfigFactory.defaultReference(), "bitcoin-s")
 
@@ -156,8 +161,10 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
   lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
     Try {
-      DatabaseConfig.forConfig[JdbcProfile](path = s"bitcoin-s.$moduleName",
-                                            config = config)
+      val c = DatabaseConfig.forConfig[JdbcProfile](path =
+                                                      s"bitcoin-s.$moduleName",
+                                                    config = config)
+      c
     } match {
       case Success(value) =>
         value
@@ -184,16 +191,21 @@ object AppConfig extends BitcoinSLogger {
   def getBaseConfig(
       baseDatadir: Path,
       configOverrides: List[Config] = List.empty): Config = {
+    val configOptions =
+      ConfigParseOptions
+        .defaults()
+        .setClassLoader(getClass().getClassLoader())
     val datadirConfig = {
       val file = baseDatadir.resolve("bitcoin-s.conf")
       val config = if (Files.isReadable(file)) {
-        ConfigFactory.parseFile(file.toFile)
+        ConfigFactory.parseFile(file.toFile, configOptions)
       } else {
         ConfigFactory.empty()
       }
 
       val withDatadir =
-        ConfigFactory.parseString(s"bitcoin-s.datadir = $baseDatadir")
+        ConfigFactory.parseString(s"bitcoin-s.datadir = $baseDatadir",
+                                  configOptions)
       withDatadir.withFallback(config)
     }
 
@@ -201,8 +213,10 @@ object AppConfig extends BitcoinSLogger {
     // provided configs also has been loaded. .parseResources() does not do that
     // whereas .load() does
     val classPathConfig = {
-      val applicationConf = ConfigFactory.parseResources("application.conf")
-      val referenceConf = ConfigFactory.parseResources("reference.conf")
+      val applicationConf =
+        ConfigFactory.parseResources("application.conf", configOptions)
+      val referenceConf =
+        ConfigFactory.parseResources("reference.conf", configOptions)
       applicationConf.withFallback(referenceConf)
     }
 
@@ -228,7 +242,6 @@ object AppConfig extends BitcoinSLogger {
       } else {
         unresolvedConfig
       }
-
     withOverrides
   }
 
