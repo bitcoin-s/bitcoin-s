@@ -5,6 +5,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
   MultiSignatureScriptPubKey,
+  P2SHScriptSignature,
   P2WSHWitnessSPKV0,
   ScriptPubKey
 }
@@ -82,14 +83,24 @@ case class DLCFundingTxBuilder(
                                  acceptChangeSPK)
 
     offerFundingInputs.foreach { ref =>
+      val scriptSig = ref.redeemScriptOpt match {
+        case Some(redeemScript) => P2SHScriptSignature(redeemScript)
+        case None               => EmptyScriptSignature
+      }
+
       builder += TransactionInput(ref.outPoint,
-                                  EmptyScriptSignature,
+                                  scriptSig,
                                   TransactionConstants.sequence)
     }
 
     acceptFundingInputs.foreach { ref =>
+      val scriptSig = ref.redeemScriptOpt match {
+        case Some(redeemScript) => P2SHScriptSignature(redeemScript)
+        case None               => EmptyScriptSignature
+      }
+
       builder += TransactionInput(ref.outPoint,
-                                  EmptyScriptSignature,
+                                  scriptSig,
                                   TransactionConstants.sequence)
     }
 

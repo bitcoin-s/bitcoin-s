@@ -14,7 +14,7 @@ class DLCFeeTestVectorTest extends BitcoinSUnitTest {
   it should "have serialization symmetry" in {
     val inputGen = for {
       redeemScriptLen <- Gen.oneOf(0, 22, 34)
-      maxWitnessLen <- Gen.oneOf(Gen.choose(1, 300), Gen.const(108))
+      maxWitnessLen <- Gen.oneOf(Gen.choose(1, 300), Gen.oneOf(107, 108))
     } yield FundingFeeInfo(redeemScriptLen, maxWitnessLen)
 
     val gen = for {

@@ -37,7 +37,9 @@ object DLCFeeTestVectorGen
     val twoInputs = Vector(feeFundingInfo2, feeFundingInfo3)
     val feeFundingInfos = redeemScriptLens.flatMap { redeemScriptLen =>
       maxWitnessLens.flatMap { maxWitnessLen =>
-        if (redeemScriptLen == 22 && maxWitnessLen != 108) {
+        if (
+          redeemScriptLen == 22 && (maxWitnessLen != 107 || maxWitnessLen != 108)
+        ) {
           None
         } else {
           Some(FundingFeeInfo(redeemScriptLen, maxWitnessLen))

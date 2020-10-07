@@ -133,7 +133,7 @@ object DLCTLVGen {
       prevTx: Transaction = inputTransaction(),
       prevTxVout: UInt32 = UInt32.zero,
       sequence: UInt32 = TransactionConstants.sequence,
-      maxWitnessLen: UInt16 = UInt16(108),
+      maxWitnessLen: UInt16 = UInt16(107),
       redeemScriptOpt: Option[WitnessScriptPubKey] = None): DLCFundingInput = {
     DLCFundingInput(prevTx,
                     prevTxVout,
@@ -146,7 +146,7 @@ object DLCTLVGen {
       prevTx: Transaction = inputTransaction(),
       prevTxVout: UInt32 = UInt32.zero,
       sequence: UInt32 = TransactionConstants.sequence,
-      maxWitnessLen: UInt16 = UInt16(108),
+      maxWitnessLen: UInt16 = UInt16(107),
       redeemScriptOpt: Option[WitnessScriptPubKey] =
         None): DLCParsingTestVector = {
     DLCParsingTestVector(
