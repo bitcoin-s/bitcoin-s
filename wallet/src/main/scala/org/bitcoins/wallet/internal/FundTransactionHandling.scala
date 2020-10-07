@@ -5,11 +5,7 @@ import org.bitcoins.core.api.wallet.{CoinSelectionAlgo, CoinSelector}
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.builder.{
-  RawTxBuilder,
-  RawTxBuilderWithFinalizer,
-  ShufflingNonInteractiveFinalizer
-}
+import org.bitcoins.core.wallet.builder._
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -49,14 +45,9 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
   }
 
   /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned transaction with [[RawTxBuilder.result()]]
-    * which can be used with signing.
+    * which can be signed with the returned [[ScriptSignatureParams]].
     *
-    * If you pass in a [[KeyManagerApi]], the [[org.bitcoins.core.wallet.utxo.ScriptSignatureParams.signers signers]]
-    * will be populated with valid signers that can be used to produce valid [[org.bitcoins.crypto.ECDigitalSignature signatures]]
-    *
-    * If you do not pass in a key manager, the transaction built by [[RawTxBuilder txbuilder]] will contain [[org.bitcoins.core.protocol.script.EmptyScriptSignature EmptyScriptSignature]]
-    *
-    * Currently utxos are funded with [[CoinSelector.accumulateLargest() accumulateLargest]] coin seleciton algorithm
+    * Utxos are funded with the given coin selection algorithm
     */
   private[wallet] def fundRawTransactionInternal(
       destinations: Vector[TransactionOutput],
@@ -138,20 +129,13 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
           logger.info(s"UTXO $index details: ${utxo.output}")
       }
 
-      val inputs =
-        InputUtil.calcSequenceForInputs(utxoSpendingInfos)
-
-      val lockTime = TxUtil.calcLockTime(utxoSpendingInfos).get
-
-      val txBuilder =
-        RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
-
-      val finalizer = ShufflingNonInteractiveFinalizer(
-        utxoSpendingInfos.map(_.inputInfo),
+      val txBuilder = ShufflingNonInteractiveFinalizer.txBuilderFrom(
+        destinations,
+        utxoSpendingInfos,
         feeRate,
         change.scriptPubKey)
 
-      (txBuilder.setFinalizer(finalizer), utxoSpendingInfos)
+      (txBuilder, utxoSpendingInfos)
     }
 
     resultF.recoverWith {
