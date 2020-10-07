@@ -48,7 +48,7 @@ object TLV extends Factory[TLV] {
            PingTLV,
            PongTLV,
            OracleEventV0TLV,
-           OracleAnnouncementV0TLV)
+           OracleAnnouncementV0TLV) ++ EventDescriptorTLV.allFactories
 
   val knownTypes: Vector[BigSizeUInt] = allFactories.map(_.tpe)
 
@@ -187,18 +187,61 @@ object PongTLV extends TLVFactory[PongTLV] {
   }
 }
 
+sealed trait EventDescriptorTLV extends TLV
+
+object EventDescriptorTLV extends Factory[EventDescriptorTLV] {
+
+  val allFactories: Vector[TLVFactory[EventDescriptorTLV]] =
+    Vector(BasicEventDescriptorTLV)
+
+  val knownTypes: Vector[BigSizeUInt] = allFactories.map(_.tpe)
+
+  def fromBytes(bytes: ByteVector): EventDescriptorTLV = {
+    val DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
+
+    allFactories.find(_.tpe == tpe) match {
+      case Some(tlvFactory) => tlvFactory.fromTLVValue(value)
+      case None =>
+        throw new IllegalArgumentException(
+          s"Unknown EventDescriptorTLV type got $tpe")
+    }
+  }
+}
+
+case class BasicEventDescriptorTLV(string: String) extends EventDescriptorTLV {
+  override def tpe: BigSizeUInt = BasicEventDescriptorTLV.tpe
+
+  override val value: ByteVector = CryptoUtil.serializeForHash(string)
+}
+
+object BasicEventDescriptorTLV extends TLVFactory[BasicEventDescriptorTLV] {
+
+  override def apply(str: String): BasicEventDescriptorTLV =
+    new BasicEventDescriptorTLV(str)
+
+  override val tpe: BigSizeUInt = BigSizeUInt(55300)
+
+  override def fromTLVValue(value: ByteVector): BasicEventDescriptorTLV = {
+    val str = new String(value.toArray, StandardCharsets.UTF_8)
+
+    BasicEventDescriptorTLV(str)
+  }
+}
+
 sealed trait OracleEventTLV extends TLV
 
 case class OracleEventV0TLV(
+    publicKey: SchnorrPublicKey,
     nonce: SchnorrNonce,
     eventMaturity: UInt32,
-    eventName: String)
-    extends OracleEventTLV {
+    eventDescriptor: EventDescriptorTLV,
+    eventURI: String
+) extends OracleEventTLV {
   override def tpe: BigSizeUInt = OracleEventV0TLV.tpe
 
   override val value: ByteVector = {
-    val eventNameBytes = CryptoUtil.serializeForHash(eventName)
-    nonce.bytes ++ eventMaturity.bytes ++ eventNameBytes
+    val uriBytes = CryptoUtil.serializeForHash(eventURI)
+    publicKey.bytes ++ nonce.bytes ++ eventMaturity.bytes ++ eventDescriptor.bytes ++ uriBytes
   }
 }
 
@@ -208,11 +251,14 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
   override def fromTLVValue(value: ByteVector): OracleEventV0TLV = {
     val iter = ValueIterator(value, 0)
 
+    val publicKey = SchnorrPublicKey(iter.take(32))
     val nonce = SchnorrNonce(iter.take(32))
     val eventMaturity = UInt32(iter.takeBits(32))
-    val eventName = new String(iter.current.toArray, StandardCharsets.UTF_8)
+    val eventDescriptor = EventDescriptorTLV(iter.current)
+    iter.skip(eventDescriptor.byteSize)
+    val eventURI = new String(iter.current.toArray, StandardCharsets.UTF_8)
 
-    OracleEventV0TLV(nonce, eventMaturity, eventName)
+    OracleEventV0TLV(publicKey, nonce, eventMaturity, eventDescriptor, eventURI)
   }
 }
 

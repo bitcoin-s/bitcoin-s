@@ -42,6 +42,20 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
+  "EventDescriptorTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.eventDescriptorTLV) { tlv =>
+      assert(EventDescriptorTLV(tlv.bytes) == tlv)
+      assert(TLV(tlv.bytes) == tlv)
+    }
+  }
+
+  "BasicEventDescriptorTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.basicEventDescriptorTLV) { tlv =>
+      assert(BasicEventDescriptorTLV(tlv.bytes) == tlv)
+      assert(TLV(tlv.bytes) == tlv)
+    }
+  }
+
   "OracleEventV0TLV" must "have serialization symmetry" in {
     forAll(TLVGen.oracleEventV0TLV) { tlv =>
       assert(OracleEventV0TLV(tlv.bytes) == tlv)

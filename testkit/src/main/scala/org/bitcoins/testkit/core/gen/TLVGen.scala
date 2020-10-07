@@ -41,12 +41,23 @@ trait TLVGen {
     NumberGenerator.bytevector.map(PongTLV.forIgnored)
   }
 
+  def basicEventDescriptorTLV: Gen[BasicEventDescriptorTLV] = {
+    for {
+      str <- StringGenerators.genString
+    } yield BasicEventDescriptorTLV(str)
+  }
+
+  def eventDescriptorTLV: Gen[EventDescriptorTLV] =
+    basicEventDescriptorTLV // todo Gen.oneOf()
+
   def oracleEventV0TLV: Gen[OracleEventV0TLV] = {
     for {
+      pubkey <- CryptoGenerators.schnorrPublicKey
       nonce <- CryptoGenerators.schnorrNonce
       maturity <- NumberGenerator.uInt32s
-      name <- StringGenerators.genString
-    } yield OracleEventV0TLV(nonce, maturity, name)
+      uri <- StringGenerators.genString
+      desc <- eventDescriptorTLV
+    } yield OracleEventV0TLV(pubkey, nonce, maturity, desc, uri)
   }
 
   def oracleAnnouncementV0TLV: Gen[OracleAnnouncementV0TLV] = {
@@ -62,7 +73,8 @@ trait TLVGen {
       errorTLV,
       pingTLV,
       pongTLV,
-      oracleEventV0TLV
+      oracleEventV0TLV,
+      eventDescriptorTLV
     )
   }
 }
