@@ -50,15 +50,15 @@ class TLVTest extends BitcoinSUnitTest {
   }
 
   "ExternalEventDescriptorTLV" must "have serialization symmetry" in {
-    forAll(TLVGen.externalEventDescriptorTLV) { tlv =>
-      assert(ExternalEventDescriptorTLV(tlv.bytes) == tlv)
+    forAll(TLVGen.externalEventDescriptorV0TLV) { tlv =>
+      assert(ExternalEventDescriptorV0TLV(tlv.bytes) == tlv)
       assert(TLV(tlv.bytes) == tlv)
     }
   }
 
   "EnumEventDescriptorTLV" must "have serialization symmetry" in {
-    forAll(TLVGen.enumEventDescriptorTLV) { tlv =>
-      assert(EnumEventDescriptorTLV(tlv.bytes) == tlv)
+    forAll(TLVGen.enumEventDescriptorV0TLV) { tlv =>
+      assert(EnumEventDescriptorV0TLV(tlv.bytes) == tlv)
       assert(TLV(tlv.bytes) == tlv)
     }
   }

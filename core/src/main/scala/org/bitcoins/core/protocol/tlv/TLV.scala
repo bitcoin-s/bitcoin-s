@@ -212,36 +212,36 @@ sealed trait EventDescriptorTLV extends TLV
 object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
 
   val allFactories: Vector[TLVFactory[EventDescriptorTLV]] =
-    Vector(ExternalEventDescriptorTLV, EnumEventDescriptorTLV)
+    Vector(ExternalEventDescriptorV0TLV, EnumEventDescriptorV0TLV)
 
   override def typeName: String = "EventDescriptorTLV"
 }
 
-case class ExternalEventDescriptorTLV(string: String)
+case class ExternalEventDescriptorV0TLV(string: String)
     extends EventDescriptorTLV {
-  override def tpe: BigSizeUInt = ExternalEventDescriptorTLV.tpe
+  override def tpe: BigSizeUInt = ExternalEventDescriptorV0TLV.tpe
 
   override val value: ByteVector = CryptoUtil.serializeForHash(string)
 }
 
-object ExternalEventDescriptorTLV
-    extends TLVFactory[ExternalEventDescriptorTLV] {
+object ExternalEventDescriptorV0TLV
+    extends TLVFactory[ExternalEventDescriptorV0TLV] {
 
-  override def apply(str: String): ExternalEventDescriptorTLV =
-    new ExternalEventDescriptorTLV(str)
+  override def apply(str: String): ExternalEventDescriptorV0TLV =
+    new ExternalEventDescriptorV0TLV(str)
 
   override val tpe: BigSizeUInt = BigSizeUInt(55300)
 
-  override def fromTLVValue(value: ByteVector): ExternalEventDescriptorTLV = {
+  override def fromTLVValue(value: ByteVector): ExternalEventDescriptorV0TLV = {
     val str = new String(value.toArray, StandardCharsets.UTF_8)
 
-    ExternalEventDescriptorTLV(str)
+    ExternalEventDescriptorV0TLV(str)
   }
 }
 
-case class EnumEventDescriptorTLV(outcomes: Vector[String])
+case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
     extends EventDescriptorTLV {
-  override def tpe: BigSizeUInt = EnumEventDescriptorTLV.tpe
+  override def tpe: BigSizeUInt = EnumEventDescriptorV0TLV.tpe
 
   override val value: ByteVector = {
     outcomes.foldLeft(ByteVector.empty) { (accum, outcome) =>
@@ -251,11 +251,11 @@ case class EnumEventDescriptorTLV(outcomes: Vector[String])
   }
 }
 
-object EnumEventDescriptorTLV extends TLVFactory[EnumEventDescriptorTLV] {
+object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
 
   override val tpe: BigSizeUInt = BigSizeUInt(55302)
 
-  override def fromTLVValue(value: ByteVector): EnumEventDescriptorTLV = {
+  override def fromTLVValue(value: ByteVector): EnumEventDescriptorV0TLV = {
     val iter = ValueIterator(value)
 
     val builder = Vector.newBuilder[String]
@@ -267,7 +267,7 @@ object EnumEventDescriptorTLV extends TLVFactory[EnumEventDescriptorTLV] {
       builder.+=(str)
     }
 
-    EnumEventDescriptorTLV(builder.result())
+    EnumEventDescriptorV0TLV(builder.result())
   }
 }
 
