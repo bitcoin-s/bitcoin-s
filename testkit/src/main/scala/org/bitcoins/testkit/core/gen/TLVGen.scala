@@ -41,14 +41,21 @@ trait TLVGen {
     NumberGenerator.bytevector.map(PongTLV.forIgnored)
   }
 
-  def basicEventDescriptorTLV: Gen[BasicEventDescriptorTLV] = {
+  def externalEventDescriptorTLV: Gen[ExternalEventDescriptorTLV] = {
     for {
       str <- StringGenerators.genString
-    } yield BasicEventDescriptorTLV(str)
+    } yield ExternalEventDescriptorTLV(str)
+  }
+
+  def enumEventDescriptorTLV: Gen[EnumEventDescriptorTLV] = {
+    for {
+      numOutcomes <- Gen.choose(2, 10)
+      outcomes <- Gen.listOfN(numOutcomes, StringGenerators.genString)
+    } yield EnumEventDescriptorTLV(outcomes.toVector)
   }
 
   def eventDescriptorTLV: Gen[EventDescriptorTLV] =
-    basicEventDescriptorTLV // todo Gen.oneOf()
+    Gen.oneOf(externalEventDescriptorTLV, enumEventDescriptorTLV)
 
   def oracleEventV0TLV: Gen[OracleEventV0TLV] = {
     for {

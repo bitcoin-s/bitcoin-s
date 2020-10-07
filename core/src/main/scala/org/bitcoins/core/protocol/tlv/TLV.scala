@@ -22,7 +22,26 @@ sealed trait TLV extends NetworkElement {
   }
 }
 
-object TLV extends Factory[TLV] {
+sealed trait TLVParentFactory[T <: TLV] extends Factory[T] {
+
+  def typeName: String
+
+  def allFactories: Vector[TLVFactory[T]]
+
+  lazy val knownTypes: Vector[BigSizeUInt] = allFactories.map(_.tpe)
+
+  override def fromBytes(bytes: ByteVector): T = {
+    val DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
+
+    allFactories.find(_.tpe == tpe) match {
+      case Some(tlvFactory) => tlvFactory.fromTLVValue(value)
+      case None =>
+        throw new IllegalArgumentException(s"Unknown $typeName type got $tpe")
+    }
+  }
+}
+
+object TLV extends TLVParentFactory[TLV] {
 
   case class DecodeTLVResult(
       tpe: BigSizeUInt,
@@ -43,16 +62,17 @@ object TLV extends Factory[TLV] {
     DecodeTLVResult(tpe, length, value)
   }
 
-  private val allFactories: Vector[TLVFactory[TLV]] =
+  val typeName = "TLV"
+
+  val allFactories: Vector[TLVFactory[TLV]] =
     Vector(ErrorTLV,
            PingTLV,
            PongTLV,
            OracleEventV0TLV,
            OracleAnnouncementV0TLV) ++ EventDescriptorTLV.allFactories
 
-  val knownTypes: Vector[BigSizeUInt] = allFactories.map(_.tpe)
-
-  def fromBytes(bytes: ByteVector): TLV = {
+  // Need to override to be able to default to Unknown
+  override def fromBytes(bytes: ByteVector): TLV = {
     val DecodeTLVResult(tpe, _, value) = decodeTLV(bytes)
 
     allFactories.find(_.tpe == tpe) match {
@@ -189,42 +209,65 @@ object PongTLV extends TLVFactory[PongTLV] {
 
 sealed trait EventDescriptorTLV extends TLV
 
-object EventDescriptorTLV extends Factory[EventDescriptorTLV] {
+object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
 
   val allFactories: Vector[TLVFactory[EventDescriptorTLV]] =
-    Vector(BasicEventDescriptorTLV)
+    Vector(ExternalEventDescriptorTLV, EnumEventDescriptorTLV)
 
-  val knownTypes: Vector[BigSizeUInt] = allFactories.map(_.tpe)
-
-  def fromBytes(bytes: ByteVector): EventDescriptorTLV = {
-    val DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
-
-    allFactories.find(_.tpe == tpe) match {
-      case Some(tlvFactory) => tlvFactory.fromTLVValue(value)
-      case None =>
-        throw new IllegalArgumentException(
-          s"Unknown EventDescriptorTLV type got $tpe")
-    }
-  }
+  override def typeName: String = "EventDescriptorTLV"
 }
 
-case class BasicEventDescriptorTLV(string: String) extends EventDescriptorTLV {
-  override def tpe: BigSizeUInt = BasicEventDescriptorTLV.tpe
+case class ExternalEventDescriptorTLV(string: String)
+    extends EventDescriptorTLV {
+  override def tpe: BigSizeUInt = ExternalEventDescriptorTLV.tpe
 
   override val value: ByteVector = CryptoUtil.serializeForHash(string)
 }
 
-object BasicEventDescriptorTLV extends TLVFactory[BasicEventDescriptorTLV] {
+object ExternalEventDescriptorTLV
+    extends TLVFactory[ExternalEventDescriptorTLV] {
 
-  override def apply(str: String): BasicEventDescriptorTLV =
-    new BasicEventDescriptorTLV(str)
+  override def apply(str: String): ExternalEventDescriptorTLV =
+    new ExternalEventDescriptorTLV(str)
 
   override val tpe: BigSizeUInt = BigSizeUInt(55300)
 
-  override def fromTLVValue(value: ByteVector): BasicEventDescriptorTLV = {
+  override def fromTLVValue(value: ByteVector): ExternalEventDescriptorTLV = {
     val str = new String(value.toArray, StandardCharsets.UTF_8)
 
-    BasicEventDescriptorTLV(str)
+    ExternalEventDescriptorTLV(str)
+  }
+}
+
+case class EnumEventDescriptorTLV(outcomes: Vector[String])
+    extends EventDescriptorTLV {
+  override def tpe: BigSizeUInt = EnumEventDescriptorTLV.tpe
+
+  override val value: ByteVector = {
+    outcomes.foldLeft(ByteVector.empty) { (accum, outcome) =>
+      val outcomeBytes = CryptoUtil.serializeForHash(outcome)
+      accum ++ UInt16(outcomeBytes.length).bytes ++ outcomeBytes
+    }
+  }
+}
+
+object EnumEventDescriptorTLV extends TLVFactory[EnumEventDescriptorTLV] {
+
+  override val tpe: BigSizeUInt = BigSizeUInt(55302)
+
+  override def fromTLVValue(value: ByteVector): EnumEventDescriptorTLV = {
+    val iter = ValueIterator(value)
+
+    val builder = Vector.newBuilder[String]
+
+    while (iter.index < value.length) {
+      val len = UInt16(iter.takeBits(16))
+      val outcomeBytes = iter.take(len.toInt)
+      val str = new String(outcomeBytes.toArray, StandardCharsets.UTF_8)
+      builder.+=(str)
+    }
+
+    EnumEventDescriptorTLV(builder.result())
   }
 }
 
