@@ -1,6 +1,8 @@
 <configuration>
     <include resource="common-logback.xml" />
 
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
     <root level="OFF">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE"/>
