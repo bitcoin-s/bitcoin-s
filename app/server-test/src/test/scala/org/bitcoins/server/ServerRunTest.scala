@@ -19,7 +19,7 @@ class ServerRunTest extends BitcoinSAsyncTest {
 
     // Use Exception because different errors can occur
     recoverToSucceededIf[Exception] {
-      val runMainF = new Main(args).runMain
+      val runMainF = new BitcoinSServerMain(args).runMain
       val deleteDirF = Future {
         Thread.sleep(2000)
         directory.deleteRecursively()

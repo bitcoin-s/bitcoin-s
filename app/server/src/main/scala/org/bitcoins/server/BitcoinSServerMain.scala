@@ -23,7 +23,8 @@ import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-class Main(override val args: Array[String]) extends BitcoinSRunner {
+class BitcoinSServerMain(override val args: Array[String])
+    extends BitcoinSRunner {
 
   override val actorSystemName = "bitcoin-s-server"
 
@@ -298,8 +299,8 @@ class Main(override val args: Array[String]) extends BitcoinSRunner {
   }
 }
 
-object Main extends App {
-  new Main(args).run
+object BitcoinSServerMain extends App {
+  new BitcoinSServerMain(args).run
 }
 
 object BitcoinSServer {
