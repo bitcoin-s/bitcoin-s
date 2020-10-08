@@ -217,25 +217,25 @@ object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
   override def typeName: String = "EventDescriptorTLV"
 }
 
-case class ExternalEventDescriptorV0TLV(string: String)
+case class ExternalEventDescriptorV0TLV(external_name: String)
     extends EventDescriptorTLV {
   override def tpe: BigSizeUInt = ExternalEventDescriptorV0TLV.tpe
 
-  override val value: ByteVector = CryptoUtil.serializeForHash(string)
+  override val value: ByteVector = CryptoUtil.serializeForHash(external_name)
 }
 
 object ExternalEventDescriptorV0TLV
     extends TLVFactory[ExternalEventDescriptorV0TLV] {
 
-  override def apply(str: String): ExternalEventDescriptorV0TLV =
-    new ExternalEventDescriptorV0TLV(str)
+  override def apply(external_name: String): ExternalEventDescriptorV0TLV =
+    new ExternalEventDescriptorV0TLV(external_name)
 
   override val tpe: BigSizeUInt = BigSizeUInt(55300)
 
   override def fromTLVValue(value: ByteVector): ExternalEventDescriptorV0TLV = {
-    val str = new String(value.toArray, StandardCharsets.UTF_8)
+    val external_name = new String(value.toArray, StandardCharsets.UTF_8)
 
-    ExternalEventDescriptorV0TLV(str)
+    ExternalEventDescriptorV0TLV(external_name)
   }
 }
 
@@ -276,7 +276,7 @@ sealed trait OracleEventTLV extends TLV
 case class OracleEventV0TLV(
     publicKey: SchnorrPublicKey,
     nonce: SchnorrNonce,
-    eventMaturity: UInt32,
+    eventMaturityEpoch: UInt32,
     eventDescriptor: EventDescriptorTLV,
     eventURI: String
 ) extends OracleEventTLV {
@@ -284,7 +284,7 @@ case class OracleEventV0TLV(
 
   override val value: ByteVector = {
     val uriBytes = CryptoUtil.serializeForHash(eventURI)
-    publicKey.bytes ++ nonce.bytes ++ eventMaturity.bytes ++ eventDescriptor.bytes ++ uriBytes
+    publicKey.bytes ++ nonce.bytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ uriBytes
   }
 }
 
@@ -308,12 +308,12 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
 sealed trait OracleAnnouncementTLV extends TLV
 
 case class OracleAnnouncementV0TLV(
-    signature: SchnorrDigitalSignature,
+    announcementSignature: SchnorrDigitalSignature,
     eventTLV: OracleEventV0TLV)
     extends OracleAnnouncementTLV {
   override def tpe: BigSizeUInt = OracleAnnouncementV0TLV.tpe
 
-  override val value: ByteVector = signature.bytes ++ eventTLV.bytes
+  override val value: ByteVector = announcementSignature.bytes ++ eventTLV.bytes
 }
 
 object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
