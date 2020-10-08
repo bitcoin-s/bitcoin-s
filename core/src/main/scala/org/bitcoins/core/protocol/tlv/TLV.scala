@@ -246,7 +246,9 @@ case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
   override def tpe: BigSizeUInt = EnumEventDescriptorV0TLV.tpe
 
   override val value: ByteVector = {
-    outcomes.foldLeft(ByteVector.empty) { (accum, outcome) =>
+    val starting = UInt16(outcomes.size).bytes
+
+    outcomes.foldLeft(starting) { (accum, outcome) =>
       val outcomeBytes = CryptoUtil.serializeForHash(outcome)
       accum ++ UInt16(outcomeBytes.length).bytes ++ outcomeBytes
     }
@@ -260,6 +262,8 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
   override def fromTLVValue(value: ByteVector): EnumEventDescriptorV0TLV = {
     val iter = ValueIterator(value)
 
+    val count = UInt16(iter.takeBits(16))
+
     val builder = Vector.newBuilder[String]
 
     while (iter.index < value.length) {
@@ -269,7 +273,12 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
       builder.+=(str)
     }
 
-    EnumEventDescriptorV0TLV(builder.result())
+    val result = builder.result()
+
+    require(count.toInt == result.size,
+            "Did not parse the expected number of outcomes")
+
+    EnumEventDescriptorV0TLV(result)
   }
 }
 
