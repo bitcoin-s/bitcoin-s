@@ -123,6 +123,13 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     }
   }
 
+  /** Starts the [[ActorSystem]] to poll the [[BitcoindRpcClient]] for its block count,
+    * if it has changed, it will then request those blocks to process them
+    *
+    * @param startCount The starting block height of the wallet
+    * @param interval The amount of time between polls, this should not be too aggressive
+    *                 as the wallet will need to process the new blocks
+    */
   def startBitcoindBlockPolling(
       wallet: Wallet,
       bitcoind: BitcoindRpcClient,
@@ -133,9 +140,13 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     var prevCount = startCount
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
+        logger.debug("Polling bitcoind for block count")
         bitcoind.getBlockCount.flatMap { count =>
-          if (prevCount != count) {
-            val range = prevCount.to(count)
+          if (prevCount < count) {
+            logger.debug("Bitcoind has new block(s), requesting...")
+
+            // use .tail so we don't process the previous block that we already did
+            val range = prevCount.to(count).tail
 
             val hashFs =
               range.map(bitcoind.getBlockHash(_).map(_.flip))
@@ -143,7 +154,10 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
             for {
               hashes <- Future.sequence(hashFs)
               _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
-            } yield ()
+            } yield logger.debug("Successfully polled bitcoind for new blocks")
+          } else if (prevCount > count) {
+            Future.failed(new RuntimeException(
+              s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
           } else FutureUtil.unit
         }
         ()
