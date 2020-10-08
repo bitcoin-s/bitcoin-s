@@ -29,7 +29,6 @@ import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
 import org.scalatest._
 import play.api.libs.json.{JsError, JsSuccess, Json}
-import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -223,10 +222,8 @@ trait ChainUnitTest
     val zmqRawBlockUriOpt: Option[InetSocketAddress] =
       bitcoind.instance.zmqConfig.rawBlock
 
-    val handleRawBlock: ByteVector => Unit = { bytes: ByteVector =>
-      val block = Block.fromBytes(bytes)
+    val handleRawBlock: Block => Unit = { block: Block =>
       chainHandlerF.flatMap(_.processHeader(block.blockHeader))
-
       ()
     }
 
