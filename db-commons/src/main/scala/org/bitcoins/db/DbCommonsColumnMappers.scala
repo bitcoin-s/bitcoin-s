@@ -2,6 +2,10 @@ package org.bitcoins.db
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
+import org.bitcoins.commons.jsonmodels.wallet.{
+  WalletStateDescriptor,
+  WalletStateDescriptorType
+}
 import org.bitcoins.core.config.{BitcoinNetwork, BitcoinNetworks}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
@@ -294,4 +298,16 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       _.hex,
       SchnorrDigitalSignature.fromHex)
   }
+
+  implicit val walletStateDescriptorTypeMapper: BaseColumnType[
+    WalletStateDescriptorType] =
+    MappedColumnType.base[WalletStateDescriptorType, String](
+      _.toString,
+      WalletStateDescriptorType.fromString)
+
+  implicit val walletStateDescriptorMapper: BaseColumnType[
+    WalletStateDescriptor] =
+    MappedColumnType.base[WalletStateDescriptor, String](
+      _.toString,
+      WalletStateDescriptor.fromString)
 }
