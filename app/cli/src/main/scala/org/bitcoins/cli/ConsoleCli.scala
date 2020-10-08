@@ -1017,7 +1017,7 @@ object ConsoleCli {
         ),
       cmd("createrangedevent")
         .action((_, conf) =>
-          conf.copy(command = CreateRangedEvent("", Instant.MIN, 0, 0, 0)))
+          conf.copy(command = CreateRangedEvent("", Instant.MIN, 0, 0, 1)))
         .text("Registers an oracle event with a range of outcomes")
         .children(
           arg[String]("label")
@@ -1058,7 +1058,6 @@ object ConsoleCli {
               })),
           arg[Int]("step")
             .text("The increment between each outcome")
-            .required()
             .action((step, conf) =>
               conf.copy(command = conf.command match {
                 case createRangedEvent: CreateRangedEvent =>
