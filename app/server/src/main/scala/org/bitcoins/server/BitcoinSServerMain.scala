@@ -21,7 +21,6 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val args: Array[String])
@@ -149,26 +148,9 @@ class BitcoinSServerMain(override val args: Array[String])
             val zmq = BitcoindRpcBackendUtil.createZMQWalletCallbacks(wallet)
             zmq.start()
           case None =>
-            var prevCount = blockCount
-            system.scheduler.scheduleWithFixedDelay(0.seconds, 10.seconds) {
-              () =>
-                {
-                  bitcoind.getBlockCount.flatMap { count =>
-                    if (prevCount != count) {
-                      val range = prevCount.to(count)
-
-                      val hashFs =
-                        range.map(bitcoind.getBlockHash(_).map(_.flip))
-                      prevCount = count
-                      for {
-                        hashes <- Future.sequence(hashFs)
-                        _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
-                      } yield ()
-                    } else FutureUtil.unit
-                  }
-                  ()
-                }
-            }
+            BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
+                                                             bitcoind,
+                                                             blockCount)
         }
 
         _ <- wallet.start()

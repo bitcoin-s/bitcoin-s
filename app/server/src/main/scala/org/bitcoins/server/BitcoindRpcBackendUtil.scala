@@ -2,6 +2,7 @@ package org.bitcoins.server
 
 import java.net.InetSocketAddress
 
+import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -11,6 +12,7 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.zmq.ZMQSubscriber
 
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /** Useful utilities to use in the wallet project for syncing things against bitcoind */
@@ -117,6 +119,34 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       override def broadcastTransaction(
           transaction: Transaction): Future[Unit] = {
         bitcoindRpcClient.sendRawTransaction(transaction).map(_ => ())
+      }
+    }
+  }
+
+  def startBitcoindBlockPolling(
+      wallet: Wallet,
+      bitcoind: BitcoindRpcClient,
+      startCount: Int,
+      interval: FiniteDuration = 10.seconds)(implicit
+      system: ActorSystem,
+      ec: ExecutionContext): Cancellable = {
+    var prevCount = startCount
+    system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
+      {
+        bitcoind.getBlockCount.flatMap { count =>
+          if (prevCount != count) {
+            val range = prevCount.to(count)
+
+            val hashFs =
+              range.map(bitcoind.getBlockHash(_).map(_.flip))
+            prevCount = count
+            for {
+              hashes <- Future.sequence(hashFs)
+              _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
+            } yield ()
+          } else FutureUtil.unit
+        }
+        ()
       }
     }
   }
