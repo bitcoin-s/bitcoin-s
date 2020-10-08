@@ -1,12 +1,7 @@
-package org.bitcoins.testkit.db
-
-import java.nio.file.{Path, Paths}
-import java.util.Properties
+package org.bitcoins.db
 
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.db.AppConfig
-import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.wallet.config.WalletAppConfig
