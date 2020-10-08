@@ -1,9 +1,11 @@
-package org.bitcoins.testkit.db
+package org.bitcoins.db
 
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.wallet.config.WalletAppConfig
+import slick.jdbc.SQLiteProfile
 
 class AppConfigTest extends BitcoinSAsyncTest {
 
@@ -42,6 +44,41 @@ class AppConfigTest extends BitcoinSAsyncTest {
     val nodeConf = conf.nodeConf
     assert(chainConf.dbName != walletConf.dbName)
     assert(walletConf.dbName != nodeConf.dbName)
+  }
+
+  it must "fill in typesafe config variables correctly" in {
+    val datadir = BitcoinSTestAppConfig.tmpDir()
+    val walletAppConfig = WalletAppConfig(datadir)
+    for {
+      _ <- walletAppConfig.start()
+    } yield {
+      //this should get substituted as all default sqlite
+      //configuration is saved in the "bitcoin-s.sqlite" key
+      //if in the future we change our default database behavior
+      //this test case will need to change to check that the profile is correct
+      assert(walletAppConfig.dbConfig.profile.isInstanceOf[SQLiteProfile])
+    }
+  }
+
+  it should "override a configuration with a system property" in {
+    val datadir = BitcoinSTestAppConfig.tmpDir()
+    System.setProperty("bitcoin-s.wallet.requiredConfirmations", "1")
+
+    //need to invalidate the config cache to force typesafe config
+    //to freshly load all system properties
+    ConfigFactory.invalidateCaches()
+
+    val walletAppConfig = WalletAppConfig(datadir)
+    val assertF = for {
+      _ <- walletAppConfig.start()
+    } yield {
+      assert(walletAppConfig.requiredConfirmations == 1)
+    }
+    assertF.onComplete { _ =>
+      System.clearProperty("bitcoin-s.wallet.requiredConfirmations")
+      ConfigFactory.invalidateCaches()
+    }
+    assertF
   }
 
 }

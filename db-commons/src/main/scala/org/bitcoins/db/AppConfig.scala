@@ -135,7 +135,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
     val resolved = {
       ConfigFactory
-        .defaultOverrides()
+        .defaultOverrides(getClass.getClassLoader)
         .withFallback(finalConfig)
         .resolve()
     }
