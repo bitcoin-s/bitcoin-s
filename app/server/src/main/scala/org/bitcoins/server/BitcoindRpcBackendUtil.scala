@@ -10,7 +10,6 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.zmq.ZMQSubscriber
-import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
@@ -48,18 +47,16 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     val zmqSocket =
       new InetSocketAddress("tcp://127.0.0.1", bitcoindRpcConf.zmqPort)
 
-    val rawTxListener: Option[ByteVector => Unit] = Some {
-      { bytes: ByteVector =>
-        val tx = Transaction(bytes)
+    val rawTxListener: Option[Transaction => Unit] = Some {
+      { tx: Transaction =>
         logger.debug(s"Received tx ${tx.txIdBE}, processing")
         wallet.processTransaction(tx, None)
         ()
       }
     }
 
-    val rawBlockListener: Option[ByteVector => Unit] = Some {
-      { bytes: ByteVector =>
-        val block = Block(bytes)
+    val rawBlockListener: Option[Block => Unit] = Some {
+      { block: Block =>
         logger.debug(s"Received block ${block.blockHeader.hashBE}, processing")
         wallet.processBlock(block)
         ()
