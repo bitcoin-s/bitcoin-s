@@ -130,9 +130,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
     UInt32.zero
   )
 
-  val remoteNestedSPK: IfConditionalScriptPubKey =
-    NonStandardIfConditionalScriptPubKey(P2PKScriptPubKey(inputPubKeyRemote2A),
-                                         P2PKScriptPubKey(inputPubKeyRemote2B))
+  val remoteNestedSPK: MultiSignatureScriptPubKey =
+    MultiSignatureScriptPubKey(2,
+                               Vector(inputPubKeyRemote2A, inputPubKeyRemote2B))
 
   val remoteFundingTx2: Transaction = BaseTransaction(
     TransactionConstants.validLockVersion,
@@ -158,10 +158,10 @@ class DLCClientTest extends BitcoinSAsyncTest {
         outPoint = TransactionOutPoint(remoteFundingTx2.txId, UInt32.zero),
         amount = remoteInput,
         scriptWitness = P2WSHWitnessV0(remoteNestedSPK),
-        ConditionalPath.nonNestedTrue
+        ConditionalPath.NoCondition
       ),
       prevTransaction = remoteFundingTx2,
-      signer = inputPrivKeyRemote2A,
+      signers = Vector(inputPrivKeyRemote2A, inputPrivKeyRemote2B),
       hashType = HashType.sigHashAll
     )
   )
@@ -284,11 +284,17 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
     outcome match {
       case ExecutedDLCOutcome(fundingTx, cet) =>
-        DLCFeeTestUtil.validateFees(dlcOffer.dlcTxBuilder, fundingTx, cet)
+        DLCFeeTestUtil.validateFees(dlcOffer.dlcTxBuilder,
+                                    fundingTx,
+                                    cet,
+                                    fundingTxSigs = 5)
         assert(noEmptySPKOutputs(cet))
         assert(BitcoinScriptUtil.verifyScript(cet, Vector(closingSpendingInfo)))
       case RefundDLCOutcome(fundingTx, refundTx) =>
-        DLCFeeTestUtil.validateFees(dlcOffer.dlcTxBuilder, fundingTx, refundTx)
+        DLCFeeTestUtil.validateFees(dlcOffer.dlcTxBuilder,
+                                    fundingTx,
+                                    refundTx,
+                                    fundingTxSigs = 5)
         assert(noEmptySPKOutputs(refundTx))
         assert(
           BitcoinScriptUtil.verifyScript(refundTx, Vector(closingSpendingInfo)))

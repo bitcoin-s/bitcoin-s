@@ -1,14 +1,6 @@
 package org.bitcoins.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.{
-  CETSignatures,
-  DLCFundingInput,
-  DLCFundingInputP2WPKHV0,
-  DLCFundingInputP2WSHV0,
-  DLCPublicKeys,
-  DLCTimeouts,
-  FundingSignatures
-}
+import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{
   Bitcoins,
@@ -17,35 +9,18 @@ import org.bitcoins.core.currency.{
   Satoshis
 }
 import org.bitcoins.core.number.{UInt16, UInt32}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  IfConditionalScriptPubKey,
-  NonStandardIfConditionalScriptPubKey,
-  P2PKScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WSHWitnessSPKV0,
-  P2WSHWitnessV0,
-  WitnessScriptPubKey
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionConstants,
   TransactionOutPoint
 }
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.{
-  ConditionalPath,
-  InputInfo,
-  P2SHNestedSegwitV0InputInfo,
-  P2WPKHV0InputInfo,
-  P2WSHV0InputInfo,
-  ScriptSignatureParams
-}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.execution.{
@@ -127,9 +102,9 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     BitcoinAddress.fromScriptPubKey(P2WPKHWitnessSPKV0(inputPubKeyRemote),
                                     RegTest)
 
-  val remoteNestedSPK: IfConditionalScriptPubKey =
-    NonStandardIfConditionalScriptPubKey(P2PKScriptPubKey(inputPubKeyRemote2A),
-                                         P2PKScriptPubKey(inputPubKeyRemote2B))
+  val remoteNestedSPK: MultiSignatureScriptPubKey =
+    MultiSignatureScriptPubKey(2,
+                               Vector(inputPubKeyRemote2A, inputPubKeyRemote2B))
 
   val remoteAddress2: BitcoinAddress =
     BitcoinAddress.fromScriptPubKey(
@@ -227,8 +202,6 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
        signedTxResult.hex)
     }
 
-    val fundingTxF = fundedInputsTxidF.map(_._6)
-
     val localFundingUtxosF = fundedInputsTxidF.map {
       case (prevTx, localOutputIndex, localOutputIndex2, _, _, tx) =>
         Vector(
@@ -278,10 +251,10 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
                 TransactionOutPoint(prevTx.txIdBE, UInt32(remoteOutputIndex2)),
               amount = tx.outputs(remoteOutputIndex2).value,
               scriptWitness = P2WSHWitnessV0(remoteNestedSPK),
-              ConditionalPath.nonNestedTrue
+              ConditionalPath.NoCondition
             ),
             prevTransaction = prevTx,
-            signer = inputPrivKeyRemote2A,
+            signers = Vector(inputPrivKeyRemote2A, inputPrivKeyRemote2B),
             hashType = HashType.sigHashAll
           )
         )
@@ -292,7 +265,6 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       .map(btc => SatoshisPerVirtualByte(btc.satoshis))
 
     for {
-      fundingTx <- fundingTxF
       localFundingUtxos <- localFundingUtxosF
       remoteFundingUtxos <- remoteFundingUtxosF
       feeRate <- feeRateF
@@ -399,7 +371,10 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       regtestFundingTx <- client.getRawTransaction(fundingTx.txIdBE)
       regtestClosingTx <- client.getRawTransaction(closingTx.txIdBE)
     } yield {
-      DLCFeeTestUtil.validateFees(builder, fundingTx, closingTx)
+      DLCFeeTestUtil.validateFees(builder,
+                                  fundingTx,
+                                  closingTx,
+                                  fundingTxSigs = 5)
       assert(noEmptySPKOutputs(fundingTx))
       assert(regtestFundingTx.hex == fundingTx)
       assert(regtestFundingTx.confirmations.isDefined)
