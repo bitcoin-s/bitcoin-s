@@ -50,6 +50,29 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
           }
       }
 
+    case ServerCommand("createrangedevent", arr) =>
+      CreateRangedEvent.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(
+              CreateRangedEvent(eventName,
+                                maturationTime,
+                                start,
+                                stop,
+                                step)) =>
+          complete {
+            oracle
+              .createNewRangedEvent(eventName,
+                                    maturationTime,
+                                    start,
+                                    stop,
+                                    step)
+              .map { eventDb =>
+                Server.httpSuccess(eventDb.nonce.hex)
+              }
+          }
+      }
+
     case ServerCommand("getevent", arr) =>
       GetEvent.fromJsArr(arr) match {
         case Failure(exception) =>

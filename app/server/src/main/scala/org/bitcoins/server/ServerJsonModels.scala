@@ -519,6 +519,40 @@ object CreateEvent extends ServerJsonModels {
   }
 }
 
+case class CreateRangedEvent(
+    eventName: String,
+    maturationTime: Instant,
+    start: Int,
+    stop: Int,
+    step: Int)
+
+object CreateRangedEvent extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateRangedEvent] = {
+    jsArr.arr.toList match {
+      case labelJs :: maturationTimeJs :: startJs :: stopJs :: stepJs :: Nil =>
+        Try {
+          val label = labelJs.str
+          val maturationTime: Instant =
+            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
+          val start = startJs.num.toInt
+          val stop = stopJs.num.toInt
+          val step = stepJs.num.toInt
+
+          CreateRangedEvent(label, maturationTime, start, stop, step)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing label, maturationTime, start, stop, and step arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 5"))
+    }
+  }
+}
+
 case class SignEvent(nonce: SchnorrNonce, outcome: String)
 
 object SignEvent extends ServerJsonModels {

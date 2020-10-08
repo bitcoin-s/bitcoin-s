@@ -15,7 +15,7 @@ import scodec.bits.ByteVector
 
 class DLCOracleTest extends DLCOracleFixture {
 
-  val testOutcomes: Vector[String] = (0 to 10).map(_.toString).toVector
+  val testOutcomes: Vector[String] = Vector("sunny", "windy", "rainy", "cloudy")
 
   behavior of "DLCOracle"
 
@@ -79,6 +79,56 @@ class DLCOracleTest extends DLCOracleFixture {
       assert(event.nonce == testEventDb.nonce)
       assert(event.maturationTime.getEpochSecond == time.getEpochSecond)
     }
+  }
+
+  it must "create a ranged event and get its details" in {
+    dlcOracle: DLCOracle =>
+      val time = TimeUtil.now
+      val eventName = "ranged"
+      val start = -100
+      val stop = 100
+      val step = 5
+
+      val expectedOutcomes = start.to(stop, step).map(_.toString)
+
+      for {
+        testEventDb <-
+          dlcOracle.createNewRangedEvent(eventName, time, start, stop, step)
+        eventOpt <- dlcOracle.getEvent(testEventDb.nonce)
+      } yield {
+        assert(eventOpt.isDefined)
+        val event = eventOpt.get
+
+        assert(event.isInstanceOf[PendingEvent])
+        assert(event.eventName == eventName)
+        assert(event.outcomes == expectedOutcomes)
+        assert(event.numOutcomes == expectedOutcomes.size)
+        assert(event.signingVersion == SigningVersion.latest)
+        assert(event.pubkey == dlcOracle.publicKey)
+        assert(event.nonce == testEventDb.nonce)
+        assert(event.maturationTime.getEpochSecond == time.getEpochSecond)
+      }
+  }
+
+  it must "fail to create a ranged event with a 0 step" in {
+    dlcOracle: DLCOracle =>
+      recoverToSucceededIf[IllegalArgumentException] {
+        dlcOracle.createNewRangedEvent("test", TimeUtil.now, 1, 2, 0)
+      }
+  }
+
+  it must "fail to create a ranged event with invalid start and stop params and positive step" in {
+    dlcOracle: DLCOracle =>
+      assertThrows[IllegalArgumentException] {
+        dlcOracle.createNewRangedEvent("test", TimeUtil.now, 200, 100, 3)
+      }
+  }
+
+  it must "fail to create a ranged event with invalid start and stop params and negative step" in {
+    dlcOracle: DLCOracle =>
+      assertThrows[IllegalArgumentException] {
+        dlcOracle.createNewRangedEvent("test", TimeUtil.now, 100, 200, -3)
+      }
   }
 
   it must "not get an event that doesn't exit" in { dlcOracle: DLCOracle =>

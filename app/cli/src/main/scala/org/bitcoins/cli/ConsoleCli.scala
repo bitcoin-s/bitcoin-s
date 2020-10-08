@@ -1015,6 +1015,57 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("createrangedevent")
+        .action((_, conf) =>
+          conf.copy(command = CreateRangedEvent("", Instant.MIN, 0, 0, 0)))
+        .text("Registers an oracle event with a range of outcomes")
+        .children(
+          arg[String]("label")
+            .text("Label for this event")
+            .required()
+            .action((label, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(eventName = label)
+                case other => other
+              })),
+          arg[Instant]("maturationtime")
+            .text("The earliest expected time an outcome will be signed, given in epoch second")
+            .required()
+            .action((time, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(maturationTime = time)
+                case other => other
+              })),
+          arg[Int]("start")
+            .text("The first possible outcome number")
+            .required()
+            .action((start, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(start = start)
+                case other => other
+              })),
+          arg[Int]("stop")
+            .text("The last possible outcome number")
+            .required()
+            .action((stop, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(stop = stop)
+                case other => other
+              })),
+          arg[Int]("step")
+            .text("The increment between each outcome")
+            .required()
+            .action((step, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(step = step)
+                case other => other
+              }))
+        ),
       cmd("getevent")
         .action((_, conf) => conf.copy(command = GetEvent(null)))
         .text("Get an event's details")
@@ -1282,6 +1333,13 @@ object ConsoleCli {
         RequestParam(
           "createevent",
           Seq(up.writeJs(label), up.writeJs(time), up.writeJs(outcomes)))
+      case CreateRangedEvent(eventName, time, start, stop, step) =>
+        RequestParam("createrangedevent",
+                     Seq(up.writeJs(eventName),
+                         up.writeJs(time),
+                         up.writeJs(start),
+                         up.writeJs(stop),
+                         up.writeJs(step)))
       case SignEvent(nonce, outcome) =>
         RequestParam("signevent", Seq(up.writeJs(nonce), up.writeJs(outcome)))
       case GetSignature(nonce) =>
@@ -1565,6 +1623,15 @@ object CliCommand {
       maturationTime: Instant,
       outcomes: Seq[String])
       extends CliCommand
+
+  case class CreateRangedEvent(
+      eventName: String,
+      maturationTime: Instant,
+      start: Int,
+      stop: Int,
+      step: Int)
+      extends CliCommand
+
   case class SignEvent(nonce: SchnorrNonce, outcome: String) extends CliCommand
   case class GetSignature(nonce: SchnorrNonce) extends CliCommand
 }

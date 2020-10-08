@@ -119,6 +119,30 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     }
   }
 
+  def createNewRangedEvent(
+      eventName: String,
+      maturationTime: Instant,
+      start: Int,
+      stop: Int,
+      step: Int = 1): Future[EventDb] = {
+    if (step == 0) {
+      Future.failed(new IllegalArgumentException("Cannot have a step of 0"))
+    } else {
+      if (step > 0) {
+        require(
+          start < step,
+          s"Start ($start) must be less than Stop ($stop) with a positive step ($step)")
+      } else {
+        require(
+          start > step,
+          s"Start ($start) must be greater than Stop ($stop) with a negative step ($step)")
+      }
+
+      val outcomes = start.to(stop, step).map(_.toString)
+      createNewEvent(eventName, maturationTime, outcomes.toVector)
+    }
+  }
+
   def createNewEvent(
       eventName: String,
       maturationTime: Instant,
