@@ -69,7 +69,7 @@ object ConsoleCli {
         .action((_, conf) =>
           conf.copy(command = DecodeRawTransaction(EmptyTransaction)))
         .text(s"Decode the given raw hex transaction")
-        .children(opt[Transaction]("tx")
+        .children(arg[Transaction]("tx")
           .required()
           .action((tx, conf) =>
             conf.copy(command = conf.command match {
