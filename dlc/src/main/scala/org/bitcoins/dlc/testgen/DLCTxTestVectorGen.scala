@@ -23,6 +23,16 @@ object DLCTxTestVectorGen
     DLCTxTestVector.fromInputs
 
   override def generateTestVectors(): Future[Vector[DLCTxTestVector]] = {
-    Future.sequence(Vector(2, 3, 5, 8).map(DLCTxGen.randomTxTestVector))
+    val numOutcomesTests = Vector(2, 3, 5, 8).map(DLCTxGen.randomTxTestVector)
+
+    val nonP2WPKHInputTests =
+      DLCTxGen.nonP2WPKHInputs.map(DLCTxGen.dlcTxTestVector(_))
+
+    val numInputs = Vector(1, 2, 3, 8)
+
+    val multiInputTests =
+      DLCTxGen.multiInputTests(numInputs).map(DLCTxGen.dlcTxTestVector(_))
+
+    Future.sequence(numOutcomesTests ++ nonP2WPKHInputTests ++ multiInputTests)
   }
 }

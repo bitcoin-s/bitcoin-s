@@ -6,12 +6,19 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
   EmptyScriptSignature,
-  P2WPKHWitnessSPKV0
+  MultiSignatureScriptPubKey,
+  P2SHScriptPubKey,
+  P2WPKHWitnessSPKV0,
+  P2WPKHWitnessV0,
+  P2WSHWitnessSPKV0,
+  P2WSHWitnessV0,
+  ScriptWitnessV0,
+  WitnessScriptPubKeyV0
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, ECPublicKey}
 import org.bitcoins.dlc.sign.DLCTxSigner
 import scodec.bits.ByteVector
 
@@ -50,21 +57,63 @@ object DLCTxGen {
   def fundingInputTx(
       inputs: Vector[TransactionInput] = Vector(dummyTransactionInput),
       idx: Int = 0,
-      privKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
+      privKeys: Vector[ECPrivateKey] = Vector(ECPrivateKey.freshPrivateKey),
+      redeemScriptOpt: Option[WitnessScriptPubKeyV0] = None,
+      scriptWitness: ScriptWitnessV0 = P2WPKHWitnessV0(
+        ECPublicKey.freshPublicKey),
       amt: CurrencyUnit = defaultAmt * 2,
       lockTime: UInt32 = UInt32.zero): FundingInputTx = {
-    val pubKey = privKey.publicKey
+    val (spk, scriptWit) = redeemScriptOpt match {
+      case Some(wspk) => (P2SHScriptPubKey(wspk), scriptWitness)
+      case None =>
+        scriptWitness match {
+          case p2wpkh: P2WPKHWitnessV0 =>
+            val pubKey = if (privKeys.head.publicKey != p2wpkh.pubKey) {
+              privKeys.head.publicKey
+            } else {
+              p2wpkh.pubKey
+            }
+            (P2WPKHWitnessSPKV0(pubKey), P2WPKHWitnessV0(pubKey))
+          case p2wsh: P2WSHWitnessV0 =>
+            (P2WSHWitnessSPKV0(p2wsh.redeemScript), p2wsh)
+        }
+    }
+
     val outputs =
-      Vector.fill(idx)(
-        TransactionOutput(defaultAmt, EmptyScriptPubKey)) :+ TransactionOutput(
-        amt,
-        P2WPKHWitnessSPKV0(pubKey))
+      Vector
+        .fill(idx)(TransactionOutput(defaultAmt, EmptyScriptPubKey)) :+
+        TransactionOutput(amt, spk)
     val tx = BaseTransaction(TransactionConstants.validLockVersion,
                              inputs,
                              outputs,
                              lockTime)
 
-    FundingInputTx(tx, idx, privKey)
+    FundingInputTx(tx, idx, privKeys, redeemScriptOpt, scriptWit)
+  }
+
+  def multiSigFundingInputTx(
+      privKeys: Vector[ECPrivateKey] =
+        Vector(ECPrivateKey.freshPrivateKey, ECPrivateKey.freshPrivateKey),
+      requiredSigs: Int = 2,
+      p2shNested: Boolean = false,
+      idx: Int = 0,
+      amt: CurrencyUnit = defaultAmt * 2,
+      lockTime: UInt32 = UInt32.zero): FundingInputTx = {
+    val multiSig =
+      MultiSignatureScriptPubKey(requiredSigs, privKeys.map(_.publicKey))
+
+    val redeemScriptOpt = if (p2shNested) {
+      Some(P2WSHWitnessSPKV0(multiSig))
+    } else None
+
+    val scriptWitness = P2WSHWitnessV0(multiSig)
+
+    fundingInputTx(idx = idx,
+                   privKeys = privKeys,
+                   redeemScriptOpt = redeemScriptOpt,
+                   scriptWitness = scriptWitness,
+                   amt = amt,
+                   lockTime = lockTime)
   }
 
   def dlcPartyParams(
@@ -87,9 +136,70 @@ object DLCTxGen {
     ValidTestInputs(params, offerParams, acceptParams)
   }
 
+  def validTestInputsForInputs(
+      offerInputs: Vector[FundingInputTx],
+      acceptInputs: Vector[FundingInputTx],
+      numOutcomes: Int = 3): ValidTestInputs = {
+    val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
+    val contractInfo = genPreImageContractInfo(outcomes.map(_._1))
+
+    validTestInputs(
+      params = dlcParams(preImageContractInfo = contractInfo),
+      offerParams = dlcPartyParams(fundingInputTxs = offerInputs),
+      acceptParams = dlcPartyParams(fundingInputTxs = acceptInputs)
+    )
+  }
+
+  def vecProd[T](vec1: Vector[T], vec2: Vector[T]): Vector[(T, T)] = {
+    vec1.flatMap(x => vec2.map((x, _)))
+  }
+
+  val allInputs = Vector(0, 1, 2)
+
+  def inputFromKind(n: Int): FundingInputTx = {
+    if (n == 0) fundingInputTx()
+    else if (n == 1) multiSigFundingInputTx()
+    else multiSigFundingInputTx(p2shNested = true)
+  }
+
+  def inputs(n: Int): Vector[FundingInputTx] = {
+    (0 until n).toVector.map { _ =>
+      inputFromKind(scala.util.Random.nextInt(3))
+    }
+  }
+
+  def nonP2WPKHInputs: Vector[ValidTestInputs] = {
+    vecProd(allInputs, allInputs).tail.map {
+      case (offerInputKind, acceptInputKind) =>
+        validTestInputsForInputs(
+          offerInputs = Vector(inputFromKind(offerInputKind)),
+          acceptInputs = Vector(inputFromKind(acceptInputKind))
+        )
+    }
+  }
+
+  def multiInputTests(numInputOptions: Vector[Int]): Vector[ValidTestInputs] = {
+    vecProd(numInputOptions, numInputOptions).tail.map {
+      case (offerNumInputs, acceptNumInputs) =>
+        validTestInputsForInputs(
+          offerInputs = inputs(offerNumInputs),
+          acceptInputs = inputs(acceptNumInputs)
+        )
+    }
+  }
+
   def dlcTxTestVector(inputs: ValidTestInputs = validTestInputs())(implicit
       ec: ExecutionContext): Future[DLCTxTestVector] = {
     DLCTxTestVector.fromInputs(inputs)
+  }
+
+  def dlcTxTestVectorWithTxInputs(
+      offerInputs: Vector[FundingInputTx],
+      acceptInputs: Vector[FundingInputTx],
+      numOutcomes: Int = 3)(implicit
+      ec: ExecutionContext): Future[DLCTxTestVector] = {
+    dlcTxTestVector(
+      validTestInputsForInputs(offerInputs, acceptInputs, numOutcomes))
   }
 
   def randomTxTestVector(numOutcomes: Int)(implicit

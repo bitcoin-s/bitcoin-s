@@ -23,7 +23,16 @@ object DLCTestVectorGen extends TestVectorGen[DLCTestVector, ValidTestInputs] {
 
   override def generateTestVectors(): Future[Vector[DLCTestVector]] = {
     // Happy Path
-    Future.sequence(
-      Vector(2, 3, 5, 8, 100).map(DLCTxGen.randomSuccessTestVector))
+    val numOutcomesTests =
+      Vector(2, 3, 5, 8, 100).map(DLCTxGen.randomSuccessTestVector)
+
+    val nonP2WPKHInputTests =
+      DLCTxGen.nonP2WPKHInputs.map(DLCTxGen.successTestVector(_))
+
+    val multiInputTests = DLCTxGen
+      .multiInputTests(Vector(1, 2, 5))
+      .map(DLCTxGen.successTestVector(_))
+
+    Future.sequence(numOutcomesTests ++ nonP2WPKHInputTests ++ multiInputTests)
   }
 }
