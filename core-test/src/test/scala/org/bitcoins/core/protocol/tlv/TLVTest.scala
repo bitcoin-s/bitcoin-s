@@ -63,6 +63,13 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
+  "RangeEventDescriptorV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.rangeEventDescriptorV0TLV) { tlv =>
+      assert(RangeEventDescriptorV0TLV(tlv.bytes) == tlv)
+      assert(TLV(tlv.bytes) == tlv)
+    }
+  }
+
   "OracleEventV0TLV" must "have serialization symmetry" in {
     forAll(TLVGen.oracleEventV0TLV) { tlv =>
       assert(OracleEventV0TLV(tlv.bytes) == tlv)

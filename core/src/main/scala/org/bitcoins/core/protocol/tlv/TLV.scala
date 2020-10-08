@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.tlv
 
 import java.nio.charset.StandardCharsets
 
-import org.bitcoins.core.number.{UInt16, UInt32}
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.tlv.TLV.DecodeTLVResult
@@ -212,7 +212,9 @@ sealed trait EventDescriptorTLV extends TLV
 object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
 
   val allFactories: Vector[TLVFactory[EventDescriptorTLV]] =
-    Vector(ExternalEventDescriptorV0TLV, EnumEventDescriptorV0TLV)
+    Vector(ExternalEventDescriptorV0TLV,
+           EnumEventDescriptorV0TLV,
+           RangeEventDescriptorV0TLV)
 
   override def typeName: String = "EventDescriptorTLV"
 }
@@ -268,6 +270,30 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
     }
 
     EnumEventDescriptorV0TLV(builder.result())
+  }
+}
+
+case class RangeEventDescriptorV0TLV(start: Int32, stop: Int32, step: UInt16)
+    extends EventDescriptorTLV {
+  override def tpe: BigSizeUInt = RangeEventDescriptorV0TLV.tpe
+
+  override val value: ByteVector = {
+    start.bytes ++ stop.bytes ++ step.bytes
+  }
+}
+
+object RangeEventDescriptorV0TLV extends TLVFactory[RangeEventDescriptorV0TLV] {
+
+  override val tpe: BigSizeUInt = BigSizeUInt(55304)
+
+  override def fromTLVValue(value: ByteVector): RangeEventDescriptorV0TLV = {
+    val iter = ValueIterator(value)
+
+    val start = Int32(iter.takeBits(32))
+    val stop = Int32(iter.takeBits(32))
+    val step = UInt16(iter.takeBits(16))
+
+    RangeEventDescriptorV0TLV(start, stop, step)
   }
 }
 

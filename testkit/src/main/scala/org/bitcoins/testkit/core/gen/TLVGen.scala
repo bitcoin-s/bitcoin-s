@@ -54,6 +54,14 @@ trait TLVGen {
     } yield EnumEventDescriptorV0TLV(outcomes.toVector)
   }
 
+  def rangeEventDescriptorV0TLV: Gen[RangeEventDescriptorV0TLV] = {
+    for {
+      start <- NumberGenerator.int32s
+      stop <- NumberGenerator.int32s.suchThat(_ > start)
+      step <- NumberGenerator.uInt16
+    } yield RangeEventDescriptorV0TLV(start, stop, step)
+  }
+
   def eventDescriptorTLV: Gen[EventDescriptorTLV] =
     Gen.oneOf(externalEventDescriptorV0TLV, enumEventDescriptorV0TLV)
 
