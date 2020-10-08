@@ -1,11 +1,8 @@
 package org.bitcoins.server
 
-import java.nio.file.{Path, Paths}
-
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
-import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -16,9 +13,7 @@ import org.bitcoins.chain.models.{
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.config._
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
-import org.bitcoins.db._
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
@@ -27,91 +22,18 @@ import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Properties
 
-object Main extends App with HttpLogger {
+class BitcoinSServerMain(override val args: Array[String])
+    extends BitcoinSRunner {
 
-  def runMain(args: Vector[String]): Future[Unit] = {
-    val argsWithIndex = args.zipWithIndex
+  override val actorSystemName = "bitcoin-s-server"
 
-    val dataDirIndexOpt = {
-      argsWithIndex.find(_._1.toLowerCase == "--datadir")
-    }
-    val datadirPathOpt = dataDirIndexOpt match {
-      case None => None
-      case Some((_, dataDirIndex)) =>
-        val str = args(dataDirIndex + 1)
-        val usableStr = str.replace("~", Properties.userHome)
-        Some(Paths.get(usableStr))
-    }
+  implicit lazy val conf: BitcoinSAppConfig =
+    BitcoinSAppConfig(datadirPath, baseConfig)
 
-    val configIndexOpt = {
-      argsWithIndex.find(_._1.toLowerCase == "--conf")
-    }
-    val baseConfig = configIndexOpt match {
-      case None =>
-        val configPath =
-          datadirPathOpt.getOrElse(AppConfig.DEFAULT_BITCOIN_S_DATADIR)
-        AppConfig
-          .getBaseConfig(configPath)
-          .resolve()
-      case Some((_, configIndex)) =>
-        val str = args(configIndex + 1)
-        val usableStr = str.replace("~", Properties.userHome)
-        val path = Paths.get(usableStr)
-        ConfigFactory
-          .parseFile(path.toFile)
-          .resolve()
-    }
+  def runMain: Future[Unit] = {
 
-    val configDataDir = Paths.get(
-      baseConfig.getStringOrElse("bitcoin-s.datadir",
-                                 AppConfig.DEFAULT_BITCOIN_S_DATADIR.toString))
-    val datadirPath = datadirPathOpt.getOrElse(configDataDir)
-
-    val networkStr = baseConfig.getString("bitcoin-s.network")
-    val network = BitcoinNetworks.fromString(networkStr)
-
-    val datadir: Path = {
-      val lastDirname = network match {
-        case MainNet  => "mainnet"
-        case TestNet3 => "testnet3"
-        case RegTest  => "regtest"
-        case SigNet   => "signet"
-      }
-      datadirPath.resolve(lastDirname)
-    }
-
-    System.setProperty("bitcoins.log.location", datadir.toAbsolutePath.toString)
-
-    implicit val system: ActorSystem = ActorSystem("bitcoin-s", baseConfig)
-    implicit val ec: ExecutionContext = system.dispatcher
-
-    system.log.info("Akka logger started")
-
-    implicit val conf: BitcoinSAppConfig = {
-      val dataDirOverrideOpt = datadirPathOpt.map(dir =>
-        ConfigFactory.parseString(s"bitcoin-s.datadir = $dir"))
-
-      dataDirOverrideOpt match {
-        case Some(dataDirOverride) =>
-          BitcoinSAppConfig(datadirPath, baseConfig, dataDirOverride)
-        case None =>
-          BitcoinSAppConfig(datadirPath, baseConfig)
-      }
-    }
-
-    val rpcPortOpt: Option[Int] = {
-      val portOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcport")
-      portOpt.map {
-        case (_, idx) => args(idx + 1).toInt
-      }
-    }
-
-    val forceChainWorkRecalc: Boolean =
-      args.exists(_.toLowerCase == "--force-recalc-chainwork")
-
-    val bip39PasswordOpt = None //todo need to prompt user for this
+    val bip39PasswordOpt = None // todo need to prompt user for this
 
     implicit val walletConf: WalletAppConfig = conf.walletConf
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
@@ -256,12 +178,13 @@ object Main extends App with HttpLogger {
   }
 
   //start everything!
-  val run = runMain(args.toVector)
-
-  run.failed.foreach { err =>
-    logger.error(s"Failed to startup server!", err)
-    sys.exit(1)
-  }(scala.concurrent.ExecutionContext.Implicits.global)
+  lazy val run: Unit = {
+    val runner = runMain
+    runner.failed.foreach { err =>
+      logger.error(s"Failed to startup server!", err)
+      sys.exit(1)
+    }(scala.concurrent.ExecutionContext.Implicits.global)
+  }
 
   private def createCallbacks(wallet: Wallet)(implicit
       nodeConf: NodeAppConfig,
@@ -324,7 +247,6 @@ object Main extends App with HttpLogger {
   private def runChainWorkCalc(force: Boolean)(implicit
       chainAppConfig: ChainAppConfig,
       system: ActorSystem): Future[ChainApi] = {
-    import system.dispatcher
     val blockEC =
       system.dispatchers.lookup(Dispatchers.DefaultBlockingDispatcherId)
     for {
@@ -375,6 +297,10 @@ object Main extends App with HttpLogger {
     }
     server.start()
   }
+}
+
+object BitcoinSServerMain extends App {
+  new BitcoinSServerMain(args).run
 }
 
 object BitcoinSServer {

@@ -6,7 +6,7 @@ Compile / fork := true
 
 libraryDependencies ++= Deps.server(scalaVersion.value)
 
-mainClass := Some("org.bitcoins.server.Main")
+mainClass := Some("org.bitcoins.server.BitcoinSServerMain")
 
 graalVMNativeImageOptions ++= Seq(
   "-H:EnableURLProtocols=http",

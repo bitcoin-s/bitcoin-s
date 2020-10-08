@@ -6,7 +6,7 @@ Compile / fork := true
 
 libraryDependencies ++= Deps.oracleServer
 
-mainClass := Some("org.bitcoins.oracle.server.Main")
+mainClass := Some("org.bitcoins.oracle.server.OracleServerMain")
 
 graalVMNativeImageOptions ++= Seq(
   "-H:EnableURLProtocols=http",

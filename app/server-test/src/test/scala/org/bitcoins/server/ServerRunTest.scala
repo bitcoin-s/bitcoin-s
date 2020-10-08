@@ -9,17 +9,17 @@ import scala.reflect.io.Directory
 class ServerRunTest extends BitcoinSAsyncTest {
 
   // Note: on this test passing it will output a stack trace
-  // because runMain calls err.printStackTrace()
+  // because runMain calls err.printStackTrace() on failure
   it must "throw errors" in {
     val datadir = BitcoinSTestAppConfig.tmpDir()
     val directory = new Directory(datadir.toFile)
 
     val args =
-      Vector("--datadir", datadir.toAbsolutePath.toString)
+      Array("--datadir", datadir.toAbsolutePath.toString)
 
     // Use Exception because different errors can occur
     recoverToSucceededIf[Exception] {
-      val runMainF = Main.runMain(args)
+      val runMainF = new BitcoinSServerMain(args).runMain
       val deleteDirF = Future {
         Thread.sleep(2000)
         directory.deleteRecursively()
