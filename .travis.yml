@@ -59,25 +59,18 @@ jobs:
       env:
         - TEST_COMMAND="chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test"
       scala: 2.12.12
-      # In the future these should be removed as the tests will be broken up and put in other projects
     - stage: test
-      name: Linux 2.13.3 DLC Tests
+      name: Linux 2.13.3 KeyManager Wallet, dlc tests
       os: linux
       env:
-        - TEST_COMMAND="dlcOracleTest/test"
-      scala: 2.13.3
-    - stage: test
-      name: Linux 2.13.3 KeyManager and Wallet tests
-      os: linux
-      env:
-        - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
+        - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls"
       scala: 2.13.3
 
     - stage: test
-      name: Linux 2.12.12 KeyManager and Wallet tests
+      name: Linux 2.12.12 KeyManager, Wallet, dlc tests
       os: linux
       env:
-        - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
+        - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls"
       scala: 2.12.12
 
     - stage: test
@@ -107,15 +100,9 @@ jobs:
     # TODO remove this condition once we have a neutrino enabled bitcoind binary for OSX
     - stage: test
       os: osx
-      name: "macOS wallet and node tests"
+      name: "macOS wallet, node, dlc tests"
       env:
-        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
-      scala: 2.13.3
-    - stage: test
-      os: osx
-      name: "macOS dlc tests"
-      env:
-        - TEST_COMMAND="dlcOracleTest/test"
+        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coveralls"
       scala: 2.13.3
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
