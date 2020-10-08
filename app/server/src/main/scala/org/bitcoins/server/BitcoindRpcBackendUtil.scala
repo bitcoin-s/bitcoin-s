@@ -20,6 +20,38 @@ import scala.util.{Failure, Success}
 /** Useful utilities to use in the wallet project for syncing things against bitcoind */
 object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
+  def catchupWalletToBitcoind(bitcoind: BitcoindRpcClient, wallet: Wallet)(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    for {
+      bitcoindHeight <- bitcoind.getBlockCount
+      walletStateOpt <- wallet.getSyncHeight()
+      _ <- walletStateOpt match {
+        case None => FutureUtil.unit // New wallet, nothing to sync
+        case Some(syncHeight) =>
+          if (syncHeight.height > bitcoindHeight) {
+            Future.failed(
+              new RuntimeException("Bitcoind is not caught up to wallet"))
+          } else {
+            val blockRange = syncHeight.height.to(bitcoindHeight).tail
+
+            val func: Vector[Int] => Future[Unit] = { range =>
+              val hashFs =
+                range.map(bitcoind.getBlockHash(_).map(_.flip))
+              for {
+                hashes <- Future.sequence(hashFs)
+                _ <- wallet.nodeApi.downloadBlocks(hashes)
+              } yield ()
+            }
+
+            FutureUtil.batchExecute(elements = blockRange.toVector,
+                                    f = func,
+                                    init = Vector.empty,
+                                    batchSize = 25)
+          }
+      }
+    } yield ()
+  }
+
   def createWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
       wallet: Wallet)(implicit ec: ExecutionContext): Wallet = {
