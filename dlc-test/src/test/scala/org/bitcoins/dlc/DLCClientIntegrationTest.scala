@@ -1,12 +1,6 @@
 package org.bitcoins.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.{
-  CETSignatures,
-  DLCFundingInputP2WPKHV0,
-  DLCPublicKeys,
-  DLCTimeouts,
-  FundingSignatures
-}
+import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{
   Bitcoins,
@@ -14,19 +8,19 @@ import org.bitcoins.core.currency.{
   CurrencyUnits,
   Satoshis
 }
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt16, UInt32}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
-import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2WPKHWitnessSPKV0}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionConstants,
   TransactionOutPoint
 }
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.execution.{
@@ -82,16 +76,40 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
 
   val inputPrivKeyLocal: ECPrivateKey = ECPrivateKey.freshPrivateKey
   val inputPubKeyLocal: ECPublicKey = inputPrivKeyLocal.publicKey
+  val inputPrivKeyLocal2A: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val inputPrivKeyLocal2B: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val inputPubKeyLocal2A: ECPublicKey = inputPrivKeyLocal2A.publicKey
+  val inputPubKeyLocal2B: ECPublicKey = inputPrivKeyLocal2B.publicKey
   val inputPrivKeyRemote: ECPrivateKey = ECPrivateKey.freshPrivateKey
   val inputPubKeyRemote: ECPublicKey = inputPrivKeyRemote.publicKey
+  val inputPrivKeyRemote2A: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val inputPrivKeyRemote2B: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val inputPubKeyRemote2A: ECPublicKey = inputPrivKeyRemote2A.publicKey
+  val inputPubKeyRemote2B: ECPublicKey = inputPrivKeyRemote2B.publicKey
 
   val localAddress: BitcoinAddress =
     BitcoinAddress.fromScriptPubKey(P2WPKHWitnessSPKV0(inputPubKeyLocal),
                                     RegTest)
 
+  val localNestedSPK: IfConditionalScriptPubKey =
+    NonStandardIfConditionalScriptPubKey(P2PKScriptPubKey(inputPubKeyLocal2A),
+                                         P2PKScriptPubKey(inputPubKeyLocal2B))
+
+  val localAddress2: BitcoinAddress =
+    BitcoinAddress.fromScriptPubKey(P2WSHWitnessSPKV0(localNestedSPK), RegTest)
+
   val remoteAddress: BitcoinAddress =
     BitcoinAddress.fromScriptPubKey(P2WPKHWitnessSPKV0(inputPubKeyRemote),
                                     RegTest)
+
+  val remoteNestedSPK: MultiSignatureScriptPubKey =
+    MultiSignatureScriptPubKey(2,
+                               Vector(inputPubKeyRemote2A, inputPubKeyRemote2B))
+
+  val remoteAddress2: BitcoinAddress =
+    BitcoinAddress.fromScriptPubKey(
+      P2SHScriptPubKey(P2WSHWitnessSPKV0(remoteNestedSPK)),
+      RegTest)
 
   val localChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
     ECPublicKey.freshPublicKey)
@@ -111,8 +129,13 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         client
           .createRawTransaction(
             Vector.empty,
-            Map(localAddress -> fundingInput(localInput * 2),
-                remoteAddress -> fundingInput(remoteInput * 2)))
+            Map(
+              localAddress -> fundingInput(localInput),
+              localAddress2 -> fundingInput(localInput),
+              remoteAddress -> fundingInput(remoteInput),
+              remoteAddress2 -> fundingInput(remoteInput)
+            )
+          )
       transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
       transaction = transactionResult.hex
       signedTxResult <- client.signRawTransactionWithWallet(transaction)
@@ -124,6 +147,18 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
                 case p2wpkh: P2WPKHWitnessSPKV0 =>
                   p2wpkh.pubKeyHash == P2WPKHWitnessSPKV0(
                     inputPubKeyLocal).pubKeyHash
+                case _ => false
+              }
+          }
+          .map(_._2)
+      localOutputIndex2 =
+        signedTxResult.hex.outputs.zipWithIndex
+          .find {
+            case (output, _) =>
+              output.scriptPubKey match {
+                case p2wsh: P2WSHWitnessSPKV0 =>
+                  p2wsh.scriptHash == P2WSHWitnessSPKV0(
+                    localNestedSPK).scriptHash
                 case _ => false
               }
           }
@@ -140,18 +175,35 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
               }
           }
           .map(_._2)
+      remoteOutputIndex2 =
+        signedTxResult.hex.outputs.zipWithIndex
+          .find {
+            case (output, _) =>
+              output.scriptPubKey match {
+                case p2sh: P2SHScriptPubKey =>
+                  p2sh.scriptHash == P2SHScriptPubKey(
+                    P2WSHWitnessSPKV0(remoteNestedSPK)).scriptHash
+                case _ => false
+              }
+          }
+          .map(_._2)
       tx <- publishTransaction(signedTxResult.hex)
     } yield {
       assert(localOutputIndex.isDefined)
+      assert(localOutputIndex2.isDefined)
       assert(remoteOutputIndex.isDefined)
+      assert(remoteOutputIndex2.isDefined)
 
-      (tx, localOutputIndex.get, remoteOutputIndex.get, signedTxResult.hex)
+      (tx,
+       localOutputIndex.get,
+       localOutputIndex2.get,
+       remoteOutputIndex.get,
+       remoteOutputIndex2.get,
+       signedTxResult.hex)
     }
 
-    val fundingTxF = fundedInputsTxidF.map(_._4)
-
     val localFundingUtxosF = fundedInputsTxidF.map {
-      case (prevTx, localOutputIndex, _, tx) =>
+      case (prevTx, localOutputIndex, localOutputIndex2, _, _, tx) =>
         Vector(
           ScriptSignatureParams(
             inputInfo = P2WPKHV0InputInfo(
@@ -163,12 +215,24 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
             prevTransaction = prevTx,
             signer = inputPrivKeyLocal,
             hashType = HashType.sigHashAll
+          ),
+          ScriptSignatureParams(
+            P2WSHV0InputInfo(
+              outPoint =
+                TransactionOutPoint(prevTx.txIdBE, UInt32(localOutputIndex2)),
+              amount = tx.outputs(localOutputIndex2).value,
+              scriptWitness = P2WSHWitnessV0(localNestedSPK),
+              ConditionalPath.nonNestedTrue
+            ),
+            prevTransaction = prevTx,
+            signer = inputPrivKeyLocal2A,
+            hashType = HashType.sigHashAll
           )
         )
     }
 
     val remoteFundingUtxosF = fundedInputsTxidF.map {
-      case (prevTx, _, remoteOutputIndex, tx) =>
+      case (prevTx, _, _, remoteOutputIndex, remoteOutputIndex2, tx) =>
         Vector(
           ScriptSignatureParams(
             P2WPKHV0InputInfo(
@@ -180,6 +244,18 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
             prevTx,
             inputPrivKeyRemote,
             HashType.sigHashAll
+          ),
+          ScriptSignatureParams(
+            P2SHNestedSegwitV0InputInfo(
+              outPoint =
+                TransactionOutPoint(prevTx.txIdBE, UInt32(remoteOutputIndex2)),
+              amount = tx.outputs(remoteOutputIndex2).value,
+              scriptWitness = P2WSHWitnessV0(remoteNestedSPK),
+              ConditionalPath.NoCondition
+            ),
+            prevTransaction = prevTx,
+            signers = Vector(inputPrivKeyRemote2A, inputPrivKeyRemote2B),
+            hashType = HashType.sigHashAll
           )
         )
     }
@@ -189,7 +265,6 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       .map(btc => SatoshisPerVirtualByte(btc.satoshis))
 
     for {
-      fundingTx <- fundingTxF
       localFundingUtxos <- localFundingUtxosF
       remoteFundingUtxos <- remoteFundingUtxosF
       feeRate <- feeRateF
@@ -204,8 +279,28 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       val remoteFundingPrivKey = ECPrivateKey.freshPrivateKey
       val remotePayoutPrivKey = ECPrivateKey.freshPrivateKey
 
-      val localVout = localFundingUtxos.head.outPoint.vout
-      val remoteVout = remoteFundingUtxos.head.outPoint.vout
+      val localFundingInputs = localFundingUtxos.map { utxo =>
+        DLCFundingInput(
+          utxo.prevTransaction,
+          utxo.outPoint.vout,
+          TransactionConstants.sequence,
+          UInt16(utxo.maxWitnessLen),
+          InputInfo
+            .getRedeemScript(utxo.inputInfo)
+            .map(_.asInstanceOf[WitnessScriptPubKey])
+        )
+      }
+      val remoteFundingInputs = remoteFundingUtxos.map { utxo =>
+        DLCFundingInput(
+          utxo.prevTransaction,
+          utxo.outPoint.vout,
+          TransactionConstants.sequence,
+          UInt16(utxo.maxWitnessLen),
+          InputInfo
+            .getRedeemScript(utxo.inputInfo)
+            .map(_.asInstanceOf[WitnessScriptPubKey])
+        )
+      }
 
       val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes).map(_._2)
 
@@ -225,10 +320,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         input = localInput,
         remoteInput = remoteInput,
         fundingUtxos = localFundingUtxos,
-        remoteFundingInputs = Vector(
-          DLCFundingInputP2WPKHV0(fundingTx,
-                                  remoteVout,
-                                  TransactionConstants.sequence)),
+        remoteFundingInputs = remoteFundingInputs,
         timeouts = DLCTimeouts(tomorrowInBlocks, twoDaysInBlocks),
         feeRate = feeRate,
         changeSPK = localChangeSPK,
@@ -249,10 +341,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         input = remoteInput,
         remoteInput = localInput,
         fundingUtxos = remoteFundingUtxos,
-        remoteFundingInputs = Vector(
-          DLCFundingInputP2WPKHV0(fundingTx,
-                                  localVout,
-                                  TransactionConstants.sequence)),
+        remoteFundingInputs = localFundingInputs,
         timeouts = DLCTimeouts(tomorrowInBlocks, twoDaysInBlocks),
         feeRate = feeRate,
         changeSPK = remoteChangeSPK,
@@ -282,7 +371,10 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       regtestFundingTx <- client.getRawTransaction(fundingTx.txIdBE)
       regtestClosingTx <- client.getRawTransaction(closingTx.txIdBE)
     } yield {
-      DLCFeeTestUtil.validateFees(builder, fundingTx, closingTx)
+      DLCFeeTestUtil.validateFees(builder,
+                                  fundingTx,
+                                  closingTx,
+                                  fundingTxSigs = 5)
       assert(noEmptySPKOutputs(fundingTx))
       assert(regtestFundingTx.hex == fundingTx)
       assert(regtestFundingTx.confirmations.isDefined)

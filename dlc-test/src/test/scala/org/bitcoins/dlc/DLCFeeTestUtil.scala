@@ -10,7 +10,9 @@ object DLCFeeTestUtil extends Assertions {
   def validateFees(
       builder: DLCTxBuilder,
       fundingTx: Transaction,
-      closingTx: Transaction): Assertion = {
+      closingTx: Transaction,
+      fundingTxSigs: Int = 2,
+      closingTxSigs: Int = 2): Assertion = {
     val feeRate = builder.feeRate
     val finalizer = builder.fundingTxBuilder.fundingTxFinalizer
     val expectedFundingFee =
@@ -42,7 +44,7 @@ object DLCFeeTestUtil extends Assertions {
       * Because of these comparisons, we can derive
       *
       * Lower Bound Fee Rate = Actual Fee / (Ceil((Actual Weight + #sigs)/4.0) + 1)
-      * Upper Bound Fee Rate = Actual Fee / Ceil((Actual Weight + #sigs)/4.0)
+      * Upper Bound Fee Rate = Actual Fee / Ceil(Actual Weight/4.0)
       *
       * So that these two fee rates correspond to vbyte amounts 1 apart and represent the
       * actual fee rate but allowing for signature size variation after which we should match
@@ -52,12 +54,12 @@ object DLCFeeTestUtil extends Assertions {
     def feeRateBounds(
         tx: Transaction,
         actualFee: CurrencyUnit,
-        missingOutputBytes: Long = 0,
-        numSignatures: Int = 2): (Double, Double) = {
+        numSignatures: Int,
+        missingOutputBytes: Long = 0): (Double, Double) = {
       val vbytesLower =
-        Math.ceil((tx.weight + numSignatures) / 4.0) + missingOutputBytes
+        Math.ceil(tx.weight / 4.0) + missingOutputBytes
       val vbytesUpper =
-        vbytesLower + 1
+        Math.ceil((tx.weight + numSignatures) / 4.0) + missingOutputBytes + 1
 
       // Upper VBytes => Lower fee rate
       val lowerBound = actualFee.satoshis.toLong / vbytesUpper
@@ -67,10 +69,10 @@ object DLCFeeTestUtil extends Assertions {
     }
 
     val (actualFundingFeeRateLower, actualFundingFeeRateUpper) =
-      feeRateBounds(fundingTx, actualFundingFee)
+      feeRateBounds(fundingTx, actualFundingFee, fundingTxSigs)
 
     val (actualClosingFeeRateLower, actualClosingFeeRateUpper) =
-      feeRateBounds(closingTx, actualClosingFee)
+      feeRateBounds(closingTx, actualClosingFee, closingTxSigs)
 
     val offerOutputBytes =
       9 + builder.offerFinalAddress.scriptPubKey.asmBytes.length
@@ -79,11 +81,17 @@ object DLCFeeTestUtil extends Assertions {
 
     val (actualClosingFeeRateWithoutOfferLower,
          actualClosingFeeRateWithoutOfferUpper) =
-      feeRateBounds(closingTx, actualClosingFee, offerOutputBytes)
+      feeRateBounds(closingTx,
+                    actualClosingFee,
+                    closingTxSigs,
+                    offerOutputBytes)
 
     val (actualClosingFeeRateWithoutAcceptLower,
          actualClosingFeeRateWithoutAcceptUpper) =
-      feeRateBounds(closingTx, actualClosingFee, acceptOutputBytes)
+      feeRateBounds(closingTx,
+                    actualClosingFee,
+                    closingTxSigs,
+                    acceptOutputBytes)
 
     def feeRateBetweenBounds(
         lowerBound: Double,
