@@ -119,6 +119,11 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     }
   }
 
+  /** Creates an event over a range of numbers from start to stop (inclusive)
+    * increasing by the step.
+    *
+    * If the final step would be higher than stop, it will not go past it.
+    */
   def createNewRangedEvent(
       eventName: String,
       maturationTime: Instant,

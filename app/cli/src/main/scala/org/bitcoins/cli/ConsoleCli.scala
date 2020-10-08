@@ -987,13 +987,13 @@ object ConsoleCli {
           conf.copy(command = CreateEvent("", Instant.MIN, Seq.empty)))
         .text("Registers an oracle event")
         .children(
-          arg[String]("label")
-            .text("Label for this event")
+          arg[String]("name")
+            .text("Name for this event")
             .required()
-            .action((label, conf) =>
+            .action((name, conf) =>
               conf.copy(command = conf.command match {
                 case createEvent: CreateEvent =>
-                  createEvent.copy(label = label)
+                  createEvent.copy(label = name)
                 case other => other
               })),
           arg[Instant]("maturationtime")
@@ -1020,13 +1020,13 @@ object ConsoleCli {
           conf.copy(command = CreateRangedEvent("", Instant.MIN, 0, 0, 1)))
         .text("Registers an oracle event with a range of outcomes")
         .children(
-          arg[String]("label")
-            .text("Label for this event")
+          arg[String]("name")
+            .text("Name for this event")
             .required()
-            .action((label, conf) =>
+            .action((name, conf) =>
               conf.copy(command = conf.command match {
                 case createRangedEvent: CreateRangedEvent =>
-                  createRangedEvent.copy(eventName = label)
+                  createRangedEvent.copy(eventName = name)
                 case other => other
               })),
           arg[Instant]("maturationtime")

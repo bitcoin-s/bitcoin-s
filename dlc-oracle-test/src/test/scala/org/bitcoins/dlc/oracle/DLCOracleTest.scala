@@ -102,7 +102,36 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event.isInstanceOf[PendingEvent])
         assert(event.eventName == eventName)
         assert(event.outcomes == expectedOutcomes)
-        assert(event.numOutcomes == expectedOutcomes.size)
+        assert(event.numOutcomes == 41)
+        assert(event.signingVersion == SigningVersion.latest)
+        assert(event.pubkey == dlcOracle.publicKey)
+        assert(event.nonce == testEventDb.nonce)
+        assert(event.maturationTime.getEpochSecond == time.getEpochSecond)
+      }
+  }
+
+  it must "create a ranged event with a non-uniform step" in {
+    dlcOracle: DLCOracle =>
+      val time = TimeUtil.now
+      val eventName = "ranged"
+      val start = 0
+      val stop = 11
+      val step = 5
+
+      val expectedOutcomes = Vector("0", "5", "10")
+
+      for {
+        testEventDb <-
+          dlcOracle.createNewRangedEvent(eventName, time, start, stop, step)
+        eventOpt <- dlcOracle.getEvent(testEventDb.nonce)
+      } yield {
+        assert(eventOpt.isDefined)
+        val event = eventOpt.get
+
+        assert(event.isInstanceOf[PendingEvent])
+        assert(event.eventName == eventName)
+        assert(event.outcomes == expectedOutcomes)
+        assert(event.numOutcomes == 3)
         assert(event.signingVersion == SigningVersion.latest)
         assert(event.pubkey == dlcOracle.publicKey)
         assert(event.nonce == testEventDb.nonce)

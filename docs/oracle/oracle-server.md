@@ -52,17 +52,16 @@ For more information on how to use our built in `cli` to interact with the serve
 - `getpublickey` - Get oracle's public key
 - `getstakingaddress` - Get oracle's staking address
 - `listevents` - Lists all event nonces
-- `createevent` `label` `maturationtime` `outcomes` - Registers an oracle event
-  - `label` - Label for this event
+- `createevent` `name` `maturationtime` `outcomes` - Registers an oracle event
+  - `name` - Name for this event
   - `maturationtime` - The earliest expected time an outcome will be signed, given in epoch second
   - `outcomes` - Possible outcomes for this event
-- `createrangedevent` `label` `maturationtime` `start` `stop` `step` - Registers an oracle event with a range of outcomes
-  - `label` - Label for this event
+- `createrangedevent` `name` `maturationtime` `start` `stop` `step` - Registers an oracle event with a range of outcomes
+  - `name` - Name for this event
   - `maturationtime` - The earliest expected time an outcome will be signed, given in epoch second
   - `start` - The first possible outcome number
   - `stop` - The last possible outcome number
   - `step` - The increment between each outcome
-
 - `getevent` `nonce` - Get an event's details
   - `nonce` - Nonce associated with the event
 - `signevent` `nonce` `outcome` - Signs an event
