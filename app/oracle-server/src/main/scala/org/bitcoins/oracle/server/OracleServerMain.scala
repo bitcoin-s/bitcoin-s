@@ -12,14 +12,14 @@ class OracleServerMain(override val args: Array[String])
 
   override val actorSystemName = "bitcoin-s-oracle"
 
-  implicit val conf: DLCOracleAppConfig =
-    DLCOracleAppConfig(datadirPath, baseConfig)
-
-  // TODO need to prompt user for these
-  val bip39PasswordOpt: Option[String] = None
-  val aesPassword: AesPassword = BIP39KeyManager.badPassphrase
-
   override def startup: Future[Unit] = {
+
+    implicit val conf: DLCOracleAppConfig =
+      DLCOracleAppConfig(datadirPath, baseConfig)
+
+    // TODO need to prompt user for these
+    val bip39PasswordOpt: Option[String] = None
+    val aesPassword: AesPassword = BIP39KeyManager.badPassphrase
     for {
       _ <- conf.start()
       oracle <- conf.initialize(aesPassword, bip39PasswordOpt)
