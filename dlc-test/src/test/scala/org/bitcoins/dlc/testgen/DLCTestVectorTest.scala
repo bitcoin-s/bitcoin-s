@@ -8,11 +8,10 @@ import scala.concurrent.Future
 class DLCTestVectorTest extends BitcoinSAsyncTest {
   behavior of "DLCTestVectors"
 
-  val randomTestVectorGen: Gen[Future[DLCTestVector]] =
-    Gen.choose(2, 100).map(num => DLCTxGen.randomSuccessTestVector(num))
-
   it should "have serialization symmetry" in {
-    forAllAsync(randomTestVectorGen) { testVectorF =>
+    val gen = TestVectorUtil.testInputGen.map(DLCTxGen.successTestVector(_))
+
+    forAllAsync(gen) { testVectorF =>
       testVectorF.map { testVector =>
         assert(DLCTestVector.fromJson(testVector.toJson).contains(testVector))
       }

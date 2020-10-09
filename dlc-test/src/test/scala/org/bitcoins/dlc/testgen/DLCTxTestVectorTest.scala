@@ -1,7 +1,6 @@
 package org.bitcoins.dlc.testgen
 
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import org.scalacheck.Gen
 
 import scala.concurrent.Future
 
@@ -9,7 +8,7 @@ class DLCTxTestVectorTest extends BitcoinSAsyncTest {
   behavior of "DLCTxTestVector"
 
   it should "have serialization symmetry" in {
-    val gen = Gen.choose(2, 100).map(DLCTxGen.randomTxTestVector)
+    val gen = TestVectorUtil.testInputGen.map(DLCTxGen.dlcTxTestVector(_))
 
     forAllAsync(gen) { testVecF =>
       testVecF.map { testVec =>

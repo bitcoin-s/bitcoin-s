@@ -8,33 +8,35 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
 }
 import org.bitcoins.commons.jsonmodels.dlc.{
   DLCFundingInput,
-  DLCFundingInputP2WPKHV0,
   DLCPublicKeys,
   DLCTimeouts
 }
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.tlv.{
-  DLCAcceptTLV,
-  DLCOfferTLV,
-  DLCSignTLV,
-  LnMessage,
-  LnMessageFactory
+import org.bitcoins.core.protocol.script.{
+  ScriptWitness,
+  ScriptWitnessV0,
+  WitnessScriptPubKey
 }
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
-  TransactionConstants,
   TransactionOutPoint
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
+import org.bitcoins.core.wallet.utxo.{
+  ConditionalPath,
+  InputInfo,
+  ScriptSignatureParams
+}
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.testgen.DLCTLVGen.PreImageContractInfo
 import play.api.libs.json._
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -47,13 +49,32 @@ object DLCTestVector extends TestVectorParser[DLCTestVector] {
   }
 }
 
-case class FundingInputTx(tx: Transaction, idx: Int, inputKey: ECPrivateKey) {
+case class FundingInputTx(
+    tx: Transaction,
+    idx: Int,
+    inputKeys: Vector[ECPrivateKey],
+    redeemScript: Option[WitnessScriptPubKey],
+    scriptWitness: ScriptWitnessV0) {
 
   val outputRef: OutputReference =
     OutputReference(TransactionOutPoint(tx.txId, UInt32(idx)), tx.outputs(idx))
 
-  def toFundingInput: DLCFundingInput =
-    DLCFundingInputP2WPKHV0(tx, UInt32(idx), TransactionConstants.sequence)
+  lazy val scriptSignatureParams: ScriptSignatureParams[InputInfo] = {
+    ScriptSignatureParams(
+      InputInfo(TransactionOutPoint(tx.txId, UInt32(idx)),
+                tx.outputs(idx),
+                redeemScript,
+                Some(scriptWitness),
+                ConditionalPath.NoCondition),
+      tx,
+      inputKeys,
+      HashType.sigHashAll
+    )
+  }
+
+  def toFundingInput(implicit ec: ExecutionContext): DLCFundingInput = {
+    DLCFundingInput.fromInputSigningInfo(scriptSignatureParams)
+  }
 }
 
 // Currently only supports P2WPKH inputs
@@ -64,26 +85,14 @@ case class DLCPartyParams(
     fundingPrivKey: ECPrivateKey,
     payoutAddress: BitcoinAddress) {
 
-  lazy val fundingInputs: Vector[DLCFundingInput] =
+  def fundingInputs(implicit ec: ExecutionContext): Vector[DLCFundingInput] =
     fundingInputTxs.map(_.toFundingInput)
 
-  lazy val fundingScriptSigParams: Vector[
-    ScriptSignatureParams[P2WPKHV0InputInfo]] = {
-    fundingInputTxs
-      .map { fundingInputTx =>
-        val OutputReference(outPoint, output) = fundingInputTx.outputRef
-        ScriptSignatureParams(
-          P2WPKHV0InputInfo(outPoint,
-                            output.value,
-                            fundingInputTx.inputKey.publicKey),
-          fundingInputTx.tx,
-          fundingInputTx.inputKey,
-          HashType.sigHashAll
-        )
-      }
+  lazy val fundingScriptSigParams: Vector[ScriptSignatureParams[InputInfo]] = {
+    fundingInputTxs.map(_.scriptSignatureParams)
   }
 
-  def toOffer(params: DLCParams): DLCOffer = {
+  def toOffer(params: DLCParams)(implicit ec: ExecutionContext): DLCOffer = {
     DLCOffer(
       ContractInfo(params.contractInfo.map(_.toMapEntry).toMap),
       params.oracleInfo,
@@ -146,16 +155,19 @@ case class ValidTestInputs(
     params: DLCParams,
     offerParams: DLCPartyParams,
     acceptParams: DLCPartyParams) {
-  lazy val offer: DLCOffer = offerParams.toOffer(params)
 
-  lazy val accept: DLCAcceptWithoutSigs = DLCAcceptWithoutSigs(
-    acceptParams.collateral.satoshis,
-    DLCPublicKeys(acceptParams.fundingPrivKey.publicKey,
-                  acceptParams.payoutAddress),
-    acceptParams.fundingInputs,
-    acceptParams.changeAddress,
-    offer.tempContractId
-  )
+  def offer(implicit ec: ExecutionContext): DLCOffer =
+    offerParams.toOffer(params)
+
+  def accept(implicit ec: ExecutionContext): DLCAcceptWithoutSigs =
+    DLCAcceptWithoutSigs(
+      acceptParams.collateral.satoshis,
+      DLCPublicKeys(acceptParams.fundingPrivKey.publicKey,
+                    acceptParams.payoutAddress),
+      acceptParams.fundingInputs,
+      acceptParams.changeAddress,
+      offer.tempContractId
+    )
 
   def builder(implicit ec: ExecutionContext): DLCTxBuilder =
     DLCTxBuilder(offer, accept)
@@ -246,6 +258,23 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
     )
   implicit val transactionFormat: Format[Transaction] = hexFormat(Transaction)
   implicit val ecPrivKeyFormat: Format[ECPrivateKey] = hexFormat(ECPrivateKey)
+
+  implicit val witnessScriptPubKeyFormat: Format[WitnessScriptPubKey] =
+    Format[WitnessScriptPubKey](
+      { json => json.validate[String].map(WitnessScriptPubKey.fromAsmHex) },
+      { wspk => JsString(wspk.asmBytes.toHex) }
+    )
+
+  implicit val scriptWitnessV0Format: Format[ScriptWitnessV0] =
+    Format[ScriptWitnessV0](
+      {
+        _.validate[String]
+          .map(ByteVector.fromValidHex(_))
+          .map(ScriptWitness.fromBytes)
+          .map(_.asInstanceOf[ScriptWitnessV0])
+      },
+      { witness => JsString(witness.hex) }
+    )
 
   implicit val fundingInputTxFormat: Format[FundingInputTx] =
     Json.format[FundingInputTx]

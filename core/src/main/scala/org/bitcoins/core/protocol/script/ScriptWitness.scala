@@ -11,6 +11,7 @@ import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPublicKey,
   EmptyDigitalSignature,
+  Factory,
   NetworkElement
 }
 import scodec.bits.ByteVector
@@ -160,7 +161,11 @@ object P2WSHWitnessV0 {
   }
 }
 
-object ScriptWitness {
+object ScriptWitness extends Factory[ScriptWitness] {
+
+  override def fromBytes(bytes: ByteVector): ScriptWitness = {
+    RawScriptWitnessParser.read(bytes)
+  }
 
   def apply(stack: Seq[ByteVector]): ScriptWitness = {
     //TODO: eventually only compressed public keys will be allowed in v0 scripts
