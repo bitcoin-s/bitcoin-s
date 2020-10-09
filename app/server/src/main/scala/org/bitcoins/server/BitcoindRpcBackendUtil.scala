@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.core.api.node.NodeApi
@@ -14,6 +15,7 @@ import org.bitcoins.zmq.ZMQSubscriber
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 /** Useful utilities to use in the wallet project for syncing things against bitcoind */
 object BitcoindRpcBackendUtil extends BitcoinSLogger {
@@ -137,11 +139,12 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       interval: FiniteDuration = 10.seconds)(implicit
       system: ActorSystem,
       ec: ExecutionContext): Cancellable = {
-    var prevCount = startCount
+    val atomicPrevCount: AtomicReference[Int] = new AtomicReference(startCount)
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
         logger.debug("Polling bitcoind for block count")
         bitcoind.getBlockCount.flatMap { count =>
+          val prevCount = atomicPrevCount.get()
           if (prevCount < count) {
             logger.debug("Bitcoind has new block(s), requesting...")
 
@@ -150,11 +153,24 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
             val hashFs =
               range.map(bitcoind.getBlockHash(_).map(_.flip))
-            prevCount = count
-            for {
+
+            val oldPrevCount = prevCount
+            atomicPrevCount.set(count)
+
+            val requestsBlocksF = for {
               hashes <- Future.sequence(hashFs)
               _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
             } yield logger.debug("Successfully polled bitcoind for new blocks")
+
+            requestsBlocksF.onComplete {
+              case Success(_) => ()
+              case Failure(err) =>
+                atomicPrevCount.set(oldPrevCount)
+                logger.error("Requesting blocks from bitcoind polling failed",
+                             err)
+            }
+
+            requestsBlocksF
           } else if (prevCount > count) {
             Future.failed(new RuntimeException(
               s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
