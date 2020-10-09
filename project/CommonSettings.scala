@@ -105,7 +105,9 @@ object CommonSettings {
       else nonScala2_13CompilerOpts
     }
 
-  val testCompilerOpts: Seq[String] = commonCompilerOpts
+  val testCompilerOpts: Seq[String] = commonCompilerOpts ++
+    //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
+    Vector("-Xcheckinit")
 
   lazy val testSettings: Seq[Setting[_]] = Seq(
     //show full stack trace (-oF) of failed tests and duration of tests (-oD)
