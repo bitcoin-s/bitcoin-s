@@ -1,0 +1,45 @@
+[ {
+  "byteLen" : 0,
+  "script" : "",
+  "description" : "empty"
+}, {
+  "byteLen" : 22,
+  "script" : "00146f47307cd1d7e61b89a6fe24e660714d31e4aca6",
+  "description" : "p2wpkh spk"
+}, {
+  "byteLen" : 25,
+  "script" : "76a914a5745456754abf104d8d1a8852f9ef4cbb0af3ee88ac",
+  "description" : "p2pkh spk"
+}, {
+  "byteLen" : 34,
+  "script" : "0020e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "description" : "p2wsh spk"
+}, {
+  "byteLen" : 35,
+  "script" : "21022a5c418a642d70ab3f21029f510931a5af44617d58fcc50195acc136ec90b75cac",
+  "description" : "p2pk spk"
+}, {
+  "byteLen" : 71,
+  "script" : "522102a48558c126c5e3eda2188e743ab31cf9b3e956bb5cc6b9a9eeceb17c69ccffc42103f9be793aa26af2acb555ced3702e360e3c65b8c040c0fc0cf85844bce904cf7452ae",
+  "description" : "2-of-2 multisig spk"
+}, {
+  "byteLen" : 173,
+  "script" : "532103828103a5eb0a8663fffd122ccc52ab7705197686cb09abc8a3d25bdae7426a7a2102fdfc0fbf0148587cb076bbeea390fad9f110ef4b5f5c916b68f0b846ccd8892d2102ab454385715ca02c7cc3aad97b202fd84375906612798b88d386e1c9a7e5bb5421020af3417e4c0a9ddd5a0adbbf460ca05301a9a13d61dcd7ac8bf43b49f06d4d2c21034f5385fdeaaaa725231983765e7fe4c1dbab5c54c051b02b1d4b68c57b8eb67555ae",
+  "description" : "3-of-5 multisig spk"
+}, {
+  "byteLen" : 107,
+  "script" : "02473045022100dc049370a3e1e2f1c30976f97b503ce00e840b10603cf7da86cbbb7a3362501302206104618664922452bfbf40951deb1cccba49f659e3a082761e360d1e1f6abff921029a5276b84f01538373a67033942bb9c4078d8ee2cb72b6dd148fc25e075109cf",
+  "description" : "p2wpkh (low R) witness"
+}, {
+  "byteLen" : 108,
+  "script" : "024830460221009efb9e799b6ddbad4040bf6ae214e3320064e68ccba81dc5a19c516eb0cb8148022100dc049370a3e1e2f1c30976f97b503ce00e840b10603cf7da86cbbb7a336250132103b000bc3cae94b64f26375a8f5d5700f320beeeeb19f82cbb1494cd22f9bf6325",
+  "description" : "p2wpkh (high R) witness"
+}, {
+  "byteLen" : 133,
+  "script" : "03473045022100dc049370a3e1e2f1c30976f97b503ce00e840b10603cf7da86cbbb7a3362501302206104618664922452bfbf40951deb1cccba49f659e3a082761e360d1e1f6abff92102d96d94954612b0ca242247baa8f09ebc4a98f9d4fe335e1b2d1efcecc4ec2f351976a9141969d7b6c106a848d1330652290cd128705d28da88ac",
+  "description" : "p2wsh(p2pkh) witness"
+}, {
+  "byteLen" : 218,
+  "script" : "0400473045022100dc049370a3e1e2f1c30976f97b503ce00e840b10603cf7da86cbbb7a3362501302206104618664922452bfbf40951deb1cccba49f659e3a082761e360d1e1f6abff94730450221009efb9e799b6ddbad4040bf6ae214e3320064e68ccba81dc5a19c516eb0cb8148022023fb6c8f5c1e1d0e3cf6890684afc31eac2ad1d64f0ba8613906a3129cd3f12e47522102a48558c126c5e3eda2188e743ab31cf9b3e956bb5cc6b9a9eeceb17c69ccffc42103f9be793aa26af2acb555ced3702e360e3c65b8c040c0fc0cf85844bce904cf7452ae",
+  "description" : "p2wsh(2-of-2 multsig) witness"
+} ]

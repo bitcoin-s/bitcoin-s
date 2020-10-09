@@ -29,10 +29,10 @@ object DLCFeeTestVectorGen
 
   override def generateTestVectors(): Future[Vector[DLCFeeTestVector]] = {
     val redeemScriptLens = Vector(0, 22, 34)
-    val maxWitnessLens = Vector(108, 100, 200)
+    val maxWitnessLens = Vector(108, 133, 218)
     val feeFundingInfo1 = FundingFeeInfo(0, 108)
     val feeFundingInfo2 = FundingFeeInfo(22, 108)
-    val feeFundingInfo3 = FundingFeeInfo(34, 200)
+    val feeFundingInfo3 = FundingFeeInfo(34, 218)
     val oneInput = Vector(feeFundingInfo1)
     val twoInputs = Vector(feeFundingInfo2, feeFundingInfo3)
     val feeFundingInfos = redeemScriptLens.flatMap { redeemScriptLen =>
