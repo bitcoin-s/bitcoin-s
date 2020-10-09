@@ -80,7 +80,7 @@ trait BitcoinSRunner extends BitcoinSLogger {
   private lazy val network: BitcoinNetwork =
     BitcoinNetworks.fromString(networkStr)
 
-  val datadir: Path = {
+  lazy val datadir: Path = {
     lazy val lastDirname = network match {
       case MainNet  => "mainnet"
       case TestNet3 => "testnet3"
