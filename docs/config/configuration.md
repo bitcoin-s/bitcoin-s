@@ -62,10 +62,9 @@ There are a few command line options available that take precedence over configu
 
 ## Internal configuration
 
-Database connections are also configured by using HOCON. This is done in
-[`db.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/db.conf). The options
-exposed here are **not** intended to
-be used by users of Bitcoin-S, and are internal only.
+Database connections are also configured by using HOCON.
+This is done in [`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf) inside the `db-commons` module.
+The options exposed here are **not** intended to be used by users of Bitcoin-S, and are internal only.
 
 ## Database Migrations
 
