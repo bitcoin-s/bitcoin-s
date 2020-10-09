@@ -6,7 +6,6 @@ import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.server.{BitcoinSRunner, Server}
 
 import scala.concurrent.Future
-import scala.sys.ShutdownHookThread
 
 class OracleServerMain(override val args: Array[String])
     extends BitcoinSRunner {
@@ -20,7 +19,7 @@ class OracleServerMain(override val args: Array[String])
   val bip39PasswordOpt: Option[String] = None
   val aesPassword: AesPassword = BIP39KeyManager.badPassphrase
 
-  lazy val run: Future[ShutdownHookThread] = {
+  override def startup: Future[Unit] = {
     for {
       _ <- conf.start()
       oracle <- conf.initialize(aesPassword, bip39PasswordOpt)
@@ -47,10 +46,11 @@ class OracleServerMain(override val args: Array[String])
         conf.stop().foreach(_ => logger.info(s"Stopped DLC Oracle"))
         system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
       }
+      ()
     }
   }
 }
 
 object OracleServerMain extends App {
-  new OracleServerMain(args).run
+  new OracleServerMain(args).run()
 }
