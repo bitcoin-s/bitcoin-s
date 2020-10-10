@@ -31,7 +31,7 @@ class BitcoinSServerMain(override val args: Array[String])
   implicit lazy val conf: BitcoinSAppConfig =
     BitcoinSAppConfig(datadirPath, baseConfig)
 
-  def runMain: Future[Unit] = {
+  def startup: Future[Unit] = {
 
     val bip39PasswordOpt = None // todo need to prompt user for this
 
@@ -177,15 +177,6 @@ class BitcoinSServerMain(override val args: Array[String])
     startFut
   }
 
-  //start everything!
-  lazy val run: Unit = {
-    val runner = runMain
-    runner.failed.foreach { err =>
-      logger.error(s"Failed to startup server!", err)
-      sys.exit(1)
-    }(scala.concurrent.ExecutionContext.Implicits.global)
-  }
-
   private def createCallbacks(wallet: Wallet)(implicit
       nodeConf: NodeAppConfig,
       ec: ExecutionContext): Future[NodeCallbacks] = {
@@ -300,7 +291,7 @@ class BitcoinSServerMain(override val args: Array[String])
 }
 
 object BitcoinSServerMain extends App {
-  new BitcoinSServerMain(args).run
+  new BitcoinSServerMain(args).run()
 }
 
 object BitcoinSServer {
