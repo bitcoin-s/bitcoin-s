@@ -8,7 +8,7 @@ import org.bitcoins.core.config._
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.{AppConfig, ConfigOps}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Properties
 
 trait BitcoinSRunner extends BitcoinSLogger {
@@ -87,9 +87,20 @@ trait BitcoinSRunner extends BitcoinSLogger {
       case RegTest  => "regtest"
       case SigNet   => "signet"
     }
-    val dir = datadirPath.resolve(lastDirname)
+    datadirPath.resolve(lastDirname)
+  }
 
-    System.setProperty("bitcoins.log.location", dir.toAbsolutePath.toString)
-    dir
+  def startup: Future[Unit]
+
+  // start everything!
+  final def run(): Unit = {
+    // Properly set log location
+    System.setProperty("bitcoins.log.location", datadir.toAbsolutePath.toString)
+
+    val runner = startup
+    runner.failed.foreach { err =>
+      logger.error(s"Failed to startup server!", err)
+      sys.exit(1)
+    }(scala.concurrent.ExecutionContext.Implicits.global)
   }
 }
