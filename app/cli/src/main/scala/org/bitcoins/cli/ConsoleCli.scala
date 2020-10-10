@@ -65,11 +65,11 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetBestBlockHash))
         .text(s"Get the best block hash"),
       cmd("decoderawtransaction")
-        .hidden()
         .action((_, conf) =>
           conf.copy(command = DecodeRawTransaction(EmptyTransaction)))
         .text(s"Decode the given raw hex transaction")
-        .children(opt[Transaction]("tx")
+        .children(arg[Transaction]("tx")
+          .text("Transaction encoded in hex to decode")
           .required()
           .action((tx, conf) =>
             conf.copy(command = conf.command match {
