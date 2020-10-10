@@ -137,6 +137,8 @@ For more information on how to use our built in `cli` to interact with the serve
  - `getfiltercount` - Get the number of filters
  - `getfilterheadercount` - Get the number of filter headers
  - `getbestblockhash` - Get the best block hash
+ - `decoderawtransaction` `tx` - `Decode the given raw hex transaction`
+     - `tx` - Transaction encoded in hex to decode
 
 #### Wallet
  - `rescan` `[options]` - Rescan for wallet UTXOs
