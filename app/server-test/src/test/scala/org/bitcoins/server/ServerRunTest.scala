@@ -14,6 +14,11 @@ import scala.reflect.io.Directory
 
 class ServerRunTest extends BitcoinSAsyncTest {
 
+  // Clear log location property
+  after {
+    System.clearProperty("bitcoins.log.location")
+  }
+
   // Note: on this test passing it will output a stack trace
   // because runMain calls err.printStackTrace() on failure
   it must "throw errors" in {
@@ -83,6 +88,7 @@ class ServerRunTest extends BitcoinSAsyncTest {
 
       val expectedDir = datadir.resolve("regtest")
 
+      // Check the log location was correctly set
       assert(
         System.getProperty("bitcoins.log.location") == expectedDir.toString)
     }
