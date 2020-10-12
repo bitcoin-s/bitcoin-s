@@ -13,7 +13,7 @@ title: Getting Bitcoin-S installed on your machine
 - [Step 2: Bitcoin-S Repository](#step-2-bitcoin-s-repository)
 - [Step 3: Configuration](#step-3-configuration)
 - [Step 4 (Optional): Discreet Log Contract Branch](#step-4-optional-discreet-log-contract-branch)
-- [Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)](#step-5-setting-up-a-bitcoin-s-server-neutrino-node)
+- [Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)](#step-5-setting-up-a-bitcoin-s-server)
 - [Step 6 (Optional): Moving To Testnet](#step-6-optional-moving-to-testnet)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -79,7 +79,7 @@ sbt test
 
 ## Step 3: Configuration
 
-Now that we have the bitcoin-s repo setup, we want to create our application configurations. This is done by creating a `bitcoin-s.conf` file at `$HOME/.bitcoin-s`. [Here is an example configuration file](applications/configuration#example-configuration-file). The only thing that you will _need_ to change is the `peers` list to which you will want to add `"localhost:18444"` if you want to run in regtest.
+Now that we have the bitcoin-s repo setup, we want to create our application configurations. This is done by creating a `bitcoin-s.conf` file at `$HOME/.bitcoin-s`. [Here is an example configuration file](config/configuration.md#example-configuration-file). The only thing that you will _need_ to change is the `peers` list to which you will want to add `"localhost:18444"` if you want to run in regtest.
 
 Once the bitcoin-s configuration is all done, I recommend creating a directory someplace in which to run your `bitcoind` node. Once you have this directory created, add the following `bitcoin.conf` file to it
 
@@ -116,7 +116,7 @@ We are finally ready to start running some programs! Follow the [instructions he
 There are 2 ways to use the bitcoin-s server. It can either can be as a neutrino node or use bitcoind as a backend.
 This can be configured by the configuration option `bitcoin-s.node.mode` choosing either `neutrino` or `bitcoind`.
 
-### Neutrino Server
+### Option A: Neutrino Server
 
 To use a neutrino server you need to be paired with a bitcoin node that can serve compact filters.
 [Suredbits](https://suredbits.com/) runs a mainnet and testnet node you can connect to them by setting your `peers` config option to:
@@ -144,7 +144,7 @@ and once this is done, you should be able to communicate with the server using
 ./app/cli/target/universal/stage/bitcoin-s-cli getnewaddress
 ```
 
-### Bitcoind Backend
+### Option B: Bitcoind Backend
 
 If you already have a bitcoind node running and would like to connect your bitcoin-s server to it you can set your node's mode to `bitcoind`.
 
