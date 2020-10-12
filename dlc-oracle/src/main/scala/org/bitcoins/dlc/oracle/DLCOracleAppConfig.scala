@@ -6,10 +6,10 @@ import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.core.util.{TimeUtil}
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver._
-import org.bitcoins.db.{AppConfig, DbManagement, JdbcProfileComponent}
+import org.bitcoins.db._
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 
@@ -122,4 +122,11 @@ case class DLCOracleAppConfig(
 
   override def allTables: List[TableQuery[Table[_]]] =
     List(rValueTable, eventTable, eventOutcomeTable)
+}
+
+object DLCOracleAppConfig extends AppConfigFactory[DLCOracleAppConfig] {
+
+  override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
+      ec: ExecutionContext): DLCOracleAppConfig =
+    DLCOracleAppConfig(datadir, confs: _*)
 }
