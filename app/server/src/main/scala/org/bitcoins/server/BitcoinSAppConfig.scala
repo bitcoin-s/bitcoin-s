@@ -1,6 +1,6 @@
 package org.bitcoins.server
 
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.chain.config.ChainAppConfig
@@ -80,6 +80,17 @@ case class BitcoinSAppConfig(
   * to be passed in wherever a specializes one is required
   */
 object BitcoinSAppConfig {
+
+  def fromConfig(config: Config)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
+    val configDataDir: Path = Paths.get(config.getString("bitcoin-s.datadir"))
+    BitcoinSAppConfig(configDataDir, config)
+  }
+
+  def fromClassPathConfig()(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
+    fromConfig(ConfigFactory.load())
+  }
 
   /** Constructs an app configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
