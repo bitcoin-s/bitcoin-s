@@ -141,9 +141,18 @@ class BitcoinSServerMain(override val args: Array[String])
           tmpWallet)
         _ = logger.info("Starting wallet")
 
-        zmq = BitcoindRpcBackendUtil.createZMQWalletCallbacks(wallet)
+        blockCount <- bitcoind.getBlockCount
+        // Create callbacks for processing new blocks
+        _ = bitcoindRpcConf.zmqPortOpt match {
+          case Some(_) =>
+            val zmq = BitcoindRpcBackendUtil.createZMQWalletCallbacks(wallet)
+            zmq.start()
+          case None =>
+            BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
+                                                             bitcoind,
+                                                             blockCount)
+        }
 
-        _ = zmq.start()
         _ <- wallet.start()
         binding <- startHttpServer(bitcoind, bitcoind, wallet, rpcPortOpt)
         _ = BitcoinSServer.startedFP.success(Future.successful(binding))
