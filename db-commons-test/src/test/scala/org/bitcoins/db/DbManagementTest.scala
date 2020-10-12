@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.db.DatabaseDriver._
+import org.bitcoins.dlc.oracle.DLCOracleAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
@@ -53,6 +54,9 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
       case PostgreSQL => 4
     }
     assert(result == expected)
+    val flywayInfo = chainDbManagement.info()
+    assert(flywayInfo.applied().length == expected)
+    assert(flywayInfo.pending().length == 0)
   }
 
   it must "run migrations for wallet db" in {
@@ -65,6 +69,9 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
       case PostgreSQL => 6
     }
     assert(result == expected)
+    val flywayInfo = walletDbManagement.info()
+    assert(flywayInfo.applied().length == expected)
+    assert(flywayInfo.pending().length == 0)
   }
 
   it must "run migrations for node db" in {
@@ -77,5 +84,8 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
       case PostgreSQL => 2
     }
     assert(result == expected)
+    val flywayInfo = nodeDbManagement.info()
+    assert(flywayInfo.applied().length == expected)
+    assert(flywayInfo.pending().length == 0)
   }
 }
