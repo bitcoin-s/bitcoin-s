@@ -138,7 +138,7 @@ object Transaction extends Factory[Transaction] {
 sealed abstract class NonWitnessTransaction extends Transaction {
   override def weight: Long = byteSize * 4
 
-  override def bytes: ByteVector = {
+  override lazy val bytes: ByteVector = {
     val versionBytes = version.bytes.reverse
     val inputBytes = BytesUtil.writeCmpctSizeUInt(inputs)
     val outputBytes = BytesUtil.writeCmpctSizeUInt(outputs)
@@ -235,7 +235,7 @@ case class WitnessTransaction(
     * Functionality inside of Bitcoin Core:
     * [[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L282-L287s]]
     */
-  override def bytes: ByteVector = {
+  override lazy val bytes: ByteVector = {
     val versionBytes = version.bytes.reverse
     val inputBytes = BytesUtil.writeCmpctSizeUInt(inputs)
     val outputBytes = BytesUtil.writeCmpctSizeUInt(outputs)
