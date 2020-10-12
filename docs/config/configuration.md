@@ -215,7 +215,7 @@ bitcoin-s {
         db {
             driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/database"
-            username = "user"
+            user = "user"
             password = "topsecret"
             numThreads = 5
         }
@@ -245,7 +245,7 @@ bitcoin-s {
         db {
             driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/chaindb"
-            username = "user"
+            user = "user"
             password = "topsecret"
         }
     }
@@ -254,7 +254,7 @@ bitcoin-s {
         db {
             driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/walletdb"
-            username = "user"
+            user = "user"
             password = "topsecret"
         }
     }
