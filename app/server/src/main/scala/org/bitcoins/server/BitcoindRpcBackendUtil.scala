@@ -1,7 +1,9 @@
 package org.bitcoins.server
 
 import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicReference
 
+import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -11,7 +13,9 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.zmq.ZMQSubscriber
 
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 /** Useful utilities to use in the wallet project for syncing things against bitcoind */
 object BitcoindRpcBackendUtil extends BitcoinSLogger {
@@ -44,8 +48,10 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
   def createZMQWalletCallbacks(wallet: Wallet)(implicit
       bitcoindRpcConf: BitcoindRpcAppConfig): ZMQSubscriber = {
+    require(bitcoindRpcConf.zmqPortOpt.isDefined,
+            "Must have the zmq port defined to setup ZMQ callbacks")
     val zmqSocket =
-      new InetSocketAddress("tcp://127.0.0.1", bitcoindRpcConf.zmqPort)
+      new InetSocketAddress("tcp://127.0.0.1", bitcoindRpcConf.zmqPortOpt.get)
 
     val rawTxListener: Option[Transaction => Unit] = Some {
       { tx: Transaction =>
@@ -115,6 +121,62 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       override def broadcastTransaction(
           transaction: Transaction): Future[Unit] = {
         bitcoindRpcClient.sendRawTransaction(transaction).map(_ => ())
+      }
+    }
+  }
+
+  /** Starts the [[ActorSystem]] to poll the [[BitcoindRpcClient]] for its block count,
+    * if it has changed, it will then request those blocks to process them
+    *
+    * @param startCount The starting block height of the wallet
+    * @param interval The amount of time between polls, this should not be too aggressive
+    *                 as the wallet will need to process the new blocks
+    */
+  def startBitcoindBlockPolling(
+      wallet: Wallet,
+      bitcoind: BitcoindRpcClient,
+      startCount: Int,
+      interval: FiniteDuration = 10.seconds)(implicit
+      system: ActorSystem,
+      ec: ExecutionContext): Cancellable = {
+    val atomicPrevCount: AtomicReference[Int] = new AtomicReference(startCount)
+    system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
+      {
+        logger.debug("Polling bitcoind for block count")
+        bitcoind.getBlockCount.flatMap { count =>
+          val prevCount = atomicPrevCount.get()
+          if (prevCount < count) {
+            logger.debug("Bitcoind has new block(s), requesting...")
+
+            // use .tail so we don't process the previous block that we already did
+            val range = prevCount.to(count).tail
+
+            val hashFs =
+              range.map(bitcoind.getBlockHash(_).map(_.flip))
+
+            val oldPrevCount = prevCount
+            atomicPrevCount.set(count)
+
+            val requestsBlocksF = for {
+              hashes <- Future.sequence(hashFs)
+              _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
+            } yield logger.debug("Successfully polled bitcoind for new blocks")
+
+            requestsBlocksF.onComplete {
+              case Success(_) => ()
+              case Failure(err) =>
+                atomicPrevCount.set(oldPrevCount)
+                logger.error("Requesting blocks from bitcoind polling failed",
+                             err)
+            }
+
+            requestsBlocksF
+          } else if (prevCount > count) {
+            Future.failed(new RuntimeException(
+              s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
+          } else FutureUtil.unit
+        }
+        ()
       }
     }
   }
