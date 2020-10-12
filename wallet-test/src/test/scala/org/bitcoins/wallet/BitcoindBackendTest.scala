@@ -66,7 +66,7 @@ class BitcoindBackendTest extends BitcoinSAsyncTest with EmbeddedPg {
       _ <-
         wallet.stateDescriptorDAO.updateSyncHeight(header.hashBE, header.height)
 
-      _ <- BitcoindRpcBackendUtil.catchupWalletToBitcoind(bitcoind, wallet)
+      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
 
       balance <- wallet.getBalance()
 

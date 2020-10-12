@@ -141,7 +141,7 @@ class BitcoinSServerMain(override val args: Array[String])
           tmpWallet)
         _ = logger.info("Starting wallet")
         _ <- wallet.start()
-        _ <- BitcoindRpcBackendUtil.catchupWalletToBitcoind(bitcoind, wallet)
+        _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
 
         blockCount <- bitcoind.getBlockCount
         // Create callbacks for processing new blocks

@@ -21,8 +21,8 @@ import scala.util.{Failure, Success}
 object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
   /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
-  def catchupWalletToBitcoind(bitcoind: BitcoindRpcClient, wallet: Wallet)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def syncWalletToBitcoind(bitcoind: BitcoindRpcClient, wallet: Wallet)(implicit
+      ec: ExecutionContext): Future[Unit] = {
 
     def doSync(walletHeight: Int, bitcoindHeight: Int): Future[Unit] = {
       if (walletHeight > bitcoindHeight) {
