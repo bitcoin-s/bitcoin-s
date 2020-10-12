@@ -1,7 +1,7 @@
 package org.bitcoins.db
 
 import com.typesafe.config.ConfigFactory
-import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.config._
 import org.bitcoins.dlc.oracle.DLCOracleAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -66,6 +66,13 @@ class AppConfigTest extends BitcoinSAsyncTest {
 
     val dlcOracleAppConfig = DLCOracleAppConfig.fromConfig(conf)
     assert(dlcOracleAppConfig.baseDatadir == dir)
+  }
+
+  it must "create from class path config" in {
+    val appConfig = BitcoinSAppConfig.fromClassPathConfig()
+    assert(appConfig.nodeConf.network == RegTest)
+    assert(appConfig.walletConf.requiredConfirmations == 6)
+    assert(!appConfig.chainConf.forceRecalcChainWork)
   }
 
   it must "fill in typesafe config variables correctly" in {

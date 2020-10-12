@@ -87,6 +87,11 @@ object BitcoinSAppConfig {
     BitcoinSAppConfig(configDataDir, config)
   }
 
+  def fromClassPathConfig()(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
+    fromConfig(ConfigFactory.load())
+  }
+
   /** Constructs an app configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */

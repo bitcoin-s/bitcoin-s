@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.oracle
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path}
 
 import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
@@ -9,7 +9,7 @@ import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver._
-import org.bitcoins.db.{AppConfig, DbManagement, JdbcProfileComponent}
+import org.bitcoins.db._
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 
@@ -124,11 +124,9 @@ case class DLCOracleAppConfig(
     List(rValueTable, eventTable, eventOutcomeTable)
 }
 
-object DLCOracleAppConfig {
+object DLCOracleAppConfig extends AppConfigFactory[DLCOracleAppConfig] {
 
-  def fromConfig(config: Config)(implicit
-      ec: ExecutionContext): DLCOracleAppConfig = {
-    val configDataDir: Path = Paths.get(config.getString("bitcoin-s.datadir"))
-    DLCOracleAppConfig(configDataDir, config)
-  }
+  override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
+      ec: ExecutionContext): DLCOracleAppConfig =
+    DLCOracleAppConfig(datadir, confs: _*)
 }
