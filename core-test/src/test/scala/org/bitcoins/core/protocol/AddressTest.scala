@@ -30,4 +30,10 @@ class AddressTest extends BitcoinSUnitTest {
     TestUtil.bech32Address.toString must be(
       "bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf")
   }
+
+  it must "calculate the correct descriptor" in {
+    forAll(AddressGenerator.address) { addr =>
+      assert(addr.descriptor == s"addr(${addr.value})")
+    }
+  }
 }
