@@ -112,7 +112,6 @@ object CETComputer {
           }
       }
 
-      println(uniqueStartDigits)
       if (uniqueStartDigits.head == 0) {
         uniqueStartDigits.reverse.init +: fromFront.drop(base - 1)
       } else {
