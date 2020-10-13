@@ -84,26 +84,37 @@ object CETComputer {
   def frontGroupingsWithFixedDigit(
       uniqueStartDigits: Vector[Int],
       base: Int): Vector[Vector[Int]] = {
-    uniqueStartDigits +: uniqueStartDigits.zipWithIndex.init.flatMap {
-      case (lastImportantDigit, unimportantDigits) =>
-        val fixedDigits = uniqueStartDigits.drop(unimportantDigits + 1).reverse
-        (lastImportantDigit + 1).until(base).map { lastDigit =>
-          fixedDigits :+ lastDigit
-        }
+    if (uniqueStartDigits.init.forall(_ == 0)) {
+      Vector(Vector(uniqueStartDigits.last))
+    } else {
+      uniqueStartDigits +: uniqueStartDigits.zipWithIndex.init.flatMap {
+        case (lastImportantDigit, unimportantDigits) =>
+          val fixedDigits =
+            uniqueStartDigits.drop(unimportantDigits + 1).reverse
+          (lastImportantDigit + 1).until(base).map { lastDigit =>
+            fixedDigits :+ lastDigit
+          }
+      }
     }
   }
 
   def backGroupingsWithFixedDigit(
-      uniqueEndDigits: Vector[Int]): Vector[Vector[Int]] = {
-    val fromBack = uniqueEndDigits.zipWithIndex.init.flatMap {
-      case (lastImportantDigit, unimportantDigits) =>
-        val fixedDigits = uniqueEndDigits.drop(unimportantDigits + 1).reverse
-        0.until(lastImportantDigit).reverseIterator.toVector.map { lastDigit =>
-          fixedDigits :+ lastDigit
-        }
-    }
+      uniqueEndDigits: Vector[Int],
+      base: Int): Vector[Vector[Int]] = {
+    if (uniqueEndDigits.init.forall(_ == base - 1)) {
+      Vector(Vector(uniqueEndDigits.last))
+    } else {
+      val fromBack = uniqueEndDigits.zipWithIndex.init.flatMap {
+        case (lastImportantDigit, unimportantDigits) =>
+          val fixedDigits = uniqueEndDigits.drop(unimportantDigits + 1).reverse
+          0.until(lastImportantDigit).reverseIterator.toVector.map {
+            lastDigit =>
+              fixedDigits :+ lastDigit
+          }
+      }
 
-    fromBack.reverse :+ uniqueEndDigits
+      fromBack.reverse :+ uniqueEndDigits
+    }
   }
 
   def firstDigitFixedGroupings(
