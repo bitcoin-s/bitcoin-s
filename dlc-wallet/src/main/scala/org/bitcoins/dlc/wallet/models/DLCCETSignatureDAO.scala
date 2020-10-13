@@ -69,9 +69,8 @@ case class DLCCETSignatureDAO()(implicit
     def signature: Rep[ECAdaptorSignature] = column("signature")
 
     def * : ProvenShape[DLCCETSignatureDb] =
-      (paramHash,
-       outcomeHash,
-       signature) <> (DLCCETSignatureDb.tupled, DLCCETSignatureDb.unapply)
+      (paramHash, outcomeHash, signature).<>(DLCCETSignatureDb.tupled,
+                                             DLCCETSignatureDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_cet_sigs",
