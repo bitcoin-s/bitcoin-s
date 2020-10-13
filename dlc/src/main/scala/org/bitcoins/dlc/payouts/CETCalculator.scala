@@ -169,7 +169,7 @@ object CETCalculator {
     val uniqueEndDigits = endDigits.dropRight(sharedDigits.length)
 
     if (sharedDigits.length == startDigits.length) {
-      Vector.empty
+      Vector(sharedDigits)
     } else if (sharedDigits.length == startDigits.length - 1) {
       startDigits.head.to(endDigits.head).toVector.map { lastDigit =>
         startDigits.tail.reverse :+ lastDigit
@@ -193,10 +193,9 @@ object CETCalculator {
       base: Int,
       numDigits: Int,
       function: OutcomeValueFunction,
-      totalCollateral: Satoshis): Vector[(Vector[Int], Satoshis)] = {
-    val min = 0
-    val max = Math.pow(base, numDigits).toLong - 1
-
+      totalCollateral: Satoshis,
+      min: Long,
+      max: Long): Vector[(Vector[Int], Satoshis)] = {
     val ranges = splitIntoRanges(min, max, totalCollateral, function)
 
     ranges.flatMap { range =>
@@ -216,5 +215,16 @@ object CETCalculator {
           }
       }
     }
+  }
+
+  def computeCETs(
+      base: Int,
+      numDigits: Int,
+      function: OutcomeValueFunction,
+      totalCollateral: Satoshis): Vector[(Vector[Int], Satoshis)] = {
+    val min = 0
+    val max = Math.pow(base, numDigits).toLong - 1
+
+    computeCETs(base, numDigits, function, totalCollateral, min, max)
   }
 }
