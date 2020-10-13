@@ -6,7 +6,36 @@ title: Oracle Server
 The Oracle Server is a DLC Oracle with functionality for creating events and attesting to them.
 It also provides data to be able to set up your staking address.
 
-### Building the Oracle Server
+## Step 1: Java and Scala
+
+To get started you will need Java, Scala, and some other nice tools installed, luckily the Scala team has an easy setup process!
+
+Simply follow the instructions in [this short blog](https://www.scala-lang.org/2020/06/29/one-click-install.html) to get started.
+
+## Step 2: Bitcoin-S Repository
+
+Now, it is time to clone the [Bitcoin-S repository](https://github.com/bitcoin-s/bitcoin-s/) by running
+
+```bashrc
+git clone --recursive git@github.com:bitcoin-s/bitcoin-s.git
+```
+
+or alternatively, if you do not have ssh setup with github, you can run
+
+```bashrc
+git clone --recursive https://github.com/bitcoin-s/bitcoin-s.git
+```
+
+Next, you will want to execute the commands
+
+```bashrc
+cd bitcoin-s
+git submodule update
+```
+
+to download the secp256k1 submodule, this is so cryptographic functions like signing will be faster.
+
+## Step 3: Building the Oracle Server
 
 You can build the oracle server with the [sbt native packager](https://github.com/sbt/sbt-native-packager).
 The native packager offers [numerous ways to package the project](https://github.com/sbt/sbt-native-packager#examples).
@@ -23,7 +52,13 @@ This will produce a script to execute bitcoin-s which you can start with
 ./app/oracle-server/target/universal/stage/bin/bitcoin-s-oracle-server
 ```
 
-### Configuration
+Alternatively you can run the server by just using:
+
+```bash
+sbt oracleServer/run
+```
+
+## Step 4: Configuration
 
 If you would like to pass in a custom datadir for your server, you can do
 
@@ -47,7 +82,7 @@ For more information on configuring the server please see our [configuration](..
 
 For more information on how to use our built in `cli` to interact with the server please see [cli.md](../applications/cli.md)
 
-### Server Endpoints
+## Server Endpoints
 
 - `getpublickey` - Get oracle's public key
 - `getstakingaddress` - Get oracle's staking address
@@ -64,7 +99,7 @@ For more information on how to use our built in `cli` to interact with the serve
 - `getsignature` `nonce` - Get the signature from a signed event
   - `nonce` - Nonce associated with the signed event
   
-#### Create Event Example
+### Create Event Example
 
 Bitcoin-S CLI:
 ```bash
@@ -98,7 +133,7 @@ $ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getevent",
 {"result":{"nonce":"28592661c78a3c2e0a568e92122e146022cb018b6b0ac888cdffc70a506e9ad2","eventName":"testEvent","numOutcomes":3,"signingVersion":"Mock","maturationTime":"2020-10-05T16:58:57Z","commitmentSignature":"a91499fa83ca607b06bb919284e002452d6c8f396295495586886b1f7e6d6f094c7d1504f35ee2210a036313569c1951aada6b3d52248f77c7e2c5836a970dd7","attestation":"","signature":"","outcomes":["outcome 1","outcome 2","outcome 3"]},"error":null}
 ```
 
-#### Sign Event Example
+### Sign Event Example
 
 Bitcoin-S CLI:
 
