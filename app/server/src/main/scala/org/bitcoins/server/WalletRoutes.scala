@@ -10,6 +10,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.AddressLabelTagType
 import org.bitcoins.crypto.NetworkElement
+import ujson._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -17,6 +18,13 @@ import scala.util.{Failure, Success}
 case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
+
+  private def spendingInfoDbToJson(spendingInfoDb: SpendingInfoDb): Value = {
+    Obj(
+      "outpoint" -> Str(spendingInfoDb.outPoint.hex),
+      "value" -> Num(spendingInfoDb.output.value.satoshis.toLong.toDouble)
+    )
+  }
 
   private def handleBroadcastable(
       tx: Transaction,
@@ -158,7 +166,7 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
         case Success(GetAddressTags(address)) =>
           complete {
             wallet.getAddressTags(address).map { tagDbs =>
-              val retStr = tagDbs.map(_.tagName.name).mkString(", ")
+              val retStr = tagDbs.map(_.tagName.name)
               Server.httpSuccess(retStr)
             }
           }
@@ -171,7 +179,7 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
         case Success(GetAddressLabels(address)) =>
           complete {
             wallet.getAddressTags(address, AddressLabelTagType).map { tagDbs =>
-              val retStr = tagDbs.map(_.tagName.name).mkString(", ")
+              val retStr = tagDbs.map(_.tagName.name)
               Server.httpSuccess(retStr)
             }
           }
@@ -316,9 +324,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
     case ServerCommand("getutxos", _) =>
       complete {
         wallet.listUtxos().map { utxos =>
-          val retStr = utxos.foldLeft("")((accum, spendInfo) =>
-            accum + s"${spendInfo.outPoint.hex} ${spendInfo.output.value}\n")
-          Server.httpSuccess(retStr)
+          val json = utxos.map(spendingInfoDbToJson)
+          Server.httpSuccess(json)
         }
       }
 
@@ -342,7 +349,11 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
       complete {
         wallet.listFundedAddresses().map { addressDbs =>
           val addressAndValues = addressDbs.map {
-            case (addressDb, value) => s"${addressDb.address} $value"
+            case (addressDb, value) =>
+              Obj(
+                "address" -> Str(addressDb.address.value),
+                "value" -> Num(value.satoshis.toLong.toDouble)
+              )
           }
 
           Server.httpSuccess(addressAndValues)
@@ -373,8 +384,11 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
           complete {
             wallet.getAddressInfo(address).map {
               case Some(addressInfo) =>
-                Server.httpSuccess(
-                  s"${addressInfo.pubkey.hex} ${addressInfo.path.toString}")
+                val json = Obj(
+                  "pubkey" -> Str(addressInfo.pubkey.hex),
+                  "path" -> Str(addressInfo.path.toString)
+                )
+                Server.httpSuccess(json)
               case None =>
                 Server.httpSuccess("Wallet does not contain address")
             }

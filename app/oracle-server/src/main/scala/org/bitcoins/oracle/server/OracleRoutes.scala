@@ -65,7 +65,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
                     (Str(completedEvent.attestation.hex),
                      Str(completedEvent.signature.hex))
                   case _: PendingEvent =>
-                    (Str(""), Str(""))
+                    (ujson.Null, ujson.Null)
                 }
 
                 val json = Obj(
@@ -82,7 +82,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
                 )
                 Server.httpSuccess(json)
               case None =>
-                Server.httpSuccess("[]")
+                Server.httpSuccess(ujson.Null)
             }
           }
       }
@@ -109,7 +109,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
               case Some(completed: CompletedEvent) =>
                 Server.httpSuccess(completed.signature.hex)
               case None | Some(_: PendingEvent) =>
-                Server.httpSuccess("[]")
+                Server.httpSuccess(ujson.Null)
             }
           }
       }

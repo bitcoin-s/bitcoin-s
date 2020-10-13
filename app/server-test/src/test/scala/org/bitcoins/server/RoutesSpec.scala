@@ -353,7 +353,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":"000000000000000000000000000000000000000000000000000000000000000000000000 -1 sats\n","error":null}""")
+          responseAs[String] == """{"result":[{"outpoint":"000000000000000000000000000000000000000000000000000000000000000000000000","value":-1}],"error":null}""")
       }
     }
 
@@ -424,7 +424,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[String] ==
-          s"""{"result":["$testAddressStr ${Satoshis.zero}"],"error":null}""".stripMargin)
+          s"""{"result":[{"address":"$testAddressStr","value":0}],"error":null}""".stripMargin)
       }
     }
 
@@ -509,7 +509,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == """{"result":"""" + key.hex + " " + hdPath.toString + """","error":null}""")
+          String] == s"""{"result":{"pubkey":"${key.hex}","path":"${hdPath.toString}"},"error":null}""")
       }
     }
 
@@ -621,8 +621,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(responseAs[
-          String] == """{"result":"""" + testLabel.name + """","error":null}""")
+        assert(
+          responseAs[String] == """{"result":["""" + testLabel.name + """"],"error":null}""")
       }
     }
 
@@ -639,8 +639,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(responseAs[
-          String] == """{"result":"""" + testLabel.name + """","error":null}""")
+        assert(
+          responseAs[String] == """{"result":["""" + testLabel.name + """"],"error":null}""")
       }
     }
 
