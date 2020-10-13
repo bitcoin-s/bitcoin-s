@@ -12,6 +12,7 @@ object CETComputer {
   case class StartZero(indexFrom: Long, indexTo: Long) extends CETRange
   case class StartTotal(indexFrom: Long, indexTo: Long) extends CETRange
   case class StartFunc(indexFrom: Long, indexTo: Long) extends CETRange
+  case class StartFuncConst(indexFrom: Long, indexTo: Long) extends CETRange
 
   object CETRange {
 
@@ -49,19 +50,32 @@ object CETComputer {
         currentRange match {
           case StartZero(indexFrom, _) =>
             currentRange = StartZero(indexFrom, num)
-          case _: StartTotal | _: StartFunc => newRange(num, value)
+          case _: StartTotal | _: StartFunc | _: StartFuncConst =>
+            newRange(num, value)
         }
       } else if (value >= totalCollateral) {
         currentRange match {
           case StartTotal(indexFrom, _) =>
             currentRange = StartTotal(indexFrom, num)
-          case _: StartZero | _: StartFunc => newRange(num, value)
+          case _: StartZero | _: StartFunc | _: StartFuncConst =>
+            newRange(num, value)
+        }
+      } else if (num != from && value == function(num - 1)) {
+        currentRange match {
+          case StartFunc(indexFrom, indexTo) =>
+            rangeBuilder += StartFunc(indexFrom, indexTo - 1)
+            currentRange = StartFuncConst(num - 1, num)
+          case StartFuncConst(indexFrom, _) =>
+            currentRange = StartFuncConst(indexFrom, num)
+          case _: StartZero | _: StartTotal =>
+            throw new RuntimeException("Something has gone horribly wrong.")
         }
       } else {
         currentRange match {
           case StartFunc(indexFrom, _) =>
             currentRange = StartFunc(indexFrom, num)
-          case _: StartZero | _: StartTotal => newRange(num, value)
+          case _: StartZero | _: StartTotal | _: StartFuncConst =>
+            newRange(num, value)
         }
       }
     }
@@ -98,8 +112,9 @@ object CETComputer {
           }
       }
 
-      if (uniqueStartDigits.last == 0) {
-        uniqueStartDigits.init.reverse +: fromFront.drop(9)
+      println(uniqueStartDigits)
+      if (uniqueStartDigits.head == 0) {
+        uniqueStartDigits.reverse.init +: fromFront.drop(base - 1)
       } else {
         uniqueStartDigits.reverse +: fromFront
       }
@@ -121,7 +136,11 @@ object CETComputer {
           }
       }
 
-      fromBack.reverse :+ uniqueEndDigits.reverse
+      if (uniqueEndDigits.head == base - 1) {
+        fromBack.drop(base - 1).reverse :+ uniqueEndDigits.reverse.init
+      } else {
+        fromBack.reverse :+ uniqueEndDigits.reverse
+      }
     }
   }
 
@@ -189,6 +208,9 @@ object CETComputer {
         case StartTotal(indexFrom, indexTo) =>
           groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map(
             _ -> totalCollateral)
+        case StartFuncConst(indexFrom, indexTo) =>
+          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map(
+            _ -> function(indexFrom))
         case StartFunc(indexFrom, indexTo) =>
           indexFrom.to(indexTo).map { num =>
             decompose(num, base, numDigits).reverse -> function(num)
