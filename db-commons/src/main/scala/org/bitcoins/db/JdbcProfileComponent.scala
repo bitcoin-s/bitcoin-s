@@ -48,7 +48,7 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
 
   lazy val driver: DatabaseDriver = DatabaseDriver.fromString(driverName)
 
-  lazy val username: String = dbConfig.config.getString("db.username")
+  lazy val username: String = dbConfig.config.getString("db.user")
 
   lazy val password: String = dbConfig.config.getString("db.password")
 
