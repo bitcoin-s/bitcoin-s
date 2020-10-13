@@ -75,6 +75,29 @@ case class FundingInputTx(
   def toFundingInput(implicit ec: ExecutionContext): DLCFundingInput = {
     DLCFundingInput.fromInputSigningInfo(scriptSignatureParams)
   }
+
+  def toSerializedFundingInputTx(implicit
+      ec: ExecutionContext): SerializedFundingInputTx = {
+    SerializedFundingInputTx(tx,
+                             idx,
+                             inputKeys,
+                             redeemScript,
+                             scriptWitness,
+                             scriptSignatureParams.maxWitnessLen)
+  }
+}
+
+case class SerializedFundingInputTx(
+    tx: Transaction,
+    idx: Int,
+    inputKeys: Vector[ECPrivateKey],
+    redeemScript: Option[WitnessScriptPubKey],
+    scriptWitness: ScriptWitnessV0,
+    maxWitnessLen: Int) {
+
+  def toFundingInputTx: FundingInputTx = {
+    FundingInputTx(tx, idx, inputKeys, redeemScript, scriptWitness)
+  }
 }
 
 // Currently only supports P2WPKH inputs
@@ -276,8 +299,16 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
       { witness => JsString(witness.hex) }
     )
 
+  implicit val serializedFundingInputTx: Format[SerializedFundingInputTx] =
+    Json.format[SerializedFundingInputTx]
+
   implicit val fundingInputTxFormat: Format[FundingInputTx] =
-    Json.format[FundingInputTx]
+    Format[FundingInputTx](
+      { _.validate[SerializedFundingInputTx].map(_.toFundingInputTx) },
+      { inputTx =>
+        Json.toJson(inputTx.toSerializedFundingInputTx(ExecutionContext.global))
+      }
+    )
 
   implicit val addressFormat: Format[BitcoinAddress] =
     Format[BitcoinAddress](
