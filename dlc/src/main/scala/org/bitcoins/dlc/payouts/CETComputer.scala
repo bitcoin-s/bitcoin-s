@@ -89,13 +89,19 @@ object CETComputer {
     if (uniqueStartDigits.init.forall(_ == 0)) {
       Vector(Vector(uniqueStartDigits.last))
     } else {
-      uniqueStartDigits.reverse +: uniqueStartDigits.zipWithIndex.init.flatMap {
+      val fromFront = uniqueStartDigits.zipWithIndex.init.flatMap {
         case (lastImportantDigit, unimportantDigits) =>
           val fixedDigits =
             uniqueStartDigits.drop(unimportantDigits + 1).reverse
           (lastImportantDigit + 1).until(base).map { lastDigit =>
             fixedDigits :+ lastDigit
           }
+      }
+
+      if (uniqueStartDigits.last == 0) {
+        uniqueStartDigits.init.reverse +: fromFront.drop(9)
+      } else {
+        uniqueStartDigits.reverse +: fromFront
       }
     }
   }
