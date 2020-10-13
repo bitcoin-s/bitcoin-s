@@ -66,6 +66,8 @@ object CETComputer {
       }
     }
 
+    rangeBuilder += currentRange
+
     rangeBuilder.result()
   }
 
@@ -87,7 +89,7 @@ object CETComputer {
     if (uniqueStartDigits.init.forall(_ == 0)) {
       Vector(Vector(uniqueStartDigits.last))
     } else {
-      uniqueStartDigits +: uniqueStartDigits.zipWithIndex.init.flatMap {
+      uniqueStartDigits.reverse +: uniqueStartDigits.zipWithIndex.init.flatMap {
         case (lastImportantDigit, unimportantDigits) =>
           val fixedDigits =
             uniqueStartDigits.drop(unimportantDigits + 1).reverse
@@ -113,7 +115,7 @@ object CETComputer {
           }
       }
 
-      fromBack.reverse :+ uniqueEndDigits
+      fromBack.reverse :+ uniqueEndDigits.reverse
     }
   }
 
@@ -152,7 +154,7 @@ object CETComputer {
       val frontGroupings = frontGroupingsWithFixedDigit(uniqueStartDigits, base)
       val firstDigitGroupings =
         firstDigitFixedGroupings(uniqueStartDigits.last, uniqueEndDigits.last)
-      val backGroupings = backGroupingsWithFixedDigit(uniqueEndDigits)
+      val backGroupings = backGroupingsWithFixedDigit(uniqueEndDigits, base)
 
       val uniqueDigitsGroupings =
         frontGroupings ++ firstDigitGroupings ++ backGroupings
