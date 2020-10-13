@@ -109,6 +109,8 @@ git submodule update
 
 and then finally test that `Secp256k1Context.isEnabled()` as in Step 2.
 
+If you're looking to set up a DLC Oracle instead go to the [oracle server docs](oracle/oracle-server.md).
+
 ## Step 5: Setting Up A Bitcoin-S Server
 
 We are finally ready to start running some programs! Follow the [instructions here](applications/server.md#building-the-server) to build the server. Then, follow [these instructions](applications/cli.md) to setup the CLI.
