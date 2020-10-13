@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.db.DatabaseDriver._
+import org.bitcoins.dlc.oracle.DLCOracleAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
@@ -48,11 +49,22 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
                                         dbConfig(ProjectType.Chain))
     val chainDbManagement = createChainDbManagement(chainAppConfig)
     val result = chainDbManagement.migrate()
-    val expected = chainAppConfig.driver match {
-      case SQLite     => 5
-      case PostgreSQL => 4
+    chainAppConfig.driver match {
+      case SQLite =>
+        val expected = 5
+        assert(result == expected)
+        val flywayInfo = chainDbManagement.info()
+        assert(flywayInfo.applied().length == expected)
+        assert(flywayInfo.pending().length == 0)
+      case PostgreSQL =>
+        val expected = 4
+        assert(result == expected)
+        val flywayInfo = chainDbManagement.info()
+        //+1 for << Flyway Schema Creation >>
+        assert(flywayInfo.applied().length == expected + 1)
+        assert(flywayInfo.pending().length == 0)
     }
-    assert(result == expected)
+
   }
 
   it must "run migrations for wallet db" in {
@@ -60,11 +72,23 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
                                           dbConfig(ProjectType.Wallet))
     val walletDbManagement = createWalletDbManagement(walletAppConfig)
     val result = walletDbManagement.migrate()
-    val expected = walletAppConfig.driver match {
-      case SQLite     => 8
-      case PostgreSQL => 6
+    walletAppConfig.driver match {
+      case SQLite =>
+        val expected = 8
+        assert(result == expected)
+        val flywayInfo = walletDbManagement.info()
+        assert(flywayInfo.applied().length == expected)
+        assert(flywayInfo.pending().length == 0)
+      case PostgreSQL =>
+        val expected = 6
+        assert(result == expected)
+        val flywayInfo = walletDbManagement.info()
+
+        //+1 for << Flyway Schema Creation >>
+        assert(flywayInfo.applied().length == expected + 1)
+        assert(flywayInfo.pending().length == 0)
     }
-    assert(result == expected)
+
   }
 
   it must "run migrations for node db" in {
@@ -72,10 +96,22 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
       NodeAppConfig(BitcoinSTestAppConfig.tmpDir(), dbConfig(ProjectType.Node))
     val nodeDbManagement = createNodeDbManagement(nodeAppConfig)
     val result = nodeDbManagement.migrate()
-    val expected = nodeAppConfig.driver match {
-      case SQLite     => 2
-      case PostgreSQL => 2
+    nodeAppConfig.driver match {
+      case SQLite =>
+        val expected = 2
+        assert(result == expected)
+        val flywayInfo = nodeDbManagement.info()
+        //+1 for << Flyway Schema Creation >>
+        assert(flywayInfo.applied().length == expected)
+        assert(flywayInfo.pending().length == 0)
+      case PostgreSQL =>
+        val expected = 2
+        assert(result == expected)
+        val flywayInfo = nodeDbManagement.info()
+
+        //+1 for << Flyway Schema Creation >>
+        assert(flywayInfo.applied().length == expected + 1)
+        assert(flywayInfo.pending().length == 0)
     }
-    assert(result == expected)
   }
 }
