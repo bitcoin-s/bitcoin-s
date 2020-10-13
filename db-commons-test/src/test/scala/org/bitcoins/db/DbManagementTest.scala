@@ -101,13 +101,37 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         val expected = 2
         assert(result == expected)
         val flywayInfo = nodeDbManagement.info()
-        //+1 for << Flyway Schema Creation >>
+
         assert(flywayInfo.applied().length == expected)
         assert(flywayInfo.pending().length == 0)
       case PostgreSQL =>
         val expected = 2
         assert(result == expected)
         val flywayInfo = nodeDbManagement.info()
+
+        //+1 for << Flyway Schema Creation >>
+        assert(flywayInfo.applied().length == expected + 1)
+        assert(flywayInfo.pending().length == 0)
+    }
+  }
+
+  it must "run migrations for oracle db" in {
+    val oracleAppConfig =
+      DLCOracleAppConfig(BitcoinSTestAppConfig.tmpDir(),
+                         dbConfig(ProjectType.Oracle))
+    val result = oracleAppConfig.migrate()
+    oracleAppConfig.driver match {
+      case SQLite =>
+        val expected = 1
+        assert(result == expected)
+        val flywayInfo = oracleAppConfig.info()
+
+        assert(flywayInfo.applied().length == expected)
+        assert(flywayInfo.pending().length == 0)
+      case PostgreSQL =>
+        val expected = 1
+        assert(result == expected)
+        val flywayInfo = oracleAppConfig.info()
 
         //+1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
