@@ -101,7 +101,7 @@ case class DLCFundingInputDAO()(implicit
        outPoint,
        output,
        redeemScriptOpt,
-       witnessScriptOpt) <> (DLCFundingInputDb.tupled, DLCFundingInputDb.unapply)
+       witnessScriptOpt).<>(DLCFundingInputDb.tupled, DLCFundingInputDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_input", sourceColumns = outPoint)

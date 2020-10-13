@@ -4,7 +4,7 @@ import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.crypto.NetworkElement
+import org.bitcoins.crypto.{CryptoUtil, NetworkElement}
 import org.bitcoins.dlc.testgen.ByteVectorWrapper._
 import play.api.libs.json.{
   JsArray,
@@ -285,6 +285,58 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "fundingSignatures" -> Element(fundingSignatures)
         )
         DLCMessageTestVector(LnMessage(tlv), "sign_dlc_v0", fields)
+      case EnumEventDescriptorV0TLV(outcomes) =>
+        val fields = Vector(
+          "tpe" -> Element(EnumEventDescriptorV0TLV.tpe),
+          "length" -> Element(tlv.length),
+          "numOutcomes" -> Element(UInt16(outcomes.size)),
+          "outcomes" -> MultiElement(outcomes.map { outcome =>
+            val outcomeBytes = CryptoUtil.serializeForHash(outcome)
+            NamedMultiElement(
+              "outcomeLen" -> Element(UInt16(outcomeBytes.length)),
+              "outcome" -> Element(outcomeBytes))
+          })
+        )
+
+        DLCTLVTestVector(tlv, "enum_event_descriptor_v0", fields)
+      case ExternalEventDescriptorV0TLV(externalName) =>
+        val fields = Vector(
+          "tpe" -> Element(ExternalEventDescriptorV0TLV.tpe),
+          "length" -> Element(tlv.length),
+          "externalName" -> Element(CryptoUtil.serializeForHash(externalName))
+        )
+
+        DLCTLVTestVector(tlv, "external_event_descriptor_v0", fields)
+      case RangeEventDescriptorV0TLV(start, stop, step) =>
+        val fields = Vector(
+          "tpe" -> Element(RangeEventDescriptorV0TLV.tpe),
+          "length" -> Element(tlv.length),
+          "start" -> Element(start),
+          "stop" -> Element(stop),
+          "step" -> Element(step)
+        )
+
+        DLCTLVTestVector(tlv, "range_event_descriptor_v0", fields)
+      case OracleEventV0TLV(pubKey, nonce, eventMaturity, descriptor, uri) =>
+        val fields = Vector(
+          "tpe" -> Element(OracleEventV0TLV.tpe),
+          "length" -> Element(tlv.length),
+          "oraclePublicKey" -> Element(pubKey),
+          "oracleNonce" -> Element(nonce),
+          "eventMaturityEpoch" -> Element(eventMaturity),
+          "eventDescriptor" -> Element(descriptor),
+          "event_uri" -> Element(CryptoUtil.serializeForHash(uri))
+        )
+
+        DLCTLVTestVector(tlv, "oracle_event_v0", fields)
+      case OracleAnnouncementV0TLV(sig, event) =>
+        val fields = Vector(
+          "tpe" -> Element(UInt16(OracleAnnouncementV0TLV.tpe.toInt)),
+          "signature" -> Element(sig),
+          "oracleEvent" -> Element(event)
+        )
+
+        DLCMessageTestVector(LnMessage(tlv), "oracle_announcement_v0", fields)
       case _: UnknownTLV | _: ErrorTLV | _: PingTLV | _: PongTLV =>
         throw new IllegalArgumentException(
           s"DLCParsingTestVector is only defined for DLC messages and TLVs, got $tlv")

@@ -5,9 +5,6 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class TLVTest extends BitcoinSUnitTest {
 
-  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    generatorDrivenConfigNewCode
-
   "TLV" must "have serialization symmetry" in {
     forAll(TLVGen.tlv) { tlv =>
       assert(TLV(tlv.bytes) == tlv)
