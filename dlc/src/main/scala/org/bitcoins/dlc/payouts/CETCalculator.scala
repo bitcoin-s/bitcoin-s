@@ -2,7 +2,7 @@ package org.bitcoins.dlc.payouts
 
 import org.bitcoins.core.currency.Satoshis
 
-object CETComputer {
+object CETCalculator {
 
   // Inclusive
   sealed trait CETRange {

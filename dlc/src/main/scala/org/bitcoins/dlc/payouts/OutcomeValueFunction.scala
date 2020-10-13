@@ -16,7 +16,7 @@ case class OutcomeValueFunction(points: Vector[OutcomeValuePoint]) {
     }
   }
 
-  private lazy val outcomes = points.map(_.outcome)
+  private lazy val outcomes = endpoints.map(_._1.outcome)
 
   def apply(outcome: BigDecimal): Satoshis = {
     val endpointIndex = outcomes.search(outcome).insertionPoint
