@@ -116,9 +116,9 @@ case class OutcomeValueQuadratic(
 
 case class OutcomeValuePolynomial(points: Vector[OutcomeValuePoint])
     extends OutcomeValueFunctionComponent {
-  override val leftEndpoint: OutcomeValuePoint = points.head
-  override val rightEndpoint: OutcomeValuePoint = points.last
-  override val midpoints: Vector[OutcomeValuePoint] = points.tail.init
+  override lazy val leftEndpoint: OutcomeValuePoint = points.head
+  override lazy val rightEndpoint: OutcomeValuePoint = points.last
+  override lazy val midpoints: Vector[OutcomeValuePoint] = points.tail.init
 
   lazy val coefficients: Vector[BigDecimal] = {
     points.map {
