@@ -68,9 +68,8 @@ case class DLCRefundSigDAO()(implicit
     def refundSig: Rep[PartialSignature] = column("refund_sig")
 
     def * : ProvenShape[DLCRefundSigDb] =
-      (paramHash,
-       isInitiator,
-       refundSig) <> (DLCRefundSigDb.tupled, DLCRefundSigDb.unapply)
+      (paramHash, isInitiator, refundSig).<>(DLCRefundSigDb.tupled,
+                                             DLCRefundSigDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_refund_sig",

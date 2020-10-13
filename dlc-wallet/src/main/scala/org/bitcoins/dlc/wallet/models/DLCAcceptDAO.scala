@@ -81,7 +81,7 @@ case class DLCAcceptDAO()(implicit
        fundingKey,
        payoutAddress,
        totalCollateral,
-       changeAddress) <> (DLCAcceptDb.tupled, DLCAcceptDb.unapply)
+       changeAddress).<>(DLCAcceptDb.tupled, DLCAcceptDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_accept", sourceColumns = paramHash)

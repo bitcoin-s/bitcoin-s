@@ -100,7 +100,7 @@ case class DLCOfferDAO()(implicit
        payoutAddress,
        totalCollateral,
        feeRate,
-       changeAddress) <> (DLCOfferDb.tupled, DLCOfferDb.unapply)
+       changeAddress).<>(DLCOfferDb.tupled, DLCOfferDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_offer", sourceColumns = paramHash)

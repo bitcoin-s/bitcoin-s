@@ -120,7 +120,7 @@ case class DLCDAO()(implicit
        isInitiator,
        account,
        keyIndex,
-       oracleSigOpt) <> (DLCDb.tupled, DLCDb.unapply)
+       oracleSigOpt).<>(DLCDb.tupled, DLCDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc", sourceColumns = paramHash)
