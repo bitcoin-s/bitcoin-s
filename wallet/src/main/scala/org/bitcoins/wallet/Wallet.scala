@@ -2,6 +2,7 @@ package org.bitcoins.wallet
 
 import java.time.Instant
 
+import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -81,6 +82,9 @@ abstract class Wallet
     OutgoingTransactionDAO()
   private[wallet] val addressTagDAO: AddressTagDAO = AddressTagDAO()
 
+  private[wallet] val stateDescriptorDAO: WalletStateDescriptorDAO =
+    WalletStateDescriptorDAO()
+
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
   val creationTime: Instant = keyManager.creationTime
@@ -157,6 +161,10 @@ abstract class Wallet
     }
   }
 
+  def getSyncHeight(): Future[Option[SyncHeightDescriptor]] = {
+    stateDescriptorDAO.getSyncHeightOpt()
+  }
+
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
     Wallet] = {
@@ -172,6 +180,9 @@ abstract class Wallet
             nodeApi.downloadBlocks(Vector(blockHash))
           } else FutureUtil.unit
       }
+      hash = blockFilters.last._1.flip
+      height <- chainQueryApi.getBlockHeight(hash)
+      _ <- stateDescriptorDAO.updateSyncHeight(hash, height.get)
     } yield {
       this
     }

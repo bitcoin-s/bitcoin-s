@@ -15,7 +15,8 @@ case class WalletDAOs(
     transactionDAO: TransactionDAO,
     incomingTxDAO: IncomingTransactionDAO,
     outgoingTxDAO: OutgoingTransactionDAO,
-    scriptPubKeyDAO: ScriptPubKeyDAO)
+    scriptPubKeyDAO: ScriptPubKeyDAO,
+    stateDescriptorDAO: WalletStateDescriptorDAO)
 
 trait WalletDAOFixture extends BitcoinSWalletTest {
 
@@ -28,6 +29,7 @@ trait WalletDAOFixture extends BitcoinSWalletTest {
     val incomingTx = IncomingTransactionDAO()
     val outgoingTx = OutgoingTransactionDAO()
     val scriptPubKey = ScriptPubKeyDAO()
+    val stateDescriptorDAO = WalletStateDescriptorDAO()
     WalletDAOs(account,
                address,
                tags,
@@ -35,7 +37,8 @@ trait WalletDAOFixture extends BitcoinSWalletTest {
                tx,
                incomingTx,
                outgoingTx,
-               scriptPubKey)
+               scriptPubKey,
+               stateDescriptorDAO)
   }
 
   final override type FixtureParam = WalletDAOs
