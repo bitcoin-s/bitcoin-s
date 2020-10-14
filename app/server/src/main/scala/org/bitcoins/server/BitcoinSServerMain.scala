@@ -138,7 +138,7 @@ class BitcoinSServerMain(override val args: Array[String])
                                              bitcoind,
                                              bitcoind,
                                              bip39PasswordOpt)
-        wallet = BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
+        wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
           bitcoind,
           tmpWallet)
         _ = logger.info("Starting wallet")
