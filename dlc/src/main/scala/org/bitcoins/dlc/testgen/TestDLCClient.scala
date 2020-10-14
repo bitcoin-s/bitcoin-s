@@ -54,9 +54,9 @@ case class TestDLCClient(
   private val dlcExecutor = DLCExecutor(dlcTxSigner)
 
   private val outcomes = if (isInitiator) {
-    offer.contractInfo
+    offer.oracleAndContractInfo.offerContractInfo
   } else {
-    dlcTxBuilder.acceptOutcomes
+    offer.oracleAndContractInfo.acceptContractInfo
   }
 
   val messages: Vector[Sha256Digest] = outcomes.keys.toVector
@@ -188,8 +188,9 @@ object TestDLCClient {
     }
 
     val offer = DLCMessage.DLCOffer(
-      contractInfo = offerOutcomes,
-      oracleInfo = DLCMessage.OracleInfo(oraclePubKey, preCommittedR),
+      oracleAndContractInfo = DLCMessage.OracleAndContractInfo(
+        DLCMessage.OracleInfo(oraclePubKey, preCommittedR),
+        offerOutcomes),
       pubKeys = offerPubKeys,
       totalCollateral = offerInput.satoshis,
       fundingInputs = offerFundingInputs,

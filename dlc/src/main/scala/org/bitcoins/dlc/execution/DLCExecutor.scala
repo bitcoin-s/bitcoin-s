@@ -2,7 +2,7 @@ package org.bitcoins.dlc.execution
 
 import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, FundingSignatures}
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
+import org.bitcoins.crypto.SchnorrDigitalSignature
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
 
@@ -12,7 +12,6 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
   val builder: DLCTxBuilder = signer.builder
   val isInitiator: Boolean = signer.isInitiator
-  val messages: Vector[Sha256Digest] = builder.offerOutcomes.keys.toVector
 
   /** Constructs the initiator's SetupDLC given the non-initiator's
     * CETSignatures which should arrive in a DLC accept message
@@ -79,7 +78,8 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     val SetupDLC(fundingTx, cetInfos, _) = dlcSetup
 
     val msgOpt =
-      messages.find(msg => builder.oraclePubKey.verify(msg.bytes, oracleSig))
+      builder.oracleAndContractInfo.allOutcomes.find(msg =>
+        builder.oracleAndContractInfo.verifySig(msg, oracleSig))
     val (msg, remoteAdaptorSig) = msgOpt match {
       case Some(msg) =>
         val cetInfo = cetInfos(msg)

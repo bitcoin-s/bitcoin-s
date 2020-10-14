@@ -3,6 +3,7 @@ package org.bitcoins.dlc.wallet.models
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   ContractInfo,
   DLCOffer,
+  OracleAndContractInfo,
   OracleInfo
 }
 import org.bitcoins.commons.jsonmodels.dlc.{
@@ -39,8 +40,7 @@ case class DLCOfferDb(
   def toDLCOffer(fundingInputs: Vector[DLCFundingInput]): DLCOffer = {
 
     DLCOffer(
-      contractInfo,
-      oracleInfo,
+      OracleAndContractInfo(oracleInfo, contractInfo),
       dlcPubKeys,
       totalCollateral.satoshis,
       fundingInputs,

@@ -4,6 +4,7 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   ContractInfo,
   DLCAcceptWithoutSigs,
   DLCOffer,
+  OracleAndContractInfo,
   OracleInfo
 }
 import org.bitcoins.commons.jsonmodels.dlc.{
@@ -117,8 +118,9 @@ case class DLCPartyParams(
 
   def toOffer(params: DLCParams)(implicit ec: ExecutionContext): DLCOffer = {
     DLCOffer(
-      ContractInfo(params.contractInfo.map(_.toMapEntry).toMap),
-      params.oracleInfo,
+      OracleAndContractInfo(
+        params.oracleInfo,
+        ContractInfo(params.contractInfo.map(_.toMapEntry).toMap)),
       DLCPublicKeys(fundingPrivKey.publicKey, payoutAddress),
       collateral.satoshis,
       fundingInputs,

@@ -70,7 +70,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
       builder.offerFundingKey
     }
 
-    val adaptorPoint = builder.sigPubKeys(outcome)
+    val adaptorPoint = builder.oracleAndContractInfo.sigPointForOutcome(outcome)
 
     val cet = Await.result(builder.buildCET(outcome), 5.seconds)
 

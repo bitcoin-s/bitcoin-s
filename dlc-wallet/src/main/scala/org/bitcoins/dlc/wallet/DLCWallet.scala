@@ -239,8 +239,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ = logger.debug(
         s"DLC Offer data collected, creating database entry, ${paramHash.hex}")
 
-      offer = DLCOffer(contractInfo,
-                       oracleInfo,
+      offer = DLCOffer(OracleAndContractInfo(oracleInfo, contractInfo),
                        dlcPubKeys,
                        collateral.satoshis,
                        utxos,
@@ -556,7 +555,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   def verifyCETSigs(accept: DLCAccept): Future[Boolean] = {
     verifierFromAccept(accept).map { verifier =>
       val correctNumberOfSigs =
-        accept.cetSigs.outcomeSigs.size == verifier.builder.offerOutcomes.size
+        accept.cetSigs.outcomeSigs.size == verifier.builder.oracleAndContractInfo.allOutcomes.length
 
       correctNumberOfSigs && accept.cetSigs.outcomeSigs.foldLeft(true) {
         case (ret, (outcome, sig)) =>
@@ -568,7 +567,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   def verifyCETSigs(sign: DLCSign): Future[Boolean] = {
     verifierFromDb(sign.contractId).map { verifier =>
       val correctNumberOfSigs =
-        sign.cetSigs.outcomeSigs.size == verifier.builder.offerOutcomes.size
+        sign.cetSigs.outcomeSigs.size == verifier.builder.oracleAndContractInfo.allOutcomes.length
 
       correctNumberOfSigs && sign.cetSigs.outcomeSigs.foldLeft(true) {
         case (ret, (outcome, sig)) =>

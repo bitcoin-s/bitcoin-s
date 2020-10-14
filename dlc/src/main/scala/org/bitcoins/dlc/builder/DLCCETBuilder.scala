@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.builder
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{ContractInfo, OracleInfo}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleAndContractInfo
 import org.bitcoins.commons.jsonmodels.dlc.DLCTimeouts
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
@@ -16,12 +16,7 @@ import org.bitcoins.core.wallet.builder.{
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{ConditionalPath, P2WSHV0InputInfo}
-import org.bitcoins.crypto.{
-  ECPublicKey,
-  SchnorrNonce,
-  SchnorrPublicKey,
-  Sha256Digest
-}
+import org.bitcoins.crypto.{ECPublicKey, Sha256Digest}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -29,24 +24,14 @@ import scala.concurrent.{ExecutionContext, Future}
   * Contract Execution Transactions (CETs)
   */
 case class DLCCETBuilder(
-    offerOutcomes: ContractInfo,
-    acceptOutcomes: ContractInfo,
+    oracleAndContractInfo: OracleAndContractInfo,
     offerFundingKey: ECPublicKey,
     offerFinalSPK: ScriptPubKey,
     acceptFundingKey: ECPublicKey,
     acceptFinalSPK: ScriptPubKey,
     timeouts: DLCTimeouts,
     feeRate: FeeUnit,
-    oracleInfo: OracleInfo,
     fundingOutputRef: OutputReference) {
-
-  val OracleInfo(oraclePubKey: SchnorrPublicKey, preCommittedR: SchnorrNonce) =
-    oracleInfo
-
-  val sigPubKeys: Map[Sha256Digest, ECPublicKey] = offerOutcomes.keys.map {
-    msg =>
-      msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
-  }.toMap
 
   private val fundingOutPoint = fundingOutputRef.outPoint
 
@@ -67,8 +52,7 @@ case class DLCCETBuilder(
       ec: ExecutionContext): Future[WitnessTransaction] = {
     val builder = RawTxBuilder().setLockTime(timeouts.contractMaturity.toUInt32)
 
-    val offerValue = offerOutcomes(msg)
-    val acceptValue = acceptOutcomes(msg)
+    val (offerValue, acceptValue) = oracleAndContractInfo.getPayouts(msg)
 
     builder += TransactionOutput(offerValue, offerFinalSPK)
     builder += TransactionOutput(acceptValue, acceptFinalSPK)

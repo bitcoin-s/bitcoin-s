@@ -42,6 +42,9 @@ trait DLCWalletUtil {
     winHash.bytes ++ Satoshis(
       10000).bytes ++ loseHash.bytes ++ Satoshis.zero.bytes)
 
+  lazy val sampleOracleAndContractInfo: OracleAndContractInfo =
+    OracleAndContractInfo(sampleOracleInfo, sampleContractInfo)
+
   lazy val sampleOracleWinSig: SchnorrDigitalSignature =
     oraclePrivKey.schnorrSignWithNonce(winHash.bytes, kValue)
 
@@ -91,8 +94,7 @@ trait DLCWalletUtil {
   )
 
   lazy val sampleDLCOffer: DLCOffer = DLCOffer(
-    sampleContractInfo,
-    sampleOracleInfo,
+    sampleOracleAndContractInfo,
     dummyDLCKeys,
     Satoshis(5000),
     Vector(dummyFundingInputs.head),

@@ -45,6 +45,12 @@ object DLCMessage {
   case class OracleInfo(pubKey: SchnorrPublicKey, rValue: SchnorrNonce)
       extends NetworkElement {
 
+    def verifySig(
+        outcome: Sha256Digest,
+        sig: SchnorrDigitalSignature): Boolean = {
+      pubKey.verify(outcome.bytes, sig)
+    }
+
     override def bytes: ByteVector = pubKey.bytes ++ rValue.bytes
 
     def toTLV: OracleInfoV0TLV = OracleInfoV0TLV(pubKey, rValue)
@@ -76,6 +82,12 @@ object DLCMessage {
     }
 
     def toTLV: ContractInfoV0TLV = ContractInfoV0TLV(outcomeValueMap)
+
+    def flip(totalCollateral: Satoshis): ContractInfo = {
+      ContractInfo(outcomeValueMap.map {
+        case (hash, amt) => (hash, (totalCollateral - amt).satoshis)
+      })
+    }
   }
 
   object ContractInfo extends Factory[ContractInfo] {
@@ -103,6 +115,70 @@ object DLCMessage {
     }
   }
 
+  case class OracleAndContractInfo(
+      oracleInfo: OracleInfo,
+      offerContractInfo: ContractInfo,
+      acceptContractInfo: ContractInfo) {
+
+    def verifySig(
+        outcome: Sha256Digest,
+        sig: SchnorrDigitalSignature): Boolean = {
+      oracleInfo.verifySig(outcome, sig)
+    }
+
+    lazy val outcomeMap: Map[Sha256Digest, (ECPublicKey, Satoshis, Satoshis)] =
+      allOutcomes.map { msg =>
+        msg -> (oracleInfo.pubKey.computeSigPoint(
+          msg.bytes,
+          oracleInfo.rValue), offerContractInfo(msg), acceptContractInfo(msg))
+      }.toMap
+
+    def resultOfOutcome(
+        outcome: Sha256Digest): (ECPublicKey, Satoshis, Satoshis) = {
+      outcomeMap(outcome)
+    }
+
+    def outcomeFromSignature(sig: SchnorrDigitalSignature): Sha256Digest = {
+      outcomeMap.find(_._2._1 == sig.sig.getPublicKey) match {
+        case Some((outcome, _)) => outcome
+        case None =>
+          throw new IllegalArgumentException(
+            s"Signature does not correspond to a possible outcome! $sig")
+      }
+    }
+
+    def sigPointForOutcome(outcome: Sha256Digest): ECPublicKey = {
+      resultOfOutcome(outcome)._1
+    }
+
+    lazy val allOutcomes: Vector[Sha256Digest] = offerContractInfo.keys.toVector
+
+    /** Returns the payouts for the signature as (toOffer, toAccept) */
+    def getPayouts(sig: SchnorrDigitalSignature): (Satoshis, Satoshis) = {
+      val outcome = outcomeFromSignature(sig)
+      getPayouts(outcome)
+    }
+
+    /** Returns the payouts for the outcome as (toOffer, toAccept) */
+    def getPayouts(outcome: Sha256Digest): (Satoshis, Satoshis) = {
+      val (_, offerOutcome, acceptOutcome) = resultOfOutcome(outcome)
+
+      (offerOutcome, acceptOutcome)
+    }
+  }
+
+  object OracleAndContractInfo {
+
+    def apply(
+        oracleInfo: OracleInfo,
+        offerContractInfo: ContractInfo): OracleAndContractInfo = {
+      OracleAndContractInfo(
+        oracleInfo,
+        offerContractInfo,
+        offerContractInfo.flip(offerContractInfo.values.maxBy(_.toLong)))
+    }
+  }
+
   sealed trait DLCSetupMessage extends DLCMessage {
     def pubKeys: DLCPublicKeys
     def totalCollateral: Satoshis
@@ -116,9 +192,9 @@ object DLCMessage {
   /**
     * The initiating party starts the protocol by sending an offer message to the other party.
     *
-    * @param contractInfo Contract information consists of a map to be used to create CETs
-    * @param oracleInfo The oracle public key and R point(s) to use to build the CETs as
-    *                   well as meta information to identify the oracle to be used in the contract.
+    * @param oracleAndContractInfo The oracle public key and R point(s) to use to build the CETs as
+    *                   well as meta information to identify the oracle to be used in the contract,
+    *                   and a map to be used to create CETs.
     * @param pubKeys The relevant public keys that the initiator will be using
     * @param totalCollateral How much the initiator inputs into the contract.
     * @param fundingInputs The set of UTXOs to be used as input to the fund transaction.
@@ -127,8 +203,7 @@ object DLCMessage {
     * @param timeouts The set of timeouts for the CETs
     */
   case class DLCOffer(
-      contractInfo: ContractInfo,
-      oracleInfo: OracleInfo,
+      oracleAndContractInfo: OracleAndContractInfo,
       pubKeys: DLCPublicKeys,
       totalCollateral: Satoshis,
       fundingInputs: Vector[DLCFundingInput],
@@ -136,6 +211,9 @@ object DLCMessage {
       feeRate: SatoshisPerVirtualByte,
       timeouts: DLCTimeouts)
       extends DLCSetupMessage {
+
+    val oracleInfo: OracleInfo = oracleAndContractInfo.oracleInfo
+    val contractInfo: ContractInfo = oracleAndContractInfo.offerContractInfo
 
     lazy val paramHash: Sha256DigestBE =
       calcParamHash(oracleInfo, contractInfo, timeouts)
@@ -232,8 +310,7 @@ object DLCMessage {
       }
 
       DLCOffer(
-        contractInfo = contractInfo,
-        oracleInfo = oracleInfo,
+        oracleAndContractInfo = OracleAndContractInfo(oracleInfo, contractInfo),
         pubKeys = DLCPublicKeys(
           offer.fundingPubKey,
           BitcoinAddress.fromScriptPubKey(offer.payoutSPK, network)),
@@ -355,8 +432,7 @@ object DLCMessage {
           }
           .get
 
-      DLCOffer(ContractInfo(contractInfoMap),
-               oracleInfo,
+      DLCOffer(OracleAndContractInfo(oracleInfo, ContractInfo(contractInfoMap)),
                pubKeys,
                totalCollateral,
                fundingInputs,
