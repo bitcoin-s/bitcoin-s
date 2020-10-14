@@ -1,27 +1,14 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAccept,
-  DLCOffer,
-  DLCSign,
-  OracleInfo
-}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, DLCMessage}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  FieldElement,
-  SchnorrDigitalSignature,
-  SchnorrNonce,
-  SchnorrPublicKey
-}
+import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.{Assertion, FutureOutcome}
-import scodec.bits.ByteVector
 
 import scala.concurrent.Future
 
@@ -259,8 +246,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val oracleInfo = OracleInfo(oraclePubKey, oracleNonce)
 
       val offerData = DLCOffer(
-        contractInfo,
-        oracleInfo,
+        OracleAndContractInfo(oracleInfo, contractInfo),
         dummyDLCKeys,
         Satoshis(5000),
         Vector(dummyFundingInputs.head),

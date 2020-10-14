@@ -24,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     ec: ExecutionContext) {
 
-  val DLCOffer(oracleAndContractInfo: OracleAndContractInfo,
+  val DLCOffer(_,
                DLCPublicKeys(offerFundingKey: ECPublicKey,
                              offerFinalAddress: BitcoinAddress),
                offerTotalCollateral: Satoshis,
@@ -46,6 +46,14 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
                            tempContractId: Sha256Digest) = accept
 
   val totalInput: CurrencyUnit = offerTotalCollateral + acceptTotalCollateral
+
+  private val oracleAndContractInfoBeforeAccept: OracleAndContractInfo =
+    offer.oracleAndContractInfo
+
+  val oracleAndContractInfo: OracleAndContractInfo =
+    oracleAndContractInfoBeforeAccept.copy(acceptContractInfo =
+      oracleAndContractInfoBeforeAccept.offerContractInfo.flip(
+        totalInput.satoshis))
 
   val offerTotalFunding: CurrencyUnit =
     offerFundingInputs.map(_.output.value).sum
