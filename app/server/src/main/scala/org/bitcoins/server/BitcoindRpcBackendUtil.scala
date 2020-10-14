@@ -20,6 +20,67 @@ import scala.util.{Failure, Success}
 /** Useful utilities to use in the wallet project for syncing things against bitcoind */
 object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
+  /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
+  def syncWalletToBitcoind(bitcoind: BitcoindRpcClient, wallet: Wallet)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+
+    def doSync(walletHeight: Int, bitcoindHeight: Int): Future[Unit] = {
+      if (walletHeight > bitcoindHeight) {
+        Future.failed(new RuntimeException(
+          s"Bitcoind and wallet are in incompatible states, " +
+            s"wallet height: $walletHeight, bitcoind height: $bitcoindHeight"))
+      } else {
+        val blockRange = walletHeight.to(bitcoindHeight).tail
+
+        logger.info(s"Syncing ${blockRange.size} blocks")
+
+        val func: Vector[Int] => Future[Unit] = { range =>
+          val hashFs =
+            range.map(bitcoind.getBlockHash(_).map(_.flip))
+          for {
+            hashes <- Future.sequence(hashFs)
+            _ <- wallet.nodeApi.downloadBlocks(hashes)
+          } yield ()
+        }
+
+        FutureUtil
+          .batchExecute(elements = blockRange.toVector,
+                        f = func,
+                        init = Vector.empty,
+                        batchSize = 25)
+          .map(_ => ())
+      }
+    }
+
+    for {
+      bitcoindHeight <- bitcoind.getBlockCount
+      walletStateOpt <- wallet.getSyncHeight()
+      _ <- walletStateOpt match {
+        case None =>
+          for {
+            utxos <- wallet.listUtxos()
+            lastConfirmedOpt = utxos.filter(_.blockHash.isDefined).lastOption
+            _ <- lastConfirmedOpt match {
+              case None => FutureUtil.unit
+              case Some(utxo) =>
+                for {
+                  heightOpt <- bitcoind.getBlockHeight(utxo.blockHash.get)
+                  _ <- heightOpt match {
+                    case Some(height) =>
+                      logger.info(
+                        s"Last utxo occurred at block $height, syncing from there")
+                      doSync(height, bitcoindHeight)
+                    case None => FutureUtil.unit
+                  }
+                } yield ()
+            }
+          } yield ()
+        case Some(syncHeight) =>
+          doSync(syncHeight.height, bitcoindHeight)
+      }
+    } yield ()
+  }
+
   def createWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
       wallet: Wallet)(implicit ec: ExecutionContext): Wallet = {

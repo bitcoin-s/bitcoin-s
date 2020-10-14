@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.util.FutureUtil
@@ -31,12 +32,18 @@ class ProcessBlockTest extends BitcoinSWalletTest {
 
       _ <- wallet.processBlock(block)
       utxos <- wallet.listUtxos()
+
+      height <- bitcoind.getBlockCount
+      bestHash <- bitcoind.getBestBlockHash
+      syncHeightOpt <- wallet.getSyncHeight()
     } yield {
       assert(utxos.size == 1)
       assert(utxos.head.output.scriptPubKey == addr.scriptPubKey)
       assert(utxos.head.output.value == 1.bitcoin)
       assert(utxos.head.blockHash.contains(hash))
       assert(utxos.head.txid == txId)
+
+      assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
     }
   }
 
@@ -53,9 +60,15 @@ class ProcessBlockTest extends BitcoinSWalletTest {
       _ <- FutureUtil.sequentially(blocks)(wallet.processBlock)
       utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
       balance <- wallet.getBalance()
+
+      height <- bitcoind.getBlockCount
+      bestHash <- bitcoind.getBestBlockHash
+      syncHeightOpt <- wallet.getSyncHeight()
     } yield {
       assert(utxos.size == 100)
       assert(balance == Bitcoins(50))
+
+      assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
     }
   }
 
@@ -75,9 +88,15 @@ class ProcessBlockTest extends BitcoinSWalletTest {
       _ <- wallet.processCompactFilters(filtersWithBlockHash)
       utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
       balance <- wallet.getBalance()
+
+      height <- bitcoind.getBlockCount
+      bestHash <- bitcoind.getBestBlockHash
+      syncHeightOpt <- wallet.getSyncHeight()
     } yield {
       assert(utxos.size == 100)
       assert(balance == Bitcoins(50))
+
+      assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
     }
   }
 }

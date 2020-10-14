@@ -140,6 +140,8 @@ class BitcoinSServerMain(override val args: Array[String])
           bitcoind,
           tmpWallet)
         _ = logger.info("Starting wallet")
+        _ <- wallet.start()
+        _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
 
         blockCount <- bitcoind.getBlockCount
         // Create callbacks for processing new blocks
@@ -153,7 +155,6 @@ class BitcoinSServerMain(override val args: Array[String])
                                                              blockCount)
         }
 
-        _ <- wallet.start()
         binding <- startHttpServer(bitcoind, bitcoind, wallet, rpcPortOpt)
         _ = BitcoinSServer.startedFP.success(Future.successful(binding))
       } yield {
