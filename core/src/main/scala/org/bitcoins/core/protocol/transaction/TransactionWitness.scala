@@ -17,7 +17,7 @@ sealed abstract class TransactionWitness
   val witnesses: Vector[ScriptWitness]
   override protected val wrapped: Vector[ScriptWitness] = witnesses
 
-  override def bytes: ByteVector = {
+  override lazy val bytes: ByteVector = {
     RawTransactionWitnessParser.write(this)
   }
 
