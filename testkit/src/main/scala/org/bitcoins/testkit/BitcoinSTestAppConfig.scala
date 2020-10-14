@@ -99,9 +99,10 @@ object BitcoinSTestAppConfig {
     case object Wallet extends ProjectType
     case object Node extends ProjectType
     case object Chain extends ProjectType
+    case object Oracle extends ProjectType
     case object Test extends ProjectType
 
-    val all = List(Wallet, Node, Chain, Test)
+    val all = List(Wallet, Node, Chain, Oracle, Test)
   }
 
   /** Generates a Typesafe config with DBs set to memory
