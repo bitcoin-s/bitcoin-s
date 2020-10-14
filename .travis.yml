@@ -127,6 +127,8 @@ cache:
     - $HOME/.bitcoin-s/binaries/
     - $HOME/build/bitcoin-s/bitcoin-s/app/server/target
     - $HOME/build/bitcoin-s/bitcoin-s/app/server-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/app/oracle-server/target
+    - $HOME/build/bitcoin-s/bitcoin-s/app/oracle-server-test/target
     - $HOME/build/bitcoin-s/bitcoin-s/app-commons/target
     - $HOME/build/bitcoin-s/bitcoin-s/app-commons-test/target
     - $HOME/build/bitcoin-s/bitcoin-s/bitcoind-rpc/target
@@ -137,6 +139,8 @@ cache:
     - $HOME/build/bitcoin-s/bitcoin-s/core-test/target
     - $HOME/build/bitcoin-s/bitcoin-s/crypto/target
     - $HOME/build/bitcoin-s/bitcoin-s/crypto-test/target
+    - $HOME/build/bitcoin-s/bitcoin-s/dlc-oracle/target
+    - $HOME/build/bitcoin-s/bitcoin-s/dlc-oracle-test/target
     - $HOME/build/bitcoin-s/bitcoin-s/db-commons/target
     - $HOME/build/bitcoin-s/bitcoin-s/db-commons-test/target
     - $HOME/build/bitcoin-s/bitcoin-s/eclair-rpc/target
