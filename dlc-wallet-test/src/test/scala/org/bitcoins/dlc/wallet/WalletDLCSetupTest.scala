@@ -3,6 +3,7 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -65,7 +66,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
               .map(_.output.value)
               .sum >= accept.totalCollateral)
           assert(
-            accept.totalCollateral == offer.contractInfo.values.max - offer.totalCollateral)
+            accept.totalCollateral == offer.contractInfo.max - offer.totalCollateral)
           assert(accept.changeAddress.value.nonEmpty)
         }
 
@@ -103,7 +104,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         assert(refundSigsA.forall(refundSigsB.contains))
 
         assert(sign.cetSigs.outcomeSigs.forall(sig =>
-          outcomeSigs.exists(_.toTuple == sig)))
+          outcomeSigs.exists(dbSig =>
+            (EnumOutcome(dbSig.outcome), dbSig.signature) == sig)))
 
         // Test that the Addresses are in the wallet's database
         assert(walletAChange.isDefined)
@@ -254,11 +256,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val attestation = FieldElement(
         "77a5aabd716936411bbe19219bd0b261fae8f0524367268feb264e0a3b215766")
 
-      val oracleInfo = OracleInfo(oraclePubKey, oracleNonce)
+      val oracleInfo = SingleNonceOracleInfo(oraclePubKey, oracleNonce)
 
       val offerData = DLCOffer(
-        contractInfo,
-        oracleInfo,
+        OracleAndContractInfo(oracleInfo, contractInfo),
         dummyDLCKeys,
         Satoshis(5000),
         Vector(dummyFundingInputs.head),
@@ -296,7 +297,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ = {
           assert(accept.fundingInputs.nonEmpty)
           assert(
-            accept.totalCollateral == offer.contractInfo.values.max - offer.totalCollateral)
+            accept.totalCollateral == offer.contractInfo.max - offer.totalCollateral)
           assert(accept.changeAddress.value.nonEmpty)
         }
 
@@ -330,7 +331,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           assert(refundSigsA.forall(refundSigsB.contains))
 
           assert(sign.cetSigs.outcomeSigs.forall(sig =>
-            outcomeSigs.exists(_.toTuple == sig)))
+            outcomeSigs.exists(dbSig =>
+              (EnumOutcome(dbSig.outcome), dbSig.signature) == sig)))
           // Test that the Addresses are in the wallet's database
           assert(walletAChange.isDefined)
           assert(walletAFinal.isDefined)

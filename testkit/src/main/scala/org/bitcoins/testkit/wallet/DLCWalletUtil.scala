@@ -8,8 +8,9 @@ import org.bitcoins.core.hd.{BIP32Path, HDAccount}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
+import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, EnumOutcome}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
+import org.bitcoins.core.protocol.{BigSizeUInt, BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
@@ -30,18 +31,33 @@ trait DLCWalletUtil {
   lazy val kValue: ECPrivateKey = ECPrivateKey.freshPrivateKey
   lazy val rValue: SchnorrNonce = kValue.schnorrNonce
 
+  lazy val winStr: String = "WIN"
+  lazy val loseStr: String = "LOSE"
+
   lazy val winHash: Sha256Digest =
-    CryptoUtil.sha256("WIN")
+    CryptoUtil.sha256(winStr)
 
   lazy val loseHash: Sha256Digest =
-    CryptoUtil.sha256("LOSE")
+    CryptoUtil.sha256(loseStr)
 
   lazy val sampleOracleInfo: OracleInfo = OracleInfo(
     oraclePrivKey.schnorrPublicKey.bytes ++ rValue.bytes)
 
-  lazy val sampleContractInfo: ContractInfo = ContractInfo(
-    winHash.bytes ++ Satoshis(
-      10000).bytes ++ loseHash.bytes ++ Satoshis.zero.bytes)
+  lazy val sampleContractInfo: ContractInfo = {
+    val winBytes = CryptoUtil.serializeForHash(winStr)
+    val loseBytes = CryptoUtil.serializeForHash(loseStr)
+
+    ContractInfo(
+      BigSizeUInt.calcFor(winBytes).bytes ++
+        winBytes ++
+        Satoshis(10000).bytes ++
+        BigSizeUInt.calcFor(loseBytes).bytes ++
+        loseBytes ++
+        Satoshis.zero.bytes)
+  }
+
+  lazy val sampleOracleAndContractInfo: OracleAndContractInfo =
+    OracleAndContractInfo(sampleOracleInfo, sampleContractInfo)
 
   lazy val sampleOracleWinSig: SchnorrDigitalSignature =
     oraclePrivKey.schnorrSignWithNonce(winHash.bytes, kValue)
@@ -92,8 +108,7 @@ trait DLCWalletUtil {
   )
 
   lazy val sampleDLCOffer: DLCOffer = DLCOffer(
-    sampleContractInfo,
-    sampleOracleInfo,
+    sampleOracleAndContractInfo,
     dummyDLCKeys,
     Satoshis(5000),
     Vector(dummyFundingInputs.head),
@@ -107,9 +122,9 @@ trait DLCWalletUtil {
                              sampleContractInfo,
                              dummyTimeouts)
 
-  lazy val dummyOutcomeSigs: Vector[(Sha256Digest, ECAdaptorSignature)] =
-    Vector(winHash -> ECAdaptorSignature.dummy,
-           loseHash -> ECAdaptorSignature.dummy)
+  lazy val dummyOutcomeSigs: Vector[(DLCOutcomeType, ECAdaptorSignature)] =
+    Vector(EnumOutcome(winStr) -> ECAdaptorSignature.dummy,
+           EnumOutcome(loseStr) -> ECAdaptorSignature.dummy)
 
   lazy val dummyCETSigs: CETSignatures =
     CETSignatures(dummyOutcomeSigs, dummyPartialSig)
@@ -151,7 +166,7 @@ trait DLCWalletUtil {
     val walletB = fundedWalletB.wallet
 
     val numOutcomes = 8
-    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes).map(_._2)
+    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
     val (contractInfo, _) =
       DLCTestUtil.genContractInfos(outcomeHashes, Satoshis(10000))
 

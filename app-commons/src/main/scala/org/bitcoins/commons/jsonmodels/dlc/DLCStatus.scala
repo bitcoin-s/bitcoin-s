@@ -3,6 +3,11 @@ package org.bitcoins.commons.jsonmodels.dlc
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
+import org.bitcoins.core.protocol.tlv.{
+  DLCOutcomeType,
+  EnumOutcome,
+  UnsignedNumericOutcome
+}
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -248,6 +253,7 @@ object DLCStatus {
       extends ClosedDLCStatus {
     override val state: DLCState = DLCState.RemoteClaimed
 
+    /** This represents the sum of all oracle signatures in the case that there are multiple */
     val oracleSig: SchnorrDigitalSignature = {
       val cetSigs = cet
         .asInstanceOf[WitnessTransaction]
@@ -259,32 +265,72 @@ object DLCStatus {
       require(cetSigs.size == 2, "There must be only 2 signatures")
 
       val oraclePubKey = offer.oracleInfo.pubKey
-      val preCommittedR = offer.oracleInfo.rValue
+      val rVals = offer.oracleInfo.nonces
+
+      def aggregateR(numSigs: Int): SchnorrNonce = {
+        rVals.take(numSigs).map(_.publicKey).reduce(_.add(_)).schnorrNonce
+      }
 
       def sigFromMsgAndSigs(
-          msg: Sha256Digest,
+          outcome: DLCOutcomeType,
           adaptorSig: ECAdaptorSignature,
           cetSig: ECDigitalSignature): SchnorrDigitalSignature = {
-        val sigPubKey = oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
+        val (sigPubKey, numSigs) = outcome match {
+          case EnumOutcome(outcome) =>
+            val sigPoint = oraclePubKey.computeSigPoint(
+              CryptoUtil.sha256(outcome).bytes,
+              aggregateR(1))
+
+            (sigPoint, 1)
+          case UnsignedNumericOutcome(digits) =>
+            val sigPoint = digits
+              .zip(rVals.take(digits.length))
+              .map {
+                case (digit, nonce) =>
+                  oraclePubKey.computeSigPoint(
+                    CryptoUtil.sha256(digit.toString).bytes,
+                    nonce)
+              }
+              .reduce(_.add(_))
+
+            (sigPoint, digits.length)
+        }
+
         val possibleOracleS =
           sigPubKey
             .extractAdaptorSecret(adaptorSig,
                                   ECDigitalSignature(cetSig.bytes.init))
             .fieldElement
-        SchnorrDigitalSignature(preCommittedR, possibleOracleS)
+        SchnorrDigitalSignature(aggregateR(numSigs), possibleOracleS)
       }
 
       val outcomeValues = cet.outputs.map(_.value).sorted
       val totalCollateral = offer.totalCollateral + accept.totalCollateral
 
-      val possibleMessages = offer.contractInfo
-        .filter {
-          case (_, amt) =>
-            Vector(amt, totalCollateral - amt)
-              .filter(_ >= Policy.dustThreshold)
-              .sorted == outcomeValues
-        }
-        .map(_._1)
+      val possibleMessages = offer.contractInfo match {
+        case DLCMessage.SingleNonceContractInfo(outcomeValueMap) =>
+          outcomeValueMap
+            .filter {
+              case (_, amt) =>
+                Vector(amt, totalCollateral - amt)
+                  .filter(_ >= Policy.dustThreshold)
+                  .sorted == outcomeValues
+            }
+            .map(_._1)
+        case info: DLCMessage.MultiNonceContractInfo =>
+          info.outcomeVec
+            .filter {
+              case (_, amt) =>
+                val amts = Vector(amt, totalCollateral - amt)
+                  .filter(_ >= Policy.dustThreshold)
+                  .sorted
+
+                Math.abs(
+                  (amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
+                  .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
+            }
+            .map { case (digits, _) => UnsignedNumericOutcome(digits) }
+      }
 
       val (offerCETSig, acceptCETSig) =
         if (
@@ -309,9 +355,10 @@ object DLCStatus {
       }
 
       val sigOpt = outcomeSigs.find {
-        case (msg, adaptorSig) =>
-          val possibleOracleSig = sigFromMsgAndSigs(msg, adaptorSig, cetSig)
-          oraclePubKey.verify(msg.bytes, possibleOracleSig)
+        case (outcome, adaptorSig) =>
+          val possibleOracleSig = sigFromMsgAndSigs(outcome, adaptorSig, cetSig)
+          val sigPoint = offer.oracleAndContractInfo.sigPointForOutcome(outcome)
+          possibleOracleSig.sig.getPublicKey == sigPoint
       }
 
       sigOpt match {
@@ -323,7 +370,7 @@ object DLCStatus {
       }
     }
 
-    override val toJson: Value =
+    override lazy val toJson: Value =
       Obj(
         "state" -> Str(state.toString),
         "paramHash" -> Str(paramHash.hex),

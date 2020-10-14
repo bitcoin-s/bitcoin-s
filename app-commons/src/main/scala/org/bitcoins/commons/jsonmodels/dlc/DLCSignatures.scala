@@ -1,11 +1,11 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
 import org.bitcoins.core.protocol.script.ScriptWitnessV0
-import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
+import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, FundingSignaturesV0TLV}
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.SeqWrapper
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest}
+import org.bitcoins.crypto.ECAdaptorSignature
 
 sealed trait DLCSignatures
 
@@ -35,13 +35,13 @@ case class FundingSignatures(
 }
 
 case class CETSignatures(
-    outcomeSigs: Vector[(Sha256Digest, ECAdaptorSignature)],
+    outcomeSigs: Vector[(DLCOutcomeType, ECAdaptorSignature)],
     refundSig: PartialSignature)
     extends DLCSignatures {
-  lazy val keys: Vector[Sha256Digest] = outcomeSigs.map(_._1)
+  lazy val keys: Vector[DLCOutcomeType] = outcomeSigs.map(_._1)
   lazy val adaptorSigs: Vector[ECAdaptorSignature] = outcomeSigs.map(_._2)
 
-  def apply(key: Sha256Digest): ECAdaptorSignature = {
+  def apply(key: DLCOutcomeType): ECAdaptorSignature = {
     outcomeSigs
       .find(_._1 == key)
       .map(_._2)

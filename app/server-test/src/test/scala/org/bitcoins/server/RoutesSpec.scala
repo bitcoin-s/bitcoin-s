@@ -30,6 +30,7 @@ import org.bitcoins.core.protocol.BlockStamp.{
   InvalidBlockStamp
 }
 import org.bitcoins.core.protocol.script.{EmptyScriptWitness, P2WPKHWitnessV0}
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{
   Bech32Address,
@@ -728,7 +729,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val oracleInfoStr =
       "6374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f58603bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1"
 
-    val contractInfo = ContractInfo(
+    val contractInfo = SingleNonceContractInfo(
       "ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f5628813000000000000e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea8813000000000000")
 
     val contractInfoDigests =
@@ -755,15 +756,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val dummyOracleSig = SchnorrDigitalSignature(
       "65ace55b5d073cc7a1c783fa8c254692c421270fa988247e3c87627ffe804ed06c20bf779da91f82da3311b1d9e0a3a513409a15c66f25201280751177dad24c")
 
-    lazy val winHash: Sha256Digest =
-      CryptoUtil.sha256(ByteVector("WIN".getBytes))
+    lazy val winStr: String = "WIN"
 
-    lazy val loseHash: Sha256Digest =
-      CryptoUtil.sha256(ByteVector("LOSE".getBytes))
+    lazy val loseStr: String = "LOSE"
 
-    lazy val dummyOutcomeSigs: Vector[(Sha256Digest, ECAdaptorSignature)] =
-      Vector(winHash -> ECAdaptorSignature.dummy,
-             loseHash -> ECAdaptorSignature.dummy)
+    lazy val dummyOutcomeSigs: Vector[(EnumOutcome, ECAdaptorSignature)] =
+      Vector(EnumOutcome(winStr) -> ECAdaptorSignature.dummy,
+             EnumOutcome(loseStr) -> ECAdaptorSignature.dummy)
 
     val dummyAddress = "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2"
 
@@ -800,8 +799,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           UInt32(contractTimeout)
         )
         .returning(Future.successful(DLCOffer(
-          contractInfo,
-          OracleInfo(oracleInfoStr),
+          OracleAndContractInfo(OracleInfo(oracleInfoStr), contractInfo),
           dummyDLCKeys,
           Satoshis(2500),
           Vector(fundingInput, fundingInput),
@@ -826,13 +824,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":{"contractInfo":[{"sha256":"${contractInfo.keys.head.hex}","sats":${contractInfo.values.head.toLong}},{"sha256":"${contractInfo.keys.last.hex}","sats":${contractInfo.values.last.toLong}}],"oracleInfo":"$oracleInfoStr","pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"totalCollateral":2500,"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}},{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","feeRate":1,"timeouts":{"contractMaturity":$contractMaturity,"contractTimeout":$contractTimeout}},"error":null}""")
+          String] == s"""{"result":{"contractInfo":[{"outcome":"${contractInfo.keys.head.outcome}","sats":${contractInfo.values.head.toLong}},{"outcome":"${contractInfo.keys.last.outcome}","sats":${contractInfo.values.last.toLong}}],"oracleInfo":"$oracleInfoStr","pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"totalCollateral":2500,"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}},{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","feeRate":1,"timeouts":{"contractMaturity":$contractMaturity,"contractTimeout":$contractTimeout}},"error":null}""")
       }
     }
 
     "accept a dlc offer" in {
       val offerStr =
-        s"""{"contractInfo":[{"sha256":"${contractInfoDigests.head}","sats":5},{"sha256":"${contractInfoDigests.last}","sats":4}],"oracleInfo":"$oracleInfoStr","pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"totalCollateral":10000000000,"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","feeRate":1,"timeouts":{"contractMaturity":$contractMaturity,"contractTimeout":$contractTimeout}}"""
+        s"""{"contractInfo":[{"outcome":"${contractInfoDigests.head}","sats":5},{"outcome":"${contractInfoDigests.last}","sats":4}],"oracleInfo":"$oracleInfoStr","pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"totalCollateral":10000000000,"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","feeRate":1,"timeouts":{"contractMaturity":$contractMaturity,"contractTimeout":$contractTimeout}}"""
 
       val sats = Satoshis.max
 
@@ -858,13 +856,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":{"totalCollateral":${sats.toLong},"pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"tempContractId":"${Sha256Digest.empty.hex}"},"error":null}""")
+          String] == s"""{"result":{"totalCollateral":${sats.toLong},"pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","cetSigs":{"outcomeSigs":[{"$winStr":"${dummyAdaptorSig.hex}"},{"$loseStr":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"tempContractId":"${Sha256Digest.empty.hex}"},"error":null}""")
       }
     }
 
     "sign a dlc" in {
       val acceptStr =
-        s"""{"totalCollateral":10000000000,"pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"tempContractId":"${paramHash.hex}"}"""
+        s"""{"totalCollateral":10000000000,"pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","cetSigs":{"outcomeSigs":[{"$winStr":"${dummyAdaptorSig.hex}"},{"$loseStr":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"tempContractId":"${paramHash.hex}"}"""
 
       (mockWalletApi
         .signDLC(_: DLCAccept))
@@ -884,13 +882,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":{"cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"fundingSigs":{"${EmptyTransactionOutPoint.hex}":"${dummyScriptWitness.hex}"},"contractId":"${paramHash.hex}"},"error":null}""")
+          String] == s"""{"result":{"cetSigs":{"outcomeSigs":[{"$winStr":"${dummyAdaptorSig.hex}"},{"$loseStr":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"fundingSigs":{"${EmptyTransactionOutPoint.hex}":"${dummyScriptWitness.hex}"},"contractId":"${paramHash.hex}"},"error":null}""")
       }
     }
 
     "add dlc sigs" in {
       val sigsStr =
-        s"""{"cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"fundingSigs":{"${EmptyTransactionOutPoint.hex}":"${dummyScriptWitness.hex}"},"contractId":"${contractId.toHex}"}"""
+        s"""{"cetSigs":{"outcomeSigs":[{"$winStr":"${dummyAdaptorSig.hex}"},{"$loseStr":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"fundingSigs":{"${EmptyTransactionOutPoint.hex}":"${dummyScriptWitness.hex}"},"contractId":"${contractId.toHex}"}"""
 
       (mockWalletApi
         .addDLCSigs(_: DLCSign))

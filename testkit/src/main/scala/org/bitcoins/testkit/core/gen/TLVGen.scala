@@ -1,7 +1,11 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCFundingInputP2WPKHV0
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCAccept, DLCOffer}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+  ContractInfo,
+  DLCAccept,
+  DLCOffer
+}
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -97,7 +101,7 @@ trait TLVGen {
   def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
     for {
       numOutcomes <- Gen.choose(2, 10)
-      outcomes <- Gen.listOfN(numOutcomes, CryptoGenerators.sha256Digest)
+      outcomes <- Gen.listOfN(numOutcomes, StringGenerators.genString)
       totalInput <-
         Gen
           .choose(numOutcomes + 1, Long.MaxValue / 10000L)
@@ -105,7 +109,9 @@ trait TLVGen {
       (contractInfo, _) =
         DLCTestUtil.genContractInfos(outcomes.toVector, totalInput)
     } yield {
-      ContractInfoV0TLV(contractInfo.outcomeValueMap)
+      ContractInfoV0TLV(contractInfo.outcomeValueMap.map {
+        case (outcome, amt) => outcome.outcome -> amt
+      })
     }
   }
 
@@ -259,22 +265,18 @@ trait TLVGen {
   }
 
   def dlcAcceptTLV(offer: DLCOfferTLV): Gen[DLCAcceptTLV] = {
-    val outcomes = offer.contractInfo match {
-      case ContractInfoV0TLV(outcomes) => outcomes
-    }
+    val contractInfo = ContractInfo.fromTLV(offer.contractInfo)
 
     for {
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       totalCollateral = scala.math.max(
-        (outcomes
-          .map(_._2)
-          .maxBy(_.toLong) - offer.totalCollateralSatoshis).satoshis.toLong,
+        (contractInfo.max - offer.totalCollateralSatoshis).satoshis.toLong,
         totalCollateralSatoshis.toLong)
       fundingInputs <- fundingInputV0TLVs(Satoshis(totalCollateral))
       changeAddress <- AddressGenerator.bitcoinAddress
-      cetSigs <- cetSignaturesV0TLV(outcomes.size)
+      cetSigs <- cetSignaturesV0TLV(contractInfo.allOutcomes.length)
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
       DLCAcceptTLV(
@@ -309,12 +311,10 @@ trait TLVGen {
   }
 
   def dlcSignTLV(offer: DLCOfferTLV, accept: DLCAcceptTLV): Gen[DLCSignTLV] = {
-    val outcomes = offer.contractInfo match {
-      case ContractInfoV0TLV(outcomes) => outcomes
-    }
+    val contractInfo = ContractInfo.fromTLV(offer.contractInfo)
 
     for {
-      cetSigs <- cetSignaturesV0TLV(outcomes.size)
+      cetSigs <- cetSignaturesV0TLV(contractInfo.allOutcomes.length)
       refundSig <- CryptoGenerators.digitalSignature
       fundingSigs <- fundingSignaturesV0TLV(offer.fundingInputs.length)
     } yield {

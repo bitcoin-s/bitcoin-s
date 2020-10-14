@@ -8,11 +8,12 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest}
+import org.bitcoins.crypto.ECAdaptorSignature
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
@@ -63,14 +64,16 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
   }
 
   /** Verifies remote's CET signature for a given outcome hash */
-  def verifyCETSig(outcome: Sha256Digest, sig: ECAdaptorSignature): Boolean = {
+  def verifyCETSig(
+      outcome: DLCOutcomeType,
+      sig: ECAdaptorSignature): Boolean = {
     val remoteFundingPubKey = if (isInitiator) {
       builder.acceptFundingKey
     } else {
       builder.offerFundingKey
     }
 
-    val adaptorPoint = builder.sigPubKeys(outcome)
+    val adaptorPoint = builder.oracleAndContractInfo.sigPointForOutcome(outcome)
 
     val cet = Await.result(builder.buildCET(outcome), 5.seconds)
 

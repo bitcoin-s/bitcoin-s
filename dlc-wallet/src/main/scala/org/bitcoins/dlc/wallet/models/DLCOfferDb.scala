@@ -3,7 +3,9 @@ package org.bitcoins.dlc.wallet.models
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   ContractInfo,
   DLCOffer,
-  OracleInfo
+  OracleAndContractInfo,
+  OracleInfo,
+  SingleNonceOracleInfo
 }
 import org.bitcoins.commons.jsonmodels.dlc.{
   DLCFundingInput,
@@ -29,7 +31,8 @@ case class DLCOfferDb(
     feeRate: SatoshisPerVirtualByte,
     changeAddress: BitcoinAddress) {
 
-  lazy val oracleInfo: OracleInfo = OracleInfo(oraclePubKey, oracleRValue)
+  lazy val oracleInfo: OracleInfo =
+    SingleNonceOracleInfo(oraclePubKey, oracleRValue)
 
   lazy val dlcPubKeys: DLCPublicKeys = DLCPublicKeys(fundingKey, payoutAddress)
 
@@ -39,8 +42,7 @@ case class DLCOfferDb(
   def toDLCOffer(fundingInputs: Vector[DLCFundingInput]): DLCOffer = {
 
     DLCOffer(
-      contractInfo,
-      oracleInfo,
+      OracleAndContractInfo(oracleInfo, contractInfo),
       dlcPubKeys,
       totalCollateral.satoshis,
       fundingInputs,
@@ -58,7 +60,7 @@ object DLCOfferDbHelper {
       offer.paramHash,
       offer.tempContractId,
       offer.oracleInfo.pubKey,
-      offer.oracleInfo.rValue,
+      offer.oracleInfo.nonces.head,
       offer.contractInfo,
       offer.timeouts.contractMaturity,
       offer.timeouts.contractTimeout,

@@ -1,27 +1,16 @@
 package org.bitcoins.dlc.testgen
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.dlc.{
-  CETSignatures,
-  DLCFundingInput,
-  DLCPublicKeys,
-  DLCTimeouts,
-  FundingSignatures
-}
+import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.tlv.{
-  CETSignaturesV0TLV,
-  DLCAcceptTLV,
-  DLCOfferTLV,
-  DLCSignTLV
-}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.util.{NumberUtil, SeqWrapper}
+import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
@@ -35,43 +24,14 @@ object DLCTLVGen {
     CryptoUtil.sha256(bytes)
   }
 
-  case class PreImageContractInfo(outcomeValueMap: Vector[(String, Satoshis)])
-      extends SeqWrapper[(String, Satoshis)] {
-    override def wrapped: Vector[(String, Satoshis)] = outcomeValueMap
-
-    def toContractInfo: ContractInfo = {
-      ContractInfo(outcomeValueMap.map {
-        case (str, amt) =>
-          CryptoUtil.sha256(str) -> amt
-      })
-    }
-  }
-
-  def genPreImageContractInfo(
-      strOutcomes: Vector[String] = DLCTestUtil.genOutcomes(3).map(_._1),
-      totalInput: CurrencyUnit =
-        defaultAmt * 2): PreImageContractInfo = {
-    val outcomes =
-      strOutcomes.map(str => CryptoUtil.sha256(str))
-    val contractInfo = genContractInfo(outcomes, totalInput)
-    PreImageContractInfo(
-      contractInfo
-        .zip(strOutcomes)
-        .map {
-          case ((_, amt), preImage) =>
-            preImage -> amt
-        }
-        .toVector)
-  }
-
   def genContractInfo(
-      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3).map(_._2),
-      totalInput: CurrencyUnit = defaultAmt * 2): ContractInfo = {
+      outcomes: Vector[String] = DLCTestUtil.genOutcomes(3),
+      totalInput: CurrencyUnit = defaultAmt * 2): SingleNonceContractInfo = {
     DLCTestUtil.genContractInfos(outcomes, totalInput)._1
   }
 
   def contractInfoParsingTestVector(
-      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3).map(_._2),
+      outcomes: Vector[String] = DLCTestUtil.genOutcomes(3),
       totalInput: CurrencyUnit = defaultAmt * 2): DLCParsingTestVector = {
     DLCParsingTestVector(genContractInfo(outcomes, totalInput).toTLV)
   }
@@ -80,8 +40,18 @@ object DLCTLVGen {
       oraclePubKey: SchnorrPublicKey =
         ECPublicKey.freshPublicKey.schnorrPublicKey,
       oracleRValue: SchnorrNonce =
-        ECPublicKey.freshPublicKey.schnorrNonce): OracleInfo = {
-    OracleInfo(oraclePubKey, oracleRValue)
+        ECPublicKey.freshPublicKey.schnorrNonce): SingleNonceOracleInfo = {
+    SingleNonceOracleInfo(oraclePubKey, oracleRValue)
+  }
+
+  def genOracleAndContractInfo(
+      oraclePubKey: SchnorrPublicKey =
+        ECPublicKey.freshPublicKey.schnorrPublicKey,
+      oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,
+      outcomes: Vector[String] = DLCTestUtil.genOutcomes(3),
+      totalInput: CurrencyUnit = defaultAmt * 2): OracleAndContractInfo = {
+    OracleAndContractInfo(genOracleInfo(oraclePubKey, oracleRValue),
+                          genContractInfo(outcomes, totalInput))
   }
 
   def oracleInfoParsingTestVector(
@@ -192,7 +162,8 @@ object DLCTLVGen {
   }
 
   def cetSigs(
-      outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3).map(_._2),
+      outcomes: Vector[DLCOutcomeType] =
+        DLCTestUtil.genOutcomes(3).map(EnumOutcome.apply),
       fundingPubKey: ECPublicKey =
         ECPublicKey.freshPublicKey): CETSignatures = {
     CETSignatures(outcomes.map(outcome => outcome -> adaptorSig),
@@ -217,8 +188,7 @@ object DLCTLVGen {
   }
 
   def dlcOffer(
-      contractInfo: ContractInfo = genContractInfo(),
-      oracleInfo: OracleInfo = genOracleInfo(),
+      oracleAndContractInfo: OracleAndContractInfo = genOracleAndContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
       totalCollateral: Satoshis = defaultAmt,
@@ -228,8 +198,7 @@ object DLCTLVGen {
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200)): DLCOffer = {
     DLCOffer(
-      contractInfo,
-      oracleInfo,
+      oracleAndContractInfo,
       DLCPublicKeys(fundingPubKey, payoutAddress),
       totalCollateral,
       fundingInputs,
@@ -240,8 +209,7 @@ object DLCTLVGen {
   }
 
   def dlcOfferTLV(
-      contractInfo: ContractInfo = genContractInfo(),
-      oracleInfo: OracleInfo = genOracleInfo(),
+      oracleAndContractInfo: OracleAndContractInfo = genOracleAndContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
       totalCollateral: Satoshis = defaultAmt,
@@ -250,8 +218,7 @@ object DLCTLVGen {
       feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte.one,
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200)): DLCOfferTLV = {
-    dlcOffer(contractInfo,
-             oracleInfo,
+    dlcOffer(oracleAndContractInfo,
              fundingPubKey,
              payoutAddress,
              totalCollateral,
@@ -263,8 +230,7 @@ object DLCTLVGen {
   }
 
   def dlcOfferParsingTestVector(
-      contractInfo: ContractInfo = genContractInfo(),
-      oracleInfo: OracleInfo = genOracleInfo(),
+      oracleAndContractInfo: OracleAndContractInfo = genOracleAndContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
       totalCollateral: Satoshis = defaultAmt,
@@ -275,8 +241,7 @@ object DLCTLVGen {
       contractTimeout: BlockTimeStamp =
         BlockTimeStamp(200)): DLCParsingTestVector = {
     DLCParsingTestVector(
-      dlcOfferTLV(contractInfo,
-                  oracleInfo,
+      dlcOfferTLV(oracleAndContractInfo,
                   fundingPubKey,
                   payoutAddress,
                   totalCollateral,
@@ -346,10 +311,10 @@ object DLCTLVGen {
       fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address()): DLCAccept = {
     val totalCollateral =
-      offer.contractInfo.values.max - offer.totalCollateral + overCollateral
+      offer.contractInfo.max - offer.totalCollateral + overCollateral
 
     val cetSignatures =
-      cetSigs(offer.contractInfo.keys, fundingPubKey)
+      cetSigs(offer.oracleAndContractInfo.allOutcomes, fundingPubKey)
 
     val tempContractId = offer.tempContractId
 
@@ -402,7 +367,7 @@ object DLCTLVGen {
       offer: DLCOffer,
       contractId: ByteVector = hash().bytes): DLCSign = {
     val cetSignatures =
-      cetSigs(offer.contractInfo.keys, offer.pubKeys.fundingKey)
+      cetSigs(offer.oracleAndContractInfo.allOutcomes, offer.pubKeys.fundingKey)
     val fundingSignatures = fundingSigs(offer.fundingInputs.map(_.outPoint))
     DLCSign(cetSignatures, fundingSignatures, contractId)
   }
@@ -414,8 +379,8 @@ object DLCTLVGen {
   }
 
   def dlcSignFromOfferAndAccept(offer: DLCOffer, accept: DLCAccept): DLCSign = {
-    import scala.concurrent.{Await, ExecutionContext}
     import scala.concurrent.duration.DurationInt
+    import scala.concurrent.{Await, ExecutionContext}
 
     val builder =
       DLCTxBuilder(offer, accept.withoutSigs)(ExecutionContext.global)

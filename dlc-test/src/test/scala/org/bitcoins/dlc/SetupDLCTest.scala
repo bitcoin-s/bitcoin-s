@@ -1,10 +1,10 @@
 package org.bitcoins.dlc
 
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.execution.{CETInfo, SetupDLC}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import scodec.bits.ByteVector
 
 class SetupDLCTest extends BitcoinSAsyncTest {
   behavior of "SetupAdaptorDLC"
@@ -45,8 +45,7 @@ class SetupDLCTest extends BitcoinSAsyncTest {
       refundTx: Transaction = validRefundTx): SetupDLC = {
     SetupDLC(
       fundingTx = fundingTx,
-      cets = Map(Sha256Digest(ByteVector.fill(32)(0.toByte)) -> cet0,
-                 Sha256Digest(ByteVector.fill(32)(1.toByte)) -> cet1),
+      cets = Map(EnumOutcome("WIN") -> cet0, EnumOutcome("LOSE") -> cet1),
       refundTx = refundTx
     )
   }

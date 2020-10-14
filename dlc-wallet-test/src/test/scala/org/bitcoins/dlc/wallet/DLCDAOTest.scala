@@ -128,14 +128,11 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val sig = DLCCETSignatureDb(
       paramHash = paramHash,
       isInitiator = true,
-      outcomeHash = DLCWalletUtil.winHash,
+      outcome = DLCWalletUtil.winStr,
       signature = ECAdaptorSignature.dummy
     )
 
-    verifyDatabaseInsertion(sig,
-                            (sig.paramHash, sig.outcomeHash),
-                            sigsDAO,
-                            dlcDAO)
+    verifyDatabaseInsertion(sig, (sig.paramHash, sig.outcome), sigsDAO, dlcDAO)
   }
 
   it should "correctly find CET signatures by eventId" in { daos =>
@@ -146,13 +143,13 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       DLCCETSignatureDb(
         paramHash = paramHash,
         isInitiator = true,
-        outcomeHash = DLCWalletUtil.winHash,
+        outcome = DLCWalletUtil.winStr,
         signature = ECAdaptorSignature.dummy
       ),
       DLCCETSignatureDb(
         paramHash = paramHash,
         isInitiator = false,
-        outcomeHash = DLCWalletUtil.loseHash,
+        outcome = DLCWalletUtil.loseStr,
         signature = ECAdaptorSignature.dummy
       )
     )

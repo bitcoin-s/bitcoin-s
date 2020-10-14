@@ -1,7 +1,15 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
-import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, FundingSignatures}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+  MultiNonceContractInfo,
+  SingleNonceContractInfo
+}
+import org.bitcoins.commons.jsonmodels.dlc.{
+  CETSignatures,
+  FundingSignatures,
+  OutcomeValueFunction,
+  OutcomeValuePoint
+}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
@@ -9,23 +17,16 @@ import org.bitcoins.core.protocol.script.{
   P2WSHWitnessV0,
   ScriptWitnessV0
 }
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  ECAdaptorSignature,
-  ECDigitalSignature,
-  Sha256Digest
-}
+import org.bitcoins.crypto.{ECAdaptorSignature, ECDigitalSignature}
 import scodec.bits.ByteVector
 
 object DLCTestUtil {
 
-  def genOutcomes(size: Int): Vector[(String, Sha256Digest)] = {
-    val strs =
-      (0 until size).map(_ => scala.util.Random.nextLong().toString).toVector
-
-    strs.map(str => str -> CryptoUtil.sha256(str))
+  def genOutcomes(size: Int): Vector[String] = {
+    (0 until size).map(_ => scala.util.Random.nextLong().toString).toVector
   }
 
   def genValues(size: Int, totalAmount: CurrencyUnit): Vector[Satoshis] = {
@@ -44,18 +45,52 @@ object DLCTestUtil {
     valsWithOrder.sortBy(_._2).map(_._1)
   }
 
-  def genContractInfos(
-      outcomeHashes: Vector[Sha256Digest],
-      totalInput: CurrencyUnit): (ContractInfo, ContractInfo) = {
+  def genContractInfos(outcomes: Vector[String], totalInput: CurrencyUnit): (
+      SingleNonceContractInfo,
+      SingleNonceContractInfo) = {
     val outcomeMap =
-      outcomeHashes
-        .zip(DLCTestUtil.genValues(outcomeHashes.length, totalInput))
+      outcomes
+        .map(EnumOutcome.apply)
+        .zip(DLCTestUtil.genValues(outcomes.length, totalInput))
 
-    val otherOutcomeMap = outcomeMap.map {
-      case (hash, amt) => (hash, (totalInput - amt).satoshis)
-    }
+    val info = SingleNonceContractInfo(outcomeMap)
+    val remoteInfo = info.flip(totalInput.satoshis)
 
-    (ContractInfo(outcomeMap), ContractInfo(otherOutcomeMap))
+    (info, remoteInfo)
+  }
+
+  /** Generates a collared forward contract */
+  def genMultiDigitContractInfo(
+      numDigits: Int,
+      totalCollateral: CurrencyUnit): (
+      MultiNonceContractInfo,
+      MultiNonceContractInfo) = {
+    val overMaxValue = Math.pow(10, numDigits).toLong
+    // Left collar goes from [0, botCollar]
+    val botCollar = scala.util.Random.nextLong(overMaxValue / 2)
+    val halfWindow = scala.math.min(overMaxValue / 4, 2500)
+    val topCollarDiff = scala.util.Random.nextLong(halfWindow)
+    // Right collar goes from [topCollar, overMaxValue)
+    val topCollar = botCollar + halfWindow + topCollarDiff
+    val isGoingLong = scala.util.Random.nextBoolean()
+    // leftVal and rightVal determine whether the contract shape
+    // goes from total to 0 or 0 to total
+    val (leftVal, rightVal) =
+      if (isGoingLong) (Satoshis.zero, totalCollateral.satoshis)
+      else (totalCollateral.satoshis, Satoshis.zero)
+    val func = OutcomeValueFunction(
+      Vector(
+        OutcomeValuePoint(0, leftVal, isEndpoint = true),
+        OutcomeValuePoint(botCollar, leftVal, isEndpoint = true),
+        OutcomeValuePoint(topCollar, rightVal, isEndpoint = true),
+        OutcomeValuePoint(overMaxValue - 1, rightVal, isEndpoint = true)
+      ))
+    val info = MultiNonceContractInfo(func,
+                                      base = 10,
+                                      numDigits,
+                                      totalCollateral.satoshis)
+    val remoteInfo = info.flip(totalCollateral.satoshis)
+    (info, remoteInfo)
   }
 
   def flipAtIndex(bytes: ByteVector, byteIndex: Int): ByteVector = {

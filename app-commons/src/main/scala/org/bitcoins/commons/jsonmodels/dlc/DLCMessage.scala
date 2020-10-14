@@ -1,12 +1,14 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
+import java.nio.charset.StandardCharsets
+
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol.script.{ScriptWitnessV0, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
+import org.bitcoins.core.protocol.{BigSizeUInt, BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
@@ -41,77 +43,423 @@ object DLCMessage {
     obj.values(index)
   }
 
-  case class OracleInfo(pubKey: SchnorrPublicKey, rValue: SchnorrNonce)
-      extends NetworkElement {
+  sealed trait OracleInfo extends NetworkElement {
+    def pubKey: SchnorrPublicKey
+    def nonces: Vector[SchnorrNonce]
+
+    def verifySigs(
+        outcome: DLCOutcomeType,
+        sigs: Vector[SchnorrDigitalSignature]): Boolean
+
+    def toTLV: OracleInfoTLV
+
+    def sigPoint(outcome: DLCOutcomeType): ECPublicKey = {
+      outcome.serialized
+        .zip(nonces)
+        .map {
+          case (bytes, nonce) =>
+            pubKey.computeSigPoint(CryptoUtil.sha256(bytes).bytes, nonce)
+        }
+        .reduce(_.add(_))
+    }
+  }
+
+  case class SingleNonceOracleInfo(
+      pubKey: SchnorrPublicKey,
+      rValue: SchnorrNonce)
+      extends OracleInfo {
+    override def nonces: Vector[SchnorrNonce] = Vector(rValue)
+
+    override def verifySigs(
+        outcome: DLCOutcomeType,
+        sigs: Vector[SchnorrDigitalSignature]): Boolean = {
+      outcome match {
+        case EnumOutcome(outcome) =>
+          if (sigs.length != 1) {
+            throw new IllegalArgumentException(
+              s"Expected one signature, got $sigs")
+          } else if (sigs.head.rx != rValue) {
+            throw new IllegalArgumentException(
+              s"Expected R value of $rValue, got ${sigs.head}")
+          } else {
+            sigs.length == 1 && pubKey.verify(CryptoUtil.sha256(outcome).bytes,
+                                              sigs.head)
+          }
+        case UnsignedNumericOutcome(_) =>
+          throw new IllegalArgumentException(
+            s"Expected EnumOutcome, got $outcome")
+      }
+    }
 
     override def bytes: ByteVector = pubKey.bytes ++ rValue.bytes
 
-    def toTLV: OracleInfoV0TLV = OracleInfoV0TLV(pubKey, rValue)
+    override def toTLV: OracleInfoV0TLV = OracleInfoV0TLV(pubKey, rValue)
   }
 
-  object OracleInfo extends Factory[OracleInfo] {
+  object SingleNonceOracleInfo extends Factory[SingleNonceOracleInfo] {
 
-    val dummy: OracleInfo = OracleInfo(ByteVector.fill(64)(1))
-
-    override def fromBytes(bytes: ByteVector): OracleInfo = {
+    override def fromBytes(bytes: ByteVector): SingleNonceOracleInfo = {
       require(bytes.size == 64, s"OracleInfo is only 64 bytes, got $bytes")
 
       val pubkey = SchnorrPublicKey(bytes.take(32))
       val rValue = SchnorrNonce(bytes.drop(32))
 
-      OracleInfo(pubkey, rValue)
+      SingleNonceOracleInfo(pubkey, rValue)
     }
   }
 
-  case class ContractInfo(outcomeValueMap: Vector[(Sha256Digest, Satoshis)])
-      extends NetworkElement
-      with SeqWrapper[(Sha256Digest, Satoshis)] {
-    override def wrapped: Vector[(Sha256Digest, Satoshis)] = outcomeValueMap
+  case class MultiNonceOracleInfo(
+      pubKey: SchnorrPublicKey,
+      nonces: Vector[SchnorrNonce])
+      extends OracleInfo {
 
-    def keys: Vector[Sha256Digest] = outcomeValueMap.map(_._1)
+    override def verifySigs(
+        outcome: DLCOutcomeType,
+        sigs: Vector[SchnorrDigitalSignature]): Boolean = {
+      require(
+        sigs.length <= nonces.length,
+        s"Too many signatures (expected at most ${nonces.length}), got $sigs")
 
-    def values: Vector[Satoshis] = outcomeValueMap.map(_._2)
+      outcome match {
+        case EnumOutcome(_) =>
+          throw new IllegalArgumentException(
+            s"Expected numeric outcome, got $outcome")
+        case UnsignedNumericOutcome(digits) =>
+          digits
+            .zip(sigs.take(digits.length).zip(nonces.take(digits.length)))
+            .foldLeft(digits.length <= sigs.length) {
+              case (result, (digit, (sig, nonce))) =>
+                require(sig.rx == nonce,
+                        s"Unexpected nonce in $sig, expected $nonce")
 
-    def apply(key: Sha256Digest): Satoshis = {
-      outcomeValueMap
-        .find(_._1 == key)
-        .map(_._2)
-        .getOrElse(
-          throw new IllegalArgumentException(s"No value found for key $key"))
-    }
-
-    override def bytes: ByteVector = {
-      outcomeValueMap.foldLeft(ByteVector.empty) {
-        case (vec, (digest, sats)) => vec ++ digest.bytes ++ sats.bytes
+                result && pubKey.verify(CryptoUtil.sha256(digit.toString).bytes,
+                                        sig)
+            }
       }
     }
 
-    def toTLV: ContractInfoV0TLV = ContractInfoV0TLV(outcomeValueMap)
+    override def bytes: ByteVector =
+      pubKey.bytes ++ nonces.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+
+    override def toTLV: OracleInfoV1TLV = OracleInfoV1TLV(pubKey, nonces)
+  }
+
+  object MultiNonceOracleInfo extends Factory[MultiNonceOracleInfo] {
+
+    override def fromBytes(bytes: ByteVector): MultiNonceOracleInfo = {
+      require(bytes.length > 32 && bytes.length % 32 == 0,
+              s"Invalid MultiNonceOracleInfo bytes: $bytes")
+
+      @tailrec
+      def loop(
+          bytesLeft: ByteVector,
+          nonces: Vector[SchnorrNonce]): Vector[SchnorrNonce] = {
+        if (bytesLeft.isEmpty) {
+          nonces
+        } else {
+          val (nonceBytes, newBytesLeft) = bytesLeft.splitAt(32)
+          loop(newBytesLeft, nonces :+ SchnorrNonce(nonceBytes))
+        }
+      }
+
+      val pubKey = SchnorrPublicKey(bytes.take(32))
+      val nonces = loop(bytes.drop(32), Vector.empty)
+
+      MultiNonceOracleInfo(pubKey, nonces)
+    }
+  }
+
+  object OracleInfo extends Factory[OracleInfo] {
+
+    val dummy: OracleInfo = SingleNonceOracleInfo(ByteVector.fill(64)(1))
+
+    override def fromBytes(bytes: ByteVector): OracleInfo = {
+      if (bytes.length > 64) {
+        MultiNonceOracleInfo(bytes)
+      } else {
+        SingleNonceOracleInfo(bytes)
+      }
+    }
+
+    def fromTLV(tlv: OracleInfoTLV): OracleInfo = {
+      tlv match {
+        case OracleInfoV0TLV(pubKey, rValue) =>
+          SingleNonceOracleInfo(pubKey, rValue)
+        case OracleInfoV1TLV(pubKey, nonces) =>
+          MultiNonceOracleInfo(pubKey, nonces)
+      }
+    }
+  }
+
+  sealed trait ContractInfo extends NetworkElement {
+
+    /** Returns the counter-party's ContractInfo corresponding to this one */
+    def flip(totalCollateral: Satoshis): ContractInfo
+    def toTLV: ContractInfoTLV
+    def allOutcomes: Vector[DLCOutcomeType]
+    def apply(outcome: DLCOutcomeType): Satoshis
+
+    /** Returns the maximum payout this party could win from this contract */
+    def max: Satoshis
+  }
+
+  case class SingleNonceContractInfo(
+      outcomeValueMap: Vector[(EnumOutcome, Satoshis)])
+      extends ContractInfo
+      with SeqWrapper[(EnumOutcome, Satoshis)] {
+
+    override def apply(outcome: DLCOutcomeType): Satoshis = {
+      outcome match {
+        case outcome: EnumOutcome =>
+          outcomeValueMap
+            .find(_._1 == outcome)
+            .map(_._2)
+            .getOrElse(throw new IllegalArgumentException(
+              s"No value found for key $outcome"))
+        case UnsignedNumericOutcome(_) =>
+          throw new IllegalArgumentException(s"Expected EnumOutcome: $outcome")
+      }
+    }
+
+    override def wrapped: Vector[(EnumOutcome, Satoshis)] = outcomeValueMap
+
+    def keys: Vector[EnumOutcome] = outcomeValueMap.map(_._1)
+
+    def values: Vector[Satoshis] = outcomeValueMap.map(_._2)
+
+    override def allOutcomes: Vector[DLCOutcomeType] = keys
+
+    override def max: Satoshis = values.maxBy(_.toLong)
+
+    override def bytes: ByteVector = {
+      outcomeValueMap.foldLeft(ByteVector.empty) {
+        case (vec, (str, sats)) =>
+          val strBytes = CryptoUtil.serializeForHash(str.outcome)
+          vec ++ BigSizeUInt.calcFor(strBytes).bytes ++ strBytes ++ sats.bytes
+      }
+    }
+
+    override def toTLV: ContractInfoV0TLV =
+      ContractInfoV0TLV(outcomeValueMap.map {
+        case (outcome, amt) => outcome.outcome -> amt
+      })
+
+    override def flip(totalCollateral: Satoshis): SingleNonceContractInfo = {
+      SingleNonceContractInfo(outcomeValueMap.map {
+        case (hash, amt) => (hash, (totalCollateral - amt).satoshis)
+      })
+    }
+  }
+
+  object SingleNonceContractInfo extends Factory[SingleNonceContractInfo] {
+
+    def fromStringVec(
+        vec: Vector[(String, Satoshis)]): SingleNonceContractInfo = {
+      SingleNonceContractInfo(vec.map {
+        case (str, amt) => EnumOutcome(str) -> amt
+      })
+    }
+
+    override def fromBytes(bytes: ByteVector): SingleNonceContractInfo = {
+      @tailrec
+      def loop(
+          remainingBytes: ByteVector,
+          accum: Vector[(EnumOutcome, Satoshis)]): Vector[
+        (EnumOutcome, Satoshis)] = {
+        if (remainingBytes.isEmpty) {
+          accum
+        } else {
+          val outcomeSize = BigSizeUInt(remainingBytes)
+          val outcome =
+            remainingBytes.drop(outcomeSize.byteSize).take(outcomeSize.toInt)
+          val outcomeStr = new String(outcome.toArray, StandardCharsets.UTF_8)
+          val outcomeSizeAndOutcomeLen =
+            outcomeSize.byteSize + outcomeSize.toInt
+          val sats = Satoshis(
+            remainingBytes.drop(outcomeSizeAndOutcomeLen).take(8))
+
+          loop(remainingBytes.drop(outcomeSizeAndOutcomeLen + 8),
+               accum :+ (EnumOutcome(outcomeStr), sats))
+        }
+      }
+
+      SingleNonceContractInfo(loop(bytes, Vector.empty))
+    }
+  }
+
+  /** Contains a deterministically compressed set of outcomes computed from
+    * a given payout curve.
+    */
+  case class MultiNonceContractInfo(
+      outcomeValueFunc: OutcomeValueFunction,
+      base: Int,
+      numDigits: Int,
+      totalCollateral: Satoshis)
+      extends ContractInfo {
+
+    lazy val outcomeVec: Vector[(Vector[Int], Satoshis)] =
+      CETCalculator.computeCETs(base,
+                                numDigits,
+                                outcomeValueFunc,
+                                totalCollateral)
+
+    override def apply(outcome: DLCOutcomeType): Satoshis = {
+      outcome match {
+        case UnsignedNumericOutcome(digits) =>
+          outcomeVec.find {
+            case (possibleOutcome, _) => digits.startsWith(possibleOutcome)
+          } match {
+            case Some((_, amt)) => amt
+            case None =>
+              throw new IllegalArgumentException(
+                s"Unrecognized outcome: $digits")
+          }
+        case EnumOutcome(_) =>
+          throw new IllegalArgumentException(
+            s"Expected UnsignedNumericOutcome: $outcome")
+      }
+    }
+
+    override def allOutcomes: Vector[DLCOutcomeType] =
+      outcomeVec.map { case (outcome, _) => UnsignedNumericOutcome(outcome) }
+
+    override def max: Satoshis = totalCollateral
+
+    override def flip(totalCollateral: Satoshis): MultiNonceContractInfo = {
+      require(
+        totalCollateral == this.totalCollateral,
+        s"Input total collateral ($totalCollateral) did not match ${this.totalCollateral}")
+
+      val flippedFunc = OutcomeValueFunction(outcomeValueFunc.points.map {
+        point => point.copy(value = (totalCollateral - point.value).satoshis)
+      })
+
+      MultiNonceContractInfo(
+        flippedFunc,
+        base,
+        numDigits,
+        totalCollateral
+      )
+    }
+
+    override def bytes: ByteVector = ByteVector.empty // TODO: Fix this
+
+    override def toTLV: ContractInfoV1TLV = {
+      val tlvPoints = outcomeValueFunc.points.map { point =>
+        TLVPoint(point.outcome.toLongExact, point.value, point.isEndpoint)
+      }
+
+      ContractInfoV1TLV(base, numDigits, totalCollateral, tlvPoints)
+    }
   }
 
   object ContractInfo extends Factory[ContractInfo] {
 
-    private val sizeOfMapElement: Int = 40
-
-    val empty: ContractInfo = ContractInfo(ByteVector.low(sizeOfMapElement))
+    val empty: ContractInfo = SingleNonceContractInfo(
+      Vector(EnumOutcome("") -> Satoshis.zero))
 
     override def fromBytes(bytes: ByteVector): ContractInfo = {
-      @tailrec
-      def loop(
-          remainingBytes: ByteVector,
-          accum: Vector[(Sha256Digest, Satoshis)]): Vector[
-        (Sha256Digest, Satoshis)] = {
-        if (remainingBytes.size < sizeOfMapElement) {
-          accum
-        } else {
-          val relevantBytes = remainingBytes.take(sizeOfMapElement)
-          val digest = Sha256Digest(relevantBytes.take(32))
-          val sats = Satoshis(relevantBytes.takeRight(8))
-          loop(remainingBytes.drop(sizeOfMapElement), accum :+ (digest, sats))
-        }
-      }
+      SingleNonceContractInfo.fromBytes(bytes)
+    }
 
-      ContractInfo(loop(bytes, Vector.empty))
+    def fromTLV(tlv: ContractInfoTLV): ContractInfo = {
+      tlv match {
+        case ContractInfoV0TLV(outcomes) =>
+          SingleNonceContractInfo.fromStringVec(outcomes)
+        case ContractInfoV1TLV(base, numDigits, totalCollateral, tlvPoints) =>
+          val points = tlvPoints.map { point =>
+            OutcomeValuePoint(point.outcome, point.value, point.isEndpoint)
+          }
+
+          MultiNonceContractInfo(OutcomeValueFunction(points),
+                                 base,
+                                 numDigits,
+                                 totalCollateral)
+      }
+    }
+  }
+
+  case class OracleAndContractInfo(
+      oracleInfo: OracleInfo,
+      offerContractInfo: ContractInfo,
+      acceptContractInfo: ContractInfo) {
+    (oracleInfo, offerContractInfo, acceptContractInfo) match {
+      case (_: SingleNonceOracleInfo,
+            _: SingleNonceContractInfo,
+            _: SingleNonceContractInfo) =>
+        ()
+      case (_: MultiNonceOracleInfo,
+            info1: MultiNonceContractInfo,
+            info2: MultiNonceContractInfo) =>
+        require(
+          info1.totalCollateral == info2.totalCollateral,
+          s"Contract Infos must have matching total collateral, got $offerContractInfo - $acceptContractInfo"
+        )
+      case (_: OracleInfo, _: ContractInfo, _: ContractInfo) =>
+        throw new IllegalArgumentException(
+          s"All infos must be for the same kind of outcome: $this")
+    }
+
+    def verifySigs(
+        outcome: DLCOutcomeType,
+        sigs: Vector[SchnorrDigitalSignature]): Boolean = {
+      oracleInfo.verifySigs(outcome, sigs)
+    }
+
+    lazy val outcomeMap: Map[
+      DLCOutcomeType,
+      (ECPublicKey, Satoshis, Satoshis)] =
+      allOutcomes.map { msg =>
+        msg -> (oracleInfo.sigPoint(msg), offerContractInfo(
+          msg), acceptContractInfo(msg))
+      }.toMap
+
+    def resultOfOutcome(
+        outcome: DLCOutcomeType): (ECPublicKey, Satoshis, Satoshis) = {
+      outcomeMap(outcome)
+    }
+
+    def outcomeFromSignature(
+        sigs: Vector[SchnorrDigitalSignature]): DLCOutcomeType = {
+      val sigPoint = sigs.map(_.sig.getPublicKey).reduce(_.add(_))
+      outcomeMap.find(_._2._1 == sigPoint) match {
+        case Some((outcome, _)) => outcome
+        case None =>
+          throw new IllegalArgumentException(
+            s"Signatures do not correspond to a possible outcome! $sigs")
+      }
+    }
+
+    def sigPointForOutcome(outcome: DLCOutcomeType): ECPublicKey = {
+      resultOfOutcome(outcome)._1
+    }
+
+    lazy val allOutcomes: Vector[DLCOutcomeType] =
+      offerContractInfo.allOutcomes
+
+    /** Returns the payouts for the signature as (toOffer, toAccept) */
+    def getPayouts(
+        sigs: Vector[SchnorrDigitalSignature]): (Satoshis, Satoshis) = {
+      val outcome = outcomeFromSignature(sigs)
+      getPayouts(outcome)
+    }
+
+    /** Returns the payouts for the outcome as (toOffer, toAccept) */
+    def getPayouts(outcome: DLCOutcomeType): (Satoshis, Satoshis) = {
+      val (_, offerOutcome, acceptOutcome) = resultOfOutcome(outcome)
+
+      (offerOutcome, acceptOutcome)
+    }
+  }
+
+  object OracleAndContractInfo {
+
+    def apply(
+        oracleInfo: OracleInfo,
+        offerContractInfo: ContractInfo): OracleAndContractInfo = {
+      OracleAndContractInfo(oracleInfo,
+                            offerContractInfo,
+                            offerContractInfo.flip(offerContractInfo.max))
     }
   }
 
@@ -132,10 +480,10 @@ object DLCMessage {
   /**
     * The initiating party starts the protocol by sending an offer message to the other party.
     *
-    * @param contractInfo    Contract information consists of a map to be used to create CETs
-    * @param oracleInfo      The oracle public key and R point(s) to use to build the CETs as
-    *                        well as meta information to identify the oracle to be used in the contract.
-    * @param pubKeys         The relevant public keys that the initiator will be using
+    * @param oracleAndContractInfo The oracle public key and R point(s) to use to build the CETs as
+    *                   well as meta information to identify the oracle to be used in the contract,
+    *                   and a map to be used to create CETs.
+    * @param pubKeys The relevant public keys that the initiator will be using
     * @param totalCollateral How much the initiator inputs into the contract.
     * @param fundingInputs   The set of UTXOs to be used as input to the fund transaction.
     * @param changeAddress   The address to use to send the change for the initiator.
@@ -143,8 +491,7 @@ object DLCMessage {
     * @param timeouts        The set of timeouts for the CETs
     */
   case class DLCOffer(
-      contractInfo: ContractInfo,
-      oracleInfo: OracleInfo,
+      oracleAndContractInfo: OracleAndContractInfo,
       pubKeys: DLCPublicKeys,
       totalCollateral: Satoshis,
       fundingInputs: Vector[DLCFundingInput],
@@ -152,6 +499,9 @@ object DLCMessage {
       feeRate: SatoshisPerVirtualByte,
       timeouts: DLCTimeouts)
       extends DLCSetupMessage {
+
+    val oracleInfo: OracleInfo = oracleAndContractInfo.oracleInfo
+    val contractInfo: ContractInfo = oracleAndContractInfo.offerContractInfo
 
     lazy val paramHash: Sha256DigestBE =
       calcParamHash(oracleInfo, contractInfo, timeouts)
@@ -185,10 +535,13 @@ object DLCMessage {
 
     override def toJson: Value = {
       val contractInfosJson =
-        contractInfo
-          .map(info =>
-            mutable.LinkedHashMap("sha256" -> Str(info._1.hex),
-                                  "sats" -> Num(info._2.toLong.toDouble)))
+        contractInfo match {
+          case SingleNonceContractInfo(outcomeValueMap) =>
+            outcomeValueMap.map(info =>
+              mutable.LinkedHashMap("outcome" -> Str(info._1.outcome),
+                                    "sats" -> Num(info._2.toLong.toDouble)))
+          case MultiNonceContractInfo(_, _, _, _) => ???
+        }
 
       val fundingInputsJson =
         fundingInputs.map { input =>
@@ -240,16 +593,11 @@ object DLCMessage {
     def fromTLV(offer: DLCOfferTLV): DLCOffer = {
       val network = Networks.fromChainHash(offer.chainHash.flip)
 
-      val contractInfo = offer.contractInfo match {
-        case ContractInfoV0TLV(outcomes) => ContractInfo(outcomes)
-      }
-      val oracleInfo = offer.oracleInfo match {
-        case OracleInfoV0TLV(pubKey, rValue) => OracleInfo(pubKey, rValue)
-      }
+      val contractInfo = ContractInfo.fromTLV(offer.contractInfo)
+      val oracleInfo = OracleInfo.fromTLV(offer.oracleInfo)
 
       DLCOffer(
-        contractInfo = contractInfo,
-        oracleInfo = oracleInfo,
+        oracleAndContractInfo = OracleAndContractInfo(oracleInfo, contractInfo),
         pubKeys = DLCPublicKeys(
           offer.fundingPubKey,
           BitcoinAddress.fromScriptPubKey(offer.payoutSPK, network)),
@@ -281,11 +629,11 @@ object DLCMessage {
                 implicit val obj: mutable.LinkedHashMap[String, Value] =
                   subVal.obj
 
-                val sha256 =
-                  getValue("sha256")
+                val outcome =
+                  getValue("outcome")
                 val sats = getValue("sats")
 
-                (Sha256Digest(sha256.str), Satoshis(sats.num.toLong))
+                (EnumOutcome(outcome.str), Satoshis(sats.num.toLong))
               }
           }
           .get
@@ -371,8 +719,8 @@ object DLCMessage {
           }
           .get
 
-      DLCOffer(ContractInfo(contractInfoMap),
-               oracleInfo,
+      DLCOffer(OracleAndContractInfo(oracleInfo,
+                                     SingleNonceContractInfo(contractInfoMap)),
                pubKeys,
                totalCollateral,
                fundingInputs,
@@ -446,8 +794,12 @@ object DLCMessage {
 
       val outcomeSigsJson =
         cetSigs.outcomeSigs.map {
-          case (hash, sig) =>
-            mutable.LinkedHashMap(hash.hex -> Str(sig.hex))
+          case (outcome, sig) =>
+            val str = outcome match {
+              case EnumOutcome(outcome)      => outcome
+              case UnsignedNumericOutcome(_) => ???
+            }
+            mutable.LinkedHashMap(str -> Str(sig.hex))
         }
 
       val cetSigsJson =
@@ -485,7 +837,7 @@ object DLCMessage {
     def fromTLV(
         accept: DLCAcceptTLV,
         network: NetworkParameters,
-        outcomes: Vector[Sha256Digest]): DLCAccept = {
+        outcomes: Vector[DLCOutcomeType]): DLCAccept = {
       val outcomeSigs = accept.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
           outcomes.zip(sigs)
@@ -512,9 +864,11 @@ object DLCMessage {
     }
 
     def fromTLV(accept: DLCAcceptTLV, offer: DLCOffer): DLCAccept = {
-      fromTLV(accept,
-              offer.changeAddress.networkParameters,
-              offer.contractInfo.keys)
+      offer.contractInfo match {
+        case info: SingleNonceContractInfo =>
+          fromTLV(accept, offer.changeAddress.networkParameters, info.keys)
+        case MultiNonceContractInfo(_, _, _, _) => ???
+      }
     }
 
     def fromMessage(
@@ -594,9 +948,8 @@ object DLCMessage {
               val outcomeSigsMap = getValue("outcomeSigs")
               val outcomeSigs = outcomeSigsMap.arr.map { v =>
                 val (key, value) = v.obj.head
-                val hash = Sha256Digest(key)
                 val sig = ECAdaptorSignature(value.str)
-                (hash, sig)
+                (EnumOutcome(key), sig)
               }
 
               val refundSig = getValue("refundSig")
@@ -657,8 +1010,12 @@ object DLCMessage {
 
       val outcomeSigsJson =
         cetSigs.outcomeSigs.map {
-          case (hash, sig) =>
-            mutable.LinkedHashMap(hash.hex -> Str(sig.hex))
+          case (outcome, sig) =>
+            val str = outcome match {
+              case EnumOutcome(outcome)      => outcome
+              case UnsignedNumericOutcome(_) => ???
+            }
+            mutable.LinkedHashMap(str -> Str(sig.hex))
         }
 
       val cetSigsJson =
@@ -680,7 +1037,7 @@ object DLCMessage {
     def fromTLV(
         sign: DLCSignTLV,
         fundingPubKey: ECPublicKey,
-        outcomes: Vector[Sha256Digest],
+        outcomes: Vector[DLCOutcomeType],
         fundingOutPoints: Vector[TransactionOutPoint]): DLCSign = {
       val outcomeSigs = sign.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
@@ -706,10 +1063,14 @@ object DLCMessage {
     }
 
     def fromTLV(sign: DLCSignTLV, offer: DLCOffer): DLCSign = {
-      fromTLV(sign,
-              offer.pubKeys.fundingKey,
-              offer.contractInfo.keys,
-              offer.fundingInputs.map(_.outPoint))
+      offer.contractInfo match {
+        case info: SingleNonceContractInfo =>
+          fromTLV(sign,
+                  offer.pubKeys.fundingKey,
+                  info.keys,
+                  offer.fundingInputs.map(_.outPoint))
+        case MultiNonceContractInfo(_, _, _, _) => ???
+      }
     }
 
     def fromMessage(sign: LnMessage[DLCSignTLV], offer: DLCOffer): DLCSign = {
@@ -729,9 +1090,8 @@ object DLCMessage {
               val outcomeSigsMap = getValue("outcomeSigs")
               val outcomeSigs = outcomeSigsMap.arr.map { item =>
                 val (key, value) = item.obj.head
-                val hash = Sha256Digest(key)
                 val sig = ECAdaptorSignature(value.str)
-                (hash, sig)
+                (EnumOutcome(key), sig)
               }
 
               val refundSig = getValue("refundSig")

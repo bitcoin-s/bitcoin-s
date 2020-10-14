@@ -15,6 +15,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{AddressType, BIP32Path, HDChainType}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
@@ -349,8 +350,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ = logger.debug(
         s"DLC Offer data collected, creating database entry, ${paramHash.hex}")
 
-      offer = DLCOffer(contractInfo,
-                       oracleInfo,
+      offer = DLCOffer(OracleAndContractInfo(oracleInfo, contractInfo),
                        dlcPubKeys,
                        collateral.satoshis,
                        utxos,
@@ -433,7 +433,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
     val paramHash = offer.paramHash
 
-    val collateral = offer.contractInfo.values.max - offer.totalCollateral
+    val collateral = offer.contractInfo.max - offer.totalCollateral
 
     logger.debug(s"Checking if Accept (${paramHash.hex}) has already been made")
     for {
@@ -455,7 +455,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             val outcomeSigs = outcomeSigDbs.map(_.toTuple)
 
             dlcAcceptDb.toDLCAccept(inputRefs,
-                                    outcomeSigs,
+                                    outcomeSigs.map {
+                                      case (str, sig) => EnumOutcome(str) -> sig
+                                    },
                                     refundSigDb.get.refundSig)
           }
         case None =>
@@ -534,7 +536,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       )
 
       sigsDbs = cetSigs.outcomeSigs.map(sig =>
-        DLCCETSignatureDb(dlc.paramHash, isInitiator = false, sig._1, sig._2))
+        DLCCETSignatureDb(dlc.paramHash,
+                          isInitiator = false,
+                          sig._1.asInstanceOf[EnumOutcome].outcome,
+                          sig._2))
 
       refundSigDb =
         DLCRefundSigDb(dlc.paramHash, isInitiator = false, cetSigs.refundSig)
@@ -612,8 +617,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
         val sigsDbs = accept.cetSigs.outcomeSigs
           .map(sig =>
-            DLCCETSignatureDb(paramHash, isInitiator = false, sig._1, sig._2))
-          .toVector
+            DLCCETSignatureDb(paramHash,
+                              isInitiator = false,
+                              sig._1.asInstanceOf[EnumOutcome].outcome,
+                              sig._2))
 
         val refundSigDb = DLCRefundSigDb(paramHash,
                                          isInitiator = false,
@@ -680,8 +687,11 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ <- dlcRefundSigDAO.upsert(refundSigDb)
 
       sigDbs = cetSigs.outcomeSigs.map(sig =>
-        DLCCETSignatureDb(dlc.paramHash, isInitiator = true, sig._1, sig._2))
-      _ <- dlcSigsDAO.upsertAll(sigDbs.toVector)
+        DLCCETSignatureDb(dlc.paramHash,
+                          isInitiator = true,
+                          sig._1.asInstanceOf[EnumOutcome].outcome,
+                          sig._2))
+      _ <- dlcSigsDAO.upsertAll(sigDbs)
 
       _ <- updateDLCState(dlc.paramHash, DLCState.Signed)
     } yield {
@@ -693,7 +703,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   def verifyCETSigs(accept: DLCAccept): Future[Boolean] = {
     verifierFromAccept(accept).map { verifier =>
       val correctNumberOfSigs =
-        accept.cetSigs.outcomeSigs.size == verifier.builder.offerOutcomes.size
+        accept.cetSigs.outcomeSigs.size == verifier.builder.oracleAndContractInfo.allOutcomes.length
 
       correctNumberOfSigs && accept.cetSigs.outcomeSigs.foldLeft(true) {
         case (ret, (outcome, sig)) =>
@@ -705,7 +715,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   def verifyCETSigs(sign: DLCSign): Future[Boolean] = {
     verifierFromDb(sign.contractId).map { verifier =>
       val correctNumberOfSigs =
-        sign.cetSigs.outcomeSigs.size == verifier.builder.offerOutcomes.size
+        sign.cetSigs.outcomeSigs.size == verifier.builder.oracleAndContractInfo.allOutcomes.length
 
       correctNumberOfSigs && sign.cetSigs.outcomeSigs.foldLeft(true) {
         case (ret, (outcome, sig)) =>
@@ -784,9 +794,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           .map(sig =>
             DLCCETSignatureDb(dlc.paramHash,
                               isInitiator = true,
-                              sig._1,
+                              sig._1.asInstanceOf[EnumOutcome].outcome,
                               sig._2))
-          .toVector
 
         for {
           isRefundSigValid <- verifyRefundSig(sign)
@@ -1054,6 +1063,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         val outcomeSigs = outcomeSigDbs
           .filter(_.isInitiator == !dlcDb.isInitiator)
           .map(_.toTuple)
+          .map { case (str, sig) => EnumOutcome(str) -> sig }
 
         val refundSig =
           refundSigs.find(_.isInitiator == !dlcDb.isInitiator).get.refundSig
@@ -1135,12 +1145,12 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
       (executor, setup) <- executorAndSetupFromDb(contractId)
 
-      payout = executor.getPayout(oracleSig)
+      payout = executor.getPayout(Vector(oracleSig))
       _ = if (payout <= 0.satoshis)
         throw new UnsupportedOperationException(
           "Cannot execute a losing outcome")
 
-      outcome <- executor.executeDLC(setup, oracleSig)
+      outcome <- executor.executeDLC(setup, Vector(oracleSig))
 
       _ <- processTransaction(outcome.cet, None)
       _ <- updateDLCState(contractId, DLCState.Claimed)
@@ -1206,15 +1216,22 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
               val offer = offerDb.toDLCOffer(fundingInputs)
               val acceptOpt = acceptDbOpt.map(
-                _.toDLCAccept(fundingInputs,
-                              sigDbs.filter(!_.isInitiator).map(_.toTuple),
-                              acceptRefundSigOpt.get))
+                _.toDLCAccept(
+                  fundingInputs,
+                  sigDbs
+                    .filter(!_.isInitiator)
+                    .map(dbSig =>
+                      (EnumOutcome(dbSig.outcome), dbSig.signature)),
+                  acceptRefundSigOpt.get))
 
               val initSigs = sigDbs.filter(_.isInitiator)
 
               def getDLCSign: DLCSign = {
                 val cetSigs =
-                  CETSignatures(initSigs.map(_.toTuple), offerRefundSigOpt.get)
+                  CETSignatures(
+                    initSigs.map(dbSig =>
+                      (EnumOutcome(dbSig.outcome), dbSig.signature)),
+                    offerRefundSigOpt.get)
 
                 val contractId = dlcDb.contractIdOpt.get
                 val fundingSigs =

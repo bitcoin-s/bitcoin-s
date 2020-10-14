@@ -11,6 +11,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -33,8 +34,8 @@ class DLCMessageTest extends BitcoinSAsyncTest {
   val dummyAddress: BitcoinAddress = BitcoinAddress(
     "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
 
-  val dummyHash: Sha256Digest = Sha256Digest(
-    "00000000000000000008bba30d4d0fb53dcbffb601557de9f16d257d4f1985b7")
+  val dummyStr: String =
+    "00000000000000000008bba30d4d0fb53dcbffb601557de9f16d257d4f1985b7"
 
   val dummySig: PartialSignature =
     PartialSignature(dummyPubKey, DummyECDigitalSignature)
@@ -42,8 +43,7 @@ class DLCMessageTest extends BitcoinSAsyncTest {
   it must "not allow a negative collateral for a DLCOffer" in {
     assertThrows[IllegalArgumentException](
       DLCOffer(
-        ContractInfo.empty,
-        OracleInfo.dummy,
+        OracleAndContractInfo(OracleInfo.dummy, ContractInfo.empty),
         DLCPublicKeys(dummyPubKey, dummyAddress),
         Satoshis(-1),
         Vector.empty,
@@ -60,7 +60,8 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         DLCPublicKeys(dummyPubKey, dummyAddress),
         Vector.empty,
         dummyAddress,
-        CETSignatures(Vector(dummyHash -> ECAdaptorSignature.dummy), dummySig),
+        CETSignatures(Vector(EnumOutcome(dummyStr) -> ECAdaptorSignature.dummy),
+                      dummySig),
         Sha256Digest.empty
       )
     )

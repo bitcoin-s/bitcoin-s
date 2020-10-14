@@ -10,6 +10,7 @@ import org.bitcoins.core.crypto.TransactionSignatureSerializer
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -65,8 +66,8 @@ case class DLCTxSigner(
   }
 
   /** Return's this party's payout for a given oracle signature */
-  def getPayout(sig: SchnorrDigitalSignature): CurrencyUnit = {
-    val (offerPayout, acceptPayout) = builder.getPayouts(sig)
+  def getPayout(sigs: Vector[SchnorrDigitalSignature]): CurrencyUnit = {
+    val (offerPayout, acceptPayout) = builder.getPayouts(sigs)
     if (isInitiator) {
       offerPayout
     } else {
@@ -179,8 +180,8 @@ case class DLCTxSigner(
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcome hash */
-  def createRemoteCETSig(msg: Sha256Digest): Future[ECAdaptorSignature] = {
-    val adaptorPoint = builder.sigPubKeys(msg)
+  def createRemoteCETSig(msg: DLCOutcomeType): Future[ECAdaptorSignature] = {
+    val adaptorPoint = builder.oracleAndContractInfo.sigPointForOutcome(msg)
     val hashType = HashType.sigHashAll
     for {
       fundingTx <- builder.buildFundingTx
@@ -205,11 +206,12 @@ case class DLCTxSigner(
   }
 
   def signCET(
-      msg: Sha256Digest,
+      msg: DLCOutcomeType,
       remoteAdaptorSig: ECAdaptorSignature,
-      oracleSig: SchnorrDigitalSignature): Future[Transaction] = {
+      oracleSigs: Vector[SchnorrDigitalSignature]): Future[Transaction] = {
+    val oracleSigSum = oracleSigs.map(_.sig).reduce(_.add(_)).toPrivateKey
     val remoteSig =
-      oracleSig.sig.toPrivateKey
+      oracleSigSum
         .completeAdaptorSignature(remoteAdaptorSig, HashType.sigHashAll.byte)
 
     val remotePartialSig = PartialSignature(remoteFundingPubKey, remoteSig)
@@ -275,7 +277,7 @@ case class DLCTxSigner(
 
   /** Creates all of this party's CETSignatures */
   def createCETSigs(): Future[CETSignatures] = {
-    val cetSigFs = offer.contractInfo.keys.map { msg =>
+    val cetSigFs = builder.oracleAndContractInfo.allOutcomes.map { msg =>
       createRemoteCETSig(msg).map(msg -> _)
     }
 

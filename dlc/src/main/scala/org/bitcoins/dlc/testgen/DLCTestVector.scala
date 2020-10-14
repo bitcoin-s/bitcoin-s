@@ -1,11 +1,6 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAcceptWithoutSigs,
-  DLCOffer,
-  OracleInfo
-}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.{
   DLCFundingInput,
   DLCPublicKeys,
@@ -34,7 +29,6 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
-import org.bitcoins.dlc.testgen.DLCTLVGen.PreImageContractInfo
 import play.api.libs.json._
 import scodec.bits.ByteVector
 
@@ -117,8 +111,9 @@ case class DLCPartyParams(
 
   def toOffer(params: DLCParams)(implicit ec: ExecutionContext): DLCOffer = {
     DLCOffer(
-      ContractInfo(params.contractInfo.map(_.toMapEntry)),
-      params.oracleInfo,
+      OracleAndContractInfo(
+        params.oracleInfo,
+        SingleNonceContractInfo(params.contractInfo.map(_.toMapEntry))),
       DLCPublicKeys(fundingPrivKey.publicKey, payoutAddress),
       collateral.satoshis,
       fundingInputs,
@@ -134,8 +129,19 @@ case class SerializedContractInfoEntry(
     outcome: Sha256Digest,
     localPayout: CurrencyUnit) {
 
-  def toMapEntry: (Sha256Digest, Satoshis) = {
-    outcome -> localPayout.satoshis
+  def toMapEntry: (EnumOutcome, Satoshis) = {
+    EnumOutcome(preImage) -> localPayout.satoshis
+  }
+}
+
+object SerializedContractInfoEntry {
+
+  def fromContractInfo(contractInfo: SingleNonceContractInfo): Vector[
+    SerializedContractInfoEntry] = {
+    contractInfo.map {
+      case (EnumOutcome(str), amt) =>
+        SerializedContractInfoEntry(str, CryptoUtil.sha256(str), amt)
+    }.toVector
   }
 }
 
@@ -147,32 +153,6 @@ case class DLCParams(
     feeRate: SatoshisPerVirtualByte,
     realOutcome: Sha256Digest,
     oracleSignature: SchnorrDigitalSignature)
-
-object DLCParams {
-
-  def apply(
-      oracleInfo: OracleInfo,
-      contractInfo: PreImageContractInfo,
-      contractMaturityBound: BlockTimeStamp,
-      contractTimeout: BlockTimeStamp,
-      feeRate: SatoshisPerVirtualByte,
-      realOutcome: Sha256Digest,
-      oracleSignature: SchnorrDigitalSignature): DLCParams = {
-    val serializedContractInfo = contractInfo.toVector.map {
-      case (preImage, amt) =>
-        val outcome = CryptoUtil.sha256(preImage)
-        SerializedContractInfoEntry(preImage, outcome, amt)
-    }
-
-    DLCParams(oracleInfo,
-              serializedContractInfo,
-              contractMaturityBound,
-              contractTimeout,
-              feeRate,
-              realOutcome,
-              oracleSignature)
-  }
-}
 
 case class ValidTestInputs(
     params: DLCParams,
@@ -200,7 +180,11 @@ case class ValidTestInputs(
     val builder = this.builder
     for {
       fundingTx <- builder.buildFundingTx
-      cetFs = params.contractInfo.map(_.outcome).map(builder.buildCET)
+      cetFs =
+        params.contractInfo
+          .map(_.preImage)
+          .map(EnumOutcome.apply)
+          .map(builder.buildCET)
       cets <- Future.sequence(cetFs)
       refundTx <- builder.buildRefundTx
     } yield DLCTransactions(fundingTx, cets, refundTx)
@@ -245,12 +229,12 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
     {
       _.validate[Map[String, String]]
         .map(map =>
-          OracleInfo(SchnorrPublicKey(map("publicKey")),
-                     SchnorrNonce(map("nonce"))))
+          SingleNonceOracleInfo(SchnorrPublicKey(map("publicKey")),
+                                SchnorrNonce(map("nonce"))))
     },
     { info =>
       Json.toJson(
-        Map("publicKey" -> info.pubKey.hex, "nonce" -> info.rValue.hex))
+        Map("publicKey" -> info.pubKey.hex, "nonce" -> info.nonces.head.hex))
     }
   )
 

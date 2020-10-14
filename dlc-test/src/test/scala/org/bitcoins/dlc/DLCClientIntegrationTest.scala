@@ -1,5 +1,6 @@
 package org.bitcoins.dlc
 
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.SingleNonceOracleInfo
 import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{
@@ -118,7 +119,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     ECPublicKey.freshPublicKey)
 
   def constructDLC(numOutcomes: Int): Future[
-    (TestDLCClient, TestDLCClient, Vector[Sha256Digest])] = {
+    (TestDLCClient, TestDLCClient, Vector[String])] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
       Bitcoins((input + Satoshis(200)).satoshis)
     }
@@ -302,15 +303,14 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         )
       }
 
-      val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes).map(_._2)
+      val outcomeStrs = DLCTestUtil.genOutcomes(numOutcomes)
 
       val (outcomes, otherOutcomes) =
-        DLCTestUtil.genContractInfos(outcomeHashes, totalInput)
+        DLCTestUtil.genContractInfos(outcomeStrs, totalInput)
 
       val acceptDLC = TestDLCClient(
         outcomes = outcomes,
-        oraclePubKey = oraclePubKey,
-        preCommittedR = preCommittedR,
+        oracleInfo = SingleNonceOracleInfo(oraclePubKey, preCommittedR),
         isInitiator = false,
         fundingPrivKey = localFundingPrivKey,
         payoutPrivKey = localPayoutPrivKey,
@@ -330,8 +330,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
 
       val offerDLC = TestDLCClient(
         outcomes = otherOutcomes,
-        oraclePubKey = oraclePubKey,
-        preCommittedR = preCommittedR,
+        oracleInfo = SingleNonceOracleInfo(oraclePubKey, preCommittedR),
         isInitiator = true,
         fundingPrivKey = remoteFundingPrivKey,
         payoutPrivKey = remotePayoutPrivKey,
@@ -349,7 +348,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         network = RegTest
       )
 
-      (acceptDLC, offerDLC, outcomeHashes)
+      (acceptDLC, offerDLC, outcomeStrs)
     }
   }
 
@@ -462,16 +461,11 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
   }
 
   def constructAndSetupDLC(numOutcomes: Int): Future[
-    (
-        TestDLCClient,
-        SetupDLC,
-        TestDLCClient,
-        SetupDLC,
-        Vector[Sha256Digest])] = {
+    (TestDLCClient, SetupDLC, TestDLCClient, SetupDLC, Vector[String])] = {
     for {
-      (acceptDLC, offerDLC, outcomeHashes) <- constructDLC(numOutcomes)
+      (acceptDLC, offerDLC, outcomes) <- constructDLC(numOutcomes)
       (acceptSetup, offerSetup) <- setupDLC(acceptDLC, offerDLC)
-    } yield (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomeHashes)
+    } yield (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomes)
   }
 
   def executeForCase(
@@ -479,11 +473,11 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       numOutcomes: Int,
       local: Boolean): Future[Assertion] = {
     for {
-      (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomeHashes) <-
+      (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomes) <-
         constructAndSetupDLC(numOutcomes)
 
       oracleSig = oraclePrivKey.schnorrSignWithNonce(
-        outcomeHashes(outcomeIndex).bytes,
+        CryptoUtil.sha256(outcomes(outcomeIndex)).bytes,
         preCommittedK)
 
       (unilateralDLC, unilateralSetup, otherDLC, otherSetup) = {
@@ -494,10 +488,11 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         }
       }
 
-      unilateralOutcome <-
-        unilateralDLC.executeDLC(unilateralSetup, Future.successful(oracleSig))
+      unilateralOutcome <- unilateralDLC.executeDLC(
+        unilateralSetup,
+        Future.successful(Vector(oracleSig)))
       otherOutcome <-
-        otherDLC.executeDLC(otherSetup, Future.successful(oracleSig))
+        otherDLC.executeDLC(otherSetup, Future.successful(Vector(oracleSig)))
 
       _ <- recoverToSucceededIf[BitcoindException](
         publishTransaction(unilateralOutcome.cet))
