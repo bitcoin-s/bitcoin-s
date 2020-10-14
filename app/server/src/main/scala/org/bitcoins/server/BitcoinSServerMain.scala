@@ -134,7 +134,7 @@ class BitcoinSServerMain(override val args: Array[String])
         tmpWallet <- dlcConf.createDLCWallet(nodeApi = bitcoind,
                                              chainQueryApi = bitcoind,
                                              feeRateApi = feeProvider)
-        wallet = BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
+        wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
           bitcoind,
           tmpWallet)
         _ = logger.info("Starting wallet")
