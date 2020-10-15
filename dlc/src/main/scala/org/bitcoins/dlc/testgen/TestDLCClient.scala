@@ -53,13 +53,7 @@ case class TestDLCClient(
 
   private val dlcExecutor = DLCExecutor(dlcTxSigner)
 
-  private val outcomes = if (isInitiator) {
-    offer.oracleAndContractInfo.offerContractInfo
-  } else {
-    offer.oracleAndContractInfo.acceptContractInfo
-  }
-
-  val messages: Vector[Sha256Digest] = outcomes.keys.toVector
+  val messages: Vector[String] = offer.oracleAndContractInfo.allOutcomes
 
   val timeouts: DLCTimeouts = offer.timeouts
 

@@ -200,14 +200,12 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
   val feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
 
-  def constructDLCClients(numOutcomes: Int): (
-      TestDLCClient,
-      TestDLCClient,
-      Vector[Sha256Digest]) = {
-    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes).map(_._2)
+  def constructDLCClients(
+      numOutcomes: Int): (TestDLCClient, TestDLCClient, Vector[String]) = {
+    val outcomeStrs = DLCTestUtil.genOutcomes(numOutcomes)
 
     val (outcomes, remoteOutcomes) =
-      DLCTestUtil.genContractInfos(outcomeHashes, totalInput)
+      DLCTestUtil.genContractInfos(outcomeStrs, totalInput)
 
     // Offer is local
     val dlcOffer: TestDLCClient = TestDLCClient(
@@ -253,7 +251,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
       network = RegTest
     )
 
-    (dlcOffer, dlcAccept, outcomeHashes)
+    (dlcOffer, dlcAccept, outcomeStrs)
   }
 
   def noEmptySPKOutputs(tx: Transaction): Boolean = {
@@ -302,13 +300,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
   }
 
   def setupDLC(numOutcomes: Int): Future[
-    (
-        SetupDLC,
-        TestDLCClient,
-        SetupDLC,
-        TestDLCClient,
-        Vector[Sha256Digest])] = {
-    val (dlcOffer, dlcAccept, outcomeHashes) = constructDLCClients(numOutcomes)
+    (SetupDLC, TestDLCClient, SetupDLC, TestDLCClient, Vector[String])] = {
+    val (dlcOffer, dlcAccept, outcomeStrs) = constructDLCClients(numOutcomes)
 
     val offerSigReceiveP =
       Promise[CETSignatures]()
@@ -344,7 +337,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
       }
       assert(acceptSetup.refundTx == offerSetup.refundTx)
 
-      (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomeHashes)
+      (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomeStrs)
     }
   }
 
@@ -352,8 +345,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
     setupDLC(numOutcomes).flatMap {
       case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomeHashes) =>
         val oracleSig =
-          oraclePrivKey.schnorrSignWithNonce(outcomeHashes(outcomeIndex).bytes,
-                                             preCommittedK)
+          oraclePrivKey.schnorrSignWithNonce(
+            CryptoUtil.sha256(outcomeHashes(outcomeIndex)).bytes,
+            preCommittedK)
 
         for {
           offerOutcome <-
@@ -468,7 +462,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
       cetFailures = outcomes.map { outcome =>
         val oracleSig =
-          oraclePrivKey.schnorrSignWithNonce(outcome.bytes, preCommittedK)
+          oraclePrivKey.schnorrSignWithNonce(CryptoUtil.sha256(outcome).bytes,
+                                             preCommittedK)
 
         for {
           _ <- recoverToSucceededIf[RuntimeException] {
@@ -532,10 +527,11 @@ class DLCClientTest extends BitcoinSAsyncTest {
     val outcomeIndex = 1
 
     setupDLC(numOutcomes = 3).flatMap {
-      case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomeHashes) =>
+      case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomes) =>
         val oracleSig =
-          oraclePrivKey.schnorrSignWithNonce(outcomeHashes(outcomeIndex).bytes,
-                                             preCommittedK)
+          oraclePrivKey.schnorrSignWithNonce(
+            CryptoUtil.sha256(outcomes(outcomeIndex)).bytes,
+            preCommittedK)
 
         for {
           acceptCETSigs <- dlcAccept.dlcTxSigner.createCETSigs()

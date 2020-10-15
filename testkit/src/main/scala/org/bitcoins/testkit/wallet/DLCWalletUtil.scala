@@ -29,11 +29,14 @@ trait DLCWalletUtil {
   lazy val kValue: ECPrivateKey = ECPrivateKey.freshPrivateKey
   lazy val rValue: SchnorrNonce = kValue.schnorrNonce
 
+  lazy val winStr: String = "WIN"
+  lazy val loseStr: String = "LOSE"
+
   lazy val winHash: Sha256Digest =
-    CryptoUtil.sha256("WIN")
+    CryptoUtil.sha256(winStr)
 
   lazy val loseHash: Sha256Digest =
-    CryptoUtil.sha256("LOSE")
+    CryptoUtil.sha256(loseStr)
 
   lazy val sampleOracleInfo: OracleInfo = OracleInfo(
     oraclePrivKey.schnorrPublicKey.bytes ++ rValue.bytes)
@@ -108,9 +111,8 @@ trait DLCWalletUtil {
                              sampleContractInfo,
                              dummyTimeouts)
 
-  lazy val dummyOutcomeSigs: Map[Sha256Digest, ECAdaptorSignature] =
-    Map(winHash -> ECAdaptorSignature.dummy,
-        loseHash -> ECAdaptorSignature.dummy)
+  lazy val dummyOutcomeSigs: Map[String, ECAdaptorSignature] =
+    Map(winStr -> ECAdaptorSignature.dummy, loseStr -> ECAdaptorSignature.dummy)
 
   lazy val dummyCETSigs: CETSignatures =
     CETSignatures(dummyOutcomeSigs, dummyPartialSig)
@@ -149,7 +151,7 @@ trait DLCWalletUtil {
     val walletB = fundedWalletB.wallet
 
     val numOutcomes = 8
-    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes).map(_._2)
+    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
     val (contractInfo, _) =
       DLCTestUtil.genContractInfos(outcomeHashes, Satoshis(10000))
 

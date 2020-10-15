@@ -129,7 +129,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   /** Constructs the unsigned Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: Sha256Digest): Future[WitnessTransaction] = {
+  def buildCET(msg: String): Future[WitnessTransaction] = {
     for {
       cetBuilder <- cetBuilderF
       cet <- cetBuilder.buildCET(msg)

@@ -16,7 +16,7 @@ import org.bitcoins.core.wallet.builder.{
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{ConditionalPath, P2WSHV0InputInfo}
-import org.bitcoins.crypto.{ECPublicKey, Sha256Digest}
+import org.bitcoins.crypto.ECPublicKey
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -48,7 +48,7 @@ case class DLCCETBuilder(
   /** Constructs a Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: Sha256Digest)(implicit
+  def buildCET(msg: String)(implicit
       ec: ExecutionContext): Future[WitnessTransaction] = {
     val builder = RawTxBuilder().setLockTime(timeouts.contractMaturity.toUInt32)
 

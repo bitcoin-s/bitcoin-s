@@ -1,9 +1,11 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
+import java.nio.charset.StandardCharsets
+
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt16, UInt32}
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.{BigSizeUInt, BitcoinAddress}
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.script.{ScriptWitnessV0, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.tlv._
@@ -45,10 +47,8 @@ object DLCMessage {
   case class OracleInfo(pubKey: SchnorrPublicKey, rValue: SchnorrNonce)
       extends NetworkElement {
 
-    def verifySig(
-        outcome: Sha256Digest,
-        sig: SchnorrDigitalSignature): Boolean = {
-      pubKey.verify(outcome.bytes, sig)
+    def verifySig(outcome: String, sig: SchnorrDigitalSignature): Boolean = {
+      pubKey.verify(CryptoUtil.sha256(outcome).bytes, sig)
     }
 
     override def bytes: ByteVector = pubKey.bytes ++ rValue.bytes
@@ -70,14 +70,16 @@ object DLCMessage {
     }
   }
 
-  case class ContractInfo(outcomeValueMap: Map[Sha256Digest, Satoshis])
+  case class ContractInfo(outcomeValueMap: Map[String, Satoshis])
       extends NetworkElement
-      with MapWrapper[Sha256Digest, Satoshis] {
-    override def wrapped: Map[Sha256Digest, Satoshis] = outcomeValueMap
+      with MapWrapper[String, Satoshis] {
+    override def wrapped: Map[String, Satoshis] = outcomeValueMap
 
     override def bytes: ByteVector = {
       outcomeValueMap.foldLeft(ByteVector.empty) {
-        case (vec, (digest, sats)) => vec ++ digest.bytes ++ sats.bytes
+        case (vec, (str, sats)) =>
+          val strBytes = CryptoUtil.serializeForHash(str)
+          vec ++ BigSizeUInt.calcFor(strBytes).bytes ++ strBytes ++ sats.bytes
       }
     }
 
@@ -92,23 +94,27 @@ object DLCMessage {
 
   object ContractInfo extends Factory[ContractInfo] {
 
-    private val sizeOfMapElement: Int = 40
-
-    val empty: ContractInfo = ContractInfo(ByteVector.low(sizeOfMapElement))
+    val empty: ContractInfo = ContractInfo(Map("" -> Satoshis.zero))
 
     override def fromBytes(bytes: ByteVector): ContractInfo = {
       @tailrec
       def loop(
           remainingBytes: ByteVector,
-          accum: Vector[(Sha256Digest, Satoshis)]): Vector[
-        (Sha256Digest, Satoshis)] = {
-        if (remainingBytes.size < sizeOfMapElement) {
+          accum: Vector[(String, Satoshis)]): Vector[(String, Satoshis)] = {
+        if (remainingBytes.isEmpty) {
           accum
         } else {
-          val relevantBytes = remainingBytes.take(sizeOfMapElement)
-          val digest = Sha256Digest(relevantBytes.take(32))
-          val sats = Satoshis(relevantBytes.takeRight(8))
-          loop(remainingBytes.drop(sizeOfMapElement), accum :+ (digest, sats))
+          val outcomeSize = BigSizeUInt(remainingBytes)
+          val outcome =
+            remainingBytes.drop(outcomeSize.byteSize).take(outcomeSize.toInt)
+          val outcomeStr = new String(outcome.toArray, StandardCharsets.UTF_8)
+          val outcomeSizeAndOutcomeLen =
+            outcomeSize.byteSize + outcomeSize.toInt
+          val sats = Satoshis(
+            remainingBytes.drop(outcomeSizeAndOutcomeLen).take(8))
+
+          loop(remainingBytes.drop(outcomeSizeAndOutcomeLen + 8),
+               accum :+ (outcomeStr, sats))
         }
       }
       ContractInfo(loop(bytes, Vector.empty).toMap)
@@ -120,25 +126,22 @@ object DLCMessage {
       offerContractInfo: ContractInfo,
       acceptContractInfo: ContractInfo) {
 
-    def verifySig(
-        outcome: Sha256Digest,
-        sig: SchnorrDigitalSignature): Boolean = {
+    def verifySig(outcome: String, sig: SchnorrDigitalSignature): Boolean = {
       oracleInfo.verifySig(outcome, sig)
     }
 
-    lazy val outcomeMap: Map[Sha256Digest, (ECPublicKey, Satoshis, Satoshis)] =
+    lazy val outcomeMap: Map[String, (ECPublicKey, Satoshis, Satoshis)] =
       allOutcomes.map { msg =>
         msg -> (oracleInfo.pubKey.computeSigPoint(
-          msg.bytes,
+          CryptoUtil.sha256(msg).bytes,
           oracleInfo.rValue), offerContractInfo(msg), acceptContractInfo(msg))
       }.toMap
 
-    def resultOfOutcome(
-        outcome: Sha256Digest): (ECPublicKey, Satoshis, Satoshis) = {
+    def resultOfOutcome(outcome: String): (ECPublicKey, Satoshis, Satoshis) = {
       outcomeMap(outcome)
     }
 
-    def outcomeFromSignature(sig: SchnorrDigitalSignature): Sha256Digest = {
+    def outcomeFromSignature(sig: SchnorrDigitalSignature): String = {
       outcomeMap.find(_._2._1 == sig.sig.getPublicKey) match {
         case Some((outcome, _)) => outcome
         case None =>
@@ -147,11 +150,11 @@ object DLCMessage {
       }
     }
 
-    def sigPointForOutcome(outcome: Sha256Digest): ECPublicKey = {
+    def sigPointForOutcome(outcome: String): ECPublicKey = {
       resultOfOutcome(outcome)._1
     }
 
-    lazy val allOutcomes: Vector[Sha256Digest] = offerContractInfo.keys.toVector
+    lazy val allOutcomes: Vector[String] = offerContractInfo.keys.toVector
 
     /** Returns the payouts for the signature as (toOffer, toAccept) */
     def getPayouts(sig: SchnorrDigitalSignature): (Satoshis, Satoshis) = {
@@ -160,7 +163,7 @@ object DLCMessage {
     }
 
     /** Returns the payouts for the outcome as (toOffer, toAccept) */
-    def getPayouts(outcome: Sha256Digest): (Satoshis, Satoshis) = {
+    def getPayouts(outcome: String): (Satoshis, Satoshis) = {
       val (_, offerOutcome, acceptOutcome) = resultOfOutcome(outcome)
 
       (offerOutcome, acceptOutcome)
@@ -249,7 +252,7 @@ object DLCMessage {
       val contractInfosJson =
         contractInfo
           .map(info =>
-            mutable.LinkedHashMap("sha256" -> Str(info._1.hex),
+            mutable.LinkedHashMap("outcome" -> Str(info._1),
                                   "sats" -> Num(info._2.toLong.toDouble)))
 
       val fundingInputsJson =
@@ -342,11 +345,11 @@ object DLCMessage {
                 implicit val obj: mutable.LinkedHashMap[String, Value] =
                   subVal.obj
 
-                val sha256 =
-                  getValue("sha256")
+                val outcome =
+                  getValue("outcome")
                 val sats = getValue("sats")
 
-                (Sha256Digest(sha256.str), Satoshis(sats.num.toLong))
+                (outcome.str, Satoshis(sats.num.toLong))
               }
           }
           .get
@@ -505,8 +508,8 @@ object DLCMessage {
 
       val outcomeSigsJson =
         cetSigs.outcomeSigs.map {
-          case (hash, sig) =>
-            mutable.LinkedHashMap(hash.hex -> Str(sig.hex))
+          case (str, sig) =>
+            mutable.LinkedHashMap(str -> Str(sig.hex))
         }
 
       val cetSigsJson =
@@ -544,7 +547,7 @@ object DLCMessage {
     def fromTLV(
         accept: DLCAcceptTLV,
         network: NetworkParameters,
-        outcomes: Vector[Sha256Digest]): DLCAccept = {
+        outcomes: Vector[String]): DLCAccept = {
       val outcomeSigs = accept.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
           outcomes.zip(sigs).toMap
@@ -650,9 +653,8 @@ object DLCMessage {
               val outcomeSigsMap = getValue("outcomeSigs")
               val outcomeSigs = outcomeSigsMap.arr.map { v =>
                 val (key, value) = v.obj.head
-                val hash = Sha256Digest(key)
                 val sig = ECAdaptorSignature(value.str)
-                (hash, sig)
+                (key, sig)
               }
 
               val refundSig = getValue("refundSig")
@@ -713,8 +715,8 @@ object DLCMessage {
 
       val outcomeSigsJson =
         cetSigs.outcomeSigs.map {
-          case (hash, sig) =>
-            mutable.LinkedHashMap(hash.hex -> Str(sig.hex))
+          case (str, sig) =>
+            mutable.LinkedHashMap(str -> Str(sig.hex))
         }
 
       val cetSigsJson =
@@ -736,7 +738,7 @@ object DLCMessage {
     def fromTLV(
         sign: DLCSignTLV,
         fundingPubKey: ECPublicKey,
-        outcomes: Vector[Sha256Digest],
+        outcomes: Vector[String],
         fundingOutPoints: Vector[TransactionOutPoint]): DLCSign = {
       val outcomeSigs = sign.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
@@ -785,9 +787,8 @@ object DLCMessage {
               val outcomeSigsMap = getValue("outcomeSigs")
               val outcomeSigs = outcomeSigsMap.arr.map { item =>
                 val (key, value) = item.obj.head
-                val hash = Sha256Digest(key)
                 val sig = ECAdaptorSignature(value.str)
-                (hash, sig)
+                (key, sig)
               }
 
               val refundSig = getValue("refundSig")

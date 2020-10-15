@@ -11,21 +11,13 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  ECAdaptorSignature,
-  ECDigitalSignature,
-  Sha256Digest
-}
+import org.bitcoins.crypto.{ECAdaptorSignature, ECDigitalSignature}
 import scodec.bits.ByteVector
 
 object DLCTestUtil {
 
-  def genOutcomes(size: Int): Vector[(String, Sha256Digest)] = {
-    val strs =
-      (0 until size).map(_ => scala.util.Random.nextLong().toString).toVector
-
-    strs.map(str => str -> CryptoUtil.sha256(str))
+  def genOutcomes(size: Int): Vector[String] = {
+    (0 until size).map(_ => scala.util.Random.nextLong().toString).toVector
   }
 
   def genValues(size: Int, totalAmount: CurrencyUnit): Vector[Satoshis] = {
@@ -45,15 +37,15 @@ object DLCTestUtil {
   }
 
   def genContractInfos(
-      outcomeHashes: Vector[Sha256Digest],
+      outcomes: Vector[String],
       totalInput: CurrencyUnit): (ContractInfo, ContractInfo) = {
     val outcomeMap =
-      outcomeHashes
-        .zip(DLCTestUtil.genValues(outcomeHashes.length, totalInput))
+      outcomes
+        .zip(DLCTestUtil.genValues(outcomes.length, totalInput))
         .toMap
 
     val otherOutcomeMap = outcomeMap.map {
-      case (hash, amt) => (hash, (totalInput - amt).satoshis)
+      case (outcome, amt) => (outcome, (totalInput - amt).satoshis)
     }
 
     (ContractInfo(outcomeMap), ContractInfo(otherOutcomeMap))

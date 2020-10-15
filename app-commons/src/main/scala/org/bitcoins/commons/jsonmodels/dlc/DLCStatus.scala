@@ -183,10 +183,12 @@ object DLCStatus {
       val preCommittedR = offer.oracleInfo.rValue
 
       def sigFromMsgAndSigs(
-          msg: Sha256Digest,
+          outcome: String,
           adaptorSig: ECAdaptorSignature,
           cetSig: ECDigitalSignature): SchnorrDigitalSignature = {
-        val sigPubKey = oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
+        val sigPubKey = oraclePubKey.computeSigPoint(
+          CryptoUtil.sha256(outcome).bytes,
+          preCommittedR)
         val possibleOracleS =
           sigPubKey
             .extractAdaptorSecret(adaptorSig,
@@ -228,9 +230,10 @@ object DLCStatus {
       }
 
       val sigOpt = outcomeSigs.find {
-        case (msg, adaptorSig) =>
-          val possibleOracleSig = sigFromMsgAndSigs(msg, adaptorSig, cetSig)
-          oraclePubKey.verify(msg.bytes, possibleOracleSig)
+        case (outcome, adaptorSig) =>
+          val possibleOracleSig = sigFromMsgAndSigs(outcome, adaptorSig, cetSig)
+          oraclePubKey.verify(CryptoUtil.sha256(outcome).bytes,
+                              possibleOracleSig)
       }
 
       sigOpt match {

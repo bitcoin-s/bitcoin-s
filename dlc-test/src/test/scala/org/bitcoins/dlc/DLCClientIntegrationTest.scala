@@ -118,7 +118,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     ECPublicKey.freshPublicKey)
 
   def constructDLC(numOutcomes: Int): Future[
-    (TestDLCClient, TestDLCClient, Vector[Sha256Digest])] = {
+    (TestDLCClient, TestDLCClient, Vector[String])] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
       Bitcoins((input + Satoshis(200)).satoshis)
     }
@@ -302,10 +302,10 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         )
       }
 
-      val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes).map(_._2)
+      val outcomeStrs = DLCTestUtil.genOutcomes(numOutcomes)
 
       val (outcomes, otherOutcomes) =
-        DLCTestUtil.genContractInfos(outcomeHashes, totalInput)
+        DLCTestUtil.genContractInfos(outcomeStrs, totalInput)
 
       val acceptDLC = TestDLCClient(
         outcomes = outcomes,
@@ -349,7 +349,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         network = RegTest
       )
 
-      (acceptDLC, offerDLC, outcomeHashes)
+      (acceptDLC, offerDLC, outcomeStrs)
     }
   }
 
@@ -462,16 +462,11 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
   }
 
   def constructAndSetupDLC(numOutcomes: Int): Future[
-    (
-        TestDLCClient,
-        SetupDLC,
-        TestDLCClient,
-        SetupDLC,
-        Vector[Sha256Digest])] = {
+    (TestDLCClient, SetupDLC, TestDLCClient, SetupDLC, Vector[String])] = {
     for {
-      (acceptDLC, offerDLC, outcomeHashes) <- constructDLC(numOutcomes)
+      (acceptDLC, offerDLC, outcomes) <- constructDLC(numOutcomes)
       (acceptSetup, offerSetup) <- setupDLC(acceptDLC, offerDLC)
-    } yield (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomeHashes)
+    } yield (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomes)
   }
 
   def executeForCase(
@@ -479,11 +474,11 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       numOutcomes: Int,
       local: Boolean): Future[Assertion] = {
     for {
-      (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomeHashes) <-
+      (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomes) <-
         constructAndSetupDLC(numOutcomes)
 
       oracleSig = oraclePrivKey.schnorrSignWithNonce(
-        outcomeHashes(outcomeIndex).bytes,
+        CryptoUtil.sha256(outcomes(outcomeIndex)).bytes,
         preCommittedK)
 
       (unilateralDLC, unilateralSetup, otherDLC, otherSetup) = {

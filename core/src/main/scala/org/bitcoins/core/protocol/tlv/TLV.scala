@@ -344,7 +344,7 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(55330)
 
   override def fromTLVValue(value: ByteVector): OracleEventV0TLV = {
-    val iter = ValueIterator(value, 0)
+    val iter = ValueIterator(value)
 
     val publicKey = SchnorrPublicKey(iter.take(32))
     val nonce = SchnorrNonce(iter.take(32))
@@ -372,7 +372,7 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(55332)
 
   override def fromTLVValue(value: ByteVector): OracleAnnouncementV0TLV = {
-    val iter = ValueIterator(value, 0)
+    val iter = ValueIterator(value)
 
     val sig = SchnorrDigitalSignature(iter.take(64))
     val eventTLV = OracleEventV0TLV(iter.current)
@@ -384,14 +384,17 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
 
 sealed trait ContractInfoTLV extends TLV
 
-case class ContractInfoV0TLV(outcomes: Map[Sha256Digest, Satoshis])
+case class ContractInfoV0TLV(outcomes: Map[String, Satoshis])
     extends ContractInfoTLV {
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
   override val value: ByteVector = {
     outcomes.foldLeft(ByteVector.empty) {
       case (bytes, (outcome, amt)) =>
-        bytes ++ outcome.bytes ++ amt.toUInt64.bytes
+        val outcomeBytes = CryptoUtil.serializeForHash(outcome)
+        bytes ++ BigSizeUInt
+          .calcFor(outcomeBytes)
+          .bytes ++ outcomeBytes ++ amt.toUInt64.bytes
     }
   }
 }
@@ -402,10 +405,13 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {
     val iter = ValueIterator(value)
 
-    val builder = Map.newBuilder[Sha256Digest, Satoshis]
+    val builder = Map.newBuilder[String, Satoshis]
 
     while (iter.index < value.length) {
-      val outcome = Sha256Digest(iter.take(32))
+      val outcomeLen = BigSizeUInt(iter.current)
+      iter.skip(outcomeLen)
+      val outcome =
+        new String(iter.take(outcomeLen.toInt).toArray, StandardCharsets.UTF_8)
       val amt = Satoshis(UInt64(iter.takeBits(64)))
       builder.+=(outcome -> amt)
     }

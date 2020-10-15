@@ -10,8 +10,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCCETSignatureDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCCETSignatureDb, (Sha256DigestBE, Sha256Digest)]
-    with SlickUtil[DLCCETSignatureDb, (Sha256DigestBE, Sha256Digest)] {
+    extends CRUD[DLCCETSignatureDb, (Sha256DigestBE, String)]
+    with SlickUtil[DLCCETSignatureDb, (Sha256DigestBE, String)] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -27,27 +27,29 @@ case class DLCCETSignatureDAO()(implicit
       ts: Vector[DLCCETSignatureDb]): Future[Vector[DLCCETSignatureDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(ids: Vector[(
-      Sha256DigestBE,
-      Sha256Digest)]): Query[DLCCETSignatureTable, DLCCETSignatureDb, Seq] =
+  override protected def findByPrimaryKeys(
+      ids: Vector[(Sha256DigestBE, String)]): Query[
+    DLCCETSignatureTable,
+    DLCCETSignatureDb,
+    Seq] =
     table
       .filter(_.paramHash.inSet(ids.map(_._1)))
-      .filter(_.outcomeHash.inSet(ids.map(_._2)))
+      .filter(_.outcome.inSet(ids.map(_._2)))
 
-  override def findByPrimaryKey(id: (Sha256DigestBE, Sha256Digest)): Query[
+  override def findByPrimaryKey(id: (Sha256DigestBE, String)): Query[
     DLCCETSignatureTable,
     DLCCETSignatureDb,
     Seq] = {
     table
       .filter(_.paramHash === id._1)
-      .filter(_.outcomeHash === id._2)
+      .filter(_.outcome === id._2)
   }
 
   override def findAll(dlcs: Vector[DLCCETSignatureDb]): Query[
     DLCCETSignatureTable,
     DLCCETSignatureDb,
     Seq] =
-    findByPrimaryKeys(dlcs.map(sig => (sig.paramHash, sig.outcomeHash)))
+    findByPrimaryKeys(dlcs.map(sig => (sig.paramHash, sig.outcome)))
 
   def findByParamHash(
       paramHash: Sha256DigestBE): Future[Vector[DLCCETSignatureDb]] = {
@@ -64,17 +66,16 @@ case class DLCCETSignatureDAO()(implicit
 
     def paramHash: Rep[Sha256DigestBE] = column("param_hash")
 
-    def outcomeHash: Rep[Sha256Digest] = column("outcome_hash")
+    def outcome: Rep[String] = column("outcome")
 
     def signature: Rep[ECAdaptorSignature] = column("signature")
 
     def * : ProvenShape[DLCCETSignatureDb] =
-      (paramHash, outcomeHash, signature).<>(DLCCETSignatureDb.tupled,
-                                             DLCCETSignatureDb.unapply)
+      (paramHash, outcome, signature).<>(DLCCETSignatureDb.tupled,
+                                         DLCCETSignatureDb.unapply)
 
     def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_dlc_cet_sigs",
-                 sourceColumns = (paramHash, outcomeHash))
+      primaryKey(name = "pk_dlc_cet_sigs", sourceColumns = (paramHash, outcome))
 
     def fk: ForeignKeyQuery[_, DLCDb] =
       foreignKey("fk_param_hash",

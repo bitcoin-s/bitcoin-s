@@ -12,7 +12,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest}
+import org.bitcoins.crypto.ECAdaptorSignature
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
@@ -63,7 +63,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
   }
 
   /** Verifies remote's CET signature for a given outcome hash */
-  def verifyCETSig(outcome: Sha256Digest, sig: ECAdaptorSignature): Boolean = {
+  def verifyCETSig(outcome: String, sig: ECAdaptorSignature): Boolean = {
     val remoteFundingPubKey = if (isInitiator) {
       builder.acceptFundingKey
     } else {

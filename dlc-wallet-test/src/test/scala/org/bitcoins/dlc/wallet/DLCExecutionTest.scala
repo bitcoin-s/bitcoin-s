@@ -3,12 +3,10 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
+import org.bitcoins.crypto.{CryptoUtil, SchnorrDigitalSignature}
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.FutureOutcome
-
-import scala.math.Ordering
 
 class DLCExecutionTest extends BitcoinSDualWalletTest {
   type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
@@ -24,23 +22,21 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       SchnorrDigitalSignature) = {
 
     // Get a hash that the initiator wins for
-    val initiatorWinHash =
+    val initiatorWinStr =
       contractInfo
-        .max(new Ordering[(Sha256Digest, Satoshis)] {
-          override def compare(
-              x: (Sha256Digest, Satoshis),
-              y: (Sha256Digest, Satoshis)): Int =
-            x._2.compare(y._2)
-        })
+        .max((x: (String, Satoshis), y: (String, Satoshis)) =>
+          x._2.compare(y._2))
         ._1
     val initiatorWinSig = DLCWalletUtil.oraclePrivKey
-      .schnorrSignWithNonce(initiatorWinHash.bytes, DLCWalletUtil.kValue)
+      .schnorrSignWithNonce(CryptoUtil.sha256(initiatorWinStr).bytes,
+                            DLCWalletUtil.kValue)
 
     // Get a hash that the recipient wins for
-    val recipientWinHash =
+    val recipientWinStr =
       contractInfo.find(_._2 == Satoshis.zero).get._1
     val recipientWinSig = DLCWalletUtil.oraclePrivKey
-      .schnorrSignWithNonce(recipientWinHash.bytes, DLCWalletUtil.kValue)
+      .schnorrSignWithNonce(CryptoUtil.sha256(recipientWinStr).bytes,
+                            DLCWalletUtil.kValue)
 
     (initiatorWinSig, recipientWinSig)
   }

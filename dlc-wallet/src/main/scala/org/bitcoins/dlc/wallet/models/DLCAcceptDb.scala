@@ -29,7 +29,7 @@ case class DLCAcceptDb(
 
   def toDLCAccept(
       fundingInputs: Vector[DLCFundingInput],
-      outcomeSigs: Map[Sha256Digest, ECAdaptorSignature],
+      outcomeSigs: Map[String, ECAdaptorSignature],
       refundSig: PartialSignature): DLCAccept = {
     val pubKeys =
       DLCPublicKeys(fundingKey, finalAddress)

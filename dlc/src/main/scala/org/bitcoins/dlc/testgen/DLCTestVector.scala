@@ -35,7 +35,6 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
-import org.bitcoins.dlc.testgen.DLCTLVGen.PreImageContractInfo
 import play.api.libs.json._
 import scodec.bits.ByteVector
 
@@ -136,8 +135,19 @@ case class SerializedContractInfoEntry(
     outcome: Sha256Digest,
     localPayout: CurrencyUnit) {
 
-  def toMapEntry: (Sha256Digest, Satoshis) = {
-    outcome -> localPayout.satoshis
+  def toMapEntry: (String, Satoshis) = {
+    preImage -> localPayout.satoshis
+  }
+}
+
+object SerializedContractInfoEntry {
+
+  def fromContractInfo(
+      contractInfo: ContractInfo): Vector[SerializedContractInfoEntry] = {
+    contractInfo.map {
+      case (str, amt) =>
+        SerializedContractInfoEntry(str, CryptoUtil.sha256(str), amt)
+    }.toVector
   }
 }
 
@@ -149,32 +159,6 @@ case class DLCParams(
     feeRate: SatoshisPerVirtualByte,
     realOutcome: Sha256Digest,
     oracleSignature: SchnorrDigitalSignature)
-
-object DLCParams {
-
-  def apply(
-      oracleInfo: OracleInfo,
-      contractInfo: PreImageContractInfo,
-      contractMaturityBound: BlockTimeStamp,
-      contractTimeout: BlockTimeStamp,
-      feeRate: SatoshisPerVirtualByte,
-      realOutcome: Sha256Digest,
-      oracleSignature: SchnorrDigitalSignature): DLCParams = {
-    val serializedContractInfo = contractInfo.toVector.map {
-      case (preImage, amt) =>
-        val outcome = CryptoUtil.sha256(preImage)
-        SerializedContractInfoEntry(preImage, outcome, amt)
-    }
-
-    DLCParams(oracleInfo,
-              serializedContractInfo,
-              contractMaturityBound,
-              contractTimeout,
-              feeRate,
-              realOutcome,
-              oracleSignature)
-  }
-}
 
 case class ValidTestInputs(
     params: DLCParams,
@@ -202,7 +186,7 @@ case class ValidTestInputs(
     val builder = this.builder
     for {
       fundingTx <- builder.buildFundingTx
-      cetFs = params.contractInfo.map(_.outcome).map(builder.buildCET)
+      cetFs = params.contractInfo.map(_.preImage).map(builder.buildCET)
       cets <- Future.sequence(cetFs)
       refundTx <- builder.buildRefundTx
     } yield DLCTransactions(fundingTx, cets, refundTx)

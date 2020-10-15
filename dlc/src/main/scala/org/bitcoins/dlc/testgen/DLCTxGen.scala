@@ -1,6 +1,10 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCSign, OracleInfo}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+  ContractInfo,
+  DLCSign,
+  OracleInfo
+}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
@@ -28,7 +32,7 @@ object DLCTxGen {
   import DLCTLVGen._
 
   def dlcParams(
-      preImageContractInfo: PreImageContractInfo = genPreImageContractInfo(),
+      contractInfo: ContractInfo = genContractInfo(),
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200),
       feeRate: SatoshisPerVirtualByte =
@@ -36,16 +40,18 @@ object DLCTxGen {
     val privKey = ECPrivateKey.freshPrivateKey
     val kVal = ECPrivateKey.freshPrivateKey
     val oracleInfo = OracleInfo(privKey.schnorrPublicKey, kVal.schnorrNonce)
-    val contractInfo = preImageContractInfo.toContractInfo
     val realOutcome = contractInfo.keys.toVector(contractInfo.size / 2)
-    val sig = privKey.schnorrSignWithNonce(realOutcome.bytes, kVal)
-    DLCParams(oracleInfo,
-              preImageContractInfo,
-              contractMaturityBound,
-              contractTimeout,
-              feeRate,
-              realOutcome,
-              sig)
+    val sig =
+      privKey.schnorrSignWithNonce(CryptoUtil.sha256(realOutcome).bytes, kVal)
+    DLCParams(
+      oracleInfo,
+      SerializedContractInfoEntry.fromContractInfo(contractInfo),
+      contractMaturityBound,
+      contractTimeout,
+      feeRate,
+      CryptoUtil.sha256(realOutcome),
+      sig
+    )
   }
 
   private val dummyTransactionInput = TransactionInput(
@@ -141,10 +147,10 @@ object DLCTxGen {
       acceptInputs: Vector[FundingInputTx],
       numOutcomes: Int = 3): ValidTestInputs = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
-    val contractInfo = genPreImageContractInfo(outcomes.map(_._1))
+    val contractInfo = genContractInfo(outcomes)
 
     validTestInputs(
-      params = dlcParams(preImageContractInfo = contractInfo),
+      params = dlcParams(contractInfo = contractInfo),
       offerParams = dlcPartyParams(fundingInputTxs = offerInputs),
       acceptParams = dlcPartyParams(fundingInputTxs = acceptInputs)
     )
@@ -205,10 +211,9 @@ object DLCTxGen {
   def randomTxTestVector(numOutcomes: Int)(implicit
       ec: ExecutionContext): Future[DLCTxTestVector] = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
-    val contractInfo = genPreImageContractInfo(outcomes.map(_._1))
+    val contractInfo = genContractInfo(outcomes)
 
-    dlcTxTestVector(
-      validTestInputs(dlcParams(preImageContractInfo = contractInfo)))
+    dlcTxTestVector(validTestInputs(dlcParams(contractInfo = contractInfo)))
   }
 
   def successTestVector(inputs: ValidTestInputs = validTestInputs())(implicit
@@ -228,7 +233,10 @@ object DLCTxGen {
                                    inputs.acceptParams.payoutAddress,
                                    inputs.acceptParams.fundingScriptSigParams)
 
-    val outcome = inputs.params.realOutcome
+    val outcome = inputs.params.contractInfo
+      .find(_.outcome == inputs.params.realOutcome)
+      .map(_.preImage)
+      .get
 
     for {
       accpetCETSigs <- acceptSigner.createCETSigs()
@@ -267,9 +275,8 @@ object DLCTxGen {
   def randomSuccessTestVector(numOutcomes: Int)(implicit
       ec: ExecutionContext): Future[SuccessTestVector] = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
-    val contractInfo = genPreImageContractInfo(outcomes.map(_._1))
+    val contractInfo = genContractInfo(outcomes)
 
-    successTestVector(
-      validTestInputs(dlcParams(preImageContractInfo = contractInfo)))
+    successTestVector(validTestInputs(dlcParams(contractInfo = contractInfo)))
   }
 }
