@@ -9,6 +9,7 @@ import org.bitcoins.commons.jsonmodels.dlc.{
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
@@ -21,8 +22,9 @@ import org.bitcoins.crypto._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
-    ec: ExecutionContext) {
+case class DLCTxBuilder[Outcome <: DLCOutcomeType](
+    offer: DLCOffer[Outcome],
+    accept: DLCAcceptWithoutSigs)(implicit ec: ExecutionContext) {
 
   val DLCOffer(_,
                DLCPublicKeys(offerFundingKey: ECPublicKey,
@@ -47,13 +49,17 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
 
   val totalInput: CurrencyUnit = offerTotalCollateral + acceptTotalCollateral
 
-  private val oracleAndContractInfoBeforeAccept: OracleAndContractInfo =
+  private val oracleAndContractInfoBeforeAccept: OracleAndContractInfo[
+    Outcome] =
     offer.oracleAndContractInfo
 
-  val oracleAndContractInfo: OracleAndContractInfo =
-    oracleAndContractInfoBeforeAccept.copy(acceptContractInfo =
+  val oracleAndContractInfo: OracleAndContractInfo[Outcome] =
+    OracleAndContractInfo(
+      oracleAndContractInfoBeforeAccept.oracleInfo,
+      oracleAndContractInfoBeforeAccept.offerContractInfo,
       oracleAndContractInfoBeforeAccept.offerContractInfo.flip(
-        totalInput.satoshis))
+        totalInput.satoshis)
+    )
 
   val offerTotalFunding: CurrencyUnit =
     offerFundingInputs.map(_.output.value).sum
@@ -79,9 +85,10 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     "Accept funding inputs must add up to at least accept's total collateral")
 
   /** Returns the payouts for the signature as (toOffer, toAccept) */
-  def getPayouts(
-      oracleSig: SchnorrDigitalSignature): (CurrencyUnit, CurrencyUnit) = {
-    oracleAndContractInfo.getPayouts(oracleSig)
+  def getPayouts(oracleSigs: Vector[SchnorrDigitalSignature]): (
+      CurrencyUnit,
+      CurrencyUnit) = {
+    oracleAndContractInfo.getPayouts(oracleSigs)
   }
 
   lazy val fundingTxBuilder: DLCFundingTxBuilder = {
@@ -129,7 +136,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   /** Constructs the unsigned Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: String): Future[WitnessTransaction] = {
+  def buildCET(msg: Outcome): Future[WitnessTransaction] = {
     for {
       cetBuilder <- cetBuilderF
       cet <- cetBuilder.buildCET(msg)

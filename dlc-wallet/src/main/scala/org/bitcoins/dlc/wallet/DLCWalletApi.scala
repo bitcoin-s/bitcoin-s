@@ -9,6 +9,7 @@ import org.bitcoins.core.api.wallet.{
 }
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.SchnorrDigitalSignature
@@ -19,15 +20,16 @@ import scala.concurrent.Future
 
 trait DLCWalletApi { self: WalletApi =>
 
-  def createDLCOffer(
-      oracleInfo: OracleInfo,
+  def createDLCOffer[Outcome <: DLCOutcomeType](
+      oracleInfo: OracleInfo[Outcome],
       contractInfo: ContractInfo,
       collateral: Satoshis,
       feeRateOpt: Option[FeeUnit],
       locktime: UInt32,
-      refundLT: UInt32): Future[DLCOffer]
+      refundLT: UInt32): Future[DLCOffer[Outcome]]
 
-  def registerDLCOffer(dlcOffer: DLCOffer): Future[DLCOffer] = {
+  def registerDLCOffer[Outcome <: DLCOutcomeType](
+      dlcOffer: DLCOffer[Outcome]): Future[DLCOffer[Outcome]] = {
     createDLCOffer(
       dlcOffer.oracleInfo,
       dlcOffer.contractInfo,
@@ -38,20 +40,30 @@ trait DLCWalletApi { self: WalletApi =>
     )
   }
 
-  def acceptDLCOffer(dlcOffer: DLCOffer): Future[DLCAccept]
+  def acceptDLCOffer[Outcome <: DLCOutcomeType](
+      dlcOffer: DLCOffer[Outcome]): Future[DLCAccept[Outcome]]
 
-  def signDLC(accept: DLCAccept): Future[DLCSign]
+  def signDLC[Outcome <: DLCOutcomeType](
+      accept: DLCAccept[Outcome]): Future[DLCSign[Outcome]]
 
-  def addDLCSigs(sigs: DLCSign): Future[DLCDb]
+  def addDLCSigs[Outcome <: DLCOutcomeType](
+      sigs: DLCSign[Outcome]): Future[DLCDb]
 
   def getDLCFundingTx(contractId: ByteVector): Future[Transaction]
 
   def broadcastDLCFundingTx(contractId: ByteVector): Future[Transaction]
 
+  /** Creates the CET for the given contractId and oracle signatures, does not broadcast it */
+  def executeDLC(
+      contractId: ByteVector,
+      oracleSigs: Vector[SchnorrDigitalSignature]): Future[Transaction]
+
   /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
   def executeDLC(
       contractId: ByteVector,
-      oracleSig: SchnorrDigitalSignature): Future[Transaction]
+      oracleSig: SchnorrDigitalSignature): Future[Transaction] = {
+    executeDLC(contractId, Vector(oracleSig))
+  }
 
   /** Creates the refund transaction for the given contractId, does not broadcast it */
   def executeDLCRefund(contractId: ByteVector): Future[Transaction]

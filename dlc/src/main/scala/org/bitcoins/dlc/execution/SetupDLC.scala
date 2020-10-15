@@ -4,9 +4,9 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.crypto.ECAdaptorSignature
 
-case class SetupDLC(
+case class SetupDLC[Outcome](
     fundingTx: Transaction,
-    cets: Map[String, CETInfo],
+    cets: Map[Outcome, CETInfo],
     refundTx: Transaction) {
   cets.foreach {
     case (msg, cetInfo) =>

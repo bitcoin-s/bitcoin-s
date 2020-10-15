@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.script.{
   P2WSHWitnessV0,
   ScriptWitnessV0
 }
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.crypto.{ECAdaptorSignature, ECDigitalSignature}
@@ -41,6 +42,7 @@ object DLCTestUtil {
       totalInput: CurrencyUnit): (ContractInfo, ContractInfo) = {
     val outcomeMap =
       outcomes
+        .map(EnumOutcome.apply)
         .zip(DLCTestUtil.genValues(outcomes.length, totalInput))
         .toMap
 
@@ -99,7 +101,8 @@ object DLCTestUtil {
     FundingSignatures(fundingSigs.tail.toVector.+:(firstOutPoint -> badWitness))
   }
 
-  def flipBit(cetSigs: CETSignatures): CETSignatures = {
+  def flipBit(
+      cetSigs: CETSignatures[EnumOutcome]): CETSignatures[EnumOutcome] = {
     val badOutcomeSigs = cetSigs.outcomeSigs.map {
       case (outcome, sig) => outcome -> flipBit(sig)
     }

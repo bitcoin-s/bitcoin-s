@@ -2,26 +2,34 @@ package org.bitcoins.dlc.testgen
 
 import java.io.File
 
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import play.api.libs.json._
 
 import scala.concurrent.Future
 
-object DLCTestVectorGen extends TestVectorGen[DLCTestVector, ValidTestInputs] {
+object DLCTestVectorGen
+    extends TestVectorGen[
+      DLCTestVector[EnumOutcome],
+      ValidTestInputs[EnumOutcome]] {
 
   override val defaultTestFile: File = new File(
     "dlc/src/main/scala/org/bitcoins/dlc/testgen/dlc_test.json")
 
-  override val testVectorParser: DLCTestVector.type = DLCTestVector
+  override val testVectorParser: DLCTestVectorHelper[EnumOutcome] =
+    DLCTestVectorHelper[EnumOutcome]()
 
-  override def inputFromJson: JsValue => JsResult[ValidTestInputs] =
-    ValidTestInputs.fromJson
+  override def inputFromJson: JsValue => JsResult[
+    ValidTestInputs[EnumOutcome]] =
+    ValidTestInputsHelper[EnumOutcome]().fromJson
 
   override val inputStr: String = "testInputs"
 
-  override def generateFromInput: ValidTestInputs => Future[DLCTestVector] =
+  override def generateFromInput: ValidTestInputs[EnumOutcome] => Future[
+    DLCTestVector[EnumOutcome]] =
     DLCTxGen.successTestVector(_)
 
-  override def generateTestVectors(): Future[Vector[DLCTestVector]] = {
+  override def generateTestVectors(): Future[
+    Vector[DLCTestVector[EnumOutcome]]] = {
     // Happy Path
     val numOutcomesTests =
       Vector(2, 3, 5, 8, 100).map(DLCTxGen.randomSuccessTestVector)

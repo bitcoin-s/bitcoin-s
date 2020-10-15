@@ -10,6 +10,7 @@ import org.bitcoins.core.crypto.TransactionSignatureSerializer
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -26,8 +27,8 @@ import scala.util.Success
 /** Responsible for constructing all DLC signatures
   * and signed transactions
   */
-case class DLCTxSigner(
-    builder: DLCTxBuilder,
+case class DLCTxSigner[Outcome <: DLCOutcomeType](
+    builder: DLCTxBuilder[Outcome],
     isInitiator: Boolean,
     fundingKey: ECPrivateKey,
     finalAddress: BitcoinAddress,
@@ -36,6 +37,7 @@ case class DLCTxSigner(
 
   private val offer = builder.offer
   private val accept = builder.accept
+  private val oracleAndContractInfo = offer.oracleAndContractInfo
 
   private val remoteFundingPubKey = if (isInitiator) {
     accept.pubKeys.fundingKey
@@ -65,8 +67,8 @@ case class DLCTxSigner(
   }
 
   /** Return's this party's payout for a given oracle signature */
-  def getPayout(sig: SchnorrDigitalSignature): CurrencyUnit = {
-    val (offerPayout, acceptPayout) = builder.getPayouts(sig)
+  def getPayouts(sigs: Vector[SchnorrDigitalSignature]): CurrencyUnit = {
+    val (offerPayout, acceptPayout) = builder.getPayouts(sigs)
     if (isInitiator) {
       offerPayout
     } else {
@@ -179,7 +181,7 @@ case class DLCTxSigner(
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcome hash */
-  def createRemoteCETSig(msg: String): Future[ECAdaptorSignature] = {
+  def createRemoteCETSig(msg: Outcome): Future[ECAdaptorSignature] = {
     val adaptorPoint = builder.oracleAndContractInfo.sigPointForOutcome(msg)
     val hashType = HashType.sigHashAll
     for {
@@ -205,11 +207,15 @@ case class DLCTxSigner(
   }
 
   def signCET(
-      msg: String,
+      msg: Outcome,
       remoteAdaptorSig: ECAdaptorSignature,
-      oracleSig: SchnorrDigitalSignature): Future[Transaction] = {
+      oracleSigs: Vector[SchnorrDigitalSignature]): Future[Transaction] = {
+    val scalar = oracleSigs.foldLeft(FieldElement.zero) {
+      case (sumSoFar, sig) => sumSoFar.add(sig.sig)
+    }
+
     val remoteSig =
-      oracleSig.sig.toPrivateKey
+      scalar.toPrivateKey
         .completeAdaptorSignature(remoteAdaptorSig, HashType.sigHashAll.byte)
 
     val remotePartialSig = PartialSignature(remoteFundingPubKey, remoteSig)
@@ -274,8 +280,8 @@ case class DLCTxSigner(
   }
 
   /** Creates all of this party's CETSignatures */
-  def createCETSigs(): Future[CETSignatures] = {
-    val cetSigFs = offer.contractInfo.keys.toVector.map { msg =>
+  def createCETSigs(): Future[CETSignatures[Outcome]] = {
+    val cetSigFs = oracleAndContractInfo.allOutcomes.map { msg =>
       createRemoteCETSig(msg).map(msg -> _)
     }
 
@@ -288,14 +294,14 @@ case class DLCTxSigner(
 
 object DLCTxSigner {
 
-  def apply(
-      builder: DLCTxBuilder,
+  def apply[Outcome <: DLCOutcomeType](
+      builder: DLCTxBuilder[Outcome],
       isInitiator: Boolean,
       fundingKey: ECPrivateKey,
       payoutPrivKey: ECPrivateKey,
       network: BitcoinNetwork,
       fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(implicit
-      ec: ExecutionContext): DLCTxSigner = {
+      ec: ExecutionContext): DLCTxSigner[Outcome] = {
     val payoutAddr =
       Bech32Address(P2WPKHWitnessSPKV0(payoutPrivKey.publicKey), network)
     DLCTxSigner(builder, isInitiator, fundingKey, payoutAddr, fundingUtxos)

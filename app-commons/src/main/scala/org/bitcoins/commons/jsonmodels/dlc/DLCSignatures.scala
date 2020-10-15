@@ -1,7 +1,7 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
 import org.bitcoins.core.protocol.script.ScriptWitnessV0
-import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
+import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, FundingSignaturesV0TLV}
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.SeqWrapper
@@ -34,7 +34,7 @@ case class FundingSignatures(
   }
 }
 
-case class CETSignatures(
-    outcomeSigs: Map[String, ECAdaptorSignature],
+case class CETSignatures[Outcome <: DLCOutcomeType](
+    outcomeSigs: Map[Outcome, ECAdaptorSignature],
     refundSig: PartialSignature)
     extends DLCSignatures

@@ -6,6 +6,7 @@ import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, EnumOutcome}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -33,8 +34,8 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   * @param payoutPrivKey This client's payout private key for this event
   * @param fundingUtxos This client's funding BitcoinUTXOSpendingInfo collection
   */
-case class TestDLCClient(
-    offer: DLCMessage.DLCOffer,
+case class TestDLCClient[Outcome <: DLCOutcomeType](
+    offer: DLCMessage.DLCOffer[Outcome],
     accept: DLCMessage.DLCAcceptWithoutSigs,
     isInitiator: Boolean,
     fundingPrivKey: ECPrivateKey,
@@ -42,18 +43,18 @@ case class TestDLCClient(
     fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(implicit
     ec: ExecutionContext)
     extends BitcoinSLogger {
-  val dlcTxBuilder: DLCTxBuilder = DLCTxBuilder(offer, accept)
+  val dlcTxBuilder: DLCTxBuilder[Outcome] = DLCTxBuilder(offer, accept)
 
-  val dlcTxSigner: DLCTxSigner = DLCTxSigner(dlcTxBuilder,
-                                             isInitiator,
-                                             fundingPrivKey,
-                                             payoutPrivKey,
-                                             RegTest,
-                                             fundingUtxos)
+  val dlcTxSigner: DLCTxSigner[Outcome] = DLCTxSigner(dlcTxBuilder,
+                                                      isInitiator,
+                                                      fundingPrivKey,
+                                                      payoutPrivKey,
+                                                      RegTest,
+                                                      fundingUtxos)
 
   private val dlcExecutor = DLCExecutor(dlcTxSigner)
 
-  val messages: Vector[String] = offer.oracleAndContractInfo.allOutcomes
+  val messages: Vector[Outcome] = offer.oracleAndContractInfo.allOutcomes
 
   val timeouts: DLCTimeouts = offer.timeouts
 
@@ -67,8 +68,9 @@ case class TestDLCClient(
     * and FundingSignatures from them
     */
   def setupDLCAccept(
-      sendSigs: CETSignatures => Future[Unit],
-      getSigs: Future[(CETSignatures, FundingSignatures)]): Future[SetupDLC] = {
+      sendSigs: CETSignatures[Outcome] => Future[Unit],
+      getSigs: Future[(CETSignatures[Outcome], FundingSignatures)]): Future[
+    SetupDLC[Outcome]] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
     for {
@@ -87,9 +89,9 @@ case class TestDLCClient(
     * signed funding transaction
     */
   def setupDLCOffer(
-      getSigs: Future[CETSignatures],
-      sendSigs: (CETSignatures, FundingSignatures) => Future[Unit],
-      getFundingTx: Future[Transaction]): Future[SetupDLC] = {
+      getSigs: Future[CETSignatures[Outcome]],
+      sendSigs: (CETSignatures[Outcome], FundingSignatures) => Future[Unit],
+      getFundingTx: Future[Transaction]): Future[SetupDLC[Outcome]] = {
     require(isInitiator, "You should call setupDLCAccept")
 
     for {
@@ -105,15 +107,15 @@ case class TestDLCClient(
   }
 
   def executeDLC(
-      dlcSetup: SetupDLC,
-      oracleSigF: Future[SchnorrDigitalSignature]): Future[
+      dlcSetup: SetupDLC[Outcome],
+      oracleSigsF: Future[Vector[SchnorrDigitalSignature]]): Future[
     ExecutedDLCOutcome] = {
-    oracleSigF.flatMap { oracleSig =>
-      dlcExecutor.executeDLC(dlcSetup, oracleSig)
+    oracleSigsF.flatMap { oracleSigs =>
+      dlcExecutor.executeDLC(dlcSetup, oracleSigs)
     }
   }
 
-  def executeRefundDLC(dlcSetup: SetupDLC): RefundDLCOutcome = {
+  def executeRefundDLC(dlcSetup: SetupDLC[Outcome]): RefundDLCOutcome = {
     dlcExecutor.executeRefundDLC(dlcSetup)
   }
 }
@@ -136,7 +138,8 @@ object TestDLCClient {
       feeRate: SatoshisPerVirtualByte,
       changeSPK: ScriptPubKey,
       remoteChangeSPK: ScriptPubKey,
-      network: BitcoinNetwork)(implicit ec: ExecutionContext): TestDLCClient = {
+      network: BitcoinNetwork)(implicit
+      ec: ExecutionContext): TestDLCClient[EnumOutcome] = {
     val pubKeys = DLCPublicKeys.fromPrivKeys(
       fundingPrivKey,
       payoutPrivKey,
@@ -182,8 +185,8 @@ object TestDLCClient {
     }
 
     val offer = DLCMessage.DLCOffer(
-      oracleAndContractInfo = DLCMessage.OracleAndContractInfo(
-        DLCMessage.OracleInfo(oraclePubKey, preCommittedR),
+      oracleAndContractInfo = DLCMessage.SingleNonceOracleAndContractInfo(
+        DLCMessage.SingleNonceOracleInfo(oraclePubKey, preCommittedR),
         offerOutcomes),
       pubKeys = offerPubKeys,
       totalCollateral = offerInput.satoshis,

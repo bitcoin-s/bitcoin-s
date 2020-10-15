@@ -5,10 +5,13 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   DLCAcceptWithoutSigs,
   DLCOffer,
   OracleAndContractInfo,
-  OracleInfo
+  OracleInfo,
+  SingleNonceOracleAndContractInfo,
+  SingleNonceOracleInfo
 }
 import org.bitcoins.commons.jsonmodels.dlc.{
   DLCFundingInput,
+  DLCMessage,
   DLCPublicKeys,
   DLCTimeouts
 }
@@ -40,12 +43,13 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-sealed trait DLCTestVector extends TestVector
+sealed trait DLCTestVector[Outcome <: DLCOutcomeType] extends TestVector
 
-object DLCTestVector extends TestVectorParser[DLCTestVector] {
+case class DLCTestVectorHelper[Outcome <: DLCOutcomeType]()
+    extends TestVectorParser[DLCTestVector[Outcome]] {
 
-  def fromJson(json: JsValue): JsResult[DLCTestVector] = {
-    SuccessTestVector.fromJson(json)
+  def fromJson(json: JsValue): JsResult[DLCTestVector[Outcome]] = {
+    TestVectorHelper[Outcome]().fromJson(json)
   }
 }
 
@@ -100,7 +104,6 @@ case class SerializedFundingInputTx(
   }
 }
 
-// Currently only supports P2WPKH inputs
 case class DLCPartyParams(
     collateral: CurrencyUnit,
     fundingInputTxs: Vector[FundingInputTx],
@@ -115,11 +118,17 @@ case class DLCPartyParams(
     fundingInputTxs.map(_.scriptSignatureParams)
   }
 
-  def toOffer(params: DLCParams)(implicit ec: ExecutionContext): DLCOffer = {
+  def toOffer[Outcome <: DLCOutcomeType](params: DLCParams[Outcome])(implicit
+      ec: ExecutionContext): DLCOffer[Outcome] = {
+    val oracleAndContractInfo = params.oracleInfo match {
+      case info: DLCMessage.SingleNonceOracleInfo =>
+        SingleNonceOracleAndContractInfo(
+          info,
+          ContractInfo(params.contractInfo.map(_.toMapEntry).toMap))
+    }
+
     DLCOffer(
-      OracleAndContractInfo(
-        params.oracleInfo,
-        ContractInfo(params.contractInfo.map(_.toMapEntry).toMap)),
+      oracleAndContractInfo.asInstanceOf[OracleAndContractInfo[Outcome]],
       DLCPublicKeys(fundingPrivKey.publicKey, payoutAddress),
       collateral.satoshis,
       fundingInputs,
@@ -135,8 +144,8 @@ case class SerializedContractInfoEntry(
     outcome: Sha256Digest,
     localPayout: CurrencyUnit) {
 
-  def toMapEntry: (String, Satoshis) = {
-    preImage -> localPayout.satoshis
+  def toMapEntry: (EnumOutcome, Satoshis) = {
+    EnumOutcome(preImage) -> localPayout.satoshis
   }
 }
 
@@ -146,13 +155,15 @@ object SerializedContractInfoEntry {
       contractInfo: ContractInfo): Vector[SerializedContractInfoEntry] = {
     contractInfo.map {
       case (str, amt) =>
-        SerializedContractInfoEntry(str, CryptoUtil.sha256(str), amt)
+        SerializedContractInfoEntry(str.outcome,
+                                    CryptoUtil.sha256(str.outcome),
+                                    amt)
     }.toVector
   }
 }
 
-case class DLCParams(
-    oracleInfo: OracleInfo,
+case class DLCParams[Outcome <: DLCOutcomeType](
+    oracleInfo: OracleInfo[Outcome],
     contractInfo: Vector[SerializedContractInfoEntry],
     contractMaturityBound: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
@@ -160,12 +171,12 @@ case class DLCParams(
     realOutcome: Sha256Digest,
     oracleSignature: SchnorrDigitalSignature)
 
-case class ValidTestInputs(
-    params: DLCParams,
+case class ValidTestInputs[Outcome <: DLCOutcomeType](
+    params: DLCParams[Outcome],
     offerParams: DLCPartyParams,
     acceptParams: DLCPartyParams) {
 
-  def offer(implicit ec: ExecutionContext): DLCOffer =
+  def offer(implicit ec: ExecutionContext): DLCOffer[Outcome] =
     offerParams.toOffer(params)
 
   def accept(implicit ec: ExecutionContext): DLCAcceptWithoutSigs =
@@ -178,7 +189,7 @@ case class ValidTestInputs(
       offer.tempContractId
     )
 
-  def builder(implicit ec: ExecutionContext): DLCTxBuilder =
+  def builder(implicit ec: ExecutionContext): DLCTxBuilder[Outcome] =
     DLCTxBuilder(offer, accept)
 
   def buildTransactions(implicit
@@ -186,17 +197,20 @@ case class ValidTestInputs(
     val builder = this.builder
     for {
       fundingTx <- builder.buildFundingTx
-      cetFs = params.contractInfo.map(_.preImage).map(builder.buildCET)
+      cetFs =
+        params.contractInfo
+          .map(entry => EnumOutcome(entry.preImage).asInstanceOf[Outcome])
+          .map(builder.buildCET)
       cets <- Future.sequence(cetFs)
       refundTx <- builder.buildRefundTx
     } yield DLCTransactions(fundingTx, cets, refundTx)
   }
 }
 
-object ValidTestInputs {
+case class ValidTestInputsHelper[Outcome <: DLCOutcomeType]() {
 
-  def fromJson(json: JsValue): JsResult[ValidTestInputs] = {
-    Json.fromJson(json)(SuccessTestVector.validTestInputsFormat)
+  def fromJson(json: JsValue): JsResult[ValidTestInputs[Outcome]] = {
+    Json.fromJson(json)(TestVectorHelper[Outcome]().validTestInputsFormat)
   }
 }
 
@@ -205,21 +219,31 @@ case class DLCTransactions(
     cets: Vector[Transaction],
     refundTx: Transaction)
 
-case class SuccessTestVector(
-    testInputs: ValidTestInputs,
-    offer: LnMessage[DLCOfferTLV],
+case class SuccessTestVector[Outcome <: DLCOutcomeType](
+    testInputs: ValidTestInputs[Outcome],
+    offer: LnMessage[DLCOfferTLV[Outcome]],
     accept: LnMessage[DLCAcceptTLV],
     sign: LnMessage[DLCSignTLV],
     unsignedTxs: DLCTransactions,
     signedTxs: DLCTransactions)
-    extends DLCTestVector {
+    extends DLCTestVector[Outcome] {
+
+  implicit val outcomeFmt: Format[Outcome] =
+    testInputs.params.oracleInfo match {
+      case _: SingleNonceOracleInfo =>
+        Format[EnumOutcome](
+          { _.validate[String].map(EnumOutcome.apply) },
+          { enumOutcome => JsString(enumOutcome.outcome) }
+        ).asInstanceOf[Format[Outcome]]
+    }
 
   override def toJson: JsValue = {
-    Json.toJson(this)(SuccessTestVector.successTestVectorFormat)
+    Json.toJson(this)(TestVectorHelper[Outcome]().successTestVectorFormat)
   }
 }
 
-object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
+case class TestVectorHelper[Outcome <: DLCOutcomeType]()
+    extends TestVectorParser[SuccessTestVector[Outcome]] {
 
   def hexFormat[T <: NetworkElement](factory: Factory[T]): Format[T] =
     Format[T](
@@ -227,18 +251,29 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
       { element => JsString(element.hex) }
     )
 
-  implicit val oracleInfoFormat: Format[OracleInfo] = Format[OracleInfo](
-    {
-      _.validate[Map[String, String]]
-        .map(map =>
-          OracleInfo(SchnorrPublicKey(map("publicKey")),
-                     SchnorrNonce(map("nonce"))))
-    },
-    { info =>
-      Json.toJson(
-        Map("publicKey" -> info.pubKey.hex, "nonce" -> info.rValue.hex))
-    }
-  )
+  implicit val singleNonceOracleInfoFormat: Format[SingleNonceOracleInfo] =
+    Format[SingleNonceOracleInfo](
+      {
+        _.validate[Map[String, String]]
+          .map(map =>
+            SingleNonceOracleInfo(SchnorrPublicKey(map("publicKey")),
+                                  SchnorrNonce(map("nonce"))))
+      },
+      { info =>
+        Json.toJson(
+          Map("publicKey" -> info.pubKey.hex, "nonce" -> info.rValue.hex))
+      }
+    )
+
+  implicit val oracleInfoFormat: Format[OracleInfo[Outcome]] =
+    Format[OracleInfo[Outcome]](
+      { json: JsValue => json.validate[SingleNonceOracleInfo] }
+        .asInstanceOf[Reads[OracleInfo[Outcome]]],
+      {
+        case info: SingleNonceOracleInfo =>
+          singleNonceOracleInfoFormat.writes(info)
+      }
+    )
 
   implicit val blockTimeStampFormat: Format[BlockTimeStamp] =
     Format[BlockTimeStamp](
@@ -305,13 +340,27 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
   implicit val contractInfoFormat: Format[SerializedContractInfoEntry] =
     Json.format[SerializedContractInfoEntry]
 
-  implicit val dlcParamFormat: Format[DLCParams] = Json.format[DLCParams]
+  implicit val dlcParamFormat: Format[DLCParams[Outcome]] =
+    Json.format[DLCParams[Outcome]]
 
   implicit val DLCPartyParamsFormat: Format[DLCPartyParams] =
     Json.format[DLCPartyParams]
 
-  implicit val offerMsgFormat: Format[LnMessage[DLCOfferTLV]] = hexFormat(
-    LnMessageFactory(DLCOfferTLV))
+  implicit val offerMsgEnumFormat: Format[LnMessage[DLCOfferTLV[EnumOutcome]]] =
+    hexFormat(LnMessageFactory(DLCOfferTLV))
+
+  implicit val offerMsgFormat: Format[LnMessage[DLCOfferTLV[Outcome]]] =
+    Format[LnMessage[DLCOfferTLV[Outcome]]](
+      { json: JsValue => json.validate[LnMessage[DLCOfferTLV[EnumOutcome]]] }
+        .asInstanceOf[Reads[LnMessage[DLCOfferTLV[Outcome]]]],
+      { offer =>
+        offer.tlv.oracleInfo match {
+          case _: OracleInfoV0TLV =>
+            offerMsgEnumFormat.writes(
+              offer.asInstanceOf[LnMessage[DLCOfferTLV[EnumOutcome]]])
+        }
+      }
+    )
 
   implicit val acceptMsgFormat: Format[LnMessage[DLCAcceptTLV]] = hexFormat(
     LnMessageFactory(DLCAcceptTLV))
@@ -319,16 +368,16 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
   implicit val signMsgFormat: Format[LnMessage[DLCSignTLV]] = hexFormat(
     LnMessageFactory(DLCSignTLV))
 
-  implicit val validTestInputsFormat: Format[ValidTestInputs] =
-    Json.format[ValidTestInputs]
+  implicit val validTestInputsFormat: Format[ValidTestInputs[Outcome]] =
+    Json.format[ValidTestInputs[Outcome]]
 
   implicit val dlcTransactionsFormat: Format[DLCTransactions] =
     Json.format[DLCTransactions]
 
-  implicit val successTestVectorFormat: Format[SuccessTestVector] =
-    Json.format[SuccessTestVector]
+  implicit val successTestVectorFormat: Format[SuccessTestVector[Outcome]] =
+    Json.format[SuccessTestVector[Outcome]]
 
-  override def fromJson(json: JsValue): JsResult[SuccessTestVector] = {
-    json.validate[SuccessTestVector]
+  override def fromJson(json: JsValue): JsResult[SuccessTestVector[Outcome]] = {
+    json.validate[SuccessTestVector[Outcome]]
   }
 }

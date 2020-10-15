@@ -3,22 +3,12 @@ package org.bitcoins.dlc.testgen
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   ContractInfo,
   DLCSign,
-  OracleInfo
+  SingleNonceOracleInfo
 }
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  EmptyScriptSignature,
-  MultiSignatureScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WPKHWitnessV0,
-  P2WSHWitnessSPKV0,
-  P2WSHWitnessV0,
-  ScriptWitnessV0,
-  WitnessScriptPubKeyV0
-}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -36,20 +26,22 @@ object DLCTxGen {
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200),
       feeRate: SatoshisPerVirtualByte =
-        SatoshisPerVirtualByte(Satoshis(5))): DLCParams = {
+        SatoshisPerVirtualByte(Satoshis(5))): DLCParams[EnumOutcome] = {
     val privKey = ECPrivateKey.freshPrivateKey
     val kVal = ECPrivateKey.freshPrivateKey
-    val oracleInfo = OracleInfo(privKey.schnorrPublicKey, kVal.schnorrNonce)
+    val oracleInfo =
+      SingleNonceOracleInfo(privKey.schnorrPublicKey, kVal.schnorrNonce)
     val realOutcome = contractInfo.keys.toVector(contractInfo.size / 2)
     val sig =
-      privKey.schnorrSignWithNonce(CryptoUtil.sha256(realOutcome).bytes, kVal)
+      privKey.schnorrSignWithNonce(CryptoUtil.sha256(realOutcome.outcome).bytes,
+                                   kVal)
     DLCParams(
       oracleInfo,
       SerializedContractInfoEntry.fromContractInfo(contractInfo),
       contractMaturityBound,
       contractTimeout,
       feeRate,
-      CryptoUtil.sha256(realOutcome),
+      CryptoUtil.sha256(realOutcome.outcome),
       sig
     )
   }
@@ -136,16 +128,17 @@ object DLCTxGen {
   }
 
   def validTestInputs(
-      params: DLCParams = dlcParams(),
+      params: DLCParams[EnumOutcome] = dlcParams(),
       offerParams: DLCPartyParams = dlcPartyParams(),
-      acceptParams: DLCPartyParams = dlcPartyParams()): ValidTestInputs = {
+      acceptParams: DLCPartyParams = dlcPartyParams()): ValidTestInputs[
+    EnumOutcome] = {
     ValidTestInputs(params, offerParams, acceptParams)
   }
 
   def validTestInputsForInputs(
       offerInputs: Vector[FundingInputTx],
       acceptInputs: Vector[FundingInputTx],
-      numOutcomes: Int = 3): ValidTestInputs = {
+      numOutcomes: Int = 3): ValidTestInputs[EnumOutcome] = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
     val contractInfo = genContractInfo(outcomes)
 
@@ -174,7 +167,7 @@ object DLCTxGen {
     }
   }
 
-  def nonP2WPKHInputs: Vector[ValidTestInputs] = {
+  def nonP2WPKHInputs: Vector[ValidTestInputs[EnumOutcome]] = {
     vecProd(allInputs, allInputs).tail.map {
       case (offerInputKind, acceptInputKind) =>
         validTestInputsForInputs(
@@ -184,7 +177,8 @@ object DLCTxGen {
     }
   }
 
-  def multiInputTests(numInputOptions: Vector[Int]): Vector[ValidTestInputs] = {
+  def multiInputTests(
+      numInputOptions: Vector[Int]): Vector[ValidTestInputs[EnumOutcome]] = {
     vecProd(numInputOptions, numInputOptions).tail.map {
       case (offerNumInputs, acceptNumInputs) =>
         validTestInputsForInputs(
@@ -194,30 +188,31 @@ object DLCTxGen {
     }
   }
 
-  def dlcTxTestVector(inputs: ValidTestInputs = validTestInputs())(implicit
-      ec: ExecutionContext): Future[DLCTxTestVector] = {
-    DLCTxTestVector.fromInputs(inputs)
+  def dlcTxTestVector(inputs: ValidTestInputs[EnumOutcome] = validTestInputs())(
+      implicit ec: ExecutionContext): Future[DLCTxTestVector[EnumOutcome]] = {
+    DLCTxTestVectorHelper[EnumOutcome]().fromInputs(inputs)
   }
 
   def dlcTxTestVectorWithTxInputs(
       offerInputs: Vector[FundingInputTx],
       acceptInputs: Vector[FundingInputTx],
       numOutcomes: Int = 3)(implicit
-      ec: ExecutionContext): Future[DLCTxTestVector] = {
+      ec: ExecutionContext): Future[DLCTxTestVector[EnumOutcome]] = {
     dlcTxTestVector(
       validTestInputsForInputs(offerInputs, acceptInputs, numOutcomes))
   }
 
   def randomTxTestVector(numOutcomes: Int)(implicit
-      ec: ExecutionContext): Future[DLCTxTestVector] = {
+      ec: ExecutionContext): Future[DLCTxTestVector[EnumOutcome]] = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
     val contractInfo = genContractInfo(outcomes)
 
     dlcTxTestVector(validTestInputs(dlcParams(contractInfo = contractInfo)))
   }
 
-  def successTestVector(inputs: ValidTestInputs = validTestInputs())(implicit
-      ec: ExecutionContext): Future[SuccessTestVector] = {
+  def successTestVector(
+      inputs: ValidTestInputs[EnumOutcome] = validTestInputs())(implicit
+      ec: ExecutionContext): Future[SuccessTestVector[EnumOutcome]] = {
     val offer = inputs.offer
     val acceptWithoutSigs = inputs.accept
 
@@ -233,10 +228,12 @@ object DLCTxGen {
                                    inputs.acceptParams.payoutAddress,
                                    inputs.acceptParams.fundingScriptSigParams)
 
-    val outcome = inputs.params.contractInfo
+    val outcomeStr = inputs.params.contractInfo
       .find(_.outcome == inputs.params.realOutcome)
       .map(_.preImage)
       .get
+
+    val outcome = EnumOutcome(outcomeStr)
 
     for {
       accpetCETSigs <- acceptSigner.createCETSigs()
@@ -247,12 +244,14 @@ object DLCTxGen {
 
       signedFundingTx <- acceptSigner.signFundingTx(offerFundingSigs)
       signedRefundTx <- offerSigner.signRefundTx(accpetCETSigs.refundSig)
-      offerSignedCET <- offerSigner.signCET(outcome,
-                                            accpetCETSigs.outcomeSigs(outcome),
-                                            inputs.params.oracleSignature)
-      acceptSignedCET <- acceptSigner.signCET(outcome,
-                                              offerCETSigs.outcomeSigs(outcome),
-                                              inputs.params.oracleSignature)
+      offerSignedCET <- offerSigner.signCET(
+        outcome,
+        accpetCETSigs.outcomeSigs(outcome),
+        Vector(inputs.params.oracleSignature))
+      acceptSignedCET <- acceptSigner.signCET(
+        outcome,
+        offerCETSigs.outcomeSigs(outcome),
+        Vector(inputs.params.oracleSignature))
     } yield {
       val accept = acceptWithoutSigs.withSigs(accpetCETSigs)
 
@@ -273,7 +272,7 @@ object DLCTxGen {
   }
 
   def randomSuccessTestVector(numOutcomes: Int)(implicit
-      ec: ExecutionContext): Future[SuccessTestVector] = {
+      ec: ExecutionContext): Future[SuccessTestVector[EnumOutcome]] = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
     val contractInfo = genContractInfo(outcomes)
 

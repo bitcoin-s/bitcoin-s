@@ -14,6 +14,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{AddressType, BIP32Path, HDChainType}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
@@ -44,16 +45,16 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigDAO = DLCRefundSigDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
-  private def calcContractId(
-      offer: DLCOffer,
-      accept: DLCAccept): Future[ByteVector] = {
+  private def calcContractId[Outcome <: DLCOutcomeType](
+      offer: DLCOffer[Outcome],
+      accept: DLCAccept[Outcome]): Future[ByteVector] = {
     val builder = DLCTxBuilder(offer, accept.withoutSigs)
     builder.buildFundingTx.map(_.txIdBE.bytes.xor(accept.tempContractId.bytes))
   }
 
-  private def updateDLCContractIds(
-      offer: DLCOffer,
-      accept: DLCAccept): Future[DLCDb] = {
+  private def updateDLCContractIds[Outcome <: DLCOutcomeType](
+      offer: DLCOffer[Outcome],
+      accept: DLCAccept[Outcome]): Future[DLCDb] = {
     require(accept.tempContractId == offer.tempContractId,
             "Offer and Accept have differing tempContractIds!")
     val paramHash = offer.paramHash
@@ -108,10 +109,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
   private def updateDLCOracleSig(
       contractId: ByteVector,
-      sig: SchnorrDigitalSignature): Future[DLCDb] = {
+      sigs: Vector[SchnorrDigitalSignature]): Future[DLCDb] = {
     dlcDAO.findByContractId(contractId).flatMap {
       case Some(dlcDb) =>
-        dlcDAO.update(dlcDb.copy(oracleSigOpt = Some(sig)))
+        dlcDAO.update(dlcDb.copy(oracleSigOpt = Some(sigs.head)))
       case None =>
         Future.failed(
           new NoSuchElementException(
@@ -157,13 +158,13 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     *
     * This is the first step of the initiator
     */
-  override def createDLCOffer(
-      oracleInfo: OracleInfo,
+  override def createDLCOffer[Outcome <: DLCOutcomeType](
+      oracleInfo: OracleInfo[Outcome],
       contractInfo: ContractInfo,
       collateral: Satoshis,
       feeRateOpt: Option[FeeUnit],
       locktime: UInt32,
-      refundLocktime: UInt32): Future[DLCOffer] = {
+      refundLocktime: UInt32): Future[DLCOffer[Outcome]] = {
     logger.debug("Calculating relevant wallet data for DLC Offer")
 
     val timeouts =
@@ -206,12 +207,12 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     } yield dlcOffer
   }
 
-  private def createNewDLCOffer(
+  private def createNewDLCOffer[Outcome <: DLCOutcomeType](
       collateral: CurrencyUnit,
-      oracleInfo: OracleInfo,
+      oracleInfo: OracleInfo[Outcome],
       contractInfo: ContractInfo,
       feeRate: SatoshisPerVirtualByte,
-      timeouts: DLCTimeouts): Future[DLCOffer] = {
+      timeouts: DLCTimeouts): Future[DLCOffer[Outcome]] = {
     val paramHash = DLCMessage.calcParamHash(oracleInfo, contractInfo, timeouts)
 
     for {
@@ -277,7 +278,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     } yield offer
   }
 
-  private def initDLCForAccept(offer: DLCOffer): Future[(DLCDb, AccountDb)] = {
+  private def initDLCForAccept[Outcome <: DLCOutcomeType](
+      offer: DLCOffer[Outcome]): Future[(DLCDb, AccountDb)] = {
     dlcDAO.findByParamHash(offer.paramHash).flatMap {
       case Some(dlcDb) =>
         accountDAO
@@ -311,7 +313,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     *
     * This is the first step of the recipient
     */
-  override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
+  override def acceptDLCOffer[Outcome <: DLCOutcomeType](
+      offer: DLCOffer[Outcome]): Future[DLCAccept[Outcome]] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
 
     val paramHash = offer.paramHash
@@ -349,11 +352,11 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     } yield dlcAccept
   }
 
-  private def createNewDLCAccept(
+  private def createNewDLCAccept[Outcome <: DLCOutcomeType](
       dlc: DLCDb,
       account: AccountDb,
       collateral: CurrencyUnit,
-      offer: DLCOffer): Future[DLCAccept] = {
+      offer: DLCOffer[Outcome]): Future[DLCAccept[Outcome]] = {
     for {
       (txBuilder, spendingInfos) <- fundRawTransactionInternal(
         destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
@@ -460,7 +463,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     } yield accept
   }
 
-  def registerDLCAccept(accept: DLCAccept): Future[DLCDb] = {
+  def registerDLCAccept[Outcome <: DLCOutcomeType](
+      accept: DLCAccept[Outcome]): Future[DLCDb] = {
     dlcDAO.findByTempContractId(accept.tempContractId).flatMap {
       case Some(dlc) =>
         require(
@@ -533,7 +537,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     *
     * This is the second step of the initiator
     */
-  override def signDLC(accept: DLCAccept): Future[DLCSign] = {
+  override def signDLC[Outcome <: DLCOutcomeType](
+      accept: DLCAccept[Outcome]): Future[DLCSign[Outcome]] = {
     for {
       dlc <- registerDLCAccept(accept)
       signer <- signerFromDb(dlc.paramHash)
@@ -552,7 +557,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
-  def verifyCETSigs(accept: DLCAccept): Future[Boolean] = {
+  def verifyCETSigs[Outcome <: DLCOutcomeType](
+      accept: DLCAccept[Outcome]): Future[Boolean] = {
     verifierFromAccept(accept).map { verifier =>
       val correctNumberOfSigs =
         accept.cetSigs.outcomeSigs.size == verifier.builder.oracleAndContractInfo.allOutcomes.length
@@ -564,8 +570,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
-  def verifyCETSigs(sign: DLCSign): Future[Boolean] = {
-    verifierFromDb(sign.contractId).map { verifier =>
+  def verifyCETSigs[Outcome <: DLCOutcomeType](
+      sign: DLCSign[Outcome]): Future[Boolean] = {
+    verifierFromDb[Outcome](sign.contractId).map { verifier =>
       val correctNumberOfSigs =
         sign.cetSigs.outcomeSigs.size == verifier.builder.oracleAndContractInfo.allOutcomes.length
 
@@ -576,23 +583,25 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
-  def verifyRefundSig(accept: DLCAccept): Future[Boolean] = {
+  def verifyRefundSig[Outcome <: DLCOutcomeType](
+      accept: DLCAccept[Outcome]): Future[Boolean] = {
     verifierFromAccept(accept).map { verifier =>
       verifier.verifyRefundSig(accept.cetSigs.refundSig)
     }
   }
 
-  def verifyRefundSig(sign: DLCSign): Future[Boolean] = {
-    verifierFromDb(sign.contractId).map { verifier =>
+  def verifyRefundSig[Outcome <: DLCOutcomeType](
+      sign: DLCSign[Outcome]): Future[Boolean] = {
+    verifierFromDb[Outcome](sign.contractId).map { verifier =>
       verifier.verifyRefundSig(sign.cetSigs.refundSig)
     }
   }
 
-  def verifyFundingSigs(
+  def verifyFundingSigs[Outcome <: DLCOutcomeType](
       inputs: Vector[DLCFundingInputDb],
-      sign: DLCSign): Future[Boolean] = {
+      sign: DLCSign[Outcome]): Future[Boolean] = {
     if (inputs.count(!_.isInitiator) == sign.fundingSigs.length) {
-      verifierFromDb(sign.contractId).map { verifier =>
+      verifierFromDb[Outcome](sign.contractId).map { verifier =>
         verifier.verifyRemoteFundingSigs(sign.fundingSigs)
       }
     } else {
@@ -605,7 +614,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   /** Takes a DLCSign an inserts the funding signatures into the database
     * This is the only way one should insert sigs to the database
     */
-  def addFundingSigs(sign: DLCSign): Future[Vector[DLCFundingInputDb]] = {
+  def addFundingSigs[Outcome <: DLCOutcomeType](
+      sign: DLCSign[Outcome]): Future[Vector[DLCFundingInputDb]] = {
     for {
       dlc <- dlcDAO.findByContractId(sign.contractId).map(_.get)
       inputs <- dlcInputsDAO.findByParamHash(dlc.paramHash)
@@ -636,7 +646,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     *
     * This is the second step of the recipient
     */
-  override def addDLCSigs(sign: DLCSign): Future[DLCDb] = {
+  override def addDLCSigs[Outcome <: DLCOutcomeType](
+      sign: DLCSign[Outcome]): Future[DLCDb] = {
     dlcDAO.findByContractId(sign.contractId).flatMap {
       case Some(dlc) =>
         val refundSigDb = DLCRefundSigDb(dlc.paramHash,
@@ -725,8 +736,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     } yield scriptSigParams
   }
 
-  private def verifierFromAccept(
-      accept: DLCAccept): Future[DLCSignatureVerifier] = {
+  private def verifierFromAccept[Outcome <: DLCOutcomeType](
+      accept: DLCAccept[Outcome]): Future[DLCSignatureVerifier[Outcome]] = {
     for {
       dlcDbOpt <- dlcDAO.findByTempContractId(accept.tempContractId)
       dlcDb = dlcDbOpt.get
@@ -750,8 +761,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
-  private def verifierFromDb(
-      contractId: ByteVector): Future[DLCSignatureVerifier] = {
+  private def verifierFromDb[Outcome <: DLCOutcomeType](
+      contractId: ByteVector): Future[DLCSignatureVerifier[Outcome]] = {
     getAllDLCData(contractId).flatMap {
       case (dlcDb, dlcOffer, dlcAccept, _, fundingInputsDb, _) =>
         verifierFromDbData(dlcDb, dlcOffer, dlcAccept, fundingInputsDb)
@@ -965,18 +976,18 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
   override def executeDLC(
       contractId: ByteVector,
-      oracleSig: SchnorrDigitalSignature): Future[Transaction] = {
+      oracleSigs: Vector[SchnorrDigitalSignature]): Future[Transaction] = {
     for {
-      _ <- updateDLCOracleSig(contractId, oracleSig)
+      _ <- updateDLCOracleSig(contractId, oracleSigs)
 
       (executor, setup) <- executorAndSetupFromDb(contractId)
 
-      payout = executor.getPayout(oracleSig)
+      payout = executor.getPayouts(oracleSigs)
       _ = if (payout <= 0.satoshis)
         throw new UnsupportedOperationException(
           "Cannot execute a losing outcome")
 
-      outcome <- executor.executeDLC(setup, oracleSig)
+      outcome <- executor.executeDLC(setup, oracleSigs)
 
       _ <- updateDLCState(contractId, DLCState.Claimed)
     } yield {

@@ -54,8 +54,8 @@ object Picklers {
     readwriter[Long]
       .bimap(_.toLong, long => SatoshisPerVirtualByte(Satoshis(long)))
 
-  implicit val oracleInfoPickler: ReadWriter[OracleInfo] =
-    readwriter[String].bimap(_.hex, OracleInfo.fromHex)
+  implicit val oracleInfoPickler: ReadWriter[OracleInfo[_]] =
+    readwriter[String].bimap(_.hex, SingleNonceOracleInfo.fromHex)
 
   implicit val contractInfoPickler: ReadWriter[ContractInfo] =
     readwriter[String].bimap(_.hex, ContractInfo.fromHex)
@@ -67,15 +67,15 @@ object Picklers {
   implicit val partialSignaturePickler: ReadWriter[PartialSignature] =
     readwriter[String].bimap(_.hex, PartialSignature.fromHex)
 
-  implicit val dlcOfferPickler: ReadWriter[DLCOffer] =
+  implicit val dlcOfferPickler: ReadWriter[DLCOffer[_]] =
     readwriter[String]
       .bimap(_.toJsonStr, str => DLCOffer.fromJson(ujson.read(str)))
 
-  implicit val dlcAcceptPickler: ReadWriter[DLCAccept] =
+  implicit val dlcAcceptPickler: ReadWriter[DLCAccept[_]] =
     readwriter[String]
       .bimap(_.toJsonStr, str => DLCAccept.fromJson(ujson.read(str).obj))
 
-  implicit val dlcSignPickler: ReadWriter[DLCSign] =
+  implicit val dlcSignPickler: ReadWriter[DLCSign[_]] =
     readwriter[String]
       .bimap(_.toJsonStr, str => DLCSign.fromJson(ujson.read(str).obj))
 

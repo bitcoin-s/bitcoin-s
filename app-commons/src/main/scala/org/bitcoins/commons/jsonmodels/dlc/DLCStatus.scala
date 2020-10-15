@@ -7,6 +7,7 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
 }
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
+import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, EnumOutcome}
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -16,22 +17,24 @@ import scodec.bits.ByteVector
   * passed back and forth as well as any relevant on-chain
   * transactions and oracle signatures.
   */
-sealed trait DLCStatus {
+sealed trait DLCStatus[Outcome <: DLCOutcomeType] {
   def isInitiator: Boolean
-  def offer: DLCOffer
+  def offer: DLCOffer[Outcome]
   def state: DLCState
   val tempContractId: Sha256Digest = offer.tempContractId
   val statusString: String = state.toString
 }
 
 /** All states other than Offered contain an accept message. */
-sealed trait AcceptedDLCStatus extends DLCStatus {
-  def accept: DLCAccept
+sealed trait AcceptedDLCStatus[Outcome <: DLCOutcomeType]
+    extends DLCStatus[Outcome] {
+  def accept: DLCAccept[Outcome]
   // TODO: add contractId when we can calc, currently cannot because app-commons doesn't depend on DLC
 }
 
-sealed trait SignedDLCStatus extends AcceptedDLCStatus {
-  def sign: DLCSign
+sealed trait SignedDLCStatus[Outcome <: DLCOutcomeType]
+    extends AcceptedDLCStatus[Outcome] {
+  def sign: DLCSign[Outcome]
   val contractId: ByteVector = sign.contractId
 }
 
@@ -40,14 +43,14 @@ object DLCStatus {
   /** The state where an offer has been created but no
     * accept message has yet been created/received.
     */
-  case class Offered(
+  case class Offered[Outcome <: DLCOutcomeType](
       eventId: Sha256Digest,
       isInitiator: Boolean,
-      offer: DLCOffer)
-      extends DLCStatus {
+      offer: DLCOffer[Outcome])
+      extends DLCStatus[Outcome] {
     override def state: DLCState = DLCState.Offered
 
-    def toAccepted(accept: DLCAccept): Accepted = {
+    def toAccepted(accept: DLCAccept[Outcome]): Accepted[Outcome] = {
       Accepted(eventId, isInitiator, offer, accept)
     }
   }
@@ -55,15 +58,15 @@ object DLCStatus {
   /** The state where an offer has been accepted but
     * no sign message has yet been created/received.
     */
-  case class Accepted(
+  case class Accepted[Outcome <: DLCOutcomeType](
       eventId: Sha256Digest,
       isInitiator: Boolean,
-      offer: DLCOffer,
-      accept: DLCAccept)
-      extends AcceptedDLCStatus {
+      offer: DLCOffer[Outcome],
+      accept: DLCAccept[Outcome])
+      extends AcceptedDLCStatus[Outcome] {
     override def state: DLCState = DLCState.Accepted
 
-    def toSigned(sign: DLCSign): Signed = {
+    def toSigned(sign: DLCSign[Outcome]): Signed[Outcome] = {
       Signed(eventId, isInitiator, offer, accept, sign)
     }
   }
@@ -73,20 +76,20 @@ object DLCStatus {
     * but the DLC funding transaction has not yet been
     * broadcasted to the network.
     */
-  case class Signed(
+  case class Signed[Outcome <: DLCOutcomeType](
       eventId: Sha256Digest,
       isInitiator: Boolean,
-      offer: DLCOffer,
-      accept: DLCAccept,
-      sign: DLCSign)
-      extends SignedDLCStatus {
+      offer: DLCOffer[Outcome],
+      accept: DLCAccept[Outcome],
+      sign: DLCSign[Outcome])
+      extends SignedDLCStatus[Outcome] {
     override def state: DLCState = DLCState.Signed
 
-    def toBroadcasted(fundingTx: Transaction): Broadcasted = {
+    def toBroadcasted(fundingTx: Transaction): Broadcasted[Outcome] = {
       Broadcasted(eventId, isInitiator, offer, accept, sign, fundingTx)
     }
 
-    def toConfirmed(fundingTx: Transaction): Confirmed = {
+    def toConfirmed(fundingTx: Transaction): Confirmed[Outcome] = {
       toBroadcasted(fundingTx).toConfirmed
     }
   }
@@ -95,17 +98,17 @@ object DLCStatus {
     * party has broadcasted the DLC funding transaction
     * to the blockchain, and it has not yet been confirmed.
     */
-  case class Broadcasted(
+  case class Broadcasted[Outcome <: DLCOutcomeType](
       eventId: Sha256Digest,
       isInitiator: Boolean,
-      offer: DLCOffer,
-      accept: DLCAccept,
-      sign: DLCSign,
+      offer: DLCOffer[Outcome],
+      accept: DLCAccept[Outcome],
+      sign: DLCSign[Outcome],
       fundingTx: Transaction)
-      extends SignedDLCStatus {
+      extends SignedDLCStatus[Outcome] {
     override def state: DLCState = DLCState.Broadcasted
 
-    def toConfirmed: Confirmed = {
+    def toConfirmed: Confirmed[Outcome] = {
       Confirmed(eventId, isInitiator, offer, accept, sign, fundingTx)
     }
   }
@@ -114,19 +117,19 @@ object DLCStatus {
     * confirmed on-chain and no execution paths have yet been
     * initiated.
     */
-  case class Confirmed(
+  case class Confirmed[Outcome <: DLCOutcomeType](
       eventId: Sha256Digest,
       isInitiator: Boolean,
-      offer: DLCOffer,
-      accept: DLCAccept,
-      sign: DLCSign,
+      offer: DLCOffer[Outcome],
+      accept: DLCAccept[Outcome],
+      sign: DLCSign[Outcome],
       fundingTx: Transaction)
-      extends SignedDLCStatus {
+      extends SignedDLCStatus[Outcome] {
     override def state: DLCState = DLCState.Confirmed
 
     def toClaimed(
         oracleSig: SchnorrDigitalSignature,
-        cet: Transaction): Claimed = {
+        cet: Transaction): Claimed[Outcome] = {
       Claimed(eventId,
               isInitiator,
               offer,
@@ -137,7 +140,7 @@ object DLCStatus {
               cet)
     }
 
-    def toRemoteClaimed(cet: Transaction): RemoteClaimed = {
+    def toRemoteClaimed(cet: Transaction): RemoteClaimed[Outcome] = {
       RemoteClaimed(eventId, isInitiator, offer, accept, sign, fundingTx, cet)
     }
   }
@@ -145,31 +148,31 @@ object DLCStatus {
   /** The state where one of the CETs has been accepted by the network
     * and executed by ourselves.
     */
-  case class Claimed(
+  case class Claimed[Outcome <: DLCOutcomeType](
       eventId: Sha256Digest,
       isInitiator: Boolean,
-      offer: DLCOffer,
-      accept: DLCAccept,
-      sign: DLCSign,
+      offer: DLCOffer[Outcome],
+      accept: DLCAccept[Outcome],
+      sign: DLCSign[Outcome],
       fundingTx: Transaction,
       oracleSig: SchnorrDigitalSignature,
       cet: Transaction)
-      extends SignedDLCStatus {
+      extends SignedDLCStatus[Outcome] {
     override def state: DLCState = DLCState.Claimed
   }
 
   /** The state where one of the CETs has been accepted by the network
     * and executed by a remote party.
     */
-  case class RemoteClaimed(
+  case class RemoteClaimed[Outcome <: DLCOutcomeType](
       eventId: Sha256Digest,
       isInitiator: Boolean,
-      offer: DLCOffer,
-      accept: DLCAccept,
-      sign: DLCSign,
+      offer: DLCOffer[Outcome],
+      accept: DLCAccept[Outcome],
+      sign: DLCSign[Outcome],
       fundingTx: Transaction,
       cet: Transaction)
-      extends SignedDLCStatus {
+      extends SignedDLCStatus[Outcome] {
     override def state: DLCState = DLCState.RemoteClaimed
 
     val oracleSig: SchnorrDigitalSignature = {
@@ -180,7 +183,9 @@ object DLCStatus {
         .asInstanceOf[P2WSHWitnessV0]
         .signatures
       val oraclePubKey = offer.oracleInfo.pubKey
-      val preCommittedR = offer.oracleInfo.rValue
+      val preCommittedR = offer.oracleInfo match {
+        case info: DLCMessage.SingleNonceOracleInfo => info.rValue
+      }
 
       def sigFromMsgAndSigs(
           outcome: String,
@@ -231,14 +236,20 @@ object DLCStatus {
 
       val sigOpt = outcomeSigs.find {
         case (outcome, adaptorSig) =>
-          val possibleOracleSig = sigFromMsgAndSigs(outcome, adaptorSig, cetSig)
-          oraclePubKey.verify(CryptoUtil.sha256(outcome).bytes,
-                              possibleOracleSig)
+          outcome match {
+            case EnumOutcome(str) =>
+              val possibleOracleSig = sigFromMsgAndSigs(str, adaptorSig, cetSig)
+              oraclePubKey.verify(CryptoUtil.sha256(str).bytes,
+                                  possibleOracleSig)
+          }
       }
 
       sigOpt match {
         case Some((msg, adaptorSig)) =>
-          sigFromMsgAndSigs(msg, adaptorSig, cetSig)
+          msg match {
+            case EnumOutcome(str) =>
+              sigFromMsgAndSigs(str, adaptorSig, cetSig)
+          }
         case None =>
           throw new IllegalArgumentException(
             "No Oracle Signature found from CET")
@@ -249,15 +260,15 @@ object DLCStatus {
   /** The state where the DLC refund transaction has been
     * accepted by the network.
     */
-  case class Refunded(
+  case class Refunded[Outcome <: DLCOutcomeType](
       eventId: Sha256Digest,
       isInitiator: Boolean,
-      offer: DLCOffer,
-      accept: DLCAccept,
-      sign: DLCSign,
+      offer: DLCOffer[Outcome],
+      accept: DLCAccept[Outcome],
+      sign: DLCSign[Outcome],
       fundingTx: Transaction,
       refundTx: Transaction)
-      extends SignedDLCStatus {
+      extends SignedDLCStatus[Outcome] {
     override def state: DLCState = DLCState.Refunded
   }
 }

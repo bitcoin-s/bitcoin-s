@@ -8,6 +8,7 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
@@ -21,7 +22,9 @@ import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 /** Responsible for verifying all DLC signatures */
-case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
+case class DLCSignatureVerifier[Outcome <: DLCOutcomeType](
+    builder: DLCTxBuilder[Outcome],
+    isInitiator: Boolean)
     extends BitcoinSLogger {
   private lazy val fundingTx = Await.result(builder.buildFundingTx, 5.seconds)
 
@@ -63,7 +66,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
   }
 
   /** Verifies remote's CET signature for a given outcome hash */
-  def verifyCETSig(outcome: String, sig: ECAdaptorSignature): Boolean = {
+  def verifyCETSig(outcome: Outcome, sig: ECAdaptorSignature): Boolean = {
     val remoteFundingPubKey = if (isInitiator) {
       builder.acceptFundingKey
     } else {

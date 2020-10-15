@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.script.{
   P2WSHWitnessV0,
   ScriptPubKey
 }
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.{
   AddWitnessDataFinalizer,
@@ -23,8 +24,8 @@ import scala.concurrent.{ExecutionContext, Future}
 /** Responsible for constructing unsigned
   * Contract Execution Transactions (CETs)
   */
-case class DLCCETBuilder(
-    oracleAndContractInfo: OracleAndContractInfo,
+case class DLCCETBuilder[Outcome <: DLCOutcomeType](
+    oracleAndContractInfo: OracleAndContractInfo[Outcome],
     offerFundingKey: ECPublicKey,
     offerFinalSPK: ScriptPubKey,
     acceptFundingKey: ECPublicKey,
@@ -48,7 +49,7 @@ case class DLCCETBuilder(
   /** Constructs a Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: String)(implicit
+  def buildCET(msg: Outcome)(implicit
       ec: ExecutionContext): Future[WitnessTransaction] = {
     val builder = RawTxBuilder().setLockTime(timeouts.contractMaturity.toUInt32)
 
