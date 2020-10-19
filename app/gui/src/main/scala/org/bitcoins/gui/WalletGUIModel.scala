@@ -1,13 +1,13 @@
 package org.bitcoins.gui
 
 import org.bitcoins.cli.CliCommand.{GetBalance, GetNewAddress, SendToAddress}
-import org.bitcoins.cli.{ConsoleCli}
+import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.gui.dialog.{GetNewAddressDialog, SendDialog}
 import scalafx.beans.property.{ObjectProperty, StringProperty}
-import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.control.Alert
+import scalafx.scene.control.Alert.AlertType
 import scalafx.stage.Window
 
 import scala.util.{Failure, Success}
@@ -20,7 +20,26 @@ class WalletGUIModel() {
   val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
 
-  updateBalance()
+  private case object UpdateBalanceRunnable extends Runnable {
+
+    override def run(): Unit = {
+      while (true) {
+        updateBalance()
+        // wait 10 seconds
+        Thread.sleep(10000)
+      }
+    }
+  }
+  lazy val updateBalanceThread = new Thread(UpdateBalanceRunnable)
+
+  def startBalanceThread(): Unit = {
+    updateBalanceThread.setDaemon(true)
+    updateBalanceThread.setName(
+      s"bitcoin-s-gui-balance-${System.currentTimeMillis()}")
+    updateBalanceThread.start()
+  }
+
+  startBalanceThread()
 
   def onGetNewAddress(): Unit = {
     val address = StringProperty("")
