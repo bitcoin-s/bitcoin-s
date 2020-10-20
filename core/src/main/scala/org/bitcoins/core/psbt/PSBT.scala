@@ -40,10 +40,6 @@ case class PSBT(
       s", got $inputMaps, ${transaction.inputs}"
   )
 
-  require(isFinalized || inputMaps.size == 1 || inputMaps.forall(
-            !_.isBIP143Vulnerable),
-          "One or more of the input maps are susceptible to the BIP 143")
-
   import org.bitcoins.core.psbt.InputPSBTRecord._
   import org.bitcoins.core.psbt.PSBTInputKeyId._
 
@@ -73,6 +69,14 @@ case class PSBT(
   def isFinalized: Boolean = inputMaps.forall(_.isFinalized)
 
   def version: UInt32 = globalMap.version.version
+
+  def validateBIP143Vulnerability: PSBT = {
+    require(isFinalized || inputMaps.size == 1 || inputMaps.forall(
+              !_.isBIP143Vulnerable),
+            "One or more of the input maps are susceptible to the BIP 143")
+
+    this
+  }
 
   /**
     * Combiner defined by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#combiner
@@ -155,7 +159,7 @@ case class PSBT(
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
       isDummySignature: Boolean = false)(implicit
       ec: ExecutionContext): Future[PSBT] = {
-    BitcoinSigner.sign(psbt = this,
+    BitcoinSigner.sign(psbt = validateBIP143Vulnerability,
                        inputIndex = inputIndex,
                        signer = signer,
                        conditionalPath = conditionalPath,
