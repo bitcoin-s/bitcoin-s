@@ -41,38 +41,57 @@ trait TLVGen {
     NumberGenerator.bytevector.map(PongTLV.forIgnored)
   }
 
-  def externalEventDescriptorV0TLV: Gen[ExternalEventDescriptorV0TLV] = {
-    for {
-      str <- StringGenerators.genString
-    } yield ExternalEventDescriptorV0TLV(str)
-  }
-
   def enumEventDescriptorV0TLV: Gen[EnumEventDescriptorV0TLV] = {
     for {
+      nonce <- CryptoGenerators.schnorrNonce
       numOutcomes <- Gen.choose(2, 10)
       outcomes <- Gen.listOfN(numOutcomes, StringGenerators.genString)
-    } yield EnumEventDescriptorV0TLV(outcomes.toVector)
+    } yield EnumEventDescriptorV0TLV(nonce, outcomes.toVector)
   }
 
   def rangeEventDescriptorV0TLV: Gen[RangeEventDescriptorV0TLV] = {
     for {
+      nonce <- CryptoGenerators.schnorrNonce
       start <- NumberGenerator.int32s
-      stop <- NumberGenerator.int32s.suchThat(_ > start)
+      count <- NumberGenerator.uInt32s
       step <- NumberGenerator.uInt16
-    } yield RangeEventDescriptorV0TLV(start, stop, step)
+      unit <- StringGenerators.genString
+      precision <- NumberGenerator.int32s
+    } yield RangeEventDescriptorV0TLV(nonce,
+                                      start,
+                                      count,
+                                      step,
+                                      unit,
+                                      precision)
+  }
+
+  def largeRangeEventDescriptorV0TLV: Gen[LargeRangeEventDescriptorV0TLV] = {
+    for {
+      base <- NumberGenerator.uInt16
+      isSigned <- NumberGenerator.bool
+      numNonces <- Gen.choose(2, 20)
+      nonces <- Gen.listOfN(numNonces, CryptoGenerators.schnorrNonce)
+      unit <- StringGenerators.genString
+      precision <- NumberGenerator.int32s
+    } yield LargeRangeEventDescriptorV0TLV(base,
+                                           isSigned,
+                                           nonces.toVector,
+                                           unit,
+                                           precision)
   }
 
   def eventDescriptorTLV: Gen[EventDescriptorTLV] =
-    Gen.oneOf(externalEventDescriptorV0TLV, enumEventDescriptorV0TLV)
+    Gen.oneOf(enumEventDescriptorV0TLV,
+              rangeEventDescriptorV0TLV,
+              largeRangeEventDescriptorV0TLV)
 
   def oracleEventV0TLV: Gen[OracleEventV0TLV] = {
     for {
       pubkey <- CryptoGenerators.schnorrPublicKey
-      nonce <- CryptoGenerators.schnorrNonce
       maturity <- NumberGenerator.uInt32s
       uri <- StringGenerators.genString
       desc <- eventDescriptorTLV
-    } yield OracleEventV0TLV(pubkey, nonce, maturity, desc, uri)
+    } yield OracleEventV0TLV(pubkey, maturity, desc, uri)
   }
 
   def oracleAnnouncementV0TLV: Gen[OracleAnnouncementV0TLV] = {
