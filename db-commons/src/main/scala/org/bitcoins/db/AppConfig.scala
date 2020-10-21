@@ -53,7 +53,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
   /** List of user-provided configs that should
     * override defaults
     */
-  protected[bitcoins] def configOverrides: List[Config] = List.empty
+  protected[bitcoins] def configOverrides: List[Config]
 
   /**
     * This method returns a new `AppConfig`, where every
