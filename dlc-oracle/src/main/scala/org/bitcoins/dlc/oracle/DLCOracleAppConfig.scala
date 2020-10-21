@@ -17,12 +17,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCOracleAppConfig(
     private val directory: Path,
-    private val conf: Config*)(implicit val ec: ExecutionContext)
+    private val confs: Config*)(implicit val ec: ExecutionContext)
     extends AppConfig
     with DbManagement
     with JdbcProfileComponent[DLCOracleAppConfig] {
 
   import profile.api._
+
+  override def configOverrides: List[Config] = confs.toList
 
   override def appConfig: DLCOracleAppConfig = this
 
