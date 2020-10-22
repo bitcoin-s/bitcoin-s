@@ -2,7 +2,9 @@ package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCState
 import org.bitcoins.core.hd.HDAccount
+import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
   SchnorrDigitalSignature,
   Sha256Digest,
   Sha256DigestBE
@@ -91,6 +93,27 @@ case class DLCDAO()(implicit
   def findByParamHash(paramHash: Sha256Digest): Future[Option[DLCDb]] =
     findByParamHash(paramHash.flip)
 
+  def findByFundingOutPoint(
+      outPoint: TransactionOutPoint): Future[Option[DLCDb]] = {
+    val q = table.filter(_.fundingOutPointOpt === outPoint)
+
+    safeDatabase.run(q.result).map(_.headOption)
+  }
+
+  def findByFundingOutPoints(
+      outPoints: Vector[TransactionOutPoint]): Future[Vector[DLCDb]] = {
+    val q = table.filter(_.fundingOutPointOpt.inSet(outPoints))
+
+    safeDatabase.runVec(q.result)
+  }
+
+  def findByFundingTxIds(
+      txIds: Vector[DoubleSha256DigestBE]): Future[Vector[DLCDb]] = {
+    val q = table.filter(_.fundingTxIdOpt.inSet(txIds))
+
+    safeDatabase.runVec(q.result)
+  }
+
   class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
 
     def paramHash: Rep[Sha256DigestBE] = column("param_hash", O.PrimaryKey)
@@ -112,6 +135,15 @@ case class DLCDAO()(implicit
     def oracleSigOpt: Rep[Option[SchnorrDigitalSignature]] =
       column("oracle_sig")
 
+    def fundingOutPointOpt: Rep[Option[TransactionOutPoint]] =
+      column("funding_outpoint")
+
+    def fundingTxIdOpt: Rep[Option[DoubleSha256DigestBE]] =
+      column("funding_tx_id")
+
+    def closingTxIdOpt: Rep[Option[DoubleSha256DigestBE]] =
+      column("closing_tx_id")
+
     def * : ProvenShape[DLCDb] =
       (paramHash,
        tempContractId,
@@ -120,7 +152,10 @@ case class DLCDAO()(implicit
        isInitiator,
        account,
        keyIndex,
-       oracleSigOpt).<>(DLCDb.tupled, DLCDb.unapply)
+       oracleSigOpt,
+       fundingOutPointOpt,
+       fundingTxIdOpt,
+       closingTxIdOpt).<>(DLCDb.tupled, DLCDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc", sourceColumns = paramHash)

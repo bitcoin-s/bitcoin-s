@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
+import org.bitcoins.commons.jsonmodels.dlc.DLCState
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
@@ -120,7 +121,20 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                  asInitiator = true,
                                  func = func,
                                  expectedOutputs = 1)
-    } yield assert(result)
+
+      _ = assert(result)
+
+      dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
+      dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
+
+    } yield {
+      (dlcDbAOpt, dlcDbBOpt) match {
+        case (Some(dlcA), Some(dlcB)) =>
+          assert(dlcA.state == DLCState.Claimed)
+          assert(dlcB.state == DLCState.RemoteClaimed)
+        case (_, _) => fail()
+      }
+    }
   }
 
   it must "do a unilateral close as the recipient" in { wallets =>
@@ -134,7 +148,20 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                  asInitiator = false,
                                  func = func,
                                  expectedOutputs = 1)
-    } yield assert(result)
+
+      _ = assert(result)
+
+      dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
+      dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
+
+    } yield {
+      (dlcDbAOpt, dlcDbBOpt) match {
+        case (Some(dlcA), Some(dlcB)) =>
+          assert(dlcA.state == DLCState.RemoteClaimed)
+          assert(dlcB.state == DLCState.Claimed)
+        case (_, _) => fail()
+      }
+    }
   }
 
   it must "fail to do losing unilateral close" in { wallets =>
@@ -160,7 +187,20 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                  asInitiator = true,
                                  func = func,
                                  expectedOutputs = 2)
-    } yield assert(result)
+
+      _ = assert(result)
+
+      dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
+      dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
+
+    } yield {
+      (dlcDbAOpt, dlcDbBOpt) match {
+        case (Some(dlcA), Some(dlcB)) =>
+          assert(dlcA.state == DLCState.Refunded)
+          assert(dlcB.state == DLCState.Refunded)
+        case (_, _) => fail()
+      }
+    }
   }
 
   it must "do a refund on a dlc as the recipient" in { wallets =>
@@ -172,6 +212,19 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                  asInitiator = false,
                                  func = func,
                                  expectedOutputs = 2)
-    } yield assert(result)
+
+      _ = assert(result)
+
+      dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
+      dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
+
+    } yield {
+      (dlcDbAOpt, dlcDbBOpt) match {
+        case (Some(dlcA), Some(dlcB)) =>
+          assert(dlcA.state == DLCState.Refunded)
+          assert(dlcB.state == DLCState.Refunded)
+        case (_, _) => fail()
+      }
+    }
   }
 }

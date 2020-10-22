@@ -205,6 +205,7 @@ abstract class Wallet
   override def broadcastTransaction(transaction: Transaction): Future[Unit] =
     for {
       _ <- nodeApi.broadcastTransaction(transaction)
+      _ <- processTransaction(transaction, None)
       _ <- walletCallbacks.executeOnTransactionBroadcast(logger, transaction)
     } yield ()
 

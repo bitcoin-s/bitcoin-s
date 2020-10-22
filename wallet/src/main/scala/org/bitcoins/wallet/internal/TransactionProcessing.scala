@@ -156,7 +156,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       }
     }
 
-  private def processIncomingUtxos(
+  def processIncomingUtxos(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       newTags: Vector[AddressTag]): Future[Vector[SpendingInfoDb]] =
@@ -396,7 +396,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
   private def getRelevantOutputs(
       transaction: Transaction): Future[Seq[OutputWithIndex]] = {
-    addressDAO.findAllAddresses().map { addrs =>
+    scriptPubKeyDAO.findAll().map { addrs =>
       val withIndex =
         transaction.outputs.zipWithIndex
       withIndex.collect {
@@ -438,18 +438,26 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
         for {
           _ <- insertIncomingTransaction(transaction, totalIncoming)
+
+          addrs <- addressDAO.findAllAddresses()
+          ourOutputs = outputsWithIndex.collect {
+            case OutputWithIndex(out, idx)
+                if addrs.map(_.scriptPubKey).contains(out.scriptPubKey) =>
+              OutputWithIndex(out, idx)
+          }
+
           prevTagDbs <- addressTagDAO.findTx(transaction, networkParameters)
           prevTags = prevTagDbs.map(_.addressTag)
           tagsToUse =
             prevTags
               .filterNot(tag => newTags.contains(tag)) ++ newTags
-          newTagDbs = outputsWithIndex.flatMap { out =>
+          newTagDbs = ourOutputs.flatMap { out =>
             val address = BitcoinAddress
               .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
             tagsToUse.map(tag => AddressTagDb(address, tag))
           }
           _ <- addressTagDAO.createAll(newTagDbs.toVector)
-          utxos <- addUTXOsFut(outputsWithIndex, transaction, blockHashOpt)
+          utxos <- addUTXOsFut(ourOutputs, transaction, blockHashOpt)
         } yield utxos
     }
   }
