@@ -202,11 +202,13 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
             dlcDb.copy(state = state)
         }
-      case (_, _) => Future.successful(dlcDb)
+      case (None, None) | (None, Some(_)) | (Some(_), None) =>
+        Future.successful(dlcDb)
     }
   }
 
-  override def processIncomingUtxos(
+  /** Process incoming utxos as normal, and then update the DLC states if applicable */
+  override protected def processIncomingUtxos(
       tx: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       newTags: Vector[AddressTag]): Future[Vector[SpendingInfoDb]] = {
@@ -215,8 +217,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         dlcDbs <- dlcDAO.findByFundingTxIds(Vector(tx.txIdBE))
         _ <-
           if (dlcDbs.nonEmpty) {
-            val txDb = TransactionDbHelper.fromTransaction(tx)
-            transactionDAO.upsert(txDb)
+            insertTransaction(tx)
           } else FutureUtil.unit
 
         // Update the state to be confirmed or broadcasted
@@ -238,7 +239,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
-  override def processOutgoingUtxos(
+  override protected def processOutgoingUtxos(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Vector[SpendingInfoDb]] = {
@@ -249,8 +250,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         dlcDbs <- dlcDAO.findByFundingOutPoints(outPoints)
         _ <-
           if (dlcDbs.nonEmpty) {
-            val txDb = TransactionDbHelper.fromTransaction(transaction)
-            transactionDAO.upsert(txDb)
+            insertTransaction(transaction)
           } else FutureUtil.unit
 
         withTx = dlcDbs.map(_.copy(closingTxIdOpt = Some(transaction.txIdBE)))
@@ -1139,7 +1139,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     for {
       (executor, setup) <- executorAndSetupFromDb(contractId)
       outcome = executor.executeRefundDLC(setup)
-      _ <- processTransaction(outcome.refundTx, None)
+      _ <- processTransaction(outcome.refundTx, blockHashOpt = None)
       _ <- updateDLCState(contractId, DLCState.Refunded)
       _ <- updateClosingTxId(contractId, outcome.refundTx.txIdBE)
     } yield {
