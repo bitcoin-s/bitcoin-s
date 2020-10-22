@@ -207,7 +207,9 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       FinalizedScriptWitnessKeyId).nonEmpty
 
   def isBIP143Vulnerable: Boolean = {
-    if (!isFinalized && witnessUTXOOpt.isDefined) {
+    if (
+      !isFinalized && witnessUTXOOpt.isDefined && nonWitnessOrUnknownUTXOOpt.isEmpty
+    ) {
 
       val isNativeV0 = witnessUTXOOpt.get.witnessUTXO.scriptPubKey
         .isInstanceOf[WitnessScriptPubKeyV0]
