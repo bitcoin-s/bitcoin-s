@@ -13,7 +13,11 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce}
+import org.bitcoins.crypto.{
+  SchnorrDigitalSignature,
+  SchnorrNonce,
+  Sha256DigestBE
+}
 import scodec.bits.ByteVector
 import ujson._
 import upickle.default._
@@ -392,6 +396,27 @@ object SendToAddress extends ServerJsonModels {
     }
   }
 
+}
+
+case class GetDLC(paramHash: Sha256DigestBE)
+
+object GetDLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetDLC] = {
+    jsArr.arr.toList match {
+      case paramHashJs :: Nil =>
+        Try {
+          val paramHash = Sha256DigestBE(paramHashJs.str)
+          GetDLC(paramHash)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing paramHash argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
 }
 
 case class CreateDLCOffer(

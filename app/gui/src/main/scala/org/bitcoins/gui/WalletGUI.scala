@@ -133,7 +133,7 @@ object WalletGUI extends JFXApp {
     )
   }
 
-  private val walletScene = new Scene {
+  private val walletScene = new Scene(1000, 600) {
     root = rootView
     stylesheets = GlobalData.currentStyleSheets
   }

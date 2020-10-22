@@ -2,6 +2,11 @@ package org.bitcoins.dlc.wallet
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.commons.jsonmodels.dlc.DLCState
+import org.bitcoins.commons.jsonmodels.dlc.DLCStatus.{
+  Claimed,
+  Refunded,
+  RemoteClaimed
+}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
@@ -127,6 +132,18 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
+      paramHash = dlcDbAOpt.get.paramHash
+
+      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
+      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+
+      _ = {
+        (statusAOpt, statusBOpt) match {
+          case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
+            assert(statusA.oracleSig == statusB.oracleSig)
+          case (_, _) => fail()
+        }
+      }
     } yield {
       (dlcDbAOpt, dlcDbBOpt) match {
         case (Some(dlcA), Some(dlcB)) =>
@@ -154,6 +171,18 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
+      paramHash = dlcDbAOpt.get.paramHash
+
+      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
+      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+
+      _ = {
+        (statusAOpt, statusBOpt) match {
+          case (Some(statusA: RemoteClaimed), Some(statusB: Claimed)) =>
+            assert(statusA.oracleSig == statusB.oracleSig)
+          case (_, _) => fail()
+        }
+      }
     } yield {
       (dlcDbAOpt, dlcDbBOpt) match {
         case (Some(dlcA), Some(dlcB)) =>
@@ -193,6 +222,18 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
+      paramHash = dlcDbAOpt.get.paramHash
+
+      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
+      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+
+      _ = {
+        (statusAOpt, statusBOpt) match {
+          case (Some(statusA: Refunded), Some(statusB: Refunded)) =>
+            assert(statusA.refundTx == statusB.refundTx)
+          case (_, _) => fail()
+        }
+      }
     } yield {
       (dlcDbAOpt, dlcDbBOpt) match {
         case (Some(dlcA), Some(dlcB)) =>
@@ -218,6 +259,18 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
+      paramHash = dlcDbAOpt.get.paramHash
+
+      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
+      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+
+      _ = {
+        (statusAOpt, statusBOpt) match {
+          case (Some(statusA: Refunded), Some(statusB: Refunded)) =>
+            assert(statusA.refundTx == statusB.refundTx)
+          case (_, _) => fail()
+        }
+      }
     } yield {
       (dlcDbAOpt, dlcDbBOpt) match {
         case (Some(dlcA), Some(dlcB)) =>

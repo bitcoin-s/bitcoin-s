@@ -1,15 +1,12 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  DLCAccept,
-  DLCOffer,
-  DLCSign
-}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
+import ujson._
 
 /** Represents the state of specific DLC for a given party.
   * This state is made up of all messages that have been
@@ -17,11 +14,14 @@ import scodec.bits.ByteVector
   * transactions and oracle signatures.
   */
 sealed trait DLCStatus {
+  def paramHash: Sha256DigestBE
   def isInitiator: Boolean
   def offer: DLCOffer
   def state: DLCState
-  val tempContractId: Sha256Digest = offer.tempContractId
-  val statusString: String = state.toString
+  lazy val tempContractId: Sha256Digest = offer.tempContractId
+  lazy val statusString: String = state.toString
+
+  def toJson: Value
 }
 
 /** All states other than Offered contain an accept message. */
@@ -35,37 +35,62 @@ sealed trait SignedDLCStatus extends AcceptedDLCStatus {
   val contractId: ByteVector = sign.contractId
 }
 
+sealed trait BroadcastedDLCStatus extends SignedDLCStatus {
+  def fundingTx: Transaction
+}
+
+sealed trait ClosedDLCStatus extends BroadcastedDLCStatus {
+  def closingTx: Transaction
+}
+
 object DLCStatus {
 
   /** The state where an offer has been created but no
     * accept message has yet been created/received.
     */
   case class Offered(
-      eventId: Sha256Digest,
+      paramHash: Sha256DigestBE,
       isInitiator: Boolean,
       offer: DLCOffer)
       extends DLCStatus {
-    override def state: DLCState = DLCState.Offered
+    override val state: DLCState = DLCState.Offered
 
     def toAccepted(accept: DLCAccept): Accepted = {
-      Accepted(eventId, isInitiator, offer, accept)
+      Accepted(paramHash, isInitiator, offer, accept)
     }
+
+    override val toJson: Value =
+      Obj(
+        "state" -> Str(state.toString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "offer" -> offer.toJson
+      )
   }
 
   /** The state where an offer has been accepted but
     * no sign message has yet been created/received.
     */
   case class Accepted(
-      eventId: Sha256Digest,
+      paramHash: Sha256DigestBE,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept)
       extends AcceptedDLCStatus {
-    override def state: DLCState = DLCState.Accepted
+    override val state: DLCState = DLCState.Accepted
 
     def toSigned(sign: DLCSign): Signed = {
-      Signed(eventId, isInitiator, offer, accept, sign)
+      Signed(paramHash, isInitiator, offer, accept, sign)
     }
+
+    override val toJson: Value =
+      Obj(
+        "state" -> Str(state.toString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "offer" -> offer.toJson,
+        "accept" -> accept.toJson
+      )
   }
 
   /** The state where the initiating party has created
@@ -74,21 +99,31 @@ object DLCStatus {
     * broadcasted to the network.
     */
   case class Signed(
-      eventId: Sha256Digest,
+      paramHash: Sha256DigestBE,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
       sign: DLCSign)
       extends SignedDLCStatus {
-    override def state: DLCState = DLCState.Signed
+    override val state: DLCState = DLCState.Signed
 
     def toBroadcasted(fundingTx: Transaction): Broadcasted = {
-      Broadcasted(eventId, isInitiator, offer, accept, sign, fundingTx)
+      Broadcasted(paramHash, isInitiator, offer, accept, sign, fundingTx)
     }
 
     def toConfirmed(fundingTx: Transaction): Confirmed = {
       toBroadcasted(fundingTx).toConfirmed
     }
+
+    override val toJson: Value =
+      Obj(
+        "state" -> Str(state.toString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "offer" -> offer.toJson,
+        "accept" -> accept.toJson,
+        "sign" -> sign.toJson
+      )
   }
 
   /** The state where the accepting (non-initiating)
@@ -96,18 +131,30 @@ object DLCStatus {
     * to the blockchain, and it has not yet been confirmed.
     */
   case class Broadcasted(
-      eventId: Sha256Digest,
+      paramHash: Sha256DigestBE,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
       sign: DLCSign,
       fundingTx: Transaction)
-      extends SignedDLCStatus {
-    override def state: DLCState = DLCState.Broadcasted
+      extends BroadcastedDLCStatus {
+    override val state: DLCState = DLCState.Broadcasted
 
     def toConfirmed: Confirmed = {
-      Confirmed(eventId, isInitiator, offer, accept, sign, fundingTx)
+      Confirmed(paramHash, isInitiator, offer, accept, sign, fundingTx)
     }
+
+    override val toJson: Value =
+      Obj(
+        "state" -> Str(state.toString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "offer" -> offer.toJson,
+        "accept" -> accept.toJson,
+        "sign" -> sign.toJson,
+        "fundingTxId" -> Str(fundingTx.txIdBE.hex),
+        "fundingTx" -> Str(fundingTx.hex)
+      )
   }
 
   /** The state where the DLC funding transaction has been
@@ -115,19 +162,19 @@ object DLCStatus {
     * initiated.
     */
   case class Confirmed(
-      eventId: Sha256Digest,
+      paramHash: Sha256DigestBE,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
       sign: DLCSign,
       fundingTx: Transaction)
-      extends SignedDLCStatus {
-    override def state: DLCState = DLCState.Confirmed
+      extends BroadcastedDLCStatus {
+    override val state: DLCState = DLCState.Confirmed
 
     def toClaimed(
         oracleSig: SchnorrDigitalSignature,
         cet: Transaction): Claimed = {
-      Claimed(eventId,
+      Claimed(paramHash,
               isInitiator,
               offer,
               accept,
@@ -138,15 +185,27 @@ object DLCStatus {
     }
 
     def toRemoteClaimed(cet: Transaction): RemoteClaimed = {
-      RemoteClaimed(eventId, isInitiator, offer, accept, sign, fundingTx, cet)
+      RemoteClaimed(paramHash, isInitiator, offer, accept, sign, fundingTx, cet)
     }
+
+    override val toJson: Value =
+      Obj(
+        "state" -> Str(state.toString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "offer" -> offer.toJson,
+        "accept" -> accept.toJson,
+        "sign" -> sign.toJson,
+        "fundingTxId" -> Str(fundingTx.txIdBE.hex),
+        "fundingTx" -> Str(fundingTx.hex)
+      )
   }
 
   /** The state where one of the CETs has been accepted by the network
     * and executed by ourselves.
     */
   case class Claimed(
-      eventId: Sha256Digest,
+      paramHash: Sha256DigestBE,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
@@ -154,23 +213,40 @@ object DLCStatus {
       fundingTx: Transaction,
       oracleSig: SchnorrDigitalSignature,
       cet: Transaction)
-      extends SignedDLCStatus {
-    override def state: DLCState = DLCState.Claimed
+      extends ClosedDLCStatus {
+    override val state: DLCState = DLCState.Claimed
+
+    override val toJson: Value =
+      Obj(
+        "state" -> Str(state.toString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "offer" -> offer.toJson,
+        "accept" -> accept.toJson,
+        "sign" -> sign.toJson,
+        "fundingTxId" -> Str(fundingTx.txIdBE.hex),
+        "fundingTx" -> Str(fundingTx.hex),
+        "oracleSig" -> Str(oracleSig.hex),
+        "cetTxId" -> Str(cet.txIdBE.hex),
+        "cet" -> Str(cet.hex)
+      )
+
+    override def closingTx: Transaction = cet
   }
 
   /** The state where one of the CETs has been accepted by the network
     * and executed by a remote party.
     */
   case class RemoteClaimed(
-      eventId: Sha256Digest,
+      paramHash: Sha256DigestBE,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
       sign: DLCSign,
       fundingTx: Transaction,
       cet: Transaction)
-      extends SignedDLCStatus {
-    override def state: DLCState = DLCState.RemoteClaimed
+      extends ClosedDLCStatus {
+    override val state: DLCState = DLCState.RemoteClaimed
 
     val oracleSig: SchnorrDigitalSignature = {
       val cetSigs = cet
@@ -179,6 +255,9 @@ object DLCStatus {
         .head
         .asInstanceOf[P2WSHWitnessV0]
         .signatures
+
+      require(cetSigs.size == 2, "There must be only 2 signatures")
+
       val oraclePubKey = offer.oracleInfo.pubKey
       val preCommittedR = offer.oracleInfo.rValue
 
@@ -243,20 +322,146 @@ object DLCStatus {
             "No Oracle Signature found from CET")
       }
     }
+
+    override val toJson: Value =
+      Obj(
+        "state" -> Str(state.toString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "offer" -> offer.toJson,
+        "accept" -> accept.toJson,
+        "sign" -> sign.toJson,
+        "fundingTxId" -> Str(fundingTx.txIdBE.hex),
+        "fundingTx" -> Str(fundingTx.hex),
+        "oracleSig" -> Str(oracleSig.hex),
+        "cetTxId" -> Str(cet.txIdBE.hex),
+        "cet" -> Str(cet.hex)
+      )
+
+    override def closingTx: Transaction = cet
   }
 
   /** The state where the DLC refund transaction has been
     * accepted by the network.
     */
   case class Refunded(
-      eventId: Sha256Digest,
+      paramHash: Sha256DigestBE,
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
       sign: DLCSign,
       fundingTx: Transaction,
       refundTx: Transaction)
-      extends SignedDLCStatus {
-    override def state: DLCState = DLCState.Refunded
+      extends ClosedDLCStatus {
+    override val state: DLCState = DLCState.Refunded
+
+    override val toJson: Value =
+      Obj(
+        "state" -> Str(state.toString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "offer" -> offer.toJson,
+        "accept" -> accept.toJson,
+        "sign" -> sign.toJson,
+        "fundingTxId" -> Str(fundingTx.txIdBE.hex),
+        "fundingTx" -> Str(fundingTx.hex),
+        "refundTxId" -> Str(refundTx.txIdBE.hex),
+        "refundTx" -> Str(refundTx.hex)
+      )
+
+    override def closingTx: Transaction = refundTx
+  }
+
+  def fromJson(json: Value): DLCStatus = {
+    val obj = json.obj
+
+    val state = DLCState.fromString(obj("state").str)
+    val paramHash = Sha256DigestBE(obj("paramHash").str)
+    val isInitiator = obj("isInitiator").bool
+    val offer = DLCOffer.fromJson(obj("offer"))
+
+    lazy val accept = DLCAccept.fromJson(obj("accept"))
+    lazy val sign = DLCSign.fromJson(obj("sign"))
+    lazy val fundingTx = Transaction(obj("fundingTx").str)
+    lazy val cet = Transaction(obj("cet").str)
+    lazy val refundTx = Transaction(obj("refundTx").str)
+    lazy val oracleSig = SchnorrDigitalSignature(obj("oracleSig").str)
+
+    state match {
+      case DLCState.Offered =>
+        Offered(paramHash, isInitiator, offer)
+      case DLCState.Accepted =>
+        Accepted(paramHash, isInitiator, offer, accept)
+      case DLCState.Signed =>
+        Signed(paramHash, isInitiator, offer, accept, sign)
+      case DLCState.Broadcasted =>
+        Broadcasted(paramHash, isInitiator, offer, accept, sign, fundingTx)
+      case DLCState.Confirmed =>
+        Confirmed(paramHash, isInitiator, offer, accept, sign, fundingTx)
+      case DLCState.Claimed =>
+        Claimed(paramHash,
+                isInitiator,
+                offer,
+                accept,
+                sign,
+                fundingTx,
+                oracleSig,
+                cet)
+      case DLCState.RemoteClaimed =>
+        RemoteClaimed(paramHash,
+                      isInitiator,
+                      offer,
+                      accept,
+                      sign,
+                      fundingTx,
+                      cet)
+      case DLCState.Refunded =>
+        Refunded(paramHash,
+                 isInitiator,
+                 offer,
+                 accept,
+                 sign,
+                 fundingTx,
+                 refundTx)
+    }
+  }
+
+  def getContractId(status: DLCStatus): Option[ByteVector] = {
+    status match {
+      case status: SignedDLCStatus =>
+        Some(status.contractId)
+      case _: Offered | _: Accepted =>
+        None
+    }
+  }
+
+  def getFundingTx(status: DLCStatus): Option[Transaction] = {
+    status match {
+      case status: BroadcastedDLCStatus =>
+        Some(status.fundingTx)
+      case _: Offered | _: Accepted | _: Signed =>
+        None
+    }
+  }
+
+  def getClosingTx(status: DLCStatus): Option[Transaction] = {
+    status match {
+      case status: ClosedDLCStatus =>
+        Some(status.closingTx)
+      case _: Offered | _: Accepted | _: Signed | _: BroadcastedDLCStatus =>
+        None
+    }
+  }
+
+  def getOracleSignature(status: DLCStatus): Option[SchnorrDigitalSignature] = {
+    status match {
+      case remoteClaimed: RemoteClaimed =>
+        Some(remoteClaimed.oracleSig)
+      case claimed: Claimed =>
+        Some(claimed.oracleSig)
+      case _: Offered | _: Accepted | _: Signed | _: BroadcastedDLCStatus |
+          _: Refunded =>
+        None
+    }
   }
 }
