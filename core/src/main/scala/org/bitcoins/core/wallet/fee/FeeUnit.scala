@@ -81,6 +81,8 @@ case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
   }
 
   override def factory: FeeUnitFactory[SatoshisPerByte] = SatoshisPerByte
+
+  override def toString: String = s"$toLong sats/byte"
 }
 
 object SatoshisPerByte extends FeeUnitFactory[SatoshisPerByte] {
@@ -130,6 +132,8 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
 
   override def factory: FeeUnitFactory[SatoshisPerKiloByte] =
     SatoshisPerKiloByte
+
+  override def toString: String = s"$toLong sats/kb"
 }
 
 object SatoshisPerKiloByte extends FeeUnitFactory[SatoshisPerKiloByte] {
@@ -162,6 +166,8 @@ case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
 
   override def factory: FeeUnitFactory[SatoshisPerVirtualByte] =
     SatoshisPerVirtualByte
+
+  override def toString: String = s"$toLong sats/vbyte"
 }
 
 object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
@@ -197,6 +203,8 @@ object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
 case class SatoshisPerKW(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
 
   override def factory: FeeUnitFactory[SatoshisPerKW] = SatoshisPerKW
+
+  override def toString: String = s"$toLong sats/kw"
 }
 
 object SatoshisPerKW extends FeeUnitFactory[SatoshisPerKW] {
