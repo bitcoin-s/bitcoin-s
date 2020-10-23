@@ -138,6 +138,13 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
       }
     }
 
+    def takeString(): String = {
+      val size = BigSizeUInt(current)
+      skip(size.byteSize)
+      val strBytes = take(size.toInt)
+      new String(strBytes.toArray, StandardCharsets.UTF_8)
+    }
+
     def takeSPK(): ScriptPubKey = {
       val len = UInt16(takeBits(16)).toInt
       ScriptPubKey.fromAsmBytes(take(len))
@@ -304,7 +311,7 @@ case class RangeEventDescriptorV0TLV(
   override val tpe: BigSizeUInt = RangeEventDescriptorV0TLV.tpe
 
   override val value: ByteVector = {
-    val unitSize = UInt16(unit.length)
+    val unitSize = BigSizeUInt(unit.length)
     val unitBytes = CryptoUtil.serializeForHash(unit)
 
     nonce.bytes ++ start.bytes ++ count.bytes ++ step.bytes ++
@@ -334,9 +341,7 @@ object RangeEventDescriptorV0TLV extends TLVFactory[RangeEventDescriptorV0TLV] {
     val count = UInt32(iter.takeBits(32))
     val step = UInt16(iter.takeBits(16))
 
-    val unitSize = UInt16(iter.takeBits(16))
-    val unitBytes = iter.take(unitSize.toInt)
-    val unit = new String(unitBytes.toArray, StandardCharsets.UTF_8)
+    val unit = iter.takeString()
     val precision = Int32(iter.takeBits(32))
 
     RangeEventDescriptorV0TLV(nonce, start, count, step, unit, precision)
@@ -372,7 +377,7 @@ trait LargeRangeEventDescriptorV0TLV extends EventDescriptorTLV {
     val numNonces = UInt16(nonces.size)
     val noncesBytes = nonces.foldLeft(ByteVector.empty)(_ ++ _.bytes)
 
-    val unitSize = UInt16(unit.length)
+    val unitSize = BigSizeUInt(unit.length)
     val unitBytes = CryptoUtil.serializeForHash(unit)
 
     base.bytes ++ isSignedByte ++ numNonces.bytes ++ noncesBytes ++
@@ -442,9 +447,7 @@ object LargeRangeEventDescriptorV0TLV
       numNonces.toInt == nonces.size,
       s"Did not parse the expected number of nonces expected ${numNonces.toInt}, got ${nonces.size}")
 
-    val unitSize = UInt16(iter.takeBits(16))
-    val unitBytes = iter.take(unitSize.toInt)
-    val unit = new String(unitBytes.toArray, StandardCharsets.UTF_8)
+    val unit = iter.takeString()
     val precision = Int32(iter.takeBits(32))
 
     LargeRangeEventDescriptorV0TLV(base, isSigned, nonces, unit, precision)
