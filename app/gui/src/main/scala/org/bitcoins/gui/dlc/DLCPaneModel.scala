@@ -150,6 +150,9 @@ class DLCPaneModel(
   }
 
   def viewDLC(status: DLCStatus): Unit = {
-    ViewDLCDialog.showAndWait(parentWindow.value, status)
+    updateDLCs()
+    val updatedStatus = dlcs.find(_.tempContractId == status.tempContractId)
+    ViewDLCDialog.showAndWait(parentWindow.value,
+                              updatedStatus.getOrElse(status))
   }
 }
