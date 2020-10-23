@@ -20,7 +20,7 @@ object Deps {
     val scodecV = "1.1.20"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.4"
-    val typesafeConfigV = "1.4.0"
+    val typesafeConfigV = "1.4.1"
 
     val scalaFxV = "14-R19"
     val javaFxV = "16-ea+2"
