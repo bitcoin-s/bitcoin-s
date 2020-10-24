@@ -348,14 +348,14 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
   }
 
   def dummyTx(
+      prevTxId: DoubleSha256Digest = DoubleSha256Digest.empty,
       scriptSig: ScriptSignature = EmptyScriptSignature,
       spk: ScriptPubKey = EmptyScriptPubKey): Transaction = {
     BaseTransaction(
       version = Int32.zero,
       inputs = Vector(
-        TransactionInput(outPoint =
-                           TransactionOutPoint(txId = DoubleSha256Digest.empty,
-                                               vout = UInt32.zero),
+        TransactionInput(outPoint = TransactionOutPoint(txId = prevTxId,
+                                                        vout = UInt32.zero),
                          scriptSignature = scriptSig,
                          sequenceNumber = UInt32.zero)),
       outputs = Vector(TransactionOutput(CurrencyUnits.oneBTC, spk)),
@@ -364,9 +364,10 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
   }
 
   def dummyPSBT(
+      prevTxId: DoubleSha256Digest = DoubleSha256Digest.empty,
       scriptSig: ScriptSignature = EmptyScriptSignature,
       spk: ScriptPubKey = EmptyScriptPubKey): PSBT = {
-    PSBT.fromUnsignedTx(dummyTx(scriptSig, spk))
+    PSBT.fromUnsignedTx(dummyTx(prevTxId, scriptSig, spk))
   }
 
   it must "successfully change a NonWitnessUTXO to a WitnessUTXO when compressing" in {
@@ -516,5 +517,29 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
     val psbt = PSBT(
       "70736274ff01005502000000010e43b32dc23232b9c74bb0d4b940e6242c8acc875f41a6e4f6063e99dcbe4eda0000000000000000000180f0fa02000000001976a9149d936768e7338f716548af87b61ad83b80ea422188ac000000000001002a02000000000100e1f5050000000017a914e9b5fdcca093fde8d0424238a517034664c4715a8700000000010717160014cbcdc27013a54990a8e468dbdabf95166ca614e701086b024730440220489caebd034c1c1caf869d1463543248d78b9c8fde4cdd6044220c123ba9489c022007214b4ac24f5b4e278172b8af2fed27990fb10fa1961b3288dd0fc9226ef05d012102b38f6ec85730be3e8fa5a0da221209781de35c2e572e82f2d707e7b67be1b9c20000")
     assert(psbt.verifyFinalizedInput(0))
+  }
+
+  it must "correctly add a non-witness utxo when there is a witness v0 redeem script" in {
+
+    val witScript = P2PKHScriptPubKey(ECPublicKey.freshPublicKey)
+    val witness = P2WSHWitnessV0(witScript)
+    val redeemScript = P2WSHWitnessSPKV0(witScript)
+    val p2sh = P2SHScriptPubKey(redeemScript)
+
+    val utxoTx = dummyTx(spk = p2sh)
+
+    val psbtTx = dummyTx(prevTxId = utxoTx.txId)
+
+    val psbt = PSBT
+      .fromUnsignedTx(psbtTx)
+      .addScriptWitnessToInput(witness, 0)
+      .addRedeemOrWitnessScriptToInput(redeemScript, 0)
+
+    val withUtxo = psbt.addUTXOToInput(utxoTx, 0)
+
+    assert(
+      withUtxo.inputMaps.head.nonWitnessOrUnknownUTXOOpt
+        .map(_.transactionSpent)
+        .contains(utxoTx))
   }
 }
