@@ -31,8 +31,7 @@ object OfferDLCDialog
       collateral = Satoshis(BigInt(inputs(collateralStr))),
       feeRateOpt = feeRate,
       locktime = UInt32(BigInt(inputs(locktimeStr))),
-      refundLT = UInt32(BigInt(inputs(refundLocktimeStr))),
-      escaped = false
+      refundLT = UInt32(BigInt(inputs(refundLocktimeStr)))
     )
   }
 }

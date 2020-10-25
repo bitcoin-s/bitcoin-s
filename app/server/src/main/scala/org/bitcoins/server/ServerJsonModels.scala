@@ -394,26 +394,20 @@ object SendToAddress extends ServerJsonModels {
 
 }
 
-trait JsonResponse {
-  def escaped: Boolean
-}
-
 case class CreateDLCOffer(
     oracleInfo: OracleInfo,
     contractInfo: ContractInfo,
     collateral: Satoshis,
     feeRateOpt: Option[SatoshisPerVirtualByte],
     locktime: UInt32,
-    refundLocktime: UInt32,
-    escaped: Boolean)
-    extends JsonResponse
+    refundLocktime: UInt32)
 
 object CreateDLCOffer extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[CreateDLCOffer] = {
 
     jsArr.arr.toList match {
-      case oracleInfoJs :: contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: escapedJs :: Nil =>
+      case oracleInfoJs :: contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: Nil =>
         Try {
           val oracleInfo = jsToOracleInfo(oracleInfoJs)
           val contractInfo = jsToContractInfo(contractInfoJs)
@@ -421,66 +415,60 @@ object CreateDLCOffer extends ServerJsonModels {
           val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
           val locktime = jsToUInt32(locktimeJs)
           val refundLT = jsToUInt32(refundLTJs)
-          val escaped = escapedJs.bool
           CreateDLCOffer(oracleInfo,
                          contractInfo,
                          collateral,
                          feeRate,
                          locktime,
-                         refundLT,
-                         escaped)
+                         refundLT)
         }
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 7"))
+            s"Bad number of arguments: ${other.length}. Expected: 6"))
     }
   }
 }
 
-case class AcceptDLCOffer(offer: DLCOffer, escaped: Boolean)
-    extends JsonResponse
+case class AcceptDLCOffer(offer: DLCOffer)
 
 object AcceptDLCOffer extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLCOffer] = {
     jsArr.arr.toList match {
-      case offerJs :: escapedJs :: Nil =>
+      case offerJs :: Nil =>
         Try {
           val offer = DLCOffer.fromJson(ujson.read(offerJs.str))
-          val escaped = escapedJs.bool
-          AcceptDLCOffer(offer, escaped)
+          AcceptDLCOffer(offer)
         }
       case Nil =>
-        Failure(new IllegalArgumentException("Missing offer arguments"))
+        Failure(new IllegalArgumentException("Missing offer argument"))
 
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2, got"))
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
     }
   }
 }
 
-case class SignDLC(accept: DLCAccept, escaped: Boolean) extends JsonResponse
+case class SignDLC(accept: DLCAccept)
 
 object SignDLC extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[SignDLC] = {
     jsArr.arr.toList match {
-      case acceptJs :: escapedJs :: Nil =>
+      case acceptJs :: Nil =>
         Try {
           val accept = DLCAccept.fromJson(ujson.read(acceptJs.str))
-          val escaped = escapedJs.bool
-          SignDLC(accept, escaped)
+          SignDLC(accept)
         }
       case Nil =>
-        Failure(
-          new IllegalArgumentException("Missing accept and escaped arguments"))
+        Failure(new IllegalArgumentException("Missing accept argument"))
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
     }
   }
 }

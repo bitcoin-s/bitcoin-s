@@ -178,9 +178,9 @@ object DLCMessage {
         fundingInputs.map { input =>
           val obj = mutable.LinkedHashMap(
             "prevTx" -> Str(input.prevTx.hex),
-            "prevTxVout" -> Num(input.prevTxVout.toInt),
-            "sequence" -> Num(input.sequence.toInt),
-            "maxWitnessLength" -> Num(input.maxWitnessLen.toInt)
+            "prevTxVout" -> Num(input.prevTxVout.toLong.toDouble),
+            "sequence" -> Num(input.sequence.toLong.toDouble),
+            "maxWitnessLength" -> Num(input.maxWitnessLen.toLong.toDouble)
           )
 
           input.redeemScriptOpt.foreach { redeemScript =>
