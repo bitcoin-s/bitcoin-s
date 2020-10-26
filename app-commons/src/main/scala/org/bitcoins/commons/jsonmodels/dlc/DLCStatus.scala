@@ -198,12 +198,14 @@ object DLCStatus {
       val outcomeValues = cet.outputs.map(_.value).sorted
       val totalCollateral = offer.totalCollateral + accept.totalCollateral
 
-      val possibleMessages = offer.contractInfo.filter {
-        case (_, amt) =>
-          Vector(amt, totalCollateral - amt)
-            .filter(_ >= Policy.dustThreshold)
-            .sorted == outcomeValues
-      }.keys
+      val possibleMessages = offer.contractInfo
+        .filter {
+          case (_, amt) =>
+            Vector(amt, totalCollateral - amt)
+              .filter(_ >= Policy.dustThreshold)
+              .sorted == outcomeValues
+        }
+        .map(_._1)
 
       val (offerCETSig, acceptCETSig) =
         if (
@@ -217,12 +219,12 @@ object DLCStatus {
 
       val (cetSig, outcomeSigs) = if (isInitiator) {
         val possibleOutcomeSigs = sign.cetSigs.outcomeSigs.filter {
-          case (msg, _) => possibleMessages.exists(_ == msg)
+          case (msg, _) => possibleMessages.contains(msg)
         }
         (acceptCETSig, possibleOutcomeSigs)
       } else {
         val possibleOutcomeSigs = accept.cetSigs.outcomeSigs.filter {
-          case (msg, _) => possibleMessages.exists(_ == msg)
+          case (msg, _) => possibleMessages.contains(msg)
         }
         (offerCETSig, possibleOutcomeSigs)
       }

@@ -268,7 +268,9 @@ trait TLVGen {
       payoutAddress <- AddressGenerator.bitcoinAddress
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       totalCollateral = scala.math.max(
-        (outcomes.values.max - offer.totalCollateralSatoshis).satoshis.toLong,
+        (outcomes
+          .map(_._2)
+          .maxBy(_.toLong) - offer.totalCollateralSatoshis).satoshis.toLong,
         totalCollateralSatoshis.toLong)
       fundingInputs <- fundingInputV0TLVs(Satoshis(totalCollateral))
       changeAddress <- AddressGenerator.bitcoinAddress

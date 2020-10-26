@@ -21,7 +21,7 @@ import org.bitcoins.core.protocol.tlv.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.util.{MapWrapper, NumberUtil}
+import org.bitcoins.core.util.{NumberUtil, SeqWrapper}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
@@ -35,9 +35,9 @@ object DLCTLVGen {
     CryptoUtil.sha256(bytes)
   }
 
-  case class PreImageContractInfo(outcomeValueMap: Map[String, Satoshis])
-      extends MapWrapper[String, Satoshis] {
-    override def wrapped: Map[String, Satoshis] = outcomeValueMap
+  case class PreImageContractInfo(outcomeValueMap: Vector[(String, Satoshis)])
+      extends SeqWrapper[(String, Satoshis)] {
+    override def wrapped: Vector[(String, Satoshis)] = outcomeValueMap
 
     def toContractInfo: ContractInfo = {
       ContractInfo(outcomeValueMap.map {
@@ -61,7 +61,7 @@ object DLCTLVGen {
           case ((_, amt), preImage) =>
             preImage -> amt
         }
-        .toMap)
+        .toVector)
   }
 
   def genContractInfo(
@@ -349,7 +349,7 @@ object DLCTLVGen {
       offer.contractInfo.values.max - offer.totalCollateral + overCollateral
 
     val cetSignatures =
-      cetSigs(offer.contractInfo.outcomeValueMap.keys.toVector, fundingPubKey)
+      cetSigs(offer.contractInfo.keys, fundingPubKey)
 
     val tempContractId = offer.tempContractId
 
@@ -401,9 +401,8 @@ object DLCTLVGen {
   def dlcSignFromOffer(
       offer: DLCOffer,
       contractId: ByteVector = hash().bytes): DLCSign = {
-    val cetSignatures = cetSigs(
-      offer.contractInfo.outcomeValueMap.keys.toVector,
-      offer.pubKeys.fundingKey)
+    val cetSignatures =
+      cetSigs(offer.contractInfo.keys, offer.pubKeys.fundingKey)
     val fundingSignatures = fundingSigs(offer.fundingInputs.map(_.outPoint))
     DLCSign(cetSignatures, fundingSignatures, contractId)
   }

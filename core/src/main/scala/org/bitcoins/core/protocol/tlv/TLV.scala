@@ -384,7 +384,7 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
 
 sealed trait ContractInfoTLV extends TLV
 
-case class ContractInfoV0TLV(outcomes: Map[Sha256Digest, Satoshis])
+case class ContractInfoV0TLV(outcomes: Vector[(Sha256Digest, Satoshis)])
     extends ContractInfoTLV {
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
@@ -402,7 +402,7 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {
     val iter = ValueIterator(value)
 
-    val builder = Map.newBuilder[Sha256Digest, Satoshis]
+    val builder = Vector.newBuilder[(Sha256Digest, Satoshis)]
 
     while (iter.index < value.length) {
       val outcome = Sha256Digest(iter.take(32))

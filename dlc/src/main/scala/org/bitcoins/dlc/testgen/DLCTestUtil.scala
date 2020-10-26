@@ -50,7 +50,6 @@ object DLCTestUtil {
     val outcomeMap =
       outcomeHashes
         .zip(DLCTestUtil.genValues(outcomeHashes.length, totalInput))
-        .toMap
 
     val otherOutcomeMap = outcomeMap.map {
       case (hash, amt) => (hash, (totalInput - amt).satoshis)

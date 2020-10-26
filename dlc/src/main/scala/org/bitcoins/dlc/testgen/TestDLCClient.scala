@@ -59,7 +59,7 @@ case class TestDLCClient(
     dlcTxBuilder.acceptOutcomes
   }
 
-  val messages: Vector[Sha256Digest] = outcomes.keys.toVector
+  val messages: Vector[Sha256Digest] = outcomes.keys
 
   val timeouts: DLCTimeouts = offer.timeouts
 
@@ -151,7 +151,7 @@ object TestDLCClient {
 
     val remoteOutcomes: ContractInfo = ContractInfo(outcomes.map {
       case (hash, amt) => (hash, (input + remoteInput - amt).satoshis)
-    })
+    }.toVector)
 
     val changeAddress = BitcoinAddress.fromScriptPubKey(changeSPK, network)
     val remoteChangeAddress =

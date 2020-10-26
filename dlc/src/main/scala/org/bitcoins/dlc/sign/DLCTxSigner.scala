@@ -275,7 +275,7 @@ case class DLCTxSigner(
 
   /** Creates all of this party's CETSignatures */
   def createCETSigs(): Future[CETSignatures] = {
-    val cetSigFs = offer.contractInfo.keys.toVector.map { msg =>
+    val cetSigFs = offer.contractInfo.keys.map { msg =>
       createRemoteCETSig(msg).map(msg -> _)
     }
 
