@@ -419,7 +419,8 @@ object DLCMessage {
         fundingInputs = fundingInputs.map(_.toTLV),
         changeSPK = changeAddress.scriptPubKey,
         cetSignatures = CETSignaturesV0TLV(cetSigs.outcomeSigs.values.toVector),
-        refundSignature = cetSigs.refundSig.signature
+        refundSignature =
+          ECDigitalSignature.fromFrontOfBytes(cetSigs.refundSig.signature.bytes)
       )
     }
 
@@ -503,7 +504,10 @@ object DLCMessage {
           BitcoinAddress.fromScriptPubKey(accept.changeSPK, network),
         cetSigs = CETSignatures(
           outcomeSigs,
-          PartialSignature(accept.fundingPubKey, accept.refundSignature)),
+          PartialSignature(
+            accept.fundingPubKey,
+            ECDigitalSignature(
+              accept.refundSignature.bytes :+ HashType.sigHashAll.byte))),
         tempContractId = accept.tempContractId
       )
     }
