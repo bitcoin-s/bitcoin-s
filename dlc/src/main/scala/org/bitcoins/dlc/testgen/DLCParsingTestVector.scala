@@ -270,7 +270,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "changeSPKLen" -> Element(UInt16(changeSPK.asmBytes.length)),
           "changeSPK" -> Element(changeSPK.asmBytes),
           "cetSignatures" -> Element(cetSignatures),
-          "refundSignature" -> Element(refundSignature)
+          "refundSignature" -> Element(refundSignature.toRawRS)
         )
         DLCMessageTestVector(LnMessage(tlv), "accept_dlc_v0", fields)
       case DLCSignTLV(contractId,
@@ -281,7 +281,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "tpe" -> Element(UInt16(DLCSignTLV.tpe.toInt)),
           "contractId" -> Element(contractId),
           "cetSignatures" -> Element(cetSignatures),
-          "refundSignature" -> Element(refundSignature),
+          "refundSignature" -> Element(refundSignature.toRawRS),
           "fundingSignatures" -> Element(fundingSignatures)
         )
         DLCMessageTestVector(LnMessage(tlv), "sign_dlc_v0", fields)

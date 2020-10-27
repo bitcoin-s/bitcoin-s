@@ -117,7 +117,7 @@ case class DLCPartyParams(
 
   def toOffer(params: DLCParams)(implicit ec: ExecutionContext): DLCOffer = {
     DLCOffer(
-      ContractInfo(params.contractInfo.map(_.toMapEntry).toMap),
+      ContractInfo(params.contractInfo.map(_.toMapEntry)),
       params.oracleInfo,
       DLCPublicKeys(fundingPrivKey.publicKey, payoutAddress),
       collateral.satoshis,

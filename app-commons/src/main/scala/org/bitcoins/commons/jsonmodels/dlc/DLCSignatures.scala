@@ -35,6 +35,17 @@ case class FundingSignatures(
 }
 
 case class CETSignatures(
-    outcomeSigs: Map[Sha256Digest, ECAdaptorSignature],
+    outcomeSigs: Vector[(Sha256Digest, ECAdaptorSignature)],
     refundSig: PartialSignature)
-    extends DLCSignatures
+    extends DLCSignatures {
+  lazy val keys: Vector[Sha256Digest] = outcomeSigs.map(_._1)
+  lazy val adaptorSigs: Vector[ECAdaptorSignature] = outcomeSigs.map(_._2)
+
+  def apply(key: Sha256Digest): ECAdaptorSignature = {
+    outcomeSigs
+      .find(_._1 == key)
+      .map(_._2)
+      .getOrElse(
+        throw new IllegalArgumentException(s"No signature found for $key"))
+  }
+}
