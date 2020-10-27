@@ -384,7 +384,7 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
 
 sealed trait ContractInfoTLV extends TLV
 
-case class ContractInfoV0TLV(outcomes: Map[Sha256Digest, Satoshis])
+case class ContractInfoV0TLV(outcomes: Vector[(Sha256Digest, Satoshis)])
     extends ContractInfoTLV {
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
@@ -402,7 +402,7 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {
     val iter = ValueIterator(value)
 
-    val builder = Map.newBuilder[Sha256Digest, Satoshis]
+    val builder = Vector.newBuilder[(Sha256Digest, Satoshis)]
 
     while (iter.index < value.length) {
       val outcome = Sha256Digest(iter.take(32))
@@ -671,7 +671,7 @@ case class DLCAcceptTLV(
       fundingInputs.foldLeft(ByteVector.empty)(_ ++ _.bytes) ++
       TLV.encodeScript(changeSPK) ++
       cetSignatures.bytes ++
-      refundSignature.bytes
+      refundSignature.toRawRS
   }
 }
 
@@ -694,8 +694,7 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
     val changeSPK = iter.takeSPK()
     val cetSignatures = CETSignaturesV0TLV.fromBytes(iter.current)
     iter.skip(cetSignatures)
-    val refundSignature = ECDigitalSignature(iter.current)
-    iter.skip(refundSignature)
+    val refundSignature = ECDigitalSignature.fromRS(iter.take(64))
 
     DLCAcceptTLV(tempContractId,
                  totalCollateralSatoshis,
@@ -719,7 +718,7 @@ case class DLCSignTLV(
   override val value: ByteVector = {
     contractId ++
       cetSignatures.bytes ++
-      refundSignature.bytes ++
+      refundSignature.toRawRS ++
       fundingSignatures.bytes
   }
 }
@@ -733,8 +732,7 @@ object DLCSignTLV extends TLVFactory[DLCSignTLV] {
     val contractId = iter.take(32)
     val cetSignatures = CETSignaturesV0TLV.fromBytes(iter.current)
     iter.skip(cetSignatures)
-    val refundSignature = ECDigitalSignature.fromFrontOfBytes(iter.current)
-    iter.skip(refundSignature)
+    val refundSignature = ECDigitalSignature.fromRS(iter.take(64))
     val fundingSignatures = FundingSignaturesV0TLV.fromBytes(iter.current)
     iter.skip(fundingSignatures)
 

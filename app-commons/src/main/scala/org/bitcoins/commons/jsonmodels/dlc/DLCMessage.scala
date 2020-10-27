@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.MapWrapper
+import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -64,10 +64,22 @@ object DLCMessage {
     }
   }
 
-  case class ContractInfo(outcomeValueMap: Map[Sha256Digest, Satoshis])
+  case class ContractInfo(outcomeValueMap: Vector[(Sha256Digest, Satoshis)])
       extends NetworkElement
-      with MapWrapper[Sha256Digest, Satoshis] {
-    override def wrapped: Map[Sha256Digest, Satoshis] = outcomeValueMap
+      with SeqWrapper[(Sha256Digest, Satoshis)] {
+    override def wrapped: Vector[(Sha256Digest, Satoshis)] = outcomeValueMap
+
+    def keys: Vector[Sha256Digest] = outcomeValueMap.map(_._1)
+
+    def values: Vector[Satoshis] = outcomeValueMap.map(_._2)
+
+    def apply(key: Sha256Digest): Satoshis = {
+      outcomeValueMap
+        .find(_._1 == key)
+        .map(_._2)
+        .getOrElse(
+          throw new IllegalArgumentException(s"No value found for key $key"))
+    }
 
     override def bytes: ByteVector = {
       outcomeValueMap.foldLeft(ByteVector.empty) {
@@ -99,15 +111,20 @@ object DLCMessage {
           loop(remainingBytes.drop(sizeOfMapElement), accum :+ (digest, sats))
         }
       }
-      ContractInfo(loop(bytes, Vector.empty).toMap)
+
+      ContractInfo(loop(bytes, Vector.empty))
     }
   }
 
   sealed trait DLCSetupMessage extends DLCMessage {
     def pubKeys: DLCPublicKeys
+
     def totalCollateral: Satoshis
+
     def fundingInputs: Vector[DLCFundingInput]
+
     def changeAddress: BitcoinAddress
+
     require(
       totalCollateral >= Satoshis.zero,
       s"Cannot have a negative totalCollateral, got: ${totalCollateral.toLong}")
@@ -116,15 +133,15 @@ object DLCMessage {
   /**
     * The initiating party starts the protocol by sending an offer message to the other party.
     *
-    * @param contractInfo Contract information consists of a map to be used to create CETs
-    * @param oracleInfo The oracle public key and R point(s) to use to build the CETs as
-    *                   well as meta information to identify the oracle to be used in the contract.
-    * @param pubKeys The relevant public keys that the initiator will be using
+    * @param contractInfo    Contract information consists of a map to be used to create CETs
+    * @param oracleInfo      The oracle public key and R point(s) to use to build the CETs as
+    *                        well as meta information to identify the oracle to be used in the contract.
+    * @param pubKeys         The relevant public keys that the initiator will be using
     * @param totalCollateral How much the initiator inputs into the contract.
-    * @param fundingInputs The set of UTXOs to be used as input to the fund transaction.
-    * @param changeAddress The address to use to send the change for the initiator.
-    * @param feeRate The fee rate to be used when computing fees for the different transactions.
-    * @param timeouts The set of timeouts for the CETs
+    * @param fundingInputs   The set of UTXOs to be used as input to the fund transaction.
+    * @param changeAddress   The address to use to send the change for the initiator.
+    * @param feeRate         The fee rate to be used when computing fees for the different transactions.
+    * @param timeouts        The set of timeouts for the CETs
     */
   case class DLCOffer(
       contractInfo: ContractInfo,
@@ -273,7 +290,7 @@ object DLCMessage {
               }
           }
           .get
-          .toMap
+          .toVector
 
       val fundingInputs =
         vec
@@ -401,8 +418,9 @@ object DLCMessage {
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
         fundingInputs = fundingInputs.map(_.toTLV),
         changeSPK = changeAddress.scriptPubKey,
-        cetSignatures = CETSignaturesV0TLV(cetSigs.outcomeSigs.values.toVector),
-        refundSignature = cetSigs.refundSig.signature
+        cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
+        refundSignature =
+          ECDigitalSignature.fromFrontOfBytes(cetSigs.refundSig.signature.bytes)
       )
     }
 
@@ -471,7 +489,7 @@ object DLCMessage {
         outcomes: Vector[Sha256Digest]): DLCAccept = {
       val outcomeSigs = accept.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
-          outcomes.zip(sigs).toMap
+          outcomes.zip(sigs)
       }
 
       DLCAccept(
@@ -486,7 +504,10 @@ object DLCMessage {
           BitcoinAddress.fromScriptPubKey(accept.changeSPK, network),
         cetSigs = CETSignatures(
           outcomeSigs,
-          PartialSignature(accept.fundingPubKey, accept.refundSignature)),
+          PartialSignature(
+            accept.fundingPubKey,
+            ECDigitalSignature(
+              accept.refundSignature.bytes :+ HashType.sigHashAll.byte))),
         tempContractId = accept.tempContractId
       )
     }
@@ -494,7 +515,7 @@ object DLCMessage {
     def fromTLV(accept: DLCAcceptTLV, offer: DLCOffer): DLCAccept = {
       fromTLV(accept,
               offer.changeAddress.networkParameters,
-              offer.contractInfo.outcomeValueMap.keys.toVector)
+              offer.contractInfo.keys)
     }
 
     def fromMessage(
@@ -582,7 +603,7 @@ object DLCMessage {
               val refundSig = getValue("refundSig")
 
               CETSignatures(
-                outcomeSigs.toMap,
+                outcomeSigs.toVector,
                 PartialSignature(refundSig.str)
               )
           }
@@ -612,7 +633,7 @@ object DLCMessage {
     def toTLV: DLCSignTLV = {
       DLCSignTLV(
         contractId = contractId,
-        cetSignatures = CETSignaturesV0TLV(cetSigs.outcomeSigs.values.toVector),
+        cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
         refundSignature = ECDigitalSignature.fromFrontOfBytes(
           cetSigs.refundSig.signature.bytes),
         fundingSignatures = fundingSigs.toTLV
@@ -664,7 +685,7 @@ object DLCMessage {
         fundingOutPoints: Vector[TransactionOutPoint]): DLCSign = {
       val outcomeSigs = sign.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
-          outcomes.zip(sigs).toMap
+          outcomes.zip(sigs)
       }
 
       val sigs = sign.fundingSignatures match {
@@ -688,7 +709,7 @@ object DLCMessage {
     def fromTLV(sign: DLCSignTLV, offer: DLCOffer): DLCSign = {
       fromTLV(sign,
               offer.pubKeys.fundingKey,
-              offer.contractInfo.outcomeValueMap.keys.toVector,
+              offer.contractInfo.keys,
               offer.fundingInputs.map(_.outPoint))
     }
 
@@ -717,7 +738,7 @@ object DLCMessage {
               val refundSig = getValue("refundSig")
 
               CETSignatures(
-                outcomeSigs.toMap,
+                outcomeSigs.toVector,
                 PartialSignature(refundSig.str)
               )
           }
@@ -752,4 +773,5 @@ object DLCMessage {
       DLCSign(cetSigs, FundingSignatures(fundingSigs), contractId)
     }
   }
+
 }

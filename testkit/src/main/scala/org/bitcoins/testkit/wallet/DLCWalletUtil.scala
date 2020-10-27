@@ -106,9 +106,9 @@ trait DLCWalletUtil {
                              sampleContractInfo,
                              dummyTimeouts)
 
-  lazy val dummyOutcomeSigs: Map[Sha256Digest, ECAdaptorSignature] =
-    Map(winHash -> ECAdaptorSignature.dummy,
-        loseHash -> ECAdaptorSignature.dummy)
+  lazy val dummyOutcomeSigs: Vector[(Sha256Digest, ECAdaptorSignature)] =
+    Vector(winHash -> ECAdaptorSignature.dummy,
+           loseHash -> ECAdaptorSignature.dummy)
 
   lazy val dummyCETSigs: CETSignatures =
     CETSignatures(dummyOutcomeSigs, dummyPartialSig)

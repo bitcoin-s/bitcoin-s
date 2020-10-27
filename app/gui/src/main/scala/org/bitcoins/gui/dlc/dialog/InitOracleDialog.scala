@@ -68,7 +68,7 @@ object InitOracleDialog {
           case (str, value) =>
             val hash = CryptoUtil.sha256(str)
             hash -> Satoshis(BigInt(value))
-        }.toMap
+        }.toVector
 
         val outcomes = inputs.map(_._1).toVector
 

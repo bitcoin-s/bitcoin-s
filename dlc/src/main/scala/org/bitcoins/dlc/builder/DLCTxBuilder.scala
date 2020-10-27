@@ -79,7 +79,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
 
   val acceptOutcomes: ContractInfo = ContractInfo(offerOutcomes.map {
     case (hash, amt) => (hash, (totalInput - amt).satoshis)
-  })
+  }.toVector)
 
   val sigPubKeys: Map[Sha256Digest, ECPublicKey] = offerOutcomes.keys.map {
     msg =>

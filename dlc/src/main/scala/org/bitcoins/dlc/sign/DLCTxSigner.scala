@@ -275,12 +275,12 @@ case class DLCTxSigner(
 
   /** Creates all of this party's CETSignatures */
   def createCETSigs(): Future[CETSignatures] = {
-    val cetSigFs = offer.contractInfo.keys.toVector.map { msg =>
+    val cetSigFs = offer.contractInfo.keys.map { msg =>
       createRemoteCETSig(msg).map(msg -> _)
     }
 
     for {
-      cetSigs <- Future.sequence(cetSigFs).map(_.toMap)
+      cetSigs <- Future.sequence(cetSigFs)
       refundSig <- createRefundSig()
     } yield CETSignatures(cetSigs, refundSig)
   }

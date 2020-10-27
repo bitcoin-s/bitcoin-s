@@ -761,9 +761,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     lazy val loseHash: Sha256Digest =
       CryptoUtil.sha256(ByteVector("LOSE".getBytes))
 
-    lazy val dummyOutcomeSigs: Map[Sha256Digest, ECAdaptorSignature] =
-      Map(winHash -> ECAdaptorSignature.dummy,
-          loseHash -> ECAdaptorSignature.dummy)
+    lazy val dummyOutcomeSigs: Vector[(Sha256Digest, ECAdaptorSignature)] =
+      Vector(winHash -> ECAdaptorSignature.dummy,
+             loseHash -> ECAdaptorSignature.dummy)
 
     val dummyAddress = "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2"
 
