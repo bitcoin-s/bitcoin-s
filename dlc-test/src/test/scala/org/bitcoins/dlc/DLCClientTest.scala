@@ -472,14 +472,13 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
         for {
           _ <- recoverToSucceededIf[RuntimeException] {
-            offerClient.dlcTxSigner.signCET(
-              outcome,
-              badAcceptCETSigs.outcomeSigs(outcome),
-              oracleSig)
+            offerClient.dlcTxSigner.signCET(outcome,
+                                            badAcceptCETSigs(outcome),
+                                            oracleSig)
           }
           _ <- recoverToSucceededIf[RuntimeException] {
             acceptClient.dlcTxSigner
-              .signCET(outcome, badOfferCETSigs.outcomeSigs(outcome), oracleSig)
+              .signCET(outcome, badOfferCETSigs(outcome), oracleSig)
           }
         } yield succeed
       }
@@ -494,12 +493,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
       }
     } yield {
       outcomes.foreach { outcome =>
-        assert(
-          offerVerifier.verifyCETSig(outcome,
-                                     acceptCETSigs.outcomeSigs(outcome)))
-        assert(
-          acceptVerifier.verifyCETSig(outcome,
-                                      offerCETSigs.outcomeSigs(outcome)))
+        assert(offerVerifier.verifyCETSig(outcome, acceptCETSigs(outcome)))
+        assert(acceptVerifier.verifyCETSig(outcome, offerCETSigs(outcome)))
       }
       assert(offerVerifier.verifyRefundSig(acceptCETSigs.refundSig))
       assert(offerVerifier.verifyRefundSig(offerCETSigs.refundSig))
@@ -507,19 +502,11 @@ class DLCClientTest extends BitcoinSAsyncTest {
       assert(acceptVerifier.verifyRefundSig(acceptCETSigs.refundSig))
 
       outcomes.foreach { outcome =>
-        assert(
-          !offerVerifier.verifyCETSig(outcome,
-                                      badAcceptCETSigs.outcomeSigs(outcome)))
-        assert(
-          !acceptVerifier.verifyCETSig(outcome,
-                                       badOfferCETSigs.outcomeSigs(outcome)))
+        assert(!offerVerifier.verifyCETSig(outcome, badAcceptCETSigs(outcome)))
+        assert(!acceptVerifier.verifyCETSig(outcome, badOfferCETSigs(outcome)))
 
-        assert(
-          !offerVerifier.verifyCETSig(outcome,
-                                      offerCETSigs.outcomeSigs(outcome)))
-        assert(
-          !acceptVerifier.verifyCETSig(outcome,
-                                       acceptCETSigs.outcomeSigs(outcome)))
+        assert(!offerVerifier.verifyCETSig(outcome, offerCETSigs(outcome)))
+        assert(!acceptVerifier.verifyCETSig(outcome, acceptCETSigs(outcome)))
       }
       assert(!offerVerifier.verifyRefundSig(badAcceptCETSigs.refundSig))
       assert(!offerVerifier.verifyRefundSig(badOfferCETSigs.refundSig))

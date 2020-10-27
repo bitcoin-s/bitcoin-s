@@ -240,10 +240,10 @@ object DLCTxGen {
       signedFundingTx <- acceptSigner.signFundingTx(offerFundingSigs)
       signedRefundTx <- offerSigner.signRefundTx(accpetCETSigs.refundSig)
       offerSignedCET <- offerSigner.signCET(outcome,
-                                            accpetCETSigs.outcomeSigs(outcome),
+                                            accpetCETSigs(outcome),
                                             inputs.params.oracleSignature)
       acceptSignedCET <- acceptSigner.signCET(outcome,
-                                              offerCETSigs.outcomeSigs(outcome),
+                                              offerCETSigs(outcome),
                                               inputs.params.oracleSignature)
     } yield {
       val accept = acceptWithoutSigs.withSigs(accpetCETSigs)

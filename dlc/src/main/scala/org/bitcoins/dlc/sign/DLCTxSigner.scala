@@ -280,7 +280,7 @@ case class DLCTxSigner(
     }
 
     for {
-      cetSigs <- Future.sequence(cetSigFs).map(_.toMap)
+      cetSigs <- Future.sequence(cetSigFs)
       refundSig <- createRefundSig()
     } yield CETSignatures(cetSigs, refundSig)
   }

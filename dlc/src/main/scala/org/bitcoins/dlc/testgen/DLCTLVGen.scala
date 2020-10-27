@@ -195,7 +195,7 @@ object DLCTLVGen {
       outcomes: Vector[Sha256Digest] = DLCTestUtil.genOutcomes(3).map(_._2),
       fundingPubKey: ECPublicKey =
         ECPublicKey.freshPublicKey): CETSignatures = {
-    CETSignatures(outcomes.map(outcome => outcome -> adaptorSig).toMap,
+    CETSignatures(outcomes.map(outcome => outcome -> adaptorSig),
                   partialSig(fundingPubKey, sigHashByte = false))
   }
 

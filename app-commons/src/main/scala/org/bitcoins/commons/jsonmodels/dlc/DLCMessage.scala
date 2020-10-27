@@ -418,7 +418,7 @@ object DLCMessage {
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
         fundingInputs = fundingInputs.map(_.toTLV),
         changeSPK = changeAddress.scriptPubKey,
-        cetSignatures = CETSignaturesV0TLV(cetSigs.outcomeSigs.values.toVector),
+        cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
         refundSignature =
           ECDigitalSignature.fromFrontOfBytes(cetSigs.refundSig.signature.bytes)
       )
@@ -489,7 +489,7 @@ object DLCMessage {
         outcomes: Vector[Sha256Digest]): DLCAccept = {
       val outcomeSigs = accept.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
-          outcomes.zip(sigs).toMap
+          outcomes.zip(sigs)
       }
 
       DLCAccept(
@@ -603,7 +603,7 @@ object DLCMessage {
               val refundSig = getValue("refundSig")
 
               CETSignatures(
-                outcomeSigs.toMap,
+                outcomeSigs.toVector,
                 PartialSignature(refundSig.str)
               )
           }
@@ -633,7 +633,7 @@ object DLCMessage {
     def toTLV: DLCSignTLV = {
       DLCSignTLV(
         contractId = contractId,
-        cetSignatures = CETSignaturesV0TLV(cetSigs.outcomeSigs.values.toVector),
+        cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
         refundSignature = ECDigitalSignature.fromFrontOfBytes(
           cetSigs.refundSig.signature.bytes),
         fundingSignatures = fundingSigs.toTLV
@@ -685,7 +685,7 @@ object DLCMessage {
         fundingOutPoints: Vector[TransactionOutPoint]): DLCSign = {
       val outcomeSigs = sign.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
-          outcomes.zip(sigs).toMap
+          outcomes.zip(sigs)
       }
 
       val sigs = sign.fundingSignatures match {
@@ -738,7 +738,7 @@ object DLCMessage {
               val refundSig = getValue("refundSig")
 
               CETSignatures(
-                outcomeSigs.toMap,
+                outcomeSigs.toVector,
                 PartialSignature(refundSig.str)
               )
           }

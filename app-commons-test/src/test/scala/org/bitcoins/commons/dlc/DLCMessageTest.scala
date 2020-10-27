@@ -10,8 +10,6 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
-import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
-import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -61,7 +59,7 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         DLCPublicKeys(dummyPubKey, dummyAddress),
         Vector.empty,
         dummyAddress,
-        CETSignatures(Map(dummyHash -> ECAdaptorSignature.dummy), dummySig),
+        CETSignatures(Vector(dummyHash -> ECAdaptorSignature.dummy), dummySig),
         Sha256Digest.empty
       )
     )

@@ -338,7 +338,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             val inputRefs = fundingInputs.zip(prevTxs).map {
               case (input, tx) => input.toFundingInput(tx.transaction)
             }
-            val outcomeSigs = outcomeSigDbs.map(_.toTuple).toMap
+            val outcomeSigs = outcomeSigDbs.map(_.toTuple)
 
             dlcAcceptDb.toDLCAccept(inputRefs,
                                     outcomeSigs,
@@ -455,7 +455,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ <- dlcInputsDAO.createAll(offerInputs ++ acceptInputs)
       _ <- dlcOfferDAO.create(dlcOfferDb)
       _ <- dlcAcceptDAO.create(dlcAcceptDb)
-      _ <- dlcSigsDAO.createAll(sigsDbs.toVector)
+      _ <- dlcSigsDAO.createAll(sigsDbs)
       _ <- dlcRefundSigDAO.create(refundSigDb)
       _ <- updateDLCContractIds(offer, accept)
     } yield accept
@@ -489,7 +489,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
         val sigsDbs = accept.cetSigs.outcomeSigs
           .map(sig => DLCCETSignatureDb(paramHash, sig._1, sig._2))
-          .toVector
 
         val refundSigDb = DLCRefundSigDb(paramHash,
                                          isInitiator = false,
@@ -645,7 +644,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                                          sign.cetSigs.refundSig)
         val sigsDbs = sign.cetSigs.outcomeSigs
           .map(sig => DLCCETSignatureDb(dlc.paramHash, sig._1, sig._2))
-          .toVector
 
         for {
           isRefundSigValid <- verifyRefundSig(sign)
@@ -890,7 +888,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
     executorFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
       .flatMap { executor =>
-        val outcomeSigs = outcomeSigDbs.map(_.toTuple).toMap
+        val outcomeSigs = outcomeSigDbs.map(_.toTuple)
 
         val refundSig =
           refundSigs.find(_.isInitiator == !dlcDb.isInitiator).get.refundSig
