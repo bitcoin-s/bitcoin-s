@@ -9,6 +9,7 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.Implicits.GeneratorOps
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalacheck.Gen
 
@@ -48,6 +49,8 @@ object KeyManagerTestUtil {
     if (attempt.isEmpty) bip39PasswordNonEmpty
     else attempt
   }
+
+  def aesPassword: AesPassword = CryptoGenerators.aesPassword.sampleSome
 
   val badPassphrase: AesPassword = BIP39KeyManager.badPassphrase
 }

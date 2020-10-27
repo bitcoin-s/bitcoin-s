@@ -91,6 +91,7 @@ object BIP39KeyManager
 
   /** Initializes the mnemonic seed and saves it to file */
   override def initializeWithEntropy(
+      aesPassword: AesPassword,
       entropy: BitVector,
       bip39PasswordOpt: Option[String],
       kmParams: KeyManagerParams): Either[
@@ -123,7 +124,7 @@ object BIP39KeyManager
           EncryptedMnemonic] =
           mnemonicE.map { mnemonic =>
             EncryptedMnemonicHelper.encrypt(DecryptedMnemonic(mnemonic, time),
-                                            badPassphrase)
+                                            aesPassword)
           }
 
         for {
@@ -146,7 +147,7 @@ object BIP39KeyManager
           s"Seed file already exists, attempting to initialize form existing seed file=$seedPath.")
 
         WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath,
-                                              badPassphrase) match {
+                                              aesPassword) match {
           case Right(mnemonic) =>
             CompatRight(
               BIP39KeyManager(mnemonic = mnemonic.mnemonicCode,
@@ -161,7 +162,7 @@ object BIP39KeyManager
       }
 
     //verify we can unlock it for a sanity check
-    val unlocked = BIP39LockedKeyManager.unlock(passphrase = badPassphrase,
+    val unlocked = BIP39LockedKeyManager.unlock(passphrase = aesPassword,
                                                 bip39PasswordOpt =
                                                   bip39PasswordOpt,
                                                 kmParams = kmParams)

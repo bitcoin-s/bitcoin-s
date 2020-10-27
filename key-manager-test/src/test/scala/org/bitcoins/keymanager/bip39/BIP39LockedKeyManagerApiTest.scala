@@ -13,10 +13,12 @@ class BIP39LockedKeyManagerApiTest extends KeyManagerApiUnitTest {
 
   it must "be able to read a locked mnemonic from disk" in {
     val bip39PwOpt = KeyManagerTestUtil.bip39PasswordOpt
-    val km = withInitializedKeyManager(bip39PasswordOpt = bip39PwOpt)
+    val aesPassword = KeyManagerTestUtil.aesPassword
+    val km = withInitializedKeyManager(aesPassword = aesPassword,
+                                       bip39PasswordOpt = bip39PwOpt)
 
     val unlockedE =
-      BIP39LockedKeyManager.unlock(KeyManagerTestUtil.badPassphrase,
+      BIP39LockedKeyManager.unlock(aesPassword,
                                    bip39PasswordOpt = bip39PwOpt,
                                    km.kmParams)
 

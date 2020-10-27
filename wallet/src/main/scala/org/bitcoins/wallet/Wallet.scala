@@ -732,10 +732,11 @@ object Wallet extends WalletLogger {
   def initialize(wallet: Wallet, bip39PasswordOpt: Option[String])(implicit
       walletAppConfig: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
+    val password = walletAppConfig.aesPassword
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later
     // and still have their wallet work
-    def createAccountFutures =
+    def createAccountFutures: Future[Vector[Future[AccountDb]]] =
       for {
         _ <- walletAppConfig.start()
         accounts = HDPurposes.singleSigPurposes.map { purpose =>
@@ -744,7 +745,7 @@ object Wallet extends WalletLogger {
           val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
           val kmE = {
             BIP39KeyManager.fromParams(kmParams = kmParams,
-                                       password = BIP39KeyManager.badPassphrase,
+                                       password = password,
                                        bip39PasswordOpt = bip39PasswordOpt)
           }
           kmE match {

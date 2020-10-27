@@ -13,6 +13,7 @@ import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
   KeyManagerParams
 }
+import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 import org.bitcoins.keymanager.WalletStorage
@@ -106,6 +107,12 @@ case class WalletAppConfig(
 
   lazy val bip39PasswordOpt: Option[String] = {
     config.getStringOrNone("bitcoin-s.wallet.bip39password")
+  }
+
+  lazy val aesPassword: AesPassword = {
+    val passOpt = config.getStringOrNone("bitcoin-s.wallet.aesPassword")
+    val aesPasswordOpt = passOpt.flatMap(AesPassword.fromStringOpt)
+    aesPasswordOpt.getOrElse(BIP39KeyManager.badPassphrase)
   }
 
   override def start(): Future[Unit] = {
@@ -218,10 +225,12 @@ object WalletAppConfig
       walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
     walletConf.hasWallet().flatMap { walletExists =>
+      val aesPassword = walletConf.aesPassword
+
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
         // TODO change me when we implement proper password handling
-        BIP39LockedKeyManager.unlock(BIP39KeyManager.badPassphrase,
+        BIP39LockedKeyManager.unlock(aesPassword,
                                      walletConf.bip39PasswordOpt,
                                      walletConf.kmParams) match {
           case Right(km) =>
@@ -235,7 +244,8 @@ object WalletAppConfig
         logger.info(s"Initializing key manager")
         val bip39PasswordOpt = walletConf.bip39PasswordOpt
         val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
-          BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
+          BIP39KeyManager.initialize(aesPassword = aesPassword,
+                                     kmParams = walletConf.kmParams,
                                      bip39PasswordOpt = bip39PasswordOpt)
 
         val keyManager = keyManagerE match {

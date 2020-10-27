@@ -46,15 +46,16 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
   it must "initialize the key manager" in {
     val entropy = MnemonicCode.getEntropy256Bits
-    val keyManager = withInitializedKeyManager(entropy = entropy)
+    val aesPassword = KeyManagerTestUtil.aesPassword
+    val keyManager =
+      withInitializedKeyManager(aesPassword = aesPassword, entropy = entropy)
     val seedPath = keyManager.kmParams.seedPath
     //verify we wrote the seed
     assert(WalletStorage.seedExists(seedPath),
            "KeyManager did not write the seed to disk!")
 
     val decryptedE =
-      WalletStorage.decryptMnemonicFromDisk(seedPath,
-                                            KeyManagerTestUtil.badPassphrase)
+      WalletStorage.decryptMnemonicFromDisk(seedPath, aesPassword)
 
     val mnemonic = decryptedE match {
       case Right(m) => m
@@ -86,7 +87,8 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     val directXpub = direct.getRootXPub
 
     val api = BIP39KeyManager
-      .initializeWithEntropy(entropy = mnemonic.toEntropy,
+      .initializeWithEntropy(aesPassword = KeyManagerTestUtil.aesPassword,
+                             entropy = mnemonic.toEntropy,
                              bip39PasswordOpt = None,
                              kmParams = kmParams)
       .getOrElse(fail())
@@ -109,7 +111,10 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     val directXpub = direct.getRootXPub
 
     val api = BIP39KeyManager
-      .initializeWithEntropy(mnemonic.toEntropy, Some(bip39Pw), kmParams)
+      .initializeWithEntropy(aesPassword = KeyManagerTestUtil.aesPassword,
+                             mnemonic.toEntropy,
+                             Some(bip39Pw),
+                             kmParams)
       .getOrElse(fail())
 
     val apiXpub = api.getRootXPub
@@ -156,7 +161,10 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     val directXpub = direct.getRootXPub
 
     val api = BIP39KeyManager
-      .initializeWithMnemonic(mnemonic, Some(bip39Pw), kmParams)
+      .initializeWithMnemonic(aesPassword = KeyManagerTestUtil.aesPassword,
+                              mnemonic,
+                              Some(bip39Pw),
+                              kmParams)
       .getOrElse(fail())
 
     val apiXpub = api.getRootXPub
@@ -209,6 +217,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     val badEntropy = BitVector.empty
 
     val init = BIP39KeyManager.initializeWithEntropy(
+      aesPassword = KeyManagerTestUtil.aesPassword,
       entropy = badEntropy,
       bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt,
       kmParams = buildParams())
@@ -218,11 +227,13 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
   it must "read an existing seed from disk if we call initialize and one already exists" in {
     val seedPath = KeyManagerTestUtil.tmpSeedPath
+    val aesPassword = KeyManagerTestUtil.aesPassword
     val kmParams =
       keymanagement.KeyManagerParams(seedPath, HDPurposes.SegWit, RegTest)
     val entropy = MnemonicCode.getEntropy256Bits
     val passwordOpt = Some(KeyManagerTestUtil.bip39Password)
-    val keyManager = withInitializedKeyManager(kmParams = kmParams,
+    val keyManager = withInitializedKeyManager(aesPassword = aesPassword,
+                                               kmParams = kmParams,
                                                entropy = entropy,
                                                bip39PasswordOpt = passwordOpt)
 
@@ -233,7 +244,9 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
     //now let's try to initialize again, our xpub should be exactly the same
     val keyManager2E =
-      BIP39KeyManager.initialize(kmParams, bip39PasswordOpt = passwordOpt)
+      BIP39KeyManager.initialize(aesPassword = aesPassword,
+                                 kmParams,
+                                 bip39PasswordOpt = passwordOpt)
     keyManager2E match {
       case Left(_) =>
         fail(s"Must have been able to intiialize the key manager for test")
@@ -245,11 +258,13 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
   it must "fail read an existing seed from disk if it is malformed" in {
     val seedPath = KeyManagerTestUtil.tmpSeedPath
+    val aesPass = KeyManagerTestUtil.aesPassword
     val kmParams =
       keymanagement.KeyManagerParams(seedPath, HDPurposes.SegWit, RegTest)
     val entropy = MnemonicCode.getEntropy256Bits
     val passwordOpt = Some(KeyManagerTestUtil.bip39Password)
-    val keyManager = withInitializedKeyManager(kmParams = kmParams,
+    val keyManager = withInitializedKeyManager(aesPassword = aesPass,
+                                               kmParams = kmParams,
                                                entropy = entropy,
                                                bip39PasswordOpt = passwordOpt)
 
@@ -261,7 +276,9 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
     //now let's try to initialize again, it should fail with a JsonParsingError
     val keyManager2E =
-      BIP39KeyManager.initialize(kmParams, bip39PasswordOpt = passwordOpt)
+      BIP39KeyManager.initialize(aesPass,
+                                 kmParams,
+                                 bip39PasswordOpt = passwordOpt)
     keyManager2E match {
       case Left(InitializeKeyManagerError.FailedToReadWrittenSeed(unlockErr)) =>
         unlockErr match {
