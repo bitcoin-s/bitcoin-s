@@ -95,7 +95,8 @@ object SerializedTransaction {
                     script = Some(p2wsh.redeemScript.asm.toVector),
                     pubKey = None,
                     signature = None,
-                    stack = Some(p2wsh.stack.toVector.tail)))
+                    stack = Some(p2wsh.stack.toVector.reverse.init)
+                  ))
             }
         }
 
