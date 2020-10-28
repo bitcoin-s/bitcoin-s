@@ -141,6 +141,9 @@ bitcoin-s {
         # You can optionally set a BIP 39 password
         # bip39password = "changeMe"
 
+        # Password that your seed is encrypted in
+        aespassword = changeMe
+
         defaultAccountType = legacy # legacy, segwit, nested-segwit
 
         bloomFalsePositiveRate = 0.0001 # percentage
