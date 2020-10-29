@@ -158,6 +158,32 @@ bitcoin-s {
 
    }
 
+    # Bitcoin-S provides manny different fee providers
+    # You can configure your server to use any of them
+    # Below is some examples of different options
+    fee-provider {
+        # name = mempoolspace # Uses mempool.space's api
+        # Mempool.Space has 3 different modes
+        # 0: Hour Fee Target
+        # 1: Half Hour Fee Target
+        # 2: Fastest Fee Target
+        # target = 0
+
+        # name = bitcoinerlive # Uses bitcoiner.live's api
+        # Bitcoiner Live's target refers to minutes to confirmations
+        # There is a set of possible options:
+        # 30, 60, 120, 180, 360, 720, 1440
+        # target = 60
+
+        # name = bitgo # Uses BitGo's api
+        # The target is optional for BitGo
+        # It refers to the expected number of blocks until confirmation
+        # target = 6
+
+        # name = constant # A constant fee rate in sats/vbyte
+        # target = 1 # Will always use 1 sat/vbyte
+    }
+
     server {
         # The port we bind our rpc server on
         rpcport = 9999

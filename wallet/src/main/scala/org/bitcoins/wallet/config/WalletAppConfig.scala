@@ -14,7 +14,7 @@ import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerParams
 }
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
-import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
+import org.bitcoins.db._
 import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.db.WalletDbManagement
@@ -96,6 +96,13 @@ case class WalletAppConfig(
             s"requiredConfirmations cannot be less than 1, got: $confs")
     confs
   }
+
+  lazy val feeProviderNameOpt: Option[String] = {
+    config.getStringOrNone("bitcoin-s.fee-provider.name")
+  }
+
+  lazy val feeProviderTargetOpt: Option[Int] =
+    config.getIntOpt("bitcoin-s.fee-provider.target")
 
   override def start(): Future[Unit] = {
     for {
