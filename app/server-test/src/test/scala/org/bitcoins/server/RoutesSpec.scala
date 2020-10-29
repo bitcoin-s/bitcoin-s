@@ -826,15 +826,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             Num(2500),
             Num(1),
             Num(contractMaturity),
-            Num(contractTimeout),
-            Bool(true)
+            Num(contractTimeout)
           )
         ))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"\\"{\\\\\\"contractInfo\\\\\\":[{\\\\\\"sha256\\\\\\":\\\\\\"${contractInfo.keys.head.hex}\\\\\\",\\\\\\"sats\\\\\\":${contractInfo.values.head.toLong}},{\\\\\\"sha256\\\\\\":\\\\\\"${contractInfo.keys.last.hex}\\\\\\",\\\\\\"sats\\\\\\":${contractInfo.values.last.toLong}}],\\\\\\"oracleInfo\\\\\\":\\\\\\"$oracleInfoStr\\\\\\",\\\\\\"pubKeys\\\\\\":{\\\\\\"fundingKey\\\\\\":\\\\\\"${dummyKey.hex}\\\\\\",\\\\\\"payoutAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\"},\\\\\\"totalCollateral\\\\\\":2500,\\\\\\"fundingInputs\\\\\\":[{\\\\\\"prevTx\\\\\\":\\\\\\"${fundingInput.prevTx.hex}\\\\\\",\\\\\\"prevTxVout\\\\\\":${fundingInput.prevTxVout.toInt},\\\\\\"sequence\\\\\\":${fundingInput.sequence.toInt},\\\\\\"maxWitnessLength\\\\\\":${fundingInput.maxWitnessLen.toInt}},{\\\\\\"prevTx\\\\\\":\\\\\\"${fundingInput.prevTx.hex}\\\\\\",\\\\\\"prevTxVout\\\\\\":${fundingInput.prevTxVout.toInt},\\\\\\"sequence\\\\\\":${fundingInput.sequence.toInt},\\\\\\"maxWitnessLength\\\\\\":${fundingInput.maxWitnessLen.toInt}}],\\\\\\"changeAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\",\\\\\\"feeRate\\\\\\":1,\\\\\\"timeouts\\\\\\":{\\\\\\"contractMaturity\\\\\\":$contractMaturity,\\\\\\"contractTimeout\\\\\\":$contractTimeout}}\\"","error":null}""")
+          String] == s"""{"result":{"contractInfo":[{"sha256":"${contractInfo.keys.head.hex}","sats":${contractInfo.values.head.toLong}},{"sha256":"${contractInfo.keys.last.hex}","sats":${contractInfo.values.last.toLong}}],"oracleInfo":"$oracleInfoStr","pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"totalCollateral":2500,"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}},{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","feeRate":1,"timeouts":{"contractMaturity":$contractMaturity,"contractTimeout":$contractTimeout}},"error":null}""")
       }
     }
 
@@ -861,12 +860,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         )
 
       val route = walletRoutes.handleCommand(
-        ServerCommand("acceptdlcoffer", Arr(Str(offerStr), Bool(true))))
+        ServerCommand("acceptdlcoffer", Arr(Str(offerStr))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"\\"{\\\\\\"totalCollateral\\\\\\":${sats.toLong},\\\\\\"pubKeys\\\\\\":{\\\\\\"fundingKey\\\\\\":\\\\\\"${dummyKey.hex}\\\\\\",\\\\\\"payoutAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\"},\\\\\\"fundingInputs\\\\\\":[{\\\\\\"prevTx\\\\\\":\\\\\\"${fundingInput.prevTx.hex}\\\\\\",\\\\\\"prevTxVout\\\\\\":${fundingInput.prevTxVout.toInt},\\\\\\"sequence\\\\\\":${fundingInput.sequence.toInt},\\\\\\"maxWitnessLength\\\\\\":${fundingInput.maxWitnessLen.toInt}}],\\\\\\"changeAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\",\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"tempContractId\\\\\\":\\\\\\"${Sha256Digest.empty.hex}\\\\\\"}\\"","error":null}""")
+          String] == s"""{"result":{"totalCollateral":${sats.toLong},"pubKeys":{"fundingKey":"${dummyKey.hex}","payoutAddress":"$dummyAddress"},"fundingInputs":[{"prevTx":"${fundingInput.prevTx.hex}","prevTxVout":${fundingInput.prevTxVout.toInt},"sequence":${fundingInput.sequence.toInt},"maxWitnessLength":${fundingInput.maxWitnessLen.toInt}}],"changeAddress":"$dummyAddress","cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"tempContractId":"${Sha256Digest.empty.hex}"},"error":null}""")
       }
     }
 
@@ -887,12 +886,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             )))
 
       val route = walletRoutes.handleCommand(
-        ServerCommand("signdlc", Arr(Str(acceptStr), Bool(true))))
+        ServerCommand("signdlc", Arr(Str(acceptStr))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"\\"{\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyAdaptorSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"fundingSigs\\\\\\":{\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\":\\\\\\"${dummyScriptWitness.hex}\\\\\\"},\\\\\\"contractId\\\\\\":\\\\\\"${paramHash.hex}\\\\\\"}\\"","error":null}""")
+          String] == s"""{"result":{"cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyAdaptorSig.hex}"},{"${loseHash.hex}":"${dummyAdaptorSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"fundingSigs":{"${EmptyTransactionOutPoint.hex}":"${dummyScriptWitness.hex}"},"contractId":"${paramHash.hex}"},"error":null}""")
       }
     }
 

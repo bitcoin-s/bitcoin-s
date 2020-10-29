@@ -1,11 +1,9 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.Materializer
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
@@ -31,21 +29,6 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
 
   implicit val materializer: Materializer =
     Materializer.createMaterializer(system)
-
-  /** Takes a string and turns into an escaped version of itself */
-  private def escape(raw: String): String = {
-    import scala.reflect.runtime.universe._
-    Literal(Constant(raw)).toString
-  }
-
-  private def handleDLCMessage(
-      dlcMessage: DLCMessage,
-      escaped: Boolean): HttpEntity.Strict = {
-    val json = dlcMessage.toJson
-    val sendString =
-      if (escaped) escape(json.toString()) else json.render(indent = 2)
-    Server.httpSuccess(sendString)
-  }
 
   private def handleBroadcastable(
       tx: Transaction,
@@ -235,8 +218,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
                              collateral,
                              feeRateOpt,
                              locktime,
-                             refundLT,
-                             escaped)) =>
+                             refundLT)) =>
           complete {
             wallet
               .createDLCOffer(oracleInfo,
@@ -245,7 +227,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
                               feeRateOpt,
                               locktime,
                               refundLT)
-              .map(handleDLCMessage(_, escaped))
+              .map { offer =>
+                Server.httpSuccess(offer.toJson)
+              }
           }
       }
 
@@ -253,11 +237,13 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
       AcceptDLCOffer.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(AcceptDLCOffer(offer, escaped)) =>
+        case Success(AcceptDLCOffer(offer)) =>
           complete {
             wallet
               .acceptDLCOffer(offer)
-              .map(handleDLCMessage(_, escaped))
+              .map { accept =>
+                Server.httpSuccess(accept.toJson)
+              }
           }
       }
 
@@ -265,11 +251,13 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
       SignDLC.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(SignDLC(accept, escaped)) =>
+        case Success(SignDLC(accept)) =>
           complete {
             wallet
               .signDLC(accept)
-              .map(handleDLCMessage(_, escaped))
+              .map { sign =>
+                Server.httpSuccess(sign.toJson)
+              }
           }
       }
 
