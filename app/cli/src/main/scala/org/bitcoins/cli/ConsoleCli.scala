@@ -145,8 +145,7 @@ object ConsoleCli {
                                      Satoshis.zero,
                                      None,
                                      UInt32.zero,
-                                     UInt32.zero,
-                                     escaped = false)))
+                                     UInt32.zero)))
         .text("Creates a DLC offer that another party can accept")
         .children(
           opt[OracleInfo]("oracleInfo")
@@ -196,19 +195,11 @@ object ConsoleCli {
                 case offer: CreateDLCOffer =>
                   offer.copy(refundLT = refundLT)
                 case other => other
-              })),
-          opt[Unit]("escaped")
-            .action((_, conf) =>
-              conf.copy(command = conf.command match {
-                case create: CreateDLCOffer =>
-                  create.copy(escaped = true)
-                case other => other
               }))
         ),
       cmd("acceptdlcoffer")
         .hidden()
-        .action((_, conf) =>
-          conf.copy(command = AcceptDLCOffer(null, escaped = false)))
+        .action((_, conf) => conf.copy(command = AcceptDLCOffer(null)))
         .text("Accepts a DLC offer given from another party")
         .children(
           opt[DLCOffer]("offer")
@@ -218,19 +209,11 @@ object ConsoleCli {
                 case accept: AcceptDLCOffer =>
                   accept.copy(offer = offer)
                 case other => other
-              })),
-          opt[Unit]("escaped")
-            .action((_, conf) =>
-              conf.copy(command = conf.command match {
-                case accept: AcceptDLCOffer =>
-                  accept.copy(escaped = true)
-                case other => other
               }))
         ),
       cmd("signdlc")
         .hidden()
-        .action((_, conf) =>
-          conf.copy(command = SignDLC(null, escaped = false)))
+        .action((_, conf) => conf.copy(command = SignDLC(null)))
         .text("Signs a DLC")
         .children(
           opt[DLCAccept]("accept")
@@ -239,13 +222,6 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case signDLC: SignDLC =>
                   signDLC.copy(accept = accept)
-                case other => other
-              })),
-          opt[Unit]("escaped")
-            .action((_, conf) =>
-              conf.copy(command = conf.command match {
-                case signDLC: SignDLC =>
-                  signDLC.copy(escaped = true)
                 case other => other
               }))
         ),
@@ -933,8 +909,7 @@ object ConsoleCli {
                           collateral,
                           feeRateOpt,
                           locktime,
-                          refundLT,
-                          escaped) =>
+                          refundLT) =>
         RequestParam(
           "createdlcoffer",
           Seq(
@@ -943,15 +918,13 @@ object ConsoleCli {
             up.writeJs(collateral),
             up.writeJs(feeRateOpt),
             up.writeJs(locktime),
-            up.writeJs(refundLT),
-            up.writeJs(escaped)
+            up.writeJs(refundLT)
           )
         )
-      case AcceptDLCOffer(offer, escaped) =>
-        RequestParam("acceptdlcoffer",
-                     Seq(up.writeJs(offer), up.writeJs(escaped)))
-      case SignDLC(accept, escaped) =>
-        RequestParam("signdlc", Seq(up.writeJs(accept), up.writeJs(escaped)))
+      case AcceptDLCOffer(offer) =>
+        RequestParam("acceptdlcoffer", Seq(up.writeJs(offer)))
+      case SignDLC(accept) =>
+        RequestParam("signdlc", Seq(up.writeJs(accept)))
       case AddDLCSigs(sigs) =>
         RequestParam("adddlcsigs", Seq(up.writeJs(sigs)))
       case ExecuteDLC(eventId, oracleSig, noBroadcast) =>
@@ -1169,10 +1142,6 @@ sealed abstract class CliCommand
 object CliCommand {
   case object NoCommand extends CliCommand
 
-  trait JsonResponse {
-    def escaped: Boolean
-  }
-
   trait Broadcastable {
     def noBroadcast: Boolean
   }
@@ -1184,18 +1153,12 @@ object CliCommand {
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
-      refundLT: UInt32,
-      escaped: Boolean)
+      refundLT: UInt32)
       extends CliCommand
-      with JsonResponse
 
-  case class AcceptDLCOffer(offer: DLCOffer, escaped: Boolean)
-      extends CliCommand
-      with JsonResponse
+  case class AcceptDLCOffer(offer: DLCOffer) extends CliCommand
 
-  case class SignDLC(accept: DLCAccept, escaped: Boolean)
-      extends CliCommand
-      with JsonResponse
+  case class SignDLC(accept: DLCAccept) extends CliCommand
 
   case class AddDLCSigs(sigs: DLCSign) extends CliCommand
 
