@@ -302,7 +302,10 @@ class BitcoinSServerMain(override val args: Array[String])
     server.start()
   }
 
-  def getFeeProviderOrElse(default: FeeRateApi)(implicit
+  /** Gets a Fee Provider from the given wallet app config
+    * Returns default if there is no config set
+    */
+  def getFeeProviderOrElse(default: => FeeRateApi)(implicit
       system: ActorSystem,
       walletConf: WalletAppConfig): FeeRateApi = {
     val feeProviderNameOpt =
@@ -312,15 +315,15 @@ class BitcoinSServerMain(override val args: Array[String])
         case (None, None) | (None, Some(_)) =>
           default
         case (Some(BitcoinerLive), None) =>
-          BitcoinerLiveFeeRateProvider(60)
+          BitcoinerLiveFeeRateProvider.fromBlockTarget(6)
         case (Some(BitcoinerLive), Some(target)) =>
-          BitcoinerLiveFeeRateProvider(target)
+          BitcoinerLiveFeeRateProvider.fromBlockTarget(target)
         case (Some(BitGo), targetOpt) =>
           BitGoFeeRateProvider(targetOpt)
         case (Some(MempoolSpace), None) =>
           MempoolSpaceProvider(HourFeeTarget)
-        case (Some(MempoolSpace), Some(num)) =>
-          val target = MempoolSpaceTarget.fromInt(num)
+        case (Some(MempoolSpace), Some(blockTarget)) =>
+          val target = MempoolSpaceTarget.fromBlockTarget(blockTarget)
           MempoolSpaceProvider(target)
         case (Some(Constant), Some(num)) =>
           ConstantFeeRateProvider(SatoshisPerVirtualByte.fromLong(num))

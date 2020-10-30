@@ -50,13 +50,16 @@ object MempoolSpaceTarget {
 
   final case object HourFeeTarget extends MempoolSpaceTarget
 
-  def fromInt(int: Int): MempoolSpaceTarget = {
-    int match {
-      case 0 => HourFeeTarget
-      case 1 => HalfHourFeeTarget
-      case 2 => FastestFeeTarget
-      case unknown: Int =>
-        throw new IllegalArgumentException(s"Unknown target, got $unknown")
+  def fromBlockTarget(blocks: Int): MempoolSpaceTarget = {
+    if (blocks <= 0) {
+      throw new IllegalArgumentException(
+        s"Cannot have a negative or zero block target, got $blocks")
+    } else if (blocks < 3) {
+      FastestFeeTarget
+    } else if (blocks < 6) {
+      HalfHourFeeTarget
+    } else {
+      HourFeeTarget
     }
   }
 }

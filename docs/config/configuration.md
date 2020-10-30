@@ -163,17 +163,14 @@ bitcoin-s {
     # Below is some examples of different options
     fee-provider {
         # name = mempoolspace # Uses mempool.space's api
-        # Mempool.Space has 3 different modes
-        # 0: Hour Fee Target
-        # 1: Half Hour Fee Target
-        # 2: Fastest Fee Target
-        # target = 0
+        # The target is optional for mempool.space
+        # It refers to the expected number of blocks until confirmation
+        # target = 6
 
         # name = bitcoinerlive # Uses bitcoiner.live's api
-        # Bitcoiner Live's target refers to minutes to confirmations
-        # There is a set of possible options:
-        # 30, 60, 120, 180, 360, 720, 1440
-        # target = 60
+        # The target is optional for Bitcoiner Live
+        # It refers to the expected number of blocks until confirmation
+        # target = 6
 
         # name = bitgo # Uses BitGo's api
         # The target is optional for BitGo
