@@ -542,7 +542,8 @@ case class FundingSignaturesV0TLV(witnesses: Vector[ScriptWitnessV0])
   override val value: ByteVector = {
     witnesses.foldLeft(UInt16(witnesses.length).bytes) {
       case (bytes, witness) =>
-        witness.stack.foldLeft(bytes ++ UInt16(witness.stack.length).bytes) {
+        witness.stack.reverse.foldLeft(
+          bytes ++ UInt16(witness.stack.length).bytes) {
           case (bytes, stackElem) =>
             bytes ++ UInt16(stackElem.length).bytes ++ stackElem
         }
@@ -563,7 +564,7 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
         val stackElemLength = UInt16(iter.takeBits(16))
         iter.take(stackElemLength.toInt)
       }
-      ScriptWitness(stack) match {
+      ScriptWitness(stack.reverse) match {
         case EmptyScriptWitness =>
           throw new IllegalArgumentException(s"Invalid witness: $stack")
         case witness: ScriptWitnessV0 => witness

@@ -206,10 +206,11 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "witnesses" -> MultiElement(witnesses.map { witness =>
             NamedMultiElement(
               "stackLen" -> Element(UInt16(witness.stack.length)),
-              "stack" -> MultiElement(witness.stack.toVector.map { stackElem =>
-                NamedMultiElement(
-                  "stackElementLen" -> Element(UInt16(stackElem.length)),
-                  "stackElement" -> stackElem)
+              "stack" -> MultiElement(witness.stack.toVector.reverse.map {
+                stackElem =>
+                  NamedMultiElement(
+                    "stackElementLen" -> Element(UInt16(stackElem.length)),
+                    "stackElement" -> stackElem)
               })
             )
           })
