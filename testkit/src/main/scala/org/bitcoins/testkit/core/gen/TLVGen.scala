@@ -100,7 +100,7 @@ trait TLVGen {
       outcomes <- Gen.listOfN(numOutcomes, CryptoGenerators.sha256Digest)
       totalInput <-
         Gen
-          .choose(numOutcomes + 1, Long.MaxValue)
+          .choose(numOutcomes + 1, Long.MaxValue / 10000L)
           .map(Satoshis.apply)
       (contractInfo, _) =
         DLCTestUtil.genContractInfos(outcomes.toVector, totalInput)
