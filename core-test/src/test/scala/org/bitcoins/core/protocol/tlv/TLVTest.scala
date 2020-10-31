@@ -1,10 +1,5 @@
 package org.bitcoins.core.protocol.tlv
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  DLCAccept,
-  DLCOffer,
-  DLCSign
-}
 import org.bitcoins.testkit.core.gen.TLVGen
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
