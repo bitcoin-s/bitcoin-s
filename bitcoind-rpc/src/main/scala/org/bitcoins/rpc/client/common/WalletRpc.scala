@@ -1,6 +1,9 @@
 package org.bitcoins.rpc.client.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  AddressType,
+  WalletFlag
+}
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
@@ -174,6 +177,37 @@ trait WalletRpc { self: Client =>
 
   def loadWallet(filePath: String): Future[LoadWalletResult] = {
     bitcoindCall[LoadWalletResult]("loadwallet", List(JsString(filePath)))
+  }
+
+  /**
+    * Change the state of the given wallet flag for a wallet.
+    */
+  def setWalletFlag(
+      flag: WalletFlag,
+      value: Boolean
+  ): Future[SetWalletFlagResult] = {
+
+    self.version match {
+      case V20 | V19 | Experimental | Unknown =>
+        bitcoindCall[SetWalletFlagResult](
+          "setwalletflag",
+          List(JsString(flag.toString), Json.toJson(value)))
+      case V16 | V17 | V18 =>
+        Future.failed(
+          new UnsupportedOperationException(
+            "setwalletflag is not available for versions before 0.19"))
+    }
+  }
+
+  def getBalances: Future[GetBalancesResult] = {
+    self.version match {
+      case V20 | V19 | Experimental | Unknown =>
+        bitcoindCall[GetBalancesResult]("getbalances")
+      case V16 | V17 | V18 =>
+        Future.failed(
+          new UnsupportedOperationException(
+            "getbalances is not available for versions before 0.19"))
+    }
   }
 
   // TODO: Should be BitcoinFeeUnit

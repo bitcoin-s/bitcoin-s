@@ -1,11 +1,8 @@
 package org.bitcoins.rpc.client.v19
 
 import akka.actor.ActorSystem
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
 import org.bitcoins.commons.jsonmodels.bitcoind.{
-  GetBalancesResult,
   RpcOpts,
-  SetWalletFlagResult,
   SignRawTransactionResult
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
@@ -120,21 +117,6 @@ class BitcoindV19RpcClient(override val instance: BitcoindInstance)(implicit
                                                 Json.toJson(keys),
                                                 Json.toJson(utxoDeps),
                                                 Json.toJson(sigHash)))
-
-  /**
-    * Change the state of the given wallet flag for a wallet.
-    */
-  def setWalletFlag(
-      flag: WalletFlag,
-      value: Boolean
-  ): Future[SetWalletFlagResult] =
-    bitcoindCall[SetWalletFlagResult](
-      "setwalletflag",
-      List(JsString(flag.toString), Json.toJson(value)))
-
-  def getBalances: Future[GetBalancesResult] = {
-    bitcoindCall[GetBalancesResult]("getbalances")
-  }
 
 }
 
