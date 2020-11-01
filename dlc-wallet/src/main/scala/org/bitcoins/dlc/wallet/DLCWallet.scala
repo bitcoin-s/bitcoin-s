@@ -189,9 +189,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             prevTxs <-
               transactionDAO.findByTxIdBEs(fundingInputs.map(_.outPoint.txIdBE))
           } yield {
-            val inputRefs = fundingInputs.zip(prevTxs).map {
-              case (input, tx) => input.toFundingInput(tx.transaction)
-            }
+            val inputRefs = matchPrevTxsWithInputs(fundingInputs, prevTxs)
             dlcOfferDb.toDLCOffer(inputRefs)
           }
         case None =>
@@ -335,9 +333,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             outcomeSigDbs <- dlcSigsDAO.findByParamHash(paramHash)
             refundSigDb <- dlcRefundSigDAO.read(paramHash, false)
           } yield {
-            val inputRefs = fundingInputs.zip(prevTxs).map {
-              case (input, tx) => input.toFundingInput(tx.transaction)
-            }
+            val inputRefs = matchPrevTxsWithInputs(fundingInputs, prevTxs)
             val outcomeSigs = outcomeSigDbs.map(_.toTuple)
 
             dlcAcceptDb.toDLCAccept(inputRefs,
@@ -516,9 +512,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             dlcInputsDAO.findByParamHash(dlc.paramHash, isInitiator = true)
           prevTxs <-
             transactionDAO.findByTxIdBEs(offerInputs.map(_.outPoint.txIdBE))
-          offer = offerDb.toDLCOffer(offerInputs.zip(prevTxs).map {
-            case (input, tx) => input.toFundingInput(tx.transaction)
-          })
+          offer =
+            offerDb.toDLCOffer(matchPrevTxsWithInputs(offerInputs, prevTxs))
 
           updatedDLCDb <- updateDLCContractIds(offer, accept)
         } yield updatedDLCDb
@@ -737,9 +732,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         transactionDAO.findByTxIdBEs(localFundingInputs.map(_.outPoint.txIdBE))
     } yield {
       val offerFundingInputs =
-        localFundingInputs.zip(prevTxs).map {
-          case (input, tx) => input.toFundingInput(tx.transaction)
-        }
+        matchPrevTxsWithInputs(localFundingInputs, prevTxs)
 
       val builder =
         DLCTxBuilder(dlcOffer.toDLCOffer(offerFundingInputs),
