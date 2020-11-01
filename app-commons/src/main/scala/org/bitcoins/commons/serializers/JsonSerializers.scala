@@ -344,6 +344,9 @@ object JsonSerializers {
   implicit val dumpWalletResultReads: Reads[DumpWalletResult] =
     Json.reads[DumpWalletResult]
 
+  implicit val loadWalletResultReads: Reads[LoadWalletResult] =
+    Json.reads[LoadWalletResult]
+
   implicit val rescanBlockChainResultReads: Reads[RescanBlockChainResult] =
     Json.reads[RescanBlockChainResult]
 
