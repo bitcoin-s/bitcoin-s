@@ -3,11 +3,10 @@ package org.bitcoins.commons.jsonmodels.dlc
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt16, UInt32}
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.script.{ScriptWitnessV0, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
@@ -366,8 +365,8 @@ object DLCMessage {
               val contractTimeout = getValue("contractTimeout")
 
               DLCTimeouts(
-                BlockTime(UInt32(contractMaturity.num.toLong)),
-                BlockTime(UInt32(contractTimeout.num.toLong))
+                BlockTimeStamp(UInt32(contractMaturity.num.toLong)),
+                BlockTimeStamp(UInt32(contractTimeout.num.toLong))
               )
           }
           .get
@@ -434,7 +433,7 @@ object DLCMessage {
           val obj = mutable.LinkedHashMap(
             "prevTx" -> Str(input.prevTx.hex),
             "prevTxVout" -> Num(input.prevTxVout.toInt),
-            "sequence" -> Num(input.sequence.toInt),
+            "sequence" -> Num(input.sequence.toLong.toDouble),
             "maxWitnessLength" -> Num(input.maxWitnessLen.toInt)
           )
 
