@@ -1,8 +1,8 @@
 package org.bitcoins.core.serializers.p2p.messages
 
+import org.bitcoins.core.p2p.TransactionMessage
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.p2p.TransactionMessage
 import scodec.bits.ByteVector
 
 /**

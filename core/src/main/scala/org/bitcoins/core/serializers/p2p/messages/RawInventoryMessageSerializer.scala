@@ -1,8 +1,8 @@
 package org.bitcoins.core.serializers.p2p.messages
 
+import org.bitcoins.core.p2p.{Inventory, InventoryMessage}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSerializerHelper}
-import org.bitcoins.core.p2p.{Inventory, InventoryMessage}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

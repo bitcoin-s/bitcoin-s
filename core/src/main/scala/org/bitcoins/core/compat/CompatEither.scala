@@ -1,8 +1,6 @@
 package org.bitcoins.core.compat
 
-import scala.util.Try
-import scala.util.Success
-import scala.util.Failure
+import scala.util.{Failure, Success, Try}
 
 /** This is an implementation of (parts of)
   * `scala.util.Either`, compatible with Scala 2.11,

@@ -2,10 +2,6 @@ package org.bitcoins.core.script.locktime
 
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.transaction.TransactionConstants
-import org.bitcoins.core.script.{
-  ExecutionInProgressScriptProgram,
-  StartedScriptProgram
-}
 import org.bitcoins.core.script.constant.{
   ScriptConstant,
   ScriptNumber,
@@ -13,6 +9,10 @@ import org.bitcoins.core.script.constant.{
 }
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
+import org.bitcoins.core.script.{
+  ExecutionInProgressScriptProgram,
+  StartedScriptProgram
+}
 import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.annotation.tailrec

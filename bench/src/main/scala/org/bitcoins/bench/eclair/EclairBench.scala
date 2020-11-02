@@ -9,8 +9,8 @@ import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 /**

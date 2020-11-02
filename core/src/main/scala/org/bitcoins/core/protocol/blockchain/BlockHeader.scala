@@ -3,13 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
 import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  Factory,
-  NetworkElement
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 /**

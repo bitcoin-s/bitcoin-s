@@ -1,9 +1,9 @@
 package org.bitcoins.core.serializers.p2p.messages
 
+import org.bitcoins.core.p2p.HeadersMessage
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.p2p.HeadersMessage
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

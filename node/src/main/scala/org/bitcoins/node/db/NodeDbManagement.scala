@@ -2,7 +2,7 @@ package org.bitcoins.node.db
 
 import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{BroadcastAbleTransactionDAO}
+import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 
 import scala.concurrent.ExecutionContext
 
