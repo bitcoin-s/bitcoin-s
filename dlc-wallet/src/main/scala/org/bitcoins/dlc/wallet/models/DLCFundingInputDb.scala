@@ -20,8 +20,10 @@ case class DLCFundingInputDb(
     OutputReference(outPoint, output)
 
   def toFundingInput(prevTx: Transaction): DLCFundingInput = {
-    require(prevTx.txId == outPoint.txId,
-            "Provided previous transaction didn't match database outpoint")
+    require(
+      prevTx.txId == outPoint.txId,
+      s"Provided previous transaction didn't match database outpoint outpoint=${outPoint.txIdBE.hex} prevTx.txId=${prevTx.txIdBE.hex}"
+    )
 
     DLCFundingInputP2WPKHV0(prevTx,
                             outPoint.vout,
