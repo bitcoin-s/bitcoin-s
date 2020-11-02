@@ -168,6 +168,14 @@ trait WalletRpc { self: Client =>
     bitcoindCall[Vector[String]]("listwallets")
   }
 
+  def unloadWallet(filePath: String): Future[Unit] = {
+    bitcoindCall[Unit]("unloadwallet", List(JsString(filePath)))
+  }
+
+  def loadWallet(filePath: String): Future[LoadWalletResult] = {
+    bitcoindCall[LoadWalletResult]("loadwallet", List(JsString(filePath)))
+  }
+
   // TODO: Should be BitcoinFeeUnit
   def setTxFee(feePerKB: Bitcoins): Future[Boolean] = {
     bitcoindCall[Boolean]("settxfee", List(JsNumber(feePerKB.toBigDecimal)))
