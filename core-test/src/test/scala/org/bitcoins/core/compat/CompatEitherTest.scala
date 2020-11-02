@@ -35,7 +35,7 @@ class CompatEitherTest extends BitcoinSUnitTest {
     assert(flatmappedLeft == CompatLeft(12))
 
     @nowarn val foldedRight = CompatEither(Right(12)).fold({ _ =>
-                     479                                        "left"
+                                                             "left"
                                                            },
                                                            { _ =>
                                                              "right"
