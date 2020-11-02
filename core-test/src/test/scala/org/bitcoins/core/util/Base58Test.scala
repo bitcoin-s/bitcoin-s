@@ -79,7 +79,7 @@ class Base58Test extends BitcoinSUnitTest {
       //if testCase is an Address, it must have a valid base58 representation
       if (testCase.addressOrWIFPrivKey.isLeft) {
         Base58.isValid(
-          testCase.addressOrWIFPrivKey.swap.left.getOrElse(fail())) must be(
+          testCase.addressOrWIFPrivKey.swap.getOrElse(fail()).toString) must be(
           true)
       } else {
         Base58.isValid(testCase.addressOrWIFPrivKey.getOrElse(fail())) must be(
