@@ -40,6 +40,15 @@ case class MempoolSpaceProvider(target: MempoolSpaceTarget)(implicit
   }
 }
 
+object MempoolSpaceProvider extends FeeProviderFactory[MempoolSpaceProvider] {
+
+  override def fromBlockTarget(blocks: Int)(implicit
+      system: ActorSystem): MempoolSpaceProvider = {
+    val target = MempoolSpaceTarget.fromBlockTarget(blocks)
+    MempoolSpaceProvider(target)
+  }
+}
+
 abstract class MempoolSpaceTarget
 
 object MempoolSpaceTarget {

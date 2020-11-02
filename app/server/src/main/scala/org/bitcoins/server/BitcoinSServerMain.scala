@@ -322,9 +322,8 @@ class BitcoinSServerMain(override val args: Array[String])
           BitGoFeeRateProvider(targetOpt)
         case (Some(MempoolSpace), None) =>
           MempoolSpaceProvider(HourFeeTarget)
-        case (Some(MempoolSpace), Some(blockTarget)) =>
-          val target = MempoolSpaceTarget.fromBlockTarget(blockTarget)
-          MempoolSpaceProvider(target)
+        case (Some(MempoolSpace), Some(target)) =>
+          MempoolSpaceProvider.fromBlockTarget(target)
         case (Some(Constant), Some(num)) =>
           ConstantFeeRateProvider(SatoshisPerVirtualByte.fromLong(num))
         case (Some(Constant), None) =>

@@ -33,12 +33,13 @@ case class BitcoinerLiveFeeRateProvider(minutes: Int)(implicit
   }
 }
 
-object BitcoinerLiveFeeRateProvider {
+object BitcoinerLiveFeeRateProvider
+    extends FeeProviderFactory[BitcoinerLiveFeeRateProvider] {
 
   final val validMinutes =
     Vector(30, 60, 120, 180, 360, 720, 1440)
 
-  def fromBlockTarget(blocks: Int)(implicit
+  override def fromBlockTarget(blocks: Int)(implicit
       system: ActorSystem): BitcoinerLiveFeeRateProvider = {
     require(blocks > 0,
             s"Cannot have a negative or zero block target, got $blocks")
