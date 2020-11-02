@@ -23,8 +23,8 @@ class FilterSyncTest extends ChainDbUnitTest {
   it must "sync 1 filter header from an external data source" in { fixture =>
     val BitcoindV19ChainHandler(bitcoind, chainHandler) = fixture
 
-    val initFilterCountF = chainHandler.getFilterCount
-    val initFilterHeaderCountF = chainHandler.getFilterHeaderCount
+    val initFilterCountF = chainHandler.getFilterCount()
+    val initFilterHeaderCountF = chainHandler.getFilterHeaderCount()
     val initAssertionsF = for {
       initFilterCount <- initFilterCountF
       initFilterHeaderCount <- initFilterHeaderCountF
