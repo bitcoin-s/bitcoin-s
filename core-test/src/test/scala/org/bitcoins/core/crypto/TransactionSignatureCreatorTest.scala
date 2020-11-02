@@ -21,6 +21,7 @@ import org.bitcoins.testkit.core.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TransactionTestUtil}
 import scodec.bits.ByteVector
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
 /**
@@ -119,6 +120,7 @@ class TransactionSignatureCreatorTest extends BitcoinSAsyncTest {
   }
 
   it should "have old and new createSig functions agree" in {
+
     forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
@@ -136,11 +138,12 @@ class TransactionSignatureCreatorTest extends BitcoinSAsyncTest {
               val txSignatureComponent =
                 TxSigComponent(signInfo.inputInfo, spendingTx)
 
+              @nowarn val oldSigF =
+                TransactionSignatureCreator.createSig(txSignatureComponent,
+                                                      signer.signFunction,
+                                                      signInfo.hashType)
               for {
-                oldSig <-
-                  TransactionSignatureCreator.createSig(txSignatureComponent,
-                                                        signer.signFunction,
-                                                        signInfo.hashType)
+                oldSig <- oldSigF
                 newSig <-
                   TransactionSignatureCreator.createSig(spendingTx,
                                                         signInfo,
@@ -361,7 +364,7 @@ class TransactionSignatureCreatorTest extends BitcoinSAsyncTest {
     val sign: ByteVector => Future[ECDigitalSignature] = { bytes: ByteVector =>
       Future(privateKey.sign(bytes))
     }
-    val txSignature =
+    @nowarn val txSignature =
       TransactionSignatureCreator.createSig(txSignatureComponent,
                                             sign,
                                             HashType.sigHashAll)
