@@ -910,7 +910,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           isInitiator = false,
           account = HDAccount(HDCoin(HDPurpose(89), HDCoinType.Testnet), 0),
           keyIndex = 0,
-          oracleSigOpt = None
+          oracleSigOpt = None,
+          fundingOutPointOpt = None,
+          fundingTxIdOpt = None,
+          closingTxIdOpt = None
         )))
 
       val route = walletRoutes.handleCommand(

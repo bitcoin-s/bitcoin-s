@@ -127,6 +127,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
 
     val sig = DLCCETSignatureDb(
       paramHash = paramHash,
+      isInitiator = true,
       outcomeHash = DLCWalletUtil.winHash,
       signature = ECAdaptorSignature.dummy
     )
@@ -144,11 +145,13 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val sigs = Vector(
       DLCCETSignatureDb(
         paramHash = paramHash,
+        isInitiator = true,
         outcomeHash = DLCWalletUtil.winHash,
         signature = ECAdaptorSignature.dummy
       ),
       DLCCETSignatureDb(
         paramHash = paramHash,
+        isInitiator = false,
         outcomeHash = DLCWalletUtil.loseHash,
         signature = ECAdaptorSignature.dummy
       )

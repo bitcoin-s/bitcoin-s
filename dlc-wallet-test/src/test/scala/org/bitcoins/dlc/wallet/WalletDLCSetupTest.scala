@@ -1,27 +1,14 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAccept,
-  DLCOffer,
-  DLCSign,
-  OracleInfo
-}
-import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, DLCMessage}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  FieldElement,
-  SchnorrDigitalSignature,
-  SchnorrNonce,
-  SchnorrPublicKey
-}
+import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.{Assertion, FutureOutcome}
-import scodec.bits.ByteVector
 
 import scala.concurrent.Future
 
@@ -53,7 +40,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32
         )
+        paramHash = offer.paramHash
+        dlcA1Opt <- walletA.dlcDAO.read(paramHash)
         _ = {
+          assert(dlcA1Opt.isDefined)
+          assert(dlcA1Opt.get.state == DLCState.Offered)
           assert(offer.oracleInfo == offerData.oracleInfo)
           assert(offer.contractInfo == offerData.contractInfo)
           assert(offer.totalCollateral == offerData.totalCollateral)
@@ -64,7 +55,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         }
 
         accept <- walletB.acceptDLCOffer(offer)
+        dlcB1Opt <- walletB.dlcDAO.read(paramHash)
         _ = {
+          assert(dlcB1Opt.isDefined)
+          assert(dlcB1Opt.get.state == DLCState.Accepted)
           assert(accept.fundingInputs.nonEmpty)
           assert(
             accept.fundingInputs
@@ -76,11 +70,15 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         }
 
         sign <- walletA.signDLC(accept)
+        dlcA2Opt <- walletA.dlcDAO.read(paramHash)
         _ = {
+          assert(dlcA2Opt.isDefined)
+          assert(dlcA2Opt.get.state == DLCState.Signed)
           assert(sign.fundingSigs.length == offerData.fundingInputs.size)
         }
 
         dlcDb <- walletB.addDLCSigs(sign)
+        _ = assert(dlcDb.state == DLCState.Signed)
         outcomeSigs <- walletB.dlcSigsDAO.findByParamHash(offer.paramHash)
 
         refundSigsA <-
