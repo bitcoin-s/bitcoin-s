@@ -364,7 +364,7 @@ object BitcoinSWalletTest extends WalletLogger {
   private def createNewKeyManager(
       bip39PasswordOpt: Option[String] = KeyManagerTestUtil.bip39PasswordOpt)(
       implicit config: WalletAppConfig): BIP39KeyManager = {
-    val keyManagerE = BIP39KeyManager.initialize(config.aesPassword,
+    val keyManagerE = BIP39KeyManager.initialize(config.aesPasswordOpt,
                                                  kmParams = config.kmParams,
                                                  bip39PasswordOpt =
                                                    bip39PasswordOpt)

@@ -104,7 +104,7 @@ case class DLCOracleAppConfig(
     val key =
       WalletStorage.getPrivateKeyFromDisk(seedPath,
                                           SegWitMainNetPriv,
-                                          password,
+                                          Some(password),
                                           bip39PasswordOpt)
     val oracle = DLCOracle(key)(this)
     initialize(oracle)

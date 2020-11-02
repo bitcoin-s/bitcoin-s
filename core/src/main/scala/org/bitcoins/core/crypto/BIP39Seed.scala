@@ -58,4 +58,18 @@ object BIP39Seed extends Factory[BIP39Seed] {
     BIP39Seed.fromBytes(ByteVector(encodedBytes))
   }
 
+  /**
+    * Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
+    * seed from a mnemonic code. An optional password can be supplied.
+    */
+  def fromMnemonic(
+      mnemonic: MnemonicCode,
+      passwordOpt: Option[String]): BIP39Seed = {
+    passwordOpt match {
+      case Some(pass) =>
+        fromMnemonic(mnemonic, pass)
+      case None =>
+        fromMnemonic(mnemonic)
+    }
+  }
 }

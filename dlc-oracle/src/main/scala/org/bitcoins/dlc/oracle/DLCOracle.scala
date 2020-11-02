@@ -232,7 +232,7 @@ object DLCOracle {
     val key =
       WalletStorage.getPrivateKeyFromDisk(conf.seedPath,
                                           SegWitMainNetPriv,
-                                          password,
+                                          Some(password),
                                           bip39PasswordOpt)
     DLCOracle(key)
   }

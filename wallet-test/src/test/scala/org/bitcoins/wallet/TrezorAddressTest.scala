@@ -148,7 +148,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       ec: ExecutionContext): Future[Wallet] = {
     val bip39PasswordOpt = None
     val kmE = BIP39KeyManager.initializeWithEntropy(
-      aesPassword = config.aesPassword,
+      aesPasswordOpt = config.aesPasswordOpt,
       entropy = mnemonic.toEntropy,
       bip39PasswordOpt = bip39PasswordOpt,
       kmParams = config.kmParams)
