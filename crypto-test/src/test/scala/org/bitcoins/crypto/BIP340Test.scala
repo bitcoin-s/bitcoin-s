@@ -86,9 +86,9 @@ class BIP340Test extends BitcoinSUnitTest {
     val bufferedSource =
       io.Source.fromURL(getClass.getResource("/bip340-test-vectors.csv"))
     try {
-      val lines = bufferedSource.getLines
+      val lines = bufferedSource.getLines()
       val _ = lines.next()
-      for (line <- bufferedSource.getLines) {
+      for (line <- bufferedSource.getLines()) {
         val testVec = line.split(",").map(_.trim)
         val index = testVec.head.toInt
         val secKeyOpt = toOpt(testVec(1))
