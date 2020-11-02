@@ -216,7 +216,7 @@ class MerkleBlockTests extends BitcoinSUnitTest {
       .insert(pubKey)
       .insert(output)
 
-    val (merkleBlock, loadedFilter) = MerkleBlock(block, filter)
+    val (_, loadedFilter) = MerkleBlock(block, filter)
 
     //this outpoint is matched because the scriptPubKey contstants match the filter
     val outPoint = TransactionOutPoint(
@@ -250,7 +250,7 @@ class MerkleBlockTests extends BitcoinSUnitTest {
       .insert(pubKey)
       .insert(output)
 
-    val (merkleBlock, loadedFilter) = MerkleBlock(block, filter)
+    val (_, loadedFilter) = MerkleBlock(block, filter)
 
     //neither of these outpoints match because the BloomUpdateNone flag is set
     val outPoint = TransactionOutPoint(

@@ -1,17 +1,11 @@
 package org.bitcoins.core.currency
 
-import org.bitcoins.core.currency._
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.core.number.Int64
 import org.bitcoins.testkit.core.gen.CurrencyUnitGenerator
+import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.scalacheck.Gen
 
 import scala.util.Try
-import org.bitcoins.core.number.Int64
-import org.bitcoins.crypto.CryptoUtil
-
-import scala.util.Success
-import scala.util.Failure
-import org.scalacheck.Gen
-import org.scalacheck.Shrink
 
 class CurrencyUnitTest extends BitcoinSUnitTest {
 
@@ -59,7 +53,7 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
 
   it must "add satoshis" in {
     forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.satoshis) {
-      (num1, num2) => (num1: Satoshis, num2: Satoshis) =>
+      (_, _) => (num1: Satoshis, num2: Satoshis) =>
         val result: Try[Int64] = Try(Int64(num1.toBigInt + num2.toBigInt))
         if (
           result.isSuccess && result.get >= Int64(Satoshis.min.toLong) &&

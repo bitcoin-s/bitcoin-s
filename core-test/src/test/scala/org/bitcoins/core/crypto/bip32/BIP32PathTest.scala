@@ -8,7 +8,7 @@ import org.bitcoins.testkit.core.gen.{
   NumberGenerator
 }
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.scalacheck.{Gen, Shrink}
+import org.scalacheck.Gen
 import scodec.bits._
 
 import scala.util.{Success, Try}
@@ -78,7 +78,7 @@ class BIP32PathTest extends BitcoinSUnitTest {
   it must "fail to parse a path beginning with the wrong character" in {
     forAll(HDGenerators.bip32Path, Gen.alphaChar.suchThat(_ != 'm')) {
       (path, char) =>
-        val badPathString = char + path.toString.drop(1)
+        val badPathString = char.toString + path.toString.drop(1)
         assertThrows[IllegalArgumentException](
           BIP32Path.fromString(badPathString))
     }
@@ -157,7 +157,6 @@ class BIP32PathTest extends BitcoinSUnitTest {
   }
 
   it must "have fromString and toString symmetry" in {
-    implicit val noShrink: Shrink[Nothing] = Shrink.shrinkAny
     forAll(HDGenerators.bip32Path) { path =>
       val toString = path.toString
       assert(path == BIP32Path.fromString(toString))
@@ -165,7 +164,6 @@ class BIP32PathTest extends BitcoinSUnitTest {
   }
 
   it must "have fromBytes and bytes symmetry" in {
-    implicit val noShrink: Shrink[Nothing] = Shrink.shrinkAny
     forAll(HDGenerators.bip32Path) { path =>
       val bytes = path.bytes
       assert(path == BIP32Path.fromBytes(bytes))

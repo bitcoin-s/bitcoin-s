@@ -2,21 +2,8 @@ package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  EmptyScriptSignature,
-  P2PKHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WPKHWitnessV0
-}
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  EmptyTransaction,
-  TransactionConstants,
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{

@@ -1,13 +1,7 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  P2PKHScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  ScriptPubKey
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
@@ -68,7 +62,7 @@ class BitcoinAddressTest extends BitcoinSUnitTest {
 
   "The empty string" must "not be a valid bitcoin address" in {
     BitcoinAddress.fromStringT("").isFailure must be(true)
-    Try(BitcoinAddress.fromStringExn("")).isFailure must be(true)
+    Try(BitcoinAddress.fromString("")).isFailure must be(true)
   }
 
   "A string that is 25 characters long" must "not be a valid bitcoin address" in {

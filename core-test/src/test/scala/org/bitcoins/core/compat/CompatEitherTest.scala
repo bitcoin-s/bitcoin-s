@@ -1,6 +1,5 @@
 package org.bitcoins.core.compat
 
-import org.bitcoins.chain.blockchain.BlockchainUpdate.Successful
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.{Failure, Success}

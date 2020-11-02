@@ -5,7 +5,6 @@ import org.bitcoins.core.script.constant.{
   OP_0,
   ScriptConstant
 }
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 

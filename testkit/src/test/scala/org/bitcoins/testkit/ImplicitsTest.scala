@@ -21,7 +21,7 @@ class ImplicitsTest extends BitcoinSUnitTest {
     } catch {
       case _: TestFailedException =>
         succeed
-      case _: Throwable => fail
+      case _: Throwable => fail()
     }
   }
 

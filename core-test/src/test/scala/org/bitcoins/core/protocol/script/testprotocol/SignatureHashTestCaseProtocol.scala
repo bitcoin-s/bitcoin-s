@@ -6,14 +6,12 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.slf4j.LoggerFactory
 import spray.json._
 
 /**
   * Created by tom on 7/21/16.
   */
 object SignatureHashTestCaseProtocol extends DefaultJsonProtocol {
-  private val logger = LoggerFactory.getLogger(this.getClass)
 
   implicit object SignatureTestCaseProtocol
       extends RootJsonFormat[SignatureHashTestCase] {
