@@ -29,9 +29,9 @@ class SbClientTest extends BitcoinSAsyncTest {
     val _ = Await.result(server.start(), 5.seconds)
   }
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     Await.result(server.stop(), 5.seconds)
-    super.afterAll
+    super.afterAll()
   }
 
   it should "successfully decrypt data from server" in {

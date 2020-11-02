@@ -1206,16 +1206,15 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
               val offer = offerDb.toDLCOffer(fundingInputs)
               val acceptOpt = acceptDbOpt.map(
-                _.toDLCAccept(
-                  fundingInputs,
-                  sigDbs.filter(!_.isInitiator).map(_.toTuple).toMap,
-                  acceptRefundSigOpt.get))
+                _.toDLCAccept(fundingInputs,
+                              sigDbs.filter(!_.isInitiator).map(_.toTuple),
+                              acceptRefundSigOpt.get))
 
               val initSigs = sigDbs.filter(_.isInitiator)
 
               def getDLCSign: DLCSign = {
-                val cetSigs = CETSignatures(initSigs.map(_.toTuple).toMap,
-                                            offerRefundSigOpt.get)
+                val cetSigs =
+                  CETSignatures(initSigs.map(_.toTuple), offerRefundSigOpt.get)
 
                 val contractId = dlcDb.contractIdOpt.get
                 val fundingSigs =
