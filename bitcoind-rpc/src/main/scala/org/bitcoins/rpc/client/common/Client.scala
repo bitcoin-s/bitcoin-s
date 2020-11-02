@@ -48,6 +48,9 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
   def version: BitcoindVersion
   protected val instance: BitcoindInstance
 
+  protected def walletExtension(walletName: String): String =
+    s"/wallet/$walletName"
+
   /**
     * The log file of the Bitcoin Core daemon
     */
@@ -250,9 +253,12 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
   protected def bitcoindCall[T](
       command: String,
       parameters: List[JsValue] = List.empty,
-      printError: Boolean = true)(implicit reader: Reads[T]): Future[T] = {
+      printError: Boolean = true,
+      uriExtensionOpt: Option[String] = None
+  )(implicit reader: Reads[T]): Future[T] = {
 
-    val request = buildRequest(instance, command, JsArray(parameters))
+    val request =
+      buildRequest(instance, command, JsArray(parameters), uriExtensionOpt)
     val responseF = sendRequest(request)
 
     val payloadF: Future[JsValue] =
@@ -279,7 +285,8 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
   protected def buildRequest(
       instance: BitcoindInstance,
       methodName: String,
-      params: JsArray): HttpRequest = {
+      params: JsArray,
+      uriExtensionOpt: Option[String] = None): HttpRequest = {
     val uuid = UUID.randomUUID().toString
     val m: Map[String, JsValue] = Map("method" -> JsString(methodName),
                                       "params" -> params,
@@ -287,9 +294,11 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
 
     val jsObject = JsObject(m)
 
+    val uriExtension = uriExtensionOpt.getOrElse("")
+
     // Would toString work?
     val uri =
-      "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
+      "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort + uriExtension
     val username = instance.authCredentials.username
     val password = instance.authCredentials.password
     HttpRequest(

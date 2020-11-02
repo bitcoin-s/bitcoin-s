@@ -1,13 +1,9 @@
 package org.bitcoins.rpc.client.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
-  AddressType,
-  FeeEstimationMode
-}
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import play.api.libs.json._
@@ -72,10 +68,12 @@ trait TransactionRpc { self: Client =>
 
   def getTransaction(
       txid: DoubleSha256DigestBE,
-      watchOnly: Boolean = false): Future[GetTransactionResult] = {
+      watchOnly: Boolean = false,
+      walletNameOpt: Option[String] = None): Future[GetTransactionResult] = {
     bitcoindCall[GetTransactionResult](
       "gettransaction",
-      List(JsString(txid.hex), JsBoolean(watchOnly)))
+      List(JsString(txid.hex), JsBoolean(watchOnly)),
+      uriExtensionOpt = walletNameOpt.map(walletExtension))
   }
 
   def getTxOut(
@@ -122,53 +120,5 @@ trait TransactionRpc { self: Client =>
 
   def getTxOutSetInfo: Future[GetTxOutSetInfoResult] = {
     bitcoindCall[GetTxOutSetInfoResult]("gettxoutsetinfo")
-  }
-
-  def getRawChangeAddress: Future[BitcoinAddress] = getRawChangeAddress(None)
-
-  def getRawChangeAddress(addressType: AddressType): Future[BitcoinAddress] =
-    getRawChangeAddress(Some(addressType))
-
-  private def getRawChangeAddress(
-      addressType: Option[AddressType]): Future[BitcoinAddress] = {
-    bitcoindCall[BitcoinAddress]("getrawchangeaddress",
-                                 addressType.map(Json.toJson(_)).toList)
-  }
-
-  def sendMany(
-      amounts: Map[BitcoinAddress, CurrencyUnit],
-      minconf: Int = 1,
-      comment: String = "",
-      subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty): Future[
-    DoubleSha256DigestBE] = {
-    val jsonOutputs: JsValue = Json.toJson {
-      amounts.map {
-        case (addr, curr) => addr -> Bitcoins(curr.satoshis)
-      }
-    }
-    bitcoindCall[DoubleSha256DigestBE](
-      "sendmany",
-      List(JsString(""),
-           jsonOutputs,
-           JsNumber(minconf),
-           JsString(comment),
-           Json.toJson(subtractFeeFrom))
-    )
-  }
-
-  def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      localComment: String = "",
-      toComment: String = "",
-      subractFeeFromAmount: Boolean = false): Future[DoubleSha256DigestBE] = {
-    bitcoindCall[DoubleSha256DigestBE](
-      "sendtoaddress",
-      List(Json.toJson(address),
-           Json.toJson(Bitcoins(amount.satoshis)),
-           JsString(localComment),
-           JsString(toComment),
-           JsBoolean(subractFeeFromAmount))
-    )
   }
 }
