@@ -20,6 +20,7 @@ import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
+import org.scalatest.Assertions.fail
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -137,7 +138,10 @@ trait DLCWalletUtil {
     isInitiator = true,
     account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,
     keyIndex = 0,
-    oracleSigOpt = Some(sampleOracleLoseSig)
+    oracleSigOpt = Some(sampleOracleLoseSig),
+    fundingOutPointOpt = None,
+    fundingTxIdOpt = None,
+    closingTxIdOpt = None
   )
 
   def initDLC(fundedWalletA: FundedDLCWallet, fundedWalletB: FundedDLCWallet)(
@@ -163,6 +167,9 @@ trait DLCWalletUtil {
       accept <- walletB.acceptDLCOffer(offer)
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)
+
+      tx <- walletB.broadcastDLCFundingTx(sigs.contractId)
+      _ <- walletA.processTransaction(tx, None)
     } yield {
       (InitializedDLCWallet(FundedDLCWallet(walletA)),
        InitializedDLCWallet(FundedDLCWallet(walletB)))
@@ -233,11 +240,34 @@ object DLCWalletUtil extends DLCWalletUtil {
       contractId <- getContractId(dlcA)
       fundingTx <- dlcB.getDLCFundingTx(contractId)
       tx <- if (asInitiator) func(dlcA) else func(dlcB)
+
+      _ <- {
+        if (asInitiator) dlcB.processTransaction(tx, None)
+        else dlcA.processTransaction(tx, None)
+      }
+
+      _ <- verifyProperlySetTxIds(dlcA)
+      _ <- verifyProperlySetTxIds(dlcB)
     } yield {
       assert(tx.inputs.size == 1)
       assert(tx.outputs.size == expectedOutputs)
       assert(ScriptInterpreter.checkTransaction(tx))
       verifyInput(tx, 0, fundingTx.outputs.head)
+    }
+  }
+
+  def verifyProperlySetTxIds(wallet: DLCWallet)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    for {
+      contractId <- getContractId(wallet)
+      dlcDbOpt <- wallet.dlcDAO.findByContractId(contractId)
+    } yield {
+      dlcDbOpt match {
+        case None => fail()
+        case Some(dlcDb) =>
+          assert(dlcDb.fundingOutPointOpt.isDefined)
+          assert(dlcDb.closingTxIdOpt.isDefined)
+      }
     }
   }
 }

@@ -64,13 +64,16 @@ case class DLCCETSignatureDAO()(implicit
 
     def paramHash: Rep[Sha256DigestBE] = column("param_hash")
 
+    def isInitiator: Rep[Boolean] = column("is_initiator")
+
     def outcomeHash: Rep[Sha256Digest] = column("outcome_hash")
 
     def signature: Rep[ECAdaptorSignature] = column("signature")
 
     def * : ProvenShape[DLCCETSignatureDb] =
-      (paramHash, outcomeHash, signature).<>(DLCCETSignatureDb.tupled,
-                                             DLCCETSignatureDb.unapply)
+      (paramHash, isInitiator, outcomeHash, signature).<>(
+        DLCCETSignatureDb.tupled,
+        DLCCETSignatureDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_cet_sigs",

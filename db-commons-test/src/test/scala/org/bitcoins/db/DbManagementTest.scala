@@ -80,8 +80,22 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
       DLCAppConfig(BitcoinSTestAppConfig.tmpDir(), dbConfig(ProjectType.DLC))
     val dlcDbManagement = createDLCDbManagement(dlcAppConfig)
     val result = dlcDbManagement.migrate()
-    val expected = if (dlcAppConfig.driverName == "postgresql") 1 else 1
-    assert(result == expected)
+    dlcAppConfig.driver match {
+      case SQLite =>
+        val expected = 2
+        assert(result == expected)
+        val flywayInfo = dlcAppConfig.info()
+        assert(flywayInfo.applied().length == expected)
+        assert(flywayInfo.pending().length == 0)
+      case PostgreSQL =>
+        val expected = 2
+        assert(result == expected)
+        val flywayInfo = dlcAppConfig.info()
+
+        //+1 for << Flyway Schema Creation >>
+        assert(flywayInfo.applied().length == expected + 1)
+        assert(flywayInfo.pending().length == 0)
+    }
   }
 
   it must "run migrations for wallet db" in {

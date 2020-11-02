@@ -83,19 +83,23 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   /////////////////////
   // Internal wallet API
 
+  protected def insertTransaction(tx: Transaction): Future[TransactionDb] = {
+    val txDb = TransactionDbHelper.fromTransaction(tx)
+    transactionDAO.upsert(txDb)
+  }
+
   private[wallet] def insertOutgoingTransaction(
       transaction: Transaction,
       feeRate: FeeUnit,
       inputAmount: CurrencyUnit,
       sentAmount: CurrencyUnit): Future[OutgoingTransactionDb] = {
-    val txDb = TransactionDbHelper.fromTransaction(transaction)
     val outgoingDb =
       OutgoingTransactionDb.fromTransaction(transaction,
                                             inputAmount,
                                             sentAmount,
                                             feeRate.calc(transaction))
     for {
-      _ <- transactionDAO.upsert(txDb)
+      _ <- insertTransaction(transaction)
       written <- outgoingTxDAO.upsert(outgoingDb)
     } yield written
   }
@@ -164,7 +168,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       }
     }
 
-  private def processIncomingUtxos(
+  protected def processIncomingUtxos(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       newTags: Vector[AddressTag]): Future[Vector[SpendingInfoDb]] =
@@ -183,7 +187,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             .map(_.toVector)
       }
 
-  def processOutgoingUtxos(
+  protected def processOutgoingUtxos(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Vector[SpendingInfoDb]] = {
@@ -394,17 +398,16 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   private[wallet] def insertIncomingTransaction(
       transaction: Transaction,
       incomingAmount: CurrencyUnit): Future[IncomingTransactionDb] = {
-    val txDb = TransactionDbHelper.fromTransaction(transaction)
     val incomingDb = IncomingTransactionDb(transaction.txIdBE, incomingAmount)
     for {
-      _ <- transactionDAO.upsert(txDb)
+      _ <- insertTransaction(transaction)
       written <- incomingTxDAO.upsert(incomingDb)
     } yield written
   }
 
   private def getRelevantOutputs(
       transaction: Transaction): Future[Seq[OutputWithIndex]] = {
-    addressDAO.findAllAddresses().map { addrs =>
+    scriptPubKeyDAO.findAll().map { addrs =>
       val withIndex =
         transaction.outputs.zipWithIndex
       withIndex.collect {
@@ -446,18 +449,26 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
         for {
           _ <- insertIncomingTransaction(transaction, totalIncoming)
+
+          addrs <- addressDAO.findAllAddresses()
+          ourOutputs = outputsWithIndex.collect {
+            case OutputWithIndex(out, idx)
+                if addrs.map(_.scriptPubKey).contains(out.scriptPubKey) =>
+              OutputWithIndex(out, idx)
+          }
+
           prevTagDbs <- addressTagDAO.findTx(transaction, networkParameters)
           prevTags = prevTagDbs.map(_.addressTag)
           tagsToUse =
             prevTags
               .filterNot(tag => newTags.contains(tag)) ++ newTags
-          newTagDbs = outputsWithIndex.flatMap { out =>
+          newTagDbs = ourOutputs.flatMap { out =>
             val address = BitcoinAddress
               .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
             tagsToUse.map(tag => AddressTagDb(address, tag))
           }
           _ <- addressTagDAO.createAll(newTagDbs.toVector)
-          utxos <- addUTXOsFut(outputsWithIndex, transaction, blockHashOpt)
+          utxos <- addUTXOsFut(ourOutputs, transaction, blockHashOpt)
         } yield utxos
     }
   }
