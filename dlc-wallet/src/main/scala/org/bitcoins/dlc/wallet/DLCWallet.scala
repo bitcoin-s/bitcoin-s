@@ -189,9 +189,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             prevTxs <-
               transactionDAO.findByTxIdBEs(fundingInputs.map(_.outPoint.txIdBE))
           } yield {
-            val inputRefs = fundingInputs.zip(prevTxs).map {
-              case (input, tx) => input.toFundingInput(tx.transaction)
-            }
+            val inputRefs = matchPrevTxsWithInputs(fundingInputs, prevTxs)
             dlcOfferDb.toDLCOffer(inputRefs)
           }
         case None =>
@@ -335,9 +333,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             outcomeSigDbs <- dlcSigsDAO.findByParamHash(paramHash)
             refundSigDb <- dlcRefundSigDAO.read(paramHash, false)
           } yield {
-            val inputRefs = fundingInputs.zip(prevTxs).map {
-              case (input, tx) => input.toFundingInput(tx.transaction)
-            }
+            val inputRefs = matchPrevTxsWithInputs(fundingInputs, prevTxs)
             val outcomeSigs = outcomeSigDbs.map(_.toTuple)
 
             dlcAcceptDb.toDLCAccept(inputRefs,
@@ -516,9 +512,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             dlcInputsDAO.findByParamHash(dlc.paramHash, isInitiator = true)
           prevTxs <-
             transactionDAO.findByTxIdBEs(offerInputs.map(_.outPoint.txIdBE))
-          offer = offerDb.toDLCOffer(offerInputs.zip(prevTxs).map {
-            case (input, tx) => input.toFundingInput(tx.transaction)
-          })
+          offer =
+            offerDb.toDLCOffer(matchPrevTxsWithInputs(offerInputs, prevTxs))
 
           updatedDLCDb <- updateDLCContractIds(offer, accept)
         } yield updatedDLCDb
@@ -737,9 +732,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         transactionDAO.findByTxIdBEs(localFundingInputs.map(_.outPoint.txIdBE))
     } yield {
       val offerFundingInputs =
-        localFundingInputs.zip(prevTxs).map {
-          case (input, tx) => input.toFundingInput(tx.transaction)
-        }
+        matchPrevTxsWithInputs(localFundingInputs, prevTxs)
 
       val builder =
         DLCTxBuilder(dlcOffer.toDLCOffer(offerFundingInputs),
@@ -776,12 +769,13 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       remotePrevTxs <-
         remoteTxDAO.findByTxIdBEs(remoteDbFundingInputs.map(_.outPoint.txIdBE))
     } yield {
-      val localFundingInputs = localDbFundingInputs.zip(localPrevTxs).map {
-        case (input, tx) => input.toFundingInput(tx.transaction)
-      }
-      val remoteFundingInputs = remoteDbFundingInputs.zip(remotePrevTxs).map {
-        case (input, tx) => input.toFundingInput(tx.transaction)
-      }
+      val localFundingInputs = matchPrevTxsWithInputs(inputs =
+                                                        localDbFundingInputs,
+                                                      prevTxs = localPrevTxs)
+
+      val remoteFundingInputs = matchPrevTxsWithInputs(inputs =
+                                                         remoteDbFundingInputs,
+                                                       prevTxs = remotePrevTxs)
 
       val (offerFundingInputs, acceptFundingInputs) = if (dlcDb.isInitiator) {
         (localFundingInputs, remoteFundingInputs)
@@ -794,6 +788,23 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                                                     acceptFundingInputs)
 
       DLCTxBuilder(offer, accept)
+    }
+  }
+
+  /** Takes in a list of inputs to fund DLCs, and pairs them with the full funding transaction for this input
+    * and then converts the input tx pair to a [[DLCFundingInput]]
+    * @throws NoSuchElementException when we have an input we cannot find the funding transaction for
+    */
+  private def matchPrevTxsWithInputs(
+      inputs: Vector[DLCFundingInputDb],
+      prevTxs: Vector[TransactionDb]): Vector[DLCFundingInput] = {
+    inputs.map { i =>
+      prevTxs.find(_.txId == i.outPoint.txId) match {
+        case Some(txDb) => i.toFundingInput(txDb.transaction)
+        case None =>
+          throw new NoSuchElementException(
+            s"Could not find previous transaction with txIdBE=${i.outPoint.txId.flip.hex}")
+      }
     }
   }
 
@@ -824,7 +835,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       fundingInputsDb: Vector[DLCFundingInputDb]): Future[DLCTxSigner] = {
     for {
       fundingUtxos <- fundingUtxosFromDb(dlcDb, fundingInputsDb)
-      builder <- builderFromDbData(dlcDb, dlcOffer, dlcAccept, fundingInputsDb)
+      builder <- builderFromDbData(dlcDb = dlcDb,
+                                   dlcOffer = dlcOffer,
+                                   dlcAccept = dlcAccept,
+                                   fundingInputsDb = fundingInputsDb)
     } yield {
       val extPrivKey =
         keyManager.rootExtPrivKey.deriveChildPrivKey(dlcDb.account)
