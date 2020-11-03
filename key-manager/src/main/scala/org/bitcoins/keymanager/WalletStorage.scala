@@ -46,7 +46,7 @@ object WalletStorage {
     * with the current epoch timestamp as part of
     * the file name.
     */
-  def writeMnemonicToDisk(seedPath: Path, mnemonic: WritableMnemonic): Path = {
+  def writeMnemonicToDisk(seedPath: Path, mnemonic: MnemonicState): Path = {
     mnemonic match {
       case decryptedMnemonic: DecryptedMnemonic =>
         writeMnemonicToDisk(seedPath, decryptedMnemonic)
@@ -237,7 +237,7 @@ object WalletStorage {
     val readJsonTupleEither: CompatEither[
       ReadMnemonicError,
       (Vector[String], Long)] = jsonE.flatMap { json =>
-      logger.trace(s"Read mnemonic JSON: $json")
+      logger.trace(s"Read mnemonic JSON: Masked(json)")
       Try {
         val creationTimeNum = parseCreationTime(json)
         val words = json(MNEMONIC_SEED).arr.toVector.map(_.str)

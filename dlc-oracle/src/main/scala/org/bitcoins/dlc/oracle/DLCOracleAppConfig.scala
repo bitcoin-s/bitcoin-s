@@ -91,20 +91,24 @@ case class DLCOracleAppConfig(
   }
 
   def initialize(
-      password: AesPassword,
+      passwordOpt: Option[AesPassword],
       bip39PasswordOpt: Option[String] = None): Future[DLCOracle] = {
     if (!seedExists()) {
       val entropy = MnemonicCode.getEntropy256Bits
       val mnemonicCode = MnemonicCode.fromEntropy(entropy)
       val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
-      val encrypted = decryptedMnemonic.encrypt(password)
-      WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
+      val toWrite = passwordOpt match {
+        case Some(password) => decryptedMnemonic.encrypt(password)
+        case None           => decryptedMnemonic
+      }
+
+      WalletStorage.writeMnemonicToDisk(seedPath, toWrite)
     }
 
     val key =
       WalletStorage.getPrivateKeyFromDisk(seedPath,
                                           SegWitMainNetPriv,
-                                          Some(password),
+                                          passwordOpt,
                                           bip39PasswordOpt)
     val oracle = DLCOracle(key)(this)
     initialize(oracle)

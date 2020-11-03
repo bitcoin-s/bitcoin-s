@@ -1,8 +1,8 @@
 package org.bitcoins.testkit.fixtures
 
-import org.bitcoins.crypto.AesPassword
 import org.bitcoins.dlc.oracle.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
+import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil.bip39PasswordOpt
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest._
@@ -24,8 +24,9 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(
       build = () => {
+        val password = KeyManagerTestUtil.aesPasswordOpt
         config
-          .initialize(AesPassword.fromString("Ben was here"), bip39PasswordOpt)
+          .initialize(password, bip39PasswordOpt)
           .map(oracle =>
             DLCOracleDAOs(oracle.rValueDAO,
                           oracle.eventDAO,

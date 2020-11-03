@@ -115,7 +115,7 @@ object BIP39KeyManager
 
         val writableMnemonicE: CompatEither[
           KeyManagerInitializeError,
-          WritableMnemonic] =
+          MnemonicState] =
           mnemonicE.map { mnemonic =>
             val decryptedMnemonic = DecryptedMnemonic(mnemonic, time)
             aesPasswordOpt match {

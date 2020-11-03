@@ -180,14 +180,12 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
         WalletStorage.decryptMnemonicFromDisk(seedPath, None)
 
       read match {
-        case Right(_) =>
-          fail("Wrote and read with different passwords")
-        case Left(DecryptionError) => succeed
-        case Left(err)             => fail(err.toString)
+        case Left(JsonParsingError(_))  => succeed
+        case res @ (Left(_) | Right(_)) => fail(res.toString)
       }
   }
 
-  it must "fail to read an encrypted mnemonic with bad password" in {
+  it must "fail to read an encrypted mnemonic with bad aes password" in {
     walletConf =>
       val _ = getAndWriteMnemonic(walletConf)
       val seedPath = getSeedPath(walletConf)

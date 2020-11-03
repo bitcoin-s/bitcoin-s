@@ -134,7 +134,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
     } yield res
   }
 
-  it should "fail to unlock the wallet with a bad password" in {
+  it should "fail to unlock the wallet with a bad aes password" in {
     wallet: Wallet =>
       val badPassphrase = Some(AesPassword.fromNonEmptyString("bad"))
 
