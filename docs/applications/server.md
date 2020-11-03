@@ -194,6 +194,8 @@ For more information on how to use our built in `cli` to interact with the serve
     - `tx` - Transaction serialized in hex
 
 #### PSBT
+ - `decodepsbt` `psbt` - Return a JSON object representing the serialized, base64-encoded partially signed Bitcoin transaction.
+    - `psbt` - PSBT serialized in hex or base64 format
  - `combinepsbts` `psbts` - Combines all the given PSBTs
     - `psbts` - PSBTs serialized in hex or base64 format
  - `joinpsbts` `psbts` - Combines all the given PSBTs
