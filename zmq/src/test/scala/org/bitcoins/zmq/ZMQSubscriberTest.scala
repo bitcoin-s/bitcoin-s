@@ -53,7 +53,7 @@ class ZMQSubscriberTest extends AsyncFlatSpec with BitcoinSLogger {
   }
 
   it must "be able to subscribe to a publisher and read a value" in {
-    val port = Math.abs(scala.util.Random.nextInt % 14000) + 1024
+    val port = Math.abs(scala.util.Random.nextInt() % 14000) + 1024
     val socket = new InetSocketAddress("tcp://127.0.0.1", port)
 
     val context = ZMQ.context(1)

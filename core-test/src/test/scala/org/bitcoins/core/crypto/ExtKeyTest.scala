@@ -35,7 +35,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
           case (Success(_), Success(_)) => succeed
           case (Failure(exc1), Failure(exc2)) =>
             assert(exc1.getMessage == exc2.getMessage)
-          case _: (Try[ExtPublicKey], Try[ExtPublicKey]) => fail
+          case _: (Try[ExtPublicKey], Try[ExtPublicKey]) => fail()
         }
     }
   }
@@ -44,7 +44,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
     forAll(CryptoGenerators.extPublicKey) { pub =>
       val attempt = ExtPrivateKey.fromStringT(pub.toString)
       attempt match {
-        case Success(_)   => fail
+        case Success(_)   => fail()
         case Failure(exc) => assert(exc.getMessage.contains("expected private"))
       }
     }
@@ -75,7 +75,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
         val pub = priv.extPublicKey
         val derivedPub = pub.deriveChildPubKey(child.toUInt32)
         derivedPub match {
-          case Success(_)   => fail
+          case Success(_)   => fail()
           case Failure(exc) => assert(exc.getMessage.contains("hardened"))
         }
     }

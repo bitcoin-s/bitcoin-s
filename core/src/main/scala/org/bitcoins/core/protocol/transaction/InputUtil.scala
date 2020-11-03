@@ -9,21 +9,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
-import org.bitcoins.core.wallet.utxo.{
-  ConditionalInputInfo,
-  EmptyInputInfo,
-  InputInfo,
-  InputSigningInfo,
-  LockTimeInputInfo,
-  MultiSignatureInputInfo,
-  P2PKHInputInfo,
-  P2PKInputInfo,
-  P2PKWithTimeoutInputInfo,
-  P2SHInputInfo,
-  P2WPKHV0InputInfo,
-  P2WSHV0InputInfo,
-  UnassignedSegwitNativeInputInfo
-}
+import org.bitcoins.core.wallet.utxo._
 
 import scala.annotation.tailrec
 

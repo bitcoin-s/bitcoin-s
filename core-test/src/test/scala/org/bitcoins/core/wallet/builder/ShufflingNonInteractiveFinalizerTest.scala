@@ -17,7 +17,6 @@ import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{
   CreditingTxGen,
-  CurrencyUnitGenerator,
   FeeUnitGen,
   ScriptGenerators
 }

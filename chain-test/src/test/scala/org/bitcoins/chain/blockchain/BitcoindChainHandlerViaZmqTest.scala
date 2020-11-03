@@ -26,7 +26,8 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
 
       for {
         _ <-
-          chainHandler.getBlockCount
+          chainHandler
+            .getBlockCount()
             .map(count => assert(count == 0))
         address <- bitcoind.getNewAddress
         hash +: _ <- bitcoind.generateToAddress(1, address)

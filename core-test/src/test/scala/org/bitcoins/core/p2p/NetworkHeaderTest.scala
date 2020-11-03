@@ -1,15 +1,14 @@
 package org.bitcoins.core.p2p
 
-import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.testkit.node.NodeTestUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.testkit.node.NodeTestUtil
+import org.bitcoins.testkit.util.BitcoinSUnitTest
+import scodec.bits.ByteVector
 
 import scala.util.Random
-import scodec.bits.ByteVector
 
 class NetworkHeaderTest extends BitcoinSUnitTest {
 

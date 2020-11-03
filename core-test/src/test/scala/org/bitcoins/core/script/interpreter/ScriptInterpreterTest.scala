@@ -37,7 +37,7 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
           | [["0x01 0x80", "DUP BOOLOR", "P2SH,STRICTENC", "EVAL_FALSE", "negative-0 negative-0 BOOLOR"]]
    """.stripMargin*/
     val lines =
-      try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n"
+      try source.getLines().filterNot(_.isEmpty).map(_.trim) mkString "\n"
       finally source.close()
     val json = lines.parseJson
     val testCasesOpt: Seq[Option[CoreTestCase]] =
@@ -59,7 +59,7 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
       val flags = ScriptFlagFactory.fromList(testCase.flags)
       val witness = testCase.witness
       val txSigComponent = witness match {
-        case Some((w, amount)) =>
+        case Some((_, amount)) =>
           scriptPubKey match {
             case p2sh: P2SHScriptPubKey =>
               val output = TransactionOutput(amount, p2sh)

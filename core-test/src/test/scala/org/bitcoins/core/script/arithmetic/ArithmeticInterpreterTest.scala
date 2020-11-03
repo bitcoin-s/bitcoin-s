@@ -1,7 +1,6 @@
 package org.bitcoins.core.script.arithmetic
 
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{
   ExecutedScriptProgram,
@@ -245,11 +244,6 @@ class ArithmeticInterpreterTest extends BitcoinSUnitTest {
     newProgram.stack.head must be(OP_FALSE)
     newProgram.script.isEmpty must be(true)
 
-    val stack1 = List(OP_0, OP_0)
-    val script1 = List(OP_BOOLAND)
-    val program1 =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
     val newProgram1 = AI.opBoolAnd(program)
 
     newProgram.stackTopIsFalse must be(true)

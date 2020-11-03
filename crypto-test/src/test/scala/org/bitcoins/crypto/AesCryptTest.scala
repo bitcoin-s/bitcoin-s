@@ -93,7 +93,7 @@ class AesCryptTest extends BitcoinSUnitTest {
     val plainText = "foobar"
     val Right(plainbytes) = ByteVector.encodeUtf8(plainText)
     val iv = getIV(hex"455014871CD34F8DCFD7C1E387987BFF")
-    val expectedCipher = ByteVector.fromValidBase64("oE8HErg1lg==")
+    //val expectedCipher = ByteVector.fromValidBase64("oE8HErg1lg==")
 
     val encrypted = AesCrypt.encryptWithIV(plainbytes, iv, key)
 
@@ -333,7 +333,7 @@ class AesCryptTest extends BitcoinSUnitTest {
         .filter(!AesKey.keylengths.contains(_))
         .map(NumberGenerator.bytevector(_))
 
-    val first +: second +: rest = bytevectorGens
+    val first +: second +: _ = bytevectorGens
     val badKeyLenghts: Gen[ByteVector] =
       Gen.oneOf(first, second, bytevectorGens: _*)
 

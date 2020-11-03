@@ -68,7 +68,7 @@ class Base58Test extends BitcoinSUnitTest {
     val source =
       Source.fromURL(this.getClass.getResource("/base58_keys_valid.json"))
     val lines =
-      try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n"
+      try source.getLines().filterNot(_.isEmpty).map(_.trim) mkString "\n"
       finally source.close()
     val json = lines.parseJson
     val testCases: Seq[Base58ValidTestCase] =
@@ -78,10 +78,12 @@ class Base58Test extends BitcoinSUnitTest {
     } yield {
       //if testCase is an Address, it must have a valid base58 representation
       if (testCase.addressOrWIFPrivKey.isLeft) {
-        Base58.isValid(testCase.addressOrWIFPrivKey.left.get.value) must be(
+        Base58.isValid(
+          testCase.addressOrWIFPrivKey.swap.getOrElse(fail()).toString) must be(
           true)
       } else {
-        Base58.isValid(testCase.addressOrWIFPrivKey.right.get) must be(true)
+        Base58.isValid(testCase.addressOrWIFPrivKey.getOrElse(fail())) must be(
+          true)
       }
     }
   }
@@ -93,7 +95,7 @@ class Base58Test extends BitcoinSUnitTest {
     val source =
       Source.fromURL(this.getClass.getResource("/base58_keys_invalid.json"))
     val lines =
-      try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n"
+      try source.getLines().filterNot(_.isEmpty).map(_.trim) mkString "\n"
       finally source.close()
     val json = lines.parseJson
     val testCases: Seq[Base58InvalidTestCase] =

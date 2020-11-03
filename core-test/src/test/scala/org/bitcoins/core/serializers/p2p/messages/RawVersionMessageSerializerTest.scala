@@ -3,8 +3,8 @@ package org.bitcoins.core.serializers.p2p.messages
 import java.net.InetSocketAddress
 
 import org.bitcoins.core.number.{Int32, Int64, UInt64}
-import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.p2p._
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 

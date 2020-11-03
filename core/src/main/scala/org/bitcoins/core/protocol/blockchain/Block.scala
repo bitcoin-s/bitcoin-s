@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector

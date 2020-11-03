@@ -13,7 +13,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
-import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, ECDigitalSignature}
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 import scodec.bits.ByteVector
@@ -137,7 +137,7 @@ class ScriptSignatureTest extends BitcoinSAsyncTest {
 
     val source = Source.fromURL(this.getClass.getResource("/sighash.json"))
     val lines =
-      try source.getLines.filterNot(_.isEmpty).map(_.trim).mkString("\n")
+      try source.getLines().filterNot(_.isEmpty).map(_.trim).mkString("\n")
       finally source.close()
     val testCases: Seq[SignatureHashTestCase] =
       lines.parseJson.convertTo[Seq[SignatureHashTestCase]]

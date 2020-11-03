@@ -7,15 +7,8 @@ import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
-import org.bitcoins.core.api.wallet.db.{
-  AccountDb,
-  AddressDb,
-  AddressTagDb,
-  LegacyAddressDb,
-  SegwitV0SpendingInfo,
-  SpendingInfoDb
-}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}

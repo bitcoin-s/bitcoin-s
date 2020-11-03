@@ -4,12 +4,12 @@ import java.math.BigInteger
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.script.constant._
 import org.bitcoins.core.protocol.transaction.{
   CoinbaseInput,
   TransactionConstants,
   TransactionOutput
 }
+import org.bitcoins.core.script.constant._
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.util.BitcoinSUnitTest

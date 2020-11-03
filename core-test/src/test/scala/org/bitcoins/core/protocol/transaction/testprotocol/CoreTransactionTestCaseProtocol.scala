@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.transaction.testprotocol
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.constant.ScriptToken

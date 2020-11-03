@@ -26,7 +26,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
   implicit override lazy val appConfig: ChainAppConfig = mainnetAppConfig
 
   val source: BufferedSource = FileUtil.getFileAsSource("block_headers.json")
-  val arrStr: String = source.getLines.next
+  val arrStr: String = source.getLines().next()
   source.close()
 
   import org.bitcoins.commons.serializers.JsonReaders.BlockHeaderReads
@@ -92,7 +92,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
 
         for {
           ch <- processedF
-          bestHash <- ch.getBestBlockHash
+          bestHash <- ch.getBestBlockHash()
         } yield assert(bestHash == blockHeadersToTest.last.hashBE)
       }
   }

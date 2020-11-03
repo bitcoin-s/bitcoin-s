@@ -1,8 +1,8 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand.ClaimDLCPenaltyFunds
-import org.bitcoins.crypto.Sha256DigestBE
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.crypto.Sha256DigestBE
 import scalafx.scene.control.TextField
 
 object PunishDLCDialog

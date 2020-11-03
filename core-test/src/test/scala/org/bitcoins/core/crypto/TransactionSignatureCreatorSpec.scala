@@ -1,10 +1,10 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.scalacheck.{Prop, Properties}
 
 /**
@@ -89,7 +89,7 @@ class TransactionSignatureCreatorSpec
 
   property("generate a valid signature for a p2wpkh witness transaction") =
     Prop.forAllNoShrink(TransactionGenerators.signedP2WPKHTransaction) {
-      case (wtxSigComponent, privKeys) =>
+      case (wtxSigComponent, _) =>
         val program = PreExecutionScriptProgram(wtxSigComponent)
         val result = ScriptInterpreter.run(program)
         result == ScriptOk
@@ -98,7 +98,7 @@ class TransactionSignatureCreatorSpec
   property(
     "generate a valid signature for a p2wsh(old scriptPubkey tx) witness transaction") =
     Prop.forAllNoShrink(TransactionGenerators.signedP2WSHTransaction) {
-      case (wtxSigComponent, privKeys) =>
+      case (wtxSigComponent, _) =>
         val program = PreExecutionScriptProgram(wtxSigComponent)
         val result = ScriptInterpreter.run(program)
         Seq(ScriptErrorPushSize, ScriptOk).contains(result)
@@ -106,7 +106,7 @@ class TransactionSignatureCreatorSpec
   property(
     "generate a valid signature from a p2sh(p2wpkh) witness transaction") =
     Prop.forAllNoShrink(TransactionGenerators.signedP2SHP2WPKHTransaction) {
-      case (wtxSigComponent, privKeys) =>
+      case (wtxSigComponent, _) =>
         val program = PreExecutionScriptProgram(wtxSigComponent)
         val result = ScriptInterpreter.run(program)
         if (result != ScriptOk) logger.warn("Result: " + result)
@@ -116,7 +116,7 @@ class TransactionSignatureCreatorSpec
   property(
     "generate a valid signature from a p2sh(p2wsh) witness tranasction") =
     Prop.forAllNoShrink(TransactionGenerators.signedP2SHP2WSHTransaction) {
-      case (wtxSigComponent, privKeys) =>
+      case (wtxSigComponent, _) =>
         val program = PreExecutionScriptProgram(wtxSigComponent)
         val result = ScriptInterpreter.run(program)
         if (result != ScriptOk) logger.warn("Result: " + result)

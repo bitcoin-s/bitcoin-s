@@ -6,8 +6,6 @@ import org.bitcoins.core.protocol.BlockStamp.{BlockHash, BlockHeight, BlockTime}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-import scala.util.Success
-
 class BlockStampTest extends BitcoinSUnitTest {
 
   it must "format and parse its string representation" in {

@@ -1,13 +1,7 @@
 package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.{
-  BaseNumbers,
-  BasicArithmetic,
-  Bounded,
-  Int64,
-  UInt5
-}
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.util.Bech32
 import org.bitcoins.crypto.NetworkElement

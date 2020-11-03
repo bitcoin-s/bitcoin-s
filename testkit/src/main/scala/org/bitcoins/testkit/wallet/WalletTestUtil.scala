@@ -38,7 +38,7 @@ object WalletTestUtil {
     * Useful if you want wallet test runs
     * To use the same key values each time
     */
-  val sampleMnemonic =
+  lazy val sampleMnemonic =
     MnemonicCode.fromWords(
       Vector("portion",
              "uniform",

@@ -63,7 +63,7 @@ class ScriptProgramFactoryTest extends BitcoinSUnitTest {
       inputIndex = UInt32.zero,
       output = TransactionOutput(CurrencyUnits.zero, TestUtil.scriptPubKey),
       ScriptFlagFactory.empty)
-    val program = PreExecutionScriptProgram(t)
+
     val inProgress =
       ExecutionInProgressScriptProgram(
         txSignatureComponent = t,
