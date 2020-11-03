@@ -10,7 +10,7 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.{TimeUtil}
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
@@ -24,7 +24,7 @@ import org.bitcoins.testkit.chain.{
   ChainUnitTest
 }
 import org.bitcoins.testkit.util.FileUtil
-import org.scalatest.{FutureOutcome}
+import org.scalatest.FutureOutcome
 import play.api.libs.json.Json
 
 import scala.concurrent.{Future, Promise}
