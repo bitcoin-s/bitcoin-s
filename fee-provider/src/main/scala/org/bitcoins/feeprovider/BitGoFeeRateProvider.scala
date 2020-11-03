@@ -45,3 +45,11 @@ case class BitGoFeeRateProvider(blockTargetOpt: Option[Int])(implicit
     belowLimit.values.min
   }
 }
+
+object BitGoFeeRateProvider extends FeeProviderFactory[BitGoFeeRateProvider] {
+
+  override def fromBlockTarget(blocks: Int)(implicit
+      system: ActorSystem): BitGoFeeRateProvider = {
+    BitGoFeeRateProvider(Some(blocks))
+  }
+}

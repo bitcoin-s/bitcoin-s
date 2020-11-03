@@ -5,16 +5,16 @@ import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  CompactFilterDAO,
-  CompactFilterHeaderDAO
-}
+import org.bitcoins.chain.models._
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
-import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.feeprovider.FeeProviderName._
+import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
+import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -70,9 +70,10 @@ class BitcoinSServerMain(override val args: Array[String])
         node <- nodeF
         chainApi <- chainApiF
         _ = logger.info("Initialized chain api")
+        feeProvider = getFeeProviderOrElse(MempoolSpaceProvider(HourFeeTarget))
         wallet <- walletConf.createHDWallet(node,
                                             chainApi,
-                                            BitcoinerLiveFeeRateProvider(60),
+                                            feeProvider,
                                             bip39PasswordOpt)
         callbacks <- createCallbacks(wallet)
         _ = nodeConf.addCallbacks(callbacks)
@@ -132,10 +133,12 @@ class BitcoinSServerMain(override val args: Array[String])
         _ = logger.info("Starting bitcoind")
         _ <- bitcoindRpcConf.start()
         _ = logger.info("Creating wallet")
-        tmpWallet <- walletConf.createHDWallet(bitcoind,
-                                               bitcoind,
-                                               bitcoind,
-                                               bip39PasswordOpt)
+        feeProvider = getFeeProviderOrElse(bitcoind)
+        tmpWallet <- walletConf.createHDWallet(nodeApi = bitcoind,
+                                               chainQueryApi = bitcoind,
+                                               feeRateApi = feeProvider,
+                                               bip39PasswordOpt =
+                                                 bip39PasswordOpt)
         wallet = BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
           bitcoind,
           tmpWallet)
@@ -297,6 +300,39 @@ class BitcoinSServerMain(override val args: Array[String])
       }
     }
     server.start()
+  }
+
+  /** Gets a Fee Provider from the given wallet app config
+    * Returns default if there is no config set
+    */
+  def getFeeProviderOrElse(default: => FeeRateApi)(implicit
+      system: ActorSystem,
+      walletConf: WalletAppConfig): FeeRateApi = {
+    val feeProviderNameOpt =
+      walletConf.feeProviderNameOpt.flatMap(FeeProviderName.fromStringOpt)
+    val feeProvider =
+      (feeProviderNameOpt, walletConf.feeProviderTargetOpt) match {
+        case (None, None) | (None, Some(_)) =>
+          default
+        case (Some(BitcoinerLive), None) =>
+          BitcoinerLiveFeeRateProvider.fromBlockTarget(6)
+        case (Some(BitcoinerLive), Some(target)) =>
+          BitcoinerLiveFeeRateProvider.fromBlockTarget(target)
+        case (Some(BitGo), targetOpt) =>
+          BitGoFeeRateProvider(targetOpt)
+        case (Some(MempoolSpace), None) =>
+          MempoolSpaceProvider(HourFeeTarget)
+        case (Some(MempoolSpace), Some(target)) =>
+          MempoolSpaceProvider.fromBlockTarget(target)
+        case (Some(Constant), Some(num)) =>
+          ConstantFeeRateProvider(SatoshisPerVirtualByte.fromLong(num))
+        case (Some(Constant), None) =>
+          throw new IllegalArgumentException(
+            "Missing a target for a ConstantFeeRateProvider")
+      }
+
+    logger.info(s"Using fee provider: $feeProvider")
+    feeProvider
   }
 }
 
