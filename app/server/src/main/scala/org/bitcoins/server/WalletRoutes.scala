@@ -208,6 +208,27 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
           }
       }
 
+    case ServerCommand("getdlcs", _) =>
+      complete {
+        wallet.listDLCs().map { dlcs =>
+          Server.httpSuccess(dlcs.map(_.toJson))
+        }
+      }
+
+    case ServerCommand("getdlc", arr) =>
+      GetDLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetDLC(eventId)) =>
+          complete {
+            wallet.findDLC(eventId).map {
+              case None => Server.httpSuccess(ujson.Null)
+              case Some(dlc) =>
+                Server.httpSuccess(dlc.toJson)
+            }
+          }
+      }
+
     case ServerCommand("createdlcoffer", arr) =>
       CreateDLCOffer.fromJsArr(arr) match {
         case Failure(exception) =>

@@ -3,6 +3,7 @@ package org.bitcoins.gui.dlc.dialog
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.gui.GlobalData
 import scalafx.Includes._
 import scalafx.application.Platform
 import scalafx.geometry.Insets
@@ -29,6 +30,7 @@ object InitOracleDialog {
          }))
 
     dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+    dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
 
     dialog.dialogPane().content = new GridPane {
       hgap = 10

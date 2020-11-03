@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
 import org.bitcoins.core.api.wallet.{
   HDWalletApi,
   NeutrinoWalletApi,
@@ -11,7 +12,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.crypto.SchnorrDigitalSignature
+import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import org.bitcoins.dlc.wallet.models.DLCDb
 import scodec.bits.ByteVector
 
@@ -56,6 +57,9 @@ trait DLCWalletApi { self: WalletApi =>
   /** Creates the refund transaction for the given contractId, does not broadcast it */
   def executeDLCRefund(contractId: ByteVector): Future[Transaction]
 
+  def listDLCs(): Future[Vector[DLCStatus]]
+
+  def findDLC(paramHash: Sha256DigestBE): Future[Option[DLCStatus]]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

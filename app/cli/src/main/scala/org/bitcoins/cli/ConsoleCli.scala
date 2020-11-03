@@ -20,7 +20,12 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce, Sha256Digest}
+import org.bitcoins.crypto.{
+  SchnorrDigitalSignature,
+  SchnorrNonce,
+  Sha256Digest,
+  Sha256DigestBE
+}
 import scopt.OParser
 import ujson._
 import upickle.{default => up}
@@ -321,6 +326,19 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("getdlcs")
+        .action((_, conf) => conf.copy(command = GetDLCs))
+        .text("Returns all dlcs in the wallet"),
+      cmd("getdlc")
+        .action((_, conf) => conf.copy(command = GetDLC(Sha256DigestBE.empty)))
+        .text("Gets a specific dlc in the wallet")
+        .children(arg[Sha256DigestBE]("paramhash")
+          .required()
+          .action((paramHash, conf) =>
+            conf.copy(command = conf.command match {
+              case _: GetDLC => GetDLC(paramHash)
+              case other     => other
+            }))),
       cmd("getbalance")
         .action((_, conf) => conf.copy(command = GetBalance(false)))
         .text("Get the wallet balance")
@@ -904,6 +922,9 @@ object ConsoleCli {
       case IsEmpty =>
         RequestParam("isempty")
       // DLCs
+      case GetDLCs => RequestParam("getdlcs")
+      case GetDLC(paramHash) =>
+        RequestParam("getdlc", Seq(up.writeJs(paramHash)))
       case CreateDLCOffer(oracleInfo,
                           contractInfo,
                           collateral,
@@ -1176,6 +1197,9 @@ object CliCommand {
   case class ExecuteDLCRefund(eventId: Sha256Digest, noBroadcast: Boolean)
       extends CliCommand
       with Broadcastable
+
+  case object GetDLCs extends CliCommand
+  case class GetDLC(paramHash: Sha256DigestBE) extends CliCommand
 
   // Wallet
   case class SendToAddress(

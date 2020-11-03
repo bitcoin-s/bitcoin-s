@@ -543,7 +543,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
           val sign = DLCSign(offerCETSigs, offerFundingSigs, contractId)
 
           val offerRemoteClaimed =
-            DLCStatus.RemoteClaimed(paramHash.flip,
+            DLCStatus.RemoteClaimed(paramHash,
                                     isInitiator = true,
                                     offer,
                                     accept,
@@ -551,7 +551,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
                                     offerOutcome.fundingTx,
                                     acceptOutcome.cet)
           val acceptRemoteClaimed =
-            DLCStatus.RemoteClaimed(paramHash.flip,
+            DLCStatus.RemoteClaimed(paramHash,
                                     isInitiator = false,
                                     offer,
                                     accept,

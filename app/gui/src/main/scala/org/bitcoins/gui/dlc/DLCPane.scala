@@ -15,16 +15,12 @@ class DLCPane(glassPane: VBox) {
   }
 
   private val resultArea = new TextArea {
-    prefHeight = 750
-    prefWidth = 800
     editable = false
     text = "Click on Offer or Accept to begin."
     wrapText = true
   }
 
   private val demoOracleArea = new TextArea {
-    prefHeight = 700
-    prefWidth = 400
     editable = false
     text =
       "Click on Init Demo Oracle to generate example oracle and contract information"
@@ -37,6 +33,8 @@ class DLCPane(glassPane: VBox) {
 
   private val model =
     new DLCPaneModel(resultArea, demoOracleArea, numOutcomesTF)
+
+  model.setUp()
 
   private val demoOracleButton = new Button {
     text = "Init Demo Oracle"
@@ -121,7 +119,6 @@ class DLCPane(glassPane: VBox) {
 
   private val buttonSpacer = new GridPane {
     hgap = 10
-    prefHeight = 50
     alignment = Pos.Center
 
     add(initButtonBar, 0, 0)
@@ -136,17 +133,28 @@ class DLCPane(glassPane: VBox) {
     spacing = 10
   }
 
+  private val tableView = new DLCTableView(model).tableView
+
+  private val textAreasAndTableViewVBox = new VBox {
+    children = Seq(textAreaHBox, tableView)
+    spacing = 10
+  }
+
   val borderPane: BorderPane = new BorderPane {
     top = buttonSpacer
-    center = textAreaHBox
+    center = textAreasAndTableViewVBox
     bottom = statusLabel
   }
 
   resultArea.prefWidth <== (borderPane.width * 2) / 3
   demoOracleVBox.prefWidth <== (borderPane.width / 3)
+  resultArea.prefHeight <== (borderPane.height * 2) / 3
+  demoOracleVBox.prefHeight <== (borderPane.height * 2) / 3
+  demoOracleArea.prefHeight <== demoOracleVBox.height * 0.9
 
   spaceRegion.prefWidth <== (borderPane.width - initButtonBar.width - acceptButtonBar.width - execButtonBar.width - 100) / 2
   spaceRegion2.prefWidth <== spaceRegion.prefWidth
+  tableView.prefHeight <== borderPane.height / 3
 
   private val taskRunner = new TaskRunner(buttonSpacer, glassPane)
   model.taskRunner = taskRunner
