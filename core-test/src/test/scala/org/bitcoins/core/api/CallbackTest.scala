@@ -17,7 +17,8 @@ class CallbackTest extends BitcoinSAsyncTest {
     val f1: Callback[Unit] = _ => {
       system.scheduler.scheduleOnce(testTimeout) {
         if (!promise.isCompleted) {
-          promise.complete(fail("2nd callback did not start before timeout"))
+          promise.failure(
+            new RuntimeException("2nd callback did not start before timeout"))
         }
       }
       promise.future.map(_ => ())

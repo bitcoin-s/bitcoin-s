@@ -34,6 +34,7 @@ object Deps {
     val sqliteV = "3.32.3.2"
     val scalameterV = "0.17"
     val scalamockV = "5.0.0"
+    val scalaCollectionCompatV = "2.2.0"
     val pgEmbeddedV = "0.13.3"
 
     val newMicroPickleV = "0.8.0"
@@ -203,6 +204,9 @@ object Deps {
     val scalameter =
       "com.storm-enroute" %% "scalameter" % V.scalameterV % "test" withSources () withJavadoc ()
 
+    val scalaCollectionCompat =
+      "org.scala-lang.modules" %% "scala-collection-compat" % V.scalaCollectionCompatV
+
     val pgEmbedded =
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
   }
@@ -244,7 +248,8 @@ object Deps {
     Test.logback,
     Test.scalaTest,
     Test.spray,
-    Test.playJson
+    Test.playJson,
+    Test.scalaCollectionCompat
   )
 
   val cryptoTest = List(

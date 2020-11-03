@@ -4,8 +4,8 @@ import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.crypto.{ECDigitalSignature, Sign}
 import scodec.bits.ByteVector
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 
 /** A signing interface for [[ExtKey]] */
 trait ExtSign extends Sign {

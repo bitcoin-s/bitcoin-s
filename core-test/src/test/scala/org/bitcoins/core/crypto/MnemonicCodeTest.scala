@@ -1,11 +1,9 @@
 package org.bitcoins.core.crypto
 
-import com.fasterxml.jackson.databind.JsonNode
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.Assertion
 import play.api.libs.json._
-import play.api.libs.json.jackson.JacksonJson
 import scodec.bits.{BinStringSyntax, BitVector, ByteVector}
 
 import scala.io.Source

@@ -5,7 +5,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionConstants,
   TransactionInput
 }
-import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 import scodec.bits.ByteVector
 

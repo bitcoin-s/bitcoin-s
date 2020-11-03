@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.constant
 
+import org.bitcoins.core.script.flag.ScriptFlagUtil
+import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
-import org.bitcoins.core.script.flag.ScriptFlagUtil
-import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
 
 import scala.annotation.tailrec

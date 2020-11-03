@@ -2,8 +2,8 @@ package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.number.{UInt32, UInt64}
-import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.blockchain.RawMerkleBlockSerializer
 import org.bitcoins.crypto.{DoubleSha256Digest, Factory, NetworkElement}
 import scodec.bits.{BitVector, ByteVector}

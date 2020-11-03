@@ -1,7 +1,6 @@
 package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransactionOutput,
   TransactionOutput

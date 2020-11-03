@@ -9,7 +9,7 @@ import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.{ScriptVerifyDerSig, ScriptVerifyNullDummy}
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.util.{BitcoinSLogger, ScriptProgramTestUtil}
+import org.bitcoins.core.util.ScriptProgramTestUtil
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 
 import scala.util.Try

@@ -1,15 +1,12 @@
 package org.bitcoins.core.protocol.ln.currency
 
-import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.LnPolicy
-import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.testkit.core.gen.ln.LnCurrencyUnitGen
-import scala.util.Success
-import scala.util.Failure
-import scala.util.Try
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
-import org.bitcoins.core.number.Int64
+
+import scala.util.{Failure, Success, Try}
 
 class LnCurrencyUnitTest extends BitcoinSUnitTest {
 
@@ -28,7 +25,7 @@ class LnCurrencyUnitTest extends BitcoinSUnitTest {
             assert(PicoBitcoins.min <= result)
             assert(result <= PicoBitcoins.max)
             assert(num1 + num2 == result)
-          case Failure(exc) => succeed
+          case Failure(_) => succeed
         }
     }
   }
@@ -48,7 +45,7 @@ class LnCurrencyUnitTest extends BitcoinSUnitTest {
             assert(PicoBitcoins.min <= result)
             assert(result <= PicoBitcoins.max)
             assert(num1 - num2 == result)
-          case Failure(exc) => succeed
+          case Failure(_) => succeed
         }
     }
   }
@@ -74,7 +71,7 @@ class LnCurrencyUnitTest extends BitcoinSUnitTest {
             assert(result >= PicoBitcoins.min)
             assert(result <= PicoBitcoins.max)
             assert(num1 * num2 == result)
-          case Failure(exc) => succeed
+          case Failure(_) => succeed
         }
     }
   }

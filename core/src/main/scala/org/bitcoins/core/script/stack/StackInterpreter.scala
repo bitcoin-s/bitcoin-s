@@ -1,12 +1,12 @@
 package org.bitcoins.core.script.stack
 
+import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.flag.ScriptFlagUtil
+import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
-import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.flag.ScriptFlagUtil
-import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.util.{Failure, Success, Try}

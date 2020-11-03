@@ -41,7 +41,7 @@ class ChainSyncTest extends ChainDbUnitTest {
       }
 
       newChainHandlerF.flatMap { chainHandler =>
-        chainHandler.getBlockCount.map(count => assert(count == 1))
+        chainHandler.getBlockCount().map(count => assert(count == 1))
 
       }
   }
@@ -66,7 +66,7 @@ class ChainSyncTest extends ChainDbUnitTest {
                        getBestBlockHashFunc = getBestBlockHashFunc)
 
       newChainHandlerF.flatMap { chainHandler =>
-        chainHandler.getBlockCount.map(count => assert(count == 0))
+        chainHandler.getBlockCount().map(count => assert(count == 0))
       }
   }
 

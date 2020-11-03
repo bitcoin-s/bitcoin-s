@@ -89,8 +89,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
       .initializeWithEntropy(entropy = mnemonic.toEntropy,
                              bip39PasswordOpt = None,
                              kmParams = kmParams)
-      .right
-      .get
+      .getOrElse(fail())
 
     val apiXpub = api.getRootXPub
 
@@ -111,8 +110,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
     val api = BIP39KeyManager
       .initializeWithEntropy(mnemonic.toEntropy, Some(bip39Pw), kmParams)
-      .right
-      .get
+      .getOrElse(fail())
 
     val apiXpub = api.getRootXPub
 
@@ -136,7 +134,9 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
     val directXpub = direct.getRootXPub
     val api =
-      BIP39KeyManager.fromParams(kmParams, password, Some(bip39Pw)).right.get
+      BIP39KeyManager
+        .fromParams(kmParams, password, Some(bip39Pw))
+        .getOrElse(fail())
 
     val apiXpub = api.getRootXPub
 
@@ -157,8 +157,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
     val api = BIP39KeyManager
       .initializeWithMnemonic(mnemonic, Some(bip39Pw), kmParams)
-      .right
-      .get
+      .getOrElse(fail())
 
     val apiXpub = api.getRootXPub
 

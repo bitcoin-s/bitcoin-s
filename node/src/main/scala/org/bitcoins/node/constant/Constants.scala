@@ -1,6 +1,7 @@
 package org.bitcoins.node.constant
 
 import akka.actor.ActorSystem
+
 import scala.concurrent.duration.DurationInt
 
 case object Constants {

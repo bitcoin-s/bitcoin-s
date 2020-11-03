@@ -18,13 +18,7 @@ import org.bitcoins.core.script.locktime.{
 import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.core.util._
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  DoubleSha256Digest,
-  ECPublicKey,
-  Sha256Digest,
-  Sha256Hash160Digest
-}
+import org.bitcoins.crypto._
 
 import scala.util.{Failure, Success, Try}
 

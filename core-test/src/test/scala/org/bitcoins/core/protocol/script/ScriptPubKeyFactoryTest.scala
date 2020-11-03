@@ -27,8 +27,8 @@ class ScriptPubKeyFactoryTest extends BitcoinSUnitTest {
     val rawScriptPubKey = TestUtil.rawP2PKScriptPubKey
     val scriptPubKey = ScriptPubKey(rawScriptPubKey)
     val result = scriptPubKey match {
-      case script: P2PKScriptPubKey => true
-      case _                        => false
+      case _: P2PKScriptPubKey => true
+      case _                   => false
     }
     result must be(true)
 
@@ -39,7 +39,7 @@ class ScriptPubKeyFactoryTest extends BitcoinSUnitTest {
       "695221025878e270211662a27181cf4d6ad4d2cf0e69a98a3815c086f587c7e9388d87182103fc85980e3fac1f3d8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906210215b5bd050869166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f53af"
     val scriptPubKey = ScriptPubKey(multiSigRawScriptPubKeyHex)
     val isMultiSigScriptPubKey: Boolean = scriptPubKey match {
-      case s: MultiSignatureScriptPubKey => true
+      case _: MultiSignatureScriptPubKey => true
       case _                             => false
     }
 

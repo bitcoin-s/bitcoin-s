@@ -6,11 +6,7 @@ import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.testkit.core.gen.{
-  CreditingTxGen,
-  CurrencyUnitGenerator,
-  ScriptGenerators
-}
+import org.bitcoins.testkit.core.gen.CreditingTxGen
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalatest.Assertion
 

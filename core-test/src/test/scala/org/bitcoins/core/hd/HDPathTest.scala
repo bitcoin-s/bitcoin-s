@@ -4,13 +4,12 @@ import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.crypto.{ExtKeyVersion, _}
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
+import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkit.core.gen.{HDGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
 
 import scala.util.{Failure, Success}
-import org.bitcoins.core.protocol.script.WitnessScriptPubKey
-import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 
 class HDPathTest extends BitcoinSUnitTest {
 
@@ -125,7 +124,7 @@ class HDPathTest extends BitcoinSUnitTest {
       attempt match {
         case None =>
           succeed
-        case Some(_) => fail
+        case Some(_) => fail()
       }
     }
   }
@@ -136,7 +135,7 @@ class HDPathTest extends BitcoinSUnitTest {
         val tooShortPath = hd.path.dropRight(1)
         val attempt = hdApply(tooShortPath)
         attempt match {
-          case Success(_) => fail
+          case Success(_) => fail()
           case Failure(exception) =>
             assert(exception.getMessage.contains("must have five elements"))
         }
@@ -155,7 +154,7 @@ class HDPathTest extends BitcoinSUnitTest {
         val badCoinAttempt = hdApply(nonHardenedCoinChildren)
 
         badCoinAttempt match {
-          case Success(_) => fail
+          case Success(_) => fail()
           case Failure(exc) =>
             assert(exc.getMessage.contains("coin type child must be hardened"))
         }
@@ -169,7 +168,7 @@ class HDPathTest extends BitcoinSUnitTest {
         val badAccountAttempt = hdApply(nonHardenedAccountChildren)
 
         badAccountAttempt match {
-          case Success(_) => fail
+          case Success(_) => fail()
           case Failure(exc) =>
             assert(exc.getMessage.contains("account child must be hardened"))
         }
@@ -183,7 +182,7 @@ class HDPathTest extends BitcoinSUnitTest {
           hdApply(hardenedChainChildren)
 
         badChainAttempt match {
-          case Success(_) => fail
+          case Success(_) => fail()
           case Failure(exc) =>
             assert(exc.getMessage.contains("chain child must not be hardened"))
         }
@@ -197,7 +196,7 @@ class HDPathTest extends BitcoinSUnitTest {
           hdApply(hardenedAddressChildren)
 
         badAddrAttempt match {
-          case Success(_) => fail
+          case Success(_) => fail()
           case Failure(exc) =>
             assert(
               exc.getMessage.contains(
@@ -395,8 +394,8 @@ class HDPathTest extends BitcoinSUnitTest {
         "KyZpNDKnfs94vbrwhJneDi77V6jF64PWPF8x5cdJb8ifgg2DUc9d")
       val expectedPub = ECPublicKey(
         hex"0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c")
-      val expectedAddress = Bech32Address.fromStringExn(
-        "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu")
+      val expectedAddress =
+        Bech32Address.fromString("bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu")
 
       assert(expectedPriv == derivedPriv)
       assert(expectedPub == derivedPub)
@@ -415,8 +414,8 @@ class HDPathTest extends BitcoinSUnitTest {
         "Kxpf5b8p3qX56DKEe5NqWbNUP9MnqoRFzZwHRtsFqhzuvUJsYZCy")
       val expectedPub = ECPublicKey(
         hex"03e775fd51f0dfb8cd865d9ff1cca2a158cf651fe997fdc9fee9c1d3b5e995ea77")
-      val expectedAddress = Bech32Address.fromStringExn(
-        "bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g")
+      val expectedAddress =
+        Bech32Address.fromString("bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g")
 
       assert(expectedPriv == derivedPriv)
       assert(expectedPub == derivedPub)
@@ -435,8 +434,8 @@ class HDPathTest extends BitcoinSUnitTest {
         "KxuoxufJL5csa1Wieb2kp29VNdn92Us8CoaUG3aGtPtcF3AzeXvF")
       val expectedPub = ECPublicKey(
         hex"03025324888e429ab8e3dbaf1f7802648b9cd01e9b418485c5fa4c1b9b5700e1a6")
-      val expectedAddress = Bech32Address.fromStringExn(
-        "bc1q8c6fshw2dlwun7ekn9qwf37cu2rn755upcp6el")
+      val expectedAddress =
+        Bech32Address.fromString("bc1q8c6fshw2dlwun7ekn9qwf37cu2rn755upcp6el")
 
       assert(expectedPriv == derivedPriv)
       assert(expectedPub == derivedPub)

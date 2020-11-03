@@ -10,13 +10,12 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
   ECPrivateKey
 }
-import org.bitcoins.testkit.chain
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
@@ -24,8 +23,8 @@ import org.bitcoins.testkit.chain.{
   ChainTestUtil,
   ChainUnitTest
 }
-import org.bitcoins.testkit.util.{FileUtil, ScalaTestUtil}
-import org.scalatest.{Assertion, FutureOutcome}
+import org.bitcoins.testkit.util.FileUtil
+import org.scalatest.FutureOutcome
 import play.api.libs.json.Json
 
 import scala.concurrent.{Future, Promise}
@@ -87,7 +86,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   it must "have an in-order seed" in { _ =>
     val source = FileUtil.getFileAsSource("block_headers.json")
-    val arrStr = source.getLines.next
+    val arrStr = source.getLines().next()
     source.close()
 
     import org.bitcoins.commons.serializers.JsonReaders.BlockHeaderReads
@@ -129,7 +128,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val assertBBestHashF = for {
         chainHandler <- chainHandlerCF
         headerB <- newHeaderBF
-        bestHash <- chainHandler.getBestBlockHash
+        bestHash <- chainHandler.getBestBlockHash()
       } yield {
         assert(bestHash == headerB.hashBE)
       }
@@ -218,14 +217,14 @@ class ChainHandlerTest extends ChainDbUnitTest {
       for {
         chainHandlerF <- chainHandlerFF
         headerE <- headerEF
-        bestHash <- chainHandlerF.getBestBlockHash
+        bestHash <- chainHandlerF.getBestBlockHash()
       } yield assert(bestHash == headerE.hashBE)
   }
 
   it must "get the highest filter header" in { chainHandler: ChainHandler =>
     {
       for {
-        count <- chainHandler.getFilterHeaderCount
+        count <- chainHandler.getFilterHeaderCount()
         genesisFilterHeader <- chainHandler.getFilterHeadersAtHeight(count)
       } yield {
         assert(genesisFilterHeader.size == 1)
@@ -255,7 +254,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   it must "get the highest filter" in { chainHandler: ChainHandler =>
     {
       for {
-        count <- chainHandler.getFilterCount
+        count <- chainHandler.getFilterCount()
         genesisFilter <- chainHandler.getFiltersAtHeight(count)
       } yield {
         assert(count == 0)
@@ -382,7 +381,6 @@ class ChainHandlerTest extends ChainDbUnitTest {
         blockHeaderBatchOpt <- chainHandler.nextBlockHeaderBatchRange(
           prevStopHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
           batchSize = batchSize)
-        count <- chainHandler.getBlockCount()
       } yield {
         assert(blockHeaderBatchOpt.isDefined)
         val marker = blockHeaderBatchOpt.get
@@ -420,7 +418,6 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val assert1F = for {
         rangeOpt <-
           chainHandler.nextBlockHeaderBatchRange(genesisHeader.hashBE, 1)
-        count <- chainHandler.getBlockCount()
       } yield {
         assert(rangeOpt.isEmpty)
       }

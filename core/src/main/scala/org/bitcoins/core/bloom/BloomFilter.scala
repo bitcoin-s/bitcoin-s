@@ -1,29 +1,21 @@
 package org.bitcoins.core.bloom
 
 import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   P2PKScriptPubKey,
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
-import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
 import org.bitcoins.core.serializers.bloom.RawBloomFilterSerializer
 import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.crypto._
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 import scala.util.hashing.MurmurHash3
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  DoubleSha256Digest,
-  ECPublicKey,
-  Factory,
-  HashDigest,
-  NetworkElement,
-  Sha256Hash160Digest
-}
 
 /**
   * Implements a bloom filter that abides by the semantics of BIP37

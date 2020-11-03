@@ -18,14 +18,7 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.util.Bech32
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  ECDigitalSignature,
-  ECPrivateKey,
-  ECPublicKey,
-  EmptyDigitalSignature,
-  Sha256Digest
-}
+import org.bitcoins.crypto._
 import org.bitcoins.testkit.core.gen.ln.LnInvoiceGen
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
@@ -69,8 +62,8 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
     val sigData =
       "6c6e62630b25fe64410d00004080c1014181c20240004080c1014181c20240004080c1014181c202404081a1fa83632b0b9b29031b7b739b4b232b91039bab83837b93a34b733903a3434b990383937b532b1ba0"
-    val hashSigData = Sha256Digest.fromHex(
-      "c3d4e83f646fa79a393d75277b1d858db1d1f7ab7137dcb7835db2ecd518e1c9")
+    /*    val hashSigData = Sha256Digest.fromHex(
+      "c3d4e83f646fa79a393d75277b1d858db1d1f7ab7137dcb7835db2ecd518e1c9")*/
 
     val signature = ECDigitalSignature.fromRS(
       "38ec6891345e204145be8a3a99de38e98a39d6a569434e1845c8af7205afcfcc7f425fcd1463e93c32881ead0d6e356d467ec8c02553f9aab15e5738b11f127f")
@@ -403,6 +396,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     // TODO uncomment when https://github.com/bitcoin-s/bitcoin-s/issues/1064 is fixed
     // serialized must be(expected)
 
+    assert(serialized == expected)
     val deserialized = LnInvoice.fromStringT(serialized)
 
     deserialized.get.toString must be(serialized)
@@ -549,6 +543,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       val i = LnInvoice.fromStringT(str).get
       i.toString must be(str)
       i.nodeId must be(NodeId.fromHex(nodeId))
+      ()
     }
     testInvoice(
       "lnbcrt500p1p0zk8umpp5wyc4s0h4jtu5lapsr4p2nevlpck7l5xec6rpjdv2a7r992vx0ctqdq9vehk7xqrrssfs6t6nyfutf4j8wzq6mf82lxefj5zadvw8fnjw6ev38y4578734zl94jfwnsfqdyt67da7g8shvhej0rkysymy260xyjtdv2dvhmvmgpdg6qjw",

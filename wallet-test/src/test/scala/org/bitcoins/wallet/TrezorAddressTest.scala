@@ -51,7 +51,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     }
     val rawText = Source
       .fromInputStream(stream)
-      .getLines
+      .getLines()
       .drop(1) // first line is a comment
       .mkString
     Json.parse(rawText)

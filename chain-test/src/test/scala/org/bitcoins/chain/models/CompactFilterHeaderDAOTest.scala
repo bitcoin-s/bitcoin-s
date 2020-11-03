@@ -1,17 +1,12 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterHeaderDb}
-import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
   ChainDbUnitTest,
-  ChainTestUtil,
-  ChainUnitTest
+  ChainTestUtil
 }
-import org.bitcoins.testkit.core.gen.{
-  BlockchainElementsGenerator,
-  CryptoGenerators
-}
+import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalatest.FutureOutcome
 
 class CompactFilterHeaderDAOTest extends ChainDbUnitTest {
