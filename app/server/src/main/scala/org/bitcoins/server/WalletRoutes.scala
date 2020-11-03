@@ -266,6 +266,18 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
           }
       }
 
+    case ServerCommand("signpsbt", arr) =>
+      SignPSBT.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(SignPSBT(psbt)) =>
+          complete {
+            wallet.signPSBT(psbt).map { signed =>
+              Server.httpSuccess(signed.base64)
+            }
+          }
+      }
+
     case ServerCommand("opreturncommit", arr) =>
       OpReturnCommit.fromJsArr(arr) match {
         case Failure(exception) =>

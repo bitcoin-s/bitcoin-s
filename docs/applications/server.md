@@ -178,6 +178,8 @@ For more information on how to use our built in `cli` to interact with the serve
     - `amount` - Amount to send in BTC
     - `algo` - Coin selection algo
     - `--feerate <value>` - Fee rate in sats per virtual byte
+ - `signpsbt` `psbt` - Signs the PSBT's inputs with keys that are associated with the wallet
+    - `psbt` - PSBT to sign
  - `opreturncommit` `message` `[options]` - Creates OP_RETURN commitment transaction
     - `message` - message to put into OP_RETURN commitment
     - `--hashMessage` - should the message be hashed before commitment
