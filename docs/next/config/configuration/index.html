@@ -197,68 +197,45 @@ to ensure the entire module is initialized correctly.</p>
 
    }
 
-    # Bitcoin-S provides manny different fee providers
-    # You can configure your<span class="hljs-built_in"> server </span><span class="hljs-keyword">to</span> use any of them
-    # Below is some examples of different options
-    fee-provider {
-        # name = mempoolspace # Uses mempool.space<span class="hljs-string">'s api
-        # The target is optional for mempool.space
-        # It refers to the expected number of blocks until confirmation
-        # target = 6
-
-        # name = bitcoinerlive # Uses bitcoiner.live'</span>s api
-        # The target is optional <span class="hljs-keyword">for</span> Bitcoiner Live
-        # It refers <span class="hljs-keyword">to</span> the expected number of blocks until confirmation
-        # target = 6
-
-        # name = bitgo # Uses BitGo<span class="hljs-string">'s api
-        # The target is optional for BitGo
-        # It refers to the expected number of blocks until confirmation
-        # target = 6
-
-        # name = constant # A constant fee rate in sats/vbyte
-        # target = 1 # Will always use 1 sat/vbyte
-    }
-
-    server {
-        # The port we bind our rpc server on
+   <span class="hljs-built_in"> server </span>{
+        # The<span class="hljs-built_in"> port </span>we bind our rpc<span class="hljs-built_in"> server </span>on
         rpcport = 9999
     }
 }
 
 
 akka {
-    loglevel = "OFF"
-    stdout-loglevel = "OFF"
+    loglevel = <span class="hljs-string">"OFF"</span>
+    stdout-loglevel = <span class="hljs-string">"OFF"</span>
     http {
-        client {
-            # The time after which an idle connection will be automatically closed.
-            # Set to `infinite` to completely disable idle connection timeouts.
+       <span class="hljs-built_in"> client </span>{
+            # The time after which an idle<span class="hljs-built_in"> connection </span>will be automatically closed.
+            # <span class="hljs-builtin-name">Set</span> <span class="hljs-keyword">to</span> `infinite` <span class="hljs-keyword">to</span> completely <span class="hljs-builtin-name">disable</span> idle<span class="hljs-built_in"> connection </span>timeouts.
 
-            # some requests potentially take a long time, like generate and prune
+            # some requests potentially take a long time, like generate <span class="hljs-keyword">and</span> prune
             idle-timeout = 5 minutes
         }
     }
 
 
     actor {
-        debug {
-            # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill etc.)
+        <span class="hljs-builtin-name">debug</span> {
+            # <span class="hljs-builtin-name">enable</span> <span class="hljs-builtin-name">DEBUG</span><span class="hljs-built_in"> logging </span>of all AutoReceiveMessages (Kill, PoisonPill etc.)
             autoreceive= off
-            # enable function of LoggingReceive, which is to log any received message at
-            # DEBUG level
+            # <span class="hljs-builtin-name">enable</span> function of LoggingReceive, which is <span class="hljs-keyword">to</span> log any received message at
+            # <span class="hljs-builtin-name">DEBUG</span> level
             receive = on
-            # enable DEBUG logging of unhandled messages
+            # <span class="hljs-builtin-name">enable</span> <span class="hljs-builtin-name">DEBUG</span><span class="hljs-built_in"> logging </span>of unhandled messages
             unhandled = off
 
-            # enable DEBUG logging of actor lifecycle changes
+            # <span class="hljs-builtin-name">enable</span> <span class="hljs-builtin-name">DEBUG</span><span class="hljs-built_in"> logging </span>of actor lifecycle changes
             lifecycle = off
 
-            event-stream=off
+            <span class="hljs-attribute">event-stream</span>=off
         }
     }
 }
-</span></code></pre>
+</code></pre>
 <h2><a class="anchor" aria-hidden="true" id="database-configuration"></a><a href="#database-configuration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Database configuration</h2>
 <p>By default, bitcoin-s uses Sqlite to store its data.
 It creates three Sqlite databases in <code>~/.bitcoin-s/${network}</code>: <code>chain.sqlite</code> for <code>chain</code> project,
