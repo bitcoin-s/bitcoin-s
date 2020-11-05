@@ -98,9 +98,9 @@ val network = RegTest
 
 val kmParams = KeyManagerParams(seedPath, purpose, network)
 
-val aesPassword = AesPassword.fromString("password")
+val aesPasswordOpt = Some(AesPassword.fromString("password"))
 
-val km = BIP39KeyManager.initializeWithMnemonic(aesPassword, mnemonic, None, kmParams)
+val km = BIP39KeyManager.initializeWithMnemonic(aesPasswordOpt, mnemonic, None, kmParams)
 
 val rootXPub = km.right.get.getRootXPub
 

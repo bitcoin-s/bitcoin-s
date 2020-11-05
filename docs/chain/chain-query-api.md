@@ -83,7 +83,7 @@ val bitcoind = BitcoindV19RpcClient(BitcoindInstance.fromConfigFile())
 val nodeApi = BitcoinSWalletTest.MockNodeApi
 
 // Create our key manager
-val keyManagerE = BIP39KeyManager.initialize(aesPassword = AesPassword.fromString("password"),
+val keyManagerE = BIP39KeyManager.initialize(aesPasswordOpt = Some(AesPassword.fromString("password")),
                                                kmParams = walletConf.kmParams,
                                                bip39PasswordOpt = None)
 

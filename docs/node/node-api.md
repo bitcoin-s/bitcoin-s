@@ -60,10 +60,10 @@ implicit val walletConf: WalletAppConfig =
 // and a ChainApi
 val bitcoind = BitcoindV19RpcClient(BitcoindInstance.fromConfigFile())
 val chainApi = BitcoinSWalletTest.MockChainQueryApi
-val aesPassword = AesPassword.fromString("password")
+val aesPasswordOpt = Some(AesPassword.fromString("password"))
 
 // Create our key manager
-val keyManagerE = BIP39KeyManager.initialize(aesPassword = aesPassword,
+val keyManagerE = BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
                                                kmParams = walletConf.kmParams,
                                                bip39PasswordOpt = None)
 
