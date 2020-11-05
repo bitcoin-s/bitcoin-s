@@ -1,23 +1,18 @@
 package org.bitcoins.keymanager
 
 import java.nio.file.{Files, Path}
-import java.util.NoSuchElementException
 
 import org.bitcoins.core.crypto.BIP39Seed
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.AesPassword
-import org.bitcoins.keymanager.ReadMnemonicError.{
-  DecryptionError,
-  JsonParsingError
-}
+import org.bitcoins.keymanager.ReadMnemonicError._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.{BeforeAndAfterEach, FutureOutcome}
-import ujson.Value.InvalidData
 
 class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
@@ -302,6 +297,19 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     }
   }
 
+  it must "fail to read an unencrypted seed that doesn't exist" in {
+    walletConf =>
+      require(!walletConf.seedExists())
+      val seedPath = getSeedPath(walletConf)
+      val read =
+        WalletStorage.decryptMnemonicFromDisk(seedPath, None)
+
+      read match {
+        case Left(NotFoundError)        => succeed
+        case res @ (Left(_) | Right(_)) => fail(res.toString)
+      }
+  }
+
   it must "throw an exception if we attempt to overwrite an existing seed" in {
     walletConf =>
       assert(!walletConf.seedExists())
@@ -346,7 +354,6 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   it must "write and read an unencrypted ExtPrivateKey from disk" in {
     walletConf: WalletAppConfig =>
       assert(!walletConf.seedExists())
-      assert(!walletConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
       val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
       val seedPath = getSeedPath(walletConf)
@@ -370,5 +377,16 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
                                             Some(password))
 
       assert(read == expected)
+  }
+
+  it must "fail to read unencrypted ExtPrivateKey from disk that doesn't exist" in {
+    walletConf: WalletAppConfig =>
+      assert(!walletConf.seedExists())
+      val seedPath = getSeedPath(walletConf)
+      val keyVersion = SegWitMainNetPriv
+
+      assertThrows[RuntimeException](
+        WalletStorage.getPrivateKeyFromDisk(seedPath, keyVersion, None, None))
+
   }
 }
