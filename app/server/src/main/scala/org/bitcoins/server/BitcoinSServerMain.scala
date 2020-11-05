@@ -33,8 +33,6 @@ class BitcoinSServerMain(override val args: Array[String])
 
   def startup: Future[Unit] = {
 
-    val bip39PasswordOpt = None // todo need to prompt user for this
-
     implicit val walletConf: WalletAppConfig = conf.walletConf
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
     implicit val chainConf: ChainAppConfig = conf.chainConf
@@ -71,10 +69,7 @@ class BitcoinSServerMain(override val args: Array[String])
         chainApi <- chainApiF
         _ = logger.info("Initialized chain api")
         feeProvider = getFeeProviderOrElse(MempoolSpaceProvider(HourFeeTarget))
-        wallet <- walletConf.createHDWallet(node,
-                                            chainApi,
-                                            feeProvider,
-                                            bip39PasswordOpt)
+        wallet <- walletConf.createHDWallet(node, chainApi, feeProvider)
         callbacks <- createCallbacks(wallet)
         _ = nodeConf.addCallbacks(callbacks)
       } yield {
@@ -136,9 +131,7 @@ class BitcoinSServerMain(override val args: Array[String])
         feeProvider = getFeeProviderOrElse(bitcoind)
         tmpWallet <- walletConf.createHDWallet(nodeApi = bitcoind,
                                                chainQueryApi = bitcoind,
-                                               feeRateApi = feeProvider,
-                                               bip39PasswordOpt =
-                                                 bip39PasswordOpt)
+                                               feeRateApi = feeProvider)
         wallet = BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
           bitcoind,
           tmpWallet)

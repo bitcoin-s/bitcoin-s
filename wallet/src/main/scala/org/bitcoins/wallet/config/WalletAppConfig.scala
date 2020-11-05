@@ -104,6 +104,10 @@ case class WalletAppConfig(
   lazy val feeProviderTargetOpt: Option[Int] =
     config.getIntOpt("bitcoin-s.fee-provider.target")
 
+  lazy val bip39PasswordOpt: Option[String] = {
+    config.getStringOrNone("bitcoin-s.wallet.bip39password")
+  }
+
   override def start(): Future[Unit] = {
     for {
       _ <- super.start()
@@ -187,14 +191,10 @@ case class WalletAppConfig(
   def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi,
-      bip39PasswordOpt: Option[String])(implicit
-      ec: ExecutionContext): Future[Wallet] = {
-    WalletAppConfig.createHDWallet(
-      nodeApi = nodeApi,
-      chainQueryApi = chainQueryApi,
-      feeRateApi = feeRateApi,
-      bip39PasswordOpt = bip39PasswordOpt)(this, ec)
+      feeRateApi: FeeRateApi)(implicit ec: ExecutionContext): Future[Wallet] = {
+    WalletAppConfig.createHDWallet(nodeApi = nodeApi,
+                                   chainQueryApi = chainQueryApi,
+                                   feeRateApi = feeRateApi)(this, ec)
   }
 
 }
@@ -214,8 +214,7 @@ object WalletAppConfig
   def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi,
-      bip39PasswordOpt: Option[String])(implicit
+      feeRateApi: FeeRateApi)(implicit
       walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
     walletConf.hasWallet().flatMap { walletExists =>
@@ -223,7 +222,7 @@ object WalletAppConfig
         logger.info(s"Using pre-existing wallet")
         // TODO change me when we implement proper password handling
         BIP39LockedKeyManager.unlock(BIP39KeyManager.badPassphrase,
-                                     bip39PasswordOpt,
+                                     walletConf.bip39PasswordOpt,
                                      walletConf.kmParams) match {
           case Right(km) =>
             val wallet =
@@ -234,7 +233,7 @@ object WalletAppConfig
         }
       } else {
         logger.info(s"Initializing key manager")
-        val bip39PasswordOpt = None
+        val bip39PasswordOpt = walletConf.bip39PasswordOpt
         val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
           BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
                                      bip39PasswordOpt = bip39PasswordOpt)
