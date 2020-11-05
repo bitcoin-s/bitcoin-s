@@ -79,7 +79,10 @@ class EventDescriptorTest extends BitcoinSUnitTest {
     assert(
       rangeEventBasePrecision1.outcomes == -10
         .until(90, 5)
-        .map(num => Vector(num.toString())))
+        .map(num => Vector(num.toString)))
+
+    assert(!rangeEventBasePrecision1.containsToPrecision(8.4))
+    assert(rangeEventBasePrecision1.containsToPrecision(8.5))
   }
 
   it must "be illegal to have num digits be zero" in {
@@ -249,5 +252,8 @@ class EventDescriptorTest extends BitcoinSUnitTest {
         .until(1000)
         .toVector
         .map(formatNum(_, numDigits = 3)))
+
+    assert(!descriptor4.containsToPrecision(13.55))
+    assert(descriptor4.containsToPrecision(13.5))
   }
 }
