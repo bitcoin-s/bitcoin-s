@@ -25,7 +25,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.4.4")
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.4")
 
 // write markdown files with type-checked Scala
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.10")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.11")
 
 // SQL migrations
 addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.4.2")
