@@ -319,6 +319,12 @@ trait NumericEventDescriptor extends EventDescriptorTLV {
     NumericRange.inclusive[BigInt](minNum, maxNum, step.toInt).toVector
   }
 
+  def contains(outcome: BigInt): Boolean = {
+    val inBounds = outcome <= maxNum && outcome >= minNum
+
+    inBounds && (outcome - minNum) % step.toInt == 0
+  }
+
   /** The base in which the outcome value is represented */
   def base: UInt16
 
@@ -343,6 +349,13 @@ trait NumericEventDescriptor extends EventDescriptorTLV {
 
   def outcomesToPrecision: Vector[BigDecimal] =
     outcomeNums.map(num => precisionModifier * BigDecimal(num))
+
+  def containsToPrecision(outcome: BigDecimal): Boolean = {
+    (outcome / precisionModifier).toBigIntExact match {
+      case Some(unModifiedOutcome) => contains(unModifiedOutcome)
+      case None                    => false
+    }
+  }
 }
 
 /**
