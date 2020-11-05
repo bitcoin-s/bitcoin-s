@@ -154,6 +154,113 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   import org.bitcoins.core.psbt.InputPSBTRecord._
   import org.bitcoins.core.psbt.PSBTInputKeyId._
 
+  def nextRole(txIn: TransactionInput): PSBTRole = {
+    if (isFinalized) {
+      PSBTRole.ExtractorPSBTRole
+    } else {
+      (nonWitnessOrUnknownUTXOOpt, witnessUTXOOpt) match {
+        case (None, None) =>
+          PSBTRole.UpdaterPSBTRole
+        case (Some(_), None) | (None, Some(_)) | (Some(_), Some(_)) =>
+          val finalizeT = finalize(txIn)
+          finalizeT match {
+            case Failure(_) =>
+              val dummySigner = Sign.dummySign(ECPublicKey.freshPublicKey)
+              Try(toUTXOSigningInfo(txIn, dummySigner)) match {
+                case Failure(_) =>
+                  PSBTRole.SignerPSBTRole
+                case Success(_) =>
+                  PSBTRole.FinalizerPSBTRole
+              }
+            case Success(_) =>
+              PSBTRole.FinalizerPSBTRole
+          }
+      }
+    }
+  }
+
+  def prevOutOpt(vout: Int): Option[TransactionOutput] = {
+    witnessUTXOOpt match {
+      case Some(witnessUTXO) =>
+        Some(witnessUTXO.witnessUTXO)
+      case None =>
+        nonWitnessOrUnknownUTXOOpt match {
+          case Some(tx) =>
+            Some(tx.transactionSpent.outputs(vout))
+          case None => None
+        }
+    }
+  }
+
+  private def missingSigsFromScript(
+      spk: ScriptPubKey): Vector[Sha256Hash160Digest] = {
+    spk match {
+      case EmptyScriptPubKey | _: WitnessCommitment |
+          _: NonStandardScriptPubKey | _: UnassignedWitnessScriptPubKey =>
+        Vector.empty
+      case p2pk: P2PKScriptPubKey =>
+        if (partialSignatures.isEmpty) {
+          Vector(CryptoUtil.sha256Hash160(p2pk.publicKey.bytes))
+        } else Vector.empty
+      case p2pkh: P2PKHScriptPubKey =>
+        if (partialSignatures.isEmpty) {
+          Vector(p2pkh.pubKeyHash)
+        } else Vector.empty
+      case multi: MultiSignatureScriptPubKey =>
+        if (partialSignatures.size < multi.requiredSigs) {
+          val keys = multi.publicKeys.filterNot(key =>
+            partialSignatures.exists(_.pubKey == key))
+          keys.map(key => CryptoUtil.sha256Hash160(key.bytes)).toVector
+        } else Vector.empty
+      case p2wpkh: P2WPKHWitnessSPKV0 =>
+        if (partialSignatures.isEmpty) {
+          Vector(p2wpkh.pubKeyHash)
+        } else Vector.empty
+      case p2pkTime: P2PKWithTimeoutScriptPubKey =>
+        if (partialSignatures.isEmpty) {
+          val keyA = CryptoUtil.sha256Hash160(p2pkTime.pubKey.bytes)
+          val keyB = CryptoUtil.sha256Hash160(p2pkTime.lockTime.bytes)
+          Vector(keyA, keyB)
+        } else Vector.empty
+      case _: P2WSHWitnessSPKV0 =>
+        witnessScriptOpt match {
+          case Some(script) =>
+            missingSigsFromScript(script.witnessScript)
+          case None => Vector.empty
+        }
+      case _: P2SHScriptPubKey =>
+        redeemScriptOpt match {
+          case Some(script) =>
+            missingSigsFromScript(script.redeemScript)
+          case None => Vector.empty
+        }
+      case locktime: LockTimeScriptPubKey =>
+        missingSigsFromScript(locktime.nestedScriptPubKey)
+      case cond: ConditionalScriptPubKey =>
+        val first = missingSigsFromScript(cond.firstSPK)
+        val second = missingSigsFromScript(cond.secondSPK)
+        first ++ second
+    }
+  }
+
+  def missingSignatures(vout: Int): Vector[Sha256Hash160Digest] = {
+    prevOutOpt(vout) match {
+      case Some(output) =>
+        missingSigsFromScript(output.scriptPubKey)
+      case None =>
+        redeemScriptOpt.map(_.redeemScript) match {
+          case Some(script) =>
+            missingSigsFromScript(script)
+          case None =>
+            witnessScriptOpt.map(_.witnessScript) match {
+              case Some(script) =>
+                missingSigsFromScript(script)
+              case None => Vector.empty
+            }
+        }
+    }
+  }
+
   def nonWitnessOrUnknownUTXOOpt: Option[NonWitnessOrUnknownUTXO] = {
     getRecords(NonWitnessUTXOKeyId).headOption
   }

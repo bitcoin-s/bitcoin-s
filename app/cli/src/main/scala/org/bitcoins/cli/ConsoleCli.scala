@@ -931,6 +931,20 @@ object ConsoleCli {
                   decode.copy(psbt = psbt)
                 case other => other
               }))),
+      cmd("analyzepsbt")
+        .action((_, conf) => conf.copy(command = AnalyzePSBT(PSBT.empty)))
+        .text("Analyzes and provides information about the current status of a PSBT and its inputs")
+        .children(
+          arg[PSBT]("psbt")
+            .text("PSBT serialized in hex or base64 format")
+            .required()
+            .action((psbt, conf) =>
+              conf.copy(command = conf.command match {
+                case analyzePSBT: AnalyzePSBT =>
+                  analyzePSBT.copy(psbt = psbt)
+                case other => other
+              }))
+        ),
       cmd("combinepsbts")
         .action((_, conf) => conf.copy(command = CombinePSBTs(Seq.empty)))
         .text("Combines all the given PSBTs")
@@ -1305,6 +1319,9 @@ object ConsoleCli {
       case DecodeRawTransaction(tx) =>
         RequestParam("decoderawtransaction", Seq(up.writeJs(tx)))
 
+      case AnalyzePSBT(psbt) =>
+        RequestParam("analyzepsbt", Seq(up.writeJs(psbt)))
+
       // Oracle
       case GetPublicKey =>
         RequestParam("getpublickey")
@@ -1592,6 +1609,7 @@ object CliCommand {
   case class FinalizePSBT(psbt: PSBT) extends CliCommand
   case class ExtractFromPSBT(psbt: PSBT) extends CliCommand
   case class ConvertToPSBT(transaction: Transaction) extends CliCommand
+  case class AnalyzePSBT(psbt: PSBT) extends CliCommand
 
   // Oracle
   case object GetPublicKey extends CliCommand

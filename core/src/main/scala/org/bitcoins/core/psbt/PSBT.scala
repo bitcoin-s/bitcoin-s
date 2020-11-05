@@ -1,6 +1,7 @@
 package org.bitcoins.core.psbt
 
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
@@ -77,6 +78,31 @@ case class PSBT(
       "One or more of the input maps are susceptible to the BIP 143 vulnerability")
 
     this
+  }
+
+  lazy val nextRole: PSBTRole = {
+    val roles = inputMaps.zip(transaction.inputs).map {
+      case (inputMap, txIn) =>
+        inputMap.nextRole(txIn)
+    }
+
+    roles.minBy(_.order)
+  }
+
+  lazy val feeOpt: Option[CurrencyUnit] = {
+    val hasPrevUtxos =
+      inputMaps.zipWithIndex.forall(i => i._1.prevOutOpt(i._2).isDefined)
+    if (hasPrevUtxos) {
+      val inputAmount = inputMaps.zipWithIndex.foldLeft(CurrencyUnits.zero) {
+        case (accum, (input, index)) =>
+          // .get is safe because of hasPrevUtxos
+          val prevOut = input.prevOutOpt(index).get
+          accum + prevOut.value
+      }
+      val outputAmount =
+        transaction.outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
+      Some(inputAmount - outputAmount)
+    } else None
   }
 
   /**
