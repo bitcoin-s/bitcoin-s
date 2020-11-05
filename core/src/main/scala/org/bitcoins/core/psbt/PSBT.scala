@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
@@ -104,6 +105,44 @@ case class PSBT(
         transaction.outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
       Some(inputAmount - outputAmount)
     } else None
+  }
+
+  lazy val estimateWeight: Option[Long] = {
+    if (nextRole.order >= PSBTRole.SignerPSBTRole.order) {
+      // Need a exe context for maxScriptSigAndWitnessWeight
+      import scala.concurrent.ExecutionContext.Implicits.global
+      val dummySigner = Sign.dummySign(ECPublicKey.freshPublicKey)
+
+      val inputWeight =
+        inputMaps.zip(transaction.inputs).foldLeft(0L) {
+          case (weight, (inputMap, txIn)) =>
+            val (scriptSigLen, maxWitnessLen) = inputMap
+              .toUTXOSatisfyingInfoUsingSigners(txIn, Vector(dummySigner))
+              .maxScriptSigAndWitnessWeight
+
+            weight + 164 + maxWitnessLen + scriptSigLen
+        }
+      val outputWeight = transaction.outputs.foldLeft(0L)(_ + _.byteSize)
+      val weight = 107 + outputWeight + inputWeight
+
+      Some(weight)
+    } else None
+  }
+
+  lazy val estimateVSize: Option[Long] = {
+    estimateWeight.map { weight =>
+      Math.ceil(weight / 4.0).toLong
+    }
+  }
+
+  lazy val estimateSatsPerVByte: Option[SatoshisPerVirtualByte] = {
+    (feeOpt, estimateVSize) match {
+      case (Some(fee), Some(vsize)) =>
+        val rate = SatoshisPerVirtualByte.fromLong(fee.satoshis.toLong / vsize)
+        Some(rate)
+      case (None, None) | (Some(_), None) | (None, Some(_)) =>
+        None
+    }
   }
 
   /**

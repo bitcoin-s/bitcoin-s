@@ -7,6 +7,7 @@ import org.bitcoins.commons.jsonmodels.{SerializedPSBT, SerializedTransaction}
 import org.bitcoins.core.api.core.CoreApi
 import ujson._
 
+import scala.collection.mutable
 import scala.util.{Failure, Success}
 
 case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
@@ -130,19 +131,25 @@ case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
 
             }
 
-            val json = psbt.feeOpt match {
-              case Some(fee) =>
-                Obj(
-                  "inputs" -> inputs,
-                  "fee" -> Num(fee.satoshis.toLong.toDouble),
-                  "next" -> Str(psbt.nextRole.shortName)
-                )
-              case None =>
-                Obj(
-                  "inputs" -> inputs,
-                  "next" -> Str(psbt.nextRole.shortName)
-                )
+            val optionalsJson: Vector[(String, Num)] = {
+              val fee = psbt.feeOpt.map(fee =>
+                "fee" -> Num(fee.satoshis.toLong.toDouble))
+              val vsize =
+                psbt.estimateVSize.map(vsize => "estimated_vsize" -> Num(vsize))
+              val feeRate = psbt.estimateSatsPerVByte.map(feeRate =>
+                "estimated_sats_vbyte" -> Num(feeRate.toLong))
+
+              Vector(fee, vsize, feeRate).flatten
             }
+
+            val inputJson = Vector("inputs" -> Arr.from(inputs))
+            val nextRoleJson: Vector[(String, Str)] =
+              Vector("next" -> Str(psbt.nextRole.shortName))
+
+            val jsonVec: Vector[(String, Value)] =
+              inputJson ++ optionalsJson ++ nextRoleJson
+            val jsonMap = mutable.LinkedHashMap.from(jsonVec)
+            val json = Obj(jsonMap)
 
             Server.httpSuccess(json)
           }
