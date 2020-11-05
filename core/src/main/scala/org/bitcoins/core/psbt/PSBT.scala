@@ -80,6 +80,7 @@ case class PSBT(
     this
   }
 
+  /** The next [[PSBTRole]] that should be used for this PSBT */
   lazy val nextRole: PSBTRole = {
     val roles = inputMaps.zip(transaction.inputs).map {
       case (inputMap, txIn) =>

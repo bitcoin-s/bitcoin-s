@@ -7,6 +7,9 @@ abstract class PSBTRole {
   def order: Int
 }
 
+/** The different roles of operations that can be preformed on a PSBT
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#roles]]
+  */
 object PSBTRole extends StringFactory[PSBTRole] {
 
   final case object CreatorPSBTRole extends PSBTRole {
