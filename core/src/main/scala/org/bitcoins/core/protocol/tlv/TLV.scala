@@ -250,17 +250,14 @@ object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
   * @param outcomeStrs The set of possible outcomes
   * @see https://github.com/discreetlogcontracts/dlcspecs/blob/540c23a3e89c886814145cf16edfd48421d0175b/Oracle.md#simple-enumeration
   */
-case class EnumEventDescriptorV0TLV(outcomeStrs: Vector[String])
+case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
     extends EventDescriptorTLV {
   override def tpe: BigSizeUInt = EnumEventDescriptorV0TLV.tpe
 
-  lazy val outcomes: Vector[Vector[String]] =
-    outcomeStrs.map(Vector(_))
-
   override val value: ByteVector = {
-    val starting = UInt16(outcomeStrs.size).bytes
+    val starting = UInt16(outcomes.size).bytes
 
-    outcomeStrs.foldLeft(starting) { (accum, outcome) =>
+    outcomes.foldLeft(starting) { (accum, outcome) =>
       val outcomeBytes = CryptoUtil.serializeForHash(outcome)
       accum ++ UInt16(outcomeBytes.length).bytes ++ outcomeBytes
     }
@@ -296,7 +293,7 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
   }
 }
 
-trait NumericEventDescriptor extends EventDescriptorTLV {
+trait NumericEventDescriptorTLV extends EventDescriptorTLV {
 
   /** The minimum valid value in the oracle can sign */
   def min: Vector[String]
@@ -338,7 +335,12 @@ trait NumericEventDescriptor extends EventDescriptorTLV {
 
   def maxToPrecision: BigDecimal = precisionModifier * BigDecimal(maxNum)
 
-  def containsToPrecision(outcome: BigDecimal): Boolean = {
+  /** Checks if a outcome is contained in the set of outcomes when adjusted for precision
+    * If you have precision=-1 and oracle outcomes [0,1,2,3...,10]
+    * This would return true if passed a value [0, 0.1, 0.2,...,1.0]
+    * If passed in the not precision adjusted outcomes [0,1,2,...10] it will return false
+    */
+  def containsPreciseOutcome(outcome: BigDecimal): Boolean = {
     (outcome / precisionModifier).toBigIntExact match {
       case Some(unModifiedOutcome) => contains(unModifiedOutcome)
       case None                    => false
@@ -358,7 +360,7 @@ case class RangeEventDescriptorV0TLV(
     step: UInt16,
     unit: String,
     precision: Int32)
-    extends NumericEventDescriptor {
+    extends NumericEventDescriptorTLV {
 
   override val minNum: BigInt = BigInt(start.toInt)
 
@@ -403,7 +405,7 @@ object RangeEventDescriptorV0TLV extends TLVFactory[RangeEventDescriptorV0TLV] {
 }
 
 /** Describes a large range event using numerical decomposition */
-trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptor {
+trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
   require(numDigits > UInt16.zero,
           s"Number of digits must be positive, got $numDigits")
 
