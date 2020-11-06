@@ -101,7 +101,7 @@ case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord])
     getRecords(VersionKeyId).headOption.getOrElse(Version(UInt32.zero))
   }
 
-  private def getRecords(key: PSBTGlobalKeyId): Vector[key.RecordType] = {
+  def getRecords(key: PSBTGlobalKeyId): Vector[key.RecordType] = {
     super.getRecords(key, PSBTGlobalKeyId)
   }
 
@@ -194,7 +194,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     getRecords(ProofOfReservesCommitmentKeyId).headOption
   }
 
-  private def getRecords(key: PSBTInputKeyId): Vector[key.RecordType] = {
+  def getRecords(key: PSBTInputKeyId): Vector[key.RecordType] = {
     super.getRecords(key, PSBTInputKeyId)
   }
 
@@ -832,7 +832,7 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord])
     getRecords(BIP32DerivationPathKeyId)
   }
 
-  private def getRecords(key: PSBTOutputKeyId): Vector[key.RecordType] = {
+  def getRecords(key: PSBTOutputKeyId): Vector[key.RecordType] = {
     super.getRecords(key, PSBTOutputKeyId)
   }
 

@@ -3,6 +3,7 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import org.bitcoins.commons.jsonmodels.{SerializedPSBT, SerializedTransaction}
 import org.bitcoins.core.api.core.CoreApi
 
 import scala.util.{Failure, Success}
@@ -78,8 +79,21 @@ case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
           reject(ValidationRejection("failure", Some(exception)))
         case Success(DecodeRawTransaction(tx)) =>
           complete {
-            val jsonStr = SerializedTransaction.decodeRawTransaction(tx)
-            Server.httpSuccess(jsonStr)
+            val decoded = SerializedTransaction.decodeRawTransaction(tx)
+            val uJson = ujson.read(decoded.toJson.toString())
+            Server.httpSuccess(uJson)
+          }
+      }
+
+    case ServerCommand("decodepsbt", arr) =>
+      DecodePSBT.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DecodePSBT(psbt)) =>
+          complete {
+            val decoded = SerializedPSBT.decodePSBT(psbt)
+            val uJson = ujson.read(decoded.toJson.toString())
+            Server.httpSuccess(uJson)
           }
       }
   }

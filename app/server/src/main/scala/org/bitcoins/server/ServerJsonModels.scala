@@ -286,6 +286,25 @@ object DecodeRawTransaction extends ServerJsonModels {
   }
 }
 
+case class DecodePSBT(psbt: PSBT)
+
+object DecodePSBT extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DecodePSBT] = {
+    jsArr.arr.toList match {
+      case psbtJs :: Nil =>
+        Try {
+          val psbt = jsToPSBT(psbtJs)
+          DecodePSBT(psbt)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 case class Rescan(
     batchSize: Option[Int],
     startBlock: Option[BlockStamp],
