@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -37,7 +38,7 @@ class PsbtRpcTest extends BitcoindRpcTest {
       "cHNidP8BAFUCAAAAASeaIyOl37UfxF8iD6WLD8E+HjNCeSqF1+Ns1jM7XLw5AAAAAAD/////AaBa6gsAAAAAGXapFP/pwAYQl8w7Y28ssEYPpPxCfStFiKwAAAAAAAEBIJVe6gsAAAAAF6kUY0UgD2jRieGtwN8cTRbqjxTA2+uHIgIDsTQcy6doO2r08SOM1ul+cWfVafrEfx5I1HVBhENVvUZGMEMCIAQktY7/qqaU4VWepck7v9SokGQiQFXN8HC2dxRpRC0HAh9cjrD+plFtYLisszrWTt5g6Hhb+zqpS5m9+GFR25qaAQEEIgAgdx/RitRZZm3Unz1WTj28QvTIR3TjYK2haBao7UiNVoEBBUdSIQOxNBzLp2g7avTxI4zW6X5xZ9Vp+sR/HkjUdUGEQ1W9RiED3lXR4drIBeP4pYwfv5uUwC89uq/hJ/78pJlfJvggg71SriIGA7E0HMunaDtq9PEjjNbpfnFn1Wn6xH8eSNR1QYRDVb1GELSmumcAAACAAAAAgAQAAIAiBgPeVdHh2sgF4/iljB+/m5TALz26r+En/vykmV8m+CCDvRC0prpnAAAAgAAAAIAFAACAAAA=",
       "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAACg8BAgMEBQYHCAkPAQIDBAUGBwgJCgsMDQ4PAAA=",
       "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA==" // this one is from Core
-    )
+    ).map(PSBT.fromBase64)
 
     for {
       (client, _, _) <- clientsF
@@ -53,7 +54,7 @@ class PsbtRpcTest extends BitcoindRpcTest {
         client.createRawTransaction(Vector.empty, Map(address -> Bitcoins.one))
       fundedRawTx <- client.fundRawTransaction(rawTx)
       psbt <- client.convertToPsbt(fundedRawTx.hex)
-      processedPsbt <- client.walletProcessPsbt(psbt)
+      processedPsbt <- client.walletProcessPSBT(psbt)
       decoded <- client.decodePsbt(processedPsbt.psbt)
     } yield {
       assert(decoded.inputs.exists(inputs =>
@@ -75,7 +76,7 @@ class PsbtRpcTest extends BitcoindRpcTest {
       psbt <-
         client.createPsbt(Vector(TransactionInput.fromTxidAndVout(txid, vout)),
                           Map(newAddr -> Bitcoins(0.5)))
-      processed <- client.walletProcessPsbt(psbt)
+      processed <- client.walletProcessPSBT(psbt)
       finalized <- client.finalizePsbt(processed.psbt)
     } yield finalized match {
       case _: FinalizedPsbt    => succeed
@@ -119,11 +120,11 @@ class PsbtRpcTest extends BitcoindRpcTest {
         thirdClient.createPsbt(inputs, Map(newAddr -> Bitcoins(1.5)))
       }
       // Update psbts, should only have data for one input and not the other
-      clientProcessedPsbt <- client.walletProcessPsbt(psbt).map(_.psbt)
+      clientProcessedPsbt <- client.walletProcessPSBT(psbt).map(_.psbt)
 
       otherClientProcessedPsbt <-
         otherClient
-          .walletProcessPsbt(psbt)
+          .walletProcessPSBT(psbt)
           .map(_.psbt)
 
       // Combine and finalize the psbts
