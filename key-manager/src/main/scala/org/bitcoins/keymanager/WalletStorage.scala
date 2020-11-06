@@ -9,6 +9,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.crypto.{AesEncryptedData, AesIV, AesPassword, AesSalt}
 import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
+import ujson.{Obj, Value}
 
 import scala.util.{Failure, Success, Try}
 
@@ -35,6 +36,23 @@ object WalletStorage {
     val CIPHER_TEXT = "cipherText"
     val SALT = "salt"
     val CREATION_TIME = "creationTime"
+    val MNEMONIC_SEED = "mnemonicSeed"
+  }
+
+  /**
+    * Writes the mnemonic to disk.
+    * If we encounter a file in the place we're about
+    * to write to, we move it to a backup location
+    * with the current epoch timestamp as part of
+    * the file name.
+    */
+  def writeMnemonicToDisk(seedPath: Path, mnemonic: MnemonicState): Path = {
+    mnemonic match {
+      case decryptedMnemonic: DecryptedMnemonic =>
+        writeMnemonicToDisk(seedPath, decryptedMnemonic)
+      case encryptedMnemonic: EncryptedMnemonic =>
+        writeMnemonicToDisk(seedPath, encryptedMnemonic)
+    }
   }
 
   /**
@@ -57,33 +75,64 @@ object WalletStorage {
       )
     }
 
+    writeMnemonicJsonToDisk(seedPath, jsObject)
+  }
+
+  /**
+    * Writes the unencrypted mnemonic to disk.
+    * If we encounter a file in the place we're about
+    * to write to, we move it to a backup location
+    * with the current epoch timestamp as part of
+    * the file name.
+    */
+  def writeMnemonicToDisk(seedPath: Path, mnemonic: DecryptedMnemonic): Path = {
+    val mnemonicCode = mnemonic.mnemonicCode
+    val jsObject = {
+      import MnemonicJsonKeys._
+      ujson.Obj(
+        MNEMONIC_SEED -> mnemonicCode.toVector,
+        CREATION_TIME -> ujson.Num(
+          mnemonic.creationTime.getEpochSecond.toDouble)
+      )
+    }
+
+    writeMnemonicJsonToDisk(seedPath, jsObject)
+  }
+
+  private def writeMnemonicJsonToDisk(seedPath: Path, jsObject: Obj): Path = {
     logger.info(s"Writing mnemonic to $seedPath")
 
     val writtenJs = ujson.write(jsObject)
 
-    def writeJsToDisk() = {
+    def writeJsToDisk(): Path = {
       val writtenPath = Files.write(seedPath, writtenJs.getBytes())
       logger.trace(s"Wrote encrypted mnemonic to $seedPath")
 
       writtenPath
     }
 
-    //check to see if a mnemonic exists already...
-    val foundMnemonicOpt: Option[EncryptedMnemonic] =
-      readEncryptedMnemonicFromDisk(seedPath) match {
-        case CompatLeft(_) =>
-          None
-        case CompatRight(mnemonic) => Some(mnemonic)
-      }
+    // Check to see if a mnemonic exists already
+    val hasMnemonic: Boolean = Files.isRegularFile(seedPath)
 
-    foundMnemonicOpt match {
-      case None =>
-        logger.trace(s"$seedPath does not exist")
-        writeJsToDisk()
-      case Some(_) =>
-        logger.info(s"$seedPath already exists")
-        throw new RuntimeException(
-          s"Attempting to overwrite an existing mnemonic seed, this is dangerous!")
+    if (hasMnemonic) {
+      logger.info(s"$seedPath already exists")
+      throw new RuntimeException(
+        s"Attempting to overwrite an existing mnemonic seed, this is dangerous! path: $seedPath")
+    } else {
+      logger.trace(s"$seedPath does not exist")
+      writeJsToDisk()
+    }
+  }
+
+  private def parseCreationTime(json: Value): Long = {
+    Try(json(MnemonicJsonKeys.CREATION_TIME).num.toLong) match {
+      case Success(value) =>
+        value
+      case Failure(_: NoSuchElementException) =>
+        // If no CREATION_TIME is set, we set date to start of bitcoin-s wallet project
+        // default is Block 555,990 block time on 2018-12-28
+        FIRST_BITCOIN_S_WALLET_TIME
+      case Failure(exception) => throw exception
     }
   }
 
@@ -122,23 +171,16 @@ object WalletStorage {
       ReadMnemonicError,
       (String, String, String, Long)] = jsonE.flatMap { json =>
       logger.trace(s"Read encrypted mnemonic JSON: $json")
-      val creationTimeNum = Try(json(CREATION_TIME).num.toLong) match {
-        case Success(value) =>
-          value
-        case Failure(err) if err.isInstanceOf[NoSuchElementException] =>
-          // If no CREATION_TIME is set, we set date to start of bitcoin-s wallet project
-          // default is Block 555,990 block time on 2018-12-28
-          FIRST_BITCOIN_S_WALLET_TIME
-        case Failure(exception) => throw exception
-      }
       Try {
+        val creationTimeNum = parseCreationTime(json)
         val ivString = json(IV).str
         val cipherTextString = json(CIPHER_TEXT).str
         val rawSaltString = json(SALT).str
         (ivString, cipherTextString, rawSaltString, creationTimeNum)
       } match {
-        case Success(value)     => CompatRight(value)
-        case Failure(exception) => throw exception
+        case Success(value) => CompatRight(value)
+        case Failure(exception) =>
+          CompatLeft(JsonParsingError(exception.getMessage))
       }
     }
 
@@ -166,28 +208,94 @@ object WalletStorage {
     encryptedEither
   }
 
+  /** Reads the raw unencrypted mnemonic from disk */
+  private def readUnencryptedMnemonicFromDisk(
+      seedPath: Path): CompatEither[ReadMnemonicError, DecryptedMnemonic] = {
+
+    val jsonE: CompatEither[ReadMnemonicError, ujson.Value] = {
+      if (Files.isRegularFile(seedPath)) {
+        val rawJson = Files.readAllLines(seedPath).asScala.mkString("\n")
+        logger.debug(s"Read raw mnemonic from $seedPath")
+
+        Try(ujson.read(rawJson)) match {
+          case Failure(ujson.ParseException(clue, _, _, _)) =>
+            CompatLeft(ReadMnemonicError.JsonParsingError(clue))
+          case Failure(exception) => throw exception
+          case Success(value) =>
+            logger.debug(s"Parsed $seedPath into valid json")
+            CompatRight(value)
+        }
+      } else {
+        logger.error(s"Mnemonic not found at $seedPath")
+        CompatLeft(ReadMnemonicError.NotFoundError)
+      }
+    }
+
+    import MnemonicJsonKeys._
+    import ReadMnemonicError._
+
+    val readJsonTupleEither: CompatEither[
+      ReadMnemonicError,
+      (Vector[String], Long)] = jsonE.flatMap { json =>
+      logger.trace(s"Read mnemonic JSON: Masked(json)")
+      Try {
+        val creationTimeNum = parseCreationTime(json)
+        val words = json(MNEMONIC_SEED).arr.toVector.map(_.str)
+        (words, creationTimeNum)
+      } match {
+        case Success(value) => CompatRight(value)
+        case Failure(exception) =>
+          CompatLeft(JsonParsingError(exception.getMessage))
+      }
+    }
+
+    readJsonTupleEither.flatMap {
+      case (words, rawCreationTime) =>
+        val decryptedMnemonicT = for {
+          mnemonicCodeT <- Try(MnemonicCode.fromWords(words))
+        } yield {
+          logger.debug(s"Parsed contents of $seedPath into a DecryptedMnemonic")
+          DecryptedMnemonic(mnemonicCodeT,
+                            Instant.ofEpochSecond(rawCreationTime))
+        }
+
+        val toRight: Try[CompatRight[ReadMnemonicError, DecryptedMnemonic]] =
+          decryptedMnemonicT
+            .map(CompatRight(_))
+
+        toRight.getOrElse(
+          CompatLeft(JsonParsingError("JSON contents was correctly formatted")))
+    }
+  }
+
   /**
     * Reads the wallet mnemonic from disk and tries to parse and
     * decrypt it
     */
   def decryptMnemonicFromDisk(
       seedPath: Path,
-      passphrase: AesPassword): Either[ReadMnemonicError, DecryptedMnemonic] = {
-
-    val encryptedEither = readEncryptedMnemonicFromDisk(seedPath)
-
+      passphraseOpt: Option[AesPassword]): Either[
+    ReadMnemonicError,
+    DecryptedMnemonic] = {
     val decryptedEither: CompatEither[ReadMnemonicError, DecryptedMnemonic] =
-      encryptedEither.flatMap { encrypted =>
-        encrypted.toMnemonic(passphrase) match {
-          case Failure(exc) =>
-            logger.error(s"Error when decrypting $encrypted: $exc")
-            CompatLeft(ReadMnemonicError.DecryptionError)
-          case Success(mnemonic) =>
-            logger.debug(s"Decrypted $encrypted successfully")
-            val decryptedMnemonic =
-              DecryptedMnemonic(mnemonic, encrypted.creationTime)
-            CompatRight(decryptedMnemonic)
-        }
+      passphraseOpt match {
+        case Some(passphrase) =>
+          val encryptedEither = readEncryptedMnemonicFromDisk(seedPath)
+
+          encryptedEither.flatMap { encrypted =>
+            encrypted.toMnemonic(passphrase) match {
+              case Failure(exc) =>
+                logger.error(s"Error when decrypting $encrypted: $exc")
+                CompatLeft(ReadMnemonicError.DecryptionError)
+              case Success(mnemonic) =>
+                logger.debug(s"Decrypted $encrypted successfully")
+                val decryptedMnemonic =
+                  DecryptedMnemonic(mnemonic, encrypted.creationTime)
+                CompatRight(decryptedMnemonic)
+            }
+          }
+        case None =>
+          readUnencryptedMnemonicFromDisk(seedPath)
       }
 
     decryptedEither match {
@@ -199,19 +307,13 @@ object WalletStorage {
   def getPrivateKeyFromDisk(
       seedPath: Path,
       privKeyVersion: ExtKeyPrivVersion,
-      passphrase: AesPassword,
+      passphraseOpt: Option[AesPassword],
       bip39PasswordOpt: Option[String]): ExtPrivateKeyHardened = {
-    val mnemonicCode = decryptMnemonicFromDisk(seedPath, passphrase) match {
+    val mnemonicCode = decryptMnemonicFromDisk(seedPath, passphraseOpt) match {
       case Left(error)     => sys.error(error.toString)
       case Right(mnemonic) => mnemonic.mnemonicCode
     }
-    val seed = bip39PasswordOpt match {
-      case Some(pw) =>
-        BIP39Seed.fromMnemonic(mnemonic = mnemonicCode, password = pw)
-      case None =>
-        BIP39Seed.fromMnemonic(mnemonic = mnemonicCode,
-                               password = BIP39Seed.EMPTY_PASSWORD)
-    }
+    val seed = BIP39Seed.fromMnemonic(mnemonicCode, bip39PasswordOpt)
 
     seed.toExtPrivateKey(privKeyVersion).toHardened
   }

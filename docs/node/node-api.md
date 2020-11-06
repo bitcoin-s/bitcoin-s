@@ -7,7 +7,7 @@ title: Node API
 import akka.actor.ActorSystem
 import org.bitcoins.core.api._
 import org.bitcoins.core.api.node._
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto._
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee._
@@ -60,9 +60,11 @@ implicit val walletConf: WalletAppConfig =
 // and a ChainApi
 val bitcoind = BitcoindV19RpcClient(BitcoindInstance.fromConfigFile())
 val chainApi = BitcoinSWalletTest.MockChainQueryApi
+val aesPasswordOpt = Some(AesPassword.fromString("password"))
 
 // Create our key manager
-val keyManagerE = BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
+val keyManagerE = BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
+                                               kmParams = walletConf.kmParams,
                                                bip39PasswordOpt = None)
 
 val keyManager = keyManagerE match {

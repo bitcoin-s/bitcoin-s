@@ -188,13 +188,15 @@ abstract class Wallet
     }
   }
 
-  def unlock(passphrase: AesPassword, bip39PasswordOpt: Option[String]): Either[
+  def unlock(
+      passphraseOpt: Option[AesPassword],
+      bip39PasswordOpt: Option[String]): Either[
     KeyManagerUnlockError,
     Wallet] = {
     val kmParams = walletConfig.kmParams
 
     val unlockedKeyManagerE =
-      BIP39LockedKeyManager.unlock(passphrase = passphrase,
+      BIP39LockedKeyManager.unlock(passphraseOpt = passphraseOpt,
                                    bip39PasswordOpt = bip39PasswordOpt,
                                    kmParams = kmParams)
     unlockedKeyManagerE match {
@@ -732,10 +734,11 @@ object Wallet extends WalletLogger {
   def initialize(wallet: Wallet, bip39PasswordOpt: Option[String])(implicit
       walletAppConfig: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
+    val passwordOpt = walletAppConfig.aesPasswordOpt
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later
     // and still have their wallet work
-    def createAccountFutures =
+    def createAccountFutures: Future[Vector[Future[AccountDb]]] =
       for {
         _ <- walletAppConfig.start()
         accounts = HDPurposes.singleSigPurposes.map { purpose =>
@@ -744,7 +747,7 @@ object Wallet extends WalletLogger {
           val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
           val kmE = {
             BIP39KeyManager.fromParams(kmParams = kmParams,
-                                       password = BIP39KeyManager.badPassphrase,
+                                       passwordOpt = passwordOpt,
                                        bip39PasswordOpt = bip39PasswordOpt)
           }
           kmE match {

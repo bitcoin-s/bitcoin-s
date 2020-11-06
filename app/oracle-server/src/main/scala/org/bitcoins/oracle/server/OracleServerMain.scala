@@ -1,8 +1,6 @@
 package org.bitcoins.oracle.server
 
-import org.bitcoins.crypto.AesPassword
 import org.bitcoins.dlc.oracle.DLCOracleAppConfig
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.server.{BitcoinSRunner, Server}
 
 import scala.concurrent.Future
@@ -19,10 +17,9 @@ class OracleServerMain(override val args: Array[String])
 
     // TODO need to prompt user for these
     val bip39PasswordOpt: Option[String] = None
-    val aesPassword: AesPassword = BIP39KeyManager.badPassphrase
     for {
       _ <- conf.start()
-      oracle <- conf.initialize(aesPassword, bip39PasswordOpt)
+      oracle <- conf.initialize(bip39PasswordOpt)
 
       routes = Seq(OracleRoutes(oracle))
       server = rpcPortOpt match {
