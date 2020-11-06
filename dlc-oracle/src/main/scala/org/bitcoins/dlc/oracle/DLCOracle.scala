@@ -220,19 +220,22 @@ object DLCOracle {
 
   def apply(
       mnemonicCode: MnemonicCode,
-      password: AesPassword,
+      passwordOpt: Option[AesPassword],
       bip39PasswordOpt: Option[String] = None)(implicit
       conf: DLCOracleAppConfig): DLCOracle = {
     val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
-    val encrypted = decryptedMnemonic.encrypt(password)
+    val toWrite = passwordOpt match {
+      case Some(password) => decryptedMnemonic.encrypt(password)
+      case None           => decryptedMnemonic
+    }
     if (!conf.seedExists()) {
-      WalletStorage.writeMnemonicToDisk(conf.seedPath, encrypted)
+      WalletStorage.writeMnemonicToDisk(conf.seedPath, toWrite)
     }
 
     val key =
       WalletStorage.getPrivateKeyFromDisk(conf.seedPath,
                                           SegWitMainNetPriv,
-                                          password,
+                                          passwordOpt,
                                           bip39PasswordOpt)
     DLCOracle(key)
   }

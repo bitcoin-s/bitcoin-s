@@ -132,10 +132,11 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
 }
 
 //initialize our key manager, where we store our keys
+val aesPasswordOpt = Some(AesPassword.fromString("password"))
 //you can add a password here if you want
 //val bip39PasswordOpt = Some("my-password-here")
 val bip39PasswordOpt = None
-val keyManager = BIP39KeyManager.initialize(walletConfig.kmParams, bip39PasswordOpt).getOrElse {
+val keyManager = BIP39KeyManager.initialize(aesPasswordOpt, walletConfig.kmParams, bip39PasswordOpt).getOrElse {
   throw new RuntimeException(s"Failed to initalize key manager")
 }
 

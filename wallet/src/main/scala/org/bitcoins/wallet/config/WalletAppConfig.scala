@@ -13,6 +13,7 @@ import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
   KeyManagerParams
 }
+import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 import org.bitcoins.keymanager.WalletStorage
@@ -106,6 +107,11 @@ case class WalletAppConfig(
 
   lazy val bip39PasswordOpt: Option[String] = {
     config.getStringOrNone("bitcoin-s.wallet.bip39password")
+  }
+
+  lazy val aesPasswordOpt: Option[AesPassword] = {
+    val passOpt = config.getStringOrNone("bitcoin-s.wallet.aesPassword")
+    passOpt.flatMap(AesPassword.fromStringOpt)
   }
 
   override def start(): Future[Unit] = {
@@ -218,11 +224,14 @@ object WalletAppConfig
       walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
     walletConf.hasWallet().flatMap { walletExists =>
+      val aesPasswordOpt = walletConf.aesPasswordOpt
+      val bip39PasswordOpt = walletConf.bip39PasswordOpt
+
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
         // TODO change me when we implement proper password handling
-        BIP39LockedKeyManager.unlock(BIP39KeyManager.badPassphrase,
-                                     walletConf.bip39PasswordOpt,
+        BIP39LockedKeyManager.unlock(aesPasswordOpt,
+                                     bip39PasswordOpt,
                                      walletConf.kmParams) match {
           case Right(km) =>
             val wallet =
@@ -233,9 +242,9 @@ object WalletAppConfig
         }
       } else {
         logger.info(s"Initializing key manager")
-        val bip39PasswordOpt = walletConf.bip39PasswordOpt
         val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
-          BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
+          BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
+                                     kmParams = walletConf.kmParams,
                                      bip39PasswordOpt = bip39PasswordOpt)
 
         val keyManager = keyManagerE match {

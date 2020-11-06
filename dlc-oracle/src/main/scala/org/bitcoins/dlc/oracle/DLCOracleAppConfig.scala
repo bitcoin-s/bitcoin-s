@@ -72,6 +72,11 @@ case class DLCOracleAppConfig(
     }
   }
 
+  lazy val aesPasswordOpt: Option[AesPassword] = {
+    val passOpt = config.getStringOrNone("bitcoin-s.oracle.aesPassword")
+    passOpt.flatMap(AesPassword.fromStringOpt)
+  }
+
   /** Checks if our oracle as a mnemonic seed associated with it */
   def seedExists(): Boolean = {
     WalletStorage.seedExists(seedPath)
@@ -90,21 +95,23 @@ case class DLCOracleAppConfig(
     start().map(_ => oracle)
   }
 
-  def initialize(
-      password: AesPassword,
-      bip39PasswordOpt: Option[String] = None): Future[DLCOracle] = {
+  def initialize(bip39PasswordOpt: Option[String] = None): Future[DLCOracle] = {
     if (!seedExists()) {
       val entropy = MnemonicCode.getEntropy256Bits
       val mnemonicCode = MnemonicCode.fromEntropy(entropy)
       val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
-      val encrypted = decryptedMnemonic.encrypt(password)
-      WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
+      val toWrite = aesPasswordOpt match {
+        case Some(password) => decryptedMnemonic.encrypt(password)
+        case None           => decryptedMnemonic
+      }
+
+      WalletStorage.writeMnemonicToDisk(seedPath, toWrite)
     }
 
     val key =
       WalletStorage.getPrivateKeyFromDisk(seedPath,
                                           SegWitMainNetPriv,
-                                          password,
+                                          aesPasswordOpt,
                                           bip39PasswordOpt)
     val oracle = DLCOracle(key)(this)
     initialize(oracle)

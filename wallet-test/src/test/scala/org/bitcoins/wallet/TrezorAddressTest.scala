@@ -13,6 +13,7 @@ import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
+import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   MockChainQueryApi,
@@ -147,6 +148,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       ec: ExecutionContext): Future[Wallet] = {
     val bip39PasswordOpt = None
     val kmE = BIP39KeyManager.initializeWithEntropy(
+      aesPasswordOpt = config.aesPasswordOpt,
       entropy = mnemonic.toEntropy,
       bip39PasswordOpt = bip39PasswordOpt,
       kmParams = config.kmParams)
