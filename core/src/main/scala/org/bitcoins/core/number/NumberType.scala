@@ -487,6 +487,7 @@ object Int32
     0.until(256).map(i => Int32(BigInt(i))).toVector
   }
 
+  val negOne = Int32(-1)
   val zero = cached(0)
   val one = cached(1)
   val two = cached(2)

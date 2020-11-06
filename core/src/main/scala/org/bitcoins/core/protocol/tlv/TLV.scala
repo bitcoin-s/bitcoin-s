@@ -247,8 +247,8 @@ object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
 
 /**
   * Describes an event over an enumerated set of outcomes
-  * @param nonce The oracle's nonce they will be committing to
-  * @param outcomes The set of possible outcomes
+  * @param outcomeStrs The set of possible outcomes
+  * @see https://github.com/discreetlogcontracts/dlcspecs/blob/540c23a3e89c886814145cf16edfd48421d0175b/Oracle.md#simple-enumeration
   */
 case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
     extends EventDescriptorTLV {
@@ -293,6 +293,61 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
   }
 }
 
+trait NumericEventDescriptorTLV extends EventDescriptorTLV {
+
+  /** The minimum valid value in the oracle can sign */
+  def min: Vector[String]
+
+  def minNum: BigInt
+
+  /** The maximum valid value in the oracle can sign */
+  def max: Vector[String]
+
+  def maxNum: BigInt
+
+  def step: UInt16
+
+  def contains(outcome: BigInt): Boolean = {
+    val inBounds = outcome <= maxNum && outcome >= minNum
+
+    inBounds && (outcome - minNum) % step.toInt == 0
+  }
+
+  /** The base in which the outcome value is represented */
+  def base: UInt16
+
+  /** The unit of the outcome value */
+  def unit: String
+
+  /** The precision of the outcome representing the base exponent
+    * by which to multiply the number represented by the composition
+    * of the digits to obtain the actual outcome value.
+    *
+    * Modifies unit.
+    */
+  def precision: Int32
+
+  lazy val precisionModifier: Double = Math.pow(base.toInt, precision.toInt)
+
+  def stepToPrecision: BigDecimal = precisionModifier * BigDecimal(step.toInt)
+
+  def minToPrecision: BigDecimal = precisionModifier * BigDecimal(minNum)
+
+  def maxToPrecision: BigDecimal = precisionModifier * BigDecimal(maxNum)
+
+  /** Checks if a outcome is contained in the set of outcomes when adjusted for precision
+    * If you have precision=-1 and oracle outcomes [0,1,2,3...,10]
+    * This would return true if passed a value [0, 0.1, 0.2,...,1.0]
+    * If passed in the not precision adjusted outcomes [0,1,2,...10] it will return false
+    */
+  def containsPreciseOutcome(outcome: BigDecimal): Boolean = {
+    (outcome / precisionModifier).toBigIntExact match {
+      case Some(unModifiedOutcome) => contains(unModifiedOutcome)
+      case None                    => false
+    }
+  }
+}
+
 /**
   * Describes a simple event over a range of numbers
   * @param start The first number in the range
@@ -305,7 +360,18 @@ case class RangeEventDescriptorV0TLV(
     step: UInt16,
     unit: String,
     precision: Int32)
-    extends EventDescriptorTLV {
+    extends NumericEventDescriptorTLV {
+
+  override val minNum: BigInt = BigInt(start.toInt)
+
+  override val min: Vector[String] = Vector(minNum.toString)
+
+  override val maxNum: BigInt =
+    start.toLong + (step.toLong * (count.toLong - 1))
+
+  override val max: Vector[String] = Vector(maxNum.toString)
+
+  override val base: UInt16 = UInt16(10)
 
   override val tpe: BigSizeUInt = RangeEventDescriptorV0TLV.tpe
 
@@ -315,16 +381,6 @@ case class RangeEventDescriptorV0TLV(
 
     start.bytes ++ count.bytes ++ step.bytes ++
       unitSize.bytes ++ unitBytes ++ precision.bytes
-  }
-
-  lazy val outcomes: Vector[Int32] = {
-    val startL = start.toLong
-    val stepL = step.toLong
-
-    val range =
-      0L.until(count.toLong).map(num => startL + (num * stepL))
-
-    range.map(Int32(_)).toVector
   }
 
   override def noncesNeeded: Int = 1
@@ -349,10 +405,9 @@ object RangeEventDescriptorV0TLV extends TLVFactory[RangeEventDescriptorV0TLV] {
 }
 
 /** Describes a large range event using numerical decomposition */
-trait DigitDecompositionEventDescriptorV0TLV extends EventDescriptorTLV {
-
-  /** The base in which the outcome value is decomposed */
-  def base: UInt16
+trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
+  require(numDigits > UInt16.zero,
+          s"Number of digits must be positive, got $numDigits")
 
   /** Whether the outcome can be negative */
   def isSigned: Boolean
@@ -360,14 +415,29 @@ trait DigitDecompositionEventDescriptorV0TLV extends EventDescriptorTLV {
   /** The number of digits that the oracle will sign */
   def numDigits: UInt16
 
-  /** The unit of the outcome value */
-  def unit: String
+  override lazy val maxNum: BigInt = base.toBigInt.pow(numDigits.toInt) - 1
 
-  /** The precision of the outcome representing the base exponent
-    * by which to multiply the number represented by the composition
-    * of the digits to obtain the actual outcome value
-    */
-  def precision: Int32
+  private lazy val maxDigit = (base.toInt - 1).toString
+
+  override lazy val max: Vector[String] = if (isSigned) {
+    "+" +: Vector.fill(numDigits.toInt)(maxDigit)
+  } else {
+    Vector.fill(numDigits.toInt)(maxDigit)
+  }
+
+  override lazy val minNum: BigInt = if (isSigned) {
+    -maxNum
+  } else {
+    0
+  }
+
+  override lazy val min: Vector[String] = if (isSigned) {
+    "-" +: Vector.fill(numDigits.toInt)(maxDigit)
+  } else {
+    Vector.fill(numDigits.toInt)("0")
+  }
+
+  override lazy val step: UInt16 = UInt16.one
 
   override lazy val tpe: BigSizeUInt =
     DigitDecompositionEventDescriptorV0TLV.tpe
