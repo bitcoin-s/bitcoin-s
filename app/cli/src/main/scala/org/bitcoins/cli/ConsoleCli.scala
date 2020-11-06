@@ -901,6 +901,19 @@ object ConsoleCli {
               }))
         ),
       note(sys.props("line.separator") + "=== PSBT ==="),
+      cmd("decodepsbt")
+        .action((_, conf) => conf.copy(command = DecodePSBT(PSBT.empty)))
+        .text("Return a JSON object representing the serialized, base64-encoded partially signed Bitcoin transaction.")
+        .children(
+          arg[PSBT]("psbt")
+            .text("PSBT serialized in hex or base64 format")
+            .required()
+            .action((psbt, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodePSBT =>
+                  decode.copy(psbt = psbt)
+                case other => other
+              }))),
       cmd("combinepsbts")
         .action((_, conf) => conf.copy(command = CombinePSBTs(Seq.empty)))
         .text("Combines all the given PSBTs")
@@ -1255,6 +1268,8 @@ object ConsoleCli {
       case SendRawTransaction(tx) =>
         RequestParam("sendrawtransaction", Seq(up.writeJs(tx)))
       // PSBTs
+      case DecodePSBT(psbt) =>
+        RequestParam("decodepsbt", Seq(up.writeJs(psbt)))
       case CombinePSBTs(psbts) =>
         RequestParam("combinepsbts", Seq(up.writeJs(psbts)))
       case JoinPSBTs(psbts) =>
@@ -1547,6 +1562,7 @@ object CliCommand {
       extends CliCommand
 
   // PSBT
+  case class DecodePSBT(psbt: PSBT) extends CliCommand
   case class CombinePSBTs(psbts: Seq[PSBT]) extends CliCommand
   case class JoinPSBTs(psbts: Seq[PSBT]) extends CliCommand
   case class FinalizePSBT(psbt: PSBT) extends CliCommand

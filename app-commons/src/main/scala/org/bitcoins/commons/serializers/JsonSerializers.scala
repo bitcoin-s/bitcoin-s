@@ -17,12 +17,21 @@ import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonWriters._
 import java.time.LocalDateTime
 
+import org.bitcoins.commons.jsonmodels.SerializedTransaction.tokenToString
+import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.jsonmodels.wallet._
+import org.bitcoins.core.psbt.{
+  GlobalPSBTRecord,
+  InputPSBTRecord,
+  OutputPSBTRecord
+}
+import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.crypto._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationLong
 
@@ -555,6 +564,57 @@ object JsonSerializers {
 
   implicit val mempoolSpaceResultReads: Reads[MempoolSpaceResult] =
     Json.reads[MempoolSpaceResult]
+
+  implicit val byteVectorWrites: Writes[ByteVector] =
+    Writes[ByteVector](bytes => JsString(bytes.toHex))
+
+  implicit val ecDigitalSignatureWrites: Writes[ECDigitalSignature] =
+    Writes[ECDigitalSignature](sig => JsString(sig.hex))
+
+  implicit val ecPublicKeyWrites: Writes[ECPublicKey] =
+    Writes[ECPublicKey](pubKey => JsString(pubKey.hex))
+
+  implicit val scriptTokenWrites: Writes[ScriptToken] =
+    Writes[ScriptToken](token => JsString(tokenToString(token)))
+
+  implicit val doubleSha256DigestBEWrites: Writes[DoubleSha256DigestBE] =
+    Writes[DoubleSha256DigestBE](hash => JsString(hash.hex))
+
+  implicit val int32Writes: Writes[Int32] =
+    Writes[Int32](num => JsNumber(num.toLong))
+
+  implicit val serializedTransactionWitnessWrites: Writes[
+    SerializedTransactionWitness] = Json.writes[SerializedTransactionWitness]
+
+  implicit val serializedTransactionInputWrites: Writes[
+    SerializedTransactionInput] = Json.writes[SerializedTransactionInput]
+
+  implicit val serializedTransactionOutputWrites: Writes[
+    SerializedTransactionOutput] = Json.writes[SerializedTransactionOutput]
+
+  implicit val serializedTransactionWrites: Writes[SerializedTransaction] =
+    Json.writes[SerializedTransaction]
+
+  implicit val unknownPSBTGlobalWrites: Writes[GlobalPSBTRecord.Unknown] =
+    GlobalPSBTRecordUnknownWrites
+
+  implicit val unknownPSBTInputWrites: Writes[InputPSBTRecord.Unknown] =
+    InputPSBTRecordUnknownWrites
+
+  implicit val unknownPSBTOutputWrites: Writes[OutputPSBTRecord.Unknown] =
+    OutputPSBTRecordUnknownWrites
+
+  implicit val serializedPSBTGlobalWrites: Writes[SerializedPSBTGlobalMap] =
+    Json.writes[SerializedPSBTGlobalMap]
+
+  implicit val serializedPSBTInputWrites: Writes[SerializedPSBTInputMap] =
+    Json.writes[SerializedPSBTInputMap]
+
+  implicit val serializedPSBTOutputWrites: Writes[SerializedPSBTOutputMap] =
+    Json.writes[SerializedPSBTOutputMap]
+
+  implicit val serializedPSBTWrites: Writes[SerializedPSBT] =
+    Json.writes[SerializedPSBT]
 
   // Map stuff
   implicit def mapDoubleSha256DigestReadsPreV19: Reads[
