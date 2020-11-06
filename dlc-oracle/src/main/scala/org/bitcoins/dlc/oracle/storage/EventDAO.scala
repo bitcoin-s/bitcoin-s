@@ -3,6 +3,11 @@ package org.bitcoins.dlc.oracle.storage
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
+import org.bitcoins.core.protocol.tlv.{
+  EventDescriptorTLV,
+  OracleEventTLV,
+  OracleEventV0TLV
+}
 import org.bitcoins.crypto._
 import org.bitcoins.db.{AppConfig, CRUD, DbCommonsColumnMappers, SlickUtil}
 import slick.lifted.{ForeignKeyQuery, ProvenShape}
@@ -41,13 +46,25 @@ case class EventDAO()(implicit
     findAll().map(_.filter(_.attestationOpt.isEmpty))
   }
 
+  def findByOracleEventTLV(
+      oracleEvent: OracleEventTLV): Future[Vector[EventDb]] = {
+    val query = oracleEvent match {
+      case v0: OracleEventV0TLV =>
+        table.filter(_.nonce.inSet(v0.nonces))
+    }
+
+    safeDatabase.runVec(query.result.transactionally)
+  }
+
   class EventTable(tag: Tag) extends Table[EventDb](tag, schemaName, "events") {
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.PrimaryKey)
 
     def pubkey: Rep[SchnorrPublicKey] = column("pubkey")
 
-    def eventName: Rep[String] = column("event_name", O.Unique)
+    def nonceIndex: Rep[Int] = column("nonce_index")
+
+    def eventName: Rep[String] = column("event_name")
 
     def numOutcomes: Rep[Long] = column("num_outcomes")
 
@@ -57,14 +74,23 @@ case class EventDAO()(implicit
 
     def attestationOpt: Rep[Option[FieldElement]] = column("attestation")
 
+    def announcementSignature: Rep[SchnorrDigitalSignature] =
+      column("announcement_signature")
+
+    def eventDescriptorTLV: Rep[EventDescriptorTLV] =
+      column("event_descriptor_tlv")
+
     def * : ProvenShape[EventDb] =
       (nonce,
        pubkey,
+       nonceIndex,
        eventName,
        numOutcomes,
        signingVersion,
        maturationTime,
-       attestationOpt).<>(EventDb.tupled, EventDb.unapply)
+       attestationOpt,
+       announcementSignature,
+       eventDescriptorTLV).<>(EventDb.tupled, EventDb.unapply)
 
     def fk: ForeignKeyQuery[_, RValueDb] = {
       foreignKey("fk_nonce",

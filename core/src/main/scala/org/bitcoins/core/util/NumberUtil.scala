@@ -336,6 +336,16 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
   def posInt: Int = {
     Math.abs(scala.util.Random.nextInt())
   }
+
+  /** Decomposes num from 0th place to numDigits place into base 10 */
+  def decompose(num: Long, base: Int, numDigits: Int): Vector[Int] = {
+    var currentNum: Long = num
+    (0 until numDigits).toVector.map { _ =>
+      val digit = currentNum % base
+      currentNum = currentNum / base
+      digit.toInt
+    }
+  }
 }
 
 object NumberUtil extends NumberUtil

@@ -1,6 +1,6 @@
 package org.bitcoins.oracle.server
 
-import org.bitcoins.dlc.oracle.DLCOracleAppConfig
+import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.{BitcoinSRunner, Server}
 
 import scala.concurrent.Future

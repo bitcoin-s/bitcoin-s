@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.oracle.storage
 
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
-import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce}
+import org.bitcoins.crypto.SchnorrNonce
 import org.bitcoins.db.{AppConfig, CRUD, DbCommonsColumnMappers, SlickUtil}
 import slick.lifted.ProvenShape
 
@@ -55,17 +55,8 @@ case class RValueDAO()(implicit
 
     def keyIndex: Rep[Int] = column("key_index", O.Unique)
 
-    def announcementSignature: Rep[SchnorrDigitalSignature] =
-      column("announcement_signature")
-
     def * : ProvenShape[RValueDb] =
-      (nonce,
-       eventName,
-       purpose,
-       coinType,
-       accountIndex,
-       chainType,
-       keyIndex,
-       announcementSignature).<>(RValueDb.tupled, RValueDb.unapply)
+      (nonce, eventName, purpose, coinType, accountIndex, chainType, keyIndex)
+        .<>(RValueDb.tupled, RValueDb.unapply)
   }
 }
