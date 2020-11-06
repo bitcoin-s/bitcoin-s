@@ -5,7 +5,7 @@ import java.nio.file.Files
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.api.wallet.db.{AddressDb, TransactionDbHelper}
 import org.bitcoins.core.hd.HDChainType.{Change, External}
-import org.bitcoins.core.hd.{AddressType, BIP32Path, HDAccount, HDChainType}
+import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
@@ -13,8 +13,6 @@ import org.bitcoins.core.protocol.script.{
   P2SHScriptPubKey,
   P2WPKHWitnessSPKV0
 }
-import org.bitcoins.core.psbt.GlobalPSBTRecord.XPubKey
-import org.bitcoins.core.psbt.{GlobalPSBTMap, PSBT}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError.MnemonicNotFound
@@ -287,5 +285,12 @@ class WalletUnitTest extends BitcoinSWalletTest {
         assert(
           signed.inputMaps.head.partialSignatures.exists(_.pubKey == walletKey))
       }
+  }
+
+  it must "be able to sign a psbt with no wallet utxos" in { wallet: Wallet =>
+    val psbt = dummyPSBT()
+    for {
+      signed <- wallet.signPSBT(psbt)
+    } yield assert(signed == psbt)
   }
 }
