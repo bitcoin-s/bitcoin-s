@@ -525,7 +525,6 @@ object DigitDecompositionEventDescriptorV0TLV
 sealed trait OracleEventTLV extends TLV
 
 case class OracleEventV0TLV(
-    publicKey: SchnorrPublicKey,
     nonces: Vector[SchnorrNonce],
     eventMaturityEpoch: UInt32,
     eventDescriptor: EventDescriptorTLV,
@@ -542,7 +541,7 @@ case class OracleEventV0TLV(
     val numNonces = UInt16(nonces.size)
     val noncesBytes = nonces.foldLeft(numNonces.bytes)(_ ++ _.bytes)
 
-    publicKey.bytes ++ noncesBytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ uriBytes
+    noncesBytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ uriBytes
   }
 }
 
@@ -551,8 +550,6 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
 
   override def fromTLVValue(value: ByteVector): OracleEventV0TLV = {
     val iter = ValueIterator(value)
-
-    val publicKey = SchnorrPublicKey(iter.take(32))
 
     val numNonces = UInt16(iter.takeBits(16))
     val builder = Vector.newBuilder[SchnorrNonce]
@@ -573,11 +570,7 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
     iter.skip(eventDescriptor.byteSize)
     val eventURI = new String(iter.current.toArray, StandardCharsets.UTF_8)
 
-    OracleEventV0TLV(publicKey,
-                     nonces,
-                     eventMaturity,
-                     eventDescriptor,
-                     eventURI)
+    OracleEventV0TLV(nonces, eventMaturity, eventDescriptor, eventURI)
   }
 }
 
@@ -585,11 +578,13 @@ sealed trait OracleAnnouncementTLV extends TLV
 
 case class OracleAnnouncementV0TLV(
     announcementSignature: SchnorrDigitalSignature,
+    publicKey: SchnorrPublicKey,
     eventTLV: OracleEventV0TLV)
     extends OracleAnnouncementTLV {
   override def tpe: BigSizeUInt = OracleAnnouncementV0TLV.tpe
 
-  override val value: ByteVector = announcementSignature.bytes ++ eventTLV.bytes
+  override val value: ByteVector =
+    announcementSignature.bytes ++ publicKey.bytes ++ eventTLV.bytes
 }
 
 object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
@@ -599,8 +594,9 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
     val iter = ValueIterator(value)
 
     val sig = SchnorrDigitalSignature(iter.take(64))
+    val publicKey = SchnorrPublicKey(iter.take(32))
     val eventTLV = OracleEventV0TLV(iter.current)
 
-    OracleAnnouncementV0TLV(sig, eventTLV)
+    OracleAnnouncementV0TLV(sig, publicKey, eventTLV)
   }
 }

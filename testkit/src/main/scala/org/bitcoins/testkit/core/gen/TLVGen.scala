@@ -80,7 +80,6 @@ trait TLVGen {
 
   def oracleEventV0TLV: Gen[OracleEventV0TLV] = {
     for {
-      pubkey <- CryptoGenerators.schnorrPublicKey
       maturity <- NumberGenerator.uInt32s
       uri <- StringGenerators.genString
       desc <- eventDescriptorTLV
@@ -88,14 +87,15 @@ trait TLVGen {
         Gen
           .listOfN(desc.noncesNeeded, CryptoGenerators.schnorrNonce)
           .map(_.toVector)
-    } yield OracleEventV0TLV(pubkey, nonces, maturity, desc, uri)
+    } yield OracleEventV0TLV(nonces, maturity, desc, uri)
   }
 
   def oracleAnnouncementV0TLV: Gen[OracleAnnouncementV0TLV] = {
     for {
       sig <- CryptoGenerators.schnorrDigitalSignature
+      pubkey <- CryptoGenerators.schnorrPublicKey
       eventTLV <- oracleEventV0TLV
-    } yield OracleAnnouncementV0TLV(sig, eventTLV)
+    } yield OracleAnnouncementV0TLV(sig, pubkey, eventTLV)
   }
 
   def tlv: Gen[TLV] = {
