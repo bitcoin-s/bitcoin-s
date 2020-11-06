@@ -135,9 +135,10 @@ case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
               val fee = psbt.feeOpt.map(fee =>
                 "fee" -> Num(fee.satoshis.toLong.toDouble))
               val vsize =
-                psbt.estimateVSize.map(vsize => "estimated_vsize" -> Num(vsize))
+                psbt.estimateVSize.map(vsize =>
+                  "estimated_vsize" -> Num(vsize.toDouble))
               val feeRate = psbt.estimateSatsPerVByte.map(feeRate =>
-                "estimated_sats_vbyte" -> Num(feeRate.toLong))
+                "estimated_sats_vbyte" -> Num(feeRate.toLong.toDouble))
 
               Vector(fee, vsize, feeRate).flatten
             }

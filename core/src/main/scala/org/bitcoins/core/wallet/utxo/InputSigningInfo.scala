@@ -110,7 +110,7 @@ case class ScriptSignatureParams[+InputType <: InputInfo](
           (scriptSigSize * 4, witnessSize)
         case tx: NonWitnessTransaction =>
           val scriptSigSize = tx.inputs.head.scriptSignature.asmBytes.size
-          (scriptSigSize * 4, 0)
+          (scriptSigSize * 4, 0L)
       }
 
     Await.result(maxWitnessLenF, 30.seconds)
