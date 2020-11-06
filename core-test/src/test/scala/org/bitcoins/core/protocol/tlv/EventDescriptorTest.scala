@@ -161,19 +161,6 @@ class EventDescriptorTest extends BitcoinSUnitTest {
     assert(expectedOutcomes3.forall(descriptor3.contains(_)))
   }
 
-  def formatNum(num: Int, numDigits: Int): Vector[String] = {
-    val sign = if (num < 0) {
-      "-"
-    } else {
-      "+"
-    }
-
-    val digits =
-      String.format(s"%0${numDigits}d", Math.abs(num)).toVector.map(_.toString)
-
-    sign +: digits
-  }
-
   it must "create a signed digit decomposition event" in {
     val descriptor =
       SignedDigitDecompositionEventDescriptor(base = UInt16(10),
@@ -182,8 +169,6 @@ class EventDescriptorTest extends BitcoinSUnitTest {
                                               precision = Int32.zero)
 
     val descriptorOutcomeNums: Vector[Int] = -9.until(10).toVector
-    val descriptorOutcomes =
-      descriptorOutcomeNums.map(formatNum(_, numDigits = 1))
 
     assert(descriptorOutcomeNums.forall(descriptor.contains(_)))
     assert(descriptorOutcomeNums.forall(descriptor.containsToPrecision(_)))
