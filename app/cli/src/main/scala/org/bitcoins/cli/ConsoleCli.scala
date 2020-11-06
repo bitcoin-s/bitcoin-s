@@ -578,6 +578,9 @@ object ConsoleCli {
       cmd("getutxos")
         .action((_, conf) => conf.copy(command = GetUtxos))
         .text("Returns list of all wallet utxos"),
+      cmd("listreservedutxos")
+        .action((_, conf) => conf.copy(command = ListReservedUtxos))
+        .text("Returns list of all reserved wallet utxos"),
       cmd("getaddresses")
         .action((_, conf) => conf.copy(command = GetAddresses))
         .text("Returns list of all wallet addresses currently being watched"),
@@ -1114,6 +1117,8 @@ object ConsoleCli {
     val requestParam: RequestParam = command match {
       case GetUtxos =>
         RequestParam("getutxos")
+      case ListReservedUtxos =>
+        RequestParam("listreservedutxos")
       case GetAddresses =>
         RequestParam("getaddresses")
       case GetSpentAddresses =>
@@ -1529,6 +1534,7 @@ object CliCommand {
 
   case class GetNewAddress(labelOpt: Option[AddressLabelTag]) extends CliCommand
   case object GetUtxos extends CliCommand
+  case object ListReservedUtxos extends CliCommand
   case object GetAddresses extends CliCommand
   case object GetSpentAddresses extends CliCommand
   case object GetFundedAddresses extends CliCommand
