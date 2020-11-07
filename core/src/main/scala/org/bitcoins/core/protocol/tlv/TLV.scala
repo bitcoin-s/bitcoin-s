@@ -5,7 +5,11 @@ import java.nio.charset.StandardCharsets
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.tlv.TLV.DecodeTLVResult
+import org.bitcoins.core.protocol.tlv.TLV.{
+  DecodeTLVResult,
+  FALSE_BYTE,
+  TRUE_BYTE
+}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
@@ -42,6 +46,9 @@ sealed trait TLVParentFactory[T <: TLV] extends Factory[T] {
 }
 
 object TLV extends TLVParentFactory[TLV] {
+
+  val FALSE_BYTE: Byte = 0x00
+  val TRUE_BYTE: Byte = 0x01
 
   case class DecodeTLVResult(
       tpe: BigSizeUInt,
@@ -119,6 +126,23 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
       require(numBits % 8 == 0,
               s"Must take a round byte number of bits, got $numBits")
       take(numBytes = numBits / 8)
+    }
+
+    def takeBoolean(): Boolean = {
+      take(1).head match {
+        case FALSE_BYTE => false
+        case TRUE_BYTE  => true
+        case byte: Byte =>
+          throw new RuntimeException(
+            s"Boolean values must be 0x00 or 0x01, got $byte")
+      }
+    }
+
+    def takeString(): String = {
+      val size = BigSizeUInt(current)
+      skip(size.byteSize)
+      val strBytes = take(size.toInt)
+      new String(strBytes.toArray, StandardCharsets.UTF_8)
     }
 
     def takeSPK(): ScriptPubKey = {
@@ -207,40 +231,25 @@ object PongTLV extends TLVFactory[PongTLV] {
   }
 }
 
-sealed trait EventDescriptorTLV extends TLV
+sealed trait EventDescriptorTLV extends TLV {
+  def noncesNeeded: Int
+}
 
 object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
 
   val allFactories: Vector[TLVFactory[EventDescriptorTLV]] =
-    Vector(ExternalEventDescriptorV0TLV,
-           EnumEventDescriptorV0TLV,
-           RangeEventDescriptorV0TLV)
+    Vector(EnumEventDescriptorV0TLV,
+           RangeEventDescriptorV0TLV,
+           DigitDecompositionEventDescriptorV0TLV)
 
   override def typeName: String = "EventDescriptorTLV"
 }
 
-case class ExternalEventDescriptorV0TLV(external_name: String)
-    extends EventDescriptorTLV {
-  override def tpe: BigSizeUInt = ExternalEventDescriptorV0TLV.tpe
-
-  override val value: ByteVector = CryptoUtil.serializeForHash(external_name)
-}
-
-object ExternalEventDescriptorV0TLV
-    extends TLVFactory[ExternalEventDescriptorV0TLV] {
-
-  override def apply(external_name: String): ExternalEventDescriptorV0TLV =
-    new ExternalEventDescriptorV0TLV(external_name)
-
-  override val tpe: BigSizeUInt = BigSizeUInt(55300)
-
-  override def fromTLVValue(value: ByteVector): ExternalEventDescriptorV0TLV = {
-    val external_name = new String(value.toArray, StandardCharsets.UTF_8)
-
-    ExternalEventDescriptorV0TLV(external_name)
-  }
-}
-
+/**
+  * Describes an event over an enumerated set of outcomes
+  * @param outcomeStrs The set of possible outcomes
+  * @see https://github.com/discreetlogcontracts/dlcspecs/blob/540c23a3e89c886814145cf16edfd48421d0175b/Oracle.md#simple-enumeration
+  */
 case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
     extends EventDescriptorTLV {
   override def tpe: BigSizeUInt = EnumEventDescriptorV0TLV.tpe
@@ -253,6 +262,8 @@ case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
       accum ++ UInt16(outcomeBytes.length).bytes ++ outcomeBytes
     }
   }
+
+  override def noncesNeeded: Int = 1
 }
 
 object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
@@ -282,13 +293,97 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
   }
 }
 
-case class RangeEventDescriptorV0TLV(start: Int32, stop: Int32, step: UInt16)
-    extends EventDescriptorTLV {
-  override def tpe: BigSizeUInt = RangeEventDescriptorV0TLV.tpe
+trait NumericEventDescriptorTLV extends EventDescriptorTLV {
+
+  /** The minimum valid value in the oracle can sign */
+  def min: Vector[String]
+
+  def minNum: BigInt
+
+  /** The maximum valid value in the oracle can sign */
+  def max: Vector[String]
+
+  def maxNum: BigInt
+
+  def step: UInt16
+
+  def contains(outcome: BigInt): Boolean = {
+    val inBounds = outcome <= maxNum && outcome >= minNum
+
+    inBounds && (outcome - minNum) % step.toInt == 0
+  }
+
+  /** The base in which the outcome value is represented */
+  def base: UInt16
+
+  /** The unit of the outcome value */
+  def unit: String
+
+  /** The precision of the outcome representing the base exponent
+    * by which to multiply the number represented by the composition
+    * of the digits to obtain the actual outcome value.
+    *
+    * Modifies unit.
+    */
+  def precision: Int32
+
+  lazy val precisionModifier: Double = Math.pow(base.toInt, precision.toInt)
+
+  def stepToPrecision: BigDecimal = precisionModifier * BigDecimal(step.toInt)
+
+  def minToPrecision: BigDecimal = precisionModifier * BigDecimal(minNum)
+
+  def maxToPrecision: BigDecimal = precisionModifier * BigDecimal(maxNum)
+
+  /** Checks if a outcome is contained in the set of outcomes when adjusted for precision
+    * If you have precision=-1 and oracle outcomes [0,1,2,3...,10]
+    * This would return true if passed a value [0, 0.1, 0.2,...,1.0]
+    * If passed in the not precision adjusted outcomes [0,1,2,...10] it will return false
+    */
+  def containsPreciseOutcome(outcome: BigDecimal): Boolean = {
+    (outcome / precisionModifier).toBigIntExact match {
+      case Some(unModifiedOutcome) => contains(unModifiedOutcome)
+      case None                    => false
+    }
+  }
+}
+
+/**
+  * Describes a simple event over a range of numbers
+  * @param start The first number in the range
+  * @param count The number of possible outcomes
+  * @param step The increment between each outcome
+  */
+case class RangeEventDescriptorV0TLV(
+    start: Int32,
+    count: UInt32,
+    step: UInt16,
+    unit: String,
+    precision: Int32)
+    extends NumericEventDescriptorTLV {
+
+  override val minNum: BigInt = BigInt(start.toInt)
+
+  override val min: Vector[String] = Vector(minNum.toString)
+
+  override val maxNum: BigInt =
+    start.toLong + (step.toLong * (count.toLong - 1))
+
+  override val max: Vector[String] = Vector(maxNum.toString)
+
+  override val base: UInt16 = UInt16(10)
+
+  override val tpe: BigSizeUInt = RangeEventDescriptorV0TLV.tpe
 
   override val value: ByteVector = {
-    start.bytes ++ stop.bytes ++ step.bytes
+    val unitSize = BigSizeUInt(unit.length)
+    val unitBytes = CryptoUtil.serializeForHash(unit)
+
+    start.bytes ++ count.bytes ++ step.bytes ++
+      unitSize.bytes ++ unitBytes ++ precision.bytes
   }
+
+  override def noncesNeeded: Int = 1
 }
 
 object RangeEventDescriptorV0TLV extends TLVFactory[RangeEventDescriptorV0TLV] {
@@ -299,27 +394,154 @@ object RangeEventDescriptorV0TLV extends TLVFactory[RangeEventDescriptorV0TLV] {
     val iter = ValueIterator(value)
 
     val start = Int32(iter.takeBits(32))
-    val stop = Int32(iter.takeBits(32))
+    val count = UInt32(iter.takeBits(32))
     val step = UInt16(iter.takeBits(16))
 
-    RangeEventDescriptorV0TLV(start, stop, step)
+    val unit = iter.takeString()
+    val precision = Int32(iter.takeBits(32))
+
+    RangeEventDescriptorV0TLV(start, count, step, unit, precision)
+  }
+}
+
+/** Describes a large range event using numerical decomposition */
+trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
+  require(numDigits > UInt16.zero,
+          s"Number of digits must be positive, got $numDigits")
+
+  /** Whether the outcome can be negative */
+  def isSigned: Boolean
+
+  /** The number of digits that the oracle will sign */
+  def numDigits: UInt16
+
+  override lazy val maxNum: BigInt = base.toBigInt.pow(numDigits.toInt) - 1
+
+  private lazy val maxDigit = (base.toInt - 1).toString
+
+  override lazy val max: Vector[String] = if (isSigned) {
+    "+" +: Vector.fill(numDigits.toInt)(maxDigit)
+  } else {
+    Vector.fill(numDigits.toInt)(maxDigit)
+  }
+
+  override lazy val minNum: BigInt = if (isSigned) {
+    -maxNum
+  } else {
+    0
+  }
+
+  override lazy val min: Vector[String] = if (isSigned) {
+    "-" +: Vector.fill(numDigits.toInt)(maxDigit)
+  } else {
+    Vector.fill(numDigits.toInt)("0")
+  }
+
+  override lazy val step: UInt16 = UInt16.one
+
+  override lazy val tpe: BigSizeUInt =
+    DigitDecompositionEventDescriptorV0TLV.tpe
+
+  override lazy val value: ByteVector = {
+    val isSignedByte =
+      if (isSigned) ByteVector(TRUE_BYTE) else ByteVector(FALSE_BYTE)
+
+    val numDigitBytes = numDigits.bytes
+    val unitSize = BigSizeUInt(unit.length)
+    val unitBytes = CryptoUtil.serializeForHash(unit)
+
+    base.bytes ++ isSignedByte ++ unitSize.bytes ++ unitBytes ++ precision.bytes ++ numDigitBytes
+  }
+
+  override def noncesNeeded: Int = {
+    if (isSigned) numDigits.toInt + 1
+    else numDigits.toInt
+  }
+}
+
+/** Represents a large range event that can be positive or negative */
+case class SignedDigitDecompositionEventDescriptor(
+    base: UInt16,
+    numDigits: UInt16,
+    unit: String,
+    precision: Int32)
+    extends DigitDecompositionEventDescriptorV0TLV {
+  override val isSigned: Boolean = true
+}
+
+/** Represents a large range event that is unsigned */
+case class UnsignedDigitDecompositionEventDescriptor(
+    base: UInt16,
+    numDigits: UInt16,
+    unit: String,
+    precision: Int32)
+    extends DigitDecompositionEventDescriptorV0TLV {
+  override val isSigned: Boolean = false
+}
+
+object DigitDecompositionEventDescriptorV0TLV
+    extends TLVFactory[DigitDecompositionEventDescriptorV0TLV] {
+
+  override val tpe: BigSizeUInt = BigSizeUInt(55306)
+
+  override def fromTLVValue(
+      value: ByteVector): DigitDecompositionEventDescriptorV0TLV = {
+    val iter = ValueIterator(value)
+
+    val base = UInt16(iter.takeBits(16))
+    val isSigned = iter.takeBoolean()
+
+    val unit = iter.takeString()
+    val precision = Int32(iter.takeBits(32))
+    val numDigits = UInt16(iter.takeBits(16))
+
+    DigitDecompositionEventDescriptorV0TLV(base,
+                                           isSigned,
+                                           numDigits.toInt,
+                                           unit,
+                                           precision)
+  }
+
+  def apply(
+      base: UInt16,
+      isSigned: Boolean,
+      numDigits: Int,
+      unit: String,
+      precision: Int32): DigitDecompositionEventDescriptorV0TLV = {
+    if (isSigned) {
+      SignedDigitDecompositionEventDescriptor(base,
+                                              UInt16(numDigits),
+                                              unit,
+                                              precision)
+    } else {
+      UnsignedDigitDecompositionEventDescriptor(base,
+                                                UInt16(numDigits),
+                                                unit,
+                                                precision)
+    }
   }
 }
 
 sealed trait OracleEventTLV extends TLV
 
 case class OracleEventV0TLV(
-    publicKey: SchnorrPublicKey,
-    nonce: SchnorrNonce,
+    nonces: Vector[SchnorrNonce],
     eventMaturityEpoch: UInt32,
     eventDescriptor: EventDescriptorTLV,
     eventURI: String
 ) extends OracleEventTLV {
+
+  require(eventDescriptor.noncesNeeded == nonces.size,
+          "Not enough nonces for this event descriptor")
+
   override def tpe: BigSizeUInt = OracleEventV0TLV.tpe
 
   override val value: ByteVector = {
     val uriBytes = CryptoUtil.serializeForHash(eventURI)
-    publicKey.bytes ++ nonce.bytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ uriBytes
+    val numNonces = UInt16(nonces.size)
+    val noncesBytes = nonces.foldLeft(numNonces.bytes)(_ ++ _.bytes)
+
+    noncesBytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ uriBytes
   }
 }
 
@@ -327,16 +549,28 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(55330)
 
   override def fromTLVValue(value: ByteVector): OracleEventV0TLV = {
-    val iter = ValueIterator(value, 0)
+    val iter = ValueIterator(value)
 
-    val publicKey = SchnorrPublicKey(iter.take(32))
-    val nonce = SchnorrNonce(iter.take(32))
+    val numNonces = UInt16(iter.takeBits(16))
+    val builder = Vector.newBuilder[SchnorrNonce]
+
+    for (_ <- 0 until numNonces.toInt) {
+      val nonceBytes = iter.take(32)
+      builder.+=(SchnorrNonce(nonceBytes))
+    }
+
+    val nonces = builder.result()
+
+    require(
+      numNonces.toInt == nonces.size,
+      s"Did not parse the expected number of nonces expected ${numNonces.toInt}, got ${nonces.size}")
+
     val eventMaturity = UInt32(iter.takeBits(32))
     val eventDescriptor = EventDescriptorTLV(iter.current)
     iter.skip(eventDescriptor.byteSize)
     val eventURI = new String(iter.current.toArray, StandardCharsets.UTF_8)
 
-    OracleEventV0TLV(publicKey, nonce, eventMaturity, eventDescriptor, eventURI)
+    OracleEventV0TLV(nonces, eventMaturity, eventDescriptor, eventURI)
   }
 }
 
@@ -344,22 +578,25 @@ sealed trait OracleAnnouncementTLV extends TLV
 
 case class OracleAnnouncementV0TLV(
     announcementSignature: SchnorrDigitalSignature,
+    publicKey: SchnorrPublicKey,
     eventTLV: OracleEventV0TLV)
     extends OracleAnnouncementTLV {
   override def tpe: BigSizeUInt = OracleAnnouncementV0TLV.tpe
 
-  override val value: ByteVector = announcementSignature.bytes ++ eventTLV.bytes
+  override val value: ByteVector =
+    announcementSignature.bytes ++ publicKey.bytes ++ eventTLV.bytes
 }
 
 object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(55332)
 
   override def fromTLVValue(value: ByteVector): OracleAnnouncementV0TLV = {
-    val iter = ValueIterator(value, 0)
+    val iter = ValueIterator(value)
 
     val sig = SchnorrDigitalSignature(iter.take(64))
+    val publicKey = SchnorrPublicKey(iter.take(32))
     val eventTLV = OracleEventV0TLV(iter.current)
 
-    OracleAnnouncementV0TLV(sig, eventTLV)
+    OracleAnnouncementV0TLV(sig, publicKey, eventTLV)
   }
 }
