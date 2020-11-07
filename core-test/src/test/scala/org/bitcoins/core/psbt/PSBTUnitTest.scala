@@ -3,7 +3,7 @@ package org.bitcoins.core.psbt
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.GlobalPSBTRecord.{UnsignedTransaction, Version}
@@ -15,13 +15,9 @@ import org.bitcoins.core.psbt.PSBTGlobalKeyId.XPubKeyKeyId
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{ConditionalPath, InputInfo}
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  ECPublicKey,
-  Sha256Hash160Digest,
-  Sign
-}
+import org.bitcoins.crypto.{ECPublicKey, Sha256Hash160Digest, Sign}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkit.util.TransactionTestUtil._
 import scodec.bits._
 
 class PSBTUnitTest extends BitcoinSAsyncTest {
@@ -74,6 +70,19 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
       .fromString(
         "tprv8ZgxMBicQKsPd9TeAdPADNnSyH9SSUUbTVeFszDE23Ki6TBB5nCefAdHkK8Fm3qMQR6sHwA56zqRmKmxnHk37JkiFzvncDqoKmPWubu7hDF")
 
+    val bip32Paths = Vector(
+      BIP32Path.fromString("m/0'/0'/0'"),
+      BIP32Path.fromString("m/0'/0'/1'"),
+      BIP32Path.fromString("m/0'/0'/2'"),
+      BIP32Path.fromString("m/0'/0'/3'"),
+      BIP32Path.fromString("m/0'/0'/4'"),
+      BIP32Path.fromString("m/0'/0'/5'")
+    )
+
+    val keys = bip32Paths.map { path =>
+      extKey.deriveChildPubKey(path).get.key
+    }
+
     val psbt = start
       .addUTXOToInput(
         Transaction(
@@ -99,12 +108,12 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
           hex"522103089dc10c7ac6db54f91329af617333db388cead0c231f723379d1b99030b02dc21023add904f3d6dcf59ddb906b0dee23529b7ffb9ed50e5e86151926860221f0e7352ae"),
         1
       )
-      .addKeyPathToInput(extKey, BIP32Path.fromString("m/0'/0'/0'"), 0)
-      .addKeyPathToInput(extKey, BIP32Path.fromString("m/0'/0'/1'"), 0)
-      .addKeyPathToInput(extKey, BIP32Path.fromString("m/0'/0'/2'"), 1)
-      .addKeyPathToInput(extKey, BIP32Path.fromString("m/0'/0'/3'"), 1)
-      .addKeyPathToOutput(extKey, BIP32Path.fromString("m/0'/0'/4'"), 0)
-      .addKeyPathToOutput(extKey, BIP32Path.fromString("m/0'/0'/5'"), 1)
+      .addKeyPathToInput(extKey, bip32Paths(0), keys(0), 0)
+      .addKeyPathToInput(extKey, bip32Paths(1), keys(1), 0)
+      .addKeyPathToInput(extKey, bip32Paths(2), keys(2), 1)
+      .addKeyPathToInput(extKey, bip32Paths(3), keys(3), 1)
+      .addKeyPathToOutput(extKey, bip32Paths(4), keys(4), 0)
+      .addKeyPathToOutput(extKey, bip32Paths(5), keys(5), 1)
 
     assert(psbt == expected)
 
@@ -345,29 +354,6 @@ class PSBTUnitTest extends BitcoinSAsyncTest {
       assert(signedPsbt0 == expectedPsbt0)
       assert(signedPsbt1 == expectedPsbt1)
     }
-  }
-
-  def dummyTx(
-      prevTxId: DoubleSha256Digest = DoubleSha256Digest.empty,
-      scriptSig: ScriptSignature = EmptyScriptSignature,
-      spk: ScriptPubKey = EmptyScriptPubKey): Transaction = {
-    BaseTransaction(
-      version = Int32.zero,
-      inputs = Vector(
-        TransactionInput(outPoint = TransactionOutPoint(txId = prevTxId,
-                                                        vout = UInt32.zero),
-                         scriptSignature = scriptSig,
-                         sequenceNumber = UInt32.zero)),
-      outputs = Vector(TransactionOutput(CurrencyUnits.oneBTC, spk)),
-      lockTime = UInt32.zero
-    )
-  }
-
-  def dummyPSBT(
-      prevTxId: DoubleSha256Digest = DoubleSha256Digest.empty,
-      scriptSig: ScriptSignature = EmptyScriptSignature,
-      spk: ScriptPubKey = EmptyScriptPubKey): PSBT = {
-    PSBT.fromUnsignedTx(dummyTx(prevTxId, scriptSig, spk))
   }
 
   it must "successfully change a NonWitnessUTXO to a WitnessUTXO when compressing" in {

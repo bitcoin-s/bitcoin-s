@@ -178,6 +178,8 @@ For more information on how to use our built in `cli` to interact with the serve
     - `amount` - Amount to send in BTC
     - `algo` - Coin selection algo
     - `--feerate <value>` - Fee rate in sats per virtual byte
+ - `signpsbt` `psbt` - Signs the PSBT's inputs with keys that are associated with the wallet
+    - `psbt` - PSBT to sign
  - `opreturncommit` `message` `[options]` - Creates OP_RETURN commitment transaction
     - `message` - message to put into OP_RETURN commitment
     - `--hashMessage` - should the message be hashed before commitment
@@ -206,3 +208,19 @@ For more information on how to use our built in `cli` to interact with the serve
     - `psbt` - PSBT serialized in hex or base64 format
  - `converttopsbt` `unsignedTx` - Creates an empty psbt from the given transaction
     - `unsignedTx` - serialized unsigned transaction in hex
+
+
+### Sign PSBT with Wallet Example
+
+Bitcoin-S CLI:
+
+```bash
+$ bitcoin-s-cli signpsbt cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA
+cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA
+```
+
+CURL:
+```bash
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "signpsbt", "params": ["cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":"cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA","error":null}
+```

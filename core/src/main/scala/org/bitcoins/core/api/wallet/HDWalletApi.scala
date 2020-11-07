@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
@@ -405,6 +406,8 @@ trait HDWalletApi extends WalletApi {
       tx <- sendToOutputs(outputs, feeRate, account)
     } yield tx
   }
+
+  def signPSBT(psbt: PSBT)(implicit ec: ExecutionContext): Future[PSBT]
 
   def makeOpReturnCommitment(
       message: String,

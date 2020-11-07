@@ -13,11 +13,12 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
-import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurpose, HDPurposes}
+import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
@@ -610,6 +611,73 @@ abstract class Wallet
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
       tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, newTags)
     } yield tx
+  }
+
+  override def signPSBT(psbt: PSBT)(implicit
+      ec: ExecutionContext): Future[PSBT] = {
+    val inputTxIds = psbt.transaction.inputs.zipWithIndex.map {
+      case (input, index) =>
+        input.previousOutput.txIdBE -> index
+    }.toMap
+    for {
+      accountDbs <- accountDAO.findAll()
+      ourXpubs = accountDbs.map(_.xpub)
+      utxos <- spendingInfoDAO.findAll()
+      txs <- transactionDAO.findByTxIds(inputTxIds.keys.toVector)
+
+      updated = txs.foldLeft(psbt) { (accum, tx) =>
+        val index = inputTxIds(tx.txIdBE)
+        accum.addUTXOToInput(tx.transaction, index)
+      }
+
+      signed <-
+        FutureUtil.foldLeftAsync(updated, updated.inputMaps.zipWithIndex) {
+          case (unsigned, (input, index)) =>
+            val xpubKeyPaths = input.BIP32DerivationPaths
+              .filter { path =>
+                ourXpubs.exists(_.fingerprint == path.masterFingerprint)
+              }
+              .map(bip32Path =>
+                HDPath.fromString(
+                  bip32Path.path.toString
+                )) // TODO add a way to get a HDPath from a BIP32 Path
+
+            val (utxoPath, withData) = {
+              val outPoint = unsigned.transaction.inputs(index).previousOutput
+              utxos.find(_.outpoint == outPoint) match {
+                case Some(utxo) =>
+                  val psbtWithUtxoData = utxo.redeemScript match {
+                    case Some(redeemScript) =>
+                      unsigned.addRedeemOrWitnessScriptToInput(redeemScript,
+                                                               index)
+                    case None => unsigned
+                  }
+
+                  (Vector(utxo.path), psbtWithUtxoData)
+                case None => (Vector.empty, unsigned)
+              }
+            }
+
+            val keyPaths = xpubKeyPaths ++ utxoPath
+
+            FutureUtil.foldLeftAsync(withData, keyPaths) { (accum, hdPath) =>
+              val sign = keyManager.toSign(hdPath)
+              // Only sign if that key doesn't have a signature yet
+              if (!input.partialSignatures.exists(_.pubKey == sign.publicKey)) {
+                logger.debug(
+                  s"Signing input $index with key ${sign.publicKey.hex}")
+                accum.sign(index, sign)
+              } else {
+                Future.successful(accum)
+              }
+            }
+        }
+    } yield {
+      if (updated == signed) {
+        logger.warn("Did not find any keys or utxos that belong to this wallet")
+      }
+      signed
+    }
   }
 
   protected def getLastAccountOpt(

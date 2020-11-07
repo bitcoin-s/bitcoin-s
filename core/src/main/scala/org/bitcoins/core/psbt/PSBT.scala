@@ -486,6 +486,7 @@ case class PSBT(
       MapType <: PSBTMap[RecordType]](
       extKey: ExtKey,
       path: BIP32Path,
+      pubKey: ECPublicKey,
       index: Int,
       keyIdByte: Byte,
       maps: Vector[MapType],
@@ -497,30 +498,23 @@ case class PSBT(
     require(!isFinalized, "Cannot update a PSBT that is finalized")
 
     val previousElements = maps(index).elements
-    val keyT = extKey.deriveChildPubKey(path)
+    lazy val expectedBytes = pubKey.bytes.+:(keyIdByte)
 
-    keyT match {
-      case Success(key) =>
-        lazy val expectedBytes = key.bytes.+:(keyIdByte)
-
-        val elements =
-          if (!previousElements.exists(_.key == expectedBytes)) {
-            val fp =
-              if (extKey.fingerprint == ExtKey.masterFingerprint) {
-                extKey.deriveChildPubKey(path.head).get.fingerprint
-              } else {
-                extKey.fingerprint
-              }
-
-            previousElements :+ makeRecord(key.key, fp, path)
+    val elements =
+      if (!previousElements.exists(_.key == expectedBytes)) {
+        val fp =
+          if (extKey.fingerprint == ExtKey.masterFingerprint) {
+            extKey.deriveChildPubKey(path.head).get.fingerprint
           } else {
-            previousElements
+            extKey.fingerprint
           }
 
-        maps.updated(index, makeMap(elements))
-      case Failure(err) =>
-        throw err
-    }
+        previousElements :+ makeRecord(pubKey, fp, path)
+      } else {
+        previousElements
+      }
+
+    maps.updated(index, makeMap(elements))
   }
 
   /**
@@ -530,10 +524,15 @@ case class PSBT(
     * @param index index of the InputPSBTMap to add the BIP32Path to
     * @return PSBT with added BIP32Path
     */
-  def addKeyPathToInput(extKey: ExtKey, path: BIP32Path, index: Int): PSBT = {
+  def addKeyPathToInput(
+      extKey: ExtKey,
+      path: BIP32Path,
+      pubKey: ECPublicKey,
+      index: Int): PSBT = {
     val newInputMaps = addKeyPathToMap[InputPSBTRecord, InputPSBTMap](
       extKey = extKey,
       path = path,
+      pubKey = pubKey,
       index = index,
       keyIdByte = PSBTInputKeyId.BIP32DerivationPathKeyId.byte,
       maps = inputMaps,
@@ -551,10 +550,15 @@ case class PSBT(
     * @param index index of the OutputPSBTMap to add the BIP32Path to
     * @return PSBT with added BIP32Path
     */
-  def addKeyPathToOutput(extKey: ExtKey, path: BIP32Path, index: Int): PSBT = {
+  def addKeyPathToOutput(
+      extKey: ExtKey,
+      path: BIP32Path,
+      pubKey: ECPublicKey,
+      index: Int): PSBT = {
     val newOutputMaps = addKeyPathToMap[OutputPSBTRecord, OutputPSBTMap](
       extKey = extKey,
       path = path,
+      pubKey = pubKey,
       index = index,
       keyIdByte = PSBTOutputKeyId.BIP32DerivationPathKeyId.byte,
       maps = outputMaps,
