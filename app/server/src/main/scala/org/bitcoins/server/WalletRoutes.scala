@@ -8,7 +8,7 @@ import org.bitcoins.core.api.wallet.AnyHDWalletApi
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.wallet.utxo.AddressLabelTagType
+import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
 import org.bitcoins.crypto.NetworkElement
 import ujson._
 
@@ -324,6 +324,14 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
     case ServerCommand("getutxos", _) =>
       complete {
         wallet.listUtxos().map { utxos =>
+          val json = utxos.map(spendingInfoDbToJson)
+          Server.httpSuccess(json)
+        }
+      }
+
+    case ServerCommand("listreservedutxos", _) =>
+      complete {
+        wallet.listUtxos(TxoState.Reserved).map { utxos =>
           val json = utxos.map(spendingInfoDbToJson)
           Server.httpSuccess(json)
         }

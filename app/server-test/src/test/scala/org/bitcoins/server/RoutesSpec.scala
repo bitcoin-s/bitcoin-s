@@ -350,6 +350,23 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    "return the reserved wallet utxos" in {
+
+      (mockWalletApi
+        .listUtxos(_: TxoState))
+        .expects(TxoState.Reserved)
+        .returning(Future.successful(Vector(spendingInfoDb)))
+
+      val route =
+        walletRoutes.handleCommand(ServerCommand("listreservedutxos", Arr()))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":[{"outpoint":"000000000000000000000000000000000000000000000000000000000000000000000000","value":-1}],"error":null}""")
+      }
+    }
+
     "return the wallet addresses" in {
       val addressDb = LegacyAddressDb(
         LegacyHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
