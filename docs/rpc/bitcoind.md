@@ -51,6 +51,24 @@ val balance: Future[Bitcoins] = for {
 } yield balance
 ```
 
+## Multi-wallet `bitcoind` instances
+
+When using the `bitcoind` with multiple wallets you will need to specify the wallet's name.
+To do so the wallet rpc functions have an optional `walletName` parameter.
+
+```scala mdoc:compile-only
+
+implicit val ec: ExecutionContext = ExecutionContext.global
+
+val client = BitcoindRpcClient.fromDatadir(binary=new File("/path/to/bitcoind"), datadir=new File("/path/to/bitcoind-datadir"))
+
+for {
+  _ <- client.start()
+  _ <- client.walletPassphrase("mypassword", 10000, Some("walletName"))
+  balance <- client.getBalance("walletName")
+} yield ()
+```
+
 ## Connecting to a remote `bitcoind`
 
 First, we create a secure connection to our `bitcoind` instance by setting
