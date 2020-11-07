@@ -823,6 +823,20 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("signpsbt")
+        .action((_, conf) => conf.copy(command = SignPSBT(PSBT.empty)))
+        .text("Signs the PSBT's inputs with keys that are associated with the wallet")
+        .children(
+          arg[PSBT]("psbt")
+            .text("PSBT to sign")
+            .required()
+            .action((psbt, conf) =>
+              conf.copy(command = conf.command match {
+                case signPSBT: SignPSBT =>
+                  signPSBT.copy(psbt = psbt)
+                case other => other
+              }))
+        ),
       cmd("opreturncommit")
         .action((_, conf) =>
           conf.copy(command = OpReturnCommit("", hashMessage = false, None)))
@@ -1259,6 +1273,8 @@ object ConsoleCli {
                      Seq(up.writeJs(message),
                          up.writeJs(hashMessage),
                          up.writeJs(satoshisPerVirtualByte)))
+      case SignPSBT(psbt) =>
+        RequestParam("signpsbt", Seq(up.writeJs(psbt)))
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -1517,6 +1533,8 @@ object CliCommand {
       hashMessage: Boolean,
       feeRateOpt: Option[SatoshisPerVirtualByte])
       extends CliCommand
+
+  case class SignPSBT(psbt: PSBT) extends CliCommand
 
   case class LockUnspent(
       unlock: Boolean,

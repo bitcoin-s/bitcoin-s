@@ -476,6 +476,18 @@ object SendWithAlgo extends ServerJsonModels {
 
 }
 
+case class SignPSBT(psbt: PSBT)
+
+object SignPSBT extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SignPSBT] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(SignPSBT(jsToPSBT(jsArr.arr.head)))
+  }
+}
+
 case class OpReturnCommit(
     message: String,
     hashMessage: Boolean,
