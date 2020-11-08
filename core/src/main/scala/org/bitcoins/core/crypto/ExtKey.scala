@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoin.NativeSecp256k1
+//import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.util._
@@ -211,10 +211,10 @@ sealed abstract class ExtPrivateKey
     //should be ECGroup addition
     //parse256(IL) + kpar (mod n)
     val tweak = CryptoContext.default match {
-      case CryptoContext.LibSecp256k1 =>
+      /*      case CryptoContext.LibSecp256k1 =>
         val tweakByteArr =
           NativeSecp256k1.privKeyTweakAdd(il.toArray, key.bytes.toArray)
-        ByteVector(tweakByteArr)
+        ByteVector(tweakByteArr)*/
       case CryptoContext.BouncyCastle =>
         val sum = key.fieldElement.add(FieldElement(il))
         sum.bytes
@@ -489,13 +489,13 @@ sealed abstract class ExtPublicKey extends ExtKey {
       val (il, ir) = hmac.splitAt(32)
       val priv = ECPrivateKey(il)
       val childPubKey = CryptoContext.default match {
-        case CryptoContext.LibSecp256k1 =>
+        /*        case CryptoContext.LibSecp256k1 =>
           val tweaked = NativeSecp256k1.pubKeyTweakAdd(key.bytes.toArray,
                                                        il.toArray,
                                                        priv.isCompressed)
-          ECPublicKey(ByteVector(tweaked))
+          ECPublicKey(ByteVector(tweaked))*/
         case CryptoContext.BouncyCastle =>
-          val tweak = ECPrivateKey.fromBytes(il).publicKey
+          val tweak = priv.publicKey
           key.add(tweak)
       }
 

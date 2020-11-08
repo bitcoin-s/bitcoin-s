@@ -1,6 +1,6 @@
 package org.bitcoins.crypto
 
-import org.bitcoin.NativeSecp256k1
+//import org.bitcoin.NativeSecp256k1
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -70,8 +70,8 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
     val pubKeyBytes = ByteVector.fromByte(2) ++ bytes
 
     val validPubKey = CryptoContext.default match {
-      case CryptoContext.LibSecp256k1 =>
-        NativeSecp256k1.isValidPubKey(pubKeyBytes.toArray)
+      /*      case CryptoContext.LibSecp256k1 =>
+        NativeSecp256k1.isValidPubKey(pubKeyBytes.toArray)*/
       case CryptoContext.BouncyCastle =>
         BouncyCastleUtil.validatePublicKey(pubKeyBytes)
     }

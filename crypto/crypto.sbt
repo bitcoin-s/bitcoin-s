@@ -4,4 +4,4 @@ libraryDependencies ++= Deps.crypto
 
 CommonSettings.prodSettings
 
-dependsOn(Projects.secp256k1jni)
+//dependsOn(Projects.secp256k1jni)

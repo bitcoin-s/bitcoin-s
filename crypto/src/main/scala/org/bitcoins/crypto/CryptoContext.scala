@@ -1,27 +1,16 @@
 package org.bitcoins.crypto
 
-import org.bitcoin.Secp256k1Context
-
 sealed trait CryptoContext
 
 object CryptoContext {
 
-  case object LibSecp256k1 extends CryptoContext
+  //case object LibSecp256k1 extends CryptoContext
 
   case object BouncyCastle extends CryptoContext
 
+  /** Only bouncy castle supported for scala/scalajs */
   def default: CryptoContext = {
-    val secpDisabled = System.getenv("DISABLE_SECP256K1")
-    if (
-      secpDisabled != null && (secpDisabled.toLowerCase == "true" || secpDisabled == "1")
-    ) {
-      BouncyCastle
-    } else {
-      if (Secp256k1Context.isEnabled) {
-        LibSecp256k1
-      } else {
-        BouncyCastle
-      }
-    }
+    //val secpDisabled = System.getenv("DISABLE_SECP256K1")
+    BouncyCastle
   }
 }

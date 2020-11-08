@@ -1,14 +1,15 @@
 package org.bitcoins.crypto
 
-import org.bitcoin.NativeSecp256k1
-import org.bitcoins.crypto.CryptoContext.{BouncyCastle, LibSecp256k1}
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
+/*import org.bitcoin.NativeSecp256k1
+import org.bitcoins.crypto.CryptoContext.{BouncyCastle}
+import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}*/
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.scalacheck.Gen
+/*import org.scalacheck.Gen
 import org.scalatest.{Outcome, Succeeded}
-import scodec.bits.ByteVector
+import scodec.bits.ByteVector*/
 
 class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
+  /*
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -17,7 +18,7 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
 
   override def withFixture(test: NoArgTest): Outcome = {
     CryptoContext.default match {
-      case CryptoContext.LibSecp256k1 => super.withFixture(test)
+      //case CryptoContext.LibSecp256k1 => super.withFixture(test)
       case CryptoContext.BouncyCastle =>
         logger.warn(s"Test ${test.name} skipped as Secp256k1 is not available.")
         Succeeded
@@ -118,6 +119,7 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
             .verify(bytes, badSig, context = LibSecp256k1))
     }
   }
+   */
 
   /*
   it must "compute schnorr signatures the same" in {
