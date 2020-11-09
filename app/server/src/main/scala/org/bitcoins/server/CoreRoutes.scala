@@ -149,7 +149,7 @@ case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
 
             val jsonVec: Vector[(String, Value)] =
               inputJson ++ optionalsJson ++ nextRoleJson
-            val jsonMap = mutable.LinkedHashMap.from(jsonVec)
+            val jsonMap = mutable.LinkedHashMap(jsonVec: _*)
             val json = Obj(jsonMap)
 
             Server.httpSuccess(json)
