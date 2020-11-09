@@ -33,3 +33,7 @@ addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.4.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
 
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
+
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.3.0")
+
+addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.0.0")

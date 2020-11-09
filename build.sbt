@@ -31,10 +31,15 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
 
 import Projects._
 
-lazy val crypto = project
+lazy val cryptoCrossProject = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
   .in(file("crypto"))
 
-lazy val core = project in file("core") dependsOn crypto
+lazy val crypto = cryptoCrossProject.jvm
+
+lazy val core = project
+  .in(file("core"))
+  .dependsOn(crypto)
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))

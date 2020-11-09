@@ -1,4 +1,5 @@
 import sbt._
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 object Deps {
 
@@ -57,15 +58,15 @@ object Deps {
     val scoptV = "4.0.0"
     val sttpV = "1.7.2"
     val codehausV = "3.1.2"
-  }
+  }git di
 
   object Compile {
 
+  val laminar = Def.setting("com.raquo" %%% "laminar" % "0.10.3") 
     val bouncycastle =
       "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
 
-    val scodec =
-      "org.scodec" %% "scodec-bits" % V.scodecV withSources () withJavadoc ()
+    val scodec = Def.setting("org.scodec" %%% "scodec-bits" % V.scodecV)
 
     val slf4j =
       "org.slf4j" % "slf4j-api" % V.slf4j % "provided" withSources () withJavadoc ()
@@ -74,7 +75,7 @@ object Deps {
       "org.zeromq" % "jeromq" % V.zeromq withSources () withJavadoc ()
 
     val akkaHttp =
-      "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
+      "com.typesafe.akka".%%("akka-http").%(V.akkav).withSources().withJavadoc()
 
     val akkaStream =
       "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
@@ -232,12 +233,11 @@ object Deps {
       Compile.slf4j
     )
 
-  val core = List(
-    Compile.bouncycastle,
-    Compile.scodec,
+  val core = List(Compile.laminar.value) ++ 
+    List(Compile.bouncycastle,
     Compile.slf4j,
     Compile.grizzledSlf4j
-  )
+  ) 
 
   val crypto = List(
     Compile.bouncycastle,
