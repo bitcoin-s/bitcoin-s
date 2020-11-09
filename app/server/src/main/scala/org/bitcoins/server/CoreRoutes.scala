@@ -5,7 +5,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.commons.jsonmodels.{SerializedPSBT, SerializedTransaction}
 import org.bitcoins.core.api.core.CoreApi
+import ujson._
 
+import scala.collection.mutable
 import scala.util.{Failure, Success}
 
 case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
@@ -94,6 +96,63 @@ case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
             val decoded = SerializedPSBT.decodePSBT(psbt)
             val uJson = ujson.read(decoded.toJson.toString())
             Server.httpSuccess(uJson)
+          }
+      }
+
+    case ServerCommand("analyzepsbt", arr) =>
+      AnalyzePSBT.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AnalyzePSBT(psbt)) =>
+          complete {
+            val inputs = psbt.inputMaps.zipWithIndex.map {
+              case (inputMap, index) =>
+                val txIn = psbt.transaction.inputs(index)
+                val vout = txIn.previousOutput.vout.toInt
+                val nextRole = inputMap.nextRole(txIn)
+                val hasUtxo = inputMap.prevOutOpt(vout).isDefined
+                val isFinalized = inputMap.isFinalized
+                val missingSigs = inputMap.missingSignatures(vout)
+
+                if (missingSigs.isEmpty) {
+                  Obj(
+                    "has_utxo" -> Bool(hasUtxo),
+                    "is_final" -> Bool(isFinalized),
+                    "next" -> Str(nextRole.shortName)
+                  )
+                } else {
+                  Obj(
+                    "has_utxo" -> Bool(hasUtxo),
+                    "is_final" -> Bool(isFinalized),
+                    "missing_sigs" -> missingSigs.map(hash => Str(hash.hex)),
+                    "next" -> Str(nextRole.shortName)
+                  )
+                }
+
+            }
+
+            val optionalsJson: Vector[(String, Num)] = {
+              val fee = psbt.feeOpt.map(fee =>
+                "fee" -> Num(fee.satoshis.toLong.toDouble))
+              val vsize =
+                psbt.estimateVSize.map(vsize =>
+                  "estimated_vsize" -> Num(vsize.toDouble))
+              val feeRate = psbt.estimateSatsPerVByte.map(feeRate =>
+                "estimated_sats_vbyte" -> Num(feeRate.toLong.toDouble))
+
+              Vector(fee, vsize, feeRate).flatten
+            }
+
+            val inputJson = Vector("inputs" -> Arr.from(inputs))
+            val nextRoleJson: Vector[(String, Str)] =
+              Vector("next" -> Str(psbt.nextRole.shortName))
+
+            val jsonVec: Vector[(String, Value)] =
+              inputJson ++ optionalsJson ++ nextRoleJson
+            val jsonMap = mutable.LinkedHashMap(jsonVec: _*)
+            val json = Obj(jsonMap)
+
+            Server.httpSuccess(json)
           }
       }
   }

@@ -1,6 +1,7 @@
 package org.bitcoins.core.psbt
 
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
@@ -8,6 +9,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
@@ -77,6 +79,70 @@ case class PSBT(
       "One or more of the input maps are susceptible to the BIP 143 vulnerability")
 
     this
+  }
+
+  /** The next [[PSBTRole]] that should be used for this PSBT */
+  lazy val nextRole: PSBTRole = {
+    val roles = inputMaps.zip(transaction.inputs).map {
+      case (inputMap, txIn) =>
+        inputMap.nextRole(txIn)
+    }
+
+    roles.minBy(_.order)
+  }
+
+  lazy val feeOpt: Option[CurrencyUnit] = {
+    val hasPrevUtxos =
+      inputMaps.zipWithIndex.forall(i => i._1.prevOutOpt(i._2).isDefined)
+    if (hasPrevUtxos) {
+      val inputAmount = inputMaps.zipWithIndex.foldLeft(CurrencyUnits.zero) {
+        case (accum, (input, index)) =>
+          // .get is safe because of hasPrevUtxos
+          val prevOut = input.prevOutOpt(index).get
+          accum + prevOut.value
+      }
+      val outputAmount =
+        transaction.outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
+      Some(inputAmount - outputAmount)
+    } else None
+  }
+
+  lazy val estimateWeight: Option[Long] = {
+    if (nextRole.order >= PSBTRole.SignerPSBTRole.order) {
+      // Need a exe context for maxScriptSigAndWitnessWeight
+      import scala.concurrent.ExecutionContext.Implicits.global
+      val dummySigner = Sign.dummySign(ECPublicKey.freshPublicKey)
+
+      val inputWeight =
+        inputMaps.zip(transaction.inputs).foldLeft(0L) {
+          case (weight, (inputMap, txIn)) =>
+            val (scriptSigLen, maxWitnessLen) = inputMap
+              .toUTXOSatisfyingInfoUsingSigners(txIn, Vector(dummySigner))
+              .maxScriptSigAndWitnessWeight
+
+            weight + 164 + maxWitnessLen + scriptSigLen
+        }
+      val outputWeight = transaction.outputs.foldLeft(0L)(_ + _.byteSize)
+      val weight = 107 + outputWeight + inputWeight
+
+      Some(weight)
+    } else None
+  }
+
+  lazy val estimateVSize: Option[Long] = {
+    estimateWeight.map { weight =>
+      Math.ceil(weight / 4.0).toLong
+    }
+  }
+
+  lazy val estimateSatsPerVByte: Option[SatoshisPerVirtualByte] = {
+    (feeOpt, estimateVSize) match {
+      case (Some(fee), Some(vsize)) =>
+        val rate = SatoshisPerVirtualByte.fromLong(fee.satoshis.toLong / vsize)
+        Some(rate)
+      case (None, None) | (Some(_), None) | (None, Some(_)) =>
+        None
+    }
   }
 
   /**
