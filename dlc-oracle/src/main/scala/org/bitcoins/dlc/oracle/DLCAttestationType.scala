@@ -3,6 +3,7 @@ package org.bitcoins.dlc.oracle
 import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
 
+/** Represents a single DLC event that the oracle is going to sign */
 sealed trait DLCAttestationType {
   def bytes: ByteVector
   def outcomeString: String

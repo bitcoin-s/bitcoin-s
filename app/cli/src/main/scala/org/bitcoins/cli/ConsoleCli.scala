@@ -1111,23 +1111,23 @@ object ConsoleCli {
                 case other => other
               }))
         ),
-      cmd("createlargerangeevent")
+      cmd("createdigitdecompevent")
         .action((_, conf) =>
-          conf.copy(command = CreateLargeRangedEvent("",
+          conf.copy(command = CreateDigitDecompEvent("",
                                                      Instant.MIN,
                                                      0,
                                                      isSigned = false,
                                                      0,
                                                      "",
                                                      0)))
-        .text("Registers an oracle event with a large number for its outcomes")
+        .text("Registers an oracle event that uses digit decomposition when signing the number")
         .children(
           arg[String]("name")
             .text("Name for this event")
             .required()
             .action((name, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateLargeRangedEvent =>
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
                   createLargeRangedEvent.copy(eventName = name)
                 case other => other
               })),
@@ -1136,7 +1136,7 @@ object ConsoleCli {
             .required()
             .action((time, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateLargeRangedEvent =>
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
                   createLargeRangedEvent.copy(maturationTime = time)
                 case other => other
               })),
@@ -1145,7 +1145,7 @@ object ConsoleCli {
             .required()
             .action((base, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateLargeRangedEvent =>
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
                   createLargeRangedEvent.copy(base = base)
                 case other => other
               })),
@@ -1153,7 +1153,7 @@ object ConsoleCli {
             .text("The max number of digits the outcome can have")
             .action((num, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateLargeRangedEvent =>
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
                   createLargeRangedEvent.copy(numDigits = num)
                 case other => other
               })),
@@ -1161,7 +1161,7 @@ object ConsoleCli {
             .text("Whether the outcomes can be negative")
             .action((_, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateLargeRangedEvent =>
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
                   createLargeRangedEvent.copy(isSigned = true)
                 case other => other
               })),
@@ -1169,7 +1169,7 @@ object ConsoleCli {
             .text("The unit denomination of the outcome value")
             .action((unit, conf) =>
               conf.copy(command = conf.command match {
-                case createRangedEvent: CreateLargeRangedEvent =>
+                case createRangedEvent: CreateDigitDecompEvent =>
                   createRangedEvent.copy(unit = unit)
                 case other => other
               })),
@@ -1179,7 +1179,7 @@ object ConsoleCli {
               "the composition of the digits to obtain the actual outcome value.")
             .action((precision, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateLargeRangedEvent =>
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
                   createLargeRangedEvent.copy(precision = precision)
                 case other => other
               }))
@@ -1221,8 +1221,8 @@ object ConsoleCli {
                 case other => other
               }))
         ),
-      cmd("signnumber")
-        .action((_, conf) => conf.copy(command = SignNumber(null, 0)))
+      cmd("signforrange")
+        .action((_, conf) => conf.copy(command = SignForRange(null, 0)))
         .text("Signs a ranged event")
         .children(
           arg[OracleEventV0TLV]("event")
@@ -1230,8 +1230,8 @@ object ConsoleCli {
             .required()
             .action((event, conf) =>
               conf.copy(command = conf.command match {
-                case signNumber: SignNumber =>
-                  signNumber.copy(oracleEventV0TLV = event)
+                case signRange: SignForRange =>
+                  signRange.copy(oracleEventV0TLV = event)
                 case other => other
               })),
           arg[Long]("outcome")
@@ -1239,13 +1239,13 @@ object ConsoleCli {
             .required()
             .action((num, conf) =>
               conf.copy(command = conf.command match {
-                case signNumber: SignNumber =>
-                  signNumber.copy(num = num)
+                case signRange: SignForRange =>
+                  signRange.copy(num = num)
                 case other => other
               }))
         ),
-      cmd("signlargenumber")
-        .action((_, conf) => conf.copy(command = SignLargeNumber(null, 0)))
+      cmd("signdigits")
+        .action((_, conf) => conf.copy(command = SignDigits(null, 0)))
         .text("Signs a large range event")
         .children(
           arg[OracleEventV0TLV]("event")
@@ -1253,8 +1253,8 @@ object ConsoleCli {
             .required()
             .action((event, conf) =>
               conf.copy(command = conf.command match {
-                case signLargeNumber: SignLargeNumber =>
-                  signLargeNumber.copy(oracleEventV0TLV = event)
+                case signDigits: SignDigits =>
+                  signDigits.copy(oracleEventV0TLV = event)
                 case other => other
               })),
           arg[Long]("outcome")
@@ -1262,8 +1262,8 @@ object ConsoleCli {
             .required()
             .action((num, conf) =>
               conf.copy(command = conf.command match {
-                case signLargeNumber: SignLargeNumber =>
-                  signLargeNumber.copy(num = num)
+                case signDigits: SignDigits =>
+                  signDigits.copy(num = num)
                 case other => other
               }))
         ),
@@ -1521,7 +1521,7 @@ object ConsoleCli {
               up.writeJs(precision))
         )
 
-      case CreateLargeRangedEvent(eventName,
+      case CreateDigitDecompEvent(eventName,
                                   time,
                                   base,
                                   isSigned,
@@ -1529,7 +1529,7 @@ object ConsoleCli {
                                   unit,
                                   precision) =>
         RequestParam(
-          "createlargerangeevent",
+          "createdigitdecompevent",
           Seq(up.writeJs(eventName),
               up.writeJs(time),
               up.writeJs(base),
@@ -1540,9 +1540,9 @@ object ConsoleCli {
         )
       case SignEvent(tlv, outcome) =>
         RequestParam("signevent", Seq(up.writeJs(tlv), up.writeJs(outcome)))
-      case SignNumber(tlv, num) =>
-        RequestParam("signnumber", Seq(up.writeJs(tlv), up.writeJs(num)))
-      case SignLargeNumber(tlv, num) =>
+      case SignForRange(tlv, num) =>
+        RequestParam("signforrange", Seq(up.writeJs(tlv), up.writeJs(num)))
+      case SignDigits(tlv, num) =>
         RequestParam("signlargenumber", Seq(up.writeJs(tlv), up.writeJs(num)))
       case GetSignatures(tlv) =>
         RequestParam("getsignatures", Seq(up.writeJs(tlv)))
@@ -1840,7 +1840,7 @@ object CliCommand {
       precision: Int)
       extends CliCommand
 
-  case class CreateLargeRangedEvent(
+  case class CreateDigitDecompEvent(
       eventName: String,
       maturationTime: Instant,
       base: Int,
@@ -1853,10 +1853,10 @@ object CliCommand {
   case class SignEvent(oracleEventV0TLV: OracleEventV0TLV, outcome: String)
       extends CliCommand
 
-  case class SignNumber(oracleEventV0TLV: OracleEventV0TLV, num: Long)
+  case class SignForRange(oracleEventV0TLV: OracleEventV0TLV, num: Long)
       extends CliCommand
 
-  case class SignLargeNumber(oracleEventV0TLV: OracleEventV0TLV, num: Long)
+  case class SignDigits(oracleEventV0TLV: OracleEventV0TLV, num: Long)
       extends CliCommand
 
   case class GetSignatures(oracleEventV0TLV: OracleEventV0TLV)

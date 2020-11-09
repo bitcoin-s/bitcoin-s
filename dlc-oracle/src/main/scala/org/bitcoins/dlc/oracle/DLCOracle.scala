@@ -211,7 +211,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
       eventTLV = OracleEventV0TLV(nonces, epoch, descriptor, eventName)
 
-      announcementBytes = signingVersion.calcAnnouncementBytes(eventTLV)
+      announcementBytes = signingVersion.calcAnnouncementHash(eventTLV)
       announcementSignature = signingKey.schnorrSign(announcementBytes)
 
       eventOutcomeDbs = descriptor match {
@@ -353,8 +353,8 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     } yield updated
   }
 
-  def signLargeRange(
-      oracleEventTLV: OracleEventV0TLV,
+  def signDigits(
+      oracleEventTLV: OracleEventTLV,
       num: Long): Future[OracleEvent] = {
 
     val eventDescriptorTLV = oracleEventTLV.eventDescriptor match {
@@ -384,7 +384,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       if (eventDescriptorTLV.isSigned) oracleEventTLV.nonces.tail
       else oracleEventTLV.nonces
 
-    val digitSigFs = nonces.reverse.zipWithIndex.map {
+    val digitSigFs = nonces.zipWithIndex.map {
       case (nonce, index) =>
         val digit = decomposed(index)
         signEvent(nonce, DigitDecompositionAttestation(digit))

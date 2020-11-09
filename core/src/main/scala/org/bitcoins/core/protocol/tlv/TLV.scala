@@ -524,6 +524,7 @@ object DigitDecompositionEventDescriptorV0TLV
 
 sealed trait OracleEventTLV extends TLV {
   def eventDescriptor: EventDescriptorTLV
+  def nonces: Vector[SchnorrNonce]
 }
 
 case class OracleEventV0TLV(
@@ -578,6 +579,8 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
 
 sealed trait OracleAnnouncementTLV extends TLV {
   def eventTLV: OracleEventTLV
+  def announcementSignature: SchnorrDigitalSignature
+  def publicKey: SchnorrPublicKey
 }
 
 case class OracleAnnouncementV0TLV(

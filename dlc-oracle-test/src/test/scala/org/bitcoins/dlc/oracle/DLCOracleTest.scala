@@ -108,7 +108,7 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event.announcementTLV == expectedAnnouncementTLV)
 
         val announceBytes =
-          SigningVersion.latest.calcAnnouncementBytes(event.eventTLV)
+          SigningVersion.latest.calcAnnouncementHash(event.eventTLV)
 
         assert(
           dlcOracle.publicKey.verify(announceBytes,
@@ -170,7 +170,7 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event.announcementTLV == expectedAnnouncementTLV)
 
         val announceBytes =
-          SigningVersion.latest.calcAnnouncementBytes(event.eventTLV)
+          SigningVersion.latest.calcAnnouncementHash(event.eventTLV)
 
         assert(
           dlcOracle.publicKey.verify(announceBytes,
@@ -213,10 +213,7 @@ class DLCOracleTest extends DLCOracleFixture {
       announcement <-
         dlcOracle.createNewEvent("test", futureTime, rangeEventDescriptorV0TLV)
 
-      nonce = announcement match {
-        case announceV0: OracleAnnouncementV0TLV =>
-          announceV0.eventTLV.nonces.head
-      }
+      nonce = announcement.eventTLV.nonces.head
 
       signedEventDb <- dlcOracle.signEvent(nonce, outcome)
       eventOpt <- dlcOracle.findEvent(announcement.eventTLV)
@@ -292,12 +289,9 @@ class DLCOracleTest extends DLCOracleFixture {
                                             unit = "units",
                                             precision = Int32.zero)
 
-      eventTLV = announcement match {
-        case announceV0: OracleAnnouncementV0TLV =>
-          announceV0.eventTLV
-      }
+      eventTLV = announcement.eventTLV
 
-      event <- dlcOracle.signLargeRange(eventTLV, outcome)
+      event <- dlcOracle.signDigits(eventTLV, outcome)
     } yield {
       event match {
         case completedEvent: CompletedDigitDecompositionV0OracleEvent =>
@@ -364,12 +358,9 @@ class DLCOracleTest extends DLCOracleFixture {
                                               unit = "units",
                                               precision = Int32.zero)
 
-        eventTLV = announcement match {
-          case announceV0: OracleAnnouncementV0TLV =>
-            announceV0.eventTLV
-        }
+        eventTLV = announcement.eventTLV
 
-        event <- dlcOracle.signLargeRange(eventTLV, outcome)
+        event <- dlcOracle.signDigits(eventTLV, outcome)
       } yield {
         event match {
           case completedEvent: CompletedDigitDecompositionV0OracleEvent =>
@@ -437,12 +428,9 @@ class DLCOracleTest extends DLCOracleFixture {
                                               unit = "units",
                                               precision = Int32.zero)
 
-        eventTLV = announcement match {
-          case announceV0: OracleAnnouncementV0TLV =>
-            announceV0.eventTLV
-        }
+        eventTLV = announcement.eventTLV
 
-        event <- dlcOracle.signLargeRange(eventTLV, outcome)
+        event <- dlcOracle.signDigits(eventTLV, outcome)
       } yield {
         event match {
           case completedEvent: CompletedDigitDecompositionV0OracleEvent =>
@@ -498,10 +486,7 @@ class DLCOracleTest extends DLCOracleFixture {
       _ = assert(beforeEvents.size == 1)
       _ = assert(beforeEvents.head.isInstanceOf[PendingOracleEvent])
 
-      nonce = announcement match {
-        case announceV0: OracleAnnouncementV0TLV =>
-          announceV0.eventTLV.nonces.head
-      }
+      nonce = announcement.eventTLV.nonces.head
 
       _ <- dlcOracle.signEvent(nonce, EnumAttestation(outcome))
       afterPending <- dlcOracle.listPendingEventDbs()
@@ -527,10 +512,7 @@ class DLCOracleTest extends DLCOracleFixture {
           announcement <-
             dlcOracle.createNewEnumEvent("test", futureTime, enumOutcomes)
 
-          nonce = announcement match {
-            case announceV0: OracleAnnouncementV0TLV =>
-              announceV0.eventTLV.nonces.head
-          }
+          nonce = announcement.eventTLV.nonces.head
 
           _ <- dlcOracle.signEvent(nonce, EnumAttestation("not a real outcome"))
         } yield ()
@@ -551,10 +533,7 @@ class DLCOracleTest extends DLCOracleFixture {
           announcement <-
             dlcOracle.createNewEvent("test", futureTime, descriptor)
 
-          nonce = announcement match {
-            case announceV0: OracleAnnouncementV0TLV =>
-              announceV0.eventTLV.nonces.head
-          }
+          nonce = announcement.eventTLV.nonces.head
 
           _ <- dlcOracle.signEvent(nonce, RangeAttestation(100))
         } yield ()

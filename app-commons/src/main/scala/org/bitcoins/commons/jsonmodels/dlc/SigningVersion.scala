@@ -6,11 +6,11 @@ import scodec.bits.ByteVector
 
 sealed abstract class SigningVersion {
 
-  /** Calculates the tweak for the deterministically generated nonce */
+  /** Calculates the tweak for the oracle's pre-committed nonce */
   def calcNonceTweak(nonce: SchnorrNonce, eventName: String): ByteVector
 
   /** Calculates the bytes to sign for an OracleAnnouncement */
-  def calcAnnouncementBytes(eventTLV: OracleEventTLV): ByteVector
+  def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector
 
   /** Calculates the bytes to sign for an event outcome */
   def calcOutcomeHash(
@@ -23,7 +23,6 @@ sealed abstract class SigningVersion {
       string: String): ByteVector = {
     calcOutcomeHash(descriptor, CryptoUtil.serializeForHash(string))
   }
-
 }
 
 object SigningVersion extends StringFactory[SigningVersion] {
@@ -39,7 +38,7 @@ object SigningVersion extends StringFactory[SigningVersion] {
       CryptoUtil.taggedSha256(bytes, "DLCv0/Nonce").bytes
     }
 
-    override def calcAnnouncementBytes(eventTLV: OracleEventTLV): ByteVector =
+    override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
       CryptoUtil.taggedSha256(eventTLV.bytes, "DLCv0/Announcement").bytes
 
     override def calcOutcomeHash(
@@ -59,7 +58,7 @@ object SigningVersion extends StringFactory[SigningVersion] {
       CryptoUtil.taggedSha256(bytes, "BasicSHA256").bytes
     }
 
-    override def calcAnnouncementBytes(eventTLV: OracleEventTLV): ByteVector =
+    override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
       CryptoUtil.sha256(eventTLV.bytes).bytes
 
     override def calcOutcomeHash(

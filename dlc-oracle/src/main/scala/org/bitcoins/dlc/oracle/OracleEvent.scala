@@ -8,6 +8,10 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.storage.EventDb
 
+/** Represents an event that the oracle has committed to
+  * Contains all the necessary information to construct
+  * all the oracle TLV messages
+  */
 sealed trait OracleEvent {
 
   /** The nonces the oracle is committing to for this event */
@@ -44,8 +48,10 @@ sealed trait OracleEvent {
   }
 }
 
+/** An oracle event that has not been signed yet */
 sealed trait PendingOracleEvent extends OracleEvent
 
+/** An oracle event that has been signed */
 sealed trait CompletedOracleEvent extends OracleEvent {
   def attestations: Vector[FieldElement]
 

@@ -594,7 +594,7 @@ object CreateRangedEvent extends ServerJsonModels {
   }
 }
 
-case class CreateLargeRangedEvent(
+case class CreateDigitDecompEvent(
     eventName: String,
     maturationTime: Instant,
     base: Int,
@@ -603,9 +603,9 @@ case class CreateLargeRangedEvent(
     unit: String,
     precision: Int)
 
-object CreateLargeRangedEvent extends ServerJsonModels {
+object CreateDigitDecompEvent extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[CreateLargeRangedEvent] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateDigitDecompEvent] = {
     jsArr.arr.toList match {
       case labelJs :: maturationTimeJs :: baseJs :: isSignedJs :: numDigitsJs :: unitJs :: precisionJs :: Nil =>
         Try {
@@ -618,7 +618,7 @@ object CreateLargeRangedEvent extends ServerJsonModels {
           val unit = unitJs.str
           val precision = precisionJs.num.toInt
 
-          CreateLargeRangedEvent(label,
+          CreateDigitDecompEvent(label,
                                  maturationTime,
                                  base,
                                  isSigned,
@@ -662,11 +662,11 @@ object SignEvent extends ServerJsonModels {
   }
 }
 
-case class SignRangeEvent(oracleEventTLV: OracleEventV0TLV, num: Long)
+case class SignForRange(oracleEventTLV: OracleEventV0TLV, num: Long)
 
-object SignRangeEvent extends ServerJsonModels {
+object SignForRange extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[SignRangeEvent] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[SignForRange] = {
     jsArr.arr.toList match {
       case tlvJs :: numJs :: Nil =>
         Try {
@@ -679,7 +679,7 @@ object SignRangeEvent extends ServerJsonModels {
                 s"Unable to parse $numJs as a number")
           }
 
-          SignRangeEvent(oracleEventTLV, num.toLong)
+          SignForRange(oracleEventTLV, num.toLong)
         }
       case Nil =>
         Failure(
@@ -693,11 +693,11 @@ object SignRangeEvent extends ServerJsonModels {
   }
 }
 
-case class SignLargeRangeEvent(oracleEventTLV: OracleEventV0TLV, num: Long)
+case class SignDigits(oracleEventTLV: OracleEventV0TLV, num: Long)
 
-object SignLargeRangeEvent extends ServerJsonModels {
+object SignDigits extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[SignLargeRangeEvent] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[SignDigits] = {
     jsArr.arr.toList match {
       case tlvJs :: numJs :: Nil =>
         Try {
@@ -710,7 +710,7 @@ object SignLargeRangeEvent extends ServerJsonModels {
                 s"Unable to parse $numJs as a number")
           }
 
-          SignLargeRangeEvent(oracleEventTLV, num.toLong)
+          SignDigits(oracleEventTLV, num.toLong)
         }
       case Nil =>
         Failure(

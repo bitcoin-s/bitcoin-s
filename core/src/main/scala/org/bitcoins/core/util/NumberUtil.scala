@@ -337,14 +337,20 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     Math.abs(scala.util.Random.nextInt())
   }
 
-  /** Decomposes num from 0th place to numDigits place into base 10 */
+  /** Decomposes the input num into a list of numDigits digits in the given base.
+    * The output Vector has the most significant digit first and the 1's place last.
+    */
   def decompose(num: Long, base: Int, numDigits: Int): Vector[Int] = {
     var currentNum: Long = num
-    (0 until numDigits).toVector.map { _ =>
+
+    val backwardsDigits = (0 until numDigits).toVector.map { _ =>
       val digit = currentNum % base
       currentNum = currentNum / base
+
       digit.toInt
     }
+
+    backwardsDigits.reverse
   }
 }
 

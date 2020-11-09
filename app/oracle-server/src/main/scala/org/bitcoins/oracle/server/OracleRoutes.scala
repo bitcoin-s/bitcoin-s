@@ -17,10 +17,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
 
   def getDescriptor(
       announcementTLV: OracleAnnouncementTLV): EventDescriptorTLV = {
-    announcementTLV match {
-      case v0: OracleAnnouncementV0TLV =>
-        v0.eventTLV.eventDescriptor
-    }
+    announcementTLV.eventTLV.eventDescriptor
   }
 
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
@@ -89,12 +86,12 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
           }
       }
 
-    case ServerCommand("createlargerangeevent", arr) =>
-      CreateLargeRangedEvent.fromJsArr(arr) match {
+    case ServerCommand("createdigitdecompevent", arr) =>
+      CreateDigitDecompEvent.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-              CreateLargeRangedEvent(eventName,
+              CreateDigitDecompEvent(eventName,
                                      maturationTime,
                                      base,
                                      isSigned,
@@ -199,11 +196,11 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
           }
       }
 
-    case ServerCommand("signnumber", arr) =>
-      SignRangeEvent.fromJsArr(arr) match {
+    case ServerCommand("signforrange", arr) =>
+      SignForRange.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(SignRangeEvent(oracleEventTLV, num)) =>
+        case Success(SignForRange(oracleEventTLV, num)) =>
           complete {
             oracle.signEvent(oracleEventTLV, RangeAttestation(num)).map {
               eventDb =>
@@ -212,13 +209,13 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
           }
       }
 
-    case ServerCommand("signlargenumber", arr) =>
-      SignLargeRangeEvent.fromJsArr(arr) match {
+    case ServerCommand("signdigits", arr) =>
+      SignDigits.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(SignLargeRangeEvent(oracleEventTLV, num)) =>
+        case Success(SignDigits(oracleEventTLV, num)) =>
           complete {
-            oracle.signLargeRange(oracleEventTLV, num).map {
+            oracle.signDigits(oracleEventTLV, num).map {
               case event: CompletedDigitDecompositionV0OracleEvent =>
                 val sigsJson = event.signatures.map(sig => Str(sig.hex))
 
