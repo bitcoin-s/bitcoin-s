@@ -59,6 +59,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
     with TransactionRpc
     with UTXORpc
     with WalletRpc
+    with PsbtRpc
     with UtilRpc {
 
   override def version: BitcoindVersion = BitcoindVersion.Unknown

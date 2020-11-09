@@ -7,6 +7,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -124,13 +125,14 @@ class BitcoindV19RpcClientTest extends BitcoindRpcTest {
       "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)"
 
     val psbt =
-      "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA=="
+      PSBT.fromBase64(
+        "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA==")
 
     for {
       (client, _) <- clientPairF
       result <- client.utxoUpdatePsbt(psbt, Seq(descriptor))
     } yield {
-      assert(result.contains(psbt))
+      assert(result == psbt)
     }
   }
 }
