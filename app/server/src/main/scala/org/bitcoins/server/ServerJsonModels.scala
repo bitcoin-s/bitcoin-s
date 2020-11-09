@@ -305,6 +305,24 @@ object DecodePSBT extends ServerJsonModels {
   }
 }
 
+case class AnalyzePSBT(psbt: PSBT)
+
+object AnalyzePSBT extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AnalyzePSBT] = {
+    jsArr.arr.toList match {
+      case psbtJs :: Nil =>
+        Try {
+          AnalyzePSBT(jsToPSBT(psbtJs))
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 case class Rescan(
     batchSize: Option[Int],
     startBlock: Option[BlockStamp],

@@ -1,14 +1,15 @@
 package org.bitcoins.core.wallet.utxo
 
-import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.script.{
-  SigVersionBase,
-  SigVersionWitnessV0,
-  SignatureVersion
-}
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.crypto.Sign
+
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext}
 
 /** Stores the information required to generate a signature (ECSignatureParams)
   * or to generate a script signature (ScriptSignatureParams) for a given satisfaction
@@ -85,6 +86,34 @@ case class ScriptSignatureParams[+InputType <: InputInfo](
   def mapInfo[T <: InputInfo](
       func: InputType => T): ScriptSignatureParams[T] = {
     this.copy(inputInfo = func(this.inputInfo))
+  }
+
+  def maxScriptSigAndWitnessWeight(implicit
+      ec: ExecutionContext): (Long, Long) = {
+    val dummyTx = BaseTransaction(
+      TransactionConstants.validLockVersion,
+      Vector(
+        TransactionInput(inputInfo.outPoint,
+                         EmptyScriptSignature,
+                         UInt32.zero)),
+      Vector(TransactionOutput(Satoshis.zero, EmptyScriptPubKey)),
+      UInt32.zero
+    )
+
+    val maxWitnessLenF = BitcoinSigner
+      .sign(this, unsignedTx = dummyTx, isDummySignature = true)
+      .map(_.transaction)
+      .map {
+        case wtx: WitnessTransaction =>
+          val scriptSigSize = wtx.inputs.head.scriptSignature.asmBytes.size
+          val witnessSize = wtx.witness.head.byteSize
+          (scriptSigSize * 4, witnessSize)
+        case tx: NonWitnessTransaction =>
+          val scriptSigSize = tx.inputs.head.scriptSignature.asmBytes.size
+          (scriptSigSize * 4, 0L)
+      }
+
+    Await.result(maxWitnessLenF, 30.seconds)
   }
 }
 
