@@ -376,7 +376,17 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
           FutureUtil.emptyVec[EventDb]
       }
 
-    val decomposed = NumberUtil.decompose(Math.abs(num),
+    val boundedNum = if (num < eventDescriptorTLV.minNum) {
+      logger.info(
+        s"Number given $num is less than the minimum, signing minimum instead")
+      eventDescriptorTLV.minNum.toLong
+    } else if (num > eventDescriptorTLV.maxNum) {
+      logger.info(
+        s"Number given $num is greater than the maximum, signing maximum instead")
+      eventDescriptorTLV.maxNum.toLong
+    } else num
+
+    val decomposed = NumberUtil.decompose(Math.abs(boundedNum),
                                           eventDescriptorTLV.base.toInt,
                                           eventDescriptorTLV.numDigits.toInt)
 
