@@ -2,6 +2,7 @@ package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
+  WalletCreateFundedPsbtOptions,
   WalletFlag
 }
 import org.bitcoins.commons.jsonmodels.bitcoind._
@@ -11,7 +12,9 @@ import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
@@ -472,6 +475,41 @@ trait WalletRpc { self: Client =>
            JsString(localComment),
            JsString(toComment),
            JsBoolean(subractFeeFromAmount)),
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
+  }
+
+  def walletProcessPSBT(
+      psbt: PSBT,
+      sign: Boolean = true,
+      sigHashType: HashType = HashType.sigHashAll,
+      walletNameOpt: Option[String] = None): Future[WalletProcessPsbtResult] = {
+    bitcoindCall[WalletProcessPsbtResult](
+      "walletprocesspsbt",
+      List(JsString(psbt.base64), JsBoolean(sign), Json.toJson(sigHashType)),
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
+  }
+
+  def walletCreateFundedPsbt(
+      inputs: Vector[TransactionInput],
+      outputs: Map[BitcoinAddress, CurrencyUnit],
+      locktime: Int = 0,
+      options: WalletCreateFundedPsbtOptions = WalletCreateFundedPsbtOptions(),
+      bip32derivs: Boolean = false,
+      walletNameOpt: Option[String] = None
+  ): Future[WalletCreateFundedPsbtResult] = {
+    val jsonOutputs =
+      Json.toJson {
+        outputs.map { case (addr, curr) => addr -> Bitcoins(curr.satoshis) }
+      }
+    bitcoindCall[WalletCreateFundedPsbtResult](
+      "walletcreatefundedpsbt",
+      List(Json.toJson(inputs),
+           jsonOutputs,
+           JsNumber(locktime),
+           Json.toJson(options),
+           Json.toJson(bip32derivs)),
       uriExtensionOpt = walletNameOpt.map(walletExtension)
     )
   }

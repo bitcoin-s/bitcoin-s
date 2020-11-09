@@ -10,11 +10,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
-import org.bitcoins.core.psbt.{
-  GlobalPSBTRecord,
-  InputPSBTRecord,
-  OutputPSBTRecord
-}
+import org.bitcoins.core.psbt._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
@@ -88,6 +84,10 @@ object JsonWriters {
 
   implicit object TransactionWrites extends Writes[Transaction] {
     override def writes(o: Transaction): JsValue = JsString(o.hex)
+  }
+
+  implicit object PSBTWrites extends Writes[PSBT] {
+    override def writes(o: PSBT): JsValue = JsString(o.base64)
   }
 
   implicit def mapWrites[K, V](keyString: K => String)(implicit

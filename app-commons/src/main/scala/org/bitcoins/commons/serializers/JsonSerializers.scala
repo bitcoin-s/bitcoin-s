@@ -28,6 +28,7 @@ import org.bitcoins.core.psbt.{
   OutputPSBTRecord
 }
 import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -75,6 +76,7 @@ object JsonSerializers {
   implicit val bitcoinAddressReads: Reads[BitcoinAddress] = BitcoinAddressReads
   implicit val merkleBlockReads: Reads[MerkleBlock] = MerkleBlockReads
   implicit val transactionReads: Reads[Transaction] = TransactionReads
+  implicit val psbtReads: Reads[PSBT] = PSBTReads
 
   implicit val transactionOutPointReads: Reads[TransactionOutPoint] =
     TransactionOutPointReads
