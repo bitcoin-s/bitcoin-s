@@ -86,70 +86,235 @@ For more information on how to use our built in `cli` to interact with the serve
 
 - `getpublickey` - Get oracle's public key
 - `getstakingaddress` - Get oracle's staking address
-- `listevents` - Lists all event nonces
+- `listevents` - Lists all oracle event TLVs
 - `createevent` `label` `maturationtime` `outcomes` - Registers an oracle event
   - `label` - Label for this event
   - `maturationtime` - The earliest expected time an outcome will be signed, given in epoch second
   - `outcomes` - Possible outcomes for this event
-- `getevent` `nonce` - Get an event's details
-  - `nonce` - Nonce associated with the event
-- `signevent` `nonce` `outcome` - Signs an event
-  - `nonce` - Nonce associated with the event to sign
-  - `outcome`- Outcome to sign for this event
-- `getsignature` `nonce` - Get the signature from a signed event
-  - `nonce` - Nonce associated with the signed event
+- `createrangedevent` `name` `maturationtime` `start` `stop` `step` - Registers an oracle event with a range of outcomes
+  - `name` - Name for this event
+  - `maturationtime` - The earliest expected time an outcome will be signed, given in epoch second
+  - `start` - The first possible outcome number
+  - `stop` - The last possible outcome number
+  - `step` - The increment between each outcome
+  - `unit` - The unit denomination of the outcome value
+  - `precision` - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.
+- `createdigitdecompevent` `name` `maturationtime` `base` `numdigits` `unit` `precision` `[signed]` - Registers an oracle event with a large number for its outcomes
+  - `name`- Name for this event
+  - `maturationtime` - The earliest expected time an outcome will be signed, given in epoch second
+  - `base` - The base in which the outcome value is decomposed
+  - `numdigits` - The max number of digits the outcome can have
+  - `unit` - The unit denomination of the outcome value
+  - `precision` - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.
+  - `--signed`- Whether the outcomes can be negative
+- `getevent` `event` - Get an event's details
+  - `event` - The event's oracle event tlv
+- `signevent` `event` `outcome` - Signs an event
+    - `event` - The event's oracle event tlv
+    - `outcome`- Outcome to sign for this event
+- `signforrange` `event` `outcome` - Signs an event
+    - `event` - The event's oracle event tlv
+    - `outcome`- Outcome to sign for this event
+- `signdigits` `event` `outcome` - Signs an event
+  - `event` - The event's oracle event tlv
+  - `outcome` - Number to sign for this event
+- `getsignatures` `event` - Get the signatures from a signed event
+  - `event` - The event's oracle event tlv
   
 ### Create Event Example
 
 Bitcoin-S CLI:
 ```bash
-$ bitcoin-s-cli createevent testevent 1601917137 "outcome 1,outcome 2,outcome 3"
-a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa
+$ bitcoin-s-cli createevent test 1701917137 "outcome1,outcome2,outcome3"
+fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533
 
-$ bitcoin-s-cli getevent a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa
+$ bitcoin-s-cli getevent fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533
 {
-  "nonce": "a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa",
-  "eventName": "testevent",
-  "numOutcomes": 3,
+  "nonces": [
+    "0374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8"
+  ],
+  "eventName": "test",
   "signingVersion": "Mock",
-  "maturationTime": "2020-10-05T16:58:57Z",
-  "announcementSignature": "1533265899006003fa79dc0d480061c3378bc634ec041efc97fc70827f3a1c9f30e05373f36c2e2dd9d2ad64d8aaee17fef724af2284b87724b949d48846920c",
-  "attestation": "",
-  "signature": "",
+  "maturationTime": "2023-12-07T02:45:37Z",
+  "announcementSignature": "e27ccd54ee0e2b94c4af6e7a4ee5a73026d244dec373d6ea5d9c671d2792108c1df0b64820a1d578165cd07d37dbb4c2e6d72fbdbead156b45d8838ca1d36691",
+  "eventDescriptorTLV": "fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533",
+  "eventTLV": "fdd8226cf8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d653374657374",
+  "announcementTLV": "fdd824b0e27ccd54ee0e2b94c4af6e7a4ee5a73026d244dec373d6ea5d9c671d2792108c1df0b64820a1d578165cd07d37dbb4c2e6d72fbdbead156b45d8838ca1d36691fdd8226cf8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d653374657374",
+  "attestations": null,
+  "signatures": null,
   "outcomes": [
-    "outcome 1",
-    "outcome 2",
-    "outcome 3"
+    "outcome1",
+    "outcome2",
+    "outcome3"
   ]
 }
+
+$ bitcoin-s-cli signevent fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533 "outcome1"
+0374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8a65977263a6b6071c29232a516adb0e69e8e049772275dc9fa8d9cfa620960dd
+
+$ bitcoin-s-cli getsignatures fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533
+[
+  "0374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8a65977263a6b6071c29232a516adb0e69e8e049772275dc9fa8d9cfa620960dd"
+]
 ```
 
 CURL:
 ```bash
-$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "createevent", "params": ["testEvent", 1601917137, ["outcome 1", "outcome 2", "outcome 3"]]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
-{"result":"28592661c78a3c2e0a568e92122e146022cb018b6b0ac888cdffc70a506e9ad2","error":null}
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "createevent", "params": ["testEvent", 1701917137, ["outcome1", "outcome2", "outcome3"]]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":"fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533","error":null}
 
-$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getevent", "params": ["28592661c78a3c2e0a568e92122e146022cb018b6b0ac888cdffc70a506e9ad2"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
-{"result":{"nonce":"28592661c78a3c2e0a568e92122e146022cb018b6b0ac888cdffc70a506e9ad2","eventName":"testEvent","numOutcomes":3,"signingVersion":"Mock","maturationTime":"2020-10-05T16:58:57Z","commitmentSignature":"a91499fa83ca607b06bb919284e002452d6c8f396295495586886b1f7e6d6f094c7d1504f35ee2210a036313569c1951aada6b3d52248f77c7e2c5836a970dd7","attestation":"","signature":"","outcomes":["outcome 1","outcome 2","outcome 3"]},"error":null}
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getevent", "params": ["fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":{"nonces":["0374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8"],"eventName":"test","signingVersion":"Mock","maturationTime":"2023-12-07T02:45:37Z","announcementSignature":"e27ccd54ee0e2b94c4af6e7a4ee5a73026d244dec373d6ea5d9c671d2792108c1df0b64820a1d578165cd07d37dbb4c2e6d72fbdbead156b45d8838ca1d36691","eventDescriptorTLV":"fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533","eventTLV":"fdd8226cf8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d653374657374","announcementTLV":"fdd824b0e27ccd54ee0e2b94c4af6e7a4ee5a73026d244dec373d6ea5d9c671d2792108c1df0b64820a1d578165cd07d37dbb4c2e6d72fbdbead156b45d8838ca1d36691fdd8226cf8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d653374657374","attestations":["a65977263a6b6071c29232a516adb0e69e8e049772275dc9fa8d9cfa620960dd"],"signatures":["0374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8a65977263a6b6071c29232a516adb0e69e8e049772275dc9fa8d9cfa620960dd"],"outcomes":["outcome1","outcome2","outcome3"]},"error":null}
+
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "signevent", "params": ["fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533", "outcome 1"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":"0374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8a65977263a6b6071c29232a516adb0e69e8e049772275dc9fa8d9cfa620960dd","error":null}
+
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getsignatures", "params": ["fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":["0374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8a65977263a6b6071c29232a516adb0e69e8e049772275dc9fa8d9cfa620960dd"],"error":null}
 ```
 
-### Sign Event Example
+#### Create Ranged Event Example
+
+Bitcoin-S CLI:
+```bash
+$ bitcoin-s-cli createrangedevent tomorrowTemperature 1701917137 0 100 1 "degrees F" 0
+fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001
+
+$ bitcoin-s-cli getevent fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001
+{
+  "nonces": [
+    "5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d0"
+  ],
+  "eventName": "tomorrowTemperature",
+  "signingVersion": "Mock",
+  "maturationTime": "2023-12-07T02:45:37Z",
+  "announcementSignature": "33861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7",
+  "eventDescriptorTLV": "fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001",
+  "eventTLV": "fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265",
+  "announcementTLV": "fdd824a933861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265",
+  "attestations": null,
+  "signatures": null,
+  "outcomes": [
+    0,
+    1,
+    2,
+  ...
+    98,
+    99,
+    100
+  ]
+}
+
+$ bitcoin-s-cli signforrange fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001 50
+abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b
+
+$ bitcoin-s-cli getsignatures fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001
+[
+  "abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b"
+]
+```
+CURL:
+```bash
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "createrangedevent", "params": ["tomorrowsTemperature", 1701917137, 0, 100, 1, "degrees C", 0]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":"fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001","error":null}
+
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getevent", "params": ["fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":{"nonces":["5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d0"],"eventName":"tomorrowTemperature","signingVersion":"Mock","maturationTime":"2023-12-07T02:45:37Z","announcementSignature":"33861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7","eventDescriptorTLV":"fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001","eventTLV":"fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265","announcementTLV":"fdd824a933861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265","attestations":null,"signatures":null,"outcomes":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99]},"error":null}
+
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "signforrange", "params": ["fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001", 50]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":"abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b","error":null}
+
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getsignatures", "params": ["fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":["abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b"],"error":null}
+```
+
+### Large Range Example
 
 Bitcoin-S CLI:
 
 ```bash
-$ bitcoin-s-cli signevent a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa "outcome 1"
-a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aabddd069a3295eb8e02a8a89de4b50b063ffeb290e5d1c6ea3e4e21efb2ad208f
+$ bitcoin-s-cli createdigitdecompevent exampleDecomp 1701917137 10 3 "units" 0 --signed
+fdd80a85000a010004abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057d14c56615db0684b6dff24683fa25905c84a87ac9f42f75a097ceeb444ba7f851408c23c383d1b897638a8310dfd1979f3dc78c75180a5e25510cfbc2563a02557e6a8d9803662a1576e95d6165e9aa1751a909124aee60736efdde78ccef4458
 
-$ bitcoin-s-cli getsignature a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa
-a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aabddd069a3295eb8e02a8a89de4b50b063ffeb290e5d1c6ea3e4e21efb2ad208f
+$ bs-cli getevent fdd80a85000a010004abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057d14c56615db0684b6dff24683fa25905c84a87ac9f42f75a097ceeb444ba7f851408c23c383d1b897638a8310dfd1979f3dc78c75180a5e25510cfbc2563a02557e6a8d9803662a1576e95d6165e9aa1751a909124aee60736efdde78ccef4458
+  {
+    "nonces": [
+      "abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057d",
+      "14c56615db0684b6dff24683fa25905c84a87ac9f42f75a097ceeb444ba7f851",
+      "408c23c383d1b897638a8310dfd1979f3dc78c75180a5e25510cfbc2563a0255",
+      "7e6a8d9803662a1576e95d6165e9aa1751a909124aee60736efdde78ccef4458"
+    ],
+    "eventName": "exampleDecomp",
+    "signingVersion": "Mock",
+    "maturationTime": "2023-12-07T02:45:37Z",
+    "announcementSignature": "7b149e6001496f34588ce3089df91d0f1dfbaaae988ed993c1eacf759519c358ad1fd1d98747412bf25e257c9e4cb18ece3f132fc3ef2f400258d9cf5eb9fae0",
+    "eventDescriptorTLV": "fdd80a85000a010004abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057d14c56615db0684b6dff24683fa25905c84a87ac9f42f75a097ceeb444ba7f851408c23c383d1b897638a8310dfd1979f3dc78c75180a5e25510cfbc2563a02557e6a8d9803662a1576e95d6165e9aa1751a909124aee60736efdde78ccef4458",
+    "eventTLV": "fdd822bef8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd80a85000a010004abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057d14c56615db0684b6dff24683fa25905c84a87ac9f42f75a097ceeb444ba7f851408c23c383d1b897638a8310dfd1979f3dc78c75180a5e25510cfbc2563a02557e6a8d9803662a1576e95d6165e9aa1751a909124aee60736efdde78ccef44586578616d706c654c6172676552616e6765",
+    "announcementTLV": "fdd824fd01027b149e6001496f34588ce3089df91d0f1dfbaaae988ed993c1eacf759519c358ad1fd1d98747412bf25e257c9e4cb18ece3f132fc3ef2f400258d9cf5eb9fae0fdd822bef8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd80a85000a010004abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057d14c56615db0684b6dff24683fa25905c84a87ac9f42f75a097ceeb444ba7f851408c23c383d1b897638a8310dfd1979f3dc78c75180a5e25510cfbc2563a02557e6a8d9803662a1576e95d6165e9aa1751a909124aee60736efdde78ccef44586578616d706c654c6172676552616e6765",
+    "attestations": null,
+    "signatures": null,
+    "outcomes": [
+      [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ],
+      [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ],
+      [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ],
+      [
+        "+",
+        "-"
+      ]
+    ]
+  }
+
+bitcoin-s-cli signdigits fdd80a85000a010004abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057d14c56615db0684b6dff24683fa25905c84a87ac9f42f75a097ceeb444ba7f851408c23c383d1b897638a8310dfd1979f3dc78c75180a5e25510cfbc2563a02557e6a8d9803662a1576e95d6165e9aa1751a909124aee60736efdde78ccef4458 123
+[
+  "abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b",
+  "14c56615db0684b6dff24683fa25905c84a87ac9f42f75a097ceeb444ba7f851edbab17bb86ee92834624bb7c59f490b3d03db4a4e2732eb56dde75740d5b674",
+  "408c23c383d1b897638a8310dfd1979f3dc78c75180a5e25510cfbc2563a0255e4f528c5cc1a80f6aaabf2b672cea43488d277d90bfe37c9ac6f2a3cb1e7705a",
+  "7e6a8d9803662a1576e95d6165e9aa1751a909124aee60736efdde78ccef4458bd578082b9e47be7d628f9c1ef43958d33f6b8b4fcae07c250f53111edc50ced"
+]
 ```
 
 CURL:
-```bash
-$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "signevent", "params": ["a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa", "outcome 1"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
-{"result":"a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aabddd069a3295eb8e02a8a89de4b50b063ffeb290e5d1c6ea3e4e21efb2ad208f","error":null}
 
-$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getsignature", "params": ["a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aa"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
-{"result":"a777c9fdc42efbbbcb78e51a18ff98cdaafb809aeb082b8ebe95d57b1e21f1aabddd069a3295eb8e02a8a89de4b50b063ffeb290e5d1c6ea3e4e21efb2ad208f","error":null}
+```
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "createdigitdecompevent", "params": ["exampleLargeRange1", 1701917137, 10, true, 3, "units", 0]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":"fdd80a85000a010004a9670e21aeb8f0281980657c6c6cc9e94804b9cbff650cb5a9a1b20b8556cbcd6de7afbb816d2ff9be8ff250d8075a68300e51569c96ab998fec90a6e0bd1a6cf0eb12e0c33dae1c44281eb9057910d6a40cf76987e721d622dae13e79ce160739bf4ff7c0ce8408aa23dd619c5aa5e25d078d64cd198830e8e70436f5611b1e","error":null}
+
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getevent", "params": ["fdd80a85000a010004a9670e21aeb8f0281980657c6c6cc9e94804b9cbff650cb5a9a1b20b8556cbcd6de7afbb816d2ff9be8ff250d8075a68300e51569c96ab998fec90a6e0bd1a6cf0eb12e0c33dae1c44281eb9057910d6a40cf76987e721d622dae13e79ce160739bf4ff7c0ce8408aa23dd619c5aa5e25d078d64cd198830e8e70436f5611b1e"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":{"nonces":["a9670e21aeb8f0281980657c6c6cc9e94804b9cbff650cb5a9a1b20b8556cbcd","6de7afbb816d2ff9be8ff250d8075a68300e51569c96ab998fec90a6e0bd1a6c","f0eb12e0c33dae1c44281eb9057910d6a40cf76987e721d622dae13e79ce1607","39bf4ff7c0ce8408aa23dd619c5aa5e25d078d64cd198830e8e70436f5611b1e"],"eventName":"exampleLargeRange1","signingVersion":"Mock","maturationTime":"2023-12-07T02:45:37Z","announcementSignature":"c85357ebc6b2d3f68bc71bd0d9a3daf97b13f3911c6dc5b15141a8ca94ad610d4166c1f4f307f2ceffe33b1b081551ad5caa527d59285400b0da4b41a0ea0786","eventDescriptorTLV":"fdd80a85000a010004a9670e21aeb8f0281980657c6c6cc9e94804b9cbff650cb5a9a1b20b8556cbcd6de7afbb816d2ff9be8ff250d8075a68300e51569c96ab998fec90a6e0bd1a6cf0eb12e0c33dae1c44281eb9057910d6a40cf76987e721d622dae13e79ce160739bf4ff7c0ce8408aa23dd619c5aa5e25d078d64cd198830e8e70436f5611b1e","eventTLV":"fdd822bff8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd80a85000a010004a9670e21aeb8f0281980657c6c6cc9e94804b9cbff650cb5a9a1b20b8556cbcd6de7afbb816d2ff9be8ff250d8075a68300e51569c96ab998fec90a6e0bd1a6cf0eb12e0c33dae1c44281eb9057910d6a40cf76987e721d622dae13e79ce160739bf4ff7c0ce8408aa23dd619c5aa5e25d078d64cd198830e8e70436f5611b1e6578616d706c654c6172676552616e676531","announcementTLV":"fdd824fd0103c85357ebc6b2d3f68bc71bd0d9a3daf97b13f3911c6dc5b15141a8ca94ad610d4166c1f4f307f2ceffe33b1b081551ad5caa527d59285400b0da4b41a0ea0786fdd822bff8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd80a85000a010004a9670e21aeb8f0281980657c6c6cc9e94804b9cbff650cb5a9a1b20b8556cbcd6de7afbb816d2ff9be8ff250d8075a68300e51569c96ab998fec90a6e0bd1a6cf0eb12e0c33dae1c44281eb9057910d6a40cf76987e721d622dae13e79ce160739bf4ff7c0ce8408aa23dd619c5aa5e25d078d64cd198830e8e70436f5611b1e6578616d706c654c6172676552616e676531","attestations":null,"signatures":null,"outcomes":[["0","1","2","3","4","5","6","7","8","9"],["0","1","2","3","4","5","6","7","8","9"],["0","1","2","3","4","5","6","7","8","9"],["+","-"]]},"error":null}
+
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "signdigits", "params": ["fdd80a85000a010004a9670e21aeb8f0281980657c6c6cc9e94804b9cbff650cb5a9a1b20b8556cbcd6de7afbb816d2ff9be8ff250d8075a68300e51569c96ab998fec90a6e0bd1a6cf0eb12e0c33dae1c44281eb9057910d6a40cf76987e721d622dae13e79ce160739bf4ff7c0ce8408aa23dd619c5aa5e25d078d64cd198830e8e70436f5611b1e", 123]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":["a9670e21aeb8f0281980657c6c6cc9e94804b9cbff650cb5a9a1b20b8556cbcde5d22ede02c2e6e5df6a12367082a5cba26d37d22369dd8659388738b8ed7109","6de7afbb816d2ff9be8ff250d8075a68300e51569c96ab998fec90a6e0bd1a6c43224409c57c70319b8167db086e923344f867033551a3055d7e65563db295f2","f0eb12e0c33dae1c44281eb9057910d6a40cf76987e721d622dae13e79ce160796046de397a4d2f17c01c42815005f67d801b2c0e01d1923d4bbb13559cccf4a","39bf4ff7c0ce8408aa23dd619c5aa5e25d078d64cd198830e8e70436f5611b1e0346f7853fd0d4ab792896f46714b8964875ddf0db22c2b30f4cf4ad5b0052c9"],"error":null}
 ```

@@ -13,6 +13,7 @@ import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -310,4 +311,10 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[WalletStateDescriptor, String](
       _.toString,
       WalletStateDescriptor.fromString)
+
+  implicit val eventDescriptorTLVMapper: BaseColumnType[EventDescriptorTLV] = {
+    MappedColumnType.base[EventDescriptorTLV, String](
+      _.hex,
+      EventDescriptorTLV.fromHex)
+  }
 }

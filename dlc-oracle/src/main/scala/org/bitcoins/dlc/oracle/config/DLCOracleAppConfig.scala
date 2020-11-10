@@ -1,4 +1,4 @@
-package org.bitcoins.dlc.oracle
+package org.bitcoins.dlc.oracle.config
 
 import java.nio.file.{Files, Path}
 
@@ -6,10 +6,11 @@ import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
+import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 
@@ -46,10 +47,8 @@ case class DLCOracleAppConfig(
   }
 
   override def start(): Future[Unit] = {
-    logger.debug(s"Initializing wallet setup")
-    for {
-      _ <- super.start()
-    } yield {
+    logger.debug(s"Initializing dlc oracle setup")
+    super.start().flatMap { _ =>
       if (Files.notExists(datadir)) {
         Files.createDirectories(datadir)
       }
@@ -57,6 +56,27 @@ case class DLCOracleAppConfig(
         migrate()
       }
       logger.info(s"Applied $numMigrations to the dlc oracle project")
+
+      if (migrationsApplied() == 2) {
+        logger.debug(s"Doing V2 Migration")
+        val eventDAO = EventDAO()(ec, appConfig)
+        for {
+          // get all events
+          allEvents <- eventDAO.findAll()
+          allOutcomes <- EventOutcomeDAO()(ec, appConfig).findAll()
+
+          outcomesByNonce = allOutcomes.groupBy(_.nonce)
+          // Update them to have the correct event descriptor
+          updated = allEvents.map { eventDb =>
+            val outcomeDbs = outcomesByNonce(eventDb.nonce)
+            val descriptor =
+              EventOutcomeDbHelper.createEnumEventDescriptor(outcomeDbs)
+            eventDb.copy(eventDescriptorTLV = descriptor)
+          }
+
+          _ <- eventDAO.upsertAll(updated)
+        } yield ()
+      } else FutureUtil.unit
     }
   }
 

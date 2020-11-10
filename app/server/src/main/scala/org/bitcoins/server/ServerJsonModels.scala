@@ -6,12 +6,12 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParamet
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.SchnorrNonce
 import ujson._
 import upickle.default._
 
@@ -568,22 +568,110 @@ object CreateEvent extends ServerJsonModels {
   }
 }
 
-case class SignEvent(nonce: SchnorrNonce, outcome: String)
+case class CreateRangedEvent(
+    eventName: String,
+    maturationTime: Instant,
+    start: Int,
+    stop: Int,
+    step: Int,
+    unit: String,
+    precision: Int)
+
+object CreateRangedEvent extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateRangedEvent] = {
+    jsArr.arr.toList match {
+      case labelJs :: maturationTimeJs :: startJs :: stopJs :: stepJs :: unitJs :: precisionJs :: Nil =>
+        Try {
+          val label = labelJs.str
+          val maturationTime: Instant =
+            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
+          val start = startJs.num.toInt
+          val stop = stopJs.num.toInt
+          val step = stepJs.num.toInt
+          val unit = unitJs.str
+          val precision = precisionJs.num.toInt
+
+          CreateRangedEvent(label,
+                            maturationTime,
+                            start,
+                            stop,
+                            step,
+                            unit,
+                            precision)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing label, maturationTime, start, stop, and step arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 5"))
+    }
+  }
+}
+
+case class CreateDigitDecompEvent(
+    eventName: String,
+    maturationTime: Instant,
+    base: Int,
+    isSigned: Boolean,
+    numDigits: Int,
+    unit: String,
+    precision: Int)
+
+object CreateDigitDecompEvent extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateDigitDecompEvent] = {
+    jsArr.arr.toList match {
+      case labelJs :: maturationTimeJs :: baseJs :: isSignedJs :: numDigitsJs :: unitJs :: precisionJs :: Nil =>
+        Try {
+          val label = labelJs.str
+          val maturationTime: Instant =
+            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
+          val base = baseJs.num.toInt
+          val isSigned = isSignedJs.bool
+          val numDigits = numDigitsJs.num.toInt
+          val unit = unitJs.str
+          val precision = precisionJs.num.toInt
+
+          CreateDigitDecompEvent(label,
+                                 maturationTime,
+                                 base,
+                                 isSigned,
+                                 numDigits,
+                                 unit,
+                                 precision)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException(
+          "Missing label, maturationTime, base, isSigned, and numDigits arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 5"))
+    }
+  }
+}
+
+case class SignEvent(oracleEventTLV: OracleEventV0TLV, outcome: String)
 
 object SignEvent extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[SignEvent] = {
     jsArr.arr.toList match {
-      case nonceJs :: outcomeJs :: Nil =>
+      case tlvJs :: outcomeJs :: Nil =>
         Try {
-          val nonce = SchnorrNonce(nonceJs.str)
+          val oracleEventTLV = OracleEventV0TLV(tlvJs.str)
           val outcome = outcomeJs.str
 
-          SignEvent(nonce, outcome)
+          SignEvent(oracleEventTLV, outcome)
         }
       case Nil =>
         Failure(
-          new IllegalArgumentException("Missing nonce and outcome arguments"))
+          new IllegalArgumentException(
+            "Missing oracle event tlv and outcome arguments"))
       case other =>
         Failure(
           new IllegalArgumentException(
@@ -592,7 +680,69 @@ object SignEvent extends ServerJsonModels {
   }
 }
 
-case class GetEvent(nonce: SchnorrNonce)
+case class SignForRange(oracleEventTLV: OracleEventV0TLV, num: Long)
+
+object SignForRange extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SignForRange] = {
+    jsArr.arr.toList match {
+      case tlvJs :: numJs :: Nil =>
+        Try {
+          val oracleEventTLV = OracleEventV0TLV(tlvJs.str)
+          val num = numJs match {
+            case num: Num => num.value
+            case str: Str => str.value.toDouble
+            case _: Value =>
+              throw new IllegalArgumentException(
+                s"Unable to parse $numJs as a number")
+          }
+
+          SignForRange(oracleEventTLV, num.toLong)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing oracle event tlv and num arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class SignDigits(oracleEventTLV: OracleEventV0TLV, num: Long)
+
+object SignDigits extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SignDigits] = {
+    jsArr.arr.toList match {
+      case tlvJs :: numJs :: Nil =>
+        Try {
+          val oracleEventTLV = OracleEventV0TLV(tlvJs.str)
+          val num = numJs match {
+            case num: Num => num.value
+            case str: Str => str.value.toDouble
+            case _: Value =>
+              throw new IllegalArgumentException(
+                s"Unable to parse $numJs as a number")
+          }
+
+          SignDigits(oracleEventTLV, num.toLong)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing oracle event tlv and num arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class GetEvent(oracleEventTLV: OracleEventV0TLV)
 
 object GetEvent extends ServerJsonModels {
 
@@ -600,9 +750,9 @@ object GetEvent extends ServerJsonModels {
     require(jsArr.arr.size == 1,
             s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
     Try {
-      val nonce = SchnorrNonce(jsArr.arr.head.str)
+      val oracleEventTLV = OracleEventV0TLV(jsArr.arr.head.str)
 
-      GetEvent(nonce)
+      GetEvent(oracleEventTLV)
     }
   }
 }

@@ -1,6 +1,7 @@
 package org.bitcoins.db
 
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.db.DatabaseDriver._
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.{FlywayException, MigrationInfoService}
 
@@ -123,6 +124,17 @@ trait DbManagement extends BitcoinSLogger {
     */
   def info(): MigrationInfoService = {
     flyway.info()
+  }
+
+  def migrationsApplied(): Int = {
+    val applied = flyway.info().applied()
+    driver match {
+      case SQLite =>
+        applied.size
+      case PostgreSQL =>
+        // -1 because of extra << Flyway Schema Creation >>
+        applied.size - 1
+    }
   }
 
   /** Executes migrations related to this database
