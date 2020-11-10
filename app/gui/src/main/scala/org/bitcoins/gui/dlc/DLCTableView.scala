@@ -92,7 +92,7 @@ class DLCTableView(model: DLCPaneModel) {
       cellValueFactory = { status =>
         new StringProperty(status,
                            "Event",
-                           status.value.offer.oracleInfo.rValue.hex)
+                           status.value.offer.oracleInfo.nonces.head.hex)
       }
     }
 

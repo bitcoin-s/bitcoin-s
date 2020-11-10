@@ -2,7 +2,7 @@ package org.bitcoins.gui.dlc
 
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleInfo
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.SingleNonceOracleInfo
 import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
 import org.bitcoins.crypto.{ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
@@ -94,7 +94,7 @@ class DLCPaneModel(
         val pubKey = privKey.schnorrPublicKey
         val kValue = ECPrivateKey.freshPrivateKey
         val rValue = kValue.schnorrNonce
-        val oracleInfo = OracleInfo(pubKey, rValue)
+        val oracleInfo = SingleNonceOracleInfo(pubKey, rValue)
 
         builder.append(
           s"Oracle Public Key: ${pubKey.hex}\nEvent R value: ${rValue.hex}\n")
@@ -102,14 +102,15 @@ class DLCPaneModel(
 
         builder.append("Outcome hashes and amounts in order of entry:\n")
         contractInfo.foreach {
-          case (hash, amt) => builder.append(s"${hash.hex} - ${amt.toLong}\n")
+          case (str, amt) => builder.append(s"$str - ${amt.toLong}\n")
         }
         builder.append(s"\nSerialized Contract Info:\n${contractInfo.hex}\n\n")
 
         builder.append("Outcomes and oracle sigs in order of entry:\n")
         outcomes.zip(contractInfo.keys).foreach {
-          case (outcome, hash) =>
-            val sig = privKey.schnorrSignWithNonce(hash.bytes, kValue)
+          case (outcome, str) =>
+            val hash = str.serialized.head
+            val sig = privKey.schnorrSignWithNonce(hash, kValue)
             builder.append(s"$outcome - ${sig.hex}\n")
         }
 

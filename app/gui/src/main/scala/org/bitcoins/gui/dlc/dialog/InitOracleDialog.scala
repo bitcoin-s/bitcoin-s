@@ -1,8 +1,8 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.SingleNonceContractInfo
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.gui.GlobalData
 import scalafx.Includes._
 import scalafx.application.Platform
@@ -15,12 +15,13 @@ object InitOracleDialog {
 
   def showAndWait(
       parentWindow: Window,
-      numOutcomes: Int): Option[(Vector[String], ContractInfo)] = {
-    val dialog = new Dialog[Option[(Vector[String], ContractInfo)]]() {
-      initOwner(parentWindow)
-      title = "Initialize Demo Oracle"
-      headerText = "Enter contract outcomes and their outcome values"
-    }
+      numOutcomes: Int): Option[(Vector[String], SingleNonceContractInfo)] = {
+    val dialog =
+      new Dialog[Option[(Vector[String], SingleNonceContractInfo)]]() {
+        initOwner(parentWindow)
+        title = "Initialize Demo Oracle"
+        headerText = "Enter contract outcomes and their outcome values"
+      }
 
     val fields =
       (0 until numOutcomes).map(_ =>
@@ -68,19 +69,20 @@ object InitOracleDialog {
         }
         val contractMap = inputs.map {
           case (str, value) =>
-            val hash = CryptoUtil.sha256(str)
-            hash -> Satoshis(BigInt(value))
+            EnumOutcome(str) -> Satoshis(BigInt(value))
         }.toVector
 
         val outcomes = inputs.map(_._1).toVector
 
-        Some((outcomes, ContractInfo(contractMap)))
+        Some((outcomes, SingleNonceContractInfo(contractMap)))
       } else None
 
     val result = dialog.showAndWait()
 
     result match {
-      case Some(Some((outcomes: Vector[_], contractInfo: ContractInfo))) =>
+      case Some(
+            Some(
+              (outcomes: Vector[_], contractInfo: SingleNonceContractInfo))) =>
         Some((outcomes.map(_.toString), contractInfo))
       case Some(_) | None => None
     }
