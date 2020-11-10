@@ -247,8 +247,8 @@ object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
 
 /**
   * Describes an event over an enumerated set of outcomes
-  * @param outcomeStrs The set of possible outcomes
-  * @see https://github.com/discreetlogcontracts/dlcspecs/blob/540c23a3e89c886814145cf16edfd48421d0175b/Oracle.md#simple-enumeration
+  * @param outcomes The set of possible outcomes
+  * @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Oracle.md#simple-enumeration
   */
 case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
     extends EventDescriptorTLV {
@@ -293,7 +293,7 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
   }
 }
 
-trait NumericEventDescriptorTLV extends EventDescriptorTLV {
+sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
 
   /** The minimum valid value in the oracle can sign */
   def min: Vector[String]
@@ -522,7 +522,10 @@ object DigitDecompositionEventDescriptorV0TLV
   }
 }
 
-sealed trait OracleEventTLV extends TLV
+sealed trait OracleEventTLV extends TLV {
+  def eventDescriptor: EventDescriptorTLV
+  def nonces: Vector[SchnorrNonce]
+}
 
 case class OracleEventV0TLV(
     nonces: Vector[SchnorrNonce],
@@ -574,7 +577,11 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
   }
 }
 
-sealed trait OracleAnnouncementTLV extends TLV
+sealed trait OracleAnnouncementTLV extends TLV {
+  def eventTLV: OracleEventTLV
+  def announcementSignature: SchnorrDigitalSignature
+  def publicKey: SchnorrPublicKey
+}
 
 case class OracleAnnouncementV0TLV(
     announcementSignature: SchnorrDigitalSignature,

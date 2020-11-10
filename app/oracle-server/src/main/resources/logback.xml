@@ -1,0 +1,73 @@
+<configuration scan="true" scanPeriod="15 seconds" >
+    <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date{yyyy-MM-dd'T'HH:mm:ss,SSXXX, UTC}UTC %level [%logger{0}] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>8192</queueSize>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="STDOUT" />
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${bitcoins.log.location}/bitcoin-s.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- hourly rollover -->
+            <fileNamePattern>${bitcoins.log.location}/logs/bitcoin-s-%d{yyyy-MM-dd_HH}.%i.log</fileNamePattern>
+
+            <!-- each file should be at most 100MB, keep 2 days of history, and at most 2GB in the archive -->
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>48</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%date{yyyy-MM-dd'T'HH:mm:ss,SSXXX, UTC}UTC %level [%logger{0}] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+    <!-- ╔═══════════════════════╗ -->
+    <!-- ║   Bitcoin-S logging   ║-->
+    <!-- ╚═══════════════════════╝ -->
+
+    <!-- ╔═══════════════════╗ -->
+    <!-- ║   Configuration   ║ -->
+    <!-- ╚═══════════════════╝ -->
+
+    <!-- inspect resolved DB connection -->
+    <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
+
+    <logger name="org.bitcoins.dlc.oracle.config" level="WARN"/>
+    <logger name="org.bitcoins.dlc.oracle.storage" level="WARN"/>
+
+
+    <!-- ╔═══════════════════════════╗ -->
+    <!-- ║   Bitcoin-S logging end   ║-->
+    <!-- ╚═══════════════════════════╝ -->
+
+    <!-- ╔═════════════════════════╗ -->
+    <!-- ║   External libraries    ║ -->
+    <!-- ╚═════════════════════════╝ -->
+
+    <!-- Disable slick logging in server -->
+    <logger name="slick" level="OFF"/>
+    <logger name="com.zaxxer" level="OFF"/>
+
+    <!-- Get rid of messages like this:
+    Connection attempt failed. Backing off new connection
+    attempts for at least 800 milliseconds. -->
+    <logger name="akka.http.impl.engine.client.PoolGateway" level="OFF"/>
+
+    <!-- get rid of "Slf4jLogger started" messages -->
+    <logger name="akka.event.slf4j.Slf4jLogger" level="OFF"/>
+
+    <!-- get rid of "Running CoordinatedShutdown Phase" messages -->
+    <logger name="akka.actor.slf4j.CoordinatedShutdown" level="OFF"/>
+
+</configuration>

@@ -11,6 +11,13 @@ class NumberUtilTest extends BitcoinSUnitTest {
 
   behavior of "NumberUtil"
 
+  private def runTest(
+      nBits: UInt32,
+      expected: BlockHeader.TargetDifficultyHelper): Assertion = {
+    val expansion = NumberUtil.targetExpansion(nBits)
+    assert(expansion == expected)
+  }
+
   it must "expand nbits to 0 difficulty threshold" in {
 
     //from the examples table on bitcoin developer reference site
@@ -192,10 +199,35 @@ class NumberUtilTest extends BitcoinSUnitTest {
     expanded18.isOverflow must be(true)
   }
 
-  private def runTest(
-      nBits: UInt32,
-      expected: BlockHeader.TargetDifficultyHelper): Assertion = {
-    val expansion = NumberUtil.targetExpansion(nBits)
-    assert(expansion == expected)
+  behavior of "NumberUtil.decompose"
+
+  it must "correctly do digit decomposition in base 10" in {
+    val num0 = 987
+    val expected0 = Vector(9, 8, 7)
+    assert(NumberUtil.decompose(num0, 10, 3) == expected0)
+
+    val num1 = 123
+    val expected1 = Vector(0, 1, 2, 3)
+    assert(NumberUtil.decompose(num1, 10, 4) == expected1)
+  }
+
+  it must "correctly do digit decomposition in base 2" in {
+    val num0 = 987
+    val expected0 = Vector(1, 1, 1, 1, 0, 1, 1, 0, 1, 1)
+    assert(NumberUtil.decompose(num0, 2, 10) == expected0)
+
+    val num1 = 123
+    val expected1 = Vector(0, 1, 1, 1, 1, 0, 1, 1)
+    assert(NumberUtil.decompose(num1, 2, 8) == expected1)
+  }
+
+  it must "correctly do digit decomposition n base 16" in {
+    val num0 = 987
+    val expected0 = Vector(3, 13, 11)
+    assert(NumberUtil.decompose(num0, 16, 3) == expected0)
+
+    val num1 = 123
+    val expected1 = Vector(0, 7, 11)
+    assert(NumberUtil.decompose(num1, 16, 3) == expected1)
   }
 }

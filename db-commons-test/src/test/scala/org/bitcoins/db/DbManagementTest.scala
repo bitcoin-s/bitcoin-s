@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.db.DatabaseDriver._
-import org.bitcoins.dlc.oracle.DLCOracleAppConfig
+import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
@@ -122,14 +122,14 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
     val result = oracleAppConfig.migrate()
     oracleAppConfig.driver match {
       case SQLite =>
-        val expected = 1
+        val expected = 2
         assert(result == expected)
         val flywayInfo = oracleAppConfig.info()
 
         assert(flywayInfo.applied().length == expected)
         assert(flywayInfo.pending().length == 0)
       case PostgreSQL =>
-        val expected = 1
+        val expected = 2
         assert(result == expected)
         val flywayInfo = oracleAppConfig.info()
 

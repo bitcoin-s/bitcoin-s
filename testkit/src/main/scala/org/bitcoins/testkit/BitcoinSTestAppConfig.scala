@@ -3,7 +3,7 @@ package org.bitcoins.testkit
 import java.nio.file._
 
 import com.typesafe.config._
-import org.bitcoins.dlc.oracle.DLCOracleAppConfig
+import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil

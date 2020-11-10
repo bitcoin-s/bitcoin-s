@@ -1,7 +1,8 @@
 package org.bitcoins.dlc.oracle.storage
 
-import org.bitcoins.crypto.{SchnorrNonce, Sha256Digest}
+import org.bitcoins.crypto.SchnorrNonce
 import org.bitcoins.db.{AppConfig, CRUD, DbCommonsColumnMappers, SlickUtil}
+import scodec.bits.ByteVector
 import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,7 +56,7 @@ case class EventOutcomeDAO()(implicit
 
     def message: Rep[String] = column("message")
 
-    def hashedMessage: Rep[Sha256Digest] = column("hashed_message")
+    def hashedMessage: Rep[ByteVector] = column("hashed_message")
 
     def * : ProvenShape[EventOutcomeDb] =
       (nonce, message, hashedMessage).<>(EventOutcomeDb.tupled,

@@ -10,6 +10,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
@@ -48,6 +49,46 @@ object CliReaders {
       override def arity: Int = 1
 
       override def reads: String => SchnorrNonce = SchnorrNonce.fromHex
+    }
+
+  implicit val eventDescriptorReads: Read[EventDescriptorTLV] =
+    new Read[EventDescriptorTLV] {
+      override def arity: Int = 1
+
+      override def reads: String => EventDescriptorTLV =
+        EventDescriptorTLV.fromHex
+    }
+
+  implicit val enumEventDescriptorReads: Read[EnumEventDescriptorV0TLV] =
+    new Read[EnumEventDescriptorV0TLV] {
+      override def arity: Int = 1
+
+      override def reads: String => EnumEventDescriptorV0TLV =
+        EnumEventDescriptorV0TLV.fromHex
+    }
+
+  implicit val rangeEventDescriptorReads: Read[RangeEventDescriptorV0TLV] =
+    new Read[RangeEventDescriptorV0TLV] {
+      override def arity: Int = 1
+
+      override def reads: String => RangeEventDescriptorV0TLV =
+        RangeEventDescriptorV0TLV.fromHex
+    }
+
+  implicit val digitDecompEventDescriptorReads: Read[
+    DigitDecompositionEventDescriptorV0TLV] =
+    new Read[DigitDecompositionEventDescriptorV0TLV] {
+      override def arity: Int = 1
+
+      override def reads: String => DigitDecompositionEventDescriptorV0TLV =
+        DigitDecompositionEventDescriptorV0TLV.fromHex
+    }
+
+  implicit val oracleEventV0TLVReads: Read[OracleEventV0TLV] =
+    new Read[OracleEventV0TLV] {
+      override def arity: Int = 1
+
+      override def reads: String => OracleEventV0TLV = OracleEventV0TLV.fromHex
     }
 
   implicit val instantReads: Read[Instant] =

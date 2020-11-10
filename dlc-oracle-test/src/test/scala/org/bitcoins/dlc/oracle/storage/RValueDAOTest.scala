@@ -6,8 +6,6 @@ import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
-import org.bitcoins.dlc.oracle.DLCOracleAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.DLCOracleDAOFixture
 
 class RValueDAOTest extends DLCOracleDAOFixture {
@@ -28,15 +26,8 @@ class RValueDAOTest extends DLCOracleDAOFixture {
     Instant.ofEpochSecond(now)
   }
 
-  val rValDb: RValueDb = RValueDb(
-    nonce,
-    eventName,
-    HDPurpose(0),
-    HDCoinType.Bitcoin,
-    0,
-    0,
-    0,
-    SchnorrDigitalSignature(nonce, FieldElement.one))
+  val rValDb: RValueDb =
+    RValueDb(nonce, eventName, HDPurpose(0), HDCoinType.Bitcoin, 0, 0, 0)
 
   it must "create an RValueDb and read it" in { daos =>
     val rValDAO = daos.rValueDAO

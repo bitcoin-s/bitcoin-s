@@ -4,10 +4,11 @@ import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
+import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
-import org.bitcoins.dlc.oracle.DLCOracleAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.Implicits._
+import org.bitcoins.testkit.core.gen.TLVGen
 import org.bitcoins.testkit.fixtures.DLCOracleDAOFixture
 
 class EventDAOTest extends DLCOracleDAOFixture {
@@ -28,22 +29,29 @@ class EventDAOTest extends DLCOracleDAOFixture {
     Instant.ofEpochSecond(now)
   }
 
-  val dummyRValDb: RValueDb = RValueDb(
-    nonce,
-    eventName,
-    HDPurpose(0),
-    HDCoinType.Bitcoin,
-    0,
-    0,
-    0,
-    SchnorrDigitalSignature(nonce, FieldElement.one))
+  val dummyRValDb: RValueDb =
+    RValueDb(nonce, eventName, HDPurpose(0), HDCoinType.Bitcoin, 0, 0, 0)
+
+  val dummySig: SchnorrDigitalSignature =
+    SchnorrDigitalSignature(nonce, FieldElement.one)
+
+  def descriptor: EventDescriptorTLV = TLVGen.eventDescriptorTLV.sampleSome
 
   it must "create an EventDb and read it" in { daos =>
     val rValDAO = daos.rValueDAO
     val eventDAO = daos.eventDAO
 
     val eventDb =
-      EventDb(nonce, publicKey, eventName, 1, sigVersion, time, None)
+      EventDb(nonce,
+              publicKey,
+              0,
+              eventName,
+              0,
+              sigVersion,
+              time,
+              None,
+              dummySig,
+              descriptor)
 
     for {
       _ <- rValDAO.create(dummyRValDb)
@@ -57,7 +65,16 @@ class EventDAOTest extends DLCOracleDAOFixture {
     val eventDAO = daos.eventDAO
 
     val eventDb =
-      EventDb(nonce, publicKey, eventName, 1, sigVersion, time, None)
+      EventDb(nonce,
+              publicKey,
+              0,
+              eventName,
+              0,
+              sigVersion,
+              time,
+              None,
+              dummySig,
+              descriptor)
 
     for {
       _ <- rValDAO.create(dummyRValDb)
