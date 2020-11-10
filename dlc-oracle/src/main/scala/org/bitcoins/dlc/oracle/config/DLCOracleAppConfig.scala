@@ -5,14 +5,16 @@ import java.nio.file.{Files, Path}
 import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
-import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.core.hd.HDPurpose
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.storage._
-import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
+import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -92,6 +94,9 @@ case class DLCOracleAppConfig(
     }
   }
 
+  lazy val kmParams: KeyManagerParams =
+    KeyManagerParams(seedPath, HDPurpose(DLCOracle.R_VALUE_PURPOSE), network)
+
   lazy val aesPasswordOpt: Option[AesPassword] = {
     val passOpt = config.getStringOrNone("bitcoin-s.key-manager.aesPassword")
     passOpt.flatMap(AesPassword.fromStringOpt)
@@ -117,15 +122,13 @@ case class DLCOracleAppConfig(
 
   def initialize(): Future[DLCOracle] = {
     if (!seedExists()) {
-      val entropy = MnemonicCode.getEntropy256Bits
-      val mnemonicCode = MnemonicCode.fromEntropy(entropy)
-      val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
-      val toWrite = aesPasswordOpt match {
-        case Some(password) => decryptedMnemonic.encrypt(password)
-        case None           => decryptedMnemonic
+      BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
+                                 kmParams = kmParams,
+                                 bip39PasswordOpt = bip39PasswordOpt) match {
+        case Left(err) => sys.error(err.toString)
+        case Right(_) =>
+          logger.info("Successfully generated a seed and key manager")
       }
-
-      WalletStorage.writeMnemonicToDisk(seedPath, toWrite)
     }
 
     val key =

@@ -25,12 +25,10 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
   implicit val ec: ExecutionContext = conf.ec
 
-  // 585 is a random one I picked, unclaimed in https://github.com/satoshilabs/slips/blob/master/slip-0044.md
-  private val R_VALUE_PURPOSE = 585
-
   private val rValAccount: HDAccount = {
+    val purpose = conf.kmParams.purpose
     val coin =
-      HDCoin(HDPurpose(R_VALUE_PURPOSE), HDCoinType.fromNetwork(conf.network))
+      HDCoin(purpose, HDCoinType.fromNetwork(conf.network))
     HDAccount(coin, 0)
   }
 
@@ -408,6 +406,9 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
 }
 
 object DLCOracle {
+
+  // 585 is a random one I picked, unclaimed in https://github.com/satoshilabs/slips/blob/master/slip-0044.md
+  val R_VALUE_PURPOSE = 585
 
   def apply(
       mnemonicCode: MnemonicCode,

@@ -22,8 +22,10 @@ object HDUtil {
       case (Multisig, MainNet) => LegacyMainNetPriv
       case (Multisig, TestNet3 | RegTest | SigNet) =>
         LegacyTestNet3Priv
-      case (Legacy, MainNet)                     => LegacyMainNetPriv
-      case (Legacy, TestNet3 | RegTest | SigNet) => LegacyTestNet3Priv
+      case (Legacy, MainNet)                             => LegacyMainNetPriv
+      case (Legacy, TestNet3 | RegTest | SigNet)         => LegacyTestNet3Priv
+      case (HDPurpose(585), MainNet)                     => SegWitMainNetPriv
+      case (HDPurpose(585), TestNet3 | RegTest | SigNet) => SegWitTestNet3Priv
       case (unknown: HDPurpose, _) =>
         throw new IllegalArgumentException(s"Got unknown HD purpose $unknown")
     }
