@@ -93,8 +93,12 @@ case class DLCOracleAppConfig(
   }
 
   lazy val aesPasswordOpt: Option[AesPassword] = {
-    val passOpt = config.getStringOrNone("bitcoin-s.oracle.aesPassword")
+    val passOpt = config.getStringOrNone("bitcoin-s.key-manager.aesPassword")
     passOpt.flatMap(AesPassword.fromStringOpt)
+  }
+
+  lazy val bip39PasswordOpt: Option[String] = {
+    config.getStringOrNone("bitcoin-s.key-manager.bip39password")
   }
 
   /** Checks if our oracle as a mnemonic seed associated with it */
@@ -111,11 +115,7 @@ case class DLCOracleAppConfig(
     seedExists() && hasDb
   }
 
-  def initialize(oracle: DLCOracle): Future[DLCOracle] = {
-    start().map(_ => oracle)
-  }
-
-  def initialize(bip39PasswordOpt: Option[String] = None): Future[DLCOracle] = {
+  def initialize(): Future[DLCOracle] = {
     if (!seedExists()) {
       val entropy = MnemonicCode.getEntropy256Bits
       val mnemonicCode = MnemonicCode.fromEntropy(entropy)
@@ -134,7 +134,8 @@ case class DLCOracleAppConfig(
                                           aesPasswordOpt,
                                           bip39PasswordOpt)
     val oracle = DLCOracle(key)(this)
-    initialize(oracle)
+
+    start().map(_ => oracle)
   }
 
   private lazy val rValueTable: TableQuery[Table[_]] = {

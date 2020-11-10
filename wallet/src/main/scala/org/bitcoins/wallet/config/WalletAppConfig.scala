@@ -106,11 +106,11 @@ case class WalletAppConfig(
     config.getIntOpt("bitcoin-s.fee-provider.target")
 
   lazy val bip39PasswordOpt: Option[String] = {
-    config.getStringOrNone("bitcoin-s.wallet.bip39password")
+    config.getStringOrNone("bitcoin-s.key-manager.bip39password")
   }
 
   lazy val aesPasswordOpt: Option[AesPassword] = {
-    val passOpt = config.getStringOrNone("bitcoin-s.wallet.aesPassword")
+    val passOpt = config.getStringOrNone("bitcoin-s.key-manager.aesPassword")
     passOpt.flatMap(AesPassword.fromStringOpt)
   }
 

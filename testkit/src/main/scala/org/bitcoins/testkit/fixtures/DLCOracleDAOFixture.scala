@@ -2,7 +2,6 @@ package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
-import org.bitcoins.testkit.keymanager.KeyManagerTestUtil.bip39PasswordOpt
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest._
 
@@ -24,7 +23,7 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
     makeFixture(
       build = () => {
         config
-          .initialize(bip39PasswordOpt)
+          .initialize()
           .map(oracle =>
             DLCOracleDAOs(oracle.rValueDAO,
                           oracle.eventDAO,
