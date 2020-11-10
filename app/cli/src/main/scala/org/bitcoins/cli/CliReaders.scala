@@ -17,6 +17,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto.{
+  AesPassword,
   SchnorrDigitalSignature,
   SchnorrNonce,
   Sha256DigestBE
@@ -98,6 +99,12 @@ object CliReaders {
       override def reads: String => Instant =
         str => Instant.ofEpochSecond(str.toLong)
     }
+
+  implicit val aesPasswordReads: Read[AesPassword] = new Read[AesPassword] {
+    override def arity: Int = 1
+
+    override def reads: String => AesPassword = AesPassword.fromString
+  }
 
   implicit val bitcoinAddressReads: Read[BitcoinAddress] =
     new Read[BitcoinAddress] {

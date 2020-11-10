@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
+import org.bitcoins.crypto.AesPassword
 import ujson._
 import upickle.default._
 
@@ -206,6 +207,55 @@ object SendRawTransaction extends ServerJsonModels {
             s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
 
     Try(SendRawTransaction(jsToTx(jsArr.arr.head)))
+  }
+}
+
+case class WalletPassphraseChange(
+    oldPassword: AesPassword,
+    newPassword: AesPassword)
+
+object WalletPassphraseChange extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[WalletPassphraseChange] = {
+    jsArr.arr.toList match {
+      case oldPassJs :: newPassJs :: Nil =>
+        Try {
+          val oldPass = AesPassword.fromString(oldPassJs.str)
+          val newPass = AesPassword.fromString(newPassJs.str)
+
+          WalletPassphraseChange(oldPass, newPass)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing old password and new password arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class WalletPassphraseSet(password: AesPassword)
+
+object WalletPassphraseSet extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[WalletPassphraseSet] = {
+    jsArr.arr.toList match {
+      case passJs :: Nil =>
+        Try {
+          val pass = AesPassword.fromString(passJs.str)
+
+          WalletPassphraseSet(pass)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing password argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
   }
 }
 

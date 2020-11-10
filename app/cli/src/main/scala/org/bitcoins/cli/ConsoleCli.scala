@@ -21,7 +21,11 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{
+  AesPassword,
+  SchnorrDigitalSignature,
+  Sha256DigestBE
+}
 import scopt.OParser
 import ujson._
 import upickle.{default => up}
@@ -892,6 +896,44 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("walletpassphrasechange")
+        .action((_, conf) =>
+          conf.copy(command = WalletPassphraseChange(null, null)))
+        .text("Changes the wallet passphrase")
+        .children(
+          arg[AesPassword]("oldpassphrase")
+            .text("The current passphrase")
+            .required()
+            .action((oldPass, conf) =>
+              conf.copy(command = conf.command match {
+                case wpc: WalletPassphraseChange =>
+                  wpc.copy(oldPassword = oldPass)
+                case other => other
+              })),
+          arg[AesPassword]("newpassphrase")
+            .text("The new passphrase")
+            .required()
+            .action((newPass, conf) =>
+              conf.copy(command = conf.command match {
+                case wpc: WalletPassphraseChange =>
+                  wpc.copy(newPassword = newPass)
+                case other => other
+              }))
+        ),
+      cmd("walletpassphraseset")
+        .action((_, conf) => conf.copy(command = WalletPassphraseSet(null)))
+        .text("Encrypts the wallet with the given passphrase")
+        .children(
+          arg[AesPassword]("passphrase")
+            .text("The passphrase to encrypt the wallet with")
+            .required()
+            .action((pass, conf) =>
+              conf.copy(command = conf.command match {
+                case wps: WalletPassphraseSet =>
+                  wps.copy(password = pass)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
@@ -1474,6 +1516,14 @@ object ConsoleCli {
                          up.writeJs(satoshisPerVirtualByte)))
       case SignPSBT(psbt) =>
         RequestParam("signpsbt", Seq(up.writeJs(psbt)))
+
+      case WalletPassphraseChange(oldPassword, newPassword) =>
+        RequestParam("walletpassphrasechange",
+                     Seq(up.writeJs(oldPassword), up.writeJs(newPassword)))
+
+      case WalletPassphraseSet(password) =>
+        RequestParam("walletpassphraseset", Seq(up.writeJs(password)))
+
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -1623,10 +1673,12 @@ object ConsoleCli {
       (getKey("result"), getKey("error")) match {
         case (Some(result), None) =>
           Success(jsValueToString(result))
+        case (None, None) =>
+          Success("")
         case (None, Some(err)) =>
           val msg = jsValueToString(err)
           error(msg)
-        case (None, None) | (Some(_), Some(_)) =>
+        case (Some(_), Some(_)) =>
           error(s"Got unexpected response: $rawBody")
       }
     }.flatten
@@ -1805,6 +1857,12 @@ object CliCommand {
   case class GetConfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetUnconfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends CliCommand
+
+  case class WalletPassphraseChange(
+      oldPassword: AesPassword,
+      newPassword: AesPassword)
+      extends CliCommand
+  case class WalletPassphraseSet(password: AesPassword) extends CliCommand
 
   // Node
   case object GetPeers extends CliCommand

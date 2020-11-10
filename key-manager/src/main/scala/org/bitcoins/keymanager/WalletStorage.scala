@@ -304,6 +304,33 @@ object WalletStorage {
     }
   }
 
+  def changeAesPassword(
+      seedPath: Path,
+      oldPasswordOpt: Option[AesPassword],
+      newPasswordOpt: Option[AesPassword]): MnemonicState = {
+    decryptMnemonicFromDisk(seedPath, oldPasswordOpt) match {
+      case Left(err) => sys.error(err.toString)
+      case Right(decrypted) =>
+        val fileName = seedPath.getFileName.toString
+        val backup = seedPath.getParent.resolve(fileName + ".backup")
+        Files.move(seedPath, backup)
+
+        val toWrite = newPasswordOpt match {
+          case Some(pass) =>
+            decrypted.encrypt(pass)
+          case None =>
+            decrypted
+        }
+
+        Try(writeMnemonicToDisk(seedPath, toWrite)) match {
+          case Failure(exception) => throw exception
+          case Success(_) =>
+            Files.delete(backup)
+            toWrite
+        }
+    }
+  }
+
   def getPrivateKeyFromDisk(
       seedPath: Path,
       privKeyVersion: ExtKeyPrivVersion,
