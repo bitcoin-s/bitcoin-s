@@ -138,12 +138,6 @@ bitcoin-s {
 
     # settings for wallet module
     wallet {
-        # You can optionally set a BIP 39 password
-        # bip39password = "changeMe"
-
-        # Password that your seed is encrypted in
-        aespassword = changeMe
-
         defaultAccountType = legacy # legacy, segwit, nested-segwit
 
         bloomFalsePositiveRate = 0.0001 # percentage
@@ -161,8 +155,15 @@ bitcoin-s {
         # How long we attempt to generate an address for
         # before we timeout
         addressQueueTimeout = 5 seconds
-
    }
+
+    key-manager {
+        # You can optionally set a BIP 39 password
+        # bip39password = "changeMe"
+
+        # Password that your seed is encrypted with
+        aespassword = changeMe
+    }
 
     # Bitcoin-S provides manny different fee providers
     # You can configure your server to use any of them
