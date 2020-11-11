@@ -15,11 +15,9 @@ class OracleServerMain(override val args: Array[String])
     implicit val conf: DLCOracleAppConfig =
       DLCOracleAppConfig(datadirPath, baseConfig)
 
-    // TODO need to prompt user for these
-    val bip39PasswordOpt: Option[String] = None
     for {
       _ <- conf.start()
-      oracle <- conf.initialize(bip39PasswordOpt)
+      oracle <- conf.initialize()
 
       routes = Seq(OracleRoutes(oracle))
       server = rpcPortOpt match {

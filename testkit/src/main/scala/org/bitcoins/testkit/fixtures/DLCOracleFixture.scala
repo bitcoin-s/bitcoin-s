@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.dlc.oracle.DLCOracle
-import org.bitcoins.testkit.keymanager.KeyManagerTestUtil.bip39PasswordOpt
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest._
@@ -16,7 +15,7 @@ trait DLCOracleFixture extends BitcoinSFixture with EmbeddedPg {
     val builder: () => Future[DLCOracle] = () => {
       val conf =
         BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(pgUrl)
-      conf.initialize(bip39PasswordOpt)
+      conf.initialize()
     }
 
     val destroy: DLCOracle => Future[Unit] = dlcOracle => {
