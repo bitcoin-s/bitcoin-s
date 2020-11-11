@@ -177,12 +177,6 @@ to ensure the entire module is initialized correctly.</p>
 
     #<span class="hljs-built_in"> settings </span><span class="hljs-keyword">for</span> wallet module
     wallet {
-        # You can optionally <span class="hljs-builtin-name">set</span> a BIP 39 password
-        # bip39password = <span class="hljs-string">"changeMe"</span>
-
-        # Password that your seed is encrypted <span class="hljs-keyword">in</span>
-        aespassword = changeMe
-
         defaultAccountType = legacy # legacy, segwit, nested-segwit
 
         bloomFalsePositiveRate = 0.0001 # percentage
@@ -200,8 +194,15 @@ to ensure the entire module is initialized correctly.</p>
         # How long we attempt <span class="hljs-keyword">to</span> generate an<span class="hljs-built_in"> address </span><span class="hljs-keyword">for</span>
         # before we timeout
         addressQueueTimeout = 5 seconds
-
    }
+
+    key-manager {
+        # You can optionally <span class="hljs-builtin-name">set</span> a BIP 39 password
+        # bip39password = <span class="hljs-string">"changeMe"</span>
+
+        # Password that your seed is encrypted with
+        aespassword = changeMe
+    }
 
     # Bitcoin-S provides manny different fee providers
     # You can configure your<span class="hljs-built_in"> server </span><span class="hljs-keyword">to</span> use any of them
