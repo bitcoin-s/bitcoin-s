@@ -1,11 +1,6 @@
 package org.bitcoins.commons.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAccept,
-  DLCOffer,
-  OracleInfo
-}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.{
   CETSignatures,
   DLCPublicKeys,
@@ -17,22 +12,17 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto.{
-  DummyECDigitalSignature,
-  ECPublicKey,
-  Sha256DigestBE
-}
+import org.bitcoins.crypto._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import scodec.bits.ByteVector
 
 class DLCMessageTest extends BitcoinSAsyncTest {
   behavior of "DLCMessage"
 
   it must "not allow a DLCTimeout where the contract times out before it matures" in {
     assertThrows[IllegalArgumentException](
-      DLCTimeouts(UInt32(5), BlockHeight(4), BlockHeight(2)))
+      DLCTimeouts(BlockHeight(4), BlockHeight(2)))
     assertThrows[IllegalArgumentException](
-      DLCTimeouts(UInt32(5), BlockTime(UInt32(4)), BlockTime(UInt32(2))))
+      DLCTimeouts(BlockTime(UInt32(4)), BlockTime(UInt32(2))))
   }
 
   val dummyPubKey: ECPublicKey = ECPublicKey.freshPublicKey
@@ -41,7 +31,7 @@ class DLCMessageTest extends BitcoinSAsyncTest {
   val dummyAddress: BitcoinAddress = BitcoinAddress(
     "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
 
-  val dummyHash: Sha256DigestBE = Sha256DigestBE(
+  val dummyHash: Sha256Digest = Sha256Digest(
     "00000000000000000008bba30d4d0fb53dcbffb601557de9f16d257d4f1985b7")
 
   val dummySig: PartialSignature =
@@ -52,12 +42,12 @@ class DLCMessageTest extends BitcoinSAsyncTest {
       DLCOffer(
         ContractInfo.empty,
         OracleInfo.dummy,
-        DLCPublicKeys(dummyPubKey, dummyPubKey2, dummyAddress),
+        DLCPublicKeys(dummyPubKey, dummyAddress),
         Satoshis(-1),
         Vector.empty,
         dummyAddress,
         SatoshisPerVirtualByte.one,
-        DLCTimeouts(UInt32(5), BlockHeight(1), BlockHeight(2))
+        DLCTimeouts(BlockHeight(1), BlockHeight(2))
       ))
   }
 
@@ -65,18 +55,12 @@ class DLCMessageTest extends BitcoinSAsyncTest {
     assertThrows[IllegalArgumentException](
       DLCAccept(
         Satoshis(-1),
-        DLCPublicKeys(dummyPubKey, dummyPubKey2, dummyAddress),
+        DLCPublicKeys(dummyPubKey, dummyAddress),
         Vector.empty,
         dummyAddress,
-        CETSignatures(Map(dummyHash -> dummySig), dummySig),
-        Sha256DigestBE(ByteVector.low(32))
+        CETSignatures(Vector(dummyHash -> ECAdaptorSignature.dummy), dummySig),
+        Sha256Digest.empty
       )
-    )
-  }
-
-  it must "not allow duplicate keys in a DLCPublicKeys" in {
-    assertThrows[IllegalArgumentException](
-      DLCPublicKeys(dummyPubKey, dummyPubKey, dummyAddress)
     )
   }
 }

@@ -3,13 +3,13 @@ package org.bitcoins.gui.dlc.dialog
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.gui.GlobalData
 import scalafx.Includes._
 import scalafx.application.Platform
 import scalafx.geometry.Insets
 import scalafx.scene.control.{ButtonType, Dialog, Label, TextField}
 import scalafx.scene.layout.GridPane
 import scalafx.stage.Window
-import scodec.bits.ByteVector
 
 object InitOracleDialog {
 
@@ -30,6 +30,7 @@ object InitOracleDialog {
          }))
 
     dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+    dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
 
     dialog.dialogPane().content = new GridPane {
       hgap = 10
@@ -67,9 +68,9 @@ object InitOracleDialog {
         }
         val contractMap = inputs.map {
           case (str, value) =>
-            val hash = CryptoUtil.sha256(ByteVector(str.getBytes)).flip
+            val hash = CryptoUtil.sha256(str)
             hash -> Satoshis(BigInt(value))
-        }.toMap
+        }.toVector
 
         val outcomes = inputs.map(_._1).toVector
 

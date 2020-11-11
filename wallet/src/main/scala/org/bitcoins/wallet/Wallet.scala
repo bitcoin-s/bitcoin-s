@@ -432,7 +432,9 @@ abstract class Wallet
       inputs = InputUtil.calcSequenceForInputs(utxos)
 
       txBuilder = RawTxBuilder() ++= inputs += dummyOutput
-      finalizer = SubtractFeeFromOutputsFinalizer(inputInfos, feeRate)
+      finalizer = SubtractFeeFromOutputsFinalizer(inputInfos,
+                                                  feeRate,
+                                                  Vector(address.scriptPubKey))
         .andThen(ShuffleFinalizer)
         .andThen(AddWitnessDataFinalizer(inputInfos))
 

@@ -13,6 +13,6 @@ object AcceptDLCDialog
   override def constructFromInput(
       inputs: Map[String, String]): AcceptDLCOffer = {
     val offer = DLCOffer.fromJson(ujson.read(inputs(dlcOfferStr)))
-    AcceptDLCOffer(offer, escaped = false)
+    AcceptDLCOffer(offer)
   }
 }

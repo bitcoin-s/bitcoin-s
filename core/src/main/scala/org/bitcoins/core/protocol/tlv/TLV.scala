@@ -2,14 +2,17 @@ package org.bitcoins.core.protocol.tlv
 
 import java.nio.charset.StandardCharsets
 
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
-import org.bitcoins.core.protocol.BigSizeUInt
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.TLV.{
   DecodeTLVResult,
   FALSE_BYTE,
   TRUE_BYTE
 }
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
@@ -72,11 +75,21 @@ object TLV extends TLVParentFactory[TLV] {
   val typeName = "TLV"
 
   val allFactories: Vector[TLVFactory[TLV]] =
-    Vector(ErrorTLV,
-           PingTLV,
-           PongTLV,
-           OracleEventV0TLV,
-           OracleAnnouncementV0TLV) ++ EventDescriptorTLV.allFactories
+    Vector(
+      ErrorTLV,
+      PingTLV,
+      PongTLV,
+      OracleEventV0TLV,
+      OracleAnnouncementV0TLV,
+      ContractInfoV0TLV,
+      OracleInfoV0TLV,
+      FundingInputV0TLV,
+      CETSignaturesV0TLV,
+      FundingSignaturesV0TLV,
+      DLCOfferTLV,
+      DLCAcceptTLV,
+      DLCSignTLV
+    ) ++ EventDescriptorTLV.allFactories
 
   // Need to override to be able to default to Unknown
   override def fromBytes(bytes: ByteVector): TLV = {
@@ -86,6 +99,10 @@ object TLV extends TLVParentFactory[TLV] {
       case Some(tlvFactory) => tlvFactory.fromTLVValue(value)
       case None             => UnknownTLV(tpe, value)
     }
+  }
+
+  def encodeScript(script: Script): ByteVector = {
+    UInt16(script.asmBytes.length).bytes ++ script.asmBytes
   }
 }
 
@@ -605,5 +622,364 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
     val eventTLV = OracleEventV0TLV(iter.current)
 
     OracleAnnouncementV0TLV(sig, publicKey, eventTLV)
+  }
+}
+
+sealed trait ContractInfoTLV extends TLV
+
+case class ContractInfoV0TLV(outcomes: Vector[(Sha256Digest, Satoshis)])
+    extends ContractInfoTLV {
+  override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
+
+  override val value: ByteVector = {
+    outcomes.foldLeft(ByteVector.empty) {
+      case (bytes, (outcome, amt)) =>
+        bytes ++ outcome.bytes ++ amt.toUInt64.bytes
+    }
+  }
+}
+
+object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42768)
+
+  override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {
+    val iter = ValueIterator(value)
+
+    val builder = Vector.newBuilder[(Sha256Digest, Satoshis)]
+
+    while (iter.index < value.length) {
+      val outcome = Sha256Digest(iter.take(32))
+      val amt = Satoshis(UInt64(iter.takeBits(64)))
+      builder.+=(outcome -> amt)
+    }
+
+    ContractInfoV0TLV(builder.result())
+  }
+}
+
+sealed trait OracleInfoTLV extends TLV
+
+case class OracleInfoV0TLV(pubKey: SchnorrPublicKey, rValue: SchnorrNonce)
+    extends OracleInfoTLV {
+  override def tpe: BigSizeUInt = OracleInfoV0TLV.tpe
+
+  override val value: ByteVector = {
+    pubKey.bytes ++ rValue.bytes
+  }
+}
+
+object OracleInfoV0TLV extends TLVFactory[OracleInfoV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42770)
+
+  override def fromTLVValue(value: ByteVector): OracleInfoV0TLV = {
+    val (pubKeyBytes, rBytes) = value.splitAt(32)
+    val pubKey = SchnorrPublicKey(pubKeyBytes)
+    val rValue = SchnorrNonce(rBytes)
+
+    OracleInfoV0TLV(pubKey, rValue)
+  }
+}
+
+sealed trait FundingInputTLV extends TLV
+
+case class FundingInputV0TLV(
+    prevTx: Transaction,
+    prevTxVout: UInt32,
+    sequence: UInt32,
+    maxWitnessLen: UInt16,
+    redeemScriptOpt: Option[WitnessScriptPubKey])
+    extends FundingInputTLV {
+  override val tpe: BigSizeUInt = FundingInputV0TLV.tpe
+
+  lazy val output: TransactionOutput = prevTx.outputs(prevTxVout.toInt)
+
+  lazy val outPoint: TransactionOutPoint =
+    TransactionOutPoint(prevTx.txId, prevTxVout)
+
+  lazy val input: TransactionInput = {
+    val scriptSig = redeemScriptOpt match {
+      case Some(redeemScript) => P2SHScriptSignature(redeemScript)
+      case None               => EmptyScriptSignature
+    }
+
+    TransactionInput(outPoint, scriptSig, sequence)
+  }
+
+  lazy val outputReference: OutputReference = OutputReference(outPoint, output)
+
+  override val value: ByteVector = {
+    val redeemScript =
+      redeemScriptOpt.getOrElse(EmptyScriptPubKey)
+
+    UInt16(prevTx.byteSize).bytes ++
+      prevTx.bytes ++
+      prevTxVout.bytes ++
+      sequence.bytes ++
+      maxWitnessLen.bytes ++
+      TLV.encodeScript(redeemScript)
+  }
+}
+
+object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42772)
+
+  override def fromTLVValue(value: ByteVector): FundingInputV0TLV = {
+    val iter = ValueIterator(value)
+
+    val prevTxLen = UInt16(iter.takeBits(16))
+    val prevTx = Transaction(iter.take(prevTxLen.toInt))
+    val prevTxVout = UInt32(iter.takeBits(32))
+    val sequence = UInt32(iter.takeBits(32))
+    val maxWitnessLen = UInt16(iter.takeBits(16))
+    val redeemScript = iter.takeSPK()
+    val redeemScriptOpt = redeemScript match {
+      case EmptyScriptPubKey         => None
+      case wspk: WitnessScriptPubKey => Some(wspk)
+      case _: NonWitnessScriptPubKey =>
+        throw new IllegalArgumentException(
+          s"Redeem Script must be Segwith SPK: $redeemScript")
+    }
+
+    FundingInputV0TLV(prevTx,
+                      prevTxVout,
+                      sequence,
+                      maxWitnessLen,
+                      redeemScriptOpt)
+  }
+}
+
+sealed trait CETSignaturesTLV extends TLV
+
+case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
+    extends CETSignaturesTLV {
+  override val tpe: BigSizeUInt = CETSignaturesV0TLV.tpe
+
+  override val value: ByteVector = {
+    sigs.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+  }
+}
+
+object CETSignaturesV0TLV extends TLVFactory[CETSignaturesV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42774)
+
+  override def fromTLVValue(value: ByteVector): CETSignaturesV0TLV = {
+    val iter = ValueIterator(value)
+
+    val builder = Vector.newBuilder[ECAdaptorSignature]
+
+    while (iter.index < value.length) {
+      val sig = ECAdaptorSignature(iter.take(162))
+      builder.+=(sig)
+    }
+
+    CETSignaturesV0TLV(builder.result())
+  }
+}
+
+sealed trait FundingSignaturesTLV extends TLV
+
+case class FundingSignaturesV0TLV(witnesses: Vector[ScriptWitnessV0])
+    extends FundingSignaturesTLV {
+  override val tpe: BigSizeUInt = FundingSignaturesV0TLV.tpe
+
+  override val value: ByteVector = {
+    witnesses.foldLeft(UInt16(witnesses.length).bytes) {
+      case (bytes, witness) =>
+        witness.stack.reverse.foldLeft(
+          bytes ++ UInt16(witness.stack.length).bytes) {
+          case (bytes, stackElem) =>
+            bytes ++ UInt16(stackElem.length).bytes ++ stackElem
+        }
+    }
+  }
+}
+
+object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42776)
+
+  override def fromTLVValue(value: ByteVector): FundingSignaturesV0TLV = {
+    val iter = ValueIterator(value)
+
+    val numWitnesses = UInt16(iter.takeBits(16))
+    val witnesses = (0 until numWitnesses.toInt).toVector.map { _ =>
+      val numStackElements = UInt16(iter.takeBits(16))
+      val stack = (0 until numStackElements.toInt).toVector.map { _ =>
+        val stackElemLength = UInt16(iter.takeBits(16))
+        iter.take(stackElemLength.toInt)
+      }
+      ScriptWitness(stack.reverse) match {
+        case EmptyScriptWitness =>
+          throw new IllegalArgumentException(s"Invalid witness: $stack")
+        case witness: ScriptWitnessV0 => witness
+      }
+    }
+
+    FundingSignaturesV0TLV(witnesses)
+  }
+}
+
+case class DLCOfferTLV(
+    contractFlags: Byte,
+    chainHash: DoubleSha256Digest,
+    contractInfo: ContractInfoTLV,
+    oracleInfo: OracleInfoTLV,
+    fundingPubKey: ECPublicKey,
+    payoutSPK: ScriptPubKey,
+    totalCollateralSatoshis: Satoshis,
+    fundingInputs: Vector[FundingInputTLV],
+    changeSPK: ScriptPubKey,
+    feeRate: SatoshisPerVirtualByte,
+    contractMaturityBound: BlockTimeStamp,
+    contractTimeout: BlockTimeStamp)
+    extends TLV {
+  override val tpe: BigSizeUInt = DLCOfferTLV.tpe
+
+  override val value: ByteVector = {
+    ByteVector(contractFlags) ++
+      chainHash.bytes ++
+      contractInfo.bytes ++
+      oracleInfo.bytes ++
+      fundingPubKey.bytes ++
+      TLV.encodeScript(payoutSPK) ++
+      totalCollateralSatoshis.toUInt64.bytes ++
+      UInt16(fundingInputs.length).bytes ++
+      fundingInputs.foldLeft(ByteVector.empty)(_ ++ _.bytes) ++
+      TLV.encodeScript(changeSPK) ++
+      feeRate.currencyUnit.satoshis.toUInt64.bytes ++
+      contractMaturityBound.toUInt32.bytes ++
+      contractTimeout.toUInt32.bytes
+  }
+}
+
+object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42778)
+
+  override def fromTLVValue(value: ByteVector): DLCOfferTLV = {
+    val iter = ValueIterator(value)
+
+    val contractFlags = iter.take(1).head
+    val chainHash = DoubleSha256Digest(iter.take(32))
+    val contractInfo = ContractInfoV0TLV.fromBytes(iter.current)
+    iter.skip(contractInfo)
+    val oracleInfo = OracleInfoV0TLV.fromBytes(iter.current)
+    iter.skip(oracleInfo)
+    val fundingPubKey = ECPublicKey(iter.take(33))
+    val payoutSPK = iter.takeSPK()
+    val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)))
+    val numFundingInputs = UInt16(iter.takeBits(16))
+    val fundingInputs = (0 until numFundingInputs.toInt).toVector.map { _ =>
+      val fundingInput = FundingInputV0TLV.fromBytes(iter.current)
+      iter.skip(fundingInput)
+      fundingInput
+    }
+    val changeSPK = iter.takeSPK()
+    val feeRate = SatoshisPerVirtualByte(Satoshis(UInt64(iter.takeBits(64))))
+    val contractMaturityBound = BlockTimeStamp(UInt32(iter.takeBits(32)))
+    val contractTimeout = BlockTimeStamp(UInt32(iter.takeBits(32)))
+
+    DLCOfferTLV(
+      contractFlags,
+      chainHash,
+      contractInfo,
+      oracleInfo,
+      fundingPubKey,
+      payoutSPK,
+      totalCollateralSatoshis,
+      fundingInputs,
+      changeSPK,
+      feeRate,
+      contractMaturityBound,
+      contractTimeout
+    )
+  }
+}
+
+case class DLCAcceptTLV(
+    tempContractId: Sha256Digest,
+    totalCollateralSatoshis: Satoshis,
+    fundingPubKey: ECPublicKey,
+    payoutSPK: ScriptPubKey,
+    fundingInputs: Vector[FundingInputTLV],
+    changeSPK: ScriptPubKey,
+    cetSignatures: CETSignaturesTLV,
+    refundSignature: ECDigitalSignature)
+    extends TLV {
+  override val tpe: BigSizeUInt = DLCAcceptTLV.tpe
+
+  override val value: ByteVector = {
+    tempContractId.bytes ++
+      totalCollateralSatoshis.toUInt64.bytes ++
+      fundingPubKey.bytes ++
+      TLV.encodeScript(payoutSPK) ++
+      UInt16(fundingInputs.length).bytes ++
+      fundingInputs.foldLeft(ByteVector.empty)(_ ++ _.bytes) ++
+      TLV.encodeScript(changeSPK) ++
+      cetSignatures.bytes ++
+      refundSignature.toRawRS
+  }
+}
+
+object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42780)
+
+  override def fromTLVValue(value: ByteVector): DLCAcceptTLV = {
+    val iter = ValueIterator(value)
+
+    val tempContractId = Sha256Digest(iter.take(32))
+    val totalCollateralSatoshis = Satoshis(UInt64(iter.takeBits(64)))
+    val fundingPubKey = ECPublicKey(iter.take(33))
+    val payoutSPK = iter.takeSPK()
+    val numFundingInputs = UInt16(iter.takeBits(16))
+    val fundingInputs = (0 until numFundingInputs.toInt).toVector.map { _ =>
+      val fundingInput = FundingInputV0TLV.fromBytes(iter.current)
+      iter.skip(fundingInput)
+      fundingInput
+    }
+    val changeSPK = iter.takeSPK()
+    val cetSignatures = CETSignaturesV0TLV.fromBytes(iter.current)
+    iter.skip(cetSignatures)
+    val refundSignature = ECDigitalSignature.fromRS(iter.take(64))
+
+    DLCAcceptTLV(tempContractId,
+                 totalCollateralSatoshis,
+                 fundingPubKey,
+                 payoutSPK,
+                 fundingInputs,
+                 changeSPK,
+                 cetSignatures,
+                 refundSignature)
+  }
+}
+
+case class DLCSignTLV(
+    contractId: ByteVector,
+    cetSignatures: CETSignaturesTLV,
+    refundSignature: ECDigitalSignature,
+    fundingSignatures: FundingSignaturesTLV)
+    extends TLV {
+  override val tpe: BigSizeUInt = DLCSignTLV.tpe
+
+  override val value: ByteVector = {
+    contractId ++
+      cetSignatures.bytes ++
+      refundSignature.toRawRS ++
+      fundingSignatures.bytes
+  }
+}
+
+object DLCSignTLV extends TLVFactory[DLCSignTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42782)
+
+  override def fromTLVValue(value: ByteVector): DLCSignTLV = {
+    val iter = ValueIterator(value)
+
+    val contractId = iter.take(32)
+    val cetSignatures = CETSignaturesV0TLV.fromBytes(iter.current)
+    iter.skip(cetSignatures)
+    val refundSignature = ECDigitalSignature.fromRS(iter.take(64))
+    val fundingSignatures = FundingSignaturesV0TLV.fromBytes(iter.current)
+    iter.skip(fundingSignatures)
+
+    DLCSignTLV(contractId, cetSignatures, refundSignature, fundingSignatures)
   }
 }

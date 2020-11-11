@@ -88,33 +88,47 @@ case class ScriptSignatureParams[+InputType <: InputInfo](
     this.copy(inputInfo = func(this.inputInfo))
   }
 
+  private var _maxScriptSigAndWitnessWeight: Option[(Long, Long)] = None
+
   def maxScriptSigAndWitnessWeight(implicit
       ec: ExecutionContext): (Long, Long) = {
-    val dummyTx = BaseTransaction(
-      TransactionConstants.validLockVersion,
-      Vector(
-        TransactionInput(inputInfo.outPoint,
-                         EmptyScriptSignature,
-                         UInt32.zero)),
-      Vector(TransactionOutput(Satoshis.zero, EmptyScriptPubKey)),
-      UInt32.zero
-    )
+    _maxScriptSigAndWitnessWeight match {
+      case Some((scriptSigWeight, witnessWeight)) =>
+        (scriptSigWeight, witnessWeight)
+      case None =>
+        val dummyTx = BaseTransaction(
+          TransactionConstants.validLockVersion,
+          Vector(
+            TransactionInput(inputInfo.outPoint,
+                             EmptyScriptSignature,
+                             UInt32.zero)),
+          Vector(TransactionOutput(Satoshis.zero, EmptyScriptPubKey)),
+          UInt32.zero
+        )
 
-    val maxWitnessLenF = BitcoinSigner
-      .sign(this, unsignedTx = dummyTx, isDummySignature = true)
-      .map(_.transaction)
-      .map {
-        case wtx: WitnessTransaction =>
-          val scriptSigSize = wtx.inputs.head.scriptSignature.asmBytes.size
-          val witnessSize = wtx.witness.head.byteSize
-          (scriptSigSize * 4, witnessSize)
-        case tx: NonWitnessTransaction =>
-          val scriptSigSize = tx.inputs.head.scriptSignature.asmBytes.size
-          (scriptSigSize * 4, 0L)
-      }
+        val maxWitnessLenF = BitcoinSigner
+          .sign(this, unsignedTx = dummyTx, isDummySignature = true)
+          .map(_.transaction)
+          .map {
+            case wtx: WitnessTransaction =>
+              val scriptSigSize = wtx.inputs.head.scriptSignature.asmBytes.size
+              val witnessSize = wtx.witness.head.byteSize
+              (scriptSigSize * 4, witnessSize)
+            case tx: NonWitnessTransaction =>
+              val scriptSigSize = tx.inputs.head.scriptSignature.asmBytes.size
+              (scriptSigSize * 4, 0L)
+          }
 
-    Await.result(maxWitnessLenF, 30.seconds)
+        val (scriptSigWeight, witnessWeight) =
+          Await.result(maxWitnessLenF, 30.seconds)
+        _maxScriptSigAndWitnessWeight = Some((scriptSigWeight, witnessWeight))
+
+        (scriptSigWeight, witnessWeight)
+    }
   }
+
+  def maxWitnessLen(implicit ec: ExecutionContext): Long =
+    maxScriptSigAndWitnessWeight._2
 }
 
 object ScriptSignatureParams {
