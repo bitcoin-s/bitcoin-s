@@ -46,7 +46,7 @@ object DLCMessage {
 
     override def bytes: ByteVector = pubKey.bytes ++ rValue.bytes
 
-    def toTLV: OracleInfoV0TLV = OracleInfoV0TLV(pubKey, rValue)
+    lazy val toTLV: OracleInfoV0TLV = OracleInfoV0TLV(pubKey, rValue)
   }
 
   object OracleInfo extends Factory[OracleInfo] {
@@ -80,13 +80,13 @@ object DLCMessage {
           throw new IllegalArgumentException(s"No value found for key $key"))
     }
 
-    override def bytes: ByteVector = {
+    override lazy val bytes: ByteVector = {
       outcomeValueMap.foldLeft(ByteVector.empty) {
         case (vec, (digest, sats)) => vec ++ digest.bytes ++ sats.bytes
       }
     }
 
-    def toTLV: ContractInfoV0TLV = ContractInfoV0TLV(outcomeValueMap)
+    lazy val toTLV: ContractInfoV0TLV = ContractInfoV0TLV(outcomeValueMap)
   }
 
   object ContractInfo extends Factory[ContractInfo] {
@@ -159,7 +159,7 @@ object DLCMessage {
     val tempContractId: Sha256Digest =
       CryptoUtil.sha256(toMessage.bytes)
 
-    def toTLV: DLCOfferTLV = {
+    lazy val toTLV: DLCOfferTLV = {
       val chainHash =
         changeAddress.networkParameters.chainParams.genesisBlock.blockHeader.hash
 
@@ -179,7 +179,7 @@ object DLCMessage {
       )
     }
 
-    def toMessage: LnMessage[DLCOfferTLV] = {
+    lazy val toMessage: LnMessage[DLCOfferTLV] = {
       LnMessage(this.toTLV)
     }
 
@@ -409,7 +409,7 @@ object DLCMessage {
       tempContractId: Sha256Digest)
       extends DLCSetupMessage {
 
-    def toTLV: DLCAcceptTLV = {
+    lazy val toTLV: DLCAcceptTLV = {
       DLCAcceptTLV(
         tempContractId = tempContractId,
         totalCollateralSatoshis = totalCollateral,
@@ -423,7 +423,7 @@ object DLCMessage {
       )
     }
 
-    def toMessage: LnMessage[DLCAcceptTLV] = {
+    lazy val toMessage: LnMessage[DLCAcceptTLV] = {
       LnMessage(this.toTLV)
     }
 
@@ -629,7 +629,7 @@ object DLCMessage {
       contractId: ByteVector)
       extends DLCMessage {
 
-    def toTLV: DLCSignTLV = {
+    lazy val toTLV: DLCSignTLV = {
       DLCSignTLV(
         contractId = contractId,
         cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
@@ -639,11 +639,11 @@ object DLCMessage {
       )
     }
 
-    def toMessage: LnMessage[DLCSignTLV] = {
+    lazy val toMessage: LnMessage[DLCSignTLV] = {
       LnMessage(this.toTLV)
     }
 
-    def toJson: Value = {
+    lazy val toJson: Value = {
 
       val fundingSigsMap = fundingSigs.map {
         case (outPoint, scriptWitness) =>

@@ -101,7 +101,7 @@ sealed abstract class Satoshis extends CurrencyUnit {
 
   def toLong: Long = underlying.toLong
 
-  def toUInt64: UInt64 = {
+  lazy val toUInt64: UInt64 = {
     require(toLong >= 0, "Cannot cast negative value to UInt64")
 
     UInt64(toLong)

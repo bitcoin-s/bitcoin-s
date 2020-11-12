@@ -29,7 +29,7 @@ case class FundingSignatures(
     FundingSignatures(sigs ++ other.sigs)
   }
 
-  def toTLV: FundingSignaturesV0TLV = {
+  lazy val toTLV: FundingSignaturesV0TLV = {
     FundingSignaturesV0TLV(sigs.map(_._2))
   }
 }
