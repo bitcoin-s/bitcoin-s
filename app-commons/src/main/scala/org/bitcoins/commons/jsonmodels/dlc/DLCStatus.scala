@@ -254,7 +254,7 @@ object DLCStatus {
     override val state: DLCState = DLCState.RemoteClaimed
 
     /** This represents the sum of all oracle signatures in the case that there are multiple */
-    val oracleSig: SchnorrDigitalSignature = {
+    val (oracleSig: SchnorrDigitalSignature, outcome: DLCOutcomeType) = {
       val cetSigs = cet
         .asInstanceOf[WitnessTransaction]
         .witness
@@ -363,7 +363,7 @@ object DLCStatus {
 
       sigOpt match {
         case Some((msg, adaptorSig)) =>
-          sigFromMsgAndSigs(msg, adaptorSig, cetSig)
+          (sigFromMsgAndSigs(msg, adaptorSig, cetSig), msg)
         case None =>
           throw new IllegalArgumentException(
             "No Oracle Signature found from CET")

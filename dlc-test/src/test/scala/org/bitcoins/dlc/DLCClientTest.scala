@@ -586,7 +586,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
       dlcOffer: TestDLCClient,
       acceptSetup: SetupDLC,
       dlcAccept: TestDLCClient,
-      oracleSigs: Vector[SchnorrDigitalSignature]): Future[Assertion] = {
+      oracleSigs: Vector[SchnorrDigitalSignature],
+      outcome: DLCOutcomeType): Future[Assertion] = {
     val (aggR, aggS) = oracleSigs
       .map(sig => (sig.rx.publicKey, sig.sig))
       .reduce[(ECPublicKey, FieldElement)] {
@@ -632,7 +633,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
                                 offerOutcome.cet)
 
       assert(offerRemoteClaimed.oracleSig == aggSig)
+      assert(offerRemoteClaimed.outcome == outcome)
       assert(acceptRemoteClaimed.oracleSig == aggSig)
+      assert(acceptRemoteClaimed.outcome == outcome)
     }
   }
 
@@ -642,19 +645,19 @@ class DLCClientTest extends BitcoinSAsyncTest {
     runTestsForParam(numOutcomesToTest) { numOutcomes =>
       setupDLC(numOutcomes, isMultiDigit = false).flatMap {
         case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomes) =>
+          val outcome = outcomes(outcomeIndex).asInstanceOf[EnumOutcome]
           val oracleSig =
-            oraclePrivKey.schnorrSignWithNonce(
-              CryptoUtil
-                .sha256(
-                  outcomes(outcomeIndex).asInstanceOf[EnumOutcome].outcome)
-                .bytes,
-              preCommittedK)
+            oraclePrivKey.schnorrSignWithNonce(CryptoUtil
+                                                 .sha256(outcome.outcome)
+                                                 .bytes,
+                                               preCommittedK)
 
           assertCorrectSigDerivation(offerSetup = offerSetup,
                                      dlcOffer = dlcOffer,
                                      acceptSetup = acceptSetup,
                                      dlcAccept = dlcAccept,
-                                     oracleSigs = Vector(oracleSig))
+                                     oracleSigs = Vector(oracleSig),
+                                     outcome = outcome)
       }
     }
   }
@@ -670,7 +673,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
       setupDLC(numDigits, isMultiDigit = true).flatMap {
         case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomes) =>
           runTestsForParam(outcomesToTest) { outcomeToTest =>
-            val oracleSigs = outcomes
+            val outcome = outcomes
               .find {
                 case UnsignedNumericOutcome(digits) =>
                   outcomeToTest.startsWith(digits)
@@ -678,7 +681,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
               }
               .get
               .asInstanceOf[UnsignedNumericOutcome]
-              .digits
+
+            val oracleSigs = outcome.digits
               .zip(preCommittedKs.take(numDigits))
               .map {
                 case (digit, kVal) =>
@@ -691,7 +695,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
                                        dlcOffer = dlcOffer,
                                        acceptSetup = acceptSetup,
                                        dlcAccept = dlcAccept,
-                                       oracleSigs = oracleSigs)
+                                       oracleSigs = oracleSigs,
+                                       outcome = outcome)
           }
       }
     }
