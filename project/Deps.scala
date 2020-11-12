@@ -12,7 +12,7 @@ object Deps {
     val scalaTestPlus =
       "3.2.1.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "1.7.30"
-    val spray = "1.3.5"
+    val spray = "1.3.6"
     val zeromq = "0.5.2"
     val akkav = "10.1.12"
     val playv = "2.9.1"
