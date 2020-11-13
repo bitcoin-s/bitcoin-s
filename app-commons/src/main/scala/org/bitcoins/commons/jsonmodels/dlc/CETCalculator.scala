@@ -347,7 +347,7 @@ object CETCalculator {
             _ -> totalCollateral)
         case StartFuncConst(indexFrom, indexTo) =>
           groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map(
-            _ -> function(indexFrom))
+            _ -> function(indexFrom, rounding))
         case StartFunc(indexFrom, indexTo) =>
           indexFrom.to(indexTo).map { num =>
             decompose(num, base, numDigits) -> function(num)
