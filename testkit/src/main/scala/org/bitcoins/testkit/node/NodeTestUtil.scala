@@ -109,8 +109,8 @@ abstract class NodeTestUtil extends P2PLogger {
   def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(implicit
       ec: ExecutionContext): Future[Boolean] = {
     val hashF = rpc.getBestBlockHash
+    val chainApi = node.chainApiFromDb()
     for {
-      chainApi <- node.chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash()
       hash <- hashF
     } yield {
@@ -121,8 +121,9 @@ abstract class NodeTestUtil extends P2PLogger {
   def isSameBestFilterHeight(node: NeutrinoNode, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
+    val chainApi = node.chainApiFromDb()
     for {
-      filterCount <- node.chainApiFromDb().flatMap(_.getFilterCount())
+      filterCount <- chainApi.getFilterCount()
       blockCount <- rpcCountF
     } yield {
       blockCount == filterCount
@@ -132,9 +133,9 @@ abstract class NodeTestUtil extends P2PLogger {
   def isSameBestFilterHeaderHeight(node: NeutrinoNode, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
+    val chainApi = node.chainApiFromDb()
     for {
-      filterHeaderCount <-
-        node.chainApiFromDb().flatMap(_.getFilterHeaderCount())
+      filterHeaderCount <- chainApi.getFilterHeaderCount()
       blockCount <- rpcCountF
     } yield {
       blockCount == filterHeaderCount
@@ -147,8 +148,9 @@ abstract class NodeTestUtil extends P2PLogger {
   def isSameBlockCount(node: Node, rpc: BitcoindRpcClient)(implicit
       ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
+    val chainApi = node.chainApiFromDb()
     for {
-      count <- node.chainApiFromDb().flatMap(_.getBlockCount())
+      count <- chainApi.getBlockCount()
       rpcCount <- rpcCountF
     } yield {
       rpcCount == count
@@ -188,7 +190,7 @@ abstract class NodeTestUtil extends P2PLogger {
       system: ActorSystem): Future[Unit] = {
     import system.dispatcher
     def bestHashF: Future[DoubleSha256DigestBE] = {
-      node.chainApiFromDb().flatMap(_.getBestBlockHash())
+      node.chainApiFromDb().getBestBlockHash()
     }
     TestAsyncUtil.retryUntilSatisfiedF(() => bestHashF.map(_ == hash))
   }

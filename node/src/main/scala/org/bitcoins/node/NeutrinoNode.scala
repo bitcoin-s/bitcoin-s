@@ -33,7 +33,7 @@ case class NeutrinoNode(
   override def start(): Future[Node] = {
     val res = for {
       node <- super.start()
-      chainApi <- chainApiFromDb()
+      chainApi = chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash()
       peerMsgSender <- peerMsgSenderF
       _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(
@@ -57,8 +57,8 @@ case class NeutrinoNode(
   override def sync(): Future[Unit] = {
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
+    val chainApi = chainApiFromDb()
     for {
-      chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
       filterHeaderCount <- chainApi.getFilterHeaderCount()
       filterCount <- chainApi.getFilterCount()
@@ -91,15 +91,15 @@ case class NeutrinoNode(
 
   /** Gets the number of compact filters in the database */
   override def getFilterCount(): Future[Int] =
-    chainApiFromDb().flatMap(_.getFilterCount())
+    chainApiFromDb().getFilterCount()
 
   /** Returns the block height of the given block stamp */
   override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
-    chainApiFromDb().flatMap(_.getHeightByBlockStamp(blockStamp))
+    chainApiFromDb().getHeightByBlockStamp(blockStamp)
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
       endHeight: Int): Future[Vector[FilterResponse]] =
-    chainApiFromDb().flatMap(_.getFiltersBetweenHeights(startHeight, endHeight))
+    chainApiFromDb().getFiltersBetweenHeights(startHeight, endHeight)
 
 }

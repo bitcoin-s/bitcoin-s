@@ -93,7 +93,7 @@ class BitcoinSServerMain(override val args: Array[String])
         wallet <- configuredWalletF
         _ <- node.start()
         _ <- wallet.start()
-        chainApi <- node.chainApiFromDb()
+        chainApi = node.chainApiFromDb()
         binding <- startHttpServer(node, chainApi, wallet, rpcPortOpt)
         _ = {
           logger.info(s"Starting ${nodeConf.nodeType.shortName} node sync")
@@ -246,11 +246,11 @@ class BitcoinSServerMain(override val args: Array[String])
       system: ActorSystem): Future[ChainApi] = {
     val blockEC =
       system.dispatchers.lookup(Dispatchers.DefaultBlockingDispatcherId)
+    val chainApi = ChainHandler.fromDatabase(
+      blockHeaderDAO = BlockHeaderDAO()(blockEC, chainAppConfig),
+      CompactFilterHeaderDAO()(blockEC, chainAppConfig),
+      CompactFilterDAO()(blockEC, chainAppConfig))
     for {
-      chainApi <- ChainHandler.fromDatabase(
-        blockHeaderDAO = BlockHeaderDAO()(blockEC, chainAppConfig),
-        CompactFilterHeaderDAO()(blockEC, chainAppConfig),
-        CompactFilterDAO()(blockEC, chainAppConfig))
       isMissingChainWork <- chainApi.isMissingChainWork
       chainApiWithWork <-
         if (isMissingChainWork || force) {

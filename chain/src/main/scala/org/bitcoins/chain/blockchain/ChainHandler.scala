@@ -23,6 +23,9 @@ import scala.concurrent._
   * of [[ChainApi ChainApi]], this is the entry point in to the
   * chain project.
   *
+  * This implementation of [[ChainApi]] reads all values directly from the database. If you want an optimized version
+  * that caches headers locally please see [[ChainHandlerCached]]
+  *
   * @param blockHeaderDAO block header DB
   * @param filterHeaderDAO filter header DB
   * @param filterDAO filter DB
@@ -943,14 +946,11 @@ object ChainHandler {
       filterHeaderDAO: CompactFilterHeaderDAO,
       filterDAO: CompactFilterDAO)(implicit
       ec: ExecutionContext,
-      chainConfig: ChainAppConfig): Future[ChainHandler] = {
-
-    Future.successful {
-      new ChainHandler(blockHeaderDAO = blockHeaderDAO,
-                       filterHeaderDAO = filterHeaderDAO,
-                       filterDAO = filterDAO,
-                       blockFilterCheckpoints = Map.empty)
-    }
+      chainConfig: ChainAppConfig): ChainHandler = {
+    new ChainHandler(blockHeaderDAO = blockHeaderDAO,
+                     filterHeaderDAO = filterHeaderDAO,
+                     filterDAO = filterDAO,
+                     blockFilterCheckpoints = Map.empty)
   }
 
   def apply(

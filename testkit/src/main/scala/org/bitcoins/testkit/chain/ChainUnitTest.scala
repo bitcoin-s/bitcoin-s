@@ -200,10 +200,10 @@ trait ChainUnitTest
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
       filterHeaderDAO <- ChainUnitTest.createPopulatedFilterHeaderDAO()
       filterDAO <- ChainUnitTest.createPopulatedFilterDAO()
-      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
-                                                filterHeaderDAO =
-                                                  filterHeaderDAO,
-                                                filterDAO = filterDAO)
+      chainHandler = ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
+                                               filterHeaderDAO =
+                                                 filterHeaderDAO,
+                                               filterDAO = filterDAO)
     } yield chainHandler
   }
 

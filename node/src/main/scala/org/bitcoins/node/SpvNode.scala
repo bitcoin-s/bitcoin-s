@@ -87,7 +87,7 @@ case class SpvNode(
 
   /** Returns the block height of the given block stamp */
   override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
-    chainApiFromDb().flatMap(_.getHeightByBlockStamp(blockStamp))
+    chainApiFromDb().getHeightByBlockStamp(blockStamp)
 
   private val cfErrMsg = "Compact filters are not supported in SPV mode"
 

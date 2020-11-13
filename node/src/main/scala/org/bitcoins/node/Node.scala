@@ -58,7 +58,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     */
   def chainApiFromDb()(implicit
-      executionContext: ExecutionContext): Future[ChainHandler] = {
+      executionContext: ExecutionContext): ChainHandler = {
     ChainHandler.fromDatabase(BlockHeaderDAO(),
                               CompactFilterHeaderDAO(),
                               CompactFilterDAO())
@@ -69,19 +69,16 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * the [[ChainApi chain api]] is updated inside of the p2p client
     */
   lazy val clientF: Future[P2PClient] = {
-    for {
-      chainApi <- chainApiFromDb()
-    } yield {
-      val peerMsgRecv: PeerMessageReceiver =
-        PeerMessageReceiver.newReceiver(chainApi = chainApi,
-                                        peer = peer,
-                                        callbacks = nodeCallbacks,
-                                        initialSyncDone = initialSyncDone)
-      val p2p = P2PClient(context = system,
-                          peer = peer,
-                          peerMessageReceiver = peerMsgRecv)
-      p2p
-    }
+    val chainApi = chainApiFromDb()
+    val peerMsgRecv: PeerMessageReceiver =
+      PeerMessageReceiver.newReceiver(chainApi = chainApi,
+                                      peer = peer,
+                                      callbacks = nodeCallbacks,
+                                      initialSyncDone = initialSyncDone)
+    val p2p = P2PClient(context = system,
+                        peer = peer,
+                        peerMessageReceiver = peerMsgRecv)
+    Future.successful(p2p)
   }
 
   lazy val peerMsgSenderF: Future[PeerMessageSender] = {
@@ -121,7 +118,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     for {
       _ <- nodeAppConfig.start()
       // get chainApi so we don't need to call chainApiFromDb on every call
-      chainApi <- chainApiFromDb()
+      chainApi = chainApiFromDb()
       node <- {
         val isInitializedF = for {
           _ <- peerMsgSenderF.map(_.connect())
@@ -190,8 +187,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def sync(): Future[Unit] = {
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainAppConfig).getBlockchains()
+    val chainApi = chainApiFromDb()
     for {
-      chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
       blockchains <- blockchainsF
     } yield {
@@ -253,18 +250,18 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   /** Gets the height of the given block */
   override def getBlockHeight(
       blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
-    chainApiFromDb().flatMap(_.getBlockHeight(blockHash))
+    chainApiFromDb().getBlockHeight(blockHash)
 
   /** Gets the hash of the block that is what we consider "best" */
   override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
-    chainApiFromDb().flatMap(_.getBestBlockHash())
+    chainApiFromDb().getBestBlockHash()
 
   /** Gets number of confirmations for the given block hash */
   def getNumberOfConfirmations(
       blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
-    chainApiFromDb().flatMap(_.getNumberOfConfirmations(blockHashOpt))
+    chainApiFromDb().getNumberOfConfirmations(blockHashOpt)
 
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
-    chainApiFromDb().flatMap(_.epochSecondToBlockHeight(time))
+    chainApiFromDb().epochSecondToBlockHeight(time)
 
 }
