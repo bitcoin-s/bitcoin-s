@@ -52,25 +52,6 @@ class ChainHandlerTest extends ChainDbUnitTest {
       nonce = UInt32(2083236893)
     )
 
-  it must "throw an error when we have no chains" in {
-    chainHandler: ChainHandler =>
-      val handler = chainHandler.copy(blockchains = Vector.empty)
-
-      recoverToSucceededIf[RuntimeException] {
-        handler.getBestBlockHeader()
-      }
-  }
-
-  it must "throw an error when we have no headers" in {
-    chainHandler: ChainHandler =>
-      val handler =
-        chainHandler.copy(blockchains = Vector(Blockchain(Vector.empty)))
-
-      recoverToSucceededIf[RuntimeException] {
-        handler.getBestBlockHeader()
-      }
-  }
-
   it must "process a new valid block header, and then be able to fetch that header" in {
     chainHandler: ChainHandler =>
       val newValidHeader =
@@ -561,18 +542,6 @@ class ChainHandlerTest extends ChainDbUnitTest {
           chainHandler.epochSecondToBlockHeight(TimeUtil.currentEpochSecond)
       } yield {
         assert(height == 0)
-      }
-  }
-
-  it must "get best filter header with zero blockchains in memory" in {
-    chainHandler: ChainHandler =>
-      val noChainsChainHandler = chainHandler.copy(blockchains = Vector.empty)
-
-      for {
-        filterHeaderOpt <- noChainsChainHandler.getBestFilterHeader()
-      } yield {
-        assert(filterHeaderOpt.isDefined)
-        assert(filterHeaderOpt.get == ChainUnitTest.genesisFilterHeaderDb)
       }
   }
 

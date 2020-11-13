@@ -30,13 +30,14 @@ import scala.concurrent._
   * @param blockFilterCheckpoints compact filter checkpoints for filter header verification in form of a map (block header hash -> filter header hash)
   * @param chainConfig config file
   */
-case class ChainHandler(
-    blockHeaderDAO: BlockHeaderDAO,
-    filterHeaderDAO: CompactFilterHeaderDAO,
-    filterDAO: CompactFilterDAO,
-    blockchains: Vector[Blockchain],
-    blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE])(
-    implicit
+class ChainHandler(
+    val blockHeaderDAO: BlockHeaderDAO,
+    val filterHeaderDAO: CompactFilterHeaderDAO,
+    val filterDAO: CompactFilterDAO,
+    val blockchains: Vector[Blockchain],
+    val blockFilterCheckpoints: Map[
+      DoubleSha256DigestBE,
+      DoubleSha256DigestBE])(implicit
     val chainConfig: ChainAppConfig,
     executionContext: ExecutionContext)
     extends ChainApi
@@ -51,28 +52,38 @@ case class ChainHandler(
     }
   }
 
-  override def getBestBlockHeader(): Future[BlockHeaderDb] = {
-    Future {
-      logger.debug(s"Querying for best block hash")
-      //https://bitcoin.org/en/glossary/block-chain
-      val groupedChains = blockchains.groupBy(_.tip.chainWork)
-      val maxWork = groupedChains.keys.max
-      val chains = groupedChains(maxWork)
+  /** Given a set of blockchains, determines which one has the best header */
+  protected def getBestBlockHeaderHelper(
+      chains: Vector[Blockchain]): BlockHeaderDb = {
+    logger.debug(
+      s"Finding best block hash out of chains.length=${chains.length}")
+    //https://bitcoin.org/en/glossary/block-chain
+    val groupedChains = chains.groupBy(_.tip.chainWork)
+    val maxWork = groupedChains.keys.max
+    val chainsByWork = groupedChains(maxWork)
 
-      val bestHeader: BlockHeaderDb = chains match {
-        case Vector() =>
-          // This should never happen
-          val errMsg = s"Did not find blockchain with work $maxWork"
-          logger.error(errMsg)
-          throw new RuntimeException(errMsg)
-        case chain +: Vector() =>
-          chain.tip
-        case chain +: rest =>
-          logger.warn(
-            s"We have multiple competing blockchains: ${(chain +: rest).map(_.tip.hashBE.hex).mkString(", ")}")
-          chain.tip
-      }
-      bestHeader
+    val bestHeader: BlockHeaderDb = chainsByWork match {
+      case Vector() =>
+        // This should never happen
+        val errMsg = s"Did not find blockchain with work $maxWork"
+        logger.error(errMsg)
+        throw new RuntimeException(errMsg)
+      case chain +: Vector() =>
+        chain.tip
+      case chain +: rest =>
+        logger.warn(
+          s"We have multiple competing blockchains: ${(chain +: rest).map(_.tip.hashBE.hex).mkString(", ")}")
+        chain.tip
+    }
+    bestHeader
+  }
+
+  override def getBestBlockHeader(): Future[BlockHeaderDb] = {
+    val blockchainsF = blockHeaderDAO.getBlockchains()
+    for {
+      blockchains <- blockchainsF
+    } yield {
+      getBestBlockHeaderHelper(blockchains)
     }
   }
 
@@ -112,7 +123,12 @@ case class ChainHandler(
 
       val createdF = blockHeaderDAO.createAll(headersToBeCreated)
 
-      val newChainHandler = this.copy(blockchains = chains)
+      val newChainHandler = ChainHandler(blockHeaderDAO,
+                                         filterHeaderDAO,
+                                         filterDAO,
+                                         blockchains = chains,
+                                         blockFilterCheckpoints =
+                                           blockFilterCheckpoints)
 
       createdF.map { headers =>
         if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
@@ -438,7 +454,11 @@ case class ChainHandler(
           res.updated(blockHeader.hashBE, filterHeaderHash)
         }
 
-      this.copy(blockFilterCheckpoints = updatedCheckpoints)
+      ChainHandler(blockHeaderDAO = blockHeaderDAO,
+                   filterHeaderDAO = filterHeaderDAO,
+                   filterDAO = filterDAO,
+                   blockchains = blockchains,
+                   blockFilterCheckpoints = updatedCheckpoints)
     }
 
   }
@@ -833,7 +853,13 @@ case class ChainHandler(
       newBlockchains <- blockHeaderDAO.getBlockchains()
     } yield {
       logger.info("Finished calculating chain work")
-      this.copy(blockchains = newBlockchains)
+      ChainHandler(
+        blockHeaderDAO = blockHeaderDAO,
+        filterHeaderDAO = filterHeaderDAO,
+        filterDAO = filterDAO,
+        blockchains = newBlockchains,
+        blockFilterCheckpoints = blockFilterCheckpoints
+      )
     }
 
     resultF.failed.foreach { err =>
@@ -850,9 +876,39 @@ case class ChainHandler(
     val genesisWithWork = genesisHeader.copy(chainWork = expectedWork)
     blockHeaderDAO.update(genesisWithWork)
   }
+
+  def copyWith(
+      blockHeaderDAO: BlockHeaderDAO = blockHeaderDAO,
+      filterHeaderDAO: CompactFilterHeaderDAO = filterHeaderDAO,
+      filterDAO: CompactFilterDAO = filterDAO,
+      blockchains: Vector[Blockchain] = blockchains,
+      blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE] =
+        blockFilterCheckpoints): ChainHandler = {
+    new ChainHandler(blockHeaderDAO = blockHeaderDAO,
+                     filterHeaderDAO = filterHeaderDAO,
+                     filterDAO = filterDAO,
+                     blockchains = blockchains,
+                     blockFilterCheckpoints = blockFilterCheckpoints)
+  }
 }
 
 object ChainHandler {
+
+  def apply(
+      blockHeaderDAO: BlockHeaderDAO,
+      filterHeaderDAO: CompactFilterHeaderDAO,
+      filterDAO: CompactFilterDAO,
+      blockchains: Vector[Blockchain],
+      blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE])(
+      implicit
+      ec: ExecutionContext,
+      chainAppConfig: ChainAppConfig): ChainHandler = {
+    new ChainHandler(blockHeaderDAO,
+                     filterHeaderDAO,
+                     filterDAO,
+                     blockchains,
+                     blockFilterCheckpoints)
+  }
 
   /** Constructs a [[ChainHandler chain handler]] from the state in the database
     * This gives us the guaranteed latest state we have in the database
