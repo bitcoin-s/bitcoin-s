@@ -308,10 +308,12 @@ object WalletStorage {
       seedPath: Path,
       oldPasswordOpt: Option[AesPassword],
       newPasswordOpt: Option[AesPassword]): MnemonicState = {
+    logger.info("Changing encryption password for seed")
     decryptMnemonicFromDisk(seedPath, oldPasswordOpt) match {
       case Left(err) => sys.error(err.toString)
       case Right(decrypted) =>
         val fileName = seedPath.getFileName.toString
+        logger.info("Creating backup file...")
         val backup = seedPath.getParent.resolve(fileName + ".backup")
         Files.move(seedPath, backup)
 
@@ -323,8 +325,12 @@ object WalletStorage {
         }
 
         Try(writeMnemonicToDisk(seedPath, toWrite)) match {
-          case Failure(exception) => throw exception
+          case Failure(exception) =>
+            logger.error(
+              s"Failed to write new seed, backup of previous seed file can be found at $backup")
+            throw exception
           case Success(_) =>
+            logger.info("Successfully wrote to disk, deleting backup file")
             Files.delete(backup)
             toWrite
         }

@@ -210,20 +210,20 @@ object SendRawTransaction extends ServerJsonModels {
   }
 }
 
-case class WalletPassphraseChange(
+case class KeyManagerPassphraseChange(
     oldPassword: AesPassword,
     newPassword: AesPassword)
 
-object WalletPassphraseChange extends ServerJsonModels {
+object KeyManagerPassphraseChange extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[WalletPassphraseChange] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[KeyManagerPassphraseChange] = {
     jsArr.arr.toList match {
       case oldPassJs :: newPassJs :: Nil =>
         Try {
           val oldPass = AesPassword.fromString(oldPassJs.str)
           val newPass = AesPassword.fromString(newPassJs.str)
 
-          WalletPassphraseChange(oldPass, newPass)
+          KeyManagerPassphraseChange(oldPass, newPass)
         }
       case Nil =>
         Failure(
@@ -237,17 +237,17 @@ object WalletPassphraseChange extends ServerJsonModels {
   }
 }
 
-case class WalletPassphraseSet(password: AesPassword)
+case class KeyManagerPassphraseSet(password: AesPassword)
 
-object WalletPassphraseSet extends ServerJsonModels {
+object KeyManagerPassphraseSet extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[WalletPassphraseSet] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[KeyManagerPassphraseSet] = {
     jsArr.arr.toList match {
       case passJs :: Nil =>
         Try {
           val pass = AesPassword.fromString(passJs.str)
 
-          WalletPassphraseSet(pass)
+          KeyManagerPassphraseSet(pass)
         }
       case Nil =>
         Failure(new IllegalArgumentException("Missing password argument"))

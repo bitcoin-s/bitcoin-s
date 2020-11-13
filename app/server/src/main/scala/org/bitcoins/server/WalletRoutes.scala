@@ -430,11 +430,11 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
         }
       }
 
-    case ServerCommand("walletpassphrasechange", arr) =>
-      WalletPassphraseChange.fromJsArr(arr) match {
+    case ServerCommand("keymanagerpassphrasechange", arr) =>
+      KeyManagerPassphraseChange.fromJsArr(arr) match {
         case Failure(err) =>
           reject(ValidationRejection("failure", Some(err)))
-        case Success(WalletPassphraseChange(oldPassword, newPassword)) =>
+        case Success(KeyManagerPassphraseChange(oldPassword, newPassword)) =>
           complete {
             val path = walletConf.seedPath
             WalletStorage.changeAesPassword(path,
@@ -445,11 +445,11 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
           }
       }
 
-    case ServerCommand("walletpassphraseset", arr) =>
-      WalletPassphraseSet.fromJsArr(arr) match {
+    case ServerCommand("keymanagerpassphraseset", arr) =>
+      KeyManagerPassphraseSet.fromJsArr(arr) match {
         case Failure(err) =>
           reject(ValidationRejection("failure", Some(err)))
-        case Success(WalletPassphraseSet(password)) =>
+        case Success(KeyManagerPassphraseSet(password)) =>
           complete {
             val path = walletConf.seedPath
             WalletStorage.changeAesPassword(path, None, Some(password))

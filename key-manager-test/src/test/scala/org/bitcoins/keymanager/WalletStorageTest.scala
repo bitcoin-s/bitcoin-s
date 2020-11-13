@@ -168,6 +168,52 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       }
   }
 
+  it must "fail to change the aes password when given the wrong password" in {
+    walletConf: WalletAppConfig =>
+      assert(!walletConf.seedExists())
+
+      getAndWriteMnemonic(walletConf)
+
+      assert(walletConf.seedExists())
+      val seedPath = getSeedPath(walletConf)
+
+      assertThrows[RuntimeException](
+        WalletStorage.changeAesPassword(seedPath = seedPath,
+                                        oldPasswordOpt = badPassphrase,
+                                        newPasswordOpt = badPassphrase))
+  }
+
+  it must "fail to change the aes password when given no password" in {
+    walletConf: WalletAppConfig =>
+      assert(!walletConf.seedExists())
+
+      getAndWriteMnemonic(walletConf)
+
+      assert(walletConf.seedExists())
+      val seedPath = getSeedPath(walletConf)
+
+      assertThrows[RuntimeException](
+        WalletStorage.changeAesPassword(seedPath = seedPath,
+                                        oldPasswordOpt = None,
+                                        newPasswordOpt = badPassphrase))
+  }
+
+  it must "fail to set the aes password when given an oldPassword" in {
+    walletConf: WalletAppConfig =>
+      assert(!walletConf.seedExists())
+      val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
+      val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
+      val seedPath = getSeedPath(walletConf)
+      WalletStorage.writeMnemonicToDisk(seedPath, writtenMnemonic)
+
+      assert(walletConf.seedExists())
+
+      assertThrows[RuntimeException](
+        WalletStorage.changeAesPassword(seedPath = seedPath,
+                                        oldPasswordOpt = passphrase,
+                                        newPasswordOpt = badPassphrase))
+  }
+
   it must "read an encrypted mnemonic without a creation time" in {
     walletConf =>
       val badJson =

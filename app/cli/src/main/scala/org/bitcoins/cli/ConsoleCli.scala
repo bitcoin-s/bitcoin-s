@@ -896,9 +896,9 @@ object ConsoleCli {
                 case other => other
               }))
         ),
-      cmd("walletpassphrasechange")
+      cmd("keymanagerpassphrasechange")
         .action((_, conf) =>
-          conf.copy(command = WalletPassphraseChange(null, null)))
+          conf.copy(command = KeyManagerPassphraseChange(null, null)))
         .text("Changes the wallet passphrase")
         .children(
           arg[AesPassword]("oldpassphrase")
@@ -906,7 +906,7 @@ object ConsoleCli {
             .required()
             .action((oldPass, conf) =>
               conf.copy(command = conf.command match {
-                case wpc: WalletPassphraseChange =>
+                case wpc: KeyManagerPassphraseChange =>
                   wpc.copy(oldPassword = oldPass)
                 case other => other
               })),
@@ -915,13 +915,13 @@ object ConsoleCli {
             .required()
             .action((newPass, conf) =>
               conf.copy(command = conf.command match {
-                case wpc: WalletPassphraseChange =>
+                case wpc: KeyManagerPassphraseChange =>
                   wpc.copy(newPassword = newPass)
                 case other => other
               }))
         ),
-      cmd("walletpassphraseset")
-        .action((_, conf) => conf.copy(command = WalletPassphraseSet(null)))
+      cmd("keymanagerpassphraseset")
+        .action((_, conf) => conf.copy(command = KeyManagerPassphraseSet(null)))
         .text("Encrypts the wallet with the given passphrase")
         .children(
           arg[AesPassword]("passphrase")
@@ -929,7 +929,7 @@ object ConsoleCli {
             .required()
             .action((pass, conf) =>
               conf.copy(command = conf.command match {
-                case wps: WalletPassphraseSet =>
+                case wps: KeyManagerPassphraseSet =>
                   wps.copy(password = pass)
                 case other => other
               }))
@@ -1517,12 +1517,12 @@ object ConsoleCli {
       case SignPSBT(psbt) =>
         RequestParam("signpsbt", Seq(up.writeJs(psbt)))
 
-      case WalletPassphraseChange(oldPassword, newPassword) =>
-        RequestParam("walletpassphrasechange",
+      case KeyManagerPassphraseChange(oldPassword, newPassword) =>
+        RequestParam("keymanagerpassphrasechange",
                      Seq(up.writeJs(oldPassword), up.writeJs(newPassword)))
 
-      case WalletPassphraseSet(password) =>
-        RequestParam("walletpassphraseset", Seq(up.writeJs(password)))
+      case KeyManagerPassphraseSet(password) =>
+        RequestParam("keymanagerpassphraseset", Seq(up.writeJs(password)))
 
       // height
       case GetBlockCount => RequestParam("getblockcount")
@@ -1858,11 +1858,11 @@ object CliCommand {
   case class GetUnconfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends CliCommand
 
-  case class WalletPassphraseChange(
+  case class KeyManagerPassphraseChange(
       oldPassword: AesPassword,
       newPassword: AesPassword)
       extends CliCommand
-  case class WalletPassphraseSet(password: AesPassword) extends CliCommand
+  case class KeyManagerPassphraseSet(password: AesPassword) extends CliCommand
 
   // Node
   case object GetPeers extends CliCommand
