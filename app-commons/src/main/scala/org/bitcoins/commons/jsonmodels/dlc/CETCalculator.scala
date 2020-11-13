@@ -54,14 +54,15 @@ object CETCalculator {
       from: Long,
       to: Long,
       totalCollateral: Satoshis,
-      function: OutcomeValueFunction): Vector[CETRange] = {
+      function: OutcomeValueFunction,
+      rounding: RoundingIntervals): Vector[CETRange] = {
     var componentStart = from
     var (currentFunc, componentIndex) = function.componentFor(from)
     var prevFunc = currentFunc
 
     val rangeBuilder = Vector.newBuilder[CETRange]
     var currentRange: CETRange =
-      CETRange(from, currentFunc(from), totalCollateral)
+      CETRange(from, currentFunc(from, rounding), totalCollateral)
 
     var num = from
 
@@ -100,7 +101,7 @@ object CETCalculator {
                 rangeBuilder += currentRange
                 currentRange = StartTotal(componentStart, componentEnd)
             }
-          } else if (num != from && funcValue == prevFunc(num - 1)) {
+          } else if (num != from && funcValue == prevFunc(num - 1, rounding)) {
             currentRange match {
               case StartFunc(indexFrom, indexTo) =>
                 rangeBuilder += StartFunc(indexFrom, indexTo - 1)
@@ -133,7 +134,7 @@ object CETCalculator {
         processConstantComponents()
       }
 
-      val value = currentFunc(num)
+      val value = currentFunc(num, rounding)
       if (value <= Satoshis.zero) {
         currentRange match {
           case StartZero(indexFrom, _) =>
@@ -150,8 +151,9 @@ object CETCalculator {
         }
       } else if (
         num != from &&
-        (num - 1 >= componentStart && value == currentFunc(num - 1)) ||
-        (num - 1 < componentStart && value == prevFunc(num - 1))
+        (num - 1 >= componentStart && value == currentFunc(num - 1,
+                                                           rounding)) ||
+        (num - 1 < componentStart && value == prevFunc(num - 1, rounding))
       ) {
         currentRange match {
           case StartFunc(indexFrom, indexTo) =>
@@ -330,9 +332,10 @@ object CETCalculator {
       numDigits: Int,
       function: OutcomeValueFunction,
       totalCollateral: Satoshis,
+      rounding: RoundingIntervals,
       min: Long,
       max: Long): Vector[(Vector[Int], Satoshis)] = {
-    val ranges = splitIntoRanges(min, max, totalCollateral, function)
+    val ranges = splitIntoRanges(min, max, totalCollateral, function, rounding)
 
     ranges.flatMap { range =>
       range match {
@@ -360,10 +363,11 @@ object CETCalculator {
       base: Int,
       numDigits: Int,
       function: OutcomeValueFunction,
-      totalCollateral: Satoshis): Vector[(Vector[Int], Satoshis)] = {
+      totalCollateral: Satoshis,
+      rounding: RoundingIntervals): Vector[(Vector[Int], Satoshis)] = {
     val min = 0
     val max = Math.pow(base, numDigits).toLong - 1
 
-    computeCETs(base, numDigits, function, totalCollateral, min, max)
+    computeCETs(base, numDigits, function, totalCollateral, rounding, min, max)
   }
 }

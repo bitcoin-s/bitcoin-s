@@ -42,6 +42,11 @@ case class OutcomeValueFunction(points: Vector[OutcomeValuePoint]) {
     val (func, _) = componentFor(outcome)
     func(outcome)
   }
+
+  def apply(outcome: BigDecimal, rounding: RoundingIntervals): Satoshis = {
+    val (func, _) = componentFor(outcome)
+    func(outcome, rounding)
+  }
 }
 
 /** A point on a DLC payout curve to be used for interpolation
@@ -66,6 +71,10 @@ sealed trait OutcomeValueFunctionComponent {
   require(midpoints.forall(!_.isEndpoint), s"$midpoints contained an endpoint")
 
   def apply(outcome: BigDecimal): Satoshis
+
+  def apply(outcome: BigDecimal, rounding: RoundingIntervals): Satoshis = {
+    rounding.round(outcome, apply(outcome))
+  }
 
   /** Returns the largest Long less than or equal to bd (floor function) */
   protected def bigDecimalSats(bd: BigDecimal): Satoshis = {

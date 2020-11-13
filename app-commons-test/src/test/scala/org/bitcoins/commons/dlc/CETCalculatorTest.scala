@@ -4,7 +4,8 @@ import org.bitcoins.commons.jsonmodels.dlc.CETCalculator._
 import org.bitcoins.commons.jsonmodels.dlc.{
   CETCalculator,
   OutcomeValueFunction,
-  OutcomeValuePoint
+  OutcomeValuePoint,
+  RoundingIntervals
 }
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.testkit.util.BitcoinSUnitTest
@@ -50,7 +51,11 @@ class CETCalculatorTest extends BitcoinSUnitTest {
       StartFunc(109, 110)
     )
 
-    val ranges = CETCalculator.splitIntoRanges(0, 110, Satoshis(10000), func)
+    val ranges = CETCalculator.splitIntoRanges(0,
+                                               110,
+                                               Satoshis(10000),
+                                               func,
+                                               RoundingIntervals.noRounding)
     assert(ranges == expected)
   }
 
@@ -338,13 +343,14 @@ class CETCalculatorTest extends BitcoinSUnitTest {
         firstTotalRange ++
         fourthFuncRange
 
-    val cetOutcomes = CETCalculator.computeCETs(base = 10,
-                                                numDigits = 3,
-                                                function = func,
-                                                totalCollateral =
-                                                  Satoshis(10000),
-                                                min = 0,
-                                                max = 110)
+    val cetOutcomes =
+      CETCalculator.computeCETs(base = 10,
+                                numDigits = 3,
+                                function = func,
+                                totalCollateral = Satoshis(10000),
+                                rounding = RoundingIntervals.noRounding,
+                                min = 0,
+                                max = 110)
     assert(cetOutcomes == expected)
   }
 }

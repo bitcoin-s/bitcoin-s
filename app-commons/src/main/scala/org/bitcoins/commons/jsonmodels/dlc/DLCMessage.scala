@@ -301,7 +301,8 @@ object DLCMessage {
       CETCalculator.computeCETs(base,
                                 numDigits,
                                 outcomeValueFunc,
-                                totalCollateral)
+                                totalCollateral,
+                                RoundingIntervals.noRounding)
 
     override def apply(outcome: DLCOutcomeType): Satoshis = {
       outcome match {
