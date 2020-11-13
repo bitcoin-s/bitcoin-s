@@ -3,6 +3,7 @@ package org.bitcoins.node
 import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
@@ -54,16 +55,18 @@ case class NeutrinoNode(
     * @return
     */
   override def sync(): Future[Unit] = {
+    val blockchainsF =
+      BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
     for {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
       filterHeaderCount <- chainApi.getFilterHeaderCount()
       filterCount <- chainApi.getFilterCount()
       peerMsgSender <- peerMsgSenderF
+      blockchains <- blockchainsF
     } yield {
       // Get all of our cached headers in case of a reorg
-      val cachedHeaders =
-        chainApi.blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      val cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
       peerMsgSender.sendGetHeadersMessage(cachedHeaders)
 
       // If we have started syncing filters headers

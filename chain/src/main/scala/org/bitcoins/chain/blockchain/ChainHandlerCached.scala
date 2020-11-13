@@ -6,7 +6,9 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.core.api.chain.db.BlockHeaderDb
+import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
+import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterHeaderDb}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,7 +22,7 @@ case class ChainHandlerCached(
     override val blockHeaderDAO: BlockHeaderDAO,
     override val filterHeaderDAO: CompactFilterHeaderDAO,
     override val filterDAO: CompactFilterDAO,
-    override val blockchains: Vector[Blockchain],
+    blockchains: Vector[Blockchain],
     override val blockFilterCheckpoints: Map[
       DoubleSha256DigestBE,
       DoubleSha256DigestBE])(implicit
@@ -29,7 +31,6 @@ case class ChainHandlerCached(
     extends ChainHandler(blockHeaderDAO,
                          filterHeaderDAO,
                          filterDAO,
-                         blockchains,
                          blockFilterCheckpoints) {
 
   /** Gets the best block header from the given [[blockchains]] parameter */
@@ -37,6 +38,23 @@ case class ChainHandlerCached(
     Future {
       getBestBlockHeaderHelper(blockchains)
     }
+  }
+
+  override def processHeaders(
+      headers: Vector[BlockHeader]): Future[ChainApi] = {
+    processHeadersWithBlockchains(headers = headers, blockchains = blockchains)
+  }
+
+  override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] = {
+    getBestFilterHeaderWithChains(blockchains)
+  }
+
+  override def nextBlockHeaderBatchRange(
+      prevStopHash: DoubleSha256DigestBE,
+      batchSize: Int): Future[Option[FilterSyncMarker]] = {
+    nextBlockHeaderBatchRangeWithChains(prevStopHash = prevStopHash,
+                                        batchSize = batchSize,
+                                        blockchains = blockchains)
   }
 }
 

@@ -26,7 +26,6 @@ import scala.concurrent._
   * @param blockHeaderDAO block header DB
   * @param filterHeaderDAO filter header DB
   * @param filterDAO filter DB
-  * @param blockchains current blockchains
   * @param blockFilterCheckpoints compact filter checkpoints for filter header verification in form of a map (block header hash -> filter header hash)
   * @param chainConfig config file
   */
@@ -34,7 +33,6 @@ class ChainHandler(
     val blockHeaderDAO: BlockHeaderDAO,
     val filterHeaderDAO: CompactFilterHeaderDAO,
     val filterDAO: CompactFilterDAO,
-    val blockchains: Vector[Blockchain],
     val blockFilterCheckpoints: Map[
       DoubleSha256DigestBE,
       DoubleSha256DigestBE])(implicit
@@ -101,9 +99,9 @@ class ChainHandler(
     }
   }
 
-  /** @inheritdoc */
-  override def processHeaders(
-      headers: Vector[BlockHeader]): Future[ChainApi] = {
+  protected def processHeadersWithBlockchains(
+      headers: Vector[BlockHeader],
+      blockchains: Vector[Blockchain]): Future[ChainApi] = {
     if (headers.isEmpty) {
       Future.successful(this)
     } else {
@@ -126,7 +124,6 @@ class ChainHandler(
       val newChainHandler = ChainHandler(blockHeaderDAO,
                                          filterHeaderDAO,
                                          filterDAO,
-                                         blockchains = chains,
                                          blockFilterCheckpoints =
                                            blockFilterCheckpoints)
 
@@ -152,6 +149,17 @@ class ChainHandler(
     }
   }
 
+  /** @inheritdoc */
+  override def processHeaders(
+      headers: Vector[BlockHeader]): Future[ChainApi] = {
+    val blockchainsF = blockHeaderDAO.getBlockchains()
+    for {
+      blockchains <- blockchainsF
+      newChainApi <- processHeadersWithBlockchains(headers = headers,
+                                                   blockchains = blockchains)
+    } yield newChainApi
+  }
+
   /**
     * @inheritdoc
     */
@@ -159,19 +167,19 @@ class ChainHandler(
     getBestBlockHeader().map(_.hashBE)
   }
 
-  /** @inheritdoc */
-  override def nextBlockHeaderBatchRange(
+  protected def nextBlockHeaderBatchRangeWithChains(
       prevStopHash: DoubleSha256DigestBE,
-      batchSize: Int): Future[Option[FilterSyncMarker]] = {
+      batchSize: Int,
+      blockchains: Vector[Blockchain]): Future[Option[FilterSyncMarker]] = {
     for {
       prevBlockHeaderOpt <- getHeader(prevStopHash)
       headerOpt <- prevBlockHeaderOpt match {
         case Some(_) =>
-          findNextHeader(prevBlockHeaderOpt, batchSize)
+          findNextHeader(prevBlockHeaderOpt, batchSize, blockchains)
         case None =>
           if (prevStopHash == DoubleSha256DigestBE.empty) {
             for {
-              next <- findNextHeader(None, batchSize)
+              next <- findNextHeader(None, batchSize, blockchains)
             } yield next
           } else {
             Future.successful(None)
@@ -182,12 +190,26 @@ class ChainHandler(
     }
   }
 
+  /** @inheritdoc */
+  override def nextBlockHeaderBatchRange(
+      prevStopHash: DoubleSha256DigestBE,
+      batchSize: Int): Future[Option[FilterSyncMarker]] = {
+    val blockchainsF = blockHeaderDAO.getBlockchains()
+    for {
+      blockchains <- blockchainsF
+      syncMarkerOpt <- nextBlockHeaderBatchRangeWithChains(prevStopHash,
+                                                           batchSize,
+                                                           blockchains)
+    } yield syncMarkerOpt
+  }
+
   /** Finds the next header in the chain. Uses chain work to break ties
     * returning only the header in the chain with the most work
     */
   private def findNextHeader(
       prevBlockHeaderOpt: Option[BlockHeaderDb],
-      batchSize: Int): Future[Option[FilterSyncMarker]] = {
+      batchSize: Int,
+      blockchains: Vector[Blockchain]): Future[Option[FilterSyncMarker]] = {
 
     val chainsF = prevBlockHeaderOpt match {
       case None =>
@@ -436,7 +458,6 @@ class ChainHandler(
   override def processCheckpoints(
       checkpoints: Vector[DoubleSha256DigestBE],
       blockHash: DoubleSha256DigestBE): Future[ChainApi] = {
-
     val blockHeadersF: Future[Seq[BlockHeaderDb]] = Future
       .traverse(checkpoints.indices.toVector) { i =>
         blockHeaderDAO.getAtHeight(i * 1000)
@@ -457,10 +478,8 @@ class ChainHandler(
       ChainHandler(blockHeaderDAO = blockHeaderDAO,
                    filterHeaderDAO = filterHeaderDAO,
                    filterDAO = filterDAO,
-                   blockchains = blockchains,
                    blockFilterCheckpoints = updatedCheckpoints)
     }
-
   }
 
   /** @inheritdoc */
@@ -491,8 +510,9 @@ class ChainHandler(
       height: Int): Future[Vector[CompactFilterHeaderDb]] =
     filterHeaderDAO.getAtHeight(height)
 
-  /** @inheritdoc */
-  override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] = {
+  protected def getBestFilterHeaderWithChains(
+      blockchains: Vector[Blockchain]): Future[
+    Option[CompactFilterHeaderDb]] = {
     val bestFilterHeadersInChain: Future[Option[CompactFilterHeaderDb]] = {
       val bestChainOpt = blockchains.maxByOption(_.tip.chainWork)
       bestChainOpt match {
@@ -512,6 +532,17 @@ class ChainHandler(
         }
     } yield {
       result
+    }
+  }
+
+  /** @inheritdoc */
+  override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] = {
+    val blockchainsF = blockHeaderDAO.getBlockchains()
+    for {
+      blockchains <- blockchainsF
+      filterHeaderOpt <- getBestFilterHeaderWithChains(blockchains)
+    } yield {
+      filterHeaderOpt
     }
   }
 
@@ -850,14 +881,12 @@ class ChainHandler(
       maxHeight <- maxHeightF
       start <- startF
       _ <- runRecalculateChainWork(maxHeight, start.head)
-      newBlockchains <- blockHeaderDAO.getBlockchains()
     } yield {
       logger.info("Finished calculating chain work")
       ChainHandler(
         blockHeaderDAO = blockHeaderDAO,
         filterHeaderDAO = filterHeaderDAO,
         filterDAO = filterDAO,
-        blockchains = newBlockchains,
         blockFilterCheckpoints = blockFilterCheckpoints
       )
     }
@@ -881,13 +910,11 @@ class ChainHandler(
       blockHeaderDAO: BlockHeaderDAO = blockHeaderDAO,
       filterHeaderDAO: CompactFilterHeaderDAO = filterHeaderDAO,
       filterDAO: CompactFilterDAO = filterDAO,
-      blockchains: Vector[Blockchain] = blockchains,
       blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE] =
         blockFilterCheckpoints): ChainHandler = {
     new ChainHandler(blockHeaderDAO = blockHeaderDAO,
                      filterHeaderDAO = filterHeaderDAO,
                      filterDAO = filterDAO,
-                     blockchains = blockchains,
                      blockFilterCheckpoints = blockFilterCheckpoints)
   }
 }
@@ -898,7 +925,6 @@ object ChainHandler {
       blockHeaderDAO: BlockHeaderDAO,
       filterHeaderDAO: CompactFilterHeaderDAO,
       filterDAO: CompactFilterDAO,
-      blockchains: Vector[Blockchain],
       blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE])(
       implicit
       ec: ExecutionContext,
@@ -906,7 +932,6 @@ object ChainHandler {
     new ChainHandler(blockHeaderDAO,
                      filterHeaderDAO,
                      filterDAO,
-                     blockchains,
                      blockFilterCheckpoints)
   }
 
@@ -919,27 +944,24 @@ object ChainHandler {
       filterDAO: CompactFilterDAO)(implicit
       ec: ExecutionContext,
       chainConfig: ChainAppConfig): Future[ChainHandler] = {
-    val bestChainsF = blockHeaderDAO.getBlockchains()
 
-    bestChainsF.map(chains =>
+    Future.successful {
       new ChainHandler(blockHeaderDAO = blockHeaderDAO,
                        filterHeaderDAO = filterHeaderDAO,
                        filterDAO = filterDAO,
-                       blockchains = chains,
-                       blockFilterCheckpoints = Map.empty))
+                       blockFilterCheckpoints = Map.empty)
+    }
   }
 
   def apply(
       blockHeaderDAO: BlockHeaderDAO,
       filterHeaderDAO: CompactFilterHeaderDAO,
-      filterDAO: CompactFilterDAO,
-      blockchains: Blockchain)(implicit
+      filterDAO: CompactFilterDAO)(implicit
       ec: ExecutionContext,
       chainConfig: ChainAppConfig): ChainHandler = {
     new ChainHandler(blockHeaderDAO = blockHeaderDAO,
                      filterHeaderDAO = filterHeaderDAO,
                      filterDAO = filterDAO,
-                     blockchains = Vector(blockchains),
                      blockFilterCheckpoints = Map.empty)
   }
 }
