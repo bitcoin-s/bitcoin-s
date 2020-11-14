@@ -125,7 +125,6 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
         blockHeaderDAO,
         compactFilterHeaderDAO,
         compactFilterDAO,
-        blockchains = Vector.empty,
         blockFilterCheckpoints = Map.empty)
 
     ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)
@@ -174,7 +173,7 @@ val balanceF: Future[CurrencyUnit] = for {
     wallet <- walletF
     (tx, blockhash) <- transactionF
     _ <- wallet.processTransaction(tx, blockhash)
-    balance <- wallet.getBalance
+    balance <- wallet.getBalance()
 } yield balance
 
 balanceF.foreach { balance =>
