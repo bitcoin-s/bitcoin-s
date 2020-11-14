@@ -164,6 +164,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
       val c = DatabaseConfig.forConfig[JdbcProfile](path =
                                                       s"bitcoin-s.$moduleName",
                                                     config = config)
+      logger.debug(s"Resolved DB config: ${ConfigOps(c.config).asReadableJson}")
       c
     } match {
       case Success(value) =>
