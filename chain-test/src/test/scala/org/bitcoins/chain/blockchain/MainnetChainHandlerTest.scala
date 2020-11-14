@@ -1,9 +1,11 @@
 package org.bitcoins.chain.blockchain
 
+import org.bitcoins.chain
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.chain.{
   ChainDbUnitTest,
   ChainTestUtil,
@@ -207,13 +209,14 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
         isMissingWork <- chainHandler.isMissingChainWork
         _ = assert(isMissingWork)
         newHandler <- chainHandler.recalculateChainWork
+        blockchains <- chainHandler.blockHeaderDAO.getBlockchains()
         headerDb <- newHandler.getBestBlockHeader()
       } yield {
         assert(headerDb.height == headersWithNoWork.head.height)
-        /*        assert(
-          newHandler.blockchains.head
-            .groupBy(_.hashBE)
-            .forall(_._2.size == 1))*/
+        val grouped = blockchains.head.groupBy(_.hashBE)
+        assert(
+          grouped
+            .forall(_._2.size == 1))
         assert(headerDb.hashBE == headersWithNoWork.head.hashBE)
         assert(headerDb.chainWork == BigInt(12885098501L))
       }
