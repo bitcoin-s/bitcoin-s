@@ -80,11 +80,12 @@ class ChainHandler(
   }
 
   override def getBestBlockHeader(): Future[BlockHeaderDb] = {
-    val blockchainsF = blockHeaderDAO.getBlockchains()
+    val tipsF: Future[Vector[BlockHeaderDb]] = blockHeaderDAO.chainTips
     for {
-      blockchains <- blockchainsF
+      tips <- tipsF
+      chains = tips.map(t => Blockchain.fromHeaders(Vector(t)))
     } yield {
-      getBestBlockHeaderHelper(blockchains)
+      getBestBlockHeaderHelper(chains)
     }
   }
 
@@ -920,6 +921,10 @@ class ChainHandler(
                      filterDAO = filterDAO,
                      blockFilterCheckpoints = blockFilterCheckpoints)
   }
+
+  def toChainHandlerCached: Future[ChainHandlerCached] = {
+    ChainHandler.toChainHandlerCached(this)
+  }
 }
 
 object ChainHandler {
@@ -963,5 +968,21 @@ object ChainHandler {
                      filterHeaderDAO = filterHeaderDAO,
                      filterDAO = filterDAO,
                      blockFilterCheckpoints = Map.empty)
+  }
+
+  /** Converts a [[ChainHandler]] to [[ChainHandlerCached]] by calling [[BlockHeaderDAO.getBlockchains()]] */
+  def toChainHandlerCached(chainHandler: ChainHandler)(implicit
+      ec: ExecutionContext): Future[ChainHandlerCached] = {
+    val blockchainsF = chainHandler.blockHeaderDAO.getBlockchains()
+    for {
+      blockchains <- blockchainsF
+      cached = ChainHandlerCached.apply(
+        blockHeaderDAO = chainHandler.blockHeaderDAO,
+        filterHeaderDAO = chainHandler.filterHeaderDAO,
+        filterDAO = chainHandler.filterDAO,
+        blockchains = blockchains,
+        blockFilterCheckpoints = chainHandler.blockFilterCheckpoints
+      )(chainHandler.chainConfig, ec)
+    } yield cached
   }
 }
