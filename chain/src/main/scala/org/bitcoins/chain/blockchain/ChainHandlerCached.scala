@@ -42,7 +42,7 @@ case class ChainHandlerCached(
 
   override def processHeaders(
       headers: Vector[BlockHeader]): Future[ChainApi] = {
-    processHeadersWithBlockchains(headers = headers, blockchains = blockchains)
+    processHeadersWithChains(headers = headers, blockchains = blockchains)
   }
 
   override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] = {

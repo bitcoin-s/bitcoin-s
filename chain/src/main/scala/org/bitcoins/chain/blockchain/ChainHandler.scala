@@ -108,22 +108,28 @@ class ChainHandler(
     }
   }
 
-  protected def processHeadersWithBlockchains(
+  protected def processHeadersWithChains(
       headers: Vector[BlockHeader],
       blockchains: Vector[Blockchain]): Future[ChainApi] = {
     if (headers.isEmpty) {
       Future.successful(this)
     } else {
+      val headersWeAlreadyHave = blockchains.flatMap(_.headers)
+
+      //if we already have the header don't process it again
+      val filteredHeaders = headers.filterNot(headersWeAlreadyHave.contains(_))
+
       val blockchainUpdates: Vector[BlockchainUpdate] = {
-        Blockchain.connectHeadersToChains(headers, blockchains)
+        Blockchain.connectHeadersToChains(headers = filteredHeaders,
+                                          blockchains = blockchains)
       }
+
+      val successfullyValidatedHeaders = blockchainUpdates
+        .flatMap(_.successfulHeaders)
 
       val headersToBeCreated = {
         // During reorgs, we can be sent a header twice
-        blockchainUpdates
-          .flatMap(_.successfulHeaders)
-          .distinct
-          .filterNot(blockchains.flatMap(_.headers).contains)
+        successfullyValidatedHeaders.distinct
       }
 
       val chains = blockchainUpdates.map(_.blockchain)
@@ -138,15 +144,16 @@ class ChainHandler(
 
       createdF.map { headers =>
         if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
-          headers.reverseIterator.foldLeft(FutureUtil.unit) { (acc, header) =>
-            for {
-              _ <- acc
-              _ <-
-                chainConfig.chainCallbacks
-                  .executeOnBlockHeaderConnectedCallbacks(logger,
-                                                          header.height,
-                                                          header.blockHeader)
-            } yield ()
+          headersToBeCreated.reverseIterator.foldLeft(FutureUtil.unit) {
+            (acc, header) =>
+              for {
+                _ <- acc
+                _ <-
+                  chainConfig.chainCallbacks
+                    .executeOnBlockHeaderConnectedCallbacks(logger,
+                                                            header.height,
+                                                            header.blockHeader)
+              } yield ()
           }
         }
         chains.foreach { c =>
@@ -164,8 +171,8 @@ class ChainHandler(
     val blockchainsF = blockHeaderDAO.getBlockchains()
     for {
       blockchains <- blockchainsF
-      newChainApi <- processHeadersWithBlockchains(headers = headers,
-                                                   blockchains = blockchains)
+      newChainApi <-
+        processHeadersWithChains(headers = headers, blockchains = blockchains)
     } yield newChainApi
   }
 
