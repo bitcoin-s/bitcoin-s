@@ -6,6 +6,7 @@ import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.hd.HDPurpose
+import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
@@ -61,10 +62,13 @@ case class DLCOracleAppConfig(
 
       if (migrationsApplied() == 2) {
         logger.debug(s"Doing V2 Migration")
+
+        val dummyMigrationTLV = EventDescriptorTLV("fdd806090001000564756d6d79")
+
         val eventDAO = EventDAO()(ec, appConfig)
         for {
-          // get all events
-          allEvents <- eventDAO.findAll()
+          // get all old events
+          allEvents <- eventDAO.findByEventDescriptor(dummyMigrationTLV)
           allOutcomes <- EventOutcomeDAO()(ec, appConfig).findAll()
 
           outcomesByNonce = allOutcomes.groupBy(_.nonce)
