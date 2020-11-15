@@ -126,9 +126,7 @@ final case class AesPassword private (private val value: String)
     key
   }
 
-  override def toStringSensitive: String = {
-    ByteVector.encodeUtf8(value).toString
-  }
+  override def toStringSensitive: String = value
 }
 
 object AesPassword extends StringFactory[AesPassword] {

@@ -57,6 +57,9 @@ object Picklers {
   implicit val instantPickler: ReadWriter[Instant] =
     readwriter[Long].bimap(_.getEpochSecond, Instant.ofEpochSecond)
 
+  implicit val aesPasswordPickler: ReadWriter[AesPassword] =
+    readwriter[String].bimap(_.toStringSensitive, AesPassword.fromString)
+
   implicit val sha256DigestBEPickler: ReadWriter[Sha256DigestBE] =
     readwriter[String].bimap(_.hex, Sha256DigestBE.fromHex)
 

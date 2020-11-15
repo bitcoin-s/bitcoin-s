@@ -33,6 +33,8 @@ import org.bitcoins.crypto.{
   Sha256Hash160Digest
 }
 import org.bitcoins.node.Node
+import org.bitcoins.server.BitcoinSAppConfig.implicitToWalletConf
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.wallet.MockWalletApi
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
@@ -44,6 +46,9 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
+
+  implicit val conf: BitcoinSAppConfig =
+    BitcoinSTestAppConfig.getSpvTestConfig()
 
   // the genesis address
   val testAddressStr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
