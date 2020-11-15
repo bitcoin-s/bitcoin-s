@@ -10,12 +10,16 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
 import org.bitcoins.crypto.NetworkElement
+import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
+case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
+    system: ActorSystem,
+    walletConf: WalletAppConfig)
     extends ServerRoute {
   import system.dispatcher
 
@@ -426,5 +430,32 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit system: ActorSystem)
         }
       }
 
+    case ServerCommand("keymanagerpassphrasechange", arr) =>
+      KeyManagerPassphraseChange.fromJsArr(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(KeyManagerPassphraseChange(oldPassword, newPassword)) =>
+          complete {
+            val path = walletConf.seedPath
+            WalletStorage.changeAesPassword(path,
+                                            Some(oldPassword),
+                                            Some(newPassword))
+
+            Server.httpSuccess(ujson.Null)
+          }
+      }
+
+    case ServerCommand("keymanagerpassphraseset", arr) =>
+      KeyManagerPassphraseSet.fromJsArr(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(KeyManagerPassphraseSet(password)) =>
+          complete {
+            val path = walletConf.seedPath
+            WalletStorage.changeAesPassword(path, None, Some(password))
+
+            Server.httpSuccess(ujson.Null)
+          }
+      }
   }
 }

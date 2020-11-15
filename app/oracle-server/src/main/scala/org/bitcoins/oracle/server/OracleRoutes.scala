@@ -6,12 +6,16 @@ import akka.http.scaladsl.server._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.dlc.oracle._
+import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
+import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.server._
 import ujson._
 
 import scala.util.{Failure, Success}
 
-case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
+case class OracleRoutes(oracle: DLCOracle)(implicit
+    system: ActorSystem,
+    conf: DLCOracleAppConfig)
     extends ServerRoute {
   import system.dispatcher
 
@@ -239,6 +243,34 @@ case class OracleRoutes(oracle: DLCOracle)(implicit system: ActorSystem)
               case None | Some(_: PendingOracleEvent) =>
                 Server.httpSuccess(ujson.Null)
             }
+          }
+      }
+
+    case ServerCommand("keymanagerpassphrasechange", arr) =>
+      KeyManagerPassphraseChange.fromJsArr(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(KeyManagerPassphraseChange(oldPassword, newPassword)) =>
+          complete {
+            val path = conf.seedPath
+            WalletStorage.changeAesPassword(path,
+                                            Some(oldPassword),
+                                            Some(newPassword))
+
+            Server.httpSuccess(ujson.Null)
+          }
+      }
+
+    case ServerCommand("keymanagerpassphraseset", arr) =>
+      KeyManagerPassphraseSet.fromJsArr(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(KeyManagerPassphraseSet(password)) =>
+          complete {
+            val path = conf.seedPath
+            WalletStorage.changeAesPassword(path, None, Some(password))
+
+            Server.httpSuccess(ujson.Null)
           }
       }
   }

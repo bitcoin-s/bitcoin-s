@@ -270,6 +270,8 @@ class BitcoinSServerMain(override val args: Array[String])
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
+    implicit val walletConf: WalletAppConfig = conf.walletConf
+
     val walletRoutes = WalletRoutes(wallet)
     val nodeRoutes = NodeRoutes(nodeApi)
     val chainRoutes = ChainRoutes(chainApi)
