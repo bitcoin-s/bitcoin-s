@@ -73,8 +73,13 @@ class ChainHandler(
         chain.tip
       case chain +: rest =>
         logger.warn(
-          s"We have multiple competing blockchains: ${(chain +: rest).map(_.tip.hashBE.hex).mkString(", ")}")
-        chain.tip
+          s"We have multiple competing blockchains with same work, selecting by time: ${(chain +: rest)
+            .map(_.tip.hashBE.hex)
+            .mkString(", ")}")
+        //since we have same chainwork, just take the oldest tip
+        //as that's "more likely" to have been propagated first
+        //and had more miners building on top of it
+        chainsByWork.sortBy(_.tip.time).head.tip
     }
     bestHeader
   }

@@ -24,7 +24,7 @@ import org.bitcoins.testkit.chain.{
   ChainUnitTest
 }
 import org.bitcoins.testkit.util.FileUtil
-import org.scalatest.FutureOutcome
+import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
 import scala.concurrent.{Future, Promise}
@@ -108,10 +108,13 @@ class ChainHandlerTest extends ChainDbUnitTest {
       // check that header B is the leader
       val assertBBestHashF = for {
         chainHandler <- chainHandlerCF
-        headerB <- newHeaderBF
+        newHeaderB <- newHeaderBF
         bestHash <- chainHandler.getBestBlockHash()
+        newHeaderC <- newHeaderCF
       } yield {
-        assert(bestHash == headerB.hashBE)
+        checkReorgHeaders(header1 = newHeaderB,
+                          header2 = newHeaderC,
+                          bestHash = bestHash)
       }
 
       // build a new header D off of C which was seen later
@@ -359,13 +362,16 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val assert1F = for {
         chainHandler <- chainHandlerF
         newHeaderB <- newHeaderBF
+        newHeaderC <- newHeaderCF
         blockHeaderBatchOpt <- chainHandler.nextBlockHeaderBatchRange(
           prevStopHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
           batchSize = batchSize)
       } yield {
         assert(blockHeaderBatchOpt.isDefined)
         val marker = blockHeaderBatchOpt.get
-        assert(newHeaderB.hash == marker.stopBlockHash)
+        checkReorgHeaders(header1 = newHeaderB,
+                          header2 = newHeaderC,
+                          bestHash = marker.stopBlockHash.flip)
         assert(newHeaderB.height == marker.startHeight)
       }
 
@@ -602,5 +608,22 @@ class ChainHandlerTest extends ChainDbUnitTest {
         _ <- chainHandler.processHeader(newValidHeader.blockHeader)
         result <- resultP.future
       } yield assert(result)
+  }
+
+  /** Checks that
+    * 1. The header1 & header2 have the same chainwork
+    * 2. Checks that header1 and header2 have the same time
+    * 3. Checks bestHash is one of header1.hashBE or header2.hashBE
+    */
+  private def checkReorgHeaders(
+      header1: BlockHeaderDb,
+      header2: BlockHeaderDb,
+      bestHash: DoubleSha256DigestBE): Assertion = {
+    assert(header1.chainWork == header2.chainWork)
+    assert(header1.time == header2.time)
+    //if both chainwork and time are the same, we are left to
+    //how the database serves up the data
+    //just make sure it is one of the two headers
+    assert(Vector(header1.hashBE, header2.hashBE).contains(bestHash))
   }
 }
