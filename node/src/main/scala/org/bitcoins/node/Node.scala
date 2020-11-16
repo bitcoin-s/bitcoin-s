@@ -2,7 +2,7 @@ package org.bitcoins.node
 
 import akka.Done
 import akka.actor.ActorSystem
-import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
@@ -58,10 +58,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     */
   def chainApiFromDb()(implicit
-      executionContext: ExecutionContext): ChainHandler = {
-    ChainHandler.fromDatabase(BlockHeaderDAO(),
-                              CompactFilterHeaderDAO(),
-                              CompactFilterDAO())
+      executionContext: ExecutionContext): Future[ChainHandlerCached] = {
+    ChainHandlerCached.fromDatabase(BlockHeaderDAO(),
+                                    CompactFilterHeaderDAO(),
+                                    CompactFilterDAO())
   }
 
   /** Unlike our chain api, this is cached inside our node
@@ -69,16 +69,20 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * the [[ChainApi chain api]] is updated inside of the p2p client
     */
   lazy val clientF: Future[P2PClient] = {
-    val chainApi = chainApiFromDb()
-    val peerMsgRecv: PeerMessageReceiver =
-      PeerMessageReceiver.newReceiver(chainApi = chainApi,
-                                      peer = peer,
-                                      callbacks = nodeCallbacks,
-                                      initialSyncDone = initialSyncDone)
-    val p2p = P2PClient(context = system,
-                        peer = peer,
-                        peerMessageReceiver = peerMsgRecv)
-    Future.successful(p2p)
+    val chainApiF = chainApiFromDb()
+    for {
+      chainApi <- chainApiF
+    } yield {
+      val peerMsgRecv: PeerMessageReceiver =
+        PeerMessageReceiver.newReceiver(chainApi = chainApi,
+                                        peer = peer,
+                                        callbacks = nodeCallbacks,
+                                        initialSyncDone = initialSyncDone)
+      val p2p = P2PClient(context = system,
+                          peer = peer,
+                          peerMessageReceiver = peerMsgRecv)
+      p2p
+    }
   }
 
   lazy val peerMsgSenderF: Future[PeerMessageSender] = {
@@ -118,7 +122,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     for {
       _ <- nodeAppConfig.start()
       // get chainApi so we don't need to call chainApiFromDb on every call
-      chainApi = chainApiFromDb()
+      chainApi <- chainApiFromDb()
       node <- {
         val isInitializedF = for {
           _ <- peerMsgSenderF.map(_.connect())
@@ -187,8 +191,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def sync(): Future[Unit] = {
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainAppConfig).getBlockchains()
-    val chainApi = chainApiFromDb()
     for {
+      chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
       blockchains <- blockchainsF
     } yield {
@@ -250,18 +254,18 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   /** Gets the height of the given block */
   override def getBlockHeight(
       blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
-    chainApiFromDb().getBlockHeight(blockHash)
+    chainApiFromDb().flatMap(_.getBlockHeight(blockHash))
 
   /** Gets the hash of the block that is what we consider "best" */
   override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
-    chainApiFromDb().getBestBlockHash()
+    chainApiFromDb().flatMap(_.getBestBlockHash())
 
   /** Gets number of confirmations for the given block hash */
   def getNumberOfConfirmations(
       blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
-    chainApiFromDb().getNumberOfConfirmations(blockHashOpt)
+    chainApiFromDb().flatMap(_.getNumberOfConfirmations(blockHashOpt))
 
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
-    chainApiFromDb().epochSecondToBlockHeight(time)
+    chainApiFromDb().flatMap(_.epochSecondToBlockHeight(time))
 
 }
