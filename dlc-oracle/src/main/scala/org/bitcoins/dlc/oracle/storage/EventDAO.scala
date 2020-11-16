@@ -46,6 +46,13 @@ case class EventDAO()(implicit
     findAll().map(_.filter(_.attestationOpt.isEmpty))
   }
 
+  def findByEventDescriptor(
+      descriptorTLV: EventDescriptorTLV): Future[Vector[EventDb]] = {
+    val query = table.filter(_.eventDescriptorTLV === descriptorTLV)
+
+    safeDatabase.runVec(query.result.transactionally)
+  }
+
   def findByOracleEventTLV(
       oracleEvent: OracleEventTLV): Future[Vector[EventDb]] = {
     val query = oracleEvent match {
