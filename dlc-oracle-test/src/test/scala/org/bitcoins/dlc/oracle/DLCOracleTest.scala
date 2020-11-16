@@ -71,6 +71,20 @@ class DLCOracleTest extends DLCOracleFixture {
       }
   }
 
+  it must "create the same event twice and list them" in {
+    dlcOracle: DLCOracle =>
+      val time = futureTime
+
+      for {
+        _ <- dlcOracle.createNewEvent("test", time, testDescriptor)
+        _ <- dlcOracle.createNewEvent("test2", time, testDescriptor)
+        events <- dlcOracle.listEvents()
+      } yield {
+        assert(events.size == 2)
+        assert(events.forall(_.eventDescriptorTLV == testDescriptor))
+      }
+  }
+
   it must "create an enum new event and get its details" in {
     dlcOracle: DLCOracle =>
       val time = futureTime

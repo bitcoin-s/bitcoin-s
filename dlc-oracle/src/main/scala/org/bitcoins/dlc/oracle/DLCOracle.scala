@@ -90,7 +90,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
   def listEvents(): Future[Vector[OracleEvent]] = {
     eventDAO.findAll().map { eventDbs =>
-      val events = eventDbs.groupBy(_.eventDescriptorTLV)
+      val events = eventDbs.groupBy(_.announcementSignature)
       events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
     }
   }
