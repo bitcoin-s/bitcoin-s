@@ -117,7 +117,8 @@ class ChainHandler(
       val headersWeAlreadyHave = blockchains.flatMap(_.headers)
 
       //if we already have the header don't process it again
-      val filteredHeaders = headers.filterNot(headersWeAlreadyHave.contains(_))
+      val filteredHeaders = headers.filterNot(h =>
+        headersWeAlreadyHave.exists(_.hashBE == h.hashBE))
 
       val blockchainUpdates: Vector[BlockchainUpdate] = {
         Blockchain.connectHeadersToChains(headers = filteredHeaders,
@@ -988,7 +989,7 @@ object ChainHandler {
     val blockchainsF = chainHandler.blockHeaderDAO.getBlockchains()
     for {
       blockchains <- blockchainsF
-      cached = ChainHandlerCached.apply(
+      cached = ChainHandlerCached(
         blockHeaderDAO = chainHandler.blockHeaderDAO,
         filterHeaderDAO = chainHandler.filterHeaderDAO,
         filterDAO = chainHandler.filterDAO,
