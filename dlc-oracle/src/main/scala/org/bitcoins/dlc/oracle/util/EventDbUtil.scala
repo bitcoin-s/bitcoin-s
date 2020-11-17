@@ -18,8 +18,7 @@ trait EventDbUtil {
   def toEventOutcomeDbs(
       descriptor: EventDescriptorTLV,
       nonces: Vector[SchnorrNonce],
-      signingVersion: SigningVersion = SigningVersion.latest): Vector[
-    EventOutcomeDb] = {
+      signingVersion: SigningVersion): Vector[EventOutcomeDb] = {
     descriptor match {
       case enum: EnumEventDescriptorV0TLV =>
         require(nonces.size == 1, "Enum events should only have one R value")
@@ -75,12 +74,22 @@ trait EventDbUtil {
     }
   }
 
+  def toEventOutcomeDbs(
+      oracleAnnouncementV0TLV: OracleAnnouncementV0TLV,
+      signingVersion: SigningVersion = SigningVersion.latest): Vector[
+    EventOutcomeDb] = {
+    toEventOutcomeDbs(descriptor =
+                        oracleAnnouncementV0TLV.eventTLV.eventDescriptor,
+                      nonces = oracleAnnouncementV0TLV.eventTLV.nonces,
+                      signingVersion = signingVersion)
+  }
+
   def toEventDbs(
-      nonces: Vector[SchnorrNonce],
       oracleAnnouncementV0TLV: OracleAnnouncementV0TLV,
       eventName: String,
       signingVersion: SigningVersion = SigningVersion.latest): Vector[
     EventDb] = {
+    val nonces = oracleAnnouncementV0TLV.eventTLV.nonces
     nonces.zipWithIndex.map {
       case (nonce, index) =>
         EventDb(

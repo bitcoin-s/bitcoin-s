@@ -213,16 +213,16 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       announcementBytes = signingVersion.calcAnnouncementHash(eventTLV)
       announcementSignature = signingKey.schnorrSign(announcementBytes)
 
-      eventOutcomeDbs = EventDbUtil.toEventOutcomeDbs(descriptor = descriptor,
-                                                      nonces = nonces,
-                                                      signingVersion =
-                                                        signingVersion)
       oracleAnnoucement = OracleAnnouncementV0TLV(announcementSignature =
                                                     announcementSignature,
                                                   publicKey = publicKey,
                                                   eventTLV = eventTLV)
-      eventDbs = EventDbUtil.toEventDbs(nonces = nonces,
-                                        oracleAnnouncementV0TLV =
+
+      eventOutcomeDbs = EventDbUtil.toEventOutcomeDbs(
+        oracleAnnouncementV0TLV = oracleAnnoucement,
+        signingVersion = signingVersion)
+
+      eventDbs = EventDbUtil.toEventDbs(oracleAnnouncementV0TLV =
                                           oracleAnnoucement,
                                         eventName = eventName,
                                         signingVersion = signingVersion)
