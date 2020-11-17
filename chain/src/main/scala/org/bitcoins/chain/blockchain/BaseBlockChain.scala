@@ -114,7 +114,7 @@ private[blockchain] trait BaseBlockChainCompObject
       findPrevBlockHeaderIdx(header, blockchain) match {
         case None =>
           logger.warn(
-            s"No common ancestor found in the chain to connect to ${header.hashBE}")
+            s"No common ancestor found in the chain with tip=${blockchain.tip.hashBE.hex} to connect to hash=${header.hashBE} prevHash=${header.previousBlockHashBE}")
           val err = TipUpdateResult.BadPreviousBlockHash(header)
           val failed = ConnectTipResult.BadTip(err)
           failed

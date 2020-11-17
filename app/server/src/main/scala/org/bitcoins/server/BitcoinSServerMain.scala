@@ -246,11 +246,11 @@ class BitcoinSServerMain(override val args: Array[String])
       system: ActorSystem): Future[ChainApi] = {
     val blockEC =
       system.dispatchers.lookup(Dispatchers.DefaultBlockingDispatcherId)
+    val chainApi = ChainHandler.fromDatabase(
+      blockHeaderDAO = BlockHeaderDAO()(blockEC, chainAppConfig),
+      CompactFilterHeaderDAO()(blockEC, chainAppConfig),
+      CompactFilterDAO()(blockEC, chainAppConfig))
     for {
-      chainApi <- ChainHandler.fromDatabase(
-        blockHeaderDAO = BlockHeaderDAO()(blockEC, chainAppConfig),
-        CompactFilterHeaderDAO()(blockEC, chainAppConfig),
-        CompactFilterDAO()(blockEC, chainAppConfig))
       isMissingChainWork <- chainApi.isMissingChainWork
       chainApiWithWork <-
         if (isMissingChainWork || force) {

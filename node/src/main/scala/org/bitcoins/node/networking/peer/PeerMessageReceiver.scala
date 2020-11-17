@@ -2,7 +2,7 @@ package org.bitcoins.node.networking.peer
 
 import akka.Done
 import akka.actor.ActorRefFactory
-import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
@@ -291,7 +291,9 @@ object PeerMessageReceiver {
     val filterHeaderDAO = CompactFilterHeaderDAO()
     val filterDAO = CompactFilterDAO()
     val chainHandlerF =
-      ChainHandler.fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO)
+      ChainHandlerCached.fromDatabase(blockHeaderDAO,
+                                      filterHeaderDAO,
+                                      filterDAO)
     for {
       chainHandler <- chainHandlerF
     } yield {

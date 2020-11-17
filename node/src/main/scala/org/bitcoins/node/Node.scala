@@ -2,7 +2,7 @@ package org.bitcoins.node
 
 import akka.Done
 import akka.actor.ActorSystem
-import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
@@ -58,10 +58,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     */
   def chainApiFromDb()(implicit
-      executionContext: ExecutionContext): Future[ChainHandler] = {
-    ChainHandler.fromDatabase(BlockHeaderDAO(),
-                              CompactFilterHeaderDAO(),
-                              CompactFilterDAO())
+      executionContext: ExecutionContext): Future[ChainHandlerCached] = {
+    ChainHandlerCached.fromDatabase(BlockHeaderDAO(),
+                                    CompactFilterHeaderDAO(),
+                                    CompactFilterDAO())
   }
 
   /** Unlike our chain api, this is cached inside our node
@@ -69,8 +69,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * the [[ChainApi chain api]] is updated inside of the p2p client
     */
   lazy val clientF: Future[P2PClient] = {
+    val chainApiF = chainApiFromDb()
     for {
-      chainApi <- chainApiFromDb()
+      chainApi <- chainApiF
     } yield {
       val peerMsgRecv: PeerMessageReceiver =
         PeerMessageReceiver.newReceiver(chainApi = chainApi,
@@ -188,13 +189,16 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * @return
     */
   def sync(): Future[Unit] = {
+    val blockchainsF =
+      BlockHeaderDAO()(executionContext, chainAppConfig).getBlockchains()
     for {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
+      blockchains <- blockchainsF
     } yield {
       // Get all of our cached headers in case of a reorg
       val cachedHeaders =
-        chainApi.blockchains.flatMap(_.headers).map(_.hashBE.flip)
+        blockchains.flatMap(_.headers).map(_.hashBE.flip)
       peerMsgSenderF.map(_.sendGetHeadersMessage(cachedHeaders))
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE}")

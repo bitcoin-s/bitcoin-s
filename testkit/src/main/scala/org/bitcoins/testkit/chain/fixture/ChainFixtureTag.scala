@@ -27,6 +27,9 @@ object ChainFixtureTag {
   case object GenesisChainHandlerWithFilter
       extends ChainFixtureTag("GenesisChainHandlerWithFilter")
 
+  case object GenesisChainHandlerCachedWithFilter
+      extends ChainFixtureTag("GenesisChainHandlerCachedWithFilter")
+
   case object PopulatedChainHandler
       extends ChainFixtureTag("PopulatedChainHandler")
 

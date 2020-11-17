@@ -121,7 +121,7 @@ sealed trait BlockHeader extends NetworkElement {
     */
   lazy val hashBE: DoubleSha256DigestBE = hash.flip
 
-  override def bytes: ByteVector = RawBlockHeaderSerializer.write(this)
+  override lazy val bytes: ByteVector = RawBlockHeaderSerializer.write(this)
 
   override def toString: String = {
     s"BlockHeader(hashBE=${hashBE.hex},version=$version," +

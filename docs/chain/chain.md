@@ -70,17 +70,16 @@ val compactFilterDAO = CompactFilterDAO()
 
 
 //initialize the chain handler from the database
-val chainHandlerF = ChainHandler.fromDatabase(blockHeaderDAO, compactFilterHeaderDAO, compactFilterDAO)
+val chainHandler = ChainHandler.fromDatabase(blockHeaderDAO, compactFilterHeaderDAO, compactFilterDAO)
 
 // Now, do the actual syncing:
 val syncedChainApiF = for {
     _ <- chainProjectInitF
-    handler <- chainHandlerF
-    synced <- ChainSync.sync(handler, getBlockHeader, getBestBlockHash)
+    synced <- ChainSync.sync(chainHandler, getBlockHeader, getBestBlockHash)
 } yield synced
 
 val syncResultF = syncedChainApiF.flatMap { chainApi =>
-  chainApi.getBlockCount.map(count => println(s"chain api blockcount=${count}"))
+  chainApi.getBlockCount().map(count => println(s"chain api blockcount=${count}"))
 
   rpcCli.getBlockCount.map(count => println(s"bitcoind blockcount=${count}"))
 }
