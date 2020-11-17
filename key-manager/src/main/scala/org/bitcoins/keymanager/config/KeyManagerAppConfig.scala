@@ -24,7 +24,7 @@ case class KeyManagerAppConfig(
       configOverrides: Seq[Config]): KeyManagerAppConfig =
     KeyManagerAppConfig(directory, configOverrides: _*)
 
-  override def moduleName: String = "key-manager"
+  override def moduleName: String = "keymanager"
 
   override def baseDatadir: Path = directory
 
