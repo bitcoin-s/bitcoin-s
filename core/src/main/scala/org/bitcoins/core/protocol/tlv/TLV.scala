@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.tlv
 
 import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BigSizeUInt
@@ -545,6 +546,11 @@ case class OracleEventV0TLV(
     val noncesBytes = nonces.foldLeft(numNonces.bytes)(_ ++ _.bytes)
 
     noncesBytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ uriBytes
+  }
+
+  /** Gets the maturation of the event since epoch */
+  def maturation: Instant = {
+    Instant.ofEpochSecond(eventMaturityEpoch.toLong)
   }
 }
 
