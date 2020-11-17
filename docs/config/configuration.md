@@ -259,6 +259,9 @@ bitcoin-s {
     
     wallet.profile = ${bitcoin-s.common.profile}
     wallet.db = ${bitcoin-s.common.db}
+
+    oracle.profile = ${bitcoin-s.common.profile}
+    oracle.db = ${bitcoin-s.common.db}
 }
 ```
 
