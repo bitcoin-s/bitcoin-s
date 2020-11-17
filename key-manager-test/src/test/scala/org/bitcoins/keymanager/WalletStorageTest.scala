@@ -22,7 +22,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     withWalletConfig(test)
 
   def getSeedPath(config: WalletAppConfig): Path = {
-    config.seedPath
+    config.kmConf.seedPath
   }
 
   behavior of "WalletStorage"
