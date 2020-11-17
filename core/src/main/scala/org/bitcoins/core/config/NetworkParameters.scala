@@ -228,7 +228,7 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
     }
 
   /** Map of magic network bytes to the corresponding network */
-  def magicToNetwork: Map[ByteVector, NetworkParameters] =
+  val magicToNetwork: Map[ByteVector, NetworkParameters] =
     Map(
       MainNet.magicBytes -> MainNet,
       TestNet3.magicBytes -> TestNet3,

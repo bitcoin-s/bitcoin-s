@@ -22,9 +22,6 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
     slickDbConfig
   }
 
-  logger.debug(
-    s"Resolved DB config: ${appConfig.slickDbConfig.config.asReadableJson}")
-
   lazy val profile: JdbcProfile = dbConfig.profile
   import profile.api._
 

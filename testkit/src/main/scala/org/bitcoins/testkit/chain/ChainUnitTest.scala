@@ -5,7 +5,7 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.ChainVerificationLogger
-import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.blockchain.{ChainHandler, ChainHandlerCached}
 import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
@@ -178,9 +178,20 @@ trait ChainUnitTest
                 () => ChainUnitTest.destroyAllTables())(test)
   }
 
+  def withChainHandlerCached(test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(() => ChainUnitTest.createChainHandlerCached(),
+                () => ChainUnitTest.destroyAllTables())(test)
+  }
+
   def withChainHandlerGenesisFilter(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(() => createChainHandlerWithGenesisFilter(),
                 () => ChainUnitTest.destroyAllTables())(test)
+  }
+
+  def withChainHandlerCachedGenesisFilter(
+      test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(build = () => createChainHandlerCachedWithGenesisFilter(),
+                destroy = () => ChainUnitTest.destroyAllTables())(test)
   }
 
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
@@ -189,10 +200,10 @@ trait ChainUnitTest
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
       filterHeaderDAO <- ChainUnitTest.createPopulatedFilterHeaderDAO()
       filterDAO <- ChainUnitTest.createPopulatedFilterDAO()
-      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
-                                                filterHeaderDAO =
-                                                  filterHeaderDAO,
-                                                filterDAO = filterDAO)
+      chainHandler = ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
+                                               filterHeaderDAO =
+                                                 filterHeaderDAO,
+                                               filterDAO = filterDAO)
     } yield chainHandler
   }
 
@@ -205,6 +216,18 @@ trait ChainUnitTest
       filterChainApi <-
         filterHeaderChainApi.processFilter(ChainUnitTest.genesisFilterMessage)
     } yield filterChainApi.asInstanceOf[ChainHandler]
+  }
+
+  def createChainHandlerCachedWithGenesisFilter(): Future[
+    ChainHandlerCached] = {
+    for {
+      chainHandler <- createChainHandler()
+      filterHeaderChainApi <- chainHandler.processFilterHeader(
+        ChainUnitTest.genesisFilterHeaderDb.filterHeader,
+        ChainUnitTest.genesisHeaderDb.hashBE)
+      filterChainApi <-
+        filterHeaderChainApi.processFilter(ChainUnitTest.genesisFilterMessage)
+    } yield filterChainApi.asInstanceOf[ChainHandlerCached]
   }
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
@@ -413,6 +436,12 @@ object ChainUnitTest extends ChainVerificationLogger {
   def createChainHandler()(implicit
       ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[ChainHandler] = {
+    createChainHandlerCached()
+  }
+
+  def createChainHandlerCached()(implicit
+      ec: ExecutionContext,
+      appConfig: ChainAppConfig): Future[ChainHandlerCached] = {
     val handlerWithGenesisHeaderF =
       ChainUnitTest.setupHeaderTableWithGenesisHeader()
 
@@ -603,7 +632,8 @@ object ChainUnitTest extends ChainVerificationLogger {
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
   def setupHeaderTableWithGenesisHeader()(implicit
       ec: ExecutionContext,
-      appConfig: ChainAppConfig): Future[(ChainHandler, BlockHeaderDb)] = {
+      appConfig: ChainAppConfig): Future[
+    (ChainHandlerCached, BlockHeaderDb)] = {
     val tableSetupF = setupAllTables()
 
     val genesisHeaderF = tableSetupF.flatMap { _ =>
@@ -622,14 +652,14 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   def makeChainHandler()(implicit
       appConfig: ChainAppConfig,
-      ec: ExecutionContext): Future[ChainHandler] = {
+      ec: ExecutionContext): Future[ChainHandlerCached] = {
     lazy val blockHeaderDAO = BlockHeaderDAO()
     lazy val filterHeaderDAO = CompactFilterHeaderDAO()
     lazy val filterDAO = CompactFilterDAO()
 
-    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
-                              filterHeaderDAO = filterHeaderDAO,
-                              filterDAO = filterDAO)
+    ChainHandlerCached.fromDatabase(blockHeaderDAO = blockHeaderDAO,
+                                    filterHeaderDAO = filterHeaderDAO,
+                                    filterDAO = filterDAO)
 
   }
 

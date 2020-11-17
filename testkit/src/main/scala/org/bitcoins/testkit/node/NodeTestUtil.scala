@@ -122,7 +122,8 @@ abstract class NodeTestUtil extends P2PLogger {
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
-      filterCount <- node.chainApiFromDb().flatMap(_.getFilterCount())
+      chainApi <- node.chainApiFromDb()
+      filterCount <- chainApi.getFilterCount()
       blockCount <- rpcCountF
     } yield {
       blockCount == filterCount
@@ -133,8 +134,8 @@ abstract class NodeTestUtil extends P2PLogger {
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
-      filterHeaderCount <-
-        node.chainApiFromDb().flatMap(_.getFilterHeaderCount())
+      chainApi <- node.chainApiFromDb()
+      filterHeaderCount <- chainApi.getFilterHeaderCount()
       blockCount <- rpcCountF
     } yield {
       blockCount == filterHeaderCount
@@ -148,7 +149,8 @@ abstract class NodeTestUtil extends P2PLogger {
       ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
-      count <- node.chainApiFromDb().flatMap(_.getBlockCount())
+      chainApi <- node.chainApiFromDb()
+      count <- chainApi.getBlockCount()
       rpcCount <- rpcCountF
     } yield {
       rpcCount == count
