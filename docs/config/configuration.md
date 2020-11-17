@@ -59,6 +59,11 @@ There are a few command line options available that take precedence over configu
 
     `force-recalc-chainwork` will force a recalculation of the entire chain's chain work, this
     can be useful if there is an incompatible migration or if it got out of sync.
+    
+- `-Dlogback.configurationFile=/path/to/config.xml`
+
+    You can set a custom logback configuration. If you need help creating a custom logback file
+    you can read [the logback configuration documentation](http://logback.qos.ch/manual/configuration.html).
 
 ## Internal configuration
 
