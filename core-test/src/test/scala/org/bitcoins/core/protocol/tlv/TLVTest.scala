@@ -72,7 +72,9 @@ class TLVTest extends BitcoinSUnitTest {
 
   "OracleEventV0TLV" must "have serialization symmetry" in {
     forAll(TLVGen.oracleEventV0TLV) { tlv =>
-      assert(OracleEventV0TLV(tlv.bytes) == tlv)
+      val oracleEvent = OracleEventV0TLV(tlv.bytes)
+      assert(oracleEvent == tlv)
+      assert(oracleEvent.maturation == tlv.maturation)
       assert(TLV(tlv.bytes) == tlv)
     }
   }
