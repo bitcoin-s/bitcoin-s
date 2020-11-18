@@ -52,11 +52,10 @@ trait BitcoinSRunner extends BitcoinSLogger {
     argsWithIndex.find(_._1.toLowerCase == "--conf").map(_._2)
   }
 
-  val withDatadir: Config =
-    ConfigFactory.parseString(s"bitcoin-s.datadir = $datadirPath")
-
   lazy val baseConfig: Config = configIndexOpt match {
     case None =>
+      val withDatadir: Config =
+        ConfigFactory.parseString(s"bitcoin-s.datadir = $datadirPath")
       AppConfig
         .getBaseConfig(datadirPath)
         .withFallback(withDatadir)
@@ -70,29 +69,30 @@ trait BitcoinSRunner extends BitcoinSLogger {
         .resolve()
   }
 
+  /** Base directory for all bitcoin-s data */
   lazy val configDataDir: Path =
     Paths.get(baseConfig.getString("bitcoin-s.datadir"))
-
-  private lazy val networkStr: String =
-    baseConfig.getString("bitcoin-s.network")
-
-  private lazy val network: BitcoinNetwork =
-    BitcoinNetworks.fromString(networkStr)
-
-  private lazy val datadir: Path = {
-    lazy val lastDirname = network match {
-      case MainNet  => "mainnet"
-      case TestNet3 => "testnet3"
-      case RegTest  => "regtest"
-      case SigNet   => "signet"
-    }
-    configDataDir.resolve(lastDirname)
-  }
 
   def startup: Future[Unit]
 
   // start everything!
   final def run(): Unit = {
+
+    /** Directory specific for current network */
+    val datadir: Path = {
+      val networkStr: String =
+        baseConfig.getString("bitcoin-s.network")
+      val network: BitcoinNetwork =
+        BitcoinNetworks.fromString(networkStr)
+      lazy val lastDirname = network match {
+        case MainNet  => "mainnet"
+        case TestNet3 => "testnet3"
+        case RegTest  => "regtest"
+        case SigNet   => "signet"
+      }
+      configDataDir.resolve(lastDirname)
+    }
+
     // Properly set log location
     System.setProperty("bitcoins.log.location", datadir.toAbsolutePath.toString)
 
