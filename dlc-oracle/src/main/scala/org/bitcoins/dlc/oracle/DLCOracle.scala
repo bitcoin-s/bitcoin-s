@@ -15,6 +15,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NumberUtil, TimeUtil}
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
+import org.bitcoins.dlc.oracle.util.EventDbUtil
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -212,76 +213,19 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       announcementBytes = signingVersion.calcAnnouncementHash(eventTLV)
       announcementSignature = signingKey.schnorrSign(announcementBytes)
 
-      eventOutcomeDbs = descriptor match {
-        case enum: EnumEventDescriptorV0TLV =>
-          require(rValueDbs.size == 1,
-                  "Enum events should only have one R value")
-          val nonce = rValueDbs.head.nonce
-          enum.outcomes.map { outcome =>
-            val attestationType = EnumAttestation(outcome)
-            val hash =
-              signingVersion.calcOutcomeHash(enum, attestationType.bytes)
-            EventOutcomeDb(nonce, outcome, hash)
-          }
-        case range: RangeEventDescriptorV0TLV =>
-          require(rValueDbs.size == 1,
-                  "Range events should only have one R value")
-          val nonce = rValueDbs.head.nonce
+      oracleAnnoucement = OracleAnnouncementV0TLV(announcementSignature =
+                                                    announcementSignature,
+                                                  publicKey = publicKey,
+                                                  eventTLV = eventTLV)
 
-          val outcomes: Vector[Long] = {
-            val startL = range.start.toLong
-            val stepL = range.step.toLong
+      eventOutcomeDbs = EventDbUtil.toEventOutcomeDbs(
+        oracleAnnouncementV0TLV = oracleAnnoucement,
+        signingVersion = signingVersion)
 
-            val outcomeRange =
-              0L.until(range.count.toLong).map(num => startL + (num * stepL))
-
-            outcomeRange.toVector
-          }
-
-          outcomes.map { outcome =>
-            val attestationType = RangeAttestation(outcome)
-            val hash =
-              signingVersion.calcOutcomeHash(range, attestationType.bytes)
-            EventOutcomeDb(nonce, outcome.toString, hash)
-          }
-        case decomp: DigitDecompositionEventDescriptorV0TLV =>
-          val signDbs = decomp match {
-            case _: SignedDigitDecompositionEventDescriptor =>
-              val plusHash = signingVersion.calcOutcomeHash(decomp, "+")
-              val minusHash = signingVersion.calcOutcomeHash(decomp, "-")
-              Vector(EventOutcomeDb(nonces.head, "+", plusHash),
-                     EventOutcomeDb(nonces.head, "-", minusHash))
-            case _: UnsignedDigitDecompositionEventDescriptor =>
-              Vector.empty
-          }
-
-          val digitNonces = if (decomp.isSigned) nonces.tail else nonces
-
-          val digitDbs = digitNonces.flatMap { nonce =>
-            0.until(decomp.base.toInt).map { num =>
-              val attestationType = DigitDecompositionAttestation(num)
-              val hash =
-                signingVersion.calcOutcomeHash(decomp, attestationType.bytes)
-              EventOutcomeDb(nonce, num.toString, hash)
-            }
-          }
-
-          signDbs ++ digitDbs
-      }
-
-      eventDbs = rValueDbs.zipWithIndex.map {
-        case (db, index) =>
-          EventDb(db.nonce,
-                  publicKey,
-                  index,
-                  eventName,
-                  eventOutcomeDbs.size,
-                  signingVersion,
-                  maturationTime,
-                  None,
-                  announcementSignature,
-                  descriptor)
-      }
+      eventDbs = EventDbUtil.toEventDbs(oracleAnnouncementV0TLV =
+                                          oracleAnnoucement,
+                                        eventName = eventName,
+                                        signingVersion = signingVersion)
 
       _ <- rValueDAO.createAll(rValueDbs)
       _ <- eventDAO.createAll(eventDbs)
