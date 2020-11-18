@@ -38,12 +38,12 @@ case class KeyManagerAppConfig(
   override def start(): Future[Unit] = FutureUtil.unit
 
   lazy val aesPasswordOpt: Option[AesPassword] = {
-    val passOpt = config.getStringOrNone("bitcoin-s.key-manager.aesPassword")
+    val passOpt = config.getStringOrNone(s"bitcoin-s.$moduleName.aesPassword")
     passOpt.flatMap(AesPassword.fromStringOpt)
   }
 
   lazy val bip39PasswordOpt: Option[String] = {
-    config.getStringOrNone("bitcoin-s.key-manager.bip39password")
+    config.getStringOrNone(s"bitcoin-s.$moduleName.bip39password")
   }
 
   /** Checks if our key manager as a mnemonic seed associated with it */
