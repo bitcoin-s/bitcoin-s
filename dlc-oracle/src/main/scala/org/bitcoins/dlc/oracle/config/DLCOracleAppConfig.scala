@@ -16,6 +16,7 @@ import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.keymanager.config.KeyManagerAppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -42,12 +43,13 @@ case class DLCOracleAppConfig(
 
   override def baseDatadir: Path = directory
 
+  lazy val kmConf: KeyManagerAppConfig =
+    KeyManagerAppConfig(directory, confs: _*)
+
   lazy val networkParameters: NetworkParameters = chain.network
 
   /** The path to our encrypted mnemonic seed */
-  lazy val seedPath: Path = {
-    baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
-  }
+  lazy val seedPath: Path = kmConf.seedPath
 
   override def start(): Future[Unit] = {
     logger.debug(s"Initializing dlc oracle setup")
@@ -99,21 +101,15 @@ case class DLCOracleAppConfig(
   }
 
   lazy val kmParams: KeyManagerParams =
-    KeyManagerParams(seedPath, HDPurpose(DLCOracle.R_VALUE_PURPOSE), network)
+    KeyManagerParams(kmConf.seedPath,
+                     HDPurpose(DLCOracle.R_VALUE_PURPOSE),
+                     network)
 
-  lazy val aesPasswordOpt: Option[AesPassword] = {
-    val passOpt = config.getStringOrNone("bitcoin-s.key-manager.aesPassword")
-    passOpt.flatMap(AesPassword.fromStringOpt)
-  }
-
-  lazy val bip39PasswordOpt: Option[String] = {
-    config.getStringOrNone("bitcoin-s.key-manager.bip39password")
-  }
+  lazy val aesPasswordOpt: Option[AesPassword] = kmConf.aesPasswordOpt
+  lazy val bip39PasswordOpt: Option[String] = kmConf.bip39PasswordOpt
 
   /** Checks if our oracle as a mnemonic seed associated with it */
-  def seedExists(): Boolean = {
-    WalletStorage.seedExists(seedPath)
-  }
+  def seedExists(): Boolean = kmConf.seedExists()
 
   def exists(): Boolean = {
     lazy val hasDb = this.driver match {
@@ -136,7 +132,7 @@ case class DLCOracleAppConfig(
     }
 
     val key =
-      WalletStorage.getPrivateKeyFromDisk(seedPath,
+      WalletStorage.getPrivateKeyFromDisk(kmConf.seedPath,
                                           SegWitMainNetPriv,
                                           aesPasswordOpt,
                                           bip39PasswordOpt)

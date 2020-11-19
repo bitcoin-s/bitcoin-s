@@ -16,8 +16,8 @@ import org.bitcoins.core.wallet.keymanagement.{
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
-import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
+import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
@@ -54,6 +54,9 @@ case class WalletAppConfig(
   def addCallbacks(newCallbacks: WalletCallbacks): WalletCallbacks = {
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
+
+  lazy val kmConf: KeyManagerAppConfig =
+    KeyManagerAppConfig(directory, conf: _*)
 
   lazy val defaultAccountKind: HDPurpose =
     config.getString("bitcoin-s.wallet.defaultAccountType") match {
@@ -105,14 +108,9 @@ case class WalletAppConfig(
   lazy val feeProviderTargetOpt: Option[Int] =
     config.getIntOpt("bitcoin-s.fee-provider.target")
 
-  lazy val bip39PasswordOpt: Option[String] = {
-    config.getStringOrNone("bitcoin-s.key-manager.bip39password")
-  }
+  lazy val bip39PasswordOpt: Option[String] = kmConf.bip39PasswordOpt
 
-  lazy val aesPasswordOpt: Option[AesPassword] = {
-    val passOpt = config.getStringOrNone("bitcoin-s.key-manager.aesPassword")
-    passOpt.flatMap(AesPassword.fromStringOpt)
-  }
+  lazy val aesPasswordOpt: Option[AesPassword] = kmConf.aesPasswordOpt
 
   override def start(): Future[Unit] = {
     for {
@@ -133,17 +131,13 @@ case class WalletAppConfig(
   }
 
   /** The path to our encrypted mnemonic seed */
-  private[bitcoins] def seedPath: Path = {
-    baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
-  }
+  private[bitcoins] lazy val seedPath: Path = kmConf.seedPath
 
   /** Checks if our wallet as a mnemonic seed associated with it */
-  def seedExists(): Boolean = {
-    Files.exists(seedPath)
-  }
+  def seedExists(): Boolean = kmConf.seedExists()
 
   def kmParams: KeyManagerParams =
-    KeyManagerParams(seedPath, defaultAccountKind, network)
+    KeyManagerParams(kmConf.seedPath, defaultAccountKind, network)
 
   /** How much elements we can have in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
     * before we throw an exception
@@ -177,7 +171,7 @@ case class WalletAppConfig(
   private def hasWallet()(implicit
       walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Boolean] = {
-    if (walletConf.seedExists()) {
+    if (kmConf.seedExists()) {
       val hdCoin = walletConf.defaultAccount.coin
       val walletDB = walletConf.dbPath resolve walletConf.dbName
       walletConf.driver match {
