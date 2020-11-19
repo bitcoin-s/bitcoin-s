@@ -6,6 +6,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
+import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -29,12 +30,16 @@ case class BitcoinSAppConfig(
   lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
   lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
 
+  lazy val kmConf: KeyManagerAppConfig =
+    KeyManagerAppConfig(directory, confs: _*)
+
   lazy val bitcoindRpcConf: BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(directory, confs: _*)
 
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[Unit] = {
-    val futures = List(walletConf.start(),
+    val futures = List(kmConf.start(),
+                       walletConf.start(),
                        nodeConf.start(),
                        chainConf.start(),
                        bitcoindRpcConf.start())

@@ -162,7 +162,7 @@ bitcoin-s {
         addressQueueTimeout = 5 seconds
    }
 
-    key-manager {
+    keymanager {
         # You can optionally set a BIP 39 password
         # bip39password = "changeMe"
 
