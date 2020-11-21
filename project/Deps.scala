@@ -1,12 +1,14 @@
 import sbt._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-
+import org.scalajs.sbtplugin.ScalaJSPlugin
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 object Deps {
 
   object V {
     val bouncyCastle = "1.67"
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
+
     val scalacheck = "1.15.1"
     val scalaTest = "3.2.3"
 
@@ -58,11 +60,10 @@ object Deps {
     val scoptV = "4.0.0"
     val sttpV = "1.7.2"
     val codehausV = "3.1.2"
-  }git di
+  }
 
   object Compile {
 
-  val laminar = Def.setting("com.raquo" %%% "laminar" % "0.10.3") 
     val bouncycastle =
       "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
 
@@ -233,16 +234,18 @@ object Deps {
       Compile.slf4j
     )
 
-  val core = List(Compile.laminar.value) ++ 
-    List(Compile.bouncycastle,
+  val core = List(Compile.bouncycastle,
     Compile.slf4j,
     Compile.grizzledSlf4j
   ) 
 
-  val crypto = List(
-    Compile.bouncycastle,
-    Compile.scodec
-  )
+  def crypto: Def.Initialize[Seq[ModuleID]] = {
+    Def.setting { List(
+        Compile.bouncycastle,
+        Compile.scodec.value
+      )
+    }
+  }
 
   val secp256k1jni = List(
     Compile.nativeLoader,

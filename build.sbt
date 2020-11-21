@@ -1,5 +1,9 @@
 import com.typesafe.sbt.SbtGit.GitKeys._
 
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+import org.scalajs.sbtplugin.ScalaJSPlugin
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
+
 import scala.util.Properties
 
 cancelable in Global := true
@@ -33,6 +37,8 @@ import Projects._
 
 lazy val cryptoCrossProject = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
+  .settings(libraryDependencies ++= Deps.crypto.value
+  )
   .in(file("crypto"))
 
 lazy val crypto = cryptoCrossProject.jvm

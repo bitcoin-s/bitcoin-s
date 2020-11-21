@@ -1,6 +1,6 @@
 name := "bitcoin-s-crypto"
 
-libraryDependencies ++= Deps.crypto
+//libraryDependencies ++= Deps.crypto.value
 
 CommonSettings.prodSettings
 
