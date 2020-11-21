@@ -35,13 +35,15 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
 
 import Projects._
 
-lazy val cryptoCrossProject = crossProject(JVMPlatform)
+lazy val cryptoCrossProject = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(libraryDependencies ++= Deps.crypto.value
   )
   .in(file("crypto"))
 
 lazy val crypto = cryptoCrossProject.jvm
+
+lazy val cryptoJS = cryptoCrossProject.js
 
 lazy val core = project
   .in(file("core"))
