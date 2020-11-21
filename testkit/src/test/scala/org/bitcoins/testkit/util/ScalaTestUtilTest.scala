@@ -2,7 +2,6 @@ package org.bitcoins.testkit.util
 
 import org.scalatest.Assertion
 import org.scalatest.exceptions.TestFailedException
-
 import scala.concurrent.Future
 
 class ScalaTestUtilTest extends BitcoinSUnitTest {

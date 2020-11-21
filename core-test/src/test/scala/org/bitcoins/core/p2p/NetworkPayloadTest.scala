@@ -1,11 +1,9 @@
 package org.bitcoins.core.p2p
 
-import org.bitcoins.core.config.{MainNet, TestNet3}
-import org.bitcoins.testkit.node.NodeTestUtil
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BitcoinSUnitTest}
+import org.bitcoins.core.config.TestNet3
 import org.bitcoins.testkit.core.gen.p2p.P2PGenerator
-
-import scala.concurrent.Future
+import org.bitcoins.testkit.node.NodeTestUtil
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class NetworkPayloadTest extends BitcoinSAsyncTest {
 

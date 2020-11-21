@@ -384,7 +384,17 @@ object P2SHTxSigComponent {
       inputIndex: UInt32,
       output: TransactionOutput,
       flags: Seq[ScriptFlag]): P2SHTxSigComponent = {
-    P2SHTxSigComponentImpl(transaction, inputIndex, output, flags)
+    lazy val nonWitnessSigComponent =
+      P2SHTxSigComponentImpl(transaction, inputIndex, output, flags)
+    transaction match {
+      case _: NonWitnessTransaction => nonWitnessSigComponent
+      case wtx: WitnessTransaction =>
+        if (wtx.witness(inputIndex.toInt) == EmptyScriptWitness) {
+          nonWitnessSigComponent
+        } else {
+          WitnessTxSigComponentP2SH(wtx, inputIndex, output, flags)
+        }
+    }
   }
 }
 

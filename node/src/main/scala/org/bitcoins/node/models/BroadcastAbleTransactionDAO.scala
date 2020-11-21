@@ -74,6 +74,6 @@ final case class BroadcastAbleTransactionDAO()(implicit
     def bytes: Rep[ByteVector] = column("tx_bytes")
 
     def * : ProvenShape[BroadcastAbleTransaction] =
-      (txid, bytes) <> (fromTuple, toTuple)
+      (txid, bytes).<>(fromTuple, toTuple)
   }
 }

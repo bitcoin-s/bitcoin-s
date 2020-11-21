@@ -32,7 +32,7 @@ object GetAddresses extends App {
   def printerr(x: Any): Unit = System.err.println(x.toString())
 
   val accountInfo = for {
-    constant <- HDPurposes.all
+    constant <- HDPurposes.singleSigPurposes
     coin <- List(HDCoinType.Bitcoin /*, HDCoinType.Testnet*/ )
     accountIndex <- 0 until 3
   } yield {

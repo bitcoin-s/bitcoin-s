@@ -2,7 +2,7 @@ package org.bitcoins.node.networking.peer
 
 import akka.Done
 import akka.actor.ActorRefFactory
-import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
@@ -42,6 +42,9 @@ class PeerMessageReceiver(
     chainAppConfig: ChainAppConfig)
     extends P2PLogger {
   import ref.dispatcher
+
+  require(nodeAppConfig.nodeType != NodeType.BitcoindBackend,
+          "Bitcoind should handle the P2P interactions")
 
   /** This method is called when we have received
     * a [[akka.io.Tcp.Connected]] message from our peer
@@ -182,6 +185,8 @@ class PeerMessageReceiver(
                 }
               case NodeType.FullNode =>
                 sys.error("Not yet implemented.")
+              case NodeType.BitcoindBackend =>
+                throw new RuntimeException("This is impossible")
             }
 
             sender.sendVerackMessage()
@@ -286,7 +291,9 @@ object PeerMessageReceiver {
     val filterHeaderDAO = CompactFilterHeaderDAO()
     val filterDAO = CompactFilterDAO()
     val chainHandlerF =
-      ChainHandler.fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO)
+      ChainHandlerCached.fromDatabase(blockHeaderDAO,
+                                      filterHeaderDAO,
+                                      filterDAO)
     for {
       chainHandler <- chainHandlerF
     } yield {

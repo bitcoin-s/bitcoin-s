@@ -92,7 +92,7 @@ case class SpvNode(
   private val cfErrMsg = "Compact filters are not supported in SPV mode"
 
   /** Gets the number of compact filters in the database */
-  override def getFilterCount: Future[Int] =
+  override def getFilterCount(): Future[Int] =
     Future.failed(new RuntimeException(cfErrMsg))
 
   override def getFiltersBetweenHeights(

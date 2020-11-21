@@ -3,12 +3,15 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.node.Node
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
-case class NodeRoutes(node: Node)(implicit system: ActorSystem)
+case class NodeRoutes(nodeApi: NodeApi)(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
@@ -19,13 +22,25 @@ case class NodeRoutes(node: Node)(implicit system: ActorSystem)
       }
 
     case ServerCommand("stop", _) =>
-      complete {
-        val nodeStopping = node.stop().map { _ =>
-          Server.httpSuccess("Node shutting down")
-        }
+      nodeApi match {
+        case node: Node =>
+          complete {
+            val nodeStopping = node.stop().map { _ =>
+              Server.httpSuccess("Node shutting down")
+            }
 
-        system.scheduler.scheduleOnce(7.seconds)(sys.exit())
-        nodeStopping
+            system.scheduler.scheduleOnce(7.seconds)(sys.exit())
+            nodeStopping
+          }
+        case bitcoind: BitcoindRpcClient =>
+          complete {
+            val nodeStopping = bitcoind.stop().map { _ =>
+              Server.httpSuccess("Node shutting down")
+            }
+
+            system.scheduler.scheduleOnce(7.seconds)(sys.exit())
+            nodeStopping
+          }
       }
 
     case ServerCommand("sendrawtransaction", arr) =>
@@ -34,8 +49,8 @@ case class NodeRoutes(node: Node)(implicit system: ActorSystem)
           reject(ValidationRejection("failure", Some(exception)))
         case Success(SendRawTransaction(tx)) =>
           complete {
-            node.broadcastTransaction(tx).map { _ =>
-              Server.httpSuccess(s"${tx.txIdBE.hex}")
+            nodeApi.broadcastTransaction(tx).map { _ =>
+              Server.httpSuccess(tx.txIdBE)
             }
           }
       }

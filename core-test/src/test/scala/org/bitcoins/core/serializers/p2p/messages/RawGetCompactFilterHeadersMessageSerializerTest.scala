@@ -1,7 +1,6 @@
 package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.gcs.FilterType
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.GetCompactFilterHeadersMessage
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest

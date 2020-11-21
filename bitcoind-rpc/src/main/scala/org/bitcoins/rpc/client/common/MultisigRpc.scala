@@ -28,7 +28,8 @@ trait MultisigRpc { self: Client =>
       minSignatures: Int,
       keys: Vector[Either[ECPublicKey, P2PKHAddress]],
       account: String = "",
-      addressType: Option[AddressType]): Future[MultiSigResult] = {
+      addressType: Option[AddressType],
+      walletNameOpt: Option[String] = None): Future[MultiSigResult] = {
     def keyToString(key: Either[ECPublicKey, P2PKHAddress]): JsString =
       key match {
         case Right(k) => JsString(k.value)
@@ -42,9 +43,15 @@ trait MultisigRpc { self: Client =>
 
     self.version match {
       case V20 | Unknown =>
-        bitcoindCall[MultiSigResultPostV20]("addmultisigaddress", params)
+        bitcoindCall[MultiSigResultPostV20](
+          "addmultisigaddress",
+          params,
+          uriExtensionOpt = walletNameOpt.map(walletExtension))
       case V16 | V17 | V18 | V19 | Experimental =>
-        bitcoindCall[MultiSigResultPreV20]("addmultisigaddress", params)
+        bitcoindCall[MultiSigResultPreV20]("addmultisigaddress",
+                                           params,
+                                           uriExtensionOpt =
+                                             walletNameOpt.map(walletExtension))
     }
   }
 
@@ -74,16 +81,19 @@ trait MultisigRpc { self: Client =>
 
   def createMultiSig(
       minSignatures: Int,
-      keys: Vector[ECPublicKey]): Future[MultiSigResult] = {
+      keys: Vector[ECPublicKey],
+      walletNameOpt: Option[String] = None): Future[MultiSigResult] = {
     self.version match {
       case V20 | Unknown =>
         bitcoindCall[MultiSigResultPostV20](
           "createmultisig",
-          List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))))
+          List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))),
+          uriExtensionOpt = walletNameOpt.map(walletExtension))
       case V16 | V17 | V18 | V19 | Experimental =>
         bitcoindCall[MultiSigResultPreV20](
           "createmultisig",
-          List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))))
+          List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))),
+          uriExtensionOpt = walletNameOpt.map(walletExtension))
     }
   }
 }

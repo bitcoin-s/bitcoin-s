@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.chain.fixture
 
-import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.blockchain.{ChainHandler, ChainHandlerCached}
 import org.bitcoins.chain.models.BlockHeaderDAO
 
 /**
@@ -26,6 +26,11 @@ object ChainFixture {
     * [[org.bitcoins.core.api.chain.db.CompactFilterDb]] inserted into their respective tables
     */
   case class GenesisChainHandlerWithGenesisFilters(chainHandler: ChainHandler)
+      extends ChainFixture
+
+  /** Genesis chain handler with the genesis block header cached in memory */
+  case class GenesisChainHandlerCachedWithGenesisFilters(
+      chainHandler: ChainHandlerCached)
       extends ChainFixture
 
   case class PopulatedChainHandler(chainHandler: ChainHandler)

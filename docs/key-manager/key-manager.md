@@ -66,6 +66,8 @@ Now we can construct a native segwit key manager for the regtest network!
 ```scala mdoc:invisible
 import java.time.Instant
 
+import org.bitcoins.crypto._
+
 import org.bitcoins.core.crypto._
 
 import org.bitcoins.core.config._
@@ -96,7 +98,9 @@ val network = RegTest
 
 val kmParams = KeyManagerParams(seedPath, purpose, network)
 
-val km = BIP39KeyManager.initializeWithMnemonic(mnemonic, None, kmParams)
+val aesPasswordOpt = Some(AesPassword.fromString("password"))
+
+val km = BIP39KeyManager.initializeWithMnemonic(aesPasswordOpt, mnemonic, None, kmParams)
 
 val rootXPub = km.right.get.getRootXPub
 

@@ -2,6 +2,10 @@ package org.bitcoins.db
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
+import org.bitcoins.commons.jsonmodels.wallet.{
+  WalletStateDescriptor,
+  WalletStateDescriptorType
+}
 import org.bitcoins.core.config.{BitcoinNetwork, BitcoinNetworks}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
@@ -9,6 +13,7 @@ import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -179,7 +184,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   }
 
   implicit val hdCoinTypeMapper: BaseColumnType[HDCoinType] = {
-    MappedColumnType.base[HDCoinType, Int](_.toInt, HDCoinType.fromInt)
+    MappedColumnType.base[HDCoinType, Int](_.toInt, HDCoinType(_))
   }
 
   implicit val hdPathMappper: BaseColumnType[HDPath] =
@@ -293,5 +298,23 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[SchnorrDigitalSignature, String](
       _.hex,
       SchnorrDigitalSignature.fromHex)
+  }
+
+  implicit val walletStateDescriptorTypeMapper: BaseColumnType[
+    WalletStateDescriptorType] =
+    MappedColumnType.base[WalletStateDescriptorType, String](
+      _.toString,
+      WalletStateDescriptorType.fromString)
+
+  implicit val walletStateDescriptorMapper: BaseColumnType[
+    WalletStateDescriptor] =
+    MappedColumnType.base[WalletStateDescriptor, String](
+      _.toString,
+      WalletStateDescriptor.fromString)
+
+  implicit val eventDescriptorTLVMapper: BaseColumnType[EventDescriptorTLV] = {
+    MappedColumnType.base[EventDescriptorTLV, String](
+      _.hex,
+      EventDescriptorTLV.fromHex)
   }
 }

@@ -13,7 +13,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
-import org.bitcoins.testkit.fixtures.{WalletDAOFixture, WalletDAOs}
+import org.bitcoins.testkit.fixtures.{WalletDAOFixture}
 import org.bitcoins.testkit.wallet.WalletTestUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 
@@ -55,7 +55,8 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   }
 
   it must "be able to update multiple utxos" in { daos =>
-    val WalletDAOs(_, addressDAO, _, spendingInfoDAO, _, _, _, _) = daos
+    val addressDAO = daos.addressDAO
+    val spendingInfoDAO = daos.utxoDAO
 
     for {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)

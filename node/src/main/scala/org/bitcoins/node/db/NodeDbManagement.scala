@@ -2,7 +2,7 @@ package org.bitcoins.node.db
 
 import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{BroadcastAbleTransactionDAO}
+import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 
 import scala.concurrent.ExecutionContext
 
@@ -17,6 +17,6 @@ trait NodeDbManagement extends DbManagement {
     BroadcastAbleTransactionDAO()(appConfig, ec).table
   }
 
-  override val allTables: List[TableQuery[Table[_]]] = List(txTable)
+  override lazy val allTables: List[TableQuery[Table[_]]] = List(txTable)
 
 }

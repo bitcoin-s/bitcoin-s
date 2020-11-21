@@ -1,7 +1,6 @@
 package org.bitcoins.core.serializers
 
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
 import scodec.bits.ByteVector
 
 /**

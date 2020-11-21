@@ -8,6 +8,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.core.protocol.transaction.EmptyTransaction
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
@@ -120,13 +121,14 @@ class BitcoindV20RpcClientTest extends BitcoindRpcTest {
       "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)"
 
     val psbt =
-      "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA=="
+      PSBT.fromBase64(
+        "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA==")
 
     for {
       (client, _) <- clientPairF
       result <- client.utxoUpdatePsbt(psbt, Seq(descriptor))
     } yield {
-      assert(result.contains(psbt))
+      assert(result == psbt)
     }
   }
 

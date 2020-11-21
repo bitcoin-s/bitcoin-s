@@ -58,6 +58,13 @@ trait TxDAO[DbEntryType <: TxDB]
     findByTxId(outPoint.txId)
   }
 
+  def findByTxIds(
+      txIdBEs: Vector[DoubleSha256DigestBE]): Future[Vector[DbEntryType]] = {
+    val q = table.filter(_.txIdBE.inSet(txIdBEs))
+
+    safeDatabase.runVec(q.result.transactionally)
+  }
+
   def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[DbEntryType]] = {
     val q = table
       .filter(_.txIdBE === txIdBE)
@@ -120,7 +127,7 @@ case class TransactionDAO()(implicit
        totalOutput,
        numInputs,
        numOutputs,
-       locktime) <> (TransactionDb.tupled, TransactionDb.unapply)
+       locktime).<>(TransactionDb.tupled, TransactionDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)

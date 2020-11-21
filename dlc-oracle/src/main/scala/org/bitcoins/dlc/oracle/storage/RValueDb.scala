@@ -1,17 +1,16 @@
 package org.bitcoins.dlc.oracle.storage
 
 import org.bitcoins.core.hd._
-import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce}
+import org.bitcoins.crypto.SchnorrNonce
 
 case class RValueDb(
     nonce: SchnorrNonce,
-    label: String,
+    eventName: String,
     purpose: HDPurpose,
     accountCoin: HDCoinType,
     accountIndex: Int,
     chainType: Int,
-    keyIndex: Int,
-    commitmentSignature: SchnorrDigitalSignature) {
+    keyIndex: Int) {
 
   val path: BIP32Path = BIP32Path.fromString(
     s"m/${purpose.constant}'/${accountCoin.toInt}'/$accountIndex'/$chainType'/$keyIndex'")
@@ -21,18 +20,16 @@ object RValueDbHelper {
 
   def apply(
       nonce: SchnorrNonce,
-      label: String,
+      eventName: String,
       account: HDAccount,
       chainType: Int,
-      keyIndex: Int,
-      commitmentSignature: SchnorrDigitalSignature): RValueDb = {
+      keyIndex: Int): RValueDb = {
     RValueDb(nonce,
-             label,
+             eventName,
              account.purpose,
              account.coin.coinType,
              account.index,
              chainType,
-             keyIndex,
-             commitmentSignature)
+             keyIndex)
   }
 }

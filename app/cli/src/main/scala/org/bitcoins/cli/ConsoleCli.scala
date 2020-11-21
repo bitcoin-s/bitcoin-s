@@ -1,5 +1,7 @@
 package org.bitcoins.cli
 
+import java.time.Instant
+
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
@@ -9,6 +11,7 @@ import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransaction,
   Transaction,
@@ -18,9 +21,13 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{
+  AesPassword,
+  SchnorrDigitalSignature,
+  Sha256DigestBE
+}
 import scopt.OParser
-import ujson.{Num, Str}
+import ujson._
 import upickle.{default => up}
 
 import scala.collection.mutable
@@ -59,11 +66,11 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetBestBlockHash))
         .text(s"Get the best block hash"),
       cmd("decoderawtransaction")
-        .hidden()
         .action((_, conf) =>
           conf.copy(command = DecodeRawTransaction(EmptyTransaction)))
         .text(s"Decode the given raw hex transaction")
-        .children(opt[Transaction]("tx")
+        .children(arg[Transaction]("tx")
+          .text("Transaction encoded in hex to decode")
           .required()
           .action((tx, conf) =>
             conf.copy(command = conf.command match {
@@ -209,7 +216,8 @@ object ConsoleCli {
           conf.copy(command = AcceptDLCOffer(null, escaped = false)))
         .text("Accepts a DLC offer given from another party")
         .children(
-          opt[DLCOffer]("offer").required
+          opt[DLCOffer]("offer")
+            .required()
             .action((offer, conf) =>
               conf.copy(command = conf.command match {
                 case accept: AcceptDLCOffer =>
@@ -230,7 +238,8 @@ object ConsoleCli {
           conf.copy(command = SignDLC(null, escaped = false)))
         .text("Signs a DLC")
         .children(
-          opt[DLCAccept]("accept").required
+          opt[DLCAccept]("accept")
+            .required()
             .action((accept, conf) =>
               conf.copy(command = conf.command match {
                 case signDLC: SignDLC =>
@@ -250,7 +259,8 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = AddDLCSigs(null)))
         .text("Adds DLC Signatures into the database")
         .children(
-          opt[DLCSign]("sigs").required
+          opt[DLCSign]("sigs")
+            .required()
             .action((sigs, conf) =>
               conf.copy(command = conf.command match {
                 case addDLCSigs: AddDLCSigs =>
@@ -264,14 +274,16 @@ object ConsoleCli {
           conf.copy(command = InitDLCMutualClose(null, null, escaped = false)))
         .text("Sign Mutual Close Tx for given oracle event")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case initClose: InitDLCMutualClose =>
                   initClose.copy(eventId = eventId)
                 case other => other
               })),
-          opt[SchnorrDigitalSignature]("oraclesig").required
+          opt[SchnorrDigitalSignature]("oraclesig")
+            .required()
             .action((sig, conf) =>
               conf.copy(command = conf.command match {
                 case initClose: InitDLCMutualClose =>
@@ -292,14 +304,16 @@ object ConsoleCli {
           conf.copy(command = AcceptDLCMutualClose(null, noBroadcast = false)))
         .text("Sign Mutual Close Tx for given oracle event")
         .children(
-          opt[DLCMutualCloseSig]("closesig").required
+          opt[DLCMutualCloseSig]("closesig")
+            .required()
             .action((closeSig, conf) =>
               conf.copy(command = conf.command match {
                 case acceptClose: AcceptDLCMutualClose =>
                   acceptClose.copy(mutualCloseSig = closeSig)
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case acceptClose: AcceptDLCMutualClose =>
@@ -312,7 +326,8 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetDLCFundingTx(null)))
         .text("Returns the Funding Tx corresponding to the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case getDLCFundingTx: GetDLCFundingTx =>
@@ -325,7 +340,8 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = BroadcastDLCFundingTx(null)))
         .text("Broadcasts the funding Tx corresponding to the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case broadcastDLCFundingTx: BroadcastDLCFundingTx =>
@@ -340,21 +356,24 @@ object ConsoleCli {
             ExecuteDLCUnilateralClose(null, null, noBroadcast = false)))
         .text("Executes a unilateral close for the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
                   executeDLCUnilateralClose.copy(eventId = eventId)
                 case other => other
               })),
-          opt[SchnorrDigitalSignature]("oraclesig").required
+          opt[SchnorrDigitalSignature]("oraclesig")
+            .required()
             .action((sig, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
                   executeDLCUnilateralClose.copy(oracleSig = sig)
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
@@ -371,21 +390,24 @@ object ConsoleCli {
                                                       noBroadcast = false)))
         .text("Executes a unilateral close for the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>
                   executeDLCRemoteUnilateralClose.copy(eventId = eventId)
                 case other => other
               })),
-          opt[Transaction]("forceCloseTx").required
+          opt[Transaction]("forceCloseTx")
+            .required()
             .action((cet, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>
                   executeDLCRemoteUnilateralClose.copy(cet = cet)
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>
@@ -400,21 +422,24 @@ object ConsoleCli {
             command = ExecuteDLCForceClose(null, null, noBroadcast = false)))
         .text("Executes a force close for the DLC with the given eventId")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCForceClose: ExecuteDLCForceClose =>
                   executeDLCForceClose.copy(eventId = eventId)
                 case other => other
               })),
-          opt[SchnorrDigitalSignature]("oraclesig").required
+          opt[SchnorrDigitalSignature]("oraclesig")
+            .required()
             .action((sig, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCForceClose: ExecuteDLCForceClose =>
                   executeDLCForceClose.copy(oracleSig = sig)
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCForceClose: ExecuteDLCForceClose =>
@@ -429,7 +454,8 @@ object ConsoleCli {
             ClaimDLCRemoteFunds(null, EmptyTransaction, noBroadcast = false)))
         .text("Claims the remote funds for the corresponding DLC")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case claimDLCRemoteFunds: ClaimDLCRemoteFunds =>
@@ -459,14 +485,16 @@ object ConsoleCli {
           conf.copy(command = ExecuteDLCRefund(null, noBroadcast = false)))
         .text("Executes the Refund transaction for the given DLC")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRefund: ExecuteDLCRefund =>
                   executeDLCRefund.copy(eventId = eventId)
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRefund: ExecuteDLCRefund =>
@@ -481,7 +509,8 @@ object ConsoleCli {
             ClaimDLCPenaltyFunds(null, EmptyTransaction, noBroadcast = false)))
         .text("Claims the penalty funds for the corresponding DLC")
         .children(
-          opt[Sha256DigestBE]("eventid").required
+          opt[Sha256DigestBE]("eventid")
+            .required()
             .action((eventId, conf) =>
               conf.copy(command = conf.command match {
                 case claimDLCPenaltyFunds: ClaimDLCPenaltyFunds =>
@@ -550,6 +579,9 @@ object ConsoleCli {
       cmd("getutxos")
         .action((_, conf) => conf.copy(command = GetUtxos))
         .text("Returns list of all wallet utxos"),
+      cmd("listreservedutxos")
+        .action((_, conf) => conf.copy(command = ListReservedUtxos))
+        .text("Returns list of all reserved wallet utxos"),
       cmd("getaddresses")
         .action((_, conf) => conf.copy(command = GetAddresses))
         .text("Returns list of all wallet addresses currently being watched"),
@@ -697,7 +729,8 @@ object ConsoleCli {
                   send.copy(satoshisPerVirtualByte = Some(feeRate))
                 case other => other
               })),
-          opt[Unit]("noBroadcast").optional
+          opt[Unit]("noBroadcast")
+            .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case send: SendToAddress =>
@@ -791,6 +824,20 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("signpsbt")
+        .action((_, conf) => conf.copy(command = SignPSBT(PSBT.empty)))
+        .text("Signs the PSBT's inputs with keys that are associated with the wallet")
+        .children(
+          arg[PSBT]("psbt")
+            .text("PSBT to sign")
+            .required()
+            .action((psbt, conf) =>
+              conf.copy(command = conf.command match {
+                case signPSBT: SignPSBT =>
+                  signPSBT.copy(psbt = psbt)
+                case other => other
+              }))
+        ),
       cmd("opreturncommit")
         .action((_, conf) =>
           conf.copy(command = OpReturnCommit("", hashMessage = false, None)))
@@ -849,6 +896,44 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("keymanagerpassphrasechange")
+        .action((_, conf) =>
+          conf.copy(command = KeyManagerPassphraseChange(null, null)))
+        .text("Changes the wallet passphrase")
+        .children(
+          arg[AesPassword]("oldpassphrase")
+            .text("The current passphrase")
+            .required()
+            .action((oldPass, conf) =>
+              conf.copy(command = conf.command match {
+                case wpc: KeyManagerPassphraseChange =>
+                  wpc.copy(oldPassword = oldPass)
+                case other => other
+              })),
+          arg[AesPassword]("newpassphrase")
+            .text("The new passphrase")
+            .required()
+            .action((newPass, conf) =>
+              conf.copy(command = conf.command match {
+                case wpc: KeyManagerPassphraseChange =>
+                  wpc.copy(newPassword = newPass)
+                case other => other
+              }))
+        ),
+      cmd("keymanagerpassphraseset")
+        .action((_, conf) => conf.copy(command = KeyManagerPassphraseSet(null)))
+        .text("Encrypts the wallet with the given passphrase")
+        .children(
+          arg[AesPassword]("passphrase")
+            .text("The passphrase to encrypt the wallet with")
+            .required()
+            .action((pass, conf) =>
+              conf.copy(command = conf.command match {
+                case wps: KeyManagerPassphraseSet =>
+                  wps.copy(password = pass)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
@@ -872,6 +957,33 @@ object ConsoleCli {
               }))
         ),
       note(sys.props("line.separator") + "=== PSBT ==="),
+      cmd("decodepsbt")
+        .action((_, conf) => conf.copy(command = DecodePSBT(PSBT.empty)))
+        .text("Return a JSON object representing the serialized, base64-encoded partially signed Bitcoin transaction.")
+        .children(
+          arg[PSBT]("psbt")
+            .text("PSBT serialized in hex or base64 format")
+            .required()
+            .action((psbt, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodePSBT =>
+                  decode.copy(psbt = psbt)
+                case other => other
+              }))),
+      cmd("analyzepsbt")
+        .action((_, conf) => conf.copy(command = AnalyzePSBT(PSBT.empty)))
+        .text("Analyzes and provides information about the current status of a PSBT and its inputs")
+        .children(
+          arg[PSBT]("psbt")
+            .text("PSBT serialized in hex or base64 format")
+            .required()
+            .action((psbt, conf) =>
+              conf.copy(command = conf.command match {
+                case analyzePSBT: AnalyzePSBT =>
+                  analyzePSBT.copy(psbt = psbt)
+                case other => other
+              }))
+        ),
       cmd("combinepsbts")
         .action((_, conf) => conf.copy(command = CombinePSBTs(Seq.empty)))
         .text("Combines all the given PSBTs")
@@ -943,6 +1055,288 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      note(sys.props("line.separator") + "=== Oracle ==="),
+      cmd("getpublickey")
+        .action((_, conf) => conf.copy(command = GetPublicKey))
+        .text(s"Get oracle's public key"),
+      cmd("getstakingaddress")
+        .action((_, conf) => conf.copy(command = GetStakingAddress))
+        .text(s"Get oracle's staking address"),
+      cmd("listevents")
+        .action((_, conf) => conf.copy(command = ListEvents))
+        .text(s"Lists all oracle event TLVs"),
+      cmd("createevent")
+        .action((_, conf) =>
+          conf.copy(command = CreateEvent("", Instant.MIN, Seq.empty)))
+        .text("Registers an oracle event")
+        .children(
+          arg[String]("name")
+            .text("Name for this event")
+            .required()
+            .action((label, conf) =>
+              conf.copy(command = conf.command match {
+                case createEvent: CreateEvent =>
+                  createEvent.copy(label = label)
+                case other => other
+              })),
+          arg[Instant]("maturationtime")
+            .text("The earliest expected time an outcome will be signed, given in epoch second")
+            .required()
+            .action((time, conf) =>
+              conf.copy(command = conf.command match {
+                case createEvent: CreateEvent =>
+                  createEvent.copy(maturationTime = time)
+                case other => other
+              })),
+          arg[Seq[String]]("outcomes")
+            .text("Possible outcomes for this event")
+            .required()
+            .action((outcomes, conf) =>
+              conf.copy(command = conf.command match {
+                case createEvent: CreateEvent =>
+                  createEvent.copy(outcomes = outcomes)
+                case other => other
+              }))
+        ),
+      cmd("createrangedevent")
+        .action((_, conf) =>
+          conf.copy(command =
+            CreateRangedEvent("", Instant.MIN, 0, 0, 1, "", 0)))
+        .text("Registers an oracle event with a range of outcomes")
+        .children(
+          arg[String]("name")
+            .text("Name for this event")
+            .required()
+            .action((name, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(eventName = name)
+                case other => other
+              })),
+          arg[Instant]("maturationtime")
+            .text("The earliest expected time an outcome will be signed, given in epoch second")
+            .required()
+            .action((time, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(maturationTime = time)
+                case other => other
+              })),
+          arg[Int]("start")
+            .text("The first possible outcome number")
+            .required()
+            .action((start, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(start = start)
+                case other => other
+              })),
+          arg[Int]("stop")
+            .text("The last possible outcome number")
+            .required()
+            .action((stop, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(stop = stop)
+                case other => other
+              })),
+          arg[Int]("step")
+            .text("The increment between each outcome")
+            .action((step, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(step = step)
+                case other => other
+              })),
+          arg[String]("unit")
+            .text("The unit denomination of the outcome value")
+            .action((unit, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(unit = unit)
+                case other => other
+              })),
+          arg[Int]("precision")
+            .text("The precision of the outcome representing the " +
+              "base exponent by which to multiply the number represented by " +
+              "the composition of the digits to obtain the actual outcome value.")
+            .action((precision, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateRangedEvent =>
+                  createRangedEvent.copy(precision = precision)
+                case other => other
+              }))
+        ),
+      cmd("createdigitdecompevent")
+        .action((_, conf) =>
+          conf.copy(command = CreateDigitDecompEvent("",
+                                                     Instant.MIN,
+                                                     0,
+                                                     isSigned = false,
+                                                     0,
+                                                     "",
+                                                     0)))
+        .text("Registers an oracle event that uses digit decomposition when signing the number")
+        .children(
+          arg[String]("name")
+            .text("Name for this event")
+            .required()
+            .action((name, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(eventName = name)
+                case other => other
+              })),
+          arg[Instant]("maturationtime")
+            .text("The earliest expected time an outcome will be signed, given in epoch second")
+            .required()
+            .action((time, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(maturationTime = time)
+                case other => other
+              })),
+          arg[Int]("base")
+            .text("The base in which the outcome value is decomposed")
+            .required()
+            .action((base, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(base = base)
+                case other => other
+              })),
+          arg[Int]("numdigits")
+            .text("The max number of digits the outcome can have")
+            .action((num, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(numDigits = num)
+                case other => other
+              })),
+          opt[Unit]("signed")
+            .text("Whether the outcomes can be negative")
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(isSigned = true)
+                case other => other
+              })),
+          arg[String]("unit")
+            .text("The unit denomination of the outcome value")
+            .action((unit, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateDigitDecompEvent =>
+                  createRangedEvent.copy(unit = unit)
+                case other => other
+              })),
+          arg[Int]("precision")
+            .text("The precision of the outcome representing the " +
+              "base exponent by which to multiply the number represented by " +
+              "the composition of the digits to obtain the actual outcome value.")
+            .action((precision, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(precision = precision)
+                case other => other
+              }))
+        ),
+      cmd("getevent")
+        .action((_, conf) => conf.copy(command = GetEvent(null)))
+        .text("Get an event's details")
+        .children(
+          arg[OracleEventV0TLV]("event")
+            .text("The event's oracle event tlv")
+            .required()
+            .action((oracleEvent, conf) =>
+              conf.copy(command = conf.command match {
+                case getEvent: GetEvent =>
+                  getEvent.copy(oracleEventV0TLV = oracleEvent)
+                case other => other
+              }))
+        ),
+      cmd("signevent")
+        .action((_, conf) => conf.copy(command = SignEvent(null, "")))
+        .text("Signs an event")
+        .children(
+          arg[OracleEventV0TLV]("event")
+            .text("The event's oracle event tlv")
+            .required()
+            .action((event, conf) =>
+              conf.copy(command = conf.command match {
+                case signEvent: SignEvent =>
+                  signEvent.copy(oracleEventV0TLV = event)
+                case other => other
+              })),
+          arg[String]("outcome")
+            .text("Outcome to sign for this event")
+            .required()
+            .action((outcome, conf) =>
+              conf.copy(command = conf.command match {
+                case signEvent: SignEvent =>
+                  signEvent.copy(outcome = outcome)
+                case other => other
+              }))
+        ),
+      cmd("signforrange")
+        .action((_, conf) => conf.copy(command = SignForRange(null, 0)))
+        .text("Signs a ranged event")
+        .children(
+          arg[OracleEventV0TLV]("event")
+            .text("The event's oracle event tlv")
+            .required()
+            .action((event, conf) =>
+              conf.copy(command = conf.command match {
+                case signRange: SignForRange =>
+                  signRange.copy(oracleEventV0TLV = event)
+                case other => other
+              })),
+          arg[Long]("outcome")
+            .text("Number to sign for this event")
+            .required()
+            .action((num, conf) =>
+              conf.copy(command = conf.command match {
+                case signRange: SignForRange =>
+                  signRange.copy(num = num)
+                case other => other
+              }))
+        ),
+      cmd("signdigits")
+        .action((_, conf) => conf.copy(command = SignDigits(null, 0)))
+        .text("Signs a large range event")
+        .children(
+          arg[OracleEventV0TLV]("event")
+            .text("The event's oracle event tlv")
+            .required()
+            .action((event, conf) =>
+              conf.copy(command = conf.command match {
+                case signDigits: SignDigits =>
+                  signDigits.copy(oracleEventV0TLV = event)
+                case other => other
+              })),
+          arg[Long]("outcome")
+            .text("The event's oracle event tlv")
+            .required()
+            .action((num, conf) =>
+              conf.copy(command = conf.command match {
+                case signDigits: SignDigits =>
+                  signDigits.copy(num = num)
+                case other => other
+              }))
+        ),
+      cmd("getsignatures")
+        .action((_, conf) => conf.copy(command = GetSignatures(null)))
+        .text("Get the signatures from a signed event")
+        .children(
+          arg[OracleEventV0TLV]("event")
+            .text("The event descriptor associated with the event to sign")
+            .required()
+            .action((event, conf) =>
+              conf.copy(command = conf.command match {
+                case getSignature: GetSignatures =>
+                  getSignature.copy(oracleEventV0TLV = event)
+                case other => other
+              }))
+        ),
       checkConfig {
         case Config(NoCommand, _, _, _) =>
           failure("You need to provide a command!")
@@ -978,6 +1372,8 @@ object ConsoleCli {
     val requestParam: RequestParam = command match {
       case GetUtxos =>
         RequestParam("getutxos")
+      case ListReservedUtxos =>
+        RequestParam("listreservedutxos")
       case GetAddresses =>
         RequestParam("getaddresses")
       case GetSpentAddresses =>
@@ -1118,6 +1514,16 @@ object ConsoleCli {
                      Seq(up.writeJs(message),
                          up.writeJs(hashMessage),
                          up.writeJs(satoshisPerVirtualByte)))
+      case SignPSBT(psbt) =>
+        RequestParam("signpsbt", Seq(up.writeJs(psbt)))
+
+      case KeyManagerPassphraseChange(oldPassword, newPassword) =>
+        RequestParam("keymanagerpassphrasechange",
+                     Seq(up.writeJs(oldPassword), up.writeJs(newPassword)))
+
+      case KeyManagerPassphraseSet(password) =>
+        RequestParam("keymanagerpassphraseset", Seq(up.writeJs(password)))
+
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -1132,6 +1538,8 @@ object ConsoleCli {
       case SendRawTransaction(tx) =>
         RequestParam("sendrawtransaction", Seq(up.writeJs(tx)))
       // PSBTs
+      case DecodePSBT(psbt) =>
+        RequestParam("decodepsbt", Seq(up.writeJs(psbt)))
       case CombinePSBTs(psbts) =>
         RequestParam("combinepsbts", Seq(up.writeJs(psbts)))
       case JoinPSBTs(psbts) =>
@@ -1145,6 +1553,66 @@ object ConsoleCli {
 
       case DecodeRawTransaction(tx) =>
         RequestParam("decoderawtransaction", Seq(up.writeJs(tx)))
+
+      case AnalyzePSBT(psbt) =>
+        RequestParam("analyzepsbt", Seq(up.writeJs(psbt)))
+
+      // Oracle
+      case GetPublicKey =>
+        RequestParam("getpublickey")
+      case GetStakingAddress =>
+        RequestParam("getstakingaddress")
+      case ListEvents =>
+        RequestParam("listevents")
+      case GetEvent(tlv) =>
+        RequestParam("getevent", Seq(up.writeJs(tlv)))
+      case CreateEvent(label, time, outcomes) =>
+        RequestParam(
+          "createevent",
+          Seq(up.writeJs(label), up.writeJs(time), up.writeJs(outcomes)))
+      case CreateRangedEvent(eventName,
+                             time,
+                             start,
+                             stop,
+                             step,
+                             unit,
+                             precision) =>
+        RequestParam(
+          "createrangedevent",
+          Seq(up.writeJs(eventName),
+              up.writeJs(time),
+              up.writeJs(start),
+              up.writeJs(stop),
+              up.writeJs(step),
+              up.writeJs(unit),
+              up.writeJs(precision))
+        )
+
+      case CreateDigitDecompEvent(eventName,
+                                  time,
+                                  base,
+                                  isSigned,
+                                  numDigits,
+                                  unit,
+                                  precision) =>
+        RequestParam(
+          "createdigitdecompevent",
+          Seq(up.writeJs(eventName),
+              up.writeJs(time),
+              up.writeJs(base),
+              up.writeJs(isSigned),
+              up.writeJs(numDigits),
+              up.writeJs(unit),
+              up.writeJs(precision))
+        )
+      case SignEvent(tlv, outcome) =>
+        RequestParam("signevent", Seq(up.writeJs(tlv), up.writeJs(outcome)))
+      case SignForRange(tlv, num) =>
+        RequestParam("signforrange", Seq(up.writeJs(tlv), up.writeJs(num)))
+      case SignDigits(tlv, num) =>
+        RequestParam("signlargenumber", Seq(up.writeJs(tlv), up.writeJs(num)))
+      case GetSignatures(tlv) =>
+        RequestParam("getsignatures", Seq(up.writeJs(tlv)))
 
       case NoCommand => ???
     }
@@ -1199,16 +1667,18 @@ object ConsoleCli {
           case Str(string)             => string
           case Num(num) if num.isWhole => num.toLong.toString
           case Num(num)                => num.toString
-          case rest: ujson.Value       => rest.toString()
+          case rest: ujson.Value       => rest.render(2)
         }
 
       (getKey("result"), getKey("error")) match {
         case (Some(result), None) =>
           Success(jsValueToString(result))
+        case (None, None) =>
+          Success("")
         case (None, Some(err)) =>
           val msg = jsValueToString(err)
           error(msg)
-        case (None, None) | (Some(_), Some(_)) =>
+        case (Some(_), Some(_)) =>
           error(s"Got unexpected response: $rawBody")
       }
     }.flatten
@@ -1357,6 +1827,8 @@ object CliCommand {
       feeRateOpt: Option[SatoshisPerVirtualByte])
       extends CliCommand
 
+  case class SignPSBT(psbt: PSBT) extends CliCommand
+
   case class LockUnspent(
       unlock: Boolean,
       outPoints: Vector[LockUnspentOutputParameter])
@@ -1373,6 +1845,7 @@ object CliCommand {
 
   case class GetNewAddress(labelOpt: Option[AddressLabelTag]) extends CliCommand
   case object GetUtxos extends CliCommand
+  case object ListReservedUtxos extends CliCommand
   case object GetAddresses extends CliCommand
   case object GetSpentAddresses extends CliCommand
   case object GetFundedAddresses extends CliCommand
@@ -1384,6 +1857,12 @@ object CliCommand {
   case class GetConfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetUnconfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends CliCommand
+
+  case class KeyManagerPassphraseChange(
+      oldPassword: AesPassword,
+      newPassword: AesPassword)
+      extends CliCommand
+  case class KeyManagerPassphraseSet(password: AesPassword) extends CliCommand
 
   // Node
   case object GetPeers extends CliCommand
@@ -1406,9 +1885,56 @@ object CliCommand {
       extends CliCommand
 
   // PSBT
+  case class DecodePSBT(psbt: PSBT) extends CliCommand
   case class CombinePSBTs(psbts: Seq[PSBT]) extends CliCommand
   case class JoinPSBTs(psbts: Seq[PSBT]) extends CliCommand
   case class FinalizePSBT(psbt: PSBT) extends CliCommand
   case class ExtractFromPSBT(psbt: PSBT) extends CliCommand
   case class ConvertToPSBT(transaction: Transaction) extends CliCommand
+  case class AnalyzePSBT(psbt: PSBT) extends CliCommand
+
+  // Oracle
+  case object GetPublicKey extends CliCommand
+  case object GetStakingAddress extends CliCommand
+  case object ListEvents extends CliCommand
+
+  case class GetEvent(oracleEventV0TLV: OracleEventV0TLV) extends CliCommand
+
+  case class CreateEvent(
+      label: String,
+      maturationTime: Instant,
+      outcomes: Seq[String])
+      extends CliCommand
+
+  case class CreateRangedEvent(
+      eventName: String,
+      maturationTime: Instant,
+      start: Int,
+      stop: Int,
+      step: Int,
+      unit: String,
+      precision: Int)
+      extends CliCommand
+
+  case class CreateDigitDecompEvent(
+      eventName: String,
+      maturationTime: Instant,
+      base: Int,
+      isSigned: Boolean,
+      numDigits: Int,
+      unit: String,
+      precision: Int)
+      extends CliCommand
+
+  case class SignEvent(oracleEventV0TLV: OracleEventV0TLV, outcome: String)
+      extends CliCommand
+
+  case class SignForRange(oracleEventV0TLV: OracleEventV0TLV, num: Long)
+      extends CliCommand
+
+  case class SignDigits(oracleEventV0TLV: OracleEventV0TLV, num: Long)
+      extends CliCommand
+
+  case class GetSignatures(oracleEventV0TLV: OracleEventV0TLV)
+      extends CliCommand
 }

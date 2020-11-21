@@ -3,37 +3,38 @@ import sbt._
 object Deps {
 
   object V {
-    val bouncyCastle = "1.66"
+    val bouncyCastle = "1.67"
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
-    val scalacheck = "1.14.3"
-    val scalaTest = "3.2.2"
+    val scalacheck = "1.15.1"
+    val scalaTest = "3.2.3"
 
     val scalaTestPlus =
       "3.2.1.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "1.7.30"
-    val spray = "1.3.5"
+    val spray = "1.3.6"
     val zeromq = "0.5.2"
-    val akkav = "10.2.1"
+    val akkav = "10.1.13"
     val playv = "2.9.1"
-    val akkaStreamv = "2.6.9"
-    val scodecV = "1.1.20"
+    val akkaStreamv = "2.6.10"
+    val scodecV = "1.1.21"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.4"
-    val typesafeConfigV = "1.4.0"
+    val typesafeConfigV = "1.4.1"
 
     val scalaFxV = "14-R19"
-    val javaFxV = "16-ea+2"
+    val javaFxV = "16-ea+4"
 
     val asyncNewScalaV = "0.10.0"
 
     val flywayV = "6.4.2"
-    val postgresV = "42.2.16"
+    val postgresV = "42.2.18"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.3"
     val sqliteV = "3.32.3.2"
     val scalameterV = "0.17"
     val scalamockV = "5.0.0"
+    val scalaCollectionCompatV = "2.2.0"
     val pgEmbeddedV = "0.13.3"
 
     val newMicroPickleV = "0.8.0"
@@ -203,6 +204,9 @@ object Deps {
     val scalameter =
       "com.storm-enroute" %% "scalameter" % V.scalameterV % "test" withSources () withJavadoc ()
 
+    val scalaCollectionCompat =
+      "org.scala-lang.modules" %% "scala-collection-compat" % V.scalaCollectionCompatV
+
     val pgEmbedded =
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
   }
@@ -244,7 +248,8 @@ object Deps {
     Test.logback,
     Test.scalaTest,
     Test.spray,
-    Test.playJson
+    Test.playJson,
+    Test.scalaCollectionCompat
   )
 
   val cryptoTest = List(
@@ -307,6 +312,15 @@ object Deps {
   val gui = List(Compile.scalaFx) ++ Compile.javaFxDeps
 
   def server(scalaVersion: String) =
+    List(
+      Compile.newMicroPickle,
+      Compile.logback,
+      Compile.akkaActor,
+      Compile.akkaHttp,
+      Compile.akkaSlf4j
+    )
+
+  val oracleServer =
     List(
       Compile.newMicroPickle,
       Compile.logback,

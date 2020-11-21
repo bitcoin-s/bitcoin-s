@@ -8,17 +8,27 @@ import org.bitcoins.core.api.wallet.AnyHDWalletApi
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.wallet.utxo.AddressLabelTagType
+import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
 import org.bitcoins.crypto.NetworkElement
-import org.bitcoins.node.Node
+import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.wallet.config.WalletAppConfig
+import ujson._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
-    system: ActorSystem)
+case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
+    system: ActorSystem,
+    walletConf: WalletAppConfig)
     extends ServerRoute {
   import system.dispatcher
+
+  private def spendingInfoDbToJson(spendingInfoDb: SpendingInfoDb): Value = {
+    Obj(
+      "outpoint" -> Str(spendingInfoDb.outPoint.hex),
+      "value" -> Num(spendingInfoDb.output.value.satoshis.toLong.toDouble)
+    )
+  }
 
   private def handleBroadcastable(
       tx: Transaction,
@@ -26,7 +36,7 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
     if (noBroadcast) {
       Future.successful(tx)
     } else {
-      node.broadcastTransaction(tx).map(_ => tx.txIdBE)
+      wallet.broadcastTransaction(tx).map(_ => tx.txIdBE)
     }
   }
 
@@ -160,7 +170,7 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
         case Success(GetAddressTags(address)) =>
           complete {
             wallet.getAddressTags(address).map { tagDbs =>
-              val retStr = tagDbs.map(_.tagName.name).mkString(", ")
+              val retStr = tagDbs.map(_.tagName.name)
               Server.httpSuccess(retStr)
             }
           }
@@ -173,7 +183,7 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
         case Success(GetAddressLabels(address)) =>
           complete {
             wallet.getAddressTags(address, AddressLabelTagType).map { tagDbs =>
-              val retStr = tagDbs.map(_.tagName.name).mkString(", ")
+              val retStr = tagDbs.map(_.tagName.name)
               Server.httpSuccess(retStr)
             }
           }
@@ -260,6 +270,18 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
           }
       }
 
+    case ServerCommand("signpsbt", arr) =>
+      SignPSBT.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(SignPSBT(psbt)) =>
+          complete {
+            wallet.signPSBT(psbt).map { signed =>
+              Server.httpSuccess(signed.base64)
+            }
+          }
+      }
+
     case ServerCommand("opreturncommit", arr) =>
       OpReturnCommit.fromJsArr(arr) match {
         case Failure(exception) =>
@@ -318,9 +340,16 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
     case ServerCommand("getutxos", _) =>
       complete {
         wallet.listUtxos().map { utxos =>
-          val retStr = utxos.foldLeft("")((accum, spendInfo) =>
-            accum + s"${spendInfo.outPoint.hex} ${spendInfo.output.value}\n")
-          Server.httpSuccess(retStr)
+          val json = utxos.map(spendingInfoDbToJson)
+          Server.httpSuccess(json)
+        }
+      }
+
+    case ServerCommand("listreservedutxos", _) =>
+      complete {
+        wallet.listUtxos(TxoState.Reserved).map { utxos =>
+          val json = utxos.map(spendingInfoDbToJson)
+          Server.httpSuccess(json)
         }
       }
 
@@ -344,7 +373,11 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
       complete {
         wallet.listFundedAddresses().map { addressDbs =>
           val addressAndValues = addressDbs.map {
-            case (addressDb, value) => s"${addressDb.address} $value"
+            case (addressDb, value) =>
+              Obj(
+                "address" -> Str(addressDb.address.value),
+                "value" -> Num(value.satoshis.toLong.toDouble)
+              )
           }
 
           Server.httpSuccess(addressAndValues)
@@ -375,8 +408,11 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
           complete {
             wallet.getAddressInfo(address).map {
               case Some(addressInfo) =>
-                Server.httpSuccess(
-                  s"${addressInfo.pubkey.hex} ${addressInfo.path.toString}")
+                val json = Obj(
+                  "pubkey" -> Str(addressInfo.pubkey.hex),
+                  "path" -> Str(addressInfo.path.toString)
+                )
+                Server.httpSuccess(json)
               case None =>
                 Server.httpSuccess("Wallet does not contain address")
             }
@@ -394,5 +430,32 @@ case class WalletRoutes(wallet: AnyHDWalletApi, node: Node)(implicit
         }
       }
 
+    case ServerCommand("keymanagerpassphrasechange", arr) =>
+      KeyManagerPassphraseChange.fromJsArr(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(KeyManagerPassphraseChange(oldPassword, newPassword)) =>
+          complete {
+            val path = walletConf.seedPath
+            WalletStorage.changeAesPassword(path,
+                                            Some(oldPassword),
+                                            Some(newPassword))
+
+            Server.httpSuccess(ujson.Null)
+          }
+      }
+
+    case ServerCommand("keymanagerpassphraseset", arr) =>
+      KeyManagerPassphraseSet.fromJsArr(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(KeyManagerPassphraseSet(password)) =>
+          complete {
+            val path = walletConf.seedPath
+            WalletStorage.changeAesPassword(path, None, Some(password))
+
+            Server.httpSuccess(ujson.Null)
+          }
+      }
   }
 }

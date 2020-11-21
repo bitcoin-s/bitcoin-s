@@ -24,6 +24,7 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
+import scala.reflect.io.Directory
 
 class WalletRpcTest extends BitcoindRpcTest {
 
@@ -483,6 +484,26 @@ class WalletRpcTest extends BitcoindRpcTest {
       _ <- walletClient.dumpPrivKey(address)
     } yield assert(fileResult.filename.exists)
 
+  }
+
+  it should "be able to load a wallet" in {
+    val name = "tmp_wallet"
+
+    for {
+      (client, _, _) <- clientsF
+      walletClient <- walletClientF
+      walletFile = client.getDaemon.datadir + s"/regtest/wallets/$name"
+
+      _ <- client.createWallet(walletFile)
+      _ <- client.unloadWallet(walletFile)
+      loadResult <- walletClient.loadWallet(walletFile)
+    } yield {
+      // clean up
+      val directory = new Directory(new File(walletFile))
+      directory.deleteRecursively()
+
+      assert(loadResult.name == walletFile)
+    }
   }
 
   it should "be able to set the tx fee" in {

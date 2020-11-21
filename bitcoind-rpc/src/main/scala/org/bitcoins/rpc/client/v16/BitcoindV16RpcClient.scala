@@ -32,7 +32,7 @@ class BitcoindV16RpcClient(override val instance: BitcoindInstance)(implicit
 
   override def version: BitcoindVersion = BitcoindVersion.V16
 
-  override def getFilterCount: Future[Int] = filtersUnsupported
+  override def getFilterCount(): Future[Int] = filtersUnsupported
 
   override def getFiltersBetweenHeights(
       startHeight: Int,

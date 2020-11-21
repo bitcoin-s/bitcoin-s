@@ -168,7 +168,7 @@ class TransactionTest extends BitcoinSUnitTest {
           |""".stripMargin*/
 
     val lines =
-      try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n"
+      try source.getLines().filterNot(_.isEmpty).map(_.trim) mkString "\n"
       finally source.close()
     val json = lines.parseJson
     val testCasesOpt: Seq[Option[CoreTransactionTestCase]] =
@@ -252,7 +252,7 @@ class TransactionTest extends BitcoinSUnitTest {
           |[[[["0000000000000000000000000000000000000000000000000000000000000000",-1,"1"]], "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0151ffffffff010000000000000000015100000000", "P2SH"]]
         """.stripMargin*/
     val lines =
-      try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n"
+      try source.getLines().filterNot(_.isEmpty).map(_.trim) mkString "\n"
       finally source.close()
     val json = lines.parseJson
     val testCasesOpt: Seq[Option[CoreTransactionTestCase]] =
@@ -272,7 +272,7 @@ class TransactionTest extends BitcoinSUnitTest {
           val txSigComponent = amountOpt match {
             case Some(amount) =>
               scriptPubKey match {
-                case p2sh: P2SHScriptPubKey =>
+                case _: P2SHScriptPubKey =>
                   tx match {
                     case btx: NonWitnessTransaction =>
                       BaseTxSigComponent(
@@ -345,7 +345,7 @@ class TransactionTest extends BitcoinSUnitTest {
       tx: Transaction,
       outPoint: TransactionOutPoint): Option[(TransactionInput, Int)] = {
     tx.inputs.zipWithIndex.find {
-      case (input, index) => input.previousOutput == outPoint
+      case (input, _) => input.previousOutput == outPoint
     }
   }
 }

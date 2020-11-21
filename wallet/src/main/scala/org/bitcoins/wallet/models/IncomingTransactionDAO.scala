@@ -46,7 +46,7 @@ case class IncomingTransactionDAO()(implicit
       IncomingTransactionTuple] = tx => Some((tx.txIdBE, tx.incomingAmount))
 
     def * : ProvenShape[IncomingTransactionDb] =
-      (txIdBE, incomingAmount) <> (fromTuple, toTuple)
+      (txIdBE, incomingAmount).<>(fromTuple, toTuple)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_in_tx", sourceColumns = txIdBE)

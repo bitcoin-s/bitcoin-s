@@ -1,12 +1,6 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  ECPrivateKey,
-  Factory,
-  NetworkElement,
-  Sha256Digest
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 final case class PaymentSecret(bytes: ByteVector) extends NetworkElement {

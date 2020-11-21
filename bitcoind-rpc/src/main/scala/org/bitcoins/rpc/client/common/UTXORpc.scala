@@ -23,6 +23,9 @@ trait UTXORpc { self: Client =>
 
   def listUnspent: Future[Vector[UnspentOutput]] = listUnspent(addresses = None)
 
+  def listUnspent(walletName: String): Future[Vector[UnspentOutput]] =
+    listUnspent(addresses = None, walletNameOpt = Some(walletName))
+
   def listUnspent(
       minConfirmations: Int,
       maxConfirmations: Int): Future[Vector[UnspentOutput]] =
@@ -41,12 +44,15 @@ trait UTXORpc { self: Client =>
   private def listUnspent(
       minConfirmations: Int = 1,
       maxConfirmations: Int = 9999999,
-      addresses: Option[Vector[BitcoinAddress]]): Future[
-    Vector[UnspentOutput]] = {
+      addresses: Option[Vector[BitcoinAddress]],
+      walletNameOpt: Option[String] = None): Future[Vector[UnspentOutput]] = {
     val params =
       List(JsNumber(minConfirmations), JsNumber(maxConfirmations)) ++
         addresses.map(Json.toJson(_)).toList
-    bitcoindCall[Vector[UnspentOutput]]("listunspent", params)
+    bitcoindCall[Vector[UnspentOutput]]("listunspent",
+                                        params,
+                                        uriExtensionOpt =
+                                          walletNameOpt.map(walletExtension))
   }
 
   def lockUnspent(

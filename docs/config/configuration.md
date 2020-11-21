@@ -59,13 +59,17 @@ There are a few command line options available that take precedence over configu
 
     `force-recalc-chainwork` will force a recalculation of the entire chain's chain work, this
     can be useful if there is an incompatible migration or if it got out of sync.
+    
+- `-Dlogback.configurationFile=/path/to/config.xml`
+
+    You can set a custom logback configuration. If you need help creating a custom logback file
+    you can read [the logback configuration documentation](http://logback.qos.ch/manual/configuration.html).
 
 ## Internal configuration
 
-Database connections are also configured by using HOCON. This is done in
-[`db.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/db.conf). The options
-exposed here are **not** intended to
-be used by users of Bitcoin-S, and are internal only.
+Database connections are also configured by using HOCON.
+This is done in [`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf) inside the `db-commons` module.
+The options exposed here are **not** intended to be used by users of Bitcoin-S, and are internal only.
 
 ## Database Migrations
 
@@ -92,6 +96,11 @@ bitcoin-s {
     network = regtest # regtest, testnet3, mainnet, signet
 
     bitcoind-rpc {
+        # bitcoind rpc username
+        rpcuser = user
+        # bitcoind rpc password
+        rpcpassword = password
+
         # Binary location of bitcoind
         binary = ${HOME}/.bitcoin-s/binaries/bitcoind/bitcoin-0.20.1/bin/bitcoind
         # bitcoind datadir
@@ -104,16 +113,12 @@ bitcoin-s {
         rpcbind = localhost
         # bitcoind rpc port
         rpcport = 8332
-        # bitcoind rpc username
-        rpcuser = user
-        # bitcoind rpc password
-        rpcpassword = password
         # bitcoind zmq port for all services
         zmqport = 29000
     }
 
     node {
-        mode = neutrino # neutrino, spv
+        mode = neutrino # neutrino, spv, bitcoind
 
         peers = [] # a list of peer addresses in form "hostname:portnumber"
         # (e.g. "neutrino.testnet3.suredbits.com:18333")
@@ -155,8 +160,38 @@ bitcoin-s {
         # How long we attempt to generate an address for
         # before we timeout
         addressQueueTimeout = 5 seconds
-
    }
+
+    keymanager {
+        # You can optionally set a BIP 39 password
+        # bip39password = "changeMe"
+
+        # Password that your seed is encrypted with
+        aespassword = changeMe
+    }
+
+    # Bitcoin-S provides manny different fee providers
+    # You can configure your server to use any of them
+    # Below is some examples of different options
+    fee-provider {
+        # name = mempoolspace # Uses mempool.space's api
+        # The target is optional for mempool.space
+        # It refers to the expected number of blocks until confirmation
+        # target = 6
+
+        # name = bitcoinerlive # Uses bitcoiner.live's api
+        # The target is optional for Bitcoiner Live
+        # It refers to the expected number of blocks until confirmation
+        # target = 6
+
+        # name = bitgo # Uses BitGo's api
+        # The target is optional for BitGo
+        # It refers to the expected number of blocks until confirmation
+        # target = 6
+
+        # name = constant # A constant fee rate in sats/vbyte
+        # target = 1 # Will always use 1 sat/vbyte
+    }
 
     server {
         # The port we bind our rpc server on
@@ -215,7 +250,7 @@ bitcoin-s {
         db {
             driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/database"
-            username = "user"
+            user = "user"
             password = "topsecret"
             numThreads = 5
         }
@@ -229,6 +264,9 @@ bitcoin-s {
     
     wallet.profile = ${bitcoin-s.common.profile}
     wallet.db = ${bitcoin-s.common.db}
+
+    oracle.profile = ${bitcoin-s.common.profile}
+    oracle.db = ${bitcoin-s.common.db}
 }
 ```
 
@@ -245,7 +283,7 @@ bitcoin-s {
         db {
             driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/chaindb"
-            username = "user"
+            user = "user"
             password = "topsecret"
         }
     }
@@ -254,7 +292,7 @@ bitcoin-s {
         db {
             driver = org.postgresql.Driver
             url = "jdbc:postgresql://localhost:5432/walletdb"
-            username = "user"
+            user = "user"
             password = "topsecret"
         }
     }

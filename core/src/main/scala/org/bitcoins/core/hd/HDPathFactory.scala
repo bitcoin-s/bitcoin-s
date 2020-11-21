@@ -49,6 +49,7 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
       case BIP32Node(HDPurposes.SegWit.constant, true) => HDPurposes.SegWit
       case BIP32Node(HDPurposes.NestedSegWit.constant, true) =>
         HDPurposes.NestedSegWit
+      case BIP32Node(HDPurposes.Multisig.constant, true) => HDPurposes.Multisig
       case BIP32Node(unknown, true) =>
         throw new IllegalArgumentException(
           s"Purpose constant ($unknown) is not a known purpose constant")
@@ -71,7 +72,7 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
             "The address index child must not be hardened!")
 
     val chainType = HDChainType.fromInt(chainChild.index)
-    val coinType = HDCoinType.fromInt(coinChild.index)
+    val coinType = HDCoinType(coinChild.index)
 
     apply(coin = coinType,
           accountIndex = accountChild.index,

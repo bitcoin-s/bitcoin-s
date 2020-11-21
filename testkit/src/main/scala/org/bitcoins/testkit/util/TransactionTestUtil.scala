@@ -5,8 +5,9 @@ import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
 
 /**
   * Created by chris on 2/12/16.
@@ -248,6 +249,29 @@ trait TransactionTestUtil extends BitcoinSLogger {
                     inputs = Vector(EmptyTransactionInput),
                     outputs = Vector(output),
                     lockTime = TransactionConstants.lockTime)
+  }
+
+  def dummyTx(
+      prevTxId: DoubleSha256Digest = DoubleSha256Digest.empty,
+      scriptSig: ScriptSignature = EmptyScriptSignature,
+      spk: ScriptPubKey = EmptyScriptPubKey): Transaction = {
+    BaseTransaction(
+      version = Int32.zero,
+      inputs = Vector(
+        TransactionInput(outPoint = TransactionOutPoint(txId = prevTxId,
+                                                        vout = UInt32.zero),
+                         scriptSignature = scriptSig,
+                         sequenceNumber = UInt32.zero)),
+      outputs = Vector(TransactionOutput(CurrencyUnits.oneBTC, spk)),
+      lockTime = UInt32.zero
+    )
+  }
+
+  def dummyPSBT(
+      prevTxId: DoubleSha256Digest = DoubleSha256Digest.empty,
+      scriptSig: ScriptSignature = EmptyScriptSignature,
+      spk: ScriptPubKey = EmptyScriptPubKey): PSBT = {
+    PSBT.fromUnsignedTx(dummyTx(prevTxId, scriptSig, spk))
   }
 }
 

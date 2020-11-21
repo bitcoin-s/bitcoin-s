@@ -33,6 +33,8 @@ sealed abstract class Address {
   def scriptPubKey: ScriptPubKey
 
   override def toString: String = value
+
+  def descriptor: String = s"addr($value)"
 }
 
 sealed abstract class BitcoinAddress extends Address

@@ -7,15 +7,8 @@ import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
-import org.bitcoins.core.api.wallet.db.{
-  AccountDb,
-  AddressDb,
-  AddressTagDb,
-  LegacyAddressDb,
-  SegwitV0SpendingInfo,
-  SpendingInfoDb
-}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
@@ -40,6 +33,8 @@ import org.bitcoins.crypto.{
   Sha256Hash160Digest
 }
 import org.bitcoins.node.Node
+import org.bitcoins.server.BitcoinSAppConfig.implicitToWalletConf
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.wallet.MockWalletApi
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
@@ -51,6 +46,9 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
+
+  implicit val conf: BitcoinSAppConfig =
+    BitcoinSTestAppConfig.getSpvTestConfig()
 
   // the genesis address
   val testAddressStr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
@@ -67,7 +65,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val nodeRoutes = NodeRoutes(mockNode)
 
-  val walletRoutes = WalletRoutes(mockWalletApi, mockNode)
+  val walletRoutes: WalletRoutes = WalletRoutes(mockWalletApi)
 
   val coreRoutes: CoreRoutes = CoreRoutes(Core)
 
@@ -353,7 +351,24 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":"000000000000000000000000000000000000000000000000000000000000000000000000 -1 sats\n","error":null}""")
+          responseAs[String] == """{"result":[{"outpoint":"000000000000000000000000000000000000000000000000000000000000000000000000","value":-1}],"error":null}""")
+      }
+    }
+
+    "return the reserved wallet utxos" in {
+
+      (mockWalletApi
+        .listUtxos(_: TxoState))
+        .expects(TxoState.Reserved)
+        .returning(Future.successful(Vector(spendingInfoDb)))
+
+      val route =
+        walletRoutes.handleCommand(ServerCommand("listreservedutxos", Arr()))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":[{"outpoint":"000000000000000000000000000000000000000000000000000000000000000000000000","value":-1}],"error":null}""")
       }
     }
 
@@ -424,7 +439,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[String] ==
-          s"""{"result":["$testAddressStr ${Satoshis.zero}"],"error":null}""".stripMargin)
+          s"""{"result":[{"address":"$testAddressStr","value":0}],"error":null}""".stripMargin)
       }
     }
 
@@ -509,7 +524,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == """{"result":"""" + key.hex + " " + hdPath.toString + """","error":null}""")
+          String] == s"""{"result":{"pubkey":"${key.hex}","path":"${hdPath.toString}"},"error":null}""")
       }
     }
 
@@ -621,8 +636,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(responseAs[
-          String] == """{"result":"""" + testLabel.name + """","error":null}""")
+        assert(
+          responseAs[String] == """{"result":["""" + testLabel.name + """"],"error":null}""")
       }
     }
 
@@ -639,8 +654,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(responseAs[
-          String] == """{"result":"""" + testLabel.name + """","error":null}""")
+        assert(
+          responseAs[String] == """{"result":["""" + testLabel.name + """"],"error":null}""")
       }
     }
 
@@ -945,6 +960,28 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         rejection == ValidationRejection(
           "failure",
           Some(InvalidData(Null, "Expected ujson.Str")))
+      }
+    }
+
+    "sign a psbt" in {
+      val tx = Transaction(
+        "020000000258e87a21b56daf0c23be8e7070456c336f7cbaa5c8757924f545887bb2abdd750000000000ffffffff838d0427d0ec650a68aa46bb0b098aea4422c071b2ca78352a077959d07cea1d0100000000ffffffff0270aaf00800000000160014d85c2b71d0060b09c9886aeb815e50991dda124d00e1f5050000000016001400aea9a2e5f0f876a588df5546e8742d1d87008f00000000")
+
+      (mockWalletApi
+        .signPSBT(_: PSBT)(_: ExecutionContext))
+        .expects(PSBT.empty, executor)
+        .returning(Future.successful(PSBT.fromUnsignedTx(tx)))
+        .anyNumberOfTimes()
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("signpsbt", Arr(Str(PSBT.empty.hex))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == s"""{"result":"${PSBT
+          .fromUnsignedTx(tx)
+          .base64}","error":null}""")
       }
     }
 

@@ -4,19 +4,7 @@ import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.util._
-import org.bitcoins.crypto.{
-  BaseECKey,
-  CryptoContext,
-  CryptoUtil,
-  ECDigitalSignature,
-  ECPrivateKey,
-  ECPublicKey,
-  Factory,
-  FieldElement,
-  MaskedToString,
-  NetworkElement,
-  StringFactory
-}
+import org.bitcoins.crypto._
 import scodec.bits.{ByteVector, HexStringSyntax}
 
 import scala.annotation.tailrec

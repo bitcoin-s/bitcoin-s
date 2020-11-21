@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.core.api._
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto._
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.Block
@@ -83,7 +83,8 @@ val bitcoind = BitcoindV19RpcClient(BitcoindInstance.fromConfigFile())
 val nodeApi = BitcoinSWalletTest.MockNodeApi
 
 // Create our key manager
-val keyManagerE = BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
+val keyManagerE = BIP39KeyManager.initialize(aesPasswordOpt = Some(AesPassword.fromString("password")),
+                                               kmParams = walletConf.kmParams,
                                                bip39PasswordOpt = None)
 
 val keyManager = keyManagerE match {

@@ -24,6 +24,7 @@ Here is an example of constructing a wallet and registering a callback, so you c
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
 import org.bitcoins.core.api._
+import org.bitcoins.crypto._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.feeprovider._
@@ -48,9 +49,11 @@ implicit val walletConf: WalletAppConfig =
 // let's use a helper method to get a v19 bitcoind
 // and a ChainApi
 val bitcoind = BitcoindV19RpcClient(BitcoindInstance.fromConfigFile())
+val aesPasswordOpt = Some(AesPassword.fromString("password"))
 
 // Create our key manager
-  val keyManagerE = BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
+  val keyManagerE = BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
+                                               kmParams = walletConf.kmParams,
                                                bip39PasswordOpt = None)
 
 val keyManager = keyManagerE match {

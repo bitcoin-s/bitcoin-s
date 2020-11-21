@@ -1,8 +1,9 @@
 package org.bitcoins.db
 
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.db.DatabaseDriver._
 import org.flywaydb.core.Flyway
-import org.flywaydb.core.api.FlywayException
+import org.flywaydb.core.api.{FlywayException, MigrationInfoService}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -11,6 +12,23 @@ trait DbManagement extends BitcoinSLogger {
   import profile.api._
 
   import scala.language.implicitConversions
+
+  private lazy val flyway: Flyway = {
+    val module = appConfig.moduleName
+    val config = {
+      val conf = Flyway
+        .configure()
+        .locations(s"classpath:${driverName}/${module}/migration/")
+      if (isPostgres) {
+        conf
+          .schemas(module)
+          .defaultSchema(module)
+      } else {
+        conf
+      }
+    }
+    config.dataSource(jdbcUrl, username, password).load
+  }
 
   /** Internally, slick defines the schema member as
     *
@@ -62,8 +80,7 @@ trait DbManagement extends BitcoinSLogger {
       createIfNotExists: Boolean = true)(implicit
       ec: ExecutionContext): Future[Unit] = {
     val tableName = table.baseTableRow.tableName
-    logger.debug(
-      s"Creating table $tableName with DB config: ${appConfig.config} ")
+    logger.debug(s"Creating table $tableName with DB config: ${appConfig} ")
 
     val query = createTableQuery(table, createIfNotExists)
     database.run(query).map(_ => logger.debug(s"Created table $tableName"))
@@ -102,26 +119,29 @@ trait DbManagement extends BitcoinSLogger {
         database.run(sql).map(_ => ())
     }
 
+  /** Returns flyway information about the state of migrations
+    * @see https://flywaydb.org/documentation/command/info
+    */
+  def info(): MigrationInfoService = {
+    flyway.info()
+  }
+
+  def migrationsApplied(): Int = {
+    val applied = flyway.info().applied()
+    driver match {
+      case SQLite =>
+        applied.size
+      case PostgreSQL =>
+        // -1 because of extra << Flyway Schema Creation >>
+        applied.size - 1
+    }
+  }
+
   /** Executes migrations related to this database
     *
     * @see [[https://flywaydb.org/documentation/api/#programmatic-configuration-java]]
     */
   def migrate(): Int = {
-    val module = appConfig.moduleName
-    val config = {
-      val conf = Flyway
-        .configure()
-        .locations(s"classpath:${driverName}/${module}/migration/")
-      if (isPostgres) {
-        conf
-          .schemas(module)
-          .defaultSchema(module)
-      } else {
-        conf
-      }
-    }
-    val flyway = config.dataSource(jdbcUrl, username, password).load
-
     try {
       flyway.migrate()
     } catch {

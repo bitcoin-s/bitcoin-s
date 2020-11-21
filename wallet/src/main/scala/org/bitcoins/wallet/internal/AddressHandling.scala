@@ -211,7 +211,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
       account: AccountDb,
       chainType: HDChainType
   ): Future[BitcoinAddress] = {
-    val p = Promise[AddressDb]
+    val p = Promise[AddressDb]()
     addressRequestQueue.add((account, chainType, p))
     for {
       addressDb <- p.future

@@ -40,7 +40,7 @@ class Bech32Spec extends Properties("Bech32Spec") {
   property("checksum must not work if we modify a char") = {
     Prop.forAll(AddressGenerator.bech32Address) { addr: Bech32Address =>
       val old = addr.value
-      val rand = Math.abs(Random.nextInt)
+      val rand = Math.abs(Random.nextInt())
       val idx = rand % old.length
       val (f, l) = old.splitAt(idx)
       val replacementChar = pickReplacementChar(l.head)
@@ -62,7 +62,7 @@ class Bech32Spec extends Properties("Bech32Spec") {
 
   @tailrec
   private def pickReplacementChar(oldChar: Char): Char = {
-    val rand = Math.abs(Random.nextInt)
+    val rand = Math.abs(Random.nextInt())
     val newChar = Bech32.charset(rand % Bech32.charset.size)
     //make sure we don't pick the same char we are replacing in the bech32 address
     if (oldChar == newChar) pickReplacementChar(oldChar)
@@ -71,7 +71,7 @@ class Bech32Spec extends Properties("Bech32Spec") {
 
   @tailrec
   private def switchCaseRandChar(addr: String): String = {
-    val rand = Math.abs(Random.nextInt)
+    val rand = Math.abs(Random.nextInt())
     val idx = rand % addr.length
     val (f, l) = addr.splitAt(idx)
     if (l.head.isDigit) {

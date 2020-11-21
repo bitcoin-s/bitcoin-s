@@ -1,6 +1,6 @@
 // bundle up Scala applications into packaging formats such as Docker,
 // GraalVM native-image, executable JARs etc
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.7.5")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.7.6")
 
 // collect code coverage when executing tests
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1")
@@ -18,14 +18,14 @@ addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.10.0")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 
 // bloop is a build server, enabling faster builds and more rapid dev feedback
-addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.4.4")
+addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.4.5")
 
 //tool to publish snapshots to sonatype after CI builds finish
 //https://github.com/olafurpg/sbt-ci-release
-addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.3")
+addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.4")
 
 // write markdown files with type-checked Scala
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.9")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.12")
 
 // SQL migrations
 addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.4.2")

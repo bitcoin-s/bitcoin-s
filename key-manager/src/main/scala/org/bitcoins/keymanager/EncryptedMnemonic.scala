@@ -9,9 +9,12 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
-case class DecryptedMnemonic(
-    mnemonicCode: MnemonicCode,
-    creationTime: Instant) {
+sealed trait MnemonicState {
+  def creationTime: Instant
+}
+
+case class DecryptedMnemonic(mnemonicCode: MnemonicCode, creationTime: Instant)
+    extends MnemonicState {
 
   def encrypt(password: AesPassword): EncryptedMnemonic =
     EncryptedMnemonicHelper.encrypt(this, password)
@@ -20,7 +23,8 @@ case class DecryptedMnemonic(
 case class EncryptedMnemonic(
     value: AesEncryptedData,
     salt: AesSalt,
-    creationTime: Instant) {
+    creationTime: Instant)
+    extends MnemonicState {
 
   def toMnemonic(password: AesPassword): Try[MnemonicCode] = {
     val key = password.toKey(salt)

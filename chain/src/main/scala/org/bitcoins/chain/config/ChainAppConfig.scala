@@ -68,47 +68,51 @@ case class ChainAppConfig(
     * and inserts preliminary data like the genesis block header
     */
   override def start(): Future[Unit] = {
-    val numMigrations = migrate()
-
-    logger.info(s"Applied ${numMigrations} to chain project")
-
-    val isInitF = isStarted()
-    isInitF.flatMap { isInit =>
-      if (isInit) {
-        FutureUtil.unit
-      } else {
-        val genesisHeader =
-          BlockHeaderDbHelper.fromBlockHeader(
-            height = 0,
-            chainWork = Pow.getBlockProof(chain.genesisBlock.blockHeader),
-            bh = chain.genesisBlock.blockHeader)
-
-        val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
-        val bhCreatedF = blockHeaderDAO.create(genesisHeader)
-        bhCreatedF.flatMap { _ =>
-          logger.info(s"Inserted genesis block header into DB")
+    for {
+      _ <- super.start()
+      numMigrations = migrate()
+      isInit <- isStarted()
+      _ <- {
+        if (isInit) {
           FutureUtil.unit
+        } else {
+          val genesisHeader =
+            BlockHeaderDbHelper.fromBlockHeader(
+              height = 0,
+              chainWork = Pow.getBlockProof(chain.genesisBlock.blockHeader),
+              bh = chain.genesisBlock.blockHeader)
+
+          val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
+          val bhCreatedF = blockHeaderDAO.create(genesisHeader)
+          bhCreatedF.flatMap { _ =>
+            logger.info(s"Inserted genesis block header into DB")
+            FutureUtil.unit
+          }
         }
       }
+    } yield {
+      logger.info(s"Applied ${numMigrations} to chain project")
     }
+
   }
 
   lazy val filterHeaderBatchSize: Int = {
     // try by network, if that fails, try general
     try {
       config.getInt(
-        s"$moduleName.neutrino.filter-header-batch-size.${chain.network.chainParams.networkId}")
+        s"bitcoin-s.$moduleName.neutrino.filter-header-batch-size.${chain.network.chainParams.networkId}")
     } catch {
       case _: ConfigException.Missing | _: ConfigException.WrongType =>
-        config.getInt(s"$moduleName.neutrino.filter-header-batch-size.default")
+        config.getInt(
+          s"bitcoin-s.$moduleName.neutrino.filter-header-batch-size.default")
     }
   }
 
   lazy val filterBatchSize: Int =
-    config.getInt(s"${moduleName}.neutrino.filter-batch-size")
+    config.getInt(s"bitcoin-s.${moduleName}.neutrino.filter-batch-size")
 
   lazy val forceRecalcChainWork: Boolean =
-    config.getBooleanOrElse(s"$moduleName.force-recalc-chainwork",
+    config.getBooleanOrElse(s"bitcoin-s.$moduleName.force-recalc-chainwork",
                             default = false)
 }
 

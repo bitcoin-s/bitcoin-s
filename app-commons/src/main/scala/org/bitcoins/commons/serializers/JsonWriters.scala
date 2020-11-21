@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.psbt._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
@@ -85,6 +86,10 @@ object JsonWriters {
     override def writes(o: Transaction): JsValue = JsString(o.hex)
   }
 
+  implicit object PSBTWrites extends Writes[PSBT] {
+    override def writes(o: PSBT): JsValue = JsString(o.base64)
+  }
+
   implicit def mapWrites[K, V](keyString: K => String)(implicit
       vWrites: Writes[V]): Writes[Map[K, V]] =
     new Writes[Map[K, V]] {
@@ -125,5 +130,58 @@ object JsonWriters {
 
       JsObject(jsOpts)
     }
+  }
+
+  implicit object GlobalPSBTRecordUnknownWrites
+      extends Writes[GlobalPSBTRecord.Unknown] {
+
+    override def writes(o: GlobalPSBTRecord.Unknown): JsValue =
+      JsObject(
+        Seq(("key", JsString(o.key.toHex)), ("value", JsString(o.value.toHex))))
+  }
+
+  implicit object InputPSBTRecordUnknownWrites
+      extends Writes[InputPSBTRecord.Unknown] {
+
+    override def writes(o: InputPSBTRecord.Unknown): JsValue =
+      JsObject(
+        Seq(("key", JsString(o.key.toHex)), ("value", JsString(o.value.toHex))))
+  }
+
+  implicit object OutputPSBTRecordUnknownWrites
+      extends Writes[OutputPSBTRecord.Unknown] {
+
+    override def writes(o: OutputPSBTRecord.Unknown): JsValue =
+      JsObject(
+        Seq(("key", JsString(o.key.toHex)), ("value", JsString(o.value.toHex))))
+  }
+
+  implicit object PartialSignatureWrites
+      extends Writes[InputPSBTRecord.PartialSignature] {
+
+    override def writes(o: InputPSBTRecord.PartialSignature): JsValue =
+      JsObject(
+        Seq(("pubkey", JsString(o.pubKey.hex)),
+            ("signature", JsString(o.signature.hex))))
+  }
+
+  implicit object InputBIP32PathWrites
+      extends Writes[InputPSBTRecord.BIP32DerivationPath] {
+
+    override def writes(o: InputPSBTRecord.BIP32DerivationPath): JsValue =
+      JsObject(
+        Seq(("pubkey", JsString(o.pubKey.hex)),
+            ("master_fingerprint", JsString(o.masterFingerprint.toHex)),
+            ("path", JsString(o.path.toString))))
+  }
+
+  implicit object OutputBIP32PathWrites
+      extends Writes[OutputPSBTRecord.BIP32DerivationPath] {
+
+    override def writes(o: OutputPSBTRecord.BIP32DerivationPath): JsValue =
+      JsObject(
+        Seq(("pubkey", JsString(o.pubKey.hex)),
+            ("master_fingerprint", JsString(o.masterFingerprint.toHex)),
+            ("path", JsString(o.path.toString))))
   }
 }

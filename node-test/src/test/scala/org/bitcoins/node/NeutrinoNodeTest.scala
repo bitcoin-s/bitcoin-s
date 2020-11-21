@@ -125,31 +125,31 @@ class NeutrinoNodeTest extends NodeUnitTest {
         val ExpectedCount = 113
 
         def hasBlocksF =
-          RpcUtil.retryUntilSatisfiedF(
-            conditionF = () => {
-              node
-                .chainApiFromDb()
-                .flatMap(_.getBlockCount.map(_ == ExpectedCount))
-            },
-            interval = 1000.millis)
+          RpcUtil.retryUntilSatisfiedF(conditionF = () => {
+                                         node
+                                           .chainApiFromDb()
+                                           .flatMap(_.getBlockCount())
+                                           .map(_ == ExpectedCount)
+                                       },
+                                       interval = 1000.millis)
 
         def hasFilterHeadersF =
-          RpcUtil.retryUntilSatisfiedF(
-            conditionF = () => {
-              node
-                .chainApiFromDb()
-                .flatMap(_.getFilterHeaderCount.map(_ == ExpectedCount))
-            },
-            interval = 1000.millis)
+          RpcUtil.retryUntilSatisfiedF(conditionF = () => {
+                                         node
+                                           .chainApiFromDb()
+                                           .flatMap(_.getFilterHeaderCount)
+                                           .map(_ == ExpectedCount)
+                                       },
+                                       interval = 1000.millis)
 
         def hasFiltersF =
-          RpcUtil.retryUntilSatisfiedF(
-            conditionF = () => {
-              node
-                .chainApiFromDb()
-                .flatMap(_.getFilterCount.map(_ == ExpectedCount))
-            },
-            interval = 1000.millis)
+          RpcUtil.retryUntilSatisfiedF(conditionF = () => {
+                                         node
+                                           .chainApiFromDb()
+                                           .flatMap(_.getFilterCount)
+                                           .map(_ == ExpectedCount)
+                                       },
+                                       interval = 1000.millis)
 
         for {
           _ <- hasBlocksF

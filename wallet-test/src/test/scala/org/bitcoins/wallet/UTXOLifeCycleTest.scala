@@ -4,7 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.crypto.ECPublicKey

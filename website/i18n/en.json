@@ -101,6 +101,9 @@
       "node/node": {
         "title": "Light Client"
       },
+      "oracle/oracle-server": {
+        "title": "Oracle Server"
+      },
       "rpc/rpc-bitcoind": {
         "title": "bitcoind/Bitcoin Core"
       },
@@ -485,6 +488,7 @@
       "RPC Clients": "RPC Clients",
       "Secp256k1": "Secp256k1",
       "Testkit": "Testkit",
+      "DLC Oracle": "DLC Oracle",
       "Contributing": "Contributing",
       "Security": "Security",
       "Getting started": "Getting started",

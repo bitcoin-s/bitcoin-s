@@ -123,6 +123,8 @@ case class RpcAccount(
 
 case class DumpWalletResult(filename: File)
 
+case class LoadWalletResult(name: String, warning: String) extends WalletResult
+
 case class RescanBlockChainResult(start_height: Int, stop_height: Int)
     extends WalletResult
 

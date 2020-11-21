@@ -1,14 +1,11 @@
 package org.bitcoins.core.p2p
 
+import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
+import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.testkit.core.gen.p2p.ControlMessageGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.number.UInt64
 import scodec.bits._
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.bloom.BloomUpdateAll
-import org.bitcoins.core.bloom.BloomFlag
-import org.bitcoins.core.bloom.BloomFilter
 
 class FilterLoadMessageTest extends BitcoinSUnitTest {
 

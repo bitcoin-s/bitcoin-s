@@ -58,13 +58,14 @@ case class TestAppConfig(
   override def appConfig: TestAppConfig = this
 
   override def start(): Future[Unit] = {
-    logger.debug(s"Initializing test setup")
-
     if (Files.notExists(datadir)) {
       Files.createDirectories(datadir)
     }
-
-    createTable(TestDAO()(ec, this).table)
+    for {
+      _ <- super.start()
+      _ = logger.debug(s"Initializing test setup")
+      _ <- createTable(TestDAO()(ec, this).table)
+    } yield ()
   }
 }
 
@@ -106,6 +107,6 @@ case class TestDAO()(implicit
     def data: Rep[ByteVector] = column[ByteVector]("data")
 
     def * : ProvenShape[TestDb] =
-      (pk, data) <> (TestDb.tupled, TestDb.unapply)
+      (pk, data).<>(TestDb.tupled, TestDb.unapply)
   }
 }

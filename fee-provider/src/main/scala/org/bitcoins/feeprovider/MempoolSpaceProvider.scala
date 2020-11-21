@@ -40,6 +40,15 @@ case class MempoolSpaceProvider(target: MempoolSpaceTarget)(implicit
   }
 }
 
+object MempoolSpaceProvider extends FeeProviderFactory[MempoolSpaceProvider] {
+
+  override def fromBlockTarget(blocks: Int)(implicit
+      system: ActorSystem): MempoolSpaceProvider = {
+    val target = MempoolSpaceTarget.fromBlockTarget(blocks)
+    MempoolSpaceProvider(target)
+  }
+}
+
 abstract class MempoolSpaceTarget
 
 object MempoolSpaceTarget {
@@ -49,4 +58,17 @@ object MempoolSpaceTarget {
   final case object HalfHourFeeTarget extends MempoolSpaceTarget
 
   final case object HourFeeTarget extends MempoolSpaceTarget
+
+  def fromBlockTarget(blocks: Int): MempoolSpaceTarget = {
+    if (blocks <= 0) {
+      throw new IllegalArgumentException(
+        s"Cannot have a negative or zero block target, got $blocks")
+    } else if (blocks < 3) {
+      FastestFeeTarget
+    } else if (blocks < 6) {
+      HalfHourFeeTarget
+    } else {
+      HourFeeTarget
+    }
+  }
 }

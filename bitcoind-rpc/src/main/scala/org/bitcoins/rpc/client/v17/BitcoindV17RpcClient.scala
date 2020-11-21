@@ -34,12 +34,11 @@ import scala.util.Try
 class BitcoindV17RpcClient(override val instance: BitcoindInstance)(implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
-    with V17LabelRpc
-    with V17PsbtRpc {
+    with V17LabelRpc {
 
   override def version: BitcoindVersion = BitcoindVersion.V17
 
-  override def getFilterCount: Future[Int] = filtersUnsupported
+  override def getFilterCount(): Future[Int] = filtersUnsupported
 
   override def getFiltersBetweenHeights(
       startHeight: Int,

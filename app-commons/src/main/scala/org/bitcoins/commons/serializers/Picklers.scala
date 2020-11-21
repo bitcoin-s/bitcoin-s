@@ -1,18 +1,21 @@
 package org.bitcoins.commons.serializers
 
+import java.time.Instant
+
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto._
 import upickle.default._
 
 object Picklers {
@@ -28,6 +31,34 @@ object Picklers {
 
   implicit val satoshisPickler: ReadWriter[Satoshis] =
     readwriter[Long].bimap(_.toLong, Satoshis.apply)
+
+  implicit val schnorrNoncePickler: ReadWriter[SchnorrNonce] =
+    readwriter[String].bimap(_.hex, SchnorrNonce.fromHex)
+
+  implicit val enumEventDescriptorPickler: ReadWriter[
+    EnumEventDescriptorV0TLV] =
+    readwriter[String].bimap(_.hex, EnumEventDescriptorV0TLV.fromHex)
+
+  implicit val rangeEventDescriptorPickler: ReadWriter[
+    RangeEventDescriptorV0TLV] =
+    readwriter[String].bimap(_.hex, RangeEventDescriptorV0TLV.fromHex)
+
+  implicit val digitDecompEventDescriptorPickler: ReadWriter[
+    DigitDecompositionEventDescriptorV0TLV] =
+    readwriter[String].bimap(_.hex,
+                             DigitDecompositionEventDescriptorV0TLV.fromHex)
+
+  implicit val eventDescriptorPickler: ReadWriter[EventDescriptorTLV] =
+    readwriter[String].bimap(_.hex, EventDescriptorTLV.fromHex)
+
+  implicit val oracleEventVoPickler: ReadWriter[OracleEventV0TLV] =
+    readwriter[String].bimap(_.hex, OracleEventV0TLV.fromHex)
+
+  implicit val instantPickler: ReadWriter[Instant] =
+    readwriter[Long].bimap(_.getEpochSecond, Instant.ofEpochSecond)
+
+  implicit val aesPasswordPickler: ReadWriter[AesPassword] =
+    readwriter[String].bimap(_.toStringSensitive, AesPassword.fromString)
 
   implicit val sha256DigestBEPickler: ReadWriter[Sha256DigestBE] =
     readwriter[String].bimap(_.hex, Sha256DigestBE.fromHex)

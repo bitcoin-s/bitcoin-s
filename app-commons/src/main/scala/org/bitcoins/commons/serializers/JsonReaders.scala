@@ -34,6 +34,7 @@ import org.bitcoins.core.protocol.{
   P2PKHAddress,
   P2SHAddress
 }
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
@@ -394,6 +395,12 @@ object JsonReaders {
       SerializerUtil.processJsString[Transaction](Transaction.fromHex)(json)
   }
 
+  implicit object PSBTReads extends Reads[PSBT] {
+
+    override def reads(json: JsValue): JsResult[PSBT] =
+      SerializerUtil.processJsString[PSBT](PSBT.fromString)(json)
+  }
+
   implicit object TransactionOutPointReads extends Reads[TransactionOutPoint] {
     private case class OutPoint(txid: DoubleSha256DigestBE, vout: UInt32)
 
@@ -479,7 +486,7 @@ object JsonReaders {
       if ((json \ "hex").isDefined) {
         JsError("PSBT was submitted as a serialized hex transaction!")
       } else {
-        (json \ "psbt").validate[String].map(NonFinalizedPsbt)
+        (json \ "psbt").validate[PSBT].map(NonFinalizedPsbt)
       }
   }
 

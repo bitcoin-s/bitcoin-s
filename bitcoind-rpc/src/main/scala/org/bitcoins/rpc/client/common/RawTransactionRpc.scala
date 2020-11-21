@@ -46,9 +46,15 @@ trait RawTransactionRpc { self: Client =>
       transaction: Transaction): Future[FundRawTransactionResult] =
     fundRawTransaction(transaction, None)
 
+  def fundRawTransaction(
+      transaction: Transaction,
+      walletName: String): Future[FundRawTransactionResult] =
+    fundRawTransaction(transaction, None, Some(walletName))
+
   private def fundRawTransaction(
       transaction: Transaction,
-      options: Option[RpcOpts.FundRawTransactionOptions]): Future[
+      options: Option[RpcOpts.FundRawTransactionOptions],
+      walletNameOpt: Option[String] = None): Future[
     FundRawTransactionResult] = {
     val params =
       if (options.isEmpty) {
@@ -57,13 +63,22 @@ trait RawTransactionRpc { self: Client =>
         List(JsString(transaction.hex), Json.toJson(options.get))
       }
 
-    bitcoindCall[FundRawTransactionResult]("fundrawtransaction", params)
+    bitcoindCall[FundRawTransactionResult]("fundrawtransaction",
+                                           params,
+                                           uriExtensionOpt =
+                                             walletNameOpt.map(walletExtension))
   }
 
   def fundRawTransaction(
       transaction: Transaction,
       options: RpcOpts.FundRawTransactionOptions): Future[
     FundRawTransactionResult] = fundRawTransaction(transaction, Some(options))
+
+  def fundRawTransaction(
+      transaction: Transaction,
+      options: RpcOpts.FundRawTransactionOptions,
+      walletName: String): Future[FundRawTransactionResult] =
+    fundRawTransaction(transaction, Some(options), Some(walletName))
 
   def getRawTransaction(
       txid: DoubleSha256DigestBE,

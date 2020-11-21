@@ -1,10 +1,5 @@
 package org.bitcoins.core.script.control
 
-import org.bitcoins.core.script.{
-  ExecutedScriptProgram,
-  ExecutionInProgressScriptProgram,
-  StartedScriptProgram
-}
 import org.bitcoins.core.script.arithmetic.OP_ADD
 import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.constant._
@@ -12,6 +7,11 @@ import org.bitcoins.core.script.reserved.{OP_RESERVED, OP_VER}
 import org.bitcoins.core.script.result.{
   ScriptErrorInvalidStackOperation,
   ScriptErrorOpReturn
+}
+import org.bitcoins.core.script.{
+  ExecutedScriptProgram,
+  ExecutionInProgressScriptProgram,
+  StartedScriptProgram
 }
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._

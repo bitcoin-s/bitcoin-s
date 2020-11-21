@@ -1,7 +1,14 @@
 package org.bitcoins.dlc.oracle.storage
 
+import java.time.Instant
+
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
-import org.bitcoins.crypto.{FieldElement, SchnorrNonce}
+import org.bitcoins.core.protocol.tlv.{
+  EventDescriptorTLV,
+  OracleEventTLV,
+  OracleEventV0TLV
+}
+import org.bitcoins.crypto._
 import org.bitcoins.db.{AppConfig, CRUD, DbCommonsColumnMappers, SlickUtil}
 import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
@@ -39,24 +46,58 @@ case class EventDAO()(implicit
     findAll().map(_.filter(_.attestationOpt.isEmpty))
   }
 
+  def findByEventDescriptor(
+      descriptorTLV: EventDescriptorTLV): Future[Vector[EventDb]] = {
+    val query = table.filter(_.eventDescriptorTLV === descriptorTLV)
+
+    safeDatabase.runVec(query.result.transactionally)
+  }
+
+  def findByOracleEventTLV(
+      oracleEvent: OracleEventTLV): Future[Vector[EventDb]] = {
+    val query = oracleEvent match {
+      case v0: OracleEventV0TLV =>
+        table.filter(_.nonce.inSet(v0.nonces))
+    }
+
+    safeDatabase.runVec(query.result.transactionally)
+  }
+
   class EventTable(tag: Tag) extends Table[EventDb](tag, schemaName, "events") {
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.PrimaryKey)
 
-    def label: Rep[String] = column("label", O.Unique)
+    def pubkey: Rep[SchnorrPublicKey] = column("pubkey")
+
+    def nonceIndex: Rep[Int] = column("nonce_index")
+
+    def eventName: Rep[String] = column("event_name")
 
     def numOutcomes: Rep[Long] = column("num_outcomes")
 
     def signingVersion: Rep[SigningVersion] = column("signing_version")
 
+    def maturationTime: Rep[Instant] = column("maturation_time")
+
     def attestationOpt: Rep[Option[FieldElement]] = column("attestation")
+
+    def announcementSignature: Rep[SchnorrDigitalSignature] =
+      column("announcement_signature")
+
+    def eventDescriptorTLV: Rep[EventDescriptorTLV] =
+      column("event_descriptor_tlv")
 
     def * : ProvenShape[EventDb] =
       (nonce,
-       label,
+       pubkey,
+       nonceIndex,
+       eventName,
        numOutcomes,
        signingVersion,
-       attestationOpt) <> (EventDb.tupled, EventDb.unapply)
+       maturationTime,
+       attestationOpt,
+       announcementSignature,
+       eventDescriptorTLV).<>(EventDb.tupled, EventDb.unapply)
 
     def fk: ForeignKeyQuery[_, RValueDb] = {
       foreignKey("fk_nonce",
@@ -66,8 +107,8 @@ case class EventDAO()(implicit
 
     def fkLabel: ForeignKeyQuery[_, RValueDb] = {
       foreignKey("fk_label",
-                 sourceColumns = label,
-                 targetTableQuery = rValueTable)(_.label)
+                 sourceColumns = eventName,
+                 targetTableQuery = rValueTable)(_.eventName)
     }
   }
 }

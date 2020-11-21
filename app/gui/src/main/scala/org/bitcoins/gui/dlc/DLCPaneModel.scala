@@ -3,8 +3,8 @@ package org.bitcoins.gui.dlc
 import org.bitcoins.cli.{CliCommand, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleInfo
 import org.bitcoins.crypto.ECPrivateKey
-import org.bitcoins.gui.{GlobalData, TaskRunner}
 import org.bitcoins.gui.dlc.dialog._
+import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.{TextArea, TextField}
 import scalafx.stage.Window

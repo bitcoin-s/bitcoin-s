@@ -11,7 +11,6 @@ class FutureUtilTest extends BitcoinSAsyncTest with BitcoinSLogger {
 
     val actorSystem = ActorSystem()
     implicit val ec = actorSystem.dispatcher
-    val scheduler = actorSystem.scheduler
 
     val assertionP = Promise[Assertion]()
     val assertionF = assertionP.future

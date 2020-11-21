@@ -43,7 +43,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
   override def processBlock(block: Block): Future[Wallet] = {
     logger.info(s"Processing block=${block.blockHeader.hash.flip}")
-    val res =
+    val resF =
       block.transactions.foldLeft(Future.successful(this)) {
         (acc, transaction) =>
           for {
@@ -54,15 +54,23 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             newWallet
           }
       }
-    res.onComplete(failure =>
+    val f = for {
+      res <- resF
+
+      hash = block.blockHeader.hashBE
+      height <- chainQueryApi.getBlockHeight(hash)
+      _ <- stateDescriptorDAO.updateSyncHeight(hash, height.get)
+    } yield res
+
+    f.onComplete(failure =>
       signalBlockProcessingCompletion(block.blockHeader.hash, failure))
-    res.foreach(_ =>
+    f.foreach(_ =>
       logger.info(
         s"Finished processing of block=${block.blockHeader.hash.flip}."))
-    res.failed.foreach(e =>
+    f.failed.foreach(e =>
       logger.error(s"Error processing of block=${block.blockHeader.hash.flip}.",
                    e))
-    res
+    f
   }
 
   override def listTransactions(): Future[Vector[TransactionDb]] =

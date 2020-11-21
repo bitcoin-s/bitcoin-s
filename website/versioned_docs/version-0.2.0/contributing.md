@@ -10,7 +10,7 @@ Bitcoin-S is an open source project where anyone is welcome to contribute. All c
 
 It's possible to communicate with other developers through a variety of communication channels:
 
-- [Suredbits Slack](https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM) - Suredbits is a company monetizing APIs through the Lightning Network. Suredbits doesn't own Bitcoin-S, but the Suredbits CEO Chris Stewart is the maintainer of this library. There's a separate Bitcoin-S channel on their Slack, this is probably the easiest way of getting in touch with someone working on this project.
+- [Suredbits Slack](https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw) - Suredbits is a company monetizing APIs through the Lightning Network. Suredbits doesn't own Bitcoin-S, but the Suredbits CEO Chris Stewart is the maintainer of this library. There's a separate Bitcoin-S channel on their Slack, this is probably the easiest way of getting in touch with someone working on this project.
 - [Bitcoin-S Gitter](https://gitter.im/bitcoin-s-core/)
 - [#bitcoin-scala](https://webchat.freenode.net/?channels=bitcoin-scala) on IRC Freenode
 

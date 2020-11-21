@@ -4,18 +4,19 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 
 sealed abstract class RpcPsbtResult
 
-final case class WalletProcessPsbtResult(psbt: String, complete: Boolean)
+final case class WalletProcessPsbtResult(psbt: PSBT, complete: Boolean)
     extends RpcPsbtResult
 
 sealed abstract class FinalizePsbtResult extends RpcPsbtResult
 final case class FinalizedPsbt(hex: Transaction) extends FinalizePsbtResult
-final case class NonFinalizedPsbt(psbt: String) extends FinalizePsbtResult
+final case class NonFinalizedPsbt(psbt: PSBT) extends FinalizePsbtResult
 
 final case class DecodePsbtResult(
     tx: RpcTransaction,
@@ -67,7 +68,7 @@ final case class RpcPsbtOutput(
 ) extends RpcPsbtResult
 
 final case class WalletCreateFundedPsbtResult(
-    psbt: String, // todo change me
+    psbt: PSBT,
     fee: Bitcoins,
     changepos: Int
 ) extends RpcPsbtResult

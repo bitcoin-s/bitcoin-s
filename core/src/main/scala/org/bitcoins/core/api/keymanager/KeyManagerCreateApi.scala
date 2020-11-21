@@ -5,6 +5,7 @@ import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
   KeyManagerParams
 }
+import org.bitcoins.crypto.AesPassword
 import scodec.bits.BitVector
 
 trait KeyManagerCreateApi
@@ -29,9 +30,11 @@ trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
     * $initialize
     */
   final def initialize(
+      aesPasswordOpt: Option[AesPassword],
       kmParams: KeyManagerParams,
       bip39PasswordOpt: Option[String]): Either[KeyManagerInitializeError, T] =
-    initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits,
+    initializeWithEntropy(aesPasswordOpt = aesPasswordOpt,
+                          entropy = MnemonicCode.getEntropy256Bits,
                           bip39PasswordOpt = bip39PasswordOpt,
                           kmParams = kmParams)
 
@@ -39,23 +42,26 @@ trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
     * $initializeWithEnt
     */
   def initializeWithEntropy(
+      aesPasswordOpt: Option[AesPassword],
       entropy: BitVector,
       bip39PasswordOpt: Option[String],
       kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T]
 
   /**
-    * Helper method to initialize a [[KeyManagerCreate$ KeyManager]] with a [[MnemonicCode MnemonicCode]]
+    * Helper method to initialize a [[KeyManagerApi KeyManager]] with a [[MnemonicCode MnemonicCode]]
     *
     * @param mnemonicCode
     * @param kmParams
     * @return
     */
   final def initializeWithMnemonic(
+      aesPasswordOpt: Option[AesPassword],
       mnemonicCode: MnemonicCode,
       bip39PasswordOpt: Option[String],
       kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T] = {
     val entropy = mnemonicCode.toEntropy
-    initializeWithEntropy(entropy = entropy,
+    initializeWithEntropy(aesPasswordOpt = aesPasswordOpt,
+                          entropy = entropy,
                           bip39PasswordOpt = bip39PasswordOpt,
                           kmParams = kmParams)
   }

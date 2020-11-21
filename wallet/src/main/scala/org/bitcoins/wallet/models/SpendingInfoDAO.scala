@@ -516,6 +516,6 @@ case class SpendingInfoDAO()(implicit
        redeemScriptOpt,
        scriptWitnessOpt,
        blockHash,
-       id.?) <> ((UTXORecord.apply _).tupled, UTXORecord.unapply)
+       id.?).<>((UTXORecord.apply _).tupled, UTXORecord.unapply)
   }
 }

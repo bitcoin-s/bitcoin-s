@@ -79,7 +79,8 @@ lazy val `bitcoin-s` = project
     appCommons,
     appCommonsTest,
     testkit,
-    zmq
+    zmq,
+    oracleServer
   )
   .settings(CommonSettings.settings: _*)
   // crossScalaVersions must be set to Nil on the aggregating project
@@ -240,6 +241,14 @@ lazy val appCommonsTest = project
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(appCommons, testkit)
 
+lazy val oracleServer = project
+  .in(file("app/oracle-server"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(
+    dlcOracle,
+    appServer
+  )
+
 lazy val appServer = project
   .in(file("app/server"))
   .settings(CommonSettings.prodSettings: _*)
@@ -249,7 +258,8 @@ lazy val appServer = project
     chain,
     wallet,
     bitcoindRpc,
-    feeProvider
+    feeProvider,
+    zmq
   )
 
 lazy val appServerTest = project
@@ -435,7 +445,8 @@ lazy val testkit = project
     eclairRpc,
     node,
     wallet,
-    zmq
+    zmq,
+    dlcOracle
   )
 
 lazy val docs = project
@@ -519,9 +530,11 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
   lazy val mainnetDir = s"${System.getenv("HOME")}/.bitcoin-s/mainnet/"
   lazy val testnetDir = s"${System.getenv("HOME")}/.bitcoin-s/testnet3/"
   lazy val regtestDir = s"${System.getenv("HOME")}/.bitcoin-s/regtest/"
+  lazy val signetDir = s"${System.getenv("HOME")}/.bitcoin-s/signet/"
   lazy val unittestDir = s"${System.getenv("HOME")}/.bitcoin-s/unittest/"
 
-  lazy val dirs = List(mainnetDir, testnetDir, regtestDir, unittestDir)
+  lazy val dirs =
+    List(mainnetDir, testnetDir, regtestDir, signetDir, unittestDir)
 
   //create directies if they DNE
   dirs.foreach { d =>
@@ -548,12 +561,15 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
 
   lazy val regtest = makeNetworkSettings(regtestDir)
 
+  lazy val signet = makeNetworkSettings(signetDir)
+
   lazy val unittest = makeNetworkSettings(unittestDir)
 
   network match {
     case "mainnet"  => mainnet
     case "testnet3" => testnet3
     case "regtest"  => regtest
+    case "signet"   => signet
     case "unittest" => unittest
     case unknown: String =>
       throw new IllegalArgumentException(s"Unknown network=${unknown}")

@@ -3,11 +3,8 @@ package org.bitcoins.wallet
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.builder.RawTxSigner
-import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.testkit.Implicits.GeneratorOps
-import org.bitcoins.testkit.core.gen.{CurrencyUnitGenerator, FeeUnitGen}
 import org.bitcoins.testkit.util.TestUtil
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,

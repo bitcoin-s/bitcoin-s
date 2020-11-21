@@ -6,8 +6,8 @@ import org.bitcoins.core.config.Networks
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalacheck.Gen
@@ -49,5 +49,7 @@ object KeyManagerTestUtil {
     else attempt
   }
 
-  val badPassphrase: AesPassword = BIP39KeyManager.badPassphrase
+  def aesPasswordOpt: Option[AesPassword] = CryptoGenerators.aesPassword.sample
+
+  val badPassphrase: Some[AesPassword] = Some(BIP39KeyManager.badPassphrase)
 }

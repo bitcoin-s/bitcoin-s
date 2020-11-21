@@ -1,7 +1,7 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.p2p.{GetDataMessage, InventoryMessage}
+import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
 /**

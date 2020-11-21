@@ -13,5 +13,5 @@ case class FilterSyncMarker(
     stopBlockHash: DoubleSha256Digest) {
 
   override def toString: String =
-    s"FilterSyncMarker(startHeight = $stopBlockHash, stopBlockHash=${stopBlockHash.flip.hex})"
+    s"FilterSyncMarker(startHeight=$startHeight, stopBlockHash=${stopBlockHash.flip.hex})"
 }

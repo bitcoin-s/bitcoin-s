@@ -8,15 +8,16 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
-import org.bitcoins.core.util.{FutureUtil, Mutable}
+import org.bitcoins.core.util.Mutable
 import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
   KeyManagerParams
 }
+import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
-import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
-import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.db._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
+import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
@@ -54,8 +55,11 @@ case class WalletAppConfig(
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
 
+  lazy val kmConf: KeyManagerAppConfig =
+    KeyManagerAppConfig(directory, conf: _*)
+
   lazy val defaultAccountKind: HDPurpose =
-    config.getString("wallet.defaultAccountType") match {
+    config.getString("bitcoin-s.wallet.defaultAccountType") match {
       case "legacy"        => HDPurposes.Legacy
       case "segwit"        => HDPurposes.SegWit
       case "nested-segwit" => HDPurposes.NestedSegWit
@@ -82,54 +86,65 @@ case class WalletAppConfig(
   }
 
   lazy val bloomFalsePositiveRate: Double =
-    config.getDouble("wallet.bloomFalsePositiveRate")
+    config.getDouble("bitcoin-s.wallet.bloomFalsePositiveRate")
 
-  lazy val addressGapLimit: Int = config.getInt("wallet.addressGapLimit")
+  lazy val addressGapLimit: Int =
+    config.getInt("bitcoin-s.wallet.addressGapLimit")
 
-  lazy val discoveryBatchSize: Int = config.getInt("wallet.discoveryBatchSize")
+  lazy val discoveryBatchSize: Int =
+    config.getInt("bitcoin-s.wallet.discoveryBatchSize")
 
-  lazy val requiredConfirmations: Int =
-    config.getInt("wallet.requiredConfirmations")
+  lazy val requiredConfirmations: Int = {
+    val confs = config.getInt("bitcoin-s.wallet.requiredConfirmations")
+    require(confs >= 1,
+            s"requiredConfirmations cannot be less than 1, got: $confs")
+    confs
+  }
 
-  require(
-    requiredConfirmations >= 1,
-    s"requiredConfirmations cannot be less than 1, got: $requiredConfirmations")
+  lazy val feeProviderNameOpt: Option[String] = {
+    config.getStringOrNone("bitcoin-s.fee-provider.name")
+  }
+
+  lazy val feeProviderTargetOpt: Option[Int] =
+    config.getIntOpt("bitcoin-s.fee-provider.target")
+
+  lazy val bip39PasswordOpt: Option[String] = kmConf.bip39PasswordOpt
+
+  lazy val aesPasswordOpt: Option[AesPassword] = kmConf.aesPasswordOpt
 
   override def start(): Future[Unit] = {
-    logger.debug(s"Initializing wallet setup")
+    for {
+      _ <- super.start()
+    } yield {
+      logger.debug(s"Initializing wallet setup")
 
-    if (Files.notExists(datadir)) {
-      Files.createDirectories(datadir)
+      if (Files.notExists(datadir)) {
+        Files.createDirectories(datadir)
+      }
+
+      val numMigrations = {
+        migrate()
+      }
+
+      logger.info(s"Applied $numMigrations to the wallet project")
     }
-
-    val numMigrations = {
-      migrate()
-    }
-
-    logger.info(s"Applied $numMigrations to the wallet project")
-
-    FutureUtil.unit
   }
 
   /** The path to our encrypted mnemonic seed */
-  private[bitcoins] def seedPath: Path = {
-    baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
-  }
+  private[bitcoins] lazy val seedPath: Path = kmConf.seedPath
 
   /** Checks if our wallet as a mnemonic seed associated with it */
-  def seedExists(): Boolean = {
-    Files.exists(seedPath)
-  }
+  def seedExists(): Boolean = kmConf.seedExists()
 
   def kmParams: KeyManagerParams =
-    KeyManagerParams(seedPath, defaultAccountKind, network)
+    KeyManagerParams(kmConf.seedPath, defaultAccountKind, network)
 
   /** How much elements we can have in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
     * before we throw an exception
     */
   def addressQueueSize: Int = {
-    if (config.hasPath("wallet.addressQueueSize")) {
-      config.getInt("wallet.addressQueueSize")
+    if (config.hasPath("bitcoin-s.wallet.addressQueueSize")) {
+      config.getInt("bitcoin-s.wallet.addressQueueSize")
     } else {
       100
     }
@@ -139,8 +154,9 @@ case class WalletAppConfig(
     * before we timeout
     */
   def addressQueueTimeout: scala.concurrent.duration.Duration = {
-    if (config.hasPath("wallet.addressQueueTimeout")) {
-      val javaDuration = config.getDuration("wallet.addressQueueTimeout")
+    if (config.hasPath("bitcoin-s.wallet.addressQueueTimeout")) {
+      val javaDuration =
+        config.getDuration("bitcoin-s.wallet.addressQueueTimeout")
       new FiniteDuration(javaDuration.toNanos, TimeUnit.NANOSECONDS)
     } else {
       5.second
@@ -155,7 +171,7 @@ case class WalletAppConfig(
   private def hasWallet()(implicit
       walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Boolean] = {
-    if (walletConf.seedExists()) {
+    if (kmConf.seedExists()) {
       val hdCoin = walletConf.defaultAccount.coin
       val walletDB = walletConf.dbPath resolve walletConf.dbName
       walletConf.driver match {
@@ -175,14 +191,10 @@ case class WalletAppConfig(
   def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi,
-      bip39PasswordOpt: Option[String])(implicit
-      ec: ExecutionContext): Future[Wallet] = {
-    WalletAppConfig.createHDWallet(
-      nodeApi = nodeApi,
-      chainQueryApi = chainQueryApi,
-      feeRateApi = feeRateApi,
-      bip39PasswordOpt = bip39PasswordOpt)(this, ec)
+      feeRateApi: FeeRateApi)(implicit ec: ExecutionContext): Future[Wallet] = {
+    WalletAppConfig.createHDWallet(nodeApi = nodeApi,
+                                   chainQueryApi = chainQueryApi,
+                                   feeRateApi = feeRateApi)(this, ec)
   }
 
 }
@@ -202,15 +214,17 @@ object WalletAppConfig
   def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi,
-      bip39PasswordOpt: Option[String])(implicit
+      feeRateApi: FeeRateApi)(implicit
       walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
     walletConf.hasWallet().flatMap { walletExists =>
+      val aesPasswordOpt = walletConf.aesPasswordOpt
+      val bip39PasswordOpt = walletConf.bip39PasswordOpt
+
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
         // TODO change me when we implement proper password handling
-        BIP39LockedKeyManager.unlock(BIP39KeyManager.badPassphrase,
+        BIP39LockedKeyManager.unlock(aesPasswordOpt,
                                      bip39PasswordOpt,
                                      walletConf.kmParams) match {
           case Right(km) =>
@@ -222,9 +236,9 @@ object WalletAppConfig
         }
       } else {
         logger.info(s"Initializing key manager")
-        val bip39PasswordOpt = None
         val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
-          BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
+          BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
+                                     kmParams = walletConf.kmParams,
                                      bip39PasswordOpt = bip39PasswordOpt)
 
         val keyManager = keyManagerE match {

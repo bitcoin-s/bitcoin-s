@@ -2,7 +2,10 @@ package org.bitcoins.zmq
 
 import java.net.InetSocketAddress
 
+import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.zeromq.{SocketType, ZMQ, ZMQException, ZMsg}
 import scodec.bits.ByteVector
 
@@ -20,10 +23,10 @@ import scodec.bits.ByteVector
   */
 class ZMQSubscriber(
     socket: InetSocketAddress,
-    hashTxListener: Option[ByteVector => Unit],
-    hashBlockListener: Option[ByteVector => Unit],
-    rawTxListener: Option[ByteVector => Unit],
-    rawBlockListener: Option[ByteVector => Unit])
+    hashTxListener: Option[DoubleSha256DigestBE => Unit],
+    hashBlockListener: Option[DoubleSha256DigestBE => Unit],
+    rawTxListener: Option[Transaction => Unit],
+    rawBlockListener: Option[Block => Unit])
     extends BitcoinSLogger {
 
   private var running = true
@@ -125,19 +128,23 @@ class ZMQSubscriber(
     notification.foreach {
       case HashTx =>
         hashTxListener.foreach { f =>
-          f(ByteVector(body))
+          val hash = DoubleSha256DigestBE(ByteVector(body))
+          f(hash)
         }
       case RawTx =>
         rawTxListener.foreach { f =>
-          f(ByteVector(body))
+          val tx = Transaction(ByteVector(body))
+          f(tx)
         }
       case HashBlock =>
         hashBlockListener.foreach { f =>
-          f(ByteVector(body))
+          val hash = DoubleSha256DigestBE(ByteVector(body))
+          f(hash)
         }
       case RawBlock =>
         rawBlockListener.foreach { f =>
-          f(ByteVector(body))
+          val block = Block(ByteVector(body))
+          f(block)
         }
     }
 

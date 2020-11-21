@@ -13,10 +13,12 @@ class BIP39LockedKeyManagerApiTest extends KeyManagerApiUnitTest {
 
   it must "be able to read a locked mnemonic from disk" in {
     val bip39PwOpt = KeyManagerTestUtil.bip39PasswordOpt
-    val km = withInitializedKeyManager(bip39PasswordOpt = bip39PwOpt)
+    val aesPasswordOpt = KeyManagerTestUtil.aesPasswordOpt
+    val km = withInitializedKeyManager(aesPasswordOpt = aesPasswordOpt,
+                                       bip39PasswordOpt = bip39PwOpt)
 
     val unlockedE =
-      BIP39LockedKeyManager.unlock(KeyManagerTestUtil.badPassphrase,
+      BIP39LockedKeyManager.unlock(aesPasswordOpt,
                                    bip39PasswordOpt = bip39PwOpt,
                                    km.kmParams)
 
@@ -31,8 +33,8 @@ class BIP39LockedKeyManagerApiTest extends KeyManagerApiUnitTest {
 
   it must "fail to read bad json in the seed file" in {
     val km = withInitializedKeyManager()
-    val badPassword = AesPassword.fromString("other bad password")
-    val unlockedE = BIP39LockedKeyManager.unlock(passphrase = badPassword,
+    val badPassword = Some(AesPassword.fromString("other bad password"))
+    val unlockedE = BIP39LockedKeyManager.unlock(passphraseOpt = badPassword,
                                                  bip39PasswordOpt = None,
                                                  kmParams = km.kmParams)
 
@@ -49,7 +51,7 @@ class BIP39LockedKeyManagerApiTest extends KeyManagerApiUnitTest {
     val km = withInitializedKeyManager()
 
     val badPath = km.kmParams.copy(seedPath = badSeedPath)
-    val badPassword = AesPassword.fromString("other bad password")
+    val badPassword = Some(AesPassword.fromString("other bad password"))
     val unlockedE = BIP39LockedKeyManager.unlock(badPassword, None, badPath)
 
     unlockedE match {

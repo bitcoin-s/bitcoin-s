@@ -19,8 +19,13 @@ object HDUtil {
       case (NestedSegWit, MainNet)               => NestedSegWitMainNetPriv
       case (NestedSegWit, TestNet3 | RegTest | SigNet) =>
         NestedSegWitTestNet3Priv
-      case (Legacy, MainNet)                     => LegacyMainNetPriv
-      case (Legacy, TestNet3 | RegTest | SigNet) => LegacyTestNet3Priv
+      case (Multisig, MainNet) => LegacyMainNetPriv
+      case (Multisig, TestNet3 | RegTest | SigNet) =>
+        LegacyTestNet3Priv
+      case (Legacy, MainNet)                             => LegacyMainNetPriv
+      case (Legacy, TestNet3 | RegTest | SigNet)         => LegacyTestNet3Priv
+      case (HDPurpose(585), MainNet)                     => SegWitMainNetPriv
+      case (HDPurpose(585), TestNet3 | RegTest | SigNet) => SegWitTestNet3Priv
       case (unknown: HDPurpose, _) =>
         throw new IllegalArgumentException(s"Got unknown HD purpose $unknown")
     }
@@ -39,6 +44,9 @@ object HDUtil {
       case (NestedSegWit, MainNet)               => NestedSegWitMainNetPub
       case (NestedSegWit, TestNet3 | RegTest | SigNet) =>
         NestedSegWitTestNet3Pub
+      case (Multisig, MainNet) => LegacyMainNetPub
+      case (Multisig, TestNet3 | RegTest | SigNet) =>
+        LegacyTestNet3Pub
       case (Legacy, MainNet)                     => LegacyMainNetPub
       case (Legacy, TestNet3 | RegTest | SigNet) => LegacyTestNet3Pub
       case (unknown: HDPurpose, _) =>

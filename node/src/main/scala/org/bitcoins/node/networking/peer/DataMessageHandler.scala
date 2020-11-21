@@ -33,6 +33,9 @@ case class DataMessageHandler(
     chainConfig: ChainAppConfig)
     extends P2PLogger {
 
+  require(appConfig.nodeType != NodeType.BitcoindBackend,
+          "Bitcoind should handle the P2P interactions")
+
   private val txDAO = BroadcastAbleTransactionDAO()
 
   def handleDataPayload(
@@ -195,7 +198,7 @@ case class DataMessageHandler(
 
               val lastHeader = headers.last
               val lastHash = lastHeader.hash
-              newApi.getBlockCount.map { count =>
+              newApi.getBlockCount().map { count =>
                 logger.trace(
                   s"Processed headers, most recent has height=$count and hash=$lastHash.")
               }
@@ -374,6 +377,8 @@ case class DataMessageHandler(
             Inventory(TypeIdentifier.MsgFilteredBlock, hash)
           case NodeType.NeutrinoNode | NodeType.FullNode =>
             Inventory(TypeIdentifier.MsgBlock, hash)
+          case NodeType.BitcoindBackend =>
+            throw new RuntimeException("This is impossible")
         }
       case other: Inventory => other
     })

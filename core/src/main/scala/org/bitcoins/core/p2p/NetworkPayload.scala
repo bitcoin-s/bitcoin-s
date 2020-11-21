@@ -6,9 +6,9 @@ import org.bitcoins.core.bloom.{BloomFilter, BloomFlag}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.gcs.{FilterHeader, FilterType, GolombFilter}
 import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.p2p.messages._
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerKiloByte}

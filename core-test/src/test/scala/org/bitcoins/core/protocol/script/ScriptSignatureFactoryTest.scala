@@ -38,7 +38,7 @@ class ScriptSignatureFactoryTest extends BitcoinSUnitTest {
     val rawScriptSig = TestUtil.rawP2PKScriptSig
     val scriptSig = ScriptSignature(rawScriptSig)
     val result = scriptSig match {
-      case s: P2PKScriptSignature => true
+      case _: P2PKScriptSignature => true
       case _                      => false
     }
     result must be(true)
@@ -47,7 +47,7 @@ class ScriptSignatureFactoryTest extends BitcoinSUnitTest {
 
   it must "parse a p2sh scriptSignature from a raw scriptSig" in {
     val result = TestUtil.p2shInputScript2Of2 match {
-      case s: P2SHScriptSignature => true
+      case _: P2SHScriptSignature => true
       case y                      => throw new RuntimeException("Should be p2sh input: " + y)
     }
     result must be(true)

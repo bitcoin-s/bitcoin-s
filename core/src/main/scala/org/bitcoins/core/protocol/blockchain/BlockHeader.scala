@@ -3,13 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
 import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  Factory,
-  NetworkElement
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 /**
@@ -127,7 +121,7 @@ sealed trait BlockHeader extends NetworkElement {
     */
   lazy val hashBE: DoubleSha256DigestBE = hash.flip
 
-  override def bytes: ByteVector = RawBlockHeaderSerializer.write(this)
+  override lazy val bytes: ByteVector = RawBlockHeaderSerializer.write(this)
 
   override def toString: String = {
     s"BlockHeader(hashBE=${hashBE.hex},version=$version," +

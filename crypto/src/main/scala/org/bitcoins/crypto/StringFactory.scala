@@ -3,7 +3,7 @@ package org.bitcoins.crypto
 import scala.util.Try
 
 /** A common factory trait that can be re-used to deserialize a string to a type t */
-trait StringFactory[T] {
+trait StringFactory[+T] {
 
   /** Tries to parse a string to type t, throws an exception if fails */
   def fromString(string: String): T

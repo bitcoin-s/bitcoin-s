@@ -1,7 +1,6 @@
 package org.bitcoins.rpc.client.v20
 
 import akka.actor.ActorSystem
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
@@ -61,7 +60,7 @@ class BitcoindV20RpcClient(override val instance: BitcoindInstance)(implicit
                             batchSize = 25)
   }
 
-  override def getFilterCount: Future[Int] = getBlockCount
+  override def getFilterCount(): Future[Int] = getBlockCount
 
   override def getFilterHeaderCount(): Future[Int] = getBlockCount
 
@@ -118,22 +117,6 @@ class BitcoindV20RpcClient(override val instance: BitcoindInstance)(implicit
                                                 Json.toJson(keys),
                                                 Json.toJson(utxoDeps),
                                                 Json.toJson(sigHash)))
-
-  /**
-    * Change the state of the given wallet flag for a wallet.
-    */
-  def setWalletFlag(
-      flag: WalletFlag,
-      value: Boolean
-  ): Future[SetWalletFlagResult] =
-    bitcoindCall[SetWalletFlagResult](
-      "setwalletflag",
-      List(JsString(flag.toString), Json.toJson(value)))
-
-  def getBalances: Future[GetBalancesResult] = {
-    bitcoindCall[GetBalancesResult]("getbalances")
-  }
-
 }
 
 object BitcoindV20RpcClient {

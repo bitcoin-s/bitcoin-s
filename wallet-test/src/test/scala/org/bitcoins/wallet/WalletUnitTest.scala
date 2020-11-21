@@ -3,15 +3,22 @@ package org.bitcoins.wallet
 import java.nio.file.Files
 
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
-import org.bitcoins.core.api.wallet.db.AddressDb
+import org.bitcoins.core.api.wallet.db.{AddressDb, TransactionDbHelper}
 import org.bitcoins.core.hd.HDChainType.{Change, External}
-import org.bitcoins.core.hd.{HDAccount, HDChainType}
+import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.{
+  MultiSignatureScriptPubKey,
+  P2PKHScriptPubKey,
+  P2SHScriptPubKey,
+  P2WPKHWitnessSPKV0
+}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError.MnemonicNotFound
-import org.bitcoins.crypto.AesPassword
+import org.bitcoins.crypto.{AesPassword, ECPublicKey}
 import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.testkit.util.TransactionTestUtil._
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
@@ -134,18 +141,28 @@ class WalletUnitTest extends BitcoinSWalletTest {
     } yield res
   }
 
-  it should "fail to unlock the wallet with a bad password" in {
+  it should "fail to unlock the wallet with a bad aes password" in {
     wallet: Wallet =>
-      val badpassphrase = AesPassword.fromNonEmptyString("bad")
+      val badPassphrase = Some(AesPassword.fromNonEmptyString("bad"))
 
-      val errorType = wallet.unlock(badpassphrase, None) match {
+      val errorType = wallet.unlock(badPassphrase, None) match {
         case Right(_)  => fail("Unlocked wallet with bad password!")
         case Left(err) => err
       }
       errorType match {
-        case KeyManagerUnlockError.MnemonicNotFound          => fail(MnemonicNotFound)
-        case KeyManagerUnlockError.BadPassword               => succeed
-        case KeyManagerUnlockError.JsonParsingError(message) => fail(message)
+        case KeyManagerUnlockError.MnemonicNotFound => fail(MnemonicNotFound)
+        case KeyManagerUnlockError.BadPassword      =>
+          // If wallet is unencrypted then we shouldn't get a bad password error
+          wallet.walletConfig.aesPasswordOpt match {
+            case Some(_) => succeed
+            case None    => fail()
+          }
+        case KeyManagerUnlockError.JsonParsingError(message) =>
+          // If wallet is encrypted then we shouldn't get a json parsing error
+          wallet.walletConfig.aesPasswordOpt match {
+            case Some(_) => fail(message)
+            case None    => succeed
+          }
       }
   }
 
@@ -185,5 +202,105 @@ class WalletUnitTest extends BitcoinSWalletTest {
             Some("random-password-to-make-key-managers-different"))
         }
       }
+  }
+
+  it must "be able to sign a psbt with a key path" in { wallet: Wallet =>
+    val dummyKey = ECPublicKey.freshPublicKey
+
+    for {
+      accountDb <- wallet.accountDAO.findAll().map(_.head)
+      addr <- wallet.getNewAddress(accountDb)
+      addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
+      walletKey = addrDb.ecPublicKey
+      walletPath = addrDb.path
+
+      spk = MultiSignatureScriptPubKey(2, Vector(dummyKey, walletKey))
+      dummyPrevTx = dummyTx(spk = spk)
+      prevTxDb = TransactionDbHelper.fromTransaction(dummyPrevTx)
+      _ <- wallet.transactionDAO.create(prevTxDb)
+
+      psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
+        .addKeyPathToInput(accountDb.xpub, walletPath, walletKey, 0)
+
+      signed <- wallet.signPSBT(psbt)
+    } yield {
+      assert(signed != psbt)
+      assert(
+        signed.inputMaps.head.partialSignatures.exists(_.pubKey == walletKey))
+    }
+  }
+
+  it must "be able to sign a psbt with our own p2pkh utxo" in {
+    wallet: Wallet =>
+      for {
+        addr <- wallet.getNewAddress(AddressType.Legacy)
+        addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
+        walletKey = addrDb.ecPublicKey
+
+        spk = addr.scriptPubKey
+        _ = assert(spk == P2PKHScriptPubKey(walletKey))
+        dummyPrevTx = dummyTx(spk = spk)
+        _ <- wallet.processTransaction(dummyPrevTx, blockHashOpt = None)
+
+        psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
+
+        signed <- wallet.signPSBT(psbt)
+      } yield {
+        assert(signed != psbt)
+        assert(
+          signed.inputMaps.head.partialSignatures.exists(_.pubKey == walletKey))
+      }
+  }
+
+  it must "be able to sign a psbt with our own p2sh segwit utxo" in {
+    wallet: Wallet =>
+      for {
+        addr <- wallet.getNewAddress(AddressType.NestedSegWit)
+        addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
+        walletKey = addrDb.ecPublicKey
+
+        spk = addr.scriptPubKey
+        _ = assert(spk == P2SHScriptPubKey(P2WPKHWitnessSPKV0(walletKey)))
+        dummyPrevTx = dummyTx(spk = spk)
+        _ <- wallet.processTransaction(dummyPrevTx, blockHashOpt = None)
+
+        psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
+
+        signed <- wallet.signPSBT(psbt)
+      } yield {
+        assert(signed != psbt)
+        assert(
+          signed.inputMaps.head.partialSignatures.exists(_.pubKey == walletKey))
+      }
+  }
+
+  it must "be able to sign a psbt with our own p2wpkh utxo" in {
+    wallet: Wallet =>
+      for {
+        addr <- wallet.getNewAddress(AddressType.SegWit)
+        addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
+        walletKey = addrDb.ecPublicKey
+
+        spk = addr.scriptPubKey
+        _ = assert(spk == P2WPKHWitnessSPKV0(walletKey))
+        dummyPrevTx = dummyTx(spk = spk)
+        _ <- wallet.processTransaction(dummyPrevTx, blockHashOpt = None)
+
+        psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
+          .addUTXOToInput(dummyPrevTx, 0)
+
+        signed <- wallet.signPSBT(psbt)
+      } yield {
+        assert(signed != psbt)
+        assert(
+          signed.inputMaps.head.partialSignatures.exists(_.pubKey == walletKey))
+      }
+  }
+
+  it must "be able to sign a psbt with no wallet utxos" in { wallet: Wallet =>
+    val psbt = dummyPSBT()
+    for {
+      signed <- wallet.signPSBT(psbt)
+    } yield assert(signed == psbt)
   }
 }

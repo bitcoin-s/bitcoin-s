@@ -22,14 +22,88 @@ The native packager offers [numerous ways to package the project](https://github
 In this example we are going to use `stage` which will produce bash scripts we can easily execute. You can stage the server with the following command.
 
 ```bash
- $ sbt appServer/universal:stage
+sbt appServer/universal:stage
 ```
 
 This will produce a script to execute bitcoin-s which you can start with
 
 ```bash
-$ ./app/server/target/universal/stage/bin/bitcoin-s-server
+./app/server/target/universal/stage/bin/bitcoin-s-server
 ```
+
+### Installation
+
+#### Linux 
+
+For server side installation you'll need to install a Java Virtual Machine first.
+
+```bash
+sudo apt install openjdk-11-jdk-headless
+```
+
+Then build a Bitcoin-S server as described above and copy it into `/usr/local`:
+
+```bash
+sudo cp -r app/server/target/universal/stage /usr/local/bitcoin-s
+sudo chmod +x /usr/local/bitcoin-s/bin/bitcoin-s-server
+```
+
+The server process will run in the background and use a separate user for security reasons. 
+This user does not have admin rights and cannot change the system configuration.
+
+```bash
+sudo adduser bitcoins
+```
+
+In this case you'll need to put the config file into `/home/bitcoins/.bitcoin-s/bitcoin-s.conf`.  
+
+To start the server as a daemon on system startup we'll need to configure a `systemd` service. 
+Create `bitcoin-s.service` file using your favorite text editor.
+
+```bash
+sudo nano /etc/systemd/system/bitcoin-s.service
+```
+
+Then copy this script into the editor, then save end exit.  
+
+
+```bash
+[Unit]
+Description=Bitcoin-S Node
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bitcoin-s/bin/bitcoin-s-server
+
+User=bitcoins
+Group=bitcoins
+
+Type=simple
+Restart=always
+RestartSec=60
+
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+PrivateDevices=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable the service:
+
+```bash
+sudo systemctl enable bitcoin-s.service
+```
+
+Start the server.
+
+```bash
+sudo systemctl start bitcoin-s.service
+```
+
+The server will write all logs into `/var/log/syslog`.
 
 ### Configuration
 
@@ -63,6 +137,8 @@ For more information on how to use our built in `cli` to interact with the serve
  - `getfiltercount` - Get the number of filters
  - `getfilterheadercount` - Get the number of filter headers
  - `getbestblockhash` - Get the best block hash
+ - `decoderawtransaction` `tx` - `Decode the given raw hex transaction`
+     - `tx` - Transaction encoded in hex to decode
 
 #### Wallet
  - `rescan` `[options]` - Rescan for wallet UTXOs
@@ -102,6 +178,8 @@ For more information on how to use our built in `cli` to interact with the serve
     - `amount` - Amount to send in BTC
     - `algo` - Coin selection algo
     - `--feerate <value>` - Fee rate in sats per virtual byte
+ - `signpsbt` `psbt` - Signs the PSBT's inputs with keys that are associated with the wallet
+    - `psbt` - PSBT to sign
  - `opreturncommit` `message` `[options]` - Creates OP_RETURN commitment transaction
     - `message` - message to put into OP_RETURN commitment
     - `--hashMessage` - should the message be hashed before commitment
@@ -109,7 +187,11 @@ For more information on how to use our built in `cli` to interact with the serve
  - `lockunspent` `unlock` `transactions` - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.
     - `unlock` - Whether to unlock (true) or lock (false) the specified transactions
     - `transactions` - The transaction outpoints to unlock/lock
-
+ - `walletpassphrasechange` `oldpassphrase` `newpassphrase` - Changes the wallet passphrase
+    - `oldpassphrase` - The current passphrase
+    - `newpassphrase` - The new passphrase
+ - `walletpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
+    - `passphrase` - The passphrase to encrypt the wallet with
 
 #### Network
  - `getpeers` - List the connected peers
@@ -118,6 +200,8 @@ For more information on how to use our built in `cli` to interact with the serve
     - `tx` - Transaction serialized in hex
 
 #### PSBT
+ - `decodepsbt` `psbt` - Return a JSON object representing the serialized, base64-encoded partially signed Bitcoin transaction.
+    - `psbt` - PSBT serialized in hex or base64 format
  - `combinepsbts` `psbts` - Combines all the given PSBTs
     - `psbts` - PSBTs serialized in hex or base64 format
  - `joinpsbts` `psbts` - Combines all the given PSBTs
@@ -128,3 +212,19 @@ For more information on how to use our built in `cli` to interact with the serve
     - `psbt` - PSBT serialized in hex or base64 format
  - `converttopsbt` `unsignedTx` - Creates an empty psbt from the given transaction
     - `unsignedTx` - serialized unsigned transaction in hex
+
+
+### Sign PSBT with Wallet Example
+
+Bitcoin-S CLI:
+
+```bash
+$ bitcoin-s-cli signpsbt cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA
+cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA
+```
+
+CURL:
+```bash
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "signpsbt", "params": ["cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":"cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA","error":null}
+```

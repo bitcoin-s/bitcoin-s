@@ -13,7 +13,7 @@ title: Getting Bitcoin-S installed on your machine
 - [Step 2: Bitcoin-S Repository](#step-2-bitcoin-s-repository)
 - [Step 3: Configuration](#step-3-configuration)
 - [Step 4 (Optional): Discreet Log Contract Branch](#step-4-optional-discreet-log-contract-branch)
-- [Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)](#step-5-setting-up-a-bitcoin-s-server-neutrino-node)
+- [Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)](#step-5-setting-up-a-bitcoin-s-server)
 - [Step 6 (Optional): Moving To Testnet](#step-6-optional-moving-to-testnet)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -79,7 +79,7 @@ sbt test
 
 ## Step 3: Configuration
 
-Now that we have the bitcoin-s repo setup, we want to create our application configurations. This is done by creating a `bitcoin-s.conf` file at `$HOME/.bitcoin-s`. [Here is an example configuration file](applications/configuration#example-configuration-file). The only thing that you will _need_ to change is the `peers` list to which you will want to add `"localhost:18444"` if you want to run in regtest.
+Now that we have the bitcoin-s repo setup, we want to create our application configurations. This is done by creating a `bitcoin-s.conf` file at `$HOME/.bitcoin-s`. [Here is an example configuration file](config/configuration.md#example-configuration-file). The only thing that you will _need_ to change is the `peers` list to which you will want to add `"localhost:18444"` if you want to run in regtest.
 
 Once the bitcoin-s configuration is all done, I recommend creating a directory someplace in which to run your `bitcoind` node. Once you have this directory created, add the following `bitcoin.conf` file to it
 
@@ -88,10 +88,9 @@ regtest=1
 server=1
 rpcuser=[your username here]
 rpcpassword=[your password here]
-rpcport=18332
 daemon=1
-deprecatedrpc=signrawtransaction
 blockfilterindex=1
+peerblockfilters=1
 debug=1
 txindex=1
 zmqpubrawblock=tcp://127.0.0.1:29000
@@ -100,7 +99,7 @@ zmqpubrawtx=tcp://127.0.0.1:29000
 
 ## Step 4 (Optional): Discreet Log Contract Branch
 
-In order to run the Bitcoin-S server with DLCs enabled, you will have to checkout the `dlc` feature branch:
+In order to run the Bitcoin-S server with DLCs enabled, you will have to checkout the `adaptor-dlc` feature branch:
 
 ```bashrc
 git fetch origin
@@ -110,29 +109,32 @@ git submodule update
 
 and then finally test that `Secp256k1Context.isEnabled()` as in Step 2.
 
-## Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)
+If you're looking to set up a DLC Oracle instead go to the [oracle server docs](oracle/oracle-server.md).
 
-We are finally ready to start running some programs! Follow the [instructions here](applications/server#building-the-server) to build the server. Then, follow [these instructions](applications/cli) to setup the CLI.
+## Step 5: Setting Up A Bitcoin-S Server
 
-If you wish to use the GUI instead of the CLI, the setup process is the same as building the server but for the project `gui`. That is, you must run
+We are finally ready to start running some programs! Follow the [instructions here](applications/server.md#building-the-server) to build the server. Then, follow [these instructions](applications/cli.md) to setup the CLI.
 
-```bashrc
-sbt gui/universal:stage
-```
+There are 2 ways to use the bitcoin-s server. It can either can be as a neutrino node or use bitcoind as a backend.
+This can be configured by the configuration option `bitcoin-s.node.mode` choosing either `neutrino` or `bitcoind`.
 
-to build and then the following (once setup is complete) to run:
+### Option A: Neutrino Server
 
-```bashrc
-./app/gui/target/universal/stage/bin/bitcoin-s-gui
-```
+To use a neutrino server you need to be paired with a bitcoin node that can serve compact filters.
+[Suredbits](https://suredbits.com/) runs a mainnet and testnet node you can connect to them by setting your `peers` config option to:
 
-Now, you want to run your `bitcoind` in regtest by doing the following command:
+Mainnet:
 
-```bashrc
-$HOME/.bitcoin-s/binaries/bitcoind/bitcoin-0.18.99/bin/bitcoind --datadir=[path/to/conf/directory] --rpcport=18332
-```
+`bitcoin-s.node.peers = ["neutrino.suredbits.com:8333"]`
 
-Once the node is running, you should be able to start your bitcoin-s server with
+Testnet:
+
+`bitcoin-s.node.peers = ["neutrino.testnet3.suredbits.com:18333"]`
+
+If you would like to use your own node you can either use the bitcoind backend option or connect to your own compatible node.
+There is no released version of bitcoind that is neutrino compatible so you will either have to compile the latest `master` yourself, or use the experimental version provided by running `sbt downloadBitcoind`. 
+
+After building your bitcoin-s server, properly configuring it to be in `neutrino` mode you can start your server with:
 
 ```bashrc
 ./app/server/target/universal/stage/bin/bitcoin-s-server
@@ -144,13 +146,39 @@ and once this is done, you should be able to communicate with the server using
 ./app/cli/target/universal/stage/bitcoin-s-cli getnewaddress
 ```
 
-To fund your wallet, you should use the CLI's `getnewaddress` command and then run
+### Option B: Bitcoind Backend
 
-```bashrc
-$HOME/.bitcoin-s/binaries/bitcoind/bitcoin-0.18.99/bin/bitcoin-cli --datadir=[path/to/conf/directory] --rpcport=18332 generatetoaddress 200 [address]
+If you already have a bitcoind node running and would like to connect your bitcoin-s server to it you can set your node's mode to `bitcoind`.
+
+You will need to configure bitcoin-s to be able to find your bitcoind.
+If you would only like bitcoin-s to connect to bitcoind and start it itself then you only need to properly set the `rpcuser`, and `rpcpassword` options.
+If you would like bitcoin-s to launch bitcoind on start up you will need to set the other configuration options.
+These options should default to use the latest bitcoind downloaded from `sbt downloadBitcoind`.
+
+```$xslt
+bitcoin-s {
+    bitcoind-rpc {
+        # bitcoind rpc username
+        rpcuser = user
+        # bitcoind rpc password
+        rpcpassword = password
+
+        # Binary location of bitcoind
+        binary = ${HOME}/.bitcoin-s/binaries/bitcoind/bitcoin-0.20.1/bin/bitcoind
+        # bitcoind datadir
+        datadir = ${HOME}/.bitcoin
+        # bitcoind network binding
+        bind = localhost
+        # bitcoind p2p port
+        port = 8333
+        # bitcoind rpc binding
+        rpcbind = localhost
+        # bitcoind rpc port
+        rpcport = 8332
+        # bitcoind zmq port for all services
+        zmqport = 29000
+    }
 ```
-
-There is currently a bug on regtest where the server is unable to handle too many blocks at once, so when generating more than a couple blocks (like above), it is recommended you shut down your server and restart it after the blocks have been created.
 
 ## Step 6 (Optional): Moving To Testnet
 
