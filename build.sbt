@@ -45,14 +45,25 @@ lazy val crypto = cryptoCrossProject.jvm
 
 lazy val cryptoJS = cryptoCrossProject.js
 
-lazy val core = project
+lazy val coreCrossProject = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(libraryDependencies ++= Deps.core.value
+  )
   .in(file("core"))
-  .dependsOn(crypto)
+  .dependsOn(cryptoCrossProject)
+
+lazy val core = coreCrossProject.jvm 
+
+
+//project
+//  .in(file("core"))
+//  .dependsOn(crypto)
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
+    core,
     appCommons
   )
 lazy val eclairRpc = project in file("eclair-rpc")

@@ -234,10 +234,12 @@ object Deps {
       Compile.slf4j
     )
 
-  val core = List(Compile.bouncycastle,
-    Compile.slf4j,
-    Compile.grizzledSlf4j
-  ) 
+  val core: Def.Initialize[Seq[ModuleID]] = Def.setting {
+    List(Compile.bouncycastle,
+      Compile.slf4j,
+      Compile.grizzledSlf4j
+    ) 
+  }
 
   def crypto: Def.Initialize[Seq[ModuleID]] = {
     Def.setting { List(
