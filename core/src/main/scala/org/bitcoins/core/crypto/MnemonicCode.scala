@@ -272,6 +272,10 @@ object MnemonicCode {
     }
 
   private[crypto] lazy val ENGLISH_WORDS: Vector[String] = {
-    EnglishWordsBip39.getWords
+    <<<<<<< HEAD
+      EnglishWordsBip39.getWords
+    =======
+    EnglishWords.getWords
+    >>>>>>> Move english word list to be represented by a Vector in memory
   }.ensuring(words => words.length == 2048, "Word list must be 2048 words long")
 }
