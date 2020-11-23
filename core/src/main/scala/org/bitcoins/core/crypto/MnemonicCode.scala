@@ -2,7 +2,7 @@ package org.bitcoins.core.crypto
 
 import java.security.SecureRandom
 
-import org.bitcoins.core.crypto.words.EnglishWords
+import org.bitcoins.core.crypto.words.EnglishWordsBip39
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.crypto.{CryptoUtil, MaskedToString}
 import scodec.bits.{BitVector, ByteVector}
@@ -272,6 +272,6 @@ object MnemonicCode {
     }
 
   private[crypto] lazy val ENGLISH_WORDS: Vector[String] = {
-    EnglishWords.getWords
+    EnglishWordsBip39.getWords
   }.ensuring(words => words.length == 2048, "Word list must be 2048 words long")
 }

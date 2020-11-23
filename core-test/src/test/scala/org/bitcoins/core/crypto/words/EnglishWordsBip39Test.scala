@@ -4,7 +4,7 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.io.Source
 
-class EnglishWordsTest extends BitcoinSUnitTest {
+class EnglishWordsBip39Test extends BitcoinSUnitTest {
   behavior of "EnglishWords"
 
   private val ENGLISH_WORDS_FILE = "/bip39-wordlists/english.txt"
@@ -16,6 +16,6 @@ class EnglishWordsTest extends BitcoinSUnitTest {
     val lines = source.getLines()
     val linesVec = lines.toVector
     source.close()
-    assert(EnglishWords.getWords == linesVec)
+    assert(EnglishWordsBip39.getWords == linesVec)
   }
 }

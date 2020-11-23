@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto.words
 
-object EnglishWords extends MnemonicWords {
+object EnglishWordsBip39 extends MnemonicWords {
 
   override lazy val getWords: Vector[String] = Vector(
     "abandon",
