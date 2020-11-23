@@ -2,12 +2,12 @@ package org.bitcoins.core.crypto
 
 import java.security.SecureRandom
 
+import org.bitcoins.core.crypto.words.EnglishWordsBip39
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.crypto.{CryptoUtil, MaskedToString}
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
-import scala.io.Source
 
 /**
   * A mnemonic code conforming to [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]].
@@ -271,15 +271,7 @@ object MnemonicCode {
         throw new RuntimeException(s"Bad mnemonic code length: ${words.length}")
     }
 
-  private val ENGLISH_WORDS_FILE = "/bip39-wordlists/english.txt"
-
   private[crypto] lazy val ENGLISH_WORDS: Vector[String] = {
-    val resourceStream = getClass.getResourceAsStream(ENGLISH_WORDS_FILE)
-    val source = Source.fromInputStream(resourceStream)
-
-    val lines = source.getLines()
-    val linesVec = lines.toVector
-    source.close()
-    linesVec
+    EnglishWordsBip39.getWords
   }.ensuring(words => words.length == 2048, "Word list must be 2048 words long")
 }
