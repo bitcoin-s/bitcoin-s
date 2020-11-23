@@ -67,9 +67,9 @@ object DLCTestUtil {
       MultiNonceContractInfo) = {
     val overMaxValue = Math.pow(10, numDigits).toLong
     // Left collar goes from [0, botCollar]
-    val botCollar = scala.util.Random.nextLong(overMaxValue / 2)
+    val botCollar = NumberUtil.randomLong(overMaxValue / 2)
     val halfWindow = scala.math.min(overMaxValue / 4, 2500)
-    val topCollarDiff = scala.util.Random.nextLong(halfWindow)
+    val topCollarDiff = NumberUtil.randomLong(halfWindow)
     // Right collar goes from [topCollar, overMaxValue)
     val topCollar = botCollar + halfWindow + topCollarDiff
     val isGoingLong = scala.util.Random.nextBoolean()

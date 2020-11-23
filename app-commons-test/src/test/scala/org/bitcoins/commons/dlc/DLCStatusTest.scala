@@ -2,6 +2,12 @@ package org.bitcoins.commons.dlc
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
+import org.bitcoins.core.protocol.script.P2WSHWitnessV0
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.testkit.core.gen.{
   CryptoGenerators,
   NumberGenerator,
@@ -10,6 +16,8 @@ import org.bitcoins.testkit.core.gen.{
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
+
+import scala.concurrent.Future
 
 class DLCStatusTest extends BitcoinSAsyncTest {
   behavior of "DLCStatus"
@@ -100,20 +108,27 @@ class DLCStatusTest extends BitcoinSAsyncTest {
     forAllParallel(
       CryptoGenerators.sha256DigestBE,
       NumberGenerator.bool,
-      TLVGen.dlcOfferTLVAcceptTLVSignTLV,
+      TLVGen.dlcOfferTLVAcceptTLVSignTLVWithOralceKeys,
       TransactionGenerators.transaction,
       TransactionGenerators.transaction,
-      Gen.listOf(CryptoGenerators.schnorrDigitalSignature)
+      Gen.choose(0L, Long.MaxValue)
     ) {
       case (paramHash,
             isInit,
-            (offerTLV, acceptTLV, signTLV),
+            (offerTLV, acceptTLV, signTLV, oracleKey, kValue),
             fundingTx,
             closingTx,
-            sigs) =>
+            outcomeNum) =>
         val offer = DLCOffer.fromTLV(offerTLV)
         val accept = DLCAccept.fromTLV(acceptTLV, offer)
         val sign = DLCSign.fromTLV(signTLV, offer)
+
+        val outcomeIndex = outcomeNum % offer.contractInfo.allOutcomes.length
+        val outcome = offer.contractInfo.allOutcomes(outcomeIndex.toInt)
+        val oracleSig =
+          oracleKey.schnorrSignWithNonce(
+            CryptoUtil.sha256(outcome.serialized.head).bytes,
+            kValue)
 
         val status =
           DLCStatus.Claimed(paramHash,
@@ -122,41 +137,77 @@ class DLCStatusTest extends BitcoinSAsyncTest {
                             accept,
                             sign,
                             fundingTx,
-                            sigs.toVector,
+                            Vector(oracleSig),
                             closingTx)
 
+        assert(status.outcome == outcome)
         assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
-  // FIXME can't calculate oracle sig and outcome because of randomized messages and txs
-  it must "have json symmetry in DLCStatus.RemoteClaimed" ignore {
-    forAllParallel(
+  it must "have json symmetry in DLCStatus.RemoteClaimed" in {
+    forAllAsync(
       CryptoGenerators.sha256DigestBE,
       NumberGenerator.bool,
-      TLVGen.dlcOfferTLVAcceptTLVSignTLV,
-      TransactionGenerators.transaction,
-      TransactionGenerators.transaction
+      TLVGen.dlcOfferTLVAcceptTLVSignTLVWithOralceKeys,
+      Gen.choose(0L, Long.MaxValue)
     ) {
       case (paramHash,
             isInit,
-            (offerTLV, acceptTLV, signTLV),
-            fundingTx,
-            closingTx) =>
+            (offerTLV, acceptTLV, signTLV, oracleKey, kValue),
+            outcomeNum) =>
         val offer = DLCOffer.fromTLV(offerTLV)
         val accept = DLCAccept.fromTLV(acceptTLV, offer)
         val sign = DLCSign.fromTLV(signTLV, offer)
 
-        val status =
-          DLCStatus.RemoteClaimed(paramHash,
-                                  isInit,
-                                  offer,
-                                  accept,
-                                  sign,
-                                  fundingTx,
-                                  closingTx)
+        val outcomeIndex = outcomeNum % offer.contractInfo.allOutcomes.length
+        val outcome = offer.contractInfo.allOutcomes(outcomeIndex.toInt)
+        val oracleSig =
+          oracleKey.schnorrSignWithNonce(
+            CryptoUtil.sha256(outcome.serialized.head).bytes,
+            kValue)
 
-        assert(DLCStatus.fromJson(status.toJson) == status)
+        val offerCETSig = oracleSig.sig.toPrivateKey.completeAdaptorSignature(
+          sign.cetSigs(outcome),
+          HashType.sigHashAll.byte)
+        val acceptCETSig = oracleSig.sig.toPrivateKey.completeAdaptorSignature(
+          accept.cetSigs(outcome),
+          HashType.sigHashAll.byte)
+
+        val builder = DLCTxBuilder(offer, accept.withoutSigs)
+
+        for {
+          fundingTx <- builder.buildFundingTx
+          unsignedCET <- builder.buildCET(outcome)
+          psbt =
+            PSBT
+              .fromUnsignedTx(unsignedCET)
+              .addUTXOToInput(fundingTx, index = 0)
+              .addScriptWitnessToInput(
+                P2WSHWitnessV0(builder.fundingTxBuilder.fundingMultiSig),
+                index = 0)
+              .addSignature(PartialSignature(offer.pubKeys.fundingKey,
+                                             offerCETSig),
+                            inputIndex = 0)
+              .addSignature(PartialSignature(accept.pubKeys.fundingKey,
+                                             acceptCETSig),
+                            inputIndex = 0)
+          closingTx <-
+            Future.fromTry(psbt.finalizePSBT.map(_.extractTransaction))
+        } yield {
+          val status =
+            DLCStatus.RemoteClaimed(paramHash,
+                                    isInit,
+                                    offer,
+                                    accept,
+                                    sign,
+                                    fundingTx,
+                                    closingTx)
+
+          assert(status.oracleSig == oracleSig)
+          assert(status.outcome == outcome)
+          assert(DLCStatus.fromJson(status.toJson) == status)
+        }
     }
   }
 

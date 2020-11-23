@@ -79,7 +79,7 @@ object InitNumericContractDialog {
       setNumericInput(yTF)
 
       val row = nextPointRow
-      pointMap.addOne((row, (xTF, yTF, endPointBox)))
+      val _ = pointMap.put(row, (xTF, yTF, endPointBox))
 
       pointGrid.add(xTF, 0, row)
       pointGrid.add(yTF, 1, row)
@@ -123,7 +123,7 @@ object InitNumericContractDialog {
       setNumericInput(roundingLevelTF)
 
       val row = nextRoundingRow
-      roundingMap.addOne((row, (outcomeTF, roundingLevelTF)))
+      val _ = roundingMap.put(row, (outcomeTF, roundingLevelTF))
 
       roundingGrid.add(outcomeTF, 0, row)
       roundingGrid.add(roundingLevelTF, 1, row)

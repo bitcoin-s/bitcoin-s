@@ -15,6 +15,7 @@ import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+import scala.collection.immutable.HashMap
 
 sealed trait DLCMessage
 
@@ -415,11 +416,18 @@ object DLCMessage {
 
     lazy val outcomeMap: Map[
       DLCOutcomeType,
-      (ECPublicKey, Satoshis, Satoshis)] =
-      allOutcomes.map { msg =>
-        msg -> (oracleInfo.sigPoint(msg), offerContractInfo(
-          msg), acceptContractInfo(msg))
-      }.toMap
+      (ECPublicKey, Satoshis, Satoshis)] = {
+      val builder =
+        HashMap.newBuilder[DLCOutcomeType, (ECPublicKey, Satoshis, Satoshis)]
+
+      allOutcomes.foreach { msg =>
+        builder.+=(
+          msg -> (oracleInfo.sigPoint(msg), offerContractInfo(
+            msg), acceptContractInfo(msg)))
+      }
+
+      builder.result()
+    }
 
     def resultOfOutcome(
         outcome: DLCOutcomeType): (ECPublicKey, Satoshis, Satoshis) = {

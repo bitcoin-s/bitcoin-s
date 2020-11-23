@@ -169,14 +169,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "totalCollateral" -> Element(UInt64(totalCollateral.toLong)),
           "numPoints" -> Element(BigSizeUInt(points.length)),
           "points" -> MultiElement(points.map { point =>
-            val leadingByte = if (point.isEndpoint) {
-              1.toByte
-            } else {
-              0.toByte
-            }
-
             NamedMultiElement(
-              "isEndpoint" -> Element(ByteVector(leadingByte)),
+              "isEndpoint" -> Element(ByteVector(point.leadingByte)),
               "outcome" -> Element(BigSizeUInt(point.outcome)),
               "value" -> Element(UInt64(point.value.toLong))
             )

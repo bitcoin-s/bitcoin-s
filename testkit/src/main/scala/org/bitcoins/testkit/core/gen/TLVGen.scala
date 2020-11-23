@@ -13,6 +13,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.testgen.DLCTestUtil
 import org.scalacheck.Gen
@@ -120,6 +121,18 @@ trait TLVGen {
       pubKey <- CryptoGenerators.schnorrPublicKey
       rValue <- CryptoGenerators.schnorrNonce
     } yield OracleInfoV0TLV(pubKey, rValue)
+  }
+
+  def oracleInfoV0TLVWithKeys: Gen[
+    (OracleInfoV0TLV, ECPrivateKey, ECPrivateKey)] = {
+    for {
+      privKey <- CryptoGenerators.privateKey
+      kValue <- CryptoGenerators.privateKey
+    } yield {
+      (OracleInfoV0TLV(privKey.schnorrPublicKey, kValue.schnorrNonce),
+       privKey,
+       kValue)
+    }
   }
 
   def fundingInputP2WPKHTLV: Gen[FundingInputV0TLV] = {
@@ -242,6 +255,16 @@ trait TLVGen {
     }
   }
 
+  def dlcOfferTLVWithOracleKeys: Gen[
+    (DLCOfferTLV, ECPrivateKey, ECPrivateKey)] = {
+    for {
+      offer <- dlcOfferTLV
+      (oracleInfo, oraclePrivKey, oracleRValue) <- oracleInfoV0TLVWithKeys
+    } yield {
+      (offer.copy(oracleInfo = oracleInfo), oraclePrivKey, oracleRValue)
+    }
+  }
+
   def dlcAcceptTLV: Gen[DLCAcceptTLV] = {
     for {
       tempContractId <- CryptoGenerators.sha256Digest
@@ -299,6 +322,14 @@ trait TLVGen {
     } yield (offer, accept)
   }
 
+  def dlcOfferTLVAcceptTLVWithOracleKeys: Gen[
+    (DLCOfferTLV, DLCAcceptTLV, ECPrivateKey, ECPrivateKey)] = {
+    for {
+      (offer, privKey, kVal) <- dlcOfferTLVWithOracleKeys
+      accept <- dlcAcceptTLV(offer)
+    } yield (offer, accept, privKey, kVal)
+  }
+
   def dlcSignTLV: Gen[DLCSignTLV] = {
     for {
       contractId <- NumberGenerator.bytevector(32)
@@ -336,6 +367,14 @@ trait TLVGen {
       (offer, accept) <- dlcOfferTLVAcceptTLV
       sign <- dlcSignTLV(offer, accept)
     } yield (offer, accept, sign)
+  }
+
+  def dlcOfferTLVAcceptTLVSignTLVWithOralceKeys: Gen[
+    (DLCOfferTLV, DLCAcceptTLV, DLCSignTLV, ECPrivateKey, ECPrivateKey)] = {
+    for {
+      (offer, accept, privKey, kValue) <- dlcOfferTLVAcceptTLVWithOracleKeys
+      sign <- dlcSignTLV(offer, accept)
+    } yield (offer, accept, sign, privKey, kValue)
   }
 
   def tlv: Gen[TLV] = {

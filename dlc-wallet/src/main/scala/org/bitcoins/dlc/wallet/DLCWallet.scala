@@ -1204,7 +1204,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         val outcomeSigs = outcomeSigDbs
           .filter(_.isInitiator == !dlcDb.isInitiator)
           .map(_.toTuple)
-          .map { case (outcome, sig) => outcome -> sig }
 
         val refundSig =
           refundSigs.find(_.isInitiator == !dlcDb.isInitiator).get.refundSig

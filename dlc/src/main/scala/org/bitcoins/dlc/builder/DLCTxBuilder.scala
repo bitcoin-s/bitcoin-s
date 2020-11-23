@@ -49,6 +49,9 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
 
   val totalInput: CurrencyUnit = offerTotalCollateral + acceptTotalCollateral
 
+  // builder.offer.oracleAndContractInfo should not be used,
+  // builder.oracleAndContractInfo should be used instead in case a party
+  // is over-collateralized in which case payouts will be incorrect here.
   private val oracleAndContractInfoBeforeAccept: OracleAndContractInfo =
     offer.oracleAndContractInfo
 

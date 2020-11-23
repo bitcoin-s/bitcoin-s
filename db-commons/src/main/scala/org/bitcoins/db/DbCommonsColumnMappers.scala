@@ -338,9 +338,9 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     Vector[SchnorrDigitalSignature]] = {
     MappedColumnType.base[Vector[SchnorrDigitalSignature], String](
       _.foldLeft("")(_ ++ _.hex),
-      _.toSeq
+      _.toArray
         .grouped(64 * 2)
-        .map(_.unwrap)
+        .map(new String(_))
         .map(SchnorrDigitalSignature.fromHex)
         .toVector
     )

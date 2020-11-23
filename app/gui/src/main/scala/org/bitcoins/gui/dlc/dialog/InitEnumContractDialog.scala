@@ -49,7 +49,7 @@ object InitEnumContractDialog {
       setNumericInput(amtTF)
 
       val row = nextRow
-      fields.addOne(row, (outcomeTF, amtTF))
+      val _ = fields.put(row, (outcomeTF, amtTF))
 
       gridPane.add(outcomeTF, 0, row)
       gridPane.add(amtTF, 1, row)

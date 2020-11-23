@@ -438,13 +438,13 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
 case class TLVPoint(outcome: Long, value: Satoshis, isEndpoint: Boolean)
     extends NetworkElement {
 
-  override def bytes: ByteVector = {
-    val leadingByte = if (isEndpoint) {
-      1.toByte
-    } else {
-      0.toByte
-    }
+  lazy val leadingByte: Byte = if (isEndpoint) {
+    1.toByte
+  } else {
+    0.toByte
+  }
 
+  override def bytes: ByteVector = {
     ByteVector(leadingByte) ++ BigSizeUInt(outcome).bytes ++ UInt64(
       value.toLong).bytes
   }
@@ -551,6 +551,10 @@ object OracleInfoV1TLV extends TLVFactory[OracleInfoV1TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(42786)
 
   override def fromTLVValue(value: ByteVector): OracleInfoV1TLV = {
+    require(
+      value.length >= 64 && value.length % 32 == 0,
+      s"Expected multiple of 32 bytes with at least one nonce, got $value")
+
     val iter = ValueIterator(value)
 
     val pubKey = SchnorrPublicKey(iter.take(32))

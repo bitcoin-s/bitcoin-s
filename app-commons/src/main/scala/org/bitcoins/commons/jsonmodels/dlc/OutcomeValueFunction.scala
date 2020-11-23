@@ -1,6 +1,7 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.util.NumberUtil
 
 import scala.math.BigDecimal.RoundingMode
 
@@ -26,7 +27,7 @@ case class OutcomeValueFunction(points: Vector[OutcomeValuePoint]) {
 
   def componentFor(
       outcome: BigDecimal): (OutcomeValueFunctionComponent, Int) = {
-    val endpointIndex = outcomes.search(outcome).insertionPoint
+    val endpointIndex = NumberUtil.search(outcomes, outcome)
     val (endpoint, _) = endpoints(endpointIndex)
 
     if (

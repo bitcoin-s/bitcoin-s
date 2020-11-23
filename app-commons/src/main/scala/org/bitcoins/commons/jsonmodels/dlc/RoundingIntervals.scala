@@ -1,6 +1,7 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.util.NumberUtil
 
 import scala.annotation.tailrec
 
@@ -9,8 +10,7 @@ case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
   def intervalContaining(
       outcome: BigDecimal): (BigDecimal, BigDecimal, Long) = {
     // Using Long.MaxValue guarantees that index will point to index of right endpoint of interval
-    val index =
-      intervalStarts.search((outcome, Long.MaxValue)).insertionPoint - 1
+    val index = NumberUtil.search(intervalStarts, (outcome, Long.MaxValue)) - 1
 
     if (index == -1) {
       (Long.MinValue, intervalStarts.head._1, 1L)
@@ -28,8 +28,7 @@ case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
 
   def roundingModulusAt(outcome: BigDecimal): Long = {
     // Using Long.MaxValue guarantees that index will point to index of right endpoint of interval
-    val index =
-      intervalStarts.search((outcome, Long.MaxValue)).insertionPoint - 1
+    val index = NumberUtil.search(intervalStarts, (outcome, Long.MaxValue)) - 1
 
     if (index == -1) 1L
     else intervalStarts(index)._2
