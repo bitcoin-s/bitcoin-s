@@ -211,6 +211,13 @@ akka {
             # some requests potentially take a long time, like generate and prune
             idle-timeout = 5 minutes
         }
+
+        server {
+            # The amount of time until a request times out on the server
+            # If you have a large payload this may need to be bumped
+            # https://doc.akka.io/docs/akka-http/current/common/timeouts.html#request-timeout
+            request-timeout = 10s
+        }
     }
 
 
