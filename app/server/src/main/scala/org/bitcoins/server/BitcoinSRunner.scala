@@ -40,6 +40,7 @@ trait BitcoinSRunner extends BitcoinSLogger {
     argsWithIndex.find(_._1.toLowerCase == "--datadir")
   }
 
+  /** Sets the default data dir, overridden by the --datadir option */
   private lazy val datadirPath: Path = dataDirIndexOpt match {
     case None => AppConfig.DEFAULT_BITCOIN_S_DATADIR
     case Some((_, dataDirIndex)) =>
@@ -52,13 +53,14 @@ trait BitcoinSRunner extends BitcoinSLogger {
     argsWithIndex.find(_._1.toLowerCase == "--conf").map(_._2)
   }
 
+  val datadirConfig: Config =
+    ConfigFactory.parseString(s"bitcoin-s.datadir = $datadirPath")
+
   lazy val baseConfig: Config = configIndexOpt match {
     case None =>
-      val withDatadir: Config =
-        ConfigFactory.parseString(s"bitcoin-s.datadir = $datadirPath")
       AppConfig
         .getBaseConfig(datadirPath)
-        .withFallback(withDatadir)
+        .withFallback(datadirConfig)
         .resolve()
     case Some(configIndex) =>
       val str = args(configIndex + 1)
@@ -66,11 +68,14 @@ trait BitcoinSRunner extends BitcoinSLogger {
       val path = Paths.get(usableStr)
       ConfigFactory
         .parseFile(path.toFile)
+        .withFallback(datadirConfig)
         .resolve()
   }
 
-  /** Base directory for all bitcoin-s data */
-  lazy val configDataDir: Path =
+  /** Base directory for all bitcoin-s data. This is the resulting datadir from
+    * the --datadir option and all configuration files.
+    */
+  lazy val datadir: Path =
     Paths.get(baseConfig.getString("bitcoin-s.datadir"))
 
   def startup: Future[Unit]
@@ -79,7 +84,7 @@ trait BitcoinSRunner extends BitcoinSLogger {
   final def run(): Unit = {
 
     /** Directory specific for current network */
-    val datadir: Path = {
+    val networkDatadir: Path = {
       val networkStr: String =
         baseConfig.getString("bitcoin-s.network")
       val network: BitcoinNetwork =
@@ -90,11 +95,12 @@ trait BitcoinSRunner extends BitcoinSLogger {
         case RegTest  => "regtest"
         case SigNet   => "signet"
       }
-      configDataDir.resolve(lastDirname)
+      datadir.resolve(lastDirname)
     }
 
     // Properly set log location
-    System.setProperty("bitcoins.log.location", datadir.toAbsolutePath.toString)
+    System.setProperty("bitcoins.log.location",
+                       networkDatadir.toAbsolutePath.toString)
 
     val runner = startup
     runner.failed.foreach { err =>
