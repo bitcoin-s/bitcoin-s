@@ -1,5 +1,7 @@
 package org.bitcoins.server
 
+import java.io.File
+import java.nio.file.Path
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
@@ -8,6 +10,7 @@ import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
@@ -421,7 +424,7 @@ object GetDLC extends ServerJsonModels {
 
 case class CreateDLCOffer(
     oracleInfo: OracleInfo,
-    contractInfo: ContractInfo,
+    contractInfoTLV: ContractInfoTLV,
     collateral: Satoshis,
     feeRateOpt: Option[SatoshisPerVirtualByte],
     locktime: UInt32,
@@ -435,13 +438,13 @@ object CreateDLCOffer extends ServerJsonModels {
       case oracleInfoJs :: contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: Nil =>
         Try {
           val oracleInfo = jsToOracleInfo(oracleInfoJs)
-          val contractInfo = jsToContractInfo(contractInfoJs)
+          val contractInfoTLV = jsToContractInfoTLV(contractInfoJs)
           val collateral = jsToSatoshis(collateralJs)
           val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
           val locktime = jsToUInt32(locktimeJs)
           val refundLT = jsToUInt32(refundLTJs)
           CreateDLCOffer(oracleInfo,
-                         contractInfo,
+                         contractInfoTLV,
                          collateral,
                          feeRate,
                          locktime,
@@ -455,7 +458,7 @@ object CreateDLCOffer extends ServerJsonModels {
   }
 }
 
-case class AcceptDLCOffer(offer: DLCOffer)
+case class AcceptDLCOffer(offer: LnMessage[DLCOfferTLV])
 
 object AcceptDLCOffer extends ServerJsonModels {
 
@@ -463,7 +466,7 @@ object AcceptDLCOffer extends ServerJsonModels {
     jsArr.arr.toList match {
       case offerJs :: Nil =>
         Try {
-          val offer = DLCOffer.fromJson(ujson.read(offerJs.str))
+          val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
           AcceptDLCOffer(offer)
         }
       case Nil =>
@@ -477,7 +480,7 @@ object AcceptDLCOffer extends ServerJsonModels {
   }
 }
 
-case class SignDLC(accept: DLCAccept)
+case class SignDLC(accept: LnMessage[DLCAcceptTLV])
 
 object SignDLC extends ServerJsonModels {
 
@@ -485,7 +488,7 @@ object SignDLC extends ServerJsonModels {
     jsArr.arr.toList match {
       case acceptJs :: Nil =>
         Try {
-          val accept = DLCAccept.fromJson(ujson.read(acceptJs.str))
+          val accept = LnMessageFactory(DLCAcceptTLV).fromHex(acceptJs.str)
           SignDLC(accept)
         }
       case Nil =>
@@ -498,7 +501,7 @@ object SignDLC extends ServerJsonModels {
   }
 }
 
-case class AddDLCSigs(sigs: DLCSign)
+case class AddDLCSigs(sigs: LnMessage[DLCSignTLV])
 
 object AddDLCSigs extends ServerJsonModels {
 
@@ -506,11 +509,32 @@ object AddDLCSigs extends ServerJsonModels {
     jsArr.arr.toList match {
       case sigsJs :: Nil =>
         Try {
-          val sigs = DLCSign.fromJson(ujson.read(sigsJs.str))
+          val sigs = LnMessageFactory(DLCSignTLV).fromHex(sigsJs.str)
           AddDLCSigs(sigs)
         }
       case Nil =>
         Failure(new IllegalArgumentException("Missing sigs argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class DLCDataFromFile(path: Path)
+
+object DLCDataFromFile extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DLCDataFromFile] = {
+    jsArr.arr.toList match {
+      case pathJs :: Nil =>
+        Try {
+          val path = new File(pathJs.str).toPath
+          DLCDataFromFile(path)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing path argument"))
       case other =>
         Failure(
           new IllegalArgumentException(
@@ -561,28 +585,28 @@ object BroadcastDLCFundingTx extends ServerJsonModels {
   }
 }
 
-case class ExecuteDLCUnilateralClose(
+case class ExecuteDLC(
     contractId: ByteVector,
-    oracleSig: SchnorrDigitalSignature,
+    oracleSigs: Vector[SchnorrDigitalSignature],
     noBroadcast: Boolean)
     extends Broadcastable
 
-object ExecuteDLCUnilateralClose extends ServerJsonModels {
+object ExecuteDLC extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCUnilateralClose] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLC] = {
     jsArr.arr.toList match {
-      case contractIdJs :: oracleSigJs :: noBroadcastJs :: Nil =>
+      case contractIdJs :: oracleSigsJs :: noBroadcastJs :: Nil =>
         Try {
           val contractId = ByteVector.fromValidHex(contractIdJs.str)
-          val oracleSig = jsToSchnorrDigitalSignature(oracleSigJs)
+          val oracleSigs = jsToSchnorrDigitalSignatureVec(oracleSigsJs)
           val noBroadcast = noBroadcastJs.bool
 
-          ExecuteDLCUnilateralClose(contractId, oracleSig, noBroadcast)
+          ExecuteDLC(contractId, oracleSigs, noBroadcast)
         }
       case Nil =>
         Failure(
           new IllegalArgumentException(
-            "Missing contractId and oracleSig arguments"))
+            "Missing contractId, oracleSig, and noBroadcast arguments"))
       case other =>
         Failure(
           new IllegalArgumentException(
@@ -798,10 +822,10 @@ trait ServerJsonModels {
         throw Value.InvalidData(js, "Expected an OracleInfo as a hex string")
     }
 
-  def jsToContractInfo(js: Value): ContractInfo =
+  def jsToContractInfoTLV(js: Value): ContractInfoTLV =
     js match {
       case str: Str =>
-        ContractInfo(str.value)
+        ContractInfoTLV(str.value)
       case _: Value =>
         throw Value.InvalidData(js, "Expected a ContractInfo as a hex string")
     }
@@ -891,4 +915,10 @@ trait ServerJsonModels {
           js,
           "Expected a SchnorrDigitalSignature as a hex string")
     }
+
+  def jsToSchnorrDigitalSignatureVec(
+      js: Value): Vector[SchnorrDigitalSignature] = {
+    js.arr.foldLeft(Vector.empty[SchnorrDigitalSignature])((vec, sig) =>
+      vec :+ jsToSchnorrDigitalSignature(sig))
+  }
 }

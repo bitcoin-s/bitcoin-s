@@ -291,7 +291,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
     )
 
     outcome match {
-      case ExecutedDLCOutcome(fundingTx, cet) =>
+      case ExecutedDLCOutcome(fundingTx, cet, _) =>
         DLCFeeTestUtil.validateFees(dlcOffer.dlcTxBuilder,
                                     fundingTx,
                                     cet,
@@ -377,14 +377,11 @@ class DLCClientTest extends BitcoinSAsyncTest {
           val fullDigits =
             CETCalculator.decompose(outcomeIndex, base = 10, numOutcomes)
 
-          val digits = outcomes.find {
-            case UnsignedNumericOutcome(digits) => fullDigits.startsWith(digits)
-            case EnumOutcome(_)                 => fail("Expected MultiDigit outcome")
-          } match {
-            case Some(UnsignedNumericOutcome(digits)) => digits
-            case Some(EnumOutcome(_)) | None =>
-              fail(s"Couldn't find outcome for $outcomeIndex")
-          }
+          val digits =
+            CETCalculator.searchForNumericOutcome(fullDigits, outcomes) match {
+              case Some(UnsignedNumericOutcome(digits)) => digits
+              case None                                 => fail(s"Couldn't find outcome for $outcomeIndex")
+            }
 
           digits.zip(preCommittedKs.take(digits.length)).map {
             case (digit, kValue) =>
@@ -673,14 +670,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
       setupDLC(numDigits, isMultiDigit = true).flatMap {
         case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomes) =>
           runTestsForParam(outcomesToTest) { outcomeToTest =>
-            val outcome = outcomes
-              .find {
-                case UnsignedNumericOutcome(digits) =>
-                  outcomeToTest.startsWith(digits)
-                case _: EnumOutcome => false
-              }
+            val outcome = CETCalculator
+              .searchForNumericOutcome(outcomeToTest, outcomes)
               .get
-              .asInstanceOf[UnsignedNumericOutcome]
 
             val oracleSigs = outcome.digits
               .zip(preCommittedKs.take(numDigits))

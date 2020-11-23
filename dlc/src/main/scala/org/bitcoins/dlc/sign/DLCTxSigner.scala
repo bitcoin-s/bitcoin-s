@@ -278,7 +278,9 @@ case class DLCTxSigner(
   /** Creates all of this party's CETSignatures */
   def createCETSigs(): Future[CETSignatures] = {
     val cetSigFs = builder.oracleAndContractInfo.allOutcomes.map { msg =>
-      createRemoteCETSig(msg).map(msg -> _)
+      // Need to wrap in another future so they are all started at once
+      // and do not block each other
+      Future(createRemoteCETSig(msg).map(msg -> _)).flatten
     }
 
     for {

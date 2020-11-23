@@ -3,7 +3,7 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.tlv.EnumOutcome
+import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -22,20 +22,117 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
   behavior of "DLCWallet"
 
+  def testNegotiate(
+      fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet),
+      offerData: DLCOffer): Future[Assertion] = {
+    val walletA = fundedDLCWallets._1.wallet
+    val walletB = fundedDLCWallets._2.wallet
+
+    for {
+      offer <- walletA.createDLCOffer(
+        offerData.oracleInfo,
+        offerData.contractInfo,
+        offerData.totalCollateral,
+        Some(offerData.feeRate),
+        offerData.timeouts.contractMaturity.toUInt32,
+        offerData.timeouts.contractTimeout.toUInt32
+      )
+      paramHash = offer.paramHash
+      dlcA1Opt <- walletA.dlcDAO.read(paramHash)
+      find1 <- walletA.findDLC(paramHash)
+      _ = {
+        assert(dlcA1Opt.isDefined)
+        assert(find1.isDefined)
+        assert(dlcA1Opt.get.state == DLCState.Offered)
+        assert(offer.oracleInfo == offerData.oracleInfo)
+        assert(offer.contractInfo == offerData.contractInfo)
+        assert(offer.totalCollateral == offerData.totalCollateral)
+        assert(offer.feeRate == offerData.feeRate)
+        assert(offer.timeouts == offerData.timeouts)
+        assert(offer.fundingInputs.nonEmpty)
+        assert(offer.changeAddress.value.nonEmpty)
+      }
+
+      accept <- walletB.acceptDLCOffer(offer)
+      dlcB1Opt <- walletB.dlcDAO.read(paramHash)
+      _ = {
+        assert(dlcB1Opt.isDefined)
+        assert(dlcB1Opt.get.state == DLCState.Accepted)
+        assert(accept.fundingInputs.nonEmpty)
+        assert(
+          accept.fundingInputs
+            .map(_.output.value)
+            .sum >= accept.totalCollateral)
+        assert(
+          accept.totalCollateral == offer.contractInfo.max - offer.totalCollateral)
+        assert(accept.changeAddress.value.nonEmpty)
+      }
+
+      sign <- walletA.signDLC(accept)
+      dlcA2Opt <- walletA.dlcDAO.read(paramHash)
+      _ = {
+        assert(dlcA2Opt.isDefined)
+        assert(dlcA2Opt.get.state == DLCState.Signed)
+        assert(sign.fundingSigs.length == offerData.fundingInputs.size)
+      }
+
+      dlcDb <- walletB.addDLCSigs(sign)
+      _ = assert(dlcDb.state == DLCState.Signed)
+      outcomeSigs <- walletB.dlcSigsDAO.findByParamHash(offer.paramHash)
+
+      refundSigsA <-
+        walletA.dlcRefundSigDAO
+          .findByParamHash(paramHash)
+          .map(_.map(_.refundSig))
+      refundSigsB <-
+        walletB.dlcRefundSigDAO
+          .findByParamHash(paramHash)
+          .map(_.map(_.refundSig))
+
+      walletAChange <- walletA.addressDAO.read(offer.changeAddress)
+      walletAFinal <- walletA.addressDAO.read(offer.pubKeys.payoutAddress)
+
+      walletBChange <- walletB.addressDAO.read(accept.changeAddress)
+      walletBFinal <- walletB.addressDAO.read(accept.pubKeys.payoutAddress)
+
+    } yield {
+      assert(dlcDb.contractIdOpt.get == sign.contractId)
+
+      assert(refundSigsA.size == 2)
+      assert(refundSigsA.forall(refundSigsB.contains))
+
+      assert(sign.cetSigs.outcomeSigs.forall(sig =>
+        outcomeSigs.exists(dbSig => (dbSig.outcome, dbSig.signature) == sig)))
+
+      // Test that the Addresses are in the wallet's database
+      assert(walletAChange.isDefined)
+      assert(walletAFinal.isDefined)
+      assert(walletBChange.isDefined)
+      assert(walletBFinal.isDefined)
+    }
+  }
+
   it must "correctly negotiate a dlc" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
-      val walletA = FundedDLCWallets._1.wallet
-      val walletB = FundedDLCWallets._2.wallet
+    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      testNegotiate(fundedDLCWallets, DLCWalletUtil.sampleDLCOffer)
+  }
+
+  it must "correctly negotiate a dlc with a multi-nonce oracle info" in {
+    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      testNegotiate(fundedDLCWallets, DLCWalletUtil.sampleMultiNonceDLCOffer)
+  }
+
+  it must "correctly negotiate a dlc using TLVs" in {
+    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = fundedDLCWallets._1.wallet
+      val walletB = fundedDLCWallets._2.wallet
 
       val offerData = DLCWalletUtil.sampleDLCOffer
-      val paramHash = DLCMessage.calcParamHash(offerData.oracleInfo,
-                                               offerData.contractInfo,
-                                               offerData.timeouts)
 
       for {
         offer <- walletA.createDLCOffer(
           offerData.oracleInfo,
-          offerData.contractInfo,
+          offerData.contractInfo.toTLV,
           offerData.totalCollateral,
           Some(offerData.feeRate),
           offerData.timeouts.contractMaturity.toUInt32,
@@ -55,7 +152,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           assert(offer.changeAddress.value.nonEmpty)
         }
 
-        accept <- walletB.acceptDLCOffer(offer)
+        accept <- walletB.acceptDLCOffer(offer.toTLV)
         dlcB1Opt <- walletB.dlcDAO.read(paramHash)
         _ = {
           assert(dlcB1Opt.isDefined)
@@ -70,7 +167,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           assert(accept.changeAddress.value.nonEmpty)
         }
 
-        sign <- walletA.signDLC(accept)
+        sign <- walletA.signDLC(accept.toTLV)
         dlcA2Opt <- walletA.dlcDAO.read(paramHash)
         _ = {
           assert(dlcA2Opt.isDefined)
@@ -78,7 +175,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           assert(sign.fundingSigs.length == offerData.fundingInputs.size)
         }
 
-        dlcDb <- walletB.addDLCSigs(sign)
+        dlcDb <- walletB.addDLCSigs(sign.toTLV)
         _ = assert(dlcDb.state == DLCState.Signed)
         outcomeSigs <- walletB.dlcSigsDAO.findByParamHash(offer.paramHash)
 
@@ -104,8 +201,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         assert(refundSigsA.forall(refundSigsB.contains))
 
         assert(sign.cetSigs.outcomeSigs.forall(sig =>
-          outcomeSigs.exists(dbSig =>
-            (EnumOutcome(dbSig.outcome), dbSig.signature) == sig)))
+          outcomeSigs.exists(dbSig => (dbSig.outcome, dbSig.signature) == sig)))
 
         // Test that the Addresses are in the wallet's database
         assert(walletAChange.isDefined)
@@ -242,12 +338,28 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
-      val winHash = CryptoUtil.sha256("Democrat_win")
-      val loseHash = CryptoUtil.sha256("Republican_win")
-      val drawHash = CryptoUtil.sha256("other")
-      val contractInfo = ContractInfo(winHash.bytes ++ Satoshis(
-        10000).bytes ++ loseHash.bytes ++ Satoshis.zero.bytes ++ drawHash.bytes ++ Satoshis(
-        5000).bytes)
+      val winStr = "Democrat_win"
+      val loseStr = "Republican_win"
+      val drawStr = "other"
+
+      val betSize = 10000
+
+      lazy val contractInfo: ContractInfo = {
+        val winBytes = CryptoUtil.serializeForHash(winStr)
+        val loseBytes = CryptoUtil.serializeForHash(loseStr)
+        val drawBytes = CryptoUtil.serializeForHash(drawStr)
+
+        ContractInfo(
+          BigSizeUInt.calcFor(winBytes).bytes ++
+            winBytes ++
+            Satoshis(betSize).bytes ++
+            BigSizeUInt.calcFor(loseBytes).bytes ++
+            loseBytes ++
+            Satoshis.zero.bytes ++
+            BigSizeUInt.calcFor(drawBytes).bytes ++
+            drawBytes ++
+            Satoshis(betSize / 2).bytes)
+      }
 
       val oraclePubKey = SchnorrPublicKey(
         "156c7d1c7922f0aa1168d9e21ac77ea88bbbe05e24e70a08bbe0519778f2e5da")
@@ -332,7 +444,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
           assert(sign.cetSigs.outcomeSigs.forall(sig =>
             outcomeSigs.exists(dbSig =>
-              (EnumOutcome(dbSig.outcome), dbSig.signature) == sig)))
+              (dbSig.outcome, dbSig.signature) == sig)))
           // Test that the Addresses are in the wallet's database
           assert(walletAChange.isDefined)
           assert(walletAFinal.isDefined)

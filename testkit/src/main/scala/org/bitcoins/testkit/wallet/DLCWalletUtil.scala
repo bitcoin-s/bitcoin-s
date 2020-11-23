@@ -19,17 +19,21 @@ import org.bitcoins.crypto._
 import org.bitcoins.dlc.testgen.DLCTestUtil
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.scalatest.Assertions.fail
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait DLCWalletUtil {
+object DLCWalletUtil {
   lazy val oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
-  lazy val kValue: ECPrivateKey = ECPrivateKey.freshPrivateKey
-  lazy val rValue: SchnorrNonce = kValue.schnorrNonce
+
+  lazy val kValues: Vector[ECPrivateKey] =
+    0.to(10).map(_ => ECPrivateKey.freshPrivateKey).toVector
+  lazy val rValues: Vector[SchnorrNonce] = kValues.map(_.schnorrNonce)
+
+  lazy val kValue: ECPrivateKey = kValues.head
+  lazy val rValue: SchnorrNonce = rValues.head
 
   lazy val winStr: String = "WIN"
   lazy val loseStr: String = "LOSE"
@@ -64,6 +68,18 @@ trait DLCWalletUtil {
 
   lazy val sampleOracleLoseSig: SchnorrDigitalSignature =
     oraclePrivKey.schnorrSignWithNonce(loseHash.bytes, kValue)
+
+  val numDigits: Int = 6
+
+  lazy val multiNonceContractInfo: MultiNonceContractInfo =
+    DLCTestUtil.genMultiDigitContractInfo(numDigits, Satoshis(10000))._1
+
+  lazy val multiNonceOracleInfo: MultiNonceOracleInfo =
+    MultiNonceOracleInfo(oraclePrivKey.schnorrPublicKey,
+                         rValues.take(numDigits))
+
+  lazy val multiNonceOracleAndContractInfo: OracleAndContractInfo =
+    OracleAndContractInfo(multiNonceOracleInfo, multiNonceContractInfo)
 
   lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(1666335)
   lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1666337)
@@ -117,6 +133,9 @@ trait DLCWalletUtil {
     dummyTimeouts
   )
 
+  lazy val sampleMultiNonceDLCOffer: DLCOffer =
+    sampleDLCOffer.copy(oracleAndContractInfo = multiNonceOracleAndContractInfo)
+
   lazy val sampleDLCParamHash: Sha256DigestBE =
     DLCMessage.calcParamHash(sampleOracleInfo,
                              sampleContractInfo,
@@ -153,27 +172,26 @@ trait DLCWalletUtil {
     isInitiator = true,
     account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,
     keyIndex = 0,
-    oracleSigOpt = Some(sampleOracleLoseSig),
+    oracleSigsOpt = Some(Vector(sampleOracleLoseSig)),
     fundingOutPointOpt = None,
     fundingTxIdOpt = None,
-    closingTxIdOpt = None
+    closingTxIdOpt = None,
+    outcomeOpt = None
   )
 
-  def initDLC(fundedWalletA: FundedDLCWallet, fundedWalletB: FundedDLCWallet)(
-      implicit ec: ExecutionContext): Future[
+  def initDLC(
+      fundedWalletA: FundedDLCWallet,
+      fundedWalletB: FundedDLCWallet,
+      oracleAndContractInfo: OracleAndContractInfo)(implicit
+      ec: ExecutionContext): Future[
     (InitializedDLCWallet, InitializedDLCWallet)] = {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
 
-    val numOutcomes = 8
-    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
-    val (contractInfo, _) =
-      DLCTestUtil.genContractInfos(outcomeHashes, Satoshis(10000))
-
     for {
       offer <- walletA.createDLCOffer(
-        oracleInfo = sampleOracleInfo,
-        contractInfo = contractInfo,
+        oracleInfo = oracleAndContractInfo.oracleInfo,
+        contractInfo = oracleAndContractInfo.offerContractInfo,
         collateral = Satoshis(5000),
         feeRateOpt = None,
         locktime = dummyTimeouts.contractMaturity.toUInt32,
@@ -190,20 +208,9 @@ trait DLCWalletUtil {
        InitializedDLCWallet(FundedDLCWallet(walletB)))
     }
   }
-}
-
-object DLCWalletUtil extends DLCWalletUtil {
 
   case class InitializedDLCWallet(funded: FundedDLCWallet) {
     val wallet: DLCWallet = funded.wallet
-  }
-
-  def createDLCWallets(
-      fundedWalletA: FundedDLCWallet,
-      fundedWalletB: FundedDLCWallet)(implicit ec: ExecutionContext): Future[
-    (InitializedDLCWallet, InitializedDLCWallet)] = {
-
-    initDLC(fundedWalletA, fundedWalletB)
   }
 
   def getInitialOffer(wallet: DLCWallet)(implicit

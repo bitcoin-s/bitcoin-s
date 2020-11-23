@@ -22,7 +22,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withDualDLCWallets(test)
+    withDualDLCWallets(test, multiNonce = false)
   }
 
   behavior of "DLCWallet"
@@ -30,10 +30,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   def getSigs(contractInfo: ContractInfo): (
       SchnorrDigitalSignature,
       SchnorrDigitalSignature) = {
-    val info = contractInfo match {
+    val info: SingleNonceContractInfo = contractInfo match {
       case info: SingleNonceContractInfo => info
       case _: MultiNonceContractInfo =>
-        throw new IllegalArgumentException("This is not yet supported")
+        throw new IllegalArgumentException("Unexpected Contract Info")
     }
 
     // Get a hash that the initiator wins for
@@ -145,7 +145,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
-            assert(statusA.oracleSig == statusB.oracleSig)
+            assert(statusA.oracleSigs == Vector(statusB.oracleSig))
           case (_, _) => fail()
         }
       }
@@ -184,7 +184,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: RemoteClaimed), Some(statusB: Claimed)) =>
-            assert(statusA.oracleSig == statusB.oracleSig)
+            assert(Vector(statusA.oracleSig) == statusB.oracleSigs)
           case (_, _) => fail()
         }
       }
@@ -284,5 +284,17 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         case (_, _) => fail()
       }
     }
+  }
+
+  it must "fail to execute with an empty vec of sigs" in { wallets =>
+    val dlcA = wallets._1.wallet
+
+    val executeDLCForceCloseF = for {
+      contractId <- getContractId(wallets._1.wallet)
+
+      tx <- dlcA.executeDLC(contractId, Vector.empty)
+    } yield tx
+
+    recoverToSucceededIf[IllegalArgumentException](executeDLCForceCloseF)
   }
 }

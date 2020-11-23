@@ -2,6 +2,7 @@ package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCState
 import org.bitcoins.core.hd.HDAccount
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
@@ -19,10 +20,11 @@ case class DLCDb(
     isInitiator: Boolean,
     account: HDAccount,
     keyIndex: Int,
-    oracleSigOpt: Option[SchnorrDigitalSignature],
+    oracleSigsOpt: Option[Vector[SchnorrDigitalSignature]],
     fundingOutPointOpt: Option[TransactionOutPoint],
     fundingTxIdOpt: Option[DoubleSha256DigestBE],
-    closingTxIdOpt: Option[DoubleSha256DigestBE]
+    closingTxIdOpt: Option[DoubleSha256DigestBE],
+    outcomeOpt: Option[DLCOutcomeType]
 ) {
 
   def updateState(newState: DLCState): DLCDb = {

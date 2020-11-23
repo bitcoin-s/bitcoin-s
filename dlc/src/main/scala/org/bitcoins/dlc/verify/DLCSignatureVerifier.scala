@@ -12,12 +12,12 @@ import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.bitcoins.crypto.ECAdaptorSignature
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
@@ -88,6 +88,29 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
       TransactionSignatureSerializer.hashForSignature(sigComponent, hashType)
 
     remoteFundingPubKey.adaptorVerify(hash.bytes, adaptorPoint, sig)
+  }
+
+  def verifyCETSigs(sigs: Vector[(DLCOutcomeType, ECAdaptorSignature)])(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    val correctNumberOfSigs =
+      sigs.size >= builder.oracleAndContractInfo.allOutcomes.length
+
+    def runVerify(
+        outcomeSigs: Vector[(DLCOutcomeType, ECAdaptorSignature)]): Future[
+      Boolean] = {
+      Future {
+        outcomeSigs.foldLeft(true) {
+          case (ret, (outcome, sig)) =>
+            ret && verifyCETSig(outcome, sig)
+        }
+      }
+    }
+
+    if (correctNumberOfSigs) {
+      FutureUtil
+        .batchAndParallelExecute(sigs, runVerify, 25)
+        .map(_.forall(res => res))
+    } else Future.successful(false)
   }
 
   /** Verifies remote's refund signature */

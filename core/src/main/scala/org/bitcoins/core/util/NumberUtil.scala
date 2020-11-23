@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader.TargetDifficultyHelper
 import org.bitcoins.crypto.FieldElement
 import scodec.bits.{BitVector, ByteVector}
 
+import scala.annotation.tailrec
 import scala.math.BigInt
 import scala.util.{Failure, Success, Try}
 
@@ -374,6 +375,61 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     val bytes = new Array[Byte](0 max num)
     scala.util.Random.self.nextBytes(bytes)
     ByteVector(bytes)
+  }
+
+  def lexicographicalOrdering[T](implicit
+      ord: Ordering[T]): Ordering[Vector[T]] = {
+    new Ordering[Vector[T]] {
+      override def compare(x: Vector[T], y: Vector[T]): Int = {
+        val xe = x.iterator
+        val ye = y.iterator
+
+        while (xe.hasNext && ye.hasNext) {
+          val res = ord.compare(xe.next(), ye.next())
+          if (res != 0) return res
+        }
+
+        Ordering.Boolean.compare(xe.hasNext, ye.hasNext)
+      }
+    }
+  }
+
+  /** Stolen from Scala 2.13 IndexedSeq::binarySearch */
+  @tailrec
+  final def search[A, B >: A, Wrapper](
+      seq: IndexedSeq[Wrapper],
+      elem: B,
+      from: Int,
+      to: Int,
+      unwrap: Wrapper => A)(implicit ord: Ordering[B]): Int = {
+    if (from < 0) search(seq, elem, from = 0, to, unwrap)
+    else if (to > seq.length) search(seq, elem, from, seq.length, unwrap)
+    else if (to <= from) from
+    else {
+      val idx = from + (to - from - 1) / 2
+      math.signum(ord.compare(elem, unwrap(seq(idx)))) match {
+        case -1 => search(seq, elem, from, idx, unwrap)(ord)
+        case 1  => search(seq, elem, idx + 1, to, unwrap)(ord)
+        case _  => idx
+      }
+    }
+  }
+
+  def search[A, B >: A, Wrapper](
+      seq: IndexedSeq[Wrapper],
+      elem: B,
+      unwrap: Wrapper => A)(implicit ord: Ordering[B]): Int = {
+    search(seq, elem, from = 0, to = seq.length, unwrap)
+  }
+
+  def search[A, B >: A](seq: IndexedSeq[A], elem: B, from: Int, to: Int)(
+      implicit ord: Ordering[B]): Int = {
+    search(seq, elem, from, to, identity[A])
+  }
+
+  def search[A, B >: A](seq: IndexedSeq[A], elem: B)(implicit
+      ord: Ordering[B]): Int = {
+    search(seq, elem, from = 0, to = seq.length)
   }
 }
 

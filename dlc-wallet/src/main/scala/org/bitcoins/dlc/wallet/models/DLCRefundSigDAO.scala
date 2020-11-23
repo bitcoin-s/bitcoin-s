@@ -55,6 +55,16 @@ case class DLCRefundSigDAO()(implicit
     safeDatabase.runVec(q.result)
   }
 
+  def findByParamHash(
+      paramHash: Sha256DigestBE,
+      isInit: Boolean): Future[Option[DLCRefundSigDb]] = {
+    val q = table
+      .filter(_.paramHash === paramHash)
+      .filter(_.isInitiator === isInit)
+
+    safeDatabase.runVec(q.result).map(_.headOption)
+  }
+
   def findByParamHash(paramHash: Sha256Digest): Future[Vector[DLCRefundSigDb]] =
     findByParamHash(paramHash.flip)
 

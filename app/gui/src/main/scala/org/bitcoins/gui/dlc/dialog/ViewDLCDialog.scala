@@ -1,6 +1,5 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCStatus._
 import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.gui.GlobalData
 import scalafx.Includes._
@@ -11,7 +10,7 @@ import scalafx.stage.Window
 
 object ViewDLCDialog {
 
-  def showAndWait(parentWindow: Window, dlcStatus: DLCStatus): Unit = {
+  def showAndWait(parentWindow: Window, status: SerializedDLCStatus): Unit = {
     val dialog = new Dialog[Unit]() {
       initOwner(parentWindow)
       title = "View DLC"
@@ -29,7 +28,7 @@ object ViewDLCDialog {
       private var row = 0
       add(new Label("Param Hash:"), 0, row)
       add(new TextField() {
-            text = dlcStatus.paramHash.hex
+            text = status.paramHash.hex
             editable = false
           },
           columnIndex = 1,
@@ -38,7 +37,7 @@ object ViewDLCDialog {
       row += 1
       add(new Label("Initiator:"), 0, row)
       add(new TextField() {
-            text = if (dlcStatus.isInitiator) "Yes" else "No"
+            text = if (status.isInitiator) "Yes" else "No"
             editable = false
           },
           columnIndex = 1,
@@ -47,7 +46,7 @@ object ViewDLCDialog {
       row += 1
       add(new Label("State:"), 0, row)
       add(new TextField() {
-            text = dlcStatus.statusString
+            text = status.statusString
             editable = false
           },
           columnIndex = 1,
@@ -56,7 +55,7 @@ object ViewDLCDialog {
       row += 1
       add(new Label("Temp Contract Id:"), 0, row)
       add(new TextField() {
-            text = dlcStatus.tempContractId.hex
+            text = status.tempContractId.hex
             editable = false
           },
           columnIndex = 1,
@@ -64,17 +63,19 @@ object ViewDLCDialog {
 
       row += 1
       add(new Label("Contract Id:"), 0, row)
-      add(new TextField() {
-            text = DLCStatus.getContractId(dlcStatus).map(_.toHex).getOrElse("")
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
+      add(
+        new TextField() {
+          text =
+            SerializedDLCStatus.getContractId(status).map(_.toHex).getOrElse("")
+          editable = false
+        },
+        columnIndex = 1,
+        rowIndex = row)
 
       row += 1
       add(new Label("Oracle Info:"), 0, row)
       add(new TextField() {
-            text = dlcStatus.offer.oracleInfo.hex
+            text = status.oracleInfo.hex
             editable = false
           },
           columnIndex = 1,
@@ -83,7 +84,7 @@ object ViewDLCDialog {
       row += 1
       add(new Label("Fee Rate:"), 0, row)
       add(new TextField() {
-            text = s"${dlcStatus.offer.feeRate.toLong} sats/vbyte"
+            text = s"${status.feeRate.toLong} sats/vbyte"
             editable = false
           },
           columnIndex = 1,
@@ -92,8 +93,7 @@ object ViewDLCDialog {
       row += 1
       add(new Label("Contract Maturity:"), 0, row)
       add(new TextField() {
-            text =
-              dlcStatus.offer.timeouts.contractMaturity.toUInt32.toLong.toString
+            text = status.timeouts.contractMaturity.toUInt32.toLong.toString
             editable = false
           },
           columnIndex = 1,
@@ -102,8 +102,7 @@ object ViewDLCDialog {
       row += 1
       add(new Label("Contract Timeout:"), 0, row)
       add(new TextField() {
-            text =
-              dlcStatus.offer.timeouts.contractTimeout.toUInt32.toLong.toString
+            text = status.timeouts.contractTimeout.toUInt32.toLong.toString
             editable = false
           },
           columnIndex = 1,
@@ -113,17 +112,7 @@ object ViewDLCDialog {
       add(new Label("Collateral:"), 0, row)
       add(
         new TextField() {
-          val num: Long = if (dlcStatus.isInitiator) {
-            dlcStatus.offer.totalCollateral.toLong
-          } else {
-            dlcStatus match {
-              case _: Offered => 0
-              case accepted: AcceptedDLCStatus =>
-                accepted.accept.totalCollateral.toLong
-            }
-          }
-
-          text = num.toString
+          text = status.totalCollateral.satoshis.toLong.toString
           editable = false
         },
         columnIndex = 1,
@@ -132,33 +121,39 @@ object ViewDLCDialog {
 
       row += 1
       add(new Label("Funding TxId:"), 0, row)
-      add(new TextField() {
-            text =
-              DLCStatus.getFundingTx(dlcStatus).map(_.txIdBE.hex).getOrElse("")
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
+      add(
+        new TextField() {
+          text =
+            SerializedDLCStatus.getFundingTxId(status).map(_.hex).getOrElse("")
+          editable = false
+        },
+        columnIndex = 1,
+        rowIndex = row)
 
       row += 1
       add(new Label("Closing TxId:"), 0, row)
-      add(new TextField() {
-            text =
-              DLCStatus.getClosingTx(dlcStatus).map(_.txIdBE.hex).getOrElse("")
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
+      add(
+        new TextField() {
+          text =
+            SerializedDLCStatus.getClosingTxId(status).map(_.hex).getOrElse("")
+          editable = false
+        },
+        columnIndex = 1,
+        rowIndex = row)
 
       row += 1
-      add(new Label("Oracle Signature:"), 0, row)
-      add(new TextField() {
-            text =
-              DLCStatus.getOracleSignature(dlcStatus).map(_.hex).getOrElse("")
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
+      add(new Label("Oracle Signatures:"), 0, row)
+      add(
+        new TextField() {
+          text = SerializedDLCStatus
+            .getOracleSignatures(status)
+            .map(_.map(_.hex).mkString(","))
+            .getOrElse("")
+          editable = false
+        },
+        columnIndex = 1,
+        rowIndex = row
+      )
 
     }
 

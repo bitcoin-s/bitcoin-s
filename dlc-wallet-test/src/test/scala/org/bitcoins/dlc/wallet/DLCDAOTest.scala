@@ -4,6 +4,7 @@ import org.bitcoins.core.api.wallet.db.TransactionDbHelper
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
+import org.bitcoins.core.protocol.tlv.{EnumOutcome, UnsignedNumericOutcome}
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
@@ -121,18 +122,42 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       } yield assert(readInput.size == 2)
   }
 
-  it should "correctly insert CET signatures into the database" in { daos =>
-    val dlcDAO = daos.dlcDAO
-    val sigsDAO = daos.dlcSigsDAO
+  it should "correctly insert enum outcome CET signatures into the database" in {
+    daos =>
+      val dlcDAO = daos.dlcDAO
+      val sigsDAO = daos.dlcSigsDAO
 
-    val sig = DLCCETSignatureDb(
-      paramHash = paramHash,
-      isInitiator = true,
-      outcome = DLCWalletUtil.winStr,
-      signature = ECAdaptorSignature.dummy
-    )
+      val sig = DLCCETSignatureDb(
+        paramHash = paramHash,
+        isInitiator = true,
+        outcome = EnumOutcome(DLCWalletUtil.winStr),
+        signature = ECAdaptorSignature.dummy
+      )
 
-    verifyDatabaseInsertion(sig, (sig.paramHash, sig.outcome), sigsDAO, dlcDAO)
+      verifyDatabaseInsertion(sig,
+                              (sig.paramHash, sig.outcome),
+                              sigsDAO,
+                              dlcDAO)
+  }
+
+  it should "correctly insert unsigned numeric outcome CET signatures into the database" in {
+    daos =>
+      val dlcDAO = daos.dlcDAO
+      val sigsDAO = daos.dlcSigsDAO
+
+      val outcomes = 0.to(100).toVector
+
+      val sig = DLCCETSignatureDb(
+        paramHash = paramHash,
+        isInitiator = true,
+        outcome = UnsignedNumericOutcome(outcomes),
+        signature = ECAdaptorSignature.dummy
+      )
+
+      verifyDatabaseInsertion(sig,
+                              (sig.paramHash, sig.outcome),
+                              sigsDAO,
+                              dlcDAO)
   }
 
   it should "correctly find CET signatures by eventId" in { daos =>
@@ -143,13 +168,13 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       DLCCETSignatureDb(
         paramHash = paramHash,
         isInitiator = true,
-        outcome = DLCWalletUtil.winStr,
+        outcome = EnumOutcome(DLCWalletUtil.winStr),
         signature = ECAdaptorSignature.dummy
       ),
       DLCCETSignatureDb(
         paramHash = paramHash,
         isInitiator = false,
-        outcome = DLCWalletUtil.loseStr,
+        outcome = EnumOutcome(DLCWalletUtil.loseStr),
         signature = ECAdaptorSignature.dummy
       )
     )

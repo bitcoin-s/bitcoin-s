@@ -12,10 +12,10 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.dlc.wallet._
 import org.bitcoins.feeprovider.FeeProviderName._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
-import org.bitcoins.dlc.wallet._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer

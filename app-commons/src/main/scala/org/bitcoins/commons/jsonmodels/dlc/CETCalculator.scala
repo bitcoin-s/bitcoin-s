@@ -1,6 +1,12 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.tlv.{
+  DLCOutcomeType,
+  EnumOutcome,
+  UnsignedNumericOutcome
+}
+import org.bitcoins.core.util.NumberUtil
 
 import scala.annotation.tailrec
 
@@ -195,6 +201,50 @@ object CETCalculator {
     }
 
     backwardsDigits.reverse
+  }
+
+  /** Recomposes the input digits into the number they represent.
+    * The input Vector has the most significant digit first and the 1's place last.
+    */
+  def fromDigits(digits: Vector[Int], base: Int, numDigits: Int): Long = {
+    digits.indices.foldLeft(0L) { (numSoFar, index) =>
+      numSoFar + digits(index) * math.pow(base, numDigits - 1 - index).toLong
+    }
+  }
+
+  /** Searches for an outcome which contains a prefix of digits */
+  def searchForPrefix[Outcome](digits: Vector[Int], outcomes: Vector[Outcome])(
+      outcomeToPrefix: Outcome => Vector[Int]): Option[Outcome] = {
+    val indexOrOverByOne = NumberUtil.search(outcomes, digits, outcomeToPrefix)(
+      NumberUtil.lexicographicalOrdering[Int])
+
+    if (indexOrOverByOne == outcomes.length) {
+      if (digits.startsWith(outcomeToPrefix(outcomes.last))) {
+        Some(outcomes.last)
+      } else None
+    } else if (indexOrOverByOne == 0) {
+      if (digits.startsWith(outcomeToPrefix(outcomes.head))) {
+        Some(outcomes.head)
+      } else None
+    } else if (digits == outcomeToPrefix(outcomes(indexOrOverByOne))) {
+      Some(outcomes(indexOrOverByOne))
+    } else {
+      if (digits.startsWith(outcomeToPrefix(outcomes(indexOrOverByOne - 1)))) {
+        Some(outcomes(indexOrOverByOne - 1))
+      } else None
+    }
+  }
+
+  /** Searches for an UnsignedNumericOutcome corresponding to (prefixing) digits */
+  def searchForNumericOutcome(
+      digits: Vector[Int],
+      outcomes: Vector[DLCOutcomeType]): Option[UnsignedNumericOutcome] = {
+    searchForPrefix(digits, outcomes) {
+      case outcome: EnumOutcome =>
+        throw new IllegalArgumentException(
+          s"Expected Numeric Outcome, got $outcome")
+      case UnsignedNumericOutcome(digits) => digits
+    }.asInstanceOf[Option[UnsignedNumericOutcome]]
   }
 
   /** Computes the front groupings in the CETCompression

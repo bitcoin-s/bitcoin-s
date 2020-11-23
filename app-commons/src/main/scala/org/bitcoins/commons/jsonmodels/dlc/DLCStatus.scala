@@ -3,11 +3,7 @@ package org.bitcoins.commons.jsonmodels.dlc
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
-import org.bitcoins.core.protocol.tlv.{
-  DLCOutcomeType,
-  EnumOutcome,
-  UnsignedNumericOutcome
-}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -64,12 +60,12 @@ object DLCStatus {
       Accepted(paramHash, isInitiator, offer, accept)
     }
 
-    override val toJson: Value =
+    override lazy val toJson: Value =
       Obj(
         "state" -> Str(state.toString),
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
-        "offer" -> offer.toJson
+        "offer" -> Str(offer.toMessage.hex)
       )
   }
 
@@ -88,13 +84,13 @@ object DLCStatus {
       Signed(paramHash, isInitiator, offer, accept, sign)
     }
 
-    override val toJson: Value =
+    override lazy val toJson: Value =
       Obj(
         "state" -> Str(state.toString),
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
-        "offer" -> offer.toJson,
-        "accept" -> accept.toJson
+        "offer" -> Str(offer.toMessage.hex),
+        "accept" -> Str(accept.toMessage.hex)
       )
   }
 
@@ -120,14 +116,14 @@ object DLCStatus {
       toBroadcasted(fundingTx).toConfirmed
     }
 
-    override val toJson: Value =
+    override lazy val toJson: Value =
       Obj(
         "state" -> Str(state.toString),
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
-        "offer" -> offer.toJson,
-        "accept" -> accept.toJson,
-        "sign" -> sign.toJson
+        "offer" -> Str(offer.toMessage.hex),
+        "accept" -> Str(accept.toMessage.hex),
+        "sign" -> Str(sign.toMessage.hex)
       )
   }
 
@@ -149,14 +145,14 @@ object DLCStatus {
       Confirmed(paramHash, isInitiator, offer, accept, sign, fundingTx)
     }
 
-    override val toJson: Value =
+    override lazy val toJson: Value =
       Obj(
         "state" -> Str(state.toString),
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
-        "offer" -> offer.toJson,
-        "accept" -> accept.toJson,
-        "sign" -> sign.toJson,
+        "offer" -> Str(offer.toMessage.hex),
+        "accept" -> Str(accept.toMessage.hex),
+        "sign" -> Str(sign.toMessage.hex),
         "fundingTxId" -> Str(fundingTx.txIdBE.hex),
         "fundingTx" -> Str(fundingTx.hex)
       )
@@ -177,7 +173,7 @@ object DLCStatus {
     override val state: DLCState = DLCState.Confirmed
 
     def toClaimed(
-        oracleSig: SchnorrDigitalSignature,
+        oracleSigs: Vector[SchnorrDigitalSignature],
         cet: Transaction): Claimed = {
       Claimed(paramHash,
               isInitiator,
@@ -185,7 +181,7 @@ object DLCStatus {
               accept,
               sign,
               fundingTx,
-              oracleSig,
+              oracleSigs,
               cet)
     }
 
@@ -193,14 +189,14 @@ object DLCStatus {
       RemoteClaimed(paramHash, isInitiator, offer, accept, sign, fundingTx, cet)
     }
 
-    override val toJson: Value =
+    override lazy val toJson: Value =
       Obj(
         "state" -> Str(state.toString),
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
-        "offer" -> offer.toJson,
-        "accept" -> accept.toJson,
-        "sign" -> sign.toJson,
+        "offer" -> Str(offer.toMessage.hex),
+        "accept" -> Str(accept.toMessage.hex),
+        "sign" -> Str(sign.toMessage.hex),
         "fundingTxId" -> Str(fundingTx.txIdBE.hex),
         "fundingTx" -> Str(fundingTx.hex)
       )
@@ -216,27 +212,45 @@ object DLCStatus {
       accept: DLCAccept,
       sign: DLCSign,
       fundingTx: Transaction,
-      oracleSig: SchnorrDigitalSignature,
+      oracleSigs: Vector[SchnorrDigitalSignature],
       cet: Transaction)
       extends ClosedDLCStatus {
     override val state: DLCState = DLCState.Claimed
 
-    override val toJson: Value =
+    val outcome: DLCOutcomeType = {
+      offer.oracleAndContractInfo.findOutcome(oracleSigs) match {
+        case Some(outcome) => outcome
+        case None =>
+          throw new IllegalArgumentException(
+            s"No outcome found for signatures: $oracleSigs")
+      }
+    }
+
+    override lazy val toJson: Value = {
+      val outcomeJs = outcome match {
+        case EnumOutcome(outcome) =>
+          Str(outcome)
+        case UnsignedNumericOutcome(digits) =>
+          Arr.from(digits.map(num => Num(num)))
+      }
+
       Obj(
         "state" -> Str(state.toString),
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
-        "offer" -> offer.toJson,
-        "accept" -> accept.toJson,
-        "sign" -> sign.toJson,
+        "offer" -> Str(offer.toMessage.hex),
+        "accept" -> Str(accept.toMessage.hex),
+        "sign" -> Str(sign.toMessage.hex),
         "fundingTxId" -> Str(fundingTx.txIdBE.hex),
         "fundingTx" -> Str(fundingTx.hex),
-        "oracleSig" -> Str(oracleSig.hex),
+        "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
+        "outcome" -> outcomeJs,
         "cetTxId" -> Str(cet.txIdBE.hex),
         "cet" -> Str(cet.hex)
       )
+    }
 
-    override def closingTx: Transaction = cet
+    override lazy val closingTx: Transaction = cet
   }
 
   /** The state where one of the CETs has been accepted by the network
@@ -370,22 +384,32 @@ object DLCStatus {
       }
     }
 
-    override lazy val toJson: Value =
+    override lazy val toJson: Value = {
+
+      val outcomeJs = outcome match {
+        case EnumOutcome(outcome) =>
+          Str(outcome)
+        case UnsignedNumericOutcome(digits) =>
+          Arr.from(digits.map(num => Num(num)))
+      }
+
       Obj(
         "state" -> Str(state.toString),
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
-        "offer" -> offer.toJson,
-        "accept" -> accept.toJson,
-        "sign" -> sign.toJson,
+        "offer" -> Str(offer.toMessage.hex),
+        "accept" -> Str(accept.toMessage.hex),
+        "sign" -> Str(sign.toMessage.hex),
         "fundingTxId" -> Str(fundingTx.txIdBE.hex),
         "fundingTx" -> Str(fundingTx.hex),
         "oracleSig" -> Str(oracleSig.hex),
+        "outcome" -> outcomeJs,
         "cetTxId" -> Str(cet.txIdBE.hex),
         "cet" -> Str(cet.hex)
       )
+    }
 
-    override def closingTx: Transaction = cet
+    override lazy val closingTx: Transaction = cet
   }
 
   /** The state where the DLC refund transaction has been
@@ -402,21 +426,21 @@ object DLCStatus {
       extends ClosedDLCStatus {
     override val state: DLCState = DLCState.Refunded
 
-    override val toJson: Value =
+    override lazy val toJson: Value =
       Obj(
         "state" -> Str(state.toString),
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
-        "offer" -> offer.toJson,
-        "accept" -> accept.toJson,
-        "sign" -> sign.toJson,
+        "offer" -> Str(offer.toMessage.hex),
+        "accept" -> Str(accept.toMessage.hex),
+        "sign" -> Str(sign.toMessage.hex),
         "fundingTxId" -> Str(fundingTx.txIdBE.hex),
         "fundingTx" -> Str(fundingTx.hex),
         "refundTxId" -> Str(refundTx.txIdBE.hex),
         "refundTx" -> Str(refundTx.hex)
       )
 
-    override def closingTx: Transaction = refundTx
+    override lazy val closingTx: Transaction = refundTx
   }
 
   def fromJson(json: Value): DLCStatus = {
@@ -425,14 +449,22 @@ object DLCStatus {
     val state = DLCState.fromString(obj("state").str)
     val paramHash = Sha256DigestBE(obj("paramHash").str)
     val isInitiator = obj("isInitiator").bool
-    val offer = DLCOffer.fromJson(obj("offer"))
+    val offer = DLCOffer.fromMessage(
+      LnMessageFactory(DLCOfferTLV).fromHex(obj("offer").str))
 
-    lazy val accept = DLCAccept.fromJson(obj("accept"))
-    lazy val sign = DLCSign.fromJson(obj("sign"))
+    lazy val accept = DLCAccept.fromMessage(
+      LnMessageFactory(DLCAcceptTLV).fromHex(obj("accept").str),
+      offer)
+    lazy val sign = DLCSign.fromMessage(
+      LnMessageFactory(DLCSignTLV).fromHex(obj("sign").str),
+      offer)
     lazy val fundingTx = Transaction(obj("fundingTx").str)
     lazy val cet = Transaction(obj("cet").str)
     lazy val refundTx = Transaction(obj("refundTx").str)
-    lazy val oracleSig = SchnorrDigitalSignature(obj("oracleSig").str)
+    lazy val oracleSigs =
+      obj("oracleSigs").arr
+        .map(value => SchnorrDigitalSignature(value.str))
+        .toVector
 
     state match {
       case DLCState.Offered =>
@@ -452,7 +484,7 @@ object DLCStatus {
                 accept,
                 sign,
                 fundingTx,
-                oracleSig,
+                oracleSigs,
                 cet)
       case DLCState.RemoteClaimed =>
         RemoteClaimed(paramHash,
@@ -500,12 +532,13 @@ object DLCStatus {
     }
   }
 
-  def getOracleSignature(status: DLCStatus): Option[SchnorrDigitalSignature] = {
+  def getOracleSignatures(
+      status: DLCStatus): Option[Vector[SchnorrDigitalSignature]] = {
     status match {
       case remoteClaimed: RemoteClaimed =>
-        Some(remoteClaimed.oracleSig)
+        Some(Vector(remoteClaimed.oracleSig))
       case claimed: Claimed =>
-        Some(claimed.oracleSig)
+        Some(claimed.oracleSigs)
       case _: Offered | _: Accepted | _: Signed | _: BroadcastedDLCStatus |
           _: Refunded =>
         None

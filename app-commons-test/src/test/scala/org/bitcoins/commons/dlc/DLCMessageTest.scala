@@ -6,7 +6,6 @@ import org.bitcoins.commons.jsonmodels.dlc.{
   DLCPublicKeys,
   DLCTimeouts
 }
-import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -90,23 +89,6 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         assert(offer.toMessage == offerMsg)
         assert(accept.toMessage == acceptMsg)
         assert(sign.toMessage == signMsg)
-    }
-  }
-
-  it must "be able to go back and forth between Json and deserialized" in {
-    val chainHashes =
-      Vector(MainNet, TestNet3, RegTest).map(_.chainParams.genesisHash)
-
-    forAll(TLVGen.dlcOfferTLVAcceptTLVSignTLV.suchThat(gen =>
-      chainHashes.contains(gen._1.chainHash))) {
-      case (offerTLV, acceptTLV, signTLV) =>
-        val offer = DLCOffer.fromTLV(offerTLV)
-        val accept = DLCAccept.fromTLV(acceptTLV, offer)
-        val sign = DLCSign.fromTLV(signTLV, offer)
-
-        assert(DLCOffer.fromJson(offer.toJson) == offer, offerTLV.hex)
-        assert(DLCAccept.fromJson(accept.toJson) == accept, acceptTLV.hex)
-        assert(DLCSign.fromJson(sign.toJson) == sign, signTLV.hex)
     }
   }
 }

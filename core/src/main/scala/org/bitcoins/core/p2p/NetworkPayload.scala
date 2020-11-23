@@ -1290,7 +1290,7 @@ object VersionMessage extends Factory[VersionMessage] {
       version = ProtocolVersion.default,
       services = ServiceIdentifier.NODE_NONE,
       timestamp = Int64(java.time.Instant.now.getEpochSecond),
-      addressReceiveServices = ServiceIdentifier.NODE_NONE,
+      addressReceiveServices = ServiceIdentifier.NODE_WITNESS,
       addressReceiveIpAddress = receivingIpAddress,
       addressReceivePort = network.port,
       addressTransServices = ServiceIdentifier.NODE_NETWORK,

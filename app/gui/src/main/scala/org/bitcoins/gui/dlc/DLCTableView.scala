@@ -1,19 +1,18 @@
 package org.bitcoins.gui.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCStatus.Offered
 import org.bitcoins.commons.jsonmodels.dlc.{
-  AcceptedDLCStatus,
-  DLCStatus,
-  SignedDLCStatus
+  AcceptedSerializedDLCStatus,
+  SerializedDLCStatus
 }
+import org.bitcoins.commons.jsonmodels.dlc.SerializedDLCStatus._
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}
 
 class DLCTableView(model: DLCPaneModel) {
 
-  val tableView: TableView[DLCStatus] = {
-    val paramHashCol = new TableColumn[DLCStatus, String] {
+  val tableView: TableView[SerializedDLCStatus] = {
+    val paramHashCol = new TableColumn[SerializedDLCStatus, String] {
       text = "Temp Contract Id"
       prefWidth = 150
       cellValueFactory = { status =>
@@ -23,14 +22,13 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val contractIdCol = new TableColumn[DLCStatus, String] {
+    val contractIdCol = new TableColumn[SerializedDLCStatus, String] {
       text = "Contract Id"
       prefWidth = 150
       cellValueFactory = { status =>
         val contractIdStr = status.value match {
-          case _: DLCStatus.Offered | _: DLCStatus.Accepted =>
-            ""
-          case signed: SignedDLCStatus =>
+          case _: SerializedOffered => ""
+          case signed: AcceptedSerializedDLCStatus =>
             signed.contractId.toHex
         }
 
@@ -38,7 +36,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val statusCol = new TableColumn[DLCStatus, String] {
+    val statusCol = new TableColumn[SerializedDLCStatus, String] {
       text = "Status"
       prefWidth = 150
       cellValueFactory = { status =>
@@ -46,7 +44,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val initiatorCol = new TableColumn[DLCStatus, String] {
+    val initiatorCol = new TableColumn[SerializedDLCStatus, String] {
       text = "Initiator"
       prefWidth = 80
       cellValueFactory = { status =>
@@ -59,55 +57,47 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val collateralCol = new TableColumn[DLCStatus, String] {
+    val collateralCol = new TableColumn[SerializedDLCStatus, String] {
       text = "Collateral"
       prefWidth = 110
       cellValueFactory = { status =>
-        val num = if (status.value.isInitiator) {
-          status.value.offer.totalCollateral.toLong
-        } else {
-          status.value match {
-            case _: Offered => ""
-            case accepted: AcceptedDLCStatus =>
-              accepted.accept.totalCollateral.toLong
-          }
-        }
-        new StringProperty(status, "Collateral", num.toString)
+        new StringProperty(status,
+                           "Collateral",
+                           status.value.localCollateral.toString)
       }
     }
 
-    val oracleCol = new TableColumn[DLCStatus, String] {
+    val oracleCol = new TableColumn[SerializedDLCStatus, String] {
       text = "Oracle"
       prefWidth = 150
       cellValueFactory = { status =>
-        new StringProperty(status,
-                           "Oracle",
-                           status.value.offer.oracleInfo.pubKey.hex)
+        new StringProperty(status, "Oracle", status.value.oracleInfo.pubKey.hex)
       }
     }
 
-    val eventCol = new TableColumn[DLCStatus, String] {
+    val eventCol = new TableColumn[SerializedDLCStatus, String] {
       text = "Event"
       prefWidth = 150
       cellValueFactory = { status =>
-        new StringProperty(status,
-                           "Event",
-                           status.value.offer.oracleInfo.nonces.head.hex)
+        new StringProperty(
+          status,
+          "Event",
+          status.value.oracleInfo.nonces.map(_.hex).mkString(""))
       }
     }
 
-    val contractMaturityCol = new TableColumn[DLCStatus, String] {
+    val contractMaturityCol = new TableColumn[SerializedDLCStatus, String] {
       text = "Contract Mat."
       prefWidth = 110
       cellValueFactory = { status =>
         new StringProperty(
           status,
           "Contract Maturity",
-          status.value.offer.timeouts.contractMaturity.toUInt32.toLong.toString)
+          status.value.timeouts.contractMaturity.toUInt32.toLong.toString)
       }
     }
 
-    new TableView[DLCStatus](model.dlcs) {
+    new TableView[SerializedDLCStatus](model.dlcs) {
       columns ++= Seq(paramHashCol,
                       contractIdCol,
                       statusCol,

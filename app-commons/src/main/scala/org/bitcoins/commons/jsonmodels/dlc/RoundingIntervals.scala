@@ -8,7 +8,7 @@ case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
 
   def intervalContaining(
       outcome: BigDecimal): (BigDecimal, BigDecimal, Long) = {
-    // Using Long.MaxValue garuntees that index will point to index of right endpoint of interval
+    // Using Long.MaxValue guarantees that index will point to index of right endpoint of interval
     val index =
       intervalStarts.search((outcome, Long.MaxValue)).insertionPoint - 1
 
@@ -27,7 +27,7 @@ case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
   }
 
   def roundingModulusAt(outcome: BigDecimal): Long = {
-    // Using Long.MaxValue garuntees that index will point to index of right endpoint of interval
+    // Using Long.MaxValue guarantees that index will point to index of right endpoint of interval
     val index =
       intervalStarts.search((outcome, Long.MaxValue)).insertionPoint - 1
 

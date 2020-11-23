@@ -19,6 +19,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -105,6 +106,10 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   /** Constructs the unsigned funding transaction */
   lazy val buildFundingTx: Future[Transaction] = {
     fundingTxBuilder.buildFundingTx()
+  }
+
+  lazy val calcContractId: Future[ByteVector] = {
+    buildFundingTx.map(_.txIdBE.bytes.xor(accept.tempContractId.bytes))
   }
 
   private lazy val cetBuilderF = {

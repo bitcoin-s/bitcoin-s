@@ -1,5 +1,7 @@
 package org.bitcoins.server
 
+import java.nio.file.Files
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -7,6 +9,7 @@ import akka.stream.Materializer
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.AddressLabelTagType
 import org.bitcoins.crypto.NetworkElement
@@ -219,9 +222,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
       GetDLC.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetDLC(eventId)) =>
+        case Success(GetDLC(paramHash)) =>
           complete {
-            wallet.findDLC(eventId).map {
+            wallet.findSerializedDLC(paramHash).map {
               case None => Server.httpSuccess(ujson.Null)
               case Some(dlc) =>
                 Server.httpSuccess(dlc.toJson)
@@ -249,7 +252,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
                               locktime,
                               refundLT)
               .map { offer =>
-                Server.httpSuccess(offer.toJson)
+                Server.httpSuccess(offer.toMessage.hex)
               }
           }
       }
@@ -261,9 +264,28 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
         case Success(AcceptDLCOffer(offer)) =>
           complete {
             wallet
-              .acceptDLCOffer(offer)
+              .acceptDLCOffer(offer.tlv)
               .map { accept =>
-                Server.httpSuccess(accept.toJson)
+                Server.httpSuccess(accept.toMessage.hex)
+              }
+          }
+      }
+
+    case ServerCommand("acceptdlcofferfromfile", arr) =>
+      DLCDataFromFile.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DLCDataFromFile(path)) =>
+          complete {
+
+            val hex = Files.readAllLines(path).get(0)
+
+            val offerMessage = LnMessageFactory(DLCOfferTLV).fromHex(hex)
+
+            wallet
+              .acceptDLCOffer(offerMessage.tlv)
+              .map { accept =>
+                Server.httpSuccess(accept.toMessage.hex)
               }
           }
       }
@@ -275,9 +297,28 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
         case Success(SignDLC(accept)) =>
           complete {
             wallet
-              .signDLC(accept)
+              .signDLC(accept.tlv)
               .map { sign =>
-                Server.httpSuccess(sign.toJson)
+                Server.httpSuccess(sign.toMessage.hex)
+              }
+          }
+      }
+
+    case ServerCommand("signdlcfromfile", arr) =>
+      DLCDataFromFile.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DLCDataFromFile(path)) =>
+          complete {
+
+            val hex = Files.readAllLines(path).get(0)
+
+            val acceptMessage = LnMessageFactory(DLCAcceptTLV).fromHex(hex)
+
+            wallet
+              .signDLC(acceptMessage.tlv)
+              .map { sign =>
+                Server.httpSuccess(sign.toMessage.hex)
               }
           }
       }
@@ -288,9 +329,27 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
           reject(ValidationRejection("failure", Some(exception)))
         case Success(AddDLCSigs(sigs)) =>
           complete {
-            wallet.addDLCSigs(sigs).map { _ =>
+            wallet.addDLCSigs(sigs.tlv).map { db =>
               Server.httpSuccess(
-                s"Successfully added sigs to DLC ${sigs.contractId.toHex}")
+                s"Successfully added sigs to DLC ${db.contractIdOpt.get.toHex}")
+            }
+          }
+      }
+
+    case ServerCommand("adddlcsigsfromfile", arr) =>
+      DLCDataFromFile.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DLCDataFromFile(path)) =>
+          complete {
+
+            val hex = Files.readAllLines(path).get(0)
+
+            val signMessage = LnMessageFactory(DLCSignTLV).fromHex(hex)
+
+            wallet.addDLCSigs(signMessage.tlv).map { db =>
+              Server.httpSuccess(
+                s"Successfully added sigs to DLC ${db.contractIdOpt.get.toHex}")
             }
           }
       }
@@ -320,14 +379,13 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
       }
 
     case ServerCommand("executedlc", arr) =>
-      ExecuteDLCUnilateralClose.fromJsArr(arr) match {
+      ExecuteDLC.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(
-              ExecuteDLCUnilateralClose(contractId, oracleSig, noBroadcast)) =>
+        case Success(ExecuteDLC(contractId, oracleSigs, noBroadcast)) =>
           complete {
             for {
-              tx <- wallet.executeDLC(contractId, oracleSig)
+              tx <- wallet.executeDLC(contractId, oracleSigs)
               retStr <- handleBroadcastable(tx, noBroadcast)
             } yield {
               Server.httpSuccess(retStr.hex)

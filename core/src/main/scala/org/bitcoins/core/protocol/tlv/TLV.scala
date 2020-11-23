@@ -741,9 +741,9 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
 
     val contractFlags = iter.take(1).head
     val chainHash = DoubleSha256Digest(iter.take(32))
-    val contractInfo = ContractInfoV0TLV.fromBytes(iter.current)
+    val contractInfo = ContractInfoTLV.fromBytes(iter.current)
     iter.skip(contractInfo)
-    val oracleInfo = OracleInfoV0TLV.fromBytes(iter.current)
+    val oracleInfo = OracleInfoTLV.fromBytes(iter.current)
     iter.skip(oracleInfo)
     val fundingPubKey = ECPublicKey(iter.take(33))
     val payoutSPK = iter.takeSPK()
