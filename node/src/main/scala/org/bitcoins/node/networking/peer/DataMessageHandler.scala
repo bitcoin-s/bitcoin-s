@@ -376,7 +376,7 @@ case class DataMessageHandler(
           case NodeType.SpvNode =>
             Inventory(TypeIdentifier.MsgFilteredBlock, hash)
           case NodeType.NeutrinoNode | NodeType.FullNode =>
-            Inventory(TypeIdentifier.MsgBlock, hash)
+            Inventory(TypeIdentifier.MsgWitnessBlock, hash)
           case NodeType.BitcoindBackend =>
             throw new RuntimeException("This is impossible")
         }

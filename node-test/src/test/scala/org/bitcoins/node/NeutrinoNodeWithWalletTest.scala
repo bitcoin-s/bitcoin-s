@@ -126,9 +126,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         )
       }
 
-      val countF = node.chainApiFromDb().flatMap(_.getFilterHeaderCount)
       for {
-        count <- countF
         _ <- node.sync()
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
@@ -148,9 +146,8 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
         // receive
         address <- wallet.getNewAddress()
-        _ <-
-          bitcoind
-            .sendToAddress(address, TestAmount)
+        txId <- bitcoind.sendToAddress(address, TestAmount)
+        expectedTx <- bitcoind.getRawTransactionRaw(txId)
 
         _ <-
           bitcoind.getNewAddress
@@ -159,7 +156,10 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
         _ <- AsyncUtil.awaitConditionF(condition2)
-      } yield succeed
+
+        // assert we got the full tx with witness data
+        txs <- wallet.listTransactions()
+      } yield assert(txs.exists(_.transaction == expectedTx))
   }
 
   it must "watch an arbitrary SPK" taggedAs UsesExperimentalBitcoind in {

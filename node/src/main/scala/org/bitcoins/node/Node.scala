@@ -245,7 +245,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     } else {
       for {
         peerMsgSender <- peerMsgSenderF
-        _ <- peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgBlock,
+        _ <- peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
                                               blockHashes: _*)
       } yield ()
     }
