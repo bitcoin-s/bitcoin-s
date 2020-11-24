@@ -112,8 +112,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
           s"Oracle Public Key: ${pubKey.hex}\nEvent R values: ${rValues.map(_.hex).mkString(",")}\n")
         builder.append(s"Serialized Oracle Info: ${oracleInfo.hex}\n\n")
 
-        builder.append(
-          s"\nSerialized Contract Info:\n${contractInfo.toTLV.hex}\n\n")
+        builder.append(s"\nSerialized Contract Info:\n${contractInfo.hex}\n\n")
 
         contractInfo match {
           case contractInfo: SingleNonceContractInfo =>
@@ -166,7 +165,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
         }
 
         GlobalDLCData.lastOracleInfo = oracleInfo.hex
-        GlobalDLCData.lastContractInfo = contractInfo.toTLV.hex
+        GlobalDLCData.lastContractInfo = contractInfo.hex
 
         oracleInfoArea.text = builder.result()
       case None => ()

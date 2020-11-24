@@ -3,7 +3,6 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -344,22 +343,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       val betSize = 10000
 
-      lazy val contractInfo: ContractInfo = {
-        val winBytes = CryptoUtil.serializeForHash(winStr)
-        val loseBytes = CryptoUtil.serializeForHash(loseStr)
-        val drawBytes = CryptoUtil.serializeForHash(drawStr)
-
-        ContractInfo(
-          BigSizeUInt.calcFor(winBytes).bytes ++
-            winBytes ++
-            Satoshis(betSize).bytes ++
-            BigSizeUInt.calcFor(loseBytes).bytes ++
-            loseBytes ++
-            Satoshis.zero.bytes ++
-            BigSizeUInt.calcFor(drawBytes).bytes ++
-            drawBytes ++
-            Satoshis(betSize / 2).bytes)
-      }
+      lazy val contractInfo: ContractInfo =
+        SingleNonceContractInfo.fromStringVec(
+          Vector(winStr -> Satoshis(betSize),
+                 loseStr -> Satoshis.zero,
+                 drawStr -> Satoshis(betSize / 2)))
 
       val oraclePubKey = SchnorrPublicKey(
         "156c7d1c7922f0aa1168d9e21ac77ea88bbbe05e24e70a08bbe0519778f2e5da")

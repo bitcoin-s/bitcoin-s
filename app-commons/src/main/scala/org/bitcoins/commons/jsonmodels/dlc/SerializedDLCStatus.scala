@@ -72,7 +72,7 @@ object SerializedDLCStatus {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "oracleInfo" -> Str(oracleInfo.hex),
-      "contractInfo" -> Str(contractInfo.toTLV.hex),
+      "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
       "contractTimeout" -> Num(
@@ -105,7 +105,7 @@ object SerializedDLCStatus {
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "oracleInfo" -> Str(oracleInfo.hex),
-      "contractInfo" -> Str(contractInfo.toTLV.hex),
+      "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
       "contractTimeout" -> Num(
@@ -138,7 +138,7 @@ object SerializedDLCStatus {
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "oracleInfo" -> Str(oracleInfo.hex),
-      "contractInfo" -> Str(contractInfo.toTLV.hex),
+      "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
       "contractTimeout" -> Num(
@@ -172,7 +172,7 @@ object SerializedDLCStatus {
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "oracleInfo" -> Str(oracleInfo.hex),
-      "contractInfo" -> Str(contractInfo.toTLV.hex),
+      "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
       "contractTimeout" -> Num(
@@ -207,7 +207,7 @@ object SerializedDLCStatus {
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "oracleInfo" -> Str(oracleInfo.hex),
-      "contractInfo" -> Str(contractInfo.toTLV.hex),
+      "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
       "contractTimeout" -> Num(
@@ -253,7 +253,7 @@ object SerializedDLCStatus {
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
         "oracleInfo" -> Str(oracleInfo.hex),
-        "contractInfo" -> Str(contractInfo.toTLV.hex),
+        "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
         "contractTimeout" -> Num(
@@ -304,7 +304,7 @@ object SerializedDLCStatus {
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
         "oracleInfo" -> Str(oracleInfo.hex),
-        "contractInfo" -> Str(contractInfo.toTLV.hex),
+        "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
         "contractTimeout" -> Num(
@@ -345,7 +345,7 @@ object SerializedDLCStatus {
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
         "oracleInfo" -> Str(oracleInfo.hex),
-        "contractInfo" -> Str(contractInfo.toTLV.hex),
+        "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
         "contractTimeout" -> Num(

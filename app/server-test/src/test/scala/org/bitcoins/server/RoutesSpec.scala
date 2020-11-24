@@ -720,7 +720,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     val oracleInfoStr =
-      "6374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f58603bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1"
+      "fda712406374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f58603bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1"
 
     val contractInfoDigests =
       Vector("ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562",

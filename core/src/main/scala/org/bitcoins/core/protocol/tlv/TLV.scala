@@ -25,6 +25,21 @@ sealed trait TLV extends NetworkElement {
   }
 }
 
+trait TLVSerializable[+T <: TLV] extends NetworkElement {
+  def toTLV: T
+
+  override def bytes: ByteVector = toTLV.bytes
+}
+
+abstract class TLVDeserializable[T <: TLV, +U <: TLVSerializable[T]](
+    tlvFactory: Factory[T])
+    extends Factory[U] {
+  def fromTLV(tlv: T): U
+
+  override def fromBytes(bytes: ByteVector): U =
+    fromTLV(tlvFactory.fromBytes(bytes))
+}
+
 sealed trait TLVParentFactory[T <: TLV] extends Factory[T] {
 
   def typeName: String

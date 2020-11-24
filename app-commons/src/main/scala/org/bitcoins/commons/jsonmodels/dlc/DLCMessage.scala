@@ -1,12 +1,10 @@
 package org.bitcoins.commons.jsonmodels.dlc
 
-import java.nio.charset.StandardCharsets
-
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.core.protocol.{BigSizeUInt, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.SeqWrapper
@@ -14,7 +12,6 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
-import scala.annotation.tailrec
 import scala.collection.immutable.HashMap
 
 sealed trait DLCMessage
@@ -30,7 +27,7 @@ object DLCMessage {
       .flip
   }
 
-  sealed trait OracleInfo extends NetworkElement {
+  sealed trait OracleInfo extends TLVSerializable[OracleInfoTLV] {
     def pubKey: SchnorrPublicKey
     def nonces: Vector[SchnorrNonce]
 
@@ -38,8 +35,6 @@ object DLCMessage {
     def verifySigs(
         outcome: DLCOutcomeType,
         sigs: Vector[SchnorrDigitalSignature]): Boolean
-
-    def toTLV: OracleInfoTLV
 
     def sigPoint(outcome: DLCOutcomeType): ECPublicKey = {
       outcome.serialized
@@ -55,7 +50,8 @@ object DLCMessage {
   case class SingleNonceOracleInfo(
       pubKey: SchnorrPublicKey,
       rValue: SchnorrNonce)
-      extends OracleInfo {
+      extends OracleInfo
+      with TLVSerializable[OracleInfoV0TLV] {
     override def nonces: Vector[SchnorrNonce] = Vector(rValue)
 
     override def verifySigs(
@@ -78,27 +74,23 @@ object DLCMessage {
       }
     }
 
-    override def bytes: ByteVector = pubKey.bytes ++ rValue.bytes
-
     override def toTLV: OracleInfoV0TLV = OracleInfoV0TLV(pubKey, rValue)
   }
 
-  object SingleNonceOracleInfo extends Factory[SingleNonceOracleInfo] {
+  object SingleNonceOracleInfo
+      extends TLVDeserializable[OracleInfoV0TLV, SingleNonceOracleInfo](
+        OracleInfoV0TLV) {
 
-    override def fromBytes(bytes: ByteVector): SingleNonceOracleInfo = {
-      require(bytes.size == 64, s"OracleInfo is only 64 bytes, got $bytes")
-
-      val pubkey = SchnorrPublicKey(bytes.take(32))
-      val rValue = SchnorrNonce(bytes.drop(32))
-
-      SingleNonceOracleInfo(pubkey, rValue)
+    override def fromTLV(tlv: OracleInfoV0TLV): SingleNonceOracleInfo = {
+      SingleNonceOracleInfo(tlv.pubKey, tlv.rValue)
     }
   }
 
   case class MultiNonceOracleInfo(
       pubKey: SchnorrPublicKey,
       nonces: Vector[SchnorrNonce])
-      extends OracleInfo {
+      extends OracleInfo
+      with TLVSerializable[OracleInfoV1TLV] {
     require(nonces.nonEmpty, "Must contain positive number of nonces.")
 
     override def verifySigs(
@@ -128,60 +120,34 @@ object DLCMessage {
       }
     }
 
-    override def bytes: ByteVector =
-      pubKey.bytes ++ nonces.foldLeft(ByteVector.empty)(_ ++ _.bytes)
-
     override def toTLV: OracleInfoV1TLV = OracleInfoV1TLV(pubKey, nonces)
   }
 
-  object MultiNonceOracleInfo extends Factory[MultiNonceOracleInfo] {
+  object MultiNonceOracleInfo
+      extends TLVDeserializable[OracleInfoV1TLV, MultiNonceOracleInfo](
+        OracleInfoV1TLV) {
 
-    override def fromBytes(bytes: ByteVector): MultiNonceOracleInfo = {
-      require(bytes.length > 32 && bytes.length % 32 == 0,
-              s"Invalid MultiNonceOracleInfo bytes: $bytes")
-
-      @tailrec
-      def loop(
-          bytesLeft: ByteVector,
-          nonces: Vector[SchnorrNonce]): Vector[SchnorrNonce] = {
-        if (bytesLeft.isEmpty) {
-          nonces
-        } else {
-          val (nonceBytes, newBytesLeft) = bytesLeft.splitAt(32)
-          loop(newBytesLeft, nonces :+ SchnorrNonce(nonceBytes))
-        }
-      }
-
-      val pubKey = SchnorrPublicKey(bytes.take(32))
-      val nonces = loop(bytes.drop(32), Vector.empty)
-
-      MultiNonceOracleInfo(pubKey, nonces)
+    override def fromTLV(tlv: OracleInfoV1TLV): MultiNonceOracleInfo = {
+      MultiNonceOracleInfo(tlv.pubKey, tlv.nonces)
     }
   }
 
-  object OracleInfo extends Factory[OracleInfo] {
+  object OracleInfo
+      extends TLVDeserializable[OracleInfoTLV, OracleInfo](OracleInfoTLV) {
 
-    val dummy: OracleInfo = SingleNonceOracleInfo(ByteVector.fill(64)(1))
+    val dummy: OracleInfo = SingleNonceOracleInfo(
+      ECPublicKey.freshPublicKey.schnorrPublicKey,
+      ECPublicKey.freshPublicKey.schnorrNonce)
 
-    override def fromBytes(bytes: ByteVector): OracleInfo = {
-      if (bytes.length > 64) {
-        MultiNonceOracleInfo(bytes)
-      } else {
-        SingleNonceOracleInfo(bytes)
-      }
-    }
-
-    def fromTLV(tlv: OracleInfoTLV): OracleInfo = {
+    override def fromTLV(tlv: OracleInfoTLV): OracleInfo = {
       tlv match {
-        case OracleInfoV0TLV(pubKey, rValue) =>
-          SingleNonceOracleInfo(pubKey, rValue)
-        case OracleInfoV1TLV(pubKey, nonces) =>
-          MultiNonceOracleInfo(pubKey, nonces)
+        case tlv: OracleInfoV0TLV => SingleNonceOracleInfo.fromTLV(tlv)
+        case tlv: OracleInfoV1TLV => MultiNonceOracleInfo.fromTLV(tlv)
       }
     }
   }
 
-  sealed trait ContractInfo extends NetworkElement {
+  sealed trait ContractInfo extends TLVSerializable[ContractInfoTLV] {
 
     /** Returns the counter-party's ContractInfo corresponding to this one.
       *
@@ -194,7 +160,6 @@ object DLCMessage {
       * In this example, only the offerer's ContractInfo should be used.
       */
     def flip(totalCollateral: Satoshis): ContractInfo
-    def toTLV: ContractInfoTLV
     def allOutcomes: Vector[DLCOutcomeType]
     def apply(outcome: DLCOutcomeType): Satoshis
 
@@ -205,6 +170,7 @@ object DLCMessage {
   case class SingleNonceContractInfo(
       outcomeValueMap: Vector[(EnumOutcome, Satoshis)])
       extends ContractInfo
+      with TLVSerializable[ContractInfoV0TLV]
       with SeqWrapper[(EnumOutcome, Satoshis)] {
 
     override def apply(outcome: DLCOutcomeType): Satoshis = {
@@ -230,14 +196,6 @@ object DLCMessage {
 
     override def max: Satoshis = values.maxBy(_.toLong)
 
-    override def bytes: ByteVector = {
-      outcomeValueMap.foldLeft(ByteVector.empty) {
-        case (vec, (str, sats)) =>
-          val strBytes = CryptoUtil.serializeForHash(str.outcome)
-          vec ++ BigSizeUInt.calcFor(strBytes).bytes ++ strBytes ++ sats.bytes
-      }
-    }
-
     override def toTLV: ContractInfoV0TLV =
       ContractInfoV0TLV(outcomeValueMap.map {
         case (outcome, amt) => outcome.outcome -> amt
@@ -250,7 +208,9 @@ object DLCMessage {
     }
   }
 
-  object SingleNonceContractInfo extends Factory[SingleNonceContractInfo] {
+  object SingleNonceContractInfo
+      extends TLVDeserializable[ContractInfoV0TLV, SingleNonceContractInfo](
+        ContractInfoV0TLV) {
 
     def fromStringVec(
         vec: Vector[(String, Satoshis)]): SingleNonceContractInfo = {
@@ -259,30 +219,8 @@ object DLCMessage {
       })
     }
 
-    override def fromBytes(bytes: ByteVector): SingleNonceContractInfo = {
-      @tailrec
-      def loop(
-          remainingBytes: ByteVector,
-          accum: Vector[(EnumOutcome, Satoshis)]): Vector[
-        (EnumOutcome, Satoshis)] = {
-        if (remainingBytes.isEmpty) {
-          accum
-        } else {
-          val outcomeSize = BigSizeUInt(remainingBytes)
-          val outcome =
-            remainingBytes.drop(outcomeSize.byteSize).take(outcomeSize.toInt)
-          val outcomeStr = new String(outcome.toArray, StandardCharsets.UTF_8)
-          val outcomeSizeAndOutcomeLen =
-            outcomeSize.byteSize + outcomeSize.toInt
-          val sats = Satoshis(
-            remainingBytes.drop(outcomeSizeAndOutcomeLen).take(8))
-
-          loop(remainingBytes.drop(outcomeSizeAndOutcomeLen + 8),
-               accum :+ (EnumOutcome(outcomeStr), sats))
-        }
-      }
-
-      SingleNonceContractInfo(loop(bytes, Vector.empty))
+    override def fromTLV(tlv: ContractInfoV0TLV): SingleNonceContractInfo = {
+      fromStringVec(tlv.outcomes)
     }
   }
 
@@ -294,7 +232,8 @@ object DLCMessage {
       base: Int,
       numDigits: Int,
       totalCollateral: Satoshis)
-      extends ContractInfo {
+      extends ContractInfo
+      with TLVSerializable[ContractInfoV1TLV] {
 
     /** Vector is always the most significant digits */
     lazy val outcomeVec: Vector[(Vector[Int], Satoshis)] =
@@ -341,8 +280,6 @@ object DLCMessage {
       )
     }
 
-    override def bytes: ByteVector = ByteVector.empty // TODO: Fix this
-
     override lazy val toTLV: ContractInfoV1TLV = {
       val tlvPoints = outcomeValueFunc.points.map { point =>
         TLVPoint(point.outcome.toLongExact, point.value, point.isEndpoint)
@@ -352,28 +289,33 @@ object DLCMessage {
     }
   }
 
-  object ContractInfo extends Factory[ContractInfo] {
+  object MultiNonceContractInfo
+      extends TLVDeserializable[ContractInfoV1TLV, MultiNonceContractInfo](
+        ContractInfoV1TLV) {
+
+    override def fromTLV(tlv: ContractInfoV1TLV): MultiNonceContractInfo = {
+      val points = tlv.points.map { point =>
+        OutcomeValuePoint(point.outcome, point.value, point.isEndpoint)
+      }
+
+      MultiNonceContractInfo(OutcomeValueFunction(points),
+                             tlv.base,
+                             tlv.numDigits,
+                             tlv.totalCollateral)
+    }
+  }
+
+  object ContractInfo
+      extends TLVDeserializable[ContractInfoTLV, ContractInfo](
+        ContractInfoTLV) {
 
     val empty: ContractInfo = SingleNonceContractInfo(
       Vector(EnumOutcome("") -> Satoshis.zero))
 
-    override def fromBytes(bytes: ByteVector): ContractInfo = {
-      SingleNonceContractInfo.fromBytes(bytes)
-    }
-
-    def fromTLV(tlv: ContractInfoTLV): ContractInfo = {
+    override def fromTLV(tlv: ContractInfoTLV): ContractInfo = {
       tlv match {
-        case ContractInfoV0TLV(outcomes) =>
-          SingleNonceContractInfo.fromStringVec(outcomes)
-        case ContractInfoV1TLV(base, numDigits, totalCollateral, tlvPoints) =>
-          val points = tlvPoints.map { point =>
-            OutcomeValuePoint(point.outcome, point.value, point.isEndpoint)
-          }
-
-          MultiNonceContractInfo(OutcomeValueFunction(points),
-                                 base,
-                                 numDigits,
-                                 totalCollateral)
+        case tlv: ContractInfoV0TLV => SingleNonceContractInfo.fromTLV(tlv)
+        case tlv: ContractInfoV1TLV => MultiNonceContractInfo.fromTLV(tlv)
       }
     }
   }

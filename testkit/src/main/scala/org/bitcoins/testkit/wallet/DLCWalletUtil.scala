@@ -10,7 +10,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
 import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, EnumOutcome}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{BigSizeUInt, BitcoinAddress, BlockTimeStamp}
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
@@ -44,21 +44,12 @@ object DLCWalletUtil {
   lazy val loseHash: Sha256Digest =
     CryptoUtil.sha256(loseStr)
 
-  lazy val sampleOracleInfo: OracleInfo = OracleInfo(
-    oraclePrivKey.schnorrPublicKey.bytes ++ rValue.bytes)
+  lazy val sampleOracleInfo: OracleInfo =
+    SingleNonceOracleInfo(oraclePrivKey.schnorrPublicKey, rValue)
 
-  lazy val sampleContractInfo: ContractInfo = {
-    val winBytes = CryptoUtil.serializeForHash(winStr)
-    val loseBytes = CryptoUtil.serializeForHash(loseStr)
-
-    ContractInfo(
-      BigSizeUInt.calcFor(winBytes).bytes ++
-        winBytes ++
-        Satoshis(10000).bytes ++
-        BigSizeUInt.calcFor(loseBytes).bytes ++
-        loseBytes ++
-        Satoshis.zero.bytes)
-  }
+  lazy val sampleContractInfo: ContractInfo =
+    SingleNonceContractInfo.fromStringVec(
+      Vector(winStr -> Satoshis(10000), loseStr -> Satoshis.zero))
 
   lazy val sampleOracleAndContractInfo: OracleAndContractInfo =
     OracleAndContractInfo(sampleOracleInfo, sampleContractInfo)
