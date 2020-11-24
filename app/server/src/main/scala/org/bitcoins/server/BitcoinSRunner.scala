@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config._
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.{AppConfig, ConfigOps}
+import org.bitcoins.db.AppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Properties
@@ -40,62 +40,67 @@ trait BitcoinSRunner extends BitcoinSLogger {
     argsWithIndex.find(_._1.toLowerCase == "--datadir")
   }
 
-  private lazy val datadirPathOpt: Option[Path] = dataDirIndexOpt match {
-    case None => None
+  /** Sets the default data dir, overridden by the --datadir option */
+  private lazy val datadirPath: Path = dataDirIndexOpt match {
+    case None => AppConfig.DEFAULT_BITCOIN_S_DATADIR
     case Some((_, dataDirIndex)) =>
       val str = args(dataDirIndex + 1)
       val usableStr = str.replace("~", Properties.userHome)
-      Some(Paths.get(usableStr))
+      Paths.get(usableStr)
   }
 
-  private lazy val configIndexOpt: Option[(String, Int)] = {
-    argsWithIndex.find(_._1.toLowerCase == "--conf")
+  private lazy val configIndexOpt: Option[Int] = {
+    argsWithIndex.find(_._1.toLowerCase == "--conf").map(_._2)
   }
+
+  val datadirConfig: Config =
+    ConfigFactory.parseString(s"bitcoin-s.datadir = $datadirPath")
 
   lazy val baseConfig: Config = configIndexOpt match {
     case None =>
-      val configPath =
-        datadirPathOpt.getOrElse(AppConfig.DEFAULT_BITCOIN_S_DATADIR)
       AppConfig
-        .getBaseConfig(configPath)
+        .getBaseConfig(datadirPath)
+        .withFallback(datadirConfig)
         .resolve()
-    case Some((_, configIndex)) =>
+    case Some(configIndex) =>
       val str = args(configIndex + 1)
       val usableStr = str.replace("~", Properties.userHome)
       val path = Paths.get(usableStr)
       ConfigFactory
         .parseFile(path.toFile)
+        .withFallback(datadirConfig)
         .resolve()
   }
 
-  lazy val configDataDir: Path = Paths.get(
-    baseConfig.getStringOrElse("bitcoin-s.datadir",
-                               AppConfig.DEFAULT_BITCOIN_S_DATADIR.toString))
-
-  lazy val datadirPath: Path = datadirPathOpt.getOrElse(configDataDir)
-
-  private lazy val networkStr: String =
-    baseConfig.getString("bitcoin-s.network")
-
-  private lazy val network: BitcoinNetwork =
-    BitcoinNetworks.fromString(networkStr)
-
-  lazy val datadir: Path = {
-    lazy val lastDirname = network match {
-      case MainNet  => "mainnet"
-      case TestNet3 => "testnet3"
-      case RegTest  => "regtest"
-      case SigNet   => "signet"
-    }
-    datadirPath.resolve(lastDirname)
-  }
+  /** Base directory for all bitcoin-s data. This is the resulting datadir from
+    * the --datadir option and all configuration files.
+    */
+  lazy val datadir: Path =
+    Paths.get(baseConfig.getString("bitcoin-s.datadir"))
 
   def startup: Future[Unit]
 
   // start everything!
   final def run(): Unit = {
+
+    /** Directory specific for current network */
+    val networkDatadir: Path = {
+      val networkStr: String =
+        baseConfig.getString("bitcoin-s.network")
+      val network: BitcoinNetwork =
+        BitcoinNetworks.fromString(networkStr)
+      lazy val lastDirname = network match {
+        case MainNet  => "mainnet"
+        case TestNet3 => "testnet3"
+        case RegTest  => "regtest"
+        case SigNet   => "signet"
+      }
+      datadir.resolve(lastDirname)
+    }
+
     // Properly set log location
-    System.setProperty("bitcoins.log.location", datadir.toAbsolutePath.toString)
+    System.setProperty("bitcoins.log.location",
+                       networkDatadir.toAbsolutePath.toString)
 
     val runner = startup
     runner.failed.foreach { err =>

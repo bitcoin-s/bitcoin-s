@@ -29,7 +29,7 @@ class BitcoinSServerMain(override val args: Array[String])
   override val actorSystemName = "bitcoin-s-server"
 
   implicit lazy val conf: BitcoinSAppConfig =
-    BitcoinSAppConfig(datadirPath, baseConfig)
+    BitcoinSAppConfig(datadir, baseConfig)
 
   def startup: Future[Unit] = {
 
