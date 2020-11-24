@@ -13,7 +13,7 @@ class OracleServerMain(override val args: Array[String])
   override def startup: Future[Unit] = {
 
     implicit val conf: DLCOracleAppConfig =
-      DLCOracleAppConfig(datadirPath, baseConfig)
+      DLCOracleAppConfig(datadir, baseConfig)
 
     for {
       _ <- conf.start()
