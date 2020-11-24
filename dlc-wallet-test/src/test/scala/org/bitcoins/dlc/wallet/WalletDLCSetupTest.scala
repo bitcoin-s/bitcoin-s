@@ -440,6 +440,9 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           assert(walletBFinal.isDefined)
         }
 
+        tx <- walletB.broadcastDLCFundingTx(sign.contractId)
+        _ <- walletA.processTransaction(tx, None)
+
         func =
           (wallet: DLCWallet) => wallet.executeDLC(sign.contractId, oracleSig)
         result <- dlcExecutionTest(dlcA = walletA,

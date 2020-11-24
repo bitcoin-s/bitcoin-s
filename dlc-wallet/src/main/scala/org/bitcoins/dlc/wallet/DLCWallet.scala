@@ -208,7 +208,11 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             } else {
               val withState = dlcDb.copy(state = DLCState.RemoteClaimed)
               if (dlcDb.outcomeOpt.isEmpty || dlcDb.oracleSigsOpt.isEmpty) {
-                calculateAndSetOutcome(withState)
+                for {
+                  // update so we can calculate correct DLCStatus
+                  _ <- dlcDAO.update(withState)
+                  withOutcome <- calculateAndSetOutcome(withState)
+                } yield withOutcome
               } else Future.successful(withState)
             }
 
@@ -1298,11 +1302,11 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         s"Created DLC execution transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
 
       _ <- updateDLCOracleSigs(contractId, oracleSigs)
-
-      _ <- processTransaction(tx, None)
       _ <- updateDLCState(contractId, DLCState.Claimed)
       _ <- updateDLCOutcome(contractId, outcome)
       _ <- updateClosingTxId(contractId, tx.txIdBE)
+
+      _ <- processTransaction(tx, None)
     } yield tx
   }
 
@@ -1312,9 +1316,11 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       refundTx = executor.executeRefundDLC(setup).refundTx
       _ = logger.info(
         s"Created DLC refund transaction ${refundTx.txIdBE.hex} for contract ${contractId.toHex}")
-      _ <- processTransaction(refundTx, blockHashOpt = None)
+
       _ <- updateDLCState(contractId, DLCState.Refunded)
       _ <- updateClosingTxId(contractId, refundTx.txIdBE)
+
+      _ <- processTransaction(refundTx, blockHashOpt = None)
     } yield refundTx
   }
 
