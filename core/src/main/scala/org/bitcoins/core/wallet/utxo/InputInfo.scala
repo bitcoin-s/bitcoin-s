@@ -180,6 +180,9 @@ object InputInfo {
     asmByteSize + varIntSize.toInt
   }
 
+  /** Computes the byteSize of witness/scriptSignature for the given info,
+    * and also returns the number of stack elements for the P2WSH case.
+    */
   private def maxScriptSigLenAndStackHeight(
       info: InputInfo,
       forP2WSH: Boolean): (Int, Int) = {
@@ -207,7 +210,7 @@ object InputInfo {
          1)
       case _: P2PKHInputInfo =>
         (P2PKHScriptSignature(LowRDummyECDigitalSignature,
-                              ECPublicKey.freshPublicKey).asmBytes.length.toInt,
+                              ECPublicKey.dummy).asmBytes.length.toInt,
          2)
       case info: P2PKWithTimeoutInputInfo =>
         (P2PKWithTimeoutScriptSignature(

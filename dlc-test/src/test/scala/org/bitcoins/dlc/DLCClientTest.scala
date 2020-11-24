@@ -672,7 +672,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to derive aggregate oracle signature from remote CET signatures" in {
-    val numDigitsToTest = Vector(2, 3, 5)
+    // Larger numbers of digits make tests take too long.
+    // TODO: In the future when bases other than 10 can be used try more digits with base 2
+    val numDigitsToTest = Vector(2, 3)
     runTestsForParam(numDigitsToTest) { numDigits =>
       val outcomesToTest = 0
         .until(9)
