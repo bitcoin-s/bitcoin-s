@@ -2,6 +2,7 @@ package org.bitcoins.dlc
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   DLCSign,
+  MultiNonceContractInfo,
   MultiNonceOracleInfo,
   SingleNonceOracleInfo
 }
@@ -195,7 +196,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
     DLCTimeouts(blockTimeToday,
                 BlockTime(UInt32(blockTimeToday.time.toLong + 1)))
 
-  val feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
+  val feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis(10))
 
   def constructDLCClients(numOutcomes: Int, isMultiNonce: Boolean): (
       TestDLCClient,
@@ -374,8 +375,19 @@ class DLCClientTest extends BitcoinSAsyncTest {
             case UnsignedNumericOutcome(_) => fail("Expected EnumOutcome")
           }
         } else {
+          val points =
+            dlcOffer.dlcTxBuilder.oracleAndContractInfo.offerContractInfo
+              .asInstanceOf[MultiNonceContractInfo]
+              .outcomeValueFunc
+              .points
+          val left = points(1).outcome.toLongExact
+          val right = points(2).outcome.toLongExact
+          // Somewhere in the middle third of the interesting values
+          val outcomeNum =
+            (2 * left + right) / 3 + (outcomeIndex % (right - left) / 3)
+
           val fullDigits =
-            CETCalculator.decompose(outcomeIndex, base = 10, numOutcomes)
+            CETCalculator.decompose(outcomeNum, base = 10, numOutcomes)
 
           val digits =
             CETCalculator.searchForNumericOutcome(fullDigits, outcomes) match {

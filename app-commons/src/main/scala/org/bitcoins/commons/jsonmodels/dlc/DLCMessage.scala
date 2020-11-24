@@ -183,7 +183,16 @@ object DLCMessage {
 
   sealed trait ContractInfo extends NetworkElement {
 
-    /** Returns the counter-party's ContractInfo corresponding to this one */
+    /** Returns the counter-party's ContractInfo corresponding to this one.
+      *
+      * WARNING: this(outcome) + flip(TC)(outcome) is not guaranteed to equal TC.
+      * As such, this should not be used to generate pairs of ContractInfos and
+      * should only be used to replace a ContractInfo with another one of the flipped
+      * perspective.
+      * An example case is for MultiNonceContractInfo where flipping the interpolation points
+      * could lead to an off-by-one after rounding so that the sum above gives TC-1.
+      * In this example, only the offerer's ContractInfo should be used.
+      */
     def flip(totalCollateral: Satoshis): ContractInfo
     def toTLV: ContractInfoTLV
     def allOutcomes: Vector[DLCOutcomeType]
@@ -372,20 +381,17 @@ object DLCMessage {
   case class OracleAndContractInfo(
       oracleInfo: OracleInfo,
       offerContractInfo: ContractInfo,
-      acceptContractInfo: ContractInfo) {
-    (oracleInfo, offerContractInfo, acceptContractInfo) match {
-      case (_: SingleNonceOracleInfo,
-            _: SingleNonceContractInfo,
-            _: SingleNonceContractInfo) =>
-        ()
-      case (_: MultiNonceOracleInfo,
-            info1: MultiNonceContractInfo,
-            info2: MultiNonceContractInfo) =>
+      totalCollateral: Satoshis) {
+    (oracleInfo, offerContractInfo) match {
+      case (_: SingleNonceOracleInfo, info: SingleNonceContractInfo) =>
         require(
-          info1.totalCollateral == info2.totalCollateral,
-          s"Contract Infos must have matching total collateral, got $offerContractInfo - $acceptContractInfo"
-        )
-      case (_: OracleInfo, _: ContractInfo, _: ContractInfo) =>
+          info.max <= totalCollateral,
+          s"Cannot have payout larger than totalCollateral ($totalCollateral): $info")
+      case (_: MultiNonceOracleInfo, info: MultiNonceContractInfo) =>
+        require(
+          info.totalCollateral == totalCollateral,
+          s"Expected total collateral of $totalCollateral, got ${info.totalCollateral}")
+      case (_: OracleInfo, _: ContractInfo) =>
         throw new IllegalArgumentException(
           s"All infos must be for the same kind of outcome: $this")
     }
@@ -424,9 +430,10 @@ object DLCMessage {
         HashMap.newBuilder[DLCOutcomeType, (ECPublicKey, Satoshis, Satoshis)]
 
       allOutcomes.foreach { msg =>
-        builder.+=(
-          msg -> (oracleInfo.sigPoint(msg), offerContractInfo(
-            msg), acceptContractInfo(msg)))
+        val offerPayout = offerContractInfo(msg)
+        val acceptPayout = (totalCollateral - offerPayout).satoshis
+
+        builder.+=(msg -> (oracleInfo.sigPoint(msg), offerPayout, acceptPayout))
       }
 
       builder.result()
@@ -462,6 +469,22 @@ object DLCMessage {
 
       (offerOutcome, acceptOutcome)
     }
+
+    def updateTotalCollateral(
+        newTotalCollateral: Satoshis): OracleAndContractInfo = {
+      if (newTotalCollateral == totalCollateral) {
+        this
+      } else {
+        offerContractInfo match {
+          case _: SingleNonceContractInfo =>
+            this.copy(totalCollateral = newTotalCollateral)
+          case info: MultiNonceContractInfo =>
+            this.copy(offerContractInfo =
+                        info.copy(totalCollateral = newTotalCollateral),
+                      totalCollateral = newTotalCollateral)
+        }
+      }
+    }
   }
 
   object OracleAndContractInfo {
@@ -471,7 +494,7 @@ object DLCMessage {
         offerContractInfo: ContractInfo): OracleAndContractInfo = {
       OracleAndContractInfo(oracleInfo,
                             offerContractInfo,
-                            offerContractInfo.flip(offerContractInfo.max))
+                            offerContractInfo.max)
     }
   }
 

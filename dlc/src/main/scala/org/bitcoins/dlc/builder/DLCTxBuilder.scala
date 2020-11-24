@@ -56,9 +56,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     offer.oracleAndContractInfo
 
   val oracleAndContractInfo: OracleAndContractInfo =
-    oracleAndContractInfoBeforeAccept.copy(acceptContractInfo =
-      oracleAndContractInfoBeforeAccept.offerContractInfo.flip(
-        totalInput.satoshis))
+    oracleAndContractInfoBeforeAccept.updateTotalCollateral(totalInput.satoshis)
 
   val offerTotalFunding: CurrencyUnit =
     offerFundingInputs.map(_.output.value).sum
