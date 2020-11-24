@@ -34,6 +34,7 @@ object DLCMessage {
     def pubKey: SchnorrPublicKey
     def nonces: Vector[SchnorrNonce]
 
+    /** The order of the given sigs should correspond to the given outcome. */
     def verifySigs(
         outcome: DLCOutcomeType,
         sigs: Vector[SchnorrDigitalSignature]): Boolean
@@ -69,8 +70,7 @@ object DLCMessage {
             throw new IllegalArgumentException(
               s"Expected R value of $rValue, got ${sigs.head}")
           } else {
-            sigs.length == 1 && pubKey.verify(CryptoUtil.sha256(outcome).bytes,
-                                              sigs.head)
+            pubKey.verify(CryptoUtil.sha256(outcome).bytes, sigs.head)
           }
         case UnsignedNumericOutcome(_) =>
           throw new IllegalArgumentException(
@@ -99,10 +99,12 @@ object DLCMessage {
       pubKey: SchnorrPublicKey,
       nonces: Vector[SchnorrNonce])
       extends OracleInfo {
+    require(nonces.nonEmpty, "Must contain positive number of nonces.")
 
     override def verifySigs(
         outcome: DLCOutcomeType,
         sigs: Vector[SchnorrDigitalSignature]): Boolean = {
+      require(sigs.nonEmpty, "At least one signature is required")
       require(
         sigs.length <= nonces.length,
         s"Too many signatures (expected at most ${nonces.length}), got $sigs")
@@ -116,8 +118,9 @@ object DLCMessage {
             .zip(sigs.take(digits.length).zip(nonces.take(digits.length)))
             .foldLeft(digits.length <= sigs.length) {
               case (result, (digit, (sig, nonce))) =>
-                require(sig.rx == nonce,
-                        s"Unexpected nonce in $sig, expected $nonce")
+                require(
+                  sig.rx == nonce,
+                  s"Unexpected nonce in ${sig.hex}, expected ${nonce.hex}")
 
                 result && pubKey.verify(CryptoUtil.sha256(digit.toString).bytes,
                                         sig)
@@ -310,7 +313,7 @@ object DLCMessage {
     override lazy val allOutcomes: Vector[DLCOutcomeType] =
       outcomeVec.map { case (outcome, _) => UnsignedNumericOutcome(outcome) }
 
-    override def max: Satoshis = totalCollateral
+    override val max: Satoshis = totalCollateral
 
     override def flip(totalCollateral: Satoshis): MultiNonceContractInfo = {
       require(
@@ -331,7 +334,7 @@ object DLCMessage {
 
     override def bytes: ByteVector = ByteVector.empty // TODO: Fix this
 
-    override def toTLV: ContractInfoV1TLV = {
+    override lazy val toTLV: ContractInfoV1TLV = {
       val tlvPoints = outcomeValueFunc.points.map { point =>
         TLVPoint(point.outcome.toLongExact, point.value, point.isEndpoint)
       }

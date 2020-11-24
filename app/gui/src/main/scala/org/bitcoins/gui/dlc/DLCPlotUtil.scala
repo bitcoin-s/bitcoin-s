@@ -95,14 +95,13 @@ object DLCPlotUtil {
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       executedCETOpt: Option[Vector[Int]]): Figure = {
-    plotCETs(CETCalculator.computeCETs(base,
-                                       numDigits,
-                                       function,
-                                       totalCollateral,
-                                       rounding),
-             base,
-             numDigits,
-             executedCETOpt)
+    val cets = CETCalculator.computeCETs(base,
+                                         numDigits,
+                                         function,
+                                         totalCollateral,
+                                         rounding)
+
+    plotCETs(cets, base, numDigits, executedCETOpt)
   }
 
   def plotCETs(
