@@ -66,12 +66,11 @@ case class FundingInputTx(
     )
   }
 
-  def toFundingInput(implicit ec: ExecutionContext): DLCFundingInput = {
+  def toFundingInput: DLCFundingInput = {
     DLCFundingInput.fromInputSigningInfo(scriptSignatureParams)
   }
 
-  def toSerializedFundingInputTx(implicit
-      ec: ExecutionContext): SerializedFundingInputTx = {
+  def toSerializedFundingInputTx: SerializedFundingInputTx = {
     SerializedFundingInputTx(tx,
                              idx,
                              inputKeys,
@@ -102,14 +101,14 @@ case class DLCPartyParams(
     fundingPrivKey: ECPrivateKey,
     payoutAddress: BitcoinAddress) {
 
-  def fundingInputs(implicit ec: ExecutionContext): Vector[DLCFundingInput] =
+  def fundingInputs: Vector[DLCFundingInput] =
     fundingInputTxs.map(_.toFundingInput)
 
   lazy val fundingScriptSigParams: Vector[ScriptSignatureParams[InputInfo]] = {
     fundingInputTxs.map(_.scriptSignatureParams)
   }
 
-  def toOffer(params: DLCParams)(implicit ec: ExecutionContext): DLCOffer = {
+  def toOffer(params: DLCParams): DLCOffer = {
     DLCOffer(
       OracleAndContractInfo(
         params.oracleInfo,
@@ -159,10 +158,9 @@ case class ValidTestInputs(
     offerParams: DLCPartyParams,
     acceptParams: DLCPartyParams) {
 
-  def offer(implicit ec: ExecutionContext): DLCOffer =
-    offerParams.toOffer(params)
+  def offer: DLCOffer = offerParams.toOffer(params)
 
-  def accept(implicit ec: ExecutionContext): DLCAcceptWithoutSigs =
+  def accept: DLCAcceptWithoutSigs =
     DLCAcceptWithoutSigs(
       acceptParams.collateral.satoshis,
       DLCPublicKeys(acceptParams.fundingPrivKey.publicKey,
@@ -290,7 +288,7 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
     Format[FundingInputTx](
       { _.validate[SerializedFundingInputTx].map(_.toFundingInputTx) },
       { inputTx =>
-        Json.toJson(inputTx.toSerializedFundingInputTx(ExecutionContext.global))
+        Json.toJson(inputTx.toSerializedFundingInputTx)
       }
     )
 

@@ -1,10 +1,19 @@
 package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.UInt64
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.crypto.{ECPublicKey, NetworkElement, Sign}
+import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
+import org.bitcoins.crypto.{
+  ECPublicKey,
+  LowRDummyECDigitalSignature,
+  NetworkElement,
+  Sign
+}
 
 import scala.annotation.tailrec
 
@@ -161,6 +170,83 @@ object InputInfo {
     val conditionalPath = ConditionalPath.fromBranch(conditionsVec)
 
     (preImages, conditionalPath)
+  }
+
+  /** Returns the maximum byteSize of any resulting ScriptSignature */
+  def maxScriptSigLen(info: InputInfo): Int = {
+    val asmByteSize = maxScriptSigLenAndStackHeight(info, forP2WSH = false)._1
+    val varIntSize = CompactSizeUInt(UInt64(asmByteSize)).byteSize
+
+    asmByteSize + varIntSize.toInt
+  }
+
+  private def maxScriptSigLenAndStackHeight(
+      info: InputInfo,
+      forP2WSH: Boolean): (Int, Int) = {
+    val boolSize = if (forP2WSH) 2 else 1
+
+    info match {
+      case _: SegwitV0NativeInputInfo | _: UnassignedSegwitNativeInputInfo =>
+        (0, 0)
+      case info: P2SHInputInfo =>
+        val serializedRedeemScript = ScriptConstant(info.redeemScript.asmBytes)
+        val pushOps = BitcoinScriptUtil.calculatePushOp(serializedRedeemScript)
+        val redeemScriptLen =
+          BytesUtil
+            .toByteVector(pushOps.:+(serializedRedeemScript))
+            .length
+            .toInt
+        val (scriptSigLen, stackHeight) =
+          maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH)
+
+        (redeemScriptLen + scriptSigLen, stackHeight + 1)
+      case _: EmptyInputInfo =>
+        (boolSize, 1)
+      case _: P2PKInputInfo =>
+        (P2PKScriptSignature(LowRDummyECDigitalSignature).asmBytes.length.toInt,
+         1)
+      case _: P2PKHInputInfo =>
+        (P2PKHScriptSignature(LowRDummyECDigitalSignature,
+                              ECPublicKey.freshPublicKey).asmBytes.length.toInt,
+         2)
+      case info: P2PKWithTimeoutInputInfo =>
+        (P2PKWithTimeoutScriptSignature(
+           info.isBeforeTimeout,
+           LowRDummyECDigitalSignature).asmBytes.length.toInt,
+         2)
+      case info: MultiSignatureInputInfo =>
+        (MultiSignatureScriptSignature(
+           Vector.fill(info.requiredSigs)(
+             LowRDummyECDigitalSignature)).asmBytes.length.toInt,
+         1 + info.requiredSigs)
+      case info: ConditionalInputInfo =>
+        val (maxLen, stackHeight) =
+          maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH)
+        (maxLen + boolSize, stackHeight + 1)
+      case info: LockTimeInputInfo =>
+        maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH)
+    }
+  }
+
+  /** Returns the maximum byteSize of any resulting ScriptWitness */
+  @tailrec
+  def maxWitnessLen(info: InputInfo): Int = {
+    info match {
+      case _: RawInputInfo | _: P2SHNonSegwitInputInfo => 0
+      case _: P2WPKHV0InputInfo                        => 107
+      case info: P2WSHV0InputInfo =>
+        val (scriptSigLen, stackHeight) =
+          maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH = true)
+        val stackHeightByteSize = CompactSizeUInt(UInt64(stackHeight)).byteSize
+        val redeemScriptSize = info.scriptWitness.redeemScript.byteSize
+
+        (stackHeightByteSize + redeemScriptSize + scriptSigLen).toInt
+      case info: P2SHNestedSegwitV0InputInfo =>
+        maxWitnessLen(info.nestedInputInfo)
+      case _: UnassignedSegwitNativeInputInfo =>
+        throw new IllegalArgumentException(
+          s"Cannot compute witness for unknown segwit InputInfo, got $info")
+    }
   }
 
   def apply(

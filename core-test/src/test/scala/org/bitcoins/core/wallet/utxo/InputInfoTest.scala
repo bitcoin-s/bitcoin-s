@@ -1,11 +1,13 @@
 package org.bitcoins.core.wallet.utxo
 
-import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkit.core.gen.{
+  CreditingTxGen,
   GenUtil,
   ScriptGenerators,
   TransactionGenerators
@@ -13,6 +15,9 @@ import org.bitcoins.testkit.core.gen.{
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class InputInfoTest extends BitcoinSAsyncTest {
+
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
 
   def randomSPK: ScriptPubKey = {
     GenUtil.sample(ScriptGenerators.scriptPubKey.map(_._1))
@@ -205,6 +210,59 @@ class InputInfoTest extends BitcoinSAsyncTest {
         scriptWitnessOpt = None,
         conditionalPath = ConditionalPath.NoCondition
       )
+    }
+  }
+
+  it must "successfully compute maxWitnessLengths" in {
+    forAllAsync(CreditingTxGen.output) { scriptSigParams =>
+      val dummyTx = BaseTransaction(
+        TransactionConstants.validLockVersion,
+        Vector(
+          TransactionInput(scriptSigParams.inputInfo.outPoint,
+                           EmptyScriptSignature,
+                           UInt32.zero)),
+        Vector(TransactionOutput(Satoshis.zero, EmptyScriptPubKey)),
+        UInt32.zero
+      )
+
+      val maxWitnessLenF = BitcoinSigner
+        .sign(scriptSigParams, unsignedTx = dummyTx, isDummySignature = true)
+        .map(_.transaction)
+        .map {
+          case wtx: WitnessTransaction  => wtx.witness.head.byteSize.toInt
+          case _: NonWitnessTransaction => 0
+        }
+
+      maxWitnessLenF.map { expectedLen =>
+        assert(scriptSigParams.maxWitnessLen == expectedLen)
+      }
+    }
+  }
+
+  it must "successfully compute maxScriptSigLengths" in {
+    forAllAsync(CreditingTxGen.output) { scriptSigParams =>
+      val dummyTx = BaseTransaction(
+        TransactionConstants.validLockVersion,
+        Vector(
+          TransactionInput(scriptSigParams.inputInfo.outPoint,
+                           EmptyScriptSignature,
+                           UInt32.zero)),
+        Vector(TransactionOutput(Satoshis.zero, EmptyScriptPubKey)),
+        UInt32.zero
+      )
+
+      val maxScriptSigF = BitcoinSigner
+        .sign(scriptSigParams, unsignedTx = dummyTx, isDummySignature = true)
+        .map(_.transaction)
+        .map { tx =>
+          tx.inputs.head.scriptSignature
+        }
+
+      maxScriptSigF.map { scriptSig =>
+        assert(InputInfo.maxScriptSigLen(
+                 scriptSigParams.inputInfo) == scriptSig.byteSize,
+               scriptSig.hex)
+      }
     }
   }
 }
