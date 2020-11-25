@@ -187,8 +187,6 @@ trait BaseAsyncTest
       genE: Gen[E],
       genF: Gen[F])(
       func: (A, B, C, D, E, F) => Future[Assertion]): Future[Assertion] = {
-    val b = Vector.newBuilder[Int]
-    b.+=(1)
     val testRunFs =
       new java.util.concurrent.CopyOnWriteArrayList[Future[Assertion]]
 
