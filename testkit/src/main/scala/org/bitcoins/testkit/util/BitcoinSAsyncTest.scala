@@ -18,7 +18,6 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 /** This is a base trait in bitcoin-s for async tests
   */
@@ -241,6 +240,7 @@ trait BaseAsyncTest
   private def forAllHelper(
       testRunsF: java.util.concurrent.CopyOnWriteArrayList[
         Future[Assertion]]): Future[Assertion] = {
+    import akka.util.ccompat.JavaConverters._
     def helper(): Boolean = {
       testRunsF.size() == generatorDrivenConfig.minSize.value
     }
