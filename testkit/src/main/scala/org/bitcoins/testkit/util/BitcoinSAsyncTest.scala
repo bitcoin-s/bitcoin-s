@@ -6,18 +6,18 @@ import akka.util.Timeout
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.rpc.util.AsyncUtil
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
 import org.scalatest._
-import org.scalatest.flatspec.FixtureAsyncFlatSpec
-import org.scalatest.flatspec.AsyncFlatSpec
-import org.scalatest.matchers.must.Matchers
 import org.scalatest.concurrent.AsyncTimeLimitedTests
+import org.scalatest.flatspec.{AsyncFlatSpec, FixtureAsyncFlatSpec}
+import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.Span
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 /** This is a base trait in bitcoin-s for async tests
   */
@@ -93,51 +93,52 @@ trait BaseAsyncTest
   }
 
   def sequenceTestRuns(
-      testRunFs: scala.collection.mutable.Builder[
-        Future[Assertion],
-        Vector[Future[Assertion]]]): Future[Assertion] = {
+      testRunFs: Vector[Future[Assertion]]): Future[Assertion] = {
     val testRunsF: Future[Vector[Assertion]] =
-      Future.sequence(testRunFs.result())
+      Future.sequence(testRunFs)
 
     testRunsF.map(_.reduce((_, testRun) => testRun))
   }
 
   def forAllAsync[A](gen: Gen[A])(
       func: A => Future[Assertion]): Future[Assertion] = {
-    val testRunFs = Vector.newBuilder[Future[Assertion]]
+    val testRunFs =
+      new java.util.concurrent.CopyOnWriteArrayList[Future[Assertion]]
 
     forAll(gen) { input =>
-      testRunFs.+=(func(input))
+      testRunFs.add(func(input))
       succeed
     }
 
-    sequenceTestRuns(testRunFs)
+    forAllHelper(testRunFs)
   }
 
   def forAllAsync[A, B](genA: Gen[A], genB: Gen[B])(
       func: (A, B) => Future[Assertion]): Future[Assertion] = {
-    val testRunFs = Vector.newBuilder[Future[Assertion]]
+    val testRunFs =
+      new java.util.concurrent.CopyOnWriteArrayList[Future[Assertion]]
 
     forAll(genA, genB) {
       case (inputA, inputB) =>
-        testRunFs.+=(func(inputA, inputB))
+        testRunFs.add(func(inputA, inputB))
         succeed
     }
 
-    sequenceTestRuns(testRunFs)
+    forAllHelper(testRunFs)
   }
 
   def forAllAsync[A, B, C](genA: Gen[A], genB: Gen[B], genC: Gen[C])(
       func: (A, B, C) => Future[Assertion]): Future[Assertion] = {
-    val testRunFs = Vector.newBuilder[Future[Assertion]]
+    val testRunFs =
+      new java.util.concurrent.CopyOnWriteArrayList[Future[Assertion]]
 
     forAll(genA, genB, genC) {
       case (inputA, inputB, inputC) =>
-        testRunFs.+=(func(inputA, inputB, inputC))
+        testRunFs.add(func(inputA, inputB, inputC))
         succeed
     }
 
-    sequenceTestRuns(testRunFs)
+    forAllHelper(testRunFs)
   }
 
   def forAllAsync[A, B, C, D](
@@ -146,15 +147,16 @@ trait BaseAsyncTest
       genC: Gen[C],
       genD: Gen[D])(
       func: (A, B, C, D) => Future[Assertion]): Future[Assertion] = {
-    val testRunFs = Vector.newBuilder[Future[Assertion]]
+    val testRunFs =
+      new java.util.concurrent.CopyOnWriteArrayList[Future[Assertion]]
 
     forAll(genA, genB, genC, genD) {
       case (inputA, inputB, inputC, inputD) =>
-        testRunFs.+=(func(inputA, inputB, inputC, inputD))
+        testRunFs.add(func(inputA, inputB, inputC, inputD))
         succeed
     }
 
-    sequenceTestRuns(testRunFs)
+    forAllHelper(testRunFs)
   }
 
   def forAllAsync[A, B, C, D, E](
@@ -164,15 +166,16 @@ trait BaseAsyncTest
       genD: Gen[D],
       genE: Gen[E])(
       func: (A, B, C, D, E) => Future[Assertion]): Future[Assertion] = {
-    val testRunFs = Vector.newBuilder[Future[Assertion]]
+    val testRunFs =
+      new java.util.concurrent.CopyOnWriteArrayList[Future[Assertion]]
 
     forAll(genA, genB, genC, genD, genE) {
       case (inputA, inputB, inputC, inputD, inputE) =>
-        testRunFs.+=(func(inputA, inputB, inputC, inputD, inputE))
+        testRunFs.add(func(inputA, inputB, inputC, inputD, inputE))
         succeed
     }
 
-    sequenceTestRuns(testRunFs)
+    forAllHelper(testRunFs)
   }
 
   def forAllAsync[A, B, C, D, E, F](
@@ -183,15 +186,16 @@ trait BaseAsyncTest
       genE: Gen[E],
       genF: Gen[F])(
       func: (A, B, C, D, E, F) => Future[Assertion]): Future[Assertion] = {
-    val testRunFs = Vector.newBuilder[Future[Assertion]]
+    val testRunFs =
+      new java.util.concurrent.CopyOnWriteArrayList[Future[Assertion]]
 
     forAll(genA, genB, genC, genD, genE, genF) {
       case (inputA, inputB, inputC, inputD, inputE, inputF) =>
-        testRunFs.+=(func(inputA, inputB, inputC, inputD, inputE, inputF))
+        testRunFs.add(func(inputA, inputB, inputC, inputD, inputE, inputF))
         succeed
     }
 
-    sequenceTestRuns(testRunFs)
+    forAllHelper(testRunFs)
   }
 
   /** Runs all property based tests in parallel. This is a convenient optimization
@@ -229,6 +233,22 @@ trait BaseAsyncTest
         Future {
           func(inputA, inputB, inputC)
         }
+    }
+  }
+
+  /** Makes sure we have aggregated all of our test runs */
+  private def forAllHelper(
+      testRunsF: java.util.concurrent.CopyOnWriteArrayList[
+        Future[Assertion]]): Future[Assertion] = {
+    import akka.util.ccompat.JavaConverters._
+    def helper(): Boolean = {
+      testRunsF.size() == generatorDrivenConfig.minSize.value
+    }
+    for {
+      _ <- AsyncUtil.retryUntilSatisfied(helper(), interval = 1.second)
+      testRuns <- sequenceTestRuns(testRunsF.asScala.toVector)
+    } yield {
+      testRuns
     }
   }
 }
