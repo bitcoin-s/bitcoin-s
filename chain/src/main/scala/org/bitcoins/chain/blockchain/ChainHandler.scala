@@ -64,11 +64,6 @@ class ChainHandler(
     val chainsByWork = groupedChains(maxWork)
 
     val bestHeader: BlockHeaderDb = chainsByWork match {
-      case Vector() =>
-        // This should never happen
-        val errMsg = s"Did not find blockchain with work $maxWork"
-        logger.error(errMsg)
-        throw new RuntimeException(errMsg)
       case chain +: Vector() =>
         chain.tip
       case chain +: rest =>
@@ -80,6 +75,12 @@ class ChainHandler(
         //as that's "more likely" to have been propagated first
         //and had more miners building on top of it
         chainsByWork.sortBy(_.tip.time).head.tip
+
+      case _: Vector[_] =>
+        // This should never happen
+        val errMsg = s"Did not find blockchain with work $maxWork"
+        logger.error(errMsg)
+        throw new RuntimeException(errMsg)
     }
     bestHeader
   }

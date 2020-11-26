@@ -99,7 +99,9 @@ object CommonSettings {
       "-Ywarn-unused",
       "-unchecked",
       "-deprecation",
-      "-feature"
+      "-feature",
+      "-Ypatmat-exhaust-depth",
+      "off"
     ) ++ commonCompilerOpts ++ {
       if (scalaVersion.startsWith("2.13")) scala2_13CompilerOpts
       else nonScala2_13CompilerOpts

@@ -285,16 +285,16 @@ private[blockchain] trait BaseBlockChainCompObject
       connectWalkBackwards(current = childHeader, ancestors = ancestors)
 
     val initBlockchainOpt = orderedHeaders match {
-      case Vector() | _ +: Vector() =>
-        //for the case of _ +: Vector() this means only our
-        //child header is in the chain, which means we
-        //weren't able to form a blockchain
-        None
       case h +: _ =>
         //find our first header as we need it's Db representation
         //rather than just the raw header
         val dbOpt = ancestors.find(_.hashBE == h.hashBE)
         Some(Blockchain.fromHeaders(Vector(dbOpt.get)))
+      case _: Vector[_] =>
+        //for the case of _ +: Vector() this means only our
+        //child header is in the chain, which means we
+        //weren't able to form a blockchain
+        None
     }
 
     //now let's connect headers
