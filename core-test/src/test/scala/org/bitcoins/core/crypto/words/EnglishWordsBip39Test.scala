@@ -10,8 +10,7 @@ class EnglishWordsBip39Test extends BitcoinSUnitTest {
   private val ENGLISH_WORDS_FILE = "/bip39-wordlists/english.txt"
 
   it must "have the same in memory and file contents" in {
-    val resourceStream = getClass.getResourceAsStream(ENGLISH_WORDS_FILE)
-    val source = Source.fromInputStream(resourceStream)
+    val source = Source.fromURL(getClass.getResource(ENGLISH_WORDS_FILE))
 
     val lines = source.getLines()
     val linesVec = lines.toVector
