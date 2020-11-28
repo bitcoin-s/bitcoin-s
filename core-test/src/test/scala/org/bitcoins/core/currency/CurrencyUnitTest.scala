@@ -11,6 +11,13 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
 
   behavior of "Satoshis"
 
+  it must "have 1BTC == 100,000,000 satoshis" in {
+    assert(Bitcoins.one == Satoshis(100000000))
+    assert(Satoshis(100000000) == Bitcoins.one)
+    assert(Satoshis.zero == Bitcoins.zero)
+    assert(Bitcoins.zero == Satoshis.zero)
+  }
+
   it must "have symmetry serialization" in {
     forAll(CurrencyUnitGenerator.satoshis) { satoshis =>
       assert(Satoshis(satoshis.hex) == satoshis)
