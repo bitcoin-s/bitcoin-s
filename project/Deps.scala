@@ -2,6 +2,7 @@ import sbt._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
+
 object Deps {
 
   object V {
@@ -227,22 +228,22 @@ object Deps {
     Test.pgEmbedded
   )
 
-  def appCommons(scalaVersion: String) =
-    List(
-      Compile.newMicroPickle,
-      Compile.playJson,
-      Compile.slf4j
-    )
+  def appCommons: Def.Initialize[Seq[ModuleID]] =
+    Def.setting {
+      List(
+        Compile.newMicroPickle,
+        Compile.playJson,
+        Compile.slf4j
+      )
+    }
 
   val core: Def.Initialize[Seq[ModuleID]] = Def.setting {
-    List(Compile.bouncycastle,
-      Compile.slf4j,
-      Compile.grizzledSlf4j
-    ) 
+    List(Compile.bouncycastle, Compile.slf4j, Compile.grizzledSlf4j)
   }
 
   def crypto: Def.Initialize[Seq[ModuleID]] = {
-    Def.setting { List(
+    Def.setting {
+      List(
         Compile.bouncycastle,
         Compile.scodec.value
       )
@@ -296,17 +297,19 @@ object Deps {
     Compile.logback
   )
 
-  val dbCommons = List(
-    Compile.flyway,
-    Compile.slick,
-    Compile.sourcecode,
-    Compile.logback,
-    Compile.sqlite,
-    Compile.postgres,
-    Compile.slickHikari,
-    Test.scalaTest,
-    Test.pgEmbedded
-  )
+  val dbCommons: Def.Initialize[Seq[ModuleID]] = Def.setting {
+    List(
+      Compile.flyway,
+      Compile.slick,
+      Compile.sourcecode,
+      Compile.logback,
+      Compile.sqlite,
+      Compile.postgres,
+      Compile.slickHikari,
+      Test.scalaTest,
+      Test.pgEmbedded
+    )
+  }
 
   def cli(scalaVersion: String) =
     List(

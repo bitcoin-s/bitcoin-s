@@ -37,23 +37,22 @@ import Projects._
 
 lazy val cryptoCrossProject = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
-  .settings(libraryDependencies ++= Deps.crypto.value
-  )
+  .settings(libraryDependencies ++= Deps.crypto.value)
   .in(file("crypto"))
 
 lazy val crypto = cryptoCrossProject.jvm
 
 lazy val cryptoJS = cryptoCrossProject.js
 
-lazy val coreCrossProject = crossProject(JVMPlatform)
+lazy val coreCrossProject = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
-  .settings(libraryDependencies ++= Deps.core.value
-  )
+  .settings(libraryDependencies ++= Deps.core.value)
   .in(file("core"))
   .dependsOn(cryptoCrossProject)
 
-lazy val core = coreCrossProject.jvm 
+lazy val core = coreCrossProject.jvm
 
+lazy val coreJS = coreCrossProject.js
 
 //project
 //  .in(file("core"))
@@ -256,12 +255,14 @@ lazy val coreTest = project
     testkit
   )
 
-lazy val appCommons = project
-  .in(file("app-commons"))
+lazy val appCommonsCrossProject = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
   .settings(CommonSettings.prodSettings: _*)
-  .dependsOn(
-    core % testAndCompile
-  )
+  .settings(libraryDependencies ++= Deps.appCommons.value)
+  .in(file("app-commons"))
+  .dependsOn(coreCrossProject)
+
+lazy val appCommons = appCommonsCrossProject.jvm
 
 lazy val appCommonsTest = project
   .in(file("app-commons-test"))
@@ -349,14 +350,15 @@ lazy val chainTest = project
   .dependsOn(chain, core % testAndCompile, testkit, zmq)
   .enablePlugins(FlywayPlugin)
 
-lazy val dbCommons = project
-  .in(file("db-commons"))
+lazy val dbCommonsCrossProject = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
   .settings(CommonSettings.prodSettings: _*)
-  .settings(
-    name := "bitcoin-s-db-commons",
-    libraryDependencies ++= Deps.dbCommons
-  )
-  .dependsOn(core, appCommons)
+  .settings(name := "bitcoin-s-db-commons")
+  .settings(libraryDependencies ++= Deps.dbCommons.value)
+  .in(file("db-commons"))
+  .dependsOn(coreCrossProject, appCommonsCrossProject)
+
+lazy val dbCommons = dbCommonsCrossProject.jvm
 
 lazy val dbCommonsTest = project
   .in(file("db-commons-test"))
