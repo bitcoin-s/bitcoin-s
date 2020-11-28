@@ -119,7 +119,8 @@ sealed abstract class ScriptParser
                  .decodeHex(
                    BytesUtil.flipEndianness(
                      h)) ++ bytesToPushOntoStack.bytes ++ accum)
-        case Vector() => accum
+        case _: Vector[_] =>
+          accum
       }
     }
     if (tryParsingLong(str) && str.size > 1 && str.substring(0, 2) != "0x") {

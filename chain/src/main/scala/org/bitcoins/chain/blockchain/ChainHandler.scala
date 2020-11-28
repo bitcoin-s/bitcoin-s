@@ -63,23 +63,25 @@ class ChainHandler(
     val maxWork = groupedChains.keys.max
     val chainsByWork = groupedChains(maxWork)
 
-    val bestHeader: BlockHeaderDb = chainsByWork match {
-      case Vector() =>
+    val bestHeader: BlockHeaderDb = {
+      if (chainsByWork.isEmpty) {
         // This should never happen
         val errMsg = s"Did not find blockchain with work $maxWork"
         logger.error(errMsg)
         throw new RuntimeException(errMsg)
-      case chain +: Vector() =>
-        chain.tip
-      case chain +: rest =>
+      } else if (chainsByWork.length == 1) {
+        chainsByWork.head.tip
+      } else {
+        val tips = chainsByWork
+          .map(_.tip.hashBE.hex)
+          .mkString(", ")
         logger.warn(
-          s"We have multiple competing blockchains with same work, selecting by time: ${(chain +: rest)
-            .map(_.tip.hashBE.hex)
-            .mkString(", ")}")
+          s"We have multiple competing blockchains with same work, selecting by time: $tips")
         //since we have same chainwork, just take the oldest tip
         //as that's "more likely" to have been propagated first
         //and had more miners building on top of it
         chainsByWork.sortBy(_.tip.time).head.tip
+      }
     }
     bestHeader
   }

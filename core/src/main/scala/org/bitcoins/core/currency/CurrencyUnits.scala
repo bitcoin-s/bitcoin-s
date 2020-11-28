@@ -74,6 +74,19 @@ sealed abstract class CurrencyUnit
   def toBigDecimal: BigDecimal
 
   protected def underlying: A
+
+  override def equals(obj: Any): Boolean = {
+    //needed for cases like
+    //1BTC == 100,000,000 satoshis should be true
+    //weirdly enough, this worked in scala version < 2.13.4
+    //but seems to be broken in 2.13.4 :/
+    //try removing this and running code, you should see
+    //failures in the 'walletTest' module
+    obj match {
+      case cu: CurrencyUnit => cu.satoshis == satoshis
+      case _                => false
+    }
+  }
 }
 
 sealed abstract class Satoshis extends CurrencyUnit {

@@ -38,6 +38,8 @@ object Base58ValidTestCaseProtocol extends DefaultJsonProtocol {
             Left(Sha256Hash160Digest(elements(1).convertTo[String]))
           case b if b.isRight =>
             Right(ECPrivateKey(elements(1).convertTo[String]))
+          case _ =>
+            sys.error(s"Should be left or right")
         }
       Base58ValidTestCaseImpl(addressOrPrivateKey(elements),
                               isHashOrPrivKey(elements),
