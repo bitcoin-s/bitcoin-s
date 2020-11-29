@@ -255,7 +255,7 @@ lazy val coreTest = project
     testkit
   )
 
-lazy val appCommonsCrossProject = crossProject(JVMPlatform)
+lazy val appCommonsCrossProject = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(CommonSettings.prodSettings: _*)
   .settings(libraryDependencies ++= Deps.appCommons.value)
@@ -350,7 +350,7 @@ lazy val chainTest = project
   .dependsOn(chain, core % testAndCompile, testkit, zmq)
   .enablePlugins(FlywayPlugin)
 
-lazy val dbCommonsCrossProject = crossProject(JVMPlatform)
+lazy val dbCommonsCrossProject = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-db-commons")
@@ -514,7 +514,7 @@ lazy val wallet = project
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet",
-    libraryDependencies ++= Deps.wallet(scalaVersion.value)
+    libraryDependencies ++= Deps.wallet.value
   )
   .dependsOn(core, appCommons, dbCommons, keyManager)
   .enablePlugins(FlywayPlugin)
@@ -538,7 +538,7 @@ lazy val dlcOracle = project
   .settings(oracleDbSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-oracle",
-    libraryDependencies ++= Deps.dlcOracle
+    libraryDependencies ++= Deps.dlcOracle.value
   )
   .dependsOn(core, keyManager, dbCommons)
 
@@ -547,7 +547,7 @@ lazy val dlcOracleTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-oracle-test",
-    libraryDependencies ++= Deps.dlcOracleTest
+    libraryDependencies ++= Deps.dlcOracleTest.value
   )
   .dependsOn(core % testAndCompile, dlcOracle, testkit)
 

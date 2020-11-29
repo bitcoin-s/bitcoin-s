@@ -4,7 +4,7 @@ name := "bitcoin-s-oracle-server"
 // when server is quit
 Compile / fork := true
 
-libraryDependencies ++= Deps.oracleServer
+libraryDependencies ++= Deps.oracleServer.value
 
 mainClass := Some("org.bitcoins.oracle.server.OracleServerMain")
 

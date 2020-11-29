@@ -158,12 +158,13 @@ object Deps {
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
     val flyway = "org.flywaydb" % "flyway-core" % V.flywayV
 
-    val newMicroJson = "com.lihaoyi" %% "ujson" % V.newMicroJsonV
+    val newMicroJson = Def.setting("com.lihaoyi" %%% "ujson" % V.newMicroJsonV)
 
-    val newMicroPickle = "com.lihaoyi" %% "upickle" % V.newMicroPickleV
+    val newMicroPickle =
+      Def.setting("com.lihaoyi" %%% "upickle" % V.newMicroPickleV)
 
     // get access to reflection data at compile-time
-    val sourcecode = "com.lihaoyi" %% "sourcecode" % V.sourcecodeV
+    val sourcecode = Def.setting("com.lihaoyi" %%% "sourcecode" % V.sourcecodeV)
 
     // parsing of CLI opts and args
     val scopt = "com.github.scopt" %% "scopt" % V.scoptV
@@ -231,7 +232,7 @@ object Deps {
   def appCommons: Def.Initialize[Seq[ModuleID]] =
     Def.setting {
       List(
-        Compile.newMicroPickle,
+        Compile.newMicroPickle.value,
         Compile.playJson,
         Compile.slf4j
       )
@@ -301,7 +302,7 @@ object Deps {
     List(
       Compile.flyway,
       Compile.slick,
-      Compile.sourcecode,
+      Compile.sourcecode.value,
       Compile.logback,
       Compile.sqlite,
       Compile.postgres,
@@ -311,37 +312,42 @@ object Deps {
     )
   }
 
-  def cli(scalaVersion: String) =
-    List(
-      Compile.sttp,
-      Compile.newMicroPickle,
-      Compile.logback,
-      Compile.scopt,
-      //we can remove this dependency when this is fixed
-      //https://github.com/oracle/graal/issues/1943
-      //see https://github.com/bitcoin-s/bitcoin-s/issues/1100
-      Compile.codehaus
-    )
+  val cli: Def.Initialize[List[ModuleID]] =
+    Def.setting {
+      List(
+        Compile.sttp,
+        Compile.newMicroPickle.value,
+        Compile.logback,
+        Compile.scopt,
+        //we can remove this dependency when this is fixed
+        //https://github.com/oracle/graal/issues/1943
+        //see https://github.com/bitcoin-s/bitcoin-s/issues/1100
+        Compile.codehaus
+      )
+    }
 
   val gui = List(Compile.breezeViz, Compile.scalaFx) ++ Compile.javaFxDeps
 
-  def server(scalaVersion: String) =
-    List(
-      Compile.newMicroPickle,
-      Compile.logback,
-      Compile.akkaActor,
-      Compile.akkaHttp,
-      Compile.akkaSlf4j
-    )
+  val server: Def.Initialize[List[ModuleID]] =
+    Def.setting {
+      List(
+        Compile.newMicroPickle.value,
+        Compile.logback,
+        Compile.akkaActor,
+        Compile.akkaHttp,
+        Compile.akkaSlf4j
+      )
+    }
 
-  val oracleServer =
+  val oracleServer: Def.Initialize[List[ModuleID]] = Def.setting {
     List(
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.logback,
       Compile.akkaActor,
       Compile.akkaHttp,
       Compile.akkaSlf4j
     )
+  }
 
   val eclairRpc = List(
     Compile.akkaHttp,
@@ -392,21 +398,25 @@ object Deps {
     Test.akkaTestkit
   )
 
-  def keyManager(scalaVersion: String) =
-    List(
-      Compile.newMicroJson
-    )
+  val keyManager: Def.Initialize[List[ModuleID]] =
+    Def.setting {
+      List(
+        Compile.newMicroJson.value
+      )
+    }
 
   val keyManagerTest = List(
     Compile.slf4j,
     Test.logback
   )
 
-  def wallet(scalaVersion: String) =
-    List(
-      Compile.newMicroJson,
-      Compile.logback
-    )
+  val wallet: Def.Initialize[List[ModuleID]] =
+    Def.setting {
+      List(
+        Compile.newMicroJson.value,
+        Compile.logback
+      )
+    }
 
   val walletTest = List(
     Test.akkaTestkit,
@@ -426,15 +436,17 @@ object Deps {
     Test.akkaTestkit
   )
 
-  val dlcOracle =
+  val dlcOracle: Def.Initialize[List[ModuleID]] = Def.setting {
     List(
-      Compile.newMicroJson,
+      Compile.newMicroJson.value,
       Compile.logback
     )
+  }
 
-  val dlcOracleTest =
+  val dlcOracleTest: Def.Initialize[List[ModuleID]] = Def.setting {
     List(
-      Compile.newMicroJson,
+      Compile.newMicroJson.value,
       Compile.logback
     )
+  }
 }

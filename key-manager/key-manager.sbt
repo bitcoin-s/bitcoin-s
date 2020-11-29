@@ -1,6 +1,6 @@
 name := "bitcoin-s-key-manager"
 
-libraryDependencies ++= Deps.keyManager(scalaVersion.value)
+libraryDependencies ++= Deps.keyManager.value
 
 coverageMinimum := 90
 

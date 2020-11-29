@@ -4,7 +4,7 @@ name := "bitcoin-s-server"
 // when server is quit
 Compile / fork := true
 
-libraryDependencies ++= Deps.server(scalaVersion.value)
+libraryDependencies ++= Deps.server.value
 
 mainClass := Some("org.bitcoins.server.BitcoinSServerMain")
 

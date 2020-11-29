@@ -7,7 +7,8 @@ package object db {
   implicit class ConfigOps(private val config: Config) extends AnyVal {
 
     def asReadableJson: String = {
-      val options = ConfigRenderOptions.concise().setFormatted(true)
+      //https://github.com/lightbend/config#debugging-your-configuration
+      val options = ConfigRenderOptions.defaults().setFormatted(true)
       config.root().render(options)
     }
 
