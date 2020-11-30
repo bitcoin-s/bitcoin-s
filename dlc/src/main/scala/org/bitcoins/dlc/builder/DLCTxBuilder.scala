@@ -109,7 +109,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     buildFundingTx.map(_.txIdBE.bytes.xor(accept.tempContractId.bytes))
   }
 
-  private lazy val cetBuilderF = {
+  private[dlc] lazy val cetBuilderF = {
     for {
       fundingTx <- buildFundingTx
     } yield {
@@ -134,10 +134,14 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     * for a given outcome hash
     */
   def buildCET(msg: OracleOutcome): Future[WitnessTransaction] = {
-    for {
-      cetBuilder <- cetBuilderF
-      cet <- cetBuilder.buildCET(msg)
-    } yield cet
+    cetBuilderF.map(_.buildCET(msg))
+  }
+
+  def buildCETs(
+      msgs: Vector[OracleOutcome]): Future[Vector[WitnessTransaction]] = {
+    cetBuilderF.map { cetBuilder =>
+      msgs.map(cetBuilder.buildCET)
+    }
   }
 
   /** Constructs the unsigned refund transaction */

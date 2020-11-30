@@ -1,7 +1,8 @@
 package org.bitcoins.dlc.builder
 
-import org.bitcoins.core.protocol.dlc.ContractInfo
-import org.bitcoins.core.protocol.dlc.{DLCTimeouts, OracleOutcome}
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.dlc.{ContractInfo, DLCTimeouts, OracleOutcome}
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
   MultiSignatureScriptPubKey,
@@ -9,16 +10,13 @@ import org.bitcoins.core.protocol.script.{
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.wallet.builder.{
-  AddWitnessDataFinalizer,
-  FilterDustFinalizer,
-  RawTxBuilder
-}
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{ConditionalPath, P2WSHV0InputInfo}
+import org.bitcoins.core.wallet.utxo.{
+  ConditionalPath,
+  InputInfo,
+  P2WSHV0InputInfo
+}
 import org.bitcoins.crypto.ECPublicKey
-
-import scala.concurrent.{ExecutionContext, Future}
 
 /** Responsible for constructing unsigned
   * Contract Execution Transactions (CETs)
@@ -35,6 +33,11 @@ case class DLCCETBuilder(
 
   private val fundingOutPoint = fundingOutputRef.outPoint
 
+  private val fundingInput = TransactionInput(
+    fundingOutPoint,
+    EmptyScriptSignature,
+    TransactionConstants.disableRBFSequence)
+
   private val fundingKeys =
     Vector(offerFundingKey, acceptFundingKey).sortBy(_.hex)
 
@@ -45,34 +48,31 @@ case class DLCCETBuilder(
     conditionalPath = ConditionalPath.NoCondition
   )
 
+  private val witnesses = Vector(InputInfo.getScriptWitness(fundingInfo))
+  private val witness = TransactionWitness.fromWitOpt(witnesses)
+
+  private def cetOfferOutput(offerValue: Satoshis): TransactionOutput = {
+    TransactionOutput(offerValue, offerFinalSPK)
+  }
+
+  private def cetAcceptOutput(acceptValue: Satoshis): TransactionOutput = {
+    TransactionOutput(acceptValue, acceptFinalSPK)
+  }
+
   /** Constructs a Contract Execution Transaction (CET)
-    * for a given outcome hash
+    * for a given outcome
     */
-  def buildCET(outcome: OracleOutcome)(implicit
-      ec: ExecutionContext): Future[WitnessTransaction] = {
-    val builder = RawTxBuilder().setLockTime(timeouts.contractMaturity.toUInt32)
+  def buildCET(outcome: OracleOutcome): WitnessTransaction = {
+    val (offerPayout, acceptPayout) = contractInfo.getPayouts(outcome)
 
-    val (offerValue, acceptValue) = contractInfo.getPayouts(outcome)
+    val outputs =
+      Vector(cetOfferOutput(offerPayout), cetAcceptOutput(acceptPayout))
+        .filter(_.value >= Policy.dustThreshold)
 
-    builder += TransactionOutput(offerValue, offerFinalSPK)
-    builder += TransactionOutput(acceptValue, acceptFinalSPK)
-
-    builder += TransactionInput(fundingOutPoint,
-                                EmptyScriptSignature,
-                                TransactionConstants.disableRBFSequence)
-
-    val finalizer =
-      FilterDustFinalizer
-        .andThen(AddWitnessDataFinalizer(Vector(fundingInfo)))
-
-    val txF = finalizer.buildTx(builder.result())
-
-    txF.flatMap {
-      case _: NonWitnessTransaction =>
-        Future.failed(
-          new RuntimeException(
-            "Something went wrong with AddWitnessDataFinalizer"))
-      case wtx: WitnessTransaction => Future.successful(wtx)
-    }
+    WitnessTransaction(TransactionConstants.validLockVersion,
+                       Vector(fundingInput),
+                       outputs,
+                       timeouts.contractMaturity.toUInt32,
+                       witness)
   }
 }
