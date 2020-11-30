@@ -25,6 +25,8 @@ sealed trait TLV extends NetworkElement {
   override def bytes: ByteVector = {
     tpe.bytes ++ length.bytes ++ value
   }
+
+  def sha256: Sha256Digest = CryptoUtil.sha256(bytes)
 }
 
 sealed trait TLVParentFactory[T <: TLV] extends Factory[T] {
