@@ -443,36 +443,52 @@ class DLCClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  val numOutcomesToTest: Vector[Int] = Vector(2, 3, 5, 8)
+  val numEnumOutcomesToTest: Vector[Int] = Vector(2, 3, 5, 8)
 
-  def runTests(
+  def runSingleNonceTests(
       exec: (Long, Int, Boolean) => Future[Assertion]): Future[Assertion] = {
-    runTestsForParam(numOutcomesToTest) { numOutcomes =>
-      val randDigits = (0 until numOutcomes).toVector.map { _ =>
-        scala.util.Random.nextInt(10)
-      }
-      val num = randDigits.mkString("").toLong
-
+    runTestsForParam(numEnumOutcomesToTest) { numOutcomes =>
       runTestsForParam(0.until(numOutcomes).toVector) { outcomeIndex =>
-        for {
-          _ <- exec(outcomeIndex, numOutcomes, false)
-          _ <-
-            if (outcomeIndex == 0) {
-              exec(num, numOutcomes, true)
-            } else {
-              Future.successful(succeed)
-            }
-        } yield succeed
+        exec(outcomeIndex, numOutcomes, false)
       }
     }
   }
 
-  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal case" in {
-    runTests(executeForCase)
+  val numDigitsToTest: Vector[Int] = Vector(2, 3, 5)
+
+  def runMultiNonceTests(
+      exec: (Long, Int, Boolean) => Future[Assertion]): Future[Assertion] = {
+    runTestsForParam(numDigitsToTest) { numDigits =>
+      val randDigits = (0 until numDigits).toVector.map { _ =>
+        scala.util.Random.nextInt(10)
+      }
+      val num = randDigits.mkString("").toLong
+
+      exec(num, numDigits, true)
+    }
+  }
+
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal enum case" in {
+    runSingleNonceTests(executeForCase)
+  }
+
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal numeric case" in {
+    runMultiNonceTests(executeForCase)
+  }
+
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the large numeric case" in {
+    val numDigits = 8
+
+    val randDigits = (0 until numDigits).toVector.map { _ =>
+      scala.util.Random.nextInt(10)
+    }
+    val num = randDigits.mkString("").toLong
+
+    executeForCase(num, numDigits, isMultiDigit = true)
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the refund case" in {
-    val testFs = numOutcomesToTest.map { numOutcomes =>
+    val testFs = numEnumOutcomesToTest.map { numOutcomes =>
       executeRefundCase(numOutcomes, isMultiNonce = false).flatMap { _ =>
         executeRefundCase(numOutcomes, isMultiNonce = true)
       }
@@ -651,7 +667,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
   it should "be able to derive oracle signature from remote CET signature" in {
     val outcomeIndex = 1
 
-    runTestsForParam(numOutcomesToTest) { numOutcomes =>
+    runTestsForParam(numEnumOutcomesToTest) { numOutcomes =>
       setupDLC(numOutcomes, isMultiDigit = false).flatMap {
         case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomes) =>
           val outcome = outcomes(outcomeIndex).asInstanceOf[EnumOutcome]
