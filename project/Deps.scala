@@ -52,7 +52,7 @@ object Deps {
     val sourcecodeV = "0.2.1"
 
     // CLI deps
-    val scoptV = "4.0.0-RC2"
+    val scoptV = "4.0.0"
     val sttpV = "1.7.2"
     val codehausV = "3.1.2"
   }
