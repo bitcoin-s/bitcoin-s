@@ -6,7 +6,6 @@ import org.bitcoins.cli.CliCommand
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.GlobalDLCData
 import scalafx.Includes._
-import scalafx.application.Platform
 import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.Insets
 import scalafx.scene.Node
@@ -49,7 +48,7 @@ abstract class DLCDialog[T <: CliCommand](
       setter: String => Unit): Unit = {
     inputs
       .find(_._1 == key)
-      .foreach(pair => setter(pair._2))
+      .foreach(pair => if (pair._2.nonEmpty) setter(pair._2))
   }
 
   protected def readStringFromNode(node: Node): String = {
@@ -106,9 +105,6 @@ abstract class DLCDialog[T <: CliCommand](
         BooleanProperty(false).delegate
       } else bools.reduce(_ || _).delegate
     }
-
-    // Request focus on the first field by default.
-    Platform.runLater(fields.head._2.requestFocus())
 
     // When the OK button is clicked, convert the result to a T.
     dialog.resultConverter = dialogButton =>
@@ -177,7 +173,7 @@ object DLCDialog {
 
   val oracleInfoStr = "Oracle Info"
   val contractInfoStr = "Contract Info"
-  val collateralStr = "Collateral"
+  val collateralStr = "Your Collateral"
   val feeRateStr = "Fee Rate"
   val locktimeStr = "Locktime"
   val refundLocktimeStr = "Refund Locktime"

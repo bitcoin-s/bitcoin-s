@@ -1,16 +1,25 @@
 package org.bitcoins.gui.dlc.dialog
 
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+  MultiNonceContractInfo,
+  SingleNonceContractInfo
+}
 import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.gui.GlobalData
+import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
 import scalafx.Includes._
 import scalafx.geometry.Insets
+import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout.GridPane
 import scalafx.stage.Window
 
 object ViewDLCDialog {
 
-  def showAndWait(parentWindow: Window, status: SerializedDLCStatus): Unit = {
+  def showAndWait(
+      parentWindow: Window,
+      status: SerializedDLCStatus,
+      model: DLCPaneModel): Unit = {
     val dialog = new Dialog[Unit]() {
       initOwner(parentWindow)
       title = "View DLC"
@@ -63,19 +72,31 @@ object ViewDLCDialog {
 
       row += 1
       add(new Label("Contract Id:"), 0, row)
-      add(
-        new TextField() {
-          text =
-            SerializedDLCStatus.getContractId(status).map(_.toHex).getOrElse("")
-          editable = false
-        },
-        columnIndex = 1,
-        rowIndex = row)
+      val contractId: String = SerializedDLCStatus
+        .getContractId(status)
+        .map(_.toHex)
+        .getOrElse("")
+
+      add(new TextField() {
+            text = contractId
+            editable = false
+          },
+          columnIndex = 1,
+          rowIndex = row)
 
       row += 1
       add(new Label("Oracle Info:"), 0, row)
       add(new TextField() {
             text = status.oracleInfo.hex
+            editable = false
+          },
+          columnIndex = 1,
+          rowIndex = row)
+
+      row += 1
+      add(new Label("Contract Info:"), 0, row)
+      add(new TextField() {
+            text = status.contractInfo.hex
             editable = false
           },
           columnIndex = 1,
@@ -143,18 +164,50 @@ object ViewDLCDialog {
 
       row += 1
       add(new Label("Oracle Signatures:"), 0, row)
-      add(
-        new TextField() {
-          text = SerializedDLCStatus
-            .getOracleSignatures(status)
-            .map(_.map(_.hex).mkString(","))
-            .getOrElse("")
-          editable = false
-        },
-        columnIndex = 1,
-        rowIndex = row
-      )
 
+      val sigsOpt: Option[String] = SerializedDLCStatus
+        .getOracleSignatures(status)
+        .map(_.map(_.hex).mkString(","))
+
+      val node: Node = sigsOpt match {
+        case Some(sigs) =>
+          new TextField() {
+            text = sigs
+            editable = false
+          }
+        case None =>
+          new Button("Execute") {
+            onAction = _ => {
+              // Set data for this DLC
+              GlobalDLCData.lastContractId = contractId
+              GlobalDLCData.lastOracleSig = ""
+              model.onExecute()
+            }
+          }
+      }
+      add(node, columnIndex = 1, rowIndex = row)
+
+      row += 1
+      status.contractInfo match {
+        case _: SingleNonceContractInfo => ()
+        case MultiNonceContractInfo(outcomeValueFunc,
+                                    base,
+                                    numDigits,
+                                    totalCollateral) =>
+          val previewGraphButton: Button = new Button("Preview Graph") {
+            onAction = _ => {
+              DLCPlotUtil.plotCETsWithOriginalCurve(
+                base,
+                numDigits,
+                outcomeValueFunc,
+                totalCollateral,
+                RoundingIntervals.noRounding)
+              ()
+            }
+          }
+
+          add(previewGraphButton, 1, row)
+      }
     }
 
     val _ = dialog.showAndWait()

@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.tlv.ContractInfoTLV
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import scalafx.scene.Node
 
-object OfferDLCDialog
+class OfferDLCDialog
     extends DLCDialog[CreateDLCOffer]("Create DLC Offer",
                                       "Enter DLC details",
                                       DLCDialog.constructOfferFields(),

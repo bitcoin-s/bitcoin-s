@@ -4,7 +4,7 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.core.protocol.tlv._
 import scalafx.scene.Node
 
-object SignDLCDialog
+class SignDLCDialog
     extends DLCDialog[SignDLCCliCommand]("Sign DLC",
                                          "Enter DLC Accept message",
                                          Vector(

@@ -4,7 +4,7 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.core.protocol.tlv._
 import scalafx.scene.Node
 
-object AcceptDLCDialog
+class AcceptDLCDialog
     extends DLCDialog[AcceptDLCCliCommand](
       "Accept DLC Offer",
       "Enter DLC Offer to accept or open from file",

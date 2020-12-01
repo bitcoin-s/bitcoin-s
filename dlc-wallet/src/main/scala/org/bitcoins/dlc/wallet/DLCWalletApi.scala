@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.dlc.{DLCStatus, SerializedDLCStatus}
+import org.bitcoins.commons.jsonmodels.dlc.SerializedDLCStatus
 import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
@@ -85,10 +85,7 @@ trait DLCWalletApi { self: WalletApi =>
 
   def listDLCs(): Future[Vector[SerializedDLCStatus]]
 
-  def findSerializedDLC(
-      paramHash: Sha256DigestBE): Future[Option[SerializedDLCStatus]]
-
-  def findDLC(paramHash: Sha256DigestBE): Future[Option[DLCStatus]]
+  def findDLC(paramHash: Sha256DigestBE): Future[Option[SerializedDLCStatus]]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

@@ -173,37 +173,38 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
   }
 
   def onOffer(): Unit = {
-    printDLCDialogResult("CreateDLCOffer", OfferDLCDialog)
+    printDLCDialogResult("CreateDLCOffer", new OfferDLCDialog)
   }
 
   def onAccept(): Unit = {
-    printDLCDialogResult("AcceptDLCOffer", AcceptDLCDialog)
+    printDLCDialogResult("AcceptDLCOffer", new AcceptDLCDialog)
   }
 
   def onSign(): Unit = {
-    printDLCDialogResult("SignDLC", SignDLCDialog)
+    printDLCDialogResult("SignDLC", new SignDLCDialog)
   }
 
   def onAddSigs(): Unit = {
-    printDLCDialogResult("AddDLCSigs", AddSigsDLCDialog)
+    printDLCDialogResult("AddDLCSigs", new AddSigsDLCDialog)
   }
 
   def onGetFunding(): Unit = {
-    printDLCDialogResult("GetDLCFundingTx", GetFundingDLCDialog)
+    printDLCDialogResult("GetDLCFundingTx", new GetFundingDLCDialog)
   }
 
-  def onClose(): Unit = {
-    printDLCDialogResult("ExecuteDLC", ExecuteDLCDialog)
+  def onExecute(): Unit = {
+    printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog)
   }
 
   def onRefund(): Unit = {
-    printDLCDialogResult("ExecuteDLCRefund", RefundDLCDialog)
+    printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog)
   }
 
   def viewDLC(status: SerializedDLCStatus): Unit = {
     updateDLCs()
     val updatedStatus = dlcs.find(_.tempContractId == status.tempContractId)
     ViewDLCDialog.showAndWait(parentWindow.value,
-                              updatedStatus.getOrElse(status))
+                              updatedStatus.getOrElse(status),
+                              this)
   }
 }

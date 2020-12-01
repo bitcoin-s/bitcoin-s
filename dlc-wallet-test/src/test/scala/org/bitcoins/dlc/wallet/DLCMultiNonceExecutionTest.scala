@@ -6,7 +6,10 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   SingleNonceContractInfo
 }
 import org.bitcoins.commons.jsonmodels.dlc.DLCState
-import org.bitcoins.commons.jsonmodels.dlc.DLCStatus.{Claimed, RemoteClaimed}
+import org.bitcoins.commons.jsonmodels.dlc.SerializedDLCStatus.{
+  SerializedClaimed,
+  SerializedRemoteClaimed
+}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.tlv.{EnumOutcome, UnsignedNumericOutcome}
 import org.bitcoins.crypto._
@@ -83,7 +86,8 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
 
       _ = {
         (statusAOpt, statusBOpt) match {
-          case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
+          case (Some(statusA: SerializedClaimed),
+                Some(statusB: SerializedRemoteClaimed)) =>
             verifyingMatchingOracleSigs(statusA, statusB)
           case (_, _) => fail()
         }
@@ -122,7 +126,8 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
 
       _ = {
         (statusAOpt, statusBOpt) match {
-          case (Some(statusA: RemoteClaimed), Some(statusB: Claimed)) =>
+          case (Some(statusA: SerializedRemoteClaimed),
+                Some(statusB: SerializedClaimed)) =>
             verifyingMatchingOracleSigs(statusB, statusA)
           case (_, _) => fail()
         }
@@ -138,8 +143,8 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
   }
 
   private def verifyingMatchingOracleSigs(
-      statusA: Claimed,
-      statusB: RemoteClaimed): Boolean = {
+      statusA: SerializedClaimed,
+      statusB: SerializedRemoteClaimed): Boolean = {
     val outcome = statusB.outcome
     val numSigs = outcome match {
       case EnumOutcome(outcome) =>

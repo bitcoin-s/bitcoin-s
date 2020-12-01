@@ -5,7 +5,7 @@ import scalafx.scene.Node
 import scalafx.scene.control.TextField
 import scodec.bits.ByteVector
 
-object GetFundingDLCDialog
+class GetFundingDLCDialog
     extends DLCDialog[BroadcastDLCFundingTx](
       "DLC Funding Transaction",
       "Enter DLC contract ID",

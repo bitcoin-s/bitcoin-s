@@ -64,13 +64,25 @@ object InitNumericContractDialog {
       add(new Label("Endpoint"), 2, 0)
     }
 
-    def addPointRow(): Unit = {
+    def addPointRow(
+        xOpt: Option[String] = None,
+        yOpt: Option[String] = None): Unit = {
 
       val xTF = new TextField() {
         promptText = "Outcome (base 10)"
       }
+      xOpt match {
+        case Some(value) =>
+          xTF.text = value
+        case None => ()
+      }
       val yTF = new TextField() {
         promptText = "Satoshis"
+      }
+      yOpt match {
+        case Some(value) =>
+          yTF.text = value
+        case None => ()
       }
       val endPointBox = new CheckBox() {
         selected = true
@@ -90,7 +102,7 @@ object InitNumericContractDialog {
       dialog.dialogPane().getScene.getWindow.sizeToScene()
     }
 
-    addPointRow()
+    addPointRow(Some("0"), Some("0"))
     addPointRow()
 
     val addPointButton: Button = new Button("+") {
