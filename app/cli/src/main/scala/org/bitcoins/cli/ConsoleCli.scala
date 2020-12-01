@@ -56,6 +56,9 @@ object ConsoleCli {
       help('h', "help").text("Display this help message and exit"),
       note(sys.props("line.separator") + "Commands:"),
       note(sys.props("line.separator") + "===Blockchain ==="),
+      cmd("getinfo")
+        .action((_, conf) => conf.copy(command = GetInfo))
+        .text(s"Returns basic info about the current chain"),
       cmd("getblockcount")
         .action((_, conf) => conf.copy(command = GetBlockCount))
         .text(s"Get the block height"),
@@ -943,6 +946,8 @@ object ConsoleCli {
     }
 
     val requestParam: RequestParam = command match {
+      case GetInfo =>
+        RequestParam("getinfo")
       case GetUtxos =>
         RequestParam("getutxos")
       case GetAddresses =>
@@ -1210,6 +1215,8 @@ object CliCommand {
   trait Broadcastable {
     def noBroadcast: Boolean
   }
+
+  case object GetInfo extends CliCommand
 
   // DLC
   case class CreateDLCOffer(

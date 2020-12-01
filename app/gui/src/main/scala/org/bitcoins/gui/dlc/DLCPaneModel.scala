@@ -4,6 +4,7 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
+import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.protocol.tlv.UnsignedNumericOutcome
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
@@ -90,6 +91,8 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
       case Some(contractInfo) =>
         val builder = new StringBuilder()
 
+        builder.append(s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
+
         val privKey = ECPrivateKey.freshPrivateKey
         val pubKey = privKey.schnorrPublicKey
         val (kValues, rValues, oracleInfo) = contractInfo match {
@@ -108,63 +111,65 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
             (kValues, rValues, oracleInfo)
         }
 
-        builder.append(
-          s"Oracle Public Key: ${pubKey.hex}\nEvent R values: ${rValues.map(_.hex).mkString(",")}\n")
-        builder.append(s"Serialized Oracle Info: ${oracleInfo.hex}\n\n")
+        if (GlobalData.network != MainNet) {
+          builder.append(
+            s"Oracle Public Key: ${pubKey.hex}\nEvent R values: ${rValues.map(_.hex).mkString(",")}\n\n")
 
-        builder.append(s"\nSerialized Contract Info:\n${contractInfo.hex}\n\n")
+          builder.append(s"Serialized Oracle Info: ${oracleInfo.hex}\n\n")
 
-        contractInfo match {
-          case contractInfo: SingleNonceContractInfo =>
-            builder.append("Outcomes and oracle sigs in order of entry:\n")
-            contractInfo.keys.foreach { outcome =>
-              val bytes = outcome.serialized.head
-              val hash = CryptoUtil.sha256(bytes).bytes
-              val sig = privKey.schnorrSignWithNonce(hash, kValues.head)
-              builder.append(s"$outcome - ${sig.hex}\n")
-            }
-          case contractInfo: MultiNonceContractInfo =>
-            builder.append("Oracle sigs:\n")
-
-            val sortedOutcomes = contractInfo.outcomeVec.sortBy(_._2)
-
-            val max = UnsignedNumericOutcome(sortedOutcomes.last._1)
-            val middle = UnsignedNumericOutcome(
-              sortedOutcomes(sortedOutcomes.size / 2)._1)
-            val min = UnsignedNumericOutcome(sortedOutcomes.head._1)
-
-            val sigsMax =
-              max.serialized.zip(kValues.take(max.digits.size)).map {
-                case (bytes, kValue) =>
-                  val hash = CryptoUtil.sha256(bytes).bytes
-                  privKey.schnorrSignWithNonce(hash, kValue)
+          contractInfo match {
+            case contractInfo: SingleNonceContractInfo =>
+              builder.append("Outcomes and oracle sigs in order of entry:\n")
+              contractInfo.keys.foreach { outcome =>
+                val bytes = outcome.serialized.head
+                val hash = CryptoUtil.sha256(bytes).bytes
+                val sig = privKey.schnorrSignWithNonce(hash, kValues.head)
+                builder.append(s"$outcome - ${sig.hex}\n")
               }
+            case contractInfo: MultiNonceContractInfo =>
+              builder.append("Oracle sigs:\n")
 
-            val sigsMiddle =
-              middle.serialized.zip(kValues.take(middle.digits.size)).map {
-                case (bytes, kValue) =>
-                  val hash = CryptoUtil.sha256(bytes).bytes
-                  privKey.schnorrSignWithNonce(hash, kValue)
-              }
+              val sortedOutcomes = contractInfo.outcomeVec.sortBy(_._2)
 
-            val sigsMin =
-              min.serialized.zip(kValues.take(min.digits.size)).map {
-                case (bytes, kValue) =>
-                  val hash = CryptoUtil.sha256(bytes).bytes
-                  privKey.schnorrSignWithNonce(hash, kValue)
-              }
+              val max = UnsignedNumericOutcome(sortedOutcomes.last._1)
+              val middle = UnsignedNumericOutcome(
+                sortedOutcomes(sortedOutcomes.size / 2)._1)
+              val min = UnsignedNumericOutcome(sortedOutcomes.head._1)
 
-            val maxSigsStr = sigsMax.map(_.hex).mkString("\n")
-            builder.append(s"local win sigs - $maxSigsStr\n\n\n")
+              val sigsMax =
+                max.serialized.zip(kValues.take(max.digits.size)).map {
+                  case (bytes, kValue) =>
+                    val hash = CryptoUtil.sha256(bytes).bytes
+                    privKey.schnorrSignWithNonce(hash, kValue)
+                }
 
-            val middleSigsStr = sigsMiddle.map(_.hex).mkString("\n")
-            builder.append(s"tie sigs - $middleSigsStr\n\n\n")
+              val sigsMiddle =
+                middle.serialized.zip(kValues.take(middle.digits.size)).map {
+                  case (bytes, kValue) =>
+                    val hash = CryptoUtil.sha256(bytes).bytes
+                    privKey.schnorrSignWithNonce(hash, kValue)
+                }
 
-            val minSigsStr = sigsMin.map(_.hex).mkString("\n")
-            builder.append(s"remote win sigs - $minSigsStr")
+              val sigsMin =
+                min.serialized.zip(kValues.take(min.digits.size)).map {
+                  case (bytes, kValue) =>
+                    val hash = CryptoUtil.sha256(bytes).bytes
+                    privKey.schnorrSignWithNonce(hash, kValue)
+                }
+
+              val maxSigsStr = sigsMax.map(_.hex).mkString("\n")
+              builder.append(s"local win sigs - $maxSigsStr\n\n\n")
+
+              val middleSigsStr = sigsMiddle.map(_.hex).mkString("\n")
+              builder.append(s"tie sigs - $middleSigsStr\n\n\n")
+
+              val minSigsStr = sigsMin.map(_.hex).mkString("\n")
+              builder.append(s"remote win sigs - $minSigsStr")
+          }
+
+          GlobalDLCData.lastOracleInfo = oracleInfo.hex
         }
 
-        GlobalDLCData.lastOracleInfo = oracleInfo.hex
         GlobalDLCData.lastContractInfo = contractInfo.hex
 
         oracleInfoArea.text = builder.result()
