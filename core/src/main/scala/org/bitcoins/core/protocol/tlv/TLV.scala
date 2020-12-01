@@ -589,6 +589,8 @@ sealed trait OracleAnnouncementTLV extends TLV {
   def eventTLV: OracleEventTLV
   def announcementSignature: SchnorrDigitalSignature
   def publicKey: SchnorrPublicKey
+
+  def validateSignature: Boolean
 }
 
 case class OracleAnnouncementV0TLV(
@@ -600,6 +602,11 @@ case class OracleAnnouncementV0TLV(
 
   override val value: ByteVector =
     announcementSignature.bytes ++ publicKey.bytes ++ eventTLV.bytes
+
+  override def validateSignature: Boolean = {
+    publicKey.verify(CryptoUtil.sha256(eventTLV.bytes).bytes,
+                     announcementSignature)
+  }
 }
 
 object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
