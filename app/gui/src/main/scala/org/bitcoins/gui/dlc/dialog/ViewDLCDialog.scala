@@ -18,7 +18,7 @@ object ViewDLCDialog {
 
   def showAndWait(
       parentWindow: Window,
-      status: SerializedDLCStatus,
+      status: DLCStatus,
       model: DLCPaneModel): Unit = {
     val dialog = new Dialog[Unit]() {
       initOwner(parentWindow)
@@ -72,7 +72,7 @@ object ViewDLCDialog {
 
       row += 1
       add(new Label("Contract Id:"), 0, row)
-      val contractId: String = SerializedDLCStatus
+      val contractId: String = DLCStatus
         .getContractId(status)
         .map(_.toHex)
         .getOrElse("")
@@ -142,30 +142,26 @@ object ViewDLCDialog {
 
       row += 1
       add(new Label("Funding TxId:"), 0, row)
-      add(
-        new TextField() {
-          text =
-            SerializedDLCStatus.getFundingTxId(status).map(_.hex).getOrElse("")
-          editable = false
-        },
-        columnIndex = 1,
-        rowIndex = row)
+      add(new TextField() {
+            text = DLCStatus.getFundingTxId(status).map(_.hex).getOrElse("")
+            editable = false
+          },
+          columnIndex = 1,
+          rowIndex = row)
 
       row += 1
       add(new Label("Closing TxId:"), 0, row)
-      add(
-        new TextField() {
-          text =
-            SerializedDLCStatus.getClosingTxId(status).map(_.hex).getOrElse("")
-          editable = false
-        },
-        columnIndex = 1,
-        rowIndex = row)
+      add(new TextField() {
+            text = DLCStatus.getClosingTxId(status).map(_.hex).getOrElse("")
+            editable = false
+          },
+          columnIndex = 1,
+          rowIndex = row)
 
       row += 1
       add(new Label("Oracle Signatures:"), 0, row)
 
-      val sigsOpt: Option[String] = SerializedDLCStatus
+      val sigsOpt: Option[String] = DLCStatus
         .getOracleSignatures(status)
         .map(_.map(_.hex).mkString(","))
 

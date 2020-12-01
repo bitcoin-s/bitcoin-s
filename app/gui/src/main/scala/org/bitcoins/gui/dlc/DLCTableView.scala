@@ -1,18 +1,15 @@
 package org.bitcoins.gui.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.{
-  AcceptedSerializedDLCStatus,
-  SerializedDLCStatus
-}
-import org.bitcoins.commons.jsonmodels.dlc.SerializedDLCStatus._
+import org.bitcoins.commons.jsonmodels.dlc.{AcceptedDLCStatus, DLCStatus}
+import org.bitcoins.commons.jsonmodels.dlc.DLCStatus._
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}
 
 class DLCTableView(model: DLCPaneModel) {
 
-  val tableView: TableView[SerializedDLCStatus] = {
-    val paramHashCol = new TableColumn[SerializedDLCStatus, String] {
+  val tableView: TableView[DLCStatus] = {
+    val paramHashCol = new TableColumn[DLCStatus, String] {
       text = "Temp Contract Id"
       prefWidth = 150
       cellValueFactory = { status =>
@@ -22,13 +19,13 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val contractIdCol = new TableColumn[SerializedDLCStatus, String] {
+    val contractIdCol = new TableColumn[DLCStatus, String] {
       text = "Contract Id"
       prefWidth = 150
       cellValueFactory = { status =>
         val contractIdStr = status.value match {
-          case _: SerializedOffered => ""
-          case signed: AcceptedSerializedDLCStatus =>
+          case _: Offered => ""
+          case signed: AcceptedDLCStatus =>
             signed.contractId.toHex
         }
 
@@ -36,7 +33,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val statusCol = new TableColumn[SerializedDLCStatus, String] {
+    val statusCol = new TableColumn[DLCStatus, String] {
       text = "Status"
       prefWidth = 150
       cellValueFactory = { status =>
@@ -44,7 +41,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val initiatorCol = new TableColumn[SerializedDLCStatus, String] {
+    val initiatorCol = new TableColumn[DLCStatus, String] {
       text = "Initiator"
       prefWidth = 80
       cellValueFactory = { status =>
@@ -57,7 +54,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val collateralCol = new TableColumn[SerializedDLCStatus, String] {
+    val collateralCol = new TableColumn[DLCStatus, String] {
       text = "Collateral"
       prefWidth = 110
       cellValueFactory = { status =>
@@ -67,7 +64,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val oracleCol = new TableColumn[SerializedDLCStatus, String] {
+    val oracleCol = new TableColumn[DLCStatus, String] {
       text = "Oracle"
       prefWidth = 150
       cellValueFactory = { status =>
@@ -75,7 +72,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val eventCol = new TableColumn[SerializedDLCStatus, String] {
+    val eventCol = new TableColumn[DLCStatus, String] {
       text = "Event"
       prefWidth = 150
       cellValueFactory = { status =>
@@ -86,7 +83,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val contractMaturityCol = new TableColumn[SerializedDLCStatus, String] {
+    val contractMaturityCol = new TableColumn[DLCStatus, String] {
       text = "Contract Mat."
       prefWidth = 110
       cellValueFactory = { status =>
@@ -97,7 +94,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    new TableView[SerializedDLCStatus](model.dlcs) {
+    new TableView[DLCStatus](model.dlcs) {
       columns ++= Seq(paramHashCol,
                       contractIdCol,
                       statusCol,

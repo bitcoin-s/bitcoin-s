@@ -3,7 +3,7 @@ package org.bitcoins.gui.dlc
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.dlc.SerializedDLCStatus
+import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
 import org.bitcoins.core.protocol.tlv.UnsignedNumericOutcome
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
@@ -23,14 +23,14 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
   val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
 
-  val dlcs: ObservableBuffer[SerializedDLCStatus] =
-    new ObservableBuffer[SerializedDLCStatus]()
+  val dlcs: ObservableBuffer[DLCStatus] =
+    new ObservableBuffer[DLCStatus]()
 
-  def getDLCs: Vector[SerializedDLCStatus] = {
+  def getDLCs: Vector[DLCStatus] = {
     ConsoleCli.exec(GetDLCs, Config.empty) match {
       case Failure(exception) => throw exception
       case Success(dlcsStr) =>
-        ujson.read(dlcsStr).arr.map(SerializedDLCStatus.fromJson).toVector
+        ujson.read(dlcsStr).arr.map(DLCStatus.fromJson).toVector
     }
   }
 
@@ -43,7 +43,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
     ConsoleCli.exec(GetDLC(paramHash), Config.empty) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
-        dlcs += SerializedDLCStatus.fromJson(ujson.read(dlcStatus))
+        dlcs += DLCStatus.fromJson(ujson.read(dlcStatus))
         dlcs.find(_.paramHash == paramHash).foreach(dlcs -= _)
     }
   }
@@ -200,7 +200,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
     printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog)
   }
 
-  def viewDLC(status: SerializedDLCStatus): Unit = {
+  def viewDLC(status: DLCStatus): Unit = {
     updateDLCs()
     val updatedStatus = dlcs.find(_.tempContractId == status.tempContractId)
     ViewDLCDialog.showAndWait(parentWindow.value,

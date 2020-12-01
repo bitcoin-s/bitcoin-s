@@ -1,12 +1,12 @@
 package org.bitcoins.commons.dlc
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.dlc.{DLCState, SerializedDLCStatus}
+import org.bitcoins.commons.jsonmodels.dlc.{DLCState, DLCStatus}
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 
-class SerializedDLCStatusTest extends BitcoinSAsyncTest {
+class DLCStatusTest extends BitcoinSAsyncTest {
   behavior of "SerializedDLCStatus"
 
   it must "have json symmetry in SerializedDLCStatus.SerializedOffered" in {
@@ -17,18 +17,18 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
         val totalCollateral = offer.contractInfo.max
 
         val status =
-          SerializedDLCStatus.SerializedOffered(offer.paramHash,
-                                                isInit,
-                                                offer.tempContractId,
-                                                offer.oracleInfo,
-                                                offer.contractInfo,
-                                                offer.timeouts,
-                                                offer.feeRate,
-                                                totalCollateral,
-                                                offer.totalCollateral)
+          DLCStatus.Offered(offer.paramHash,
+                            isInit,
+                            offer.tempContractId,
+                            offer.oracleInfo,
+                            offer.contractInfo,
+                            offer.timeouts,
+                            offer.feeRate,
+                            totalCollateral,
+                            offer.totalCollateral)
 
         assert(status.state == DLCState.Offered)
-        assert(SerializedDLCStatus.fromJson(status.toJson) == status)
+        assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
@@ -42,7 +42,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
         val totalCollateral = offer.contractInfo.max
 
         val status =
-          SerializedDLCStatus.SerializedAccepted(
+          DLCStatus.Accepted(
             offer.paramHash,
             isInit,
             offer.tempContractId,
@@ -56,7 +56,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Accepted)
-        assert(SerializedDLCStatus.fromJson(status.toJson) == status)
+        assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
@@ -70,7 +70,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
         val totalCollateral = offer.contractInfo.max
 
         val status =
-          SerializedDLCStatus.SerializedSigned(
+          DLCStatus.Signed(
             offer.paramHash,
             isInit,
             offer.tempContractId,
@@ -84,7 +84,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Signed)
-        assert(SerializedDLCStatus.fromJson(status.toJson) == status)
+        assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
@@ -99,7 +99,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
         val totalCollateral = offer.contractInfo.max
 
         val status =
-          SerializedDLCStatus.SerializedBroadcasted(
+          DLCStatus.Broadcasted(
             offer.paramHash,
             isInit,
             offer.tempContractId,
@@ -114,7 +114,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Broadcasted)
-        assert(SerializedDLCStatus.fromJson(status.toJson) == status)
+        assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
@@ -129,7 +129,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
         val totalCollateral = offer.contractInfo.max
 
         val status =
-          SerializedDLCStatus.SerializedConfirmed(
+          DLCStatus.Confirmed(
             offer.paramHash,
             isInit,
             offer.tempContractId,
@@ -144,7 +144,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Confirmed)
-        assert(SerializedDLCStatus.fromJson(status.toJson) == status)
+        assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
@@ -166,7 +166,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
         val outcome = offer.contractInfo.allOutcomes(rand.toInt)
 
         val status =
-          SerializedDLCStatus.SerializedClaimed(
+          DLCStatus.Claimed(
             offer.paramHash,
             isInit,
             offer.tempContractId,
@@ -184,7 +184,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Claimed)
-        assert(SerializedDLCStatus.fromJson(status.toJson) == status)
+        assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
@@ -206,7 +206,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
         val outcome = offer.contractInfo.allOutcomes(rand.toInt)
 
         val status =
-          SerializedDLCStatus.SerializedRemoteClaimed(
+          DLCStatus.RemoteClaimed(
             offer.paramHash,
             isInit,
             offer.tempContractId,
@@ -224,7 +224,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.RemoteClaimed)
-        assert(SerializedDLCStatus.fromJson(status.toJson) == status)
+        assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
@@ -242,7 +242,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
         val totalCollateral = offer.contractInfo.max
 
         val status =
-          SerializedDLCStatus.SerializedRefunded(
+          DLCStatus.Refunded(
             offer.paramHash,
             isInit,
             offer.tempContractId,
@@ -258,7 +258,7 @@ class SerializedDLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Refunded)
-        assert(SerializedDLCStatus.fromJson(status.toJson) == status)
+        assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 }
