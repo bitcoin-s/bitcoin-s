@@ -86,11 +86,9 @@ want.</p>
 <span class="hljs-comment">// and a ChainApi</span>
 <span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">BitcoindV19RpcClient</span>(<span class="hljs-type">BitcoindInstance</span>.fromConfigFile())
 <span class="hljs-keyword">val</span> chainApi = <span class="hljs-type">BitcoinSWalletTest</span>.<span class="hljs-type">MockChainQueryApi</span>
-<span class="hljs-keyword">val</span> aesPasswordOpt = <span class="hljs-type">Some</span>(<span class="hljs-type">AesPassword</span>.fromString(<span class="hljs-string">"password"</span>))
 
 <span class="hljs-comment">// Create our key manager</span>
-<span class="hljs-keyword">val</span> keyManagerE = <span class="hljs-type">BIP39KeyManager</span>.initialize(aesPasswordOpt = aesPasswordOpt,
-                                               kmParams = walletConf.kmParams,
+<span class="hljs-keyword">val</span> keyManagerE = <span class="hljs-type">BIP39KeyManager</span>.initialize(kmParams = walletConf.kmParams,
                                                bip39PasswordOpt = <span class="hljs-type">None</span>)
 
 <span class="hljs-keyword">val</span> keyManager = keyManagerE <span class="hljs-keyword">match</span> {
