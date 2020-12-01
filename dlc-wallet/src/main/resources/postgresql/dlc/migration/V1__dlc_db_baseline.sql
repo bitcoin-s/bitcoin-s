@@ -7,7 +7,8 @@ CREATE TABLE "wallet_dlcs"
     "is_initiator"     BOOLEAN NOT NULL,
     "account"          TEXT    NOT NULL,
     "key_index"        INTEGER NOT NULL,
-    "oracle_sig"       TEXT,
+    "oracle_sigs"      TEXT,
+    "funding_outpoint" TEXT,
     "funding_tx_id"    TEXT,
     "closing_tx_id"    TEXT,
     constraint "pk_dlc" primary key ("param_hash")
@@ -18,8 +19,7 @@ CREATE TABLE "wallet_dlc_offers"
 (
     "param_hash"        VARCHAR(254) NOT NULL UNIQUE,
     "temp_contract_id"  TEXT         NOT NULL UNIQUE,
-    "oracle_pub_key"    TEXT         NOT NULL,
-    "oracle_r_value"    TEXT         NOT NULL,
+    "oracle_info_tlv"   TEXT         NOT NULL,
     "contract_info"     TEXT         NOT NULL,
     "contract_maturity" TEXT         NOT NULL,
     "contract_timeout"  TEXT         NOT NULL,
@@ -62,10 +62,10 @@ CREATE TABLE "wallet_dlc_funding_inputs"
 
 CREATE TABLE "wallet_dlc_cet_sigs"
 (
-    "param_hash"   TEXT NOT NULL,
-    "outcome_hash" TEXT NOT NULL,
-    "signature"    TEXT NOT NULL,
-    constraint "pk_dlc_cet_sigs" primary key ("param_hash", "outcome_hash"),
+    "param_hash"   TEXT    NOT NULL,
+    "is_initiator" INTEGER NOT NULL,
+    "outcome"      TEXT    NOT NULL,
+    "signature"    TEXT    NOT NULL,
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
 );
 

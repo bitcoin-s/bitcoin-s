@@ -1,11 +1,6 @@
 package org.bitcoins.dlc.builder
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAcceptWithoutSigs,
-  DLCOffer,
-  OracleInfo
-}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.{
   DLCFundingInput,
   DLCPublicKeys,
@@ -14,6 +9,7 @@ import org.bitcoins.commons.jsonmodels.dlc.{
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
@@ -23,23 +19,22 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     ec: ExecutionContext) {
 
-  val DLCOffer(
-    offerOutcomes: ContractInfo,
-    OracleInfo(oraclePubKey: SchnorrPublicKey, preCommittedR: SchnorrNonce),
-    DLCPublicKeys(offerFundingKey: ECPublicKey,
-                  offerFinalAddress: BitcoinAddress),
-    offerTotalCollateral: Satoshis,
-    offerFundingInputs: Vector[DLCFundingInput],
-    offerChangeAddress: BitcoinAddress,
-    feeRate: SatoshisPerVirtualByte,
-    DLCTimeouts(contractMaturity: BlockTimeStamp,
-                contractTimeout: BlockTimeStamp)) = offer
+  val DLCOffer(_,
+               DLCPublicKeys(offerFundingKey: ECPublicKey,
+                             offerFinalAddress: BitcoinAddress),
+               offerTotalCollateral: Satoshis,
+               offerFundingInputs: Vector[DLCFundingInput],
+               offerChangeAddress: BitcoinAddress,
+               feeRate: SatoshisPerVirtualByte,
+               DLCTimeouts(contractMaturity: BlockTimeStamp,
+                           contractTimeout: BlockTimeStamp)) = offer
 
   val network: BitcoinNetwork = offerFinalAddress.networkParameters match {
     case network: BitcoinNetwork => network
@@ -53,6 +48,15 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
                            tempContractId: Sha256Digest) = accept
 
   val totalInput: CurrencyUnit = offerTotalCollateral + acceptTotalCollateral
+
+  // builder.offer.oracleAndContractInfo should not be used,
+  // builder.oracleAndContractInfo should be used instead in case a party
+  // is over-collateralized in which case payouts will be incorrect here.
+  private val oracleAndContractInfoBeforeAccept: OracleAndContractInfo =
+    offer.oracleAndContractInfo
+
+  val oracleAndContractInfo: OracleAndContractInfo =
+    oracleAndContractInfoBeforeAccept.updateTotalCollateral(totalInput.satoshis)
 
   val offerTotalFunding: CurrencyUnit =
     offerFundingInputs.map(_.output.value).sum
@@ -68,7 +72,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
           "Offer change address must have same network as final address")
   require(acceptChangeAddress.networkParameters == network,
           "Accept change address must have same network as final address")
-  require(totalInput >= offerOutcomes.values.max,
+  require(totalInput >= oracleAndContractInfo.offerContractInfo.max,
           "Total collateral must add up to max winnings")
   require(
     offerTotalFunding >= offerTotalCollateral,
@@ -77,22 +81,11 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     acceptTotalFunding >= acceptTotalCollateral,
     "Accept funding inputs must add up to at least accept's total collateral")
 
-  val acceptOutcomes: ContractInfo = ContractInfo(offerOutcomes.map {
-    case (hash, amt) => (hash, (totalInput - amt).satoshis)
-  }.toVector)
-
-  val sigPubKeys: Map[Sha256Digest, ECPublicKey] = offerOutcomes.keys.map {
-    msg =>
-      msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
-  }.toMap
-
   /** Returns the payouts for the signature as (toOffer, toAccept) */
-  def getPayouts(
-      oracleSig: SchnorrDigitalSignature): (CurrencyUnit, CurrencyUnit) = {
-    DLCTxBuilder.getPayouts(oracleSig,
-                            sigPubKeys,
-                            offerOutcomes,
-                            acceptOutcomes)
+  def getPayouts(oracleSigs: Vector[SchnorrDigitalSignature]): (
+      CurrencyUnit,
+      CurrencyUnit) = {
+    oracleAndContractInfo.getPayouts(oracleSigs)
   }
 
   lazy val fundingTxBuilder: DLCFundingTxBuilder = {
@@ -116,6 +109,10 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     fundingTxBuilder.buildFundingTx()
   }
 
+  lazy val calcContractId: Future[ByteVector] = {
+    buildFundingTx.map(_.txIdBE.bytes.xor(accept.tempContractId.bytes))
+  }
+
   private lazy val cetBuilderF = {
     for {
       fundingTx <- buildFundingTx
@@ -125,15 +122,13 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
         OutputReference(fundingOutPoint, fundingTx.outputs.head)
 
       DLCCETBuilder(
-        offerOutcomes = offerOutcomes,
-        acceptOutcomes = acceptOutcomes,
+        oracleAndContractInfo = oracleAndContractInfo,
         offerFundingKey = offerFundingKey,
         offerFinalSPK = offerFinalAddress.scriptPubKey,
         acceptFundingKey = acceptFundingKey,
         acceptFinalSPK = acceptFinalAddress.scriptPubKey,
         timeouts = offer.timeouts,
         feeRate = feeRate,
-        oracleInfo = offer.oracleInfo,
         fundingOutputRef = fundingOutputRef
       )
     }
@@ -142,7 +137,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   /** Constructs the unsigned Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: Sha256Digest): Future[WitnessTransaction] = {
+  def buildCET(msg: DLCOutcomeType): Future[WitnessTransaction] = {
     for {
       cetBuilder <- cetBuilderF
       cet <- cetBuilder.buildCET(msg)
@@ -172,26 +167,5 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     }
 
     builderF.flatMap(_.buildRefundTx())
-  }
-}
-
-object DLCTxBuilder {
-
-  /** vbytes for a CET/Refund Tx */
-  val approxClosingVBytes: Long = 169L
-
-  /** Returns the payouts for the signature as (toOffer, toAccept) */
-  def getPayouts(
-      oracleSig: SchnorrDigitalSignature,
-      sigPubKeys: Map[Sha256Digest, ECPublicKey],
-      offerOutcomes: ContractInfo,
-      acceptOutcomes: ContractInfo): (CurrencyUnit, CurrencyUnit) = {
-    sigPubKeys.find(_._2 == oracleSig.sig.getPublicKey) match {
-      case Some((hash, _)) =>
-        (offerOutcomes(hash), acceptOutcomes(hash))
-      case None =>
-        throw new IllegalArgumentException(
-          s"Signature does not correspond to a possible outcome! $oracleSig")
-    }
   }
 }

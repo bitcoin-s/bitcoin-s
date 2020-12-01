@@ -1,6 +1,10 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+  ContractInfo,
+  MultiNonceContractInfo,
+  SingleNonceContractInfo
+}
 import org.bitcoins.commons.jsonmodels.dlc.DLCState
 import org.bitcoins.commons.jsonmodels.dlc.DLCStatus.{
   Claimed,
@@ -9,18 +13,16 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCStatus.{
 }
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256Digest}
+import org.bitcoins.crypto.{CryptoUtil, SchnorrDigitalSignature}
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.FutureOutcome
-
-import scala.math.Ordering
 
 class DLCExecutionTest extends BitcoinSDualWalletTest {
   type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withDualDLCWallets(test)
+    withDualDLCWallets(test, multiNonce = false)
   }
 
   behavior of "DLCWallet"
@@ -28,25 +30,28 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   def getSigs(contractInfo: ContractInfo): (
       SchnorrDigitalSignature,
       SchnorrDigitalSignature) = {
+    val info: SingleNonceContractInfo = contractInfo match {
+      case info: SingleNonceContractInfo => info
+      case _: MultiNonceContractInfo =>
+        throw new IllegalArgumentException("Unexpected Contract Info")
+    }
 
     // Get a hash that the initiator wins for
-    val initiatorWinHash =
-      contractInfo
-        .max(new Ordering[(Sha256Digest, Satoshis)] {
-          override def compare(
-              x: (Sha256Digest, Satoshis),
-              y: (Sha256Digest, Satoshis)): Int =
-            x._2.compare(y._2)
-        })
+    val initiatorWinStr =
+      info
+        .maxBy(_._2.toLong)
         ._1
+        .outcome
     val initiatorWinSig = DLCWalletUtil.oraclePrivKey
-      .schnorrSignWithNonce(initiatorWinHash.bytes, DLCWalletUtil.kValue)
+      .schnorrSignWithNonce(CryptoUtil.sha256(initiatorWinStr).bytes,
+                            DLCWalletUtil.kValue)
 
     // Get a hash that the recipient wins for
-    val recipientWinHash =
-      contractInfo.find(_._2 == Satoshis.zero).get._1
+    val recipientWinStr =
+      info.find(_._2 == Satoshis.zero).get._1.outcome
     val recipientWinSig = DLCWalletUtil.oraclePrivKey
-      .schnorrSignWithNonce(recipientWinHash.bytes, DLCWalletUtil.kValue)
+      .schnorrSignWithNonce(CryptoUtil.sha256(recipientWinStr).bytes,
+                            DLCWalletUtil.kValue)
 
     (initiatorWinSig, recipientWinSig)
   }
@@ -140,7 +145,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
-            assert(statusA.oracleSig == statusB.oracleSig)
+            assert(statusA.oracleSigs == Vector(statusB.oracleSig))
           case (_, _) => fail()
         }
       }
@@ -179,7 +184,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: RemoteClaimed), Some(statusB: Claimed)) =>
-            assert(statusA.oracleSig == statusB.oracleSig)
+            assert(Vector(statusA.oracleSig) == statusB.oracleSigs)
           case (_, _) => fail()
         }
       }
@@ -279,5 +284,17 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         case (_, _) => fail()
       }
     }
+  }
+
+  it must "fail to execute with an empty vec of sigs" in { wallets =>
+    val dlcA = wallets._1.wallet
+
+    val executeDLCForceCloseF = for {
+      contractId <- getContractId(wallets._1.wallet)
+
+      tx <- dlcA.executeDLC(contractId, Vector.empty)
+    } yield tx
+
+    recoverToSucceededIf[IllegalArgumentException](executeDLCForceCloseF)
   }
 }

@@ -8,15 +8,16 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256Digest}
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.crypto.ECAdaptorSignature
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
@@ -63,14 +64,16 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
   }
 
   /** Verifies remote's CET signature for a given outcome hash */
-  def verifyCETSig(outcome: Sha256Digest, sig: ECAdaptorSignature): Boolean = {
+  def verifyCETSig(
+      outcome: DLCOutcomeType,
+      sig: ECAdaptorSignature): Boolean = {
     val remoteFundingPubKey = if (isInitiator) {
       builder.acceptFundingKey
     } else {
       builder.offerFundingKey
     }
 
-    val adaptorPoint = builder.sigPubKeys(outcome)
+    val adaptorPoint = builder.oracleAndContractInfo.sigPointForOutcome(outcome)
 
     val cet = Await.result(builder.buildCET(outcome), 5.seconds)
 
@@ -85,6 +88,29 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
       TransactionSignatureSerializer.hashForSignature(sigComponent, hashType)
 
     remoteFundingPubKey.adaptorVerify(hash.bytes, adaptorPoint, sig)
+  }
+
+  def verifyCETSigs(sigs: Vector[(DLCOutcomeType, ECAdaptorSignature)])(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    val correctNumberOfSigs =
+      sigs.size >= builder.oracleAndContractInfo.allOutcomes.length
+
+    def runVerify(
+        outcomeSigs: Vector[(DLCOutcomeType, ECAdaptorSignature)]): Future[
+      Boolean] = {
+      Future {
+        outcomeSigs.foldLeft(true) {
+          case (ret, (outcome, sig)) =>
+            ret && verifyCETSig(outcome, sig)
+        }
+      }
+    }
+
+    if (correctNumberOfSigs) {
+      FutureUtil
+        .batchAndParallelExecute(sigs, runVerify, 25)
+        .map(_.forall(res => res))
+    } else Future.successful(false)
   }
 
   /** Verifies remote's refund signature */

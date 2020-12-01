@@ -2,22 +2,20 @@ package org.bitcoins.gui.dlc
 
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleInfo
-import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
-import org.bitcoins.crypto.{ECPrivateKey, Sha256DigestBE}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.dlc.SerializedDLCStatus
+import org.bitcoins.core.protocol.tlv.UnsignedNumericOutcome
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.beans.property.ObjectProperty
 import scalafx.collections.ObservableBuffer
-import scalafx.scene.control.{TextArea, TextField}
+import scalafx.scene.control.TextArea
 import scalafx.stage.Window
 
 import scala.util.{Failure, Success}
 
-class DLCPaneModel(
-    resultArea: TextArea,
-    oracleInfoArea: TextArea,
-    numOutcomesTF: TextField) {
+class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
   var taskRunner: TaskRunner = _
 
   // Sadly, it is a Java "pattern" to pass null into
@@ -25,13 +23,14 @@ class DLCPaneModel(
   val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
 
-  val dlcs: ObservableBuffer[DLCStatus] = new ObservableBuffer[DLCStatus]()
+  val dlcs: ObservableBuffer[SerializedDLCStatus] =
+    new ObservableBuffer[SerializedDLCStatus]()
 
-  def getDLCs: Vector[DLCStatus] = {
+  def getDLCs: Vector[SerializedDLCStatus] = {
     ConsoleCli.exec(GetDLCs, Config.empty) match {
       case Failure(exception) => throw exception
       case Success(dlcsStr) =>
-        ujson.read(dlcsStr).arr.map(DLCStatus.fromJson).toVector
+        ujson.read(dlcsStr).arr.map(SerializedDLCStatus.fromJson).toVector
     }
   }
 
@@ -44,7 +43,7 @@ class DLCPaneModel(
     ConsoleCli.exec(GetDLC(paramHash), Config.empty) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
-        dlcs += DLCStatus.fromJson(ujson.read(dlcStatus))
+        dlcs += SerializedDLCStatus.fromJson(ujson.read(dlcStatus))
         dlcs.find(_.paramHash == paramHash).foreach(dlcs -= _)
     }
   }
@@ -80,37 +79,89 @@ class DLCPaneModel(
     }
   }
 
-  def onInitOracle(): Unit = {
-    val numOutcomes = BigInt(numOutcomesTF.text()).toInt
-    require(numOutcomes <= 10, "More than 10 outcomes not supported.")
-
-    val result = InitOracleDialog.showAndWait(parentWindow.value, numOutcomes)
+  def onInitContract(isEnum: Boolean): Unit = {
+    val result = if (isEnum) {
+      InitEnumContractDialog.showAndWait(parentWindow.value)
+    } else {
+      InitNumericContractDialog.showAndWait(parentWindow.value)
+    }
 
     result match {
-      case Some((outcomes, contractInfo)) =>
+      case Some(contractInfo) =>
         val builder = new StringBuilder()
 
         val privKey = ECPrivateKey.freshPrivateKey
         val pubKey = privKey.schnorrPublicKey
-        val kValue = ECPrivateKey.freshPrivateKey
-        val rValue = kValue.schnorrNonce
-        val oracleInfo = OracleInfo(pubKey, rValue)
+        val (kValues, rValues, oracleInfo) = contractInfo match {
+          case SingleNonceContractInfo(_) =>
+            val kValue = ECPrivateKey.freshPrivateKey
+            val rValue = kValue.schnorrNonce
+            val oracleInfo = SingleNonceOracleInfo(pubKey, rValue)
+
+            (Vector(kValue), Vector(rValue), oracleInfo)
+          case MultiNonceContractInfo(_, _, numDigits, _) =>
+            val kValues =
+              0.until(numDigits).map(_ => ECPrivateKey.freshPrivateKey).toVector
+            val rValues = kValues.map(_.schnorrNonce)
+            val oracleInfo = MultiNonceOracleInfo(pubKey, rValues)
+
+            (kValues, rValues, oracleInfo)
+        }
 
         builder.append(
-          s"Oracle Public Key: ${pubKey.hex}\nEvent R value: ${rValue.hex}\n")
+          s"Oracle Public Key: ${pubKey.hex}\nEvent R values: ${rValues.map(_.hex).mkString(",")}\n")
         builder.append(s"Serialized Oracle Info: ${oracleInfo.hex}\n\n")
 
-        builder.append("Outcome hashes and amounts in order of entry:\n")
-        contractInfo.foreach {
-          case (hash, amt) => builder.append(s"${hash.hex} - ${amt.toLong}\n")
-        }
         builder.append(s"\nSerialized Contract Info:\n${contractInfo.hex}\n\n")
 
-        builder.append("Outcomes and oracle sigs in order of entry:\n")
-        outcomes.zip(contractInfo.keys).foreach {
-          case (outcome, hash) =>
-            val sig = privKey.schnorrSignWithNonce(hash.bytes, kValue)
-            builder.append(s"$outcome - ${sig.hex}\n")
+        contractInfo match {
+          case contractInfo: SingleNonceContractInfo =>
+            builder.append("Outcomes and oracle sigs in order of entry:\n")
+            contractInfo.keys.foreach { outcome =>
+              val bytes = outcome.serialized.head
+              val hash = CryptoUtil.sha256(bytes).bytes
+              val sig = privKey.schnorrSignWithNonce(hash, kValues.head)
+              builder.append(s"$outcome - ${sig.hex}\n")
+            }
+          case contractInfo: MultiNonceContractInfo =>
+            builder.append("Oracle sigs:\n")
+
+            val sortedOutcomes = contractInfo.outcomeVec.sortBy(_._2)
+
+            val max = UnsignedNumericOutcome(sortedOutcomes.last._1)
+            val middle = UnsignedNumericOutcome(
+              sortedOutcomes(sortedOutcomes.size / 2)._1)
+            val min = UnsignedNumericOutcome(sortedOutcomes.head._1)
+
+            val sigsMax =
+              max.serialized.zip(kValues.take(max.digits.size)).map {
+                case (bytes, kValue) =>
+                  val hash = CryptoUtil.sha256(bytes).bytes
+                  privKey.schnorrSignWithNonce(hash, kValue)
+              }
+
+            val sigsMiddle =
+              middle.serialized.zip(kValues.take(middle.digits.size)).map {
+                case (bytes, kValue) =>
+                  val hash = CryptoUtil.sha256(bytes).bytes
+                  privKey.schnorrSignWithNonce(hash, kValue)
+              }
+
+            val sigsMin =
+              min.serialized.zip(kValues.take(min.digits.size)).map {
+                case (bytes, kValue) =>
+                  val hash = CryptoUtil.sha256(bytes).bytes
+                  privKey.schnorrSignWithNonce(hash, kValue)
+              }
+
+            val maxSigsStr = sigsMax.map(_.hex).mkString("\n")
+            builder.append(s"local win sigs - $maxSigsStr\n\n\n")
+
+            val middleSigsStr = sigsMiddle.map(_.hex).mkString("\n")
+            builder.append(s"tie sigs - $middleSigsStr\n\n\n")
+
+            val minSigsStr = sigsMin.map(_.hex).mkString("\n")
+            builder.append(s"remote win sigs - $minSigsStr")
         }
 
         GlobalDLCData.lastOracleInfo = oracleInfo.hex
@@ -142,14 +193,14 @@ class DLCPaneModel(
   }
 
   def onClose(): Unit = {
-    printDLCDialogResult("ExecuteDLC", ForceCloseDLCDialog)
+    printDLCDialogResult("ExecuteDLC", ExecuteDLCDialog)
   }
 
   def onRefund(): Unit = {
     printDLCDialogResult("ExecuteDLCRefund", RefundDLCDialog)
   }
 
-  def viewDLC(status: DLCStatus): Unit = {
+  def viewDLC(status: SerializedDLCStatus): Unit = {
     updateDLCs()
     val updatedStatus = dlcs.find(_.tempContractId == status.tempContractId)
     ViewDLCDialog.showAndWait(parentWindow.value,

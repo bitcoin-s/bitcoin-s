@@ -1,16 +1,13 @@
 package org.bitcoins.dlc.wallet.models
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
-  ContractInfo,
-  DLCOffer,
-  OracleInfo
-}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.{
   DLCFundingInput,
   DLCPublicKeys,
   DLCTimeouts
 }
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.protocol.tlv.{ContractInfoTLV, OracleInfoTLV}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -18,9 +15,8 @@ import org.bitcoins.crypto._
 case class DLCOfferDb(
     paramHash: Sha256DigestBE,
     tempContractId: Sha256Digest,
-    oraclePubKey: SchnorrPublicKey,
-    oracleRValue: SchnorrNonce,
-    contractInfo: ContractInfo,
+    oracleInfoTLV: OracleInfoTLV,
+    contractInfoTLV: ContractInfoTLV,
     contractMaturity: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
     fundingKey: ECPublicKey,
@@ -29,7 +25,9 @@ case class DLCOfferDb(
     feeRate: SatoshisPerVirtualByte,
     changeAddress: BitcoinAddress) {
 
-  lazy val oracleInfo: OracleInfo = OracleInfo(oraclePubKey, oracleRValue)
+  lazy val oracleInfo: OracleInfo = OracleInfo.fromTLV(oracleInfoTLV)
+
+  lazy val contractInfo: ContractInfo = ContractInfo.fromTLV(contractInfoTLV)
 
   lazy val dlcPubKeys: DLCPublicKeys = DLCPublicKeys(fundingKey, payoutAddress)
 
@@ -39,8 +37,7 @@ case class DLCOfferDb(
   def toDLCOffer(fundingInputs: Vector[DLCFundingInput]): DLCOffer = {
 
     DLCOffer(
-      contractInfo,
-      oracleInfo,
+      OracleAndContractInfo(oracleInfo, contractInfo),
       dlcPubKeys,
       totalCollateral.satoshis,
       fundingInputs,
@@ -57,9 +54,8 @@ object DLCOfferDbHelper {
     DLCOfferDb(
       offer.paramHash,
       offer.tempContractId,
-      offer.oracleInfo.pubKey,
-      offer.oracleInfo.rValue,
-      offer.contractInfo,
+      offer.oracleInfo.toTLV,
+      offer.contractInfo.toTLV,
       offer.timeouts.contractMaturity,
       offer.timeouts.contractTimeout,
       offer.pubKeys.fundingKey,

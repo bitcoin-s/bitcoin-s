@@ -7,8 +7,6 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.DualFundingInput
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 
-import scala.concurrent.ExecutionContext
-
 sealed trait DLCFundingInput {
   def prevTx: Transaction
   def prevTxVout: UInt32
@@ -99,8 +97,7 @@ object DLCFundingInput {
 
   def fromInputSigningInfo(
       info: ScriptSignatureParams[InputInfo],
-      sequence: UInt32 = TransactionConstants.sequence)(implicit
-      ec: ExecutionContext): DLCFundingInput = {
+      sequence: UInt32 = TransactionConstants.sequence): DLCFundingInput = {
     DLCFundingInput(
       info.prevTransaction,
       info.outPoint.vout,

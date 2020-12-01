@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.wallet.models
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.protocol.tlv.{ContractInfoTLV, OracleInfoTLV}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -68,11 +68,9 @@ case class DLCOfferDAO()(implicit
     def tempContractId: Rep[Sha256Digest] =
       column("temp_contract_id", O.Unique)
 
-    def oraclePubKey: Rep[SchnorrPublicKey] = column("oracle_pub_key")
+    def oracleInfoTLV: Rep[OracleInfoTLV] = column("oracle_info_tlv")
 
-    def oracleRValue: Rep[SchnorrNonce] = column("oracle_r_value")
-
-    def contractInfo: Rep[ContractInfo] = column("contract_info")
+    def contractInfoTLV: Rep[ContractInfoTLV] = column("contract_info")
 
     def contractMaturity: Rep[BlockTimeStamp] = column("contract_maturity")
 
@@ -91,9 +89,8 @@ case class DLCOfferDAO()(implicit
     def * : ProvenShape[DLCOfferDb] =
       (paramHash,
        tempContractId,
-       oraclePubKey,
-       oracleRValue,
-       contractInfo,
+       oracleInfoTLV,
+       contractInfoTLV,
        contractMaturity,
        contractTimeout,
        fundingKey,

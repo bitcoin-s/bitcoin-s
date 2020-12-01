@@ -55,13 +55,13 @@ object NonStandardScriptSignature
 }
 
 /** A script signature to be used in tests for signing EmptyScriptPubKey.
-  * This script pushes an OP_TRUE onto the stack, causing a successful spend.
+  * This script pushes a true onto the stack, causing a successful spend.
   */
 case object TrivialTrueScriptSignature extends ScriptSignature {
   override lazy val signatures: Seq[ECDigitalSignature] = Nil
 
   override lazy val asm: Vector[ScriptToken] =
-    Vector(BytesToPushOntoStack(1), ScriptConstant("51"))
+    Vector(OP_TRUE)
 
   def isTrivialTrueScriptSignature(asm: Seq[ScriptToken]): Boolean = {
     asm == this.asm

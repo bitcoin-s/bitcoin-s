@@ -1,6 +1,9 @@
 package org.bitcoins.testkit.wallet
 
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleAndContractInfo
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.db.AppConfig
+import org.bitcoins.dlc.testgen.DLCTestUtil
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -60,7 +63,9 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
   }
 
   /** Creates 2 funded segwit wallets that have a DLC initiated */
-  def withDualDLCWallets(test: OneArgAsyncTest): FutureOutcome = {
+  def withDualDLCWallets(
+      test: OneArgAsyncTest,
+      multiNonce: Boolean): FutureOutcome = {
     makeDependentFixture(
       build = () =>
         for {
@@ -74,8 +79,22 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
             chainQueryApi,
             getBIP39PasswordOpt(),
             Some(segwitWalletConf))(config2, system)
+
+          oracleAndContractInfo =
+            if (multiNonce) {
+              DLCWalletUtil.multiNonceOracleAndContractInfo
+            } else {
+              val numOutcomes = 8
+              val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
+              val (contractInfo, _) =
+                DLCTestUtil.genContractInfos(outcomes, Satoshis(10000))
+
+              OracleAndContractInfo(DLCWalletUtil.sampleOracleInfo,
+                                    contractInfo)
+            }
+
           (dlcWalletA, dlcWalletB) <-
-            DLCWalletUtil.createDLCWallets(walletA, walletB)
+            DLCWalletUtil.initDLC(walletA, walletB, oracleAndContractInfo)
         } yield (dlcWalletA, dlcWalletB),
       destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
         for {

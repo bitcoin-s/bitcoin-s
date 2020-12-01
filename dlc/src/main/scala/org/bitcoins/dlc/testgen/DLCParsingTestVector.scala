@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.core.number.UInt16
+import org.bitcoins.core.number.{UInt16, UInt64}
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.tlv._
@@ -155,11 +155,28 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "length" -> Element(tlv.length),
           "outcomes" -> MultiElement(outcomes.toVector.map {
             case (outcome, amt) =>
-              NamedMultiElement("outcome" -> outcome.bytes,
+              NamedMultiElement("outcome" -> CryptoUtil.sha256(outcome).bytes,
                                 "localPayout" -> amt.toUInt64.bytes)
           })
         )
         DLCTLVTestVector(tlv, "contract_info_v0", fields)
+      case ContractInfoV1TLV(base, numDigits, totalCollateral, points) =>
+        val fields = Vector(
+          "tpe" -> Element(ContractInfoV1TLV.tpe),
+          "length" -> Element(tlv.length),
+          "base" -> Element(BigSizeUInt(base)),
+          "numDigits" -> Element(UInt16(numDigits)),
+          "totalCollateral" -> Element(UInt64(totalCollateral.toLong)),
+          "numPoints" -> Element(BigSizeUInt(points.length)),
+          "points" -> MultiElement(points.map { point =>
+            NamedMultiElement(
+              "isEndpoint" -> Element(ByteVector(point.leadingByte)),
+              "outcome" -> Element(BigSizeUInt(point.outcome)),
+              "value" -> Element(UInt64(point.value.toLong))
+            )
+          })
+        )
+        DLCTLVTestVector(tlv, "contract_info_v1", fields)
       case OracleInfoV0TLV(pubKey, rValue) =>
         val fields = Vector(
           "tpe" -> Element(OracleInfoV0TLV.tpe),
@@ -168,6 +185,14 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "rValue" -> Element(rValue)
         )
         DLCTLVTestVector(tlv, "oracle_info_v0", fields)
+      case OracleInfoV1TLV(pubKey, nonces) =>
+        val fields = Vector(
+          "tpe" -> Element(OracleInfoV1TLV.tpe),
+          "length" -> Element(tlv.length),
+          "pubKey" -> Element(pubKey),
+          "nonces" -> MultiElement(nonces.map(Element(_)))
+        )
+        DLCTLVTestVector(tlv, "oracle_info_v1", fields)
       case FundingInputV0TLV(prevTx,
                              prevTxVout,
                              sequence,

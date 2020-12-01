@@ -74,6 +74,9 @@ object DLCFeeTestUtil extends Assertions {
     val (actualClosingFeeRateLower, actualClosingFeeRateUpper) =
       feeRateBounds(closingTx, actualClosingFee, closingTxSigs)
 
+    assert(actualFundingFee == expectedFundingFee)
+    assert(actualClosingFee == expectedClosingFee)
+
     val offerOutputBytes =
       9 + builder.offerFinalAddress.scriptPubKey.asmBytes.length
     val acceptOutputBytes =
@@ -99,8 +102,6 @@ object DLCFeeTestUtil extends Assertions {
       feeRate.toLong >= lowerBound && feeRate.toLong <= upperBound
     }
 
-    assert(actualFundingFee == expectedFundingFee)
-    assert(actualClosingFee == expectedClosingFee)
     assert(
       feeRateBetweenBounds(actualFundingFeeRateLower,
                            actualFundingFeeRateUpper))
