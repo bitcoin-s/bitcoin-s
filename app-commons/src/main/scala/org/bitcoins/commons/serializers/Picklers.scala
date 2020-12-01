@@ -1,9 +1,5 @@
 package org.bitcoins.commons.serializers
 
-import java.io.File
-import java.nio.file.Path
-import java.time.Instant
-
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
@@ -20,6 +16,10 @@ import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import upickle.default._
+
+import java.io.File
+import java.nio.file.Path
+import java.time.Instant
 
 object Picklers {
 
@@ -64,6 +64,9 @@ object Picklers {
 
   implicit val oracleInfoPickler: ReadWriter[OracleInfo] =
     readwriter[String].bimap(_.hex, OracleInfo.fromHex)
+
+  implicit val oracleAnnouncementPickler: ReadWriter[OracleAnnouncementTLV] =
+    readwriter[String].bimap(_.hex, OracleAnnouncementTLV.fromHex)
 
   implicit val contractInfoPickler: ReadWriter[ContractInfo] =
     readwriter[String].bimap(_.hex, ContractInfo.fromHex)

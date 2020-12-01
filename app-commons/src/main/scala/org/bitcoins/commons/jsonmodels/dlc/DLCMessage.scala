@@ -139,6 +139,19 @@ object DLCMessage {
       ECPublicKey.freshPublicKey.schnorrPublicKey,
       ECPublicKey.freshPublicKey.schnorrNonce)
 
+    def fromOracleAnnouncement(
+        announcement: OracleAnnouncementTLV): OracleInfo = {
+      announcement.eventTLV.eventDescriptor match {
+        case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV =>
+          require(announcement.eventTLV.nonces.size == 1)
+          SingleNonceOracleInfo(announcement.publicKey,
+                                announcement.eventTLV.nonces.head)
+        case _: DigitDecompositionEventDescriptorV0TLV =>
+          MultiNonceOracleInfo(announcement.publicKey,
+                               announcement.eventTLV.nonces)
+      }
+    }
+
     override def fromTLV(tlv: OracleInfoTLV): OracleInfo = {
       tlv match {
         case tlv: OracleInfoV0TLV => SingleNonceOracleInfo.fromTLV(tlv)

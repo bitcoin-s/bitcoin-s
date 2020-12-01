@@ -3,7 +3,7 @@ package org.bitcoins.dlc.wallet
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.dlc.SerializedDLCStatus._
+import org.bitcoins.commons.jsonmodels.dlc.DLCStatus._
 import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -1408,7 +1408,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     } yield refundTx
   }
 
-  override def listDLCs(): Future[Vector[SerializedDLCStatus]] = {
+  override def listDLCs(): Future[Vector[DLCStatus]] = {
     for {
       ids <- dlcDAO.findAll().map(_.map(_.paramHash))
       dlcFs = ids.map(findDLC)
@@ -1420,8 +1420,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
-  override def findDLC(
-      paramHash: Sha256DigestBE): Future[Option[SerializedDLCStatus]] = {
+  override def findDLC(paramHash: Sha256DigestBE): Future[Option[DLCStatus]] = {
     for {
       dlcDbOpt <- dlcDAO.read(paramHash)
       offerDbOpt <- dlcOfferDAO.read(paramHash)
@@ -1435,9 +1434,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           totalCollateral - offerDb.totalCollateral
         }
 
-        val serializedStatus = dlcDb.state match {
+        val status = dlcDb.state match {
           case DLCState.Offered =>
-            SerializedOffered(
+            Offered(
               paramHash,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
@@ -1449,7 +1448,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               localCollateral
             )
           case DLCState.Accepted =>
-            SerializedAccepted(
+            Accepted(
               paramHash,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
@@ -1462,7 +1461,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               localCollateral
             )
           case DLCState.Signed =>
-            SerializedSigned(
+            Signed(
               paramHash,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
@@ -1475,7 +1474,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               localCollateral
             )
           case DLCState.Broadcasted =>
-            SerializedBroadcasted(
+            Broadcasted(
               paramHash,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
@@ -1489,7 +1488,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.fundingTxIdOpt.get
             )
           case DLCState.Confirmed =>
-            SerializedConfirmed(
+            Confirmed(
               paramHash,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
@@ -1503,7 +1502,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.fundingTxIdOpt.get
             )
           case DLCState.Claimed =>
-            SerializedClaimed(
+            Claimed(
               paramHash,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
@@ -1524,7 +1523,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             require(oracleSigs.size == 1,
                     "Remote claimed should only have one oracle sig")
 
-            SerializedRemoteClaimed(
+            RemoteClaimed(
               paramHash,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
@@ -1541,7 +1540,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.outcomeOpt.get
             )
           case DLCState.Refunded =>
-            SerializedRefunded(
+            Refunded(
               paramHash,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
@@ -1557,7 +1556,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             )
         }
 
-        Some(serializedStatus)
+        Some(status)
       case (None, None) | (None, Some(_)) | (Some(_), None) =>
         None
     }

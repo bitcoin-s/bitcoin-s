@@ -39,7 +39,8 @@ abstract class DLCDialog[T <: CliCommand](
 
   readCachedValue(DLCDialog.dlcContractIdStr, GlobalDLCData.lastContractId)
   readCachedValue(DLCDialog.dlcOracleSigStr, GlobalDLCData.lastOracleSig)
-  readCachedValue(DLCDialog.oracleInfoStr, GlobalDLCData.lastOracleInfo)
+  readCachedValue(DLCDialog.oracleAnnouncementStr,
+                  GlobalDLCData.lastOracleAnnouncement)
   readCachedValue(DLCDialog.contractInfoStr, GlobalDLCData.lastContractInfo)
 
   private def writeCachedValue(
@@ -119,9 +120,9 @@ abstract class DLCDialog[T <: CliCommand](
         writeCachedValue(DLCDialog.dlcOracleSigStr,
                          textInputs,
                          GlobalDLCData.lastOracleSig = _)
-        writeCachedValue(DLCDialog.oracleInfoStr,
+        writeCachedValue(DLCDialog.oracleAnnouncementStr,
                          textInputs,
-                         GlobalDLCData.lastOracleInfo = _)
+                         GlobalDLCData.lastOracleAnnouncement = _)
         writeCachedValue(DLCDialog.contractInfoStr,
                          textInputs,
                          GlobalDLCData.lastContractInfo = _)
@@ -171,7 +172,7 @@ object DLCDialog {
   val acceptFileChosenLabel = new Label("")
   val signFileChosenLabel = new Label("")
 
-  val oracleInfoStr = "Oracle Info"
+  val oracleAnnouncementStr = "Oracle Announcement"
   val contractInfoStr = "Contract Info"
   val collateralStr = "Your Collateral"
   val feeRateStr = "Fee Rate"
@@ -181,7 +182,7 @@ object DLCDialog {
   val fileChosenStr = ""
 
   val allOfferFields: Map[String, String] = Map[String, String](
-    oracleInfoStr -> "",
+    oracleAnnouncementStr -> "",
     contractInfoStr -> "",
     collateralStr -> "Satoshis",
     feeRateStr -> "sats/vbyte (optional)",

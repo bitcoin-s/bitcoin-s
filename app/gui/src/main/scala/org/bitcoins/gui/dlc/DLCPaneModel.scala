@@ -5,7 +5,8 @@ import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
 import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.protocol.tlv.UnsignedNumericOutcome
+import org.bitcoins.core.number.{Int32, UInt16, UInt32}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
@@ -112,10 +113,33 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
         }
 
         if (GlobalData.network != MainNet) {
+
+          val descriptor = contractInfo match {
+            case SingleNonceContractInfo(outcomeValueMap) =>
+              EnumEventDescriptorV0TLV(outcomeValueMap.map(_._1.outcome))
+            case MultiNonceContractInfo(_, base, numDigits, _) =>
+              UnsignedDigitDecompositionEventDescriptor(UInt16(base),
+                                                        UInt16(numDigits),
+                                                        "units",
+                                                        Int32.zero)
+          }
+
+          val oracleEvent = OracleEventV0TLV(oracleInfo.nonces,
+                                             UInt32.zero,
+                                             descriptor,
+                                             "dummy oracle")
+
+          val announcementSig =
+            privKey.schnorrSign(CryptoUtil.sha256(oracleEvent.bytes).bytes)
+
+          val announcement =
+            OracleAnnouncementV0TLV(announcementSig, pubKey, oracleEvent)
+
           builder.append(
             s"Oracle Public Key: ${pubKey.hex}\nEvent R values: ${rValues.map(_.hex).mkString(",")}\n\n")
 
-          builder.append(s"Serialized Oracle Info: ${oracleInfo.hex}\n\n")
+          builder.append(
+            s"Serialized Oracle Announcement: ${announcement.hex}\n\n")
 
           contractInfo match {
             case contractInfo: SingleNonceContractInfo =>
@@ -167,7 +191,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
               builder.append(s"remote win sigs - $minSigsStr")
           }
 
-          GlobalDLCData.lastOracleInfo = oracleInfo.hex
+          GlobalDLCData.lastOracleAnnouncement = announcement.hex
         }
 
         GlobalDLCData.lastContractInfo = contractInfo.hex
