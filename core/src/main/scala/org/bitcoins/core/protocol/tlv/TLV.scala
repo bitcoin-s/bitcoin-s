@@ -27,15 +27,6 @@ sealed trait TLV extends NetworkElement {
   }
 
   def sha256: Sha256Digest = CryptoUtil.sha256(bytes)
-
-  override def equals(obj: Any): Boolean = {
-    obj match {
-      case tlv: TLV =>
-        tlv.bytes == this.bytes
-      case other =>
-        other.equals(this)
-    }
-  }
 }
 
 sealed trait TLVParentFactory[T <: TLV] extends Factory[T] {
@@ -157,11 +148,11 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
       }
     }
 
-    def takeString(): String = {
+    def takeString(): NormalizedString = {
       val size = BigSizeUInt(current)
       skip(size.byteSize)
       val strBytes = take(size.toInt)
-      new String(strBytes.toArray, StandardCharsets.UTF_8)
+      NormalizedString(strBytes)
     }
 
     def takeSPK(): ScriptPubKey = {
@@ -169,6 +160,50 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
       ScriptPubKey.fromAsmBytes(take(len))
     }
   }
+}
+
+case class NormalizedString(private val str: String) {
+
+  val normStr: String = CryptoUtil.normalize(str)
+
+  override def equals(other: Any): Boolean = {
+    other match {
+      case otherStr: String =>
+        normStr == otherStr
+      case _ => other.equals(str)
+    }
+  }
+
+  override def toString: String = normStr
+}
+
+object NormalizedString {
+
+  def apply(str: String): NormalizedString = {
+    new NormalizedString(CryptoUtil.normalize(str))
+  }
+
+  def apply(bytes: ByteVector): NormalizedString = {
+    apply(new String(bytes.toArray, StandardCharsets.UTF_8))
+  }
+
+  import scala.language.implicitConversions
+
+  implicit def stringToNormalized(str: String): NormalizedString =
+    NormalizedString(str)
+
+  implicit def normalizedToString(normalized: NormalizedString): String =
+    normalized.normStr
+
+  // If other kinds of Iterables are needed, there's a fancy thing to do
+  // that is done all over the Seq code using params and an implicit CanBuildFrom
+  implicit def stringVecToNormalized(
+      strs: Vector[String]): Vector[NormalizedString] =
+    strs.map(apply)
+
+  implicit def normalizedVecToString(
+      strs: Vector[NormalizedString]): Vector[String] =
+    strs.map(_.normStr)
 }
 
 case class UnknownTLV(tpe: BigSizeUInt, value: ByteVector) extends TLV {
@@ -269,7 +304,7 @@ object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
   * @param outcomes The set of possible outcomes
   * @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Oracle.md#simple-enumeration
   */
-case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
+case class EnumEventDescriptorV0TLV(outcomes: Vector[NormalizedString])
     extends EventDescriptorTLV {
   override def tpe: BigSizeUInt = EnumEventDescriptorV0TLV.tpe
 
@@ -294,7 +329,7 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
 
     val count = UInt16(iter.takeBits(16))
 
-    val builder = Vector.newBuilder[String]
+    val builder = Vector.newBuilder[NormalizedString]
 
     while (iter.index < value.length) {
       val str = iter.takeString()
@@ -313,12 +348,12 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
 sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
 
   /** The minimum valid value in the oracle can sign */
-  def min: Vector[String]
+  def min: Vector[NormalizedString]
 
   def minNum: BigInt
 
   /** The maximum valid value in the oracle can sign */
-  def max: Vector[String]
+  def max: Vector[NormalizedString]
 
   def maxNum: BigInt
 
@@ -334,7 +369,7 @@ sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
   def base: UInt16
 
   /** The unit of the outcome value */
-  def unit: String
+  def unit: NormalizedString
 
   /** The precision of the outcome representing the base exponent
     * by which to multiply the number represented by the composition
@@ -375,18 +410,18 @@ case class RangeEventDescriptorV0TLV(
     start: Int32,
     count: UInt32,
     step: UInt16,
-    unit: String,
+    unit: NormalizedString,
     precision: Int32)
     extends NumericEventDescriptorTLV {
 
   override val minNum: BigInt = BigInt(start.toInt)
 
-  override val min: Vector[String] = Vector(minNum.toString)
+  override val min: Vector[NormalizedString] = Vector(minNum.toString)
 
   override val maxNum: BigInt =
     start.toLong + (step.toLong * (count.toLong - 1))
 
-  override val max: Vector[String] = Vector(maxNum.toString)
+  override val max: Vector[NormalizedString] = Vector(maxNum.toString)
 
   override val base: UInt16 = UInt16(10)
 
@@ -431,9 +466,9 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
 
   override lazy val maxNum: BigInt = base.toBigInt.pow(numDigits.toInt) - 1
 
-  private lazy val maxDigit = (base.toInt - 1).toString
+  private lazy val maxDigit: NormalizedString = (base.toInt - 1).toString
 
-  override lazy val max: Vector[String] = if (isSigned) {
+  override lazy val max: Vector[NormalizedString] = if (isSigned) {
     "+" +: Vector.fill(numDigits.toInt)(maxDigit)
   } else {
     Vector.fill(numDigits.toInt)(maxDigit)
@@ -445,7 +480,7 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
     0
   }
 
-  override lazy val min: Vector[String] = if (isSigned) {
+  override lazy val min: Vector[NormalizedString] = if (isSigned) {
     "-" +: Vector.fill(numDigits.toInt)(maxDigit)
   } else {
     Vector.fill(numDigits.toInt)("0")
@@ -476,7 +511,7 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
 case class SignedDigitDecompositionEventDescriptor(
     base: UInt16,
     numDigits: UInt16,
-    unit: String,
+    unit: NormalizedString,
     precision: Int32)
     extends DigitDecompositionEventDescriptorV0TLV {
   override val isSigned: Boolean = true
@@ -486,7 +521,7 @@ case class SignedDigitDecompositionEventDescriptor(
 case class UnsignedDigitDecompositionEventDescriptor(
     base: UInt16,
     numDigits: UInt16,
-    unit: String,
+    unit: NormalizedString,
     precision: Int32)
     extends DigitDecompositionEventDescriptorV0TLV {
   override val isSigned: Boolean = false
@@ -519,7 +554,7 @@ object DigitDecompositionEventDescriptorV0TLV
       base: UInt16,
       isSigned: Boolean,
       numDigits: Int,
-      unit: String,
+      unit: NormalizedString,
       precision: Int32): DigitDecompositionEventDescriptorV0TLV = {
     if (isSigned) {
       SignedDigitDecompositionEventDescriptor(base,
@@ -544,7 +579,7 @@ case class OracleEventV0TLV(
     nonces: Vector[SchnorrNonce],
     eventMaturityEpoch: UInt32,
     eventDescriptor: EventDescriptorTLV,
-    eventId: String
+    eventId: NormalizedString
 ) extends OracleEventTLV {
 
   require(eventDescriptor.noncesNeeded == nonces.size,
