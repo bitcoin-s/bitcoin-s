@@ -99,6 +99,13 @@ object TLV extends TLVParentFactory[TLV] {
       case None             => UnknownTLV(tpe, value)
     }
   }
+
+  def getStringBytes(str: String): ByteVector = {
+    val strBytes = CryptoUtil.serializeForHash(str)
+    val size = BigSizeUInt(strBytes.size)
+
+    size.bytes ++ strBytes
+  }
 }
 
 sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
@@ -270,8 +277,8 @@ case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
     val starting = UInt16(outcomes.size).bytes
 
     outcomes.foldLeft(starting) { (accum, outcome) =>
-      val outcomeBytes = CryptoUtil.serializeForHash(outcome)
-      accum ++ BigSizeUInt(outcomeBytes.length).bytes ++ outcomeBytes
+      val outcomeBytes = TLV.getStringBytes(outcome)
+      accum ++ outcomeBytes
     }
   }
 
@@ -386,11 +393,8 @@ case class RangeEventDescriptorV0TLV(
   override val tpe: BigSizeUInt = RangeEventDescriptorV0TLV.tpe
 
   override val value: ByteVector = {
-    val unitBytes = CryptoUtil.serializeForHash(unit)
-    val unitSize = BigSizeUInt(unitBytes.size)
-
     start.bytes ++ count.bytes ++ step.bytes ++
-      unitSize.bytes ++ unitBytes ++ precision.bytes
+      TLV.getStringBytes(unit) ++ precision.bytes
   }
 
   override def noncesNeeded: Int = 1
@@ -457,10 +461,9 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
       if (isSigned) ByteVector(TRUE_BYTE) else ByteVector(FALSE_BYTE)
 
     val numDigitBytes = numDigits.bytes
-    val unitBytes = CryptoUtil.serializeForHash(unit)
-    val unitSize = BigSizeUInt(unitBytes.size)
+    val unitBytes = TLV.getStringBytes(unit)
 
-    base.bytes ++ isSignedByte ++ unitSize.bytes ++ unitBytes ++ precision.bytes ++ numDigitBytes
+    base.bytes ++ isSignedByte ++ unitBytes ++ precision.bytes ++ numDigitBytes
   }
 
   override def noncesNeeded: Int = {
@@ -550,12 +553,12 @@ case class OracleEventV0TLV(
   override def tpe: BigSizeUInt = OracleEventV0TLV.tpe
 
   override val value: ByteVector = {
-    val uriBytes = CryptoUtil.serializeForHash(eventId)
+    val eventIdBytes = TLV.getStringBytes(eventId)
+
     val numNonces = UInt16(nonces.size)
     val noncesBytes = nonces.foldLeft(numNonces.bytes)(_ ++ _.bytes)
 
-    noncesBytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ BigSizeUInt(
-      uriBytes.size).bytes ++ uriBytes
+    noncesBytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ eventIdBytes
   }
 
   /** Gets the maturation of the event since epoch */
