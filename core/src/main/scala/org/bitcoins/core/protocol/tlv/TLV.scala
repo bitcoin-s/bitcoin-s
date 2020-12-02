@@ -331,6 +331,9 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
 
     EnumEventDescriptorV0TLV(result)
   }
+
+  val dummy: EnumEventDescriptorV0TLV = EnumEventDescriptorV0TLV(
+    Vector("dummy"))
 }
 
 sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
@@ -666,6 +669,17 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
     val eventTLV = OracleEventV0TLV(iter.current)
 
     OracleAnnouncementV0TLV(sig, publicKey, eventTLV)
+  }
+
+  lazy val dummy: OracleAnnouncementV0TLV = {
+    val priv = ECPrivateKey.freshPrivateKey
+    val event = OracleEventV0TLV(Vector(priv.schnorrNonce),
+                                 UInt32.zero,
+                                 EnumEventDescriptorV0TLV.dummy,
+                                 "dummy")
+    val sig = priv.schnorrSign(CryptoUtil.sha256(event.bytes).bytes)
+
+    OracleAnnouncementV0TLV(sig, priv.schnorrPublicKey, event)
   }
 }
 

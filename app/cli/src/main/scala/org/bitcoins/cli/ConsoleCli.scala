@@ -150,7 +150,7 @@ object ConsoleCli {
       cmd("createdlcoffer")
         .action((_, conf) =>
           conf.copy(
-            command = CreateDLCOffer(null,
+            command = CreateDLCOffer(OracleAnnouncementV0TLV.dummy,
                                      ContractInfo.empty.toTLV,
                                      Satoshis.zero,
                                      None,

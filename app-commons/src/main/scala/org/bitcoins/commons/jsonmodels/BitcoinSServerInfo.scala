@@ -4,6 +4,7 @@ import org.bitcoins.core.config.{BitcoinNetwork, BitcoinNetworks}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import ujson._
 
+/** Basic information about the chain state of the Bitcoin-S server */
 case class BitcoinSServerInfo(
     network: BitcoinNetwork,
     blockHeight: Int,

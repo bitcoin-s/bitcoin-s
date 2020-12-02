@@ -6,10 +6,10 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
   SingleNonceContractInfo
 }
 import org.bitcoins.commons.jsonmodels.dlc.DLCState
-import org.bitcoins.commons.jsonmodels.dlc.SerializedDLCStatus.{
-  SerializedClaimed,
-  SerializedRefunded,
-  SerializedRemoteClaimed
+import org.bitcoins.commons.jsonmodels.dlc.DLCStatus.{
+  Claimed,
+  Refunded,
+  RemoteClaimed
 }
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
@@ -144,8 +144,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
       _ = {
         (statusAOpt, statusBOpt) match {
-          case (Some(statusA: SerializedClaimed),
-                Some(statusB: SerializedRemoteClaimed)) =>
+          case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
             assert(statusA.oracleSigs == Vector(statusB.oracleSig))
           case (_, _) => fail()
         }
@@ -184,8 +183,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
       _ = {
         (statusAOpt, statusBOpt) match {
-          case (Some(statusA: SerializedRemoteClaimed),
-                Some(statusB: SerializedClaimed)) =>
+          case (Some(statusA: RemoteClaimed), Some(statusB: Claimed)) =>
             assert(Vector(statusA.oracleSig) == statusB.oracleSigs)
           case (_, _) => fail()
         }
@@ -236,8 +234,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
       _ = {
         (statusAOpt, statusBOpt) match {
-          case (Some(statusA: SerializedRefunded),
-                Some(statusB: SerializedRefunded)) =>
+          case (Some(statusA: Refunded), Some(statusB: Refunded)) =>
             assert(statusA.closingTxId == statusB.closingTxId)
           case (_, _) => fail()
         }
@@ -274,8 +271,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
       _ = {
         (statusAOpt, statusBOpt) match {
-          case (Some(statusA: SerializedRefunded),
-                Some(statusB: SerializedRefunded)) =>
+          case (Some(statusA: Refunded), Some(statusB: Refunded)) =>
             assert(statusA.closingTxId == statusB.closingTxId)
           case (_, _) => fail()
         }

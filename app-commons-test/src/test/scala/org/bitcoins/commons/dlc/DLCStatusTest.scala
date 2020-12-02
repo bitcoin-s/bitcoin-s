@@ -7,9 +7,9 @@ import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 
 class DLCStatusTest extends BitcoinSAsyncTest {
-  behavior of "SerializedDLCStatus"
+  behavior of "DLCStatus"
 
-  it must "have json symmetry in SerializedDLCStatus.SerializedOffered" in {
+  it must "have json symmetry in DLCStatus.Offered" in {
     forAllParallel(NumberGenerator.bool, TLVGen.dlcOfferTLV) {
       case (isInit, offerTLV) =>
         val offer = DLCOffer.fromTLV(offerTLV)
@@ -32,7 +32,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
     }
   }
 
-  it must "have json symmetry in SerializedDLCStatus.SerializedAccepted" in {
+  it must "have json symmetry in DLCStatus.Accepted" in {
     forAllParallel(NumberGenerator.bool,
                    TLVGen.dlcOfferTLV,
                    NumberGenerator.bytevector) {
@@ -60,7 +60,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
     }
   }
 
-  it must "have json symmetry in SerializedDLCStatus.SerializedSigned" in {
+  it must "have json symmetry in DLCStatus.Signed" in {
     forAllParallel(NumberGenerator.bool,
                    TLVGen.dlcOfferTLV,
                    NumberGenerator.bytevector) {
@@ -88,7 +88,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
     }
   }
 
-  it must "have json symmetry in SerializedDLCStatus.SerializedBroadcasted" in {
+  it must "have json symmetry in DLCStatus.Broadcasted" in {
     forAllParallel(NumberGenerator.bool,
                    TLVGen.dlcOfferTLV,
                    NumberGenerator.bytevector,
@@ -118,7 +118,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
     }
   }
 
-  it must "have json symmetry in SerializedDLCStatus.SerializedConfirmed" in {
+  it must "have json symmetry in DLCStatus.Confirmed" in {
     forAllParallel(NumberGenerator.bool,
                    TLVGen.dlcOfferTLV,
                    NumberGenerator.bytevector,
@@ -148,7 +148,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
     }
   }
 
-  it must "have json symmetry in SerializedDLCStatus.SerializedClaimed" in {
+  it must "have json symmetry in DLCStatus.Claimed" in {
     forAllParallel(
       NumberGenerator.bool,
       TLVGen.dlcOfferTLV,
@@ -162,8 +162,9 @@ class DLCStatusTest extends BitcoinSAsyncTest {
 
         val totalCollateral = offer.contractInfo.max
 
-        val rand = Math.random() * offer.contractInfo.allOutcomes.size
-        val outcome = offer.contractInfo.allOutcomes(rand.toInt)
+        val rand =
+          scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
+        val outcome = offer.contractInfo.allOutcomes(rand)
 
         val status =
           DLCStatus.Claimed(
@@ -188,7 +189,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
     }
   }
 
-  it must "have json symmetry in SerializedDLCStatus.SerializedRemoteClaimed" in {
+  it must "have json symmetry in DLCStatus.RemoteClaimed" in {
     forAllParallel(
       NumberGenerator.bool,
       TLVGen.dlcOfferTLV,
@@ -202,8 +203,9 @@ class DLCStatusTest extends BitcoinSAsyncTest {
 
         val totalCollateral = offer.contractInfo.max
 
-        val rand = Math.random() * offer.contractInfo.allOutcomes.size
-        val outcome = offer.contractInfo.allOutcomes(rand.toInt)
+        val rand =
+          scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
+        val outcome = offer.contractInfo.allOutcomes(rand)
 
         val status =
           DLCStatus.RemoteClaimed(
@@ -228,7 +230,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
     }
   }
 
-  it must "have json symmetry in SerializedDLCStatus.SerializedRefunded" in {
+  it must "have json symmetry in DLCStatus.Refunded" in {
     forAllParallel(
       NumberGenerator.bool,
       TLVGen.dlcOfferTLV,

@@ -222,8 +222,18 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                 updated.state match {
                   case DLCState.Claimed | DLCState.RemoteClaimed |
                       DLCState.Refunded =>
+                    val contractId = updated.contractIdOpt.get.toHex
                     logger.info(
-                      s"Deleting unneeded DLC signatures for contract ${updated.contractIdOpt.get}")
+                      s"Deleting unneeded DLC signatures for contract $contractId")
+
+                    // Make sure we can safely delete the sigs
+                    // Refunded will not have these set
+                    if (updated.state != DLCState.Refunded) {
+                      require(
+                        updated.outcomeOpt.isDefined && updated.oracleSigsOpt.isDefined,
+                        s"Attempted to delete signatures when no outcome or oracle signature was set, $contractId"
+                      )
+                    }
                     dlcSigsDAO.deleteByParamHash(updated.paramHash)
                   case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
                       DLCState.Broadcasted | DLCState.Confirmed =>
