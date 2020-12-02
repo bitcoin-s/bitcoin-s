@@ -179,12 +179,8 @@ case class NormalizedString(private val str: String) {
 
 object NormalizedString {
 
-  def apply(str: String): NormalizedString = {
-    new NormalizedString(CryptoUtil.normalize(str))
-  }
-
   def apply(bytes: ByteVector): NormalizedString = {
-    apply(new String(bytes.toArray, StandardCharsets.UTF_8))
+    NormalizedString(new String(bytes.toArray, StandardCharsets.UTF_8))
   }
 
   import scala.language.implicitConversions
