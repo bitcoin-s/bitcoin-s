@@ -27,6 +27,15 @@ sealed trait TLV extends NetworkElement {
   }
 
   def sha256: Sha256Digest = CryptoUtil.sha256(bytes)
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case tlv: TLV =>
+        tlv.bytes == this.bytes
+      case other =>
+        other.equals(this)
+    }
+  }
 }
 
 sealed trait TLVParentFactory[T <: TLV] extends Factory[T] {
@@ -262,7 +271,7 @@ case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
 
     outcomes.foldLeft(starting) { (accum, outcome) =>
       val outcomeBytes = CryptoUtil.serializeForHash(outcome)
-      accum ++ UInt16(outcomeBytes.length).bytes ++ outcomeBytes
+      accum ++ BigSizeUInt(outcomeBytes.length).bytes ++ outcomeBytes
     }
   }
 
@@ -281,9 +290,7 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
     val builder = Vector.newBuilder[String]
 
     while (iter.index < value.length) {
-      val len = UInt16(iter.takeBits(16))
-      val outcomeBytes = iter.take(len.toInt)
-      val str = new String(outcomeBytes.toArray, StandardCharsets.UTF_8)
+      val str = iter.takeString()
       builder.+=(str)
     }
 
@@ -379,8 +386,8 @@ case class RangeEventDescriptorV0TLV(
   override val tpe: BigSizeUInt = RangeEventDescriptorV0TLV.tpe
 
   override val value: ByteVector = {
-    val unitSize = BigSizeUInt(unit.length)
     val unitBytes = CryptoUtil.serializeForHash(unit)
+    val unitSize = BigSizeUInt(unitBytes.size)
 
     start.bytes ++ count.bytes ++ step.bytes ++
       unitSize.bytes ++ unitBytes ++ precision.bytes
@@ -450,8 +457,8 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
       if (isSigned) ByteVector(TRUE_BYTE) else ByteVector(FALSE_BYTE)
 
     val numDigitBytes = numDigits.bytes
-    val unitSize = BigSizeUInt(unit.length)
     val unitBytes = CryptoUtil.serializeForHash(unit)
+    val unitSize = BigSizeUInt(unitBytes.size)
 
     base.bytes ++ isSignedByte ++ unitSize.bytes ++ unitBytes ++ precision.bytes ++ numDigitBytes
   }
@@ -534,7 +541,7 @@ case class OracleEventV0TLV(
     nonces: Vector[SchnorrNonce],
     eventMaturityEpoch: UInt32,
     eventDescriptor: EventDescriptorTLV,
-    eventURI: String
+    eventId: String
 ) extends OracleEventTLV {
 
   require(eventDescriptor.noncesNeeded == nonces.size,
@@ -543,11 +550,12 @@ case class OracleEventV0TLV(
   override def tpe: BigSizeUInt = OracleEventV0TLV.tpe
 
   override val value: ByteVector = {
-    val uriBytes = CryptoUtil.serializeForHash(eventURI)
+    val uriBytes = CryptoUtil.serializeForHash(eventId)
     val numNonces = UInt16(nonces.size)
     val noncesBytes = nonces.foldLeft(numNonces.bytes)(_ ++ _.bytes)
 
-    noncesBytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ uriBytes
+    noncesBytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ BigSizeUInt(
+      uriBytes.size).bytes ++ uriBytes
   }
 
   /** Gets the maturation of the event since epoch */
@@ -579,9 +587,9 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
     val eventMaturity = UInt32(iter.takeBits(32))
     val eventDescriptor = EventDescriptorTLV(iter.current)
     iter.skip(eventDescriptor.byteSize)
-    val eventURI = new String(iter.current.toArray, StandardCharsets.UTF_8)
+    val eventId = iter.takeString()
 
-    OracleEventV0TLV(nonces, eventMaturity, eventDescriptor, eventURI)
+    OracleEventV0TLV(nonces, eventMaturity, eventDescriptor, eventId)
   }
 }
 
