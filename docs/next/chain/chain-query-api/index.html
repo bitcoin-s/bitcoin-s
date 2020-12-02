@@ -106,7 +106,8 @@ want.</p>
 <span class="hljs-keyword">val</span> nodeApi = <span class="hljs-type">BitcoinSWalletTest</span>.<span class="hljs-type">MockNodeApi</span>
 
 <span class="hljs-comment">// Create our key manager</span>
-<span class="hljs-keyword">val</span> keyManagerE = <span class="hljs-type">BIP39KeyManager</span>.initialize(kmParams = walletConf.kmParams,
+<span class="hljs-keyword">val</span> keyManagerE = <span class="hljs-type">BIP39KeyManager</span>.initialize(aesPasswordOpt = <span class="hljs-type">Some</span>(<span class="hljs-type">AesPassword</span>.fromString(<span class="hljs-string">"password"</span>)),
+                                               kmParams = walletConf.kmParams,
                                                bip39PasswordOpt = <span class="hljs-type">None</span>)
 
 <span class="hljs-keyword">val</span> keyManager = keyManagerE <span class="hljs-keyword">match</span> {
