@@ -303,8 +303,9 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
 
     val result = builder.result()
 
-    require(count.toInt == result.size,
-            "Did not parse the expected number of outcomes")
+    require(
+      count.toInt == result.size,
+      s"Did not parse the expected number of outcomes, ${count.toInt} != ${result.size}")
 
     EnumEventDescriptorV0TLV(result)
   }
