@@ -96,6 +96,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
         eventOpt <- dlcOracle.findEvent(announcement.eventTLV)
       } yield {
+        assert(announcement.validateSignature)
         assert(eventOpt.isDefined)
         val event = eventOpt.get
 
@@ -151,6 +152,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
         eventOpt <- dlcOracle.findEvent(announcement.eventTLV)
       } yield {
+        assert(announcement.validateSignature)
         assert(eventOpt.isDefined)
         val event = eventOpt.get
 
@@ -303,6 +305,8 @@ class DLCOracleTest extends DLCOracleFixture {
                                             unit = "units",
                                             precision = Int32.zero)
 
+      _ = assert(announcement.validateSignature)
+
       eventTLV = announcement.eventTLV
 
       event <- dlcOracle.signDigits(eventTLV, outcome)
@@ -371,6 +375,8 @@ class DLCOracleTest extends DLCOracleFixture {
                                               numDigits = 3,
                                               unit = "units",
                                               precision = Int32.zero)
+
+        _ = assert(announcement.validateSignature)
 
         eventTLV = announcement.eventTLV
 
@@ -441,6 +447,8 @@ class DLCOracleTest extends DLCOracleFixture {
                                               numDigits = 3,
                                               unit = "units",
                                               precision = Int32.zero)
+
+        _ = assert(announcement.validateSignature)
 
         eventTLV = announcement.eventTLV
 
