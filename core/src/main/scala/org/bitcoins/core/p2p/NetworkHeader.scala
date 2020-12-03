@@ -27,13 +27,16 @@ case class NetworkHeader(
     payloadSize: UInt32,
     checksum: ByteVector
 ) extends NetworkElement {
-  require(bytes.length == 24, "NetworkHeaders must be 24 bytes")
+  require(bytes.length == NetworkHeader.bytesSize,
+          s"NetworkHeaders must be ${NetworkHeader.bytesSize} bytes")
 
   override def bytes: ByteVector = RawNetworkHeaderSerializer.write(this)
 
 }
 
 object NetworkHeader extends Factory[NetworkHeader] {
+
+  val bytesSize = 24
 
   override def fromBytes(bytes: ByteVector): NetworkHeader =
     RawNetworkHeaderSerializer.read(bytes)

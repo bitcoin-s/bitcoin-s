@@ -4,7 +4,7 @@ import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.p2p.{HeadersMessage, NetworkMessage, VersionMessage}
+import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.DoubleSha256Digest
@@ -108,6 +108,17 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
     assert(leftover.isEmpty)
 
   }
+
+  it must "parse an unknown command" in {
+    val header =
+      NetworkHeader(TestNet3, "madeup", UInt32.zero, ByteVector.low(4))
+
+    val (messages, leftover) = P2PClient.parseIndividualMessages(header.bytes)
+    assert(messages.isEmpty)
+    assert(leftover.isEmpty)
+
+  }
+
   behavior of "P2PClient"
 
   override def beforeAll(): Unit = {
