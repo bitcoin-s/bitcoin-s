@@ -62,10 +62,11 @@ case class DLCOracleAppConfig(
       }
       logger.info(s"Applied $numMigrations to the dlc oracle project")
 
-      if (migrationsApplied() == 2) {
-        logger.debug(s"Doing V2 Migration")
+      val migrations = migrationsApplied()
+      if (migrations == 2 || migrations == 3) { // For V2/V3 migrations
+        logger.debug(s"Doing V2/V3 Migration")
 
-        val dummyMigrationTLV = EventDescriptorTLV("fdd806090001000564756d6d79")
+        val dummyMigrationTLV = EventDescriptorTLV("fdd8060800010564756d6d79")
 
         val eventDAO = EventDAO()(ec, appConfig)
         for {

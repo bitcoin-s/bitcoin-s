@@ -2,6 +2,9 @@ package org.bitcoins.testkit.core.gen
 
 import org.scalacheck.Gen
 
+import java.nio.charset.StandardCharsets
+import scala.util.{Failure, Success, Try}
+
 /**
   * Created by chris on 6/20/16.
   */
@@ -55,6 +58,17 @@ trait StringGenerators {
       randomString <- genString(randomNum)
     } yield randomString
 
+  def genUTF8String: Gen[String] = {
+    for {
+      bytes <- NumberGenerator.bytes
+      str <- Try(new String(bytes.toArray, StandardCharsets.UTF_8)) match {
+        case Failure(_) =>
+          genUTF8String
+        case Success(value) =>
+          Gen.const(value)
+      }
+    } yield str
+  }
 }
 
 object StringGenerators extends StringGenerators

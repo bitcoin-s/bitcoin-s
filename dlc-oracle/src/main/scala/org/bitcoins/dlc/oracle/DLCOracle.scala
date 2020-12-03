@@ -1,7 +1,5 @@
 package org.bitcoins.dlc.oracle
 
-import java.time.Instant
-
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
@@ -18,6 +16,7 @@ import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.dlc.oracle.util.EventDbUtil
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
@@ -273,7 +272,9 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
               s"No event saved with nonce ${nonce.hex} $outcome"))
       }
 
-      eventOutcomeOpt <- eventOutcomeDAO.read((nonce, outcome.outcomeString))
+      hash = eventDb.signingVersion.calcOutcomeHash(eventDb.eventDescriptorTLV,
+                                                    outcome.outcomeString)
+      eventOutcomeOpt <- eventOutcomeDAO.find(nonce, hash)
       eventOutcomeDb <- eventOutcomeOpt match {
         case Some(value) => Future.successful(value)
         case None =>
