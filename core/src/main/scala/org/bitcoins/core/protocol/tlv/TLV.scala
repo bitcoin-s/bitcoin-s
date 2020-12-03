@@ -90,6 +90,13 @@ object TLV extends TLVParentFactory[TLV] {
       case None             => UnknownTLV(tpe, value)
     }
   }
+
+  def getStringBytes(str: NormalizedString): ByteVector = {
+    val strBytes = str.bytes
+    val size = BigSizeUInt(strBytes.size)
+
+    size.bytes ++ strBytes
+  }
 }
 
 sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
@@ -141,11 +148,11 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
       }
     }
 
-    def takeString(): String = {
+    def takeString(): NormalizedString = {
       val size = BigSizeUInt(current)
       skip(size.byteSize)
       val strBytes = take(size.toInt)
-      new String(strBytes.toArray, StandardCharsets.UTF_8)
+      NormalizedString(strBytes)
     }
 
     def takeSPK(): ScriptPubKey = {
@@ -153,6 +160,51 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
       ScriptPubKey.fromAsmBytes(take(len))
     }
   }
+}
+
+case class NormalizedString(private val str: String) extends NetworkElement {
+
+  val normStr: String = CryptoUtil.normalize(str)
+
+  override def equals(other: Any): Boolean = {
+    other match {
+      case otherStr: String =>
+        normStr == otherStr
+      case _ => other.equals(str)
+    }
+  }
+
+  override def toString: String = normStr
+
+  override def bytes: ByteVector = CryptoUtil.serializeForHash(normStr)
+}
+
+object NormalizedString extends StringFactory[NormalizedString] {
+
+  def apply(bytes: ByteVector): NormalizedString = {
+    NormalizedString(new String(bytes.toArray, StandardCharsets.UTF_8))
+  }
+
+  import scala.language.implicitConversions
+
+  implicit def stringToNormalized(str: String): NormalizedString =
+    NormalizedString(str)
+
+  implicit def normalizedToString(normalized: NormalizedString): String =
+    normalized.normStr
+
+  // If other kinds of Iterables are needed, there's a fancy thing to do
+  // that is done all over the Seq code using params and an implicit CanBuildFrom
+  implicit def stringVecToNormalized(
+      strs: Vector[String]): Vector[NormalizedString] =
+    strs.map(apply)
+
+  implicit def normalizedVecToString(
+      strs: Vector[NormalizedString]): Vector[String] =
+    strs.map(_.normStr)
+
+  override def fromString(string: String): NormalizedString =
+    NormalizedString(string)
 }
 
 case class UnknownTLV(tpe: BigSizeUInt, value: ByteVector) extends TLV {
@@ -253,7 +305,7 @@ object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
   * @param outcomes The set of possible outcomes
   * @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Oracle.md#simple-enumeration
   */
-case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
+case class EnumEventDescriptorV0TLV(outcomes: Vector[NormalizedString])
     extends EventDescriptorTLV {
   override def tpe: BigSizeUInt = EnumEventDescriptorV0TLV.tpe
 
@@ -261,8 +313,8 @@ case class EnumEventDescriptorV0TLV(outcomes: Vector[String])
     val starting = UInt16(outcomes.size).bytes
 
     outcomes.foldLeft(starting) { (accum, outcome) =>
-      val outcomeBytes = CryptoUtil.serializeForHash(outcome)
-      accum ++ UInt16(outcomeBytes.length).bytes ++ outcomeBytes
+      val outcomeBytes = TLV.getStringBytes(outcome)
+      accum ++ outcomeBytes
     }
   }
 
@@ -278,19 +330,18 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
 
     val count = UInt16(iter.takeBits(16))
 
-    val builder = Vector.newBuilder[String]
+    val builder = Vector.newBuilder[NormalizedString]
 
     while (iter.index < value.length) {
-      val len = UInt16(iter.takeBits(16))
-      val outcomeBytes = iter.take(len.toInt)
-      val str = new String(outcomeBytes.toArray, StandardCharsets.UTF_8)
+      val str = iter.takeString()
       builder.+=(str)
     }
 
     val result = builder.result()
 
-    require(count.toInt == result.size,
-            "Did not parse the expected number of outcomes")
+    require(
+      count.toInt == result.size,
+      s"Did not parse the expected number of outcomes, ${count.toInt} != ${result.size}")
 
     EnumEventDescriptorV0TLV(result)
   }
@@ -299,12 +350,12 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
 sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
 
   /** The minimum valid value in the oracle can sign */
-  def min: Vector[String]
+  def min: Vector[NormalizedString]
 
   def minNum: BigInt
 
   /** The maximum valid value in the oracle can sign */
-  def max: Vector[String]
+  def max: Vector[NormalizedString]
 
   def maxNum: BigInt
 
@@ -320,7 +371,7 @@ sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
   def base: UInt16
 
   /** The unit of the outcome value */
-  def unit: String
+  def unit: NormalizedString
 
   /** The precision of the outcome representing the base exponent
     * by which to multiply the number represented by the composition
@@ -361,29 +412,26 @@ case class RangeEventDescriptorV0TLV(
     start: Int32,
     count: UInt32,
     step: UInt16,
-    unit: String,
+    unit: NormalizedString,
     precision: Int32)
     extends NumericEventDescriptorTLV {
 
   override val minNum: BigInt = BigInt(start.toInt)
 
-  override val min: Vector[String] = Vector(minNum.toString)
+  override val min: Vector[NormalizedString] = Vector(minNum.toString)
 
   override val maxNum: BigInt =
     start.toLong + (step.toLong * (count.toLong - 1))
 
-  override val max: Vector[String] = Vector(maxNum.toString)
+  override val max: Vector[NormalizedString] = Vector(maxNum.toString)
 
   override val base: UInt16 = UInt16(10)
 
   override val tpe: BigSizeUInt = RangeEventDescriptorV0TLV.tpe
 
   override val value: ByteVector = {
-    val unitSize = BigSizeUInt(unit.length)
-    val unitBytes = CryptoUtil.serializeForHash(unit)
-
     start.bytes ++ count.bytes ++ step.bytes ++
-      unitSize.bytes ++ unitBytes ++ precision.bytes
+      TLV.getStringBytes(unit) ++ precision.bytes
   }
 
   override def noncesNeeded: Int = 1
@@ -420,10 +468,10 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
 
   override lazy val maxNum: BigInt = base.toBigInt.pow(numDigits.toInt) - 1
 
-  private lazy val maxDigit = (base.toInt - 1).toString
+  private lazy val maxDigit: NormalizedString = (base.toInt - 1).toString
 
-  override lazy val max: Vector[String] = if (isSigned) {
-    "+" +: Vector.fill(numDigits.toInt)(maxDigit)
+  override lazy val max: Vector[NormalizedString] = if (isSigned) {
+    NormalizedString("+") +: Vector.fill(numDigits.toInt)(maxDigit)
   } else {
     Vector.fill(numDigits.toInt)(maxDigit)
   }
@@ -434,8 +482,8 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
     0
   }
 
-  override lazy val min: Vector[String] = if (isSigned) {
-    "-" +: Vector.fill(numDigits.toInt)(maxDigit)
+  override lazy val min: Vector[NormalizedString] = if (isSigned) {
+    NormalizedString("-") +: Vector.fill(numDigits.toInt)(maxDigit)
   } else {
     Vector.fill(numDigits.toInt)("0")
   }
@@ -450,10 +498,9 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
       if (isSigned) ByteVector(TRUE_BYTE) else ByteVector(FALSE_BYTE)
 
     val numDigitBytes = numDigits.bytes
-    val unitSize = BigSizeUInt(unit.length)
-    val unitBytes = CryptoUtil.serializeForHash(unit)
+    val unitBytes = TLV.getStringBytes(unit)
 
-    base.bytes ++ isSignedByte ++ unitSize.bytes ++ unitBytes ++ precision.bytes ++ numDigitBytes
+    base.bytes ++ isSignedByte ++ unitBytes ++ precision.bytes ++ numDigitBytes
   }
 
   override def noncesNeeded: Int = {
@@ -466,7 +513,7 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
 case class SignedDigitDecompositionEventDescriptor(
     base: UInt16,
     numDigits: UInt16,
-    unit: String,
+    unit: NormalizedString,
     precision: Int32)
     extends DigitDecompositionEventDescriptorV0TLV {
   override val isSigned: Boolean = true
@@ -476,7 +523,7 @@ case class SignedDigitDecompositionEventDescriptor(
 case class UnsignedDigitDecompositionEventDescriptor(
     base: UInt16,
     numDigits: UInt16,
-    unit: String,
+    unit: NormalizedString,
     precision: Int32)
     extends DigitDecompositionEventDescriptorV0TLV {
   override val isSigned: Boolean = false
@@ -509,7 +556,7 @@ object DigitDecompositionEventDescriptorV0TLV
       base: UInt16,
       isSigned: Boolean,
       numDigits: Int,
-      unit: String,
+      unit: NormalizedString,
       precision: Int32): DigitDecompositionEventDescriptorV0TLV = {
     if (isSigned) {
       SignedDigitDecompositionEventDescriptor(base,
@@ -534,7 +581,7 @@ case class OracleEventV0TLV(
     nonces: Vector[SchnorrNonce],
     eventMaturityEpoch: UInt32,
     eventDescriptor: EventDescriptorTLV,
-    eventURI: String
+    eventId: NormalizedString
 ) extends OracleEventTLV {
 
   require(eventDescriptor.noncesNeeded == nonces.size,
@@ -543,11 +590,12 @@ case class OracleEventV0TLV(
   override def tpe: BigSizeUInt = OracleEventV0TLV.tpe
 
   override val value: ByteVector = {
-    val uriBytes = CryptoUtil.serializeForHash(eventURI)
+    val eventIdBytes = TLV.getStringBytes(eventId)
+
     val numNonces = UInt16(nonces.size)
     val noncesBytes = nonces.foldLeft(numNonces.bytes)(_ ++ _.bytes)
 
-    noncesBytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ uriBytes
+    noncesBytes ++ eventMaturityEpoch.bytes ++ eventDescriptor.bytes ++ eventIdBytes
   }
 
   /** Gets the maturation of the event since epoch */
@@ -579,9 +627,9 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
     val eventMaturity = UInt32(iter.takeBits(32))
     val eventDescriptor = EventDescriptorTLV(iter.current)
     iter.skip(eventDescriptor.byteSize)
-    val eventURI = new String(iter.current.toArray, StandardCharsets.UTF_8)
+    val eventId = iter.takeString()
 
-    OracleEventV0TLV(nonces, eventMaturity, eventDescriptor, eventURI)
+    OracleEventV0TLV(nonces, eventMaturity, eventDescriptor, eventId)
   }
 }
 

@@ -128,7 +128,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
               case Some(event: OracleEvent) =>
                 val outcomesJson = event.eventDescriptorTLV match {
                   case enum: EnumEventDescriptorV0TLV =>
-                    enum.outcomes.map(Str)
+                    enum.outcomes.map(outcome => Str(outcome.normStr))
                   case range: RangeEventDescriptorV0TLV =>
                     val outcomes: Vector[Long] = {
                       val startL = range.start.toLong
