@@ -64,7 +64,7 @@
             });
         </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/core/txbuilder.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">TxBuilder Example</h1></header><article><div><span><p>Bitcoin-S features a transaction building API that allows you to construct and sign Bitcoin transactions. Here's an example of how to use it</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = <span class="hljs-type">ExecutionContext</span>.<span class="hljs-type">Implicits</span>.global
-<span class="hljs-comment">// ec: ExecutionContext = scala.concurrent.impl.ExecutionContextImpl$$anon$3@78649f0b[Running, parallelism = 2, size = 2, active = 0, running = 0, steals = 8, tasks = 0, submissions = 0]</span>
+<span class="hljs-comment">// ec: ExecutionContext = scala.concurrent.impl.ExecutionContextImpl$$anon$3@286b6f43[Running, parallelism = 2, size = 2, active = 0, running = 0, steals = 5, tasks = 0, submissions = 0]</span>
 
 <span class="hljs-comment">// Initialize a transaction builder</span>
 <span class="hljs-keyword">val</span> builder = <span class="hljs-type">RawTxBuilder</span>()
@@ -74,19 +74,19 @@
 <span class="hljs-keyword">val</span> privKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
 <span class="hljs-comment">// privKey: ECPrivateKey = Masked(ECPrivateKeyImpl)</span>
 <span class="hljs-keyword">val</span> pubKey = privKey.publicKey
-<span class="hljs-comment">// pubKey: ECPublicKey = ECPublicKey(03ddd35ef79b2192e1386d5d5690f91f9567cbc845e395ea9e20b1eb301bb21761)</span>
+<span class="hljs-comment">// pubKey: ECPublicKey = ECPublicKey(026d77a4295a2946561e7707e543a7ef272fe248e93fb3c3b9790ca6f965f7f0c4)</span>
 
 <span class="hljs-comment">// this is the script that the TxBuilder is going to create a</span>
 <span class="hljs-comment">// script signature that validly spends this scriptPubKey</span>
 <span class="hljs-keyword">val</span> creditingSpk = <span class="hljs-type">P2PKHScriptPubKey</span>(pubKey = privKey.publicKey)
-<span class="hljs-comment">// creditingSpk: P2PKHScriptPubKey = pkh(e47e9bf33acf2c772fa03be64b3f7df16f984eb0)</span>
+<span class="hljs-comment">// creditingSpk: P2PKHScriptPubKey = pkh(8fd5f10263bd4fd8bf61ee84cd6bbbd8d1cb2d61)</span>
 <span class="hljs-keyword">val</span> amount = <span class="hljs-number">10000.</span>satoshis
 <span class="hljs-comment">// amount: Satoshis = 10000 sats</span>
 
 <span class="hljs-comment">// this is the UTXO we are going to be spending</span>
 <span class="hljs-keyword">val</span> utxo =
   <span class="hljs-type">TransactionOutput</span>(value = amount, scriptPubKey = creditingSpk)
-<span class="hljs-comment">// utxo: TransactionOutput = TransactionOutput(10000 sats,pkh(e47e9bf33acf2c772fa03be64b3f7df16f984eb0))</span>
+<span class="hljs-comment">// utxo: TransactionOutput = TransactionOutput(10000 sats,pkh(8fd5f10263bd4fd8bf61ee84cd6bbbd8d1cb2d61))</span>
 
 <span class="hljs-comment">// the private key that locks the funds for the script we are spending too</span>
 <span class="hljs-keyword">val</span> destinationPrivKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
@@ -99,7 +99,7 @@
 <span class="hljs-comment">// the script that corresponds to destination private key, this is what is receiving the money</span>
 <span class="hljs-keyword">val</span> destinationSPK =
   <span class="hljs-type">P2PKHScriptPubKey</span>(pubKey = destinationPrivKey.publicKey)
-<span class="hljs-comment">// destinationSPK: P2PKHScriptPubKey = pkh(ef6a5024867a71b4750e403a88e15b0afd836db2)</span>
+<span class="hljs-comment">// destinationSPK: P2PKHScriptPubKey = pkh(4220d9730942616f37de7362c481a897c0e42f90)</span>
 
 <span class="hljs-comment">// this is where we are sending money too</span>
 <span class="hljs-comment">// we could add more destinations here if we</span>
@@ -110,7 +110,7 @@
 
     <span class="hljs-type">Vector</span>(destination0)
 }
-<span class="hljs-comment">// destinations: Vector[TransactionOutput] = Vector(TransactionOutput(5000 sats,pkh(ef6a5024867a71b4750e403a88e15b0afd836db2)))</span>
+<span class="hljs-comment">// destinations: Vector[TransactionOutput] = Vector(TransactionOutput(5000 sats,pkh(4220d9730942616f37de7362c481a897c0e42f90)))</span>
 
 <span class="hljs-comment">// Add the destinations to the tx builder</span>
 builder ++= destinations
@@ -123,17 +123,17 @@ builder ++= destinations
                                   inputs = <span class="hljs-type">Vector</span>.empty,
                                   outputs = <span class="hljs-type">Vector</span>(utxo),
                                   lockTime = <span class="hljs-type">UInt32</span>.zero)
-<span class="hljs-comment">// creditingTx: BaseTransaction = BaseTransaction(Int32Impl(1),Vector(),Vector(TransactionOutput(10000 sats,pkh(e47e9bf33acf2c772fa03be64b3f7df16f984eb0))),UInt32Impl(0))</span>
+<span class="hljs-comment">// creditingTx: BaseTransaction = BaseTransaction(Int32Impl(1),Vector(),Vector(TransactionOutput(10000 sats,pkh(8fd5f10263bd4fd8bf61ee84cd6bbbd8d1cb2d61))),UInt32Impl(0))</span>
 
 <span class="hljs-comment">// this is the information we need from the crediting TX</span>
 <span class="hljs-comment">// to properly "link" it in the transaction we are creating</span>
 <span class="hljs-keyword">val</span> outPoint = <span class="hljs-type">TransactionOutPoint</span>(creditingTx.txId, <span class="hljs-type">UInt32</span>.zero)
-<span class="hljs-comment">// outPoint: TransactionOutPoint = TransactionOutPoint(88d761c971de6a42f9d6bf5550f2b2368d5e194629e00e7240886b46b58c11bf:0)</span>
+<span class="hljs-comment">// outPoint: TransactionOutPoint = TransactionOutPoint(703fa68b71cc9e8dc359e0559911785887d38c6c9560243527bb5c5449ab4994:0)</span>
 <span class="hljs-keyword">val</span> input = <span class="hljs-type">TransactionInput</span>(
     outPoint,
     <span class="hljs-type">EmptyScriptSignature</span>,
     sequenceNumber = <span class="hljs-type">UInt32</span>.zero)
-<span class="hljs-comment">// input: TransactionInput = TransactionInputImpl(TransactionOutPoint(88d761c971de6a42f9d6bf5550f2b2368d5e194629e00e7240886b46b58c11bf:0),EmptyScriptSignature,UInt32Impl(0))</span>
+<span class="hljs-comment">// input: TransactionInput = TransactionInputImpl(TransactionOutPoint(703fa68b71cc9e8dc359e0559911785887d38c6c9560243527bb5c5449ab4994:0),EmptyScriptSignature,UInt32Impl(0))</span>
 
 <span class="hljs-comment">// Add a new input to our builder</span>
 builder += input
@@ -141,11 +141,11 @@ builder += input
 
 <span class="hljs-comment">// We can now generate a RawTxBuilderResult ready to be finalized</span>
 <span class="hljs-keyword">val</span> builderResult = builder.result()
-<span class="hljs-comment">// builderResult: RawTxBuilderResult = RawTxBuilderResult(Int32Impl(2),Vector(TransactionInputImpl(TransactionOutPoint(88d761c971de6a42f9d6bf5550f2b2368d5e194629e00e7240886b46b58c11bf:0),EmptyScriptSignature,UInt32Impl(0))),Vector(TransactionOutput(5000 sats,pkh(ef6a5024867a71b4750e403a88e15b0afd836db2))),UInt32Impl(0))</span>
+<span class="hljs-comment">// builderResult: RawTxBuilderResult = RawTxBuilderResult(Int32Impl(2),Vector(TransactionInputImpl(TransactionOutPoint(703fa68b71cc9e8dc359e0559911785887d38c6c9560243527bb5c5449ab4994:0),EmptyScriptSignature,UInt32Impl(0))),Vector(TransactionOutput(5000 sats,pkh(4220d9730942616f37de7362c481a897c0e42f90))),UInt32Impl(0))</span>
 
 <span class="hljs-comment">// this contains the information needed to analyze our input during finalization</span>
 <span class="hljs-keyword">val</span> inputInfo = <span class="hljs-type">P2PKHInputInfo</span>(outPoint, amount, privKey.publicKey)
-<span class="hljs-comment">// inputInfo: P2PKHInputInfo = P2PKHInputInfo(TransactionOutPoint(88d761c971de6a42f9d6bf5550f2b2368d5e194629e00e7240886b46b58c11bf:0),10000 sats,ECPublicKey(03ddd35ef79b2192e1386d5d5690f91f9567cbc845e395ea9e20b1eb301bb21761))</span>
+<span class="hljs-comment">// inputInfo: P2PKHInputInfo = P2PKHInputInfo(TransactionOutPoint(703fa68b71cc9e8dc359e0559911785887d38c6c9560243527bb5c5449ab4994:0),10000 sats,ECPublicKey(026d77a4295a2946561e7707e543a7ef272fe248e93fb3c3b9790ca6f965f7f0c4))</span>
 
 <span class="hljs-comment">// this is how much we are going to pay as a fee to the network</span>
 <span class="hljs-comment">// for this example, we are going to pay 1 satoshi per byte</span>
@@ -155,18 +155,18 @@ builder += input
 <span class="hljs-keyword">val</span> changePrivKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
 <span class="hljs-comment">// changePrivKey: ECPrivateKey = Masked(ECPrivateKeyImpl)</span>
 <span class="hljs-keyword">val</span> changeSPK = <span class="hljs-type">P2PKHScriptPubKey</span>(pubKey = changePrivKey.publicKey)
-<span class="hljs-comment">// changeSPK: P2PKHScriptPubKey = pkh(3963452a70fcc99796b9512edde815398d5a193c)</span>
+<span class="hljs-comment">// changeSPK: P2PKHScriptPubKey = pkh(d706962a135d01441713a7eff9a96e165a8fc693)</span>
 
 <span class="hljs-comment">// We chose a finalizer that adds a change output to our tx based on a fee rate</span>
 <span class="hljs-keyword">val</span> finalizer = <span class="hljs-type">StandardNonInteractiveFinalizer</span>(
     <span class="hljs-type">Vector</span>(inputInfo),
     feeRate,
     changeSPK)
-<span class="hljs-comment">// finalizer: StandardNonInteractiveFinalizer = StandardNonInteractiveFinalizer(Vector(P2PKHInputInfo(TransactionOutPoint(88d761c971de6a42f9d6bf5550f2b2368d5e194629e00e7240886b46b58c11bf:0),10000 sats,ECPublicKey(03ddd35ef79b2192e1386d5d5690f91f9567cbc845e395ea9e20b1eb301bb21761))),1 sats/byte,pkh(3963452a70fcc99796b9512edde815398d5a193c))</span>
+<span class="hljs-comment">// finalizer: StandardNonInteractiveFinalizer = StandardNonInteractiveFinalizer(Vector(P2PKHInputInfo(TransactionOutPoint(703fa68b71cc9e8dc359e0559911785887d38c6c9560243527bb5c5449ab4994:0),10000 sats,ECPublicKey(026d77a4295a2946561e7707e543a7ef272fe248e93fb3c3b9790ca6f965f7f0c4))),1 sats/byte,pkh(d706962a135d01441713a7eff9a96e165a8fc693))</span>
 
 <span class="hljs-comment">// We can now finalize the tx builder result from earlier with this finalizer</span>
 <span class="hljs-keyword">val</span> unsignedTxF: <span class="hljs-type">Future</span>[<span class="hljs-type">Transaction</span>] = finalizer.buildTx(builderResult)
-<span class="hljs-comment">// unsignedTxF: Future[Transaction] = Future(Success(BaseTransaction(Int32Impl(2),Vector(TransactionInputImpl(TransactionOutPoint(88d761c971de6a42f9d6bf5550f2b2368d5e194629e00e7240886b46b58c11bf:0),EmptyScriptSignature,UInt32Impl(0))),Vector(TransactionOutput(5000 sats,pkh(ef6a5024867a71b4750e403a88e15b0afd836db2)), TransactionOutput(4775 sats,pkh(3963452a70fcc99796b9512edde815398d5a193c))),UInt32Impl(0))))</span>
+<span class="hljs-comment">// unsignedTxF: Future[Transaction] = Future(Success(BaseTransaction(Int32Impl(2),Vector(TransactionInputImpl(TransactionOutPoint(703fa68b71cc9e8dc359e0559911785887d38c6c9560243527bb5c5449ab4994:0),EmptyScriptSignature,UInt32Impl(0))),Vector(TransactionOutput(5000 sats,pkh(4220d9730942616f37de7362c481a897c0e42f90)), TransactionOutput(4775 sats,pkh(d706962a135d01441713a7eff9a96e165a8fc693))),UInt32Impl(0))))</span>
 
 <span class="hljs-comment">// We now turn to signing the unsigned transaction</span>
 <span class="hljs-comment">// this contains all the information we need to</span>
@@ -176,12 +176,12 @@ builder += input
                                      signers = <span class="hljs-type">Vector</span>(privKey),
                                      hashType =
                                          <span class="hljs-type">HashType</span>.sigHashAll)
-<span class="hljs-comment">// utxoInfo: ScriptSignatureParams[P2PKHInputInfo] = ScriptSignatureParams(P2PKHInputInfo(TransactionOutPoint(88d761c971de6a42f9d6bf5550f2b2368d5e194629e00e7240886b46b58c11bf:0),10000 sats,ECPublicKey(03ddd35ef79b2192e1386d5d5690f91f9567cbc845e395ea9e20b1eb301bb21761)),BaseTransaction(Int32Impl(1),Vector(),Vector(TransactionOutput(10000 sats,pkh(e47e9bf33acf2c772fa03be64b3f7df16f984eb0))),UInt32Impl(0)),Vector(Masked(ECPrivateKeyImpl)),SIGHASH_ALL(Int32Impl(1)))</span>
+<span class="hljs-comment">// utxoInfo: ScriptSignatureParams[P2PKHInputInfo] = ScriptSignatureParams(P2PKHInputInfo(TransactionOutPoint(703fa68b71cc9e8dc359e0559911785887d38c6c9560243527bb5c5449ab4994:0),10000 sats,ECPublicKey(026d77a4295a2946561e7707e543a7ef272fe248e93fb3c3b9790ca6f965f7f0c4)),BaseTransaction(Int32Impl(1),Vector(),Vector(TransactionOutput(10000 sats,pkh(8fd5f10263bd4fd8bf61ee84cd6bbbd8d1cb2d61))),UInt32Impl(0)),Vector(Masked(ECPrivateKeyImpl)),SIGHASH_ALL(Int32Impl(1)))</span>
 
 <span class="hljs-comment">// all of the UTXO spending information, since we only have</span>
 <span class="hljs-comment">// one input, this is just one element</span>
 <span class="hljs-keyword">val</span> utxoInfos: <span class="hljs-type">Vector</span>[<span class="hljs-type">ScriptSignatureParams</span>[<span class="hljs-type">InputInfo</span>]] = <span class="hljs-type">Vector</span>(utxoInfo)
-<span class="hljs-comment">// utxoInfos: Vector[ScriptSignatureParams[InputInfo]] = Vector(ScriptSignatureParams(P2PKHInputInfo(TransactionOutPoint(88d761c971de6a42f9d6bf5550f2b2368d5e194629e00e7240886b46b58c11bf:0),10000 sats,ECPublicKey(03ddd35ef79b2192e1386d5d5690f91f9567cbc845e395ea9e20b1eb301bb21761)),BaseTransaction(Int32Impl(1),Vector(),Vector(TransactionOutput(10000 sats,pkh(e47e9bf33acf2c772fa03be64b3f7df16f984eb0))),UInt32Impl(0)),Vector(Masked(ECPrivateKeyImpl)),SIGHASH_ALL(Int32Impl(1))))</span>
+<span class="hljs-comment">// utxoInfos: Vector[ScriptSignatureParams[InputInfo]] = Vector(ScriptSignatureParams(P2PKHInputInfo(TransactionOutPoint(703fa68b71cc9e8dc359e0559911785887d38c6c9560243527bb5c5449ab4994:0),10000 sats,ECPublicKey(026d77a4295a2946561e7707e543a7ef272fe248e93fb3c3b9790ca6f965f7f0c4)),BaseTransaction(Int32Impl(1),Vector(),Vector(TransactionOutput(10000 sats,pkh(8fd5f10263bd4fd8bf61ee84cd6bbbd8d1cb2d61))),UInt32Impl(0)),Vector(Masked(ECPrivateKeyImpl)),SIGHASH_ALL(Int32Impl(1))))</span>
 
 <span class="hljs-comment">// Yay! Now we use the RawTxSigner object to sign the tx.</span>
 <span class="hljs-comment">// The 'sign' method is going produce a validly signed transaction</span>
@@ -201,7 +201,7 @@ builder += input
   }
   <span class="hljs-type">Await</span>.result(signedTxF, <span class="hljs-number">30.</span>seconds)
 }
-<span class="hljs-comment">// signedTx: Transaction = BaseTransaction(Int32Impl(2),Vector(TransactionInputImpl(TransactionOutPoint(88d761c971de6a42f9d6bf5550f2b2368d5e194629e00e7240886b46b58c11bf:0),P2PKHScriptSignature(ECPublicKey(03ddd35ef79b2192e1386d5d5690f91f9567cbc845e395ea9e20b1eb301bb21761), ECDigitalSignature(3044022019c3bb9ae8df6d872f95be99378665f825c03078764a50c896abd93e35879e5602202423e11c4692f0a0ce1e493c1ef80ae998bfc42824f774e631e6f24440834bf301)),UInt32Impl(0))),Vector(TransactionOutput(5000 sats,pkh(ef6a5024867a71b4750e403a88e15b0afd836db2)), TransactionOutput(4775 sats,pkh(3963452a70fcc99796b9512edde815398d5a193c))),UInt32Impl(0))</span>
+<span class="hljs-comment">// signedTx: Transaction = BaseTransaction(Int32Impl(2),Vector(TransactionInputImpl(TransactionOutPoint(703fa68b71cc9e8dc359e0559911785887d38c6c9560243527bb5c5449ab4994:0),P2PKHScriptSignature(ECPublicKey(026d77a4295a2946561e7707e543a7ef272fe248e93fb3c3b9790ca6f965f7f0c4), ECDigitalSignature(304402205c149f8b50e4857f18708582588ea92b0b3add862de6c6590f2f161ef0dbe290022038a43b75c7adb9aaa7639690c04b96420b8881056b3e648db9ba8bcf2d69422901)),UInt32Impl(0))),Vector(TransactionOutput(5000 sats,pkh(4220d9730942616f37de7362c481a897c0e42f90)), TransactionOutput(4775 sats,pkh(d706962a135d01441713a7eff9a96e165a8fc693))),UInt32Impl(0))</span>
 </code></pre>
 <pre><code class="hljs css language-scala">signedTx.inputs.length
 <span class="hljs-comment">// res2: Int = 1</span>
@@ -211,7 +211,7 @@ signedTx.outputs.length
 
 <span class="hljs-comment">//remember, you can call .hex on any bitcoin-s data structure to get the hex representation!</span>
 signedTx.hex
-<span class="hljs-comment">// res4: String = 0200000001bf118cb5466b8840720ee02946195e8d36b2f25055bfd6f9426ade71c961d788000000006a473044022019c3bb9ae8df6d872f95be99378665f825c03078764a50c896abd93e35879e5602202423e11c4692f0a0ce1e493c1ef80ae998bfc42824f774e631e6f24440834bf3012103ddd35ef79b2192e1386d5d5690f91f9567cbc845e395ea9e20b1eb301bb21761000000000288130000000000001976a914ef6a5024867a71b4750e403a88e15b0afd836db288aca7120000000000001976a9143963452a70fcc99796b9512edde815398d5a193c88ac00000000</span>
+<span class="hljs-comment">// res4: String = 02000000019449ab49545cbb27352460956c8cd3875878119955e059c38d9ecc718ba63f70000000006a47304402205c149f8b50e4857f18708582588ea92b0b3add862de6c6590f2f161ef0dbe290022038a43b75c7adb9aaa7639690c04b96420b8881056b3e648db9ba8bcf2d6942290121026d77a4295a2946561e7707e543a7ef272fe248e93fb3c3b9790ca6f965f7f0c4000000000288130000000000001976a9144220d9730942616f37de7362c481a897c0e42f9088aca7120000000000001976a914d706962a135d01441713a7eff9a96e165a8fc69388ac00000000</span>
 </code></pre>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/core/psbts"><span class="arrow-prev">← </span><span>Partially Signed Bitcoin Transactions</span></a><a class="docs-next button" href="/docs/next/core/lightning-network"><span>Lightning Network Data Types</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
