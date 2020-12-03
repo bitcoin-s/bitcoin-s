@@ -1,0 +1,148 @@
+name: CI
+env:
+  SCALA_2_13: 2.13.4
+  SCALA_2_12: 2.12.12
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Compile and Check Formatting
+        run: sbt ++${SCALA_2_12} test:compile scalafmtCheckAll
+  test0:
+    needs: compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Compile website
+        run: sbt ++${SCALA_2_13} docs/mdoc
+  test1:
+    needs: compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Linux 2.13 bitcoind and eclair rpc tests
+        run: sbt ++${SCALA_2_13} bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls
+  test2:
+    needs: compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Linux 2.12 bitcoind and eclair rpc tests
+        run: sbt ++${SCALA_2_12} bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls
+  test3:
+    needs: compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Linux 2.13 App, Chain, Node, and Core Tests
+        run: sbt ++${SCALA_2_13} chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test
+  test4:
+    needs: compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Linux 2.12 App, Chain, Node, and Core Tests
+        run: sbt ++${SCALA_2_12} chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test
+  test5:
+    needs: compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Linux 2.13 KeyManager, Wallet, and DLC tests
+        run: sbt ++${SCALA_2_13} keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls
+  test6:
+    needs: compile
+    runs-on: ubuntu-latest
+    steps:
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Linux 2.12 KeyManager, Wallet, and DLC tests
+        run: sbt ++${SCALA_2_12} keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls
+  test7:
+    needs: compile
+    runs-on: ubuntu-latest
+    env:
+      DISABLE_SECP256K1: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Secp256k1 Disabled Core Test
+        run: sbt ++${SCALA_2_13} cryptoTest/test coreTest/test
+  test8:
+    needs: compile
+    runs-on: ubuntu-latest
+    env:
+      PG_ENABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: PostgreSQL tests
+        run: sbt ++${SCALA_2_13} dbCommonsTest/test walletTest/test chainTest/test nodeTest/test
+  test9:
+    needs: compile
+    runs-on: ubuntu-latest
+    env:
+      PG_ENABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: PostgreSQL tests
+        run: sbt ++${SCALA_2_13} dbCommonsTest/test walletTest/test chainTest/test nodeTest/test
+
+# TODO MAC tests
