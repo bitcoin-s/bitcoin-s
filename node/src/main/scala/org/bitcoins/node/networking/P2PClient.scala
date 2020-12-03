@@ -355,13 +355,13 @@ object P2PClient extends P2PLogger {
     * @return the parsed [[NetworkMessage]]'s and the unaligned bytes that did not parse to a message
     */
   private[bitcoins] def parseIndividualMessages(
-      bytes: ByteVector): (List[NetworkMessage], ByteVector) = {
+      bytes: ByteVector): (Vector[NetworkMessage], ByteVector) = {
     @tailrec
     def loop(
         remainingBytes: ByteVector,
-        accum: List[NetworkMessage]): (List[NetworkMessage], ByteVector) = {
+        accum: Vector[NetworkMessage]): (Vector[NetworkMessage], ByteVector) = {
       if (remainingBytes.length <= 0) {
-        (accum.reverse, remainingBytes)
+        (accum, remainingBytes)
       } else {
         val headerTry = Try(
           NetworkHeader.fromBytes(remainingBytes.take(NetworkHeader.bytesSize)))
@@ -381,10 +381,10 @@ object P2PClient extends P2PLogger {
                   logger.trace(
                     s"Parsed a message=${message.header.commandName} from bytes, continuing with remainingBytes=${newRemainingBytes.length}")
 
-                  loop(newRemainingBytes, message :: accum)
+                  loop(newRemainingBytes, accum :+ message)
                 case Failure(_) =>
                   // Can't parse message yet, we need to wait for more bytes
-                  (accum.reverse, remainingBytes)
+                  (accum, remainingBytes)
               }
             } else if (payloadBytes.size == header.payloadSize.toInt) { // If we've received the entire unknown message
               logger.info(
@@ -393,7 +393,7 @@ object P2PClient extends P2PLogger {
             } else {
               // If we can't parse the entire unknown message, continue on until we can
               // so we properly skip it
-              (accum.reverse, remainingBytes)
+              (accum, remainingBytes)
             }
           case Failure(exc) =>
             logger.trace(
@@ -402,11 +402,11 @@ object P2PClient extends P2PLogger {
             //this case means that our TCP frame was not aligned with bitcoin protocol
             //return the unaligned bytes so we can apply them to the next tcp frame of bytes we receive
             //http://stackoverflow.com/a/37979529/967713
-            (accum.reverse, remainingBytes)
+            (accum, remainingBytes)
         }
       }
     }
-    val (messages, remainingBytes) = loop(bytes, Nil)
+    val (messages, remainingBytes) = loop(bytes, Vector.empty)
     (messages, remainingBytes)
   }
 
