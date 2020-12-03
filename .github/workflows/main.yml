@@ -17,6 +17,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Compile and Check Formatting
         run: sbt ++${SCALA_2_12} test:compile scalafmtCheckAll
 
@@ -30,6 +38,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Compile website
         run: sbt ++${SCALA_2_13} docs/mdoc
 
@@ -43,6 +59,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Linux 2.13 bitcoind and eclair rpc tests
         run: sbt ++${SCALA_2_13} downloadBitcoind downloadEclair coverage bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls
 
@@ -56,6 +80,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Linux 2.12 bitcoind and eclair rpc tests
         run: sbt ++${SCALA_2_12} downloadBitcoind downloadEclair coverage bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls
 
@@ -69,6 +101,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Linux 2.13 App, Chain, Node, and Core Tests
         run: sbt ++${SCALA_2_13} downloadBitcoind coverage chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test
 
@@ -82,6 +122,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Linux 2.12 App, Chain, Node, and Core Tests
         run: sbt ++${SCALA_2_12} downloadBitcoind coverage chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test
 
@@ -95,6 +143,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Linux 2.13 KeyManager, Wallet, and DLC tests
         run: sbt ++${SCALA_2_13} downloadBitcoind coverage keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls
 
@@ -108,6 +164,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Linux 2.12 KeyManager, Wallet, and DLC tests
         run: sbt ++${SCALA_2_12} downloadBitcoind coverage keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls
 
@@ -123,6 +187,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Secp256k1 Disabled Core Test
         run: sbt ++${SCALA_2_13} cryptoTest/test coreTest/test
 
@@ -138,6 +210,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: PostgreSQL tests
         run: sbt ++${SCALA_2_13} downloadBitcoind dbCommonsTest/test walletTest/test chainTest/test nodeTest/test
 
@@ -151,6 +231,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Mac 2.13 bitcoind and eclair rpc tests
         run: sbt ++${SCALA_2_13} downloadBitcoind downloadEclair coverage cryptoTest/test coreTest/test appCommonsTest/test bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls
 
@@ -164,6 +252,14 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Mac 2.13 Wallet, Node, and DLC tests
         run: sbt ++${SCALA_2_13} downloadBitcoind coverage walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coveralls
 
@@ -177,5 +273,13 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.8"
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
       - name: Windows Crypto, Core, and Database tests
         run: sbt ++${SCALA_2_13} cryptoTest/test coreTest/test dbCommonsTest/test
