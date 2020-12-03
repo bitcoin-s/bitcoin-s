@@ -466,7 +466,7 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
   private lazy val maxDigit: NormalizedString = (base.toInt - 1).toString
 
   override lazy val max: Vector[NormalizedString] = if (isSigned) {
-    "+" +: Vector.fill(numDigits.toInt)(maxDigit)
+    NormalizedString("+") +: Vector.fill(numDigits.toInt)(maxDigit)
   } else {
     Vector.fill(numDigits.toInt)(maxDigit)
   }
@@ -478,7 +478,7 @@ trait DigitDecompositionEventDescriptorV0TLV extends NumericEventDescriptorTLV {
   }
 
   override lazy val min: Vector[NormalizedString] = if (isSigned) {
-    "-" +: Vector.fill(numDigits.toInt)(maxDigit)
+    NormalizedString("-") +: Vector.fill(numDigits.toInt)(maxDigit)
   } else {
     Vector.fill(numDigits.toInt)("0")
   }
