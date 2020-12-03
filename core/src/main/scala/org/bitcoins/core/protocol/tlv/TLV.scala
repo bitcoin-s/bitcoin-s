@@ -91,8 +91,8 @@ object TLV extends TLVParentFactory[TLV] {
     }
   }
 
-  def getStringBytes(str: String): ByteVector = {
-    val strBytes = CryptoUtil.serializeForHash(str)
+  def getStringBytes(str: NormalizedString): ByteVector = {
+    val strBytes = str.bytes
     val size = BigSizeUInt(strBytes.size)
 
     size.bytes ++ strBytes
@@ -162,7 +162,7 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
   }
 }
 
-case class NormalizedString(private val str: String) {
+case class NormalizedString(private val str: String) extends NetworkElement {
 
   val normStr: String = CryptoUtil.normalize(str)
 
@@ -175,9 +175,11 @@ case class NormalizedString(private val str: String) {
   }
 
   override def toString: String = normStr
+
+  override def bytes: ByteVector = CryptoUtil.serializeForHash(normStr)
 }
 
-object NormalizedString {
+object NormalizedString extends StringFactory[NormalizedString] {
 
   def apply(bytes: ByteVector): NormalizedString = {
     NormalizedString(new String(bytes.toArray, StandardCharsets.UTF_8))
@@ -200,6 +202,9 @@ object NormalizedString {
   implicit def normalizedVecToString(
       strs: Vector[NormalizedString]): Vector[String] =
     strs.map(_.normStr)
+
+  override def fromString(string: String): NormalizedString =
+    NormalizedString(string)
 }
 
 case class UnknownTLV(tpe: BigSizeUInt, value: ByteVector) extends TLV {
