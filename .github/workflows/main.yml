@@ -15,8 +15,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -36,8 +34,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -57,8 +53,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -78,8 +72,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -99,8 +91,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -120,8 +110,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -141,8 +129,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -162,8 +148,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -185,8 +169,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -208,8 +190,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -229,8 +209,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -250,8 +228,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -274,8 +250,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.8"
       - name: Cache
         uses: actions/cache@v2
         with:
