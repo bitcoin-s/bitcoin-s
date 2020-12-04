@@ -267,6 +267,9 @@ jobs:
     needs: compile
     runs-on: windows-latest
     steps:
+      - name: Configure git
+        run: "git config --global core.autocrlf false"
+        shell: bash
       - name: Checkout
         uses: actions/checkout@v2
       - name: Setup Scala
@@ -283,3 +286,4 @@ jobs:
           key: ${{ runner.os }}-cache
       - name: Windows Crypto, Core, and Database tests
         run: sbt ++${SCALA_2_13} cryptoTest/test coreTest/test dbCommonsTest/test
+        shell: bash
