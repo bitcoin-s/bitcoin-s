@@ -35,9 +35,9 @@ class TLVJsonSerializersTest extends BitcoinSUnitTest {
                                               precision = Int32.zero)
 
   val signedDigitDecompositionEventDescriptor =
-    SignedDigitDecompositionEventDescriptor(base = UInt16(10),
+    SignedDigitDecompositionEventDescriptor(base = UInt16(16),
                                             numDigits = UInt16(1),
-                                            unit = "BTC/USD",
+                                            unit = "USD/BTC",
                                             precision = Int32.zero)
 
   val privateKey = ECPrivateKey.freshPrivateKey
@@ -159,10 +159,10 @@ class TLVJsonSerializersTest extends BitcoinSUnitTest {
     assert(
       (json \ "eventTLV" \ "eventDescriptor" \ "base")
         .validate[Int]
-        .get == signedDigitDecompositionEventDescriptor.base.toInt)
+        .get == unsignedDigitDecompositionEventDescriptor.base.toInt)
     assert(
       (json \ "eventTLV" \ "eventDescriptor" \ "unit")
         .validate[String]
-        .get == signedDigitDecompositionEventDescriptor.unit.normStr)
+        .get == unsignedDigitDecompositionEventDescriptor.unit.normStr)
   }
 }
