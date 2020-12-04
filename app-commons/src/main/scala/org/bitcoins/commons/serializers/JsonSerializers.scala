@@ -2,11 +2,10 @@ package org.bitcoins.commons.serializers
 
 import java.io.File
 import java.net.{InetAddress, URI}
-
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.{Int32, UInt32, UInt64}
+import org.bitcoins.core.number.{Int32, UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -15,13 +14,23 @@ import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonWriters._
-import java.time.LocalDateTime
 
+import java.time.LocalDateTime
 import org.bitcoins.commons.jsonmodels.SerializedTransaction.tokenToString
 import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.jsonmodels.wallet._
+import org.bitcoins.core.protocol.tlv.{
+  DigitDecompositionEventDescriptorV0TLV,
+  EnumEventDescriptorV0TLV,
+  EventDescriptorTLV,
+  OracleAnnouncementV0TLV,
+  OracleEventV0TLV,
+  RangeEventDescriptorV0TLV,
+  SignedDigitDecompositionEventDescriptor,
+  UnsignedDigitDecompositionEventDescriptor
+}
 import org.bitcoins.core.psbt.{
   GlobalPSBTRecord,
   InputPSBTRecord,
@@ -104,6 +113,8 @@ object JsonSerializers {
     TransactionInputWrites
   implicit val uInt32Writes: Writes[UInt32] = UInt32Writes
   implicit val transactionWrites: Writes[Transaction] = TransactionWrites
+
+  implicit val uInt16Writes: Writes[UInt16] = UInt16Writes
 
   implicit val xpubFormat: Format[ExtPublicKey] = new Format[ExtPublicKey] {
 
@@ -653,5 +664,48 @@ object JsonSerializers {
 
   implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] =
     mapWrites[BitcoinAddress, Bitcoins](_.value)
+
+  implicit val schnorrDigitalSignatureWrites: Writes[SchnorrDigitalSignature] =
+    Writes[SchnorrDigitalSignature](sig => JsString(sig.hex))
+
+  implicit val schnorrPublicKeyWrites: Writes[SchnorrPublicKey] =
+    Writes[SchnorrPublicKey](pubKey => JsString(pubKey.hex))
+
+  implicit val schnorrNonceWrites: Writes[SchnorrNonce] =
+    Writes[SchnorrNonce](nonce => JsString(nonce.hex))
+
+  implicit val enumEventDescriptorV0TLVWrites: Writes[
+    EnumEventDescriptorV0TLV] = Json.writes[EnumEventDescriptorV0TLV]
+
+  implicit val unsignedDigitDecompositionEventDescriptorWrites: Writes[
+    UnsignedDigitDecompositionEventDescriptor] =
+    Json.writes[UnsignedDigitDecompositionEventDescriptor]
+
+  implicit val signedDigitDecompositionEventDescriptorWrites: Writes[
+    SignedDigitDecompositionEventDescriptor] =
+    Json.writes[SignedDigitDecompositionEventDescriptor]
+
+  implicit object EventDescriptorTLVWrites extends Writes[EventDescriptorTLV] {
+
+    override def writes(o: EventDescriptorTLV): JsValue =
+      o match {
+        case dd: DigitDecompositionEventDescriptorV0TLV =>
+          dd match {
+            case sdded: SignedDigitDecompositionEventDescriptor =>
+              Json.toJson(sdded)
+            case udded: UnsignedDigitDecompositionEventDescriptor =>
+              Json.toJson(udded)
+          }
+        case eed: EnumEventDescriptorV0TLV => Json.toJson(eed)
+        case _: RangeEventDescriptorV0TLV  => JsObject.empty // deprecated
+      }
+
+  }
+
+  implicit val oracleEventV0TLVWrites: Writes[OracleEventV0TLV] =
+    Json.writes[OracleEventV0TLV]
+
+  implicit val oracleAnnouncementV0TLVWrites: Writes[OracleAnnouncementV0TLV] =
+    Json.writes[OracleAnnouncementV0TLV]
 
 }
