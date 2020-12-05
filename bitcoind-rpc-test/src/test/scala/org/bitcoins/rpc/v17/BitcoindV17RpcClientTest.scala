@@ -15,7 +15,7 @@ import org.bitcoins.core.protocol.transaction.TransactionInput
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.util.AsyncUtil
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -25,7 +25,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
   val unusedLabel = "unused_label"
 
   val clientsF: Future[(BitcoindV17RpcClient, BitcoindV17RpcClient)] =
-    BitcoindRpcTestUtilRpc.createNodePairV17(clientAccum)
+    BitcoindRpcTestUtil.createNodePairV17(clientAccum)
 
   behavior of "BitcoindV17RpcClient"
 
@@ -45,7 +45,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       tx <-
-        BitcoindRpcTestUtilRpc.createRawCoinbaseTransaction(client, otherClient)
+        BitcoindRpcTestUtil.createRawCoinbaseTransaction(client, otherClient)
       acceptance <- client.testMempoolAccept(tx)
     } yield {
       assert(acceptance.rejectReason.isEmpty == acceptance.allowed)
@@ -56,7 +56,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       rawTx <-
-        BitcoindRpcTestUtilRpc.createRawCoinbaseTransaction(client, otherClient)
+        BitcoindRpcTestUtil.createRawCoinbaseTransaction(client, otherClient)
       signedTx <- client.signRawTransactionWithWallet(rawTx)
     } yield assert(signedTx.complete)
   }
@@ -148,7 +148,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, otherClient) <- clientsF
       address <- client.getNewAddress(usedLabel)
       _ <-
-        BitcoindRpcTestUtilRpc
+        BitcoindRpcTestUtil
           .fundBlockChainTransaction(client,
                                      otherClient,
                                      address,
@@ -200,14 +200,14 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       addr <- client.getNewAddress
-      _ <- BitcoindRpcTestUtilRpc.fundBlockChainTransaction(otherClient,
-                                                            client,
-                                                            addr,
-                                                            btc)
+      _ <- BitcoindRpcTestUtil.fundBlockChainTransaction(otherClient,
+                                                         client,
+                                                         addr,
+                                                         btc)
 
       newestBlock <- otherClient.getBestBlockHash
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-        BitcoindRpcTestUtilRpc.hasSeenBlock(client, newestBlock))
+        BitcoindRpcTestUtil.hasSeenBlock(client, newestBlock))
 
       oldAmount <- client.getReceivedByLabel(l)
       _ = assert(oldAmount == Bitcoins(0))
@@ -227,7 +227,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       newBlock +: _ <-
         client.getNewAddress.flatMap(otherClient.generateToAddress(1, _))
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-        BitcoindRpcTestUtilRpc.hasSeenBlock(client, newBlock))
+        BitcoindRpcTestUtil.hasSeenBlock(client, newBlock))
       list <- client.listReceivedByLabel()
     } yield {
 

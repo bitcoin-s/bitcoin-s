@@ -6,7 +6,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.AsyncUtil.RpcRetryException
 import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{BitcoindRpcTest, FileUtil}
 
 import scala.concurrent.Future
@@ -16,7 +16,7 @@ import scala.util.Success
 class TestRpcUtilTest extends BitcoindRpcTest {
 
   private lazy val clientsF =
-    BitcoindRpcTestUtilRpc.createNodeTriple(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodeTriple(clientAccum = clientAccum)
 
   private def trueLater(delay: Int = 1000): Future[Boolean] =
     Future {
@@ -89,7 +89,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
 
   it should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
     val instance =
-      BitcoindRpcTestUtilRpc.instance(RpcUtil.randomPort, RpcUtil.randomPort)
+      BitcoindRpcTestUtil.instance(RpcUtil.randomPort, RpcUtil.randomPort)
     val dir = instance.datadir
     assert(dir.isDirectory)
     assert(dir.getPath().startsWith(scala.util.Properties.tmpDir))
@@ -100,7 +100,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
   }
 
   it should "be able to create a single node, wait for it to start and then delete it" in {
-    val instance = BitcoindRpcTestUtilRpc.instance()
+    val instance = BitcoindRpcTestUtil.instance()
     val client = BitcoindRpcClient.withActorSystem(instance)
     val startedF = client.start()
 
@@ -112,7 +112,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
 
   it should "be able to create a connected node pair with more than 100 blocks and then delete them" in {
     for {
-      (client1, client2) <- BitcoindRpcTestUtilRpc.createNodePair()
+      (client1, client2) <- BitcoindRpcTestUtil.createNodePair()
       _ = assert(client1.getDaemon.datadir.isDirectory)
       _ = assert(client2.getDaemon.datadir.isDirectory)
 
@@ -123,7 +123,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
       count2 <- client2.getBlockCount
       _ = assert(count1 > 100)
       _ = assert(count2 > 100)
-      _ <- BitcoindRpcTestUtilRpc.deleteNodePair(client1, client2)
+      _ <- BitcoindRpcTestUtil.deleteNodePair(client1, client2)
     } yield {
       assert(!client1.getDaemon.datadir.exists)
       assert(!client2.getDaemon.datadir.exists)
@@ -135,7 +135,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
       (first, second, third) <- clientsF
       address <- second.getNewAddress
       txid <- first.sendToAddress(address, Bitcoins.one)
-      _ <- BitcoindRpcTestUtilRpc.generateAndSync(Vector(first, second, third))
+      _ <- BitcoindRpcTestUtil.generateAndSync(Vector(first, second, third))
       tx <- first.getTransaction(txid)
       _ = assert(tx.confirmations > 0)
       rawTx <- second.getRawTransaction(txid)
@@ -152,8 +152,8 @@ class TestRpcUtilTest extends BitcoindRpcTest {
       (first, second, third) <- clientsF
       allClients = Vector(first, second, third)
       heightPreGeneration <- first.getBlockCount
-      _ <- BitcoindRpcTestUtilRpc.generateAllAndSync(allClients,
-                                                     blocks = blocksToGenerate)
+      _ <- BitcoindRpcTestUtil.generateAllAndSync(allClients,
+                                                  blocks = blocksToGenerate)
       firstHash <- first.getBestBlockHash
       secondHash <- second.getBestBlockHash
       heightPostGeneration <- first.getBlockCount
@@ -169,11 +169,11 @@ class TestRpcUtilTest extends BitcoindRpcTest {
       (first, second, _) <- clientsF
       address <- second.getNewAddress
       txid <- first.sendToAddress(address, Bitcoins.one)
-      hashes <- BitcoindRpcTestUtilRpc.generateAndSync(Vector(first, second))
-      vout <- BitcoindRpcTestUtilRpc.findOutput(first,
-                                                txid,
-                                                Bitcoins.one,
-                                                Some(hashes.head))
+      hashes <- BitcoindRpcTestUtil.generateAndSync(Vector(first, second))
+      vout <- BitcoindRpcTestUtil.findOutput(first,
+                                             txid,
+                                             Bitcoins.one,
+                                             Some(hashes.head))
       tx <- first.getRawTransaction(txid, Some(hashes.head))
     } yield {
       assert(tx.vout(vout.toInt).value == Bitcoins.one)

@@ -13,8 +13,8 @@ import org.bitcoins.rpc.config.{
   BitcoindInstance
 }
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc.newestBitcoindBinary
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil.newestBitcoindBinary
 import org.bitcoins.testkit.util.{BitcoindRpcTest, FileUtil}
 import org.scalatest.compatible.Assertion
 
@@ -138,7 +138,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
       _ <- client.start()
       _ <- client.getNewAddress.flatMap(client.generateToAddress(101, _))
       balance <- client.getBalance
-      _ <- BitcoindRpcTestUtilRpc.stopServers(Vector(client))
+      _ <- BitcoindRpcTestUtil.stopServers(Vector(client))
       _ <-
         client.getBalance
           .map { balance =>

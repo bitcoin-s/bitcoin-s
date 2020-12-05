@@ -15,7 +15,7 @@ import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc._
 import org.bitcoins.rpc.client.common._
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -29,12 +29,12 @@ class MultiWalletRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[
     (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtilRpc.createNodeTripleV19(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodeTripleV19(clientAccum = clientAccum)
 
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap {
     clients =>
       val walletClient =
-        BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtilRpc.instance())
+        BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
       clientAccum += walletClient
 
       for {

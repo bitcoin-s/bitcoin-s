@@ -10,7 +10,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.AsyncUtil
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -18,13 +18,13 @@ import scala.concurrent.Future
 class BlockchainRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtilRpc.createNodePairV17(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePairV17(clientAccum = clientAccum)
 
   lazy val pruneClientF: Future[BitcoindRpcClient] = clientsF.flatMap {
     case (_, _) =>
       val pruneClient =
         BitcoindRpcClient.withActorSystem(
-          BitcoindRpcTestUtilRpc
+          BitcoindRpcTestUtil
             .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.V17)))
 
       clientAccum += pruneClient
@@ -60,7 +60,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
   it should "be able to get the first block" in {
     for {
       (client, _) <- clientsF
-      block <- BitcoindRpcTestUtilRpc.getFirstBlock(client)
+      block <- BitcoindRpcTestUtil.getFirstBlock(client)
     } yield {
       assert(block.tx.nonEmpty)
       assert(block.height == 1)
@@ -97,7 +97,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
       (client, otherClient) <- clientsF
       address <- otherClient.getNewAddress(addressType = AddressType.P2SHSegwit)
       txid <-
-        BitcoindRpcTestUtilRpc
+        BitcoindRpcTestUtil
           .fundMemPoolTransaction(client, address, Bitcoins(1))
       blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       mostRecentBlock <- client.getBlock(blocks.head)
@@ -132,10 +132,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
   it should "be able to mark a block as precious" in {
     for {
       (freshClient, otherFreshClient) <-
-        BitcoindRpcTestUtilRpc.createNodePair(clientAccum)
+        BitcoindRpcTestUtil.createNodePair(clientAccum)
       _ <- freshClient.disconnectNode(otherFreshClient.getDaemon.uri)
-      _ <-
-        BitcoindRpcTestUtilRpc.awaitDisconnected(freshClient, otherFreshClient)
+      _ <- BitcoindRpcTestUtil.awaitDisconnected(freshClient, otherFreshClient)
 
       blocks1 <-
         freshClient.getNewAddress.flatMap(freshClient.generateToAddress(1, _))
@@ -151,7 +150,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
         freshClient
           .addNode(otherFreshClient.getDaemon.uri, AddNodeArgument.OneTry)
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-        BitcoindRpcTestUtilRpc.hasSeenBlock(otherFreshClient, bestHash1))
+        BitcoindRpcTestUtil.hasSeenBlock(otherFreshClient, bestHash1))
 
       _ <- otherFreshClient.preciousBlock(bestHash1)
       newBestHash <- otherFreshClient.getBestBlockHash
@@ -162,7 +161,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
   it should "be able to get tx out proof and verify it" in {
     for {
       (client, _) <- clientsF
-      block <- BitcoindRpcTestUtilRpc.getFirstBlock(client)
+      block <- BitcoindRpcTestUtil.getFirstBlock(client)
       merkle <- client.getTxOutProof(Vector(block.tx.head.txid))
       txids <- client.verifyTxOutProof(merkle)
     } yield {
@@ -221,7 +220,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
   it should "be able to get a transaction" in {
     for {
       (client, _) <- clientsF
-      block <- BitcoindRpcTestUtilRpc.getFirstBlock(client)
+      block <- BitcoindRpcTestUtil.getFirstBlock(client)
       tx <- client.getTransaction(block.tx.head.txid)
       count <- client.getBlockCount
     } yield {

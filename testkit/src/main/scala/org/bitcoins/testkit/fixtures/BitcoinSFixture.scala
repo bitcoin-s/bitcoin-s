@@ -2,7 +2,7 @@ package org.bitcoins.testkit.fixtures
 
 import akka.actor.ActorSystem
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest._
@@ -160,7 +160,7 @@ object BitcoinSFixture {
   /** Creates a new bitcoind instance */
   def createBitcoind(versionOpt: Option[BitcoindVersion] = None)(implicit
       system: ActorSystem): Future[BitcoindRpcClient] = {
-    val instance = BitcoindRpcTestUtilRpc.instance(versionOpt = versionOpt)
+    val instance = BitcoindRpcTestUtil.instance(versionOpt = versionOpt)
     val bitcoind = versionOpt match {
       case Some(v) => BitcoindRpcClient.fromVersion(v, instance)
       case None    => new BitcoindRpcClient(instance)

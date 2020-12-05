@@ -3,7 +3,7 @@ package org.bitcoins.rpc.v18
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -14,8 +14,8 @@ import scala.concurrent.Future
 class PsbtRpcTest extends BitcoindRpcTest {
 
   lazy val clientF: Future[BitcoindV18RpcClient] = {
-    val client = new BitcoindV18RpcClient(BitcoindRpcTestUtilRpc.v18Instance())
-    val clientIsStartedF = BitcoindRpcTestUtilRpc.startServers(Vector(client))
+    val client = new BitcoindV18RpcClient(BitcoindRpcTestUtil.v18Instance())
+    val clientIsStartedF = BitcoindRpcTestUtil.startServers(Vector(client))
     clientIsStartedF.map(_ => client)
   }
 

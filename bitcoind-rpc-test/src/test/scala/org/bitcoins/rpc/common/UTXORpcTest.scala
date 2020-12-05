@@ -2,7 +2,7 @@ package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -10,7 +10,7 @@ import scala.concurrent.Future
 class UTXORpcTest extends BitcoindRpcTest {
 
   lazy val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtilRpc.startedBitcoindRpcClient(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   behavior of "UTXORpc"
 
@@ -52,7 +52,7 @@ class UTXORpcTest extends BitcoindRpcTest {
   it should "be able to get utxo info" in {
     for {
       client <- clientF
-      block <- BitcoindRpcTestUtilRpc.getFirstBlock(client)
+      block <- BitcoindRpcTestUtil.getFirstBlock(client)
       info1 <- client.getTxOut(block.tx.head.txid, 0)
     } yield assert(info1.coinbase)
   }

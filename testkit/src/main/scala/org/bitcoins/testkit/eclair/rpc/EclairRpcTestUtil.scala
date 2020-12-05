@@ -26,7 +26,7 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtilRpc, TestRpcUtil}
+import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
 import org.bitcoins.testkit.util.{EclairRpcTestClient, FileUtil}
 
 import java.io.{File, PrintWriter}
@@ -59,16 +59,16 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     */
   def startedBitcoindRpcClient(instance: BitcoindInstance = bitcoindInstance())(
       implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
-    BitcoindRpcTestUtilRpc.startedBitcoindRpcClient(instance)
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
   }
 
   def bitcoindInstance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort): BitcoindInstance = {
-    BitcoindRpcTestUtilRpc.v19Instance(port = port,
-                                       rpcPort = rpcPort,
-                                       zmqPort = zmqPort)
+    BitcoindRpcTestUtil.v19Instance(port = port,
+                                    rpcPort = rpcPort,
+                                    zmqPort = zmqPort)
   }
 
   //cribbed from https://github.com/Christewart/eclair/blob/bad02e2c0e8bd039336998d318a861736edfa0ad/eclair-core/src/test/scala/fr/acinq/eclair/integration/IntegrationSpec.scala#L140-L153
@@ -686,7 +686,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         uri = new URI("http://localhost:18333"),
         rpcUri = auth.bitcoindRpcUri,
         authCredentials = auth.bitcoinAuthOpt.get,
-        binary = BitcoindRpcTestUtilRpc.getBinary(BitcoindVersion.V17)
+        binary = BitcoindRpcTestUtil.getBinary(BitcoindVersion.V17)
       )
       BitcoindRpcClient.withActorSystem(bitcoindInstance)
     }
@@ -723,7 +723,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
     logger.debug(s"shutting down eclair")
     val stopEclairF = eclairRpcClient.stop()
-    val killBitcoindF = BitcoindRpcTestUtilRpc.stopServer(bitcoindRpc)
+    val killBitcoindF = BitcoindRpcTestUtil.stopServer(bitcoindRpc)
     val iskilled = eclairRpcClient.isStopped
 
     val shutdownF = for {

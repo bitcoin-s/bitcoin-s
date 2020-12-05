@@ -22,7 +22,7 @@ import org.bitcoins.testkit.chain.ChainUnitTest.createChainHandler
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.CachedChainAppConfig
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 
 import org.bitcoins.testkit.util.ScalaTestUtil
 import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
@@ -579,7 +579,7 @@ object ChainUnitTest extends ChainVerificationLogger {
       chainAppConfig: ChainAppConfig): Future[Unit] = {
     import system.dispatcher
     val stopBitcoindF =
-      BitcoindRpcTestUtilRpc.stopServer(bitcoindChainHandler.bitcoindRpc)
+      BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
     val dropTableF = ChainUnitTest.destroyAllTables()
     stopBitcoindF.flatMap(_ => dropTableF)
   }
@@ -610,7 +610,7 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   def destroyBitcoind(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem): Future[Unit] = {
-    BitcoindRpcTestUtilRpc.stopServer(bitcoind)
+    BitcoindRpcTestUtil.stopServer(bitcoind)
   }
 
   def setupAllTables()(implicit

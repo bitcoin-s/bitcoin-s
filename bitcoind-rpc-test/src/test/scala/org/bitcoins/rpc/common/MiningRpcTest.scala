@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -10,7 +10,7 @@ import org.bitcoins.rpc.BitcoindP2PException.NotConnected
 class MiningRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtilRpc.createNodePairV17(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePairV17(clientAccum = clientAccum)
 
   behavior of "MiningRpc"
 

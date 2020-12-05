@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.testkit.chain.BlockHeaderHelper
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -18,13 +18,13 @@ import scala.concurrent.Future
 class BitcoindV18RpcClientTest extends BitcoindRpcTest {
 
   lazy val clientF: Future[BitcoindV18RpcClient] = {
-    val client = new BitcoindV18RpcClient(BitcoindRpcTestUtilRpc.v18Instance())
-    val clientIsStartedF = BitcoindRpcTestUtilRpc.startServers(Vector(client))
+    val client = new BitcoindV18RpcClient(BitcoindRpcTestUtil.v18Instance())
+    val clientIsStartedF = BitcoindRpcTestUtil.startServers(Vector(client))
     clientIsStartedF.map(_ => client)
   }
 
   lazy val clientPairF: Future[(BitcoindV18RpcClient, BitcoindV18RpcClient)] =
-    BitcoindRpcTestUtilRpc.createNodePairV18(clientAccum)
+    BitcoindRpcTestUtil.createNodePairV18(clientAccum)
 
   clientF.foreach(c => clientAccum.+=(c))
 

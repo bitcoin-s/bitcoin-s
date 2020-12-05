@@ -4,7 +4,7 @@ import org.bitcoins.testkit.util.{BitcoinSUnitTest, FileUtil}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.CookieBased
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 
 class BitcoindAuthCredentialsTest extends BitcoinSUnitTest {
   it must "handle cookie based auth" in {

@@ -12,7 +12,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -20,7 +20,7 @@ import scala.concurrent.Future
 class BitcoindV20RpcClientTest extends BitcoindRpcTest {
 
   lazy val clientPairF: Future[(BitcoindV20RpcClient, BitcoindV20RpcClient)] =
-    BitcoindRpcTestUtilRpc.createNodePairV20(clientAccum)
+    BitcoindRpcTestUtil.createNodePairV20(clientAccum)
 
   lazy val clientF: Future[BitcoindV20RpcClient] = clientPairF.map(_._1)
 

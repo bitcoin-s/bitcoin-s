@@ -41,7 +41,7 @@ import org.bitcoins.testkit.node.fixture.{
   SpvNodeConnectedWithBitcoind,
   SpvNodeConnectedWithBitcoindV19
 }
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
@@ -72,7 +72,7 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   implicit override lazy val np: NetworkParameters = config.nodeConf.network
 
-  lazy val startedBitcoindF = BitcoindRpcTestUtilRpc.startedBitcoindRpcClient()
+  lazy val startedBitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
   lazy val bitcoindPeerF = startedBitcoindF.map(NodeTestUtil.getBitcoindPeer)
 

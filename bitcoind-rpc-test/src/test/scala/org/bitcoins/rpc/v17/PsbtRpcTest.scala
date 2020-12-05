@@ -14,7 +14,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -23,7 +23,7 @@ class PsbtRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[
     (BitcoindV17RpcClient, BitcoindV17RpcClient, BitcoindV17RpcClient)] = {
-    BitcoindRpcTestUtilRpc.createNodeTripleV17(clientAccum)
+    BitcoindRpcTestUtil.createNodeTripleV17(clientAccum)
   }
 
   behavior of "PsbtRpc"
@@ -67,11 +67,11 @@ class PsbtRpcTest extends BitcoindRpcTest {
     for {
       (client, otherClient, _) <- clientsF
       addr <- client.getNewAddress
-      txid <- BitcoindRpcTestUtilRpc.fundBlockChainTransaction(client,
-                                                               otherClient,
-                                                               addr,
-                                                               Bitcoins.one)
-      vout <- BitcoindRpcTestUtilRpc.findOutput(client, txid, Bitcoins.one)
+      txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
+                                                            otherClient,
+                                                            addr,
+                                                            Bitcoins.one)
+      vout <- BitcoindRpcTestUtil.findOutput(client, txid, Bitcoins.one)
       newAddr <- client.getNewAddress
       psbt <-
         client.createPsbt(Vector(TransactionInput.fromTxidAndVout(txid, vout)),
@@ -95,17 +95,17 @@ class PsbtRpcTest extends BitcoindRpcTest {
       otherClientTxid <-
         thirdClient.sendToAddress(otherClientAddr, Bitcoins.one)
 
-      _ <- BitcoindRpcTestUtilRpc.generateAndSync(
+      _ <- BitcoindRpcTestUtil.generateAndSync(
         Vector(thirdClient, client, otherClient))
 
       rawClientTx <- client.getRawTransaction(clientTxid)
       _ = assert(rawClientTx.confirmations.exists(_ > 0))
 
       clientVout <-
-        BitcoindRpcTestUtilRpc.findOutput(client, clientTxid, Bitcoins.one)
-      otherClientVout <- BitcoindRpcTestUtilRpc.findOutput(otherClient,
-                                                           otherClientTxid,
-                                                           Bitcoins.one)
+        BitcoindRpcTestUtil.findOutput(client, clientTxid, Bitcoins.one)
+      otherClientVout <- BitcoindRpcTestUtil.findOutput(otherClient,
+                                                        otherClientTxid,
+                                                        Bitcoins.one)
 
       // create a psbt spending outputs generated above
       newAddr <- thirdClient.getNewAddress
