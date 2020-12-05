@@ -672,7 +672,7 @@ object AddrV2Message extends Factory[AddrV2Message] {
                                                I2P_NETWORK_BYTE,
                                                CJDNS_NETWORK_BYTE)
 
-  def fromBytes(bytes: ByteVector): AddrV2Message = {
+  override def fromBytes(bytes: ByteVector): AddrV2Message = {
     val timeBytes = bytes.take(4)
     val time = UInt32(timeBytes)
 
