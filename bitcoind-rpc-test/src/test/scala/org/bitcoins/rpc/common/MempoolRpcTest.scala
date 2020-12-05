@@ -14,7 +14,7 @@ import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -22,12 +22,12 @@ import scala.concurrent.Future
 class MempoolRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePairV18(clientAccum = clientAccum)
+    BitcoindRpcTestUtilRpc.createNodePairV18(clientAccum = clientAccum)
 
   lazy val clientWithoutBroadcastF: Future[BitcoindRpcClient] =
     clientsF.flatMap {
       case (client, otherClient) =>
-        val defaultConfig = BitcoindRpcTestUtil.standardConfig
+        val defaultConfig = BitcoindRpcTestUtilRpc.standardConfig
 
         val configNoBroadcast =
           defaultConfig
@@ -35,7 +35,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
 
         val instanceWithoutBroadcast =
           BitcoindInstance.fromConfig(configNoBroadcast,
-                                      BitcoindRpcTestUtil.getBinary(V18))
+                                      BitcoindRpcTestUtilRpc.getBinary(V18))
 
         val clientWithoutBroadcast =
           BitcoindRpcClient.withActorSystem(instanceWithoutBroadcast)
@@ -46,9 +46,9 @@ class MempoolRpcTest extends BitcoindRpcTest {
 
         for {
           _ <- clientWithoutBroadcast.start()
-          _ <- BitcoindRpcTestUtil.connectPairs(pairs)
-          _ <- BitcoindRpcTestUtil.syncPairs(pairs)
-          _ <- BitcoindRpcTestUtil.generateAndSync(
+          _ <- BitcoindRpcTestUtilRpc.connectPairs(pairs)
+          _ <- BitcoindRpcTestUtilRpc.syncPairs(pairs)
+          _ <- BitcoindRpcTestUtilRpc.generateAndSync(
             Vector(clientWithoutBroadcast, client, otherClient),
             blocks = 200)
         } yield clientWithoutBroadcast
@@ -60,7 +60,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       transaction <-
-        BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
+        BitcoindRpcTestUtilRpc.sendCoinbaseTransaction(client, otherClient)
       mempool <- client.getRawMemPool
     } yield {
       assert(mempool.length == 1)
@@ -72,7 +72,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       transaction <-
-        BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
+        BitcoindRpcTestUtilRpc.sendCoinbaseTransaction(client, otherClient)
       mempool <- client.getRawMemPoolWithTransactions
     } yield {
       val txid = mempool.keySet.head
@@ -85,7 +85,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       transaction <-
-        BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
+        BitcoindRpcTestUtilRpc.sendCoinbaseTransaction(client, otherClient)
       _ <- client.getMemPoolEntry(transaction.txid)
     } yield succeed
   }
@@ -118,7 +118,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
       _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       info <- client.getMemPoolInfo
       _ <-
-        BitcoindRpcTestUtil
+        BitcoindRpcTestUtilRpc
           .sendCoinbaseTransaction(client, otherClient)
       newInfo <- client.getMemPoolInfo
     } yield {
@@ -132,7 +132,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
       (client, otherClient) <- clientsF
       address <- otherClient.getNewAddress
       txid <-
-        BitcoindRpcTestUtil
+        BitcoindRpcTestUtilRpc
           .fundMemPoolTransaction(client, address, Bitcoins(3.2))
       entry <- client.getMemPoolEntry(txid)
       tt <- client.prioritiseTransaction(txid, Bitcoins(1).satoshis)
@@ -150,9 +150,9 @@ class MempoolRpcTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       address1 <- client.getNewAddress
-      txid1 <- BitcoindRpcTestUtil.fundMemPoolTransaction(client,
-                                                          address1,
-                                                          Bitcoins(2))
+      txid1 <- BitcoindRpcTestUtilRpc.fundMemPoolTransaction(client,
+                                                             address1,
+                                                             Bitcoins(2))
       mempool <- client.getRawMemPool
       address2 <- client.getNewAddress
 
@@ -164,7 +164,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
         client
           .createRawTransaction(Vector(input), Map(address2 -> Bitcoins.one))
       }
-      signedTx <- BitcoindRpcTestUtil.signRawTransaction(client, createdTx)
+      signedTx <- BitcoindRpcTestUtilRpc.signRawTransaction(client, createdTx)
       txid2 <- client.sendRawTransaction(signedTx.hex, maxfeerate = 0)
 
       descendantsTxid1 <- client.getMemPoolDescendants(txid1)

@@ -2,7 +2,7 @@ package org.bitcoins.rpc.common
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -12,7 +12,7 @@ import org.bitcoins.rpc.BitcoindException.MiscError
 class NodeRpcTest extends BitcoindRpcTest {
 
   lazy val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+    BitcoindRpcTestUtilRpc.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   behavior of "NodeRpc"
 

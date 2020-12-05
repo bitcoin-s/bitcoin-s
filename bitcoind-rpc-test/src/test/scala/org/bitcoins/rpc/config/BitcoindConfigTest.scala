@@ -1,17 +1,14 @@
 package org.bitcoins.rpc.config
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, FileUtil}
 
 class BitcoindConfigTest extends BitcoinSUnitTest {
 
-  def tmpDir = BitcoindRpcTestUtil.tmpDir()
+  def tmpDir = FileUtil.tmpDir()
   it must "have to/fromString symmetry" in {
-    val conf = BitcoindRpcTestUtil.standardConfig
+    val conf = BitcoindRpcTestUtilRpc.standardConfig
     val confStr = conf.toWriteableString
     val otherConf = BitcoindConfig(confStr, tmpDir)
     val otherConfStr = otherConf.toWriteableString
@@ -126,7 +123,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
   }
 
   it must "have a default config in test utils" in {
-    val conf = BitcoindRpcTestUtil.standardConfig
+    val conf = BitcoindRpcTestUtilRpc.standardConfig
     assert(conf.username.isDefined)
     assert(conf.password.isDefined)
     assert(conf.zmqpubhashblock.isDefined)

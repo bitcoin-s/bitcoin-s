@@ -19,7 +19,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.async.Async.{async, await}
@@ -30,12 +30,12 @@ class WalletRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[
     (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodeTripleV19(clientAccum = clientAccum)
+    BitcoindRpcTestUtilRpc.createNodeTripleV19(clientAccum = clientAccum)
 
   // This client's wallet is encrypted
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap { _ =>
     val walletClient =
-      BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
+      BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtilRpc.instance())
     clientAccum += walletClient
 
     for {
@@ -158,7 +158,8 @@ class WalletRpcTest extends BitcoindRpcTest {
     for {
       (client, _, _) <- clientsF
       balance <- client.getUnconfirmedBalance
-      transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client, client)
+      transaction <-
+        BitcoindRpcTestUtilRpc.sendCoinbaseTransaction(client, client)
       newBalance <- client.getUnconfirmedBalance
     } yield {
       assert(balance == Bitcoins(0))
@@ -217,7 +218,7 @@ class WalletRpcTest extends BitcoindRpcTest {
     val privKey = await(thirdClient.dumpPrivKey(address))
 
     val txidF =
-      BitcoindRpcTestUtil
+      BitcoindRpcTestUtilRpc
         .fundBlockChainTransaction(client, thirdClient, address, Bitcoins(1.5))
     val txid = await(txidF)
 
@@ -274,10 +275,10 @@ class WalletRpcTest extends BitcoindRpcTest {
 
       address <- client.getNewAddress
 
-      txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
-                                                            otherClient,
-                                                            address,
-                                                            amount)
+      txid <- BitcoindRpcTestUtilRpc.fundBlockChainTransaction(client,
+                                                               otherClient,
+                                                               address,
+                                                               amount)
 
       (changeAddress, changeAmount) <-
         getChangeAddressAndAmount(client, address, txid)
@@ -344,7 +345,7 @@ class WalletRpcTest extends BitcoindRpcTest {
       (client, otherClient, _) <- clientsF
       address <- otherClient.getNewAddress
       txid <-
-        BitcoindRpcTestUtil
+        BitcoindRpcTestUtilRpc
           .fundBlockChainTransaction(client,
                                      otherClient,
                                      address,
@@ -370,10 +371,10 @@ class WalletRpcTest extends BitcoindRpcTest {
     for {
       (client, otherClient, _) <- clientsF
       _ <- otherClient.importAddress(address)
-      txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
-                                                            otherClient,
-                                                            address,
-                                                            Bitcoins(1.5))
+      txid <- BitcoindRpcTestUtilRpc.fundBlockChainTransaction(client,
+                                                               otherClient,
+                                                               address,
+                                                               Bitcoins(1.5))
       list <- otherClient.listReceivedByAddress(includeWatchOnly = true)
     } yield {
       val entry =
@@ -539,7 +540,7 @@ class WalletRpcTest extends BitcoindRpcTest {
 
         client.createRawTransaction(inputs, outputs)
       }
-      stx <- BitcoindRpcTestUtil.signRawTransaction(client, rawTx)
+      stx <- BitcoindRpcTestUtilRpc.signRawTransaction(client, rawTx)
       txid <- client.sendRawTransaction(stx.hex, 0)
       tx <- client.getTransaction(txid)
       bumpedTx <- client.bumpFee(txid)

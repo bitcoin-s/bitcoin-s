@@ -13,7 +13,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.node.{CachedBitcoinSAppConfig, NodeTestUtil}
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest._
 import scodec.bits._
@@ -24,14 +24,14 @@ import scala.concurrent.duration.DurationInt
 class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
 
   lazy val bitcoindRpcF =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+    BitcoindRpcTestUtilRpc.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   lazy val bitcoindPeerF = bitcoindRpcF.map { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
   }
 
   lazy val bitcoindRpc2F =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+    BitcoindRpcTestUtilRpc.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   lazy val bitcoindPeer2F = bitcoindRpcF.map { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)

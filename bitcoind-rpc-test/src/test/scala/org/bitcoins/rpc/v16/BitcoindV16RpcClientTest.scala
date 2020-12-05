@@ -15,7 +15,7 @@ import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.util.AsyncUtil
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.async.Async.{async, await}
@@ -26,7 +26,7 @@ import scala.util.Properties
 class BitcoindV16RpcClientTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindV16RpcClient, BitcoindV16RpcClient)] =
-    BitcoindRpcTestUtil.createNodePairV16(clientAccum)
+    BitcoindRpcTestUtilRpc.createNodePairV16(clientAccum)
 
   behavior of "BitcoindV16RpcClient"
 
@@ -63,7 +63,7 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
 
       recentBlock <- otherClient.getBestBlockHash
       _ <- AsyncUtil.retryUntilSatisfiedF(
-        () => BitcoindRpcTestUtil.hasSeenBlock(client, recentBlock),
+        () => BitcoindRpcTestUtilRpc.hasSeenBlock(client, recentBlock),
         1.second)
       (utxoTxid, utxoVout) <-
         client.listUnspent
@@ -151,7 +151,7 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
 
     val ourAccountAddress = await(client.getNewAddress(ourAccount))
     await(
-      BitcoindRpcTestUtil
+      BitcoindRpcTestUtilRpc
         .fundBlockChainTransaction(otherClient,
                                    client,
                                    ourAccountAddress,
@@ -162,7 +162,7 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
     val sendAmt = Bitcoins(1.5)
 
     val _ = await(
-      BitcoindRpcTestUtil
+      BitcoindRpcTestUtilRpc
         .fundBlockChainTransaction(otherClient,
                                    client,
                                    accountlessAddress,

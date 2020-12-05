@@ -1,11 +1,11 @@
 package org.bitcoins.testkit.util
 
 import java.io.File
-import java.nio.file.Path
-
+import java.nio.file.{Path, Paths}
 import org.bitcoins.core.util.BitcoinSLogger
 
-import scala.util.Properties
+import scala.annotation.tailrec
+import scala.util.{Properties, Random}
 
 object FileUtil extends BitcoinSLogger {
 
@@ -37,5 +37,22 @@ object FileUtil extends BitcoinSLogger {
 
   def deleteTmpDir(path: Path): Boolean = {
     deleteTmpDir(path.toFile)
+  }
+
+  @tailrec
+  final def randomDirName: String = {
+    val dirname = 0.until(5).map(_ => Random.alphanumeric.head).mkString
+    val dir = new File(dirname)
+    if (!dir.exists()) {
+      dirname
+    } else {
+      randomDirName
+    }
+  }
+
+  def tmpDir(): File = {
+    val f = Paths.get(Properties.tmpDir, FileUtil.randomDirName).toFile
+    f.mkdirs()
+    f
   }
 }

@@ -5,7 +5,7 @@ import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
@@ -13,7 +13,7 @@ import scala.concurrent.Future
 class UtilRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
+    BitcoindRpcTestUtilRpc.createNodePair(clientAccum = clientAccum)
 
   behavior of "RpcUtilTest"
 

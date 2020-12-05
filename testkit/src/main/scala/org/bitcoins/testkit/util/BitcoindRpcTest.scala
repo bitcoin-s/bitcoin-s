@@ -1,19 +1,19 @@
 package org.bitcoins.testkit.util
 
 import java.nio.file.Files
-
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
 
 import scala.collection.mutable
 
 abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
 
-  private val dirExists = Files.exists(BitcoindRpcTestUtil.binaryDirectory)
+  private val dirExists =
+    Files.exists(BitcoindRpcTestUtilRpc.sbtBinaryDirectory)
 
   private val hasContents = dirExists && Files
-    .list(BitcoindRpcTestUtil.binaryDirectory)
+    .list(BitcoindRpcTestUtilRpc.sbtBinaryDirectory)
     .toArray()
     .nonEmpty
 
@@ -23,13 +23,13 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
     printerr(s"Run 'sbt downloadBitcoind' to fetch needed binaries")
     sys.error {
       val msg =
-        s""""bitcoind binary directory (${BitcoindRpcTestUtil.binaryDirectory}) is empty. 
+        s""""bitcoind binary directory (${BitcoindRpcTestUtilRpc.sbtBinaryDirectory}) is empty. 
            |Run 'sbt downloadBitcoind' to fetch needed binaries""".stripMargin
       msg
     }
   }
 
-  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtilRpc.network
 
   /**
     * Bitcoind RPC clients can be added to this builder
@@ -42,7 +42,7 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
     Vector[BitcoindRpcClient]] = Vector.newBuilder
 
   override def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(clientAccum.result())
+    BitcoindRpcTestUtilRpc.stopServers(clientAccum.result())
     super.afterAll()
   }
 }

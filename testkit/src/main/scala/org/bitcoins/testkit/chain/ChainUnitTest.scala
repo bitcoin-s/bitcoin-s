@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.chain
 
 import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.ChainVerificationLogger
@@ -23,7 +22,8 @@ import org.bitcoins.testkit.chain.ChainUnitTest.createChainHandler
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.CachedChainAppConfig
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtilRpc
+
 import org.bitcoins.testkit.util.ScalaTestUtil
 import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
@@ -579,7 +579,7 @@ object ChainUnitTest extends ChainVerificationLogger {
       chainAppConfig: ChainAppConfig): Future[Unit] = {
     import system.dispatcher
     val stopBitcoindF =
-      BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
+      BitcoindRpcTestUtilRpc.stopServer(bitcoindChainHandler.bitcoindRpc)
     val dropTableF = ChainUnitTest.destroyAllTables()
     stopBitcoindF.flatMap(_ => dropTableF)
   }
@@ -610,7 +610,7 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   def destroyBitcoind(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem): Future[Unit] = {
-    BitcoindRpcTestUtil.stopServer(bitcoind)
+    BitcoindRpcTestUtilRpc.stopServer(bitcoind)
   }
 
   def setupAllTables()(implicit
