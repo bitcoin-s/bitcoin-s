@@ -33,7 +33,7 @@ object Deps {
     val slickV = "3.3.3"
     val sqliteV = "3.32.3.2"
     val scalameterV = "0.17"
-    val scalamockV = "5.0.0"
+    val scalamockV = "5.1.0"
     val scalaCollectionCompatV = "2.3.1"
     val pgEmbeddedV = "0.13.3"
 
