@@ -4,10 +4,10 @@ import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.p2p.{HeadersMessage, NetworkMessage, VersionMessage}
+import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
@@ -105,9 +105,25 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
       hex"fabfb5da6d65726b6c65626c6f636b0097000000b4b6e45d00000020387191f7d488b849b4080fdf105c71269fc841a2f0f2944fc5dc785c830c716e37f36373098aae06a668cc74e388caf50ecdcb5504ce936490b4b72940e08859548c305dffff7f20010000000200000002ecd1c722709bfc241f8b94fc64034dcba2c95409dc4cd1d7b864e1128a04e5b044133327b04ff8ac576e7748a4dae4111f0c765dacbfe0c5a9fddbeb8f60d5af0105fabfb5da747800000000000000000000cc0100004413332702000000065b7f0f3eec398047e921037815aa41709b6243a1897f1423194b7558399ae0300000000017160014008dc9d88d1797305f3fbd30d2b36d6bde984a09feffffffe9145055d671fd705a09f028033da614b619205b9926fe5ebe45e15ae8b3231e0100000017160014d74cfac04bb0e6838c35f1f4a0a60d13655be2fbfeffffff797f8ff9c10fa618b6254343a648be995410e82c03fd8accb0de2271a3fb1abd00000000171600143ee832c09db48eca28a64a358ed7a01dbe52d31bfeffffffc794dba971b9479dfcbc662a3aacd641553bdb2418b15c0221c5dfd4471a7a70000000001716001452c13ba0314f7718c234ed6adfea6422ce03a545feffffffb7c3bf1762b15f3b0e0eaa5beb46fe96a9e2829a7413fd900b9b7e0d192ab64800000000171600143ee832c09db48eca28a64a358ed7a01dbe52d31bfeffffffb6ced6cb8dfc2f7f5b37561938ead3bc5ca4036e2b45d9738cc086a10eed4e010100000017160014aebb17e245fe8c98a75f0b6717fcadca30e491e2feffffff02002a7515000000001976a9148374ff8beb55ea2945039881ca26071b5749fafe88ac485620000000000017a91405d36a2b0bdedf3fc58bed6f9e4026f8934a2716876b050000fabfb5da686561646572730000000000010000001406e05800"
     val (messages, leftover) = P2PClient.parseIndividualMessages(bytes)
     assert(messages.length == 3)
-    assert(leftover.isEmpty)
 
+    val commandNames = messages.map(_.header.commandName)
+    assert(commandNames == Vector("merkleblock", "tx", "headers"))
+
+    assert(leftover.isEmpty)
   }
+
+  it must "parse an unknown command" in {
+    val header: NetworkHeader =
+      NetworkHeader(TestNet3,
+                    "madeup",
+                    UInt32.zero,
+                    CryptoUtil.doubleSHA256(ByteVector.empty).bytes.take(4))
+
+    val (messages, leftover) = P2PClient.parseIndividualMessages(header.bytes)
+    assert(messages.isEmpty)
+    assert(leftover.isEmpty)
+  }
+
   behavior of "P2PClient"
 
   override def beforeAll(): Unit = {

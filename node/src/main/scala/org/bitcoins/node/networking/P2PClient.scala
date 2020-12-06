@@ -5,7 +5,7 @@ import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import akka.util.{ByteString, CompactByteString, Timeout}
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.p2p.{NetworkMessage, NetworkPayload}
+import org.bitcoins.core.p2p.{NetworkHeader, NetworkMessage, NetworkPayload}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
@@ -355,34 +355,58 @@ object P2PClient extends P2PLogger {
     * @return the parsed [[NetworkMessage]]'s and the unaligned bytes that did not parse to a message
     */
   private[bitcoins] def parseIndividualMessages(
-      bytes: ByteVector): (List[NetworkMessage], ByteVector) = {
+      bytes: ByteVector): (Vector[NetworkMessage], ByteVector) = {
     @tailrec
     def loop(
         remainingBytes: ByteVector,
-        accum: List[NetworkMessage]): (List[NetworkMessage], ByteVector) = {
+        accum: Vector[NetworkMessage]): (Vector[NetworkMessage], ByteVector) = {
       if (remainingBytes.length <= 0) {
-        (accum.reverse, remainingBytes)
+        (accum, remainingBytes)
       } else {
-        val messageTry = Try(NetworkMessage(remainingBytes))
-        messageTry match {
-          case Success(message) =>
+        val headerTry = Try(
+          NetworkHeader.fromBytes(remainingBytes.take(NetworkHeader.bytesSize)))
+        headerTry match {
+          case Success(header) =>
+            val payloadBytes = remainingBytes
+              .drop(NetworkHeader.bytesSize)
+              .take(header.payloadSize.toInt)
+
             val newRemainingBytes =
-              remainingBytes.slice(message.bytes.length, remainingBytes.length)
-            logger.trace(
-              s"Parsed a message=${message.header.commandName} from bytes, continuing with remainingBytes=${newRemainingBytes.length}")
-            loop(newRemainingBytes, message :: accum)
+              remainingBytes.drop(NetworkHeader.bytesSize + payloadBytes.size)
+
+            // If it's a message type we know, try to parse it
+            if (NetworkPayload.commandNames.contains(header.commandName)) {
+              Try(NetworkMessage(header.bytes ++ payloadBytes)) match {
+                case Success(message) =>
+                  logger.trace(
+                    s"Parsed a message=${message.header.commandName} from bytes, continuing with remainingBytes=${newRemainingBytes.length}")
+
+                  loop(newRemainingBytes, accum :+ message)
+                case Failure(_) =>
+                  // Can't parse message yet, we need to wait for more bytes
+                  (accum, remainingBytes)
+              }
+            } else if (payloadBytes.size == header.payloadSize.toInt) { // If we've received the entire unknown message
+              logger.info(
+                s"Received unknown network message ${header.commandName}")
+              loop(newRemainingBytes, accum)
+            } else {
+              // If we can't parse the entire unknown message, continue on until we can
+              // so we properly skip it
+              (accum, remainingBytes)
+            }
           case Failure(exc) =>
             logger.trace(
-              s"Failed to parse network message, could be because TCP frame isn't aligned: $exc")
+              s"Failed to parse network message $remainingBytes, could be because TCP frame isn't aligned: $exc")
 
             //this case means that our TCP frame was not aligned with bitcoin protocol
             //return the unaligned bytes so we can apply them to the next tcp frame of bytes we receive
             //http://stackoverflow.com/a/37979529/967713
-            (accum.reverse, remainingBytes)
+            (accum, remainingBytes)
         }
       }
     }
-    val (messages, remainingBytes) = loop(bytes, Nil)
+    val (messages, remainingBytes) = loop(bytes, Vector.empty)
     (messages, remainingBytes)
   }
 
