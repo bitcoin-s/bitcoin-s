@@ -90,6 +90,10 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(verackMsg)
   }
 
+  def sendSendAddrV2Message(): Future[Unit] = {
+    sendMsg(SendAddrV2Message)
+  }
+
   /** Responds to a ping message */
   def sendPong(ping: PingMessage): Future[Unit] = {
     val pong = PongMessage(ping.nonce)

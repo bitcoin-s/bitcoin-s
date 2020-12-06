@@ -219,6 +219,11 @@ class PeerMessageReceiver(
         Future.successful(this)
       case _: AddrMessage =>
         Future.successful(this)
+      case _: AddrV2Message =>
+        sender.sendSendAddrV2Message()
+        Future.successful(this)
+      case SendAddrV2Message =>
+        Future.successful(this)
       case _ @(_: FilterAddMessage | _: FilterLoadMessage |
           FilterClearMessage) =>
         Future.successful(this)
