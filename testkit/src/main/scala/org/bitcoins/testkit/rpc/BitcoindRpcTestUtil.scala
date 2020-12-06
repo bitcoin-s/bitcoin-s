@@ -43,7 +43,7 @@ import org.bitcoins.rpc.config.{
   ZmqConfig
 }
 import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
-import org.bitcoins.testkit.util.{FileUtil, SbtBinaryFactory, TestkitBinaries}
+import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil}
 import org.bitcoins.util.ListUtil
 
 import scala.collection.immutable.Map
@@ -133,7 +133,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   def getBinary(
       version: BitcoindVersion,
-      binaryDirectory: Path = BitcoindRpcTestUtil.sbtBinaryDirectory): File =
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory): File =
     version match {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest, binaryDirectory)
@@ -180,7 +180,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       pruneMode: Boolean = false,
       versionOpt: Option[BitcoindVersion] = None,
       binaryDirectory: Path =
-        BitcoindRpcTestUtil.sbtBinaryDirectory): BitcoindInstance = {
+        BitcoindRpcTestClient.sbtBinaryDirectory): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
     val hasNeutrinoSupport = versionOpt match {
@@ -225,7 +225,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestUtil.sbtBinaryDirectory
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
@@ -239,7 +239,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestUtil.sbtBinaryDirectory
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
@@ -253,7 +253,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestUtil.sbtBinaryDirectory
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
@@ -267,7 +267,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestUtil.sbtBinaryDirectory
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
@@ -281,7 +281,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestUtil.sbtBinaryDirectory
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
@@ -295,7 +295,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestUtil.sbtBinaryDirectory
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
@@ -303,6 +303,59 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.Experimental),
              binaryDirectory = binaryDirectory)
+
+  /** Gets an instance of bitcoind with the given version */
+  def getInstance(
+      bitcoindVersion: BitcoindVersion,
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqPort: Int = RpcUtil.randomPort,
+      pruneMode: Boolean = false,
+      binaryDirectory: Path =
+        BitcoindRpcTestClient.sbtBinaryDirectory): BitcoindInstance = {
+    bitcoindVersion match {
+      case BitcoindVersion.V16 =>
+        BitcoindRpcTestUtil.v16Instance(port,
+                                        rpcPort,
+                                        zmqPort,
+                                        pruneMode,
+                                        binaryDirectory = binaryDirectory)
+      case BitcoindVersion.V17 =>
+        BitcoindRpcTestUtil.v17Instance(port,
+                                        rpcPort,
+                                        zmqPort,
+                                        pruneMode,
+                                        binaryDirectory = binaryDirectory)
+      case BitcoindVersion.V18 =>
+        BitcoindRpcTestUtil.v18Instance(port,
+                                        rpcPort,
+                                        zmqPort,
+                                        pruneMode,
+                                        binaryDirectory = binaryDirectory)
+      case BitcoindVersion.V19 =>
+        BitcoindRpcTestUtil.v19Instance(port,
+                                        rpcPort,
+                                        zmqPort,
+                                        pruneMode,
+                                        binaryDirectory = binaryDirectory)
+      case BitcoindVersion.V20 =>
+        BitcoindRpcTestUtil.v20Instance(port,
+                                        rpcPort,
+                                        zmqPort,
+                                        pruneMode,
+                                        binaryDirectory = binaryDirectory)
+      case BitcoindVersion.Experimental =>
+        BitcoindRpcTestUtil.vExperimentalInstance(port,
+                                                  rpcPort,
+                                                  zmqPort,
+                                                  pruneMode,
+                                                  binaryDirectory =
+                                                    binaryDirectory)
+      case BitcoindVersion.Unknown =>
+        sys.error(
+          s"Could not create a bitcoind version with version=${BitcoindVersion.Unknown}")
+    }
+  }
 
   def startServers(servers: Vector[BitcoindRpcClient])(implicit
       ec: ExecutionContext): Future[Unit] = {
@@ -1010,11 +1063,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 }
 
-object BitcoindRpcTestUtil extends BitcoindRpcTestUtil with SbtBinaryFactory {
-
-  /** Directory where sbt downloads bitcoind binaries */
-  override val sbtBinaryDirectory: Path =
-    TestkitBinaries.baseBinaryDirectory.resolve("bitcoind")
+object BitcoindRpcTestUtil extends BitcoindRpcTestUtil {
 
   /**
     * Used for long running async tasks

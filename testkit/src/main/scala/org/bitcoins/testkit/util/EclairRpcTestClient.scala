@@ -10,15 +10,15 @@ import java.io.File
 import java.nio.file.{Files, Path}
 import scala.concurrent.Future
 
+/** Helper class to start a eclair client with the given binary */
 case class EclairRpcTestClient(
-    binary: Path,
+    override val binary: Path,
     bitcoindRpcClientOpt: Option[BitcoindRpcClient])(implicit
     system: ActorSystem)
     extends RpcBinaryUtil[EclairRpcClient] {
   require(Files.exists(binary),
           s"Path did not exist! got=${binary.toAbsolutePath.toString}")
   import system.dispatcher
-  override val binaryDirectory: Path = binary.getParent
 
   private lazy val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
     bitcoindRpcClientOpt match {
