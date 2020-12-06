@@ -1,11 +1,10 @@
 package org.bitcoins.core.p2p
 
 import java.net.{InetAddress, InetSocketAddress}
-
 import org.bitcoins.core.bloom.{BloomFilter, BloomFlag}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.gcs.{FilterHeader, FilterType, GolombFilter}
-import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
+import org.bitcoins.core.number.{Int32, Int64, UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -526,6 +525,212 @@ object AddrMessage extends Factory[AddrMessage] {
       addresses: Seq[NetworkIpAddress]): AddrMessage =
     AddrMessageImpl(ipCount, addresses)
 
+}
+
+/** addrV2 relays information about a peer. It supports many different
+  * address types and networks.
+  *
+  * @see https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki
+  */
+sealed trait AddrV2Message extends ControlPayload {
+  def time: UInt32
+  def services: CompactSizeUInt
+  def networkId: Byte
+  def addrBytes: ByteVector
+  def port: UInt16
+
+  override def commandName: String = NetworkPayload.addrV2CommandName
+
+  override def bytes: ByteVector =
+    time.bytes ++ services.bytes ++ ByteVector.fromByte(
+      networkId) ++ addrBytes ++ port.bytes
+}
+
+/** addrv2 message that contains an IPv4 address */
+case class IPv4AddrV2Message(
+    time: UInt32,
+    services: CompactSizeUInt,
+    addr: InetAddress,
+    port: UInt16)
+    extends AddrV2Message {
+  override val networkId: Byte = AddrV2Message.IPV4_NETWORK_BYTE
+
+  override val addrBytes: ByteVector = ByteVector(addr.getAddress)
+
+  require(addrBytes.size == AddrV2Message.IPV4_ADDR_LENGTH,
+          "Incorrect size of IPv4 message, consider using IPv6AddrV2Message")
+}
+
+/** addrv2 message that contains an IPv6 address */
+case class IPv6AddrV2Message(
+    time: UInt32,
+    services: CompactSizeUInt,
+    addr: InetAddress,
+    port: UInt16)
+    extends AddrV2Message {
+  override val networkId: Byte = AddrV2Message.IPV6_NETWORK_BYTE
+
+  override val addrBytes: ByteVector = ByteVector(addr.getAddress)
+
+  require(addrBytes.size == AddrV2Message.IPV6_ADDR_LENGTH,
+          "Incorrect size of IPv6 message, consider using IPv4AddrV2Message")
+}
+
+/** addrv2 message that contains a TorV2 address */
+case class TorV2AddrV2Message(
+    time: UInt32,
+    services: CompactSizeUInt,
+    addrBytes: ByteVector,
+    port: UInt16)
+    extends AddrV2Message {
+  require(
+    addrBytes.size == AddrV2Message.TOR_V2_ADDR_LENGTH,
+    s"TorV2 addresses are ${AddrV2Message.TOR_V2_ADDR_LENGTH} bytes, got ${addrBytes.size}")
+  override val networkId: Byte = AddrV2Message.TOR_V2_NETWORK_BYTE
+}
+
+/** addrv2 message that contains a TorV3 address */
+case class TorV3AddrV2Message(
+    time: UInt32,
+    services: CompactSizeUInt,
+    addrBytes: ByteVector,
+    port: UInt16)
+    extends AddrV2Message {
+  require(
+    addrBytes.size == AddrV2Message.TOR_V3_ADDR_LENGTH,
+    s"TorV3 addresses are ${AddrV2Message.TOR_V3_ADDR_LENGTH} bytes, got ${addrBytes.size}")
+  override val networkId: Byte = AddrV2Message.TOR_V3_NETWORK_BYTE
+}
+
+/** addrv2 message that contains an I2P address */
+case class I2PAddrV2Message(
+    time: UInt32,
+    services: CompactSizeUInt,
+    addrBytes: ByteVector,
+    port: UInt16)
+    extends AddrV2Message {
+  require(
+    addrBytes.size == AddrV2Message.I2P_ADDR_LENGTH,
+    s"I2P addresses are ${AddrV2Message.I2P_ADDR_LENGTH} bytes, got ${addrBytes.size}")
+  override val networkId: Byte = AddrV2Message.I2P_NETWORK_BYTE
+}
+
+/** addrv2 message that contains an CJDNS address */
+case class CJDNSAddrV2Message(
+    time: UInt32,
+    services: CompactSizeUInt,
+    addrBytes: ByteVector,
+    port: UInt16)
+    extends AddrV2Message {
+  require(
+    addrBytes.size == AddrV2Message.CJDNS_ADDR_LENGTH,
+    s"CJDNS addresses are ${AddrV2Message.CJDNS_ADDR_LENGTH} bytes, got ${addrBytes.size}")
+  override val networkId: Byte = AddrV2Message.CJDNS_NETWORK_BYTE
+}
+
+/** addrv2 message that contains an address from a network we do not understand */
+case class UnknownNetworkAddrV2Message(
+    time: UInt32,
+    services: CompactSizeUInt,
+    networkId: Byte,
+    addrBytes: ByteVector,
+    port: UInt16)
+    extends AddrV2Message {
+  require(!AddrV2Message.knownNetworkBytes.contains(networkId),
+          s"$networkId is a known network byte")
+}
+
+/**
+  * The companion object for an AddrV2Message
+  * @see https://developer.bitcoin.org/reference/p2p_networking.html#addrv2
+  * @see https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki
+  */
+object AddrV2Message extends Factory[AddrV2Message] {
+
+  final val IPV4_NETWORK_BYTE: Byte = 0x01
+  final val IPV4_ADDR_LENGTH: Int = 4
+
+  final val IPV6_NETWORK_BYTE: Byte = 0x02
+  final val IPV6_ADDR_LENGTH: Int = 16
+
+  final val TOR_V2_NETWORK_BYTE: Byte = 0x03
+  final val TOR_V2_ADDR_LENGTH: Int = 10
+
+  final val TOR_V3_NETWORK_BYTE: Byte = 0x04
+  final val TOR_V3_ADDR_LENGTH: Int = 32
+
+  final val I2P_NETWORK_BYTE: Byte = 0x05
+  final val I2P_ADDR_LENGTH: Int = 32
+
+  final val CJDNS_NETWORK_BYTE: Byte = 0x06
+  final val CJDNS_ADDR_LENGTH: Int = 16
+
+  val knownNetworkBytes: Vector[Byte] = Vector(IPV4_NETWORK_BYTE,
+                                               IPV6_NETWORK_BYTE,
+                                               TOR_V2_NETWORK_BYTE,
+                                               TOR_V3_NETWORK_BYTE,
+                                               I2P_NETWORK_BYTE,
+                                               CJDNS_NETWORK_BYTE)
+
+  override def fromBytes(bytes: ByteVector): AddrV2Message = {
+    val timeBytes = bytes.take(4)
+    val time = UInt32(timeBytes)
+
+    val services = CompactSizeUInt(bytes.drop(4))
+
+    val remainingBytes = bytes.drop(4 + services.bytes.size)
+
+    val networkId = remainingBytes.head
+
+    val addrPortBytes = remainingBytes.tail
+
+    networkId match {
+      case IPV4_NETWORK_BYTE =>
+        val addrBytes = addrPortBytes.take(IPV4_ADDR_LENGTH)
+        val address = InetAddress.getByAddress(addrBytes.toArray)
+        val port = UInt16(addrPortBytes.drop(IPV4_ADDR_LENGTH).take(2))
+        IPv4AddrV2Message(time, services, address, port)
+      case IPV6_NETWORK_BYTE =>
+        val addrBytes = addrPortBytes.take(IPV6_ADDR_LENGTH)
+        val address = InetAddress.getByAddress(addrBytes.toArray)
+        val port = UInt16(addrPortBytes.drop(IPV6_ADDR_LENGTH).take(2))
+        IPv6AddrV2Message(time, services, address, port)
+      case TOR_V2_NETWORK_BYTE =>
+        val addrBytes = addrPortBytes.take(TOR_V2_ADDR_LENGTH)
+        val port = UInt16(addrPortBytes.drop(TOR_V2_ADDR_LENGTH).take(2))
+        TorV2AddrV2Message(time, services, addrBytes, port)
+      case TOR_V3_NETWORK_BYTE =>
+        val addrBytes = addrPortBytes.take(TOR_V3_ADDR_LENGTH)
+        val port = UInt16(addrPortBytes.drop(TOR_V3_ADDR_LENGTH).take(2))
+        TorV3AddrV2Message(time, services, addrBytes, port)
+      case I2P_NETWORK_BYTE =>
+        val addrBytes = addrPortBytes.take(I2P_ADDR_LENGTH)
+        val port = UInt16(addrPortBytes.drop(I2P_ADDR_LENGTH).take(2))
+        I2PAddrV2Message(time, services, addrBytes, port)
+      case CJDNS_NETWORK_BYTE =>
+        val addrBytes = addrPortBytes.take(CJDNS_ADDR_LENGTH)
+        val port = UInt16(addrPortBytes.drop(CJDNS_ADDR_LENGTH).take(2))
+        CJDNSAddrV2Message(time, services, addrBytes, port)
+      case unknown: Byte =>
+        val addrBytes = addrPortBytes.dropRight(2)
+        val port = UInt16(addrPortBytes.drop(addrBytes.size))
+        UnknownNetworkAddrV2Message(time, services, unknown, addrBytes, port)
+
+    }
+  }
+}
+
+/**
+  * Sending such a message indicates that a node can understand and
+  * prefers to receive addrv2 messages instead of addr messages.
+  * I.e. "Send me addrv2".sendaddrv2 SHOULD be sent after receiving the verack message from the peer.
+  * For older peers, that did not emit sendaddrv2, keep sending the legacy
+  * addr message, ignoring addresses with the newly introduced address types.
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki#signaling-support-and-compatibility]]
+  */
+case object SendAddrV2Message extends ControlPayload {
+  override val commandName: String = NetworkPayload.sendAddrV2CommandName
+  override val bytes: ByteVector = ByteVector.empty
 }
 
 /**
@@ -1329,6 +1534,8 @@ object NetworkPayload {
   private[core] val notFoundCommandName = "notfound"
   private[core] val transactionCommandName = "tx"
   private[core] val addrCommandName = "addr"
+  private[core] val addrV2CommandName = "addrv2"
+  private[core] val sendAddrV2CommandName = "sendaddrv2"
   private[core] val feeFilterCommandName = "feefilter"
   private[core] val filterAddCommandName = "filteradd"
   private[core] val filterClearCommandName = "filterclear"
@@ -1368,6 +1575,10 @@ object NetworkPayload {
     notFoundCommandName -> RawNotFoundMessageSerializer.read,
     transactionCommandName -> RawTransactionMessageSerializer.read,
     addrCommandName -> RawAddrMessageSerializer.read,
+    addrV2CommandName -> AddrV2Message.fromBytes,
+    sendAddrV2CommandName -> { _: ByteVector =>
+      SendAddrV2Message
+    },
     feeFilterCommandName -> RawFeeFilterMessageSerializer.read,
     filterAddCommandName -> RawFilterAddMessageSerializer.read,
     filterClearCommandName -> { _: ByteVector =>
