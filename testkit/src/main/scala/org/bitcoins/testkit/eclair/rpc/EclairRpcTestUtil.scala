@@ -726,7 +726,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         uri = new URI("http://localhost:18333"),
         rpcUri = auth.bitcoindRpcUri,
         authCredentials = auth.bitcoinAuthOpt.get,
-        binary = BitcoindRpcTestUtil.getBinary(BitcoindVersion.V17)
+        binary = BitcoindRpcTestUtil.getBinary(BitcoindVersion.newest)
       )
       BitcoindRpcClient.withActorSystem(bitcoindInstance)
     }
