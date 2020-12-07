@@ -100,7 +100,7 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: Linux 2.13 App, Chain, Node, and Core Tests
-        run: sbt ++${SCALA_2_13} downloadBitcoind coverage chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test
+        run: sbt ++${SCALA_2_13} downloadBitcoind coverage chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test cryptoCrossProjectJVM/coverageReport cryptoCrossProjectJVM/coverageAggregate cryptoCrossProjectJVM/coveralls coreTest/test coreCrossProjectJVM/coverageReport coreCrossProjectJVM/coverageAggregate coreCrossProjectJVM/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test
 
   Linux_2-12_App_Chain_Node_and_Core_Tests:
     needs: compile
@@ -119,7 +119,7 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: Linux 2.12 App, Chain, Node, and Core Tests
-        run: sbt ++${SCALA_2_12} downloadBitcoind coverage chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test
+        run: sbt ++${SCALA_2_12} downloadBitcoind coverage chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test cryptoCrossProjectJVM/coverageReport cryptoCrossProjectJVM/coverageAggregate cryptoCrossProjectJVM/coveralls coreTest/test coreCrossProjectJVM/coverageReport coreCrossProjectJVM/coverageAggregate coreCrossProjectJVM/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test
 
   Linux_2-13_KeyManager_Wallet_and_DLC_Tests:
     needs: compile
