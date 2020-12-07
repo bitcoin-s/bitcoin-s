@@ -741,6 +741,7 @@ object ContractInfoTLV extends TLVParentFactory[ContractInfoTLV] {
   override def typeName: String = "ContractInfoTLV"
 }
 
+/** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Messaging.md#version-0-contract_info */
 case class ContractInfoV0TLV(outcomes: Vector[(String, Satoshis)])
     extends ContractInfoTLV {
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
@@ -809,6 +810,7 @@ object TLVPoint extends Factory[TLVPoint] {
   }
 }
 
+/** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#curve-serialization */
 case class ContractInfoV1TLV(
     base: Int,
     numDigits: Int,

@@ -361,9 +361,12 @@ object ShufflingNonInteractiveFinalizer
   }
 }
 
-/** Adds a future fee amount to the output with the given
-  * ScriptPubKey and subtracts that amount in equal portions
-  * from the specified change ScriptPubKeys.
+/** Adds a an amount to the output with the given ScriptPubKey
+  * and subtracts that amount in equal proportions from the specified
+  * change ScriptPubKeys.
+  *
+  * This can be useful when you want to account for a future spending
+  * fee in this transaction to get nice output values on the spending tx.
   */
 case class AddFutureFeeFinalizer(
     spk: ScriptPubKey,
@@ -409,6 +412,11 @@ case class AddFutureFeeFinalizer(
   }
 }
 
+/** Subtracts the given fee from the output with the given ScriptPubKey.
+  * This can be useful if you are constructing a transaction without
+  * considering fees and have some after-the-fact external formula for
+  * computing fees and they need the removed.
+  */
 case class SubtractFromOutputFinalizer(spk: ScriptPubKey, subAmt: CurrencyUnit)
     extends RawTxFinalizer {
 
@@ -493,10 +501,11 @@ case class DualFundingInput(
     maxWitnessLen: Int)
 
 /** Finalizes a dual-funded transaction given the DualFundingInputs
-  * from both parties, their change spks and the non-change spk.
+  * from both parties, their change spks and the funding scriptpubkey
+  * for the dual funded protocol.
   *
   * This includes adding the future fee of spending transactions
-  * to the non-change output as well as subtracting relevant fees
+  * to the funding output as well as subtracting relevant fees
   * from the change outputs. This finalizer filters dust outputs.
   */
 case class DualFundingTxFinalizer(
@@ -510,14 +519,17 @@ case class DualFundingTxFinalizer(
     fundingSPK: ScriptPubKey)
     extends RawTxFinalizer {
 
+  /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#fees */
   private def computeFees(
       inputs: Vector[DualFundingInput],
       payoutSPK: ScriptPubKey,
       changeSPK: ScriptPubKey): (CurrencyUnit, CurrencyUnit) = {
+    // https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#expected-weight-of-the-contract-execution-or-refund-transaction
     val futureFeeWeight = 249 + 4 * payoutSPK.asmBytes.length
     val futureFeeVBytes = Math.ceil(futureFeeWeight / 4.0).toLong
     val futureFee = feeRate * futureFeeVBytes
 
+    // https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#expected-weight-of-the-funding-transaction
     val inputWeight =
       inputs.foldLeft(0L) {
         case (weight, DualFundingInput(scriptSignature, maxWitnessLen)) =>

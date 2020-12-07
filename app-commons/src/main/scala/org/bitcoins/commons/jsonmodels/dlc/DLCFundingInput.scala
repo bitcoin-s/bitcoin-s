@@ -73,8 +73,9 @@ object DLCFundingInput {
               "P2SH input requires a redeem script")
         }
       case _: P2WPKHWitnessSPKV0 =>
-        require(maxWitnessLen == UInt16(107),
-                s"P2WPKH max witness length must be 107, got $maxWitnessLen")
+        require(
+          maxWitnessLen == UInt16(107) || maxWitnessLen == UInt16(108),
+          s"P2WPKH max witness length must be 107 or 108, got $maxWitnessLen")
         DLCFundingInputP2WPKHV0(prevTx, prevTxVout, sequence)
       case _: P2WSHWitnessSPKV0 =>
         DLCFundingInputP2WSHV0(prevTx, prevTxVout, sequence, maxWitnessLen)
