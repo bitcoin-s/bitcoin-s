@@ -1,9 +1,5 @@
 package org.bitcoins.testkit.eclair.rpc
 
-import java.io.{File, PrintWriter}
-import java.net.URI
-import java.nio.file.Files
-
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.commons.jsonmodels.eclair.{
@@ -13,7 +9,6 @@ import org.bitcoins.commons.jsonmodels.eclair.{
   PaymentId
 }
 import org.bitcoins.core.compat.JavaConverters._
-import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
@@ -32,8 +27,11 @@ import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
-import org.bitcoins.testkit.util.TestkitBinaries
+import org.bitcoins.testkit.util.{EclairRpcTestClient, FileUtil}
 
+import java.io.{File, PrintWriter}
+import java.net.URI
+import java.nio.file.Path
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
@@ -51,41 +49,10 @@ import scala.util.{Failure, Success}
   */
 trait EclairRpcTestUtil extends BitcoinSLogger {
 
-  /** Directory where sbt downloads Eclair binaries */
-  private[bitcoins] val binaryDirectory =
-    TestkitBinaries.baseBinaryDirectory.resolve("eclair")
-
-  /** Path to Jar downloaded by Eclair, if it exists */
-  private[bitcoins] def binary(
-      eclairVersionOpt: Option[String],
-      eclairCommitOpt: Option[String]): Option[File] = {
-    val path = binaryDirectory
-      .resolve(eclairVersionOpt.getOrElse(EclairRpcClient.version))
-      .resolve(
-        s"eclair-node-${EclairRpcClient.version}-${eclairCommitOpt.getOrElse(EclairRpcClient.commit)}")
-      .resolve("bin")
-      .resolve(
-        if (sys.props("os.name").toLowerCase.contains("windows"))
-          "eclair-node.bat"
-        else
-          "eclair-node.sh")
-
-    if (Files.exists(path)) {
-      Some(path.toFile)
-    } else {
-      None
-    }
-  }
-
-  def randomDirName: String =
-    0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
-
   def randomEclairDatadir(): File =
-    new File(s"/tmp/eclair-test/${randomDirName}/.eclair/")
+    new File(s"/tmp/eclair-test/${FileUtil.randomDirName}/.eclair/")
 
   def cannonicalDatadir = new File(s"${System.getenv("HOME")}/.reg_eclair/")
-
-  lazy val network = RegTest
 
   /**
     * Makes a best effort to get a 0.16 bitcoind instance
@@ -204,39 +171,25 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       eclairVersionOpt: Option[String] = None,
       eclairCommitOpt: Option[String] = None)(implicit
       system: ActorSystem): Future[EclairRpcClient] = {
-    import system.dispatcher
-    val bitcoindRpcF: Future[BitcoindRpcClient] = {
-      if (bitcoindRpcOpt.isDefined) {
-        Future.successful(bitcoindRpcOpt.get)
-      } else {
-        EclairRpcTestUtil.startedBitcoindRpcClient()
-      }
-    }
+    val eclairRpcTestClient = EclairRpcTestClient.fromSbtDownload(
+      eclairVersionOpt = eclairVersionOpt,
+      eclairCommitOpt = eclairCommitOpt,
+      bitcoindRpcClientOpt = bitcoindRpcOpt)
 
-    val randInstanceF = bitcoindRpcF.map(randomEclairInstance(_))
-    val eclairRpcF = randInstanceF.map(i =>
-      new EclairRpcClient(i, binary(eclairVersionOpt, eclairCommitOpt)))
-
-    val startedF = eclairRpcF.flatMap(_.start())
-
-    startedF.flatMap(_ => eclairRpcF)
+    eclairRpcTestClient.start()
   }
 
   def cannonicalEclairClient(
       eclairVersionOpt: Option[String] = None,
-      eclairCommitOpt: Option[String] = None)(implicit
+      eclairCommitOpt: Option[String] = None,
+      binaryDirectory: Path = EclairRpcTestClient.sbtBinaryDirectory)(implicit
       system: ActorSystem): EclairRpcClient = {
     val inst = cannonicalEclairInstance()
-    new EclairRpcClient(inst, binary(eclairVersionOpt, eclairCommitOpt))
-  }
-
-  def deleteTmpDir(dir: File): Boolean = {
-    if (!dir.isDirectory) {
-      dir.delete()
-    } else {
-      dir.listFiles().foreach(deleteTmpDir)
-      dir.delete()
-    }
+    new EclairRpcClient(inst,
+                        EclairRpcTestClient.getBinary(
+                          eclairVersionOpt = eclairVersionOpt,
+                          eclairCommitOpt = eclairCommitOpt,
+                          binaryDirectory = binaryDirectory))
   }
 
   /**
@@ -542,7 +495,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       eclairVersionOpt1: Option[String] = None,
       eclairCommitOpt1: Option[String] = None,
       eclairVersionOpt2: Option[String] = None,
-      eclairCommitOpt2: Option[String] = None)(implicit
+      eclairCommitOpt2: Option[String] = None,
+      binaryDirectory: Path = EclairRpcTestClient.sbtBinaryDirectory)(implicit
       system: ActorSystem): Future[(EclairRpcClient, EclairRpcClient)] = {
     import system.dispatcher
     val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
@@ -561,14 +515,20 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
     val clientF = e1InstanceF.flatMap { e1 =>
       val e =
-        new EclairRpcClient(e1, binary(eclairVersionOpt1, eclairCommitOpt1))
+        new EclairRpcClient(e1,
+                            EclairRpcTestClient.getBinary(eclairVersionOpt1,
+                                                          eclairCommitOpt1,
+                                                          binaryDirectory))
       logger.debug(
         s"Temp eclair directory created ${e.getDaemon.authCredentials.datadir}")
       e.start().map(_ => e)
     }
     val otherClientF = e2InstanceF.flatMap { e2 =>
       val e =
-        new EclairRpcClient(e2, binary(eclairVersionOpt2, eclairCommitOpt2))
+        new EclairRpcClient(e2,
+                            EclairRpcTestClient.getBinary(eclairVersionOpt2,
+                                                          eclairCommitOpt2,
+                                                          binaryDirectory))
       logger.debug(
         s"Temp eclair directory created ${e.getDaemon.authCredentials.datadir}")
       e.start().map(_ => e)
@@ -805,16 +765,19 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         senderEclairCommit: Option[String],
         networkSize: Int,
         channelAmount: MilliSatoshis,
-        logbackXml: Option[String])(implicit
+        logbackXml: Option[String],
+        binaryDirectory: Path = EclairRpcTestClient.sbtBinaryDirectory)(implicit
         system: ActorSystem): Future[EclairNetwork] = {
       import system.dispatcher
       for {
         bitcoind <- startedBitcoindRpcClient()
         testEclairInstance =
           EclairRpcTestUtil.eclairInstance(bitcoind, logbackXml = logbackXml)
-        testEclairNode = new EclairRpcClient(
-          testEclairInstance,
-          binary(testEclairVersion, testEclairCommit))
+        testEclairNode = new EclairRpcClient(testEclairInstance,
+                                             EclairRpcTestClient.getBinary(
+                                               testEclairVersion,
+                                               testEclairCommit,
+                                               binaryDirectory))
         _ <- testEclairNode.start()
         _ <- awaitEclairInSync(testEclairNode, bitcoind)
         networkEclairInstances =
@@ -826,7 +789,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
                                                logbackXml = logbackXml))
         networkEclairNodes = networkEclairInstances.map(
           new EclairRpcClient(_,
-                              binary(senderEclairVersion, senderEclairCommit)))
+                              EclairRpcTestClient.getBinary(senderEclairVersion,
+                                                            senderEclairCommit,
+                                                            binaryDirectory)))
         _ <- Future.sequence(networkEclairNodes.map(_.start()))
         _ <- Future.sequence(
           networkEclairNodes.map(awaitEclairInSync(_, bitcoind)))

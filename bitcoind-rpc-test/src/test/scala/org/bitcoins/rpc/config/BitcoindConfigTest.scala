@@ -1,15 +1,12 @@
 package org.bitcoins.rpc.config
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.config.MainNet
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, FileUtil}
 
 class BitcoindConfigTest extends BitcoinSUnitTest {
 
-  def tmpDir = BitcoindRpcTestUtil.tmpDir()
+  def tmpDir = FileUtil.tmpDir()
   it must "have to/fromString symmetry" in {
     val conf = BitcoindRpcTestUtil.standardConfig
     val confStr = conf.toWriteableString

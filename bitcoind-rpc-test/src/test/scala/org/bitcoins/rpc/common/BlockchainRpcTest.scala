@@ -24,8 +24,8 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     case (_, _) =>
       val pruneClient =
         BitcoindRpcClient.withActorSystem(
-          BitcoindRpcTestUtil.instance(pruneMode = true,
-                                       versionOpt = Some(BitcoindVersion.V17)))
+          BitcoindRpcTestUtil
+            .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.V17)))
 
       clientAccum += pruneClient
 

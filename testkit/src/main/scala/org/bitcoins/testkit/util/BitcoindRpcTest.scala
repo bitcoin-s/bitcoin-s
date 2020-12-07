@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.util
 
 import java.nio.file.Files
-
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -10,10 +9,11 @@ import scala.collection.mutable
 
 abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
 
-  private val dirExists = Files.exists(BitcoindRpcTestUtil.binaryDirectory)
+  private val dirExists =
+    Files.exists(BitcoindRpcTestClient.sbtBinaryDirectory)
 
   private val hasContents = dirExists && Files
-    .list(BitcoindRpcTestUtil.binaryDirectory)
+    .list(BitcoindRpcTestClient.sbtBinaryDirectory)
     .toArray()
     .nonEmpty
 
@@ -23,7 +23,7 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
     printerr(s"Run 'sbt downloadBitcoind' to fetch needed binaries")
     sys.error {
       val msg =
-        s""""bitcoind binary directory (${BitcoindRpcTestUtil.binaryDirectory}) is empty. 
+        s""""bitcoind binary directory (${BitcoindRpcTestClient.sbtBinaryDirectory}) is empty. 
            |Run 'sbt downloadBitcoind' to fetch needed binaries""".stripMargin
       msg
     }

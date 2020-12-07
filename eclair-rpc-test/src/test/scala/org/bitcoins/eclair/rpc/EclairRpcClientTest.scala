@@ -2,7 +2,6 @@ package org.bitcoins.eclair.rpc
 
 import java.nio.file.Files
 import java.time.Instant
-
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
@@ -29,7 +28,7 @@ import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkit.util.{BitcoinSAsyncTest, EclairRpcTestClient}
 import org.scalatest.Assertion
 
 import scala.concurrent._
@@ -37,10 +36,10 @@ import scala.concurrent.duration.{DurationInt, _}
 
 class EclairRpcClientTest extends BitcoinSAsyncTest {
 
-  private val dirExists = Files.exists(EclairRpcTestUtil.binaryDirectory)
+  private val dirExists = Files.exists(EclairRpcTestClient.sbtBinaryDirectory)
 
   private val hasContents = dirExists && Files
-    .list(EclairRpcTestUtil.binaryDirectory)
+    .list(EclairRpcTestClient.sbtBinaryDirectory)
     .toArray()
     .nonEmpty
 
@@ -50,7 +49,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     printerr(s"Run 'sbt downloadEclair' to fetch needed binaries")
     sys.error {
       val msg =
-        s""""Eclair binary directory (${BitcoindRpcTestUtil.binaryDirectory}) is empty. 
+        s""""Eclair binary directory (${EclairRpcTestClient.sbtBinaryDirectory}) is empty.
            |Run 'sbt downloadEclair' to fetch needed binaries""".stripMargin
       msg
     }
@@ -407,14 +406,12 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to start and shutdown a node" in {
+    val eclairTestClient =
+      EclairRpcTestClient.fromSbtDownload(eclairVersionOpt = None,
+                                          eclairCommitOpt = None,
+                                          bitcoindRpcClientOpt = None)
     for {
-      bitcoind <- EclairRpcTestUtil.startedBitcoindRpcClient()
-      eclair <- {
-        val server = EclairRpcTestUtil.eclairInstance(bitcoind)
-        val eclair =
-          new EclairRpcClient(server, EclairRpcTestUtil.binary(None, None))
-        eclair.start().map(_ => eclair)
-      }
+      eclair <- eclairTestClient.start()
       _ <- TestAsyncUtil.retryUntilSatisfiedF(conditionF =
                                                 () => eclair.isStarted(),
                                               interval = 1.second,
@@ -542,7 +539,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
     val badClientF =
       badInstanceF.map(
-        new EclairRpcClient(_, EclairRpcTestUtil.binary(None, None)))
+        new EclairRpcClient(_,
+                            Some(
+                              EclairRpcTestClient.sbtBinaryDirectory.toFile)))
 
     badClientF.flatMap { badClient =>
       recoverToSucceededIf[RuntimeException](badClient.getInfo)

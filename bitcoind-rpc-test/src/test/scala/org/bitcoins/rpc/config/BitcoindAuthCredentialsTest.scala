@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.config
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, FileUtil}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.CookieBased
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import org.bitcoins.core.config.RegTest
@@ -11,7 +11,7 @@ class BitcoindAuthCredentialsTest extends BitcoinSUnitTest {
     val confStr = """
                     |regtest=1
         """.stripMargin
-    val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
+    val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
     val auth = BitcoindAuthCredentials.fromConfig(conf)
     val cookie = auth match {
       case cookie: CookieBased => cookie
@@ -29,7 +29,7 @@ class BitcoindAuthCredentialsTest extends BitcoinSUnitTest {
                     |rpcuser=foo
                     |rpcpassword=bar
         """.stripMargin
-    val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
+    val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
     val auth = BitcoindAuthCredentials.fromConfig(conf)
 
     val pass = auth match {
@@ -49,7 +49,7 @@ class BitcoindAuthCredentialsTest extends BitcoinSUnitTest {
                     |rpcpassword=bar
       """.stripMargin
 
-    val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
+    val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
     BitcoindAuthCredentials.fromConfig(conf) match {
       case _: CookieBased => fail
       case PasswordBased(username, password) =>

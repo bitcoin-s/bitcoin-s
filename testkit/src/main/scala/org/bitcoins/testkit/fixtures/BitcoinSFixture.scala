@@ -3,6 +3,7 @@ package org.bitcoins.testkit.fixtures
 import akka.actor.ActorSystem
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest._
 

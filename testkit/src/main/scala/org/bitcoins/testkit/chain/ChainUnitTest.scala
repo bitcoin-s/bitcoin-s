@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.chain
 
 import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.ChainVerificationLogger
@@ -24,6 +23,7 @@ import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.CachedChainAppConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+
 import org.bitcoins.testkit.util.ScalaTestUtil
 import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
