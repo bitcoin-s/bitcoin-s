@@ -3,7 +3,6 @@ package org.bitcoins.rpc
 import java.io.{File, PrintWriter}
 import java.net.URI
 import java.nio.file.{Files, Path}
-
 import akka.stream.StreamTcpException
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
@@ -16,7 +15,7 @@ import org.bitcoins.rpc.config.{
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil.newestBitcoindBinary
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.testkit.util.{BitcoindRpcTest, FileUtil}
 import org.scalatest.compatible.Assertion
 
 import scala.concurrent.Future
@@ -66,7 +65,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
                      |rpcport=${RpcUtil.randomPort}
     """.stripMargin
 
-    val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
+    val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
     val instance = BitcoindInstance.fromConfig(conf, newestBitcoindBinary)
     assert(
       instance.authCredentials
@@ -86,7 +85,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
                      |rpcport=${RpcUtil.randomPort}
       """.stripMargin
 
-    val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
+    val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
     val instance = BitcoindInstance.fromConfig(conf, newestBitcoindBinary)
     assert(
       instance.authCredentials
@@ -113,7 +112,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
                      |rpcport=${RpcUtil.randomPort}
        """.stripMargin
 
-    val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
+    val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
     val authCredentials =
       BitcoindAuthCredentials.PasswordBased(username = "bitcoin-s",
                                             password = "strong_password")
