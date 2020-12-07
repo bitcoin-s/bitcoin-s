@@ -26,7 +26,6 @@ import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto.{
   AesPassword,
   SchnorrDigitalSignature,
-  SchnorrNonce,
   Sha256DigestBE
 }
 import scodec.bits.ByteVector
