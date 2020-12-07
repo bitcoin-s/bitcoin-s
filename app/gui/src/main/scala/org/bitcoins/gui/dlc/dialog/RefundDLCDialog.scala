@@ -5,7 +5,7 @@ import scalafx.scene.Node
 import scalafx.scene.control.TextField
 import scodec.bits.ByteVector
 
-object RefundDLCDialog
+class RefundDLCDialog
     extends DLCDialog[ExecuteDLCRefund](
       "DLC Refund",
       "Enter DLC contract ID",

@@ -3,8 +3,10 @@ package org.bitcoins.gui.dlc
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.dlc.SerializedDLCStatus
-import org.bitcoins.core.protocol.tlv.UnsignedNumericOutcome
+import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
+import org.bitcoins.core.config.MainNet
+import org.bitcoins.core.number.{Int32, UInt16, UInt32}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
@@ -23,14 +25,14 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
   val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
 
-  val dlcs: ObservableBuffer[SerializedDLCStatus] =
-    new ObservableBuffer[SerializedDLCStatus]()
+  val dlcs: ObservableBuffer[DLCStatus] =
+    new ObservableBuffer[DLCStatus]()
 
-  def getDLCs: Vector[SerializedDLCStatus] = {
+  def getDLCs: Vector[DLCStatus] = {
     ConsoleCli.exec(GetDLCs, Config.empty) match {
       case Failure(exception) => throw exception
       case Success(dlcsStr) =>
-        ujson.read(dlcsStr).arr.map(SerializedDLCStatus.fromJson).toVector
+        ujson.read(dlcsStr).arr.map(DLCStatus.fromJson).toVector
     }
   }
 
@@ -43,7 +45,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
     ConsoleCli.exec(GetDLC(paramHash), Config.empty) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
-        dlcs += SerializedDLCStatus.fromJson(ujson.read(dlcStatus))
+        dlcs += DLCStatus.fromJson(ujson.read(dlcStatus))
         dlcs.find(_.paramHash == paramHash).foreach(dlcs -= _)
     }
   }
@@ -90,6 +92,8 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
       case Some(contractInfo) =>
         val builder = new StringBuilder()
 
+        builder.append(s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
+
         val privKey = ECPrivateKey.freshPrivateKey
         val pubKey = privKey.schnorrPublicKey
         val (kValues, rValues, oracleInfo) = contractInfo match {
@@ -108,63 +112,88 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
             (kValues, rValues, oracleInfo)
         }
 
-        builder.append(
-          s"Oracle Public Key: ${pubKey.hex}\nEvent R values: ${rValues.map(_.hex).mkString(",")}\n")
-        builder.append(s"Serialized Oracle Info: ${oracleInfo.hex}\n\n")
+        if (GlobalData.network != MainNet) {
 
-        builder.append(s"\nSerialized Contract Info:\n${contractInfo.hex}\n\n")
+          val descriptor = contractInfo match {
+            case SingleNonceContractInfo(outcomeValueMap) =>
+              EnumEventDescriptorV0TLV(outcomeValueMap.map(_._1.outcome))
+            case MultiNonceContractInfo(_, base, numDigits, _) =>
+              UnsignedDigitDecompositionEventDescriptor(UInt16(base),
+                                                        UInt16(numDigits),
+                                                        "units",
+                                                        Int32.zero)
+          }
 
-        contractInfo match {
-          case contractInfo: SingleNonceContractInfo =>
-            builder.append("Outcomes and oracle sigs in order of entry:\n")
-            contractInfo.keys.foreach { outcome =>
-              val bytes = outcome.serialized.head
-              val hash = CryptoUtil.sha256(bytes).bytes
-              val sig = privKey.schnorrSignWithNonce(hash, kValues.head)
-              builder.append(s"$outcome - ${sig.hex}\n")
-            }
-          case contractInfo: MultiNonceContractInfo =>
-            builder.append("Oracle sigs:\n")
+          val oracleEvent = OracleEventV0TLV(oracleInfo.nonces,
+                                             UInt32.zero,
+                                             descriptor,
+                                             "dummy oracle")
 
-            val sortedOutcomes = contractInfo.outcomeVec.sortBy(_._2)
+          val announcementSig =
+            privKey.schnorrSign(CryptoUtil.sha256(oracleEvent.bytes).bytes)
 
-            val max = UnsignedNumericOutcome(sortedOutcomes.last._1)
-            val middle = UnsignedNumericOutcome(
-              sortedOutcomes(sortedOutcomes.size / 2)._1)
-            val min = UnsignedNumericOutcome(sortedOutcomes.head._1)
+          val announcement =
+            OracleAnnouncementV0TLV(announcementSig, pubKey, oracleEvent)
 
-            val sigsMax =
-              max.serialized.zip(kValues.take(max.digits.size)).map {
-                case (bytes, kValue) =>
-                  val hash = CryptoUtil.sha256(bytes).bytes
-                  privKey.schnorrSignWithNonce(hash, kValue)
+          builder.append(
+            s"Oracle Public Key: ${pubKey.hex}\nEvent R values: ${rValues.map(_.hex).mkString(",")}\n\n")
+
+          builder.append(
+            s"Serialized Oracle Announcement: ${announcement.hex}\n\n")
+
+          contractInfo match {
+            case contractInfo: SingleNonceContractInfo =>
+              builder.append("Outcomes and oracle sigs in order of entry:\n")
+              contractInfo.keys.foreach { outcome =>
+                val bytes = outcome.serialized.head
+                val hash = CryptoUtil.sha256(bytes).bytes
+                val sig = privKey.schnorrSignWithNonce(hash, kValues.head)
+                builder.append(s"$outcome - ${sig.hex}\n")
               }
+            case contractInfo: MultiNonceContractInfo =>
+              builder.append("Oracle sigs:\n")
 
-            val sigsMiddle =
-              middle.serialized.zip(kValues.take(middle.digits.size)).map {
-                case (bytes, kValue) =>
-                  val hash = CryptoUtil.sha256(bytes).bytes
-                  privKey.schnorrSignWithNonce(hash, kValue)
-              }
+              val sortedOutcomes = contractInfo.outcomeVec.sortBy(_._2)
 
-            val sigsMin =
-              min.serialized.zip(kValues.take(min.digits.size)).map {
-                case (bytes, kValue) =>
-                  val hash = CryptoUtil.sha256(bytes).bytes
-                  privKey.schnorrSignWithNonce(hash, kValue)
-              }
+              val max = UnsignedNumericOutcome(sortedOutcomes.last._1)
+              val middle = UnsignedNumericOutcome(
+                sortedOutcomes(sortedOutcomes.size / 2)._1)
+              val min = UnsignedNumericOutcome(sortedOutcomes.head._1)
 
-            val maxSigsStr = sigsMax.map(_.hex).mkString("\n")
-            builder.append(s"local win sigs - $maxSigsStr\n\n\n")
+              val sigsMax =
+                max.serialized.zip(kValues.take(max.digits.size)).map {
+                  case (bytes, kValue) =>
+                    val hash = CryptoUtil.sha256(bytes).bytes
+                    privKey.schnorrSignWithNonce(hash, kValue)
+                }
 
-            val middleSigsStr = sigsMiddle.map(_.hex).mkString("\n")
-            builder.append(s"tie sigs - $middleSigsStr\n\n\n")
+              val sigsMiddle =
+                middle.serialized.zip(kValues.take(middle.digits.size)).map {
+                  case (bytes, kValue) =>
+                    val hash = CryptoUtil.sha256(bytes).bytes
+                    privKey.schnorrSignWithNonce(hash, kValue)
+                }
 
-            val minSigsStr = sigsMin.map(_.hex).mkString("\n")
-            builder.append(s"remote win sigs - $minSigsStr")
+              val sigsMin =
+                min.serialized.zip(kValues.take(min.digits.size)).map {
+                  case (bytes, kValue) =>
+                    val hash = CryptoUtil.sha256(bytes).bytes
+                    privKey.schnorrSignWithNonce(hash, kValue)
+                }
+
+              val maxSigsStr = sigsMax.map(_.hex).mkString("\n")
+              builder.append(s"local win sigs - $maxSigsStr\n\n\n")
+
+              val middleSigsStr = sigsMiddle.map(_.hex).mkString("\n")
+              builder.append(s"tie sigs - $middleSigsStr\n\n\n")
+
+              val minSigsStr = sigsMin.map(_.hex).mkString("\n")
+              builder.append(s"remote win sigs - $minSigsStr")
+          }
+
+          GlobalDLCData.lastOracleAnnouncement = announcement.hex
         }
 
-        GlobalDLCData.lastOracleInfo = oracleInfo.hex
         GlobalDLCData.lastContractInfo = contractInfo.hex
 
         oracleInfoArea.text = builder.result()
@@ -173,37 +202,38 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
   }
 
   def onOffer(): Unit = {
-    printDLCDialogResult("CreateDLCOffer", OfferDLCDialog)
+    printDLCDialogResult("CreateDLCOffer", new OfferDLCDialog)
   }
 
   def onAccept(): Unit = {
-    printDLCDialogResult("AcceptDLCOffer", AcceptDLCDialog)
+    printDLCDialogResult("AcceptDLCOffer", new AcceptDLCDialog)
   }
 
   def onSign(): Unit = {
-    printDLCDialogResult("SignDLC", SignDLCDialog)
+    printDLCDialogResult("SignDLC", new SignDLCDialog)
   }
 
   def onAddSigs(): Unit = {
-    printDLCDialogResult("AddDLCSigs", AddSigsDLCDialog)
+    printDLCDialogResult("AddDLCSigs", new AddSigsDLCDialog)
   }
 
   def onGetFunding(): Unit = {
-    printDLCDialogResult("GetDLCFundingTx", GetFundingDLCDialog)
+    printDLCDialogResult("GetDLCFundingTx", new GetFundingDLCDialog)
   }
 
-  def onClose(): Unit = {
-    printDLCDialogResult("ExecuteDLC", ExecuteDLCDialog)
+  def onExecute(): Unit = {
+    printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog)
   }
 
   def onRefund(): Unit = {
-    printDLCDialogResult("ExecuteDLCRefund", RefundDLCDialog)
+    printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog)
   }
 
-  def viewDLC(status: SerializedDLCStatus): Unit = {
+  def viewDLC(status: DLCStatus): Unit = {
     updateDLCs()
     val updatedStatus = dlcs.find(_.tempContractId == status.tempContractId)
     ViewDLCDialog.showAndWait(parentWindow.value,
-                              updatedStatus.getOrElse(status))
+                              updatedStatus.getOrElse(status),
+                              this)
   }
 }

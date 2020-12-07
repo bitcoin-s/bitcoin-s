@@ -6,7 +6,7 @@ import scalafx.scene.Node
 import scalafx.scene.control.TextField
 import scodec.bits.ByteVector
 
-object ExecuteDLCDialog
+class ExecuteDLCDialog
     extends DLCDialog[ExecuteDLC](
       "DLC Close",
       "Enter DLC execution info",

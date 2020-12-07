@@ -142,7 +142,7 @@ class DLCPane(glassPane: VBox) {
   private val executeButton = new Button {
     text = "Execute"
     onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onClose()
+      override def handle(event: ActionEvent): Unit = model.onExecute()
     }
   }
 

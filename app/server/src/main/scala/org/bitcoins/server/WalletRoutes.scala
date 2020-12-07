@@ -1,11 +1,11 @@
 package org.bitcoins.server
 
 import java.nio.file.Files
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.Materializer
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleInfo
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
@@ -224,7 +224,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
           reject(ValidationRejection("failure", Some(exception)))
         case Success(GetDLC(paramHash)) =>
           complete {
-            wallet.findSerializedDLC(paramHash).map {
+            wallet.findDLC(paramHash).map {
               case None => Server.httpSuccess(ujson.Null)
               case Some(dlc) =>
                 Server.httpSuccess(dlc.toJson)
@@ -237,13 +237,20 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-              CreateDLCOffer(oracleInfo,
+              CreateDLCOffer(announcement,
                              contractInfo,
                              collateral,
                              feeRateOpt,
                              locktime,
                              refundLT)) =>
           complete {
+            if (!announcement.validateSignature) {
+              throw new RuntimeException(
+                s"Received Oracle announcement with invalid signature! ${announcement.hex}")
+            }
+
+            val oracleInfo = OracleInfo.fromOracleAnnouncement(announcement)
+
             wallet
               .createDLCOffer(oracleInfo,
                               contractInfo,

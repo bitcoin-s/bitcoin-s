@@ -235,7 +235,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: Refunded), Some(statusB: Refunded)) =>
-            assert(statusA.refundTx == statusB.refundTx)
+            assert(statusA.closingTxId == statusB.closingTxId)
           case (_, _) => fail()
         }
       }
@@ -272,7 +272,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: Refunded), Some(statusB: Refunded)) =>
-            assert(statusA.refundTx == statusB.refundTx)
+            assert(statusA.closingTxId == statusB.closingTxId)
           case (_, _) => fail()
         }
       }

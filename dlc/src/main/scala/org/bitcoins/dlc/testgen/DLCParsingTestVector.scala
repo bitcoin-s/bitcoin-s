@@ -325,40 +325,64 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
         )
 
         DLCTLVTestVector(tlv, "enum_event_descriptor_v0", fields)
-      case ExternalEventDescriptorV0TLV(externalName) =>
-        val fields = Vector(
-          "tpe" -> Element(ExternalEventDescriptorV0TLV.tpe),
-          "length" -> Element(tlv.length),
-          "externalName" -> Element(CryptoUtil.serializeForHash(externalName))
-        )
-
-        DLCTLVTestVector(tlv, "external_event_descriptor_v0", fields)
-      case RangeEventDescriptorV0TLV(start, stop, step) =>
+      case RangeEventDescriptorV0TLV(start, stop, step, units, precision) =>
         val fields = Vector(
           "tpe" -> Element(RangeEventDescriptorV0TLV.tpe),
           "length" -> Element(tlv.length),
           "start" -> Element(start),
           "stop" -> Element(stop),
-          "step" -> Element(step)
+          "step" -> Element(step),
+          "units" -> Element(CryptoUtil.serializeForHash(units)),
+          "precision" -> Element(precision)
         )
 
         DLCTLVTestVector(tlv, "range_event_descriptor_v0", fields)
-      case OracleEventV0TLV(pubKey, nonce, eventMaturity, descriptor, uri) =>
+      case SignedDigitDecompositionEventDescriptor(base,
+                                                   numDigits,
+                                                   units,
+                                                   precision) =>
+        val fields = Vector(
+          "tpe" -> Element(RangeEventDescriptorV0TLV.tpe),
+          "length" -> Element(tlv.length),
+          "base" -> Element(base),
+          "numDigits" -> Element(numDigits),
+          "isSigned" -> Element(ByteVector.fromByte(0x01)),
+          "units" -> Element(CryptoUtil.serializeForHash(units)),
+          "precision" -> Element(precision)
+        )
+
+        DLCTLVTestVector(tlv, "range_event_descriptor_v0", fields)
+      case UnsignedDigitDecompositionEventDescriptor(base,
+                                                     numDigits,
+                                                     units,
+                                                     precision) =>
+        val fields = Vector(
+          "tpe" -> Element(RangeEventDescriptorV0TLV.tpe),
+          "length" -> Element(tlv.length),
+          "base" -> Element(base),
+          "numDigits" -> Element(numDigits),
+          "isSigned" -> Element(ByteVector.fromByte(0x00)),
+          "units" -> Element(CryptoUtil.serializeForHash(units)),
+          "precision" -> Element(precision)
+        )
+
+        DLCTLVTestVector(tlv, "range_event_descriptor_v0", fields)
+      case OracleEventV0TLV(nonces, eventMaturity, descriptor, uri) =>
         val fields = Vector(
           "tpe" -> Element(OracleEventV0TLV.tpe),
           "length" -> Element(tlv.length),
-          "oraclePublicKey" -> Element(pubKey),
-          "oracleNonce" -> Element(nonce),
+          "oracleNonces" -> MultiElement(nonces.map(Element(_))),
           "eventMaturityEpoch" -> Element(eventMaturity),
           "eventDescriptor" -> Element(descriptor),
           "event_uri" -> Element(CryptoUtil.serializeForHash(uri))
         )
 
         DLCTLVTestVector(tlv, "oracle_event_v0", fields)
-      case OracleAnnouncementV0TLV(sig, event) =>
+      case OracleAnnouncementV0TLV(sig, pubkey, event) =>
         val fields = Vector(
           "tpe" -> Element(UInt16(OracleAnnouncementV0TLV.tpe.toInt)),
           "signature" -> Element(sig),
+          "oraclePubKey" -> Element(pubkey),
           "oracleEvent" -> Element(event)
         )
 

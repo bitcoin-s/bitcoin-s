@@ -1,7 +1,6 @@
 package org.bitcoins.server
 
 import java.time.{ZoneId, ZonedDateTime}
-
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
@@ -65,7 +64,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val mockNode = mock[Node]
 
-  val chainRoutes = ChainRoutes(mockChainApi)
+  val chainRoutes = ChainRoutes(mockChainApi, RegTest)
 
   val nodeRoutes = NodeRoutes(mockNode)
 
@@ -719,9 +718,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
-    val oracleInfoStr =
-      "fda712406374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f58603bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1"
-
     val contractInfoDigests =
       Vector("ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562",
              "e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea")
@@ -776,8 +772,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val fundingInput: DLCFundingInputP2WPKHV0 =
       DLCFundingInputP2WPKHV0(wtx, UInt32.zero, UInt32.zero)
 
+    val announcementTLV = OracleAnnouncementV0TLV(
+      "fdd8249426cbca0e5366f6688fd837a83d3fe34d103f8d88a3bdc40d648e47e43c6f70a7e65fb85d5de46779604b541ebe74d06b3c316446a6f97fcd23d6de8e1d7b9451f74577f8cab8361962ce642a8da4b1f48f8813ed243203cb50ebba45c789abf0fdd8223000015b0fb6b85a9badee0a826349822db7412f79c71efdd903eac94a10ee10d6e4425fe3da00fdd80604000101620161")
+
+    val oracleInfo = SingleNonceOracleInfo(announcementTLV.publicKey,
+                                           announcementTLV.eventTLV.nonces.head)
+
     val offer = DLCOffer(
-      OracleAndContractInfo(OracleInfo(oracleInfoStr), contractInfo),
+      OracleAndContractInfo(oracleInfo, contractInfo),
       dummyDLCKeys,
       Satoshis(2500),
       Vector(fundingInput, fundingInput),
@@ -795,7 +797,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         _: UInt32,
                         _: UInt32))
         .expects(
-          OracleInfo(oracleInfoStr),
+          oracleInfo,
           contractInfoTLV,
           Satoshis(2500),
           Some(SatoshisPerVirtualByte(Satoshis.one)),
@@ -808,7 +810,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         ServerCommand(
           "createdlcoffer",
           Arr(
-            Str(oracleInfoStr),
+            Str(announcementTLV.hex),
             Str(contractInfoTLV.hex),
             Num(2500),
             Num(1),

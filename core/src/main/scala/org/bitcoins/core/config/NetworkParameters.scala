@@ -68,8 +68,6 @@ sealed abstract class MainNet extends BitcoinNetwork {
     * @inheritdoc
     */
   override def rpcPort = 8332
-  //mainnet doesn't need to be specified like testnet or regtest
-  override def name = ""
 
   /**
     * @inheritdoc

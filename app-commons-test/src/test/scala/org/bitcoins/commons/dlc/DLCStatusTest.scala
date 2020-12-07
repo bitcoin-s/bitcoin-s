@@ -1,242 +1,265 @@
 package org.bitcoins.commons.dlc
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
-import org.bitcoins.core.protocol.script.P2WSHWitnessV0
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.crypto.CryptoUtil
-import org.bitcoins.dlc.builder.DLCTxBuilder
-import org.bitcoins.testkit.core.gen.{
-  CryptoGenerators,
-  NumberGenerator,
-  TLVGen,
-  TransactionGenerators
-}
+import org.bitcoins.commons.jsonmodels.dlc.{DLCState, DLCStatus}
+import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
-
-import scala.concurrent.Future
 
 class DLCStatusTest extends BitcoinSAsyncTest {
   behavior of "DLCStatus"
 
   it must "have json symmetry in DLCStatus.Offered" in {
-    forAllParallel(CryptoGenerators.sha256DigestBE,
-                   NumberGenerator.bool,
-                   TLVGen.dlcOfferTLV) {
-      case (paramHash, isInit, offerTLV) =>
+    forAllParallel(NumberGenerator.bool, TLVGen.dlcOfferTLV) {
+      case (isInit, offerTLV) =>
         val offer = DLCOffer.fromTLV(offerTLV)
 
-        val status =
-          DLCStatus.Offered(paramHash, isInitiator = isInit, offer)
+        val totalCollateral = offer.contractInfo.max
 
+        val status =
+          DLCStatus.Offered(offer.paramHash,
+                            isInit,
+                            offer.tempContractId,
+                            offer.oracleInfo,
+                            offer.contractInfo,
+                            offer.timeouts,
+                            offer.feeRate,
+                            totalCollateral,
+                            offer.totalCollateral)
+
+        assert(status.state == DLCState.Offered)
         assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
   it must "have json symmetry in DLCStatus.Accepted" in {
-    forAllParallel(CryptoGenerators.sha256DigestBE,
-                   NumberGenerator.bool,
-                   TLVGen.dlcOfferTLVAcceptTLV) {
-      case (paramHash, isInit, (offerTLV, acceptTLV)) =>
+    forAllParallel(NumberGenerator.bool,
+                   TLVGen.dlcOfferTLV,
+                   NumberGenerator.bytevector) {
+      case (isInit, offerTLV, contractId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
-        val accept = DLCAccept.fromTLV(acceptTLV, offer)
 
-        val status = DLCStatus.Accepted(paramHash, isInit, offer, accept)
+        val totalCollateral = offer.contractInfo.max
 
+        val status =
+          DLCStatus.Accepted(
+            offer.paramHash,
+            isInit,
+            offer.tempContractId,
+            contractId,
+            offer.oracleInfo,
+            offer.contractInfo,
+            offer.timeouts,
+            offer.feeRate,
+            totalCollateral,
+            offer.totalCollateral
+          )
+
+        assert(status.state == DLCState.Accepted)
         assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
   it must "have json symmetry in DLCStatus.Signed" in {
-    forAllParallel(CryptoGenerators.sha256DigestBE,
-                   NumberGenerator.bool,
-                   TLVGen.dlcOfferTLVAcceptTLVSignTLV) {
-      case (paramHash, isInit, (offerTLV, acceptTLV, signTLV)) =>
+    forAllParallel(NumberGenerator.bool,
+                   TLVGen.dlcOfferTLV,
+                   NumberGenerator.bytevector) {
+      case (isInit, offerTLV, contractId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
-        val accept = DLCAccept.fromTLV(acceptTLV, offer)
-        val sign = DLCSign.fromTLV(signTLV, offer)
 
-        val status = DLCStatus.Signed(paramHash, isInit, offer, accept, sign)
+        val totalCollateral = offer.contractInfo.max
 
+        val status =
+          DLCStatus.Signed(
+            offer.paramHash,
+            isInit,
+            offer.tempContractId,
+            contractId,
+            offer.oracleInfo,
+            offer.contractInfo,
+            offer.timeouts,
+            offer.feeRate,
+            totalCollateral,
+            offer.totalCollateral
+          )
+
+        assert(status.state == DLCState.Signed)
         assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
   it must "have json symmetry in DLCStatus.Broadcasted" in {
-    forAllParallel(CryptoGenerators.sha256DigestBE,
-                   NumberGenerator.bool,
-                   TLVGen.dlcOfferTLVAcceptTLVSignTLV,
-                   TransactionGenerators.transaction) {
-      case (paramHash, isInit, (offerTLV, acceptTLV, signTLV), fundingTx) =>
+    forAllParallel(NumberGenerator.bool,
+                   TLVGen.dlcOfferTLV,
+                   NumberGenerator.bytevector,
+                   CryptoGenerators.doubleSha256DigestBE) {
+      case (isInit, offerTLV, contractId, fundingTxId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
-        val accept = DLCAccept.fromTLV(acceptTLV, offer)
-        val sign = DLCSign.fromTLV(signTLV, offer)
+
+        val totalCollateral = offer.contractInfo.max
 
         val status =
-          DLCStatus.Broadcasted(paramHash,
-                                isInit,
-                                offer,
-                                accept,
-                                sign,
-                                fundingTx)
+          DLCStatus.Broadcasted(
+            offer.paramHash,
+            isInit,
+            offer.tempContractId,
+            contractId,
+            offer.oracleInfo,
+            offer.contractInfo,
+            offer.timeouts,
+            offer.feeRate,
+            totalCollateral,
+            offer.totalCollateral,
+            fundingTxId
+          )
 
+        assert(status.state == DLCState.Broadcasted)
         assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
   it must "have json symmetry in DLCStatus.Confirmed" in {
-    forAllParallel(CryptoGenerators.sha256DigestBE,
-                   NumberGenerator.bool,
-                   TLVGen.dlcOfferTLVAcceptTLVSignTLV,
-                   TransactionGenerators.transaction) {
-      case (paramHash, isInit, (offerTLV, acceptTLV, signTLV), fundingTx) =>
+    forAllParallel(NumberGenerator.bool,
+                   TLVGen.dlcOfferTLV,
+                   NumberGenerator.bytevector,
+                   CryptoGenerators.doubleSha256DigestBE) {
+      case (isInit, offerTLV, contractId, fundingTxId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
-        val accept = DLCAccept.fromTLV(acceptTLV, offer)
-        val sign = DLCSign.fromTLV(signTLV, offer)
+
+        val totalCollateral = offer.contractInfo.max
 
         val status =
-          DLCStatus.Confirmed(paramHash, isInit, offer, accept, sign, fundingTx)
+          DLCStatus.Confirmed(
+            offer.paramHash,
+            isInit,
+            offer.tempContractId,
+            contractId,
+            offer.oracleInfo,
+            offer.contractInfo,
+            offer.timeouts,
+            offer.feeRate,
+            totalCollateral,
+            offer.totalCollateral,
+            fundingTxId
+          )
 
+        assert(status.state == DLCState.Confirmed)
         assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
   it must "have json symmetry in DLCStatus.Claimed" in {
     forAllParallel(
-      CryptoGenerators.sha256DigestBE,
       NumberGenerator.bool,
-      TLVGen.dlcOfferTLVAcceptTLVSignTLVWithOralceKeys,
-      TransactionGenerators.transaction,
-      TransactionGenerators.transaction,
-      Gen.choose(0L, Long.MaxValue)
+      TLVGen.dlcOfferTLV,
+      NumberGenerator.bytevector,
+      CryptoGenerators.doubleSha256DigestBE,
+      CryptoGenerators.doubleSha256DigestBE,
+      Gen.listOf(CryptoGenerators.schnorrDigitalSignature)
     ) {
-      case (paramHash,
-            isInit,
-            (offerTLV, acceptTLV, signTLV, oracleKey, kValue),
-            fundingTx,
-            closingTx,
-            outcomeNum) =>
+      case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sigs) =>
         val offer = DLCOffer.fromTLV(offerTLV)
-        val accept = DLCAccept.fromTLV(acceptTLV, offer)
-        val sign = DLCSign.fromTLV(signTLV, offer)
 
-        val outcomeIndex = outcomeNum % offer.contractInfo.allOutcomes.length
-        val outcome = offer.contractInfo.allOutcomes(outcomeIndex.toInt)
-        val oracleSig =
-          oracleKey.schnorrSignWithNonce(
-            CryptoUtil.sha256(outcome.serialized.head).bytes,
-            kValue)
+        val totalCollateral = offer.contractInfo.max
+
+        val rand =
+          scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
+        val outcome = offer.contractInfo.allOutcomes(rand)
 
         val status =
-          DLCStatus.Claimed(paramHash,
-                            isInit,
-                            offer,
-                            accept,
-                            sign,
-                            fundingTx,
-                            Vector(oracleSig),
-                            closingTx)
+          DLCStatus.Claimed(
+            offer.paramHash,
+            isInit,
+            offer.tempContractId,
+            contractId,
+            offer.oracleInfo,
+            offer.contractInfo,
+            offer.timeouts,
+            offer.feeRate,
+            totalCollateral,
+            offer.totalCollateral,
+            fundingTxId,
+            closingTxId,
+            sigs.toVector,
+            outcome
+          )
 
-        assert(status.outcome == outcome)
+        assert(status.state == DLCState.Claimed)
         assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
   it must "have json symmetry in DLCStatus.RemoteClaimed" in {
-    forAllAsync(
-      CryptoGenerators.sha256DigestBE,
+    forAllParallel(
       NumberGenerator.bool,
-      TLVGen.dlcOfferTLVAcceptTLVSignTLVWithOralceKeys,
-      Gen.choose(0L, Long.MaxValue)
+      TLVGen.dlcOfferTLV,
+      NumberGenerator.bytevector,
+      CryptoGenerators.doubleSha256DigestBE,
+      CryptoGenerators.doubleSha256DigestBE,
+      CryptoGenerators.schnorrDigitalSignature
     ) {
-      case (paramHash,
-            isInit,
-            (offerTLV, acceptTLV, signTLV, oracleKey, kValue),
-            outcomeNum) =>
+      case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sig) =>
         val offer = DLCOffer.fromTLV(offerTLV)
-        val accept = DLCAccept.fromTLV(acceptTLV, offer)
-        val sign = DLCSign.fromTLV(signTLV, offer)
 
-        val outcomeIndex = outcomeNum % offer.contractInfo.allOutcomes.length
-        val outcome = offer.contractInfo.allOutcomes(outcomeIndex.toInt)
-        val oracleSig =
-          oracleKey.schnorrSignWithNonce(
-            CryptoUtil.sha256(outcome.serialized.head).bytes,
-            kValue)
+        val totalCollateral = offer.contractInfo.max
 
-        val offerCETSig = oracleSig.sig.toPrivateKey.completeAdaptorSignature(
-          sign.cetSigs(outcome),
-          HashType.sigHashAll.byte)
-        val acceptCETSig = oracleSig.sig.toPrivateKey.completeAdaptorSignature(
-          accept.cetSigs(outcome),
-          HashType.sigHashAll.byte)
+        val rand =
+          scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
+        val outcome = offer.contractInfo.allOutcomes(rand)
 
-        val builder = DLCTxBuilder(offer, accept.withoutSigs)
+        val status =
+          DLCStatus.RemoteClaimed(
+            offer.paramHash,
+            isInit,
+            offer.tempContractId,
+            contractId,
+            offer.oracleInfo,
+            offer.contractInfo,
+            offer.timeouts,
+            offer.feeRate,
+            totalCollateral,
+            offer.totalCollateral,
+            fundingTxId,
+            closingTxId,
+            sig,
+            outcome
+          )
 
-        for {
-          fundingTx <- builder.buildFundingTx
-          unsignedCET <- builder.buildCET(outcome)
-          psbt =
-            PSBT
-              .fromUnsignedTx(unsignedCET)
-              .addUTXOToInput(fundingTx, index = 0)
-              .addScriptWitnessToInput(
-                P2WSHWitnessV0(builder.fundingTxBuilder.fundingMultiSig),
-                index = 0)
-              .addSignature(PartialSignature(offer.pubKeys.fundingKey,
-                                             offerCETSig),
-                            inputIndex = 0)
-              .addSignature(PartialSignature(accept.pubKeys.fundingKey,
-                                             acceptCETSig),
-                            inputIndex = 0)
-          closingTx <-
-            Future.fromTry(psbt.finalizePSBT.map(_.extractTransaction))
-        } yield {
-          val status =
-            DLCStatus.RemoteClaimed(paramHash,
-                                    isInit,
-                                    offer,
-                                    accept,
-                                    sign,
-                                    fundingTx,
-                                    closingTx)
-
-          assert(status.oracleSig == oracleSig)
-          assert(status.outcome == outcome)
-          assert(DLCStatus.fromJson(status.toJson) == status)
-        }
+        assert(status.state == DLCState.RemoteClaimed)
+        assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }
 
   it must "have json symmetry in DLCStatus.Refunded" in {
     forAllParallel(
-      CryptoGenerators.sha256DigestBE,
       NumberGenerator.bool,
-      TLVGen.dlcOfferTLVAcceptTLVSignTLV,
-      TransactionGenerators.transaction,
-      TransactionGenerators.transaction
+      TLVGen.dlcOfferTLV,
+      NumberGenerator.bytevector,
+      CryptoGenerators.doubleSha256DigestBE,
+      CryptoGenerators.doubleSha256DigestBE
     ) {
-      case (paramHash,
-            isInit,
-            (offerTLV, acceptTLV, signTLV),
-            fundingTx,
-            closingTx) =>
+      case (isInit, offerTLV, contractId, fundingTxId, closingTxId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
-        val accept = DLCAccept.fromTLV(acceptTLV, offer)
-        val sign = DLCSign.fromTLV(signTLV, offer)
+
+        val totalCollateral = offer.contractInfo.max
 
         val status =
-          DLCStatus.Refunded(paramHash,
-                             isInit,
-                             offer,
-                             accept,
-                             sign,
-                             fundingTx,
-                             closingTx)
+          DLCStatus.Refunded(
+            offer.paramHash,
+            isInit,
+            offer.tempContractId,
+            contractId,
+            offer.oracleInfo,
+            offer.contractInfo,
+            offer.timeouts,
+            offer.feeRate,
+            totalCollateral,
+            offer.totalCollateral,
+            fundingTxId,
+            closingTxId
+          )
 
+        assert(status.state == DLCState.Refunded)
         assert(DLCStatus.fromJson(status.toJson) == status)
     }
   }

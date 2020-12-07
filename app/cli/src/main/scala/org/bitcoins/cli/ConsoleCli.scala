@@ -56,6 +56,9 @@ object ConsoleCli {
       help('h', "help").text("Display this help message and exit"),
       note(sys.props("line.separator") + "Commands:"),
       note(sys.props("line.separator") + "===Blockchain ==="),
+      cmd("getinfo")
+        .action((_, conf) => conf.copy(command = GetInfo))
+        .text(s"Returns basic info about the current chain"),
       cmd("getblockcount")
         .action((_, conf) => conf.copy(command = GetBlockCount))
         .text(s"Get the block height"),
@@ -147,7 +150,7 @@ object ConsoleCli {
       cmd("createdlcoffer")
         .action((_, conf) =>
           conf.copy(
-            command = CreateDLCOffer(OracleInfo.dummy,
+            command = CreateDLCOffer(OracleAnnouncementV0TLV.dummy,
                                      ContractInfo.empty.toTLV,
                                      Satoshis.zero,
                                      None,
@@ -155,12 +158,12 @@ object ConsoleCli {
                                      UInt32.zero)))
         .text("Creates a DLC offer that another party can accept")
         .children(
-          arg[OracleInfo]("oracleInfo")
+          arg[OracleAnnouncementTLV]("oracle")
             .required()
-            .action((info, conf) =>
+            .action((oracle, conf) =>
               conf.copy(command = conf.command match {
                 case offer: CreateDLCOffer =>
-                  offer.copy(oracleInfo = info)
+                  offer.copy(oracle = oracle)
                 case other => other
               })),
           arg[ContractInfoTLV]("contractInfo")
@@ -943,6 +946,8 @@ object ConsoleCli {
     }
 
     val requestParam: RequestParam = command match {
+      case GetInfo =>
+        RequestParam("getinfo")
       case GetUtxos =>
         RequestParam("getutxos")
       case GetAddresses =>
@@ -963,7 +968,7 @@ object ConsoleCli {
       case GetDLCs => RequestParam("getdlcs")
       case GetDLC(paramHash) =>
         RequestParam("getdlc", Seq(up.writeJs(paramHash)))
-      case CreateDLCOffer(oracleInfo,
+      case CreateDLCOffer(oracle,
                           contractInfo,
                           collateral,
                           feeRateOpt,
@@ -972,7 +977,7 @@ object ConsoleCli {
         RequestParam(
           "createdlcoffer",
           Seq(
-            up.writeJs(oracleInfo),
+            up.writeJs(oracle),
             up.writeJs(contractInfo),
             up.writeJs(collateral),
             up.writeJs(feeRateOpt),
@@ -1211,9 +1216,11 @@ object CliCommand {
     def noBroadcast: Boolean
   }
 
+  case object GetInfo extends CliCommand
+
   // DLC
   case class CreateDLCOffer(
-      oracleInfo: OracleInfo,
+      oracle: OracleAnnouncementTLV,
       contractInfo: ContractInfoTLV,
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],

@@ -640,27 +640,24 @@ class DLCClientTest extends BitcoinSAsyncTest {
       val accept = dlcOffer.accept.withSigs(acceptCETSigs)
       val sign = DLCSign(offerCETSigs, offerFundingSigs, contractId)
 
-      val offerRemoteClaimed =
-        DLCStatus.RemoteClaimed(paramHash,
-                                isInitiator = true,
-                                offer,
-                                accept,
-                                sign,
-                                offerOutcome.fundingTx,
-                                acceptOutcome.cet)
-      val acceptRemoteClaimed =
-        DLCStatus.RemoteClaimed(paramHash,
-                                isInitiator = false,
-                                offer,
-                                accept,
-                                sign,
-                                acceptOutcome.fundingTx,
-                                offerOutcome.cet)
+      val (offerOracleSig, offerDLCOutcome) =
+        DLCStatus.calculateOutcomeAndSig(isInitiator = true,
+                                         offer,
+                                         accept,
+                                         sign,
+                                         acceptOutcome.cet)
 
-      assert(offerRemoteClaimed.oracleSig == aggSig)
-      assert(offerRemoteClaimed.outcome == outcome)
-      assert(acceptRemoteClaimed.oracleSig == aggSig)
-      assert(acceptRemoteClaimed.outcome == outcome)
+      val (acceptOracleSig, acceptDLCOutcome) =
+        DLCStatus.calculateOutcomeAndSig(isInitiator = false,
+                                         offer,
+                                         accept,
+                                         sign,
+                                         offerOutcome.cet)
+
+      assert(offerOracleSig == aggSig)
+      assert(offerDLCOutcome == outcome)
+      assert(acceptOracleSig == aggSig)
+      assert(acceptDLCOutcome == outcome)
     }
   }
 

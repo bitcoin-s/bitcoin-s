@@ -53,7 +53,7 @@ case class DLCCETSignatureDAO()(implicit
   def findByParamHash(
       paramHash: Sha256DigestBE): Future[Vector[DLCCETSignatureDb]] = {
     val q = table.filter(_.paramHash === paramHash)
-    safeDatabase.run(q.result).map(_.toVector)
+    safeDatabase.runVec(q.result)
   }
 
   def findByParamHash(
@@ -62,12 +62,17 @@ case class DLCCETSignatureDAO()(implicit
     val q = table
       .filter(_.paramHash === paramHash)
       .filter(_.isInitiator === isInit)
-    safeDatabase.run(q.result).map(_.toVector)
+    safeDatabase.runVec(q.result)
   }
 
   def findByParamHash(
       paramHash: Sha256Digest): Future[Vector[DLCCETSignatureDb]] =
     findByParamHash(paramHash.flip)
+
+  def deleteByParamHash(paramHash: Sha256DigestBE): Future[Int] = {
+    val q = table.filter(_.paramHash === paramHash)
+    safeDatabase.run(q.delete)
+  }
 
   class DLCCETSignatureTable(tag: Tag)
       extends Table[DLCCETSignatureDb](tag, "wallet_dlc_cet_sigs") {

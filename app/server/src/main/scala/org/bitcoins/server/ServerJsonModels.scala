@@ -5,7 +5,6 @@ import java.nio.file.Path
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -423,7 +422,7 @@ object GetDLC extends ServerJsonModels {
 }
 
 case class CreateDLCOffer(
-    oracleInfo: OracleInfo,
+    announcement: OracleAnnouncementTLV,
     contractInfoTLV: ContractInfoTLV,
     collateral: Satoshis,
     feeRateOpt: Option[SatoshisPerVirtualByte],
@@ -435,15 +434,15 @@ object CreateDLCOffer extends ServerJsonModels {
   def fromJsArr(jsArr: ujson.Arr): Try[CreateDLCOffer] = {
 
     jsArr.arr.toList match {
-      case oracleInfoJs :: contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: Nil =>
+      case announcementJs :: contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: Nil =>
         Try {
-          val oracleInfo = jsToOracleInfo(oracleInfoJs)
+          val announcement = jsToOracleAnnouncementTLV(announcementJs)
           val contractInfoTLV = jsToContractInfoTLV(contractInfoJs)
           val collateral = jsToSatoshis(collateralJs)
           val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
           val locktime = jsToUInt32(locktimeJs)
           val refundLT = jsToUInt32(refundLTJs)
-          CreateDLCOffer(oracleInfo,
+          CreateDLCOffer(announcement,
                          contractInfoTLV,
                          collateral,
                          feeRate,
@@ -814,12 +813,14 @@ object GetEvent extends ServerJsonModels {
 
 trait ServerJsonModels {
 
-  def jsToOracleInfo(js: Value): OracleInfo =
+  def jsToOracleAnnouncementTLV(js: Value): OracleAnnouncementTLV =
     js match {
       case str: Str =>
-        OracleInfo(str.value)
+        OracleAnnouncementTLV(str.value)
       case _: Value =>
-        throw Value.InvalidData(js, "Expected an OracleInfo as a hex string")
+        throw Value.InvalidData(
+          js,
+          "Expected an OracleAnnouncementTLV as a hex string")
     }
 
   def jsToContractInfoTLV(js: Value): ContractInfoTLV =

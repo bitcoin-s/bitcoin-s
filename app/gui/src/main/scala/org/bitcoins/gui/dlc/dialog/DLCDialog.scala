@@ -6,7 +6,6 @@ import org.bitcoins.cli.CliCommand
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.GlobalDLCData
 import scalafx.Includes._
-import scalafx.application.Platform
 import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.Insets
 import scalafx.scene.Node
@@ -40,7 +39,8 @@ abstract class DLCDialog[T <: CliCommand](
 
   readCachedValue(DLCDialog.dlcContractIdStr, GlobalDLCData.lastContractId)
   readCachedValue(DLCDialog.dlcOracleSigStr, GlobalDLCData.lastOracleSig)
-  readCachedValue(DLCDialog.oracleInfoStr, GlobalDLCData.lastOracleInfo)
+  readCachedValue(DLCDialog.oracleAnnouncementStr,
+                  GlobalDLCData.lastOracleAnnouncement)
   readCachedValue(DLCDialog.contractInfoStr, GlobalDLCData.lastContractInfo)
 
   private def writeCachedValue(
@@ -49,7 +49,7 @@ abstract class DLCDialog[T <: CliCommand](
       setter: String => Unit): Unit = {
     inputs
       .find(_._1 == key)
-      .foreach(pair => setter(pair._2))
+      .foreach(pair => if (pair._2.nonEmpty) setter(pair._2))
   }
 
   protected def readStringFromNode(node: Node): String = {
@@ -107,9 +107,6 @@ abstract class DLCDialog[T <: CliCommand](
       } else bools.reduce(_ || _).delegate
     }
 
-    // Request focus on the first field by default.
-    Platform.runLater(fields.head._2.requestFocus())
-
     // When the OK button is clicked, convert the result to a T.
     dialog.resultConverter = dialogButton =>
       if (dialogButton == ButtonType.OK) {
@@ -123,9 +120,9 @@ abstract class DLCDialog[T <: CliCommand](
         writeCachedValue(DLCDialog.dlcOracleSigStr,
                          textInputs,
                          GlobalDLCData.lastOracleSig = _)
-        writeCachedValue(DLCDialog.oracleInfoStr,
+        writeCachedValue(DLCDialog.oracleAnnouncementStr,
                          textInputs,
-                         GlobalDLCData.lastOracleInfo = _)
+                         GlobalDLCData.lastOracleAnnouncement = _)
         writeCachedValue(DLCDialog.contractInfoStr,
                          textInputs,
                          GlobalDLCData.lastContractInfo = _)
@@ -175,9 +172,9 @@ object DLCDialog {
   val acceptFileChosenLabel = new Label("")
   val signFileChosenLabel = new Label("")
 
-  val oracleInfoStr = "Oracle Info"
+  val oracleAnnouncementStr = "Oracle Announcement"
   val contractInfoStr = "Contract Info"
-  val collateralStr = "Collateral"
+  val collateralStr = "Your Collateral"
   val feeRateStr = "Fee Rate"
   val locktimeStr = "Locktime"
   val refundLocktimeStr = "Refund Locktime"
@@ -185,7 +182,7 @@ object DLCDialog {
   val fileChosenStr = ""
 
   val allOfferFields: Map[String, String] = Map[String, String](
-    oracleInfoStr -> "",
+    oracleAnnouncementStr -> "",
     contractInfoStr -> "",
     collateralStr -> "Satoshis",
     feeRateStr -> "sats/vbyte (optional)",
