@@ -1091,13 +1091,13 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetEvent(null)))
         .text("Get an event's details")
         .children(
-          arg[SchnorrNonce]("nonce")
-            .text("Nonce associated with the event")
+          arg[OracleEventV0TLV]("event")
+            .text("The event's oracle event tlv")
             .required()
-            .action((nonce, conf) =>
+            .action((oracleEvent, conf) =>
               conf.copy(command = conf.command match {
                 case getEvent: GetEvent =>
-                  getEvent.copy(nonce = nonce)
+                  getEvent.copy(oracleEventV0TLV = oracleEvent)
                 case other => other
               }))
         ),
@@ -1693,7 +1693,7 @@ object CliCommand {
   case object GetStakingAddress extends CliCommand
   case object ListEvents extends CliCommand
 
-  case class GetEvent(nonce: SchnorrNonce) extends CliCommand
+  case class GetEvent(oracleEventV0TLV: OracleEventV0TLV) extends CliCommand
 
   case class CreateEvent(
       label: String,
