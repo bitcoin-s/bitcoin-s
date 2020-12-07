@@ -22,12 +22,9 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.jsonmodels.wallet._
 import org.bitcoins.core.protocol.tlv.{
-  DigitDecompositionEventDescriptorV0TLV,
   EnumEventDescriptorV0TLV,
-  EventDescriptorTLV,
   OracleAnnouncementV0TLV,
   OracleEventV0TLV,
-  RangeEventDescriptorV0TLV,
   SignedDigitDecompositionEventDescriptor,
   UnsignedDigitDecompositionEventDescriptor
 }
@@ -685,27 +682,11 @@ object JsonSerializers {
     SignedDigitDecompositionEventDescriptor] =
     Json.writes[SignedDigitDecompositionEventDescriptor]
 
-  implicit object EventDescriptorTLVWrites extends Writes[EventDescriptorTLV] {
-
-    override def writes(o: EventDescriptorTLV): JsValue =
-      o match {
-        case dd: DigitDecompositionEventDescriptorV0TLV =>
-          dd match {
-            case sdded: SignedDigitDecompositionEventDescriptor =>
-              Json.toJson(sdded)
-            case udded: UnsignedDigitDecompositionEventDescriptor =>
-              Json.toJson(udded)
-          }
-        case eed: EnumEventDescriptorV0TLV => Json.toJson(eed)
-        case _: RangeEventDescriptorV0TLV  => JsObject.empty // deprecated
-      }
-
-  }
-
   implicit val oracleEventV0TLVWrites: Writes[OracleEventV0TLV] =
     Json.writes[OracleEventV0TLV]
 
   implicit val oracleAnnouncementV0TLVWrites: Writes[OracleAnnouncementV0TLV] =
-    Json.writes[OracleAnnouncementV0TLV]
+    OracleAnnouncementV0TLVWrites
+//    Json.writes[OracleAnnouncementV0TLV]
 
 }

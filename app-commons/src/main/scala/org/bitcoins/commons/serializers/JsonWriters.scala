@@ -9,6 +9,16 @@ import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
+import org.bitcoins.core.protocol.tlv.{
+  DigitDecompositionEventDescriptorV0TLV,
+  EnumEventDescriptorV0TLV,
+  EventDescriptorTLV,
+  OracleAnnouncementV0TLV,
+  OracleEventV0TLV,
+  RangeEventDescriptorV0TLV,
+  SignedDigitDecompositionEventDescriptor,
+  UnsignedDigitDecompositionEventDescriptor
+}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.script.crypto._
@@ -187,5 +197,80 @@ object JsonWriters {
         Seq(("pubkey", JsString(o.pubKey.hex)),
             ("master_fingerprint", JsString(o.masterFingerprint.toHex)),
             ("path", JsString(o.path.toString))))
+  }
+
+  def eventDescriptorTLVKey(o: EventDescriptorTLV): String =
+    o match {
+      case dd: DigitDecompositionEventDescriptorV0TLV =>
+        dd match {
+          case _: SignedDigitDecompositionEventDescriptor =>
+            "signedDigitDecomposition"
+          case _: UnsignedDigitDecompositionEventDescriptor =>
+            "unsignedDigitDecomposition"
+        }
+      case _: EnumEventDescriptorV0TLV =>
+        "enum"
+      case _: RangeEventDescriptorV0TLV =>
+        // deprecated
+        "range"
+    }
+
+  implicit object EventDescriptorTLVWrites extends Writes[EventDescriptorTLV] {
+
+    override def writes(o: EventDescriptorTLV): JsValue =
+      o match {
+        case dd: DigitDecompositionEventDescriptorV0TLV =>
+          JsObject(
+            Seq(
+              ("hex", JsString(dd.hex)),
+              ("base", JsNumber(dd.base.toLong)),
+              ("numDigits", JsNumber(dd.numDigits.toLong)),
+              ("unit", JsString(dd.unit.normStr)),
+              ("precision", JsNumber(dd.precision.toLong))
+            ))
+        case eed: EnumEventDescriptorV0TLV =>
+          JsObject(
+            Seq(
+              ("hex", JsString(eed.hex)),
+              ("outcomes", Json.toJson(eed.outcomes.map(_.normStr)))
+            ))
+        case red: RangeEventDescriptorV0TLV =>
+          // deprecated
+          JsObject(
+            Seq(
+              ("hex", JsString(red.hex))
+            ))
+      }
+
+  }
+
+  implicit object OracleEventV0TLVWrites extends Writes[OracleEventV0TLV] {
+
+    override def writes(o: OracleEventV0TLV): JsValue = {
+      JsObject(
+        Seq(
+          ("hex", JsString(o.hex)),
+          ("nonces", Json.toJson(o.nonces.map(_.hex))),
+          ("maturation", JsString(o.maturation.toString)),
+          ("eventid", JsString(o.eventId)),
+          (eventDescriptorTLVKey(o.eventDescriptor),
+           Json.toJson(o.eventDescriptor))
+        ))
+    }
+
+  }
+
+  implicit object OracleAnnouncementV0TLVWrites
+      extends Writes[OracleAnnouncementV0TLV] {
+
+    override def writes(o: OracleAnnouncementV0TLV): JsValue = {
+      JsObject(
+        Seq(
+          ("hex", JsString(o.hex)),
+          ("signature", JsString(o.announcementSignature.hex)),
+          ("pubkey", JsString(o.publicKey.hex)),
+          ("event", Json.toJson(o.eventTLV))
+        ))
+    }
   }
 }
