@@ -593,7 +593,19 @@ abstract class Wallet
 
     val output = TransactionOutput(0.satoshis, scriptPubKey)
 
-    sendToOutputs(Vector(output), feeRate, fromAccount)
+    for {
+      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
+        destinations = Vector(output),
+        feeRate = feeRate,
+        fromAccount = fromAccount,
+        coinSelectionAlgo = CoinSelectionAlgo.RandomSelection,
+        fromTagOpt = None)
+      tx <- finishSend(txBuilder,
+                       utxoInfos,
+                       CurrencyUnits.zero,
+                       feeRate,
+                       Vector.empty)
+    } yield tx
   }
 
   override def sendToOutputs(
