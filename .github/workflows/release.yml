@@ -1,0 +1,22 @@
+name: Release
+on:
+  push:
+    branches: [master, main, adaptor-dlc]
+    tags: ["*"]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 0
+      - uses: olafurpg/setup-scala@v10
+      - uses: olafurpg/setup-gpg@v3
+      - run: sbt ci-release docs/publishWebsite
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_TOKEN }}
+          GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
