@@ -104,24 +104,24 @@ generate specific kinds of addresses for wallets.</p>
 </ol>
 <p>This controls how the root key is defined. The combination of <code>purpose</code> and <code>network</code> determine how the root <code>ExtKey</code> is serialized. For more information on how this works please see <a href="/docs/0.3.0/core/hd-keys">hd-keys</a></p>
 <p>Now we can construct a native segwit key manager for the regtest network!</p>
-<pre><code class="hljs css language-scala"><span class="hljs-comment">//this will create a temp directory with the prefix 'key-manager-example` that will</span>
-<span class="hljs-comment">//have a file in it called "encrypted-bitcoin-s-seed.json"</span>
-<span class="hljs-keyword">val</span> seedPath = <span class="hljs-type">Files</span>.createTempDirectory(<span class="hljs-string">"key-manager-example"</span>).resolve(<span class="hljs-type">WalletStorage</span>.<span class="hljs-type">ENCRYPTED_SEED_FILE_NAME</span>)
+<pre><code class="hljs css language-scala"><span class="hljs-comment">//this will create a temp directory with the prefix &#x27;key-manager-example` that will</span>
+<span class="hljs-comment">//have a file in it called &quot;encrypted-bitcoin-s-seed.json&quot;</span>
+<span class="hljs-keyword">val</span> seedPath = <span class="hljs-type">Files</span>.createTempDirectory(<span class="hljs-string">&quot;key-manager-example&quot;</span>).resolve(<span class="hljs-type">WalletStorage</span>.<span class="hljs-type">ENCRYPTED_SEED_FILE_NAME</span>)
 <span class="hljs-comment">// seedPath: Path = /tmp/key-manager-example6695794117403645345/encrypted-bitcoin-s-seed.json</span>
 
-<span class="hljs-comment">//let's create a native segwit key manager</span>
+<span class="hljs-comment">//let&#x27;s create a native segwit key manager</span>
 <span class="hljs-keyword">val</span> purpose = <span class="hljs-type">HDPurposes</span>.<span class="hljs-type">SegWit</span>
-<span class="hljs-comment">// purpose: HDPurpose = m/84'</span>
+<span class="hljs-comment">// purpose: HDPurpose = m/84&#x27;</span>
 
-<span class="hljs-comment">//let's choose regtest as our network</span>
+<span class="hljs-comment">//let&#x27;s choose regtest as our network</span>
 <span class="hljs-keyword">val</span> network = <span class="hljs-type">RegTest</span>
 <span class="hljs-comment">// network: RegTest.type = RegTest</span>
 
 <span class="hljs-keyword">val</span> kmParams = <span class="hljs-type">KeyManagerParams</span>(seedPath, purpose, network)
-<span class="hljs-comment">// kmParams: KeyManagerParams = KeyManagerParams(/tmp/key-manager-example6695794117403645345/encrypted-bitcoin-s-seed.json,m/84',RegTest)</span>
+<span class="hljs-comment">// kmParams: KeyManagerParams = KeyManagerParams(/tmp/key-manager-example6695794117403645345/encrypted-bitcoin-s-seed.json,m/84&#x27;,RegTest)</span>
 
 <span class="hljs-keyword">val</span> km = <span class="hljs-type">BIP39KeyManager</span>.initializeWithMnemonic(mnemonic, <span class="hljs-type">None</span>, kmParams)
-<span class="hljs-comment">// km: Either[KeyManagerInitializeError, BIP39KeyManager] = Right(BIP39KeyManager(Masked(MnemonicCodeImpl),KeyManagerParams(/tmp/key-manager-example6695794117403645345/encrypted-bitcoin-s-seed.json,m/84',RegTest),None))</span>
+<span class="hljs-comment">// km: Either[KeyManagerInitializeError, BIP39KeyManager] = Right(BIP39KeyManager(Masked(MnemonicCodeImpl),KeyManagerParams(/tmp/key-manager-example6695794117403645345/encrypted-bitcoin-s-seed.json,m/84&#x27;,RegTest),None))</span>
 
 <span class="hljs-keyword">val</span> rootXPub = km.right.get.getRootXPub
 <span class="hljs-comment">// rootXPub: ExtPublicKey = vpub5SLqN2bLY4WeZwnivVWfghDdWLN1osw3cJagfGXncZhnZ4T1r9m2D6Be4h6ceRY6YQR2hDLcvExdAq36cuKTKbEDDBn8CAUAjTxn5Y1o9JH</span>
@@ -134,13 +134,13 @@ println(rootXPub)
 <p>which is a native segwit <code>ExtPubKey</code> for the regtest network!</p>
 <p>You can always change the <code>network</code> or <code>purpose</code> to support different things. You do <em>not</em> need to initialize the key manager
 again after initializing it once. You can use the same <code>mnemonic</code> for different networks, which you control <code>KeyManagerParams</code>.</p>
-<pre><code class="hljs css language-scala"><span class="hljs-comment">//let's create a nested segwit key manager for mainnet</span>
+<pre><code class="hljs css language-scala"><span class="hljs-comment">//let&#x27;s create a nested segwit key manager for mainnet</span>
 <span class="hljs-keyword">val</span> mainnetKmParams = <span class="hljs-type">KeyManagerParams</span>(seedPath, <span class="hljs-type">HDPurposes</span>.<span class="hljs-type">SegWit</span>, <span class="hljs-type">MainNet</span>)
-<span class="hljs-comment">// mainnetKmParams: KeyManagerParams = KeyManagerParams(/tmp/key-manager-example6695794117403645345/encrypted-bitcoin-s-seed.json,m/84',MainNet)</span>
+<span class="hljs-comment">// mainnetKmParams: KeyManagerParams = KeyManagerParams(/tmp/key-manager-example6695794117403645345/encrypted-bitcoin-s-seed.json,m/84&#x27;,MainNet)</span>
 
 <span class="hljs-comment">//we do not need to all `initializeWithMnemonic()` again as we have saved the seed to dis</span>
 <span class="hljs-keyword">val</span> mainnetKeyManager = <span class="hljs-type">BIP39KeyManager</span>(mnemonic, mainnetKmParams, <span class="hljs-type">None</span>)
-<span class="hljs-comment">// mainnetKeyManager: BIP39KeyManager = BIP39KeyManager(Masked(MnemonicCodeImpl),KeyManagerParams(/tmp/key-manager-example6695794117403645345/encrypted-bitcoin-s-seed.json,m/84',MainNet),None)</span>
+<span class="hljs-comment">// mainnetKeyManager: BIP39KeyManager = BIP39KeyManager(Masked(MnemonicCodeImpl),KeyManagerParams(/tmp/key-manager-example6695794117403645345/encrypted-bitcoin-s-seed.json,m/84&#x27;,MainNet),None)</span>
 
 <span class="hljs-keyword">val</span> mainnetXpub = mainnetKeyManager.getRootXPub
 <span class="hljs-comment">// mainnetXpub: ExtPublicKey = zpub6jftahH18ngZy8ZCFvfAX3beCCwoaMu3GkfZnr7L8bDJmThvrnRGhLpC9Wvxe49nAxtFh7irktNphyVMVgyWWXxcgYZpXok7pNDMdoTT1K6</span>

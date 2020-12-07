@@ -95,7 +95,7 @@ from a <code>String</code>. Then we define the actual tags, we are going to have
 tags. We are going to make the <code>UserId</code> tag special, and allow it to take in any user id so we can have a huge
 set of users but all with different ids.</p>
 <pre><code class="hljs css language-scala"><span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">UserIdTagType</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ExternalAddressTagType</span> </span>{
-  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> typeName: <span class="hljs-type">String</span> = <span class="hljs-string">"UserIdTag"</span>
+  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> typeName: <span class="hljs-type">String</span> = <span class="hljs-string">&quot;UserIdTag&quot;</span>
 }
 
 <span class="hljs-comment">/** Allows to assign funds in a specific address to a user */</span>
@@ -108,11 +108,11 @@ set of users but all with different ids.</p>
   <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> tagType: <span class="hljs-type">ExternalAddressTagType</span> = <span class="hljs-type">UserIdTagType</span>
 
   <span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">CompanyTagName</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ExternalAddressTagName</span> </span>{
-    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">name</span></span>: <span class="hljs-type">String</span> = <span class="hljs-string">"Company"</span>
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">name</span></span>: <span class="hljs-type">String</span> = <span class="hljs-string">&quot;Company&quot;</span>
   }
 
   <span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">InsuranceFundTagName</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ExternalAddressTagName</span> </span>{
-    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">name</span></span>: <span class="hljs-type">String</span> = <span class="hljs-string">"InsuranceFund"</span>
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">name</span></span>: <span class="hljs-type">String</span> = <span class="hljs-string">&quot;InsuranceFund&quot;</span>
   }
 
   <span class="hljs-comment">/** Funds that do not belong to any user and instead belong to the company */</span>
@@ -120,7 +120,7 @@ set of users but all with different ids.</p>
     <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> tagName: <span class="hljs-type">ExternalAddressTagName</span> = <span class="hljs-type">CompanyTagName</span>
   }
 
-  <span class="hljs-comment">/** Funds in the company's insurance fund */</span>
+  <span class="hljs-comment">/** Funds in the company&#x27;s insurance fund */</span>
   <span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">InsuranceFund</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ExternalAddressTag</span> <span class="hljs-keyword">with</span> <span class="hljs-title">UserIdTag</span> </span>{
     <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> tagName: <span class="hljs-type">ExternalAddressTagName</span> = <span class="hljs-type">InsuranceFundTagName</span>
   }
@@ -150,7 +150,7 @@ set of users but all with different ids.</p>
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">fromString</span></span>(str: <span class="hljs-type">String</span>): <span class="hljs-type">UserIdTag</span> = {
     fromStringOpt(str) <span class="hljs-keyword">match</span> {
       <span class="hljs-keyword">case</span> <span class="hljs-type">Some</span>(tag) =&gt; tag
-      <span class="hljs-keyword">case</span> <span class="hljs-type">None</span> =&gt; sys.error(<span class="hljs-string">s"Could not find tag=<span class="hljs-subst">$str</span>"</span>)
+      <span class="hljs-keyword">case</span> <span class="hljs-type">None</span> =&gt; sys.error(<span class="hljs-string">s&quot;Could not find tag=<span class="hljs-subst">$str</span>&quot;</span>)
     }
 
   }

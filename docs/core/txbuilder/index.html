@@ -126,7 +126,7 @@ builder ++= destinations
 <span class="hljs-comment">// creditingTx: BaseTransaction = BaseTransaction(Int32Impl(1),Vector(),Vector(TransactionOutput(10000 sats,pkh(6d52a3bf4776ae367dee519bda02a3f6b03fad7a))),UInt32Impl(0))</span>
 
 <span class="hljs-comment">// this is the information we need from the crediting TX</span>
-<span class="hljs-comment">// to properly "link" it in the transaction we are creating</span>
+<span class="hljs-comment">// to properly &quot;link&quot; it in the transaction we are creating</span>
 <span class="hljs-keyword">val</span> outPoint = <span class="hljs-type">TransactionOutPoint</span>(creditingTx.txId, <span class="hljs-type">UInt32</span>.zero)
 <span class="hljs-comment">// outPoint: TransactionOutPoint = TransactionOutPoint(76aca317ebbd73347d8c95c9af482c7670cb8e7a9efe383a2909e7eb7dd98ea1:0)</span>
 <span class="hljs-keyword">val</span> input = <span class="hljs-type">TransactionInput</span>(
@@ -184,7 +184,7 @@ builder += input
 <span class="hljs-comment">// utxoInfos: Vector[ScriptSignatureParams[InputInfo]] = Vector(ScriptSignatureParams(P2PKHInputInfo(TransactionOutPoint(76aca317ebbd73347d8c95c9af482c7670cb8e7a9efe383a2909e7eb7dd98ea1:0),10000 sats,ECPublicKey(037ad941b7ac16fba77a8f76b111e6254f4645116ed60d742e7641c41541231208)),BaseTransaction(Int32Impl(1),Vector(),Vector(TransactionOutput(10000 sats,pkh(6d52a3bf4776ae367dee519bda02a3f6b03fad7a))),UInt32Impl(0)),Vector(Masked(ECPrivateKeyImpl)),SIGHASH_ALL(Int32Impl(1))))</span>
 
 <span class="hljs-comment">// Yay! Now we use the RawTxSigner object to sign the tx.</span>
-<span class="hljs-comment">// The 'sign' method is going produce a validly signed transaction</span>
+<span class="hljs-comment">// The &#x27;sign&#x27; method is going produce a validly signed transaction</span>
 <span class="hljs-comment">// This is going to iterate through each of the UTXOs and use</span>
 <span class="hljs-comment">// the corresponding ScriptSignatureParams to produce a validly</span>
 <span class="hljs-comment">// signed input. This UTXO has:</span>

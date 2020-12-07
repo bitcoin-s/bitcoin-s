@@ -85,11 +85,11 @@ construct a wallet configuration:</p>
 
 
 <span class="hljs-comment">// reads a custom data directory</span>
-<span class="hljs-keyword">val</span> customDirectory = <span class="hljs-type">Paths</span>.get(<span class="hljs-type">Properties</span>.userHome, <span class="hljs-string">"custom-bitcoin-s-directory"</span>)
+<span class="hljs-keyword">val</span> customDirectory = <span class="hljs-type">Paths</span>.get(<span class="hljs-type">Properties</span>.userHome, <span class="hljs-string">&quot;custom-bitcoin-s-directory&quot;</span>)
 <span class="hljs-keyword">val</span> configFromCustomDatadir = <span class="hljs-type">WalletAppConfig</span>(customDirectory)
 
 <span class="hljs-comment">// reads a custom data directory and overrides the network to be testnet3</span>
-<span class="hljs-keyword">val</span> customOverride = <span class="hljs-type">ConfigFactory</span>.parseString(<span class="hljs-string">"bitcoin-s.network = testnet3"</span>)
+<span class="hljs-keyword">val</span> customOverride = <span class="hljs-type">ConfigFactory</span>.parseString(<span class="hljs-string">&quot;bitcoin-s.network = testnet3&quot;</span>)
 <span class="hljs-keyword">val</span> configFromCustomDirAndOverride = <span class="hljs-type">WalletAppConfig</span>(customDirectory, customOverride)
 </code></pre>
 <p>You can pass as many <code>com.typesafe.config.Config</code>s as you'd like. If any

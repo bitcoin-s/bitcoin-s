@@ -103,14 +103,14 @@
 <span class="hljs-keyword">val</span> rValue = kValue.schnorrNonce
 
 <span class="hljs-comment">//the hash the oracle will sign when the bitcoin price is over $9,000</span>
-<span class="hljs-keyword">val</span> winHash = <span class="hljs-type">CryptoUtil</span>.sha256(<span class="hljs-type">ByteVector</span>(<span class="hljs-string">"BTC_OVER_9000"</span>.getBytes))
+<span class="hljs-keyword">val</span> winHash = <span class="hljs-type">CryptoUtil</span>.sha256(<span class="hljs-type">ByteVector</span>(<span class="hljs-string">&quot;BTC_OVER_9000&quot;</span>.getBytes))
 <span class="hljs-comment">//the hash the oracle with sign when the bitcoin price is under $9,000</span>
-<span class="hljs-keyword">val</span> loseHash = <span class="hljs-type">CryptoUtil</span>.sha256(<span class="hljs-type">ByteVector</span>(<span class="hljs-string">"BTC_UNDER_9000"</span>.getBytes))
+<span class="hljs-keyword">val</span> loseHash = <span class="hljs-type">CryptoUtil</span>.sha256(<span class="hljs-type">ByteVector</span>(<span class="hljs-string">&quot;BTC_UNDER_9000&quot;</span>.getBytes))
 
-<span class="hljs-comment">//the amounts received in the case the oracle signs hash of message "BTC_OVER_9000"</span>
+<span class="hljs-comment">//the amounts received in the case the oracle signs hash of message &quot;BTC_OVER_9000&quot;</span>
 <span class="hljs-keyword">val</span> amtReceivedOnWin = <span class="hljs-type">Satoshis</span>(<span class="hljs-number">100000</span>)
 
-<span class="hljs-comment">//the amount received in the case the oracle signs hash of message "BTC_UNDER_9000"</span>
+<span class="hljs-comment">//the amount received in the case the oracle signs hash of message &quot;BTC_UNDER_9000&quot;</span>
 <span class="hljs-keyword">val</span> amtReceivedOnLoss = <span class="hljs-type">Satoshis</span>.zero
 
 (pubKey.bytes ++ rValue.bytes).toHex

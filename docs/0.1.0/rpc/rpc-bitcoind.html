@@ -109,8 +109,8 @@ ready to create the connection with our RPC client</p>
 <span class="hljs-keyword">import</span> org.bitcoins.rpc.config._
 <span class="hljs-keyword">import</span> org.bitcoins.rpc.client.common._
 
-<span class="hljs-keyword">val</span> username = <span class="hljs-string">"FILL_ME_IN"</span> <span class="hljs-comment">//this username comes from 'rpcuser' in your bitcoin.conf file //this username comes from 'rpcuser' in your bitcoin.conf file</span>
-<span class="hljs-keyword">val</span> password = <span class="hljs-string">"FILL_ME_IN"</span> <span class="hljs-comment">//this password comes from your 'rpcpassword' in your bitcoin.conf file //this password comes from your 'rpcpassword' in your bitcoin.conf file</span>
+<span class="hljs-keyword">val</span> username = <span class="hljs-string">&quot;FILL_ME_IN&quot;</span> <span class="hljs-comment">//this username comes from &#x27;rpcuser&#x27; in your bitcoin.conf file //this username comes from &#x27;rpcuser&#x27; in your bitcoin.conf file</span>
+<span class="hljs-keyword">val</span> password = <span class="hljs-string">&quot;FILL_ME_IN&quot;</span> <span class="hljs-comment">//this password comes from your &#x27;rpcpassword&#x27; in your bitcoin.conf file //this password comes from your &#x27;rpcpassword&#x27; in your bitcoin.conf file</span>
 
 <span class="hljs-keyword">val</span> authCredentials = <span class="hljs-type">BitcoindAuthCredentials</span>.<span class="hljs-type">PasswordBased</span>(
   username = username,
@@ -120,8 +120,8 @@ ready to create the connection with our RPC client</p>
 <span class="hljs-keyword">val</span> bitcoindInstance = {
   <span class="hljs-type">BitcoindInstance</span> (
     network = <span class="hljs-type">MainNet</span>,
-    uri = <span class="hljs-keyword">new</span> <span class="hljs-type">URI</span>(<span class="hljs-string">s"http://localhost:<span class="hljs-subst">${MainNet.port}</span>"</span>),
-    rpcUri = <span class="hljs-keyword">new</span> <span class="hljs-type">URI</span>(<span class="hljs-string">s"http://localhost:<span class="hljs-subst">${MainNet.rpcPort}</span>"</span>),
+    uri = <span class="hljs-keyword">new</span> <span class="hljs-type">URI</span>(<span class="hljs-string">s&quot;http://localhost:<span class="hljs-subst">${MainNet.port}</span>&quot;</span>),
+    rpcUri = <span class="hljs-keyword">new</span> <span class="hljs-type">URI</span>(<span class="hljs-string">s&quot;http://localhost:<span class="hljs-subst">${MainNet.rpcPort}</span>&quot;</span>),
     authCredentials = authCredentials
   )
 }
@@ -132,7 +132,7 @@ ready to create the connection with our RPC client</p>
 <span class="hljs-keyword">val</span> rpcCli = <span class="hljs-keyword">new</span> <span class="hljs-type">BitcoindRpcClient</span>(bitcoindInstance)
 
 rpcCli.getBalance.onComplete { <span class="hljs-keyword">case</span> balance =&gt;
-  println(<span class="hljs-string">s"Wallet balance=<span class="hljs-subst">${balance}</span>"</span>)
+  println(<span class="hljs-string">s&quot;Wallet balance=<span class="hljs-subst">${balance}</span>&quot;</span>)
   system.terminate()
 }
 </code></pre>

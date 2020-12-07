@@ -170,7 +170,7 @@
       asm = asm.toVector,
       constructor = <span class="hljs-type">P2PKWithTimeoutScriptPubKeyImpl</span>.apply,
       invariant = isP2PKWithTimeoutScriptPubKey,
-      errorMsg = <span class="hljs-string">s"Given asm was not a P2PKWithTimeoutScriptPubKey, got <span class="hljs-subst">$asm</span>"</span>
+      errorMsg = <span class="hljs-string">s&quot;Given asm was not a P2PKWithTimeoutScriptPubKey, got <span class="hljs-subst">$asm</span>&quot;</span>
     )
   }
 
@@ -239,7 +239,7 @@
     <span class="hljs-type">Seq</span>(<span class="hljs-type">ECDigitalSignature</span>(<span class="hljs-type">BitcoinScriptUtil</span>.filterPushOps(asm).head.hex))
   }
 
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">toString</span> </span>= <span class="hljs-string">s"P2PKScriptSignature(<span class="hljs-subst">$signature</span>)"</span>
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">toString</span> </span>= <span class="hljs-string">s&quot;P2PKScriptSignature(<span class="hljs-subst">$signature</span>)&quot;</span>
 }
 
 <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">P2PKScriptSignature</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ScriptFactory</span>[<span class="hljs-type">P2PKScriptSignature</span>] </span>{
@@ -251,7 +251,7 @@
     buildScript(asm.toVector,
                 <span class="hljs-type">P2PKScriptSignatureImpl</span>(_),
                 isP2PKScriptSignature(_),
-                <span class="hljs-string">"The given asm tokens were not a p2pk script sig: "</span> + asm)
+                <span class="hljs-string">&quot;The given asm tokens were not a p2pk script sig: &quot;</span> + asm)
   }
 
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">apply</span></span>(signature: <span class="hljs-type">ECDigitalSignature</span>): <span class="hljs-type">P2PKScriptSignature</span> = {
@@ -279,7 +279,7 @@
       asm.toVector,
       <span class="hljs-type">ConditionalScriptSignature</span>.fromAsm,
       isP2PKWithTimeoutScriptSignature,
-      <span class="hljs-string">s"The given asm tokens were not a P2PKWithTimeoutScriptSignature, got <span class="hljs-subst">$asm</span>"</span>
+      <span class="hljs-string">s&quot;The given asm tokens were not a P2PKWithTimeoutScriptSignature, got <span class="hljs-subst">$asm</span>&quot;</span>
     )
   }
 
@@ -356,7 +356,7 @@
               conditionalPath.headOption <span class="hljs-keyword">match</span> {
                 <span class="hljs-keyword">case</span> <span class="hljs-type">None</span> =&gt;
                   <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-type">IllegalArgumentException</span>(
-                    <span class="hljs-string">"ConditionalPath must be specified for P2PKWithTimeout"</span>)
+                    <span class="hljs-string">&quot;ConditionalPath must be specified for P2PKWithTimeout&quot;</span>)
                 <span class="hljs-keyword">case</span> <span class="hljs-type">Some</span>(beforeTimeout) =&gt;
                   <span class="hljs-type">P2PKWithTimeoutInputInfo</span>(outPoint,
                                            amount,
@@ -552,9 +552,9 @@
 </code></pre>
 <p>This should have quite a lengthy output but we are only interested in any compiler errors there may be, as well as non-exhaustive match compiler warnings. You should first fix any compiler errors you encounter, and then you can get the warnings again by running <code>clean</code> and then running <code>test:compile</code> again.</p>
 <p>The warnings we're interested in should look something like this:</p>
-<pre><code class="hljs">[warn] <span class="hljs-regexp">/home/</span>nkohen<span class="hljs-regexp">/Desktop/</span>SuredBits<span class="hljs-regexp">/bitcoin-s-core/</span>testkit<span class="hljs-regexp">/src/</span>main<span class="hljs-regexp">/scala/</span>org<span class="hljs-regexp">/bitcoins/</span>testkit<span class="hljs-regexp">/core/</span>gen/ScriptGenerators.<span class="hljs-string">scala:</span><span class="hljs-number">524</span>:<span class="hljs-number">59</span>: match may not be exhaustive.
-[warn] It would fail on the following <span class="hljs-string">input:</span> P2PKWithTimeoutScriptPubKeyImpl(_)
-[warn]       <span class="hljs-string">scriptPubKey:</span> ScriptPubKey): Gen[ScriptSignature] = scriptPubKey match {
+<pre><code class="hljs">[warn] <span class="hljs-regexp">/home/</span>nkohen<span class="hljs-regexp">/Desktop/</span>SuredBits<span class="hljs-regexp">/bitcoin-s-core/</span>testkit<span class="hljs-regexp">/src/m</span>ain<span class="hljs-regexp">/scala/</span>org<span class="hljs-regexp">/bitcoins/</span>testkit<span class="hljs-regexp">/core/g</span>en/ScriptGenerators.scala:<span class="hljs-number">524</span>:<span class="hljs-number">59</span>: match may not be exhaustive.
+[warn] It would fail on the following input: P2PKWithTimeoutScriptPubKeyImpl(_)
+[warn]       scriptPubKey: ScriptPubKey): Gen[ScriptSignature] = scriptPubKey match {
 [warn]                                                           ^
 [warn] one warning found
 </code></pre>

@@ -153,14 +153,14 @@ $ systemctl --user start bloop
 <ol>
 <li>Bash:</li>
 </ol>
-<pre><code class="hljs css language-bash">$ <span class="hljs-built_in">echo</span> <span class="hljs-string">'. $HOME/.bloop/bash/bloop'</span> &gt;&gt; <span class="hljs-variable">$HOME</span>/.bash_profile
+<pre><code class="hljs css language-bash">$ <span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;. $HOME/.bloop/bash/bloop&#x27;</span> &gt;&gt; <span class="hljs-variable">$HOME</span>/.bash_profile
 </code></pre>
 <ol start="2">
 <li>Zsh:</li>
 </ol>
-<pre><code class="hljs css language-bash">$ <span class="hljs-built_in">echo</span> <span class="hljs-string">'autoload -U compinit'</span> &gt;&gt; <span class="hljs-variable">$HOME</span>/.zshrc
-$ <span class="hljs-built_in">echo</span> <span class="hljs-string">'fpath=($HOME/.bloop/zsh $fpath)'</span> &gt;&gt; <span class="hljs-variable">$HOME</span>/.bashrc
-$ <span class="hljs-built_in">echo</span> <span class="hljs-string">'compinit'</span> &gt;&gt; <span class="hljs-variable">$HOME</span>/.bashrc
+<pre><code class="hljs css language-bash">$ <span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;autoload -U compinit&#x27;</span> &gt;&gt; <span class="hljs-variable">$HOME</span>/.zshrc
+$ <span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;fpath=($HOME/.bloop/zsh $fpath)&#x27;</span> &gt;&gt; <span class="hljs-variable">$HOME</span>/.bashrc
+$ <span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;compinit&#x27;</span> &gt;&gt; <span class="hljs-variable">$HOME</span>/.bashrc
 </code></pre>
 <ol start="3">
 <li>Fish:</li>
@@ -172,7 +172,7 @@ $ <span class="hljs-built_in">echo</span> <span class="hljs-string">'compinit'</
 </code></pre></li>
 <li>Import Bitcoin-S into IntelliJ again, as a bsp (Build Server Protocol) project (instead of a sbt project). Make sure you're running on the most recent IntelliJ and Scala plugin. See <a href="https://scalacenter.github.io/bloop/docs/ides/intellij">official docs</a> for details.</li>
 <li><em>(Bonus step):</em> Lightning fast recompilations on file save:
-<pre><code class="hljs css language-bash">$ bloop compile --project &lt;name of module your<span class="hljs-string">'re working on&gt; --watch
+<pre><code class="hljs css language-bash">$ bloop compile --project &lt;name of module your<span class="hljs-string">&#x27;re working on&gt; --watch
 </span></code></pre></li>
 </ol>
 <p>Your editor should now be much faster and require less resources :tada:</p>
@@ -183,7 +183,7 @@ testing. At the simplest level, you can think of property based testing as
 specifying a invariant that must always hold true.
 <a href="https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionSpec.scala#L13-L17">Here</a>
 is an example of a property in the bitcoin-s-core test suite</p>
-<pre><code class="hljs css language-scala">  property(<span class="hljs-string">"Serialization symmetry"</span>) =
+<pre><code class="hljs css language-scala">  property(<span class="hljs-string">&quot;Serialization symmetry&quot;</span>) =
     <span class="hljs-type">Prop</span>.forAll(<span class="hljs-type">TransactionGenerators</span>.transactions) { tx =&gt;
       <span class="hljs-type">Transaction</span>(tx.hex) == tx
   }
@@ -205,7 +205,7 @@ valid by running it through our <a href="/api/org/bitcoins/core/script/interpret
 If we have built our functionality correctly the <code>ScriptInterpreter</code> should
 always return <a href="/api/org/bitcoins/core/script/result/ScriptResult"><code>ScriptOk</code></a>
 indicating the script was valid.</p>
-<pre><code class="hljs css language-scala">  property(<span class="hljs-string">"generate valid signatures for a multisignature transaction"</span>) =
+<pre><code class="hljs css language-scala">  property(<span class="hljs-string">&quot;generate valid signatures for a multisignature transaction&quot;</span>) =
     <span class="hljs-type">Prop</span>.forAllNoShrink(<span class="hljs-type">TransactionGenerators</span>.signedMultiSigTransaction) {
       <span class="hljs-keyword">case</span> (txSignatureComponent: <span class="hljs-type">TxSigComponent</span>, _)  =&gt;
         <span class="hljs-comment">//run it through the interpreter</span>
