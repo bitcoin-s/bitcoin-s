@@ -1,5 +1,7 @@
 package org.bitcoins.cli
 
+import java.io.File
+import java.nio.file.Path
 import java.time.{Instant, ZoneId, ZonedDateTime}
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
@@ -16,16 +18,18 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{
-  AesPassword,
-  SchnorrDigitalSignature,
-  SchnorrNonce,
-  Sha256DigestBE
-}
+import org.bitcoins.crypto._
+import scodec.bits.ByteVector
 import scopt._
 
 /** scopt readers for parsing CLI params and options */
 object CliReaders {
+
+  implicit val pathReads: Read[Path] = new Read[Path] {
+    val arity = 1
+
+    val reads: String => Path = str => new File(str).toPath
+  }
 
   implicit val npReads: Read[NetworkParameters] =
     new Read[NetworkParameters] {
@@ -44,6 +48,13 @@ object CliReaders {
             sys.error(msg)
           }
     }
+
+  implicit val byteVectorReads: Read[ByteVector] = new Read[ByteVector] {
+    override def arity: Int = 1
+
+    override def reads: String => ByteVector =
+      str => ByteVector.fromValidHex(str)
+  }
 
   implicit val schnorrNonceReads: Read[SchnorrNonce] =
     new Read[SchnorrNonce] {
@@ -145,10 +156,22 @@ object CliReaders {
     val reads: String => OracleInfo = OracleInfo.fromHex
   }
 
+  implicit val oracleAnnouncementReads: Read[OracleAnnouncementTLV] =
+    new Read[OracleAnnouncementTLV] {
+      val arity: Int = 1
+      val reads: String => OracleAnnouncementTLV = OracleAnnouncementTLV.fromHex
+    }
+
   implicit val contractInfoReads: Read[ContractInfo] =
     new Read[ContractInfo] {
       val arity: Int = 1
       val reads: String => ContractInfo = ContractInfo.fromHex
+    }
+
+  implicit val contractInfoTLVReads: Read[ContractInfoTLV] =
+    new Read[ContractInfoTLV] {
+      val arity: Int = 1
+      val reads: String => ContractInfoTLV = ContractInfoTLV.fromHex
     }
 
   implicit val blockStampReads: Read[BlockStamp] =
@@ -156,20 +179,19 @@ object CliReaders {
       val arity: Int = 1
       private val dateRe = """(\d4)-(\d2)-(\d2)""".r
 
-      val reads: String => BlockStamp = str =>
-        str match {
-          case dateRe(year, month, day) =>
-            val time = ZonedDateTime.of(year.toInt,
-                                        month.toInt,
-                                        day.toInt,
-                                        0,
-                                        0,
-                                        0,
-                                        0,
-                                        ZoneId.of("UTC"))
-            BlockTime(time)
-          case _ => BlockStamp.fromString(str)
-        }
+      val reads: String => BlockStamp = {
+        case dateRe(year, month, day) =>
+          val time = ZonedDateTime.of(year.toInt,
+                                      month.toInt,
+                                      day.toInt,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      ZoneId.of("UTC"))
+          BlockTime(time)
+        case str => BlockStamp.fromString(str)
+      }
     }
 
   implicit val psbtReads: Read[PSBT] =
@@ -197,7 +219,7 @@ object CliReaders {
       val arity: Int = 1
 
       val reads: String => CoinSelectionAlgo =
-        CoinSelectionAlgo.fromString(_)
+        CoinSelectionAlgo.fromString
     }
 
   implicit val schnorrSigReads: Read[SchnorrDigitalSignature] =
@@ -205,7 +227,7 @@ object CliReaders {
       override def arity: Int = 1
 
       override def reads: String => SchnorrDigitalSignature =
-        SchnorrDigitalSignature.fromHex
+        str => SchnorrDigitalSignature.fromHex(str.trim)
     }
 
   implicit val partialSigReads: Read[PartialSignature] =
@@ -239,41 +261,52 @@ object CliReaders {
         LockUnspentOutputParameter.fromJsonString
     }
 
-  implicit val dlcOfferReads: Read[DLCOffer] = new Read[DLCOffer] {
+  implicit val sha256DigestReads: Read[Sha256Digest] =
+    new Read[Sha256Digest] {
+      val arity: Int = 1
+
+      val reads: String => Sha256Digest = Sha256Digest.fromHex
+    }
+
+  implicit val dlcOfferTLVReads: Read[DLCOfferTLV] = new Read[DLCOfferTLV] {
     override def arity: Int = 1
 
-    // this will be a JSON string
-    override def reads: String => DLCOffer =
-      str => {
-        DLCOffer.fromJson(ujson.read(str))
-      }
+    override def reads: String => DLCOfferTLV = DLCOfferTLV.fromHex
   }
 
-  implicit val dlcAcceptReads: Read[DLCAccept] = new Read[DLCAccept] {
-    override def arity: Int = 1
-
-    // this will be a JSON string
-    override def reads: String => DLCAccept =
-      str => {
-        DLCAccept.fromJson(ujson.read(str))
-      }
-  }
-
-  implicit val dlcSignReads: Read[DLCSign] = new Read[DLCSign] {
-    override def arity: Int = 1
-
-    // this will be a JSON string
-    override def reads: String => DLCSign =
-      str => {
-        DLCSign.fromJson(ujson.read(str))
-      }
-  }
-
-  implicit val dlcMutualCloseSigReads: Read[DLCMutualCloseSig] =
-    new Read[DLCMutualCloseSig] {
+  implicit val lnMessageDLCOfferTLVReads: Read[LnMessage[DLCOfferTLV]] =
+    new Read[LnMessage[DLCOfferTLV]] {
       override def arity: Int = 1
 
-      override def reads: String => DLCMutualCloseSig =
-        str => DLCMutualCloseSig.fromJson(ujson.read(str))
+      override def reads: String => LnMessage[DLCOfferTLV] =
+        LnMessageFactory(DLCOfferTLV).fromHex
+    }
+
+  implicit val dlcAcceptTLVReads: Read[DLCAcceptTLV] = new Read[DLCAcceptTLV] {
+    override def arity: Int = 1
+
+    override def reads: String => DLCAcceptTLV = DLCAcceptTLV.fromHex
+  }
+
+  implicit val lnMessageDLCAcceptTLVReads: Read[LnMessage[DLCAcceptTLV]] =
+    new Read[LnMessage[DLCAcceptTLV]] {
+      override def arity: Int = 1
+
+      override def reads: String => LnMessage[DLCAcceptTLV] =
+        LnMessageFactory(DLCAcceptTLV).fromHex
+    }
+
+  implicit val dlcSignTLVReads: Read[DLCSignTLV] = new Read[DLCSignTLV] {
+    override def arity: Int = 1
+
+    override def reads: String => DLCSignTLV = DLCSignTLV.fromHex
+  }
+
+  implicit val lnMessageSignTLVReads: Read[LnMessage[DLCSignTLV]] =
+    new Read[LnMessage[DLCSignTLV]] {
+      override def arity: Int = 1
+
+      override def reads: String => LnMessage[DLCSignTLV] =
+        LnMessageFactory(DLCSignTLV).fromHex
     }
 }

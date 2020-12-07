@@ -1,7 +1,7 @@
 package org.bitcoins.db
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
-import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
+import org.bitcoins.commons.jsonmodels.dlc.{DLCState, SigningVersion}
 import org.bitcoins.commons.jsonmodels.wallet.{
   WalletStateDescriptor,
   WalletStateDescriptorType
@@ -120,6 +120,9 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val schnorrNonceMapper: BaseColumnType[SchnorrNonce] =
     MappedColumnType.base[SchnorrNonce, String](_.hex, SchnorrNonce.fromHex)
+
+  implicit val oracleInfoTLVMapper: BaseColumnType[OracleInfoTLV] =
+    MappedColumnType.base[OracleInfoTLV, String](_.hex, OracleInfoTLV.fromHex)
 
   implicit val sha256Hash160DigestMapper: BaseColumnType[Sha256Hash160Digest] =
     MappedColumnType
@@ -260,6 +263,37 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       .base[ContractInfo, String](_.hex, ContractInfo.fromHex)
   }
 
+  implicit val contractInfoTLVMapper: BaseColumnType[ContractInfoTLV] = {
+    MappedColumnType
+      .base[ContractInfoTLV, String](_.hex, ContractInfoTLV.fromHex)
+  }
+
+  implicit val dlcOutcomeTypeMapper: BaseColumnType[DLCOutcomeType] = {
+    val enumStr = "Enum:"
+    val unsignedNumStr = "Unsigned:"
+
+    MappedColumnType.base[DLCOutcomeType, String](
+      {
+        case EnumOutcome(outcome) =>
+          s"$enumStr$outcome"
+        case UnsignedNumericOutcome(digits) =>
+          s"$unsignedNumStr" + digits.mkString("|")
+      },
+      str => {
+        if (str.startsWith(enumStr)) {
+          EnumOutcome(str.drop(enumStr.length))
+        } else if (str.startsWith(unsignedNumStr)) {
+          val data = str.drop(unsignedNumStr.length)
+          val strVec = data.split('|')
+          val ints = strVec.map(_.toInt)
+
+          UnsignedNumericOutcome(ints.toVector)
+        } else
+          throw new RuntimeException("Unknown outcome type")
+      }
+    )
+  }
+
   implicit val blockStampWithFutureMapper: BaseColumnType[BlockTimeStamp] = {
     MappedColumnType.base[BlockTimeStamp, Long](
       _.toUInt32.toLong,
@@ -300,6 +334,18 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       SchnorrDigitalSignature.fromHex)
   }
 
+  implicit val schnorrDigitalSignatureVecMapper: BaseColumnType[
+    Vector[SchnorrDigitalSignature]] = {
+    MappedColumnType.base[Vector[SchnorrDigitalSignature], String](
+      _.foldLeft("")(_ ++ _.hex),
+      _.toArray
+        .grouped(64 * 2)
+        .map(new String(_))
+        .map(SchnorrDigitalSignature.fromHex)
+        .toVector
+    )
+  }
+
   implicit val walletStateDescriptorTypeMapper: BaseColumnType[
     WalletStateDescriptorType] =
     MappedColumnType.base[WalletStateDescriptorType, String](
@@ -311,6 +357,17 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[WalletStateDescriptor, String](
       _.toString,
       WalletStateDescriptor.fromString)
+
+  implicit val ecAdaptorSignatureMapper: BaseColumnType[ECAdaptorSignature] = {
+    MappedColumnType.base[ECAdaptorSignature, String](
+      _.hex,
+      ECAdaptorSignature.fromHex)
+  }
+
+  implicit val dlcStateMapper: BaseColumnType[DLCState] = {
+    MappedColumnType
+      .base[DLCState, String](_.toString, DLCState.fromString)
+  }
 
   implicit val eventDescriptorTLVMapper: BaseColumnType[EventDescriptorTLV] = {
     MappedColumnType.base[EventDescriptorTLV, String](

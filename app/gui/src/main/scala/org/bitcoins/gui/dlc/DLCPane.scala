@@ -1,10 +1,17 @@
 package org.bitcoins.gui.dlc
 
+import java.io.File
+import java.nio.file.Files
+
 import javafx.event.{ActionEvent, EventHandler}
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
 import scalafx.scene.layout._
+import scalafx.stage.FileChooser
+import scalafx.stage.FileChooser.ExtensionFilter
+
+import scala.util.Properties
 
 class DLCPane(glassPane: VBox) {
 
@@ -14,43 +21,78 @@ class DLCPane(glassPane: VBox) {
     text <== GlobalData.statusText
   }
 
-  private val resultArea = new TextArea {
-    prefHeight = 750
-    prefWidth = 800
+  private val resultTextArea = new TextArea {
     editable = false
     text = "Click on Offer or Accept to begin."
     wrapText = true
   }
 
+  private val exportButton = new Button("Export Result") {
+    alignmentInParent = Pos.BottomRight
+    onAction = _ => {
+      val txtFilter = new ExtensionFilter("Text Files", "*.txt")
+      val allExtensionFilter = new ExtensionFilter("All Files", "*")
+      val fileChooser = new FileChooser() {
+        extensionFilters.addAll(txtFilter, allExtensionFilter)
+        selectedExtensionFilter = txtFilter
+        initialDirectory = new File(Properties.userHome)
+      }
+
+      val selectedFile = fileChooser.showSaveDialog(null)
+
+      if (selectedFile != null) {
+        val bytes = resultTextArea.text.value.getBytes
+
+        Files.write(selectedFile.toPath, bytes)
+        ()
+      }
+    }
+  }
+
+  private val resultArea = new BorderPane() {
+    padding = Insets(10)
+    center = resultTextArea
+    bottom = exportButton
+  }
+
+  BorderPane.setMargin(exportButton, Insets(10))
+
   private val demoOracleArea = new TextArea {
-    prefHeight = 700
-    prefWidth = 400
     editable = false
     text =
       "Click on Init Demo Oracle to generate example oracle and contract information"
     wrapText = true
   }
 
-  private val numOutcomesTF = new TextField {
-    promptText = "Number of Outcomes"
+  private val model =
+    new DLCPaneModel(resultTextArea, demoOracleArea)
+
+  model.setUp()
+
+  private val enumContractButton = new Button {
+    text = "Enum Contract"
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onInitContract(true)
+    }
   }
 
-  private val model =
-    new DLCPaneModel(resultArea, demoOracleArea, numOutcomesTF)
-
-  private val demoOracleButton = new Button {
-    text = "Init Demo Oracle"
+  private val numericContractButton = new Button {
+    text = "Numeric Contract"
     onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onInitOracle()
+
+      override def handle(event: ActionEvent): Unit =
+        model.onInitContract(false)
     }
   }
 
   private val oracleButtonHBox = new HBox {
-    children = Seq(numOutcomesTF, demoOracleButton)
+    alignment = Pos.Center
+    children = Seq(enumContractButton, numericContractButton)
     spacing = 15
   }
 
   private val demoOracleVBox = new VBox {
+    padding = Insets(10)
     children = Seq(demoOracleArea, oracleButtonHBox)
     spacing = 15
   }
@@ -90,20 +132,6 @@ class DLCPane(glassPane: VBox) {
     }
   }
 
-  private val initCloseButton = new Button {
-    text = "Init Close"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onInitClose()
-    }
-  }
-
-  private val acceptCloseButton = new Button {
-    text = "Accept Close"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onAcceptClose()
-    }
-  }
-
   private val refundButton = new Button {
     text = "Refund"
     onAction = new EventHandler[ActionEvent] {
@@ -111,17 +139,10 @@ class DLCPane(glassPane: VBox) {
     }
   }
 
-  private val forceCloseButton = new Button {
-    text = "Force Close"
+  private val executeButton = new Button {
+    text = "Execute"
     onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onForceClose()
-    }
-  }
-
-  private val punishButton = new Button {
-    text = "Punish"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onPunish()
+      override def handle(event: ActionEvent): Unit = model.onExecute()
     }
   }
 
@@ -134,11 +155,7 @@ class DLCPane(glassPane: VBox) {
   }
 
   private val execButtonBar = new ButtonBar {
-    buttons = Seq(initCloseButton,
-                  acceptCloseButton,
-                  refundButton,
-                  forceCloseButton,
-                  punishButton)
+    buttons = Seq(refundButton, executeButton)
   }
 
   private val spaceRegion = new Region()
@@ -146,7 +163,6 @@ class DLCPane(glassPane: VBox) {
 
   private val buttonSpacer = new GridPane {
     hgap = 10
-    prefHeight = 50
     alignment = Pos.Center
 
     add(initButtonBar, 0, 0)
@@ -161,17 +177,28 @@ class DLCPane(glassPane: VBox) {
     spacing = 10
   }
 
+  private val tableView = new DLCTableView(model).tableView
+
+  private val textAreasAndTableViewVBox = new VBox {
+    children = Seq(textAreaHBox, tableView)
+    spacing = 10
+  }
+
   val borderPane: BorderPane = new BorderPane {
     top = buttonSpacer
-    center = textAreaHBox
+    center = textAreasAndTableViewVBox
     bottom = statusLabel
   }
 
   resultArea.prefWidth <== (borderPane.width * 2) / 3
   demoOracleVBox.prefWidth <== (borderPane.width / 3)
+  resultArea.prefHeight <== (borderPane.height * 2) / 3
+  demoOracleVBox.prefHeight <== (borderPane.height * 2) / 3
+  demoOracleArea.prefHeight <== demoOracleVBox.height * 0.9
 
   spaceRegion.prefWidth <== (borderPane.width - initButtonBar.width - acceptButtonBar.width - execButtonBar.width - 100) / 2
   spaceRegion2.prefWidth <== spaceRegion.prefWidth
+  tableView.prefHeight <== borderPane.height / 3
 
   private val taskRunner = new TaskRunner(buttonSpacer, glassPane)
   model.taskRunner = taskRunner

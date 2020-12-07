@@ -5,7 +5,10 @@ import java.math.BigInteger
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.scalacheck.Gen
 import org.scalatest.Assertion
+
+import scala.annotation.tailrec
 
 class NumberUtilTest extends BitcoinSUnitTest {
 
@@ -229,5 +232,41 @@ class NumberUtilTest extends BitcoinSUnitTest {
     val num1 = 123
     val expected1 = Vector(0, 7, 11)
     assert(NumberUtil.decompose(num1, 16, 3) == expected1)
+  }
+
+  it should "correctly decompose in any base" in {
+    assert(NumberUtil.decompose(255, 16, 2) == Vector(15, 15))
+
+    forAll(Gen.choose(2, 256), Gen.choose(0L, Long.MaxValue)) {
+      case (base, num) =>
+        val numStr = num.toString
+        val expectedBase10 = numStr
+          .foldLeft(Vector.empty[Int]) {
+            case (vec, char) =>
+              vec :+ (char.toInt - '0'.toInt)
+          }
+        val base10 = NumberUtil.decompose(num, 10, numStr.length)
+        assert(base10 == expectedBase10)
+
+        // Add some extra digits for leading zeroes
+        val numDigits = (Math.log(num) / Math.log(base)).toInt + 5
+        val decomposed = NumberUtil.decompose(num, base, numDigits)
+        assert(decomposed.head == 0)
+
+        @tailrec
+        def pow(base: BigInt, exp: Int, prodSoFar: BigInt = 1): BigInt = {
+          if (exp == 0) {
+            prodSoFar
+          } else {
+            pow(base, exp - 1, base * prodSoFar)
+          }
+        }
+
+        val computedNum = decomposed.reverse.zipWithIndex.foldLeft(BigInt(0)) {
+          case (sumSoFar, (digit, position)) =>
+            sumSoFar + digit * pow(BigInt(base), position)
+        }
+        assert(computedNum.toLong == num)
+    }
   }
 }

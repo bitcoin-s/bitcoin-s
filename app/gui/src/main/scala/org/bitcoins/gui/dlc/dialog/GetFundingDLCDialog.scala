@@ -1,19 +1,22 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.cli.CliCommand.GetDLCFundingTx
-import org.bitcoins.crypto.Sha256DigestBE
+import org.bitcoins.cli.CliCommand.BroadcastDLCFundingTx
+import scalafx.scene.Node
 import scalafx.scene.control.TextField
+import scodec.bits.ByteVector
 
-object GetFundingDLCDialog
-    extends DLCDialog[GetDLCFundingTx](
+class GetFundingDLCDialog
+    extends DLCDialog[BroadcastDLCFundingTx](
       "DLC Funding Transaction",
-      "Enter DLC event ID",
-      Vector(DLCDialog.dlcEventIdStr -> new TextField())) {
+      "Enter DLC contract ID",
+      Vector(DLCDialog.dlcContractIdStr -> new TextField())) {
   import DLCDialog._
 
   override def constructFromInput(
-      inputs: Map[String, String]): GetDLCFundingTx = {
-    val eventId = Sha256DigestBE(inputs(dlcEventIdStr))
-    GetDLCFundingTx(eventId)
+      inputs: Map[String, Node]): BroadcastDLCFundingTx = {
+    val hex = readStringFromNode(inputs(dlcContractIdStr))
+
+    val contractId = ByteVector.fromValidHex(hex)
+    BroadcastDLCFundingTx(contractId)
   }
 }

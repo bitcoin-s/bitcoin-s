@@ -1,11 +1,14 @@
 package org.bitcoins.gui
 
 import org.bitcoins.cli.Config
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.gui.settings.Themes
 import scalafx.beans.property.{DoubleProperty, StringProperty}
 
 object GlobalData {
   val currentBalance: DoubleProperty = DoubleProperty(0)
+
+  var network: BitcoinNetwork = _
 
   val log: StringProperty = StringProperty("")
 

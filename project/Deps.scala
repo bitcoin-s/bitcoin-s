@@ -6,24 +6,24 @@ object Deps {
     val bouncyCastle = "1.67"
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
-    val scalacheck = "1.15.1"
-    val scalaTest = "3.2.3"
+    val scalacheck = "1.14.3"
+    val scalaTest = "3.2.2"
 
     val scalaTestPlus =
       "3.2.1.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "1.7.30"
-    val spray = "1.3.6"
+    val spray = "1.3.5"
     val zeromq = "0.5.2"
-    val akkav = "10.1.13"
+    val akkav = "10.1.12"
     val playv = "2.9.1"
     val akkaStreamv = "2.6.10"
-    val scodecV = "1.1.22"
+    val scodecV = "1.1.21"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.4"
     val typesafeConfigV = "1.4.1"
 
     val scalaFxV = "14-R19"
-    val javaFxV = "16-ea+5"
+    val javaFxV = "16-ea+3"
 
     val asyncNewScalaV = "0.10.0"
 
@@ -34,8 +34,10 @@ object Deps {
     val sqliteV = "3.32.3.2"
     val scalameterV = "0.17"
     val scalamockV = "5.0.0"
-    val scalaCollectionCompatV = "2.3.1"
+    val scalaCollectionCompatV = "2.2.0"
     val pgEmbeddedV = "0.13.3"
+
+    val breezeV = "1.1"
 
     val newMicroPickleV = "0.8.0"
     val newMicroJsonV = newMicroPickleV
@@ -52,7 +54,7 @@ object Deps {
     val sourcecodeV = "0.2.1"
 
     // CLI deps
-    val scoptV = "4.0.0"
+    val scoptV = "4.0.0-RC2"
     val sttpV = "1.7.2"
     val codehausV = "3.1.2"
   }
@@ -122,6 +124,10 @@ object Deps {
                                javaFxMedia,
                                javaFxSwing,
                                javaFxWeb)
+
+    val breezeViz =
+      ("org.scalanlp" %% "breeze-viz" % V.breezeV withSources () withJavadoc ())
+        .exclude("bouncycastle", "bcprov-jdk14")
 
     val playJson =
       "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
@@ -238,6 +244,14 @@ object Deps {
     Compile.scodec
   )
 
+  // version number needed for MicroJson
+  val dlc = List(
+    Compile.playJson,
+    Compile.newMicroJson
+  )
+
+  val dlcTest = List()
+
   val secp256k1jni = List(
     Compile.nativeLoader,
     Test.junitInterface
@@ -309,7 +323,7 @@ object Deps {
       Compile.codehaus
     )
 
-  val gui = List(Compile.scalaFx) ++ Compile.javaFxDeps
+  val gui = List(Compile.breezeViz, Compile.scalaFx) ++ Compile.javaFxDeps
 
   def server(scalaVersion: String) =
     List(
@@ -328,6 +342,12 @@ object Deps {
       Compile.akkaHttp,
       Compile.akkaSlf4j
     )
+
+  val dlcSuredbitsClient = List(
+    Compile.akkaStream,
+    Compile.akkaHttp,
+    Compile.playJson
+  )
 
   val eclairRpc = List(
     Compile.akkaHttp,
@@ -392,6 +412,18 @@ object Deps {
     List(
       Compile.newMicroJson,
       Compile.logback
+    )
+
+  val dlcWallet =
+    List(
+      Compile.newMicroJson,
+      Compile.logback
+    )
+
+  val dlcWalletTest =
+    List(
+      Test.akkaTestkit,
+      Test.pgEmbedded
     )
 
   val walletTest = List(

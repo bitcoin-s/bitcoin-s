@@ -1,7 +1,13 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.number.{BaseNumbers, BasicArithmetic, Bounded, Int64}
+import org.bitcoins.core.number.{
+  BaseNumbers,
+  BasicArithmetic,
+  Bounded,
+  Int64,
+  UInt64
+}
 import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
@@ -74,19 +80,6 @@ sealed abstract class CurrencyUnit
   def toBigDecimal: BigDecimal
 
   protected def underlying: A
-
-  override def equals(obj: Any): Boolean = {
-    //needed for cases like
-    //1BTC == 100,000,000 satoshis should be true
-    //weirdly enough, this worked in scala version < 2.13.4
-    //but seems to be broken in 2.13.4 :/
-    //try removing this and running code, you should see
-    //failures in the 'walletTest' module
-    obj match {
-      case cu: CurrencyUnit => cu.satoshis == satoshis
-      case _                => false
-    }
-  }
 }
 
 sealed abstract class Satoshis extends CurrencyUnit {
@@ -108,6 +101,12 @@ sealed abstract class Satoshis extends CurrencyUnit {
 
   def toLong: Long = underlying.toLong
 
+  def toUInt64: UInt64 = {
+    require(toLong >= 0, "Cannot cast negative value to UInt64")
+
+    UInt64(toLong)
+  }
+
   def ==(satoshis: Satoshis): Boolean = underlying == satoshis.underlying
 }
 
@@ -124,6 +123,7 @@ object Satoshis
   override def fromBytes(bytes: ByteVector): Satoshis =
     RawSatoshisSerializer.read(bytes)
   def apply(int64: Int64): Satoshis = SatoshisImpl(int64)
+  def apply(uint64: UInt64): Satoshis = SatoshisImpl(Int64(uint64.toLong))
   def apply(satoshis: Long): Satoshis = SatoshisImpl(Int64(satoshis))
   def apply(satoshis: BigInt): Satoshis = SatoshisImpl(Int64(satoshis))
 
