@@ -70,12 +70,12 @@ an API with the ability to query for filters.</p>
 <p>To run this example you need to make sure you have access to a bitcoind binary. You can download this with bitcoin-s by doing
 <code>sbt downloadBitcoind</code></p>
 <pre><code class="hljs css language-scala"><span class="hljs-comment">//we need an actor system and app config to power this</span>
-<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system: <span class="hljs-type">ActorSystem</span> = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">s&quot;wallet-rescan-example&quot;</span>)
+<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system: <span class="hljs-type">ActorSystem</span> = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">s"wallet-rescan-example"</span>)
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = system.dispatcher
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> appConfig: <span class="hljs-type">BitcoinSAppConfig</span> = <span class="hljs-type">BitcoinSTestAppConfig</span>.getNeutrinoTestConfig()
 
 <span class="hljs-keyword">val</span> bip39PasswordOpt = <span class="hljs-type">None</span>
-<span class="hljs-comment">//ok now let&#x27;s spin up a bitcoind and a bitcoin-s wallet with funds in it</span>
+<span class="hljs-comment">//ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it</span>
 <span class="hljs-keyword">val</span> walletWithBitcoindF = <span class="hljs-keyword">for</span> {
   bitcoind &lt;- <span class="hljs-type">BitcoinSFixture</span>.createBitcoindWithFunds()
   walletWithBitcoind &lt;- <span class="hljs-type">BitcoinSWalletTest</span>.createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
@@ -85,17 +85,17 @@ an API with the ability to query for filters.</p>
 
 <span class="hljs-keyword">val</span> bitcoindF = walletWithBitcoindF.map(_.bitcoind)
 
-<span class="hljs-comment">//let&#x27;s see what our initial wallet balance is</span>
+<span class="hljs-comment">//let's see what our initial wallet balance is</span>
 <span class="hljs-keyword">val</span> initBalanceF = <span class="hljs-keyword">for</span> {
   w &lt;- walletF
   balance &lt;- w.getBalance()
 } <span class="hljs-keyword">yield</span> {
-  println(<span class="hljs-string">s&quot;Initial wallet balance=<span class="hljs-subst">${balance}</span>&quot;</span>)
+  println(<span class="hljs-string">s"Initial wallet balance=<span class="hljs-subst">${balance}</span>"</span>)
   balance
 }
 
 <span class="hljs-comment">//ok great! We have money in the wallet to start,</span>
-<span class="hljs-comment">//now let&#x27;s delete our internal tables that hold our utxos</span>
+<span class="hljs-comment">//now let's delete our internal tables that hold our utxos</span>
 <span class="hljs-comment">//and addresses so that we end up with a 0 balance</span>
 <span class="hljs-keyword">val</span> clearedWalletF = <span class="hljs-keyword">for</span> {
   w &lt;- walletF
@@ -103,7 +103,7 @@ an API with the ability to query for filters.</p>
   clearedWallet &lt;- w.clearAllUtxosAndAddresses()
   zeroBalance &lt;- clearedWallet.getBalance()
 } <span class="hljs-keyword">yield</span> {
-  println(<span class="hljs-string">s&quot;Balance after clearing utxos: <span class="hljs-subst">${zeroBalance}</span>&quot;</span>)
+  println(<span class="hljs-string">s"Balance after clearing utxos: <span class="hljs-subst">${zeroBalance}</span>"</span>)
   clearedWallet
 }
 
@@ -119,7 +119,7 @@ an API with the ability to query for filters.</p>
   _ &lt;- w.fullRescanNeutrinoWallet(addrBatchSize)
   balanceAfterRescan &lt;- w.getBalance()
 } <span class="hljs-keyword">yield</span> {
-  println(<span class="hljs-string">s&quot;Wallet balance after rescan: <span class="hljs-subst">${balanceAfterRescan}</span>&quot;</span>)
+  println(<span class="hljs-string">s"Wallet balance after rescan: <span class="hljs-subst">${balanceAfterRescan}</span>"</span>)
   ()
 }
 

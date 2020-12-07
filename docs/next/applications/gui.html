@@ -86,16 +86,16 @@ running in the background before running the GUI.</p>
 <h3><a class="anchor" aria-hidden="true" id="scalafx"></a><a href="#scalafx" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>ScalaFX</h3>
 <p><a href="https://www.scalafx.org/">ScalaFX</a> is a scala library wrapping <a href="https://openjfx.io/">JavaFX</a> which is itself a java interface to <a href="https://www.gtk.org/">GTK</a> (which is useful to know when googling for answers as it is easier to search for answers in GTK or sometimes javafx and then translate them to scalafx).</p>
 <p>ScalaFX itself requires the dependency</p>
-<pre><code class="hljs css language-scala"><span class="hljs-string">&quot;org.scalafx&quot;</span> %% <span class="hljs-string">&quot;scalafx&quot;</span>
+<pre><code class="hljs css language-scala"><span class="hljs-string">"org.scalafx"</span> %% <span class="hljs-string">"scalafx"</span>
 </code></pre>
 <p>but full use of the library requires also adding these dependencies:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-string">&quot;org.openjfx&quot;</span> % <span class="hljs-string">&quot;javafx-base&quot;</span>
-<span class="hljs-string">&quot;org.openjfx&quot;</span> % <span class="hljs-string">&quot;javafx-controls&quot;</span>
-<span class="hljs-string">&quot;org.openjfx&quot;</span> % <span class="hljs-string">&quot;javafx-fxml&quot;</span>
-<span class="hljs-string">&quot;org.openjfx&quot;</span> % <span class="hljs-string">&quot;javafx-graphics&quot;</span>
-<span class="hljs-string">&quot;org.openjfx&quot;</span> % <span class="hljs-string">&quot;javafx-media&quot;</span>
-<span class="hljs-string">&quot;org.openjfx&quot;</span> % <span class="hljs-string">&quot;javafx-swing&quot;</span>
-<span class="hljs-string">&quot;org.openjfx&quot;</span> % <span class="hljs-string">&quot;javafx-web&quot;</span>
+<pre><code class="hljs css language-scala"><span class="hljs-string">"org.openjfx"</span> % <span class="hljs-string">"javafx-base"</span>
+<span class="hljs-string">"org.openjfx"</span> % <span class="hljs-string">"javafx-controls"</span>
+<span class="hljs-string">"org.openjfx"</span> % <span class="hljs-string">"javafx-fxml"</span>
+<span class="hljs-string">"org.openjfx"</span> % <span class="hljs-string">"javafx-graphics"</span>
+<span class="hljs-string">"org.openjfx"</span> % <span class="hljs-string">"javafx-media"</span>
+<span class="hljs-string">"org.openjfx"</span> % <span class="hljs-string">"javafx-swing"</span>
+<span class="hljs-string">"org.openjfx"</span> % <span class="hljs-string">"javafx-web"</span>
 </code></pre>
 <p>which for some reason must all be classified by the OS of the machine they are running on.</p>
 <p>A GUI can now be built by creating an object which extends <code>scalafx.application.JFXApp</code> and setting the <code>stage</code> var to a <code>new JFXApp.PrimaryStage</code> whose <code>scene</code> is your <code>Node</code> (where <code>Node</code> is the super-class in this framework for all GUI elements).</p>
