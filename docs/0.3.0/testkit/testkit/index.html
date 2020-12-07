@@ -73,7 +73,7 @@
 A quick example of a useful utility method is <a href="../../bitcoind-rpc/src/main/scala/org/bitcoins/testkit/rpc/BitcoindRpcTestUtil.scala">BitcoindRpcTestUtil.startedBitcoindRpcClient()</a>.
 This spins up a bitcoind regtest instance on machine and generates 101 blocks on that node.</p>
 <p>This gives you the ability to start spending money immediately with that bitcoind node.</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">"bitcoind-testkit-example"</span>)
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">&quot;bitcoind-testkit-example&quot;</span>)
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = system.dispatcher
 
 <span class="hljs-comment">//pick our bitcoind version we want to spin up</span>
@@ -84,20 +84,20 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
 <span class="hljs-comment">//create an instance</span>
 <span class="hljs-keyword">val</span> instance = <span class="hljs-type">BitcoindRpcTestUtil</span>.instance(versionOpt = <span class="hljs-type">Some</span>(bitcoindV))
 
-<span class="hljs-comment">//now let's create an rpc client off of that instance</span>
+<span class="hljs-comment">//now let&#x27;s create an rpc client off of that instance</span>
 <span class="hljs-keyword">val</span> bitcoindRpcClientF = <span class="hljs-type">BitcoindRpcTestUtil</span>.startedBitcoindRpcClient(instance)
 
-<span class="hljs-comment">//yay! it's started. Now you can run tests against this.</span>
-<span class="hljs-comment">//let's just grab the block count for an example</span>
+<span class="hljs-comment">//yay! it&#x27;s started. Now you can run tests against this.</span>
+<span class="hljs-comment">//let&#x27;s just grab the block count for an example</span>
 <span class="hljs-keyword">val</span> blockCountF = <span class="hljs-keyword">for</span> {
   bitcoind &lt;- bitcoindRpcClientF
   count &lt;- bitcoind.getBlockCount
 } <span class="hljs-keyword">yield</span> {
   <span class="hljs-comment">//run a test against the block count</span>
-  assert(count &gt; <span class="hljs-number">0</span>, <span class="hljs-string">s"Block count was not more than zero!"</span>)
+  assert(count &gt; <span class="hljs-number">0</span>, <span class="hljs-string">s&quot;Block count was not more than zero!&quot;</span>)
 }
 
-<span class="hljs-comment">//when you are done, don't forget to destroy it! Otherwise it will keep running on the underlying os</span>
+<span class="hljs-comment">//when you are done, don&#x27;t forget to destroy it! Otherwise it will keep running on the underlying os</span>
 <span class="hljs-keyword">val</span> stoppedF = <span class="hljs-keyword">for</span> {
   rpc &lt;- bitcoindRpcClientF
   _ &lt;- blockCountF
@@ -116,7 +116,7 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
 <span class="hljs-comment">//4. assert the node has received the payment</span>
 <span class="hljs-comment">//5. cleanup</span>
 
-<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">"eclair-testkit-example"</span>)
+<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">&quot;eclair-testkit-example&quot;</span>)
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = system.dispatcher
 
 <span class="hljs-comment">//we need a bitcoind to connect eclair nodes to</span>
@@ -129,7 +129,7 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
     } <span class="hljs-keyword">yield</span> cli
 }
 
-<span class="hljs-comment">//let's create two eclair nodes now</span>
+<span class="hljs-comment">//let&#x27;s create two eclair nodes now</span>
 <span class="hljs-keyword">val</span> clientF = <span class="hljs-keyword">for</span> {
   bitcoind &lt;- bitcoindRpcClientF
   e &lt;- <span class="hljs-type">EclairRpcTestUtil</span>.randomEclairClient(<span class="hljs-type">Some</span>(bitcoind))
@@ -140,13 +140,13 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
   e &lt;- <span class="hljs-type">EclairRpcTestUtil</span>.randomEclairClient(<span class="hljs-type">Some</span>(bitcoind))
 } <span class="hljs-keyword">yield</span> e
 
-<span class="hljs-comment">//great, setup done! Let's run the test</span>
+<span class="hljs-comment">//great, setup done! Let&#x27;s run the test</span>
 <span class="hljs-comment">//to verify we can send a payment over the channel</span>
 <span class="hljs-keyword">for</span> {
   client &lt;- clientF
   otherClient &lt;- otherClientF
   _ &lt;- <span class="hljs-type">EclairRpcTestUtil</span>.openAndConfirmChannel(clientF, otherClientF)
-  invoice &lt;- otherClient.createInvoice(<span class="hljs-string">"abc"</span>, <span class="hljs-number">50.</span>msats)
+  invoice &lt;- otherClient.createInvoice(<span class="hljs-string">&quot;abc&quot;</span>, <span class="hljs-number">50.</span>msats)
   info &lt;- otherClient.getInfo
   _ = assert(info.nodeId == invoice.nodeId)
   infos &lt;- client.getSentInfo(invoice.lnTags.paymentHash.hash)
@@ -158,7 +158,7 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
   assert(sentInfo.head.amount == <span class="hljs-number">50.</span>msats)
 }
 
-<span class="hljs-comment">//don't forget to shutdown everything!</span>
+<span class="hljs-comment">//don&#x27;t forget to shutdown everything!</span>
 <span class="hljs-keyword">val</span> stop1F = clientF.map(c =&gt; <span class="hljs-type">EclairRpcTestUtil</span>.shutdown(c))
 
 <span class="hljs-keyword">val</span> stop2F = otherClientF.map(o =&gt; <span class="hljs-type">EclairRpcTestUtil</span>.shutdown(o))
@@ -194,7 +194,7 @@ This allows you to integrate property based testing into your library and feel c
 </ol>
 <p>In general, you will find constructors and destructors of fixtures that can be useful when testing your applications
 if yo uare using any of those modules.</p>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-11-5 by Scala Steward</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/0.3.0/secp256k1/secp256k1"><span class="arrow-prev">← </span><span>Secp256k1</span></a><a class="docs-next button" href="/docs/0.3.0/contributing"><span>Contributing</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#philosphy-of-testkit">Philosphy of Testkit</a><ul class="toc-headings"><li><a href="#testkit-for-bitcoind">Testkit for bitcoind</a></li><li><a href="#testkit-for-eclair">Testkit for eclair</a></li><li><a href="#testkit-for-core">Testkit for core</a></li><li><a href="#other-modules">Other modules</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-11-6 by Ben Carman</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/0.3.0/secp256k1/secp256k1"><span class="arrow-prev">← </span><span>Secp256k1</span></a><a class="docs-next button" href="/docs/0.3.0/contributing"><span>Contributing</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#philosphy-of-testkit">Philosphy of Testkit</a><ul class="toc-headings"><li><a href="#testkit-for-bitcoind">Testkit for bitcoind</a></li><li><a href="#testkit-for-eclair">Testkit for eclair</a></li><li><a href="#testkit-for-core">Testkit for core</a></li><li><a href="#other-modules">Other modules</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;

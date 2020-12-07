@@ -64,13 +64,13 @@
             });
         </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/core/adding-spks.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Adding New Script Types</h1></header><article><div><span><h1><a class="anchor" aria-hidden="true" id="adding-a-new-scriptpubkey-type"></a><a href="#adding-a-new-scriptpubkey-type" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Adding a New ScriptPubKey Type</h1>
 <p>In this document, we will describe how to add new script implementations and types in Bitcoin-S. We will use the following script template example which we have called P2PK with Timeout to illustrate the process:</p>
-<pre><code class="hljs"><span class="hljs-attribute">OP_IF</span>
-    <span class="hljs-section">&lt;Public Key&gt;</span>
-<span class="hljs-attribute">OP_ELSE</span>
-    <span class="hljs-section">&lt;Timeout&gt;</span> <span class="hljs-attribute">OP_CHECKSEQUENCEVERIFY</span> OP_DROP
-    <span class="hljs-section">&lt;Timeout Public Key&gt;</span>
-<span class="hljs-attribute">OP_ENDIF</span>
-<span class="hljs-attribute">OP_CHECKSIG</span>
+<pre><code class="hljs">OP_IF
+    <span class="hljs-variable">&lt;Public Key&gt;</span>
+OP_ELSE
+    <span class="hljs-variable">&lt;Timeout&gt;</span> OP_CHECKSEQUENCEVERIFY OP_DROP
+    <span class="hljs-variable">&lt;Timeout Public Key&gt;</span>
+OP_ENDIF
+OP_CHECKSIG
 </code></pre>
 <p>Here is <a href="https://github.com/bitcoin-s/bitcoin-s/pull/967">the actual pull request</a> in which a very similar <code>ScriptPubKey</code> is implemented in Bitcoin-S.</p>
 <p>Please note that this document only explains how to add new <code>RawScriptPubKey</code>s which are the subset of <code>ScriptPubKey</code>s which are fully described by their raw scripts. This is to say that this guide will not help in implementing a new segwit version, but should be helpful for most anything else.</p>
@@ -132,7 +132,7 @@
       asm = asm.toVector,
       constructor = <span class="hljs-type">P2PKWithTimeoutScriptPubKeyImpl</span>.apply,
       invariant = isP2PKWithTimeoutScriptPubKey,
-      errorMsg = <span class="hljs-string">s"Given asm was not a P2PKWithTimeoutScriptPubKey, got <span class="hljs-subst">$asm</span>"</span>
+      errorMsg = <span class="hljs-string">s&quot;Given asm was not a P2PKWithTimeoutScriptPubKey, got <span class="hljs-subst">$asm</span>&quot;</span>
     )
   }
 
@@ -201,7 +201,7 @@
     <span class="hljs-type">Seq</span>(<span class="hljs-type">ECDigitalSignature</span>(<span class="hljs-type">BitcoinScriptUtil</span>.filterPushOps(asm).head.hex))
   }
 
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">toString</span> </span>= <span class="hljs-string">s"P2PKScriptSignature(<span class="hljs-subst">$signature</span>)"</span>
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">toString</span> </span>= <span class="hljs-string">s&quot;P2PKScriptSignature(<span class="hljs-subst">$signature</span>)&quot;</span>
 }
 
 <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">P2PKScriptSignature</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ScriptFactory</span>[<span class="hljs-type">P2PKScriptSignature</span>] </span>{
@@ -213,7 +213,7 @@
     buildScript(asm.toVector,
                 <span class="hljs-type">P2PKScriptSignatureImpl</span>(_),
                 isP2PKScriptSignature(_),
-                <span class="hljs-string">"The given asm tokens were not a p2pk script sig: "</span> + asm)
+                <span class="hljs-string">&quot;The given asm tokens were not a p2pk script sig: &quot;</span> + asm)
   }
 
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">apply</span></span>(signature: <span class="hljs-type">ECDigitalSignature</span>): <span class="hljs-type">P2PKScriptSignature</span> = {
@@ -231,7 +231,7 @@
 }
 </code></pre>
 <p>However, it is sometimes not necessary to create a new <code>ScriptSignature</code> type for every new <code>ScriptPubKey</code>. This is because we want to maintain unique representations for every <code>ScriptSignature</code>, and it turns out that in our case of <code>P2PKWithTimeoutScriptPubKey</code>, script signatures are of the form</p>
-<pre><code class="hljs"><span class="hljs-section">&lt;boolean&gt;</span> <span class="hljs-section">&lt;signautre&gt;</span>
+<pre><code class="hljs"><span class="hljs-variable">&lt;boolean&gt;</span> <span class="hljs-variable">&lt;signautre&gt;</span>
 </code></pre>
 <p>which is already represented by <code>ConditionalScriptSignature</code>. When this happens, you only need to create an <code>object</code> for your new type, and then follow step 2 above, skipping the first part (adding an Impl <code>case class</code>):</p>
 <pre><code class="hljs css language-scala"><span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">P2PKWithTimeoutScriptSignature</span></span>
@@ -241,7 +241,7 @@
       asm.toVector,
       <span class="hljs-type">ConditionalScriptSignature</span>.fromAsm,
       isP2PKWithTimeoutScriptSignature,
-      <span class="hljs-string">s"The given asm tokens were not a P2PKWithTimeoutScriptSignature, got <span class="hljs-subst">$asm</span>"</span>
+      <span class="hljs-string">s&quot;The given asm tokens were not a P2PKWithTimeoutScriptSignature, got <span class="hljs-subst">$asm</span>&quot;</span>
     )
   }
 
@@ -283,7 +283,7 @@
     <span class="hljs-keyword">with</span> <span class="hljs-type">RawScriptUTXOSpendingInfoSingle</span> {
   require(
     scriptPubKey.pubKey == signer.publicKey || scriptPubKey.timeoutPubKey == signer.publicKey,
-    <span class="hljs-string">"Signer pubkey must match ScriptPubKey"</span>)
+    <span class="hljs-string">&quot;Signer pubkey must match ScriptPubKey&quot;</span>)
 
   <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> requiredSigs: <span class="hljs-type">Int</span> = <span class="hljs-number">1</span>
 
@@ -321,7 +321,7 @@
 </span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">RawScriptUTXOSpendingInfoFull</span></span>
     <span class="hljs-keyword">with</span> <span class="hljs-type">MultiSignatureSpendingInfo</span> {
   require(signersWithPossibleExtra.length &gt;= scriptPubKey.requiredSigs,
-          <span class="hljs-string">s"Not enough signers!: <span class="hljs-subst">$this</span>"</span>)
+          <span class="hljs-string">s&quot;Not enough signers!: <span class="hljs-subst">$this</span>&quot;</span>)
 
   <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> requiredSigs: <span class="hljs-type">Int</span> = scriptPubKey.requiredSigs
 
@@ -407,7 +407,7 @@
         conditionalPath.headOption <span class="hljs-keyword">match</span> {
           <span class="hljs-keyword">case</span> <span class="hljs-type">None</span> =&gt;
             <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-type">IllegalArgumentException</span>(
-              <span class="hljs-string">"ConditionalPath must be specified for P2PKWithTimeout"</span>)
+              <span class="hljs-string">&quot;ConditionalPath must be specified for P2PKWithTimeout&quot;</span>)
           <span class="hljs-keyword">case</span> <span class="hljs-type">Some</span>(beforeTimeout) =&gt;
             <span class="hljs-type">P2PKWithTimeoutSpendingInfo</span>(outPoint,
                                         amount,
@@ -632,9 +632,9 @@
 </code></pre>
 <p>This should have quite a lengthy output but we are only interested in any compiler errors there may be, as well as non-exhaustive match compiler warnings. You should first fix any compiler errors you encounter, and then you can get the warnings again by running <code>clean</code> and then running <code>test:compile</code> again.</p>
 <p>The warnings we're interested in should look something like this:</p>
-<pre><code class="hljs">[warn] <span class="hljs-regexp">/home/</span>nkohen<span class="hljs-regexp">/Desktop/</span>SuredBits<span class="hljs-regexp">/bitcoin-s-core/</span>testkit<span class="hljs-regexp">/src/</span>main<span class="hljs-regexp">/scala/</span>org<span class="hljs-regexp">/bitcoins/</span>testkit<span class="hljs-regexp">/core/</span>gen/ScriptGenerators.<span class="hljs-string">scala:</span><span class="hljs-number">524</span>:<span class="hljs-number">59</span>: match may not be exhaustive.
-[warn] It would fail on the following <span class="hljs-string">input:</span> P2PKWithTimeoutScriptPubKeyImpl(_)
-[warn]       <span class="hljs-string">scriptPubKey:</span> ScriptPubKey): Gen[ScriptSignature] = scriptPubKey match {
+<pre><code class="hljs">[warn] <span class="hljs-regexp">/home/</span>nkohen<span class="hljs-regexp">/Desktop/</span>SuredBits<span class="hljs-regexp">/bitcoin-s-core/</span>testkit<span class="hljs-regexp">/src/m</span>ain<span class="hljs-regexp">/scala/</span>org<span class="hljs-regexp">/bitcoins/</span>testkit<span class="hljs-regexp">/core/g</span>en/ScriptGenerators.scala:<span class="hljs-number">524</span>:<span class="hljs-number">59</span>: match may not be exhaustive.
+[warn] It would fail on the following input: P2PKWithTimeoutScriptPubKeyImpl(_)
+[warn]       scriptPubKey: ScriptPubKey): Gen[ScriptSignature] = scriptPubKey match {
 [warn]                                                           ^
 [warn] one warning found
 </code></pre>
@@ -645,7 +645,7 @@
 <span class="hljs-keyword">test
 </span></code></pre>
 <p>If all tests pass we are all done! If you encounter any test failures, you can re-run individual tests using the <code>testOnly</code> command which must be given the full name of the test you wish to run (these names should be at the bottom of the testing output and look something like <code>org.bitcoins.core.script.interpreter.ScriptInterpreterTest</code>).</p>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-11-5 by Scala Steward</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/0.3.0/core/hd-keys"><span class="arrow-prev">← </span><span>HD Key Generation</span></a><a class="docs-next button" href="/docs/0.3.0/core/spending-info"><span>Signing Transactions</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#step-0-design-philosophy">Step 0: Design Philosophy</a></li><li><a href="#step-1-create-a-new-scriptpubkey-trait">Step 1: Create a New ScriptPubKey Trait</a></li><li><a href="#step-2-create-companion-object">Step 2: Create Companion Object</a></li><li><a href="#step-3-add-to-relevant-fromasm-methods">Step 3: Add to Relevant fromAsm Methods</a></li><li><a href="#step-4-create-a-scriptsignature-if-necessary">Step 4: Create a ScriptSignature If Necessary</a></li><li><a href="#step-5-add-to-scriptsignaturefromasm-if-applicable">Step 5: Add to ScriptSignature.fromAsm If Applicable</a></li><li><a href="#step-6-create-relevant-bitcoinutxospendinginfo">Step 6: Create Relevant BitcoinUTXOSpendingInfo</a><ul class="toc-headings"><li><a href="#non-nested-single-key-spending-info">Non-Nested Single-Key Spending Info</a></li><li><a href="#non-nested-multi-key-spending-info">Non-Nested Multi-Key Spending Info</a></li><li><a href="#nested-spending-info">Nested Spending Info</a></li></ul></li><li><a href="#step-7-add-to-relevant-apply-methods">Step 7: Add to Relevant Apply Methods</a></li><li><a href="#step-8-create-a-signer">Step 8: Create a Signer</a><ul class="toc-headings"><li><a href="#non-nested-single-key-spending-info-1">Non-Nested Single-Key Spending Info</a></li><li><a href="#non-nested-multi-key-spending-info-1">Non-Nested Multi-Key Spending Info</a></li><li><a href="#nested-spending-info-1">Nested Spending Info</a></li></ul></li><li><a href="#step-9-add-to-bitcoinsignersign">Step 9: Add to BitcoinSigner.sign</a></li><li><a href="#step-10-add-to-scriptgenerators">Step 10: Add to ScriptGenerators</a><ul class="toc-headings"><li><a href="#scriptpubkey-generator">ScriptPubKey Generator</a></li><li><a href="#scriptsignature-generator">ScriptSignature Generator</a></li><li><a href="#scriptpubkey-with-paired-scriptsignature-generator">ScriptPubKey with Paired ScriptSignature Generator</a></li></ul></li><li><a href="#step-11-add-to-creditingtxgen">Step 11: Add to CreditingTxGen</a></li><li><a href="#step-12-fix-all-non-exhaustive-matches">Step 12: Fix all Non-Exhaustive Matches</a></li><li><a href="#step-13-run-tests-and-debug">Step 13: Run tests and debug</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-11-6 by Ben Carman</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/0.3.0/core/hd-keys"><span class="arrow-prev">← </span><span>HD Key Generation</span></a><a class="docs-next button" href="/docs/0.3.0/core/spending-info"><span>Signing Transactions</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#step-0-design-philosophy">Step 0: Design Philosophy</a></li><li><a href="#step-1-create-a-new-scriptpubkey-trait">Step 1: Create a New ScriptPubKey Trait</a></li><li><a href="#step-2-create-companion-object">Step 2: Create Companion Object</a></li><li><a href="#step-3-add-to-relevant-fromasm-methods">Step 3: Add to Relevant fromAsm Methods</a></li><li><a href="#step-4-create-a-scriptsignature-if-necessary">Step 4: Create a ScriptSignature If Necessary</a></li><li><a href="#step-5-add-to-scriptsignaturefromasm-if-applicable">Step 5: Add to ScriptSignature.fromAsm If Applicable</a></li><li><a href="#step-6-create-relevant-bitcoinutxospendinginfo">Step 6: Create Relevant BitcoinUTXOSpendingInfo</a><ul class="toc-headings"><li><a href="#non-nested-single-key-spending-info">Non-Nested Single-Key Spending Info</a></li><li><a href="#non-nested-multi-key-spending-info">Non-Nested Multi-Key Spending Info</a></li><li><a href="#nested-spending-info">Nested Spending Info</a></li></ul></li><li><a href="#step-7-add-to-relevant-apply-methods">Step 7: Add to Relevant Apply Methods</a></li><li><a href="#step-8-create-a-signer">Step 8: Create a Signer</a><ul class="toc-headings"><li><a href="#non-nested-single-key-spending-info-1">Non-Nested Single-Key Spending Info</a></li><li><a href="#non-nested-multi-key-spending-info-1">Non-Nested Multi-Key Spending Info</a></li><li><a href="#nested-spending-info-1">Nested Spending Info</a></li></ul></li><li><a href="#step-9-add-to-bitcoinsignersign">Step 9: Add to BitcoinSigner.sign</a></li><li><a href="#step-10-add-to-scriptgenerators">Step 10: Add to ScriptGenerators</a><ul class="toc-headings"><li><a href="#scriptpubkey-generator">ScriptPubKey Generator</a></li><li><a href="#scriptsignature-generator">ScriptSignature Generator</a></li><li><a href="#scriptpubkey-with-paired-scriptsignature-generator">ScriptPubKey with Paired ScriptSignature Generator</a></li></ul></li><li><a href="#step-11-add-to-creditingtxgen">Step 11: Add to CreditingTxGen</a></li><li><a href="#step-12-fix-all-non-exhaustive-matches">Step 12: Fix all Non-Exhaustive Matches</a></li><li><a href="#step-13-run-tests-and-debug">Step 13: Run tests and debug</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
