@@ -85,10 +85,8 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
   }
 
   it must "return the entire byte array if a message is not aligned to a byte frame" in {
-    implicit val nodeConf = config.nodeConf
-    val versionMessage =
-      VersionMessage(TestNet3.dnsSeeds(0), np)
-    val networkMsg = NetworkMessage(np, versionMessage)
+    val networkMsg = NetworkMessage(
+      "fabfb5da76657273696f6e00000000006e000000b12d23e97d1101000000000000000000b487c95f00000000000000000000000000000000000000000000ffffc0f1a38e480c010000000000000000000000000000000000ffff7f000101480c0000000000000000182f626974636f696e732d7370762d6e6f64652f302e302e310000000000")
     //remove last byte so the message is not aligned
     val bytes = networkMsg.bytes.slice(0, networkMsg.bytes.size - 1)
     val (_, unAlignedBytes) = P2PClient.parseIndividualMessages(bytes)
