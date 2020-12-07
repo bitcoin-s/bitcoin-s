@@ -251,16 +251,6 @@ of all files in `core` project.
 
 ### CI
 
-Bitcoin-S uses Travis to run tests and deploy library and website builds. Generally
+Bitcoin-S uses Github Actions to run tests and deploy library and website builds. Generally
 speaking CI has to pass for a PR to get merged. If you make documentation/website only
 changes, you can start your PR title with `Docs:`. This skips running tests on CI.
-
-#### My CI isn't running!
-Travis CI has a conservative policy when it comes to crypto projects. They do not
-allow new contributors to create new CI runs. They believe you are crypto mining.
-
-You can detect if travis thinks you are abusing their resources by looking a [this link](https://travis-ci.org/bitcoin-s/bitcoin-s/requests).
-
-If your PR says `Abuse Detected` next to it, that means you need to email travis saying you are just
-trying to contribute to bitcoin-s and are not attempting to mine cryptocurrency. For more information on travis users
-having this same problem see [this link](https://travis-ci.community/t/abuse-detected-for-my-prs-and-some-commits/6124).

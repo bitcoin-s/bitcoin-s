@@ -100,6 +100,6 @@ Before running those commands, you might have to change a few constants in
 
 ### CI
 
-Bitcoin-S uses Travis to run tests and deploy library and website builds. Generally
+Bitcoin-S uses Github Actions to run tests and deploy library and website builds. Generally
 speaking CI has to pass for a PR to get merged. If you make documentation/website only
 changes, you can start your PR title with `Docs:`. This skips running tests on CI.
