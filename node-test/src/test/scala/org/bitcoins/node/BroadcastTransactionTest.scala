@@ -3,6 +3,7 @@ package org.bitcoins.node
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.Implicits._
@@ -25,7 +26,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
   override type FixtureParam = SpvNodeConnectedWithBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeConnectedToBitcoind(test)
+    withSpvNodeConnectedToBitcoind(test, Some(BitcoindVersion.V17))
 
   private val sendAmount = 1.bitcoin
 
@@ -43,6 +44,21 @@ class BroadcastTransactionTest extends NodeUnitTest {
       assert(txDbOpt.isDefined)
       assert(txDbOpt.get.transaction == tx)
     }
+  }
+
+  it must "fail to broadcast a transaction when disconnected" in { param =>
+    val SpvNodeConnectedWithBitcoind(node, rpc) = param
+
+    val tx = TransactionGenerators.transaction.sampleSome
+
+    for {
+      peers <- rpc.getPeerInfo
+      me = peers.head
+      _ <- rpc.disconnectNode(me.networkInfo.addr)
+      res <- recoverToSucceededIf[RuntimeException] {
+        node.broadcastTransaction(tx)
+      }
+    } yield res
   }
 
   it must "broadcast a transaction" in { param =>

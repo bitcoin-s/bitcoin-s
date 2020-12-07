@@ -229,10 +229,19 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       // message because a Bitcoin-S node currently doesn't have a mempool and only
       // broadcasts/relays transactions from its own wallet.
       // See https://developer.bitcoin.org/reference/p2p_networking.html#tx
-      _ =
-        logger.info(s"Sending out tx message for tx=${transaction.txIdBE.hex}")
-      _ <- peerMsgSender.sendTransactionMessage(transaction)
-    } yield ()
+      connected <- isConnected
+
+      res <- {
+        if (connected) {
+          logger.info(
+            s"Sending out tx message for tx=${transaction.txIdBE.hex}")
+          peerMsgSender.sendTransactionMessage(transaction)
+        } else {
+          Future.failed(new RuntimeException(
+            s"Error broadcasting transaction ${transaction.txIdBE.hex}, peer is disconnected $peer"))
+        }
+      }
+    } yield res
   }
 
   /**
