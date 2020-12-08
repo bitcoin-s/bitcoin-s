@@ -29,11 +29,16 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
         // if it was print the error
         str
       case Success(tx) =>
-        s"""|Transaction: ${tx.hex}
+        s"""|TxId: ${tx.txIdBE.hex}
             |
-            |TxId: ${tx.txIdBE.hex}
+            |url: ${GlobalData.buildTxUrl(tx.txIdBE)}
+            |
+            |If the tx doesn't show up after a few minutes at this url you may need to manually
+            |broadcast the tx with the full hex below
             |
             |Link to broadcast: ${GlobalData.broadcastUrl}
+            |
+            |Transaction: ${tx.hex}
       """.stripMargin
     }
   }

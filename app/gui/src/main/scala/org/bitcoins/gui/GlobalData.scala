@@ -2,6 +2,7 @@ package org.bitcoins.gui
 
 import org.bitcoins.cli.Config
 import org.bitcoins.core.config._
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.gui.settings.Themes
 import scalafx.beans.property.{DoubleProperty, StringProperty}
 
@@ -41,5 +42,17 @@ object GlobalData {
     case TestNet3 =>
       "https://blockstream.info/testnet/api/tx"
     case net @ (RegTest | SigNet) => s"Broadcast from your own node on $net"
+  }
+
+  /** Builds a url for the blockstream explorer to view the tx */
+  def buildTxUrl(txid: DoubleSha256DigestBE): String = {
+    network match {
+      case MainNet =>
+        s"https://blockstream.info/tx/${txid.hex}"
+      case TestNet3 =>
+        s"https://blockstream.info/testnet/tx/${txid.hex}"
+      case net @ (RegTest | SigNet) =>
+        s"View transaction on your own node on $net"
+    }
   }
 }
