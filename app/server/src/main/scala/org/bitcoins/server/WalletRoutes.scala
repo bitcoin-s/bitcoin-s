@@ -380,7 +380,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit system: ActorSystem)
         case Success(BroadcastDLCFundingTx(contractId)) =>
           complete {
             wallet.broadcastDLCFundingTx(contractId).map { tx =>
-              Server.httpSuccess(tx.txIdBE.hex)
+              Server.httpSuccess(tx.hex)
             }
           }
       }
