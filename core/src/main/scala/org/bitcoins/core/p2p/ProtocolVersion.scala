@@ -30,12 +30,15 @@ object ProtocolVersion extends Factory[ProtocolVersion] {
     ProtocolVersion70001,
     ProtocolVersion70002,
     ProtocolVersion70012,
-    ProtocolVersion70013
+    ProtocolVersion70013,
+    ProtocolVersion70014,
+    ProtocolVersion70015,
+    ProtocolVersion70016
   )
 
   def fromBytes(bytes: ByteVector): ProtocolVersion = {
     //TODO: Should we default to the latest protocol version if the bytes don't match???
-    versions.find(v => v.bytes == bytes).getOrElse(ProtocolVersion70015)
+    versions.find(v => v.bytes == bytes).getOrElse(versions.last)
   }
 }
 
@@ -161,4 +164,13 @@ case object ProtocolVersion70014 extends ProtocolVersion {
   */
 case object ProtocolVersion70015 extends ProtocolVersion {
   override val bytes: ByteVector = hex"7f110100"
+}
+
+/**
+  * Indicates that a node prefers to relay transactions via wtxid, rather than txid.
+  * Protocol version 70016 as described by BIP 339.
+  * Bitcoin Core 0.21.0 (December 2020)
+  */
+case object ProtocolVersion70016 extends ProtocolVersion {
+  override val bytes: ByteVector = hex"80110100"
 }
