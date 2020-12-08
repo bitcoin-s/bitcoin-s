@@ -33,7 +33,9 @@ object CETCalculator {
   /** This range contains payouts that all vary at every step and cannot be compressed */
   case class StartFunc(indexFrom: Long, indexTo: Long) extends CETRange
 
-  /** This range contains some constant payout between 0 and totalCollateral (exclusive) */
+  /** This range contains some constant payout between 0 and totalCollateral (exclusive).
+    * To be clear, indexFrom and indexTo are still inclusive values.
+    */
   case class StartFuncConst(indexFrom: Long, indexTo: Long) extends CETRange
 
   object CETRange {

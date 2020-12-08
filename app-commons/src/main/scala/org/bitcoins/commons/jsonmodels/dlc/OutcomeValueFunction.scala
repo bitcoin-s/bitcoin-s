@@ -7,6 +7,10 @@ import scala.math.BigDecimal.RoundingMode
 
 /** A DLC payout curve defined by piecewise interpolating points */
 case class OutcomeValueFunction(points: Vector[OutcomeValuePoint]) {
+  require(points.init.zip(points.tail).forall {
+            case (p1, p2) => p1.outcome < p2.outcome
+          },
+          s"Points must be ascending: $points")
 
   /** These points (and their indices in this.points) represent the endpoints
     * between which interpolation happens.
@@ -39,15 +43,20 @@ case class OutcomeValueFunction(points: Vector[OutcomeValuePoint]) {
     }
   }
 
-  def apply(outcome: BigDecimal): Satoshis = {
+  def getPayout(outcome: BigDecimal): Satoshis = {
     val (func, _) = componentFor(outcome)
     func(outcome)
   }
 
-  def apply(outcome: BigDecimal, rounding: RoundingIntervals): Satoshis = {
+  def getPayout(outcome: BigDecimal, rounding: RoundingIntervals): Satoshis = {
     val (func, _) = componentFor(outcome)
     func(outcome, rounding)
   }
+
+  def apply(outcome: BigDecimal): Satoshis = getPayout(outcome)
+
+  def apply(outcome: BigDecimal, rounding: RoundingIntervals): Satoshis =
+    getPayout(outcome, rounding)
 }
 
 /** A point on a DLC payout curve to be used for interpolation
@@ -70,6 +79,20 @@ sealed trait OutcomeValueFunctionComponent {
   require(leftEndpoint.isEndpoint, s"$leftEndpoint not an endpoint")
   require(rightEndpoint.isEndpoint, s"$rightEndpoint not an endpoint")
   require(midpoints.forall(!_.isEndpoint), s"$midpoints contained an endpoint")
+  midpoints.headOption match {
+    case Some(firstMidpoint) =>
+      require(leftEndpoint.outcome < firstMidpoint.outcome,
+              s"Points must be ascending: $this")
+      require(midpoints.init.zip(midpoints.tail).forall {
+                case (m1, m2) => m1.outcome < m2.outcome
+              },
+              s"Points must be ascending: $this")
+      require(rightEndpoint.outcome > midpoints.last.outcome,
+              s"Points must be ascending: $this")
+    case None =>
+      require(leftEndpoint.outcome < rightEndpoint.outcome,
+              s"Points must be ascending: $this")
+  }
 
   def apply(outcome: BigDecimal): Satoshis
 

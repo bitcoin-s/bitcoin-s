@@ -39,6 +39,8 @@ class OutcomeValueFunctionTest extends BitcoinSUnitTest {
         outcomes.foreach { outcome =>
           assert(line(outcome) == polyDegOne(outcome))
         }
+
+      case _ => fail()
     }
   }
 
@@ -56,18 +58,20 @@ class OutcomeValueFunctionTest extends BitcoinSUnitTest {
 
     forAll(intGen, intGen, Gen.listOfN(1000, numGen), twoNums) {
       case (slope, yIntercept, outcomes, (x1, x2)) =>
-        def func(outcome: BigDecimal): Satoshis = {
+        def expectedPayout(outcome: BigDecimal): Satoshis = {
           val value = slope * outcome + yIntercept
           val rounded = value.setScale(0, RoundingMode.FLOOR).toLongExact
           Satoshis(rounded)
         }
 
-        val point1 = OutcomeValuePoint(x1, func(x1), isEndpoint = true)
-        val point2 = OutcomeValuePoint(x2, func(x2), isEndpoint = true)
+        val point1 =
+          OutcomeValuePoint(x1, expectedPayout(x1), isEndpoint = true)
+        val point2 =
+          OutcomeValuePoint(x2, expectedPayout(x2), isEndpoint = true)
         val line = OutcomeValueLine(point1, point2)
 
         outcomes.foreach { outcome =>
-          assert(line(outcome) == func(outcome))
+          assert(line(outcome) == expectedPayout(outcome))
         }
     }
   }
@@ -83,6 +87,8 @@ class OutcomeValueFunctionTest extends BitcoinSUnitTest {
         outcomes.foreach { outcome =>
           assert(parabola(outcome) == polyDegTwo(outcome))
         }
+
+      case _ => fail()
     }
   }
 
@@ -98,19 +104,22 @@ class OutcomeValueFunctionTest extends BitcoinSUnitTest {
 
     forAll(intGen, intGen, intGen, Gen.listOfN(1000, numGen), threeNums) {
       case (a, b, c, outcomes, (x1, x2, x3)) =>
-        def func(outcome: BigDecimal): Satoshis = {
+        def expectedPayout(outcome: BigDecimal): Satoshis = {
           val value = a * outcome * outcome + b * outcome + c
           val rounded = value.setScale(0, RoundingMode.FLOOR).toLongExact
           Satoshis(rounded)
         }
 
-        val point1 = OutcomeValuePoint(x1, func(x1), isEndpoint = true)
-        val point2 = OutcomeValuePoint(x2, func(x2), isEndpoint = false)
-        val point3 = OutcomeValuePoint(x3, func(x3), isEndpoint = true)
+        val point1 =
+          OutcomeValuePoint(x1, expectedPayout(x1), isEndpoint = true)
+        val point2 =
+          OutcomeValuePoint(x2, expectedPayout(x2), isEndpoint = false)
+        val point3 =
+          OutcomeValuePoint(x3, expectedPayout(x3), isEndpoint = true)
         val parabola = OutcomeValueQuadratic(point1, point2, point3)
 
         outcomes.foreach { outcome =>
-          assert(parabola(outcome) == func(outcome))
+          assert(parabola(outcome) == expectedPayout(outcome))
         }
     }
   }
@@ -127,15 +136,18 @@ class OutcomeValueFunctionTest extends BitcoinSUnitTest {
 
     forAll(intGen, intGen, Gen.listOfN(1000, numGen), threeNums) {
       case (slope, yIntercept, outcomes, (x1, x2, x3)) =>
-        def func(outcome: BigDecimal): Satoshis = {
+        def expectedPayout(outcome: BigDecimal): Satoshis = {
           val value = slope * outcome + yIntercept
           val rounded = value.setScale(0, RoundingMode.FLOOR).toLongExact
           Satoshis(rounded)
         }
 
-        val point1 = OutcomeValuePoint(x1, func(x1), isEndpoint = true)
-        val point2 = OutcomeValuePoint(x2, func(x2), isEndpoint = false)
-        val point3 = OutcomeValuePoint(x3, func(x3), isEndpoint = true)
+        val point1 =
+          OutcomeValuePoint(x1, expectedPayout(x1), isEndpoint = true)
+        val point2 =
+          OutcomeValuePoint(x2, expectedPayout(x2), isEndpoint = false)
+        val point3 =
+          OutcomeValuePoint(x3, expectedPayout(x3), isEndpoint = true)
         val line = OutcomeValueLine(point1, point3)
         val parabola = OutcomeValueQuadratic(point1, point2, point3)
 
@@ -157,6 +169,8 @@ class OutcomeValueFunctionTest extends BitcoinSUnitTest {
         outcomes.foreach { outcome =>
           assert(cubic(outcome) == polyDegThree(outcome))
         }
+
+      case _ => fail()
     }
   }
 
@@ -178,21 +192,25 @@ class OutcomeValueFunctionTest extends BitcoinSUnitTest {
            Gen.listOfN(1000, numGen),
            fourNums) {
       case (a, b, c, d, outcomes, (x1, x2, x3, x4)) =>
-        def func(outcome: BigDecimal): Satoshis = {
+        def expectedPayout(outcome: BigDecimal): Satoshis = {
           val value =
             a * outcome * outcome * outcome + b * outcome * outcome + c * outcome + d
           val rounded = value.setScale(0, RoundingMode.FLOOR).toLongExact
           Satoshis(rounded)
         }
 
-        val point1 = OutcomeValuePoint(x1, func(x1), isEndpoint = true)
-        val point2 = OutcomeValuePoint(x2, func(x2), isEndpoint = false)
-        val point3 = OutcomeValuePoint(x3, func(x3), isEndpoint = false)
-        val point4 = OutcomeValuePoint(x4, func(x4), isEndpoint = true)
+        val point1 =
+          OutcomeValuePoint(x1, expectedPayout(x1), isEndpoint = true)
+        val point2 =
+          OutcomeValuePoint(x2, expectedPayout(x2), isEndpoint = false)
+        val point3 =
+          OutcomeValuePoint(x3, expectedPayout(x3), isEndpoint = false)
+        val point4 =
+          OutcomeValuePoint(x4, expectedPayout(x4), isEndpoint = true)
         val cubic = OutcomeValueCubic(point1, point2, point3, point4)
 
         outcomes.foreach { outcome =>
-          assert(cubic(outcome) == func(outcome))
+          assert(cubic(outcome) == expectedPayout(outcome))
         }
     }
   }
@@ -210,16 +228,20 @@ class OutcomeValueFunctionTest extends BitcoinSUnitTest {
 
     forAll(intGen, intGen, Gen.listOfN(1000, numGen), fourNums) {
       case (slope, yIntercept, outcomes, (x1, x2, x3, x4)) =>
-        def func(outcome: BigDecimal): Satoshis = {
+        def expectedPayout(outcome: BigDecimal): Satoshis = {
           val value = slope * outcome + yIntercept
           val rounded = value.setScale(0, RoundingMode.FLOOR).toLongExact
           Satoshis(rounded)
         }
 
-        val point1 = OutcomeValuePoint(x1, func(x1), isEndpoint = true)
-        val point2 = OutcomeValuePoint(x2, func(x2), isEndpoint = false)
-        val point3 = OutcomeValuePoint(x3, func(x3), isEndpoint = false)
-        val point4 = OutcomeValuePoint(x4, func(x4), isEndpoint = true)
+        val point1 =
+          OutcomeValuePoint(x1, expectedPayout(x1), isEndpoint = true)
+        val point2 =
+          OutcomeValuePoint(x2, expectedPayout(x2), isEndpoint = false)
+        val point3 =
+          OutcomeValuePoint(x3, expectedPayout(x3), isEndpoint = false)
+        val point4 =
+          OutcomeValuePoint(x4, expectedPayout(x4), isEndpoint = true)
         val line = OutcomeValueLine(point1, point4)
         val cubic = OutcomeValueCubic(point1, point2, point3, point4)
 
@@ -242,16 +264,20 @@ class OutcomeValueFunctionTest extends BitcoinSUnitTest {
 
     forAll(intGen, intGen, intGen, Gen.listOfN(1000, numGen), fourNums) {
       case (a, b, c, outcomes, (x1, x2, x3, x4)) =>
-        def func(outcome: BigDecimal): Satoshis = {
+        def expectedPayout(outcome: BigDecimal): Satoshis = {
           val value = a * outcome * outcome + b * outcome + c
           val rounded = value.setScale(0, RoundingMode.FLOOR).toLongExact
           Satoshis(rounded)
         }
 
-        val point1 = OutcomeValuePoint(x1, func(x1), isEndpoint = true)
-        val point2 = OutcomeValuePoint(x2, func(x2), isEndpoint = false)
-        val point3 = OutcomeValuePoint(x3, func(x3), isEndpoint = false)
-        val point4 = OutcomeValuePoint(x4, func(x4), isEndpoint = true)
+        val point1 =
+          OutcomeValuePoint(x1, expectedPayout(x1), isEndpoint = true)
+        val point2 =
+          OutcomeValuePoint(x2, expectedPayout(x2), isEndpoint = false)
+        val point3 =
+          OutcomeValuePoint(x3, expectedPayout(x3), isEndpoint = false)
+        val point4 =
+          OutcomeValuePoint(x4, expectedPayout(x4), isEndpoint = true)
         val quadratic = OutcomeValueQuadratic(point1, point2, point4)
         val cubic = OutcomeValueCubic(point1, point2, point3, point4)
 

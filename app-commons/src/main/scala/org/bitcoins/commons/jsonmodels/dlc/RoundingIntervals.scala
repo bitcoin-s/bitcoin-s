@@ -5,6 +5,12 @@ import org.bitcoins.core.util.NumberUtil
 
 import scala.annotation.tailrec
 
+/** Specifies a list of intervals with corresponding rounding moduli.
+  * In particular, each element (outcome, roundingMod) of intervalStarts
+  * represents the beginning of a new interval at outcome with new modulus roundingMod.
+  *
+  * @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#rounding-intervals
+  */
 case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
 
   def intervalContaining(
