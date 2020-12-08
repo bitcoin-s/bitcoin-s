@@ -78,7 +78,7 @@ That does the appropriate loading of the library onto your classpath to be acces
 <p>To tell if you have access to libsecp256k1 you can do the following</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> isEnabled = org.bitcoin.<span class="hljs-type">Secp256k1Context</span>.isEnabled()
 
-println(<span class="hljs-string">s"Secp256k1Context.isEnabled=<span class="hljs-subst">${isEnabled}</span>"</span>)
+println(<span class="hljs-string">s&quot;Secp256k1Context.isEnabled=<span class="hljs-subst">${isEnabled}</span>&quot;</span>)
 </code></pre>
 <p>If libsecp256k1 is enabled, you can use <a href="/api/org/bitcoin/NativeSecp256k1">NativeSecp256k1</a>
 with static method defined in the class.</p>
@@ -90,14 +90,14 @@ with static method defined in the class.</p>
     
 <span class="hljs-keyword">val</span> verify = <span class="hljs-type">NativeSecp256k1</span>.verify(dataToSign.bytes.toArray, signature, pubKey.bytes.toArray)
 
-println(<span class="hljs-string">s"Verified with NativeSecp256k1 signature=<span class="hljs-subst">${verify}</span>"</span>)
+println(<span class="hljs-string">s&quot;Verified with NativeSecp256k1 signature=<span class="hljs-subst">${verify}</span>&quot;</span>)
 
 <span class="hljs-comment">//you can also just directly sign with the ECKey interface:</span>
 <span class="hljs-keyword">val</span> signature2 = privKey.sign(dataToSign)
 
 <span class="hljs-keyword">val</span> verified2 = pubKey.verify(dataToSign, signature2)
 
-println(<span class="hljs-string">s"Verified with NativeSecp256k1 again=<span class="hljs-subst">${verified2}</span>"</span>)
+println(<span class="hljs-string">s&quot;Verified with NativeSecp256k1 again=<span class="hljs-subst">${verified2}</span>&quot;</span>)
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" id="when-libsecp256k1-isnt-available-or-you-want-to-turn-it-off"></a><a href="#when-libsecp256k1-isnt-available-or-you-want-to-turn-it-off" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>When libsecp256k1 isn't available, or you want to turn it off</h3>
 <p>There are two reasons you wouldn't want to use libsecp256k1</p>
@@ -114,17 +114,17 @@ println(<span class="hljs-string">s"Verified with NativeSecp256k1 again=<span cl
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> privKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
 <span class="hljs-comment">// privKey: ECPrivateKey = Masked(ECPrivateKeyImpl)</span>
 <span class="hljs-keyword">val</span> publicKey = privKey.publicKeyWithBouncyCastle
-<span class="hljs-comment">// publicKey: ECPublicKey = ECPublicKey(03a6f8b37efb6dc4d87c05f44584a304cbca6b3a221a779a84ebb933ec8d7e7ec1)</span>
+<span class="hljs-comment">// publicKey: ECPublicKey = ECPublicKey(033ec02503be91d2d88d0914bfac1a9c724892c4ce5835ac2993660093656f7a71)</span>
 <span class="hljs-keyword">val</span> dataToSign = <span class="hljs-type">DoubleSha256Digest</span>.empty
 <span class="hljs-comment">// dataToSign: DoubleSha256Digest = DoubleSha256Digest(0000000000000000000000000000000000000000000000000000000000000000)</span>
 
 <span class="hljs-keyword">val</span> signature = privKey.signWithBouncyCastle(dataToSign.bytes)
-<span class="hljs-comment">// signature: ECDigitalSignature = ECDigitalSignature(3045022100e29868eda565400a2ef80ffdf3d87c19c69bf6d4cb986139aaad1c0f58b2160102201497aa3a5026c0d85f4c697c2431b6ad10df5296a99944260c22043274f40255)</span>
+<span class="hljs-comment">// signature: ECDigitalSignature = ECDigitalSignature(3044022008908c4142f3d5053f88342402fcad595ec0351b29959c9c7e41b37bf77828b202202e67bf37315a49ba140db7840525c9ccf492c96e233285b044b1953001c84907)</span>
 
 <span class="hljs-keyword">val</span> verified = publicKey.verifyWithBouncyCastle(dataToSign.bytes, signature)
 <span class="hljs-comment">// verified: Boolean = true</span>
 
-println(<span class="hljs-string">s"Verified with bouncy castle=<span class="hljs-subst">${verified}</span>"</span>)
+println(<span class="hljs-string">s&quot;Verified with bouncy castle=<span class="hljs-subst">${verified}</span>&quot;</span>)
 <span class="hljs-comment">// Verified with bouncy castle=true</span>
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" id="building-libsecp256k1"></a><a href="#building-libsecp256k1" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Building libsecp256k1</h3>

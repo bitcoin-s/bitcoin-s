@@ -75,7 +75,7 @@ want.</p>
   <span class="hljs-comment">/** Gets the height of the given block */</span>
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getBlockHeight</span></span>(blockHash: <span class="hljs-type">DoubleSha256DigestBE</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">Option</span>[<span class="hljs-type">Int</span>]]
 
-  <span class="hljs-comment">/** Gets the hash of the block that is what we consider "best" */</span>
+  <span class="hljs-comment">/** Gets the hash of the block that is what we consider &quot;best&quot; */</span>
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getBestBlockHash</span></span>(): <span class="hljs-type">Future</span>[<span class="hljs-type">DoubleSha256DigestBE</span>]
 
   <span class="hljs-comment">/** Gets number of confirmations for the given block hash*/</span>
@@ -95,12 +95,12 @@ want.</p>
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="chain-query-with-bitcoind"></a><a href="#chain-query-with-bitcoind" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Chain query with bitcoind</h2>
 <p>As an example, we will show you how to use the <code>ChainQueryApi</code> and bitcoind to query chain data.</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system: <span class="hljs-type">ActorSystem</span> = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">s"node-api-example"</span>)
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system: <span class="hljs-type">ActorSystem</span> = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">s&quot;node-api-example&quot;</span>)
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContextExecutor</span> = system.dispatcher
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> walletConf: <span class="hljs-type">WalletAppConfig</span> =
     <span class="hljs-type">BitcoinSTestAppConfig</span>.getSpvTestConfig().walletConf
 
-<span class="hljs-comment">// let's use a helper method to get a v19 bitcoind</span>
+<span class="hljs-comment">// let&#x27;s use a helper method to get a v19 bitcoind</span>
 <span class="hljs-comment">// and a ChainApi</span>
 <span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">BitcoindV19RpcClient</span>(<span class="hljs-type">BitcoindInstance</span>.fromConfigFile())
 <span class="hljs-keyword">val</span> nodeApi = <span class="hljs-type">BitcoinSWalletTest</span>.<span class="hljs-type">MockNodeApi</span>
@@ -112,7 +112,7 @@ want.</p>
 <span class="hljs-keyword">val</span> keyManager = keyManagerE <span class="hljs-keyword">match</span> {
     <span class="hljs-keyword">case</span> <span class="hljs-type">Right</span>(keyManager) =&gt; keyManager
     <span class="hljs-keyword">case</span> <span class="hljs-type">Left</span>(err) =&gt;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-type">RuntimeException</span>(<span class="hljs-string">s"Cannot initialize key manager err=<span class="hljs-subst">$err</span>"</span>)
+      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-type">RuntimeException</span>(<span class="hljs-string">s&quot;Cannot initialize key manager err=<span class="hljs-subst">$err</span>&quot;</span>)
   }
 
 <span class="hljs-comment">// This function can be used to create a callback for when our chain api receives a transaction, block, or</span>
@@ -140,19 +140,19 @@ want.</p>
 <span class="hljs-comment">// relaying the block on the network, finding relevant wallet transactions, verifying the block,</span>
 <span class="hljs-comment">// or writing it to disk</span>
 <span class="hljs-keyword">val</span> exampleProcessTx = (tx: <span class="hljs-type">Transaction</span>) =&gt;
-    <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s"Received tx: <span class="hljs-subst">${tx.txIdBE}</span>"</span>))
+    <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s&quot;Received tx: <span class="hljs-subst">${tx.txIdBE}</span>&quot;</span>))
 
 <span class="hljs-keyword">val</span> exampleProcessBlock = (block: <span class="hljs-type">Block</span>) =&gt;
-    <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s"Received block: <span class="hljs-subst">${block.blockHeader.hashBE}</span>"</span>))
+    <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s&quot;Received block: <span class="hljs-subst">${block.blockHeader.hashBE}</span>&quot;</span>))
 
 <span class="hljs-keyword">val</span> exampleProcessFilters =
     (filters: <span class="hljs-type">Vector</span>[(<span class="hljs-type">DoubleSha256Digest</span>, <span class="hljs-type">GolombFilter</span>)]) =&gt;
-      <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s"Received filter: <span class="hljs-subst">${filters.head._1.flip.hex}</span> <span class="hljs-subst">${filters.head._2.hash.flip.hex}</span>"</span>))
+      <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s&quot;Received filter: <span class="hljs-subst">${filters.head._1.flip.hex}</span> <span class="hljs-subst">${filters.head._2.hash.flip.hex}</span>&quot;</span>))
 
 <span class="hljs-keyword">val</span> exampleCallbacks =
     createCallbacks(exampleProcessTx, exampleProcessFilters, exampleProcessBlock)
 
-<span class="hljs-comment">// Here is where we are defining our actual chain api, Ideally this could be it's own class</span>
+<span class="hljs-comment">// Here is where we are defining our actual chain api, Ideally this could be it&#x27;s own class</span>
 <span class="hljs-comment">// but for the examples sake we will keep it small.</span>
 <span class="hljs-keyword">val</span> chainApi = <span class="hljs-keyword">new</span> <span class="hljs-type">ChainQueryApi</span> {
 
@@ -165,7 +165,7 @@ want.</p>
       bitcoind.getBlock(blockHash).map(block =&gt; <span class="hljs-type">Some</span>(block.height))
     }
 
-    <span class="hljs-comment">/** Gets the hash of the block that is what we consider "best" */</span>
+    <span class="hljs-comment">/** Gets the hash of the block that is what we consider &quot;best&quot; */</span>
     <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getBestBlockHash</span></span>(): <span class="hljs-type">Future</span>[<span class="hljs-type">DoubleSha256DigestBE</span>] = {
       bitcoind.getBestBlockHash
     }
@@ -196,7 +196,7 @@ want.</p>
         <span class="hljs-keyword">case</span> blockHash: <span class="hljs-type">BlockStamp</span>.<span class="hljs-type">BlockHash</span> =&gt;
           getBlockHeight(blockHash.hash).map(_.get)
         <span class="hljs-keyword">case</span> blockTime: <span class="hljs-type">BlockStamp</span>.<span class="hljs-type">BlockTime</span> =&gt;
-          <span class="hljs-type">Future</span>.failed(<span class="hljs-keyword">new</span> <span class="hljs-type">RuntimeException</span>(<span class="hljs-string">s"Not implemented: <span class="hljs-subst">$blockTime</span>"</span>))
+          <span class="hljs-type">Future</span>.failed(<span class="hljs-keyword">new</span> <span class="hljs-type">RuntimeException</span>(<span class="hljs-string">s&quot;Not implemented: <span class="hljs-subst">$blockTime</span>&quot;</span>))
       }
     }
 
@@ -226,7 +226,7 @@ want.</p>
 <span class="hljs-comment">// Then to trigger one of the events we can run</span>
 wallet.chainQueryApi.getFiltersBetweenHeights(<span class="hljs-number">100</span>, <span class="hljs-number">150</span>)
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-10-12 by Ben Carman</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/chain/filter-sync"><span class="arrow-prev">← </span><span>Syncing Blockfilters</span></a><a class="docs-next button" href="/docs/config/configuration"><span>Application Configuration</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#chain-query-with-bitcoind">Chain query with bitcoind</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 8/12/2020 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/chain/filter-sync"><span class="arrow-prev">← </span><span>Syncing Blockfilters</span></a><a class="docs-next button" href="/docs/config/configuration"><span>Application Configuration</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#chain-query-with-bitcoind">Chain query with bitcoind</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;

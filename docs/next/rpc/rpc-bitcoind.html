@@ -78,12 +78,25 @@ version lines. It can be set up to work with both local and remote Bitcoin Core 
 <span class="hljs-comment">// this reads authentication credentials and</span>
 <span class="hljs-comment">// connection details from the default data</span>
 <span class="hljs-comment">// directory on your platform</span>
-<span class="hljs-keyword">val</span> client = <span class="hljs-type">BitcoindRpcClient</span>.fromDatadir(binary=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">"/path/to/bitcoind"</span>), datadir=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">"/path/to/bitcoind-datadir"</span>))
+<span class="hljs-keyword">val</span> client = <span class="hljs-type">BitcoindRpcClient</span>.fromDatadir(binary=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">&quot;/path/to/bitcoind&quot;</span>), datadir=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">&quot;/path/to/bitcoind-datadir&quot;</span>))
 
 <span class="hljs-keyword">val</span> balance: <span class="hljs-type">Future</span>[<span class="hljs-type">Bitcoins</span>] = <span class="hljs-keyword">for</span> {
   _ &lt;- client.start()
   balance &lt;- client.getBalance
 } <span class="hljs-keyword">yield</span> balance
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="multi-wallet-bitcoind-instances"></a><a href="#multi-wallet-bitcoind-instances" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Multi-wallet <code>bitcoind</code> instances</h2>
+<p>When using the <code>bitcoind</code> with multiple wallets you will need to specify the wallet's name.
+To do so the wallet rpc functions have an optional <code>walletName</code> parameter.</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = <span class="hljs-type">ExecutionContext</span>.global
+
+<span class="hljs-keyword">val</span> client = <span class="hljs-type">BitcoindRpcClient</span>.fromDatadir(binary=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">&quot;/path/to/bitcoind&quot;</span>), datadir=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">&quot;/path/to/bitcoind-datadir&quot;</span>))
+
+<span class="hljs-keyword">for</span> {
+  _ &lt;- client.start()
+  _ &lt;- client.walletPassphrase(<span class="hljs-string">&quot;mypassword&quot;</span>, <span class="hljs-number">10000</span>, <span class="hljs-type">Some</span>(<span class="hljs-string">&quot;walletName&quot;</span>))
+  balance &lt;- client.getBalance(<span class="hljs-string">&quot;walletName&quot;</span>)
+} <span class="hljs-keyword">yield</span> ()
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="connecting-to-a-remote-bitcoind"></a><a href="#connecting-to-a-remote-bitcoind" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Connecting to a remote <code>bitcoind</code></h2>
 <p>First, we create a secure connection to our <code>bitcoind</code> instance by setting
@@ -99,8 +112,8 @@ connect to a testnet <code>bitcoind</code>, the default port is '18332'</p>
 ready to create the connection with our RPC client</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = <span class="hljs-type">ExecutionContext</span>.global
 
-<span class="hljs-keyword">val</span> username = <span class="hljs-string">"FILL_ME_IN"</span> <span class="hljs-comment">//this username comes from 'rpcuser' in your bitcoin.conf file //this username comes from 'rpcuser' in your bitcoin.conf file</span>
-<span class="hljs-keyword">val</span> password = <span class="hljs-string">"FILL_ME_IN"</span> <span class="hljs-comment">//this password comes from your 'rpcpassword' in your bitcoin.conf file //this password comes from your 'rpcpassword' in your bitcoin.conf file</span>
+<span class="hljs-keyword">val</span> username = <span class="hljs-string">&quot;FILL_ME_IN&quot;</span> <span class="hljs-comment">//this username comes from &#x27;rpcuser&#x27; in your bitcoin.conf file //this username comes from &#x27;rpcuser&#x27; in your bitcoin.conf file</span>
+<span class="hljs-keyword">val</span> password = <span class="hljs-string">&quot;FILL_ME_IN&quot;</span> <span class="hljs-comment">//this password comes from your &#x27;rpcpassword&#x27; in your bitcoin.conf file //this password comes from your &#x27;rpcpassword&#x27; in your bitcoin.conf file</span>
 
 <span class="hljs-keyword">val</span> authCredentials = <span class="hljs-type">BitcoindAuthCredentials</span>.<span class="hljs-type">PasswordBased</span>(
   username = username,
@@ -110,8 +123,8 @@ ready to create the connection with our RPC client</p>
 <span class="hljs-keyword">val</span> bitcoindInstance = {
   <span class="hljs-type">BitcoindInstance</span> (
     network = <span class="hljs-type">MainNet</span>,
-    uri = <span class="hljs-keyword">new</span> <span class="hljs-type">URI</span>(<span class="hljs-string">s"http://localhost:<span class="hljs-subst">${MainNet.port}</span>"</span>),
-    rpcUri = <span class="hljs-keyword">new</span> <span class="hljs-type">URI</span>(<span class="hljs-string">s"http://localhost:<span class="hljs-subst">${MainNet.rpcPort}</span>"</span>),
+    uri = <span class="hljs-keyword">new</span> <span class="hljs-type">URI</span>(<span class="hljs-string">s&quot;http://localhost:<span class="hljs-subst">${MainNet.port}</span>&quot;</span>),
+    rpcUri = <span class="hljs-keyword">new</span> <span class="hljs-type">URI</span>(<span class="hljs-string">s&quot;http://localhost:<span class="hljs-subst">${MainNet.rpcPort}</span>&quot;</span>),
     authCredentials = authCredentials
   )
 }
@@ -119,7 +132,7 @@ ready to create the connection with our RPC client</p>
 <span class="hljs-keyword">val</span> rpcCli = <span class="hljs-type">BitcoindRpcClient</span>(bitcoindInstance)
 
 rpcCli.getBalance.onComplete { <span class="hljs-keyword">case</span> balance =&gt;
-  println(<span class="hljs-string">s"Wallet balance=<span class="hljs-subst">${balance}</span>"</span>)
+  println(<span class="hljs-string">s&quot;Wallet balance=<span class="hljs-subst">${balance}</span>&quot;</span>)
 }
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="error-handling"></a><a href="#error-handling" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Error handling</h2>
@@ -132,22 +145,22 @@ class is only intended to cover errors returned by Bitcoin Core. An example of h
 handling could look:</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = <span class="hljs-type">ExecutionContext</span>.global
 
-<span class="hljs-comment">// let's assume you have an already running client,</span>
-<span class="hljs-comment">// so there's no need to start this one</span>
-<span class="hljs-keyword">val</span> cli = <span class="hljs-type">BitcoindRpcClient</span>.fromDatadir(binary=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">"/path/to/bitcoind"</span>), datadir=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">"/path/to/bitcoind-datadir"</span>))
+<span class="hljs-comment">// let&#x27;s assume you have an already running client,</span>
+<span class="hljs-comment">// so there&#x27;s no need to start this one</span>
+<span class="hljs-keyword">val</span> cli = <span class="hljs-type">BitcoindRpcClient</span>.fromDatadir(binary=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">&quot;/path/to/bitcoind&quot;</span>), datadir=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">&quot;/path/to/bitcoind-datadir&quot;</span>))
 
-<span class="hljs-comment">// let's also assume you have a bitcoin address</span>
+<span class="hljs-comment">// let&#x27;s also assume you have a bitcoin address</span>
 <span class="hljs-keyword">val</span> address: <span class="hljs-type">BitcoinAddress</span> = ???
 
 <span class="hljs-keyword">val</span> txid: <span class="hljs-type">Future</span>[<span class="hljs-type">DoubleSha256DigestBE</span>] =
   cli.sendToAddress(address, <span class="hljs-number">3.</span>bitcoins).recoverWith {
     <span class="hljs-keyword">case</span> <span class="hljs-type">BitcoindWalletException</span>.<span class="hljs-type">UnlockNeeded</span>(_) =&gt;
-      cli.walletPassphrase(<span class="hljs-string">"my_passphrase"</span>, <span class="hljs-number">60</span>).flatMap { _ =&gt;
+      cli.walletPassphrase(<span class="hljs-string">&quot;my_passphrase&quot;</span>, <span class="hljs-number">60</span>).flatMap { _ =&gt;
         cli.sendToAddress(address, <span class="hljs-number">3.</span>bitcoins)
       }
   }
 </code></pre>
-</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/rpc/rpc-eclair"><span class="arrow-prev">← </span><span>Eclair</span></a><a class="docs-next button" href="/docs/next/secp256k1/secp256k1"><span>Secp256k1</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#connecting-to-a-local-bitcoind-instance">Connecting to a local <code>bitcoind</code> instance</a><ul class="toc-headings"><li><a href="#getting-started-quickly-with-default-options">Getting started quickly, with default options:</a></li></ul></li><li><a href="#connecting-to-a-remote-bitcoind">Connecting to a remote <code>bitcoind</code></a></li><li><a href="#error-handling">Error handling</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/rpc/rpc-eclair"><span class="arrow-prev">← </span><span>Eclair</span></a><a class="docs-next button" href="/docs/next/secp256k1/secp256k1"><span>Secp256k1</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#connecting-to-a-local-bitcoind-instance">Connecting to a local <code>bitcoind</code> instance</a><ul class="toc-headings"><li><a href="#getting-started-quickly-with-default-options">Getting started quickly, with default options:</a></li></ul></li><li><a href="#multi-wallet-bitcoind-instances">Multi-wallet <code>bitcoind</code> instances</a></li><li><a href="#connecting-to-a-remote-bitcoind">Connecting to a remote <code>bitcoind</code></a></li><li><a href="#error-handling">Error handling</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;

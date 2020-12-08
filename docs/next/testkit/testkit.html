@@ -73,7 +73,7 @@
 A quick example of a useful utility method is <a href="/api/org/bitcoins/testkit/rpc/BitcoindRpcTestUtil">BitcoindRpcTestUtil.startedBitcoindRpcClient()</a>.
 This spins up a bitcoind regtest instance on machine and generates 101 blocks on that node.</p>
 <p>This gives you the ability to start spending money immediately with that bitcoind node.</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">"bitcoind-testkit-example"</span>)
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">&quot;bitcoind-testkit-example&quot;</span>)
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = system.dispatcher
 
 <span class="hljs-comment">//pick our bitcoind version we want to spin up</span>
@@ -84,20 +84,20 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
 <span class="hljs-comment">//create an instance</span>
 <span class="hljs-keyword">val</span> instance = <span class="hljs-type">BitcoindRpcTestUtil</span>.instance(versionOpt = <span class="hljs-type">Some</span>(bitcoindV))
 
-<span class="hljs-comment">//now let's create an rpc client off of that instance</span>
+<span class="hljs-comment">//now let&#x27;s create an rpc client off of that instance</span>
 <span class="hljs-keyword">val</span> bitcoindRpcClientF = <span class="hljs-type">BitcoindRpcTestUtil</span>.startedBitcoindRpcClient(instance)
 
-<span class="hljs-comment">//yay! it's started. Now you can run tests against this.</span>
-<span class="hljs-comment">//let's just grab the block count for an example</span>
+<span class="hljs-comment">//yay! it&#x27;s started. Now you can run tests against this.</span>
+<span class="hljs-comment">//let&#x27;s just grab the block count for an example</span>
 <span class="hljs-keyword">val</span> blockCountF = <span class="hljs-keyword">for</span> {
   bitcoind &lt;- bitcoindRpcClientF
   count &lt;- bitcoind.getBlockCount
 } <span class="hljs-keyword">yield</span> {
   <span class="hljs-comment">//run a test against the block count</span>
-  assert(count &gt; <span class="hljs-number">0</span>, <span class="hljs-string">s"Block count was not more than zero!"</span>)
+  assert(count &gt; <span class="hljs-number">0</span>, <span class="hljs-string">s&quot;Block count was not more than zero!&quot;</span>)
 }
 
-<span class="hljs-comment">//when you are done, don't forget to destroy it! Otherwise it will keep running on the underlying os</span>
+<span class="hljs-comment">//when you are done, don&#x27;t forget to destroy it! Otherwise it will keep running on the underlying os</span>
 <span class="hljs-keyword">val</span> stoppedF = <span class="hljs-keyword">for</span> {
   rpc &lt;- bitcoindRpcClientF
   _ &lt;- blockCountF
@@ -116,7 +116,7 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
 <span class="hljs-comment">//4. assert the node has received the payment</span>
 <span class="hljs-comment">//5. cleanup</span>
 
-<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">"eclair-testkit-example"</span>)
+<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">&quot;eclair-testkit-example&quot;</span>)
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = system.dispatcher
 
 <span class="hljs-comment">//we need a bitcoind to connect eclair nodes to</span>
@@ -129,7 +129,7 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
     } <span class="hljs-keyword">yield</span> cli
 }
 
-<span class="hljs-comment">//let's create two eclair nodes now</span>
+<span class="hljs-comment">//let&#x27;s create two eclair nodes now</span>
 <span class="hljs-keyword">val</span> clientF = <span class="hljs-keyword">for</span> {
   bitcoind &lt;- bitcoindRpcClientF
   e &lt;- <span class="hljs-type">EclairRpcTestUtil</span>.randomEclairClient(<span class="hljs-type">Some</span>(bitcoind))
@@ -140,13 +140,13 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
   e &lt;- <span class="hljs-type">EclairRpcTestUtil</span>.randomEclairClient(<span class="hljs-type">Some</span>(bitcoind))
 } <span class="hljs-keyword">yield</span> e
 
-<span class="hljs-comment">//great, setup done! Let's run the test</span>
+<span class="hljs-comment">//great, setup done! Let&#x27;s run the test</span>
 <span class="hljs-comment">//to verify we can send a payment over the channel</span>
 <span class="hljs-keyword">for</span> {
   client &lt;- clientF
   otherClient &lt;- otherClientF
   _ &lt;- <span class="hljs-type">EclairRpcTestUtil</span>.openAndConfirmChannel(clientF, otherClientF)
-  invoice &lt;- otherClient.createInvoice(<span class="hljs-string">"abc"</span>, <span class="hljs-number">50.</span>msats)
+  invoice &lt;- otherClient.createInvoice(<span class="hljs-string">&quot;abc&quot;</span>, <span class="hljs-number">50.</span>msats)
   info &lt;- otherClient.getInfo
   _ = assert(info.nodeId == invoice.nodeId)
   infos &lt;- client.getSentInfo(invoice.lnTags.paymentHash.hash)
@@ -158,7 +158,7 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
   assert(sentInfo.head.amount == <span class="hljs-number">50.</span>msats)
 }
 
-<span class="hljs-comment">//don't forget to shutdown everything!</span>
+<span class="hljs-comment">//don&#x27;t forget to shutdown everything!</span>
 <span class="hljs-keyword">val</span> stop1F = clientF.map(c =&gt; <span class="hljs-type">EclairRpcTestUtil</span>.shutdown(c))
 
 <span class="hljs-keyword">val</span> stop2F = otherClientF.map(o =&gt; <span class="hljs-type">EclairRpcTestUtil</span>.shutdown(o))

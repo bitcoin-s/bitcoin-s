@@ -76,13 +76,13 @@
 <span class="hljs-keyword">val</span> privateKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
 
 <span class="hljs-comment">// Construct private key from hex</span>
-<span class="hljs-keyword">val</span> privateKeyFixed = <span class="hljs-type">ECPrivateKey</span>(<span class="hljs-string">"6846a082d76e7c34cd2deddc6ef3d4cb3220e6c72c7c9ec03408d60ed976837c"</span>)
+<span class="hljs-keyword">val</span> privateKeyFixed = <span class="hljs-type">ECPrivateKey</span>(<span class="hljs-string">&quot;6846a082d76e7c34cd2deddc6ef3d4cb3220e6c72c7c9ec03408d60ed976837c&quot;</span>)
 
 <span class="hljs-comment">// Compute public key from private key</span>
 <span class="hljs-keyword">val</span> publicKey = privateKey.publicKey
 
 <span class="hljs-comment">// Take SHA256 hash</span>
-<span class="hljs-keyword">val</span> hash = <span class="hljs-type">CryptoUtil</span>.sha256(<span class="hljs-type">ByteVector</span>(<span class="hljs-string">"Hello"</span>.getBytes()))
+<span class="hljs-keyword">val</span> hash = <span class="hljs-type">CryptoUtil</span>.sha256(<span class="hljs-type">ByteVector</span>(<span class="hljs-string">&quot;Hello&quot;</span>.getBytes()))
 
 <span class="hljs-comment">// Sign and verify signature</span>
 <span class="hljs-keyword">val</span> sig = privateKey.sign(hash)
