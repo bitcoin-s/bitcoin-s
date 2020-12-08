@@ -7,7 +7,7 @@ import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.util.GUIUtil.setNumericInput
 import scalafx.Includes._
 import scalafx.geometry.{Insets, Pos}
-import scalafx.scene.control.{Label, _}
+import scalafx.scene.control._
 import scalafx.scene.layout._
 import scalafx.stage.Window
 

@@ -169,7 +169,7 @@ case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
 
   override def toString: String = s"$toLong sats/vbyte"
 
-  def toSatoshisPerKW: SatoshisPerKW = SatoshisPerKW(currencyUnit * 4000)
+  lazy val toSatoshisPerKW: SatoshisPerKW = SatoshisPerKW(currencyUnit * 4000)
 }
 
 object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {

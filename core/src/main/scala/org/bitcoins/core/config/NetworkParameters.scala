@@ -233,7 +233,7 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
     }
 
   /** Map of magic network bytes to the corresponding network */
-  def magicToNetwork: Map[ByteVector, NetworkParameters] =
+  lazy val magicToNetwork: Map[ByteVector, NetworkParameters] =
     Map(
       MainNet.magicBytes -> MainNet,
       TestNet3.magicBytes -> TestNet3,
@@ -241,7 +241,7 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
       SigNet.magicBytes -> SigNet
     )
 
-  def bytesToNetwork: Map[ByteVector, NetworkParameters] =
+  lazy val bytesToNetwork: Map[ByteVector, NetworkParameters] =
     Map(
       MainNet.p2shNetworkByte -> MainNet,
       MainNet.p2pkhNetworkByte -> MainNet,
