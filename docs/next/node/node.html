@@ -85,38 +85,38 @@ Let's make an easy one</p>
 p2p network support yet (<a href="https://github.com/bitcoin/bitcoin/pull/16442">pr here</a>) which means that we have built a custom binary and host it ourselves. You need
 to make sure to run <code>sbt downloadBitcoind</code> and then look for the <code>bitcoind</code> binary with neutrino support in
 <code>$HOME/.bitcoin-s/binaries/bitcoind/bitcoin-0.18.99/</code>. This binary is built from the open PR on bitcoin core.</p>
-<pre><code class="hljs css language-scala">implicit val system = ActorSystem(s&quot;node-example&quot;)
+<pre><code class="hljs css language-scala">implicit val system = ActorSystem(s"node-example")
 implicit val ec = system.dispatcher
 
 //we also require a bitcoind instance to connect to
-//so let&#x27;s start one (make sure you ran &#x27;sbt downloadBitcoind&#x27;)
+//so let's start one (make sure you ran 'sbt downloadBitcoind')
 val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.Experimental))
 val p2pPort = instance.p2pPort
 val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
 
-//contains information on how to connect to bitcoin&#x27;s p2p info
+//contains information on how to connect to bitcoin's p2p info
 val peerF = bitcoindF.map(b =&gt; NodeUnitTest.createPeer(b))
 
 // set a data directory
-val prefix = s&quot;node-example-${System.currentTimeMillis()}&quot;
+val prefix = s"node-example-${System.currentTimeMillis()}"
 val datadir = Files.createTempDirectory(prefix)
 
 val tmpDir = BitcoinSTestAppConfig.tmpDir()
 // set the current network to regtest
 val config = ConfigFactory.parseString {
-    s&quot;&quot;&quot;
+    s"""
     | bitcoin-s {
     |   network = regtest
     |   node {
     |        mode = neutrino # neutrino, spv
     |
-    |        peers = [&quot;127.0.0.1:$p2pPort&quot;] # a list of peer addresses in form &quot;hostname:portnumber&quot;
-    |        # (e.g. &quot;neutrino.testnet3.suredbits.com:18333&quot;)
+    |        peers = ["127.0.0.1:$p2pPort"] # a list of peer addresses in form "hostname:portnumber"
+    |        # (e.g. "neutrino.testnet3.suredbits.com:18333")
     |        # Port number is optional, the default value is 8333 for mainnet,
     |        # 18333 for testnet and 18444 for regtest.
     |   }
     | }
-    |&quot;&quot;&quot;.stripMargin
+    |""".stripMargin
 }
 
 implicit val appConfig = BitcoinSAppConfig(datadir, config)
@@ -132,7 +132,7 @@ val chainApiF = for {
 } yield chainHandler
 
 
-//yay! All setup done, let&#x27;s create a node and then start it!
+//yay! All setup done, let's create a node and then start it!
 val nodeF = for {
   _ &lt;- chainApiF
   peer &lt;- peerF
@@ -144,23 +144,23 @@ val nodeF = for {
                initialSyncDone = None)
 }
 
-//let&#x27;s start it
+//let's start it
 val startedNodeF = nodeF.flatMap(_.start())
 
-//let&#x27;s make a simple callback that print&#x27;s the
+//let's make a simple callback that print's the
 //blockhash everytime we receive a block on the network
 val blockReceivedFunc: OnBlockReceived = { block: Block =&gt;
 Future.successful(
-  println(s&quot;Received blockhash=${block.blockHeader.hashBE}&quot;))
+  println(s"Received blockhash=${block.blockHeader.hashBE}"))
 }
 
 // Create callback
 val nodeCallbacks = NodeCallbacks.onBlockReceived(blockReceivedFunc)
 
-// Add call to our node&#x27;s config
+// Add call to our node's config
 nodeConfig.addCallbacks(nodeCallbacks)
 
-//let&#x27;s test it out by generating a block with bitcoind!
+//let's test it out by generating a block with bitcoind!
 
 val genBlockF = for {
   bitcoind &lt;- bitcoindF
