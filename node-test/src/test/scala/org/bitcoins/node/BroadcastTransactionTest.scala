@@ -55,6 +55,12 @@ class BroadcastTransactionTest extends NodeUnitTest {
       peers <- rpc.getPeerInfo
       me = peers.head
       _ <- rpc.disconnectNode(me.networkInfo.addr)
+
+      // Wait until disconnected
+      _ <-
+        TestAsyncUtil.retryUntilSatisfiedF(() => rpc.getPeerInfo.map(_.isEmpty),
+                                           500.millis)
+
       res <- recoverToSucceededIf[RuntimeException] {
         node.broadcastTransaction(tx)
       }
