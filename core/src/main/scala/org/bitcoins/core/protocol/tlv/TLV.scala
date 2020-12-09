@@ -148,16 +148,20 @@ object TLV extends TLVParentFactory[TLV] {
   val typeName = "TLV"
 
   val allFactories: Vector[TLVFactory[TLV]] = {
-    Vector(ErrorTLV,
-           PingTLV,
-           PongTLV,
-           OracleEventV0TLV,
-           FundingInputV0TLV,
-           CETSignaturesV0TLV,
-           FundingSignaturesV0TLV,
-           DLCOfferTLV,
-           DLCAcceptTLV,
-           DLCSignTLV) ++ EventDescriptorTLV.allFactories ++
+    Vector(
+      ErrorTLV,
+      PingTLV,
+      PongTLV,
+      OracleEventV0TLV,
+      RoundingIntervalsV0TLV,
+      PayoutFunctionV0TLV,
+      FundingInputV0TLV,
+      CETSignaturesV0TLV,
+      FundingSignaturesV0TLV,
+      DLCOfferTLV,
+      DLCAcceptTLV,
+      DLCSignTLV
+    ) ++ EventDescriptorTLV.allFactories ++
       ContractInfoTLV.allFactories ++
       OracleInfoTLV.allFactories ++
       OracleAnnouncementTLV.allFactories
@@ -850,6 +854,42 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   }
 }
 
+case class RoundingIntervalsV0TLV(intervalStarts: Vector[(Long, Satoshis)])
+    extends TLV {
+  def isEmpty: Boolean = intervalStarts.isEmpty
+
+  override val tpe: BigSizeUInt = RoundingIntervalsV0TLV.tpe
+
+  override val value: ByteVector = {
+    u16PrefixedList[(Long, Satoshis)](
+      intervalStarts,
+      {
+        case (outcome, roundingModSats) =>
+          BigSizeUInt(outcome).bytes ++
+            BigSizeUInt(roundingModSats.toLong).bytes
+      })
+  }
+}
+
+object RoundingIntervalsV0TLV extends TLVFactory[RoundingIntervalsV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42788)
+
+  val noRounding: RoundingIntervalsV0TLV = RoundingIntervalsV0TLV(Vector.empty)
+
+  override def fromTLVValue(value: ByteVector): RoundingIntervalsV0TLV = {
+    val iter = ValueIterator(value)
+
+    val intervalStarts = iter.takeU16PrefixedList { () =>
+      val outcome = iter.takeBigSize().toLong
+      val roundingMod = Satoshis(iter.takeBigSize().toLong)
+
+      (outcome, roundingMod)
+    }
+
+    RoundingIntervalsV0TLV(intervalStarts)
+  }
+}
+
 case class TLVPoint(
     outcome: Long,
     value: Satoshis,
@@ -890,11 +930,32 @@ object TLVPoint extends Factory[TLVPoint] {
 }
 
 /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#curve-serialization */
+case class PayoutFunctionV0TLV(points: Vector[TLVPoint]) extends TLV {
+  override val tpe: BigSizeUInt = PayoutFunctionV0TLV.tpe
+
+  override val value: ByteVector = {
+    u16PrefixedList(points)
+  }
+}
+
+object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42790)
+
+  override def fromTLVValue(value: ByteVector): PayoutFunctionV0TLV = {
+    val iter = ValueIterator(value)
+
+    val points = iter.takeU16PrefixedList(() => iter.take(TLVPoint))
+
+    PayoutFunctionV0TLV(points)
+  }
+}
+
 case class ContractInfoV1TLV(
     base: Int,
     numDigits: Int,
     totalCollateral: Satoshis,
-    points: Vector[TLVPoint])
+    payoutFunction: PayoutFunctionV0TLV,
+    roundingIntervals: RoundingIntervalsV0TLV)
     extends ContractInfoTLV {
   override val tpe: BigSizeUInt = ContractInfoV1TLV.tpe
 
@@ -902,7 +963,8 @@ case class ContractInfoV1TLV(
     BigSizeUInt(base).bytes ++
       UInt16(numDigits).bytes ++
       satBytes(totalCollateral) ++
-      bigSizePrefixedList(points)
+      payoutFunction.bytes ++
+      roundingIntervals.bytes
   }
 }
 
@@ -915,9 +977,14 @@ object ContractInfoV1TLV extends TLVFactory[ContractInfoV1TLV] {
     val base = iter.takeBigSize()
     val numDigits = iter.takeU16()
     val totalCollateral = iter.takeSats()
-    val points = iter.takeBigSizePrefixedList(() => iter.take(TLVPoint))
+    val payoutFunction = iter.take(PayoutFunctionV0TLV)
+    val roundingIntervals = iter.take(RoundingIntervalsV0TLV)
 
-    ContractInfoV1TLV(base.toInt, numDigits.toInt, totalCollateral, points)
+    ContractInfoV1TLV(base.toInt,
+                      numDigits.toInt,
+                      totalCollateral,
+                      payoutFunction,
+                      roundingIntervals)
   }
 }
 
@@ -1180,11 +1247,18 @@ case class DLCAcceptTLV(
     fundingInputs: Vector[FundingInputTLV],
     changeSPK: ScriptPubKey,
     cetSignatures: CETSignaturesTLV,
-    refundSignature: ECDigitalSignature)
+    refundSignature: ECDigitalSignature,
+    roundingIntervalsV0TLV: RoundingIntervalsV0TLV =
+      RoundingIntervalsV0TLV.noRounding)
     extends TLV {
   override val tpe: BigSizeUInt = DLCAcceptTLV.tpe
 
   override val value: ByteVector = {
+    // TODO: Use of rounding intervals option here is a hack
+    val roundingIntervalsBytes =
+      if (roundingIntervalsV0TLV.isEmpty) ByteVector.empty
+      else roundingIntervalsV0TLV.bytes
+
     tempContractId.bytes ++
       satBytes(totalCollateralSatoshis) ++
       fundingPubKey.bytes ++
@@ -1192,7 +1266,8 @@ case class DLCAcceptTLV(
       u16PrefixedList(fundingInputs) ++
       TLV.encodeScript(changeSPK) ++
       cetSignatures.bytes ++
-      refundSignature.toRawRS
+      refundSignature.toRawRS ++
+      roundingIntervalsBytes
   }
 }
 
@@ -1211,6 +1286,10 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
     val changeSPK = iter.takeSPK()
     val cetSignatures = iter.take(CETSignaturesV0TLV)
     val refundSignature = ECDigitalSignature.fromRS(iter.take(64))
+    val roundingIntervals =
+      if (iter.current.isEmpty)
+        RoundingIntervalsV0TLV.noRounding
+      else iter.take(RoundingIntervalsV0TLV)
 
     DLCAcceptTLV(tempContractId,
                  totalCollateralSatoshis,
@@ -1219,7 +1298,8 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
                  fundingInputs,
                  changeSPK,
                  cetSignatures,
-                 refundSignature)
+                 refundSignature,
+                 roundingIntervals)
   }
 }
 

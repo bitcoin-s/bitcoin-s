@@ -40,6 +40,7 @@ case class DLCAcceptDb(
               fundingInputs,
               changeAddress,
               cetSigs,
+              None,
               tempContractId)
   }
 
@@ -53,6 +54,7 @@ case class DLCAcceptDb(
                          pubKeys,
                          fundingInputs,
                          changeAddress,
+                         None,
                          tempContractId)
   }
 }

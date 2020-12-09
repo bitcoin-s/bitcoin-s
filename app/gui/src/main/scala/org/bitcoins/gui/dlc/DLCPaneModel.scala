@@ -129,7 +129,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
             val oracleInfo = SingleNonceOracleInfo(pubKey, rValue)
 
             (Vector(kValue), Vector(rValue), oracleInfo)
-          case MultiNonceContractInfo(_, _, numDigits, _) =>
+          case MultiNonceContractInfo(_, _, numDigits, _, _) =>
             val kValues =
               0.until(numDigits).map(_ => ECPrivateKey.freshPrivateKey).toVector
             val rValues = kValues.map(_.schnorrNonce)
@@ -143,7 +143,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
           val descriptor = contractInfo match {
             case SingleNonceContractInfo(outcomeValueMap) =>
               EnumEventDescriptorV0TLV(outcomeValueMap.map(_._1.outcome))
-            case MultiNonceContractInfo(_, base, numDigits, _) =>
+            case MultiNonceContractInfo(_, base, numDigits, _, _) =>
               UnsignedDigitDecompositionEventDescriptor(UInt16(base),
                                                         UInt16(numDigits),
                                                         "units",

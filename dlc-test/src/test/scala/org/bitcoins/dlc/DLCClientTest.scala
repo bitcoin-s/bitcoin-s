@@ -210,7 +210,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
       (local, remote, outcomeStrs.map(EnumOutcome.apply))
     } else {
       val (local, remote) =
-        DLCTestUtil.genMultiDigitContractInfo(numOutcomes, totalInput)
+        DLCTestUtil.genMultiDigitContractInfo(numOutcomes,
+                                              totalInput,
+                                              numRounds = 4)
       (local, remote, local.allOutcomes)
     }
 

@@ -56,6 +56,7 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         dummyAddress,
         CETSignatures(Vector(EnumOutcome(dummyStr) -> ECAdaptorSignature.dummy),
                       dummySig),
+        None,
         Sha256Digest.empty
       )
     )

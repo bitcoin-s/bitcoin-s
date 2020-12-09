@@ -6,7 +6,8 @@ import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc.{
   DLCFundingInput,
   DLCPublicKeys,
-  DLCTimeouts
+  DLCTimeouts,
+  RoundingIntervals
 }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv.DLCOutcomeType
@@ -40,12 +41,14 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     case network: BitcoinNetwork => network
   }
 
-  val DLCAcceptWithoutSigs(acceptTotalCollateral: Satoshis,
-                           DLCPublicKeys(acceptFundingKey: ECPublicKey,
-                                         acceptFinalAddress: BitcoinAddress),
-                           acceptFundingInputs: Vector[DLCFundingInput],
-                           acceptChangeAddress: BitcoinAddress,
-                           tempContractId: Sha256Digest) = accept
+  val DLCAcceptWithoutSigs(
+    acceptTotalCollateral: Satoshis,
+    DLCPublicKeys(acceptFundingKey: ECPublicKey,
+                  acceptFinalAddress: BitcoinAddress),
+    acceptFundingInputs: Vector[DLCFundingInput],
+    acceptChangeAddress: BitcoinAddress,
+    acceptRoundingIntervalsOpt: Option[RoundingIntervals],
+    tempContractId: Sha256Digest) = accept
 
   val totalInput: CurrencyUnit = offerTotalCollateral + acceptTotalCollateral
 
@@ -56,7 +59,8 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     offer.oracleAndContractInfo
 
   val oracleAndContractInfo: OracleAndContractInfo =
-    oracleAndContractInfoBeforeAccept.updateTotalCollateral(totalInput.satoshis)
+    oracleAndContractInfoBeforeAccept.updateOnAccept(totalInput.satoshis,
+                                                     acceptRoundingIntervalsOpt)
 
   val offerTotalFunding: CurrencyUnit =
     offerFundingInputs.map(_.output.value).sum

@@ -196,6 +196,7 @@ object TestDLCClient {
       pubKeys = acceptPubKeys,
       fundingInputs = acceptFundingInputs,
       changeAddress = acceptChangeAddress,
+      roundingIntervalsOpt = None,
       tempContractId = offer.tempContractId
     )
 

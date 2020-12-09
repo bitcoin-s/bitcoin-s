@@ -168,12 +168,29 @@ object InitNumericContractDialog {
               None
             }
         }
+        val roundingIntervalStartsTF = roundingMap.values.toVector
+        val roundingIntervalsStarts = roundingIntervalStartsTF.flatMap {
+          case (outcomeTF, roundingModTF) =>
+            if (
+              outcomeTF.text.value.nonEmpty && roundingModTF.text.value.nonEmpty
+            ) {
+              val outcome = outcomeTF.text.value.toLong
+              val roundingMod = roundingModTF.text.value.toLong
+              Some(
+                RoundingIntervals.IntervalStart(BigDecimal(outcome),
+                                                roundingMod))
+            } else None
+        }
 
         val sorted = outcomesValuePoints.sortBy(_.outcome)
         require(sorted == outcomesValuePoints, "Must be sorted by outcome")
 
         val func = DLCPayoutCurve(outcomesValuePoints)
-        MultiNonceContractInfo(func, base, numDigits, totalCollateral)
+        MultiNonceContractInfo(func,
+                               base,
+                               numDigits,
+                               totalCollateral,
+                               RoundingIntervals(roundingIntervalsStarts))
       }
     }
 

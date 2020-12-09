@@ -126,9 +126,7 @@ trait TLVGen {
       (contractInfo, _) =
         DLCTestUtil.genContractInfos(outcomes.toVector, totalInput)
     } yield {
-      ContractInfoV0TLV(contractInfo.outcomeValueMap.map {
-        case (outcome, amt) => outcome.outcome -> amt
-      })
+      contractInfo.toTLV
     }
   }
 

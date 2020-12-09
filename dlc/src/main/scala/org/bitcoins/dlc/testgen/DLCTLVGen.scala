@@ -265,6 +265,7 @@ object DLCTLVGen {
               fundingInputs,
               changeAddress,
               cetSignatures,
+              None,
               tempContractId)
   }
 
@@ -323,6 +324,7 @@ object DLCTLVGen {
               fundingInputs,
               changeAddress,
               cetSignatures,
+              None,
               tempContractId)
   }
 
