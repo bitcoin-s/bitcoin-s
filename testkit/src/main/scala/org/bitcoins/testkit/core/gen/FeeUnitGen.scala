@@ -42,7 +42,7 @@ abstract class FeeUnitGen {
     */
   private def lowFee: Gen[Satoshis] = {
     Gen
-      .choose(0, 100)
+      .choose(1, 100)
       .map(Satoshis(_))
   }
 
