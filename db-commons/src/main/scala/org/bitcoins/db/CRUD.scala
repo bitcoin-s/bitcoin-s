@@ -1,10 +1,10 @@
 package org.bitcoins.db
 
-import java.sql.SQLException
-
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import slick.dbio.{DBIOAction, NoStream}
+import slick.lifted.AbstractTable
 
+import java.sql.SQLException
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -19,6 +19,8 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     private val ec: ExecutionContext,
     override val appConfig: AppConfig)
     extends JdbcProfileComponent[AppConfig] {
+
+  val schemaName: Option[String] = appConfig.schemaName
 
   import profile.api._
 
@@ -36,7 +38,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     * ever used for things of the form TableQuery[XDAO().table] -> TableQuery[XDAO#XTable].
     */
   implicit protected def tableQuerySafeSubtypeCast[
-      SpecificT <: slick.lifted.AbstractTable[_],
+      SpecificT <: AbstractTable[_],
       SomeT <: SpecificT](
       tableQuery: TableQuery[SomeT]): TableQuery[SpecificT] = {
     tableQuery.asInstanceOf[TableQuery[SpecificT]]
@@ -194,7 +196,7 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
     * the database.
     */
   private val foreignKeysPragma = sqlu"PRAGMA foreign_keys = TRUE;"
-  private val sqlite = jdbcProfile.driverName == "sqlite"
+  private val sqlite = jdbcProfile.appConfig.driver == DatabaseDriver.SQLite
 
   /** Logs the given action and error, if we are not on mainnet */
   private def logAndThrowError(

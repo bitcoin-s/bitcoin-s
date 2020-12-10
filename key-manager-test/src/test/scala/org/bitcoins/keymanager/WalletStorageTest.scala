@@ -39,8 +39,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     val encrypted =
       EncryptedMnemonicHelper.encrypt(decryptedMnemonic, passphrase.get)
     val seedPath = getSeedPath(walletConf)
-    val _ =
-      WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
+    WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
     decryptedMnemonic
   }
 
@@ -225,6 +224,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           | }
     """.stripMargin
       val seedPath = getSeedPath(walletConf)
+      Files.createDirectories(seedPath.getParent)
       Files.write(seedPath, badJson.getBytes())
 
       val read =
@@ -249,6 +249,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           | }
     """.stripMargin
       val seedPath = getSeedPath(walletConf)
+      Files.createDirectories(seedPath.getParent)
       Files.write(seedPath, badJson.getBytes())
 
       val read = WalletStorage.decryptMnemonicFromDisk(seedPath, None)
@@ -273,6 +274,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           | }
     """.stripMargin
       val seedPath = getSeedPath(walletConf)
+      Files.createDirectories(seedPath.getParent)
       Files.write(seedPath, badJson.getBytes())
 
       val read =
@@ -294,6 +296,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           | }
     """.stripMargin
       val seedPath = getSeedPath(walletConf)
+      Files.createDirectories(seedPath.getParent)
       Files.write(seedPath, badJson.getBytes())
 
       val read =
@@ -330,6 +333,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           | }
     """.stripMargin
       val seedPath = getSeedPath(walletConf)
+      Files.createDirectories(seedPath.getParent)
       Files.write(seedPath, badJson.getBytes())
 
       val read =
@@ -350,6 +354,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           | }
     """.stripMargin
       val seedPath = getSeedPath(walletConf)
+      Files.createDirectories(seedPath.getParent)
       Files.write(seedPath, badJson.getBytes())
 
       val read =
@@ -371,6 +376,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           | }
     """.stripMargin
       val seedPath = getSeedPath(walletConf)
+      Files.createDirectories(seedPath.getParent)
       Files.write(seedPath, badJson.getBytes())
 
       val read =
@@ -391,6 +397,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           | }
     """.stripMargin
       val seedPath = getSeedPath(walletConf)
+      Files.createDirectories(seedPath.getParent)
       Files.write(seedPath, badJson.getBytes())
 
       val read = WalletStorage.decryptMnemonicFromDisk(seedPath, None)
@@ -411,6 +418,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
         | }
     """.stripMargin
     val seedPath = getSeedPath(walletConf)
+    Files.createDirectories(seedPath.getParent)
     Files.write(seedPath, badJson.getBytes())
 
     val read =

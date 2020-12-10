@@ -7,14 +7,14 @@ import java.util.NoSuchElementException
 import org.bitcoins.core.compat._
 import org.bitcoins.core.crypto._
 import org.bitcoins.crypto.{AesEncryptedData, AesIV, AesPassword, AesSalt}
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 import ujson.{Obj, Value}
 
 import scala.util.{Failure, Success, Try}
 
-// what do we do if seed exists? error if they aren't equal?
-object WalletStorage {
+object WalletStorage extends KeyManagerLogger {
+
+  val SEED_FOLDER_NAME: String = "seeds"
 
   val ENCRYPTED_SEED_FILE_NAME: String =
     "encrypted-bitcoin-s-seed.json"
@@ -23,8 +23,6 @@ object WalletStorage {
 
   /** Start of bitcoin-s wallet project, Block 555,990 block time on 2018-12-28 */
   val FIRST_BITCOIN_S_WALLET_TIME = 1546042867L
-
-  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Checks if a wallet seed exists in datadir */
   def seedExists(seedPath: java.nio.file.Path): Boolean = {
@@ -105,6 +103,7 @@ object WalletStorage {
     val writtenJs = ujson.write(jsObject)
 
     def writeJsToDisk(): Path = {
+      Files.createDirectories(seedPath.getParent)
       val writtenPath = Files.write(seedPath, writtenJs.getBytes())
       logger.trace(s"Wrote encrypted mnemonic to $seedPath")
 
