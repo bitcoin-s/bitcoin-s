@@ -29,6 +29,9 @@ case class OutcomeValueFunction(points: Vector[OutcomeValuePoint]) {
 
   private lazy val outcomes = endpoints.map(_._1.outcome)
 
+  /** Returns the function component on which the given oracle outcome is
+    * defined, along with its index
+    */
   def componentFor(
       outcome: BigDecimal): (OutcomeValueFunctionComponent, Int) = {
     val endpointIndex = NumberUtil.search(outcomes, outcome)
@@ -132,7 +135,7 @@ case class OutcomeValueConstant(
   require(leftEndpoint.value == rightEndpoint.value,
           "Constant function must have same values on endpoints")
 
-  override def midpoints: Vector[OutcomeValuePoint] = Vector.empty
+  override lazy val midpoints: Vector[OutcomeValuePoint] = Vector.empty
 
   override def apply(outcome: BigDecimal): Satoshis = leftEndpoint.value
 }
@@ -142,7 +145,7 @@ case class OutcomeValueLine(
     leftEndpoint: OutcomeValuePoint,
     rightEndpoint: OutcomeValuePoint)
     extends OutcomeValueFunctionComponent {
-  override def midpoints: Vector[OutcomeValuePoint] = Vector.empty
+  override lazy val midpoints: Vector[OutcomeValuePoint] = Vector.empty
 
   lazy val slope: BigDecimal = {
     (rightEndpoint.value.toLong - leftEndpoint.value.toLong) / (rightEndpoint.outcome - leftEndpoint.outcome)
@@ -156,13 +159,15 @@ case class OutcomeValueLine(
   }
 }
 
-/** A quadratic between left and right endpoints defining a piece of a larger payout curve */
+/** A quadratic between left and right endpoints defining a piece of a larger payout curve.
+  * A quadratic equation defines a parabola: https://en.wikipedia.org/wiki/Quadratic_function
+  */
 case class OutcomeValueQuadratic(
     leftEndpoint: OutcomeValuePoint,
     midpoint: OutcomeValuePoint,
     rightEndpoint: OutcomeValuePoint)
     extends OutcomeValueFunctionComponent {
-  override def midpoints: Vector[OutcomeValuePoint] = Vector(midpoint)
+  override lazy val midpoints: Vector[OutcomeValuePoint] = Vector(midpoint)
 
   private lazy val (x01, x02, x12) =
     (leftEndpoint.outcome - midpoint.outcome,
@@ -197,7 +202,7 @@ case class OutcomeValueCubic(
     rightEndpoint: OutcomeValuePoint)
     extends OutcomeValueFunctionComponent {
 
-  override def midpoints: Vector[OutcomeValuePoint] =
+  override lazy val midpoints: Vector[OutcomeValuePoint] =
     Vector(leftMidpoint, rightMidpoint)
 
   private lazy val (x01, x02, x03, x12, x13, x23) =

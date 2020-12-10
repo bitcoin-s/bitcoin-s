@@ -12,13 +12,19 @@ import org.bitcoins.core.protocol.tlv.{
   EnumOutcome,
   UnsignedNumericOutcome
 }
-import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.protocol.transaction.{
+  NonWitnessTransaction,
+  Transaction,
+  WitnessTransaction
+}
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import ujson._
 
 sealed trait DLCStatus {
+
+  /** The flipped sha256 hash of oracleInfo ++ contractInfo ++ timeoutes */
   def paramHash: Sha256DigestBE
   def isInitiator: Boolean
   def state: DLCState
@@ -66,7 +72,7 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit
   ) extends DLCStatus {
-    override val state: DLCState = DLCState.Offered
+    override val state: DLCState.Offered.type = DLCState.Offered
 
     override lazy val toJson: Value = Obj(
       "state" -> Str(statusString),
@@ -98,7 +104,7 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit)
       extends AcceptedDLCStatus {
-    override val state: DLCState = DLCState.Accepted
+    override val state: DLCState.Accepted.type = DLCState.Accepted
 
     override lazy val toJson: Value = Obj(
       "state" -> Str(statusString),
@@ -131,7 +137,7 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit)
       extends AcceptedDLCStatus {
-    override val state: DLCState = DLCState.Signed
+    override val state: DLCState.Signed.type = DLCState.Signed
 
     override lazy val toJson: Value = Obj(
       "state" -> Str(statusString),
@@ -165,7 +171,7 @@ object DLCStatus {
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE)
       extends BroadcastedDLCStatus {
-    override val state: DLCState = DLCState.Broadcasted
+    override val state: DLCState.Broadcasted.type = DLCState.Broadcasted
 
     override lazy val toJson: Value = Obj(
       "state" -> Str(statusString),
@@ -200,7 +206,7 @@ object DLCStatus {
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE)
       extends BroadcastedDLCStatus {
-    override val state: DLCState = DLCState.Confirmed
+    override val state: DLCState.Confirmed.type = DLCState.Confirmed
 
     override lazy val toJson: Value = Obj(
       "state" -> Str(statusString),
@@ -238,7 +244,7 @@ object DLCStatus {
       oracleSigs: Vector[SchnorrDigitalSignature],
       outcome: DLCOutcomeType)
       extends ClaimedDLCStatus {
-    override val state: DLCState = DLCState.Claimed
+    override val state: DLCState.Claimed.type = DLCState.Claimed
 
     override lazy val toJson: Value = {
       val outcomeJs = outcome match {
@@ -288,7 +294,7 @@ object DLCStatus {
       oracleSig: SchnorrDigitalSignature,
       outcome: DLCOutcomeType)
       extends ClaimedDLCStatus {
-    override val state: DLCState = DLCState.RemoteClaimed
+    override val state: DLCState.RemoteClaimed.type = DLCState.RemoteClaimed
     override val oracleSigs: Vector[SchnorrDigitalSignature] = Vector(oracleSig)
 
     override lazy val toJson: Value = {
@@ -337,7 +343,7 @@ object DLCStatus {
       fundingTxId: DoubleSha256DigestBE,
       closingTxId: DoubleSha256DigestBE)
       extends ClosedDLCStatus {
-    override val state: DLCState = DLCState.Refunded
+    override val state: DLCState.Refunded.type = DLCState.Refunded
 
     override lazy val toJson: Value =
       Obj(
@@ -559,10 +565,13 @@ object DLCStatus {
       accept: DLCAccept,
       sign: DLCSign,
       cet: Transaction): (SchnorrDigitalSignature, DLCOutcomeType) = {
-    val cetSigs = cet
-      .asInstanceOf[WitnessTransaction]
-      .witness
-      .head
+    val wCET = cet match {
+      case wtx: WitnessTransaction => wtx
+      case _: NonWitnessTransaction =>
+        throw new IllegalArgumentException(s"Expected Witness CET: $cet")
+    }
+
+    val cetSigs = wCET.witness.head
       .asInstanceOf[P2WSHWitnessV0]
       .signatures
 
@@ -576,6 +585,17 @@ object DLCStatus {
       rVals.take(numSigs).map(_.publicKey).reduce(_.add(_)).schnorrNonce
     }
 
+    /** Extracts an adaptor secret from cetSig assuming it is the completion
+      * adaptorSig (which it may not be) and returns the oracle signature if
+      * and only if adaptorSig does correspond to cetSig.
+      *
+      * This method is used to search through possible cetSigs until the correct
+      * one is found by validating the returned signature.
+      *
+      * @param outcome A potential outcome that could have been executed for
+      * @param adaptorSig The adaptor signature corresponding to outcome
+      * @param cetSig The actual signature for local's key found on-chain on a CET
+      */
     def sigFromMsgAndSigs(
         outcome: DLCOutcomeType,
         adaptorSig: ECAdaptorSignature,
@@ -609,7 +629,7 @@ object DLCStatus {
       SchnorrDigitalSignature(aggregateR(numSigs), possibleOracleS)
     }
 
-    val outcomeValues = cet.outputs.map(_.value).sorted
+    val outcomeValues = wCET.outputs.map(_.value).sorted
     val totalCollateral = offer.totalCollateral + accept.totalCollateral
 
     val possibleMessages = offer.contractInfo match {

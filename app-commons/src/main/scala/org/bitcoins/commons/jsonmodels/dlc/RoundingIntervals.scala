@@ -12,14 +12,23 @@ import scala.annotation.tailrec
   * @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#rounding-intervals
   */
 case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
+  if (intervalStarts.nonEmpty) {
+    require(intervalStarts.init.zip(intervalStarts.tail).forall {
+              case (i1, i2) => i1._1 < i2._1
+            },
+            s"Intervals must be ascending: $intervalStarts")
+  }
 
+  /** Returns the rounding interval (start, end, mod) containing the given outcome */
   def intervalContaining(
       outcome: BigDecimal): (BigDecimal, BigDecimal, Long) = {
     // Using Long.MaxValue guarantees that index will point to index of right endpoint of interval
     val index = NumberUtil.search(intervalStarts, (outcome, Long.MaxValue)) - 1
 
     if (index == -1) {
-      (Long.MinValue, intervalStarts.head._1, 1L)
+      val firstIntervalChange =
+        intervalStarts.map(_._1).headOption.getOrElse(BigDecimal(Long.MaxValue))
+      (Long.MinValue, firstIntervalChange, 1L)
     } else if (index == intervalStarts.length - 1) {
       val (intervalStart, roundingModulus) = intervalStarts.last
 
@@ -32,12 +41,9 @@ case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
     }
   }
 
+  /** Returns the rounding modulus which should be used at the given outcome */
   def roundingModulusAt(outcome: BigDecimal): Long = {
-    // Using Long.MaxValue guarantees that index will point to index of right endpoint of interval
-    val index = NumberUtil.search(intervalStarts, (outcome, Long.MaxValue)) - 1
-
-    if (index == -1) 1L
-    else intervalStarts(index)._2
+    intervalContaining(outcome)._3
   }
 
   def round(outcome: BigDecimal, computedPayout: Satoshis): Satoshis = {
@@ -59,6 +65,9 @@ case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
     Satoshis(roundedPayout)
   }
 
+  /** Returns a RoundingIntervals which does the maximum amount of rounding
+    * allowed by both this and other.
+    */
   def minRoundingWith(other: RoundingIntervals): RoundingIntervals = {
 
     val builder = Vector.newBuilder[(BigDecimal, Long)]

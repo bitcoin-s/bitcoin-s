@@ -13,7 +13,7 @@ sealed trait DLCOutcomeType {
 /** An outcome from an enumerated event type */
 case class EnumOutcome(outcome: String) extends DLCOutcomeType {
 
-  override def serialized: Vector[ByteVector] =
+  override lazy val serialized: Vector[ByteVector] =
     Vector(CryptoUtil.serializeForHash(outcome))
 }
 
@@ -25,6 +25,6 @@ case class EnumOutcome(outcome: String) extends DLCOutcomeType {
   */
 case class UnsignedNumericOutcome(digits: Vector[Int]) extends DLCOutcomeType {
 
-  override def serialized: Vector[ByteVector] =
+  override lazy val serialized: Vector[ByteVector] =
     digits.map(digit => CryptoUtil.serializeForHash(digit.toString))
 }

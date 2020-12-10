@@ -29,6 +29,8 @@ object DLCMessage {
 
   sealed trait OracleInfo extends TLVSerializable[OracleInfoTLV] {
     def pubKey: SchnorrPublicKey
+
+    /** The oracle's pre-committed nonces, in the correct order */
     def nonces: Vector[SchnorrNonce]
 
     /** The order of the given sigs should correspond to the given outcome. */
@@ -36,6 +38,9 @@ object DLCMessage {
         outcome: DLCOutcomeType,
         sigs: Vector[SchnorrDigitalSignature]): Boolean
 
+    /** Computes the signature point (aka signature anticipation) for a given outcome.
+      * This point is used for adaptor signing.
+      */
     def sigPoint(outcome: DLCOutcomeType): ECPublicKey = {
       outcome.serialized
         .zip(nonces)
