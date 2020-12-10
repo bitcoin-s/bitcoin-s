@@ -100,25 +100,4 @@ class BroadcastTransactionTest extends NodeUnitTest {
       // pre-balance - sent amount + 1 block reward maturing +/- fees
       (bitcoindBalancePreBroadcast - sendAmount + 50.bitcoins).satoshis.toLong === bitcoindBalancePostBroadcast.satoshis.toLong +- 5000)
   }
-
-  it must "fail to broadcast a transaction when disconnected" in { param =>
-    val SpvNodeConnectedWithBitcoind(node, rpc) = param
-
-    val tx = TransactionGenerators.transaction.sampleSome
-
-    for {
-      peers <- rpc.getPeerInfo
-      me = peers.head
-      _ <- rpc.disconnectNode(me.networkInfo.addr)
-
-      // Wait until disconnected
-      _ <-
-        TestAsyncUtil.retryUntilSatisfiedF(() => rpc.getPeerInfo.map(_.isEmpty),
-                                           500.millis)
-
-      res <- recoverToSucceededIf[RuntimeException] {
-        node.broadcastTransaction(tx)
-      }
-    } yield res
-  }
 }
