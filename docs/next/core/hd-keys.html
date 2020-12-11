@@ -86,36 +86,36 @@ use that to generate further private and public keys:</p>
 <span class="hljs-comment">// how long our phrase ends up being</span>
 <span class="hljs-comment">// 256 bits of entropy results in 24 words</span>
 <span class="hljs-keyword">val</span> entropy: <span class="hljs-type">BitVector</span> = <span class="hljs-type">MnemonicCode</span>.getEntropy256Bits
-<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0x019d2db13c155456f4a624970b85501a78562764a2b4f0b732f6f0e3c4534576)</span>
+<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0x29d0709ec2707840f2dbbc4460f72757e77e457cdd792bfdf1afecd60b0044ee)</span>
 
 <span class="hljs-keyword">val</span> mnemonicCode = <span class="hljs-type">MnemonicCode</span>.fromEntropy(entropy)
 <span class="hljs-comment">// mnemonicCode: MnemonicCode = Masked(MnemonicCodeImpl)</span>
 
 mnemonicCode.words <span class="hljs-comment">// the phrase the user should write down</span>
-<span class="hljs-comment">// res0: Vector[String] = Vector(account, truly, hobby, join, fetch, clock, spoon, setup, novel, found, favorite, crunch, lyrics, beauty, myth, final, vague, ridge, sad, tide, detail, claim, beyond, thank) // the phrase the user should write down</span>
+<span class="hljs-comment">// res0: Vector[String] = Vector(clap, logic, chicken, lumber, always, call, slice, jealous, dutch, amateur, six, quit, jewel, cargo, vibrant, quality, cloud, usage, hip, super, gaze, lens, beauty, stage) // the phrase the user should write down</span>
 
 <span class="hljs-comment">// the password argument is an optional, extra security</span>
 <span class="hljs-comment">// measure. all MnemonicCode instances will give you a</span>
 <span class="hljs-comment">// valid BIP39 seed, but different passwords will give</span>
 <span class="hljs-comment">// you different seeds. So you could have as many wallets</span>
-<span class="hljs-comment">// from the same seed as you&#x27;d like, by simply giving them</span>
+<span class="hljs-comment">// from the same seed as you'd like, by simply giving them</span>
 <span class="hljs-comment">// different passwords.</span>
 <span class="hljs-keyword">val</span> bip39Seed = <span class="hljs-type">BIP39Seed</span>.fromMnemonic(mnemonicCode,
-                                       password = <span class="hljs-string">&quot;secret password&quot;</span>)
+                                       password = <span class="hljs-string">"secret password"</span>)
 <span class="hljs-comment">// bip39Seed: BIP39Seed = Masked(BIP39SeedImpl)</span>
 
 <span class="hljs-keyword">val</span> xpriv = <span class="hljs-type">ExtPrivateKey</span>.fromBIP39Seed(<span class="hljs-type">ExtKeyVersion</span>.<span class="hljs-type">SegWitMainNetPriv</span>,
                                         bip39Seed)
 <span class="hljs-comment">// xpriv: ExtPrivateKey = Masked(ExtPrivateKeyImpl)</span>
 <span class="hljs-keyword">val</span> xpub = xpriv.extPublicKey
-<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZxn8LmQjgBaPtLw5BnWdpAb3Ur7ENqax2TDGbRfcLfdtqCaqfsahFgBHmbFZFjZkNLoofQiJ19RevUPGu1r1NMHWg5gB2N8c</span>
+<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZxqjjJnNBnEpDf4Xqf4WawfW3bQFR2GxAdaFRd7nAcnD5QfdDpP96VmRuDPy5ZaJxm2zeLaXDL2vBNsFDxKJqFeH8og5VzfB</span>
 
 <span class="hljs-comment">// you can now use the generated xpriv to derive further</span>
 <span class="hljs-comment">// private or public keys</span>
 
 <span class="hljs-comment">// this can be done with BIP89 paths (called SegWitHDPath in bitcoin-s)</span>
-<span class="hljs-keyword">val</span> segwitPath = <span class="hljs-type">SegWitHDPath</span>.fromString(<span class="hljs-string">&quot;m/84&#x27;/0&#x27;/0&#x27;/0/0&quot;</span>)
-<span class="hljs-comment">// segwitPath: SegWitHDPath = m/84&#x27;/0&#x27;/0&#x27;/0/0</span>
+<span class="hljs-keyword">val</span> segwitPath = <span class="hljs-type">SegWitHDPath</span>.fromString(<span class="hljs-string">"m/84'/0'/0'/0/0"</span>)
+<span class="hljs-comment">// segwitPath: SegWitHDPath = m/84'/0'/0'/0/0</span>
 
 <span class="hljs-comment">// alternatively:</span>
 <span class="hljs-keyword">val</span> otherSegwitPath =
@@ -123,7 +123,7 @@ mnemonicCode.words <span class="hljs-comment">// the phrase the user should writ
              accountIndex = <span class="hljs-number">0</span>,
              <span class="hljs-type">HDChainType</span>.<span class="hljs-type">External</span>,
              addressIndex = <span class="hljs-number">0</span>)
-<span class="hljs-comment">// otherSegwitPath: SegWitHDPath = m/84&#x27;/0&#x27;/0&#x27;/0/0</span>
+<span class="hljs-comment">// otherSegwitPath: SegWitHDPath = m/84'/0'/0'/0/0</span>
 
 segwitPath == otherSegwitPath
 <span class="hljs-comment">// res1: Boolean = true</span>
@@ -144,8 +144,8 @@ spend or steal any of your money.</p>
 <span class="hljs-comment">//                          first account -------┐</span>
 <span class="hljs-comment">//                          bitcoin ----------┐  |</span>
 <span class="hljs-comment">//                          segwit --------┐  |  |</span>
-<span class="hljs-keyword">val</span> accountPath = <span class="hljs-type">BIP32Path</span>.fromString(<span class="hljs-string">&quot;m/84&#x27;/0&#x27;/0&#x27;&quot;</span>)
-<span class="hljs-comment">// accountPath: BIP32Path = m/84&#x27;/0&#x27;/0&#x27;</span>
+<span class="hljs-keyword">val</span> accountPath = <span class="hljs-type">BIP32Path</span>.fromString(<span class="hljs-string">"m/84'/0'/0'"</span>)
+<span class="hljs-comment">// accountPath: BIP32Path = m/84'/0'/0'</span>
 <span class="hljs-keyword">val</span> accountXpub = {
     <span class="hljs-comment">// this key is sensitive, keep away from prying eyes!</span>
     <span class="hljs-keyword">val</span> accountXpriv = xpriv.deriveChildPrivKey(accountPath)
@@ -154,41 +154,41 @@ spend or steal any of your money.</p>
     <span class="hljs-comment">// can generate addresses with it!</span>
     accountXpriv.extPublicKey
 }
-<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6rtYwDn2MvE3NS2Jy29UzbzhL6TbvjjP7RZf1w2DeBon9tzWZa3XDjxzePLxNnBG7K4MxRccWLwx9vzEJ8FMnx6pws217dzWs7cZrRpWiPh</span>
+<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6rB8K9VmbxgpwF2QvpuKGyCrUXgwEznQTGxvfCjzRV64pBhMbpeyZBS48fHCghYAnWypjmEA1whcKwJasmKBq9nBA3tK9PDu8JM921mPviw</span>
 
                               <span class="hljs-comment">// address no. 0 ---------------┐</span>
                               <span class="hljs-comment">// external address ----------┐ |</span>
-<span class="hljs-keyword">val</span> firstAddressPath = <span class="hljs-type">SegWitHDPath</span>.fromString(<span class="hljs-string">&quot;m/84&#x27;/0&#x27;/0&#x27;/0/0&quot;</span>)
-<span class="hljs-comment">// firstAddressPath: SegWitHDPath = m/84&#x27;/0&#x27;/0&#x27;/0/0</span>
+<span class="hljs-keyword">val</span> firstAddressPath = <span class="hljs-type">SegWitHDPath</span>.fromString(<span class="hljs-string">"m/84'/0'/0'/0/0"</span>)
+<span class="hljs-comment">// firstAddressPath: SegWitHDPath = m/84'/0'/0'/0/0</span>
 <span class="hljs-keyword">val</span> firstAccountAddress = {
-    <span class="hljs-comment">// this is a bit quirky, but we&#x27;re not interesting in</span>
+    <span class="hljs-comment">// this is a bit quirky, but we're not interesting in</span>
     <span class="hljs-comment">// deriving the complete path from our account xpub</span>
-    <span class="hljs-comment">// instead, we&#x27;re only interested in the part after</span>
+    <span class="hljs-comment">// instead, we're only interested in the part after</span>
     <span class="hljs-comment">// the account level (3rd level). the .diff() method</span>
     <span class="hljs-comment">// achieves that</span>
     <span class="hljs-keyword">val</span> <span class="hljs-type">Some</span>(pathDiff) = accountPath.diff(firstAddressPath)
 
     <span class="hljs-comment">// deriving public keys from hardened extended keys</span>
-    <span class="hljs-comment">// is not possible, that&#x27;s why .deriveChildPubKey()</span>
+    <span class="hljs-comment">// is not possible, that's why .deriveChildPubKey()</span>
     <span class="hljs-comment">// returns a Try[ExtPublicKey]. A hardened key is marked</span>
-    <span class="hljs-comment">// by a &#x27; after the number in the notation we use above.</span>
+    <span class="hljs-comment">// by a ' after the number in the notation we use above.</span>
     <span class="hljs-keyword">val</span> <span class="hljs-type">Success</span>(extPubKey) = accountXpub.deriveChildPubKey(pathDiff)
     <span class="hljs-keyword">val</span> pubkey = extPubKey.key
     <span class="hljs-keyword">val</span> scriptPubKey = <span class="hljs-type">P2WPKHWitnessSPKV0</span>(pubkey)
     <span class="hljs-type">Bech32Address</span>(scriptPubKey, <span class="hljs-type">TestNet3</span>)
 }
-<span class="hljs-comment">// firstAccountAddress: Bech32Address = tb1qcd6mfsg8vnd45p9uvmt7u2m5q2pn9952fk8u3l</span>
+<span class="hljs-comment">// firstAccountAddress: Bech32Address = tb1q3gq3p2pye05s8xy749lsd5u8v2cfghf5eqdgzh</span>
 
 <span class="hljs-comment">// tada! We just generated an address you can send money to,</span>
 <span class="hljs-comment">// without having access to the private key!</span>
 firstAccountAddress.value
-<span class="hljs-comment">// res2: String = tb1qcd6mfsg8vnd45p9uvmt7u2m5q2pn9952fk8u3l</span>
+<span class="hljs-comment">// res2: String = tb1q3gq3p2pye05s8xy749lsd5u8v2cfghf5eqdgzh</span>
 
 <span class="hljs-comment">// you can now continue deriving addresses from the same public</span>
 <span class="hljs-comment">// key, by imitating what we did above. To get the next</span>
 <span class="hljs-comment">// HD path to generate an address at:</span>
 <span class="hljs-keyword">val</span> nextAddressPath: <span class="hljs-type">SegWitHDPath</span> = firstAddressPath.next
-<span class="hljs-comment">// nextAddressPath: SegWitHDPath = m/84&#x27;/0&#x27;/0&#x27;/0/1</span>
+<span class="hljs-comment">// nextAddressPath: SegWitHDPath = m/84'/0'/0'/0/1</span>
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" id="signing-things-with-hd-keys"></a><a href="#signing-things-with-hd-keys" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Signing things with HD keys</h3>
 <p>Please see <a href="/docs/next/crypto/sign">sign.md</a> for information on how to sign things with HD keys.</p>

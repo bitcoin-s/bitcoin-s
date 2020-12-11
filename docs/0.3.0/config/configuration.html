@@ -85,11 +85,11 @@ construct a wallet configuration:</p>
 
 
 <span class="hljs-comment">// reads a custom data directory</span>
-<span class="hljs-keyword">val</span> customDirectory = <span class="hljs-type">Paths</span>.get(<span class="hljs-type">Properties</span>.userHome, <span class="hljs-string">&quot;custom-bitcoin-s-directory&quot;</span>)
+<span class="hljs-keyword">val</span> customDirectory = <span class="hljs-type">Paths</span>.get(<span class="hljs-type">Properties</span>.userHome, <span class="hljs-string">"custom-bitcoin-s-directory"</span>)
 <span class="hljs-keyword">val</span> configFromCustomDatadir = <span class="hljs-type">WalletAppConfig</span>(customDirectory)
 
 <span class="hljs-comment">// reads a custom data directory and overrides the network to be testnet3</span>
-<span class="hljs-keyword">val</span> customOverride = <span class="hljs-type">ConfigFactory</span>.parseString(<span class="hljs-string">&quot;bitcoin-s.network = testnet3&quot;</span>)
+<span class="hljs-keyword">val</span> customOverride = <span class="hljs-type">ConfigFactory</span>.parseString(<span class="hljs-string">"bitcoin-s.network = testnet3"</span>)
 <span class="hljs-keyword">val</span> configFromCustomDirAndOverride = <span class="hljs-type">WalletAppConfig</span>(customDirectory, customOverride)
 </code></pre>
 <p>You can pass as many <code>com.typesafe.config.Config</code>s as you'd like. If any
@@ -115,106 +115,106 @@ It should be noted if you are using a module as a library, you are responsible f
 to ensure the entire module is initialized correctly.</p>
 <h2><a class="anchor" aria-hidden="true" id="example-configuration-file"></a><a href="#example-configuration-file" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Example Configuration File</h2>
 <pre><code class="hljs css language-$xslt">bitcoin-s {
-    <span class="hljs-attr">datadir</span> = ${HOME}/.bitcoin-s
-    <span class="hljs-attr">network</span> = regtest <span class="hljs-comment"># regtest, testnet3, mainnet</span>
+    datadir = <span class="hljs-variable">${HOME}</span>/.bitcoin-s
+   <span class="hljs-built_in"> network </span>= regtest # regtest, testnet3, mainnet
 
-    logging {
-        <span class="hljs-attr">level</span> = WARN <span class="hljs-comment"># trace, debug, info, warn, error, off</span>
+   <span class="hljs-built_in"> logging </span>{
+        level = WARN # trace, debug, info, warn, error, off
 
-        <span class="hljs-comment"># You can also tune specific module loggers.</span>
-        <span class="hljs-comment"># They each take the same levels as above.</span>
-        <span class="hljs-comment"># If they are commented out (as they are</span>
-        <span class="hljs-comment"># by default), `logging.level` gets used</span>
-        <span class="hljs-comment"># instead. </span>
-        <span class="hljs-comment"># The available loggers are: </span>
+        # You can also tune specific module loggers.
+        # They each take the same levels as above.
+        # <span class="hljs-keyword">If</span> they are commented out (as they are
+        # by default), `logging.level` gets used
+        # instead. 
+        # The available loggers are: 
 
-        <span class="hljs-comment"># incoming and outgoing P2P messages</span>
-        <span class="hljs-comment"># p2p = info</span>
+        #<span class="hljs-built_in"> incoming </span><span class="hljs-keyword">and</span> outgoing P2P messages
+        # p2p = <span class="hljs-builtin-name">info</span>
 
-        <span class="hljs-comment"># verification of block headers, merkle trees</span>
-        <span class="hljs-comment"># chain-verification = info</span>
+        # verification of block headers, merkle trees
+        # chain-verification = <span class="hljs-builtin-name">info</span>
 
-        <span class="hljs-comment"># generation of addresses, signing of TXs</span>
-        <span class="hljs-comment"># key-handling = info</span>
+        # generation of addresses, signing of TXs
+        # key-handling = <span class="hljs-builtin-name">info</span>
 
-        <span class="hljs-comment"># wallet operations not related to key management</span>
-        <span class="hljs-comment"># wallet = info</span>
+        # wallet operations <span class="hljs-keyword">not</span> related <span class="hljs-keyword">to</span> key management
+        # wallet = <span class="hljs-builtin-name">info</span>
 
-        <span class="hljs-comment"># HTTP RPC server</span>
-        <span class="hljs-comment"># http = info</span>
+        # HTTP RPC<span class="hljs-built_in"> server
+</span>        # http = <span class="hljs-builtin-name">info</span>
 
-        <span class="hljs-comment"># Database interactions</span>
-        <span class="hljs-comment"># database = info</span>
+        # Database interactions
+        # database = <span class="hljs-builtin-name">info</span>
 
-        <span class="hljs-comment"># whether or not to write to the log file</span>
-        <span class="hljs-attr">disable-file</span> = <span class="hljs-literal">false</span>
+        # whether <span class="hljs-keyword">or</span> <span class="hljs-keyword">not</span> <span class="hljs-keyword">to</span> write <span class="hljs-keyword">to</span> the log file
+        disable-file = <span class="hljs-literal">false</span>
 
-        <span class="hljs-comment"># whether or not to log to stdout </span>
-        <span class="hljs-attr">disable-console</span> = <span class="hljs-literal">false</span>
+        # whether <span class="hljs-keyword">or</span> <span class="hljs-keyword">not</span> <span class="hljs-keyword">to</span> log <span class="hljs-keyword">to</span> stdout 
+        disable-console = <span class="hljs-literal">false</span>
     }
 
     node {
-        <span class="hljs-attr">mode</span> = neutrino <span class="hljs-comment"># neutrino, spv</span>
+        mode = neutrino # neutrino, spv
 
-        <span class="hljs-attr">peers</span> = [] <span class="hljs-comment"># a list of peer addresses in form &quot;hostname:portnumber&quot;</span>
-        <span class="hljs-comment"># (e.g. &quot;neutrino.testnet3.suredbits.com:18333&quot;)</span>
-        <span class="hljs-comment"># Port number is optional, the default value is 8333 for mainnet,</span>
-        <span class="hljs-comment"># 18333 for testnet and 18444 for regtest.</span>
+        peers = [] # a list of<span class="hljs-built_in"> peer </span>addresses <span class="hljs-keyword">in</span> form <span class="hljs-string">"hostname:portnumber"</span>
+        # (e.g. <span class="hljs-string">"neutrino.testnet3.suredbits.com:18333"</span>)
+        #<span class="hljs-built_in"> Port </span>number is optional, the<span class="hljs-built_in"> default </span>value is 8333 <span class="hljs-keyword">for</span> mainnet,
+        # 18333 <span class="hljs-keyword">for</span> testnet <span class="hljs-keyword">and</span> 18444 <span class="hljs-keyword">for</span> regtest.
     }
 
     chain {
         neutrino {
-            <span class="hljs-attr">filter-header-batch-size</span> = <span class="hljs-number">2000</span>
-            <span class="hljs-attr">filter-batch-size</span> = <span class="hljs-number">100</span>
+            filter-header-batch-size = 2000
+            filter-batch-size = 100
         }
     }
 
-    <span class="hljs-comment"># settings for wallet module</span>
+    #<span class="hljs-built_in"> settings </span><span class="hljs-keyword">for</span> wallet module
     wallet {
-        <span class="hljs-attr">defaultAccountType</span> = legacy <span class="hljs-comment"># legacy, segwit, nested-segwit</span>
+        defaultAccountType = legacy # legacy, segwit, nested-segwit
 
-        <span class="hljs-attr">bloomFalsePositiveRate</span> = <span class="hljs-number">0.0001</span> <span class="hljs-comment"># percentage</span>
+        bloomFalsePositiveRate = 0.0001 # percentage
 
-        <span class="hljs-attr">addressGapLimit</span> = <span class="hljs-number">20</span>
+        addressGapLimit = 20
 
-        <span class="hljs-attr">discoveryBatchSize</span> = <span class="hljs-number">100</span>
+        discoveryBatchSize = 100
     }
 }
 
 
 akka {
-    <span class="hljs-attr">loglevel</span> = <span class="hljs-string">&quot;OFF&quot;</span>
-    <span class="hljs-attr">stdout-loglevel</span> = <span class="hljs-string">&quot;OFF&quot;</span>
+    loglevel = <span class="hljs-string">"OFF"</span>
+    stdout-loglevel = <span class="hljs-string">"OFF"</span>
     http {
-        client {
-            <span class="hljs-comment"># The time after which an idle connection will be automatically closed.</span>
-            <span class="hljs-comment"># Set to `infinite` to completely disable idle connection timeouts.</span>
+       <span class="hljs-built_in"> client </span>{
+            # The time after which an idle<span class="hljs-built_in"> connection </span>will be automatically closed.
+            # <span class="hljs-builtin-name">Set</span> <span class="hljs-keyword">to</span> `infinite` <span class="hljs-keyword">to</span> completely <span class="hljs-builtin-name">disable</span> idle<span class="hljs-built_in"> connection </span>timeouts.
 
-            <span class="hljs-comment"># some requests potentially take a long time, like generate and prune</span>
-            <span class="hljs-attr">idle-timeout</span> = <span class="hljs-number">5</span> minutes
+            # some requests potentially take a long time, like generate <span class="hljs-keyword">and</span> prune
+            idle-timeout = 5 minutes
         }
     }
 
 
     actor {
-        debug {
-            <span class="hljs-comment"># enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill etc.)</span>
-            <span class="hljs-attr">autoreceive=</span> off
-            <span class="hljs-comment"># enable function of LoggingReceive, which is to log any received message at</span>
-            <span class="hljs-comment"># DEBUG level</span>
-            <span class="hljs-attr">receive</span> = on
-            <span class="hljs-comment"># enable DEBUG logging of unhandled messages</span>
-            <span class="hljs-attr">unhandled</span> = off
+        <span class="hljs-builtin-name">debug</span> {
+            # <span class="hljs-builtin-name">enable</span> <span class="hljs-builtin-name">DEBUG</span><span class="hljs-built_in"> logging </span>of all AutoReceiveMessages (Kill, PoisonPill etc.)
+            autoreceive= off
+            # <span class="hljs-builtin-name">enable</span> function of LoggingReceive, which is <span class="hljs-keyword">to</span> log any received message at
+            # <span class="hljs-builtin-name">DEBUG</span> level
+            receive = on
+            # <span class="hljs-builtin-name">enable</span> <span class="hljs-builtin-name">DEBUG</span><span class="hljs-built_in"> logging </span>of unhandled messages
+            unhandled = off
 
-            <span class="hljs-comment"># enable DEBUG logging of actor lifecycle changes</span>
-            <span class="hljs-attr">lifecycle</span> = off
+            # <span class="hljs-builtin-name">enable</span> <span class="hljs-builtin-name">DEBUG</span><span class="hljs-built_in"> logging </span>of actor lifecycle changes
+            lifecycle = off
 
-            <span class="hljs-attr">event-stream=off</span>
+            <span class="hljs-attribute">event-stream</span>=off
         }
     }
 }
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/13/2020 by Ben Carman</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/0.3.0/chain/filter-sync"><span class="arrow-prev">← </span><span>Syncing Blockfilters</span></a><a class="docs-next button" href="/docs/0.3.0/core/core-intro"><span>Core Module</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#internal-configuration">Internal configuration</a></li><li><a href="#database-migrations">Database Migrations</a></li><li><a href="#example-configuration-file">Example Configuration File</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-10-13 by Ben Carman</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/0.3.0/chain/filter-sync"><span class="arrow-prev">← </span><span>Syncing Blockfilters</span></a><a class="docs-next button" href="/docs/0.3.0/core/core-intro"><span>Core Module</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#internal-configuration">Internal configuration</a></li><li><a href="#database-migrations">Database Migrations</a></li><li><a href="#example-configuration-file">Example Configuration File</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
