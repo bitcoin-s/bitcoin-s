@@ -55,6 +55,8 @@ case class KeyManagerAppConfig(
           // Copy key manager file to new location
           if (WalletStorage.seedExists(defaultFile)) {
             logger.info(s"Copying seed file to seeds folder $seedPath")
+            // Create directory
+            Files.createDirectories(seedPath.getParent)
             Files.copy(defaultFile, seedPath)
           }
         }
