@@ -234,7 +234,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
     assert(NumberUtil.decompose(num1, 16, 3) == expected1)
   }
 
-  it should "correctly decompose in any base" in {
+  it must "correctly decompose in any base" in {
     assert(NumberUtil.decompose(255, 16, 2) == Vector(15, 15))
 
     forAll(Gen.choose(2, 256), Gen.choose(0L, Long.MaxValue)) {
@@ -267,6 +267,48 @@ class NumberUtilTest extends BitcoinSUnitTest {
             sumSoFar + digit * pow(BigInt(base), position)
         }
         assert(computedNum.toLong == num)
+    }
+  }
+
+  behavior of "NumberUtil.fromDigits"
+
+  it must "correctly handle digit decomposition in base 10" in {
+    val expected0 = 987
+    val num0 = Vector(9, 8, 7)
+    assert(NumberUtil.fromDigits(num0, 10, 3) == expected0)
+
+    val expected1 = 123
+    val num1 = Vector(0, 1, 2, 3)
+    assert(NumberUtil.fromDigits(num1, 10, 4) == expected1)
+  }
+
+  it must "correctly do digit decomposition in base 2" in {
+    val expected0 = 987
+    val num0 = Vector(1, 1, 1, 1, 0, 1, 1, 0, 1, 1)
+    assert(NumberUtil.fromDigits(num0, 2, 10) == expected0)
+
+    val expected1 = 123
+    val num1 = Vector(0, 1, 1, 1, 1, 0, 1, 1)
+    assert(NumberUtil.fromDigits(num1, 2, 8) == expected1)
+  }
+
+  it must "correctly do digit decomposition n base 16" in {
+    val expected0 = 987
+    val num0 = Vector(3, 13, 11)
+    assert(NumberUtil.fromDigits(num0, 16, 3) == expected0)
+
+    val expected1 = 123
+    val num1 = Vector(0, 7, 11)
+    assert(NumberUtil.fromDigits(num1, 16, 3) == expected1)
+  }
+
+  it must "correctly invert decompose" in {
+    forAll(Gen.choose(2, 256), Gen.choose(0L, Long.MaxValue)) {
+      case (base, num) =>
+        // Add some extra digits for leading zeroes
+        val numDigits = (Math.log(num) / Math.log(base)).toInt + 5
+        val digits = NumberUtil.decompose(num, base, numDigits)
+        assert(NumberUtil.fromDigits(digits, base, numDigits) == num)
     }
   }
 }

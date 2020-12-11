@@ -358,8 +358,21 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     * The input Vector has the most significant digit first and the 1's place last.
     */
   def fromDigits(digits: Vector[Int], base: Int, numDigits: Int): Long = {
+    def pow(base: Long, exp: Long): Long = {
+      if (math.pow(base.toDouble, numDigits.toDouble) <= Int.MaxValue) {
+        math.pow(base.toDouble, exp.toDouble).toLong
+      } else { // For large numbers, Double loss of precision becomes an issue
+        def powRec(base: Long, currentExp: Long): Long = {
+          if (currentExp == 0) 1
+          else base * powRec(base, currentExp - 1)
+        }
+
+        powRec(base, exp)
+      }
+    }
+
     digits.indices.foldLeft(0L) { (numSoFar, index) =>
-      numSoFar + digits(index) * math.pow(base, numDigits - 1 - index).toLong
+      numSoFar + digits(index) * pow(base, numDigits - 1 - index).toLong
     }
   }
 
@@ -368,6 +381,7 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     *  random number generator's sequence.
     *
     *  Stolen from scala.util.Random.nextLong (in scala version 2.13)
+    *  @see https://github.com/scala/scala/blob/4aae0b91cd266f02b9f3d911db49381a300b5103/src/library/scala/util/Random.scala#L131
     */
   def randomLong(bound: Long): Long = {
     require(bound > 0, "bound must be positive")
@@ -419,7 +433,9 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     }
   }
 
-  /** Stolen from Scala 2.13 IndexedSeq::binarySearch */
+  /** Stolen from Scala 2.13 IndexedSeq::binarySearch
+    * @see https://github.com/scala/scala/blob/4aae0b91cd266f02b9f3d911db49381a300b5103/src/library/scala/collection/IndexedSeq.scala#L117
+    */
   @tailrec
   final def search[A, B >: A, Wrapper](
       seq: IndexedSeq[Wrapper],

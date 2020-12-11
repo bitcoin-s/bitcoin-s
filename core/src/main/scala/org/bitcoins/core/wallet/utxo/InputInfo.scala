@@ -174,23 +174,26 @@ object InputInfo {
 
   /** Returns the maximum byteSize of any resulting ScriptSignature */
   def maxScriptSigLen(info: InputInfo): Int = {
-    val asmByteSize = maxScriptSigLenAndStackHeight(info, forP2WSH = false)._1
+    val asmByteSize =
+      maxScriptSigLenAndStackHeight(info, forP2WSH = false).scriptSigLen
     val varIntSize = CompactSizeUInt(UInt64(asmByteSize)).byteSize
 
     asmByteSize + varIntSize.toInt
   }
+
+  case class ScriptSigLenAndStackHeight(scriptSigLen: Int, stackHeight: Int)
 
   /** Computes the byteSize of witness/scriptSignature for the given info,
     * and also returns the number of stack elements for the P2WSH case.
     */
   private def maxScriptSigLenAndStackHeight(
       info: InputInfo,
-      forP2WSH: Boolean): (Int, Int) = {
+      forP2WSH: Boolean): ScriptSigLenAndStackHeight = {
     val boolSize = if (forP2WSH) 2 else 1
 
     info match {
       case _: SegwitV0NativeInputInfo | _: UnassignedSegwitNativeInputInfo =>
-        (0, 0)
+        ScriptSigLenAndStackHeight(0, 0)
       case info: P2SHInputInfo =>
         val serializedRedeemScript = ScriptConstant(info.redeemScript.asmBytes)
         val pushOps = BitcoinScriptUtil.calculatePushOp(serializedRedeemScript)
@@ -199,33 +202,39 @@ object InputInfo {
             .toByteVector(pushOps.:+(serializedRedeemScript))
             .length
             .toInt
-        val (scriptSigLen, stackHeight) =
+        val ScriptSigLenAndStackHeight(scriptSigLen, stackHeight) =
           maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH)
 
-        (redeemScriptLen + scriptSigLen, stackHeight + 1)
+        ScriptSigLenAndStackHeight(redeemScriptLen + scriptSigLen,
+                                   stackHeight + 1)
       case _: EmptyInputInfo =>
-        (boolSize, 1)
+        ScriptSigLenAndStackHeight(boolSize, 1)
       case _: P2PKInputInfo =>
-        (P2PKScriptSignature(LowRDummyECDigitalSignature).asmBytes.length.toInt,
-         1)
+        ScriptSigLenAndStackHeight(
+          P2PKScriptSignature(
+            LowRDummyECDigitalSignature).asmBytes.length.toInt,
+          1)
       case _: P2PKHInputInfo =>
-        (P2PKHScriptSignature(LowRDummyECDigitalSignature,
-                              ECPublicKey.dummy).asmBytes.length.toInt,
-         2)
+        ScriptSigLenAndStackHeight(
+          P2PKHScriptSignature(LowRDummyECDigitalSignature,
+                               ECPublicKey.dummy).asmBytes.length.toInt,
+          2)
       case info: P2PKWithTimeoutInputInfo =>
-        (P2PKWithTimeoutScriptSignature(
-           info.isBeforeTimeout,
-           LowRDummyECDigitalSignature).asmBytes.length.toInt,
-         2)
+        ScriptSigLenAndStackHeight(
+          P2PKWithTimeoutScriptSignature(
+            info.isBeforeTimeout,
+            LowRDummyECDigitalSignature).asmBytes.length.toInt,
+          2)
       case info: MultiSignatureInputInfo =>
-        (MultiSignatureScriptSignature(
-           Vector.fill(info.requiredSigs)(
-             LowRDummyECDigitalSignature)).asmBytes.length.toInt,
-         1 + info.requiredSigs)
+        ScriptSigLenAndStackHeight(
+          MultiSignatureScriptSignature(
+            Vector.fill(info.requiredSigs)(
+              LowRDummyECDigitalSignature)).asmBytes.length.toInt,
+          1 + info.requiredSigs)
       case info: ConditionalInputInfo =>
-        val (maxLen, stackHeight) =
+        val ScriptSigLenAndStackHeight(maxLen, stackHeight) =
           maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH)
-        (maxLen + boolSize, stackHeight + 1)
+        ScriptSigLenAndStackHeight(maxLen + boolSize, stackHeight + 1)
       case info: LockTimeInputInfo =>
         maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH)
     }
@@ -238,7 +247,7 @@ object InputInfo {
       case _: RawInputInfo | _: P2SHNonSegwitInputInfo => 0
       case _: P2WPKHV0InputInfo                        => 107
       case info: P2WSHV0InputInfo =>
-        val (scriptSigLen, stackHeight) =
+        val ScriptSigLenAndStackHeight(scriptSigLen, stackHeight) =
           maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH = true)
         val stackHeightByteSize = CompactSizeUInt(UInt64(stackHeight)).byteSize
         val redeemScriptSize = info.scriptWitness.redeemScript.byteSize
