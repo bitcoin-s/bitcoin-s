@@ -621,6 +621,9 @@ object DLCStatus {
           (sigPoint, digits.length)
       }
 
+      // This value is either the oracle signature S value or it is
+      // useless garbage, but we don't know in this scope, the caller
+      // must do further work to check this.
       val possibleOracleS =
         sigPubKey
           .extractAdaptorSecret(adaptorSig,
@@ -650,6 +653,10 @@ object DLCStatus {
                 .filter(_ >= Policy.dustThreshold)
                 .sorted
 
+              // Only messages within 1 satoshi of the on-chain CET's value
+              // should be considered.
+              // Off-by-one is okay because both parties round to the nearest
+              // Satoshi for fees and if both round up they could be off-by-one.
               Math.abs(
                 (amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
                 .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1

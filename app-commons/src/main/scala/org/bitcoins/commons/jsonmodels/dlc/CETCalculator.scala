@@ -24,7 +24,10 @@ object CETCalculator {
     def indexTo: Long
   }
 
-  /** This range contains payouts all <= 0 */
+  /** This range contains payouts all <= 0
+    * (Note that interpolated functions are allowed
+    * to be negative, but we set all negative values to 0).
+    */
   case class StartZero(indexFrom: Long, indexTo: Long) extends CETRange
 
   /** This range contains payouts all >= totalCollateral */
