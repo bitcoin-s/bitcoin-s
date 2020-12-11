@@ -137,6 +137,24 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     }
   }
 
+  /** Reads a (DER encoded) ECDigitalSignature from the front of a ByteVector */
+  def fromFrontOfBytes(bytes: ByteVector): ECDigitalSignature = {
+    val sigWithExtra = fromBytes(bytes)
+    val sig = fromRS(sigWithExtra.r, sigWithExtra.s)
+
+    require(bytes.startsWith(sig.bytes),
+            s"Received weirdly encoded signature at beginning of $bytes")
+
+    sig
+  }
+
+  /** Reads a (DER encoded with sighash) ECDigitalSignature from the front of a ByteVector */
+  def fromFrontOfBytesWithSigHash(bytes: ByteVector): ECDigitalSignature = {
+    val sigWithoutSigHash = fromFrontOfBytes(bytes)
+    ECDigitalSignature(
+      sigWithoutSigHash.bytes :+ bytes.drop(sigWithoutSigHash.byteSize).head)
+  }
+
   def apply(r: BigInt, s: BigInt): ECDigitalSignature = fromRS(r, s)
 
   /**

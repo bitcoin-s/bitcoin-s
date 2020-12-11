@@ -5,7 +5,9 @@ import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   Transaction,
   TransactionInput,
-  TransactionOutput
+  TransactionOutput,
+  TransactionWitness,
+  WitnessTransaction
 }
 
 /** Raw Transaction to be finalized by a RawTxFinalizer */
@@ -17,6 +19,10 @@ case class RawTxBuilderResult(
 
   def toBaseTransaction: BaseTransaction = {
     BaseTransaction(version, inputs, outputs, lockTime)
+  }
+
+  def toWitnessTransaction(witness: TransactionWitness): WitnessTransaction = {
+    WitnessTransaction(version, inputs, outputs, lockTime, witness)
   }
 }
 

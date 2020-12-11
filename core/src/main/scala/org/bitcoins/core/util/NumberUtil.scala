@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader.TargetDifficultyHelper
 import org.bitcoins.crypto.FieldElement
 import scodec.bits.{BitVector, ByteVector}
 
+import scala.annotation.tailrec
 import scala.math.BigInt
 import scala.util.{Failure, Success, Try}
 
@@ -351,6 +352,125 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     }
 
     backwardsDigits.reverse
+  }
+
+  /** Recomposes the input digits into the number they represent.
+    * The input Vector has the most significant digit first and the 1's place last.
+    */
+  def fromDigits(digits: Vector[Int], base: Int, numDigits: Int): Long = {
+    def pow(base: Long, exp: Long): Long = {
+      if (math.pow(base.toDouble, numDigits.toDouble) <= Int.MaxValue) {
+        math.pow(base.toDouble, exp.toDouble).toLong
+      } else { // For large numbers, Double loss of precision becomes an issue
+        def powRec(base: Long, currentExp: Long): Long = {
+          if (currentExp == 0) 1
+          else base * powRec(base, currentExp - 1)
+        }
+
+        powRec(base, exp)
+      }
+    }
+
+    digits.indices.foldLeft(0L) { (numSoFar, index) =>
+      numSoFar + digits(index) * pow(base, numDigits - 1 - index).toLong
+    }
+  }
+
+  /** Returns a pseudorandom, uniformly distributed long value between 0
+    *  (inclusive) and the specified value (exclusive), drawn from this
+    *  random number generator's sequence.
+    *
+    *  Stolen from scala.util.Random.nextLong (in scala version 2.13)
+    *  @see https://github.com/scala/scala/blob/4aae0b91cd266f02b9f3d911db49381a300b5103/src/library/scala/util/Random.scala#L131
+    */
+  def randomLong(bound: Long): Long = {
+    require(bound > 0, "bound must be positive")
+
+    /*
+     * Divide bound by two until small enough for nextInt. On each
+     * iteration (at most 31 of them but usually much less),
+     * randomly choose both whether to include high bit in result
+     * (offset) and whether to continue with the lower vs upper
+     * half (which makes a difference only if odd).
+     */
+
+    var offset = 0L
+    var _bound = bound
+
+    while (_bound >= Integer.MAX_VALUE) {
+      val bits = scala.util.Random.nextInt(2)
+      val halfn = _bound >>> 1
+      val nextn =
+        if ((bits & 2) == 0) halfn
+        else _bound - halfn
+      if ((bits & 1) == 0)
+        offset += _bound - nextn
+      _bound = nextn
+    }
+    offset + scala.util.Random.nextInt(_bound.toInt)
+  }
+
+  def randomBytes(num: Int): ByteVector = {
+    val bytes = new Array[Byte](0 max num)
+    scala.util.Random.self.nextBytes(bytes)
+    ByteVector(bytes)
+  }
+
+  def lexicographicalOrdering[T](implicit
+      ord: Ordering[T]): Ordering[Vector[T]] = {
+    new Ordering[Vector[T]] {
+      override def compare(x: Vector[T], y: Vector[T]): Int = {
+        val xe = x.iterator
+        val ye = y.iterator
+
+        while (xe.hasNext && ye.hasNext) {
+          val res = ord.compare(xe.next(), ye.next())
+          if (res != 0) return res
+        }
+
+        Ordering.Boolean.compare(xe.hasNext, ye.hasNext)
+      }
+    }
+  }
+
+  /** Stolen from Scala 2.13 IndexedSeq::binarySearch
+    * @see https://github.com/scala/scala/blob/4aae0b91cd266f02b9f3d911db49381a300b5103/src/library/scala/collection/IndexedSeq.scala#L117
+    */
+  @tailrec
+  final def search[A, B >: A, Wrapper](
+      seq: IndexedSeq[Wrapper],
+      elem: B,
+      from: Int,
+      to: Int,
+      unwrap: Wrapper => A)(implicit ord: Ordering[B]): Int = {
+    if (from < 0) search(seq, elem, from = 0, to, unwrap)
+    else if (to > seq.length) search(seq, elem, from, seq.length, unwrap)
+    else if (to <= from) from
+    else {
+      val idx = from + (to - from - 1) / 2
+      math.signum(ord.compare(elem, unwrap(seq(idx)))) match {
+        case -1 => search(seq, elem, from, idx, unwrap)(ord)
+        case 1  => search(seq, elem, idx + 1, to, unwrap)(ord)
+        case _  => idx
+      }
+    }
+  }
+
+  def search[A, B >: A, Wrapper](
+      seq: IndexedSeq[Wrapper],
+      elem: B,
+      unwrap: Wrapper => A)(implicit ord: Ordering[B]): Int = {
+    search(seq, elem, from = 0, to = seq.length, unwrap)
+  }
+
+  def search[A, B >: A](seq: IndexedSeq[A], elem: B, from: Int, to: Int)(
+      implicit ord: Ordering[B]): Int = {
+    search(seq, elem, from, to, identity[A])
+  }
+
+  def search[A, B >: A](seq: IndexedSeq[A], elem: B)(implicit
+      ord: Ordering[B]): Int = {
+    search(seq, elem, from = 0, to = seq.length)
   }
 }
 

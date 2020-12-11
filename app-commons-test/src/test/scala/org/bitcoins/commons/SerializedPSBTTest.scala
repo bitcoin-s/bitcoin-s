@@ -69,7 +69,6 @@ class SerializedPSBTTest extends BitcoinSUnitTest {
     assert(decoded.global.tx == SerializedTransaction.decodeRawTransaction(tx))
     assert(decoded.global.version == UInt32.zero)
 
-    println(Json.prettyPrint(decoded.toJson))
     assert(decoded.inputs.size == 1)
     assert(decoded.inputs.head.bip32Paths.isEmpty)
     assert(decoded.inputs.head.finalizedScriptSig.nonEmpty)

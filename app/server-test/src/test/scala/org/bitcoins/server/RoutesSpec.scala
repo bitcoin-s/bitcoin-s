@@ -61,7 +61,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val mockNode = mock[Node]
 
-  val chainRoutes = ChainRoutes(mockChainApi)
+  val chainRoutes = ChainRoutes(mockChainApi, RegTest)
 
   val nodeRoutes = NodeRoutes(mockNode)
 

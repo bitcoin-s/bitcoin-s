@@ -274,7 +274,7 @@ class BitcoinSServerMain(override val args: Array[String])
 
     val walletRoutes = WalletRoutes(wallet)
     val nodeRoutes = NodeRoutes(nodeApi)
-    val chainRoutes = ChainRoutes(chainApi)
+    val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
     val coreRoutes = CoreRoutes(Core)
     val server = {
       rpcPortOpt match {

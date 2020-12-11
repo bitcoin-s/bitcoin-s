@@ -436,11 +436,16 @@ object Rescan extends ServerJsonModels {
 
 }
 
+trait Broadcastable {
+  def noBroadcast: Boolean
+}
+
 case class SendToAddress(
     address: BitcoinAddress,
     amount: Bitcoins,
     satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
     noBroadcast: Boolean)
+    extends Broadcastable
 
 object SendToAddress extends ServerJsonModels {
 
