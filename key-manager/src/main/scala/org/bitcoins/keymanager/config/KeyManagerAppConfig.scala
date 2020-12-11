@@ -48,12 +48,15 @@ case class KeyManagerAppConfig(
   override def start(): Future[Unit] = {
     walletNameOpt match {
       case Some(_) => FutureUtil.unit
-      case None    =>
-        // Copy key manager file to new location
+      case None =>
         if (!seedExists()) {
           val defaultFile =
             baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
-          Files.copy(defaultFile, seedPath)
+          // Copy key manager file to new location
+          if (WalletStorage.seedExists(defaultFile)) {
+            logger.info(s"Copying seed file to seeds folder $seedPath")
+            Files.copy(defaultFile, seedPath)
+          }
         }
         FutureUtil.unit
     }

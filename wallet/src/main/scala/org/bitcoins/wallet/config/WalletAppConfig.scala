@@ -129,7 +129,7 @@ case class WalletAppConfig(
   override lazy val schemaName: Option[String] = {
     (driver, walletNameOpt) match {
       case (PostgreSQL, Some(walletName)) =>
-        Some(s"$moduleName-$walletName")
+        Some(s"${moduleName}_$walletName")
       case (PostgreSQL, None) =>
         Some(moduleName)
       case (SQLite, None) | (SQLite, Some(_)) =>
