@@ -76,6 +76,19 @@ case class BIP39KeyManager(
   def getRootXPub: ExtPublicKey = {
     rootExtPrivKey.extPublicKey
   }
+
+  /** This is overriden because we do not have a type for bip39 passwords
+    * for which we can extend [[org.bitcoins.crypto.MaskedToString]]
+    */
+  override def toString: String = {
+    s"""
+       |BIP39KeyManager(
+       |    mnemonic=$mnemonic,
+       |    kmParams=$kmParams,
+       |    bip39PasswordOpt=${bip39PasswordOpt.map(_ =>
+      s"Masked(bip39password)")},
+       |    creationTime=$creationTime)""".stripMargin
+  }
 }
 
 object BIP39KeyManager
