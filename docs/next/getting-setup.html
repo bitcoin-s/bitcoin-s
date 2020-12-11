@@ -83,11 +83,11 @@
 <pre><code class="hljs css language-bashrc">git <span class="hljs-keyword">clone</span> <span class="hljs-title">--recursive</span> git@github.com:bitcoin-s/bitcoin-s.git
 </code></pre>
 <p>or alternatively, if you do not have ssh setup with github, you can run</p>
-<pre><code class="hljs css language-bashrc">git <span class="hljs-keyword">clone</span> <span class="hljs-title">--recursive</span> https://github.com/bitcoin-s/bitcoin-s.git
+<pre><code class="hljs css language-bashrc">git clone --recursive https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/bitcoin-s/</span>bitcoin-s.git
 </code></pre>
 <p>Next, you will want to execute the commands</p>
-<pre><code class="hljs css language-bashrc"><span class="hljs-symbol">cd</span> <span class="hljs-keyword">bitcoin-s
-</span><span class="hljs-symbol">git</span> <span class="hljs-keyword">submodule </span>update
+<pre><code class="hljs css language-bashrc">cd <span class="hljs-keyword">bitcoin-s
+</span>git <span class="hljs-keyword">submodule </span>update
 </code></pre>
 <p>to download the secp256k1 submodule.</p>
 <p>You should be able to test your secp256k1 installation by running <code>sbt core/console</code> in your bitcoin-s directory and then running</p>
@@ -95,7 +95,7 @@
 <span class="hljs-keyword">import</span> org.bitcoin._
 
 scala&gt; <span class="hljs-type">Secp256k1Context</span>.isEnabled()
-<span class="hljs-type">SLF4J</span>: <span class="hljs-type">Failed</span> to load <span class="hljs-class"><span class="hljs-keyword">class</span> "<span class="hljs-title">org</span>.<span class="hljs-title">slf4j</span>.<span class="hljs-title">impl</span>.<span class="hljs-title">StaticLoggerBinder</span>".</span>
+<span class="hljs-type">SLF4J</span>: <span class="hljs-type">Failed</span> to load <span class="hljs-class"><span class="hljs-keyword">class</span> &quot;<span class="hljs-title">org</span>.<span class="hljs-title">slf4j</span>.<span class="hljs-title">impl</span>.<span class="hljs-title">StaticLoggerBinder</span>&quot;.</span>
 <span class="hljs-type">SLF4J</span>: <span class="hljs-type">Defaulting</span> to no-operation (<span class="hljs-type">NOP</span>) logger implementation
 <span class="hljs-type">SLF4J</span>: <span class="hljs-type">See</span> http:<span class="hljs-comment">//www.slf4j.org/codes.html#StaticLoggerBinder for further details.</span>
 res0: <span class="hljs-type">Boolean</span> = <span class="hljs-literal">true</span>
@@ -126,9 +126,9 @@ res0: <span class="hljs-type">Boolean</span> = <span class="hljs-literal">true</
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="step-4-optional-discreet-log-contract-branch"></a><a href="#step-4-optional-discreet-log-contract-branch" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 4 (Optional): Discreet Log Contract Branch</h2>
 <p>In order to run the Bitcoin-S server with DLCs enabled, you will have to checkout the <code>adaptor-dlc</code> feature branch:</p>
-<pre><code class="hljs css language-bashrc"><span class="hljs-attr">git</span> <span class="hljs-string">fetch origin</span>
-<span class="hljs-attr">git</span> <span class="hljs-string">checkout adaptor-dlc</span>
-<span class="hljs-attr">git</span> <span class="hljs-string">submodule update</span>
+<pre><code class="hljs css language-bashrc">git fetch <span class="hljs-keyword">origin
+</span>git checkout adaptor-dlc
+git <span class="hljs-keyword">submodule </span>update
 </code></pre>
 <p>and then finally test that <code>Secp256k1Context.isEnabled()</code> as in Step 2.</p>
 <p>If you're looking to set up a DLC Oracle instead go to the <a href="/docs/next/oracle/oracle-server">oracle server docs</a>.</p>
@@ -146,7 +146,7 @@ This can be configured by the configuration option <code>bitcoin-s.node.mode</co
 <p>If you would like to use your own node you can either use the bitcoind backend option or connect to your own compatible node.
 There is no released version of bitcoind that is neutrino compatible so you will either have to compile the latest <code>master</code> yourself, or use the experimental version provided by running <code>sbt downloadBitcoind</code>.</p>
 <p>After building your bitcoin-s server, properly configuring it to be in <code>neutrino</code> mode you can start your server with:</p>
-<pre><code class="hljs css language-bashrc">.<span class="hljs-meta-keyword">/app/</span>server<span class="hljs-meta-keyword">/target/</span>universal<span class="hljs-meta-keyword">/stage/</span>bin/bitcoin-s-server
+<pre><code class="hljs css language-bashrc">.<span class="hljs-regexp">/app/</span>server<span class="hljs-regexp">/target/u</span>niversal<span class="hljs-regexp">/stage/</span>bin/bitcoin-s-server
 </code></pre>
 <p>and once this is done, you should be able to communicate with the server using</p>
 <pre><code class="hljs css language-bashrc">.<span class="hljs-regexp">/app/</span>cli<span class="hljs-regexp">/target/u</span>niversal<span class="hljs-regexp">/stage/</span>bitcoin-s-cli getnewaddress
@@ -157,27 +157,27 @@ There is no released version of bitcoind that is neutrino compatible so you will
 If you would only like bitcoin-s to connect to bitcoind and start it itself then you only need to properly set the <code>rpcuser</code>, and <code>rpcpassword</code> options.
 If you would like bitcoin-s to launch bitcoind on start up you will need to set the other configuration options.
 These options should default to use the latest bitcoind downloaded from <code>sbt downloadBitcoind</code>.</p>
-<pre><code class="hljs css language-$xslt">bitcoin-s {
+<pre><code class="hljs css language-$xslt">bitcoin-<span class="hljs-keyword">s</span> {
     bitcoind-rpc {
-        # bitcoind rpc username
-        rpcuser =<span class="hljs-built_in"> user
-</span>        # bitcoind rpc password
+        <span class="hljs-comment"># bitcoind rpc username</span>
+        rpcuser = user
+        <span class="hljs-comment"># bitcoind rpc password</span>
         rpcpassword = password
 
-        # Binary location of bitcoind
-        binary = <span class="hljs-variable">${HOME}</span>/.bitcoin-s/binaries/bitcoind/bitcoin-0.20.1/bin/bitcoind
-        # bitcoind datadir
-        datadir = <span class="hljs-variable">${HOME}</span>/.bitcoin
-        # bitcoind<span class="hljs-built_in"> network </span>binding
-        bind = localhost
-        # bitcoind p2p<span class="hljs-built_in"> port
-</span>       <span class="hljs-built_in"> port </span>= 8333
-        # bitcoind rpc binding
+        <span class="hljs-comment"># Binary location of bitcoind</span>
+        binary = ${HOME}/.bitcoin-<span class="hljs-regexp">s/binaries/bitcoind/</span>bitcoin-<span class="hljs-number">0</span>.<span class="hljs-number">20.1</span>/bin/bitcoind
+        <span class="hljs-comment"># bitcoind datadir</span>
+        datadir = ${HOME}/.bitcoin
+        <span class="hljs-comment"># bitcoind network binding</span>
+        <span class="hljs-keyword">bind</span> = localhost
+        <span class="hljs-comment"># bitcoind p2p port</span>
+        port = <span class="hljs-number">8333</span>
+        <span class="hljs-comment"># bitcoind rpc binding</span>
         rpcbind = localhost
-        # bitcoind rpc<span class="hljs-built_in"> port
-</span>        rpcport = 8332
-        # bitcoind zmq<span class="hljs-built_in"> port </span><span class="hljs-keyword">for</span> all services
-        zmqport = 29000
+        <span class="hljs-comment"># bitcoind rpc port</span>
+        rpcport = <span class="hljs-number">8332</span>
+        <span class="hljs-comment"># bitcoind zmq port for all services</span>
+        zmqport = <span class="hljs-number">29000</span>
     }
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="step-6-optional-moving-to-testnet"></a><a href="#step-6-optional-moving-to-testnet" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 6 (Optional): Moving To Testnet</h2>

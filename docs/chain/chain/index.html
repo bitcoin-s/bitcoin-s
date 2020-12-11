@@ -88,21 +88,21 @@ val getBestBlockHash = SyncUtil.getBestBlockHashFunc(rpcCli)
 val getBlockHeader = SyncUtil.getBlockHeaderFunc(rpcCli)
 
 // set a data directory
-val datadir = Files.createTempDirectory("bitcoin-s-test")
+val datadir = Files.createTempDirectory(&quot;bitcoin-s-test&quot;)
 
 // set the current network to regtest
 import com.typesafe.config.ConfigFactory
 val config = ConfigFactory.parseString {
-    """
+    &quot;&quot;&quot;
     | bitcoin-s {
     |   network = regtest
     | }
-    |""".stripMargin
+    |&quot;&quot;&quot;.stripMargin
 }
 
 implicit val chainConfig = ChainAppConfig(datadir, config)
 
-// Initialize the needed database tables if they don't exist:
+// Initialize the needed database tables if they don&#x27;t exist:
 val chainProjectInitF = chainConfig.start()
 val blockHeaderDAO = BlockHeaderDAO()
 val compactFilterHeaderDAO = CompactFilterHeaderDAO()
@@ -120,16 +120,16 @@ val syncedChainApiF = for {
 } yield synced
 
 val syncResultF = syncedChainApiF.flatMap { chainApi =&gt;
-  chainApi.getBlockCount.map(count =&gt; println(s"chain api blockcount=${count}"))
+  chainApi.getBlockCount.map(count =&gt; println(s&quot;chain api blockcount=${count}&quot;))
 
-  rpcCli.getBlockCount.map(count =&gt; println(s"bitcoind blockcount=${count}"))
+  rpcCli.getBlockCount.map(count =&gt; println(s&quot;bitcoind blockcount=${count}&quot;))
 }
 
 syncResultF.onComplete { case result =&gt;
-  println(s"Sync result=${result}")
+  println(s&quot;Sync result=${result}&quot;)
 }
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-10-13 by Ben Carman</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/applications/gui"><span class="arrow-prev">← </span><span>GUI</span></a><a class="docs-next button" href="/docs/chain/filter-sync"><span>Syncing Blockfilters</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#syncing-and-verifying-block-headers">Syncing and verifying block headers</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/10/2020 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/applications/gui"><span class="arrow-prev">← </span><span>GUI</span></a><a class="docs-next button" href="/docs/chain/filter-sync"><span>Syncing Blockfilters</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#syncing-and-verifying-block-headers">Syncing and verifying block headers</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
