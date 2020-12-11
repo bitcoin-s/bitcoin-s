@@ -79,7 +79,7 @@ abstract class FeeUnitGen {
 
   /** Generates a FeeUnit based on the maxFee allowed for a transaction */
   def feeUnit(maxFee: Long): Gen[FeeUnit] = {
-    Gen.choose(1L, maxFee / 10000L).map { n =>
+    Gen.choose(1L, maxFee).map { n =>
       SatoshisPerKiloByte(Satoshis(n))
     }
   }
