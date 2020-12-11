@@ -44,6 +44,13 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     assert(km != dummy)
   }
 
+  it must "not put the bip39 password in the toString" in {
+    val passpharse = "test-bip39-passpharse"
+    val km = withInitializedKeyManager(bip39PasswordOpt = Some(passpharse))
+    assert(!km.toString.contains(passpharse))
+    assert(km.toString.contains("Masked(bip39password)"))
+  }
+
   it must "initialize the key manager" in {
     val entropy = MnemonicCode.getEntropy256Bits
     val aesPasswordOpt = KeyManagerTestUtil.aesPasswordOpt
