@@ -1,7 +1,8 @@
 package org.bitcoins.keymanager
 
-import java.nio.file.{Files, Path}
+import com.typesafe.config.ConfigFactory
 
+import java.nio.file.{Files, Path}
 import org.bitcoins.core.crypto.BIP39Seed
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.util.TimeUtil
@@ -9,7 +10,7 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.ReadMnemonicError._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkit.core.gen.{CryptoGenerators, StringGenerators}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.{BeforeAndAfterEach, FutureOutcome}
@@ -521,5 +522,43 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       assertThrows[RuntimeException](
         WalletStorage.getPrivateKeyFromDisk(seedPath, keyVersion, None, None))
 
+  }
+
+  it must "safely create 2 seeds in the seed folder" in {
+    walletConfA: WalletAppConfig =>
+      assert(!walletConfA.seedExists())
+      getAndWriteMnemonic(walletConfA)
+      assert(walletConfA.seedExists())
+
+      val otherWalletName = StringGenerators.genNonEmptyString
+        .suchThat(_ != walletConfA.walletNameOpt.getOrElse(""))
+        .sampleSome
+
+      val walletConfB = walletConfA.withOverrides(
+        ConfigFactory.parseString(
+          s"bitcoin-s.wallet.walletName = $otherWalletName"))
+
+      assert(!walletConfB.seedExists())
+      getAndWriteMnemonic(walletConfB)
+      assert(walletConfB.seedExists())
+
+      val expectedParentDir =
+        walletConfA.baseDatadir.resolve(WalletStorage.SEED_FOLDER_NAME)
+      assert(walletConfA.seedPath.getParent == expectedParentDir)
+      assert(walletConfB.seedPath.getParent == expectedParentDir)
+      assert(walletConfA.seedPath.getParent == walletConfB.seedPath.getParent)
+      assert(walletConfA.seedPath != walletConfB.seedPath)
+
+      val mnemonicAE =
+        WalletStorage.decryptMnemonicFromDisk(walletConfA.seedPath, passphrase)
+      val mnemonicBE =
+        WalletStorage.decryptMnemonicFromDisk(walletConfB.seedPath, passphrase)
+
+      (mnemonicAE, mnemonicBE) match {
+        case (Left(_), Left(_)) | (Right(_), Left(_)) | (Left(_), Right(_)) =>
+          fail() // if any of them error, then fail
+        case (Right(mnemonicA), Right(mnemonicB)) =>
+          assert(mnemonicA != mnemonicB)
+      }
   }
 }
