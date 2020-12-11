@@ -3,13 +3,13 @@ package org.bitcoins.core.wallet.builder
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Random, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 /** This trait is responsible for converting RawTxBuilderResults into
   * finalized (unsigned) transactions. This process usually includes
@@ -361,33 +361,105 @@ object ShufflingNonInteractiveFinalizer
   }
 }
 
-case class SubtractFeeFromOutputsFinalizer(
-    inputInfos: Vector[InputInfo],
-    feeRate: FeeUnit)
+/** Adds a an amount to the output with the given ScriptPubKey
+  * and subtracts that amount in equal proportions from the specified
+  * change ScriptPubKeys.
+  *
+  * This can be useful when you want to account for a future spending
+  * fee in this transaction to get nice output values on the spending tx.
+  */
+case class AddFutureFeeFinalizer(
+    spk: ScriptPubKey,
+    futureFee: CurrencyUnit,
+    changeSPKs: Vector[ScriptPubKey])
     extends RawTxFinalizer {
 
   override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
       ec: ExecutionContext): Future[Transaction] = {
-    val RawTxBuilderResult(version, inputs, outputs, lockTime) = txBuilderResult
+    val changeOutputs = txBuilderResult.outputs.filter(output =>
+      changeSPKs.contains(output.scriptPubKey))
 
-    val witnesses = inputInfos.map(InputInfo.getScriptWitness)
-    val txWithPossibleWitness = TransactionWitness.fromWitOpt(witnesses) match {
-      case _: EmptyWitness =>
-        BaseTransaction(version, inputs, outputs, lockTime)
-      case wit: TransactionWitness =>
-        WitnessTransaction(version, inputs, outputs, lockTime, wit)
+    val outputT = txBuilderResult.outputs.zipWithIndex
+      .find(_._1.scriptPubKey == spk) match {
+      case Some((output, index)) =>
+        val newOutput = output.copy(value = output.value + futureFee)
+        Success((newOutput, index))
+      case None =>
+        Failure(new RuntimeException(
+          s"Did not find expected SPK $spk in ${txBuilderResult.outputs.map(_.scriptPubKey)}"))
     }
 
-    val dummyTxF = TxUtil.addDummySigs(txWithPossibleWitness, inputInfos)
+    val outputsT = outputT.map {
+      case (newOutput, index) =>
+        val subFromChange =
+          Satoshis(futureFee.satoshis.toLong / changeOutputs.length)
+        val outputsMinusChange = txBuilderResult.outputs.map { output =>
+          if (changeSPKs.contains(output.scriptPubKey)) {
+            output.copy(value = output.value - subFromChange)
+          } else {
+            output
+          }
+        }
+
+        outputsMinusChange.updated(index, newOutput)
+    }
+
+    val txT = outputsT.map { outputs =>
+      txBuilderResult.toBaseTransaction.copy(outputs = outputs)
+    }
+
+    Future.fromTry(txT)
+  }
+}
+
+/** Subtracts the given fee from the output with the given ScriptPubKey.
+  * This can be useful if you are constructing a transaction without
+  * considering fees and have some after-the-fact external formula for
+  * computing fees and they need the removed.
+  */
+case class SubtractFromOutputFinalizer(spk: ScriptPubKey, subAmt: CurrencyUnit)
+    extends RawTxFinalizer {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    txBuilderResult.outputs.zipWithIndex.find(_._1.scriptPubKey == spk) match {
+      case Some((output, index)) =>
+        val newOutput = output.copy(value = output.value - subAmt)
+        val newOutputs = txBuilderResult.outputs.updated(index, newOutput)
+        Future.successful(
+          txBuilderResult.toBaseTransaction.copy(outputs = newOutputs))
+      case None =>
+        Future.failed(new RuntimeException(
+          s"Did not find expected SPK $spk in ${txBuilderResult.outputs.map(_.scriptPubKey)}"))
+    }
+  }
+}
+
+/** Assumes the input transaction has had no fee considerations
+  * and subtracts the estimated fee in equal portions from the
+  * outputs with the specified ScriptPubKeys
+  */
+case class SubtractFeeFromOutputsFinalizer(
+    inputInfos: Vector[InputInfo],
+    feeRate: FeeUnit,
+    spks: Vector[ScriptPubKey])
+    extends RawTxFinalizer {
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    val dummyTxF =
+      TxUtil.addDummySigs(txBuilderResult.toBaseTransaction, inputInfos)
 
     val outputsAfterFeeF = dummyTxF.map { dummyTx =>
-      SubtractFeeFromOutputsFinalizer.subtractFees(dummyTx,
-                                                   feeRate,
-                                                   outputs.map(_.scriptPubKey))
+      SubtractFeeFromOutputsFinalizer.subtractFees(
+        dummyTx,
+        feeRate,
+        spks
+      )
     }
 
     outputsAfterFeeF.map { outputsAfterFee =>
-      BaseTransaction(version, inputs, outputsAfterFee, lockTime)
+      txBuilderResult.toBaseTransaction.copy(outputs = outputsAfterFee)
     }
   }
 }
@@ -400,12 +472,10 @@ object SubtractFeeFromOutputsFinalizer {
       spks: Vector[ScriptPubKey]): Vector[TransactionOutput] = {
     val fee = feeRate.calc(tx)
 
-    val outputs = tx.outputs.zipWithIndex.filter {
-      case (output, _) => spks.contains(output.scriptPubKey)
-    }
-    val unchangedOutputs = tx.outputs.zipWithIndex.filterNot {
-      case (output, _) => spks.contains(output.scriptPubKey)
-    }
+    val (outputs, unchangedOutputs) =
+      tx.outputs.zipWithIndex.toVector.partition {
+        case (output, _) => spks.contains(output.scriptPubKey)
+      }
 
     val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
     val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
@@ -422,7 +492,81 @@ object SubtractFeeFromOutputsFinalizer {
       .dropRight(1)
       .:+((newLastOutput, lastOutputIndex))
 
-    (newOutputs ++ unchangedOutputs).sortBy(_._2).map(_._1).toVector
+    (newOutputs ++ unchangedOutputs).sortBy(_._2).map(_._1)
+  }
+}
+
+case class DualFundingInput(
+    scriptSignature: ScriptSignature,
+    maxWitnessLen: Int)
+
+/** Finalizes a dual-funded transaction given the DualFundingInputs
+  * from both parties, their change spks and the funding scriptpubkey
+  * for the dual funded protocol.
+  *
+  * This includes adding the future fee of spending transactions
+  * to the funding output as well as subtracting relevant fees
+  * from the change outputs. This finalizer filters dust outputs.
+  */
+case class DualFundingTxFinalizer(
+    offerInputs: Vector[DualFundingInput],
+    offerPayoutSPK: ScriptPubKey,
+    offerChangeSPK: ScriptPubKey,
+    acceptInputs: Vector[DualFundingInput],
+    acceptPayoutSPK: ScriptPubKey,
+    acceptChangeSPK: ScriptPubKey,
+    feeRate: SatoshisPerVirtualByte,
+    fundingSPK: ScriptPubKey)
+    extends RawTxFinalizer {
+
+  /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#fees */
+  private def computeFees(
+      inputs: Vector[DualFundingInput],
+      payoutSPK: ScriptPubKey,
+      changeSPK: ScriptPubKey): (CurrencyUnit, CurrencyUnit) = {
+    // https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#expected-weight-of-the-contract-execution-or-refund-transaction
+    val futureFeeWeight = 249 + 4 * payoutSPK.asmBytes.length
+    val futureFeeVBytes = Math.ceil(futureFeeWeight / 4.0).toLong
+    val futureFee = feeRate * futureFeeVBytes
+
+    // https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#expected-weight-of-the-funding-transaction
+    val inputWeight =
+      inputs.foldLeft(0L) {
+        case (weight, DualFundingInput(scriptSignature, maxWitnessLen)) =>
+          weight + 164 + 4 * scriptSignature.asmBytes.length + maxWitnessLen.toInt
+      }
+    val outputWeight = 36 + 4 * changeSPK.asmBytes.length
+    val weight = 107 + outputWeight + inputWeight
+    val vbytes = Math.ceil(weight / 4.0).toLong
+    val fundingFee = feeRate * vbytes
+
+    (futureFee, fundingFee)
+  }
+
+  lazy val (offerFutureFee, offerFundingFee) =
+    computeFees(offerInputs, offerPayoutSPK, offerChangeSPK)
+
+  lazy val (acceptFutureFee, acceptFundingFee) =
+    computeFees(acceptInputs, acceptPayoutSPK, acceptChangeSPK)
+
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    val addOfferFutureFee =
+      AddFutureFeeFinalizer(fundingSPK, offerFutureFee, Vector(offerChangeSPK))
+    val addAcceptFutureFee = AddFutureFeeFinalizer(fundingSPK,
+                                                   acceptFutureFee,
+                                                   Vector(acceptChangeSPK))
+    val subtractOfferFundingFee =
+      SubtractFromOutputFinalizer(offerChangeSPK, offerFundingFee)
+    val subtractAcceptFundingFee =
+      SubtractFromOutputFinalizer(acceptChangeSPK, acceptFundingFee)
+
+    addOfferFutureFee
+      .andThen(addAcceptFutureFee)
+      .andThen(subtractOfferFundingFee)
+      .andThen(subtractAcceptFundingFee)
+      .andThen(FilterDustFinalizer)
+      .buildTx(txBuilderResult)
   }
 }
 

@@ -236,6 +236,58 @@ trait BaseAsyncTest
     }
   }
 
+  /** Runs all property based tests in parallel. This is a convenient optimization
+    * for synchronous property based tests
+    */
+  def forAllParallel[A, B, C, D, E](
+      genA: Gen[A],
+      genB: Gen[B],
+      genC: Gen[C],
+      genD: Gen[D])(func: (A, B, C, D) => Assertion): Future[Assertion] = {
+    forAllAsync(genA, genB, genC, genD) {
+      case (inputA, inputB, inputC, inputD) =>
+        Future {
+          func(inputA, inputB, inputC, inputD)
+        }
+    }
+  }
+
+  /** Runs all property based tests in parallel. This is a convenient optimization
+    * for synchronous property based tests
+    */
+  def forAllParallel[A, B, C, D, E](
+      genA: Gen[A],
+      genB: Gen[B],
+      genC: Gen[C],
+      genD: Gen[D],
+      genE: Gen[E])(func: (A, B, C, D, E) => Assertion): Future[Assertion] = {
+    forAllAsync(genA, genB, genC, genD, genE) {
+      case (inputA, inputB, inputC, inputD, inputE) =>
+        Future {
+          func(inputA, inputB, inputC, inputD, inputE)
+        }
+    }
+  }
+
+  /** Runs all property based tests in parallel. This is a convenient optimization
+    * for synchronous property based tests
+    */
+  def forAllParallel[A, B, C, D, E, F](
+      genA: Gen[A],
+      genB: Gen[B],
+      genC: Gen[C],
+      genD: Gen[D],
+      genE: Gen[E],
+      genF: Gen[F])(
+      func: (A, B, C, D, E, F) => Assertion): Future[Assertion] = {
+    forAllAsync(genA, genB, genC, genD, genE, genF) {
+      case (inputA, inputB, inputC, inputD, inputE, inputF) =>
+        Future {
+          func(inputA, inputB, inputC, inputD, inputE, inputF)
+        }
+    }
+  }
+
   /** Makes sure we have aggregated all of our test runs */
   private def forAllHelper(
       testRunsF: java.util.concurrent.CopyOnWriteArrayList[

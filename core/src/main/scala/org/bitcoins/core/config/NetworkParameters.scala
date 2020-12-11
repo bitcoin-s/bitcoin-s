@@ -1,7 +1,7 @@
 package org.bitcoins.core.config
 
 import org.bitcoins.core.protocol.blockchain._
-import org.bitcoins.crypto.{CryptoUtil, StringFactory}
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE, StringFactory}
 import scodec.bits.ByteVector
 
 sealed abstract class NetworkParameters {
@@ -68,8 +68,6 @@ sealed abstract class MainNet extends BitcoinNetwork {
     * @inheritdoc
     */
   override def rpcPort = 8332
-  //mainnet doesn't need to be specified like testnet or regtest
-  override def name = ""
 
   /**
     * @inheritdoc
@@ -202,6 +200,13 @@ object Networks extends StringFactory[NetworkParameters] {
 
   def bytesToNetwork: Map[ByteVector, NetworkParameters] =
     BitcoinNetworks.bytesToNetwork
+
+  def fromChainHash(chainHash: DoubleSha256DigestBE): NetworkParameters = {
+    knownNetworks
+      .find(_.chainParams.genesisBlock.blockHeader.hashBE == chainHash)
+      .getOrElse(throw new IllegalArgumentException(
+        s"$chainHash is not a recognized Chain Hash"))
+  }
 }
 
 object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
@@ -228,7 +233,7 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
     }
 
   /** Map of magic network bytes to the corresponding network */
-  val magicToNetwork: Map[ByteVector, NetworkParameters] =
+  lazy val magicToNetwork: Map[ByteVector, NetworkParameters] =
     Map(
       MainNet.magicBytes -> MainNet,
       TestNet3.magicBytes -> TestNet3,
@@ -236,7 +241,7 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
       SigNet.magicBytes -> SigNet
     )
 
-  def bytesToNetwork: Map[ByteVector, NetworkParameters] =
+  lazy val bytesToNetwork: Map[ByteVector, NetworkParameters] =
     Map(
       MainNet.p2shNetworkByte -> MainNet,
       MainNet.p2pkhNetworkByte -> MainNet,
