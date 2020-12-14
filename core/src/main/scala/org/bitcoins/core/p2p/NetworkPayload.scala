@@ -622,6 +622,8 @@ case class CJDNSAddrV2Message(
     addrBytes: ByteVector,
     port: UInt16)
     extends AddrV2Message {
+  require(addrBytes.head == 0xfc.toByte,
+          s"CJDNS addresses start with 0xFC, got $addrBytes")
   require(
     addrBytes.size == AddrV2Message.CJDNS_ADDR_LENGTH,
     s"CJDNS addresses are ${AddrV2Message.CJDNS_ADDR_LENGTH} bytes, got ${addrBytes.size}")

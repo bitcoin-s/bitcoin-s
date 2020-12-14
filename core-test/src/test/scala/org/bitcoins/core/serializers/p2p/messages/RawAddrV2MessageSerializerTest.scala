@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
-import scodec.bits.HexStringSyntax
+import scodec.bits.{ByteVector, HexStringSyntax}
 
 import java.net.InetAddress
 
@@ -67,9 +67,13 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
     for {
       time <- NumberGenerator.uInt32s
       services <- NumberGenerator.compactSizeUInts
-      addrBytes <- NumberGenerator.bytevector(AddrV2Message.CJDNS_ADDR_LENGTH)
+      addrBytes <-
+        NumberGenerator.bytevector(AddrV2Message.CJDNS_ADDR_LENGTH - 1)
       port <- NumberGenerator.uInt16
-    } yield CJDNSAddrV2Message(time, services, addrBytes, port)
+    } yield CJDNSAddrV2Message(time,
+                               services,
+                               ByteVector.fromByte(0xfc.toByte) ++ addrBytes,
+                               port)
   }
 
   def unknownAddrV2MessageGen: Gen[UnknownNetworkAddrV2Message] = {
@@ -177,11 +181,11 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
   it must "parse a CJDNSAddrV2Message" in {
     val msg = CJDNSAddrV2Message(UInt32(4523),
                                  CompactSizeUInt(UInt64(53453453L)),
-                                 hex"00000000000000000000000000000000",
+                                 hex"fc000000000000000000000000000000",
                                  UInt16(8333))
 
     assert(
-      "000011abfe8da22f030600000000000000000000000000000000208d" == msg.hex)
+      "000011abfe8da22f0306fc000000000000000000000000000000208d" == msg.hex)
   }
 
   "UnknownNetworkAddrV2Message" must "have serialization symmetry" in {
