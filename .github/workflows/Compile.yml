@@ -1,0 +1,48 @@
+name: Compile & Formatting
+env:
+  COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+
+on:
+  pull_request:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
+      - name: Compile and Check Formatting
+        run: sbt ++2.12.12 test:compile scalafmtCheckAll
+
+# FIXME Need new secp256k1 bindings on windows
+#  WindowsTest:
+#    runs-on: windows-latest
+#    steps:
+#      - name: Configure git
+#        run: "git config --global core.autocrlf false"
+#        shell: bash
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#      - name: Setup Scala
+#        uses: olafurpg/setup-scala@v10
+#      - name: Cache
+#        uses: actions/cache@v2
+#        with:
+#          path: |
+#            ~/.ivy2/cache
+#            ~/.sbt
+#            ~/.bitcoin-s/binaries
+#          key: ${{ runner.os }}-cache
+#      - name: Windows Crypto, Core, and Database tests
+#        run: sbt ++${SCALA_2_13} cryptoTest/test coreTest/test dbCommonsTest/test
+#        shell: bash
