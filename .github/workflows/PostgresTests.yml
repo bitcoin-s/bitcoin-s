@@ -1,0 +1,27 @@
+name: PostgreSQL Tests
+env:
+  COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      PG_ENABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
+      - name: run tests
+        run: sbt ++2.13.4 downloadBitcoind dbCommonsTest/test walletTest/test chainTest/test nodeTest/test

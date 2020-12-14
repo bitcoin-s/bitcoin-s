@@ -1,0 +1,25 @@
+name: Linux 2.12 KeyManager, Wallet, and DLC tests
+env:
+  COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-cache
+      - name: run tests
+        run: sbt ++2.12.12 downloadBitcoind coverage keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls feeProviderTest/test walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls
