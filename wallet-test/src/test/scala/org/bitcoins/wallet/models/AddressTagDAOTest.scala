@@ -1,7 +1,5 @@
 package org.bitcoins.wallet.models
 
-import java.sql.SQLException
-
 import org.bitcoins.core.api.wallet.db.AddressTagDb
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
 import org.bitcoins.core.wallet.utxo.{
@@ -12,12 +10,13 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.util.TestUtil
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.WalletTestUtil
 import org.scalatest.Assertion
 
+import java.sql.SQLException
 import scala.concurrent.Future
 
-class AddressTagDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
+class AddressTagDAOTest extends WalletDAOFixture {
 
   behavior of "AddressTagDAO"
 
