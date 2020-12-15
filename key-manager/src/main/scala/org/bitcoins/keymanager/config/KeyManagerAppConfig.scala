@@ -46,22 +46,21 @@ case class KeyManagerAppConfig(
   }
 
   override def start(): Future[Unit] = {
-    walletNameOpt match {
-      case Some(_) => FutureUtil.unit
-      case None =>
-        if (!seedExists()) {
-          val defaultFile =
-            baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
-          // Copy key manager file to new location
-          if (WalletStorage.seedExists(defaultFile)) {
-            logger.info(s"Copying seed file to seeds folder $seedPath")
-            // Create directory
-            Files.createDirectories(seedPath.getParent)
-            Files.copy(defaultFile, seedPath)
-          }
-        }
-        FutureUtil.unit
+    val oldDefaultFile =
+      baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+
+    val newDefaultFile = baseDatadir
+      .resolve(WalletStorage.SEED_FOLDER_NAME)
+      .resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+
+    if (!Files.exists(newDefaultFile) && Files.exists(oldDefaultFile)) {
+      // Copy key manager file to new location
+      logger.info(s"Copying seed file to seeds folder $newDefaultFile")
+      // Create directory
+      Files.createDirectories(newDefaultFile.getParent)
+      Files.copy(oldDefaultFile, newDefaultFile)
     }
+    FutureUtil.unit
   }
 
   override def stop(): Future[Unit] = FutureUtil.unit
