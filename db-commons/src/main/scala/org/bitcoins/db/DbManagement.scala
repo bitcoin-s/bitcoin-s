@@ -9,7 +9,7 @@ import java.nio.file.Files
 import scala.concurrent.{ExecutionContext, Future}
 
 trait DbManagement extends BitcoinSLogger {
-  _: JdbcProfileComponent[AppConfig] =>
+  _: JdbcProfileComponent[DbAppConfig] =>
   import profile.api._
 
   import scala.language.implicitConversions

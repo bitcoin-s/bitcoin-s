@@ -31,7 +31,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class WalletAppConfig(
     private val directory: Path,
     private val conf: Config*)(implicit override val ec: ExecutionContext)
-    extends AppConfig
+    extends DbAppConfig
     with WalletDbManagement
     with JdbcProfileComponent[WalletAppConfig] {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList

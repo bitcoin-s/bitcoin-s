@@ -64,6 +64,8 @@ case class KeyManagerAppConfig(
     }
   }
 
+  override def stop(): Future[Unit] = FutureUtil.unit
+
   lazy val aesPasswordOpt: Option[AesPassword] = {
     val passOpt = config.getStringOrNone(s"bitcoin-s.$moduleName.aesPassword")
     passOpt.flatMap(AesPassword.fromStringOpt)

@@ -17,8 +17,8 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 abstract class CRUD[T, PrimaryKeyType](implicit
     private val ec: ExecutionContext,
-    override val appConfig: AppConfig)
-    extends JdbcProfileComponent[AppConfig] {
+    override val appConfig: DbAppConfig)
+    extends JdbcProfileComponent[DbAppConfig] {
 
   val schemaName: Option[String] = appConfig.schemaName
 
@@ -184,7 +184,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
   def count(): Future[Int] = safeDatabase.run(table.length.result)
 }
 
-case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
+case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
     extends BitcoinSLogger {
 
   import jdbcProfile.database

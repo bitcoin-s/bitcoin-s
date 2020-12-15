@@ -4,7 +4,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
+trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends BitcoinSLogger {
 
   def appConfig: ConfigType
 
