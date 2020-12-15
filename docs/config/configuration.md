@@ -147,6 +147,7 @@ bitcoin-s {
         # wallet name for each of them. They will each have
         # their own unique seed and database or schema,
         # depending on the database driver.
+        # The wallet name can contain letters, numbers, and underscores '_'.
         # walletName = MyWallet0
 
         defaultAccountType = legacy # legacy, segwit, nested-segwit
