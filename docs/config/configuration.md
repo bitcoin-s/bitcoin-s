@@ -263,7 +263,6 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             driver = org.postgresql.Driver
-            driveName = postgresql
 
             # these 3 options will result into a jdbc url of
             # "jdbc:postgresql://localhost:5432/database"
@@ -303,7 +302,6 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             driver = org.postgresql.Driver
-            driverName = postgresql
             name = chaindb
             host = localhost
             port = 5432
@@ -315,7 +313,6 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             driver = org.postgresql.Driver
-            driverName = postgresql
             name = walletdb
             host = localhost
             port = 5432
