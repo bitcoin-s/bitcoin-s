@@ -143,6 +143,11 @@ bitcoin-s {
 
     # settings for wallet module
     wallet {
+        # You can have multiple wallets by setting a different
+        # wallet name for each of them. They will each have
+        # their own seed and database.
+        # walletName = MyWallet1
+
         defaultAccountType = legacy # legacy, segwit, nested-segwit
 
         bloomFalsePositiveRate = 0.0001 # percentage
@@ -256,7 +261,14 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             driver = org.postgresql.Driver
-            url = "jdbc:postgresql://localhost:5432/database"
+            driveName = postgresql
+
+            # these 3 options will result into a jdbc url of
+            # "jdbc:postgresql://localhost:5432/database"
+            name = database
+            host = localhost
+            port = 5432
+
             user = "user"
             password = "topsecret"
             numThreads = 5
@@ -289,7 +301,10 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             driver = org.postgresql.Driver
-            url = "jdbc:postgresql://localhost:5432/chaindb"
+            driverName = postgresql
+            name = chaindb
+            host = localhost
+            port = 5432
             user = "user"
             password = "topsecret"
         }
@@ -298,7 +313,10 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             driver = org.postgresql.Driver
-            url = "jdbc:postgresql://localhost:5432/walletdb"
+            driverName = postgresql
+            name = walletdb
+            host = localhost
+            port = 5432
             user = "user"
             password = "topsecret"
         }

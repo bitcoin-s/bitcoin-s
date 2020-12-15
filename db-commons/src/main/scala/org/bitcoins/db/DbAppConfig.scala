@@ -27,7 +27,7 @@ abstract class DbAppConfig extends AppConfig {
       case SQLite =>
         s""""jdbc:sqlite:"$dbPath/$dbName"""
       case PostgreSQL =>
-        s""""jdbc:postgresql://$dbHost:$dbPort/postgres""""
+        s""""jdbc:postgresql://$dbHost:$dbPort/$dbName""""
     }
   }
 

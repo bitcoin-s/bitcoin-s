@@ -160,6 +160,7 @@ object BitcoinSTestAppConfig {
       s""" $name.profile = "slick.jdbc.PostgresProfile$$"
          | $name.db {
          |   driverName = postgres
+         |   name = postgres
          |   url = "$url"
          |   driver = "org.postgresql.Driver"
          |   user = "postgres"
