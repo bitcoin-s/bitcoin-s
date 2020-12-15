@@ -145,8 +145,9 @@ bitcoin-s {
     wallet {
         # You can have multiple wallets by setting a different
         # wallet name for each of them. They will each have
-        # their own seed and database.
-        # walletName = MyWallet1
+        # their own unique seed and database or schema,
+        # depending on the database driver.
+        # walletName = MyWallet0
 
         defaultAccountType = legacy # legacy, segwit, nested-segwit
 
