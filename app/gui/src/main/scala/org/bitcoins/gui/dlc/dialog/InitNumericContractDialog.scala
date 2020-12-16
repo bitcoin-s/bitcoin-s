@@ -194,8 +194,12 @@ object InitNumericContractDialog {
       }
 
       roundingIntervalsT match {
-        case Failure(_)         => RoundingIntervals.noRounding
-        case Success(intervals) => RoundingIntervals(intervals)
+        case Failure(_) => RoundingIntervals.noRounding
+        case Success(intervals) =>
+          RoundingIntervals(intervals.map {
+            case (firstOutcome, roundingMod) =>
+              RoundingIntervals.IntervalStart(firstOutcome, roundingMod)
+          })
       }
     }
 
