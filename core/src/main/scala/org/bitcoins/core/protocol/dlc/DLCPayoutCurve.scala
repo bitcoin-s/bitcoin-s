@@ -71,6 +71,15 @@ sealed trait OutcomePayoutPoint {
   def outcome: BigDecimal
   def payout: Satoshis
   def isEndpoint: Boolean
+
+  def copy(
+      outcome: BigDecimal = this.outcome,
+      payout: Satoshis = this.payout): OutcomePayoutPoint = {
+    this match {
+      case OutcomePayoutEndpoint(_, _) => OutcomePayoutEndpoint(outcome, payout)
+      case OutcomePayoutMidpoint(_, _) => OutcomePayoutMidpoint(outcome, payout)
+    }
+  }
 }
 
 object OutcomePayoutPoint {

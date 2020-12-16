@@ -269,20 +269,15 @@ object DLCStatus {
       val (sigPubKey, numSigs) = outcome match {
         case EnumOutcome(outcome) =>
           val sigPoint = oraclePubKey.computeSigPoint(
-            CryptoUtil.sha256(outcome).bytes,
+            CryptoUtil.sha256(outcome),
             aggregateR(1))
 
           (sigPoint, 1)
         case UnsignedNumericOutcome(digits) =>
-          val sigPoint = digits
-            .zip(rVals.take(digits.length))
-            .map {
-              case (digit, nonce) =>
-                oraclePubKey.computeSigPoint(
-                  CryptoUtil.sha256(digit.toString).bytes,
-                  nonce)
-            }
-            .reduce(_.add(_))
+          val digitBytes =
+            digits.map(d => CryptoUtil.serializeForHash(d.toString))
+          val sigPoint =
+            oraclePubKey.computeSigPoint(digitBytes, rVals.take(digits.length))
 
           (sigPoint, digits.length)
       }

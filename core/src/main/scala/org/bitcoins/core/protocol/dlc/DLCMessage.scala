@@ -42,13 +42,7 @@ object DLCMessage {
       * This point is used for adaptor signing.
       */
     def sigPoint(outcome: DLCOutcomeType): ECPublicKey = {
-      outcome.serialized
-        .zip(nonces)
-        .map {
-          case (bytes, nonce) =>
-            pubKey.computeSigPoint(CryptoUtil.sha256(bytes).bytes, nonce)
-        }
-        .reduce(_.add(_))
+      pubKey.computeSigPoint(outcome.serialized, nonces)
     }
   }
 

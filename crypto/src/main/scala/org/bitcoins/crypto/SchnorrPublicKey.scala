@@ -37,6 +37,21 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
     computeSigPoint(data, nonce, compressed = true)
   }
 
+  def computeSigPoint(hash: HashDigest, nonce: SchnorrNonce): ECPublicKey = {
+    computeSigPoint(hash.bytes, nonce)
+  }
+
+  def computeSigPoint(
+      bytesToHash: Vector[ByteVector],
+      nonces: Vector[SchnorrNonce]): ECPublicKey = {
+    bytesToHash
+      .zip(nonces)
+      .map {
+        case (bytes, nonce) => computeSigPoint(CryptoUtil.sha256(bytes), nonce)
+      }
+      .reduce(_.add(_))
+  }
+
   // TODO: match on CryptoContext once secp version is added
   def computeSigPoint(
       data: ByteVector,
