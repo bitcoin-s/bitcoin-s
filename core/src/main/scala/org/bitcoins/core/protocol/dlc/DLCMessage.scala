@@ -1,4 +1,4 @@
-package org.bitcoins.commons.jsonmodels.dlc
+package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency.Satoshis

@@ -1,6 +1,5 @@
-package org.bitcoins.commons.dlc
+package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen

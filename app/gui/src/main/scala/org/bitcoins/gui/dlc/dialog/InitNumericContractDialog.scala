@@ -1,12 +1,12 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.MultiNonceContractInfo
-import org.bitcoins.commons.jsonmodels.dlc.{
+import org.bitcoins.core.protocol.dlc.DLCMessage.MultiNonceContractInfo
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.dlc.{
   OutcomeValueFunction,
   OutcomeValuePoint,
   RoundingIntervals
 }
-import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.DLCPlotUtil
 import org.bitcoins.gui.util.GUIUtil.setNumericInput

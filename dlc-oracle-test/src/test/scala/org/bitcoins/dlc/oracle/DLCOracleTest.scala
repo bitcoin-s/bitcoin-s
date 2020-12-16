@@ -1,11 +1,10 @@
 package org.bitcoins.dlc.oracle
 
 import java.time.Instant
-
-import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
+import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.TimeUtil

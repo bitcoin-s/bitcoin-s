@@ -1,13 +1,7 @@
-package org.bitcoins.commons.dlc
+package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.CETCalculator._
-import org.bitcoins.commons.jsonmodels.dlc.{
-  CETCalculator,
-  OutcomeValueFunction,
-  OutcomeValuePoint,
-  RoundingIntervals
-}
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.dlc.CETCalculator._
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 

@@ -1,4 +1,4 @@
-package org.bitcoins.commons.jsonmodels.dlc
+package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.util.NumberUtil

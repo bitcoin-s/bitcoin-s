@@ -1,12 +1,12 @@
 package org.bitcoins.gui.dlc
 
 import breeze.plot.{plot, Figure}
-import org.bitcoins.commons.jsonmodels.dlc.{
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.dlc.{
   CETCalculator,
   OutcomeValueFunction,
   RoundingIntervals
 }
-import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.util.NumberUtil
 
 object DLCPlotUtil {

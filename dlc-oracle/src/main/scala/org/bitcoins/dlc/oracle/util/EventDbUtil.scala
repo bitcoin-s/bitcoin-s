@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.oracle.util
 
-import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto.SchnorrNonce
 import org.bitcoins.dlc.oracle.storage.{EventDb, EventOutcomeDb}

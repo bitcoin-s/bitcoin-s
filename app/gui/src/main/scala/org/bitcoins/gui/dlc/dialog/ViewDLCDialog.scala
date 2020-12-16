@@ -1,10 +1,11 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+import org.bitcoins.core.protocol.dlc.DLCMessage.{
   MultiNonceContractInfo,
   SingleNonceContractInfo
 }
-import org.bitcoins.commons.jsonmodels.dlc._
+import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.dlc.DLCStatus
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
 import scalafx.Includes._

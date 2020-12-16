@@ -1,4 +1,4 @@
-package org.bitcoins.commons.jsonmodels.dlc
+package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
