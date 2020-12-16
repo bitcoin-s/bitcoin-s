@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.util.NumberUtil
+import org.bitcoins.core.util.{Indexed, NumberUtil}
 
 import scala.math.BigDecimal.RoundingMode
 
@@ -16,42 +16,42 @@ case class DLCPayoutCurve(points: Vector[OutcomePayoutPoint]) {
     * between which interpolation happens.
     * In other words these endpoints define the pieces of the piecewise function.
     */
-  lazy val endpoints: Vector[(OutcomePayoutPoint, Int)] =
-    points.zipWithIndex.filter(_._1.isEndpoint)
+  lazy val endpoints: Vector[Indexed[OutcomePayoutPoint]] =
+    Indexed(points).filter(_.element.isEndpoint)
 
   /** This Vector contains the function pieces between the endpoints */
   lazy val functionComponents: Vector[DLCPayoutCurveComponent] = {
     endpoints.init.zip(endpoints.tail).map { // All pairs of adjacent endpoints
-      case ((_, index), (_, nextIndex)) =>
+      case (Indexed(_, index), Indexed(_, nextIndex)) =>
         DLCPayoutCurveComponent(points.slice(index, nextIndex + 1))
     }
   }
 
-  private lazy val outcomes = endpoints.map(_._1.outcome)
+  private lazy val outcomes = endpoints.map(_.element.outcome)
 
   /** Returns the function component on which the given oracle outcome is
     * defined, along with its index
     */
-  def componentFor(outcome: BigDecimal): (DLCPayoutCurveComponent, Int) = {
+  def componentFor(outcome: BigDecimal): Indexed[DLCPayoutCurveComponent] = {
     val endpointIndex = NumberUtil.search(outcomes, outcome)
-    val (endpoint, _) = endpoints(endpointIndex)
+    val Indexed(endpoint, _) = endpoints(endpointIndex)
 
     if (
       endpoint.outcome == outcome && endpointIndex != functionComponents.length
     ) {
-      (functionComponents(endpointIndex), endpointIndex)
+      Indexed(functionComponents(endpointIndex), endpointIndex)
     } else {
-      (functionComponents(endpointIndex - 1), endpointIndex - 1)
+      Indexed(functionComponents(endpointIndex - 1), endpointIndex - 1)
     }
   }
 
   def getPayout(outcome: BigDecimal): Satoshis = {
-    val (func, _) = componentFor(outcome)
+    val Indexed(func, _) = componentFor(outcome)
     func(outcome)
   }
 
   def getPayout(outcome: BigDecimal, rounding: RoundingIntervals): Satoshis = {
-    val (func, _) = componentFor(outcome)
+    val Indexed(func, _) = componentFor(outcome)
     func(outcome, rounding)
   }
 

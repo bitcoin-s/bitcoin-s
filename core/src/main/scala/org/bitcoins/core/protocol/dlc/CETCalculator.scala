@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.tlv.{
   EnumOutcome,
   UnsignedNumericOutcome
 }
-import org.bitcoins.core.util.NumberUtil
+import org.bitcoins.core.util.{Indexed, NumberUtil}
 
 import scala.annotation.tailrec
 
@@ -68,7 +68,9 @@ object CETCalculator {
       function: DLCPayoutCurve,
       rounding: RoundingIntervals): Vector[CETRange] = {
     var componentStart = from
-    var (currentFunc, componentIndex) = function.componentFor(from)
+    val Indexed(firstCurrentFunc, firstComponentIndex) =
+      function.componentFor(from)
+    var (currentFunc, componentIndex) = (firstCurrentFunc, firstComponentIndex)
     var prevFunc = currentFunc
 
     val rangeBuilder = Vector.newBuilder[CETRange]
