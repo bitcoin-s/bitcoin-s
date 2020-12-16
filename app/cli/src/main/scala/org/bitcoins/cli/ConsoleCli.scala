@@ -1522,6 +1522,7 @@ object ConsoleCli {
         case (None, Some(err)) =>
           val msg = jsValueToString(err)
           error(msg)
+        case (None, None) => Success("")
         case (None, None) | (Some(_), Some(_)) =>
           error(s"Got unexpected response: $rawBody")
       }
