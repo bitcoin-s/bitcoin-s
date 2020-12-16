@@ -63,24 +63,50 @@ case class DLCPayoutCurve(points: Vector[OutcomePayoutPoint]) {
 
 /** A point on a DLC payout curve to be used for interpolation
   *
-  * @param outcome An element of the domain of possible events signed by the oracle
-  * @param payout The payout to the local party corresponding to outcome
-  * @param isEndpoint True if this point defines a boundary between pieces in the curve
+  * outcome: An element of the domain of possible events signed by the oracle
+  * payout: The payout to the local party corresponding to outcome
+  * isEndpoint: True if this point defines a boundary between pieces in the curve
   */
-case class OutcomePayoutPoint(
-    outcome: BigDecimal,
-    payout: Satoshis,
-    isEndpoint: Boolean)
+sealed trait OutcomePayoutPoint {
+  def outcome: BigDecimal
+  def payout: Satoshis
+  def isEndpoint: Boolean
+}
+
+object OutcomePayoutPoint {
+
+  def apply(
+      outcome: BigDecimal,
+      payout: Satoshis,
+      isEndpoint: Boolean): OutcomePayoutPoint = {
+    if (isEndpoint) {
+      OutcomePayoutEndpoint(outcome, payout)
+    } else {
+      OutcomePayoutMidpoint(outcome, payout)
+    }
+  }
+}
+
+case class OutcomePayoutEndpoint(outcome: BigDecimal, payout: Satoshis)
+    extends OutcomePayoutPoint {
+  override val isEndpoint: Boolean = true
+
+  def toMidpoint: OutcomePayoutMidpoint = OutcomePayoutMidpoint(outcome, payout)
+}
+
+case class OutcomePayoutMidpoint(outcome: BigDecimal, payout: Satoshis)
+    extends OutcomePayoutPoint {
+  override val isEndpoint: Boolean = false
+
+  def toEndpoint: OutcomePayoutEndpoint = OutcomePayoutEndpoint(outcome, payout)
+}
 
 /** A single piece of a larger piecewise function defined between left and right endpoints */
 sealed trait DLCPayoutCurveComponent {
-  def leftEndpoint: OutcomePayoutPoint
-  def midpoints: Vector[OutcomePayoutPoint]
-  def rightEndpoint: OutcomePayoutPoint
+  def leftEndpoint: OutcomePayoutEndpoint
+  def midpoints: Vector[OutcomePayoutMidpoint]
+  def rightEndpoint: OutcomePayoutEndpoint
 
-  require(leftEndpoint.isEndpoint, s"$leftEndpoint not an endpoint")
-  require(rightEndpoint.isEndpoint, s"$rightEndpoint not an endpoint")
-  require(midpoints.forall(!_.isEndpoint), s"$midpoints contained an endpoint")
   midpoints.headOption match {
     case Some(firstMidpoint) =>
       require(leftEndpoint.outcome < firstMidpoint.outcome,
@@ -111,15 +137,26 @@ sealed trait DLCPayoutCurveComponent {
 object DLCPayoutCurveComponent {
 
   def apply(points: Vector[OutcomePayoutPoint]): DLCPayoutCurveComponent = {
+    require(points.head.isEndpoint && points.last.isEndpoint,
+            s"First and last points must be endpoints, $points")
+    require(points.tail.init.forall(!_.isEndpoint),
+            s"Endpoint detected in middle, $points")
+
     points match {
-      case Vector(left, right) =>
+      case Vector(left: OutcomePayoutEndpoint, right: OutcomePayoutEndpoint) =>
         if (left.payout == right.payout) {
           OutcomePayoutConstant(left, right)
         } else {
           OutcomePayoutLine(left, right)
         }
-      case Vector(left, mid, right) => OutcomePayoutQuadratic(left, mid, right)
-      case Vector(left, mid1, mid2, right) =>
+      case Vector(left: OutcomePayoutEndpoint,
+                  mid: OutcomePayoutMidpoint,
+                  right: OutcomePayoutEndpoint) =>
+        OutcomePayoutQuadratic(left, mid, right)
+      case Vector(left: OutcomePayoutEndpoint,
+                  mid1: OutcomePayoutMidpoint,
+                  mid2: OutcomePayoutMidpoint,
+                  right: OutcomePayoutEndpoint) =>
         OutcomePayoutCubic(left, mid1, mid2, right)
       case _ => OutcomePayoutPolynomial(points)
     }
@@ -127,23 +164,23 @@ object DLCPayoutCurveComponent {
 }
 
 case class OutcomePayoutConstant(
-    leftEndpoint: OutcomePayoutPoint,
-    rightEndpoint: OutcomePayoutPoint)
+    leftEndpoint: OutcomePayoutEndpoint,
+    rightEndpoint: OutcomePayoutEndpoint)
     extends DLCPayoutCurveComponent {
   require(leftEndpoint.payout == rightEndpoint.payout,
           "Constant function must have same values on endpoints")
 
-  override lazy val midpoints: Vector[OutcomePayoutPoint] = Vector.empty
+  override lazy val midpoints: Vector[OutcomePayoutMidpoint] = Vector.empty
 
   override def apply(outcome: BigDecimal): Satoshis = leftEndpoint.payout
 }
 
 /** A Line between left and right endpoints defining a piece of a larger payout curve */
 case class OutcomePayoutLine(
-    leftEndpoint: OutcomePayoutPoint,
-    rightEndpoint: OutcomePayoutPoint)
+    leftEndpoint: OutcomePayoutEndpoint,
+    rightEndpoint: OutcomePayoutEndpoint)
     extends DLCPayoutCurveComponent {
-  override lazy val midpoints: Vector[OutcomePayoutPoint] = Vector.empty
+  override lazy val midpoints: Vector[OutcomePayoutMidpoint] = Vector.empty
 
   lazy val slope: BigDecimal = {
     (rightEndpoint.payout.toLong - leftEndpoint.payout.toLong) / (rightEndpoint.outcome - leftEndpoint.outcome)
@@ -161,11 +198,11 @@ case class OutcomePayoutLine(
   * A quadratic equation defines a parabola: https://en.wikipedia.org/wiki/Quadratic_function
   */
 case class OutcomePayoutQuadratic(
-    leftEndpoint: OutcomePayoutPoint,
-    midpoint: OutcomePayoutPoint,
-    rightEndpoint: OutcomePayoutPoint)
+    leftEndpoint: OutcomePayoutEndpoint,
+    midpoint: OutcomePayoutMidpoint,
+    rightEndpoint: OutcomePayoutEndpoint)
     extends DLCPayoutCurveComponent {
-  override lazy val midpoints: Vector[OutcomePayoutPoint] = Vector(midpoint)
+  override lazy val midpoints: Vector[OutcomePayoutMidpoint] = Vector(midpoint)
 
   private lazy val (x01, x02, x12) =
     (leftEndpoint.outcome - midpoint.outcome,
@@ -194,13 +231,13 @@ case class OutcomePayoutQuadratic(
 
 /** A cubic between left and right endpoints defining a piece of a larger payout curve */
 case class OutcomePayoutCubic(
-    leftEndpoint: OutcomePayoutPoint,
-    leftMidpoint: OutcomePayoutPoint,
-    rightMidpoint: OutcomePayoutPoint,
-    rightEndpoint: OutcomePayoutPoint)
+    leftEndpoint: OutcomePayoutEndpoint,
+    leftMidpoint: OutcomePayoutMidpoint,
+    rightMidpoint: OutcomePayoutMidpoint,
+    rightEndpoint: OutcomePayoutEndpoint)
     extends DLCPayoutCurveComponent {
 
-  override lazy val midpoints: Vector[OutcomePayoutPoint] =
+  override lazy val midpoints: Vector[OutcomePayoutMidpoint] =
     Vector(leftMidpoint, rightMidpoint)
 
   private lazy val (x01, x02, x03, x12, x13, x23) =
@@ -241,23 +278,37 @@ case class OutcomePayoutCubic(
 /** A polynomial interpolating points and defining a piece of a larger payout curve */
 case class OutcomePayoutPolynomial(points: Vector[OutcomePayoutPoint])
     extends DLCPayoutCurveComponent {
-  override lazy val leftEndpoint: OutcomePayoutPoint = points.head
-  override lazy val rightEndpoint: OutcomePayoutPoint = points.last
-  override lazy val midpoints: Vector[OutcomePayoutPoint] = points.tail.init
+  require(points.head.isEndpoint && points.last.isEndpoint,
+          s"First and last points must be endpoints, $points")
+  require(points.tail.init.forall(!_.isEndpoint),
+          s"Endpoint detected in middle, $points")
+
+  override lazy val leftEndpoint: OutcomePayoutEndpoint =
+    points.head.asInstanceOf[OutcomePayoutEndpoint]
+
+  override lazy val rightEndpoint: OutcomePayoutEndpoint =
+    points.last.asInstanceOf[OutcomePayoutEndpoint]
+
+  override lazy val midpoints: Vector[OutcomePayoutMidpoint] =
+    points.tail.init.asInstanceOf[Vector[OutcomePayoutMidpoint]]
 
   lazy val coefficients: Vector[BigDecimal] = {
-    points.map {
-      case OutcomePayoutPoint(xi, yi, _) =>
-        val denom = points.foldLeft(BigDecimal(1)) {
-          case (prodSoFar, OutcomePayoutPoint(xj, _, _)) =>
-            if (xj == xi) {
-              prodSoFar
-            } else {
-              prodSoFar * (xi - xj)
-            }
-        }
+    points.map { point =>
+      val xi = point.outcome
+      val yi = point.payout
 
-        yi.toLong / denom
+      val denom = points.foldLeft(BigDecimal(1)) {
+        case (prodSoFar, p) =>
+          val xj = p.outcome
+
+          if (xj == xi) {
+            prodSoFar
+          } else {
+            prodSoFar * (xi - xj)
+          }
+      }
+
+      yi.toLong / denom
     }
   }
 
@@ -266,8 +317,8 @@ case class OutcomePayoutPolynomial(points: Vector[OutcomePayoutPoint])
       case Some(point) => point.payout
       case None =>
         val allProd = points.foldLeft(BigDecimal(1)) {
-          case (prodSoFar, OutcomePayoutPoint(xj, _, _)) =>
-            prodSoFar * (outcome - xj)
+          case (prodSoFar, point) =>
+            prodSoFar * (outcome - point.outcome)
         }
 
         val value = coefficients.zipWithIndex.foldLeft(BigDecimal(0)) {
