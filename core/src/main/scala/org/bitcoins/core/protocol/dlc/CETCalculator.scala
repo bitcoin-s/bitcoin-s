@@ -65,7 +65,7 @@ object CETCalculator {
       from: Long,
       to: Long,
       totalCollateral: Satoshis,
-      function: OutcomeValueFunction,
+      function: DLCPayoutCurve,
       rounding: RoundingIntervals): Vector[CETRange] = {
     var componentStart = from
     var (currentFunc, componentIndex) = function.componentFor(from)
@@ -92,9 +92,9 @@ object CETCalculator {
     @tailrec
     def processConstantComponents(): Unit = {
       currentFunc match {
-        case OutcomeValueConstant(_, rightEndpoint) =>
+        case OutcomePayoutConstant(_, rightEndpoint) =>
           val componentEnd = rightEndpoint.outcome.toLongExact - 1
-          val funcValue = rightEndpoint.value
+          val funcValue = rightEndpoint.payout
 
           if (funcValue <= Satoshis.zero) {
             currentRange match {
@@ -132,7 +132,7 @@ object CETCalculator {
             updateComponent()
             processConstantComponents()
           }
-        case _: OutcomeValueFunctionComponent => ()
+        case _: DLCPayoutCurveComponent => ()
       }
     }
 
@@ -360,7 +360,7 @@ object CETCalculator {
   def computeCETs(
       base: Int,
       numDigits: Int,
-      function: OutcomeValueFunction,
+      function: DLCPayoutCurve,
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       min: Long,
@@ -392,7 +392,7 @@ object CETCalculator {
   def computeCETs(
       base: Int,
       numDigits: Int,
-      function: OutcomeValueFunction,
+      function: DLCPayoutCurve,
       totalCollateral: Satoshis,
       rounding: RoundingIntervals): Vector[(Vector[Int], Satoshis)] = {
     val min = 0

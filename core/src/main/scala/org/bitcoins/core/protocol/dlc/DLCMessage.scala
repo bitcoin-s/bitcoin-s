@@ -246,7 +246,7 @@ object DLCMessage {
     * a given payout curve.
     */
   case class MultiNonceContractInfo(
-      outcomeValueFunc: OutcomeValueFunction,
+      outcomeValueFunc: DLCPayoutCurve,
       base: Int,
       numDigits: Int,
       totalCollateral: Satoshis)
@@ -286,8 +286,8 @@ object DLCMessage {
         totalCollateral == this.totalCollateral,
         s"Input total collateral ($totalCollateral) did not match ${this.totalCollateral}")
 
-      val flippedFunc = OutcomeValueFunction(outcomeValueFunc.points.map {
-        point => point.copy(value = (totalCollateral - point.value).satoshis)
+      val flippedFunc = DLCPayoutCurve(outcomeValueFunc.points.map { point =>
+        point.copy(payout = (totalCollateral - point.payout).satoshis)
       })
 
       MultiNonceContractInfo(
@@ -300,7 +300,7 @@ object DLCMessage {
 
     override lazy val toTLV: ContractInfoV1TLV = {
       val tlvPoints = outcomeValueFunc.points.map { point =>
-        TLVPoint(point.outcome.toLongExact, point.value, point.isEndpoint)
+        TLVPoint(point.outcome.toLongExact, point.payout, point.isEndpoint)
       }
 
       ContractInfoV1TLV(base, numDigits, totalCollateral, tlvPoints)
@@ -313,10 +313,10 @@ object DLCMessage {
 
     override def fromTLV(tlv: ContractInfoV1TLV): MultiNonceContractInfo = {
       val points = tlv.points.map { point =>
-        OutcomeValuePoint(point.outcome, point.value, point.isEndpoint)
+        OutcomePayoutPoint(point.outcome, point.value, point.isEndpoint)
       }
 
-      MultiNonceContractInfo(OutcomeValueFunction(points),
+      MultiNonceContractInfo(DLCPayoutCurve(points),
                              tlv.base,
                              tlv.numDigits,
                              tlv.totalCollateral)

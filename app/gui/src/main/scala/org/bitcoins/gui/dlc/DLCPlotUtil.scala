@@ -4,7 +4,7 @@ import breeze.plot.{plot, Figure}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.{
   CETCalculator,
-  OutcomeValueFunction,
+  DLCPayoutCurve,
   RoundingIntervals
 }
 import org.bitcoins.core.util.NumberUtil
@@ -14,7 +14,7 @@ object DLCPlotUtil {
   def plotCETsWithOriginalCurve(
       base: Int,
       numDigits: Int,
-      function: OutcomeValueFunction,
+      function: DLCPayoutCurve,
       totalCollateral: Satoshis,
       rounding: RoundingIntervals): Figure = {
     plotCETsWithOriginalCurve(base,
@@ -28,7 +28,7 @@ object DLCPlotUtil {
   def plotCETsWithOriginalCurve(
       base: Int,
       numDigits: Int,
-      function: OutcomeValueFunction,
+      function: DLCPayoutCurve,
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       executedCET: Vector[Int]): Figure = {
@@ -43,7 +43,7 @@ object DLCPlotUtil {
   private def plotCETsWithOriginalCurve(
       base: Int,
       numDigits: Int,
-      function: OutcomeValueFunction,
+      function: DLCPayoutCurve,
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       executedCETOpt: Option[Vector[Int]]): Figure = {
@@ -63,7 +63,7 @@ object DLCPlotUtil {
   def plotCETs(
       base: Int,
       numDigits: Int,
-      function: OutcomeValueFunction,
+      function: DLCPayoutCurve,
       totalCollateral: Satoshis,
       rounding: RoundingIntervals): Figure = {
     plotCETs(base,
@@ -77,7 +77,7 @@ object DLCPlotUtil {
   def plotCETs(
       base: Int,
       numDigits: Int,
-      function: OutcomeValueFunction,
+      function: DLCPayoutCurve,
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       executedDLC: Vector[Int]): Figure = {
@@ -92,7 +92,7 @@ object DLCPlotUtil {
   private def plotCETs(
       base: Int,
       numDigits: Int,
-      function: OutcomeValueFunction,
+      function: DLCPayoutCurve,
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       executedCETOpt: Option[Vector[Int]]): Figure = {

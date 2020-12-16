@@ -3,8 +3,8 @@ package org.bitcoins.gui.dlc.dialog
 import org.bitcoins.core.protocol.dlc.DLCMessage.MultiNonceContractInfo
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.{
-  OutcomeValueFunction,
-  OutcomeValuePoint,
+  DLCPayoutCurve,
+  OutcomePayoutPoint,
   RoundingIntervals
 }
 import org.bitcoins.gui.GlobalData
@@ -163,7 +163,7 @@ object InitNumericContractDialog {
             if (xTF.text.value.nonEmpty && yTF.text.value.nonEmpty) {
               val x = xTF.text.value.toLong
               val y = yTF.text.value.toLong
-              Some(OutcomeValuePoint(x, Satoshis(y), checkBox.selected.value))
+              Some(OutcomePayoutPoint(x, Satoshis(y), checkBox.selected.value))
             } else {
               None
             }
@@ -172,7 +172,7 @@ object InitNumericContractDialog {
         val sorted = outcomesValuePoints.sortBy(_.outcome)
         require(sorted == outcomesValuePoints, "Must be sorted by outcome")
 
-        val func = OutcomeValueFunction(outcomesValuePoints)
+        val func = DLCPayoutCurve(outcomesValuePoints)
         MultiNonceContractInfo(func, base, numDigits, totalCollateral)
       }
     }
