@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.fixtures
 
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
 import org.scalatest._
@@ -16,9 +17,27 @@ case class WalletDAOs(
     incomingTxDAO: IncomingTransactionDAO,
     outgoingTxDAO: OutgoingTransactionDAO,
     scriptPubKeyDAO: ScriptPubKeyDAO,
-    stateDescriptorDAO: WalletStateDescriptorDAO)
+    stateDescriptorDAO: WalletStateDescriptorDAO) {
 
-trait WalletDAOFixture extends BitcoinSWalletTest {
+  val list = Vector(scriptPubKeyDAO,
+                    accountDAO,
+                    addressDAO,
+                    addressTagDAO,
+                    transactionDAO,
+                    incomingTxDAO,
+                    utxoDAO,
+                    outgoingTxDAO,
+                    stateDescriptorDAO)
+}
+
+trait WalletDAOFixture extends BitcoinSFixture with EmbeddedPg {
+
+  implicit protected val config: WalletAppConfig =
+    BitcoinSTestAppConfig
+      .getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl())
+      .walletConf
+
+  final override type FixtureParam = WalletDAOs
 
   private lazy val daos: WalletDAOs = {
     val account = AccountDAO()
@@ -41,27 +60,20 @@ trait WalletDAOFixture extends BitcoinSWalletTest {
                stateDescriptorDAO)
   }
 
-  final override type FixtureParam = WalletDAOs
-
-  implicit private val walletConfig: WalletAppConfig = config
-
-  override def afterAll(): Unit = {
-    super.afterAll()
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(
+      build = () => {
+        Future(config.migrate()).map(_ => daos)
+      },
+      destroy = () => dropAll()
+    )(test)
   }
 
-  def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    makeFixture(build = () => Future(walletConfig.migrate()).map(_ => daos),
-                destroy = () => dropAll())(test)
-
-  def dropAll(): Future[Unit] = {
+  private def dropAll(): Future[Unit] = {
     val res = for {
-      _ <- walletConfig.dropTable("flyway_schema_history")
-      _ <- walletConfig.dropAll()
+      _ <- FutureUtil.sequentially(daos.list.reverse)(dao => dao.deleteAll())
     } yield ()
-    res.failed.foreach { ex =>
-      ex.printStackTrace()
-    }
+    res.failed.foreach(_.printStackTrace())
     res
   }
-
 }

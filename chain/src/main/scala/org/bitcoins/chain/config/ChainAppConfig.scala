@@ -1,7 +1,5 @@
 package org.bitcoins.chain.config
 
-import java.nio.file.Path
-
 import com.typesafe.config.{Config, ConfigException}
 import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.chain.db.ChainDbManagement
@@ -11,6 +9,7 @@ import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.db._
 
+import java.nio.file.Path
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S chain verification module
@@ -20,7 +19,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class ChainAppConfig(
     private val directory: Path,
     private val confs: Config*)(implicit override val ec: ExecutionContext)
-    extends AppConfig
+    extends DbAppConfig
     with ChainDbManagement
     with JdbcProfileComponent[ChainAppConfig] {
 

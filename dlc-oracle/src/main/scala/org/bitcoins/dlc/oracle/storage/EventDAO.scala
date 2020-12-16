@@ -1,7 +1,5 @@
 package org.bitcoins.dlc.oracle.storage
 
-import java.time.Instant
-
 import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv.{
   EventDescriptorTLV,
@@ -9,14 +7,16 @@ import org.bitcoins.core.protocol.tlv.{
   OracleEventV0TLV
 }
 import org.bitcoins.crypto._
-import org.bitcoins.db.{AppConfig, CRUD, DbCommonsColumnMappers, SlickUtil}
+import org.bitcoins.db.{CRUD, DbCommonsColumnMappers, SlickUtil}
+import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 case class EventDAO()(implicit
     val ec: ExecutionContext,
-    override val appConfig: AppConfig)
+    override val appConfig: DLCOracleAppConfig)
     extends CRUD[EventDb, SchnorrNonce]
     with SlickUtil[EventDb, SchnorrNonce] {
 

@@ -5,29 +5,41 @@ import org.bitcoins.db.DatabaseDriver._
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.{FlywayException, MigrationInfoService}
 
+import java.nio.file.Files
 import scala.concurrent.{ExecutionContext, Future}
 
 trait DbManagement extends BitcoinSLogger {
-  _: JdbcProfileComponent[AppConfig] =>
+  _: JdbcProfileComponent[DbAppConfig] =>
   import profile.api._
 
   import scala.language.implicitConversions
 
   private lazy val flyway: Flyway = {
     val module = appConfig.moduleName
+
+    val driverName = appConfig.driver match {
+      case SQLite     => "sqlite"
+      case PostgreSQL => "postgresql"
+    }
+
     val config = {
       val conf = Flyway
         .configure()
-        .locations(s"classpath:${driverName}/${module}/migration/")
-      if (isPostgres) {
-        conf
-          .schemas(module)
-          .defaultSchema(module)
-      } else {
-        conf
+        .locations(s"classpath:$driverName/$module/migration/")
+      appConfig.schemaName match {
+        case Some(schema) =>
+          conf
+            .schemas(schema)
+            .defaultSchema(schema)
+        case None => conf
       }
     }
-    config.dataSource(jdbcUrl, username, password).load
+
+    // Remove "s needed for config
+    val url = appConfig.jdbcUrl.replace("\"", "")
+    config
+      .dataSource(url, username, password)
+      .load
   }
 
   /** Internally, slick defines the schema member as
@@ -80,7 +92,7 @@ trait DbManagement extends BitcoinSLogger {
       createIfNotExists: Boolean = true)(implicit
       ec: ExecutionContext): Future[Unit] = {
     val tableName = table.baseTableRow.tableName
-    logger.debug(s"Creating table $tableName with DB config: ${appConfig} ")
+    logger.debug(s"Creating table $tableName with DB config: $appConfig")
 
     val query = createTableQuery(table, createIfNotExists)
     database.run(query).map(_ => logger.debug(s"Created table $tableName"))
@@ -96,7 +108,8 @@ trait DbManagement extends BitcoinSLogger {
 
   def dropTable(tableName: String)(implicit
       ec: ExecutionContext): Future[Int] = {
-    val fullTableName = schemaName.map(_ + ".").getOrElse("") + tableName
+    val fullTableName =
+      appConfig.schemaName.map(_ + ".").getOrElse("") + tableName
     val sql = sqlu"""DROP TABLE IF EXISTS #$fullTableName"""
     val result = database.run(sql)
     result.failed.foreach { ex =>
@@ -107,7 +120,7 @@ trait DbManagement extends BitcoinSLogger {
 
   def createSchema(createIfNotExists: Boolean = true)(implicit
       ec: ExecutionContext): Future[Unit] =
-    schemaName match {
+    appConfig.schemaName match {
       case None =>
         FutureUtil.unit
       case Some(schema) =>
@@ -128,7 +141,7 @@ trait DbManagement extends BitcoinSLogger {
 
   def migrationsApplied(): Int = {
     val applied = flyway.info().applied()
-    driver match {
+    appConfig.driver match {
       case SQLite =>
         applied.size
       case PostgreSQL =>
@@ -143,6 +156,7 @@ trait DbManagement extends BitcoinSLogger {
     */
   def migrate(): Int = {
     try {
+      createDbFileIfDNE()
       flyway.migrate()
     } catch {
       case err: FlywayException =>
@@ -156,6 +170,18 @@ trait DbManagement extends BitcoinSLogger {
     }
   }
 
-  private def isPostgres =
-    appConfig.slickDbConfig.profile.getClass.getName == "slick.jdbc.PostgresProfile$"
+  private def createDbFileIfDNE(): Unit = {
+    //should add a check in here that we are using sqlite
+    if (!Files.exists(appConfig.dbPath)) {
+      val _ = {
+        logger.debug(s"Creating database directory=${appConfig.dbPath}")
+        Files.createDirectories(appConfig.dbPath)
+        val dbFilePath = appConfig.dbPath.resolve(appConfig.dbName)
+        logger.debug(s"Creating database file=$dbFilePath")
+        Files.createFile(dbFilePath)
+      }
+
+      ()
+    }
+  }
 }

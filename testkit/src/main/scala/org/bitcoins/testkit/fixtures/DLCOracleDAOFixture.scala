@@ -14,29 +14,35 @@ case class DLCOracleDAOs(
 
 trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
-  implicit protected def config: DLCOracleAppConfig =
+  implicit protected val config: DLCOracleAppConfig =
     BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = DLCOracleDAOs
 
+  private lazy val daos = {
+    val rValueDAO = RValueDAO()
+    val eventDAO = EventDAO()
+    val outcomeDAO = EventOutcomeDAO()
+    DLCOracleDAOs(rValueDAO, eventDAO, outcomeDAO)
+  }
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(
       build = () => {
-        config
-          .initialize()
-          .map(oracle =>
-            DLCOracleDAOs(oracle.rValueDAO,
-                          oracle.eventDAO,
-                          oracle.eventOutcomeDAO))
+        Future(config.migrate()).map(_ => daos)
       },
-      destroy = () => destroyAppConfig(config)
+      destroy = () => dropAll()
     )(test)
   }
 
-  private def destroyAppConfig(conf: DLCOracleAppConfig): Future[Unit] = {
-    for {
-      _ <- conf.dropAll()
-      _ <- conf.stop()
+  private def dropAll(): Future[Unit] = {
+    val res = for {
+      _ <- config.dropTable("flyway_schema_history")
+      _ <- config.dropAll()
     } yield ()
+    res.failed.foreach { ex =>
+      ex.printStackTrace()
+    }
+    res
   }
 }

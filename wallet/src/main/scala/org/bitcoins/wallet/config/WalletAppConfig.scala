@@ -1,8 +1,5 @@
 package org.bitcoins.wallet.config
 
-import java.nio.file.{Files, Path}
-import java.util.concurrent.TimeUnit
-
 import com.typesafe.config.Config
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -22,7 +19,9 @@ import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import java.nio.file.{Files, Path, Paths}
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S wallet
@@ -32,7 +31,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class WalletAppConfig(
     private val directory: Path,
     private val conf: Config*)(implicit override val ec: ExecutionContext)
-    extends AppConfig
+    extends DbAppConfig
     with WalletDbManagement
     with JdbcProfileComponent[WalletAppConfig] {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList
@@ -112,6 +111,32 @@ case class WalletAppConfig(
 
   lazy val aesPasswordOpt: Option[AesPassword] = kmConf.aesPasswordOpt
 
+  lazy val walletNameOpt: Option[String] = kmConf.walletNameOpt
+
+  override lazy val dbPath: Path = {
+    val pathStrOpt =
+      config.getStringOrNone(s"bitcoin-s.$moduleName.db.path")
+    (pathStrOpt, walletNameOpt) match {
+      case (Some(pathStr), Some(walletName)) =>
+        Paths.get(pathStr).resolve(walletName)
+      case (Some(pathStr), None) =>
+        Paths.get(pathStr)
+      case (None, Some(_)) | (None, None) =>
+        sys.error(s"Could not find dbPath for $moduleName.db.path")
+    }
+  }
+
+  override lazy val schemaName: Option[String] = {
+    (driver, walletNameOpt) match {
+      case (PostgreSQL, Some(walletName)) =>
+        Some(s"${moduleName}_$walletName")
+      case (PostgreSQL, None) =>
+        Some(moduleName)
+      case (SQLite, None) | (SQLite, Some(_)) =>
+        None
+    }
+  }
+
   override def start(): Future[Unit] = {
     for {
       _ <- super.start()
@@ -153,7 +178,7 @@ case class WalletAppConfig(
   /** How long we wait while generating an address in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
     * before we timeout
     */
-  def addressQueueTimeout: scala.concurrent.duration.Duration = {
+  def addressQueueTimeout: Duration = {
     if (config.hasPath("bitcoin-s.wallet.addressQueueTimeout")) {
       val javaDuration =
         config.getDuration("bitcoin-s.wallet.addressQueueTimeout")
