@@ -248,11 +248,11 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
   }
 
   def onExecute(): Unit = {
-    printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog)
+    printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog, txPrintFunc)
   }
 
   def onRefund(): Unit = {
-    printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog)
+    printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog, txPrintFunc)
   }
 
   def viewDLC(status: DLCStatus): Unit = {

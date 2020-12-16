@@ -397,9 +397,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           complete {
             for {
               tx <- wallet.executeDLC(contractId, oracleSigs)
-              retStr <- handleBroadcastable(tx, noBroadcast)
+              _ <- handleBroadcastable(tx, noBroadcast)
             } yield {
-              Server.httpSuccess(retStr.hex)
+              Server.httpSuccess(tx.hex)
             }
           }
       }
@@ -412,9 +412,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           complete {
             for {
               tx <- wallet.executeDLCRefund(contractId)
-              retStr <- handleBroadcastable(tx, noBroadcast)
+              _ <- handleBroadcastable(tx, noBroadcast)
             } yield {
-              Server.httpSuccess(retStr.hex)
+              Server.httpSuccess(tx.hex)
             }
           }
       }
