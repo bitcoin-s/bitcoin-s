@@ -2,9 +2,9 @@ package org.bitcoins.wallet.models
 
 import org.bitcoins.core.api.wallet.db.{TransactionDb, TransactionDbHelper}
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.WalletTestUtil
 
-class TransactionDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
+class TransactionDAOTest extends WalletDAOFixture {
 
   val txDb: TransactionDb =
     TransactionDbHelper.fromTransaction(WalletTestUtil.sampleTransaction)

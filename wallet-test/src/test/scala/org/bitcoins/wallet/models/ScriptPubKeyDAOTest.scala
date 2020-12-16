@@ -1,16 +1,15 @@
 package org.bitcoins.wallet.models
 
-import java.sql.SQLException
-
 import org.bitcoins.core.api.wallet.db.ScriptPubKeyDb
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.reserved._
 import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 
-class ScriptPubKeyDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
+import java.sql.SQLException
+
+class ScriptPubKeyDAOTest extends WalletDAOFixture {
   behavior of "ScriptPubKeyDAO"
 
   it must "be able to store and load spks" in { daos =>

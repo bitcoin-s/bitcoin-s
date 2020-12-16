@@ -13,11 +13,11 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
-import org.bitcoins.testkit.fixtures.{WalletDAOFixture}
+import org.bitcoins.testkit.fixtures.WalletDAOFixture
+import org.bitcoins.testkit.wallet.WalletTestUtil
 import org.bitcoins.testkit.wallet.WalletTestUtil._
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 
-class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
+class SpendingInfoDAOTest extends WalletDAOFixture {
   behavior of "SpendingInfoDAO"
 
   it should "preserve public key scripts" in { daos =>

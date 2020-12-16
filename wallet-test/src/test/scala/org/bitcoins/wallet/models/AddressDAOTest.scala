@@ -1,12 +1,12 @@
 package org.bitcoins.wallet.models
 
-import java.sql.SQLException
-
 import org.bitcoins.core.api.wallet.db.AddressRecord
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.WalletTestUtil
 
-class AddressDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
+import java.sql.SQLException
+
+class AddressDAOTest extends WalletDAOFixture {
 
   behavior of "AddressDAO"
 

@@ -1,7 +1,8 @@
 package org.bitcoins.dlc.oracle.storage
 
 import org.bitcoins.crypto.SchnorrNonce
-import org.bitcoins.db.{AppConfig, CRUD, DbCommonsColumnMappers, SlickUtil}
+import org.bitcoins.db.{CRUD, DbCommonsColumnMappers, SlickUtil}
+import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import scodec.bits.ByteVector
 import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
@@ -9,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class EventOutcomeDAO()(implicit
     val ec: ExecutionContext,
-    override val appConfig: AppConfig)
+    override val appConfig: DLCOracleAppConfig)
     extends CRUD[EventOutcomeDb, (SchnorrNonce, String)]
     with SlickUtil[EventOutcomeDb, (SchnorrNonce, String)] {
 

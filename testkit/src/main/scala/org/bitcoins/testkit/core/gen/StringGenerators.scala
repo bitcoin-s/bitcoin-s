@@ -58,6 +58,12 @@ trait StringGenerators {
       randomString <- genString(randomNum)
     } yield randomString
 
+  def genNonEmptyString: Gen[String] =
+    for {
+      randomNum <- Gen.choose(1, 100)
+      randomString <- genString(randomNum)
+    } yield randomString
+
   def genUTF8String: Gen[String] = {
     for {
       bytes <- NumberGenerator.bytes

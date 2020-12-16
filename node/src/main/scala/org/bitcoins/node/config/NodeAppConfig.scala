@@ -1,17 +1,16 @@
 package org.bitcoins.node.config
 
-import java.nio.file.Path
-
 import akka.Done
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.Mutable
-import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
+import org.bitcoins.db.{AppConfigFactory, DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer
 
+import java.nio.file.Path
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /** Configuration for the Bitcoin-S node
@@ -21,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 case class NodeAppConfig(
     private val directory: Path,
     private val confs: Config*)(implicit override val ec: ExecutionContext)
-    extends AppConfig
+    extends DbAppConfig
     with NodeDbManagement
     with JdbcProfileComponent[NodeAppConfig] {
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList

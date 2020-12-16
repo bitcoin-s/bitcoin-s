@@ -6,7 +6,7 @@ title: Key Manager
 
 ### Key Manager
 
-The key manager module's goal is to encapusulate all private key interactions with the [wallet](../wallet/wallet.md) project.
+The key manager module's goal is to encapsulate all private key interactions with the [wallet](../wallet/wallet.md) project.
 
 As of this writing, there is only one type of `KeyManager` - [`BIP39KeyManager`](/api/org/bitcoins/keymanager/bip39/BIP39KeyManager).
 
@@ -17,18 +17,6 @@ Over the long run, we want to make it so that the wallet project needs to commun
 This means that ALL SIGNING should be done inside of the key-manager, and private keys should not leave the key manager.
 
 This makes it easier to reason about the security characteristics of our private keys, and a way to provide a uniform interface for alternative key storage systems (hsm, cloud based key storage, etc) to be plugged into the bitcoin-s library.
-
-### Disclaimer 
-
-Currently bip39 password is supported at the library level, but is not supported for end users using the server project. 
-[You can see that the bip39 password is hard coded to `None` here](https://github.com/bitcoin-s/bitcoin-s/blob/e387d075b0ff2e0a0fec15788fcb48e4ddc4d9d5/app/server/src/main/scala/org/bitcoins/server/Main.scala#L53).
-
-There is a password that is used to encrypt your mnemonic seed on disk, but that password is hard coded to a default value. 
-THIS MEANS THAT YOUR MNEMONIC SEED CAN TRIVIALLY BE STOLEN IF AN ATTACKER CAN ACCESS YOUR HARD DRIVE. 
-TAKE PROPER OPSEC PRECAUTIONS.
-
-Overall the key manager module should be considered insecure. For this release, it is more about setting up the module 
-as a logical distinction for further development in subsequent releases.
 
 #### Creating a key manager
 

@@ -7,11 +7,9 @@ import org.bitcoins.core.api.wallet.db.{
 }
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.WalletTestUtil
 
-class OutgoingTransactionDAOTest
-    extends BitcoinSWalletTest
-    with WalletDAOFixture {
+class OutgoingTransactionDAOTest extends WalletDAOFixture {
 
   val txDb: TransactionDb =
     TransactionDbHelper.fromTransaction(WalletTestUtil.sampleTransaction)

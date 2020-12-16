@@ -21,7 +21,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.Implicits.GeneratorOps
 import org.bitcoins.testkit.chain.SyncUtil
-import org.bitcoins.testkit.core.gen.FeeUnitGen
+import org.bitcoins.testkit.core.gen._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
@@ -66,7 +66,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
     ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = segwit")
 
   // This is a random block on testnet
-  val testBlockHash = DoubleSha256DigestBE.fromHex(
+  val testBlockHash: DoubleSha256DigestBE = DoubleSha256DigestBE.fromHex(
     "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75")
 
   def chainQueryApi: ChainQueryApi =
@@ -294,7 +294,23 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
 
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {
-      val walletConf = config.walletConf
+      val baseConf = config.walletConf
+      val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
+        Some(StringGenerators.genNonEmptyString.sampleSome)
+      } else None
+
+      val walletConf = walletNameOpt match {
+        case Some(walletName) =>
+          val walletNameOverride = ConfigFactory.parseString(
+            s"bitcoin-s.wallet.walletName = $walletName"
+          )
+
+          BitcoinSAppConfig(
+            baseConf.baseDatadir,
+            (walletNameOverride +: baseConf.configOverrides): _*).walletConf
+        case None => baseConf
+      }
+
       walletConf.start().map(_ => walletConf)
     }
 

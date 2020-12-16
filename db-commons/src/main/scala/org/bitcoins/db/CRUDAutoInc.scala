@@ -6,7 +6,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
     ec: ExecutionContext,
-    override val appConfig: AppConfig)
+    override val appConfig: DbAppConfig)
     extends CRUD[T, Long]()(ec, appConfig)
     with TableAutoIncComponent[T] {
   import profile.api._
