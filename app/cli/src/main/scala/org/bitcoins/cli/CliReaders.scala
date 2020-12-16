@@ -56,6 +56,14 @@ object CliReaders {
       str => ByteVector.fromValidHex(str)
   }
 
+  implicit val doubleSha256Reads: Read[DoubleSha256DigestBE] =
+    new Read[DoubleSha256DigestBE] {
+      override def arity: Int = 1
+
+      override def reads: String => DoubleSha256DigestBE =
+        DoubleSha256DigestBE.fromHex
+    }
+
   implicit val schnorrNonceReads: Read[SchnorrNonce] =
     new Read[SchnorrNonce] {
       override def arity: Int = 1

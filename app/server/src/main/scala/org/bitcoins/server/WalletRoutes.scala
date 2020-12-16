@@ -116,6 +116,21 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("gettransaction", arr) =>
+      GetTransaction.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetTransaction(txId)) =>
+          complete {
+            wallet.findTransaction(txId).map {
+              case None =>
+                Server.httpSuccess(ujson.Null)
+              case Some(txDb) =>
+                Server.httpSuccess(txDb.transaction.hex)
+            }
+          }
+      }
+
     case ServerCommand("lockunspent", arr) =>
       LockUnspent.fromJsArr(arr) match {
         case Failure(exception) =>

@@ -73,6 +73,11 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     f
   }
 
+  override def findTransaction(
+      txId: DoubleSha256DigestBE): Future[Option[TransactionDb]] = {
+    transactionDAO.findByTxId(txId)
+  }
+
   override def listTransactions(): Future[Vector[TransactionDb]] =
     transactionDAO.findAll()
 
