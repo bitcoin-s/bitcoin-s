@@ -96,7 +96,7 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
     val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
     val mnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
     val seedPath = tempDir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
-    WalletStorage.writeMnemonicToDisk(seedPath, mnemonic)
+    WalletStorage.writeSeedToDisk(seedPath, mnemonic)
 
     config.start().map { _ =>
       assert(Files.exists(seedPath), "We should not delete the old seed!")
