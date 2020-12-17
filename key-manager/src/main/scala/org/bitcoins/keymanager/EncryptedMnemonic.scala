@@ -1,32 +1,51 @@
 package org.bitcoins.keymanager
 
-import java.time.Instant
-
 import org.bitcoins.core.compat.CompatEither
 import org.bitcoins.core.crypto._
 import org.bitcoins.crypto.{AesCrypt, AesEncryptedData, AesPassword, AesSalt}
 import scodec.bits.ByteVector
 
+import java.time.Instant
 import scala.util.{Failure, Success, Try}
 
-sealed trait MnemonicState {
+sealed trait SeedState {
   def creationTime: Instant
 }
 
-case class DecryptedMnemonic(mnemonicCode: MnemonicCode, creationTime: Instant)
-    extends MnemonicState {
+sealed trait DecryptedSeedState extends SeedState {
+  protected def strToEncrypt: String
 
-  def encrypt(password: AesPassword): EncryptedMnemonic =
-    EncryptedMnemonicHelper.encrypt(this, password)
+  def encrypt(password: AesPassword): EncryptedSeed = {
+    val Right(clearText) = ByteVector.encodeUtf8(strToEncrypt)
+    val (key, salt) = password.toKey
+
+    val encrypted = AesCrypt.encrypt(clearText, key)
+
+    EncryptedSeed(encrypted, salt, creationTime)
+  }
 }
 
-case class EncryptedMnemonic(
+case class DecryptedMnemonic(
+    private[keymanager] val mnemonicCode: MnemonicCode,
+    creationTime: Instant)
+    extends DecryptedSeedState {
+  override protected val strToEncrypt: String = mnemonicCode.words.mkString(" ")
+}
+
+case class DecryptedExtPrivKey(
+    private[keymanager] val xprv: ExtPrivateKey,
+    creationTime: Instant)
+    extends DecryptedSeedState {
+  override protected val strToEncrypt: String = xprv.toStringSensitive
+}
+
+case class EncryptedSeed(
     value: AesEncryptedData,
     salt: AesSalt,
     creationTime: Instant)
-    extends MnemonicState {
+    extends SeedState {
 
-  def toMnemonic(password: AesPassword): Try[MnemonicCode] = {
+  private def decryptStr(password: AesPassword): Try[String] = {
     val key = password.toKey(salt)
     val either = AesCrypt.decrypt(value, key)
     CompatEither(either).toTry.flatMap { decrypted =>
@@ -35,28 +54,19 @@ case class EncryptedMnemonic(
           // when failing to decode this to a UTF-8 string
           // we assume it's because of a bad password
           Failure(ReadMnemonicError.DecryptionError)
-
-        case Right(wordsStr) =>
-          val wordsVec = wordsStr.split(" ").toVector
-          Success(MnemonicCode.fromWords(wordsVec))
+        case Right(str) => Success(str)
       }
     }
   }
-}
 
-object EncryptedMnemonicHelper {
+  def toMnemonic(password: AesPassword): Try[MnemonicCode] = {
+    decryptStr(password).map { wordsStr =>
+      val wordsVec = wordsStr.split(" ").toVector
+      MnemonicCode.fromWords(wordsVec)
+    }
+  }
 
-  def encrypt(
-      mnemonic: DecryptedMnemonic,
-      password: AesPassword): EncryptedMnemonic = {
-    val wordsStr = mnemonic.mnemonicCode.words.mkString(" ")
-    val Right(clearText) = ByteVector.encodeUtf8(wordsStr)
-
-    val (key, salt) = password.toKey
-
-    val encryted = AesCrypt
-      .encrypt(clearText, key)
-
-    EncryptedMnemonic(encryted, salt, mnemonic.creationTime)
+  def toExtPrivKey(password: AesPassword): Try[ExtPrivateKey] = {
+    decryptStr(password).map(ExtPrivateKey.fromString)
   }
 }

@@ -1,12 +1,10 @@
 package org.bitcoins.keymanager.bip39
 
-import java.nio.file.Files
-
 import org.bitcoins.core.api.keymanager.KeyManagerApi
 import org.bitcoins.core.config.{MainNet, RegTest}
-import org.bitcoins.core.crypto.MnemonicCode
+import org.bitcoins.core.crypto.{BIP39Seed, MnemonicCode}
 import org.bitcoins.core.hd._
-import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.util.{HDUtil, TimeUtil}
 import org.bitcoins.core.wallet.keymanagement
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError.JsonParsingError
 import org.bitcoins.core.wallet.keymanagement.{
@@ -21,6 +19,8 @@ import org.bitcoins.testkit.keymanager.{
   KeyManagerTestUtil
 }
 import scodec.bits.BitVector
+
+import java.nio.file.Files
 
 class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
   val purpose = HDPurposes.Legacy
@@ -44,13 +44,6 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     assert(km != dummy)
   }
 
-  it must "not put the bip39 password in the toString" in {
-    val passpharse = "test-bip39-passpharse"
-    val km = withInitializedKeyManager(bip39PasswordOpt = Some(passpharse))
-    assert(!km.toString.contains(passpharse))
-    assert(km.toString.contains("Masked(bip39password)"))
-  }
-
   it must "initialize the key manager" in {
     val entropy = MnemonicCode.getEntropy256Bits
     val aesPasswordOpt = KeyManagerTestUtil.aesPasswordOpt
@@ -63,17 +56,18 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
            "KeyManager did not write the seed to disk!")
 
     val decryptedE =
-      WalletStorage.decryptMnemonicFromDisk(seedPath, aesPasswordOpt)
+      WalletStorage.decryptSeedFromDisk(seedPath, aesPasswordOpt)
 
-    val mnemonic = decryptedE match {
-      case Right(m) => m
+    decryptedE match {
+      case Right(mnemonic: DecryptedMnemonic) =>
+        assert(mnemonic.mnemonicCode.toEntropy == entropy,
+               s"We did not read the same entropy that we wrote!")
+      case Right(xprv: DecryptedExtPrivKey) =>
+        fail(s"Parsed unexpected type of seed $xprv")
       case Left(err) =>
         fail(
           s"Failed to read mnemonic that was written by key manager with err=$err")
     }
-
-    assert(mnemonic.mnemonicCode.toEntropy == entropy,
-           s"We did not read the same entropy that we wrote!")
   }
 
   it must "initialize the key manager with a specific mnemonic" in {
@@ -90,7 +84,8 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
   it must "initialize a key manager to the same xpub if we call constructor directly or use CreateKeyManagerApi" in {
     val kmParams = buildParams()
-    val direct = BIP39KeyManager(mnemonic, kmParams, None, TimeUtil.now)
+    val direct =
+      BIP39KeyManager.fromMnemonic(mnemonic, kmParams, None, TimeUtil.now)
 
     val directXpub = direct.getRootXPub
 
@@ -114,7 +109,10 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     val kmParams = buildParams()
     val bip39Pw = KeyManagerTestUtil.bip39Password
     val direct =
-      BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw), TimeUtil.now)
+      BIP39KeyManager.fromMnemonic(mnemonic,
+                                   kmParams,
+                                   Some(bip39Pw),
+                                   TimeUtil.now)
 
     val directXpub = direct.getRootXPub
 
@@ -134,16 +132,53 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
   }
 
-  it must "write a key manager to disk then initialize a key manager from a params" in {
+  it must "write a mnemonic key manager to disk then initialize a key manager from a params" in {
     val kmParams = buildParams()
     val bip39Pw = KeyManagerTestUtil.bip39Password
     val direct =
-      BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw), TimeUtil.now)
+      BIP39KeyManager.fromMnemonic(mnemonic,
+                                   kmParams,
+                                   Some(bip39Pw),
+                                   TimeUtil.now)
 
     val decryptedMnemonic = DecryptedMnemonic(mnemonic, direct.creationTime)
     val password = AesPassword.fromNonEmptyString("password")
-    WalletStorage.writeMnemonicToDisk(kmParams.seedPath,
-                                      decryptedMnemonic.encrypt(password))
+    WalletStorage.writeSeedToDisk(kmParams.seedPath,
+                                  decryptedMnemonic.encrypt(password))
+
+    val directXpub = direct.getRootXPub
+    val api =
+      BIP39KeyManager
+        .fromParams(kmParams, Some(password), Some(bip39Pw))
+        .getOrElse(fail())
+
+    val apiXpub = api.getRootXPub
+
+    assert(apiXpub == directXpub,
+           s"We don't have initialization symmetry between our constructors!")
+
+    //we should be able to derive the same child xpub
+    assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
+  }
+
+  it must "write a xprv key manager to disk then initialize a key manager from a params" in {
+    val kmParams = buildParams()
+    val bip39Pw = KeyManagerTestUtil.bip39Password
+
+    val direct =
+      BIP39KeyManager.fromMnemonic(mnemonic,
+                                   kmParams,
+                                   Some(bip39Pw),
+                                   TimeUtil.now)
+    val seed = BIP39Seed.fromMnemonic(mnemonic, Some(bip39Pw))
+    val privVersion = HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
+    val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
+
+    val decryptedXprv =
+      DecryptedExtPrivKey(rootExtPrivKey, direct.creationTime)
+    val password = AesPassword.fromNonEmptyString("password")
+    WalletStorage.writeSeedToDisk(kmParams.seedPath,
+                                  decryptedXprv.encrypt(password))
 
     val directXpub = direct.getRootXPub
     val api =
@@ -164,7 +199,10 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     val kmParams = buildParams()
     val bip39Pw = KeyManagerTestUtil.bip39Password
     val direct =
-      BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw), TimeUtil.now)
+      BIP39KeyManager.fromMnemonic(mnemonic,
+                                   kmParams,
+                                   Some(bip39Pw),
+                                   TimeUtil.now)
 
     val directXpub = direct.getRootXPub
 
@@ -190,11 +228,14 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     val bip39Pw = KeyManagerTestUtil.bip39PasswordNonEmpty
 
     val withPassword =
-      BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw), TimeUtil.now)
+      BIP39KeyManager.fromMnemonic(mnemonic,
+                                   kmParams,
+                                   Some(bip39Pw),
+                                   TimeUtil.now)
     val withPasswordXpub = withPassword.getRootXPub
 
     val noPassword =
-      BIP39KeyManager(mnemonic, kmParams, None, TimeUtil.now)
+      BIP39KeyManager.fromMnemonic(mnemonic, kmParams, None, TimeUtil.now)
 
     val noPwXpub = noPassword.getRootXPub
 
