@@ -26,7 +26,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
   override type FixtureParam = SpvNodeConnectedWithBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeConnectedToBitcoind(test, Some(BitcoindVersion.V17))
+    withSpvNodeConnectedToBitcoind(test)
 
   private val sendAmount = 1.bitcoin
 
