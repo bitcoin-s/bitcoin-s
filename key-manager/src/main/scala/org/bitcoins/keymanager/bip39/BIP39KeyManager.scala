@@ -1,8 +1,5 @@
 package org.bitcoins.keymanager.bip39
 
-import java.nio.file.Files
-import java.time.Instant
-
 import org.bitcoins.core.api.keymanager.{
   BIP39KeyManagerApi,
   BIP39KeyManagerCreateApi,
@@ -22,41 +19,34 @@ import org.bitcoins.crypto.{AesPassword, Sign}
 import org.bitcoins.keymanager._
 import scodec.bits.BitVector
 
+import java.nio.file.Files
+import java.time.Instant
 import scala.util.{Failure, Success, Try}
 
 /**
   * This is a key manager implementation meant to represent an in memory
   * BIP39 key manager
   *
-  * @param mnemonic the mnemonic seed used for this wallet
+  * @param rootExtPrivKey the root seed used for this wallet
   * @param kmParams the parameters used to generate the right keychain
   * @see https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
   */
-case class BIP39KeyManager(
-    private val mnemonic: MnemonicCode,
-    kmParams: KeyManagerParams,
-    private val bip39PasswordOpt: Option[String],
-    creationTime: Instant)
+class BIP39KeyManager(
+    private[this] val rootExtPrivKey: ExtPrivateKey,
+    val kmParams: KeyManagerParams,
+    val creationTime: Instant)
     extends BIP39KeyManagerApi
     with KeyManagerLogger {
-
-  private val seed = BIP39Seed.fromMnemonic(mnemonic, bip39PasswordOpt)
 
   override def equals(other: Any): Boolean =
     other match {
       case bip39Km: BIP39KeyManager =>
-        mnemonic == bip39Km.mnemonic &&
+        getRootXPub == bip39Km.getRootXPub &&
           kmParams == bip39Km.kmParams &&
-          bip39PasswordOpt == bip39Km.bip39PasswordOpt &&
           creationTime.getEpochSecond == bip39Km.creationTime.getEpochSecond
       case _ =>
         other.equals(this)
     }
-
-  private val privVersion: ExtKeyPrivVersion =
-    HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
-
-  private val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
 
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO
@@ -73,27 +63,27 @@ case class BIP39KeyManager(
   }
 
   /** Returns the root [[ExtPublicKey]] */
-  def getRootXPub: ExtPublicKey = {
+  val getRootXPub: ExtPublicKey = {
     rootExtPrivKey.extPublicKey
-  }
-
-  /** This is overriden because we do not have a type for bip39 passwords
-    * for which we can extend [[org.bitcoins.crypto.MaskedToString]]
-    */
-  override def toString: String = {
-    s"""
-       |BIP39KeyManager(
-       |    mnemonic=$mnemonic,
-       |    kmParams=$kmParams,
-       |    bip39PasswordOpt=${bip39PasswordOpt.map(_ =>
-      s"Masked(bip39password)")},
-       |    creationTime=$creationTime)""".stripMargin
   }
 }
 
 object BIP39KeyManager
     extends BIP39KeyManagerCreateApi[BIP39KeyManager]
     with BitcoinSLogger {
+
+  def fromMnemonic(
+      mnemonic: MnemonicCode,
+      kmParams: KeyManagerParams,
+      bip39PasswordOpt: Option[String],
+      creationTime: Instant
+  ): BIP39KeyManager = {
+    val seed = BIP39Seed.fromMnemonic(mnemonic, bip39PasswordOpt)
+    val privVersion = HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
+    val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
+    new BIP39KeyManager(rootExtPrivKey, kmParams, creationTime)
+  }
+
   val badPassphrase: AesPassword = AesPassword.fromString("changeMe")
 
   /** Initializes the mnemonic seed and saves it to file */
@@ -128,12 +118,11 @@ object BIP39KeyManager
 
         val writableMnemonicE: CompatEither[
           KeyManagerInitializeError,
-          MnemonicState] =
+          SeedState] =
           mnemonicE.map { mnemonic =>
             val decryptedMnemonic = DecryptedMnemonic(mnemonic, time)
             aesPasswordOpt match {
-              case Some(aesPassword) =>
-                EncryptedMnemonicHelper.encrypt(decryptedMnemonic, aesPassword)
+              case Some(aesPassword) => decryptedMnemonic.encrypt(aesPassword)
               case None =>
                 decryptedMnemonic
             }
@@ -144,26 +133,29 @@ object BIP39KeyManager
           writable <- writableMnemonicE
         } yield {
           val mnemonicPath =
-            WalletStorage.writeMnemonicToDisk(seedPath, writable)
+            WalletStorage.writeSeedToDisk(seedPath, writable)
           logger.info(s"Saved wallet mnemonic to $mnemonicPath")
 
-          BIP39KeyManager(mnemonic = mnemonic,
-                          kmParams = kmParams,
-                          bip39PasswordOpt = bip39PasswordOpt,
-                          creationTime = time)
+          fromMnemonic(mnemonic = mnemonic,
+                       kmParams = kmParams,
+                       bip39PasswordOpt = bip39PasswordOpt,
+                       creationTime = time)
         }
       } else {
         logger.info(
           s"Seed file already exists, attempting to initialize form existing seed file=$seedPath.")
 
-        WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath,
-                                              aesPasswordOpt) match {
-          case Right(mnemonic) =>
+        WalletStorage.decryptSeedFromDisk(kmParams.seedPath,
+                                          aesPasswordOpt) match {
+          case Right(mnemonic: DecryptedMnemonic) =>
             CompatRight(
-              BIP39KeyManager(mnemonic = mnemonic.mnemonicCode,
-                              kmParams = kmParams,
-                              bip39PasswordOpt = bip39PasswordOpt,
-                              creationTime = mnemonic.creationTime))
+              fromMnemonic(mnemonic = mnemonic.mnemonicCode,
+                           kmParams = kmParams,
+                           bip39PasswordOpt = bip39PasswordOpt,
+                           creationTime = mnemonic.creationTime))
+          case Right(xprv: DecryptedExtPrivKey) =>
+            val km = new BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
+            CompatRight(km)
           case Left(err) =>
             CompatLeft(
               InitializeKeyManagerError.FailedToReadWrittenSeed(
@@ -213,15 +205,18 @@ object BIP39KeyManager
     ReadMnemonicError,
     BIP39KeyManager] = {
     val mnemonicCodeE =
-      WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, passwordOpt)
+      WalletStorage.decryptSeedFromDisk(kmParams.seedPath, passwordOpt)
 
     mnemonicCodeE match {
-      case Right(mnemonic) =>
+      case Right(mnemonic: DecryptedMnemonic) =>
         Right(
-          new BIP39KeyManager(mnemonic.mnemonicCode,
-                              kmParams,
-                              bip39PasswordOpt,
-                              mnemonic.creationTime))
+          fromMnemonic(mnemonic.mnemonicCode,
+                       kmParams,
+                       bip39PasswordOpt,
+                       mnemonic.creationTime))
+      case Right(xprv: DecryptedExtPrivKey) =>
+        val km = new BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
+        Right(km)
       case Left(v) => Left(v)
     }
   }

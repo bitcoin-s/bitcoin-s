@@ -366,7 +366,7 @@ object DLCOracle {
       case None           => decryptedMnemonic
     }
     if (!conf.seedExists()) {
-      WalletStorage.writeMnemonicToDisk(conf.kmConf.seedPath, toWrite)
+      WalletStorage.writeSeedToDisk(conf.kmConf.seedPath, toWrite)
     }
 
     val key =

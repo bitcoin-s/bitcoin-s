@@ -110,7 +110,7 @@ again after initializing it once. You can use the same `mnemonic` for different 
 val mainnetKmParams = KeyManagerParams(seedPath, HDPurposes.SegWit, MainNet)
 
 //we do not need to all `initializeWithMnemonic()` again as we have saved the seed to dis
-val mainnetKeyManager = BIP39KeyManager(mnemonic, mainnetKmParams, None, Instant.now)
+val mainnetKeyManager = BIP39KeyManager.fromMnemonic(mnemonic, mainnetKmParams, None, Instant.now)
 
 val mainnetXpub = mainnetKeyManager.getRootXPub
 
