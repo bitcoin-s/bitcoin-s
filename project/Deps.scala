@@ -57,6 +57,7 @@ object Deps {
     val scoptV = "4.0.0"
     val sttpV = "1.7.2"
     val codehausV = "3.1.2"
+    val zxingV = "3.4.1"
   }
 
   object Compile {
@@ -179,6 +180,12 @@ object Deps {
 
     val pgEmbedded =
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV withSources () withJavadoc ()
+
+    val zxingCore =
+      "com.google.zxing" % "core" % V.zxingV withSources () withJavadoc ()
+
+    val zxingJ2SE =
+      "com.google.zxing" % "javase" % V.zxingV withSources () withJavadoc ()
   }
 
   object Test {
@@ -312,7 +319,9 @@ object Deps {
       //we can remove this dependency when this is fixed
       //https://github.com/oracle/graal/issues/1943
       //see https://github.com/bitcoin-s/bitcoin-s/issues/1100
-      Compile.codehaus
+      Compile.codehaus,
+      Compile.zxingCore,
+      Compile.zxingJ2SE
     )
 
   val gui = List(Compile.breezeViz, Compile.scalaFx) ++ Compile.javaFxDeps

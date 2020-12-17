@@ -1,9 +1,8 @@
 package org.bitcoins.cli
 
 import java.io.File
-import java.nio.file.Path
+import java.nio.file.{FileSystems, Path}
 import java.time.Instant
-
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
@@ -458,6 +457,20 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case getAddressInfo: GetAddressInfo =>
                   getAddressInfo.copy(address = addr)
+                case other => other
+              }))
+        ),
+      cmd("getqrcode")
+        .action((_, conf) => conf.copy(command = GetQRCode(null)))
+        .text("Generates a QR code for the given address")
+        .children(
+          arg[BitcoinAddress]("address")
+            .text("Address to generate QR code")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case getQRCode: GetQRCode =>
+                  getQRCode.copy(address = addr)
                 case other => other
               }))
         ),
@@ -1290,6 +1303,8 @@ object ConsoleCli {
         RequestParam("getunconfirmedbalance", Seq(up.writeJs(isSats)))
       case GetAddressInfo(address) =>
         RequestParam("getaddressinfo", Seq(up.writeJs(address)))
+      case GetQRCode(address) =>
+        RequestParam("getqrcode", Seq(up.writeJs(address)))
       case GetNewAddress(labelOpt) =>
         RequestParam("getnewaddress", Seq(up.writeJs(labelOpt)))
       case LockUnspent(unlock, outPoints) =>
@@ -1443,6 +1458,22 @@ object ConsoleCli {
         RequestParam("getsignatures", Seq(up.writeJs(tlv)))
 
       case NoCommand => ???
+    }
+
+    if (requestParam.method == "getqrcode") {
+      return Try {
+        import com.google.zxing.BarcodeFormat
+        import com.google.zxing.client.j2se.MatrixToImageWriter
+        import com.google.zxing.qrcode.QRCodeWriter
+
+        val address = requestParam.params.head.str
+        val writer = new QRCodeWriter
+        val bm = writer.encode(address, BarcodeFormat.QR_CODE, 200, 200)
+        val path = FileSystems.getDefault().getPath(s"$address.png")
+        MatrixToImageWriter.writeToPath(bm, "PNG", path)
+        val res: String = s"QR code stored at $path"
+        res
+      }
     }
 
     Try {
@@ -1651,6 +1682,7 @@ object CliCommand {
   case class GetConfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetUnconfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends CliCommand
+  case class GetQRCode(address: BitcoinAddress) extends CliCommand
 
   case class KeyManagerPassphraseChange(
       oldPassword: AesPassword,
