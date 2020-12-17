@@ -27,25 +27,12 @@ sealed trait DecryptedSeedState extends SeedState {
 
 case class DecryptedMnemonic(mnemonicCode: MnemonicCode, creationTime: Instant)
     extends DecryptedSeedState {
-  override protected def strToEncrypt: String = mnemonicCode.words.mkString(" ")
+  override protected val strToEncrypt: String = mnemonicCode.words.mkString(" ")
 }
 
 case class DecryptedExtPrivKey(xprv: ExtPrivateKey, creationTime: Instant)
     extends DecryptedSeedState {
-
-  override def encrypt(aesPassword: AesPassword): EncryptedSeed = {
-    ByteVector.encodeUtf8(xprv.toStringSensitive) match {
-      case Left(err) => throw err
-      case Right(str) =>
-        val (key, salt) = aesPassword.toKey
-
-        val encrypted = AesCrypt.encrypt(str, key)
-
-        EncryptedSeed(encrypted, salt, creationTime)
-    }
-  }
-
-  override protected def strToEncrypt: String = xprv.toStringSensitive
+  override protected val strToEncrypt: String = xprv.toStringSensitive
 }
 
 case class EncryptedSeed(

@@ -32,13 +32,13 @@ object BIP39LockedKeyManager extends BitcoinSLogger {
     resultE match {
       case Right(mnemonic: DecryptedMnemonic) =>
         Right(
-          BIP39KeyManager(mnemonic.mnemonicCode,
-                          kmParams,
-                          bip39PasswordOpt,
-                          mnemonic.creationTime))
+          BIP39KeyManager.fromMnemonic(mnemonic.mnemonicCode,
+                                       kmParams,
+                                       bip39PasswordOpt,
+                                       mnemonic.creationTime))
 
       case Right(xprv: DecryptedExtPrivKey) =>
-        val km = BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
+        val km = new BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
         Right(km)
 
       case Left(result) =>

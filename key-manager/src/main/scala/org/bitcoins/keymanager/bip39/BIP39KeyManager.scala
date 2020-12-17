@@ -31,17 +31,17 @@ import scala.util.{Failure, Success, Try}
   * @param kmParams the parameters used to generate the right keychain
   * @see https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
   */
-case class BIP39KeyManager(
-    private val rootExtPrivKey: ExtPrivateKey,
-    kmParams: KeyManagerParams,
-    creationTime: Instant)
+class BIP39KeyManager(
+    private[this] val rootExtPrivKey: ExtPrivateKey,
+    val kmParams: KeyManagerParams,
+    val creationTime: Instant)
     extends BIP39KeyManagerApi
     with KeyManagerLogger {
 
   override def equals(other: Any): Boolean =
     other match {
       case bip39Km: BIP39KeyManager =>
-        rootExtPrivKey == bip39Km.rootExtPrivKey &&
+        getRootXPub == bip39Km.getRootXPub &&
           kmParams == bip39Km.kmParams &&
           creationTime.getEpochSecond == bip39Km.creationTime.getEpochSecond
       case _ =>
@@ -63,7 +63,7 @@ case class BIP39KeyManager(
   }
 
   /** Returns the root [[ExtPublicKey]] */
-  def getRootXPub: ExtPublicKey = {
+  val getRootXPub: ExtPublicKey = {
     rootExtPrivKey.extPublicKey
   }
 }
@@ -72,7 +72,7 @@ object BIP39KeyManager
     extends BIP39KeyManagerCreateApi[BIP39KeyManager]
     with BitcoinSLogger {
 
-  def apply(
+  def fromMnemonic(
       mnemonic: MnemonicCode,
       kmParams: KeyManagerParams,
       bip39PasswordOpt: Option[String],
@@ -81,7 +81,7 @@ object BIP39KeyManager
     val seed = BIP39Seed.fromMnemonic(mnemonic, bip39PasswordOpt)
     val privVersion = HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
     val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
-    BIP39KeyManager(rootExtPrivKey, kmParams, creationTime)
+    new BIP39KeyManager(rootExtPrivKey, kmParams, creationTime)
   }
 
   val badPassphrase: AesPassword = AesPassword.fromString("changeMe")
@@ -136,10 +136,10 @@ object BIP39KeyManager
             WalletStorage.writeSeedToDisk(seedPath, writable)
           logger.info(s"Saved wallet mnemonic to $mnemonicPath")
 
-          BIP39KeyManager(mnemonic = mnemonic,
-                          kmParams = kmParams,
-                          bip39PasswordOpt = bip39PasswordOpt,
-                          creationTime = time)
+          fromMnemonic(mnemonic = mnemonic,
+                       kmParams = kmParams,
+                       bip39PasswordOpt = bip39PasswordOpt,
+                       creationTime = time)
         }
       } else {
         logger.info(
@@ -149,12 +149,12 @@ object BIP39KeyManager
                                           aesPasswordOpt) match {
           case Right(mnemonic: DecryptedMnemonic) =>
             CompatRight(
-              BIP39KeyManager(mnemonic = mnemonic.mnemonicCode,
-                              kmParams = kmParams,
-                              bip39PasswordOpt = bip39PasswordOpt,
-                              creationTime = mnemonic.creationTime))
+              fromMnemonic(mnemonic = mnemonic.mnemonicCode,
+                           kmParams = kmParams,
+                           bip39PasswordOpt = bip39PasswordOpt,
+                           creationTime = mnemonic.creationTime))
           case Right(xprv: DecryptedExtPrivKey) =>
-            val km = BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
+            val km = new BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
             CompatRight(km)
           case Left(err) =>
             CompatLeft(
@@ -210,12 +210,12 @@ object BIP39KeyManager
     mnemonicCodeE match {
       case Right(mnemonic: DecryptedMnemonic) =>
         Right(
-          BIP39KeyManager(mnemonic.mnemonicCode,
-                          kmParams,
-                          bip39PasswordOpt,
-                          mnemonic.creationTime))
+          fromMnemonic(mnemonic.mnemonicCode,
+                       kmParams,
+                       bip39PasswordOpt,
+                       mnemonic.creationTime))
       case Right(xprv: DecryptedExtPrivKey) =>
-        val km = BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
+        val km = new BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
         Right(km)
       case Left(v) => Left(v)
     }
