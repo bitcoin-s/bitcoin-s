@@ -3,13 +3,12 @@ package org.bitcoins.node
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.node.NodeUnitTest
-import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
+import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoindV19
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -22,19 +21,28 @@ class BroadcastTransactionTest extends NodeUnitTest {
   implicit override protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
-  override type FixtureParam = SpvNodeConnectedWithBitcoind
+  override type FixtureParam = SpvNodeConnectedWithBitcoindV19
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeConnectedToBitcoind(test)
+    withSpvNodeConnectedToBitcoindV19(test)
 
   private val sendAmount = 1.bitcoin
 
-  it must "safely broadcast a transaction twice" in { param =>
-    val node = param.node
+  def createValidTx(rpc: BitcoindV19RpcClient): Future[Transaction] = {
+    for {
+      rawTx <-
+        rpc.createRawTransaction(Vector.empty, Map(junkAddress -> sendAmount))
+      fundedTx <- rpc.fundRawTransaction(rawTx)
+      tx <- rpc.signRawTransactionWithWallet(fundedTx.hex).map(_.hex)
+    } yield tx
+  }
 
-    val tx = TransactionGenerators.transaction.sampleSome
+  it must "safely broadcast a transaction twice" in { param =>
+    val SpvNodeConnectedWithBitcoindV19(node, rpc) = param
 
     for {
+      tx <- createValidTx(rpc)
+
       _ <- node.broadcastTransaction(tx)
       _ <- node.broadcastTransaction(tx)
 
@@ -46,7 +54,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
   }
 
   it must "broadcast a transaction" in { param =>
-    val SpvNodeConnectedWithBitcoind(node, rpc) = param
+    val SpvNodeConnectedWithBitcoindV19(node, rpc) = param
 
     def hasSeenTx(transaction: Transaction): Future[Boolean] = {
       rpc
@@ -78,14 +86,9 @@ class BroadcastTransactionTest extends NodeUnitTest {
     }
 
     for {
-      // fund bitcoind
-      _ <- rpc.getNewAddress.flatMap(rpc.generateToAddress(101, _))
       bitcoindBalancePreBroadcast <- rpc.getBalance
 
-      rawTx <-
-        rpc.createRawTransaction(Vector.empty, Map(junkAddress -> sendAmount))
-      fundedTx <- rpc.fundRawTransaction(rawTx)
-      tx <- rpc.signRawTransactionWithWallet(fundedTx.hex).map(_.hex)
+      tx <- createValidTx(rpc)
 
       _ <- attemptBroadcast(tx)
         .recoverWith {
