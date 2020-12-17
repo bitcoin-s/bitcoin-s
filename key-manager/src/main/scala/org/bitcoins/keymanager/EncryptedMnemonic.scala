@@ -25,12 +25,16 @@ sealed trait DecryptedSeedState extends SeedState {
   }
 }
 
-case class DecryptedMnemonic(mnemonicCode: MnemonicCode, creationTime: Instant)
+case class DecryptedMnemonic(
+    private[keymanager] val mnemonicCode: MnemonicCode,
+    creationTime: Instant)
     extends DecryptedSeedState {
   override protected val strToEncrypt: String = mnemonicCode.words.mkString(" ")
 }
 
-case class DecryptedExtPrivKey(xprv: ExtPrivateKey, creationTime: Instant)
+case class DecryptedExtPrivKey(
+    private[keymanager] val xprv: ExtPrivateKey,
+    creationTime: Instant)
     extends DecryptedSeedState {
   override protected val strToEncrypt: String = xprv.toStringSensitive
 }
