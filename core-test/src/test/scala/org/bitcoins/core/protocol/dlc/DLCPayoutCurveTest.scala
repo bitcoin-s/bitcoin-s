@@ -32,7 +32,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
       }
   }
 
-  it should "agree on lines and degree 1 polynomials" in {
+  it should "agree on lines and degree 1 polynomials" ignore {
     forAll(nPoints(2), Gen.listOfN(1000, numGen)) {
       case (Vector(point1: OutcomePayoutEndpoint,
                    point2: OutcomePayoutEndpoint),
@@ -48,7 +48,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     }
   }
 
-  it should "agree on lines and y = mx + b" in {
+  it should "agree on lines and y = mx + b" ignore {
     val twoNums = for {
       num1 <- intGen
       num2 <- intGen.suchThat(_ != num1)
@@ -78,7 +78,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     }
   }
 
-  it should "agree on quadratics and degree 2 polynomials" in {
+  it should "agree on quadratics and degree 2 polynomials" ignore {
     forAll(nPoints(3), Gen.listOfN(1000, numGen)) {
       case (Vector(point1: OutcomePayoutEndpoint,
                    point2: OutcomePayoutMidpoint,
@@ -96,7 +96,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     }
   }
 
-  it should "agree on quadratics and y = ax^2 + bx + c" in {
+  it should "agree on quadratics and y = ax^2 + bx + c" ignore {
     val threeNums = for {
       num1 <- intGen
       num2 <- intGen.suchThat(_ != num1)
@@ -125,7 +125,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     }
   }
 
-  it should "agree on degenerate quadratics and lines" in {
+  it should "agree on degenerate quadratics and lines" ignore {
     val threeNums = for {
       num1 <- intGen
       num2 <- intGen.suchThat(_ != num1)
@@ -155,7 +155,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     }
   }
 
-  it should "agree on cubics and degree 3 polynomials" in {
+  it should "agree on cubics and degree 3 polynomials" ignore {
     forAll(nPoints(4), Gen.listOfN(1000, numGen)) {
       case (Vector(point1: OutcomePayoutEndpoint,
                    point2: OutcomePayoutMidpoint,
@@ -174,7 +174,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     }
   }
 
-  it should "agree on cubics and y = ax^3 + bx^2 + cx + d" in {
+  it should "agree on cubics and y = ax^3 + bx^2 + cx + d" ignore {
     val fourNums = for {
       num1 <- intGen
       num2 <- intGen.suchThat(_ != num1)
@@ -211,7 +211,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     }
   }
 
-  it should "agree on degenerate cubics and lines" in {
+  it should "agree on degenerate cubics and lines" ignore {
     val fourNums = for {
       num1 <- intGen
       num2 <- intGen.suchThat(_ != num1)
@@ -243,7 +243,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     }
   }
 
-  it should "agree on degenerate cubics and quadratics" in {
+  it should "agree on degenerate cubics and quadratics" ignore {
     val fourNums = for {
       num1 <- intGen
       num2 <- intGen.suchThat(_ != num1)
@@ -275,7 +275,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     }
   }
 
-  it should "parse points into component functions correctly and compute outputs" in {
+  it should "parse points into component functions correctly and compute outputs" ignore {
     val point0 = OutcomePayoutEndpoint(0, Satoshis.zero)
     val point1 = OutcomePayoutEndpoint(1, Satoshis.one)
 
