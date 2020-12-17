@@ -19,7 +19,7 @@ case class BitGoResult(
     cpfpFeePerKb: SatoshisPerKiloByte,
     numBlocks: Int,
     confidence: Int,
-    multiplier: Int,
+    multiplier: Double,
     feeByBlockTarget: Map[Int, SatoshisPerKiloByte]
 ) extends FeeRateApiResult
 
