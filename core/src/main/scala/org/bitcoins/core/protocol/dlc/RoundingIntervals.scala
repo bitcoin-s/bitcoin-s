@@ -1,6 +1,10 @@
-package org.bitcoins.commons.jsonmodels.dlc
+package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.dlc.RoundingIntervals.{
+  Interval,
+  IntervalStart
+}
 import org.bitcoins.core.util.NumberUtil
 
 import scala.annotation.tailrec
@@ -11,39 +15,47 @@ import scala.annotation.tailrec
   *
   * @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#rounding-intervals
   */
-case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
+case class RoundingIntervals(intervalStarts: Vector[IntervalStart]) {
   if (intervalStarts.nonEmpty) {
     require(intervalStarts.init.zip(intervalStarts.tail).forall {
-              case (i1, i2) => i1._1 < i2._1
+              case (i1, i2) => i1.firstOutcome < i2.firstOutcome
             },
             s"Intervals must be ascending: $intervalStarts")
   }
 
   /** Returns the rounding interval (start, end, mod) containing the given outcome */
-  def intervalContaining(
-      outcome: BigDecimal): (BigDecimal, BigDecimal, Long) = {
+  def intervalContaining(outcome: BigDecimal): Interval = {
+    implicit val ord: Ordering[IntervalStart] =
+      Ordering.by[IntervalStart, (BigDecimal, Long)](i =>
+        (i.firstOutcome, i.roundingMod))
+
     // Using Long.MaxValue guarantees that index will point to index of right endpoint of interval
-    val index = NumberUtil.search(intervalStarts, (outcome, Long.MaxValue)) - 1
+    val index =
+      NumberUtil.search(intervalStarts,
+                        IntervalStart(outcome, Long.MaxValue)) - 1
 
     if (index == -1) {
       val firstIntervalChange =
-        intervalStarts.map(_._1).headOption.getOrElse(BigDecimal(Long.MaxValue))
-      (Long.MinValue, firstIntervalChange, 1L)
+        intervalStarts
+          .map(_.firstOutcome)
+          .headOption
+          .getOrElse(BigDecimal(Long.MaxValue))
+      Interval(Long.MinValue, firstIntervalChange, 1L)
     } else if (index == intervalStarts.length - 1) {
-      val (intervalStart, roundingModulus) = intervalStarts.last
+      val IntervalStart(intervalStart, roundingModulus) = intervalStarts.last
 
-      (intervalStart, Long.MaxValue, roundingModulus)
+      Interval(intervalStart, Long.MaxValue, roundingModulus)
     } else {
-      val (intervalStart, roundingModulus) = intervalStarts(index)
-      val (intervalEnd, _) = intervalStarts(index + 1)
+      val IntervalStart(intervalStart, roundingModulus) = intervalStarts(index)
+      val IntervalStart(intervalEnd, _) = intervalStarts(index + 1)
 
-      (intervalStart, intervalEnd, roundingModulus)
+      Interval(intervalStart, intervalEnd, roundingModulus)
     }
   }
 
   /** Returns the rounding modulus which should be used at the given outcome */
   def roundingModulusAt(outcome: BigDecimal): Long = {
-    intervalContaining(outcome)._3
+    intervalContaining(outcome).roundingMod
   }
 
   def round(outcome: BigDecimal, computedPayout: Satoshis): Satoshis = {
@@ -70,44 +82,48 @@ case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
     */
   def minRoundingWith(other: RoundingIntervals): RoundingIntervals = {
 
-    val builder = Vector.newBuilder[(BigDecimal, Long)]
+    val builder = Vector.newBuilder[IntervalStart]
+
+    def addInterval(firstOutcome: BigDecimal, roundingMod: Long): Unit = {
+      builder.+=(IntervalStart(firstOutcome, roundingMod))
+    }
 
     @tailrec
     def minMerge(
-        thisIntervals: Vector[(BigDecimal, Long)],
+        thisIntervals: Vector[IntervalStart],
         thisCurrentMod: Long,
-        otherIntervals: Vector[(BigDecimal, Long)],
+        otherIntervals: Vector[IntervalStart],
         otherCurrentMod: Long): Unit = {
       if (thisIntervals.isEmpty) {
         val otherEnd = otherIntervals.map {
-          case (startRange, otherMod) =>
-            (startRange, Math.min(thisCurrentMod, otherMod))
+          case IntervalStart(startRange, otherMod) =>
+            IntervalStart(startRange, Math.min(thisCurrentMod, otherMod))
         }
         builder.++=(otherEnd)
       } else if (otherIntervals.isEmpty) {
         val thisEnd = thisIntervals.map {
-          case (startRange, thisMod) =>
-            (startRange, Math.min(thisMod, otherCurrentMod))
+          case IntervalStart(startRange, thisMod) =>
+            IntervalStart(startRange, Math.min(thisMod, otherCurrentMod))
         }
         builder.++=(thisEnd)
       } else {
-        val (thisNextStart, thisNextMod) = thisIntervals.head
-        val (otherNextStart, otherNextMod) = otherIntervals.head
+        val IntervalStart(thisNextStart, thisNextMod) = thisIntervals.head
+        val IntervalStart(otherNextStart, otherNextMod) = otherIntervals.head
 
         if (thisNextStart < otherNextStart) {
-          builder.+=((thisNextStart, Math.min(thisNextMod, otherCurrentMod)))
+          addInterval(thisNextStart, Math.min(thisNextMod, otherCurrentMod))
           minMerge(thisIntervals.tail,
                    thisNextMod,
                    otherIntervals,
                    otherCurrentMod)
         } else if (thisNextStart > otherNextStart) {
-          builder.+=((otherNextStart, Math.min(otherNextMod, thisCurrentMod)))
+          addInterval(otherNextStart, Math.min(otherNextMod, thisCurrentMod))
           minMerge(thisIntervals,
                    thisCurrentMod,
                    otherIntervals.tail,
                    otherNextMod)
         } else {
-          builder.+=((thisNextStart, Math.min(thisNextMod, otherNextMod)))
+          addInterval(thisNextStart, Math.min(thisNextMod, otherNextMod))
           minMerge(thisIntervals.tail,
                    thisNextMod,
                    otherIntervals.tail,
@@ -128,7 +144,7 @@ case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
     var currentMod: Long = 1L
 
     val canonicalVec = intervalStarts.filter {
-      case (_, newMod) =>
+      case IntervalStart(_, newMod) =>
         if (newMod == currentMod) false
         else {
           currentMod = newMod
@@ -142,4 +158,14 @@ case class RoundingIntervals(intervalStarts: Vector[(BigDecimal, Long)]) {
 
 object RoundingIntervals {
   val noRounding: RoundingIntervals = RoundingIntervals(Vector.empty)
+
+  case class IntervalStart(firstOutcome: BigDecimal, roundingMod: Long)
+
+  case class Interval(
+      firstOutcome: BigDecimal,
+      nextFirstOutcome: BigDecimal,
+      roundingMod: Long) {
+    require(firstOutcome < nextFirstOutcome,
+            s"First outcome must come before last, $this")
+  }
 }

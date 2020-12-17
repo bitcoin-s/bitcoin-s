@@ -1,13 +1,7 @@
-package org.bitcoins.commons.dlc
+package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.CETCalculator._
-import org.bitcoins.commons.jsonmodels.dlc.{
-  CETCalculator,
-  OutcomeValueFunction,
-  OutcomeValuePoint,
-  RoundingIntervals
-}
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.dlc.CETCalculator._
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 
@@ -21,19 +15,19 @@ class CETCalculatorTest extends BitcoinSUnitTest {
   private val baseGen: Gen[Int] = Gen.choose(2, 256)
 
   it should "correctly split into ranges" in {
-    val func = OutcomeValueFunction(
+    val func = DLCPayoutCurve(
       Vector(
-        OutcomeValuePoint(0, Satoshis(-1000), isEndpoint = true),
-        OutcomeValuePoint(10, Satoshis(-1000), isEndpoint = true),
-        OutcomeValuePoint(20, Satoshis(0), isEndpoint = false),
-        OutcomeValuePoint(30, Satoshis(3000), isEndpoint = true),
-        OutcomeValuePoint(40, Satoshis(4000), isEndpoint = true),
-        OutcomeValuePoint(50, Satoshis(4000), isEndpoint = true),
-        OutcomeValuePoint(70, Satoshis(0), isEndpoint = false),
-        OutcomeValuePoint(80, Satoshis(1000), isEndpoint = true),
-        OutcomeValuePoint(90, Satoshis(1000), isEndpoint = true),
-        OutcomeValuePoint(100, Satoshis(11000), isEndpoint = false),
-        OutcomeValuePoint(110, Satoshis(9000), isEndpoint = true)
+        OutcomePayoutPoint(0, Satoshis(-1000), isEndpoint = true),
+        OutcomePayoutPoint(10, Satoshis(-1000), isEndpoint = true),
+        OutcomePayoutPoint(20, Satoshis(0), isEndpoint = false),
+        OutcomePayoutPoint(30, Satoshis(3000), isEndpoint = true),
+        OutcomePayoutPoint(40, Satoshis(4000), isEndpoint = true),
+        OutcomePayoutPoint(50, Satoshis(4000), isEndpoint = true),
+        OutcomePayoutPoint(70, Satoshis(0), isEndpoint = false),
+        OutcomePayoutPoint(80, Satoshis(1000), isEndpoint = true),
+        OutcomePayoutPoint(90, Satoshis(1000), isEndpoint = true),
+        OutcomePayoutPoint(100, Satoshis(11000), isEndpoint = false),
+        OutcomePayoutPoint(110, Satoshis(9000), isEndpoint = true)
       ))
 
     val expected = Vector(
@@ -234,19 +228,19 @@ class CETCalculatorTest extends BitcoinSUnitTest {
   }
 
   it should "correctly compute all needed CETs" in {
-    val func = OutcomeValueFunction(
+    val func = DLCPayoutCurve(
       Vector(
-        OutcomeValuePoint(0, Satoshis(-1000), isEndpoint = true),
-        OutcomeValuePoint(10, Satoshis(-1000), isEndpoint = true),
-        OutcomeValuePoint(20, Satoshis(0), isEndpoint = false),
-        OutcomeValuePoint(30, Satoshis(3000), isEndpoint = true),
-        OutcomeValuePoint(40, Satoshis(4000), isEndpoint = true),
-        OutcomeValuePoint(50, Satoshis(4000), isEndpoint = true),
-        OutcomeValuePoint(70, Satoshis(0), isEndpoint = false),
-        OutcomeValuePoint(80, Satoshis(1000), isEndpoint = true),
-        OutcomeValuePoint(90, Satoshis(1000), isEndpoint = true),
-        OutcomeValuePoint(100, Satoshis(11000), isEndpoint = false),
-        OutcomeValuePoint(110, Satoshis(9000), isEndpoint = true)
+        OutcomePayoutPoint(0, Satoshis(-1000), isEndpoint = true),
+        OutcomePayoutPoint(10, Satoshis(-1000), isEndpoint = true),
+        OutcomePayoutPoint(20, Satoshis(0), isEndpoint = false),
+        OutcomePayoutPoint(30, Satoshis(3000), isEndpoint = true),
+        OutcomePayoutPoint(40, Satoshis(4000), isEndpoint = true),
+        OutcomePayoutPoint(50, Satoshis(4000), isEndpoint = true),
+        OutcomePayoutPoint(70, Satoshis(0), isEndpoint = false),
+        OutcomePayoutPoint(80, Satoshis(1000), isEndpoint = true),
+        OutcomePayoutPoint(90, Satoshis(1000), isEndpoint = true),
+        OutcomePayoutPoint(100, Satoshis(11000), isEndpoint = false),
+        OutcomePayoutPoint(110, Satoshis(9000), isEndpoint = true)
       ))
 
     val firstZeroRange = Vector(

@@ -1,10 +1,11 @@
-package org.bitcoins.commons.dlc
+package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.dlc.{DLCState, DLCStatus}
+import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
+import upickle.default._
 
 class DLCStatusTest extends BitcoinSAsyncTest {
   behavior of "DLCStatus"
@@ -28,7 +29,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
                             offer.totalCollateral)
 
         assert(status.state == DLCState.Offered)
-        assert(DLCStatus.fromJson(status.toJson) == status)
+        assert(read[DLCStatus](write(status)) == status)
     }
   }
 
@@ -56,7 +57,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Accepted)
-        assert(DLCStatus.fromJson(status.toJson) == status)
+        assert(read[DLCStatus](write(status)) == status)
     }
   }
 
@@ -84,7 +85,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Signed)
-        assert(DLCStatus.fromJson(status.toJson) == status)
+        assert(read[DLCStatus](write(status)) == status)
     }
   }
 
@@ -114,7 +115,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Broadcasted)
-        assert(DLCStatus.fromJson(status.toJson) == status)
+        assert(read[DLCStatus](write(status)) == status)
     }
   }
 
@@ -144,7 +145,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Confirmed)
-        assert(DLCStatus.fromJson(status.toJson) == status)
+        assert(read[DLCStatus](write(status)) == status)
     }
   }
 
@@ -185,7 +186,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Claimed)
-        assert(DLCStatus.fromJson(status.toJson) == status)
+        assert(read[DLCStatus](write(status)) == status)
     }
   }
 
@@ -226,7 +227,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.RemoteClaimed)
-        assert(DLCStatus.fromJson(status.toJson) == status)
+        assert(read[DLCStatus](write(status)) == status)
     }
   }
 
@@ -260,7 +261,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
           )
 
         assert(status.state == DLCState.Refunded)
-        assert(DLCStatus.fromJson(status.toJson) == status)
+        assert(read[DLCStatus](write(status)) == status)
     }
   }
 }
