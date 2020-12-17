@@ -33,6 +33,9 @@ case class KeyManagerAppConfig(
     config.getStringOrNone(s"bitcoin-s.wallet.walletName")
   }
 
+  lazy val seedFolder: Path = baseDatadir
+    .resolve(WalletStorage.SEED_FOLDER_NAME)
+
   /** The path to our encrypted mnemonic seed */
   lazy val seedPath: Path = {
     val prefix = walletNameOpt match {
@@ -40,17 +43,15 @@ case class KeyManagerAppConfig(
         s"$walletName-"
       case None => ""
     }
-    baseDatadir
-      .resolve(WalletStorage.SEED_FOLDER_NAME)
-      .resolve(s"$prefix${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
+
+    seedFolder.resolve(s"$prefix${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
   }
 
   override def start(): Future[Unit] = {
     val oldDefaultFile =
       baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
 
-    val newDefaultFile = baseDatadir
-      .resolve(WalletStorage.SEED_FOLDER_NAME)
+    val newDefaultFile = seedFolder
       .resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
 
     if (!Files.exists(newDefaultFile) && Files.exists(oldDefaultFile)) {
