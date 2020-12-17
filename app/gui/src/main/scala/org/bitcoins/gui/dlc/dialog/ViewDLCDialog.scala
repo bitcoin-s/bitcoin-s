@@ -4,7 +4,7 @@ import org.bitcoins.core.protocol.dlc.DLCMessage.{
   MultiNonceContractInfo,
   SingleNonceContractInfo
 }
-import org.bitcoins.core.protocol.dlc.DLCStatus
+import org.bitcoins.core.protocol.dlc.{DLCPayoutCurve, DLCStatus}
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
 import scalafx.Includes._
@@ -193,9 +193,17 @@ object ViewDLCDialog {
                                     roundingIntervals) =>
           val previewGraphButton: Button = new Button("Preview Graph") {
             onAction = _ => {
+
+              val payoutCurve = if (status.isInitiator) {
+                outcomeValueFunc
+              } else {
+                DLCPayoutCurve(outcomeValueFunc.points.map { point =>
+                  point.copy(payout = totalCollateral.toLong - point.payout)
+                })
+              }
               DLCPlotUtil.plotCETsWithOriginalCurve(base,
                                                     numDigits,
-                                                    outcomeValueFunc,
+                                                    payoutCurve,
                                                     totalCollateral,
                                                     roundingIntervals)
               ()
