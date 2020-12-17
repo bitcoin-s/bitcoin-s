@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand._
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleInfo
+import org.bitcoins.core.protocol.dlc.DLCMessage.OracleInfo
 import org.bitcoins.core.protocol.tlv._
 import scalafx.scene.Node
 import scalafx.scene.control.Alert.AlertType

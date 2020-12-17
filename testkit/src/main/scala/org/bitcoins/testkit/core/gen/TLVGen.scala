@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.core.gen
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCFundingInputP2WPKHV0
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+import org.bitcoins.core.protocol.dlc.DLCMessage.{
   ContractInfo,
   DLCOffer,
   SingleNonceContractInfo
@@ -9,6 +8,7 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.dlc.DLCFundingInputP2WPKHV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}

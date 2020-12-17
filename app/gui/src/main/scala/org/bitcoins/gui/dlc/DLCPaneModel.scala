@@ -2,10 +2,11 @@ package org.bitcoins.gui.dlc
 
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.dlc.DLCStatus
+import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number.{Int32, UInt16, UInt32}
+import org.bitcoins.core.protocol.dlc.DLCStatus
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
@@ -14,6 +15,7 @@ import scalafx.beans.property.ObjectProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.TextArea
 import scalafx.stage.Window
+import upickle.default._
 
 import scala.util.{Failure, Success}
 
@@ -32,7 +34,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
     ConsoleCli.exec(GetDLCs, Config.empty) match {
       case Failure(exception) => throw exception
       case Success(dlcsStr) =>
-        ujson.read(dlcsStr).arr.map(DLCStatus.fromJson).toVector
+        ujson.read(dlcsStr).arr.map(read[DLCStatus]).toVector
     }
   }
 
@@ -45,7 +47,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
     ConsoleCli.exec(GetDLC(paramHash), Config.empty) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
-        dlcs += DLCStatus.fromJson(ujson.read(dlcStatus))
+        dlcs += read[DLCStatus](ujson.read(dlcStatus))
         dlcs.find(_.paramHash == paramHash).foreach(dlcs -= _)
     }
   }

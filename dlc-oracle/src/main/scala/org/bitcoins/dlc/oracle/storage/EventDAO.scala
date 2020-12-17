@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.oracle.storage
 
-import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv.{
   EventDescriptorTLV,
   OracleEventTLV,

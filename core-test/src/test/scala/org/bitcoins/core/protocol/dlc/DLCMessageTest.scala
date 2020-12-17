@@ -1,20 +1,14 @@
-package org.bitcoins.commons.dlc
+package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
-import org.bitcoins.commons.jsonmodels.dlc.{
-  CETSignatures,
-  DLCPublicKeys,
-  DLCTimeouts
-}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
+import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
-import org.bitcoins.testkit.core.gen.{LnMessageGen, TLVGen}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class DLCMessageTest extends BitcoinSAsyncTest {

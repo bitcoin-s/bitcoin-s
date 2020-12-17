@@ -1,7 +1,7 @@
-package org.bitcoins.commons.dlc
+package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.RoundingIntervals
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.dlc.RoundingIntervals.IntervalStart
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 
@@ -27,12 +27,12 @@ class RoundingIntervalsTest extends BitcoinSUnitTest {
   it should "correctly round" in {
     val roundingInterval = RoundingIntervals(
       Vector(
-        BigDecimal(20) -> 2,
-        BigDecimal(30) -> 3,
-        BigDecimal(40) -> 4,
-        BigDecimal(50) -> 5,
-        BigDecimal(100) -> 10,
-        BigDecimal(1000) -> 100
+        IntervalStart(20, 2),
+        IntervalStart(30, 3),
+        IntervalStart(40, 4),
+        IntervalStart(50, 5),
+        IntervalStart(100, 10),
+        IntervalStart(1000, 100)
       ))
 
     assert(roundingInterval.round(15, Satoshis(12345)) == Satoshis(12345))
@@ -75,12 +75,12 @@ class RoundingIntervalsTest extends BitcoinSUnitTest {
   it should "correctly round on negative payouts" in {
     val roundingInterval = RoundingIntervals(
       Vector(
-        BigDecimal(20) -> 2,
-        BigDecimal(30) -> 3,
-        BigDecimal(40) -> 4,
-        BigDecimal(50) -> 5,
-        BigDecimal(100) -> 10,
-        BigDecimal(1000) -> 100
+        IntervalStart(20, 2),
+        IntervalStart(30, 3),
+        IntervalStart(40, 4),
+        IntervalStart(50, 5),
+        IntervalStart(100, 10),
+        IntervalStart(1000, 100)
       ))
 
     assert(roundingInterval.round(15, Satoshis(-12345)) == Satoshis(-12345))
@@ -123,44 +123,44 @@ class RoundingIntervalsTest extends BitcoinSUnitTest {
   it should "correctly merge two RoundingIntervals" in {
     val roundingIntervals1 = RoundingIntervals(
       Vector(
-        BigDecimal(2) -> 3,
-        BigDecimal(4) -> 2,
-        BigDecimal(5) -> 1,
-        BigDecimal(6) -> 2,
-        BigDecimal(7) -> 4,
-        BigDecimal(8) -> 5,
-        BigDecimal(9) -> 1,
-        BigDecimal(10) -> 4,
-        BigDecimal(12) -> 2,
-        BigDecimal(13) -> 6,
-        BigDecimal(14) -> 3,
-        BigDecimal(15) -> 7,
-        BigDecimal(16) -> 1
+        IntervalStart(2, 3),
+        IntervalStart(4, 2),
+        IntervalStart(5, 1),
+        IntervalStart(6, 2),
+        IntervalStart(7, 4),
+        IntervalStart(8, 5),
+        IntervalStart(9, 1),
+        IntervalStart(10, 4),
+        IntervalStart(12, 2),
+        IntervalStart(13, 6),
+        IntervalStart(14, 3),
+        IntervalStart(15, 7),
+        IntervalStart(16, 1)
       ))
     val roundingIntervals2 = RoundingIntervals(
       Vector(
-        BigDecimal(1) -> 2,
-        BigDecimal(3) -> 4,
-        BigDecimal(4) -> 1,
-        BigDecimal(5) -> 2,
-        BigDecimal(6) -> 3,
-        BigDecimal(11) -> 5
+        IntervalStart(1, 2),
+        IntervalStart(3, 4),
+        IntervalStart(4, 1),
+        IntervalStart(5, 2),
+        IntervalStart(6, 3),
+        IntervalStart(11, 5)
       ))
     val expected = RoundingIntervals(
       Vector(
-        BigDecimal(2) -> 2,
-        BigDecimal(3) -> 3,
-        BigDecimal(4) -> 1,
-        BigDecimal(6) -> 2,
-        BigDecimal(7) -> 3,
-        BigDecimal(9) -> 1,
-        BigDecimal(10) -> 3,
-        BigDecimal(11) -> 4,
-        BigDecimal(12) -> 2,
-        BigDecimal(13) -> 5,
-        BigDecimal(14) -> 3,
-        BigDecimal(15) -> 5,
-        BigDecimal(16) -> 1
+        IntervalStart(2, 2),
+        IntervalStart(3, 3),
+        IntervalStart(4, 1),
+        IntervalStart(6, 2),
+        IntervalStart(7, 3),
+        IntervalStart(9, 1),
+        IntervalStart(10, 3),
+        IntervalStart(11, 4),
+        IntervalStart(12, 2),
+        IntervalStart(13, 5),
+        IntervalStart(14, 3),
+        IntervalStart(15, 5),
+        IntervalStart(16, 1)
       ))
 
     assert(roundingIntervals1.minRoundingWith(roundingIntervals2) == expected)

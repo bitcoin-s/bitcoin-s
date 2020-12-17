@@ -1,6 +1,6 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.SingleNonceContractInfo
+import org.bitcoins.core.protocol.dlc.DLCMessage.SingleNonceContractInfo
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.gui.GlobalData

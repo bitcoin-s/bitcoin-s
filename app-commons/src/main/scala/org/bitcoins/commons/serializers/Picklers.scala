@@ -1,11 +1,13 @@
 package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.dlc.DLCMessage._
+import org.bitcoins.core.protocol.dlc.DLCStatus._
+import org.bitcoins.core.protocol.dlc.{DLCState, DLCStatus, DLCTimeouts}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -15,6 +17,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
+import ujson._
 import upickle.default._
 
 import java.io.File
@@ -147,4 +150,361 @@ object Picklers {
     LockUnspentOutputParameter] =
     readwriter[String].bimap(_.toJson.render(),
                              LockUnspentOutputParameter.fromJsonString)
+
+  implicit val offeredW: Writer[Offered] =
+    writer[Obj].comap { offered =>
+      import offered._
+      Obj(
+        "state" -> Str(statusString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "tempContractId" -> Str(tempContractId.hex),
+        "oracleInfo" -> Str(oracleInfo.hex),
+        "contractInfo" -> Str(contractInfo.hex),
+        "contractMaturity" -> Num(
+          timeouts.contractMaturity.toUInt32.toLong.toDouble),
+        "contractTimeout" -> Num(
+          timeouts.contractTimeout.toUInt32.toLong.toDouble),
+        "feeRate" -> Num(feeRate.toLong.toDouble),
+        "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+        "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+        "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble)
+      )
+    }
+
+  implicit val acceptedW: Writer[Accepted] = writer[Obj].comap { accepted =>
+    import accepted._
+    Obj(
+      "state" -> Str(statusString),
+      "paramHash" -> Str(paramHash.hex),
+      "isInitiator" -> Bool(isInitiator),
+      "tempContractId" -> Str(tempContractId.hex),
+      "contractId" -> Str(contractId.toHex),
+      "oracleInfo" -> Str(oracleInfo.hex),
+      "contractInfo" -> Str(contractInfo.hex),
+      "contractMaturity" -> Num(
+        timeouts.contractMaturity.toUInt32.toLong.toDouble),
+      "contractTimeout" -> Num(
+        timeouts.contractTimeout.toUInt32.toLong.toDouble),
+      "feeRate" -> Num(feeRate.toLong.toDouble),
+      "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+      "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+      "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble)
+    )
+  }
+
+  implicit val signedW: Writer[Signed] = writer[Obj].comap { signed =>
+    import signed._
+    Obj(
+      "state" -> Str(statusString),
+      "paramHash" -> Str(paramHash.hex),
+      "isInitiator" -> Bool(isInitiator),
+      "tempContractId" -> Str(tempContractId.hex),
+      "contractId" -> Str(contractId.toHex),
+      "oracleInfo" -> Str(oracleInfo.hex),
+      "contractInfo" -> Str(contractInfo.hex),
+      "contractMaturity" -> Num(
+        timeouts.contractMaturity.toUInt32.toLong.toDouble),
+      "contractTimeout" -> Num(
+        timeouts.contractTimeout.toUInt32.toLong.toDouble),
+      "feeRate" -> Num(feeRate.toLong.toDouble),
+      "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+      "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+      "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble)
+    )
+  }
+
+  implicit val broadcastedW: Writer[Broadcasted] =
+    writer[Obj].comap { broadcasted =>
+      import broadcasted._
+      Obj(
+        "state" -> Str(statusString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "tempContractId" -> Str(tempContractId.hex),
+        "contractId" -> Str(contractId.toHex),
+        "oracleInfo" -> Str(oracleInfo.hex),
+        "contractInfo" -> Str(contractInfo.hex),
+        "contractMaturity" -> Num(
+          timeouts.contractMaturity.toUInt32.toLong.toDouble),
+        "contractTimeout" -> Num(
+          timeouts.contractTimeout.toUInt32.toLong.toDouble),
+        "feeRate" -> Num(feeRate.toLong.toDouble),
+        "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+        "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+        "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
+        "fundingTxId" -> Str(fundingTxId.hex)
+      )
+    }
+
+  implicit val confirmedW: Writer[Confirmed] =
+    writer[Obj].comap { confirmed =>
+      import confirmed._
+      Obj(
+        "state" -> Str(statusString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "tempContractId" -> Str(tempContractId.hex),
+        "contractId" -> Str(contractId.toHex),
+        "oracleInfo" -> Str(oracleInfo.hex),
+        "contractInfo" -> Str(contractInfo.hex),
+        "contractMaturity" -> Num(
+          timeouts.contractMaturity.toUInt32.toLong.toDouble),
+        "contractTimeout" -> Num(
+          timeouts.contractTimeout.toUInt32.toLong.toDouble),
+        "feeRate" -> Num(feeRate.toLong.toDouble),
+        "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+        "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+        "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
+        "fundingTxId" -> Str(fundingTxId.hex)
+      )
+    }
+
+  implicit val claimedW: Writer[Claimed] = writer[Obj].comap { claimed =>
+    import claimed._
+    val outcomeJs = outcome match {
+      case EnumOutcome(outcome) =>
+        Str(outcome)
+      case UnsignedNumericOutcome(digits) =>
+        Arr.from(digits.map(num => Num(num)))
+    }
+
+    Obj(
+      "state" -> Str(statusString),
+      "paramHash" -> Str(paramHash.hex),
+      "isInitiator" -> Bool(isInitiator),
+      "tempContractId" -> Str(tempContractId.hex),
+      "contractId" -> Str(contractId.toHex),
+      "oracleInfo" -> Str(oracleInfo.hex),
+      "contractInfo" -> Str(contractInfo.hex),
+      "contractMaturity" -> Num(
+        timeouts.contractMaturity.toUInt32.toLong.toDouble),
+      "contractTimeout" -> Num(
+        timeouts.contractTimeout.toUInt32.toLong.toDouble),
+      "feeRate" -> Num(feeRate.toLong.toDouble),
+      "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+      "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+      "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
+      "fundingTxId" -> Str(fundingTxId.hex),
+      "closingTxId" -> Str(closingTxId.hex),
+      "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
+      "outcome" -> outcomeJs
+    )
+  }
+
+  implicit val remoteClaimedW: Writer[RemoteClaimed] =
+    writer[Obj].comap { remoteClaimed =>
+      import remoteClaimed._
+      val outcomeJs = outcome match {
+        case EnumOutcome(outcome) =>
+          Str(outcome)
+        case UnsignedNumericOutcome(digits) =>
+          Arr.from(digits.map(num => Num(num)))
+      }
+
+      Obj(
+        "state" -> Str(statusString),
+        "paramHash" -> Str(paramHash.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "tempContractId" -> Str(tempContractId.hex),
+        "contractId" -> Str(contractId.toHex),
+        "oracleInfo" -> Str(oracleInfo.hex),
+        "contractInfo" -> Str(contractInfo.hex),
+        "contractMaturity" -> Num(
+          timeouts.contractMaturity.toUInt32.toLong.toDouble),
+        "contractTimeout" -> Num(
+          timeouts.contractTimeout.toUInt32.toLong.toDouble),
+        "feeRate" -> Num(feeRate.toLong.toDouble),
+        "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+        "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+        "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
+        "fundingTxId" -> Str(fundingTxId.hex),
+        "closingTxId" -> Str(closingTxId.hex),
+        "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
+        "outcome" -> outcomeJs
+      )
+    }
+
+  implicit val refundedW: Writer[Refunded] = writer[Obj].comap { refunded =>
+    import refunded._
+    Obj(
+      "state" -> Str(statusString),
+      "paramHash" -> Str(paramHash.hex),
+      "isInitiator" -> Bool(isInitiator),
+      "tempContractId" -> Str(tempContractId.hex),
+      "contractId" -> Str(contractId.toHex),
+      "oracleInfo" -> Str(oracleInfo.hex),
+      "contractInfo" -> Str(contractInfo.hex),
+      "contractMaturity" -> Num(
+        timeouts.contractMaturity.toUInt32.toLong.toDouble),
+      "contractTimeout" -> Num(
+        timeouts.contractTimeout.toUInt32.toLong.toDouble),
+      "feeRate" -> Num(feeRate.toLong.toDouble),
+      "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+      "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+      "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
+      "fundingTxId" -> Str(fundingTxId.hex),
+      "closingTxId" -> Str(closingTxId.hex)
+    )
+  }
+
+  implicit val dlcStatusW: Writer[DLCStatus] = Writer.merge(offeredW,
+                                                            acceptedW,
+                                                            signedW,
+                                                            broadcastedW,
+                                                            confirmedW,
+                                                            claimedW,
+                                                            remoteClaimedW,
+                                                            refundedW)
+
+  implicit val dlcStatusR: Reader[DLCStatus] = reader[Obj].map { obj =>
+    val paramHash = Sha256DigestBE(obj("paramHash").str)
+    val state = DLCState.fromString(obj("state").str)
+    val isInitiator = obj("isInitiator").bool
+    val tempContractId = Sha256Digest(obj("tempContractId").str)
+    val oracleInfo = OracleInfo(obj("oracleInfo").str)
+    val contractInfoTLV = ContractInfoTLV(obj("contractInfo").str)
+    val contractMaturity =
+      BlockStamp(UInt32(obj("contractMaturity").num.toLong))
+    val contractTimeout = BlockStamp(UInt32(obj("contractTimeout").num.toLong))
+    val feeRate = SatoshisPerVirtualByte.fromLong(obj("feeRate").num.toLong)
+    val totalCollateral = Satoshis(obj("totalCollateral").num.toLong)
+    val localCollateral = Satoshis(obj("localCollateral").num.toLong)
+
+    lazy val contractId = ByteVector.fromValidHex(obj("contractId").str)
+    lazy val fundingTxId = DoubleSha256DigestBE(obj("fundingTxId").str)
+    lazy val closingTxId = DoubleSha256DigestBE(obj("closingTxId").str)
+    lazy val oracleSigs =
+      obj("oracleSigs").arr
+        .map(value => SchnorrDigitalSignature(value.str))
+        .toVector
+
+    lazy val outcomeJs = obj("outcome")
+    lazy val outcome = outcomeJs.strOpt match {
+      case Some(value) => EnumOutcome(value)
+      case None =>
+        val digits = outcomeJs.arr.map(value => value.num.toInt)
+        UnsignedNumericOutcome(digits.toVector)
+    }
+
+    state match {
+      case DLCState.Offered =>
+        Offered(
+          paramHash,
+          isInitiator,
+          tempContractId,
+          oracleInfo,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral
+        )
+      case DLCState.Accepted =>
+        Accepted(
+          paramHash,
+          isInitiator,
+          tempContractId,
+          contractId,
+          oracleInfo,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral
+        )
+      case DLCState.Signed =>
+        Signed(
+          paramHash,
+          isInitiator,
+          tempContractId,
+          contractId,
+          oracleInfo,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral
+        )
+      case DLCState.Broadcasted =>
+        Broadcasted(
+          paramHash,
+          isInitiator,
+          tempContractId,
+          contractId,
+          oracleInfo,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral,
+          fundingTxId
+        )
+      case DLCState.Confirmed =>
+        Confirmed(
+          paramHash,
+          isInitiator,
+          tempContractId,
+          contractId,
+          oracleInfo,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral,
+          fundingTxId
+        )
+      case DLCState.Claimed =>
+        Claimed(
+          paramHash,
+          isInitiator,
+          tempContractId,
+          contractId,
+          oracleInfo,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral,
+          fundingTxId,
+          closingTxId,
+          oracleSigs,
+          outcome
+        )
+      case DLCState.RemoteClaimed =>
+        require(oracleSigs.size == 1,
+                "Remote claimed should only have one oracle sig")
+        RemoteClaimed(
+          paramHash,
+          isInitiator,
+          tempContractId,
+          contractId,
+          oracleInfo,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral,
+          fundingTxId,
+          closingTxId,
+          oracleSigs.head,
+          outcome
+        )
+      case DLCState.Refunded =>
+        Refunded(
+          paramHash,
+          isInitiator,
+          tempContractId,
+          contractId,
+          oracleInfo,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral,
+          fundingTxId,
+          closingTxId
+        )
+    }
+  }
 }

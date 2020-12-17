@@ -7,7 +7,7 @@ import java.time.Instant
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters

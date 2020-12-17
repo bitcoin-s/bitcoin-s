@@ -1,4 +1,4 @@
-package org.bitcoins.commons.jsonmodels.dlc
+package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto.{CryptoUtil, SchnorrNonce, StringFactory}
