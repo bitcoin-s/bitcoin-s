@@ -1,16 +1,11 @@
 package org.bitcoins.node
 
-import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.node.NodeUnitTest
-import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.scalatest.FutureOutcome
-
-import scala.concurrent.duration._
 
 class DisconnectedPeerTest extends NodeUnitTest {
 
@@ -18,29 +13,15 @@ class DisconnectedPeerTest extends NodeUnitTest {
   implicit override protected val config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
-  override type FixtureParam = SpvNodeConnectedWithBitcoind
+  override type FixtureParam = SpvNode
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeConnectedToBitcoind(test, Some(BitcoindVersion.V17))
+    withDisconnectedSpvNode(test)
 
-  it must "fail to broadcast a transaction when disconnected" in { param =>
-    val SpvNodeConnectedWithBitcoind(node, rpc) = param
-
+  it must "fail to broadcast a transaction when disconnected" in { node =>
     val tx = TransactionGenerators.transaction.sampleSome
-
-    for {
-      peers <- rpc.getPeerInfo
-      me = peers.head
-      _ <- rpc.disconnectNode(me.networkInfo.addr)
-
-      // Wait until disconnected
-      _ <-
-        TestAsyncUtil.retryUntilSatisfiedF(() => rpc.getPeerInfo.map(_.isEmpty),
-                                           500.millis)
-
-      res <- recoverToSucceededIf[RuntimeException] {
-        node.broadcastTransaction(tx)
-      }
-    } yield res
+    recoverToSucceededIf[RuntimeException] {
+      node.broadcastTransaction(tx)
+    }
   }
 }
