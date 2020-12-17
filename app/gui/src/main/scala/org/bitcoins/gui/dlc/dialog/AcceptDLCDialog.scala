@@ -58,10 +58,12 @@ class AcceptDLCDialog
           }
         } else {
           new Alert(AlertType.Confirmation) {
+            resizable = true
             initOwner(owner)
             title = "Confirm no Oracle Announcement"
             contentText =
               s"Are you sure you would like sign to accept this DLC Offer without verifying it has the correct oracle?"
+            dialogPane().getScene.getWindow.sizeToScene()
           }.showAndWait() match {
             case Some(ButtonType.OK) => ()
             case None | Some(_)      => throw new RuntimeException("Did not accept")

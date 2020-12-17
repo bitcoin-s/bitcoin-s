@@ -3,9 +3,9 @@ package org.bitcoins.gui.dlc
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
-import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number.{Int32, UInt16, UInt32}
+import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc.DLCStatus
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -15,10 +15,13 @@ import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.beans.property.ObjectProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.TextArea
-import scalafx.stage.Window
+import scalafx.stage.FileChooser.ExtensionFilter
+import scalafx.stage.{FileChooser, Window}
 import upickle.default._
 
-import scala.util.{Failure, Success, Try}
+import java.io.File
+import java.nio.file.Files
+import scala.util.{Failure, Properties, Success, Try}
 
 class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
   var taskRunner: TaskRunner = _
@@ -263,5 +266,29 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
     ViewDLCDialog.showAndWait(parentWindow.value,
                               updatedStatus.getOrElse(status),
                               this)
+  }
+
+  def exportResult(result: String): Unit = {
+    val txtFilter = new ExtensionFilter("Text Files", "*.txt")
+    val allExtensionFilter = new ExtensionFilter("All Files", "*")
+    val fileChooser = new FileChooser() {
+      extensionFilters.addAll(txtFilter, allExtensionFilter)
+      selectedExtensionFilter = txtFilter
+      initialDirectory = new File(Properties.userHome)
+    }
+
+    val selectedFile = fileChooser.showSaveDialog(null)
+
+    taskRunner.run(
+      "Export Result",
+      op = {
+        if (selectedFile != null) {
+          val bytes = result.getBytes
+
+          Files.write(selectedFile.toPath, bytes)
+          ()
+        }
+      }
+    )
   }
 }
