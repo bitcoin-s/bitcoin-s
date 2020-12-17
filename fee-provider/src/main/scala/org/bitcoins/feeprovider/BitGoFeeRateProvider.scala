@@ -10,7 +10,7 @@ import play.api.libs.json.{JsError, JsSuccess, Json}
 import scala.util.{Failure, Success, Try}
 
 /** Fetches fee rate from BitGo's API
-  * Documentation found here: https://www.bitgo.com/api/v2/#operation/v2.tx.getfeeestimate
+  * @see [[https://www.bitgo.com/api/v2/#operation/v2.tx.getfeeestimate]]
   */
 case class BitGoFeeRateProvider(blockTargetOpt: Option[Int])(implicit
     override val system: ActorSystem)
@@ -32,7 +32,7 @@ case class BitGoFeeRateProvider(blockTargetOpt: Option[Int])(implicit
       case JsError(error) =>
         Failure(
           new RuntimeException(
-            s"Unexpected error when parsing response: $error"))
+            s"Unexpected error when parsing response $str: $error"))
     }
   }
 
