@@ -43,9 +43,7 @@ object WalletStorage extends KeyManagerLogger {
   /**
     * Writes the mnemonic to disk.
     * If we encounter a file in the place we're about
-    * to write to, we move it to a backup location
-    * with the current epoch timestamp as part of
-    * the file name.
+    * to write to, an error will be thrown.
     */
   def writeSeedToDisk(seedPath: Path, seed: SeedState): Path = {
     seed match {
@@ -61,9 +59,7 @@ object WalletStorage extends KeyManagerLogger {
   /**
     * Writes the encrypted mnemonic to disk.
     * If we encounter a file in the place we're about
-    * to write to, we move it to a backup location
-    * with the current epoch timestamp as part of
-    * the file name.
+    * to write to, an error will be thrown.
     */
   def writeSeedToDisk(seedPath: Path, seed: EncryptedSeed): Path = {
     val encrypted = seed.value
@@ -83,9 +79,7 @@ object WalletStorage extends KeyManagerLogger {
   /**
     * Writes the unencrypted mnemonic to disk.
     * If we encounter a file in the place we're about
-    * to write to, we move it to a backup location
-    * with the current epoch timestamp as part of
-    * the file name.
+    * to write to, an error will be thrown.
     */
   def writeSeedToDisk(seedPath: Path, mnemonic: DecryptedMnemonic): Path = {
     val mnemonicCode = mnemonic.mnemonicCode
@@ -104,9 +98,7 @@ object WalletStorage extends KeyManagerLogger {
   /**
     * Writes the unencrypted xprv to disk.
     * If we encounter a file in the place we're about
-    * to write to, we move it to a backup location
-    * with the current epoch timestamp as part of
-    * the file name.
+    * to write to, an error will be thrown.
     */
   def writeSeedToDisk(seedPath: Path, extKey: DecryptedExtPrivKey): Path = {
     val jsObject = {
@@ -120,6 +112,11 @@ object WalletStorage extends KeyManagerLogger {
     writeSeedJsonToDisk(seedPath, jsObject)
   }
 
+  /**
+    * Writes a seed's json output to disk.
+    * If we encounter a file in the place we're about
+    * to write to, an error will be thrown.
+    */
   private def writeSeedJsonToDisk(seedPath: Path, jsObject: Obj): Path = {
     logger.info(s"Writing seed to $seedPath")
 
