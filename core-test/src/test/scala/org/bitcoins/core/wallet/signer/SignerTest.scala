@@ -30,6 +30,7 @@ import org.bitcoins.testkit.core.gen.{
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
+import scala.annotation.nowarn
 import scala.concurrent.{ExecutionContext, Future}
 
 class SignerTest extends BitcoinSAsyncTest {
@@ -172,10 +173,11 @@ class SignerTest extends BitcoinSAsyncTest {
             signInfo.signers.map { signer =>
               val txSignatureComponent =
                 TxSigComponent(signInfo.inputInfo, spendingTx)
-              val oldSigF = BitcoinSigner.doSign(txSignatureComponent,
-                                                 signer.signFunction,
-                                                 signInfo.hashType,
-                                                 isDummySignature = false)
+              @nowarn val oldSigF = BitcoinSigner.doSign(txSignatureComponent,
+                                                         signer.signFunction,
+                                                         signInfo.hashType,
+                                                         isDummySignature =
+                                                           false)
               for {
                 oldSig <- oldSigF
                 newSig <- BitcoinSigner.doSign(spendingTx,

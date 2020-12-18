@@ -21,6 +21,7 @@ import org.bitcoins.testkit.core.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TransactionTestUtil}
 import scodec.bits.ByteVector
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
 /**
@@ -137,7 +138,7 @@ class TransactionSignatureCreatorTest extends BitcoinSAsyncTest {
               val txSignatureComponent =
                 TxSigComponent(signInfo.inputInfo, spendingTx)
 
-              val oldSigF =
+              @nowarn val oldSigF =
                 TransactionSignatureCreator.createSig(txSignatureComponent,
                                                       signer.signFunction,
                                                       signInfo.hashType)
@@ -363,7 +364,7 @@ class TransactionSignatureCreatorTest extends BitcoinSAsyncTest {
     val sign: ByteVector => Future[ECDigitalSignature] = { bytes: ByteVector =>
       Future(privateKey.sign(bytes))
     }
-    val txSignature =
+    @nowarn val txSignature =
       TransactionSignatureCreator.createSig(txSignatureComponent,
                                             sign,
                                             HashType.sigHashAll)

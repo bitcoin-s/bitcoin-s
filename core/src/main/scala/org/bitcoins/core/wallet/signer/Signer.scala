@@ -18,6 +18,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 sealed abstract class SignerUtils {
 
+  @deprecated("use an InputSigningInfo[InputInfo] instead", since = "6/23/2020")
   def doSign(
       sigComponent: TxSigComponent,
       sign: ByteVector => Future[ECDigitalSignature],
