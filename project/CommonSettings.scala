@@ -116,13 +116,6 @@ object CommonSettings {
     publish / skip := true
   ) ++ settings
 
-  lazy val testWithDbSettings: Seq[Setting[_]] = Seq(
-    // To make in-memory DBs work properly
-    Test / fork := false,
-    // To avoid deadlock issues with SQLite
-    Test / parallelExecution := true
-  ) ++ testSettings
-
   lazy val prodSettings: Seq[Setting[_]] = settings
 
   lazy val binariesPath =
