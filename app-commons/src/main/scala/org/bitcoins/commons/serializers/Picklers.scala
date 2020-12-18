@@ -2,7 +2,12 @@ package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
-import org.bitcoins.core.crypto.{ExtPrivateKey, ExtPublicKey, MnemonicCode}
+import org.bitcoins.core.crypto.{
+  ExtKey,
+  ExtPrivateKey,
+  ExtPublicKey,
+  MnemonicCode
+}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage._
@@ -514,5 +519,5 @@ object Picklers {
       str => MnemonicCode.fromWords(str.split(' ').toVector))
 
   implicit val extPrivateKeyPickler: ReadWriter[ExtPrivateKey] =
-    readwriter[String].bimap(_.toString, ExtPrivateKey.fromString)
+    readwriter[String].bimap(ExtKey.toString, ExtPrivateKey.fromString)
 }

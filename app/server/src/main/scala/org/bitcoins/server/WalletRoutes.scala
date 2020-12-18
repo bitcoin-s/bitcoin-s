@@ -471,7 +471,6 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
             val seedPath = kmConf.seedFolder.resolve(
               s"$walletName-${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
 
-            // TODO Maybe rethink creation time
             val creationTime = Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
 
             val mnemonicState = passwordOpt match {
@@ -496,7 +495,6 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
             val seedPath = kmConf.seedFolder.resolve(
               s"$walletName-${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
 
-            // TODO Maybe rethink creation time
             val creationTime = Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
 
             val mnemonicState = passwordOpt match {

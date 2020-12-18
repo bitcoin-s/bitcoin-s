@@ -189,7 +189,7 @@ For more information on how to use our built in `cli` to interact with the serve
     - `transactions` - The transaction outpoints to unlock/lock
 - `importseed` `walletname` `words` `passphrase` - Imports a mnemonic seed as a new seed file
    - `walletname` - Name to associate with this seed
-   - `words` - Mnemonic seed words
+   - `words` - Mnemonic seed words, space separated
    - `passphrase` - Passphrase to encrypt this seed with
 - `importxprv` `walletname` `xprv` `passphrase` - Imports a mnemonic seed as a new seed file
    - `walletname` - Name to associate with this seed

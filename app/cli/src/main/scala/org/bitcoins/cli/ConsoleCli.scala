@@ -756,7 +756,7 @@ object ConsoleCli {
                 case other => other
               })),
           arg[MnemonicCode]("words")
-            .text("Mnemonic seed words")
+            .text("Mnemonic seed words, space separated")
             .required()
             .action((mnemonic, conf) =>
               conf.copy(command = conf.command match {
