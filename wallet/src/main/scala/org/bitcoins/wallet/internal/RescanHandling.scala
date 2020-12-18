@@ -260,7 +260,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
   }
 
-  private def fetchFiltersInRange(
+  private[wallet] def fetchFiltersInRange(
       scripts: Vector[ScriptPubKey],
       parallelismLevel: Int)(
       heightRange: Vector[Int]): Future[Vector[BlockMatchingResponse]] = {
