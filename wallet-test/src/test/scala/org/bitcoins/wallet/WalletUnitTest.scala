@@ -159,13 +159,13 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it should "match block filters" in { wallet: Wallet =>
     for {
-      matched <- wallet.getMatchingBlocks(
+      height <- wallet.chainQueryApi.getFilterCount()
+      matched <- wallet.fetchFiltersInRange(
         scripts = Vector(
           // this is a random address which is included into the test block
           BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").scriptPubKey),
-        startOpt = None,
-        endOpt = None
-      )(system.dispatcher)
+        parallelismLevel = 1
+      )(heightRange = 0.to(height).toVector)
     } yield {
       assert(
         Vector(BlockMatchingResponse(blockHash = testBlockHash,
