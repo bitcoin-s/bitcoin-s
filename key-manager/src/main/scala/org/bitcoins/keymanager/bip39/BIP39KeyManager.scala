@@ -5,7 +5,6 @@ import org.bitcoins.core.api.keymanager.{
   BIP39KeyManagerCreateApi,
   KeyManagerApi
 }
-import org.bitcoins.core.compat.{CompatEither, CompatLeft, CompatRight}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd.{HDAccount, HDPath}
 import org.bitcoins.core.util.{BitcoinSLogger, HDUtil, TimeUtil}
@@ -99,26 +98,24 @@ object BIP39KeyManager
 
     val time = TimeUtil.now
 
-    val writtenToDiskE: CompatEither[KeyManagerInitializeError, KeyManagerApi] =
+    val writtenToDiskE: Either[KeyManagerInitializeError, KeyManagerApi] =
       if (Files.notExists(seedPath)) {
         logger.info(
           s"Seed path parent directory does not exist, creating ${seedPath.getParent}")
         Files.createDirectories(seedPath.getParent)
 
         val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
-        val mnemonicE: CompatEither[KeyManagerInitializeError, MnemonicCode] =
+        val mnemonicE: Either[KeyManagerInitializeError, MnemonicCode] =
           mnemonicT match {
             case Success(mnemonic) =>
               logger.info(s"Created mnemonic from entropy")
-              CompatEither(Right(mnemonic))
+              Right(mnemonic)
             case Failure(err) =>
               logger.error(s"Could not create mnemonic from entropy! $err")
-              CompatEither(Left(InitializeKeyManagerError.BadEntropy))
+              Left(InitializeKeyManagerError.BadEntropy)
           }
 
-        val writableMnemonicE: CompatEither[
-          KeyManagerInitializeError,
-          SeedState] =
+        val writableMnemonicE: Either[KeyManagerInitializeError, SeedState] =
           mnemonicE.map { mnemonic =>
             val decryptedMnemonic = DecryptedMnemonic(mnemonic, time)
             aesPasswordOpt match {
@@ -148,16 +145,16 @@ object BIP39KeyManager
         WalletStorage.decryptSeedFromDisk(kmParams.seedPath,
                                           aesPasswordOpt) match {
           case Right(mnemonic: DecryptedMnemonic) =>
-            CompatRight(
+            Right(
               fromMnemonic(mnemonic = mnemonic.mnemonicCode,
                            kmParams = kmParams,
                            bip39PasswordOpt = bip39PasswordOpt,
                            creationTime = mnemonic.creationTime))
           case Right(xprv: DecryptedExtPrivKey) =>
             val km = new BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
-            CompatRight(km)
+            Right(km)
           case Left(err) =>
-            CompatLeft(
+            Left(
               InitializeKeyManagerError.FailedToReadWrittenSeed(
                 JsonParsingError(err.toString)))
         }
@@ -169,7 +166,7 @@ object BIP39KeyManager
                                                   bip39PasswordOpt,
                                                 kmParams = kmParams)
 
-    val biasedFinalE: CompatEither[KeyManagerInitializeError, BIP39KeyManager] =
+    val biasedFinalE: Either[KeyManagerInitializeError, BIP39KeyManager] =
       for {
         kmBeforeWrite <- writtenToDiskE
         invariant <- unlocked match {
@@ -178,20 +175,20 @@ object BIP39KeyManager
               unlockedKeyManager == kmBeforeWrite,
               s"We could not read the key manager we just wrote! $kmBeforeWrite != $unlockedKeyManager"
             )
-            CompatRight(unlockedKeyManager)
+            Right(unlockedKeyManager)
 
           case Left(err) =>
-            CompatLeft(InitializeKeyManagerError.FailedToReadWrittenSeed(err))
+            Left(InitializeKeyManagerError.FailedToReadWrittenSeed(err))
         }
       } yield {
         invariant
       }
 
     biasedFinalE match {
-      case CompatRight(initSuccess) =>
+      case Right(initSuccess) =>
         logger.info(s"Successfully initialized wallet")
         Right(initSuccess)
-      case CompatLeft(err) =>
+      case Left(err) =>
         logger.error(s"Failed to initialize key manager with err=$err")
         Left(err)
     }
