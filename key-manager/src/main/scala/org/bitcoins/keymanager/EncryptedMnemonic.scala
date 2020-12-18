@@ -1,6 +1,5 @@
 package org.bitcoins.keymanager
 
-import org.bitcoins.core.compat.CompatEither
 import org.bitcoins.core.crypto._
 import org.bitcoins.crypto.{AesCrypt, AesEncryptedData, AesPassword, AesSalt}
 import scodec.bits.ByteVector
@@ -48,7 +47,7 @@ case class EncryptedSeed(
   private def decryptStr(password: AesPassword): Try[String] = {
     val key = password.toKey(salt)
     val either = AesCrypt.decrypt(value, key)
-    CompatEither(either).toTry.flatMap { decrypted =>
+    either.toTry.flatMap { decrypted =>
       decrypted.decodeUtf8 match {
         case Left(_) =>
           // when failing to decode this to a UTF-8 string
