@@ -184,7 +184,7 @@ sealed abstract class CryptoGenerators {
     */
   def privateKeySeqWithRequiredSigs(num: Int): Gen[(Seq[ECPrivateKey], Int)] = {
     if (num <= 0) {
-      Gen.const(Nil, 0)
+      Gen.const((Nil, 0))
     } else {
       val privateKeys = privateKeySeq(num)
       for {

@@ -61,9 +61,10 @@ case class ScriptPubKeyDAO()(implicit
 
     private val toTuple: ScriptPubKeyDb => Option[ScriptPubKeyTuple] = {
       scriptPubKeyDb =>
-        Some(scriptPubKeyDb.id,
-             scriptPubKeyDb.scriptPubKey,
-             scriptPubKeyDb.scriptPubKey.scriptType)
+        Some(
+          (scriptPubKeyDb.id,
+           scriptPubKeyDb.scriptPubKey,
+           scriptPubKeyDb.scriptPubKey.scriptType))
     }
 
     override def * =

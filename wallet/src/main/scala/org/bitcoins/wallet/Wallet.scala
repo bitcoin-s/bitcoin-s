@@ -121,7 +121,7 @@ abstract class Wallet
     // safe since we're deriving from a priv
     val xpub = keyManager.deriveXPub(account).get
 
-    accountDAO.read(account.coin, account.index).flatMap {
+    accountDAO.read((account.coin, account.index)).flatMap {
       case Some(account) =>
         if (account.xpub != xpub) {
           val errorMsg =
@@ -918,7 +918,7 @@ object Wallet extends WalletLogger {
     //2. We already have this account in our database, so we do nothing
     //3. We have this account in our database, with a DIFFERENT xpub. This is bad. Fail with an exception
     //   this most likely means that we have a different key manager than we expected
-    wallet.accountDAO.read(account.coin, account.index).flatMap {
+    wallet.accountDAO.read((account.coin, account.index)).flatMap {
       case Some(account) =>
         if (account.xpub != xpub) {
           val errorMsg =

@@ -75,7 +75,11 @@ object CommonSettings {
     )
   }
 
-  private val scala2_13CompilerOpts = Seq("-Xlint:unused", "-Xfatal-warnings")
+  private val scala2_13CompilerOpts =
+    Seq("-Xlint:unused",
+        "-Xlint:adapted-args",
+        "-Xlint:nullary-unit",
+        "-Xfatal-warnings")
 
   private val nonScala2_13CompilerOpts = Seq(
     "-Xmax-classfile-name",
@@ -87,8 +91,6 @@ object CommonSettings {
   //https://docs.scala-lang.org/overviews/compiler-options/index.html
   def compilerOpts(scalaVersion: String): Seq[String] =
     Seq(
-      "-encoding",
-      "UTF-8",
       "-unchecked",
       "-feature",
       "-deprecation",
