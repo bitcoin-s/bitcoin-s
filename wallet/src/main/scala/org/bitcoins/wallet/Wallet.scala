@@ -12,6 +12,7 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -559,11 +560,13 @@ abstract class Wallet
       _ <- spendingInfoDAO.updateAll(
         oldUtxos.map(_.copyWithState(TxoState.DoesNotExist)))
 
+      sequence = tx.inputs.head.sequence + UInt32.one
       outputs = tx.outputs.filterNot(_.scriptPubKey == changeSpk)
       txBuilder = StandardNonInteractiveFinalizer.txBuilderFrom(outputs,
                                                                 spendingInfos,
                                                                 newFeeRate,
-                                                                changeSpk)
+                                                                changeSpk,
+                                                                sequence)
 
       amount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
       tx <-

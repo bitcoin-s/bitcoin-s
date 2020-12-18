@@ -1,7 +1,7 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.Int64
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
@@ -66,8 +66,10 @@ abstract class FinalizerFactory[T <: RawTxFinalizer] {
       outputs: Seq[TransactionOutput],
       utxos: Seq[InputSigningInfo[InputInfo]],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer[T] = {
-    val inputs = InputUtil.calcSequenceForInputs(utxos)
+      changeSPK: ScriptPubKey,
+      defaultSequence: UInt32 = Policy.sequence): RawTxBuilderWithFinalizer[
+    T] = {
+    val inputs = InputUtil.calcSequenceForInputs(utxos, defaultSequence)
     val lockTime = TxUtil.calcLockTime(utxos).get
     val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
     val finalizer =
