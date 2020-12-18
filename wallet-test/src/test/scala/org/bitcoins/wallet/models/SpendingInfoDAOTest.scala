@@ -3,9 +3,10 @@ package org.bitcoins.wallet.models
 import org.bitcoins.core.api.wallet.db.{
   LegacySpendingInfo,
   NestedSegwitV0SpendingInfo,
+  ScriptPubKeyDb,
   SegwitV0SpendingInfo
 }
-import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   TransactionInput
@@ -212,10 +213,13 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
       created <- WalletTestUtil.insertNestedSegWitUTXO(daos)
       db <- utxoDAO.read(created.id.get)
 
+      account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
+      addr <- daos.addressDAO.create(getAddressDb(account))
+
       // Add another utxo
-      u2 = WalletTestUtil.sampleSegwitUTXO(EmptyScriptPubKey)
+      u2 = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey)
       _ <- insertDummyIncomingTransaction(daos, u2)
-      _ <- daos.utxoDAO.create(u2)
+      _ <- utxoDAO.create(u2)
 
       dbs <- utxoDAO.findDbsForTx(created.txid)
     } yield {
