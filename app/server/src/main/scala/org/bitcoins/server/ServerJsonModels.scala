@@ -1,7 +1,6 @@
 package org.bitcoins.server
 
 import java.time.Instant
-
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -12,7 +11,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.AesPassword
+import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE}
 import ujson._
 import upickle.default._
 
@@ -434,6 +433,18 @@ object Rescan extends ServerJsonModels {
     }
   }
 
+}
+
+case class GetTransaction(txId: DoubleSha256DigestBE)
+
+object GetTransaction extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetTransaction] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(GetTransaction(DoubleSha256DigestBE(jsArr.arr.head.str)))
+  }
 }
 
 trait Broadcastable {

@@ -3,7 +3,6 @@ package org.bitcoins.cli
 import java.io.File
 import java.nio.file.Path
 import java.time.Instant
-
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
@@ -25,6 +24,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto.{
   AesPassword,
+  DoubleSha256DigestBE,
   SchnorrDigitalSignature,
   Sha256DigestBE
 }
@@ -717,6 +717,21 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("gettransaction")
+        .action((_, conf) =>
+          conf.copy(command = GetTransaction(DoubleSha256DigestBE.empty)))
+        .text("Get detailed information about in-wallet transaction <txid>")
+        .children(
+          arg[DoubleSha256DigestBE]("txid")
+            .text("The transaction id")
+            .required()
+            .action((txid, conf) =>
+              conf.copy(command = conf.command match {
+                case getTx: GetTransaction =>
+                  getTx.copy(txId = txid)
+                case other => other
+              }))
+        ),
       cmd("lockunspent")
         .action((_, conf) =>
           conf.copy(command = LockUnspent(unlock = false, Vector.empty)))
@@ -1316,6 +1331,9 @@ object ConsoleCli {
                          up.writeJs(force),
                          up.writeJs(ignoreCreationTime)))
 
+      case GetTransaction(txId) =>
+        RequestParam("gettransaction", Seq(up.writeJs(txId)))
+
       case SendToAddress(address,
                          bitcoins,
                          satoshisPerVirtualByte,
@@ -1504,6 +1522,7 @@ object ConsoleCli {
         case (None, Some(err)) =>
           val msg = jsValueToString(err)
           error(msg)
+        case (None, None) => Success("")
         case (None, None) | (Some(_), Some(_)) =>
           error(s"Got unexpected response: $rawBody")
       }
@@ -1651,6 +1670,7 @@ object CliCommand {
   case class GetConfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetUnconfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends CliCommand
+  case class GetTransaction(txId: DoubleSha256DigestBE) extends CliCommand
 
   case class KeyManagerPassphraseChange(
       oldPassword: AesPassword,

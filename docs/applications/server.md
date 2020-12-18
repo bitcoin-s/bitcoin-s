@@ -183,7 +183,9 @@ For more information on how to use our built in `cli` to interact with the serve
  - `opreturncommit` `message` `[options]` - Creates OP_RETURN commitment transaction
     - `message` - message to put into OP_RETURN commitment
     - `--hashMessage` - should the message be hashed before commitment
-    - `--feerate <value>` - Fee rate in sats per virtual byte
+    - `--feerate <value>` - Fee rate in sats per virtual byte 
+ - `gettransaction` `txid` - Get detailed information about in-wallet transaction <txid>
+    - `txid` - The transaction id
  - `lockunspent` `unlock` `transactions` - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.
     - `unlock` - Whether to unlock (true) or lock (false) the specified transactions
     - `transactions` - The transaction outpoints to unlock/lock
