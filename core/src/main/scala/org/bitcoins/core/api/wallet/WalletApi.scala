@@ -1,7 +1,5 @@
 package org.bitcoins.core.api.wallet
 
-import java.time.Instant
-
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.KeyManagerApi
@@ -22,6 +20,7 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -363,6 +362,10 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
       feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
+
+  def bumpFee(
+      txId: DoubleSha256DigestBE,
+      newFeeRate: FeeUnit): Future[Transaction]
 
   def makeOpReturnCommitment(
       message: String,

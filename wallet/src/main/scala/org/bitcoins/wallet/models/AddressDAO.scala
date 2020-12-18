@@ -280,6 +280,21 @@ case class AddressDAO()(implicit
       })
   }
 
+  def findByScriptPubKeys(
+      spks: Vector[ScriptPubKey]): Future[Vector[AddressDb]] = {
+    val query = table
+      .join(spkTable)
+      .on(_.scriptPubKeyId === _.id)
+      .filter(_._2.scriptPubKey.inSet(spks))
+
+    safeDatabase
+      .runVec(query.result.transactionally)
+      .map(res =>
+        res.map {
+          case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+        })
+  }
+
   private def findMostRecentForChain(account: HDAccount, chain: HDChainType) = {
     addressesForAccountQuery(account.index)
       .filter(_._1.purpose === account.purpose)
