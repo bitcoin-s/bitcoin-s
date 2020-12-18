@@ -65,9 +65,7 @@ object CommonSettings {
         Seq("-source", "1.8", "-target", "1.8")
       }
     },
-    licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-    // Travis has performance issues on macOS
-    Test / parallelExecution := !(Properties.isMac && isCI)
+    licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
   )
 
   private val commonCompilerOpts = {
