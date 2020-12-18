@@ -111,6 +111,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
           elements = range.toVector,
           f = fetchFiltersInRange(scripts, parallelismLevel),
           batchSize = batchSize)
+
+        _ <- downloadAndProcessBlocks(matched.map(_.blockHash.flip))
       } yield {
         logger.info(s"Matched ${matched.length} blocks on rescan")
         matched
@@ -128,10 +130,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressBatchSize: Int): Future[Unit] = {
     for {
       scriptPubKeys <- generateScriptPubKeys(account, addressBatchSize)
-      blocks <- matchBlocks(scriptPubKeys = scriptPubKeys,
-                            endOpt = endOpt,
-                            startOpt = startOpt)
-      _ <- downloadAndProcessBlocks(blocks)
+      _ <- matchBlocks(scriptPubKeys = scriptPubKeys,
+                       endOpt = endOpt,
+                       startOpt = startOpt)
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
       res <-
@@ -249,10 +250,17 @@ private[wallet] trait RescanHandling extends WalletLogger {
                 address <- getNewChangeAddress(account)
               } yield prev :+ address
           }
-    } yield addresses.map(_.scriptPubKey) ++ changeAddresses.map(_.scriptPubKey)
+      spksDb <- scriptPubKeyDAO.findAll()
+    } yield {
+      val addrSpks =
+        addresses.map(_.scriptPubKey) ++ changeAddresses.map(_.scriptPubKey)
+      val otherSpks = spksDb.map(_.scriptPubKey)
+
+      (addrSpks ++ otherSpks).distinct
+    }
   }
 
-  private def fetchFiltersInRange(
+  private[wallet] def fetchFiltersInRange(
       scripts: Vector[ScriptPubKey],
       parallelismLevel: Int)(
       heightRange: Vector[Int]): Future[Vector[BlockMatchingResponse]] = {
