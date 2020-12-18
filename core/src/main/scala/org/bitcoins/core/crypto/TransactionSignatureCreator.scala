@@ -61,7 +61,6 @@ sealed abstract class TransactionSignatureCreator {
   }
 
   /** This is the same as createSig above, except the 'sign' function returns a Future[ECDigitalSignature] */
-  @deprecated("use an InputSigningInfo[InputInfo] instead", since = "6/23/2020")
   def createSig(
       component: TxSigComponent,
       sign: ByteVector => Future[ECDigitalSignature],
