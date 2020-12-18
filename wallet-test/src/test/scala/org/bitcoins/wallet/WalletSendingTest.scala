@@ -268,7 +268,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       firstBal <- wallet.getBalance()
 
       newFeeRate = SatoshisPerByte(feeRate.currencyUnit + Satoshis.one)
-      bumpedTx <- wallet.bumpFee(tx.txIdBE, newFeeRate)
+      bumpedTx <- wallet.bumpFeeRBF(tx.txIdBE, newFeeRate)
 
       txDb1Opt <- wallet.outgoingTxDAO.findByTxId(tx.txIdBE)
       txDb2Opt <- wallet.outgoingTxDAO.findByTxId(bumpedTx.txIdBE)

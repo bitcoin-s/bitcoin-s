@@ -363,7 +363,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       amounts: Vector[CurrencyUnit],
       feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
 
-  def bumpFee(
+  def bumpFeeRBF(
       txId: DoubleSha256DigestBE,
       newFeeRate: FeeUnit): Future[Transaction]
 

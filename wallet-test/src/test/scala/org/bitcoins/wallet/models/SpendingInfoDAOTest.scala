@@ -5,7 +5,7 @@ import org.bitcoins.core.api.wallet.db.{
   NestedSegwitV0SpendingInfo,
   SegwitV0SpendingInfo
 }
-import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   TransactionInput
@@ -202,6 +202,27 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
       case None                                => fail(s"Did not read back a UTXO")
       case Some(_: NestedSegwitV0SpendingInfo) => succeed
       case Some(other)                         => fail(s"did not get a nested segwit UTXO: $other")
+    }
+  }
+
+  it should "find incoming outputs dbs being spent, given a TX" in { daos =>
+    val utxoDAO = daos.utxoDAO
+
+    for {
+      created <- WalletTestUtil.insertNestedSegWitUTXO(daos)
+      db <- utxoDAO.read(created.id.get)
+
+      // Add another utxo
+      u2 = WalletTestUtil.sampleSegwitUTXO(EmptyScriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, u2)
+      _ <- daos.utxoDAO.create(u2)
+
+      dbs <- utxoDAO.findDbsForTx(created.txid)
+    } yield {
+      assert(dbs.size == 1)
+      assert(db.isDefined)
+
+      assert(dbs == Vector(db.get))
     }
   }
 }

@@ -494,7 +494,7 @@ abstract class Wallet
     } yield tx
   }
 
-  override def bumpFee(
+  override def bumpFeeRBF(
       txId: DoubleSha256DigestBE,
       newFeeRate: FeeUnit): Future[Transaction] = {
     for {
@@ -510,8 +510,9 @@ abstract class Wallet
       spks = tx.outputs.map(_.scriptPubKey).toVector
 
       utxos <- spendingInfoDAO.findByOutPoints(outPoints)
+      _ = require(utxos.nonEmpty, "Can only bump fee for our own transaction")
       _ = require(utxos.size == tx.inputs.size,
-                  "Can only bump fee for our own transaction")
+                  "Can only bump fee for a transaction we own all the inputs")
       spendingInfos <- FutureUtil.sequentially(utxos) { utxo =>
         transactionDAO
           .findByOutPoint(utxo.outPoint)
@@ -533,8 +534,9 @@ abstract class Wallet
             SatoshisPerKW.calc(inputAmount, tx)
         }
 
-        require(oldFeeRate.currencyUnit < newFeeRate.currencyUnit,
-                "Cannot bump to a lower fee")
+        require(
+          oldFeeRate.currencyUnit < newFeeRate.currencyUnit,
+          s"Cannot bump to a lower fee ${oldFeeRate.currencyUnit} < ${newFeeRate.currencyUnit}")
       }
 
       myAddrs <- addressDAO.findByScriptPubKeys(spks)
