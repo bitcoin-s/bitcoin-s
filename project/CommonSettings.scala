@@ -95,7 +95,9 @@ object CommonSettings {
 
   /** Compiler options for test code */
   private val scala2_13TestCompilerOpts = {
-    Seq("-Xfatal-warnings") ++ scala2_13CompilerLinting
+    Seq("-Xfatal-warnings",
+        //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
+        "-Xcheckinit") ++ scala2_13CompilerLinting
   }
 
   private val nonScala2_13CompilerOpts = Seq(
