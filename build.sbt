@@ -313,7 +313,7 @@ lazy val chain = project
 
 lazy val chainTest = project
   .in(file("chain-test"))
-  .settings(CommonSettings.testWithDbSettings: _*)
+  .settings(CommonSettings.testSettings: _*)
   .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain-test",
@@ -411,7 +411,7 @@ lazy val node =
 lazy val nodeTest =
   project
     .in(file("node-test"))
-    .settings(CommonSettings.testWithDbSettings: _*)
+    .settings(CommonSettings.testSettings: _*)
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node-test",
@@ -492,7 +492,7 @@ lazy val wallet = project
 
 lazy val walletTest = project
   .in(file("wallet-test"))
-  .settings(CommonSettings.testWithDbSettings: _*)
+  .settings(CommonSettings.testSettings: _*)
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet-test",
