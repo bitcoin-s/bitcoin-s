@@ -1,13 +1,13 @@
 package org.bitcoins.server
 
-import java.nio.file.{Path, Paths}
-
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config._
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.AppConfig
+import org.bitcoins.db.AppConfig.safePathToString
 
+import java.nio.file.{Path, Paths}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Properties
 
@@ -54,7 +54,8 @@ trait BitcoinSRunner extends BitcoinSLogger {
   }
 
   val datadirConfig: Config =
-    ConfigFactory.parseString(s"bitcoin-s.datadir = $datadirPath")
+    ConfigFactory.parseString(
+      s"bitcoin-s.datadir = ${safePathToString(datadirPath)}")
 
   lazy val baseConfig: Config = configIndexOpt match {
     case None =>

@@ -162,6 +162,12 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
 object AppConfig extends BitcoinSLogger {
 
+  def safePathToString(path: Path): String = {
+    val pathStr = path.toString.replace("\\", "/")
+
+    s""""$pathStr"""" // Add quotes around it
+  }
+
   def getBaseConfig(
       baseDatadir: Path,
       configOverrides: List[Config] = List.empty): Config = {
@@ -178,8 +184,8 @@ object AppConfig extends BitcoinSLogger {
       }
 
       val withDatadir =
-        ConfigFactory.parseString(s"bitcoin-s.datadir = $baseDatadir",
-                                  configOptions)
+        ConfigFactory.parseString(
+          s"bitcoin-s.datadir = ${safePathToString(baseDatadir)}")
       withDatadir.withFallback(config)
     }
 
@@ -233,7 +239,10 @@ object AppConfig extends BitcoinSLogger {
     * both with and without a trailing `/`
     */
   private val defaultDatadirRegex: Regex = {
-    (Properties.userHome + "/.bitcoin-s/(testnet3|mainnet|regtest)/?$").r
+    // Fix for windows
+    val home = Properties.userHome.replace('\\', '/')
+
+    (home + "/.bitcoin-s/(testnet3|mainnet|regtest)/?$").r
   }
 
   /**
