@@ -77,7 +77,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       port: Int = RpcUtil.randomPort,
       apiPort: Int = RpcUtil.randomPort): Config = {
     val configMap = {
-      Map(
+      Map[String, Any](
         "eclair.chain" -> "regtest",
         "eclair.spv" -> false,
         "eclair.server.public-ips.1" -> "127.0.0.1",

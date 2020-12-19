@@ -860,7 +860,7 @@ class EclairRpcClient(
                 .get()} for paymentId=${paymentId} for interval=${interval}"))
         } else {
           val resultsF = getSentInfo(paymentId)
-          resultsF.recover {
+          resultsF.failed.foreach {
             case e: Throwable =>
               logger.error(
                 s"Cannot check payment status for paymentId=${paymentId}",
