@@ -1,25 +1,24 @@
 package org.bitcoins.eclair.rpc.api
 
-import java.net.InetSocketAddress
-import java.time.Instant
-
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
-import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
-import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln.{
-  LnInvoice,
-  LnParams,
-  PaymentPreimage,
+import org.bitcoins.core.protocol.ln.channel.{
+  ChannelId,
+  FundedChannelId,
   ShortChannelId
 }
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln.routing.{NodeRoute, Route}
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.eclair.rpc.network.NodeUri
 
+import java.net.InetSocketAddress
+import java.time.Instant
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -77,15 +76,13 @@ trait EclairApi {
 
   def close(id: ChannelId, spk: ScriptPubKey): Future[ChannelCommandResult]
 
-  def findRoute(
-      nodeId: NodeId,
-      amountMsat: MilliSatoshis): Future[Vector[NodeId]]
+  def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[NodeRoute]
 
-  def findRoute(invoice: LnInvoice): Future[Vector[NodeId]]
+  def findRoute(invoice: LnInvoice): Future[NodeRoute]
 
   def findRoute(
       invoice: LnInvoice,
-      amountMsat: MilliSatoshis): Future[Vector[NodeId]]
+      amountMsat: MilliSatoshis): Future[NodeRoute]
 
   def forceClose(channelId: ChannelId): Future[ChannelCommandResult]
 
@@ -102,13 +99,13 @@ trait EclairApi {
   def updateRelayFee(
       channelId: ChannelId,
       feeBaseMsat: MilliSatoshis,
-      feePropertionalMillionths: Long): Future[ChannelCommandResult]
+      feeProportionalMillionths: Long): Future[UpdateRelayFeeResult]
 
   def updateRelayFee(
       shortChannelId: ShortChannelId,
       feeBaseMsat: MilliSatoshis,
       feePropertionalMillionths: Long
-  ): Future[ChannelCommandResult]
+  ): Future[UpdateRelayFeeResult]
 
   def open(
       nodeId: NodeId,
@@ -264,7 +261,7 @@ trait EclairApi {
     */
   def sendToRoute(
       invoice: LnInvoice,
-      route: scala.collection.immutable.Seq[NodeId],
+      route: Route,
       amountMsat: MilliSatoshis,
       paymentHash: Sha256Digest,
       finalCltvExpiry: Long,
