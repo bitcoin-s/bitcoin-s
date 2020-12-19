@@ -3,7 +3,10 @@ package org.bitcoins.wallet
 import org.bitcoins.core.api.wallet.{CoinSelectionAlgo, CoinSelector}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.transaction.{
+  EmptyTransaction,
+  TransactionOutput
+}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.wallet.fee._
@@ -283,6 +286,49 @@ class WalletSendingTest extends BitcoinSWalletTest {
       assert(txDb1.actualFee < txDb2.actualFee)
       assert(firstBal - secondBal == txDb2.actualFee - txDb1.actualFee)
     }
+  }
+
+  it should "correctly CPFP a transaction" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+    for {
+      parent <- wallet.sendToAddress(testAddress, amountToSend, None)
+      bumpRate <- wallet.feeRateApi.getFeeRate
+      child <- wallet.bumpFeeCPFP(parent.txIdBE, bumpRate)
+
+      received <- wallet.spendingInfoDAO.findTx(child).map(_.nonEmpty)
+    } yield {
+      // Verify we are only sending to ourself
+      assert(child.outputs.size == 1)
+      assert(received)
+
+      // Verify we are only spending 1 output from the parent tx
+      assert(child.inputs.size == 1)
+      assert(child.inputs.head.previousOutput.txId == parent.txId)
+      assert(child.inputs.head.previousOutput.vout.toInt < parent.outputs.size)
+
+      // Verify fee rate
+      val utxo = parent.outputs(child.inputs.head.previousOutput.vout.toInt)
+      val inputAmount = utxo.value
+      val childFeeRate = bumpRate match {
+        case _: SatoshisPerByte =>
+          SatoshisPerByte.calc(inputAmount, child)
+        case _: SatoshisPerKiloByte =>
+          SatoshisPerKiloByte.calc(inputAmount, child)
+        case _: SatoshisPerVirtualByte =>
+          SatoshisPerVirtualByte.calc(inputAmount, child)
+        case _: SatoshisPerKW =>
+          SatoshisPerKW.calc(inputAmount, child)
+      }
+
+      assert(childFeeRate == bumpRate)
+    }
+  }
+
+  it should "fail to CPFP a transaction we don't own" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    recoverToSucceededIf[RuntimeException](
+      wallet.bumpFeeCPFP(EmptyTransaction.txIdBE, SatoshisPerByte.one))
   }
 
   it should "fail to send from outpoints when already spent" in {

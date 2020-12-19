@@ -369,6 +369,13 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       txId: DoubleSha256DigestBE,
       newFeeRate: FeeUnit): Future[Transaction]
 
+  /** Bumps the fee of the parent transaction with a new
+    * child transaction with the given fee rate
+    */
+  def bumpFeeCPFP(
+      txId: DoubleSha256DigestBE,
+      feeRate: FeeUnit): Future[Transaction]
+
   def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,
