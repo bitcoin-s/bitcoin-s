@@ -65,9 +65,7 @@ object CommonSettings {
         Seq("-source", "1.8", "-target", "1.8")
       }
     },
-    licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-    // Travis has performance issues on macOS
-    Test / parallelExecution := !(Properties.isMac && isCI)
+    licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
   )
 
   private val commonCompilerOpts = {
@@ -117,13 +115,6 @@ object CommonSettings {
     logBuffered in Test := false,
     publish / skip := true
   ) ++ settings
-
-  lazy val testWithDbSettings: Seq[Setting[_]] = Seq(
-    // To make in-memory DBs work properly
-    Test / fork := false,
-    // To avoid deadlock issues with SQLite
-    Test / parallelExecution := true
-  ) ++ testSettings
 
   lazy val prodSettings: Seq[Setting[_]] = settings
 
