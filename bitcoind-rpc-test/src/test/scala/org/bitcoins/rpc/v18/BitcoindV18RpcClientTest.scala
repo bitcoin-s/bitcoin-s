@@ -94,8 +94,7 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
   it should "get node addresses given a count" ignore {
     for {
       (freshClient, otherFreshClient) <- clientPairF
-      freshclientnode <-
-        freshClient.addNode(freshClient.getDaemon.uri, AddNodeArgument.Add)
+      _ <- freshClient.addNode(freshClient.getDaemon.uri, AddNodeArgument.Add)
       nodeaddress <- freshClient.getNodeAddresses(1)
     } yield {
       assert(nodeaddress.head.address == otherFreshClient.instance.uri)

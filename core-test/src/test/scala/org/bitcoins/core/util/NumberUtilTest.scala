@@ -249,7 +249,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
         assert(base10 == expectedBase10)
 
         // Add some extra digits for leading zeroes
-        val numDigits = (Math.log(num) / Math.log(base)).toInt + 5
+        val numDigits = (Math.log(num.toDouble) / Math.log(base)).toInt + 5
         val decomposed = NumberUtil.decompose(num, base, numDigits)
         assert(decomposed.head == 0)
 
@@ -306,7 +306,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
     forAll(Gen.choose(2, 256), Gen.choose(0L, Long.MaxValue)) {
       case (base, num) =>
         // Add some extra digits for leading zeroes
-        val numDigits = (Math.log(num) / Math.log(base)).toInt + 5
+        val numDigits = (Math.log(num.toDouble) / Math.log(base)).toInt + 5
         val digits = NumberUtil.decompose(num, base, numDigits)
         assert(NumberUtil.fromDigits(digits, base, numDigits) == num)
     }

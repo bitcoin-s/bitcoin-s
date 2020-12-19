@@ -84,7 +84,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       .toVector
 
     val address =
-      BitcoinAddress.fromStringExn("mpLQjfK79b7CCV4VMJWEWAj5Mpx8Up5zxB")
+      BitcoinAddress.fromString("mpLQjfK79b7CCV4VMJWEWAj5Mpx8Up5zxB")
 
     val outputs: Map[BitcoinAddress, Bitcoins] =
       Map(address -> Bitcoins(0.1))
