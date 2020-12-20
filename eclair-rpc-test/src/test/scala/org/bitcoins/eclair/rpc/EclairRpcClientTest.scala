@@ -27,7 +27,6 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, EclairRpcTestClient}
 import org.scalatest.Assertion
 
@@ -626,7 +625,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             _ = assert(channels.exists(_.state == ChannelState.NORMAL),
                        "Nodes did not have open channel!")
             preimage = PaymentPreimage.random
-            wsEventP = Promise[WebSocketEvent]
+            wsEventP = Promise[WebSocketEvent]()
             _ <- client.connectToWebSocket { event =>
               if (!wsEventP.isCompleted) {
                 wsEventP.success(event)
@@ -1257,6 +1256,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
   override def afterAll(): Unit = {
     clients.result().foreach(EclairRpcTestUtil.shutdown)
-    super.afterAll
+    super.afterAll()
   }
 }

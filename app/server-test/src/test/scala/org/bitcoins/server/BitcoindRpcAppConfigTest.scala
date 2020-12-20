@@ -18,6 +18,7 @@ class BitcoindRpcAppConfigTest extends BitcoinSAsyncTest {
   override def afterAll(): Unit = {
     super.afterAll()
     new Directory(tempDir.toFile).deleteRecursively()
+    ()
   }
 
   it must "be overridable" in {

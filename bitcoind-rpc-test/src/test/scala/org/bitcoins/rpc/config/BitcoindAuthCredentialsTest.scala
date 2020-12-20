@@ -1,10 +1,11 @@
 package org.bitcoins.rpc.config
 
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, FileUtil}
-import org.bitcoins.rpc.config.BitcoindAuthCredentials.CookieBased
-import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
+  CookieBased,
+  PasswordBased
+}
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, FileUtil}
 
 class BitcoindAuthCredentialsTest extends BitcoinSUnitTest {
   it must "handle cookie based auth" in {
@@ -51,7 +52,7 @@ class BitcoindAuthCredentialsTest extends BitcoinSUnitTest {
 
     val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
     BitcoindAuthCredentials.fromConfig(conf) match {
-      case _: CookieBased => fail
+      case _: CookieBased => fail()
       case PasswordBased(username, password) =>
         assert(username == "foo")
         assert(password == "bar")

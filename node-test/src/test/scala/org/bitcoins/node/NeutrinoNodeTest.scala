@@ -34,7 +34,6 @@ class NeutrinoNodeTest extends NodeUnitTest {
                                          getBIP39PasswordOpt(),
                                          Some(BitcoindVersion.Experimental))
 
-  private val testTimeout = 30.seconds
   private var assertionP: Promise[Boolean] = Promise()
   after {
     //reset assertion after a test runs, because we
@@ -43,12 +42,14 @@ class NeutrinoNodeTest extends NodeUnitTest {
     //after a NeutrinoNode is constructed :-(
     assertionP = Promise()
   }
-  private var utxos: Set[ScriptPubKey] = _
+  //what is going on here??
+  private val utxos: Set[ScriptPubKey] = Set.empty
 
   private def blockCallback(block: Block): Future[Unit] = {
     val scriptPubKeys =
       block.transactions.flatMap(tx => tx.outputs.map(_.scriptPubKey)).toSet
     assertionP
+      //is this trivially false always?
       .success(utxos.intersect(scriptPubKeys) == utxos)
       .future
       .map(_ => ())
@@ -137,7 +138,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
           RpcUtil.retryUntilSatisfiedF(conditionF = () => {
                                          node
                                            .chainApiFromDb()
-                                           .flatMap(_.getFilterHeaderCount)
+                                           .flatMap(_.getFilterHeaderCount())
                                            .map(_ == ExpectedCount)
                                        },
                                        interval = 1000.millis)
@@ -146,7 +147,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
           RpcUtil.retryUntilSatisfiedF(conditionF = () => {
                                          node
                                            .chainApiFromDb()
-                                           .flatMap(_.getFilterCount)
+                                           .flatMap(_.getFilterCount())
                                            .map(_ == ExpectedCount)
                                        },
                                        interval = 1000.millis)

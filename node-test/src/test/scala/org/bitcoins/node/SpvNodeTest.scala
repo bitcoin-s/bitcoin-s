@@ -88,8 +88,8 @@ class SpvNodeTest extends NodeUnitTest {
         //we should expect 5 headers have been announced to us via
         //the send headers message.
         val has6BlocksF = RpcUtil.retryUntilSatisfiedF(
-          conditionF =
-            () => spvNode.chainApiFromDb().flatMap(_.getBlockCount.map(_ == 6)),
+          conditionF = () =>
+            spvNode.chainApiFromDb().flatMap(_.getBlockCount().map(_ == 6)),
           interval = 250.millis)
 
         has6BlocksF.map { _ =>

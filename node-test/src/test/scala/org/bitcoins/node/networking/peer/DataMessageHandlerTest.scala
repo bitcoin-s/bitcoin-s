@@ -33,6 +33,16 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
       val resultP: Promise[(MerkleBlock, Vector[Transaction])] = Promise()
 
+      val callback: OnMerkleBlockReceived = {
+        (merkle: MerkleBlock, txs: Vector[Transaction]) =>
+          {
+            Future {
+              resultP.success((merkle, txs))
+              ()
+            }
+          }
+      }
+
       for {
         sender <- spv.peerMsgSenderF
 
@@ -43,14 +53,6 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
         payload1 = MerkleBlockMessage(merkleBlock)
         payload2 = TransactionMessage(tx)
-
-        callback: OnMerkleBlockReceived =
-          (merkle: MerkleBlock, txs: Vector[Transaction]) => {
-            Future {
-              resultP.success((merkle, txs))
-              ()
-            }
-          }
 
         callbacks = NodeCallbacks.onMerkleBlockReceived(callback)
 
@@ -67,6 +69,12 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
       val resultP: Promise[Block] = Promise()
 
+      val callback: OnBlockReceived = (block: Block) => {
+        Future {
+          resultP.success(block)
+          ()
+        }
+      }
       for {
         sender <- spv.peerMsgSenderF
 
@@ -74,13 +82,6 @@ class DataMessageHandlerTest extends NodeUnitTest {
         block <- bitcoind.getBlockRaw(hash)
 
         payload = BlockMessage(block)
-
-        callback: OnBlockReceived = (block: Block) => {
-          Future {
-            resultP.success(block)
-            ()
-          }
-        }
 
         callbacks = NodeCallbacks.onBlockReceived(callback)
 
@@ -96,6 +97,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
       val resultP: Promise[Vector[BlockHeader]] = Promise()
 
+      val callback: OnBlockHeadersReceived = (headers: Vector[BlockHeader]) => {
+        Future {
+          resultP.success(headers)
+          ()
+        }
+      }
+
       for {
         sender <- spv.peerMsgSenderF
 
@@ -103,13 +111,6 @@ class DataMessageHandlerTest extends NodeUnitTest {
         header <- bitcoind.getBlockHeaderRaw(hash)
 
         payload = HeadersMessage(CompactSizeUInt.one, Vector(header))
-
-        callback: OnBlockHeadersReceived = (headers: Vector[BlockHeader]) => {
-          Future {
-            resultP.success(headers)
-            ()
-          }
-        }
 
         callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
 
@@ -125,7 +126,15 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
       val resultP: Promise[Vector[(DoubleSha256Digest, GolombFilter)]] =
         Promise()
-
+      val callback: OnCompactFiltersReceived = {
+        (filters: Vector[(DoubleSha256Digest, GolombFilter)]) =>
+          {
+            Future {
+              resultP.success(filters)
+              ()
+            }
+          }
+      }
       for {
         sender <- spv.peerMsgSenderF
 
@@ -134,14 +143,6 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
         payload =
           CompactFilterMessage(FilterType.Basic, hash.flip, filter.filter.bytes)
-
-        callback: OnCompactFiltersReceived =
-          (filters: Vector[(DoubleSha256Digest, GolombFilter)]) => {
-            Future {
-              resultP.success(filters)
-              ()
-            }
-          }
 
         callbacks = NodeCallbacks.onCompactFilterReceived(callback)
 
