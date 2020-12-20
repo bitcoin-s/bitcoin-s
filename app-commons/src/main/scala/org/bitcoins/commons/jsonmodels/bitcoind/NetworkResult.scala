@@ -1,12 +1,11 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
-import java.net.URI
-
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
 
+import java.net.URI
 import scala.concurrent.duration.FiniteDuration
 
 sealed abstract class NetworkResult
@@ -63,7 +62,24 @@ case class Network(
 case class NetworkAddress(address: String, port: Int, score: Int)
     extends NetworkResult
 
-case class Peer(
+sealed trait Peer extends NetworkResult {
+  def id: Int
+  def networkInfo: PeerNetworkInfo
+  def version: Int
+  def subver: String
+  def inbound: Boolean
+  def addnode: Boolean
+  def startingheight: Int
+  def synced_headers: Int
+  def synced_blocks: Int
+  def inflight: Vector[Int]
+  def whitelisted: Boolean
+  def bytessent_per_msg: Map[String, Int]
+  def bytesrecv_per_msg: Map[String, Int]
+  def minfeefilter: Option[SatoshisPerKiloByte]
+}
+
+case class PeerPreV20(
     id: Int,
     networkInfo: PeerNetworkInfo,
     version: Int,
@@ -79,7 +95,24 @@ case class Peer(
     bytessent_per_msg: Map[String, Int],
     bytesrecv_per_msg: Map[String, Int],
     minfeefilter: Option[SatoshisPerKiloByte])
-    extends NetworkResult
+    extends Peer
+
+case class PeerPostV20(
+    id: Int,
+    networkInfo: PeerNetworkInfo,
+    version: Int,
+    subver: String,
+    inbound: Boolean,
+    addnode: Boolean,
+    startingheight: Int,
+    synced_headers: Int,
+    synced_blocks: Int,
+    inflight: Vector[Int],
+    whitelisted: Boolean,
+    bytessent_per_msg: Map[String, Int],
+    bytesrecv_per_msg: Map[String, Int],
+    minfeefilter: Option[SatoshisPerKiloByte])
+    extends Peer
 
 case class PeerNetworkInfo(
     addr: URI,

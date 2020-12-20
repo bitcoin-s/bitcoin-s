@@ -199,7 +199,7 @@ object JsonSerializers {
   implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
     Json.reads[PeerNetworkInfo]
 
-  implicit val peerReads: Reads[Peer] = ((__ \ "id").read[Int] and
+  implicit val peerPreV20Reads: Reads[PeerPreV20] = ((__ \ "id").read[Int] and
     __.read[PeerNetworkInfo] and
     (__ \ "version").read[Int] and
     (__ \ "subver").read[String] and
@@ -213,7 +213,22 @@ object JsonSerializers {
     (__ \ "whitelisted").read[Boolean] and
     (__ \ "bytessent_per_msg").read[Map[String, Int]] and
     (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
-    (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(Peer)
+    (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(PeerPreV20)
+
+  implicit val peerPostV20Reads: Reads[PeerPostV20] = ((__ \ "id").read[Int] and
+    __.read[PeerNetworkInfo] and
+    (__ \ "version").read[Int] and
+    (__ \ "subver").read[String] and
+    (__ \ "inbound").read[Boolean] and
+    (__ \ "addnode").read[Boolean] and
+    (__ \ "startingheight").read[Int] and
+    (__ \ "synced_headers").read[Int] and
+    (__ \ "synced_blocks").read[Int] and
+    (__ \ "inflight").read[Vector[Int]] and
+    (__ \ "whitelisted").read[Boolean] and
+    (__ \ "bytessent_per_msg").read[Map[String, Int]] and
+    (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
+    (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(PeerPostV20)
 
   implicit val nodeBanPostV20Reads: Reads[NodeBanPostV20] =
     Json.reads[NodeBanPostV20]

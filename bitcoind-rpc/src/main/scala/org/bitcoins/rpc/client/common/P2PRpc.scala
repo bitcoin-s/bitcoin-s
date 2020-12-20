@@ -1,7 +1,5 @@
 package org.bitcoins.rpc.client.common
 
-import java.net.URI
-
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddNodeArgument,
   SetBanCommand
@@ -12,6 +10,7 @@ import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
+import java.net.URI
 import scala.concurrent.Future
 
 /**
@@ -62,7 +61,12 @@ trait P2PRpc { self: Client =>
   }
 
   def getPeerInfo: Future[Vector[Peer]] = {
-    bitcoindCall[Vector[Peer]]("getpeerinfo")
+    self.version match {
+      case V20 | Unknown =>
+        bitcoindCall[Vector[PeerPostV20]]("getpeerinfo")
+      case V16 | V17 | V18 | V19 | Experimental =>
+        bitcoindCall[Vector[PeerPreV20]]("getpeerinfo")
+    }
   }
 
   def listBanned: Future[Vector[NodeBan]] = {
@@ -71,7 +75,6 @@ trait P2PRpc { self: Client =>
         bitcoindCall[Vector[NodeBanPostV20]]("listbanned")
       case V16 | V17 | V18 | V19 | Experimental =>
         bitcoindCall[Vector[NodeBanPreV20]]("listbanned")
-
     }
   }
 
