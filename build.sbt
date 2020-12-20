@@ -120,8 +120,6 @@ lazy val `bitcoin-s` = project
     oracleServer
   )
   .settings(CommonSettings.settings: _*)
-  // crossScalaVersions must be set to Nil on the aggregating project
-  .settings(crossScalaVersions := Nil)
   // unidoc aggregates Scaladocs for all subprojects into one big doc
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
