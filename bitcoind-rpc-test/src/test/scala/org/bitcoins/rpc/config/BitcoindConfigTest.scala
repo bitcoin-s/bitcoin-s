@@ -34,7 +34,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
                     |rpcport=4000
     """.stripMargin.split("\n")
 
-    val conf = BitcoindConfig(confStr, tmpDir)
+    val conf = BitcoindConfig(confStr.toIndexedSeq, tmpDir)
     assert(conf.rpcport == 3000)
     assert(conf.network == RegTest)
   }
@@ -51,7 +51,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
                     |regtest.rpcport=3000
     """.stripMargin.split("\n")
 
-    val conf = BitcoindConfig(confStr, tmpDir)
+    val conf = BitcoindConfig(confStr.toIndexedSeq, tmpDir)
     assert(conf.rpcport == 4000)
     assert(conf.network == RegTest)
   }
@@ -66,7 +66,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
                     |regtest.rpcport=3000
     """.stripMargin.split("\n")
 
-    val conf = BitcoindConfig(confStr, tmpDir)
+    val conf = BitcoindConfig(confStr.toIndexedSeq, tmpDir)
     assert(conf.rpcport == TestNet3.rpcPort)
     assert(conf.network == TestNet3)
   }
@@ -86,7 +86,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
                     |rpcport=1000
     """.stripMargin.split("\n")
 
-    val conf = BitcoindConfig(confStr, tmpDir)
+    val conf = BitcoindConfig(confStr.toIndexedSeq, tmpDir)
     assert(conf.rpcport == 3000)
     assert(conf.network == TestNet3)
     assert(conf.username.contains("username"))
@@ -115,7 +115,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
                     |rpcuser=username
     """.stripMargin.split("\n")
 
-    val conf = BitcoindConfig(confStr, tmpDir)
+    val conf = BitcoindConfig(confStr.toIndexedSeq, tmpDir)
     assert(conf.rpcport == 4000)
     assert(conf.network == RegTest)
     assert(conf.username.contains("username"))

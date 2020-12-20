@@ -25,7 +25,9 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.reflect.io.Directory
+import scala.annotation.nowarn
 
+@nowarn
 class WalletRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[
@@ -62,7 +64,7 @@ class WalletRpcTest extends BitcoindRpcTest {
     for {
       (client, _, _) <- clientsF
       result <- {
-        val datadir = client.getDaemon.datadir
+        val datadir = client.getDaemon.datadir.getAbsolutePath
         client.dumpWallet(datadir + "/test.dat")
       }
     } yield {
@@ -89,11 +91,11 @@ class WalletRpcTest extends BitcoindRpcTest {
     for {
       (client, _, _) <- clientsF
       _ <- {
-        val datadir = client.getDaemon.datadir
+        val datadir = client.getDaemon.datadir.getAbsolutePath
         client.backupWallet(datadir + "/backup.dat")
       }
     } yield {
-      val datadir = client.getDaemon.datadir
+      val datadir = client.getDaemon.datadir.getAbsolutePath
       val file = new File(datadir + "/backup.dat")
       assert(file.exists)
       assert(file.isFile)
@@ -418,7 +420,8 @@ class WalletRpcTest extends BitcoindRpcTest {
       key <- client.dumpPrivKey(address)
       result <-
         client
-          .dumpWallet(client.getDaemon.datadir + "/wallet_dump.dat")
+          .dumpWallet(
+            client.getDaemon.datadir.getAbsolutePath + "/wallet_dump.dat")
     } yield {
       assert(key == ecPrivateKey)
       val reader = new Scanner(result.filename)
@@ -476,7 +479,8 @@ class WalletRpcTest extends BitcoindRpcTest {
       (client, _, _) <- clientsF
       walletClient <- walletClientF
       address <- client.getNewAddress
-      walletFile = client.getDaemon.datadir + "/client_wallet.dat"
+      walletFile =
+        client.getDaemon.datadir.getAbsolutePath + "/client_wallet.dat"
 
       fileResult <- client.dumpWallet(walletFile)
       _ <- walletClient.walletPassphrase(password, 1000)
@@ -492,7 +496,8 @@ class WalletRpcTest extends BitcoindRpcTest {
     for {
       (client, _, _) <- clientsF
       walletClient <- walletClientF
-      walletFile = client.getDaemon.datadir + s"/regtest/wallets/$name"
+      walletFile =
+        client.getDaemon.datadir.getAbsolutePath + s"/regtest/wallets/$name"
 
       _ <- client.createWallet(walletFile)
       _ <- client.unloadWallet(walletFile)

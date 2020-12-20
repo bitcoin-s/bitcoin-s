@@ -54,7 +54,7 @@ object CommonSettings {
     scalacOptions in (Compile, doc) ~= (_ filterNot (s =>
       s == "-Xfatal-warnings")),
     scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
-    scalacOptions in Test := testCompilerOpts,
+    scalacOptions in Test := testCompilerOpts(scalaVersion.value),
     Compile / compile / javacOptions ++= {
       if (isCI) {
         //jdk11 is used on CI, we need to use the --release flag to make sure
@@ -105,9 +105,12 @@ object CommonSettings {
       else nonScala2_13CompilerOpts
     }
 
-  val testCompilerOpts: Seq[String] = commonCompilerOpts ++
-    //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
-    Vector("-Xcheckinit")
+  def testCompilerOpts(scalaVersion: String): Seq[String] = {
+    commonCompilerOpts ++
+      //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
+      Vector("-Xcheckinit") ++
+      compilerOpts(scalaVersion)
+  }
 
   lazy val testSettings: Seq[Setting[_]] = Seq(
     //show full stack trace (-oF) of failed tests and duration of tests (-oD)

@@ -207,7 +207,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       regTest = {
         val regTest =
-          new File(client.getDaemon.datadir + "/regtest")
+          new File(client.getDaemon.datadir.getAbsolutePath + "/regtest")
         assert(regTest.isDirectory)
         assert(!regTest.list().contains("mempool.dat"))
         regTest

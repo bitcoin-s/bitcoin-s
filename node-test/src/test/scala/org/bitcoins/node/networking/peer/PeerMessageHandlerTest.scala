@@ -35,7 +35,7 @@ class PeerMessageHandlerTest extends NodeUnitTest {
       bitcoindPeerF.flatMap(_ => peerHandlerF.map(_.peerMsgSender.connect()))
 
     val isConnectedF = TestAsyncUtil.retryUntilSatisfiedF(
-      () => p2pClientF.flatMap(_.isConnected),
+      () => p2pClientF.flatMap(_.isConnected()),
       interval = 500.millis
     )
 
@@ -196,6 +196,6 @@ class PeerMessageHandlerTest extends NodeUnitTest {
 
   override def afterAll(): Unit = {
     startedBitcoindF.flatMap(_.stop())
-    super.afterAll
+    super.afterAll()
   }
 }

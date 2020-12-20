@@ -283,7 +283,8 @@ object Deps {
       Test.logback,
       Test.scalaTest,
       Test.scalacheck,
-      Test.newAsync
+      Test.newAsync,
+      Test.scalaCollectionCompat
     )
 
   val bench = List(

@@ -95,11 +95,11 @@ class MultiWalletRpcTest extends BitcoindRpcTest {
     for {
       client <- walletClientF
       _ <- {
-        val datadir = client.getDaemon.datadir
+        val datadir = client.getDaemon.datadir.getAbsolutePath
         client.backupWallet(datadir + "/backup.dat", Some(walletName))
       }
     } yield {
-      val datadir = client.getDaemon.datadir
+      val datadir = client.getDaemon.datadir.getAbsolutePath
       val file = new File(datadir + "/backup.dat")
       assert(file.exists)
       assert(file.isFile)
@@ -288,8 +288,9 @@ class MultiWalletRpcTest extends BitcoindRpcTest {
       key <- client.dumpPrivKey(address, Some(walletName))
       result <-
         client
-          .dumpWallet(client.getDaemon.datadir + "/wallet_dump.dat",
-                      Some(walletName))
+          .dumpWallet(
+            client.getDaemon.datadir.getAbsolutePath + "/wallet_dump.dat",
+            Some(walletName))
     } yield {
       assert(key == ecPrivateKey)
       val reader = new Scanner(result.filename)
@@ -350,7 +351,8 @@ class MultiWalletRpcTest extends BitcoindRpcTest {
       client <- walletClientF
       walletClient <- walletClientF
       address <- client.getNewAddress(Some(walletName))
-      walletFile = client.getDaemon.datadir + "/client_wallet.dat"
+      walletFile =
+        client.getDaemon.datadir.getAbsolutePath + "/client_wallet.dat"
 
       fileResult <-
         client.dumpWallet(walletFile, walletNameOpt = Some(walletName))
