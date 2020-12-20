@@ -1,7 +1,5 @@
 package org.bitcoins.wallet
 
-import java.time.Instant
-
 import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -14,6 +12,7 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -33,20 +32,16 @@ import org.bitcoins.core.wallet.utxo.TxoState.{
   PendingConfirmationsReceived
 }
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{
-  AesPassword,
-  CryptoUtil,
-  DoubleSha256Digest,
-  ECPublicKey
-}
+import org.bitcoins.crypto._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
 import scodec.bits.ByteVector
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Random, Success}
 
 abstract class Wallet
     extends AnyHDWalletApi
@@ -496,6 +491,88 @@ abstract class Wallet
         changeAddr.scriptPubKey)
 
       tx <- finishSend(txBuilder, utxos, amount, feeRate, newTags)
+    } yield tx
+  }
+
+  override def bumpFeeRBF(
+      txId: DoubleSha256DigestBE,
+      newFeeRate: FeeUnit): Future[Transaction] = {
+    for {
+      txDbOpt <- transactionDAO.findByTxId(txId)
+      tx <- txDbOpt match {
+        case Some(db) => Future.successful(db.transaction)
+        case None =>
+          Future.failed(
+            new RuntimeException(s"Unable to find transaction ${txId.hex}"))
+      }
+
+      outPoints = tx.inputs.map(_.previousOutput).toVector
+      spks = tx.outputs.map(_.scriptPubKey).toVector
+
+      utxos <- spendingInfoDAO.findByOutPoints(outPoints)
+      _ = require(utxos.nonEmpty, "Can only bump fee for our own transaction")
+      _ = require(utxos.size == tx.inputs.size,
+                  "Can only bump fee for a transaction we own all the inputs")
+      spendingInfos <- FutureUtil.sequentially(utxos) { utxo =>
+        transactionDAO
+          .findByOutPoint(utxo.outPoint)
+          .map(txDbOpt =>
+            utxo.toUTXOInfo(keyManager = keyManager, txDbOpt.get.transaction))
+      }
+
+      _ = {
+        val inputAmount = utxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
+
+        val oldFeeRate = newFeeRate match {
+          case _: SatoshisPerByte =>
+            SatoshisPerByte.calc(inputAmount, tx)
+          case _: SatoshisPerKiloByte =>
+            SatoshisPerKiloByte.calc(inputAmount, tx)
+          case _: SatoshisPerVirtualByte =>
+            SatoshisPerVirtualByte.calc(inputAmount, tx)
+          case _: SatoshisPerKW =>
+            SatoshisPerKW.calc(inputAmount, tx)
+        }
+
+        require(
+          oldFeeRate.currencyUnit < newFeeRate.currencyUnit,
+          s"Cannot bump to a lower fee ${oldFeeRate.currencyUnit} < ${newFeeRate.currencyUnit}")
+      }
+
+      myAddrs <- addressDAO.findByScriptPubKeys(spks)
+      _ = require(myAddrs.nonEmpty, "Must have an output we own")
+
+      changeSpks = myAddrs.flatMap { db =>
+        if (db.path.chain.chainType == HDChainType.Change) {
+          Some(db.scriptPubKey)
+        } else None
+      }
+
+      changeSpk =
+        if (changeSpks.nonEmpty) {
+          // Pick a random change spk
+          Random.shuffle(changeSpks).head
+        } else {
+          // If none are explicit change, pick a random one we own
+          Random.shuffle(myAddrs.map(_.scriptPubKey)).head
+        }
+
+      // Mark old outputs as replaced
+      oldUtxos <- spendingInfoDAO.findDbsForTx(txId)
+      _ <- spendingInfoDAO.updateAll(
+        oldUtxos.map(_.copyWithState(TxoState.DoesNotExist)))
+
+      sequence = tx.inputs.head.sequence + UInt32.one
+      outputs = tx.outputs.filterNot(_.scriptPubKey == changeSpk)
+      txBuilder = StandardNonInteractiveFinalizer.txBuilderFrom(outputs,
+                                                                spendingInfos,
+                                                                newFeeRate,
+                                                                changeSpk,
+                                                                sequence)
+
+      amount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
+      tx <-
+        finishSend(txBuilder, spendingInfos, amount, newFeeRate, Vector.empty)
     } yield tx
   }
 
