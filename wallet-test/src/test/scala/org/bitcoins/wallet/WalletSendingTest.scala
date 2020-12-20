@@ -9,6 +9,8 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.testkit.Implicits.GeneratorOps
+import org.bitcoins.testkit.core.gen.FeeUnitGen
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
@@ -252,6 +254,34 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
       assert(tx.outputs.size == 1)
       assert(tx.outputs.head.scriptPubKey == testAddress.scriptPubKey)
+    }
+  }
+
+  it should "correctly bump the fee rate of a transaction" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    val feeRate = FeeUnitGen.satsPerByte.sampleSome
+
+    for {
+      tx <- wallet.sendToAddress(testAddress, amountToSend, feeRate)
+
+      firstBal <- wallet.getBalance()
+
+      newFeeRate = SatoshisPerByte(feeRate.currencyUnit + Satoshis.one)
+      bumpedTx <- wallet.bumpFeeRBF(tx.txIdBE, newFeeRate)
+
+      txDb1Opt <- wallet.outgoingTxDAO.findByTxId(tx.txIdBE)
+      txDb2Opt <- wallet.outgoingTxDAO.findByTxId(bumpedTx.txIdBE)
+
+      secondBal <- wallet.getBalance()
+    } yield {
+      assert(txDb1Opt.isDefined)
+      assert(txDb2Opt.isDefined)
+      val txDb1 = txDb1Opt.get
+      val txDb2 = txDb2Opt.get
+
+      assert(txDb1.actualFee < txDb2.actualFee)
+      assert(firstBal - secondBal == txDb2.actualFee - txDb1.actualFee)
     }
   }
 
