@@ -2,6 +2,8 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDChainType
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
@@ -20,15 +22,16 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
 
   behavior of "Wallet - integration test"
 
+  // the amount we're receiving from bitcoind
+  val valueFromBitcoind: Bitcoins = Bitcoins.one
+
+  // the amount we're sending to bitcoind
+  val valueToBitcoind: Bitcoins = Bitcoins(0.5)
+
   it should ("create an address, receive funds to it from bitcoind, import the"
     + " UTXO and construct a valid, signed transaction that's"
     + " broadcast and confirmed by bitcoind") in { walletWithBitcoind =>
     val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
-    // the amount we're receiving from bitcoind
-    val valueFromBitcoind = Bitcoins.one
-
-    // the amount we're sending to bitcoind
-    val valueToBitcoind = Bitcoins(0.5)
 
     for {
       addr <- wallet.getNewAddress()
@@ -135,5 +138,103 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
                                      delta = outgoingTx.get.actualFee))
       assert(tx.confirmations.exists(_ > 0))
     }
+  }
+
+  it should "correctly bump fees with RBF" in { walletWithBitcoind =>
+    val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+
+    for {
+      // Fund wallet
+      addr <- wallet.getNewAddress()
+      txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
+      rawTx <- bitcoind.getRawTransaction(txId)
+      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- wallet.processTransaction(rawTx.hex, rawTx.blockhash)
+
+      // Verify we funded the wallet
+      balance <- wallet.getBalance()
+      _ = assert(balance == valueFromBitcoind)
+
+      // Create first tx
+      tx1 <- bitcoind.getNewAddress.flatMap {
+        wallet.sendToAddress(_, valueToBitcoind, SatoshisPerVirtualByte.one)
+      }
+      _ <- bitcoind.sendRawTransaction(tx1)
+
+      // Verify we sent to bitcoind
+      bitcoindBal1 <- bitcoind.getUnconfirmedBalance
+      _ = assert(bitcoindBal1 == valueToBitcoind)
+
+      walletBal1 <- wallet.getBalance()
+
+      // Create replacement tx
+      newFeeRate = SatoshisPerVirtualByte.fromLong(20)
+      replacementTx <- wallet.bumpFeeRBF(tx1.txIdBE, newFeeRate)
+
+      // Check tx being replaced exists
+      tx1Info <- bitcoind.getRawTransaction(tx1.txIdBE)
+      _ = assert(tx1Info.blockhash.isEmpty)
+
+      _ <- bitcoind.sendRawTransaction(replacementTx)
+
+      // After replacement tx is broadcast, old tx should be gone
+      _ <- recoverToSucceededIf[InvalidAddressOrKey](
+        bitcoind.getRawTransaction(tx1.txIdBE))
+
+      // Check we didn't send extra to bitcoind
+      bitcoindBal2 <- bitcoind.getUnconfirmedBalance
+      _ = assert(bitcoindBal2 == valueToBitcoind)
+
+      // Check we paid more in fees
+      walletBal2 <- wallet.getBalance()
+      _ = assert(walletBal1 > walletBal2)
+
+      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+
+      replacementInfo <- bitcoind.getRawTransaction(replacementTx.txIdBE)
+    } yield {
+      // Check correct one was confirmed
+      assert(replacementInfo.blockhash.isDefined)
+    }
+  }
+
+  it should "correctly bump fees with CPFP" in { walletWithBitcoind =>
+    val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+
+    for {
+      // Fund wallet
+      addr <- wallet.getNewAddress()
+      txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
+      rawTx <- bitcoind.getRawTransaction(txId)
+      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- wallet.processTransaction(rawTx.hex, rawTx.blockhash)
+
+      // Verify we funded the wallet
+      balance <- wallet.getBalance()
+      _ = assert(balance == valueFromBitcoind)
+
+      // Create parent tx
+      parentTx <- bitcoind.getNewAddress.flatMap {
+        wallet.sendToAddress(_, valueToBitcoind, None)
+      }
+      _ <- bitcoind.sendRawTransaction(parentTx)
+
+      // Verify we sent to bitcoind
+      bitcoindBal1 <- bitcoind.getUnconfirmedBalance
+      _ = assert(bitcoindBal1 == valueToBitcoind)
+
+      walletBal1 <- wallet.getBalance()
+
+      // Create child tx
+      childFeeRate <- wallet.feeRateApi.getFeeRate
+      childTx <- wallet.bumpFeeCPFP(parentTx.txIdBE, childFeeRate)
+      _ <- bitcoind.sendRawTransaction(childTx)
+
+      // Check we didn't send again to bitcoind
+      bitcoindBal2 <- bitcoind.getUnconfirmedBalance
+      _ = assert(bitcoindBal2 == valueToBitcoind)
+
+      walletBal2 <- wallet.getBalance()
+    } yield assert(walletBal1 > walletBal2)
   }
 }
