@@ -216,33 +216,17 @@ WantedBy=multi-user.target
 <li><code>--hashMessage</code> - should the message be hashed before commitment</li>
 <li><code>--feerate &lt;value&gt;</code> - Fee rate in sats per virtual byte</li>
 </ul></li>
-<li><code>gettransaction</code> <code>txid</code> - Get detailed information about in-wallet transaction <txid>
-<ul>
-<li><code>txid</code> - The transaction id</li>
-</ul></li>
 <li><code>lockunspent</code> <code>unlock</code> <code>transactions</code> - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.
 <ul>
 <li><code>unlock</code> - Whether to unlock (true) or lock (false) the specified transactions</li>
 <li><code>transactions</code> - The transaction outpoints to unlock/lock</li>
 </ul></li>
-<li><code>importseed</code> <code>walletname</code> <code>words</code> <code>passphrase</code> - Imports a mnemonic seed as a new seed file
-<ul>
-<li><code>walletname</code> - Name to associate with this seed</li>
-<li><code>words</code> - Mnemonic seed words, space separated</li>
-<li><code>passphrase</code> - Passphrase to encrypt this seed with</li>
-</ul></li>
-<li><code>importxprv</code> <code>walletname</code> <code>xprv</code> <code>passphrase</code> - Imports a mnemonic seed as a new seed file
-<ul>
-<li><code>walletname</code> - Name to associate with this seed</li>
-<li><code>xprv</code> - base58 encoded extended private key</li>
-<li><code>passphrase</code> - Passphrase to encrypt this seed with</li>
-</ul></li>
-<li><code>keymanagerpassphrasechange</code> <code>oldpassphrase</code> <code>newpassphrase</code> - Changes the wallet passphrase
+<li><code>walletpassphrasechange</code> <code>oldpassphrase</code> <code>newpassphrase</code> - Changes the wallet passphrase
 <ul>
 <li><code>oldpassphrase</code> - The current passphrase</li>
 <li><code>newpassphrase</code> - The new passphrase</li>
 </ul></li>
-<li><code>keymanagerpassphraseset</code> <code>passphrase</code> - Encrypts the wallet with the given passphrase
+<li><code>walletpassphraseset</code> <code>passphrase</code> - Encrypts the wallet with the given passphrase
 <ul>
 <li><code>passphrase</code> - The passphrase to encrypt the wallet with</li>
 </ul></li>
