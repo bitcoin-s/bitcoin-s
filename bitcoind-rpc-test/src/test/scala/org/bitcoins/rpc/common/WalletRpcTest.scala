@@ -1,31 +1,35 @@
 package org.bitcoins.rpc.common
 
-import java.io.File
-import java.util.Scanner
-
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.{
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptWitness,
+  P2WPKHWitnessV0,
+  P2WSHWitnessV0,
+  ScriptSignature
 }
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.signer.BitcoinSigner
+import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2WPKHV0InputInfo}
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
+import java.io.File
+import java.util.Scanner
+import scala.annotation.nowarn
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.reflect.io.Directory
-import scala.annotation.nowarn
 
 @nowarn
 class WalletRpcTest extends BitcoindRpcTest {
@@ -569,6 +573,48 @@ class WalletRpcTest extends BitcoindRpcTest {
       assert(
         transaction.outputs.contains(
           TransactionOutput(Bitcoins(1), address.scriptPubKey)))
+    }
+  }
+
+  it should "generate the same (low R) signatures as bitcoin-s" in {
+    for {
+      (client, otherClient, _) <- clientsF
+      address <- otherClient.getNewAddress
+      transactionWithoutFunds <-
+        client
+          .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
+      transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
+      transaction = transactionResult.hex
+      signedTx <- client.signRawTransactionWithWallet(transaction).map(_.hex)
+
+      // Validate signature against bitcoin-s generated one
+      outPoint = transaction.inputs.head.previousOutput
+      prevTx <- client.getRawTransactionRaw(outPoint.txIdBE)
+      output = prevTx.outputs(outPoint.vout.toInt)
+      privKey <- client.dumpPrivKey(
+        BitcoinAddress.fromScriptPubKey(output.scriptPubKey, RegTest))
+      partialSig <- BitcoinSigner.signSingle(
+        ECSignatureParams(
+          P2WPKHV0InputInfo(outPoint, output.value, privKey.publicKey),
+          prevTx,
+          privKey,
+          HashType.sigHashAll),
+        transaction,
+        isDummySignature = false)
+    } yield {
+      signedTx match {
+        case btx: NonWitnessTransaction =>
+          assert(
+            btx.inputs.head.scriptSignature.signatures.head == partialSig.signature)
+        case wtx: WitnessTransaction =>
+          wtx.witness.head match {
+            case p2wpkh: P2WPKHWitnessV0 =>
+              assert(p2wpkh.pubKey == partialSig.pubKey)
+              assert(p2wpkh.signature == partialSig.signature)
+            case _: P2WSHWitnessV0 | EmptyScriptWitness =>
+              fail("Expected P2WPKH")
+          }
+      }
     }
   }
 }
