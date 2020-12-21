@@ -82,9 +82,44 @@ lazy val `bitcoin-s` = project
     zmq,
     oracleServer
   )
+  .dependsOn(
+    secp256k1jni,
+    chain,
+    chainTest,
+    cli,
+    cliTest,
+    core,
+    coreTest,
+    crypto,
+    cryptoTest,
+    dbCommons,
+    dbCommonsTest,
+    feeProvider,
+    feeProviderTest,
+    dlcOracle,
+    dlcOracleTest,
+    bitcoindRpc,
+    bitcoindRpcTest,
+    bench,
+    eclairRpc,
+    eclairRpcTest,
+    bundle,
+    gui,
+    keyManager,
+    keyManagerTest,
+    node,
+    nodeTest,
+    wallet,
+    walletTest,
+    appServer,
+    appServerTest,
+    appCommons,
+    appCommonsTest,
+    testkit,
+    zmq,
+    oracleServer
+  )
   .settings(CommonSettings.settings: _*)
-  // crossScalaVersions must be set to Nil on the aggregating project
-  .settings(crossScalaVersions := Nil)
   // unidoc aggregates Scaladocs for all subprojects into one big doc
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
