@@ -704,6 +704,43 @@ abstract class Wallet
     } yield tx
   }
 
+  /** @inheritdoc */
+  override def bumpFeeCPFP(
+      txId: DoubleSha256DigestBE,
+      feeRate: FeeUnit): Future[Transaction] = {
+    for {
+      txDbOpt <- transactionDAO.findByTxId(txId)
+      tx <- txDbOpt match {
+        case Some(db) => Future.successful(db.transaction)
+        case None =>
+          Future.failed(
+            new RuntimeException(s"Unable to find transaction ${txId.hex}"))
+      }
+
+      spendingInfos <- spendingInfoDAO.findTx(tx)
+      _ = require(spendingInfos.nonEmpty,
+                  s"Transaction ${txId.hex} must have an output we own")
+
+      changeSpendingInfos = spendingInfos.flatMap { db =>
+        if (db.privKeyPath.chain.chainType == HDChainType.Change) {
+          Some(db)
+        } else None
+      }
+
+      spendingInfo =
+        if (changeSpendingInfos.nonEmpty) {
+          // Pick a random change spendingInfo
+          Random.shuffle(changeSpendingInfos).head
+        } else {
+          // If none are explicit change, pick a random one we own
+          Random.shuffle(spendingInfos).head
+        }
+
+      addr <- getNewChangeAddress()
+      childTx <- sendFromOutPoints(Vector(spendingInfo.outPoint), addr, feeRate)
+    } yield childTx
+  }
+
   override def signPSBT(psbt: PSBT)(implicit
       ec: ExecutionContext): Future[PSBT] = {
     val inputTxIds = psbt.transaction.inputs.zipWithIndex.map {
