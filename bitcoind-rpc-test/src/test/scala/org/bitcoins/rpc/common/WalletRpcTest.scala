@@ -564,6 +564,27 @@ class WalletRpcTest extends BitcoindRpcTest {
           .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
       transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
       transaction = transactionResult.hex
+      singedTx <- client.signRawTransactionWithWallet(transaction).map(_.hex)
+
+      // Will throw error if invalid
+      _ <- client.sendRawTransaction(singedTx)
+    } yield {
+      assert(transaction.inputs.length == 1)
+      assert(
+        transaction.outputs.contains(
+          TransactionOutput(Bitcoins(1), address.scriptPubKey)))
+    }
+  }
+
+  it should "generate the same (low R) signatures as bitcoin-s" in {
+    for {
+      (client, otherClient, _) <- clientsF
+      address <- otherClient.getNewAddress
+      transactionWithoutFunds <-
+        client
+          .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
+      transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
+      transaction = transactionResult.hex
       signedTx <- client.signRawTransactionWithWallet(transaction).map(_.hex)
 
       // Validate signature against bitcoin-s generated one
@@ -580,15 +601,7 @@ class WalletRpcTest extends BitcoindRpcTest {
           HashType.sigHashAll),
         transaction,
         isDummySignature = false)
-
-      // Will throw error if invalid
-      _ <- client.sendRawTransaction(signedTx)
     } yield {
-      assert(transaction.inputs.length == 1)
-      assert(
-        transaction.outputs.contains(
-          TransactionOutput(Bitcoins(1), address.scriptPubKey)))
-
       signedTx match {
         case btx: NonWitnessTransaction =>
           assert(
