@@ -10,10 +10,12 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
 import org.bitcoins.crypto.NetworkElement
-import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.keymanager._
+import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 
+import java.time.Instant
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -22,6 +24,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
     walletConf: WalletAppConfig)
     extends ServerRoute {
   import system.dispatcher
+
+  implicit val kmConf: KeyManagerAppConfig = walletConf.kmConf
 
   private def spendingInfoDbToJson(spendingInfoDb: SpendingInfoDb): Value = {
     Obj(
@@ -468,6 +472,54 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
           complete {
             val path = walletConf.seedPath
             WalletStorage.changeAesPassword(path, None, Some(password))
+
+            Server.httpSuccess(ujson.Null)
+          }
+      }
+
+    case ServerCommand("importseed", arr) =>
+      ImportSeed.fromJsArr(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(ImportSeed(walletName, mnemonic, passwordOpt)) =>
+          complete {
+            val seedPath = kmConf.seedFolder.resolve(
+              s"$walletName-${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
+
+            val creationTime = Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
+
+            val mnemonicState = passwordOpt match {
+              case Some(pass) =>
+                DecryptedMnemonic(mnemonic, creationTime).encrypt(pass)
+              case None =>
+                DecryptedMnemonic(mnemonic, creationTime)
+            }
+
+            WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
+
+            Server.httpSuccess(ujson.Null)
+          }
+      }
+
+    case ServerCommand("importxprv", arr) =>
+      ImportXprv.fromJsArr(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(ImportXprv(walletName, xprv, passwordOpt)) =>
+          complete {
+            val seedPath = kmConf.seedFolder.resolve(
+              s"$walletName-${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
+
+            val creationTime = Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
+
+            val mnemonicState = passwordOpt match {
+              case Some(pass) =>
+                DecryptedExtPrivKey(xprv, creationTime).encrypt(pass)
+              case None =>
+                DecryptedExtPrivKey(xprv, creationTime)
+            }
+
+            WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
 
             Server.httpSuccess(ujson.Null)
           }

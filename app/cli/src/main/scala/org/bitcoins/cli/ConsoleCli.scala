@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv._
@@ -757,6 +758,68 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("importseed")
+        .action((_, conf) => conf.copy(command = ImportSeed("", null, None)))
+        .text("Imports a mnemonic seed as a new seed file")
+        .children(
+          arg[String]("walletname")
+            .text("Name to associate with this seed")
+            .required()
+            .action((walletName, conf) =>
+              conf.copy(command = conf.command match {
+                case is: ImportSeed =>
+                  is.copy(walletName = walletName)
+                case other => other
+              })),
+          arg[MnemonicCode]("words")
+            .text("Mnemonic seed words, space separated")
+            .required()
+            .action((mnemonic, conf) =>
+              conf.copy(command = conf.command match {
+                case is: ImportSeed =>
+                  is.copy(mnemonic = mnemonic)
+                case other => other
+              })),
+          arg[AesPassword]("passphrase")
+            .text("Passphrase to encrypt the seed with")
+            .action((password, conf) =>
+              conf.copy(command = conf.command match {
+                case is: ImportSeed =>
+                  is.copy(passwordOpt = Some(password))
+                case other => other
+              }))
+        ),
+      cmd("importxprv")
+        .action((_, conf) => conf.copy(command = ImportXprv("", null, None)))
+        .text("Imports a xprv as a new seed file")
+        .children(
+          arg[String]("walletname")
+            .text("What name to associate with this seed")
+            .required()
+            .action((walletName, conf) =>
+              conf.copy(command = conf.command match {
+                case ix: ImportXprv =>
+                  ix.copy(walletName = walletName)
+                case other => other
+              })),
+          arg[ExtPrivateKey]("xprv")
+            .text("base58 encoded extended private key")
+            .required()
+            .action((xprv, conf) =>
+              conf.copy(command = conf.command match {
+                case ix: ImportXprv =>
+                  ix.copy(xprv = xprv)
+                case other => other
+              })),
+          arg[AesPassword]("passphrase")
+            .text("Passphrase to encrypt this seed with")
+            .action((password, conf) =>
+              conf.copy(command = conf.command match {
+                case ix: ImportXprv =>
+                  ix.copy(passwordOpt = Some(password))
+                case other => other
+              }))
+        ),
       cmd("keymanagerpassphrasechange")
         .action((_, conf) =>
           conf.copy(command = KeyManagerPassphraseChange(null, null)))
@@ -1370,6 +1433,18 @@ object ConsoleCli {
       case KeyManagerPassphraseSet(password) =>
         RequestParam("keymanagerpassphraseset", Seq(up.writeJs(password)))
 
+      case ImportSeed(walletName, mnemonic, passwordOpt) =>
+        RequestParam("importseed",
+                     Seq(up.writeJs(walletName),
+                         up.writeJs(mnemonic),
+                         up.writeJs(passwordOpt)))
+
+      case ImportXprv(walletName, xprv, passwordOpt) =>
+        RequestParam("importxprv",
+                     Seq(up.writeJs(walletName),
+                         up.writeJs(xprv),
+                         up.writeJs(passwordOpt)))
+
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -1677,6 +1752,18 @@ object CliCommand {
       newPassword: AesPassword)
       extends CliCommand
   case class KeyManagerPassphraseSet(password: AesPassword) extends CliCommand
+
+  case class ImportSeed(
+      walletName: String,
+      mnemonic: MnemonicCode,
+      passwordOpt: Option[AesPassword])
+      extends CliCommand
+
+  case class ImportXprv(
+      walletName: String,
+      xprv: ExtPrivateKey,
+      passwordOpt: Option[AesPassword])
+      extends CliCommand
 
   // Node
   case object GetPeers extends CliCommand
