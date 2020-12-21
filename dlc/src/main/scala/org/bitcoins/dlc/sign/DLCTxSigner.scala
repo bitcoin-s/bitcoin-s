@@ -209,7 +209,11 @@ case class DLCTxSigner(
       msg: DLCOutcomeType,
       remoteAdaptorSig: ECAdaptorSignature,
       oracleSigs: Vector[SchnorrDigitalSignature]): Future[Transaction] = {
-    val oracleSigSum = oracleSigs.map(_.sig).reduce(_.add(_)).toPrivateKey
+    val oracleSigSum = oracleSigs
+      .take(msg.serialized.length)
+      .map(_.sig)
+      .reduce(_.add(_))
+      .toPrivateKey
     val remoteSig =
       oracleSigSum
         .completeAdaptorSignature(remoteAdaptorSig, HashType.sigHashAll.byte)
