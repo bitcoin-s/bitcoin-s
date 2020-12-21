@@ -53,10 +53,12 @@ trait Sign {
 
   private def signLowRFuture(bytes: ByteVector, startAt: Long)(implicit
       ec: ExecutionContext): Future[ECDigitalSignature] = {
-    val startBytes = ByteVector.fromLong(startAt).padLeft(32)
-
-    val sigF: Future[ECDigitalSignature] =
+    val sigF: Future[ECDigitalSignature] = if (startAt == 0) {
+      signFunction(bytes)
+    } else {
+      val startBytes = ByteVector.fromLong(startAt).padLeft(32).reverse
       signWithEntropyFunction(bytes, startBytes)
+    }
 
     sigF.flatMap { sig =>
       if (sig.bytes.length <= 70) {
