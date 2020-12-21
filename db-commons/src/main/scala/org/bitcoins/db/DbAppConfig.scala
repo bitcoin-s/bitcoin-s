@@ -1,6 +1,7 @@
 package org.bitcoins.db
 
 import com.typesafe.config._
+import org.bitcoins.db.AppConfig.safePathToString
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -31,7 +32,7 @@ abstract class DbAppConfig extends AppConfig {
   lazy val jdbcUrl: String = {
     driver match {
       case SQLite =>
-        s""""jdbc:sqlite:"$dbPath/$dbName"""
+        s""""jdbc:sqlite:"${safePathToString(dbPath)}/$dbName"""
       case PostgreSQL =>
         s""""jdbc:postgresql://$dbHost:$dbPort/$dbName""""
     }
@@ -93,7 +94,7 @@ abstract class DbAppConfig extends AppConfig {
          |bitcoin-s {
          |  $moduleName {
          |     db {
-         |        path = $dbPath
+         |        path = ${safePathToString(dbPath)}
          |        name = $dbName
          |        url = $jdbcUrl
          |     }

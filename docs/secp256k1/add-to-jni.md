@@ -401,6 +401,10 @@ I normally first build the C binaries and add to Bitcoin-S before coming back to
    ./configure --host=x86_64-w64-mingw32 --enable-experimental --enable-module_ecdh --enable-jni && make clean && make CFLAGS="-std=c99"
    ```
 
+   There may be some errors that can be ignored:
+      - `Could not determine the host path corresponding to`
+      - `redeclared without dllimport attribute: previous dllimport ignored`
+
 3. Copy binaries into bitcoin-s natives for your system
 
    You have now built the C binaries for your JNI bindings for your operating system and you should now find your operating system's directory in `bitcoin-s/secp256k1jni/natives` and replace its contents with the contents of `secp256k1/.libs` (which contains the compiled binaries).
