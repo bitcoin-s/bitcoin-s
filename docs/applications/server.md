@@ -189,10 +189,18 @@ For more information on how to use our built in `cli` to interact with the serve
  - `lockunspent` `unlock` `transactions` - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.
     - `unlock` - Whether to unlock (true) or lock (false) the specified transactions
     - `transactions` - The transaction outpoints to unlock/lock
- - `walletpassphrasechange` `oldpassphrase` `newpassphrase` - Changes the wallet passphrase
+- `importseed` `walletname` `words` `passphrase` - Imports a mnemonic seed as a new seed file
+   - `walletname` - Name to associate with this seed
+   - `words` - Mnemonic seed words, space separated
+   - `passphrase` - Passphrase to encrypt this seed with
+- `importxprv` `walletname` `xprv` `passphrase` - Imports a mnemonic seed as a new seed file
+   - `walletname` - Name to associate with this seed
+   - `xprv` - base58 encoded extended private key
+   - `passphrase` - Passphrase to encrypt this seed with
+ - `keymanagerpassphrasechange` `oldpassphrase` `newpassphrase` - Changes the wallet passphrase
     - `oldpassphrase` - The current passphrase
     - `newpassphrase` - The new passphrase
- - `walletpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
+ - `keymanagerpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
     - `passphrase` - The passphrase to encrypt the wallet with
 
 #### Network

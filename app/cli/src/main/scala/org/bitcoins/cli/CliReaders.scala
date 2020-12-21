@@ -3,11 +3,11 @@ package org.bitcoins.cli
 import java.io.File
 import java.nio.file.Path
 import java.time.{Instant, ZoneId, ZonedDateTime}
-
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
+import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
@@ -317,4 +317,21 @@ object CliReaders {
       override def reads: String => LnMessage[DLCSignTLV] =
         LnMessageFactory(DLCSignTLV).fromHex
     }
+
+  implicit val extPrivKeyReads: Read[ExtPrivateKey] = new Read[ExtPrivateKey] {
+    override def arity: Int = 1
+
+    override def reads: String => ExtPrivateKey = ExtPrivateKey.fromString
+  }
+
+  implicit val mnemonicCodeReads: Read[MnemonicCode] = new Read[MnemonicCode] {
+    override def arity: Int = 1
+
+    override def reads: String => MnemonicCode =
+      str => {
+        val words = str.split(' ')
+
+        MnemonicCode.fromWords(words.toVector)
+      }
+  }
 }

@@ -3,6 +3,7 @@ package org.bitcoins.server
 import java.time.Instant
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.tlv._
@@ -254,6 +255,91 @@ object KeyManagerPassphraseSet extends ServerJsonModels {
         Failure(
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class ImportSeed(
+    walletName: String,
+    mnemonic: MnemonicCode,
+    passwordOpt: Option[AesPassword])
+
+object ImportSeed extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ImportSeed] = {
+    jsArr.arr.toList match {
+      case walletNameJs :: mnemonicJs :: passJs :: Nil =>
+        Try {
+          val walletName = walletNameJs.str
+
+          val mnemonicWords = mnemonicJs match {
+            case Str(str) => str.split(' ').toVector
+            case Arr(arr) => arr.map(_.str).toVector
+            case Null | False | True | Num(_) | Obj(_) =>
+              throw new IllegalArgumentException(
+                "mnemonic must be a string or array of strings")
+          }
+          val mnemonic = MnemonicCode.fromWords(mnemonicWords)
+
+          val pass = passJs match {
+            case Str(str) =>
+              Some(AesPassword.fromString(str))
+            case Null =>
+              None
+            case Arr(_) | False | True | Num(_) | Obj(_) =>
+              throw new IllegalArgumentException(
+                "password must be a string or null")
+          }
+
+          ImportSeed(walletName, mnemonic, pass)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing walletName, mnemonic, and password argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class ImportXprv(
+    walletName: String,
+    xprv: ExtPrivateKey,
+    passwordOpt: Option[AesPassword])
+
+object ImportXprv extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ImportXprv] = {
+    jsArr.arr.toList match {
+      case walletNameJs :: xprvJs :: passJs :: Nil =>
+        Try {
+          val walletName = walletNameJs.str
+
+          val xprv = ExtPrivateKey.fromString(xprvJs.str)
+
+          val pass = passJs match {
+            case Str(str) =>
+              Some(AesPassword.fromString(str))
+            case Null =>
+              None
+            case Arr(_) | False | True | Bool(_) | Num(_) | Obj(_) =>
+              throw new IllegalArgumentException(
+                "password must be a string or null")
+          }
+
+          ImportXprv(walletName, xprv, pass)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing walletName, xprv, and password argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
     }
   }
 }
