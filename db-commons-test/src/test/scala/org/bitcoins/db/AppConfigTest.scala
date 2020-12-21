@@ -53,7 +53,7 @@ class AppConfigTest extends BitcoinSAsyncTest {
     val conf = ConfigFactory.parseString {
       s"""
          |bitcoin-s {
-         |  datadir = $dir
+         |  datadir = ${AppConfig.safePathToString(dir)}
          |}
       """.stripMargin
     }

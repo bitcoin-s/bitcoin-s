@@ -296,7 +296,7 @@ object TxUtil extends BitcoinSLogger {
         import scala.concurrent.ExecutionContext.Implicits.global
         import scala.concurrent.duration.DurationInt
 
-        Await.result(TxUtil.addDummySigs(tx, inputInfos), 5.seconds)
+        Await.result(TxUtil.addDummySigs(tx, inputInfos), 20.seconds)
       }
 
       val actualFee = creditingAmount - spentAmount
