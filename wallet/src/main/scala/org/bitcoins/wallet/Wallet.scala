@@ -506,6 +506,10 @@ abstract class Wallet
             new RuntimeException(s"Unable to find transaction ${txId.hex}"))
       }
 
+      _ = require(
+        tx.inputs.exists(_.sequence < TransactionConstants.disableRBFSequence),
+        "Transaction is not signaling RBF")
+
       outPoints = tx.inputs.map(_.previousOutput).toVector
       spks = tx.outputs.map(_.scriptPubKey).toVector
 
@@ -513,6 +517,11 @@ abstract class Wallet
       _ = require(utxos.nonEmpty, "Can only bump fee for our own transaction")
       _ = require(utxos.size == tx.inputs.size,
                   "Can only bump fee for a transaction we own all the inputs")
+
+      oldOutputs <- spendingInfoDAO.findDbsForTx(txId)
+      _ = require(!oldOutputs.exists(_.blockHash.isDefined),
+                  "Cannot replace a confirmed transaction")
+
       spendingInfos <- FutureUtil.sequentially(utxos) { utxo =>
         transactionDAO
           .findByOutPoint(utxo.outPoint)
