@@ -718,6 +718,56 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("bumpfeecpfp")
+        .action((_, conf) =>
+          conf.copy(command = BumpFeeCPFP(DoubleSha256DigestBE.empty,
+                                          SatoshisPerVirtualByte.zero)))
+        .text("Bump the fee of the given transaction id with a child tx using the given fee rate")
+        .children(
+          arg[DoubleSha256DigestBE]("txid")
+            .text("Id of transaction to bump fee")
+            .required()
+            .action((txid, conf) =>
+              conf.copy(command = conf.command match {
+                case cpfp: BumpFeeCPFP =>
+                  cpfp.copy(txId = txid)
+                case other => other
+              })),
+          arg[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate in sats per virtual byte of the child transaction")
+            .required()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case cpfp: BumpFeeCPFP =>
+                  cpfp.copy(feeRate = feeRate)
+                case other => other
+              }))
+        ),
+      cmd("bumpfeerbf")
+        .action((_, conf) =>
+          conf.copy(command = BumpFeeRBF(DoubleSha256DigestBE.empty,
+                                         SatoshisPerVirtualByte.zero)))
+        .text("Replace given transaction with one with the new fee rate")
+        .children(
+          arg[DoubleSha256DigestBE]("txid")
+            .text("Id of transaction to bump fee")
+            .required()
+            .action((txid, conf) =>
+              conf.copy(command = conf.command match {
+                case rbf: BumpFeeRBF =>
+                  rbf.copy(txId = txid)
+                case other => other
+              })),
+          arg[SatoshisPerVirtualByte]("feerate")
+            .text("New fee rate in sats per virtual byte")
+            .required()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case rbf: BumpFeeRBF =>
+                  rbf.copy(feeRate = feeRate)
+                case other => other
+              }))
+        ),
       cmd("gettransaction")
         .action((_, conf) =>
           conf.copy(command = GetTransaction(DoubleSha256DigestBE.empty)))
@@ -1418,6 +1468,10 @@ object ConsoleCli {
                          up.writeJs(bitcoins),
                          up.writeJs(feeRateOpt),
                          up.writeJs(algo)))
+      case BumpFeeCPFP(txId, feeRate) =>
+        RequestParam("bumpfeecpfp", Seq(up.writeJs(txId), up.writeJs(feeRate)))
+      case BumpFeeRBF(txId, feeRate) =>
+        RequestParam("bumpfeerbf", Seq(up.writeJs(txId), up.writeJs(feeRate)))
       case OpReturnCommit(message, hashMessage, satoshisPerVirtualByte) =>
         RequestParam("opreturncommit",
                      Seq(up.writeJs(message),
@@ -1713,6 +1767,16 @@ object CliCommand {
       message: String,
       hashMessage: Boolean,
       feeRateOpt: Option[SatoshisPerVirtualByte])
+      extends CliCommand
+
+  case class BumpFeeCPFP(
+      txId: DoubleSha256DigestBE,
+      feeRate: SatoshisPerVirtualByte)
+      extends CliCommand
+
+  case class BumpFeeRBF(
+      txId: DoubleSha256DigestBE,
+      feeRate: SatoshisPerVirtualByte)
       extends CliCommand
 
   case class SignPSBT(psbt: PSBT) extends CliCommand
