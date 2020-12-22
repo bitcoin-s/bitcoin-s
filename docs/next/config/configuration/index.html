@@ -180,6 +180,13 @@ to ensure the entire module is initialized correctly.</p>
 
     <span class="hljs-comment"># settings for wallet module</span>
     wallet {
+        <span class="hljs-comment"># You can have multiple wallets by setting a different</span>
+        <span class="hljs-comment"># wallet name for each of them. They will each have</span>
+        <span class="hljs-comment"># their own unique seed and database or schema,</span>
+        <span class="hljs-comment"># depending on the database driver.</span>
+        <span class="hljs-comment"># The wallet name can contain letters, numbers, and underscores &#x27;_&#x27;.</span>
+        <span class="hljs-comment"># walletName = MyWallet0</span>
+
         <span class="hljs-attr">defaultAccountType</span> = legacy <span class="hljs-comment"># legacy, segwit, nested-segwit</span>
 
         <span class="hljs-attr">bloomFalsePositiveRate</span> = <span class="hljs-number">0.0001</span> <span class="hljs-comment"># percentage</span>
@@ -288,7 +295,13 @@ PostgreSQL database for all project you need to add following into your config f
         profile = &quot;slick.jdbc.PostgresProfile$&quot;
         db {
             driver = org.postgresql.Driver
-            url = &quot;jdbc</span>:postgresql://localhost:5432/database&quot;
+
+            # these 3 options will result into a jdbc url of
+            # &quot;jdbc</span>:postgresql://localhost:5432/database&quot;
+            name = database
+            host = localhost
+            port = 5432
+
             user = &quot;user&quot;
             password = &quot;topsecret&quot;
             numThreads = 5
@@ -317,7 +330,9 @@ is omitted), and <code>walletdb</code> and <code>chaindb</code> PostgreSQL datab
         <span class="hljs-attr">profile</span> = <span class="hljs-string">&quot;slick.jdbc.PostgresProfile$&quot;</span>
         db {
             <span class="hljs-attr">driver</span> = org.postgresql.Driver
-            <span class="hljs-attr">url</span> = <span class="hljs-string">&quot;jdbc:postgresql://localhost:5432/chaindb&quot;</span>
+            <span class="hljs-attr">name</span> = chaindb
+            <span class="hljs-attr">host</span> = localhost
+            <span class="hljs-attr">port</span> = <span class="hljs-number">5432</span>
             <span class="hljs-attr">user</span> = <span class="hljs-string">&quot;user&quot;</span>
             <span class="hljs-attr">password</span> = <span class="hljs-string">&quot;topsecret&quot;</span>
         }
@@ -326,7 +341,9 @@ is omitted), and <code>walletdb</code> and <code>chaindb</code> PostgreSQL datab
         <span class="hljs-attr">profile</span> = <span class="hljs-string">&quot;slick.jdbc.PostgresProfile$&quot;</span>
         db {
             <span class="hljs-attr">driver</span> = org.postgresql.Driver
-            <span class="hljs-attr">url</span> = <span class="hljs-string">&quot;jdbc:postgresql://localhost:5432/walletdb&quot;</span>
+            <span class="hljs-attr">name</span> = walletdb
+            <span class="hljs-attr">host</span> = localhost
+            <span class="hljs-attr">port</span> = <span class="hljs-number">5432</span>
             <span class="hljs-attr">user</span> = <span class="hljs-string">&quot;user&quot;</span>
             <span class="hljs-attr">password</span> = <span class="hljs-string">&quot;topsecret&quot;</span>
         }

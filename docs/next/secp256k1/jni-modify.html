@@ -301,7 +301,12 @@ make<span class="hljs-built_in"> check
 <p>You should then be able to build <code>libsecp256k1</code> with the following:</p>
 <pre><code class="hljs css language-bashrc"><span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;LDFLAGS = -no-undefined&quot;</span> &gt;&gt; Makefile.am
 <span class="hljs-string">./configure</span> <span class="hljs-params">--host=x86_64-w64-mingw32</span> <span class="hljs-params">--enable-experimental</span> <span class="hljs-params">--enable-module_ecdh</span> <span class="hljs-params">--enable-jni</span> &amp;&amp; make clean &amp;&amp; make CFLAGS=<span class="hljs-string">&quot;-std=c99&quot;</span>
-</code></pre></li>
+</code></pre>
+<p>There may be some errors that can be ignored:</p>
+<ul>
+<li><code>Could not determine the host path corresponding to</code></li>
+<li><code>redeclared without dllimport attribute: previous dllimport ignored</code></li>
+</ul></li>
 <li><p>Copy binaries into bitcoin-s natives for your system</p>
 <p>You have now built the C binaries for your JNI bindings for your operating system and you should now find your operating system's directory in <code>bitcoin-s/secp256k1jni/natives</code> and replace its contents with the contents of <code>secp256k1/.libs</code> (which contains the compiled binaries).</p></li>
 <li><p>Run <code>secp256k1jni</code> tests</p>
