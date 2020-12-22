@@ -216,6 +216,16 @@ WantedBy=multi-user.target
 <li><code>--hashMessage</code> - should the message be hashed before commitment</li>
 <li><code>--feerate &lt;value&gt;</code> - Fee rate in sats per virtual byte</li>
 </ul></li>
+<li><code>bumpfeecpfp</code> <code>txid</code> <code>feerate</code> - Bump the fee of the given transaction id with a child tx using the given fee rate
+<ul>
+<li><code>txid</code> - Id of transaction to bump fee</li>
+<li><code>feerate</code> - Fee rate in sats per virtual byte of the child transaction</li>
+</ul></li>
+<li><code>bumpfeerbf</code> <code>txid</code> <code>feerate</code> - Replace given transaction with one with the new fee rate
+<ul>
+<li><code>txid</code> - Id of transaction to bump fee</li>
+<li><code>feerate</code> - New fee rate in sats per virtual byte</li>
+</ul></li>
 <li><code>gettransaction</code> <code>txid</code> - Get detailed information about in-wallet transaction <txid>
 <ul>
 <li><code>txid</code> - The transaction id</li>
