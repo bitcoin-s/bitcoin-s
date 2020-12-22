@@ -100,6 +100,8 @@ keys appear multiple times the last one encountered takes precedence.</p>
 <ul>
 <li><p><code>--datadir &lt;directory&gt;</code></p>
 <p><code>datadir</code> sets the data directory instead of using the default <code>$HOME/.bitcoin-s</code></p></li>
+<li><p><code>--rpcbind &lt;ip&gt;</code></p>
+<p><code>rpcbind</code> sets the interface the rpc server binds to instead of using the default <code>127.0.0.1</code></p></li>
 <li><p><code>--rpcport &lt;port&gt;</code></p>
 <p><code>rpcport</code> sets the port the rpc server binds to instead of using the default <code>9999</code></p></li>
 <li><p><code>--force-recalc-chainwork</code></p>
@@ -240,6 +242,9 @@ to ensure the entire module is initialized correctly.</p>
     server {
         <span class="hljs-comment"># The port we bind our rpc server on</span>
         <span class="hljs-attr">rpcport</span> = <span class="hljs-number">9999</span>
+
+        <span class="hljs-comment"># The ip address we bind our server too</span>
+        <span class="hljs-attr">rpcbind</span> = <span class="hljs-string">&quot;127.0.0.1&quot;</span>
     }
 }
 
