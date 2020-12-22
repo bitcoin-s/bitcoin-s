@@ -1032,6 +1032,50 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    "bump fee with rbf" in {
+      (mockWalletApi
+        .bumpFeeRBF(_: DoubleSha256DigestBE, _: FeeUnit))
+        .expects(DoubleSha256DigestBE.empty, SatoshisPerVirtualByte.one)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockWalletApi.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("bumpfeerbf",
+                      Arr(Str(DoubleSha256DigestBE.empty.hex), Num(1))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
+    "bump fee with CPFP" in {
+      (mockWalletApi
+        .bumpFeeCPFP(_: DoubleSha256DigestBE, _: FeeUnit))
+        .expects(DoubleSha256DigestBE.empty, SatoshisPerVirtualByte.one)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockWalletApi.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("bumpfeecpfp",
+                      Arr(Str(DoubleSha256DigestBE.empty.hex), Num(1))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
     "return the peer list" in {
       val route =
         nodeRoutes.handleCommand(ServerCommand("getpeers", Arr()))
