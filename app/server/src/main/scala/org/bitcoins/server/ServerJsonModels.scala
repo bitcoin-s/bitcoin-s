@@ -689,6 +689,30 @@ object OpReturnCommit extends ServerJsonModels {
   }
 }
 
+case class BumpFee(txId: DoubleSha256DigestBE, feeRate: SatoshisPerVirtualByte)
+
+object BumpFee extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[BumpFee] = {
+    jsArr.arr.toList match {
+      case txIdJs :: feeRateJs :: Nil =>
+        Try {
+          val txId = DoubleSha256DigestBE(txIdJs.str)
+          val feeRate = SatoshisPerVirtualByte(Satoshis(feeRateJs.num.toLong))
+          BumpFee(txId, feeRate)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException("Missing txId and fee rate arguments"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
 // Oracle Models
 
 case class CreateEvent(

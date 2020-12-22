@@ -321,6 +321,32 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("bumpfeerbf", arr) =>
+      BumpFee.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(BumpFee(txId, feeRate)) =>
+          complete {
+            for {
+              tx <- wallet.bumpFeeRBF(txId, feeRate)
+              _ <- wallet.broadcastTransaction(tx)
+            } yield Server.httpSuccess(tx.txIdBE)
+          }
+      }
+
+    case ServerCommand("bumpfeecpfp", arr) =>
+      BumpFee.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(BumpFee(txId, feeRate)) =>
+          complete {
+            for {
+              tx <- wallet.bumpFeeCPFP(txId, feeRate)
+              _ <- wallet.broadcastTransaction(tx)
+            } yield Server.httpSuccess(tx.txIdBE)
+          }
+      }
+
     case ServerCommand("rescan", arr) =>
       Rescan.fromJsArr(arr) match {
         case Failure(exception) =>
