@@ -747,7 +747,7 @@ case class ContractInfoV0TLV(outcomes: Vector[(String, Satoshis)])
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
   override val value: ByteVector = {
-    outcomes.foldLeft(ByteVector.empty) {
+    outcomes.foldLeft(BigSizeUInt(outcomes.length).bytes) {
       case (bytes, (outcome, amt)) =>
         val outcomeBytes = CryptoUtil.serializeForHash(outcome)
         bytes ++ BigSizeUInt
@@ -763,18 +763,20 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {
     val iter = ValueIterator(value)
 
-    val builder = Vector.newBuilder[(String, Satoshis)]
+    val numOutcomes = BigSizeUInt(iter.current)
+    iter.skip(numOutcomes)
 
-    while (iter.index < value.length) {
+    val outcomes = 0.until(numOutcomes.toInt).toVector.map { _ =>
       val outcomeLen = BigSizeUInt(iter.current)
       iter.skip(outcomeLen)
       val outcome =
         new String(iter.take(outcomeLen.toInt).toArray, StandardCharsets.UTF_8)
       val amt = Satoshis(UInt64(iter.takeBits(64)))
-      builder.+=(outcome -> amt)
+
+      outcome -> amt
     }
 
-    ContractInfoV0TLV(builder.result())
+    ContractInfoV0TLV(outcomes)
   }
 }
 
@@ -985,7 +987,7 @@ case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
   override val tpe: BigSizeUInt = CETSignaturesV0TLV.tpe
 
   override val value: ByteVector = {
-    sigs.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+    sigs.foldLeft(BigSizeUInt(sigs.length).bytes)(_ ++ _.bytes)
   }
 }
 
@@ -995,14 +997,14 @@ object CETSignaturesV0TLV extends TLVFactory[CETSignaturesV0TLV] {
   override def fromTLVValue(value: ByteVector): CETSignaturesV0TLV = {
     val iter = ValueIterator(value)
 
-    val builder = Vector.newBuilder[ECAdaptorSignature]
+    val numSigs = BigSizeUInt(iter.current)
+    iter.skip(numSigs)
 
-    while (iter.index < value.length) {
-      val sig = ECAdaptorSignature(iter.take(162))
-      builder.+=(sig)
+    val sigs = 0.until(numSigs.toInt).toVector.map { _ =>
+      ECAdaptorSignature(iter.take(162))
     }
 
-    CETSignaturesV0TLV(builder.result())
+    CETSignaturesV0TLV(sigs)
   }
 }
 
