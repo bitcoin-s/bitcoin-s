@@ -506,6 +506,8 @@ abstract class Wallet
             new RuntimeException(s"Unable to find transaction ${txId.hex}"))
       }
 
+      _ = require(TxUtil.isRBFEnabled(tx), "Transaction is not signaling RBF")
+
       outPoints = tx.inputs.map(_.previousOutput).toVector
       spks = tx.outputs.map(_.scriptPubKey).toVector
 
@@ -513,6 +515,13 @@ abstract class Wallet
       _ = require(utxos.nonEmpty, "Can only bump fee for our own transaction")
       _ = require(utxos.size == tx.inputs.size,
                   "Can only bump fee for a transaction we own all the inputs")
+
+      oldOutputs <- spendingInfoDAO.findDbsForTx(txId)
+      blockHashes = oldOutputs.flatMap(_.blockHash).distinct
+      _ = require(
+        blockHashes.isEmpty,
+        s"Cannot replace a confirmed transaction, ${blockHashes.map(_.hex)}")
+
       spendingInfos <- FutureUtil.sequentially(utxos) { utxo =>
         transactionDAO
           .findByOutPoint(utxo.outPoint)
@@ -558,9 +567,8 @@ abstract class Wallet
         }
 
       // Mark old outputs as replaced
-      oldUtxos <- spendingInfoDAO.findDbsForTx(txId)
       _ <- spendingInfoDAO.updateAll(
-        oldUtxos.map(_.copyWithState(TxoState.DoesNotExist)))
+        oldOutputs.map(_.copyWithState(TxoState.DoesNotExist)))
 
       sequence = tx.inputs.head.sequence + UInt32.one
       outputs = tx.outputs.filterNot(_.scriptPubKey == changeSpk)
@@ -720,6 +728,12 @@ abstract class Wallet
       spendingInfos <- spendingInfoDAO.findTx(tx)
       _ = require(spendingInfos.nonEmpty,
                   s"Transaction ${txId.hex} must have an output we own")
+
+      oldOutputs <- spendingInfoDAO.findDbsForTx(txId)
+      blockHashes = oldOutputs.flatMap(_.blockHash).distinct
+      _ = require(
+        blockHashes.isEmpty,
+        s"No need to fee bump a confirmed transaction, ${blockHashes.map(_.hex)}")
 
       changeSpendingInfos = spendingInfos.flatMap { db =>
         if (db.privKeyPath.chain.chainType == HDChainType.Change) {

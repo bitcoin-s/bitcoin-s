@@ -198,6 +198,40 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
     }
   }
 
+  it should "fail to RBF a confirmed transaction" in { walletWithBitcoind =>
+    val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+
+    for {
+      // Fund wallet
+      addr <- wallet.getNewAddress()
+      txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
+      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      rawTx <- bitcoind.getRawTransaction(txId)
+      _ <- wallet.processTransaction(rawTx.hex, rawTx.blockhash)
+
+      // Verify we funded the wallet
+      balance <- wallet.getBalance()
+      _ = assert(balance == valueFromBitcoind)
+
+      // Create rbf tx
+      rbf <- bitcoind.getNewAddress.flatMap {
+        wallet.sendToAddress(_, valueToBitcoind, SatoshisPerVirtualByte.one)
+      }
+      _ <- bitcoind.sendRawTransaction(rbf)
+
+      // Confirm transaction
+      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+      rawTx1 <- bitcoind.getRawTransaction(rbf.txIdBE)
+      _ = require(rawTx1.blockhash.isDefined)
+      _ <- wallet.processTransaction(rbf, rawTx1.blockhash)
+
+      // fail to RBF confirmed tx
+      res <- recoverToSucceededIf[IllegalArgumentException] {
+        wallet.bumpFeeRBF(rbf.txIdBE, SatoshisPerVirtualByte.fromLong(20))
+      }
+    } yield res
+  }
+
   it should "correctly bump fees with CPFP" in { walletWithBitcoind =>
     val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
 

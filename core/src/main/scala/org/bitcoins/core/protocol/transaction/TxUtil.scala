@@ -24,6 +24,11 @@ import scala.util.{Failure, Success, Try}
 
 object TxUtil extends BitcoinSLogger {
 
+  def isRBFEnabled(transaction: Transaction): Boolean = {
+    transaction.inputs.exists(
+      _.sequence < TransactionConstants.disableRBFSequence)
+  }
+
   private def computeNextLockTime(
       currentLockTimeOpt: Option[UInt32],
       locktime: Long): Try[UInt32] = {
