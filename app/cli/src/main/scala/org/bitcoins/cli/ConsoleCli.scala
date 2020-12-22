@@ -1665,7 +1665,10 @@ object ConsoleCli {
       params: Seq[ujson.Value.Value] = Nil) {
 
     lazy val toJsonMap: Map[String, ujson.Value] = {
-      Map("method" -> method, "params" -> params)
+      if (params.isEmpty)
+        Map("method" -> method)
+      else
+        Map("method" -> method, "params" -> params)
     }
   }
 }
