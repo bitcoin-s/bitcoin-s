@@ -183,7 +183,13 @@ For more information on how to use our built in `cli` to interact with the serve
  - `opreturncommit` `message` `[options]` - Creates OP_RETURN commitment transaction
     - `message` - message to put into OP_RETURN commitment
     - `--hashMessage` - should the message be hashed before commitment
-    - `--feerate <value>` - Fee rate in sats per virtual byte 
+    - `--feerate <value>` - Fee rate in sats per virtual byte
+ - `bumpfeecpfp` `txid` `feerate` - Bump the fee of the given transaction id with a child tx using the given fee rate
+    - `txid` - Id of transaction to bump fee
+    - `feerate` - Fee rate in sats per virtual byte of the child transaction
+ - `bumpfeerbf` `txid` `feerate` - Replace given transaction with one with the new fee rate
+    - `txid` - Id of transaction to bump fee
+    - `feerate` - New fee rate in sats per virtual byte
  - `gettransaction` `txid` - Get detailed information about in-wallet transaction <txid>
     - `txid` - The transaction id
  - `lockunspent` `unlock` `transactions` - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.

@@ -734,7 +734,7 @@ object ConsoleCli {
                 case other => other
               })),
           arg[SatoshisPerVirtualByte]("feerate")
-            .text("Fee rate in sats per virtual byte")
+            .text("Fee rate in sats per virtual byte of the child transaction")
             .required()
             .action((feeRate, conf) =>
               conf.copy(command = conf.command match {
@@ -759,7 +759,7 @@ object ConsoleCli {
                 case other => other
               })),
           arg[SatoshisPerVirtualByte]("feerate")
-            .text("Fee rate in sats per virtual byte")
+            .text("New fee rate in sats per virtual byte")
             .required()
             .action((feeRate, conf) =>
               conf.copy(command = conf.command match {
