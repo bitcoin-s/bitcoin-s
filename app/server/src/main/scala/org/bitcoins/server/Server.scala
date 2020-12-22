@@ -16,6 +16,7 @@ import scala.concurrent.Future
 case class Server(
     conf: AppConfig,
     handlers: Seq[ServerRoute],
+    rpcbindOpt: Option[String],
     rpcport: Int = 9999)(implicit system: ActorSystem)
     extends HttpLogger {
 
@@ -78,7 +79,7 @@ case class Server(
 
   def start(): Future[Http.ServerBinding] = {
     val httpFut =
-      Http().bindAndHandle(route, "localhost", rpcport)
+      Http().bindAndHandle(route, rpcbindOpt.getOrElse("localhost"), rpcport)
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }

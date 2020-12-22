@@ -51,6 +51,10 @@ There are a few command line options available that take precedence over configu
 
      `datadir` sets the data directory instead of using the default `$HOME/.bitcoin-s`
 
+- `--rpcbind <ip>`
+
+    `rpcbind` sets the interface the rpc server binds to instead of using the default `127.0.0.1`
+
 - `--rpcport <port>`
 
     `rpcport` sets the port the rpc server binds to instead of using the default `9999`
@@ -203,6 +207,9 @@ bitcoin-s {
     server {
         # The port we bind our rpc server on
         rpcport = 9999
+
+        # The ip address we bind our server too
+        rpcbind = "127.0.0.1"
     }
 }
 
