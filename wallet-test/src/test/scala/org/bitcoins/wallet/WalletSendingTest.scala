@@ -374,6 +374,21 @@ class WalletSendingTest extends BitcoinSWalletTest {
     }
   }
 
+  it should "fail to CPFP a confirmed transaction" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    val feeRate = FeeUnitGen.satsPerByte.sampleSome
+
+    for {
+      tx <- wallet.sendToAddress(testAddress, amountToSend, feeRate)
+      _ <- wallet.processTransaction(tx, Some(DoubleSha256DigestBE.empty))
+
+      res <- recoverToSucceededIf[IllegalArgumentException] {
+        wallet.bumpFeeCPFP(tx.txIdBE, feeRate)
+      }
+    } yield res
+  }
+
   it should "fail to CPFP a transaction we don't own" in { fundedWallet =>
     val wallet = fundedWallet.wallet
 
