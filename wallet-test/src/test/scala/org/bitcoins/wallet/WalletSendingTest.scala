@@ -370,7 +370,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
           SatoshisPerKW.calc(inputAmount, child)
       }
 
-      assert(childFeeRate == bumpRate)
+      // Do +/- scale factor because of rounding errors
+      assert(childFeeRate.toLong === bumpRate.toLong +- bumpRate.scaleFactor)
     }
   }
 
