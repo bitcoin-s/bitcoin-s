@@ -3,7 +3,7 @@ import sbt._
 object Deps {
 
   object V {
-    val bouncyCastle = "1.67"
+    val bouncyCastle = "1.68"
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.2"
