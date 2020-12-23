@@ -11,6 +11,11 @@ Bitcoin-s has experimental support for neutrino which is a new lite client propo
 read more about how neutrino works [here](https://suredbits.com/neutrino-what-is-it-and-why-we-need-it/). At this time, 
 bitcoin-s only supports connecting to one trusted peer.
 
+#### Limitations
+
+Currently, the node does not have an active mempool.
+It is only aware of transactions it broadcasts and ones confirmed in blocks.
+
 #### Callbacks
 
 Bitcoin-S support call backs for the following events that happen on the bitcoin p2p network:
