@@ -1,7 +1,5 @@
 package org.bitcoins.rpc.client.common
 
-import java.io.File
-
 import akka.actor.ActorSystem
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
@@ -18,7 +16,11 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  StringFactory
+}
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
@@ -26,6 +28,7 @@ import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
 
+import java.io.File
 import scala.concurrent.Future
 
 /**
@@ -274,10 +277,12 @@ object BitcoindRpcClient {
 
 sealed trait BitcoindVersion
 
-object BitcoindVersion {
+object BitcoindVersion extends StringFactory[BitcoindVersion] {
 
   /** The newest version of `bitcoind` we support */
   val newest: BitcoindVersion = V20
+
+  val known = Vector(V16, V17, V18, V19, V20, Experimental)
 
   case object V16 extends BitcoindVersion {
     override def toString: String = "v0.16"
@@ -307,4 +312,11 @@ object BitcoindVersion {
     override def toString: String = "Unknown"
   }
 
+  override def fromStringOpt(str: String): Option[BitcoindVersion] = {
+    known.find(_.toString.toLowerCase == str.toLowerCase)
+  }
+
+  override def fromString(string: String): BitcoindVersion = {
+    fromStringOpt(string).get
+  }
 }
