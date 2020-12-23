@@ -15,7 +15,11 @@ The crypto module contains support for AES using the object `AesCrypt` and its c
 
 ## Elliptic Curve Keys and Functions
 
-`ECKey.scala` contains types `ECPublicKey` and `ECPrivateKey` which represent private and public keys for the secp256k1 curve (used by Bitcoin). These keys also implement functions for using them to create and verify `ECDigitalSignature`s and `ECPrivateKey` implements the [`Sign` interface](sign.md). Note that all sensitive information (such as private keys) extends the `MaskToString` interface which overrides the `toString` method to mask the actual result unless `toStringSensitive` is explicitly called. This is done to avoid accidentally logging keys.
+`ECKey.scala` contains types `ECPublicKey` and `ECPrivateKey` which represent private and public keys for the secp256k1 curve (used by Bitcoin).
+There also exists `SchnorrPublicKey` and `SchnorrNonce` that can be used for doing BIP 340 compatible Schnorr signatures. 
+
+These keys also implement functions for using them to create and verify `ECDigitalSignature`s, `SchnorrDigitalSignatures`, and `ECPrivateKey` implements the [`Sign` interface](sign.md). Note that all sensitive information (such as private keys) extends the `MaskToString` interface which overrides the `toString` method to mask the actual result unless `toStringSensitive` is explicitly called.
+This is done to avoid accidentally logging keys.
 
 Utility functions for signatures (such as checking for or flipping to low s) can be found in `DERSignatureUtil`.
 
