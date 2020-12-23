@@ -72,6 +72,19 @@ object ConsoleCli {
       cmd("getbestblockhash")
         .action((_, conf) => conf.copy(command = GetBestBlockHash))
         .text(s"Get the best block hash"),
+      cmd("getblockheader")
+        .action((_, conf) =>
+          conf.copy(command = GetBlockHeader(DoubleSha256DigestBE.empty)))
+        .text("Returns information about block header <hash>")
+        .children(
+          arg[DoubleSha256DigestBE]("hash")
+            .text("The block hash")
+            .required()
+            .action((hash, conf) =>
+              conf.copy(command = conf.command match {
+                case gbh: GetBlockHeader => gbh.copy(hash = hash)
+                case other               => other
+              }))),
       cmd("decoderawtransaction")
         .action((_, conf) =>
           conf.copy(command = DecodeRawTransaction(EmptyTransaction)))
@@ -1499,6 +1512,8 @@ object ConsoleCli {
                          up.writeJs(xprv),
                          up.writeJs(passwordOpt)))
 
+      case GetBlockHeader(hash) =>
+        RequestParam("getblockheader", Seq(up.writeJs(hash)))
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -1842,6 +1857,7 @@ object CliCommand {
   case object GetBlockCount extends CliCommand
   case object GetFilterCount extends CliCommand
   case object GetFilterHeaderCount extends CliCommand
+  case class GetBlockHeader(hash: DoubleSha256DigestBE) extends CliCommand
   case class DecodeRawTransaction(transaction: Transaction) extends CliCommand
 
   case class Rescan(
