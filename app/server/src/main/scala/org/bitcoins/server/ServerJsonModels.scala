@@ -418,6 +418,19 @@ object ConvertToPSBT extends ServerJsonModels {
   }
 }
 
+case class GetBlockHeader(hash: DoubleSha256DigestBE)
+
+object GetBlockHeader extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetBlockHeader] =
+    Try {
+      require(jsArr.arr.size == 1,
+              s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+      GetBlockHeader(DoubleSha256DigestBE(jsArr.arr.head.str))
+    }
+}
+
 case class DecodeRawTransaction(tx: Transaction)
 
 object DecodeRawTransaction extends ServerJsonModels {

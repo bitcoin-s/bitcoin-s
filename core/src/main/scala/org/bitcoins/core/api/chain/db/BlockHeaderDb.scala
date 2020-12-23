@@ -28,6 +28,8 @@ case class BlockHeaderDb(
     blockHeader
   }
 
+  lazy val difficulty: BigInt = blockHeader.difficulty
+
   lazy val hash: DoubleSha256Digest = hashBE.flip
 
   override def toString: String = {
