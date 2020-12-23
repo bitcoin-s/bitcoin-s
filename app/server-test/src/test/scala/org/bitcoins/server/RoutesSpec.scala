@@ -1,12 +1,12 @@
 package org.bitcoins.server
 
 import java.time.{ZoneId, ZonedDateTime}
-
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
 import org.bitcoins.core.config.RegTest
@@ -20,6 +20,7 @@ import org.bitcoins.core.protocol.BlockStamp.{
   BlockTime,
   InvalidBlockStamp
 }
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.EmptyScriptWitness
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
@@ -214,6 +215,44 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(contentType == `application/json`)
         assert(
           responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
+    val blockHeader = BlockHeader(
+      "00e0002094c6692e100ed20d14f8c325c897259749e781d55ed1b7eb1000000000000000309a90b49f5f5a14ffdb2857557f6f27a136943603fb29e65e283dcb27fd886124fee25f57e53019886c0e8b")
+    val blockHeaderDb =
+      BlockHeaderDbHelper.fromBlockHeader(height = 1899697,
+                                          chainWork = BigInt(12345),
+                                          bh = blockHeader)
+
+    "get a block header" in {
+      val chainworkStr = {
+        val bytes = ByteVector(blockHeaderDb.chainWork.toByteArray)
+        val padded = if (bytes.length <= 32) {
+          bytes.padLeft(32)
+        } else bytes
+
+        padded.toHex
+      }
+
+      (mockChainApi
+        .getHeader(_: DoubleSha256DigestBE))
+        .expects(blockHeader.hashBE)
+        .returning(Future.successful(Some(blockHeaderDb)))
+
+      (mockChainApi
+        .getNumberOfConfirmations(_: DoubleSha256DigestBE))
+        .expects(blockHeader.hashBE)
+        .returning(Future.successful(Some(1)))
+
+      val route =
+        chainRoutes.handleCommand(
+          ServerCommand("getblockheader", Arr(Str(blockHeader.hashBE.hex))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":1,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":${blockHeader.difficulty.toDouble},"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}"},"error":null}""")
       }
     }
 
