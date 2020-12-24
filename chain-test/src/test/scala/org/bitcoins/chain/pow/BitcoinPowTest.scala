@@ -115,8 +115,7 @@ class BitcoinPowTest extends ChainDbUnitTest {
               Pow.getNetworkWorkRequired(nextTip.blockHeader, chain)
             assert(nextNBits == nextTip.nBits)
           case None =>
-            fail()
-
+            fail(s"Chain not found best on header at height=$height")
         }
       }
     }
