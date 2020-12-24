@@ -83,6 +83,11 @@ trait TxDAO[DbEntryType <: TxDB]
 
   def findByTxId(txId: DoubleSha256Digest): Future[Option[DbEntryType]] =
     findByTxId(txId.flip)
+
+  def findByTxIdBEs(
+      txIdBEs: Vector[DoubleSha256DigestBE]): Future[Vector[DbEntryType]] = {
+    database.run(findByPrimaryKeys(txIdBEs).result).map(_.toVector)
+  }
 }
 
 case class TransactionDAO()(implicit
