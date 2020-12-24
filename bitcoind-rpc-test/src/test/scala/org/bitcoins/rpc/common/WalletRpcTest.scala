@@ -45,7 +45,7 @@ class WalletRpcTest extends BitcoindRpcTest {
     clientAccum += walletClient
 
     for {
-      _ <- walletClient.start()
+      _ <- startClient(walletClient)
       _ <- walletClient.getNewAddress.flatMap(
         walletClient.generateToAddress(101, _))
       _ <- walletClient.encryptWallet(password)

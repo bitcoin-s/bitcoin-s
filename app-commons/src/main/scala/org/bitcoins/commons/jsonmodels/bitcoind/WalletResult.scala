@@ -1,8 +1,5 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
-import java.io.File
-import java.time.ZonedDateTime
-
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.hd.BIP32Path
@@ -18,6 +15,9 @@ import org.bitcoins.crypto.{
   RipeMd160Digest,
   Sha256Hash160Digest
 }
+
+import java.io.File
+import java.time.ZonedDateTime
 
 sealed abstract class WalletResult
 
@@ -239,7 +239,6 @@ sealed trait AddressInfoResult extends WalletResult {
   def timestamp: Option[ZonedDateTime]
   def hdkeypath: Option[BIP32Path]
   def hdseedid: Option[RipeMd160Digest]
-  def labels: Vector[LabelResult]
 }
 
 case class AddressInfoResultPreV18(
@@ -343,6 +342,90 @@ object AddressInfoResultPostV18 {
       pubkey = info.pubkey,
       embedded = info.embedded,
       label = info.label,
+      ischange = info.ischange,
+      timestamp = info.timestamp,
+      hdkeypath = info.hdkeypath,
+      hdseedid = info.hdseedid,
+      hdmasterfingerprint = info.hdmasterfingerprint,
+      labels = info.labels
+    )
+  }
+}
+
+case class AddressInfoResultPostV21(
+    address: BitcoinAddress,
+    scriptPubKey: ScriptPubKey,
+    isProps: AddressInfoResultPostV21.AddressInfoIsProps,
+    desc: String,
+    witness_version: Option[WitnessVersion],
+    witness_program: Option[String],
+    script: Option[ScriptType],
+    hex: Option[ScriptPubKey],
+    pubkeys: Option[Vector[ECPublicKey]],
+    sigsrequired: Option[Int],
+    pubkey: Option[ECPublicKey],
+    embedded: Option[EmbeddedResult],
+    ischange: Boolean,
+    timestamp: Option[ZonedDateTime],
+    hdkeypath: Option[BIP32Path],
+    hdseedid: Option[RipeMd160Digest],
+    hdmasterfingerprint: Option[String],
+    labels: Vector[String]
+) extends AddressInfoResult {
+  override val label: String = labels.mkString(", ")
+  override val ismine: Boolean = isProps.ismine
+  val solvable: Boolean = isProps.solvable
+  override val iswatchonly: Boolean = isProps.iswatchonly
+  override val isscript: Boolean = isProps.isscript
+  override val iswitness: Boolean = isProps.iswitness
+  override val iscompressed: Option[Boolean] = isProps.iscompressed
+}
+
+object AddressInfoResultPostV21 {
+
+  case class AddressInfoIsProps(
+      ismine: Boolean,
+      solvable: Boolean,
+      iswatchonly: Boolean,
+      isscript: Boolean,
+      iswitness: Boolean,
+      iscompressed: Option[Boolean])
+
+  case class AddressInfoResultPostV21WithoutIsProps(
+      address: BitcoinAddress,
+      scriptPubKey: ScriptPubKey,
+      desc: String,
+      witness_version: Option[WitnessVersion],
+      witness_program: Option[String],
+      script: Option[ScriptType],
+      hex: Option[ScriptPubKey],
+      pubkeys: Option[Vector[ECPublicKey]],
+      sigsrequired: Option[Int],
+      pubkey: Option[ECPublicKey],
+      embedded: Option[EmbeddedResult],
+      ischange: Boolean,
+      timestamp: Option[ZonedDateTime],
+      hdkeypath: Option[BIP32Path],
+      hdseedid: Option[RipeMd160Digest],
+      hdmasterfingerprint: Option[String],
+      labels: Vector[String])
+
+  def apply(
+      info: AddressInfoResultPostV21WithoutIsProps,
+      isProps: AddressInfoIsProps): AddressInfoResultPostV21 = {
+    AddressInfoResultPostV21(
+      address = info.address,
+      scriptPubKey = info.scriptPubKey,
+      isProps = isProps,
+      desc = info.desc,
+      witness_version = info.witness_version,
+      witness_program = info.witness_program,
+      script = info.script,
+      hex = info.hex,
+      pubkeys = info.pubkeys,
+      sigsrequired = info.sigsrequired,
+      pubkey = info.pubkey,
+      embedded = info.embedded,
       ischange = info.ischange,
       timestamp = info.timestamp,
       hdkeypath = info.hdkeypath,

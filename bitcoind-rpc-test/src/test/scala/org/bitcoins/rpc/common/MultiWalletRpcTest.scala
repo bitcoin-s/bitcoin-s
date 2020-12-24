@@ -38,7 +38,7 @@ class MultiWalletRpcTest extends BitcoindRpcTest {
       clientAccum += walletClient
 
       for {
-        _ <- walletClient.start()
+        _ <- startClient(walletClient)
         _ <- walletClient.createWallet(walletName)
         _ <- walletClient.encryptWallet(password, Some(walletName))
         _ <-

@@ -57,6 +57,8 @@ sealed trait BitcoindInstance extends BitcoinSLogger {
         BitcoindVersion.V19
       case _: String if foundVersion.startsWith(BitcoindVersion.V20.toString) =>
         BitcoindVersion.V20
+      case _: String if foundVersion.startsWith(BitcoindVersion.V21.toString) =>
+        BitcoindVersion.V21
       case _: String => BitcoindVersion.Unknown
     }
   }
