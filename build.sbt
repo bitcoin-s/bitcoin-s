@@ -309,6 +309,9 @@ lazy val appServerTest = project
 lazy val cli = project
   .in(file("app/cli"))
   .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-cli"
+  )
   .dependsOn(
     appCommons
   )
