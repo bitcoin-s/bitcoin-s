@@ -1,7 +1,8 @@
 {
   "docs": {
     "Getting Started": [
-      "getting-started"
+      "getting-started",
+      "bips"
     ],
     "Getting Setup": [
       "getting-setup"
