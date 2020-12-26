@@ -104,14 +104,19 @@ class BitcoinPowTest extends ChainDbUnitTest {
     val nestedAssertions: Vector[Future[Assertion]] = {
       iterator.map { height =>
         val blockF = blockHeaderDAO.getAtHeight(height + 1).map(_.head)
-        val blockchainF =
+        val blockchainOptF: Future[Option[Blockchain]] =
           blockF.flatMap(b => blockHeaderDAO.getBlockchainFrom(b))
-        for {
-          blockchain <- blockchainF
-          nextTip = blockchain.head
-          chain = Blockchain.fromHeaders(blockchain.tail.toVector)
-          nextNBits = Pow.getNetworkWorkRequired(nextTip.blockHeader, chain)
-        } yield assert(nextNBits == nextTip.nBits)
+
+        blockchainOptF.map {
+          case Some(blockchain) =>
+            val chain = Blockchain.fromHeaders(blockchain.tail.toVector)
+            val nextTip = blockchain.tip
+            val nextNBits =
+              Pow.getNetworkWorkRequired(nextTip.blockHeader, chain)
+            assert(nextNBits == nextTip.nBits)
+          case None =>
+            fail(s"Chain not found best on header at height=$height")
+        }
       }
     }
     Future

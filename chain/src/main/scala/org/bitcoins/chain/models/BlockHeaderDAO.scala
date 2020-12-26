@@ -330,8 +330,8 @@ case class BlockHeaderDAO()(implicit
       ec: ExecutionContext): Future[Vector[Blockchain]] = {
     val chainTipsF = chainTips
     chainTipsF.flatMap { tips =>
-      val nestedFuture: Vector[Future[Vector[Blockchain]]] = tips.map { tip =>
-        getBlockchainsFrom(tip)
+      val nestedFuture: Vector[Future[Option[Blockchain]]] = tips.map { tip =>
+        getBlockchainFrom(tip)
       }
       Future.sequence(nestedFuture).map(_.flatten)
     }
@@ -339,20 +339,16 @@ case class BlockHeaderDAO()(implicit
 
   /** Retrieves a blockchain with the best tip being the given header */
   def getBlockchainFrom(header: BlockHeaderDb)(implicit
-      ec: ExecutionContext): Future[Blockchain] = {
+      ec: ExecutionContext): Future[Option[Blockchain]] = {
     val diffInterval = appConfig.chain.difficultyChangeInterval
     val height = Math.max(0, header.height - diffInterval)
-    val headersF = getBetweenHeights(from = height, to = header.height)
-    headersF.map(headers =>
-      Blockchain.fromHeaders(headers.sortBy(_.height)(Ordering.Int.reverse)))
-  }
+    val blockchainsF =
+      getBlockchainsBetweenHeights(from = height, to = header.height)
 
-  def getBlockchainsFrom(header: BlockHeaderDb)(implicit
-      ec: ExecutionContext): Future[Vector[Blockchain]] = {
-    val diffInterval = appConfig.chain.difficultyChangeInterval
-    val height = Math.max(0, header.height - diffInterval)
-
-    getBlockchainsBetweenHeights(from = height, to = header.height)
+    for {
+      blockchains <- blockchainsF
+      blockchainOpt = blockchains.find(_.tip == header)
+    } yield blockchainOpt
   }
 
   @tailrec
