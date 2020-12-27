@@ -96,7 +96,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   it must "fail if we give a header that cannot be connected to anything" in {
     chainHandler: ChainHandler =>
-    val newHeader = BlockHeaderHelper.badPrevHash
+      val newHeader = BlockHeaderHelper.badPrevHash
       recoverToSucceededIf[RuntimeException] {
         for {
           result <- chainHandler.processHeader(newHeader)

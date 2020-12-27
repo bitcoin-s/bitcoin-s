@@ -139,17 +139,18 @@ class ChainHandler(
         //this means we are given zero headers that were valid.
         //Return a failure in this case to avoid issue 2365
         //https://github.com/bitcoin-s/bitcoin-s/issues/2365
-        Future.failed(new RuntimeException(s"Failed to connect any headers to our internal chain state, failures=$blockchainUpdates"))
+        Future.failed(new RuntimeException(
+          s"Failed to connect any headers to our internal chain state, failures=$blockchainUpdates"))
       } else {
         val chains = blockchainUpdates.map(_.blockchain)
 
         val createdF = blockHeaderDAO.createAll(headersToBeCreated)
 
         val newChainHandler = ChainHandler(blockHeaderDAO,
-          filterHeaderDAO,
-          filterDAO,
-          blockFilterCheckpoints =
-            blockFilterCheckpoints)
+                                           filterHeaderDAO,
+                                           filterDAO,
+                                           blockFilterCheckpoints =
+                                             blockFilterCheckpoints)
 
         createdF.map { headers =>
           if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
@@ -159,7 +160,8 @@ class ChainHandler(
                   _ <- acc
                   _ <-
                     chainConfig.chainCallbacks
-                      .executeOnBlockHeaderConnectedCallbacks(logger,
+                      .executeOnBlockHeaderConnectedCallbacks(
+                        logger,
                         header.height,
                         header.blockHeader)
                 } yield ()
