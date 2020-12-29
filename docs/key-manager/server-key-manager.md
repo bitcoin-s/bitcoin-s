@@ -19,6 +19,16 @@ You can change which wallet and key manager you are using by setting the `bitcoi
 option. If it is not set, it will use the default wallet. Different seeds are saved in the `seeds` folder, and the
 seed's file name will be prefixed with the wallet name.
 
+For example, if you have a default wallet, and 2 wallets named `test-wallet` and `rickRollWallet` your seeds folder will look like:
+
+```
+tree ~/.bitcoin-s/seeds
+/home/suredbits/.bitcoin-s/seeds
+├── encrypted-bitcoin-s-seed.json
+├── test-wallet-encrypted-bitcoin-s-seed.json
+└── rickRollWallet-encrypted-bitcoin-s-seed.json
+```
+
 Currently, Bitcoin-S only supports using a single key manger/wallet at a single instance. When switching wallets, you
 will need to shut down the server and restart it with your modified config.
 
@@ -72,4 +82,7 @@ To do this, you will need the seed file name to be `walletName-encrypted-bitcoin
 if you want it to be the default wallet.
 To load it, just set the `bitcoin-s.wallet.walletName` config option to the appropriate wallet name.
 
-You made need to run a wallet rescan to restore funds, this can be done by using the `rescan` RPC command.
+You may need to run a wallet rescan to restore funds, this can be done by using the `rescan` RPC command.
+
+For example, if you wanted to restore your `rickRollWallet`, you would place your backup at `~/.bitcoin-s/seeds/rickRollWallet-encrypted-bitcoin-s-seed.json`
+and then load the wallet using a config with `bitcoin-s.wallet.walletName = rickRollWallet`
