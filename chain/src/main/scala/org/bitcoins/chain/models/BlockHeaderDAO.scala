@@ -4,6 +4,7 @@ import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
@@ -424,6 +425,13 @@ case class BlockHeaderDAO()(implicit
       }
       result.headOption
     }
+  }
+
+  def findPrevHeaders(
+      headers: Vector[BlockHeader]): Future[Vector[BlockHeaderDb]] = {
+    val query = table.filter(_.hash.inSet(headers.map(_.previousBlockHashBE)))
+
+    safeDatabase.runVec(query.result.transactionally)
   }
 
   /** A table that stores block headers related to a blockchain */

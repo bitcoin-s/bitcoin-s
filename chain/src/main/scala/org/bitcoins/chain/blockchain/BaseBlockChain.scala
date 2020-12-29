@@ -191,7 +191,7 @@ private[blockchain] trait BaseBlockChainCompObject
     * 2. Causes a re-org, which returns the old best tip and the new competing chain
     * 3. Fails to connect tip, in which case it returns the old best chain
     */
-  private def parseConnectTipResult(
+  private[blockchain] def parseConnectTipResult(
       connectTipResult: ConnectTipResult,
       lastUpdate: BlockchainUpdate): Vector[BlockchainUpdate] = {
     lastUpdate match {

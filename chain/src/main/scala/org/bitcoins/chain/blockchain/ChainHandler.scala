@@ -129,15 +129,46 @@ class ChainHandler(
 
       val successfullyValidatedHeaders = blockchainUpdates
         .flatMap(_.successfulHeaders)
+        .distinct
 
-      val headersToBeCreated = {
-        // During reorgs, we can be sent a header twice
-        successfullyValidatedHeaders.distinct
-      }
+      val unsuccessfulMemoryHeaders =
+        headers.filterNot(
+          successfullyValidatedHeaders.map(_.blockHeader).contains)
+
+      val successfullyDbValidatedHeadersF =
+        blockHeaderDAO.findPrevHeaders(unsuccessfulMemoryHeaders).map {
+          prevHeaders =>
+            // (Prev HeaderDb, new Header)
+            val successfulDbHeaders: Vector[(BlockHeaderDb, BlockHeader)] =
+              unsuccessfulMemoryHeaders.flatMap { h =>
+                prevHeaders
+                  .find(_.hashBE == h.previousBlockHashBE)
+                  .map(prev => (prev, h))
+              }
+
+            successfulDbHeaders.flatMap {
+              case (prevDb, header) =>
+                val singleChain = Blockchain(Vector(prevDb))
+                // Validate header & calculate correct BlockHeaderDb
+                val result = Blockchain.connectTip(header, singleChain)
+                Blockchain
+                  .parseConnectTipResult(
+                    result,
+                    BlockchainUpdate.Successful(singleChain, Vector.empty))
+                  .head // Only a single header we are checking
+                  .successfulHeaders
+            }
+        }
+
+      val headersToBeCreatedF =
+        successfullyDbValidatedHeadersF.map(_ ++ successfullyValidatedHeaders)
 
       val chains = blockchainUpdates.map(_.blockchain)
 
-      val createdF = blockHeaderDAO.createAll(headersToBeCreated)
+      val createdF = for {
+        headersToBeCreated <- headersToBeCreatedF
+        _ <- blockHeaderDAO.createAll(headersToBeCreated)
+      } yield headersToBeCreated
 
       val newChainHandler = ChainHandler(blockHeaderDAO,
                                          filterHeaderDAO,
@@ -147,16 +178,15 @@ class ChainHandler(
 
       createdF.map { headers =>
         if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
-          headersToBeCreated.reverseIterator.foldLeft(FutureUtil.unit) {
-            (acc, header) =>
-              for {
-                _ <- acc
-                _ <-
-                  chainConfig.chainCallbacks
-                    .executeOnBlockHeaderConnectedCallbacks(logger,
-                                                            header.height,
-                                                            header.blockHeader)
-              } yield ()
+          headers.reverseIterator.foldLeft(FutureUtil.unit) { (acc, header) =>
+            for {
+              _ <- acc
+              _ <-
+                chainConfig.chainCallbacks
+                  .executeOnBlockHeaderConnectedCallbacks(logger,
+                                                          header.height,
+                                                          header.blockHeader)
+            } yield ()
           }
         }
         chains.foreach { c =>
