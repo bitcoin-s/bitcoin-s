@@ -35,6 +35,7 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.node.Node
 import org.bitcoins.server.BitcoinSAppConfig.implicitToWalletConf
+import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.wallet.MockWalletApi
 import org.scalamock.scalatest.MockFactory

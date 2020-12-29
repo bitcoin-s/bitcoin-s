@@ -1,4 +1,4 @@
-package org.bitcoins.server
+package org.bitcoins.server.routes
 
 import akka.actor.ActorSystem
 import akka.event.Logging
@@ -59,7 +59,7 @@ case class Server(
     }
   }
 
-  val route =
+  val route: Route =
     // TODO implement better logging
     DebuggingDirectives.logRequestResult("http-rpc-server", Logging.InfoLevel) {
       withErrorHandling {
