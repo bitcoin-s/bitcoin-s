@@ -83,7 +83,7 @@
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">publicKey</span></span>: <span class="hljs-type">ECPublicKey</span>
 }
 </code></pre>
-<p>The <code>ByteVector</code> that is input to the <code>signFunction</code> should be the hash that is output from <a href="/api/org/bitcoins/core/crypto/TransactionSignatureSerializer"><code>TransactionSignatureSerializer</code></a>'s <code>hashForSignature</code> method. Our in-memory <a href="/api/org/bitcoins/crypto/ECKey"><code>ECKey</code></a> types implement the <code>Sign</code> API.</p>
+<p>The <code>ByteVector</code> that is input to the <code>signFunction</code> should be the hash that is output from <a href="/api/org/bitcoins/core/crypto/TransactionSignatureSerializer"><code>TransactionSignatureSerializer</code></a>'s <code>hashForSignature</code> method. Our in-memory <a href="/api/org/bitcoins/crypto/BaseECKey"><code>BaseECKey</code></a> types implement the <code>Sign</code> API.</p>
 <p>If you wanted to implement a new <code>Sign</code> api for a hardware wallet, you can easily pass it into the <code>TxBuilder</code>/<code>Signer</code> classes to allow for you to use those devices to sign with Bitcoin-S.</p>
 <p>This API is currently used to sign ordinary transactions with our <a href="/api/org/bitcoins/core/wallet/signer/Signer"><code>Signer</code></a>s. The <code>Signer</code> subtypes (i.e. <code>P2PKHSigner</code>) implement the specific functionality needed to produce a valid digital signature for their corresponding script type.</p>
 <h3><a class="anchor" aria-hidden="true" id="the-extsignapiorgbitcoinscryptosign-api"></a><a href="#the-extsignapiorgbitcoinscryptosign-api" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>The <a href="/api/org/bitcoins/crypto/Sign"><code>ExtSign</code></a> API.</h3>
@@ -96,13 +96,13 @@
 <span class="hljs-comment">// extPrivKey: ExtPrivateKey = Masked(ExtPrivateKeyImpl)</span>
 
 extPrivKey.sign(<span class="hljs-type">DoubleSha256Digest</span>.empty.bytes)
-<span class="hljs-comment">// res0: ECDigitalSignature = ECDigitalSignature(30450221009a718876b6bfb14c9bfae613de4b11b61e0117a46a9a3ee65f99d197c0189fa7022011032cc73ccfd601425e840142b2b59ede089e65dfb41ac87eb950f8b0b0e36a)</span>
+<span class="hljs-comment">// res0: ECDigitalSignature = ECDigitalSignature(304402203e5e4ce795795dbfd2dda19c096894dd5d3424ba7d4df21e0a76787a1268f9c402206cdf7e0ba90fb97e0f7e385e34b543c7f2f9696bf7f2c2a5cc45075855076518)</span>
 
 <span class="hljs-keyword">val</span> path = <span class="hljs-type">BIP32Path</span>(<span class="hljs-type">Vector</span>(<span class="hljs-type">BIP32Node</span>(<span class="hljs-number">0</span>,<span class="hljs-literal">false</span>)))
 <span class="hljs-comment">// path: BIP32Path = m/0</span>
 
 extPrivKey.sign(<span class="hljs-type">DoubleSha256Digest</span>.empty.bytes,path)
-<span class="hljs-comment">// res1: ECDigitalSignature = ECDigitalSignature(304402207fea67e80eb417fb3f690f00c4ca904e34f31355f53390b2bdba0de4db6db955022017eb074c7907b165a4bd778d28f6ce725958972c87291382771e8ace491a35ea)</span>
+<span class="hljs-comment">// res1: ECDigitalSignature = ECDigitalSignature(3045022100827868ab8c30cdce5c11e0d593203274c9f432309ca877f905efc63acf024b5402205d762029ac28835a86b252c871d3b60089319f4966cd7891ab7d035adcb10644)</span>
 </code></pre>
 <p>With <code>ExtSign</code>, you can use <code>ExtPrivateKey</code> to sign transactions inside of <code>TxBuilder</code> since <code>UTXOSpendingInfo</code> takes in <code>Sign</code> as a parameter.</p>
 <p>You can also provide a <code>path</code> to use to derive a child <code>ExtPrivateKey</code>, and then sign with that child private key</p>
