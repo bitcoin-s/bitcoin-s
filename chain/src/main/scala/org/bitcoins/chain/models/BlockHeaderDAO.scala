@@ -401,8 +401,20 @@ case class BlockHeaderDAO()(implicit
     for {
       staleChains <- staleChainsF
       bestChains <- bestChainsF
+      //we need to check the stale chains tips to see if it is contained
+      //in our best chains. If it is, that means the stale chain
+      //is a subchain of a best chain. We need to discard it if
+      //if that is the case to avoid duplicates
+      filtered = staleChains.filterNot { c =>
+        bestChains.exists { best =>
+          best.findAtHeight(c.tip.height) match {
+            case Some(h) => h == c.tip
+            case None    => false
+          }
+        }
+      }
     } yield {
-      bestChains ++ staleChains
+      bestChains ++ filtered
     }
   }
 

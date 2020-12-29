@@ -193,6 +193,21 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       }
   }
 
+  it must "deduplicate blockchains so in reorg situations we do not return duplicates" in {
+    blockHeaderDAO: BlockHeaderDAO =>
+      val reorgFixtureF = buildBlockHeaderDAOCompetingHeaders(blockHeaderDAO)
+
+      //now we have 2 competing tips, so we should return 2 chains
+      val firstAssertionF = for {
+        _ <- reorgFixtureF
+        chains <- blockHeaderDAO.getBlockchains()
+      } yield {
+        assert(chains.length == 2)
+      }
+
+      firstAssertionF
+  }
+
   it must "retrieve a block header by height" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
