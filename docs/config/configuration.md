@@ -15,7 +15,7 @@ bitcoin-s, the values there take precedence over the ones found in our
 Bitcoin-S data directory.
 
 The resolved configuration gets parsed by
-[`AppConfig`](api/org/bitcoins/db/AppConfig).
+[`AppConfig`](/api/org/bitcoins/db/AppConfig).
 `AppConfig` is an abstract class that's implemented by corresponding case
 classes in the `wallet`, `chain` and `node` projects. Here's some examples of how to
 construct a wallet configuration:
