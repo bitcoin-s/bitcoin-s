@@ -380,8 +380,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
               .asInstanceOf[MultiNonceContractInfo]
               .outcomeValueFunc
               .points
-          val left = points(1).outcome.toLongExact
-          val right = points(2).outcome.toLongExact
+          val left = points(1).outcome
+          val right = points(2).outcome
           // Somewhere in the middle third of the interesting values
           val outcomeNum =
             (2 * left + right) / 3 + (outcomeIndex % (right - left) / 3)
