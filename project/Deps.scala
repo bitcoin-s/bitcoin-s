@@ -430,4 +430,11 @@ object Deps {
       Compile.newMicroJson,
       Compile.logback
     )
+
+  val serverRoutes = List(
+    Compile.akkaHttp,
+    Compile.akkaActor,
+    Compile.akkaSlf4j,
+    Compile.akkaStream
+  )
 }

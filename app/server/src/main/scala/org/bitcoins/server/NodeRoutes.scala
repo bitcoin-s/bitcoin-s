@@ -7,6 +7,7 @@ import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.node.Node
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}

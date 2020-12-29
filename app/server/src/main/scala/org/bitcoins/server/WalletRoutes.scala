@@ -12,6 +12,7 @@ import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
 import org.bitcoins.crypto.NetworkElement
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
+import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 

@@ -80,7 +80,8 @@ lazy val `bitcoin-s` = project
     appCommonsTest,
     testkit,
     zmq,
-    oracleServer
+    oracleServer,
+    serverRoutes
   )
   .dependsOn(
     secp256k1jni,
@@ -117,7 +118,8 @@ lazy val `bitcoin-s` = project
     appCommonsTest,
     testkit,
     zmq,
-    oracleServer
+    oracleServer,
+    serverRoutes
   )
   .settings(CommonSettings.settings: _*)
   // unidoc aggregates Scaladocs for all subprojects into one big doc
@@ -281,13 +283,20 @@ lazy val oracleServer = project
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     dlcOracle,
-    appServer
+    serverRoutes
   )
+
+lazy val serverRoutes = project
+  .in(file("app/server-routes"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(libraryDependencies ++= Deps.serverRoutes)
+  .dependsOn(appCommons, dbCommons)
 
 lazy val appServer = project
   .in(file("app/server"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
+    serverRoutes,
     appCommons,
     node,
     chain,

@@ -1,4 +1,4 @@
-package org.bitcoins.server
+package org.bitcoins.server.routes
 
 import grizzled.slf4j.Logging
 

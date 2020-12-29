@@ -7,6 +7,7 @@ import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import scodec.bits.ByteVector
 import ujson._
 
