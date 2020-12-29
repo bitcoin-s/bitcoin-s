@@ -86,13 +86,13 @@ use that to generate further private and public keys:</p>
 <span class="hljs-comment">// how long our phrase ends up being</span>
 <span class="hljs-comment">// 256 bits of entropy results in 24 words</span>
 <span class="hljs-keyword">val</span> entropy: <span class="hljs-type">BitVector</span> = <span class="hljs-type">MnemonicCode</span>.getEntropy256Bits
-<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0xcf0f5fcebf2b643984409377a23eb5df458fe81f7587bb50954217b1c4c4442c)</span>
+<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0x7b40d4acb61a4a64d063c4f91346bf03dad0642fb61b6d0af4118a8e998da4bb)</span>
 
 <span class="hljs-keyword">val</span> mnemonicCode = <span class="hljs-type">MnemonicCode</span>.fromEntropy(entropy)
 <span class="hljs-comment">// mnemonicCode: MnemonicCode = Masked(MnemonicCodeImpl)</span>
 
 mnemonicCode.words <span class="hljs-comment">// the phrase the user should write down</span>
-<span class="hljs-comment">// res0: Vector[String] = Vector(someone, kit, victory, layer, rent, broom, baby, bar, jeans, ball, pulp, salon, flight, village, lava, rail, robust, lucky, explain, control, brisk, giraffe, awful, never) // the phrase the user should write down</span>
+<span class="hljs-comment">// res0: Vector[String] = Vector(kitten, allow, clinic, history, pigeon, crash, dose, joy, weekend, olive, quit, amateur, public, craft, salute, sell, home, fish, afford, bench, trumpet, short, napkin, gesture) // the phrase the user should write down</span>
 
 <span class="hljs-comment">// the password argument is an optional, extra security</span>
 <span class="hljs-comment">// measure. all MnemonicCode instances will give you a</span>
@@ -108,7 +108,7 @@ mnemonicCode.words <span class="hljs-comment">// the phrase the user should writ
                                         bip39Seed)
 <span class="hljs-comment">// xpriv: ExtPrivateKey = Masked(ExtPrivateKeyImpl)</span>
 <span class="hljs-keyword">val</span> xpub = xpriv.extPublicKey
-<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZwpMqr6tEz5iBA4WQAMMDBUu4Z5rfEjj9CrsjBp8FjCVMUkD5hdK2oLDn287UQ7vzdR5rC42RJqT2AmqZN6jVd2qj3jZZfGD</span>
+<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZwBdc5MPx69s4eXMfsQM2d3yYVFQhkq6PTzX5fzhgn1t3V2gQNFYnYNZeWtCxKjuDf6r7Fo4VqSRvXAvnRozKmDYDjuyuw2W</span>
 
 <span class="hljs-comment">// you can now use the generated xpriv to derive further</span>
 <span class="hljs-comment">// private or public keys</span>
@@ -154,7 +154,7 @@ spend or steal any of your money.</p>
     <span class="hljs-comment">// can generate addresses with it!</span>
     accountXpriv.extPublicKey
 }
-<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6ruhKQv7LiRPGXKoTEBHK3zdpPmA6z62ZBbe6QfkqxyKKTi4uzYChKMDk8GEPT2cCpRuc8RbhAXThXLF6RrZnqp3dLzZmqr34FUdJEXDoaj</span>
+<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6qLXvhL25Noc3S7x72TyQX5yUpy7XoGgnGVe4qvtbfcwCfda4JkADGdEvw35ZGMQ17yP44TpZqWAM57MZyh5eYBAKvwUmdKNXFV2kqM1Rek</span>
 
                               <span class="hljs-comment">// address no. 0 ---------------┐</span>
                               <span class="hljs-comment">// external address ----------┐ |</span>
@@ -177,12 +177,12 @@ spend or steal any of your money.</p>
     <span class="hljs-keyword">val</span> scriptPubKey = <span class="hljs-type">P2WPKHWitnessSPKV0</span>(pubkey)
     <span class="hljs-type">Bech32Address</span>(scriptPubKey, <span class="hljs-type">TestNet3</span>)
 }
-<span class="hljs-comment">// firstAccountAddress: Bech32Address = tb1qykq4p67vz56gaq4k4nj76ngeyf4rrts6fr2knm</span>
+<span class="hljs-comment">// firstAccountAddress: Bech32Address = tb1qqdlvasmye9z637pp2vuw4svzxswh582p5679wd</span>
 
 <span class="hljs-comment">// tada! We just generated an address you can send money to,</span>
 <span class="hljs-comment">// without having access to the private key!</span>
 firstAccountAddress.value
-<span class="hljs-comment">// res2: String = tb1qykq4p67vz56gaq4k4nj76ngeyf4rrts6fr2knm</span>
+<span class="hljs-comment">// res2: String = tb1qqdlvasmye9z637pp2vuw4svzxswh582p5679wd</span>
 
 <span class="hljs-comment">// you can now continue deriving addresses from the same public</span>
 <span class="hljs-comment">// key, by imitating what we did above. To get the next</span>
