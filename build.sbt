@@ -291,7 +291,7 @@ lazy val serverRoutes = project
   .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-server-routes")
   .settings(libraryDependencies ++= Deps.serverRoutes)
-  .dependsOn(appCommons, dbCommons)
+  .dependsOn(appCommons, dbCommons, keyManager)
 
 lazy val appServer = project
   .in(file("app/server"))

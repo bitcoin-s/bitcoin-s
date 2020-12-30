@@ -1,4 +1,4 @@
-name: Linux 2.12 App, Chain, Node, and Core Tests
+name: Linux 2.13 App, Chain, Node, and Core Tests
 env:
   COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 

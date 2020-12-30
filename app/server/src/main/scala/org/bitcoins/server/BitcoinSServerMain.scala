@@ -3,6 +3,7 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
+import com.typesafe.config.ConfigFactory
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -31,8 +32,41 @@ class BitcoinSServerMain(override val args: Array[String])
 
   override val actorSystemName = "bitcoin-s-server"
 
-  implicit lazy val conf: BitcoinSAppConfig =
-    BitcoinSAppConfig(datadir, baseConfig)
+  implicit lazy val conf: BitcoinSAppConfig = {
+    val (aesPassOpt, bip39PassOpt) = getUserPasswords
+
+    // Set config options based on user input.
+    // Make sure to ignore config options for
+    // passwords user choose to set to None
+    val conf = (aesPassOpt, bip39PassOpt) match {
+      case (None, None) =>
+        baseConfig
+          .withoutPath("bitcoin-s.keymanager.aesPassword")
+          .withoutPath("bitcoin-s.keymanager.bip39password")
+      case (Some(aes), None) =>
+        ConfigFactory
+          .parseString(
+            s"bitcoin-s.keymanager.aesPassword = ${aes.toStringSensitive}")
+          .withFallback(baseConfig)
+          .withoutPath("bitcoin-s.keymanager.bip39password")
+      case (None, Some(bip39)) =>
+        ConfigFactory
+          .parseString(s"bitcoin-s.keymanager.bip39password = $bip39")
+          .withFallback(baseConfig)
+          .withoutPath("bitcoin-s.keymanager.aesPassword")
+      case (Some(aes), Some(bip39)) =>
+        val aesConf =
+          ConfigFactory.parseString(
+            s"bitcoin-s.keymanager.aesPassword = ${aes.toStringSensitive}")
+
+        ConfigFactory
+          .parseString(s"bitcoin-s.keymanager.bip39password = $bip39")
+          .withFallback(aesConf)
+          .withFallback(baseConfig)
+    }
+
+    BitcoinSAppConfig(datadir, conf)
+  }
 
   def startup: Future[Unit] = {
 

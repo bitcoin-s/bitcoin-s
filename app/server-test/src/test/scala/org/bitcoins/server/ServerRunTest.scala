@@ -1,18 +1,30 @@
 package org.bitcoins.server
 
-import java.nio.file._
-
+import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.keymanager.config.KeyManagerAppConfig
+import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.Implicits.GeneratorOps
+import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
+import java.nio.file._
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.reflect.io.Directory
 
 class ServerRunTest extends BitcoinSAsyncTest {
+
+  def getAndWriteMnemonic(kmConf: KeyManagerAppConfig): DecryptedMnemonic = {
+    val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
+    val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
+    val seedPath = kmConf.seedPath
+    WalletStorage.writeSeedToDisk(seedPath, decryptedMnemonic)
+    decryptedMnemonic
+  }
 
   // Clear log location property
   after {
@@ -24,6 +36,10 @@ class ServerRunTest extends BitcoinSAsyncTest {
   it must "throw errors" in {
     val datadir = BitcoinSTestAppConfig.tmpDir()
     val directory = new Directory(datadir.toFile)
+
+    // Set KeyManager file so we skip the user input passwords
+    val kmConf = KeyManagerAppConfig.fromDatadir(datadir)
+    getAndWriteMnemonic(kmConf)
 
     val randPort = RpcUtil.randomPort
     val args = Array("--datadir",
@@ -50,6 +66,10 @@ class ServerRunTest extends BitcoinSAsyncTest {
     val datadir = BitcoinSTestAppConfig.tmpDir()
     val directory = new Directory(datadir.toFile)
     val confFile = datadir.resolve("bitcoin-s.conf")
+
+    // Set KeyManager file so we skip the user input passwords
+    val kmConf = KeyManagerAppConfig.fromDatadir(datadir)
+    getAndWriteMnemonic(kmConf)
 
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(

@@ -4,8 +4,10 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config._
 import org.bitcoins.core.util.{BitcoinSLogger, EnvUtil}
+import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.safePathToString
+import org.bitcoins.keymanager.config.KeyManagerAppConfig
 
 import java.nio.file.{Path, Paths}
 import scala.concurrent.{ExecutionContext, Future}
@@ -119,5 +121,35 @@ trait BitcoinSRunner extends BitcoinSLogger {
       logger.error(s"Failed to startup server!", err)
       sys.exit(1)
     }(scala.concurrent.ExecutionContext.Implicits.global)
+  }
+
+  def getUserPasswords: (Option[AesPassword], Option[String]) = {
+    val kmConf = KeyManagerAppConfig(datadir, baseConfig)
+    kmConf.start()
+
+    if (!kmConf.seedExists()) {
+      logger.info("Creating new wallet!")
+      // Print to user if their log level is too high
+      if (!logger.isInfoEnabled) {
+        println("Creating new wallet!")
+      }
+      print("Enter wallet password (empty for unencrypted wallet): ")
+      val aesPassStr: String = System.console().readPassword().mkString
+      val aesPasswordOpt = AesPassword.fromStringOpt(aesPassStr)
+
+      print("Confirm wallet password: ")
+      val confirmAesStr: String = System.console().readPassword().mkString
+      require(aesPassStr == confirmAesStr, "Wallet passwords did not match")
+
+      print("Enter wallet BIP 39 password (empty for none): ")
+      val bip39PassStr: String = System.console().readPassword().mkString
+      val bip39PassOpt = if (bip39PassStr.nonEmpty) Some(bip39PassStr) else None
+
+      print("Confirm BIP 39 password: ")
+      val confirmBip39Str: String = System.console().readPassword().mkString
+      require(bip39PassStr == confirmBip39Str, "BIP 39 passwords did not match")
+
+      (aesPasswordOpt, bip39PassOpt)
+    } else (None, None)
   }
 }
