@@ -540,6 +540,24 @@ class DLCOracleTest extends DLCOracleFixture {
       }
   }
 
+  it must "fail to sign a negative number for a unsigned digit decomp event" in {
+    dlcOracle: DLCOracle =>
+      for {
+        announcement <-
+          dlcOracle.createNewLargeRangedEvent(eventName = "test",
+                                              maturationTime = futureTime,
+                                              base = UInt16(2),
+                                              isSigned = false,
+                                              numDigits = 3,
+                                              unit = "units",
+                                              precision = Int32.zero)
+
+        res <- recoverToSucceededIf[IllegalArgumentException] {
+          dlcOracle.signDigits(announcement.eventTLV, -2)
+        }
+      } yield res
+  }
+
   it must "fail to sign a range outcome that doesn't exist" in {
     dlcOracle: DLCOracle =>
       val descriptor =

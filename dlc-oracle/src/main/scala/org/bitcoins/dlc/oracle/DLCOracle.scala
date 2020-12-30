@@ -316,7 +316,12 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
           signEvent(oracleEventTLV.nonces.head, signOutcome).map(db =>
             Vector(db))
         case _: UnsignedDigitDecompositionEventDescriptor =>
-          FutureUtil.emptyVec[EventDb]
+          if (num >= 0) {
+            FutureUtil.emptyVec[EventDb]
+          } else {
+            Future.failed(new IllegalArgumentException(
+              s"Cannot sign a negative number for an unsigned event, got $num"))
+          }
       }
 
     val boundedNum = if (num < eventDescriptorTLV.minNum) {
