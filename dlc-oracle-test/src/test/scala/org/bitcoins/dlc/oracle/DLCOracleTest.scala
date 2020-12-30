@@ -285,6 +285,11 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(
             SchnorrDigitalSignature(completedEvent.nonces.head,
                                     completedEvent.attestation) == sig)
+          assert(
+            OracleEvent.verifyAttestations(announcement,
+                                           completedEvent.signatures,
+                                           signingVersion =
+                                             SigningVersion.latest))
         case _: PendingOracleEvent | _: CompletedOracleEvent =>
           fail()
       }
@@ -654,5 +659,108 @@ class DLCOracleTest extends DLCOracleFixture {
     assertThrows[IllegalArgumentException] {
       dlcOracle.createNewEvent("test", Instant.EPOCH, testDescriptor)
     }
+  }
+
+  it must "create and sign a signed digit decomposition event" in {
+    dlcOracle: DLCOracle =>
+      val eventName = "signed"
+      val maturationTime = futureTime
+      val descriptor =
+        SignedDigitDecompositionEventDescriptor(UInt16(2),
+                                                UInt16(3),
+                                                "unit",
+                                                Int32(0))
+
+      for {
+        announcement: OracleAnnouncementTLV <-
+          dlcOracle.createNewEvent(eventName, maturationTime, descriptor)
+        event <-
+          dlcOracle
+            .signDigits(announcement.eventTLV, -2)
+      } yield {
+        assert(event.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
+        val attestations = event
+          .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
+          .signatures
+        assert(
+          OracleEvent.verifyAttestations(announcement,
+                                         attestations,
+                                         signingVersion =
+                                           SigningVersion.latest))
+      }
+  }
+
+  it must "create and sign a unsigned digit decomposition event" in {
+    dlcOracle: DLCOracle =>
+      val eventName = "unsigned"
+      val maturationTime = futureTime
+      val descriptor =
+        UnsignedDigitDecompositionEventDescriptor(UInt16(2),
+                                                  UInt16(3),
+                                                  "unit",
+                                                  Int32(0))
+
+      for {
+        announcement: OracleAnnouncementTLV <-
+          dlcOracle.createNewEvent(eventName, maturationTime, descriptor)
+        event <-
+          dlcOracle
+            .signDigits(announcement.eventTLV, 2)
+      } yield {
+        assert(event.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
+        val attestations = event
+          .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
+          .signatures
+        assert(
+          OracleEvent.verifyAttestations(announcement,
+                                         attestations,
+                                         signingVersion =
+                                           SigningVersion.latest))
+      }
+  }
+
+  it must "fail to verify a unsigned digit decomposition event " in {
+    dlcOracle: DLCOracle =>
+      val eventName1 = "unsigned1"
+      val eventName2 = "unsigned2"
+      val maturationTime = futureTime
+      val descriptor =
+        UnsignedDigitDecompositionEventDescriptor(UInt16(2),
+                                                  UInt16(3),
+                                                  "unit",
+                                                  Int32(0))
+
+      for {
+        announcement1: OracleAnnouncementTLV <-
+          dlcOracle.createNewEvent(eventName1, maturationTime, descriptor)
+        announcement2: OracleAnnouncementTLV <-
+          dlcOracle.createNewEvent(eventName2, maturationTime, descriptor)
+        event1 <-
+          dlcOracle
+            .signDigits(announcement1.eventTLV, 2)
+        event2 <-
+          dlcOracle
+            .signDigits(announcement2.eventTLV, 1)
+      } yield {
+        assert(event1.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
+        val attestations1 = event1
+          .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
+          .signatures
+        assert(event2.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
+        val attestations2 = event2
+          .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
+          .signatures
+
+        assert(
+          !OracleEvent.verifyAttestations(announcement1,
+                                          attestations2,
+                                          signingVersion =
+                                            SigningVersion.latest))
+        assert(
+          !OracleEvent.verifyAttestations(announcement2,
+                                          attestations1,
+                                          signingVersion =
+                                            SigningVersion.latest))
+      }
   }
 }
