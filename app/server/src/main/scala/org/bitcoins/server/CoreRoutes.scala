@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.commons.jsonmodels.{SerializedPSBT, SerializedTransaction}
 import org.bitcoins.core.api.core.CoreApi
+import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
 
 import scala.collection.mutable

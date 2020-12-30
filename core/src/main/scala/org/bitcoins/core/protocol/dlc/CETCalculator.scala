@@ -95,8 +95,8 @@ object CETCalculator {
     def processConstantComponents(): Unit = {
       currentFunc match {
         case OutcomePayoutConstant(_, rightEndpoint) =>
-          val componentEnd = rightEndpoint.outcome.toLongExact - 1
-          val funcValue = rightEndpoint.payout
+          val componentEnd = rightEndpoint.outcome - 1
+          val funcValue = rightEndpoint.roundedPayout
 
           if (funcValue <= Satoshis.zero) {
             currentRange match {

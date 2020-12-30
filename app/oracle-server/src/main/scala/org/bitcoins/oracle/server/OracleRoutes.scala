@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.dlc.oracle._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.keymanager.WalletStorage
-import org.bitcoins.server._
+import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
 
 import scala.util.{Failure, Success}

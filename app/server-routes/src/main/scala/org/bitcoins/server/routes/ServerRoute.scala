@@ -1,4 +1,4 @@
-package org.bitcoins.server
+package org.bitcoins.server.routes
 
 import akka.http.scaladsl.server.StandardRoute
 

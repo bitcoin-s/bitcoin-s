@@ -8,6 +8,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     env:
       PG_ENABLED: "1"
     steps:

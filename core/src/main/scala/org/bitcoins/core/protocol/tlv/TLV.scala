@@ -850,7 +850,11 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   }
 }
 
-case class TLVPoint(outcome: Long, value: Satoshis, isEndpoint: Boolean)
+case class TLVPoint(
+    outcome: Long,
+    value: Satoshis,
+    extraPrecision: Int,
+    isEndpoint: Boolean)
     extends NetworkElement {
 
   lazy val leadingByte: Byte = if (isEndpoint) {
@@ -862,7 +866,8 @@ case class TLVPoint(outcome: Long, value: Satoshis, isEndpoint: Boolean)
   override def bytes: ByteVector = {
     ByteVector(leadingByte) ++
       BigSizeUInt(outcome).bytes ++
-      UInt64(value.toLong).bytes
+      UInt64(value.toLong).bytes ++
+      UInt16(extraPrecision).bytes
   }
 }
 
@@ -879,7 +884,8 @@ object TLVPoint extends Factory[TLVPoint] {
 
     val outcome = BigSizeUInt(bytes.tail)
     val value = UInt64(bytes.drop(1 + outcome.byteSize).take(8))
-    TLVPoint(outcome.toLong, Satoshis(value.toLong), isEndpoint)
+    val extraPrecision = UInt16(bytes.drop(9 + outcome.byteSize).take(2)).toInt
+    TLVPoint(outcome.toLong, Satoshis(value.toLong), extraPrecision, isEndpoint)
   }
 }
 
