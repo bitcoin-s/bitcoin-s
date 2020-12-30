@@ -106,6 +106,13 @@ sealed abstract class Transaction extends NetworkElement {
   }
 
   lazy val totalOutput: CurrencyUnit = outputs.map(_.value).sum
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case tx: Transaction => bytes == tx.bytes
+      case other: Any      => super.equals(other)
+    }
+  }
 }
 
 object Transaction extends Factory[Transaction] {

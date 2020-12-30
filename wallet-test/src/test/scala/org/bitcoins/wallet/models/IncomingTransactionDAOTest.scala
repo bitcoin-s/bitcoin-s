@@ -6,17 +6,19 @@ import org.bitcoins.core.api.wallet.db.{
   TransactionDbHelper
 }
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.testkit.Implicits.GeneratorOps
+import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
-import org.bitcoins.testkit.wallet.WalletTestUtil
 
 class IncomingTransactionDAOTest extends WalletDAOFixture {
 
-  val txDb: TransactionDb =
-    TransactionDbHelper.fromTransaction(WalletTestUtil.sampleTransaction)
+  val tx: Transaction = TransactionGenerators.realisticTransaction.sampleSome
+
+  val txDb: TransactionDb = TransactionDbHelper.fromTransaction(tx)
 
   val incoming: IncomingTransactionDb =
-    IncomingTransactionDb(WalletTestUtil.sampleTransaction.txIdBE,
-                          Satoshis(10000))
+    IncomingTransactionDb(tx.txIdBE, Satoshis(10000))
 
   it should "insert and read an transaction into the database" in { daos =>
     val txDAO = daos.transactionDAO

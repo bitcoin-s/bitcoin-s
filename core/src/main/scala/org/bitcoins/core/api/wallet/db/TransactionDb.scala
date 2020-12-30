@@ -33,12 +33,30 @@ case class TransactionDb(
     numOutputs: Int,
     lockTime: UInt32)
     extends TxDB {
+  require(
+    txIdBE == transaction.txIdBE,
+    s"transaction's txId ${transaction.txIdBE.hex} and txIdBE ${txIdBE.hex} must match")
+  require(
+    unsignedTxIdBE == unsignedTx.txIdBE,
+    s"unsignedTx's txId ${unsignedTx.txIdBE.hex} and unsignedTxIdBE ${txIdBE.hex} must match")
+  require(
+    wTxIdBEOpt.isEmpty || wTxIdBEOpt.get == transaction
+      .asInstanceOf[WitnessTransaction]
+      .wTxIdBE,
+    s"transaction's wTxIdBE ${transaction.asInstanceOf[WitnessTransaction].wTxIdBE.hex} and wTxIdBEOpt ${wTxIdBEOpt.get.hex} must match"
+  )
+
   require(unsignedTx.inputs.forall(_.scriptSignature == EmptyScriptSignature),
           s"All ScriptSignatures must be empty, got $unsignedTx")
 
   lazy val txId: DoubleSha256Digest = txIdBE.flip
   lazy val unsignedTxId: DoubleSha256Digest = unsignedTxIdBE.flip
   lazy val wTxIdOpt: Option[DoubleSha256Digest] = wTxIdBEOpt.map(_.flip)
+
+  override def toString: String = {
+    s"TransactionDb(${txIdBE.hex}, ${transaction.hex}, ${unsignedTxIdBE.hex}, ${unsignedTx.hex}, ${wTxIdBEOpt
+      .map(_.hex)}, $totalOutput, $numInputs, $numOutputs, ${lockTime.toBigInt})"
+  }
 }
 
 object TransactionDbHelper {
@@ -66,7 +84,7 @@ object TransactionDbHelper {
                                       wtx.lockTime,
                                       EmptyWitness.fromInputs(unsignedInputs))
 
-        (uwtx, Some(uwtx.wTxIdBE))
+        (uwtx, Some(wtx.wTxIdBE))
     }
     val totalOutput = tx.outputs.map(_.value).sum
     TransactionDb(tx.txIdBE,

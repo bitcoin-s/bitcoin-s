@@ -2,8 +2,7 @@ package org.bitcoins.db
 
 import slick.jdbc.JdbcProfile
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 trait SlickUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
   def profile: JdbcProfile
@@ -14,7 +13,12 @@ trait SlickUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
   def createAllNoAutoInc(ts: Vector[T], database: SafeDatabase)(implicit
       ec: ExecutionContext): Future[Vector[T]] = {
     val actions = (table ++= ts).andThen(DBIO.successful(ts)).transactionally
-    val result = database.run(actions)
-    result
+    database.run(actions).flatMap { created =>
+      if (created == ts) {
+        Future.successful(created)
+      } else {
+        Future.failed(new RuntimeException("Upsert failed for: " + ts))
+      }
+    }
   }
 }

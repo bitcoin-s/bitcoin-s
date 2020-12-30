@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.wallet
 
-import org.bitcoins.core.api.wallet.db
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
@@ -18,7 +17,7 @@ import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
+import org.bitcoins.testkit.core.gen.{CryptoGenerators, TransactionGenerators}
 import org.bitcoins.testkit.fixtures.WalletDAOs
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -109,8 +108,11 @@ object WalletTestUtil {
   private def randomScriptWitness: ScriptWitness =
     P2WPKHWitnessV0(freshXpub().key)
 
-  private def randomTXID = CryptoGenerators.doubleSha256Digest.sampleSome.flip
-  private def randomVout = NumberGenerator.uInt32s.sampleSome
+  private def randomVout(transaction: Transaction): UInt32 = {
+    val rand = scala.util.Random.nextInt(transaction.outputs.size)
+
+    UInt32(rand)
+  }
 
   private def randomBlockHash =
     CryptoGenerators.doubleSha256Digest.sampleSome.flip
@@ -120,48 +122,58 @@ object WalletTestUtil {
     TxoState.all(idx)
   }
 
-  def sampleSegwitUTXO(spk: ScriptPubKey): SegwitV0SpendingInfo = {
-    val outpoint = TransactionOutPoint(randomTXID, randomVout)
+  def sampleSegwitUTXO(
+      spk: ScriptPubKey): (Transaction, SegwitV0SpendingInfo) = {
+    val tx = TransactionGenerators.realisticTransaction.sampleSome
+
+    val outpoint = TransactionOutPoint(tx.txIdBE, randomVout(tx))
     val output =
       TransactionOutput(1.bitcoin, spk)
     val scriptWitness = randomScriptWitness
     val privkeyPath = WalletTestUtil.sampleSegwitPath
-    db.SegwitV0SpendingInfo(
+    val db = SegwitV0SpendingInfo(
       state = randomState,
-      txid = randomTXID,
+      txid = tx.txIdBE,
       outPoint = outpoint,
       output = output,
       privKeyPath = privkeyPath,
       scriptWitness = scriptWitness,
       blockHash = Some(randomBlockHash)
     )
+
+    (tx, db)
   }
 
-  def sampleLegacyUTXO(spk: ScriptPubKey): LegacySpendingInfo = {
+  def sampleLegacyUTXO(spk: ScriptPubKey): (Transaction, LegacySpendingInfo) = {
+    val tx = TransactionGenerators.realisticTransaction.sampleSome
     val outpoint =
-      TransactionOutPoint(randomTXID, randomVout)
+      TransactionOutPoint(tx.txIdBE, randomVout(tx))
     val output =
       TransactionOutput(1.bitcoin, spk)
     val privKeyPath = WalletTestUtil.sampleLegacyPath
-    db.LegacySpendingInfo(state = randomState,
-                          txid = randomTXID,
-                          outPoint = outpoint,
-                          output = output,
-                          privKeyPath = privKeyPath,
-                          blockHash = Some(randomBlockHash))
+    val db = LegacySpendingInfo(state = randomState,
+                                txid = tx.txIdBE,
+                                outPoint = outpoint,
+                                output = output,
+                                privKeyPath = privKeyPath,
+                                blockHash = Some(randomBlockHash))
+
+    (tx, db)
   }
 
   def sampleNestedSegwitUTXO(
-      ecPublicKey: ECPublicKey): NestedSegwitV0SpendingInfo = {
+      ecPublicKey: ECPublicKey): (Transaction, NestedSegwitV0SpendingInfo) = {
+    val tx = TransactionGenerators.realisticTransaction.sampleSome
+
     val wpkh = P2WPKHWitnessSPKV0(ecPublicKey)
-    val outpoint = TransactionOutPoint(randomTXID, randomVout)
+    val outpoint = TransactionOutPoint(tx.txIdBE, randomVout(tx))
     val output =
       TransactionOutput(1.bitcoin, P2SHScriptPubKey(wpkh))
     val scriptWitness = randomScriptWitness
     val privkeyPath = WalletTestUtil.sampleNestedSegwitPath
-    db.NestedSegwitV0SpendingInfo(
+    val db = NestedSegwitV0SpendingInfo(
       state = randomState,
-      txid = randomTXID,
+      txid = tx.txIdBE,
       outPoint = outpoint,
       output = output,
       privKeyPath = privkeyPath,
@@ -169,6 +181,8 @@ object WalletTestUtil {
       scriptWitness = scriptWitness,
       blockHash = Some(randomBlockHash)
     )
+
+    (tx, db)
   }
 
   /** Given an account returns a sample address */
@@ -191,20 +205,10 @@ object WalletTestUtil {
                     scriptPubKey = wspk)
   }
 
-  def insertDummyIncomingTransaction(daos: WalletDAOs, utxo: SpendingInfoDb)(
-      implicit ec: ExecutionContext): Future[IncomingTransactionDb] = {
-    val txDb = TransactionDb(
-      txIdBE = utxo.txid,
-      transaction = EmptyTransaction,
-      unsignedTxIdBE = utxo.txid,
-      unsignedTx = EmptyTransaction,
-      wTxIdBEOpt = None,
-      totalOutput = Satoshis.zero,
-      numInputs = 1,
-      numOutputs = 1,
-      lockTime = UInt32.zero
-    )
-    val incomingDb = IncomingTransactionDb(utxo.txid, utxo.output.value)
+  def insertDummyIncomingTransaction(daos: WalletDAOs, tx: Transaction)(implicit
+      ec: ExecutionContext): Future[IncomingTransactionDb] = {
+    val txDb = TransactionDbHelper.fromTransaction(tx)
+    val incomingDb = IncomingTransactionDb(tx.txIdBE, Satoshis.zero)
     for {
       _ <- daos.transactionDAO.upsert(txDb)
       written <- daos.incomingTxDAO.upsert(incomingDb)
@@ -238,8 +242,8 @@ object WalletTestUtil {
     for {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- daos.addressDAO.create(getAddressDb(account))
-      utxo = sampleLegacyUTXO(addr.scriptPubKey)
-      _ <- insertDummyIncomingTransaction(daos, utxo)
+      (tx, utxo) = sampleLegacyUTXO(addr.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, tx)
       utxoDb <- daos.utxoDAO.create(utxo)
     } yield utxoDb.asInstanceOf[LegacySpendingInfo]
   }
@@ -250,8 +254,8 @@ object WalletTestUtil {
     for {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- daos.addressDAO.create(getAddressDb(account))
-      utxo = sampleSegwitUTXO(addr.scriptPubKey)
-      _ <- insertDummyIncomingTransaction(daos, utxo)
+      (tx, utxo) = sampleSegwitUTXO(addr.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, tx)
       utxoDb <- daos.utxoDAO.create(utxo)
     } yield utxoDb.asInstanceOf[SegwitV0SpendingInfo]
   }
@@ -262,8 +266,8 @@ object WalletTestUtil {
     for {
       account <- daos.accountDAO.create(WalletTestUtil.nestedSegWitAccountDb)
       addr <- daos.addressDAO.create(getNestedSegwitAddressDb(account))
-      utxo = sampleNestedSegwitUTXO(addr.ecPublicKey)
-      _ <- insertDummyIncomingTransaction(daos, utxo)
+      (tx, utxo) = sampleNestedSegwitUTXO(addr.ecPublicKey)
+      _ <- insertDummyIncomingTransaction(daos, tx)
       utxoDb <- daos.utxoDAO.create(utxo)
     } yield utxoDb.asInstanceOf[NestedSegwitV0SpendingInfo]
   }

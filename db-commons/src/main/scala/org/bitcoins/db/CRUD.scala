@@ -78,10 +78,14 @@ abstract class CRUD[T, PrimaryKeyType](implicit
 
   /** Update the corresponding record in the database */
   def update(t: T): Future[T] = {
-    updateAll(Vector(t)).map { ts =>
+    updateAll(Vector(t)).flatMap { ts =>
       ts.headOption match {
-        case Some(updated) => updated
-        case None          => throw UpdateFailedException("Update failed for: " + t)
+        case Some(updated) =>
+          if (updated == t) {
+            Future.successful(updated)
+          } else Future.failed(UpdateFailedException("Update failed for: " + t))
+        case None =>
+          Future.failed(UpdateFailedException("Update failed for: " + t))
       }
     }
   }
@@ -95,7 +99,13 @@ abstract class CRUD[T, PrimaryKeyType](implicit
       for {
         _ <- safeDatabase.runVec(DBIO.sequence(actions).transactionally)
         result <- safeDatabase.runVec(findAll(ts).result)
-      } yield result
+      } yield {
+        if (result == ts) {
+          result
+        } else {
+          throw UpsertFailedException("Upsert failed for: " + ts)
+        }
+      }
     }
 
     FutureUtil.foldLeftAsync(Vector.empty[T], ts) { (accum, t) =>
@@ -130,7 +140,10 @@ abstract class CRUD[T, PrimaryKeyType](implicit
   def upsert(t: T): Future[T] = {
     upsertAll(Vector(t)).flatMap { ts =>
       ts.headOption match {
-        case Some(updated) => Future.successful(updated)
+        case Some(updated) =>
+          if (updated == t) {
+            Future.successful(updated)
+          } else Future.failed(UpsertFailedException("Upsert failed for: " + t))
         case None =>
           Future.failed(UpsertFailedException("Upsert failed for: " + t))
       }
@@ -144,8 +157,13 @@ abstract class CRUD[T, PrimaryKeyType](implicit
       for {
         _ <- safeDatabase.run(DBIO.sequence(actions).transactionally)
         result <- safeDatabase.runVec(findAll(ts).result)
-      } yield result
-
+      } yield {
+        if (result == ts) {
+          result
+        } else {
+          throw UpsertFailedException("Upsert failed for: " + ts)
+        }
+      }
     }
 
     FutureUtil.foldLeftAsync(Vector.empty[T], ts) { (accum, t) =>

@@ -98,8 +98,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                                           walletUtxos = walletUtxos.map(_._1),
                                           outputs = destinations,
                                           feeRate = feeRate)
-
-      } yield walletUtxos.filter(utxo => utxos.contains(utxo._1))
+      } yield walletUtxos.filter(utxo =>
+        utxos.exists(_.outPoint == utxo._1.outPoint))
 
     val resultF = for {
       selectedUtxos <- selectedUtxosF

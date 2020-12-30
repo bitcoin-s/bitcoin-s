@@ -202,4 +202,18 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
     )
   }
 
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case db: SpendingInfoDb =>
+        db.blockHash == db.blockHash &&
+          db.outPoint == db.outPoint &&
+          db.output == db.output &&
+          db.privKeyPath == db.privKeyPath &&
+          db.redeemScriptOpt == db.redeemScriptOpt &&
+          db.scriptWitnessOpt == db.scriptWitnessOpt &&
+          db.txid == db.txid &&
+          db.state == db.state
+      case other: Any => super.equals(other)
+    }
+  }
 }

@@ -34,12 +34,12 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
       createdAddr1 <- addressDAO.create(addr1)
       createdAddr2 <- addressDAO.create(addr2)
 
-      u1 = sampleLegacyUTXO(addr1.scriptPubKey)
-      _ <- insertDummyIncomingTransaction(daos, u1)
+      (tx1, u1) = sampleLegacyUTXO(addr1.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, tx1)
       utxo1 <- daos.utxoDAO.create(u1)
 
-      u2 = WalletTestUtil.sampleSegwitUTXO(addr2.scriptPubKey)
-      _ <- insertDummyIncomingTransaction(daos, u2)
+      (tx2, u2) = WalletTestUtil.sampleSegwitUTXO(addr2.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, tx2)
       utxo2 <- daos.utxoDAO.create(u2)
 
       utxos = Vector(utxo1, utxo2)
@@ -62,12 +62,12 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- addressDAO.create(getAddressDb(account))
 
-      u1 = sampleLegacyUTXO(addr.scriptPubKey)
-      _ <- insertDummyIncomingTransaction(daos, u1)
+      (tx1, u1) = sampleLegacyUTXO(addr.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, tx1)
       utxo1 <- daos.utxoDAO.create(u1)
 
-      u2 = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey)
-      _ <- insertDummyIncomingTransaction(daos, u2)
+      (tx2, u2) = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, tx2)
       utxo2 <- daos.utxoDAO.create(u2)
 
       utxos = Vector(utxo1, utxo2)
@@ -216,8 +216,8 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
       addr <- daos.addressDAO.create(getAddressDb(account))
 
       // Add another utxo
-      u2 = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey)
-      _ <- insertDummyIncomingTransaction(daos, u2)
+      (tx2, u2) = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, tx2)
       _ <- utxoDAO.create(u2)
 
       dbs <- utxoDAO.findDbsForTx(created.txid)
