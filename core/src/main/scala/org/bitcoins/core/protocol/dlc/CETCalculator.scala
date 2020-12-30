@@ -431,7 +431,7 @@ object CETCalculator {
     }
   }
 
-  /** Given the right endpoint of a CET and the number of ignored digits,
+  /** Given the left endpoint of a CET and the number of ignored digits,
     * computes the binary digits for the CET.
     */
   def numToVec(num: Long, numDigits: Int, ignoredDigits: Int): Vector[Int] = {
@@ -557,7 +557,7 @@ object CETCalculator {
           // CET of width halfMaxError covering [leftErrorCET - halfMaxError, leftErrorCET - 1]
           numToVec(leftErrorCET - halfMaxError, numDigits, maxErrorExp - 1)
         } else {
-          // CET of width minFail covering at most [leftErrorCET - minFail, leftErrorCET - 1]
+          // CET of width minFail covering at least [start - minFail, leftErrorCET - 1]
           minCoverRightCET(start, maxErrorExp, minFail, numDigits)
         }
 
@@ -577,7 +577,7 @@ object CETCalculator {
           // CET of width halfMaxError covering [rightErrorCET + 1, rightErrorCET + halfMaxError]
           numToVec(rightErrorCET + 1, numDigits, maxErrorExp - 1)
         } else {
-          // CET of width minFail covering at most [rightErrorCET + 1, rightErrorCET + minFail]
+          // CET of width minFail covering at least [rightErrorCET + 1, end + minFail]
           minCoverLeftCET(end, maxErrorExp, minFail, numDigits)
         }
 
