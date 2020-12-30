@@ -705,7 +705,7 @@ class DLCOracleTest extends DLCOracleFixture {
           dlcOracle.createNewEvent(eventName, maturationTime, descriptor)
         event <-
           dlcOracle
-            .signDigits(announcement.eventTLV, -2)
+            .signDigits(announcement.eventTLV, 2)
       } yield {
         assert(event.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
         val attestations = event
