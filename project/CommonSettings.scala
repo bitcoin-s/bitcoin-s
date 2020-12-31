@@ -41,10 +41,8 @@ object CommonSettings {
     apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
     // scaladoc settings end
     ////
-    scalacOptions in Compile := compilerOpts(scalaVersion = scalaVersion.value,
-                                             isTestModule = false),
-    Test / scalacOptions := compilerOpts(scalaVersion = scalaVersion.value,
-                                         isTestModule = true),
+    scalacOptions in Compile := compilerOpts(scalaVersion = scalaVersion.value),
+    Test / scalacOptions := testCompilerOpts(scalaVersion = scalaVersion.value),
     //remove annoying import unused things in the scala console
     //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
     scalacOptions in (Compile, console) ~= (_ filterNot (s =>
@@ -93,13 +91,6 @@ object CommonSettings {
     Seq("-Xfatal-warnings") ++ scala2_13CompilerLinting
   }
 
-  /** Compiler options for test code */
-  private val scala2_13TestCompilerOpts = {
-    Seq("-Xfatal-warnings",
-        //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
-        "-Xcheckinit") ++ scala2_13CompilerLinting
-  }
-
   private val nonScala2_13CompilerOpts = Seq(
     "-Xmax-classfile-name",
     "128",
@@ -108,7 +99,7 @@ object CommonSettings {
   )
 
   //https://docs.scala-lang.org/overviews/compiler-options/index.html
-  def compilerOpts(scalaVersion: String, isTestModule: Boolean): Seq[String] = {
+  def compilerOpts(scalaVersion: String): Seq[String] = {
     Seq(
       "-unchecked",
       "-feature",
@@ -122,10 +113,8 @@ object CommonSettings {
       "-Ypatmat-exhaust-depth",
       "off"
     ) ++ commonCompilerOpts ++ {
-      if (scalaVersion.startsWith("2.13") && !isTestModule) {
+      if (scalaVersion.startsWith("2.13")) {
         scala2_13SourceCompilerOpts
-      } else if (scalaVersion.startsWith("2.13") && isTestModule) {
-        scala2_13TestCompilerOpts
       } else nonScala2_13CompilerOpts
     }
   }
