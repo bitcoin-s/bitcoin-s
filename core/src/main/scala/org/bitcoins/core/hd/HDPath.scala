@@ -4,7 +4,7 @@ import org.bitcoins.crypto.StringFactory
 
 import scala.util.{Failure, Success, Try}
 
-private[bitcoins] trait HDPath extends BIP32Path {
+trait HDPath extends BIP32Path {
 
   /**
     * This type is to give a cleaner return

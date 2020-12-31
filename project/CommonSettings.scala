@@ -82,7 +82,9 @@ object CommonSettings {
       "-Xlint:unused",
       "-Xlint:adapted-args",
       "-Xlint:nullary-unit",
+      "-Xlint:inaccessible",
       "-Xlint:infer-any",
+      "-Xlint:missing-interpolator",
       "-Xlint:eta-sam"
     )
   }
