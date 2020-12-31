@@ -289,6 +289,7 @@ lazy val oracleServer = project
 lazy val serverRoutes = project
   .in(file("app/server-routes"))
   .settings(CommonSettings.prodSettings: _*)
+  .settings(name := "bitcoin-s-server-routes")
   .settings(libraryDependencies ++= Deps.serverRoutes)
   .dependsOn(appCommons, dbCommons)
 

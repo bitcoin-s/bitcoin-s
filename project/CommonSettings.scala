@@ -82,7 +82,8 @@ object CommonSettings {
       "-Xlint:unused",
       "-Xlint:adapted-args",
       "-Xlint:nullary-unit",
-      "-Xlint:infer-any"
+      "-Xlint:infer-any",
+      "-Xlint:eta-sam"
     )
   }
 
