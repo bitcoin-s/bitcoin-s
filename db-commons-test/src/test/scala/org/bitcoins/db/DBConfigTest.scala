@@ -1,15 +1,5 @@
 package org.bitcoins.db
 
-import java.io.{File, IOException}
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{
-  FileVisitResult,
-  Files,
-  Path,
-  SimpleFileVisitor,
-  StandardOpenOption
-}
-
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.config.MainNet
@@ -18,6 +8,11 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.wallet.config.WalletAppConfig
+
+import java.io.{File, IOException}
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file._
+import scala.reflect.io.Directory
 
 class DBConfigTest extends BitcoinSAsyncTest {
 
@@ -119,14 +114,16 @@ class DBConfigTest extends BitcoinSAsyncTest {
           override def visitFile(
               file: Path,
               attrs: BasicFileAttributes): FileVisitResult = {
-            Files.delete(file);
+            val directory = new Directory(file.toFile)
+            directory.deleteRecursively()
             FileVisitResult.CONTINUE
           }
 
           override def postVisitDirectory(
               dir: Path,
               exc: IOException): FileVisitResult = {
-            Files.delete(dir);
+            val directory = new Directory(dir.toFile)
+            directory.deleteRecursively()
             FileVisitResult.CONTINUE
           }
         }
