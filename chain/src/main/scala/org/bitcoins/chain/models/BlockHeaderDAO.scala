@@ -269,7 +269,7 @@ case class BlockHeaderDAO()(implicit
 
   /** Returns the block height of the block with the most work from our database */
   def bestHeight: Future[Int] = {
-    chainTips.map { tips =>
+    getBestChainTips.map { tips =>
       tips.maxByOption(_.chainWork).map(_.height).getOrElse(0)
     }
   }
@@ -301,8 +301,30 @@ case class BlockHeaderDAO()(implicit
     safeDatabase.runVec(aggregate)
   }
 
-  def chainTips: Future[Vector[BlockHeaderDb]] = {
-    logger.debug(s"Getting chain tips from database")
+  /** Retrieves chain tips my finding duplicates at a certain height
+    * within a given range. This indicates there was a contentious chain tip
+    * at some point.
+    *
+    * It's important to note that this query will NOT return the current best chain tip
+    * unless that current chain tips is contentious
+    *
+    * @param lowestHeight the height we will look backwards until. This is inclusive
+    */
+  private def forkedChainTips(
+      lowestHeight: Int): Future[Vector[BlockHeaderDb]] = {
+    val headersQ = table.filter(_.height >= lowestHeight)
+    val headersF = safeDatabase.runVec(headersQ.result)
+    for {
+      headers <- headersF
+      byHeight = headers.groupBy(_.height)
+      //now find instances where we have duplicate headers at a given height
+      //this indicates there was at one point a fork
+      forks = byHeight.filter(_._2.length > 1)
+    } yield forks.flatMap(_._2).toVector
+  }
+
+  /** Returns the block header with the most accumulated work */
+  def getBestChainTips: Future[Vector[BlockHeaderDb]] = {
     val aggregate = {
       maxWorkQuery.flatMap { work =>
         logger.debug(s"Max block work: $work")
@@ -314,7 +336,39 @@ case class BlockHeaderDAO()(implicit
       }
     }
 
-    safeDatabase.runVec(aggregate)
+    safeDatabase
+      .runVec(aggregate)
+  }
+
+  /** Retrieves all possible chainTips from the database. Note this does NOT retrieve
+    * the BEST chain tips. If you need those please call [[getBestChainTips]]. This method
+    * will search backwards [[appConfig.chain.difficultyChangeInterval]] blocks looking
+    * for all forks that we have in our chainstate.
+    *
+    * We will then return all conflicting headers.
+    *
+    * Note:
+    * This method does NOT try and remove headers that are in the best chain. This means
+    * half the returned headers from this method will be in the best chain. To figure out
+    * which headers are in the best chain, you will need to walk backwards from [[getBestChainTips]]
+    * figuring out which headers are a part of the best chain.
+    */
+  def getForkedChainTips: Future[Vector[BlockHeaderDb]] = {
+    val mHeight = maxHeight
+    val lowestHeightF = mHeight.map { h =>
+      val lowest = h - appConfig.chain.difficultyChangeInterval
+      Math.max(lowest, 0)
+    }
+
+    //what to do about tips that are in the best chain?
+    val tipsF = for {
+      lowestHeight <- lowestHeightF
+      result <- forkedChainTips(lowestHeight)
+    } yield {
+      result
+    }
+
+    tipsF
   }
 
   /** Returns competing blockchains that are contained in our BlockHeaderDAO
@@ -328,12 +382,39 @@ case class BlockHeaderDAO()(implicit
     */
   def getBlockchains()(implicit
       ec: ExecutionContext): Future[Vector[Blockchain]] = {
-    val chainTipsF = chainTips
-    chainTipsF.flatMap { tips =>
+    val chainTipsF = getForkedChainTips
+    val bestTipF = getBestChainTips
+    val staleChainsF = chainTipsF.flatMap { tips =>
       val nestedFuture: Vector[Future[Option[Blockchain]]] = tips.map { tip =>
         getBlockchainFrom(tip)
       }
       Future.sequence(nestedFuture).map(_.flatten)
+    }
+
+    val bestChainsF = bestTipF.flatMap { tips =>
+      val nestedFuture: Vector[Future[Option[Blockchain]]] = tips.map { tip =>
+        getBlockchainFrom(tip)
+      }
+      Future.sequence(nestedFuture).map(_.flatten)
+    }
+
+    for {
+      staleChains <- staleChainsF
+      bestChains <- bestChainsF
+      //we need to check the stale chains tips to see if it is contained
+      //in our best chains. If it is, that means the stale chain
+      //is a subchain of a best chain. We need to discard it if
+      //if that is the case to avoid duplicates
+      filtered = staleChains.filterNot { c =>
+        bestChains.exists { best =>
+          best.findAtHeight(c.tip.height) match {
+            case Some(h) => h == c.tip
+            case None    => false
+          }
+        }
+      }
+    } yield {
+      bestChains ++ filtered
     }
   }
 

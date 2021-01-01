@@ -20,10 +20,13 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.chain.ChainUnitTest.createChainHandler
 import org.bitcoins.testkit.chain.fixture._
+import org.bitcoins.testkit.chain.models.{
+  ReorgFixtureBlockHeaderDAO,
+  ReorgFixtureChainApi
+}
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.CachedChainAppConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-
 import org.bitcoins.testkit.util.ScalaTestUtil
 import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
@@ -388,26 +391,39 @@ trait ChainUnitTest
     }
   }
 
-  case class ReorgFixture(
-      chainApi: ChainApi,
-      headerDb1: BlockHeaderDb,
-      headerDb2: BlockHeaderDb,
-      oldBestBlockHeader: BlockHeaderDb) {
-    lazy val header1: BlockHeader = headerDb1.blockHeader
-    lazy val header2: BlockHeader = headerDb2.blockHeader
-  }
-
   /** Builds two competing headers off of the [[ChainHandler.getBestBlockHash best chain tip]] */
   def buildChainHandlerCompetingHeaders(
-      chainHandler: ChainHandler): Future[ReorgFixture] = {
+      chainHandler: ChainHandler): Future[ReorgFixtureChainApi] = {
     for {
       oldBestTip <- chainHandler.getBestBlockHeader()
       (newHeaderB, newHeaderC) = buildCompetingHeaders(oldBestTip)
-      newChainApi <- chainHandler.processHeaders(Vector(newHeaderB, newHeaderC))
+      newChainApi <- chainHandler.processHeader(newHeaderB)
+      newChainApi2 <- newChainApi.processHeader(newHeaderC)
       newHeaderDbB <- newChainApi.getHeader(newHeaderB.hashBE)
-      newHeaderDbC <- newChainApi.getHeader(newHeaderC.hashBE)
+      newHeaderDbC <- newChainApi2.getHeader(newHeaderC.hashBE)
     } yield {
-      ReorgFixture(newChainApi, newHeaderDbB.get, newHeaderDbC.get, oldBestTip)
+      ReorgFixtureChainApi(newChainApi2,
+                           newHeaderDbB.get,
+                           newHeaderDbC.get,
+                           oldBestTip)
+    }
+  }
+
+  /** Builds two competing headers off of [[BlockHeaderDAO.chainTips]]. */
+  def buildBlockHeaderDAOCompetingHeaders(
+      blockHeaderDAO: BlockHeaderDAO): Future[ReorgFixtureBlockHeaderDAO] = {
+    val handler = ChainHandler.fromDatabase(blockHeaderDAO,
+                                            CompactFilterHeaderDAO(),
+                                            CompactFilterDAO())
+    val chainFixtureF = buildChainHandlerCompetingHeaders(handler)
+    for {
+      chainFixture <- chainFixtureF
+    } yield {
+      ReorgFixtureBlockHeaderDAO(blockHeaderDAO = blockHeaderDAO,
+                                 headerDb1 = chainFixture.headerDb1,
+                                 headerDb2 = chainFixture.headerDb2,
+                                 oldBestBlockHeader =
+                                   chainFixture.oldBestBlockHeader)
     }
   }
 }
