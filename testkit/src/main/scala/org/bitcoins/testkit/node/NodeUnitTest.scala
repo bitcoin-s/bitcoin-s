@@ -577,7 +577,10 @@ object NodeUnitTest extends P2PLogger {
                    initialSyncDone = None)
     }
 
-    nodeF.flatMap(_.start()).flatMap(_ => nodeF)
+    nodeF
+      .flatMap(_.start())
+      .flatMap(_.sync())
+      .flatMap(_ => nodeF)
   }
 
 }

@@ -127,6 +127,9 @@ class ChainHandler(
                                           blockchains = blockchains)
       }
 
+      logger.error(
+        s"blockchainUpdates=${blockchainUpdates.map(_.getClass.getSimpleName)}")
+
       val successfullyValidatedHeaders = blockchainUpdates
         .flatMap(_.successfulHeaders)
 

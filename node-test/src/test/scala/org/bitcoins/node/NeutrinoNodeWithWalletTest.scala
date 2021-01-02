@@ -3,7 +3,7 @@ package org.bitcoins.node
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.util.EnvUtil
+import org.bitcoins.core.util.{EnvUtil, FutureUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
@@ -63,9 +63,18 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
   val TestFees: Satoshis = 2230.sats
 
   def nodeCallbacks: NodeCallbacks = {
+    val onBlockHeadersReceived: OnBlockHeadersReceived = { headers =>
+      logger.error(s"header callback=${headers.length}")
+      FutureUtil.unit
+    }
+
     val onBlock: OnBlockReceived = { block =>
       for {
         wallet <- walletF
+        _ = logger.error(
+          s"block callback for header hash=${block.blockHeader.hashBE.hex} tx.length=${block.transactions.length}")
+        _ = block.transactions.map(t =>
+          logger.error(s"tx.txIdBE=${t.txIdBE.hex}"))
         _ <- wallet.processBlock(block)
       } yield ()
     }
@@ -77,6 +86,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     }
 
     NodeCallbacks(
+      onBlockHeadersReceived = Vector(onBlockHeadersReceived),
       onBlockReceived = Vector(onBlock),
       onCompactFiltersReceived = Vector(onCompactFilters)
     )
@@ -95,9 +105,17 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
           expectedAddresses: Int): Future[Boolean] = {
         for {
           confirmedBalance <- wallet.getConfirmedBalance()
+          _ = logger.error(
+            s"confirmedBalance=$confirmedBalance expectedConfirmedAmount=$expectedConfirmedAmount")
           unconfirmedBalance <- wallet.getUnconfirmedBalance()
+          _ = logger.error(
+            s"unconfirmedBalance=$confirmedBalance expectedUnconfirmedAmount=$expectedUnconfirmedAmount")
           addresses <- wallet.listAddresses()
+          _ = logger.error(
+            s"addresses=${addresses.length} expectedAddresses=$expectedAddresses")
           utxos <- wallet.listDefaultAccountUtxos()
+          _ =
+            logger.error(s"utxos=${utxos.length} expectedUtxos=$expectedUtxos")
         } yield {
           // +- fee rate because signatures could vary in size
           (expectedConfirmedAmount === confirmedBalance +- FeeRate.currencyUnit) &&
@@ -128,35 +146,48 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
       for {
         _ <- node.sync()
+        _ = logger.error(
+          s"@@@@@@@@@@@@@@@@@@@@@@@@@Start syncing@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-
+        _ = logger.error(
+          s"@@@@@@@@@@@@@@@@@@@@@@@@@Done syncing@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         // send
         addr <- bitcoind.getNewAddress
-        _ <- wallet.sendToAddress(addr, TestAmount, Some(FeeRate))
-
-        _ <-
+        tx <- wallet.sendToAddress(addr, TestAmount, Some(FeeRate))
+        //??? adding this since sendToAddress doesn't seem to broadcast ????
+        //_ <- bitcoind.sendRawTransaction(tx, 0.0)
+        _ = logger.error(s"Sending txid=${tx.txIdBE} to $addr")
+        //_ = Thread.sleep(5000)
+        hash1 <-
           bitcoind.getNewAddress
             .flatMap(bitcoind.generateToAddress(1, _))
+        _ = logger.error(
+          s"-----------------------1st generate to address $hash1-----------------------")
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-
+        block <- bitcoind.getBlock(hash1.head)
+        _ = logger.error(s"block.tx.length=${block.tx.length}")
         _ <- AsyncUtil.awaitConditionF(condition1)
-
+        _ =
+          logger.error(s"!!!!!!!!!!! Done with condition1 !!!!!!!!!!!!!!!!!!!!")
         // receive
         address <- wallet.getNewAddress()
         txId <- bitcoind.sendToAddress(address, TestAmount)
         expectedTx <- bitcoind.getRawTransactionRaw(txId)
 
-        _ <-
+        hash2 <-
           bitcoind.getNewAddress
             .flatMap(bitcoind.generateToAddress(1, _))
+        _ = logger.error(
+          s"-----------------------2nd generate to address $hash2-----------------------")
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
         _ <- AsyncUtil.awaitConditionF(condition2)
-
+        _ =
+          logger.error(s"!!!!!!!!!!! Done with condition2 !!!!!!!!!!!!!!!!!!!!")
         // assert we got the full tx with witness data
         txs <- wallet.listTransactions()
       } yield assert(txs.exists(_.transaction == expectedTx))
