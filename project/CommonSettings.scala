@@ -41,7 +41,8 @@ object CommonSettings {
     apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
     // scaladoc settings end
     ////
-    scalacOptions in Compile := compilerOpts(scalaVersion.value),
+    scalacOptions in Compile := compilerOpts(scalaVersion = scalaVersion.value),
+    Test / scalacOptions := testCompilerOpts(scalaVersion = scalaVersion.value),
     //remove annoying import unused things in the scala console
     //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
     scalacOptions in (Compile, console) ~= (_ filterNot (s =>
@@ -75,7 +76,23 @@ object CommonSettings {
     )
   }
 
-  private val scala2_13CompilerOpts = Seq("-Xlint:unused", "-Xfatal-warnings")
+  /** Linting options for scalac */
+  private val scala2_13CompilerLinting = {
+    Seq(
+      "-Xlint:unused",
+      "-Xlint:adapted-args",
+      "-Xlint:nullary-unit",
+      "-Xlint:inaccessible",
+      "-Xlint:infer-any",
+      "-Xlint:missing-interpolator",
+      "-Xlint:eta-sam"
+    )
+  }
+
+  /** Compiler options for source code */
+  private val scala2_13SourceCompilerOpts = {
+    Seq("-Xfatal-warnings") ++ scala2_13CompilerLinting
+  }
 
   private val nonScala2_13CompilerOpts = Seq(
     "-Xmax-classfile-name",
@@ -85,10 +102,8 @@ object CommonSettings {
   )
 
   //https://docs.scala-lang.org/overviews/compiler-options/index.html
-  def compilerOpts(scalaVersion: String): Seq[String] =
+  def compilerOpts(scalaVersion: String): Seq[String] = {
     Seq(
-      "-encoding",
-      "UTF-8",
       "-unchecked",
       "-feature",
       "-deprecation",
@@ -101,9 +116,11 @@ object CommonSettings {
       "-Ypatmat-exhaust-depth",
       "off"
     ) ++ commonCompilerOpts ++ {
-      if (scalaVersion.startsWith("2.13")) scala2_13CompilerOpts
-      else nonScala2_13CompilerOpts
+      if (scalaVersion.startsWith("2.13")) {
+        scala2_13SourceCompilerOpts
+      } else nonScala2_13CompilerOpts
     }
+  }
 
   def testCompilerOpts(scalaVersion: String): Seq[String] = {
     commonCompilerOpts ++

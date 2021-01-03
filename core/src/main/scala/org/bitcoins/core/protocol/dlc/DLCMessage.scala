@@ -392,7 +392,7 @@ object DLCMessage {
         val offerPayout = offerContractInfo(msg)
         val acceptPayout = (totalCollateral - offerPayout).satoshis
 
-        builder.+=(msg -> (oracleInfo.sigPoint(msg), offerPayout, acceptPayout))
+        builder.+=((msg, (oracleInfo.sigPoint(msg), offerPayout, acceptPayout)))
       }
 
       builder.result()

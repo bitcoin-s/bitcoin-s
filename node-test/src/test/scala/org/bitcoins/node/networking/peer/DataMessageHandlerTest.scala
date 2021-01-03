@@ -60,7 +60,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
         _ <- dataMessageHandler.handleDataPayload(payload1, sender)
         _ <- dataMessageHandler.handleDataPayload(payload2, sender)
         result <- resultP.future
-      } yield assert(result == (merkleBlock, Vector(tx)))
+      } yield assert(result == ((merkleBlock, Vector(tx))))
   }
 
   it must "verify OnBlockReceived callbacks are executed" in {
