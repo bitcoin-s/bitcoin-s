@@ -8,6 +8,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
@@ -17,7 +18,7 @@ import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait FundWalletUtil {
+trait FundWalletUtil extends BitcoinSLogger {
 
   def fundAccountForWallet(
       amts: Vector[CurrencyUnit],
@@ -69,10 +70,15 @@ trait FundWalletUtil {
     } yield (tx, hashes.head)
 
     val fundedWalletF =
-      txAndHashF.map(txAndHash =>
+      txAndHashF.flatMap(txAndHash =>
         wallet.processTransaction(txAndHash._1, Some(txAndHash._2)))
 
-    fundedWalletF.flatMap(_.map(_.asInstanceOf[Wallet]))
+    for {
+      fundedWallet <- fundedWalletF
+      balance <- fundedWallet.getBalance()
+      confirmedBalance <- fundedWallet.getConfirmedBalance()
+      unconfirmedBalance <- fundedWallet.getUnconfirmedBalance()
+    } yield fundedWallet
   }
 
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */

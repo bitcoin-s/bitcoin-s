@@ -260,7 +260,6 @@ case class DataMessageHandler(
           chainApi
             .getHeader(block.blockHeader.hashBE)
             .flatMap { headerOpt =>
-              logger.info(s"headerOpt=$headerOpt")
               if (headerOpt.isEmpty) {
                 logger.debug("Processing block's header...")
                 for {

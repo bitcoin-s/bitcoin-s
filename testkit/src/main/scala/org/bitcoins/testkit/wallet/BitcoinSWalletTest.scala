@@ -653,13 +653,18 @@ object BitcoinSWalletTest extends WalletLogger {
       _ = require(
         balance == expectedDefaultAmt,
         s"Funding wallet fixture failed to fund the wallet, got balance=$balance expected=$expectedDefaultAmt")
-
       account1Balance <- fundedWallet.getBalance(hdAccount1)
       _ = require(
         account1Balance == expectedAccount1Amt,
         s"Funding wallet fixture failed to fund account 1, " +
           s"got balance=$hdAccount1 expected=$expectedAccount1Amt"
       )
+
+      totalBalance <- fundedWallet.getBalance()
+
+      _ = require(
+        totalBalance == expectedDefaultAmt,
+        s"Total balance was not expected amount. Got=${totalBalance} expected=$expectedDefaultAmt")
 
     } yield pair
   }
