@@ -73,12 +73,7 @@ trait FundWalletUtil extends BitcoinSLogger {
       txAndHashF.flatMap(txAndHash =>
         wallet.processTransaction(txAndHash._1, Some(txAndHash._2)))
 
-    for {
-      fundedWallet <- fundedWalletF
-      balance <- fundedWallet.getBalance()
-      confirmedBalance <- fundedWallet.getConfirmedBalance()
-      unconfirmedBalance <- fundedWallet.getUnconfirmedBalance()
-    } yield fundedWallet
+    fundedWalletF
   }
 
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
