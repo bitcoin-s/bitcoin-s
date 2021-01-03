@@ -577,10 +577,14 @@ object NodeUnitTest extends P2PLogger {
                    initialSyncDone = None)
     }
 
-    nodeF
-      .flatMap(_.start())
-      .flatMap(_.sync())
-      .flatMap(_ => nodeF)
+    for {
+      node <- nodeF
+      started <- node.start()
+      _ <- node.sync()
+      _ <- NodeTestUtil.awaitSync(node, bitcoind)
+      _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
+      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+    } yield started
   }
 
 }

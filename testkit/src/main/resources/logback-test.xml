@@ -20,7 +20,7 @@
         </encoder>
     </appender>
 
-    <root level="OFF">
+    <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
@@ -51,16 +51,16 @@
     <!-- ╚═════════════════╝ -->
 
     <!-- See incoming message names and the peer it's sent from -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="INFO"/>
 
     <!-- Inspect handling of headers and inventory messages  -->
-    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
 
     <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.P2PClientActor" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
 
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
@@ -68,9 +68,9 @@
 
     <!-- See queries received by chain handler, as well as result of  -->
     <!-- connecting new block headers to chain -->
-    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="WARN"/>
+    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="INFO"/>
 
-    <logger name="org.bitcoins.chain.validation" level="WARN"/>
+    <logger name="org.bitcoins.chain.validation" level="INFO"/>
 
     <!-- ╔═════════════════════╗ -->
     <!-- ║   Wallet module     ║ -->

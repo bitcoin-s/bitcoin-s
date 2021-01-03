@@ -21,6 +21,7 @@ import org.bitcoins.wallet.Wallet
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration._
 
 class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
@@ -140,19 +141,17 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         // send
         addr <- bitcoind.getNewAddress
         _ <- wallet.sendToAddress(addr, TestAmount, Some(FeeRate))
-        //??? adding this since sendToAddress doesn't seem to broadcast ????
-        //_ <- bitcoind.sendRawTransaction(tx, 0.0)
+
         _ <- wallet.getConfirmedBalance()
         _ <- wallet.getUnconfirmedBalance()
         _ <- wallet.getBalance()
-        hash1 <-
+        _ <-
           bitcoind.getNewAddress
             .flatMap(bitcoind.generateToAddress(1, _))
         _ <- wallet.getConfirmedBalance()
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-        _ <- bitcoind.getBlock(hash1.head)
-        _ <- AsyncUtil.awaitConditionF(condition1)
+        _ <- AsyncUtil.awaitConditionF(condition1, interval = 500.millis)
         // receive
         address <- wallet.getNewAddress()
         txId <- bitcoind.sendToAddress(address, TestAmount)
@@ -164,7 +163,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-        _ <- AsyncUtil.awaitConditionF(condition2)
+        _ <- AsyncUtil.awaitConditionF(condition2, interval = 250.millis)
         // assert we got the full tx with witness data
         txs <- wallet.listTransactions()
       } yield assert(txs.exists(_.transaction == expectedTx))

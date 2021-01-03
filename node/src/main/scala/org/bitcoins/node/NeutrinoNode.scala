@@ -30,7 +30,7 @@ case class NeutrinoNode(
 
   override val peer: Peer = nodePeer
 
-  override def start(): Future[Node] = {
+  override def start(): Future[NeutrinoNode] = {
     val res = for {
       node <- super.start()
       chainApi <- chainApiFromDb()
@@ -39,7 +39,7 @@ case class NeutrinoNode(
       _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(
         stopHash = bestHash.flip)
     } yield {
-      node
+      node.asInstanceOf[NeutrinoNode]
     }
 
     res.failed.foreach(logger.error("Cannot start Neutrino node", _))
