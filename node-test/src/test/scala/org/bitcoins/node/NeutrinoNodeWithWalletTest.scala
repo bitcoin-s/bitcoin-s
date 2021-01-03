@@ -192,10 +192,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       val output = TransactionOutput(sats, spk)
 
       for {
-        _ <- node.sync()
-        _ <- NodeTestUtil.awaitSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-
         // start watching
         _ <- wallet.watchScriptPubKey(spk)
 
@@ -238,10 +234,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         utxos <- wallet.listDefaultAccountUtxos()
         _ = assert(addresses.size == 6)
         _ = assert(utxos.size == 3)
-
-        _ <- node.sync()
-        _ <- NodeTestUtil.awaitSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
         address <- wallet.getNewAddress()
         _ <-
