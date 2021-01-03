@@ -137,10 +137,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       }
 
       for {
-        _ <- node.sync()
-        _ <- NodeTestUtil.awaitSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
         // send
         addr <- bitcoind.getNewAddress
         _ <- wallet.sendToAddress(addr, TestAmount, Some(FeeRate))
