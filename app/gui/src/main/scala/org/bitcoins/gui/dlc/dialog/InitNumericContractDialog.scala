@@ -186,7 +186,7 @@ object InitNumericContractDialog {
             ) {
               val outcome = BigDecimal(outcomeTF.text.value.toDouble)
               val level = roundingLevelTF.text.value.toLong
-              Some(outcome, level)
+              Some((outcome, level))
             } else {
               None
             }

@@ -56,7 +56,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
   }
 
   def callbacks: NodeCallbacks = {
-    NodeCallbacks(onBlockReceived = Vector(blockCallback))
+    NodeCallbacks(onBlockReceived = Vector(blockCallback(_)))
   }
 
   behavior of "NeutrinoNode"

@@ -115,10 +115,18 @@ abstract class SyncUtil extends BitcoinSLogger {
         }
 
         val batchSize = 25
-        val batchedExecutedF = FutureUtil.batchExecute(elements = blockHashes,
-                                                       f = f,
-                                                       init = Vector.empty,
-                                                       batchSize = batchSize)
+        val batchedExecutedF = {
+          for {
+            wallet <- walletF
+            updatedWallet <-
+              FutureUtil.batchExecute[DoubleSha256Digest, Wallet](
+                elements = blockHashes,
+                f = f,
+                init = wallet,
+                batchSize = batchSize)
+          } yield updatedWallet
+
+        }
 
         batchedExecutedF.map { _ =>
           logger.info(

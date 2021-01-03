@@ -172,7 +172,7 @@ object BaseTransaction extends Factory[BaseTransaction] {
 
   def unapply(tx: NonWitnessTransaction): Option[
     (Int32, Seq[TransactionInput], Seq[TransactionOutput], UInt32)] = {
-    Some(tx.version, tx.inputs, tx.outputs, tx.lockTime)
+    Some((tx.version, tx.inputs, tx.outputs, tx.lockTime))
   }
 }
 
