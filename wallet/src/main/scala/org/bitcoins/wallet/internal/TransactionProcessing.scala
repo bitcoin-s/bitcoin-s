@@ -58,8 +58,15 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       res <- resF
 
       hash = block.blockHeader.hashBE
-      height <- chainQueryApi.getBlockHeight(hash)
-      _ <- stateDescriptorDAO.updateSyncHeight(hash, height.get)
+      heightOpt <- chainQueryApi.getBlockHeight(hash)
+      _ <- heightOpt match {
+        case Some(height) =>
+          stateDescriptorDAO.updateSyncHeight(hash, height)
+        case None =>
+          logger.warn(
+            s"Could not update wallet sync height for block ${hash.hex}, could not get block height")
+          FutureUtil.unit
+      }
     } yield res
 
     f.onComplete(failure =>
