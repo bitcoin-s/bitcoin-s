@@ -10,8 +10,8 @@ import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import java.io.{File, IOException}
-import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file._
+import java.nio.file.attribute.BasicFileAttributes
 import scala.reflect.io.Directory
 
 class DBConfigTest extends BitcoinSAsyncTest {
@@ -28,31 +28,24 @@ class DBConfigTest extends BitcoinSAsyncTest {
       val chainConfig = ChainAppConfig(dataDir)
       val nodeConfig = NodeAppConfig(dataDir)
       val walletConfig = WalletAppConfig(dataDir)
-      val assertF = for {
-        _ <- chainConfig.start()
-        _ <- nodeConfig.start()
-        _ <- walletConfig.start()
-      } yield {
-        val slickChainConfig = chainConfig.slickDbConfig
-        assert(slickChainConfig.profileName == "slick.jdbc.SQLiteProfile")
-        assert(slickChainConfig.config.hasPath("db.numThreads"))
-        assert(slickChainConfig.config.getInt("db.numThreads") == 1)
-        assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
 
-        val slickNodeConfig = nodeConfig.slickDbConfig
-        assert(slickNodeConfig.profileName == "slick.jdbc.SQLiteProfile")
-        assert(slickNodeConfig.config.hasPath("db.numThreads"))
-        assert(slickNodeConfig.config.getInt("db.numThreads") == 1)
-        assert(slickNodeConfig.config.getInt("db.queueSize") == 5000)
+      val slickChainConfig = chainConfig.slickDbConfig
+      assert(slickChainConfig.profileName == "slick.jdbc.SQLiteProfile")
+      assert(slickChainConfig.config.hasPath("db.numThreads"))
+      assert(slickChainConfig.config.getInt("db.numThreads") == 1)
+      assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
 
-        val slickWalletConfig = walletConfig.slickDbConfig
-        assert(slickWalletConfig.profileName == "slick.jdbc.SQLiteProfile")
-        assert(slickWalletConfig.config.hasPath("db.numThreads"))
-        assert(slickWalletConfig.config.getInt("db.numThreads") == 1)
-        assert(slickWalletConfig.config.getInt("db.queueSize") == 5000)
-      }
+      val slickNodeConfig = nodeConfig.slickDbConfig
+      assert(slickNodeConfig.profileName == "slick.jdbc.SQLiteProfile")
+      assert(slickNodeConfig.config.hasPath("db.numThreads"))
+      assert(slickNodeConfig.config.getInt("db.numThreads") == 1)
+      assert(slickNodeConfig.config.getInt("db.queueSize") == 5000)
 
-      assertF
+      val slickWalletConfig = walletConfig.slickDbConfig
+      assert(slickWalletConfig.profileName == "slick.jdbc.SQLiteProfile")
+      assert(slickWalletConfig.config.hasPath("db.numThreads"))
+      assert(slickWalletConfig.config.getInt("db.numThreads") == 1)
+      assert(slickWalletConfig.config.getInt("db.queueSize") == 5000)
     }
   }
 
