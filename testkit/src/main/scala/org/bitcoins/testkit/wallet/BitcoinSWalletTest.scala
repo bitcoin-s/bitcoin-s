@@ -15,6 +15,11 @@ import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.node.{
+  NodeCallbacks,
+  OnBlockReceived,
+  OnCompactFiltersReceived
+}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
@@ -616,6 +621,8 @@ object BitcoinSWalletTest extends WalletLogger {
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi,
         bip39PasswordOpt = bip39PasswordOpt)
+      _ = config.nodeConf.addCallbacks(
+        BitcoinSWalletTest.createNodeCallbacksForWallet(wallet))
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
@@ -646,27 +653,7 @@ object BitcoinSWalletTest extends WalletLogger {
       )
     } yield fundedAcct1
 
-    //sanity check to make sure we have money
-    for {
-      fundedWallet <- fundedAccount1WalletF
-      balance <- fundedWallet.getBalance(defaultAccount)
-      _ = require(
-        balance == expectedDefaultAmt,
-        s"Funding wallet fixture failed to fund the wallet, got balance=$balance expected=$expectedDefaultAmt")
-      account1Balance <- fundedWallet.getBalance(hdAccount1)
-      _ = require(
-        account1Balance == expectedAccount1Amt,
-        s"Funding wallet fixture failed to fund account 1, " +
-          s"got balance=$hdAccount1 expected=$expectedAccount1Amt"
-      )
-
-      totalBalance <- fundedWallet.getBalance()
-
-      _ = require(
-        totalBalance == expectedDefaultAmt,
-        s"Total balance was not expected amount. Got=${totalBalance} expected=$expectedDefaultAmt")
-
-    } yield pair
+    fundedAccount1WalletF.map(_ => pair)
   }
 
   def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(implicit
@@ -689,6 +676,26 @@ object BitcoinSWalletTest extends WalletLogger {
       _ <- wallet.walletConfig.dropAll()
       _ <- wallet.stop()
     } yield ()
+  }
+
+  /** Constructs callbacks for the wallet from the node to process blocks and compact filters */
+  def createNodeCallbacksForWallet(wallet: Wallet)(implicit
+      ec: ExecutionContext): NodeCallbacks = {
+    val onBlock: OnBlockReceived = { block =>
+      for {
+        _ <- wallet.processBlock(block)
+      } yield ()
+    }
+    val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
+      for {
+        _ <- wallet.processCompactFilters(blockFilters)
+      } yield ()
+    }
+
+    NodeCallbacks(
+      onBlockReceived = Vector(onBlock),
+      onCompactFiltersReceived = Vector(onCompactFilters)
+    )
   }
 
 }

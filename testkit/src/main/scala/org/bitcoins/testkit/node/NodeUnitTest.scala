@@ -307,10 +307,10 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
       build = () =>
         NodeUnitTest
           .createNeutrinoNodeFundedWalletBitcoind(
-            nodeCallbacks,
-            bip39PasswordOpt,
-            versionOpt,
-            walletCallbacks)(system, appConfig),
+            nodeCallbacks = nodeCallbacks,
+            bip39PasswordOpt = bip39PasswordOpt,
+            versionOpt = versionOpt,
+            walletCallbacks = walletCallbacks)(system, appConfig),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
         _: NodeFundedWalletBitcoind)(system, appConfig)
     )(test)
@@ -451,8 +451,10 @@ object NodeUnitTest extends P2PLogger {
         chainQueryApi = node,
         bip39PasswordOpt = bip39PasswordOpt,
         walletCallbacks = walletCallbacks)
+      startedNode <- node.start()
+      syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
     } yield {
-      NeutrinoNodeFundedWalletBitcoind(node = node,
+      NeutrinoNodeFundedWalletBitcoind(node = syncedNode,
                                        wallet = fundedWallet.wallet,
                                        bitcoindRpc = fundedWallet.bitcoind,
                                        bip39PasswordOpt = bip39PasswordOpt)
@@ -474,7 +476,7 @@ object NodeUnitTest extends P2PLogger {
     val destroyedF = for {
       _ <- destroyNode(fundedWalletBitcoind.node)
       _ <- BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
-      _ <- appConfig.walletConf.stop()
+      _ <- appConfig.stop()
     } yield ()
 
     destroyedF
@@ -577,14 +579,17 @@ object NodeUnitTest extends P2PLogger {
                    initialSyncDone = None)
     }
 
+    nodeF
+  }
+
+  def syncNeutrinoNode(node: NeutrinoNode, bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem): Future[NeutrinoNode] = {
+    import system.dispatcher
     for {
-      node <- nodeF
-      started <- node.start()
       _ <- node.sync()
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-    } yield started
+    } yield node
   }
-
 }

@@ -21,7 +21,6 @@ import org.bitcoins.wallet.Wallet
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.{Future, Promise}
-import scala.concurrent.duration._
 
 class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
@@ -40,7 +39,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     } else {
       withNeutrinoNodeFundedWalletBitcoind(
         test = test,
-        nodeCallbacks = nodeCallbacks,
+        nodeCallbacks = NodeCallbacks.empty,
         bip39PasswordOpt = getBIP39PasswordOpt(),
         versionOpt = Some(BitcoindVersion.Experimental)
       )
@@ -48,7 +47,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
   }
 
   private var walletP: Promise[Wallet] = Promise()
-  private var walletF: Future[Wallet] = walletP.future
+  //private var walletF: Future[Wallet] = walletP.future
 
   after {
     //reset assertion after a test runs, because we
@@ -56,38 +55,16 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     //limitations, we can't currently modify callbacks
     //after a NeutrinoNode is constructed :-(
     walletP = Promise()
-    walletF = walletP.future
+    //walletF = walletP.future
   }
 
   val TestAmount = 1.bitcoin
   val FeeRate = SatoshisPerByte(10.sats)
   val TestFees: Satoshis = 2230.sats
 
-  def nodeCallbacks: NodeCallbacks = {
-    val onBlock: OnBlockReceived = { block =>
-      for {
-        wallet <- walletF
-        _ <- wallet.processBlock(block)
-      } yield ()
-    }
-    val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
-      for {
-        wallet <- walletF
-        _ <- wallet.processCompactFilters(blockFilters)
-      } yield ()
-    }
-
-    NodeCallbacks(
-      onBlockReceived = Vector(onBlock),
-      onCompactFiltersReceived = Vector(onCompactFilters)
-    )
-  }
-
   it must "receive information about received payments" taggedAs UsesExperimentalBitcoind in {
     param =>
       val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
-
-      walletP.success(wallet)
 
       def condition(
           expectedConfirmedAmount: CurrencyUnit,
@@ -151,7 +128,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- wallet.getConfirmedBalance()
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-        _ <- AsyncUtil.awaitConditionF(condition1, interval = 500.millis)
+        _ <- AsyncUtil.awaitConditionF(condition1)
         // receive
         address <- wallet.getNewAddress()
         txId <- bitcoind.sendToAddress(address, TestAmount)
@@ -163,7 +140,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-        _ <- AsyncUtil.awaitConditionF(condition2, interval = 250.millis)
+        _ <- AsyncUtil.awaitConditionF(condition2)
         // assert we got the full tx with witness data
         txs <- wallet.listTransactions()
       } yield assert(txs.exists(_.transaction == expectedTx))
@@ -208,58 +185,58 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       } yield assert(txs.exists(_.txIdBE == txSent.txIdBE))
   }
 
-  it must "rescan information about received payments" taggedAs UsesExperimentalBitcoind in {
-    param =>
-      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+  /*    it must "rescan information about received payments" taggedAs UsesExperimentalBitcoind in {
+      param =>
+        val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
-      walletP.success(wallet)
+        walletP.success(wallet)
 
-      def condition(): Future[Boolean] = {
-        for {
-          balance <- wallet.getBalance()
-          addresses <- wallet.listAddresses()
-          utxos <- wallet.listUtxos()
-        } yield {
-          balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount &&
-          utxos.size == 4 &&
-          addresses.map(_.scriptPubKey.hex).sorted == utxos
-            .map(_.output.scriptPubKey.hex)
-            .sorted
+        def condition(): Future[Boolean] = {
+          for {
+            balance <- wallet.getBalance()
+            addresses <- wallet.listAddresses()
+            utxos <- wallet.listUtxos()
+          } yield {
+            balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount &&
+            utxos.size == 4 &&
+            addresses.map(_.scriptPubKey.hex).sorted == utxos
+              .map(_.output.scriptPubKey.hex)
+              .sorted
+          }
         }
-      }
 
-      for {
-        addresses <- wallet.listAddresses()
-        utxos <- wallet.listDefaultAccountUtxos()
-        _ = assert(addresses.size == 6)
-        _ = assert(utxos.size == 3)
+        for {
+          addresses <- wallet.listAddresses()
+          utxos <- wallet.listDefaultAccountUtxos()
+          _ = assert(addresses.size == 6)
+          _ = assert(utxos.size == 3)
 
-        address <- wallet.getNewAddress()
-        _ <-
-          bitcoind
-            .sendToAddress(address, TestAmount)
+          address <- wallet.getNewAddress()
+          _ <-
+            bitcoind
+              .sendToAddress(address, TestAmount)
 
-        addresses <- wallet.listAddresses()
-        utxos <- wallet.listDefaultAccountUtxos()
-        _ = assert(addresses.size == 7)
-        _ = assert(utxos.size == 3)
+          addresses <- wallet.listAddresses()
+          utxos <- wallet.listDefaultAccountUtxos()
+          _ = assert(addresses.size == 7)
+          _ = assert(utxos.size == 3)
 
-        _ <- wallet.clearAllUtxosAndAddresses()
+          _ <- wallet.clearAllUtxosAndAddresses()
 
-        addresses <- wallet.listAddresses()
-        utxos <- wallet.listDefaultAccountUtxos()
-        _ = assert(addresses.isEmpty)
-        _ = assert(utxos.isEmpty)
+          addresses <- wallet.listAddresses()
+          utxos <- wallet.listDefaultAccountUtxos()
+          _ = assert(addresses.isEmpty)
+          _ = assert(utxos.isEmpty)
 
-        _ <-
-          bitcoind.getNewAddress
-            .flatMap(bitcoind.generateToAddress(1, _))
-        _ <- NodeTestUtil.awaitSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+          _ <-
+            bitcoind.getNewAddress
+              .flatMap(bitcoind.generateToAddress(1, _))
+          _ <- NodeTestUtil.awaitSync(node, bitcoind)
+          _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
-        _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
+          _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
 
-        _ <- AsyncUtil.awaitConditionF(condition)
-      } yield succeed
-  }
+          _ <- AsyncUtil.awaitConditionF(condition)
+        } yield succeed
+    }*/
 }

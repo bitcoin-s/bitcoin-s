@@ -69,11 +69,7 @@ trait FundWalletUtil extends BitcoinSLogger {
       hashes <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
     } yield (tx, hashes.head)
 
-    val fundedWalletF =
-      txAndHashF.flatMap(txAndHash =>
-        wallet.processTransaction(txAndHash._1, Some(txAndHash._2)))
-
-    fundedWalletF
+    txAndHashF.map(_ => wallet)
   }
 
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
