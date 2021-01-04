@@ -9,7 +9,7 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
 
   behavior of "AttestationVerification"
 
-  val signingVersion = SigningVersion.latest
+  val signingVersion = SigningVersion.BasicSHA256SigningVersion
 
   val enumTlv = OracleAnnouncementV0TLV.fromHex(
     """fdd824a350a5f6214e14574bc925a9d5d211961a8e4e9ed8d3cb8dbc7c65d8da767152759e7d8d7646ded432717c8a4616a8fac714

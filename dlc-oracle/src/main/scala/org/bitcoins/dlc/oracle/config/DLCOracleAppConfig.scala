@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.hd.HDPurpose
-import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
+import org.bitcoins.core.protocol.tlv.EnumEventDescriptorV0TLV
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
@@ -65,7 +65,7 @@ case class DLCOracleAppConfig(
       if (migrations == 2 || migrations == 3) { // For V2/V3 migrations
         logger.debug(s"Doing V2/V3 Migration")
 
-        val dummyMigrationTLV = EventDescriptorTLV("fdd8060800010564756d6d79")
+        val dummyMigrationTLV = EnumEventDescriptorV0TLV.dummy
 
         val eventDAO = EventDAO()(ec, appConfig)
         for {
