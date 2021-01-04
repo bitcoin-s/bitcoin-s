@@ -174,6 +174,12 @@ object WalletStorage extends KeyManagerLogger {
     }
   }
 
+  case class RawEncryptedSeed(
+      rawIv: String,
+      rawCipherText: String,
+      rawSalt: String,
+      rawCreationTime: Long)
+
   /** Reads the raw encrypted mnemonic from json,
     * performing no decryption
     */
@@ -182,16 +188,17 @@ object WalletStorage extends KeyManagerLogger {
     import MnemonicJsonKeys._
     import ReadMnemonicError._
 
-    val readJsonTupleEither: Either[
-      ReadMnemonicError,
-      (String, String, String, Long)] = {
+    val readJsonTupleEither: Either[ReadMnemonicError, RawEncryptedSeed] = {
       logger.trace(s"Read encrypted mnemonic JSON: $json")
       Try {
         val creationTimeNum = parseCreationTime(json)
         val ivString = json(IV).str
         val cipherTextString = json(CIPHER_TEXT).str
         val rawSaltString = json(SALT).str
-        (ivString, cipherTextString, rawSaltString, creationTimeNum)
+        RawEncryptedSeed(ivString,
+                         cipherTextString,
+                         rawSaltString,
+                         creationTimeNum)
       } match {
         case Success(value) => Right(value)
         case Failure(exception) =>
@@ -200,7 +207,7 @@ object WalletStorage extends KeyManagerLogger {
     }
 
     readJsonTupleEither.flatMap {
-      case (rawIv, rawCipherText, rawSalt, rawCreationTime) =>
+      case RawEncryptedSeed(rawIv, rawCipherText, rawSalt, rawCreationTime) =>
         val encryptedOpt = for {
           iv <- ByteVector.fromHex(rawIv).map(AesIV.fromValidBytes)
           cipherText <- ByteVector.fromHex(rawCipherText)
