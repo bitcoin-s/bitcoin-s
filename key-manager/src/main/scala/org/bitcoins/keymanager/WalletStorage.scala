@@ -291,6 +291,33 @@ object WalletStorage extends KeyManagerLogger {
     }
   }
 
+  private def decryptSeed(
+      encrypted: EncryptedSeed,
+      passphrase: AesPassword): Either[
+    ReadMnemonicError,
+    DecryptedSeedState] = {
+    // attempt to decrypt as mnemonic
+    encrypted.toMnemonic(passphrase) match {
+      case Failure(_) =>
+        // if failed, attempt to decrypt as xprv
+        encrypted.toExtPrivKey(passphrase) match {
+          case Failure(exc) =>
+            logger.error(s"Error when decrypting $encrypted: $exc")
+            Left(ReadMnemonicError.DecryptionError)
+          case Success(xprv) =>
+            logger.debug(s"Decrypted $encrypted successfully")
+            val decryptedExtPrivKey =
+              DecryptedExtPrivKey(xprv, encrypted.creationTime)
+            Right(decryptedExtPrivKey)
+        }
+      case Success(mnemonic) =>
+        logger.debug(s"Decrypted $encrypted successfully")
+        val decryptedMnemonic =
+          DecryptedMnemonic(mnemonic, encrypted.creationTime)
+        Right(decryptedMnemonic)
+    }
+  }
+
   /**
     * Reads the wallet mnemonic from disk and tries to parse and
     * decrypt it
@@ -312,24 +339,7 @@ object WalletStorage extends KeyManagerLogger {
           passphraseOpt match {
             case Some(passphrase) =>
               readEncryptedMnemonicFromJson(json).flatMap { encrypted =>
-                encrypted.toMnemonic(passphrase) match {
-                  case Failure(_) =>
-                    encrypted.toExtPrivKey(passphrase) match {
-                      case Failure(exc) =>
-                        logger.error(s"Error when decrypting $encrypted: $exc")
-                        Left(ReadMnemonicError.DecryptionError)
-                      case Success(xprv) =>
-                        logger.debug(s"Decrypted $encrypted successfully")
-                        val decryptedExtPrivKey =
-                          DecryptedExtPrivKey(xprv, encrypted.creationTime)
-                        Right(decryptedExtPrivKey)
-                    }
-                  case Success(mnemonic) =>
-                    logger.debug(s"Decrypted $encrypted successfully")
-                    val decryptedMnemonic =
-                      DecryptedMnemonic(mnemonic, encrypted.creationTime)
-                    Right(decryptedMnemonic)
-                }
+                decryptSeed(encrypted, passphrase)
               }
             case None => Left(DecryptionError)
           }
