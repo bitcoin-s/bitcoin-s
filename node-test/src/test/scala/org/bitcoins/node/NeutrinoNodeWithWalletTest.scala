@@ -16,11 +16,9 @@ import org.bitcoins.testkit.node.{
   NodeTestUtil,
   NodeUnitTest
 }
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.Wallet
 import org.scalatest.FutureOutcome
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
@@ -42,20 +40,8 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         nodeCallbacks = NodeCallbacks.empty,
         bip39PasswordOpt = getBIP39PasswordOpt(),
         versionOpt = Some(BitcoindVersion.Experimental)
-      )
+      )(system, config)
     }
-  }
-
-  private var walletP: Promise[Wallet] = Promise()
-  //private var walletF: Future[Wallet] = walletP.future
-
-  after {
-    //reset assertion after a test runs, because we
-    //are doing mutation to work around our callback
-    //limitations, we can't currently modify callbacks
-    //after a NeutrinoNode is constructed :-(
-    walletP = Promise()
-    //walletF = walletP.future
   }
 
   val TestAmount = 1.bitcoin
@@ -149,8 +135,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
   it must "watch an arbitrary SPK" taggedAs UsesExperimentalBitcoind in {
     param =>
       val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
-
-      walletP.success(wallet)
 
       def generateBlock() =
         for {

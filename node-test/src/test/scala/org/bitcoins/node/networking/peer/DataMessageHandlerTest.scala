@@ -1,5 +1,6 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.p2p._
@@ -8,6 +9,7 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node._
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest
@@ -26,6 +28,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withSpvNodeConnectedToBitcoindV19(test)
+
+  private val cachedConfig = config
+
+  implicit private lazy val nodeAppConfig: NodeAppConfig = cachedConfig.nodeConf
+
+  implicit protected lazy val chainConfig: ChainAppConfig =
+    cachedConfig.chainConf
 
   it must "verify OnMerkleBlock callbacks are executed" in {
     param: FixtureParam =>

@@ -14,6 +14,7 @@ import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
@@ -67,9 +68,9 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
   /** Wallet config with data directory set to user temp directory */
   implicit protected def config: BitcoinSAppConfig
 
-  implicit protected lazy val chainConfig: ChainAppConfig = config.chainConf
+  //implicit protected lazy val chainConfig: ChainAppConfig = config.chainConf
 
-  implicit protected lazy val nodeConfig: NodeAppConfig = config.nodeConf
+  //implicit protected lazy val nodeConfig: NodeAppConfig = config.nodeConf
 
   implicit override lazy val np: NetworkParameters = config.nodeConf.network
 
@@ -192,7 +193,8 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
       build = nodeBuilder,
       destroy = (_: Node) => {
         for {
-          _ <- ChainUnitTest.destroyAllTables()
+          _ <- ChainUnitTest.destroyAllTables()(appConfig.chainConf,
+                                                system.dispatcher)
           _ <- appConfig.stop()
         } yield ()
       }
@@ -302,7 +304,6 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
       walletCallbacks: WalletCallbacks = WalletCallbacks.empty)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-
     makeDependentFixture(
       build = () =>
         NodeUnitTest
@@ -465,7 +466,7 @@ object NodeUnitTest extends P2PLogger {
       fundedWalletBitcoind: NodeFundedWalletBitcoind)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
-    import system.dispatcher
+    /*    import system.dispatcher
     val walletWithBitcoind = {
       WalletWithBitcoindRpc(fundedWalletBitcoind.wallet,
                             fundedWalletBitcoind.bitcoindRpc)
@@ -479,8 +480,8 @@ object NodeUnitTest extends P2PLogger {
       _ <- appConfig.stop()
     } yield ()
 
-    destroyedF
-
+    destroyedF*/
+    FutureUtil.unit
   }
 
   def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(implicit

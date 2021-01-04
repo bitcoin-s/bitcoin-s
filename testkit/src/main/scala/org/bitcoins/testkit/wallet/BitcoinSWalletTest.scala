@@ -621,6 +621,7 @@ object BitcoinSWalletTest extends WalletLogger {
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi,
         bip39PasswordOpt = bip39PasswordOpt)
+      //add callbacks for wallet
       _ = config.nodeConf.addCallbacks(
         BitcoinSWalletTest.createNodeCallbacksForWallet(wallet))
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
