@@ -141,19 +141,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
         case Left(err) => err
       }
       errorType match {
-        case KeyManagerUnlockError.MnemonicNotFound => fail(MnemonicNotFound)
-        case KeyManagerUnlockError.BadPassword      =>
-          // If wallet is unencrypted then we shouldn't get a bad password error
-          wallet.walletConfig.aesPasswordOpt match {
-            case Some(_) => succeed
-            case None    => fail()
-          }
-        case KeyManagerUnlockError.JsonParsingError(message) =>
-          // If wallet is encrypted then we shouldn't get a json parsing error
-          wallet.walletConfig.aesPasswordOpt match {
-            case Some(_) => fail(message)
-            case None    => succeed
-          }
+        case KeyManagerUnlockError.MnemonicNotFound          => fail(MnemonicNotFound)
+        case KeyManagerUnlockError.BadPassword               => succeed
+        case KeyManagerUnlockError.JsonParsingError(message) => fail(message)
       }
   }
 
