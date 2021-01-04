@@ -5,6 +5,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
@@ -103,21 +104,16 @@ case class DataMessageHandler(
                   filterCount <- chainApi.getFilterCount()
                 } yield (filterHeaderCount, filterCount + 1)
             }
-          newSyncing <-
+          newSyncing =
             if (batchSizeFull) {
-              logger.info(
-                s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
-              for {
-                _ <- sendNextGetCompactFilterCommand(peerMsgSender,
-                                                     filter.blockHash.flip)
-              } yield syncing
+              syncing
             } else {
               val syncing = newFilterHeight < newFilterHeaderHeight
               if (!syncing) {
                 logger.info(s"We are synced")
                 Try(initialSyncDone.map(_.success(Done)))
               }
-              Future.successful(syncing)
+              syncing
             }
           // If we are not syncing or our filter batch is full, process the filters
           filterBatch = currentFilterBatch :+ filter
@@ -135,7 +131,13 @@ case class DataMessageHandler(
                   blockFilters)
               } yield (Vector.empty, newChainApi)
             } else Future.successful((filterBatch, chainApi))
-
+          _ <-
+            if (batchSizeFull) {
+              logger.info(
+                s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
+              sendNextGetCompactFilterCommand(peerMsgSender,
+                                              filter.blockHash.flip)
+            } else FutureUtil.unit
         } yield {
           this.copy(
             chainApi = newChainApi,
