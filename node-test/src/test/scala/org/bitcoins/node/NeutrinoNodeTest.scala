@@ -31,7 +31,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withNeutrinoNodeFundedWalletBitcoind(test,
                                          getBIP39PasswordOpt(),
-                                         Some(BitcoindVersion.Experimental))
+                                         Some(BitcoindVersion.V21))
 
   private var assertionP: Promise[Boolean] = Promise()
   after {
