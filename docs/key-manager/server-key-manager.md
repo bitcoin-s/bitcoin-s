@@ -1,5 +1,6 @@
 ---
-id: server-key-manager title: Server Key Manager
+id: server-key-manager
+title: Server Key Manager
 ---
 
 The [Application Server](../applications/server.md) supports a Neutrino node and wallet. For its wallet, it uses

@@ -32,6 +32,9 @@
       "applications/wallet": {
         "title": "Wallet"
       },
+      "bips": {
+        "title": "Supported BIPs"
+      },
       "chain/chain-query-api": {
         "title": "Chain Query API"
       },
@@ -94,6 +97,9 @@
       },
       "key-manager/key-manager": {
         "title": "Key Manager"
+      },
+      "key-manager/server-key-manager": {
+        "title": "Server Key Manager"
       },
       "node/node-api": {
         "title": "Node API"
