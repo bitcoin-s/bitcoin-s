@@ -21,6 +21,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto.{
@@ -54,6 +55,9 @@ object ConsoleCli {
       opt[Int]("rpcport")
         .action((port, conf) => conf.copy(rpcPort = port))
         .text(s"The port to send our rpc request to on the server"),
+      opt[Unit]("version")
+        .action((_, conf) => conf.copy(command = GetVersion))
+        .hidden(),
       help('h', "help").text("Display this help message and exit"),
       note(sys.props("line.separator") + "Commands:"),
       note(sys.props("line.separator") + "===Blockchain ==="),
@@ -1604,6 +1608,10 @@ object ConsoleCli {
       case GetSignatures(tlv) =>
         RequestParam("getsignatures", Seq(up.writeJs(tlv)))
 
+      case GetVersion =>
+        // skip sending to server and just return version number of cli
+        return Success(EnvUtil.getVersion)
+
       case NoCommand => ???
     }
 
@@ -1707,6 +1715,10 @@ object CliCommand {
   trait Broadcastable {
     def noBroadcast: Boolean
   }
+
+  sealed trait ServerlessCliCommand extends CliCommand
+
+  case object GetVersion extends ServerlessCliCommand
 
   case object GetInfo extends CliCommand
 
