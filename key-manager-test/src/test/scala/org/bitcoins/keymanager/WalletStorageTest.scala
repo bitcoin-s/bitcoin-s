@@ -497,6 +497,71 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     }
   }
 
+  it must "fail to read an unencrypted xprv with a password" in { walletConf =>
+    val badJson =
+      """
+        | {
+        |   "xprv":"xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7",
+        |   "creationTime":1601917137
+        | }
+    """.stripMargin
+    val seedPath = getSeedPath(walletConf)
+    Files.createDirectories(seedPath.getParent)
+    Files.write(seedPath, badJson.getBytes())
+
+    val read =
+      WalletStorage.decryptSeedFromDisk(seedPath, passphrase)
+
+    read match {
+      case Left(DecryptionError)      => succeed
+      case res @ (Left(_) | Right(_)) => fail(res.toString)
+    }
+  }
+
+  it must "fail to read an unencrypted xprv  with a improperly formatted xprv" in {
+    walletConf =>
+      val badJson =
+        """
+          | {
+          |   "xprv":"BROKENxprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7",
+          |   "creationTime":1601917137
+          | }
+    """.stripMargin
+      val seedPath = getSeedPath(walletConf)
+      Files.createDirectories(seedPath.getParent)
+      Files.write(seedPath, badJson.getBytes())
+
+      val read =
+        WalletStorage.decryptSeedFromDisk(seedPath, None)
+
+      read match {
+        case Left(JsonParsingError(_))  => succeed
+        case res @ (Left(_) | Right(_)) => fail(res.toString)
+      }
+  }
+
+  it must "fail to read an unencrypted xprv with a improperly formatted creation time" in {
+    walletConf =>
+      val badJson =
+        """
+          | {
+          |   "xprv":"xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7",
+          |   "creationTime":
+          | }
+    """.stripMargin
+      val seedPath = getSeedPath(walletConf)
+      Files.createDirectories(seedPath.getParent)
+      Files.write(seedPath, badJson.getBytes())
+
+      val read =
+        WalletStorage.decryptSeedFromDisk(seedPath, None)
+
+      read match {
+        case Left(JsonParsingError(_))  => succeed
+        case res @ (Left(_) | Right(_)) => fail(res.toString)
+      }
+  }
+
   it must "fail to read an unencrypted seed that doesn't exist" in {
     walletConf =>
       require(!walletConf.seedExists())
