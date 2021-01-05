@@ -240,4 +240,18 @@ class Bech32Test extends BitcoinSUnitTest {
         .checkDataValidity("bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf")
         .isFailure)
   }
+
+  it must "fail to read a segwitV1 bech32 address" in {
+    assert(
+      Bech32Address
+        .fromStringT(
+          "tb1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7")
+        .isFailure)
+
+    assert(
+      Bech32Address
+        .fromStringT(
+          "bc1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7")
+        .isFailure)
+  }
 }

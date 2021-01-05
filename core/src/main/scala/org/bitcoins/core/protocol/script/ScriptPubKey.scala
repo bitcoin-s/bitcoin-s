@@ -1227,6 +1227,16 @@ object WitnessScriptPubKeyV0 {
     WitnessScriptPubKey.isWitnessScriptPubKey(asm) && asm.headOption.contains(
       OP_0)
   }
+
+  def apply(asm: Seq[ScriptToken]): WitnessScriptPubKeyV0 = fromAsm(asm)
+
+  def fromAsm(asm: Seq[ScriptToken]): WitnessScriptPubKeyV0 =
+    asm match {
+      case _ if P2WPKHWitnessSPKV0.isValid(asm) =>
+        P2WPKHWitnessSPKV0.fromAsm(asm)
+      case _ if P2WSHWitnessSPKV0.isValid(asm) =>
+        P2WSHWitnessSPKV0.fromAsm(asm)
+    }
 }
 
 /**
