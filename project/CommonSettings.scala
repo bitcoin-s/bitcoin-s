@@ -123,10 +123,11 @@ object CommonSettings {
   }
 
   def testCompilerOpts(scalaVersion: String): Seq[String] = {
-    commonCompilerOpts ++
+    (commonCompilerOpts ++
       //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
       Vector("-Xcheckinit") ++
-      compilerOpts(scalaVersion)
+      compilerOpts(scalaVersion))
+      .filterNot(_ == "-Xfatal-warnings")
   }
 
   lazy val testSettings: Seq[Setting[_]] = Seq(
