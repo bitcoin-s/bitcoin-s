@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.{Future, Promise}
 
@@ -73,15 +74,15 @@ case class SpvNode(
     sentFilterAddF.map(_ => this)
   }
 
-  override def start(): Future[Node] = {
+  override def start(): Future[SpvNode] = {
     for {
       node <- super.start()
       peerMsgSender <- peerMsgSenderF
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => isConnected)
       _ <- peerMsgSender.sendFilterLoadMessage(bloomFilter)
     } yield {
       logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
-      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
-      node
+      node.asInstanceOf[SpvNode]
     }
   }
 

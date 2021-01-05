@@ -269,10 +269,13 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
         bitcoind <-
           BitcoinSFixture
             .createBitcoindWithFunds(None)
-        wallet <- createWalletWithBitcoindCallbacks(bitcoind = bitcoind,
-                                                    bip39PasswordOpt =
-                                                      bip39PasswordOpt)
-        fundedWallet <- fundWalletWithBitcoind(wallet)
+        walletWithBitcoind <- createWalletWithBitcoindCallbacks(
+          bitcoind = bitcoind,
+          bip39PasswordOpt = bip39PasswordOpt)
+        fundedWallet <- fundWalletWithBitcoind(walletWithBitcoind)
+        _ <-
+          SyncUtil.syncWallet(wallet = fundedWallet.wallet, bitcoind = bitcoind)
+        _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
       } yield fundedWallet
     }
 
@@ -290,6 +293,9 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
             .map(_.asInstanceOf[BitcoindV19RpcClient])
         wallet <- createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
         fundedWallet <- fundWalletWithBitcoind(wallet)
+        _ <-
+          SyncUtil.syncWallet(wallet = fundedWallet.wallet, bitcoind = bitcoind)
+        _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
       } yield {
         WalletWithBitcoindV19(fundedWallet.wallet, bitcoind)
       }
@@ -713,7 +719,9 @@ object BitcoinSWalletTest extends WalletLogger {
   def awaitWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
       config: BitcoinSAppConfig,
       system: ActorSystem): Future[Unit] = {
-    AsyncUtil.retryUntilSatisfiedF(() => isSameWalletBalances(fundedWallet))
+    AsyncUtil.retryUntilSatisfiedF(conditionF =
+                                     () => isSameWalletBalances(fundedWallet),
+                                   interval = 1.seconds)
   }
 
   private def isSameWalletBalances(fundedWallet: WalletWithBitcoind)(implicit

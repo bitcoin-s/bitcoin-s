@@ -176,10 +176,10 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
     val nodeBuilder: () => Future[SpvNode] = { () =>
       require(appConfig.nodeType == NodeType.SpvNode)
       for {
-        node <- NodeUnitTest.createSpvNode(
-          emptyPeer,
-          NodeCallbacks.empty,
-          start = false)(system, appConfig.chainConf, appConfig.nodeConf)
+        node <- NodeUnitTest.createSpvNode(emptyPeer, NodeCallbacks.empty)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
         _ <- appConfig.start()
       } yield node
     }
@@ -419,11 +419,16 @@ object NodeUnitTest extends P2PLogger {
         node,
         bip39PasswordOpt,
         walletCallbacks)
+      walletBloomFilter <- fundedWallet.wallet.getBloomFilter()
+      withBloomFilter = node.setBloomFilter(walletBloomFilter)
+      _ = logger.info(s"@!Before start!@")
+      startedNodeWithBloomFilter <- withBloomFilter.start()
+      _ <- syncSpvNode(startedNodeWithBloomFilter, bitcoind)
       //callbacks are executed asynchronously, which is how we fund the wallet
       //so we need to wait until the wallet balances are correct
       _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
     } yield {
-      SpvNodeFundedWalletBitcoind(node = node,
+      SpvNodeFundedWalletBitcoind(node = startedNodeWithBloomFilter,
                                   wallet = fundedWallet.wallet,
                                   bitcoindRpc = fundedWallet.bitcoind,
                                   bip39PasswordOpt)
@@ -511,13 +516,10 @@ object NodeUnitTest extends P2PLogger {
     Peer(id = None, socket = socket)
   }
 
-  /** Creates a spv node peered with the given bitcoind client, this method
-    * also calls [[org.bitcoins.node.Node.start() start]] to start the node
+  /** Creates a spv node peered with the given bitcoind client
+    * This does NOT start the spv node
     */
-  def createSpvNode(
-      peer: Peer,
-      callbacks: NodeCallbacks,
-      start: Boolean = true)(implicit
+  def createSpvNode(peer: Peer, callbacks: NodeCallbacks)(implicit
       system: ActorSystem,
       chainAppConfig: ChainAppConfig,
       nodeAppConfig: NodeAppConfig): Future[SpvNode] = {
@@ -544,9 +546,7 @@ object NodeUnitTest extends P2PLogger {
       ).setBloomFilter(NodeTestUtil.emptyBloomFilter)
     }
 
-    if (start)
-      nodeF.flatMap(_.start()).flatMap(_ => nodeF)
-    else nodeF
+    nodeF
 
   }
 
@@ -591,6 +591,15 @@ object NodeUnitTest extends P2PLogger {
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+    } yield node
+  }
+
+  def syncSpvNode(node: SpvNode, bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem): Future[SpvNode] = {
+    import system.dispatcher
+    for {
+      _ <- node.sync()
+      _ <- NodeTestUtil.awaitSync(node, bitcoind)
     } yield node
   }
 }
