@@ -72,9 +72,39 @@ object SigningVersion extends StringFactory[SigningVersion] {
     }
   }
 
-  val latest: SigningVersion = BasicSHA256SigningVersion
+  /** V0 DLC Oracle singing algo, specified in https://github.com/discreetlogcontracts/dlcspecs/pull/113 */
+  final case object DLCOracleV0SigningVersion extends SigningVersion {
 
-  val all: Vector[SigningVersion] = Vector(Mock, BasicSHA256SigningVersion)
+    override def calcNonceTweak(
+        nonce: SchnorrNonce,
+        eventName: String): ByteVector = {
+      val bytes = nonce.bytes ++ CryptoUtil.serializeForHash(eventName)
+
+      CryptoUtil.taggedSha256(bytes, "DLC/oracle/nonce/v0").bytes
+    }
+
+    override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
+      CryptoUtil
+        .taggedSha256(eventTLV.bytes, "DLC/oracle/announcement/v0")
+        .bytes
+
+    override def calcOutcomeHash(
+        descriptor: EventDescriptorTLV,
+        byteVector: ByteVector): ByteVector = {
+      descriptor match {
+        case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV |
+            _: DigitDecompositionEventDescriptorV0TLV =>
+          CryptoUtil
+            .taggedSha256(byteVector, "DLC/oracle/attestation/v0")
+            .bytes
+      }
+    }
+  }
+
+  val latest: SigningVersion = DLCOracleV0SigningVersion
+
+  val all: Vector[SigningVersion] =
+    Vector(Mock, BasicSHA256SigningVersion, DLCOracleV0SigningVersion)
 
   override def fromStringOpt(str: String): Option[SigningVersion] = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase)
