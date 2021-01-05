@@ -16,6 +16,7 @@ import org.bitcoins.testkit.node.{
   NodeTestUtil,
   NodeUnitTest
 }
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -169,58 +170,56 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       } yield assert(txs.exists(_.txIdBE == txSent.txIdBE))
   }
 
-  /*    it must "rescan information about received payments" taggedAs UsesExperimentalBitcoind in {
-      param =>
-        val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+  it must "rescan information about received payments" taggedAs UsesExperimentalBitcoind in {
+    param =>
+      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
-        walletP.success(wallet)
-
-        def condition(): Future[Boolean] = {
-          for {
-            balance <- wallet.getBalance()
-            addresses <- wallet.listAddresses()
-            utxos <- wallet.listUtxos()
-          } yield {
-            balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount &&
-            utxos.size == 4 &&
-            addresses.map(_.scriptPubKey.hex).sorted == utxos
-              .map(_.output.scriptPubKey.hex)
-              .sorted
-          }
-        }
-
+      def condition(): Future[Boolean] = {
         for {
+          balance <- wallet.getBalance()
           addresses <- wallet.listAddresses()
-          utxos <- wallet.listDefaultAccountUtxos()
-          _ = assert(addresses.size == 6)
-          _ = assert(utxos.size == 3)
+          utxos <- wallet.listUtxos()
+        } yield {
+          balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount &&
+          utxos.size == 4 &&
+          addresses.map(_.scriptPubKey.hex).sorted == utxos
+            .map(_.output.scriptPubKey.hex)
+            .sorted
+        }
+      }
 
-          address <- wallet.getNewAddress()
-          _ <-
-            bitcoind
-              .sendToAddress(address, TestAmount)
+      for {
+        addresses <- wallet.listAddresses()
+        utxos <- wallet.listDefaultAccountUtxos()
+        _ = assert(addresses.size == 6)
+        _ = assert(utxos.size == 3)
 
-          addresses <- wallet.listAddresses()
-          utxos <- wallet.listDefaultAccountUtxos()
-          _ = assert(addresses.size == 7)
-          _ = assert(utxos.size == 3)
+        address <- wallet.getNewAddress()
+        _ <-
+          bitcoind
+            .sendToAddress(address, TestAmount)
 
-          _ <- wallet.clearAllUtxosAndAddresses()
+        addresses <- wallet.listAddresses()
+        utxos <- wallet.listDefaultAccountUtxos()
+        _ = assert(addresses.size == 7)
+        _ = assert(utxos.size == 3)
 
-          addresses <- wallet.listAddresses()
-          utxos <- wallet.listDefaultAccountUtxos()
-          _ = assert(addresses.isEmpty)
-          _ = assert(utxos.isEmpty)
+        _ <- wallet.clearAllUtxosAndAddresses()
 
-          _ <-
-            bitcoind.getNewAddress
-              .flatMap(bitcoind.generateToAddress(1, _))
-          _ <- NodeTestUtil.awaitSync(node, bitcoind)
-          _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+        addresses <- wallet.listAddresses()
+        utxos <- wallet.listDefaultAccountUtxos()
+        _ = assert(addresses.isEmpty)
+        _ = assert(utxos.isEmpty)
 
-          _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
+        _ <-
+          bitcoind.getNewAddress
+            .flatMap(bitcoind.generateToAddress(1, _))
+        _ <- NodeTestUtil.awaitSync(node, bitcoind)
+        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
-          _ <- AsyncUtil.awaitConditionF(condition)
-        } yield succeed
-    }*/
+        _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
+
+        _ <- AsyncUtil.awaitConditionF(condition)
+      } yield succeed
+  }
 }

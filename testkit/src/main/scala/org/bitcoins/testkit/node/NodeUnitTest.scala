@@ -14,7 +14,6 @@ import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
@@ -67,10 +66,6 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   /** Wallet config with data directory set to user temp directory */
   implicit protected def config: BitcoinSAppConfig
-
-  //implicit protected lazy val chainConfig: ChainAppConfig = config.chainConf
-
-  //implicit protected lazy val nodeConfig: NodeAppConfig = config.nodeConf
 
   implicit override lazy val np: NetworkParameters = config.nodeConf.network
 
@@ -424,6 +419,9 @@ object NodeUnitTest extends P2PLogger {
         node,
         bip39PasswordOpt,
         walletCallbacks)
+      //callbacks are executed asynchronously, which is how we fund the wallet
+      //so we need to wait until the wallet balances are correct
+      _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
     } yield {
       SpvNodeFundedWalletBitcoind(node = node,
                                   wallet = fundedWallet.wallet,
@@ -454,6 +452,9 @@ object NodeUnitTest extends P2PLogger {
         walletCallbacks = walletCallbacks)
       startedNode <- node.start()
       syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
+      //callbacks are executed asynchronously, which is how we fund the wallet
+      //so we need to wait until the wallet balances are correct
+      _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
     } yield {
       NeutrinoNodeFundedWalletBitcoind(node = syncedNode,
                                        wallet = fundedWallet.wallet,
@@ -466,7 +467,7 @@ object NodeUnitTest extends P2PLogger {
       fundedWalletBitcoind: NodeFundedWalletBitcoind)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
-    /*    import system.dispatcher
+    import system.dispatcher
     val walletWithBitcoind = {
       WalletWithBitcoindRpc(fundedWalletBitcoind.wallet,
                             fundedWalletBitcoind.bitcoindRpc)
@@ -480,8 +481,7 @@ object NodeUnitTest extends P2PLogger {
       _ <- appConfig.stop()
     } yield ()
 
-    destroyedF*/
-    FutureUtil.unit
+    destroyedF
   }
 
   def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(implicit

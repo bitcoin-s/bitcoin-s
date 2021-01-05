@@ -22,6 +22,7 @@ import org.bitcoins.node.{
 }
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.Implicits.GeneratorOps
@@ -606,6 +607,13 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield funded
   }
 
+  /** Funds a wallet with bitcoind, this method adds [[BitcoinSWalletTest.createNodeCallbacksForWallet()]]
+    * which processes filters/blocks that can be used to fund the wallet.
+    *
+    * It's important to note that this does NOT synchronize the wallet with a chain state.
+    * This should be done by the caller of this method. A useful method to help you with that
+    * in neutrino node cases is [[BitcoinSWalletTest.awaitWalletBalances]]
+    */
   def fundedWalletAndBitcoind(
       bitcoindRpcClient: BitcoindRpcClient,
       nodeApi: NodeApi,
@@ -622,8 +630,8 @@ object BitcoinSWalletTest extends WalletLogger {
         chainQueryApi = chainQueryApi,
         bip39PasswordOpt = bip39PasswordOpt)
       //add callbacks for wallet
-      _ = config.nodeConf.addCallbacks(
-        BitcoinSWalletTest.createNodeCallbacksForWallet(wallet))
+      nodeCallbacks = BitcoinSWalletTest.createNodeCallbacksForWallet(wallet)
+      _ = config.nodeConf.addCallbacks(nodeCallbacks)
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
@@ -697,6 +705,34 @@ object BitcoinSWalletTest extends WalletLogger {
       onBlockReceived = Vector(onBlock),
       onCompactFiltersReceived = Vector(onCompactFilters)
     )
+  }
+
+  /** Makes sure our wallet is fully funded with the default amounts specified in
+    * [[BitcoinSWalletTest]]. This will future won't be completed until balances satisfy [[isSameWalletBalances()]]
+    */
+  def awaitWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
+      config: BitcoinSAppConfig,
+      system: ActorSystem): Future[Unit] = {
+    AsyncUtil.retryUntilSatisfiedF(() => isSameWalletBalances(fundedWallet))
+  }
+
+  private def isSameWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
+      config: BitcoinSAppConfig,
+      system: ActorSystem): Future[Boolean] = {
+    import system.dispatcher
+    val defaultAccount = config.walletConf.defaultAccount
+    val hdAccount1 = WalletTestUtil.getHdAccount1(config.walletConf)
+    val expectedDefaultAmt = BitcoinSWalletTest.expectedDefaultAmt
+    val expectedAccount1Amt = BitcoinSWalletTest.expectedAccount1Amt
+    val defaultBalanceF = fundedWallet.wallet.getBalance(defaultAccount)
+    val account1BalanceF = fundedWallet.wallet.getBalance(hdAccount1)
+    for {
+      balance <- defaultBalanceF
+      account1Balance <- account1BalanceF
+    } yield {
+      balance == expectedDefaultAmt &&
+      account1Balance == expectedAccount1Amt
+    }
   }
 
 }
