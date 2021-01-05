@@ -3,7 +3,7 @@ package org.bitcoins.server.routes
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config._
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, EnvUtil}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.safePathToString
 
@@ -107,6 +107,8 @@ trait BitcoinSRunner extends BitcoinSLogger {
       }
       datadir.resolve(lastDirname)
     }
+
+    logger.info(s"version=${EnvUtil.getVersion}")
 
     // Properly set log location
     System.setProperty("bitcoins.log.location",
