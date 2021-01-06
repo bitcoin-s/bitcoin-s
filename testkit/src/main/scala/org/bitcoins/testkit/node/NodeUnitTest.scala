@@ -391,6 +391,7 @@ object NodeUnitTest extends P2PLogger {
       _ <- destroyNode(node)
       _ <- ChainUnitTest.destroyBitcoind(bitcoind)
       _ <- appConfig.stop()
+      _ = cleanTables(appConfig)
     } yield {
       logger.debug(s"Done with teardown of node connected with bitcoind!")
       ()
@@ -485,6 +486,7 @@ object NodeUnitTest extends P2PLogger {
       _ <- destroyNode(fundedWalletBitcoind.node)
       _ <- BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
       _ <- appConfig.stop()
+      _ = cleanTables(appConfig)
     } yield ()
 
     destroyedF
@@ -602,5 +604,18 @@ object NodeUnitTest extends P2PLogger {
       _ <- node.sync()
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
     } yield node
+  }
+
+  /**
+    * This is needed for postgres, we do not drop tables in between individual tests with postgres
+    * rather an entire test suite shares the same postgres database.
+    * therefore, we need to clean the database after each test, so that migrations can be applied during
+    * the setup phase for the next test.
+    * @param appConfig
+    */
+  private def cleanTables(appConfig: BitcoinSAppConfig): Unit = {
+    appConfig.nodeConf.clean()
+    appConfig.walletConf.clean()
+    appConfig.chainConf.clean()
   }
 }
