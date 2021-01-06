@@ -35,11 +35,9 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
       val callback: OnMerkleBlockReceived = {
         (merkle: MerkleBlock, txs: Vector[Transaction]) =>
-          {
-            Future {
-              resultP.success((merkle, txs))
-              ()
-            }
+          Future {
+            resultP.success((merkle, txs))
+            ()
           }
       }
 
@@ -55,8 +53,9 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload2 = TransactionMessage(tx)
 
         callbacks = NodeCallbacks.onMerkleBlockReceived(callback)
+        _ = nodeConfig.addCallbacks(callbacks)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi, callbacks)
+        dataMessageHandler = DataMessageHandler(genesisChainApi)
         _ <- dataMessageHandler.handleDataPayload(payload1, sender)
         _ <- dataMessageHandler.handleDataPayload(payload2, sender)
         result <- resultP.future
@@ -84,8 +83,9 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload = BlockMessage(block)
 
         callbacks = NodeCallbacks.onBlockReceived(callback)
+        _ = nodeConfig.addCallbacks(callbacks)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi, callbacks)
+        dataMessageHandler = DataMessageHandler(genesisChainApi)
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == block)
@@ -113,8 +113,9 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload = HeadersMessage(CompactSizeUInt.one, Vector(header))
 
         callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
+        _ = nodeConfig.addCallbacks(callbacks)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi, callbacks)
+        dataMessageHandler = DataMessageHandler(genesisChainApi)
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == Vector(header))
@@ -128,11 +129,9 @@ class DataMessageHandlerTest extends NodeUnitTest {
         Promise()
       val callback: OnCompactFiltersReceived = {
         (filters: Vector[(DoubleSha256Digest, GolombFilter)]) =>
-          {
-            Future {
-              resultP.success(filters)
-              ()
-            }
+          Future {
+            resultP.success(filters)
+            ()
           }
       }
       for {
@@ -145,8 +144,9 @@ class DataMessageHandlerTest extends NodeUnitTest {
           CompactFilterMessage(FilterType.Basic, hash.flip, filter.filter.bytes)
 
         callbacks = NodeCallbacks.onCompactFilterReceived(callback)
+        _ = nodeConfig.addCallbacks(callbacks)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi, callbacks)
+        dataMessageHandler = DataMessageHandler(genesisChainApi)
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))

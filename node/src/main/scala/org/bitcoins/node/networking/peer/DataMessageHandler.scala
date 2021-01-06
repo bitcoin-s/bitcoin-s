@@ -9,7 +9,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.bitcoins.node.{NodeCallbacks, NodeType, P2PLogger}
+import org.bitcoins.node.{NodeType, P2PLogger}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
@@ -23,7 +23,6 @@ import scala.util.Try
   */
 case class DataMessageHandler(
     chainApi: ChainApi,
-    callbacks: NodeCallbacks,
     initialSyncDone: Option[Promise[Done]] = None,
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     filterHeaderHeightOpt: Option[Int] = None,
@@ -126,9 +125,10 @@ case class DataMessageHandler(
               logger.debug(s"Processing ${filterBatch.size} filters")
               for {
                 newChainApi <- chainApi.processFilters(filterBatch)
-                _ <- callbacks.executeOnCompactFiltersReceivedCallbacks(
-                  logger,
-                  blockFilters)
+                _ <-
+                  appConfig.nodeCallbacks
+                    .executeOnCompactFiltersReceivedCallbacks(logger,
+                                                              blockFilters)
               } yield (Vector.empty, newChainApi)
             } else Future.successful((filterBatch, chainApi))
           _ <-
@@ -245,7 +245,9 @@ case class DataMessageHandler(
         for {
           newApi <- chainApiF
           newSyncing <- getHeadersF
-          _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(logger, headers)
+          _ <- appConfig.nodeCallbacks.executeOnBlockHeadersReceivedCallbacks(
+            logger,
+            headers)
         } yield {
           this.copy(chainApi = newApi, syncing = newSyncing)
         }
@@ -262,9 +264,11 @@ case class DataMessageHandler(
                 logger.debug("Processing block's header...")
                 for {
                   processedApi <- chainApi.processHeader(block.blockHeader)
-                  _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(
-                    logger,
-                    Vector(block.blockHeader))
+                  _ <-
+                    appConfig.nodeCallbacks
+                      .executeOnBlockHeadersReceivedCallbacks(
+                        logger,
+                        Vector(block.blockHeader))
                 } yield processedApi
               } else Future.successful(chainApi)
             }
@@ -273,24 +277,25 @@ case class DataMessageHandler(
         for {
           newApi <- newApiF
           _ <-
-            callbacks
+            appConfig.nodeCallbacks
               .executeOnBlockReceivedCallbacks(logger, block)
         } yield {
           this.copy(chainApi = newApi)
         }
       case TransactionMessage(tx) =>
-        MerkleBuffers.putTx(tx, callbacks).flatMap { belongsToMerkle =>
-          if (belongsToMerkle) {
-            logger.trace(
-              s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
-            Future.successful(this)
-          } else {
-            logger.trace(
-              s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
-            callbacks
-              .executeOnTxReceivedCallbacks(logger, tx)
-              .map(_ => this)
-          }
+        MerkleBuffers.putTx(tx, appConfig.nodeCallbacks).flatMap {
+          belongsToMerkle =>
+            if (belongsToMerkle) {
+              logger.trace(
+                s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
+              Future.successful(this)
+            } else {
+              logger.trace(
+                s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
+              appConfig.nodeCallbacks
+                .executeOnTxReceivedCallbacks(logger, tx)
+                .map(_ => this)
+            }
         }
       case MerkleBlockMessage(merkleBlock) =>
         MerkleBuffers.putMerkle(merkleBlock)
