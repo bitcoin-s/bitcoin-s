@@ -18,7 +18,8 @@ import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node.{
   NodeCallbacks,
   OnBlockReceived,
-  OnCompactFiltersReceived
+  OnCompactFiltersReceived,
+  OnMerkleBlockReceived
 }
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
@@ -636,7 +637,8 @@ object BitcoinSWalletTest extends WalletLogger {
         chainQueryApi = chainQueryApi,
         bip39PasswordOpt = bip39PasswordOpt)
       //add callbacks for wallet
-      nodeCallbacks = BitcoinSWalletTest.createNodeCallbacksForWallet(wallet)
+      nodeCallbacks =
+        BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(wallet)
       _ = config.nodeConf.addCallbacks(nodeCallbacks)
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- fundWalletWithBitcoind(withBitcoind)
@@ -694,7 +696,7 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   /** Constructs callbacks for the wallet from the node to process blocks and compact filters */
-  def createNodeCallbacksForWallet(wallet: Wallet)(implicit
+  def createNeutrinoNodeCallbacksForWallet(wallet: Wallet)(implicit
       ec: ExecutionContext): NodeCallbacks = {
     val onBlock: OnBlockReceived = { block =>
       for {
@@ -711,6 +713,19 @@ object BitcoinSWalletTest extends WalletLogger {
       onBlockReceived = Vector(onBlock),
       onCompactFiltersReceived = Vector(onCompactFilters)
     )
+  }
+
+  /** Registers a callback to handle merkle blocks given to us by a spv node */
+  def createSpvNodeCallbacksForWallet(wallet: Wallet)(implicit
+      ec: ExecutionContext): NodeCallbacks = {
+    val onMerkleBlockReceived: OnMerkleBlockReceived = {
+      case (merkleBlock, txs) =>
+        for {
+          _ <- wallet.processTransactions(txs,
+                                          Some(merkleBlock.blockHeader.hashBE))
+        } yield ()
+    }
+    NodeCallbacks(onMerkleBlockReceived = Vector(onMerkleBlockReceived))
   }
 
   /** Makes sure our wallet is fully funded with the default amounts specified in

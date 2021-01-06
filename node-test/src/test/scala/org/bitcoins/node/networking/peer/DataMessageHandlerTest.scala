@@ -121,10 +121,16 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
         payload = HeadersMessage(CompactSizeUInt.one, Vector(header))
 
+<<<<<<< HEAD
         callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
         _ = nodeConfig.addCallbacks(callbacks)
 
         dataMessageHandler = DataMessageHandler(genesisChainApi)
+=======
+        nodeCallbacks = NodeCallbacks.onBlockHeadersReceived(callback)
+        _ = nodeAppConfig.addCallbacks(nodeCallbacks)
+        dataMessageHandler = DataMessageHandler(genesisChainApi, nodeCallbacks)
+>>>>>>> Get all tests passing again
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == Vector(header))
@@ -152,10 +158,16 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload =
           CompactFilterMessage(FilterType.Basic, hash.flip, filter.filter.bytes)
 
+<<<<<<< HEAD
         callbacks = NodeCallbacks.onCompactFilterReceived(callback)
         _ = nodeConfig.addCallbacks(callbacks)
 
         dataMessageHandler = DataMessageHandler(genesisChainApi)
+=======
+        nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
+        _ = nodeAppConfig.addCallbacks(nodeCallbacks)
+        dataMessageHandler = DataMessageHandler(genesisChainApi, nodeCallbacks)
+>>>>>>> Get all tests passing again
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))

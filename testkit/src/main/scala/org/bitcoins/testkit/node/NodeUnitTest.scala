@@ -211,6 +211,8 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
             system,
             appConfig.chainConf,
             appConfig.nodeConf)
+          started <- node.start()
+          _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
         } yield SpvNodeConnectedWithBitcoind(node, bitcoind)
     }
 
@@ -235,6 +237,8 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
         node <- NodeUnitTest.createSpvNode(
           createPeer(bitcoind),
           NodeCallbacks.empty)(system, appConfig.chainConf, appConfig.nodeConf)
+        started <- node.start()
+        _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
       } yield SpvNodeConnectedWithBitcoindV19(node, bitcoind)
     }
 
@@ -419,9 +423,11 @@ object NodeUnitTest extends P2PLogger {
         node,
         bip39PasswordOpt,
         walletCallbacks)
+      spvCallbacks =
+        BitcoinSWalletTest.createSpvNodeCallbacksForWallet(fundedWallet.wallet)
+      _ = appConfig.nodeConf.addCallbacks(spvCallbacks)
       walletBloomFilter <- fundedWallet.wallet.getBloomFilter()
       withBloomFilter = node.setBloomFilter(walletBloomFilter)
-      _ = logger.info(s"@!Before start!@")
       startedNodeWithBloomFilter <- withBloomFilter.start()
       _ <- syncSpvNode(startedNodeWithBloomFilter, bitcoind)
       //callbacks are executed asynchronously, which is how we fund the wallet
