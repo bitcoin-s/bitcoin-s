@@ -177,7 +177,7 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
           system,
           appConfig.chainConf,
           appConfig.nodeConf)
-        _ <- appConfig.start()
+
       } yield node
     }
 
@@ -390,8 +390,8 @@ object NodeUnitTest extends P2PLogger {
     val resultF = for {
       _ <- destroyNode(node)
       _ <- ChainUnitTest.destroyBitcoind(bitcoind)
-      _ <- appConfig.stop()
       _ = cleanTables(appConfig)
+      _ <- appConfig.stop()
     } yield {
       logger.debug(s"Done with teardown of node connected with bitcoind!")
       ()
@@ -485,8 +485,8 @@ object NodeUnitTest extends P2PLogger {
     val destroyedF = for {
       _ <- destroyNode(fundedWalletBitcoind.node)
       _ <- BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
-      _ <- appConfig.stop()
       _ = cleanTables(appConfig)
+      _ <- appConfig.stop()
     } yield ()
 
     destroyedF
@@ -535,6 +535,8 @@ object NodeUnitTest extends P2PLogger {
     }
     val chainApiF = for {
       _ <- checkConfigF
+      _ = chainAppConfig.migrate()
+      _ = nodeAppConfig.start()
       chainHandler <- ChainUnitTest.createChainHandler()
     } yield chainHandler
     val nodeF = for {
@@ -615,7 +617,7 @@ object NodeUnitTest extends P2PLogger {
     */
   private def cleanTables(appConfig: BitcoinSAppConfig): Unit = {
     appConfig.nodeConf.clean()
-    appConfig.walletConf.clean()
+    //appConfig.walletConf.clean()
     appConfig.chainConf.clean()
   }
 }
