@@ -8,7 +8,6 @@ import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
-import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -172,7 +171,7 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
     val probe = TestProbe()
     val remote = peer.socket
     val peerMessageReceiverF =
-      PeerMessageReceiver.preConnection(peer, NodeCallbacks.empty, None)
+      PeerMessageReceiver.preConnection(peer, None)
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>

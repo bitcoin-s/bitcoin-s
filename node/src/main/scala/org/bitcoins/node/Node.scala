@@ -76,7 +76,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       val peerMsgRecv: PeerMessageReceiver =
         PeerMessageReceiver.newReceiver(chainApi = chainApi,
                                         peer = peer,
-                                        callbacks = nodeCallbacks,
                                         initialSyncDone = initialSyncDone)
       val p2p = P2PClient(context = system,
                           peer = peer,

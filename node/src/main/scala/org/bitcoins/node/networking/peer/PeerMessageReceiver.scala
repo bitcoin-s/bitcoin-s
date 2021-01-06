@@ -20,7 +20,7 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
   Normal,
   Preconnection
 }
-import org.bitcoins.node.{NodeCallbacks, NodeType, P2PLogger}
+import org.bitcoins.node.{NodeType, P2PLogger}
 
 import scala.concurrent.{Future, Promise}
 
@@ -34,8 +34,7 @@ import scala.concurrent.{Future, Promise}
 class PeerMessageReceiver(
     dataMessageHandler: DataMessageHandler,
     val state: PeerMessageReceiverState,
-    peer: Peer,
-    callbacks: NodeCallbacks
+    peer: Peer
 )(implicit
     ref: ActorRefFactory,
     nodeAppConfig: NodeAppConfig,
@@ -139,7 +138,7 @@ class PeerMessageReceiver(
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
     dataMessageHandler.handleDataPayload(payload, sender).map { handler =>
-      new PeerMessageReceiver(handler, state, peer, callbacks)
+      new PeerMessageReceiver(handler, state, peer)
     }
   }
 
@@ -241,8 +240,7 @@ class PeerMessageReceiver(
     new PeerMessageReceiver(
       dataMessageHandler = dataMessageHandler,
       state = newState,
-      peer = peer,
-      callbacks = callbacks
+      peer = peer
     )
   }
 }
@@ -264,18 +262,16 @@ object PeerMessageReceiver {
       state: PeerMessageReceiverState,
       chainApi: ChainApi,
       peer: Peer,
-      callbacks: NodeCallbacks,
       initialSyncDone: Option[Promise[Done]])(implicit
       ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
   ): PeerMessageReceiver = {
     import ref.dispatcher
-    val dataHandler = DataMessageHandler(chainApi, callbacks, initialSyncDone)
+    val dataHandler = DataMessageHandler(chainApi, initialSyncDone)
     new PeerMessageReceiver(dataMessageHandler = dataHandler,
                             state = state,
-                            peer = peer,
-                            callbacks = callbacks)
+                            peer = peer)
   }
 
   /**
@@ -283,10 +279,7 @@ object PeerMessageReceiver {
     * to be connected to a peer. This can be given to [[org.bitcoins.node.networking.P2PClient.props() P2PClient]]
     * to connect to a peer on the network
     */
-  def preConnection(
-      peer: Peer,
-      callbacks: NodeCallbacks,
-      initialSyncDone: Option[Promise[Done]])(implicit
+  def preConnection(peer: Peer, initialSyncDone: Option[Promise[Done]])(implicit
       ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
@@ -305,7 +298,6 @@ object PeerMessageReceiver {
       PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
                           chainApi = chainHandler,
                           peer = peer,
-                          callbacks = callbacks,
                           initialSyncDone = initialSyncDone)
     }
   }
@@ -313,7 +305,6 @@ object PeerMessageReceiver {
   def newReceiver(
       chainApi: ChainApi,
       peer: Peer,
-      callbacks: NodeCallbacks,
       initialSyncDone: Option[Promise[Done]])(implicit
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
@@ -321,7 +312,6 @@ object PeerMessageReceiver {
     PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
                         chainApi = chainApi,
                         peer = peer,
-                        callbacks = callbacks,
                         initialSyncDone = initialSyncDone)
   }
 }
