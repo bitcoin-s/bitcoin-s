@@ -1,6 +1,5 @@
 package org.bitcoins.node.networking.peer
 
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.p2p._
@@ -9,7 +8,6 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node._
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest
@@ -28,13 +26,6 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withSpvNodeConnectedToBitcoindV19(test)
-
-  private val cachedConfig = config
-
-  implicit private lazy val nodeAppConfig: NodeAppConfig = cachedConfig.nodeConf
-
-  implicit protected lazy val chainConfig: ChainAppConfig =
-    cachedConfig.chainConf
 
   it must "verify OnMerkleBlock callbacks are executed" in {
     param: FixtureParam =>
@@ -61,10 +52,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload1 = MerkleBlockMessage(merkleBlock)
         payload2 = TransactionMessage(tx)
 
-        callbacks = NodeCallbacks.onMerkleBlockReceived(callback)
-        _ = nodeConfig.addCallbacks(callbacks)
+        nodeCallbacks = NodeCallbacks(onMerkleBlockReceived = Vector(callback))
+        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload1, sender)
         _ <- dataMessageHandler.handleDataPayload(payload2, sender)
         result <- resultP.future
@@ -91,10 +85,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
         payload = BlockMessage(block)
 
-        callbacks = NodeCallbacks.onBlockReceived(callback)
-        _ = nodeConfig.addCallbacks(callbacks)
+        nodeCallbacks = NodeCallbacks.onBlockReceived(callback)
+        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == block)
@@ -121,16 +118,14 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
         payload = HeadersMessage(CompactSizeUInt.one, Vector(header))
 
-<<<<<<< HEAD
         callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
-        _ = nodeConfig.addCallbacks(callbacks)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi)
-=======
-        nodeCallbacks = NodeCallbacks.onBlockHeadersReceived(callback)
-        _ = nodeAppConfig.addCallbacks(nodeCallbacks)
-        dataMessageHandler = DataMessageHandler(genesisChainApi, nodeCallbacks)
->>>>>>> Get all tests passing again
+        _ = spv.nodeAppConfig.addCallbacks(callbacks)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
+
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == Vector(header))
@@ -158,16 +153,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload =
           CompactFilterMessage(FilterType.Basic, hash.flip, filter.filter.bytes)
 
-<<<<<<< HEAD
-        callbacks = NodeCallbacks.onCompactFilterReceived(callback)
-        _ = nodeConfig.addCallbacks(callbacks)
-
-        dataMessageHandler = DataMessageHandler(genesisChainApi)
-=======
         nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
-        _ = nodeAppConfig.addCallbacks(nodeCallbacks)
-        dataMessageHandler = DataMessageHandler(genesisChainApi, nodeCallbacks)
->>>>>>> Get all tests passing again
+        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
+
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))
