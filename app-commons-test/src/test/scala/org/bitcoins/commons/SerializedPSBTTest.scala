@@ -5,7 +5,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.psbt.{GlobalPSBTRecord, OutputPSBTRecord, PSBT}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import play.api.libs.json.Json
 import scodec.bits._
 
 class SerializedPSBTTest extends BitcoinSUnitTest {
@@ -69,7 +68,6 @@ class SerializedPSBTTest extends BitcoinSUnitTest {
     assert(decoded.global.tx == SerializedTransaction.decodeRawTransaction(tx))
     assert(decoded.global.version == UInt32.zero)
 
-    println(Json.prettyPrint(decoded.toJson))
     assert(decoded.inputs.size == 1)
     assert(decoded.inputs.head.bip32Paths.isEmpty)
     assert(decoded.inputs.head.finalizedScriptSig.nonEmpty)

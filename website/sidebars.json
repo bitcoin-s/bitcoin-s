@@ -1,7 +1,8 @@
 {
   "docs": {
     "Getting Started": [
-      "getting-started"
+      "getting-started",
+      "bips"
     ],
     "Getting Setup": [
       "getting-setup"
@@ -37,6 +38,7 @@
       "fee-provider/fee-provider"
     ],
     "Key Manager": [
+      "key-manager/server-key-manager",
       "key-manager/key-manager"
     ],
     "Node": [

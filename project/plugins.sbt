@@ -1,6 +1,6 @@
 // bundle up Scala applications into packaging formats such as Docker,
 // GraalVM native-image, executable JARs etc
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.7.6")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.8.0")
 
 // collect code coverage when executing tests
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1")
@@ -25,7 +25,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.4.6")
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.5")
 
 // write markdown files with type-checked Scala
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.13")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.14")
 
 // SQL migrations
 addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.4.2")

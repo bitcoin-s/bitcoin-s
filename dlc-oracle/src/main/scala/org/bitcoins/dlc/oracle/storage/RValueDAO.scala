@@ -2,14 +2,15 @@ package org.bitcoins.dlc.oracle.storage
 
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.crypto.SchnorrNonce
-import org.bitcoins.db.{AppConfig, CRUD, DbCommonsColumnMappers, SlickUtil}
+import org.bitcoins.db.{CRUD, DbCommonsColumnMappers, SlickUtil}
+import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import slick.lifted.ProvenShape
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class RValueDAO()(implicit
     val ec: ExecutionContext,
-    override val appConfig: AppConfig)
+    override val appConfig: DLCOracleAppConfig)
     extends CRUD[RValueDb, SchnorrNonce]
     with SlickUtil[RValueDb, SchnorrNonce] {
 

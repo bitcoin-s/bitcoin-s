@@ -4,9 +4,9 @@ import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.WalletTestUtil
 
-class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
+class AccountDAOTest extends WalletDAOFixture {
 
   it should "insert and read an account into the database" in { daos =>
     val accountDAO = daos.accountDAO
@@ -27,7 +27,7 @@ class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   it must "find an account by HdAccount" in { daos =>
     val accountDAO = daos.accountDAO
     val account =
-      WalletTestUtil.getHdAccount1(walletAppConfig = walletAppConfig)
+      WalletTestUtil.getHdAccount1(walletAppConfig = config)
     for {
       created <- {
 

@@ -80,7 +80,7 @@ class PsbtRpcTest extends BitcoindRpcTest {
       finalized <- client.finalizePsbt(processed.psbt)
     } yield finalized match {
       case _: FinalizedPsbt    => succeed
-      case _: NonFinalizedPsbt => fail
+      case _: NonFinalizedPsbt => fail()
     }
   }
 
@@ -134,7 +134,7 @@ class PsbtRpcTest extends BitcoindRpcTest {
     } yield {
       finalized match {
         case _: FinalizedPsbt    => succeed
-        case _: NonFinalizedPsbt => fail
+        case _: NonFinalizedPsbt => fail()
       }
     }
   }

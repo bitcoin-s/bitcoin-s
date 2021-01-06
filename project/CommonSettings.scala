@@ -41,7 +41,8 @@ object CommonSettings {
     apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
     // scaladoc settings end
     ////
-    scalacOptions in Compile := compilerOpts(scalaVersion.value),
+    scalacOptions in Compile := compilerOpts(scalaVersion = scalaVersion.value),
+    Test / scalacOptions := testCompilerOpts(scalaVersion = scalaVersion.value),
     //remove annoying import unused things in the scala console
     //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
     scalacOptions in (Compile, console) ~= (_ filterNot (s =>
@@ -54,7 +55,7 @@ object CommonSettings {
     scalacOptions in (Compile, doc) ~= (_ filterNot (s =>
       s == "-Xfatal-warnings")),
     scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
-    scalacOptions in Test := testCompilerOpts,
+    scalacOptions in Test := testCompilerOpts(scalaVersion.value),
     Compile / compile / javacOptions ++= {
       if (isCI) {
         //jdk11 is used on CI, we need to use the --release flag to make sure
@@ -65,9 +66,7 @@ object CommonSettings {
         Seq("-source", "1.8", "-target", "1.8")
       }
     },
-    licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-    // Travis has performance issues on macOS
-    Test / parallelExecution := !(Properties.isMac && isCI)
+    licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
   )
 
   private val commonCompilerOpts = {
@@ -77,7 +76,23 @@ object CommonSettings {
     )
   }
 
-  private val scala2_13CompilerOpts = Seq("-Xlint:unused", "-Xfatal-warnings")
+  /** Linting options for scalac */
+  private val scala2_13CompilerLinting = {
+    Seq(
+      "-Xlint:unused",
+      "-Xlint:adapted-args",
+      "-Xlint:nullary-unit",
+      "-Xlint:inaccessible",
+      "-Xlint:infer-any",
+      "-Xlint:missing-interpolator",
+      "-Xlint:eta-sam"
+    )
+  }
+
+  /** Compiler options for source code */
+  private val scala2_13SourceCompilerOpts = {
+    Seq("-Xfatal-warnings") ++ scala2_13CompilerLinting
+  }
 
   private val nonScala2_13CompilerOpts = Seq(
     "-Xmax-classfile-name",
@@ -87,10 +102,8 @@ object CommonSettings {
   )
 
   //https://docs.scala-lang.org/overviews/compiler-options/index.html
-  def compilerOpts(scalaVersion: String): Seq[String] =
+  def compilerOpts(scalaVersion: String): Seq[String] = {
     Seq(
-      "-encoding",
-      "UTF-8",
       "-unchecked",
       "-feature",
       "-deprecation",
@@ -103,13 +116,19 @@ object CommonSettings {
       "-Ypatmat-exhaust-depth",
       "off"
     ) ++ commonCompilerOpts ++ {
-      if (scalaVersion.startsWith("2.13")) scala2_13CompilerOpts
-      else nonScala2_13CompilerOpts
+      if (scalaVersion.startsWith("2.13")) {
+        scala2_13SourceCompilerOpts
+      } else nonScala2_13CompilerOpts
     }
+  }
 
-  val testCompilerOpts: Seq[String] = commonCompilerOpts ++
-    //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
-    Vector("-Xcheckinit")
+  def testCompilerOpts(scalaVersion: String): Seq[String] = {
+    (commonCompilerOpts ++
+      //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
+      Vector("-Xcheckinit") ++
+      compilerOpts(scalaVersion))
+      .filterNot(_ == "-Xfatal-warnings")
+  }
 
   lazy val testSettings: Seq[Setting[_]] = Seq(
     //show full stack trace (-oF) of failed tests and duration of tests (-oD)
@@ -117,13 +136,6 @@ object CommonSettings {
     logBuffered in Test := false,
     publish / skip := true
   ) ++ settings
-
-  lazy val testWithDbSettings: Seq[Setting[_]] = Seq(
-    // To make in-memory DBs work properly
-    Test / fork := false,
-    // To avoid deadlock issues with SQLite
-    Test / parallelExecution := true
-  ) ++ testSettings
 
   lazy val prodSettings: Seq[Setting[_]] = settings
 

@@ -1,7 +1,13 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.number.{BaseNumbers, BasicArithmetic, Bounded, Int64}
+import org.bitcoins.core.number.{
+  BaseNumbers,
+  BasicArithmetic,
+  Bounded,
+  Int64,
+  UInt64
+}
 import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
@@ -108,6 +114,12 @@ sealed abstract class Satoshis extends CurrencyUnit {
 
   def toLong: Long = underlying.toLong
 
+  lazy val toUInt64: UInt64 = {
+    require(toLong >= 0, "Cannot cast negative value to UInt64")
+
+    UInt64(toLong)
+  }
+
   def ==(satoshis: Satoshis): Boolean = underlying == satoshis.underlying
 }
 
@@ -124,6 +136,7 @@ object Satoshis
   override def fromBytes(bytes: ByteVector): Satoshis =
     RawSatoshisSerializer.read(bytes)
   def apply(int64: Int64): Satoshis = SatoshisImpl(int64)
+  def apply(uint64: UInt64): Satoshis = SatoshisImpl(Int64(uint64.toLong))
   def apply(satoshis: Long): Satoshis = SatoshisImpl(Int64(satoshis))
   def apply(satoshis: BigInt): Satoshis = SatoshisImpl(Int64(satoshis))
 

@@ -1,12 +1,12 @@
 package org.bitcoins.server
 
 import java.time.{ZoneId, ZonedDateTime}
-
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
 import org.bitcoins.core.config.RegTest
@@ -20,6 +20,7 @@ import org.bitcoins.core.protocol.BlockStamp.{
   BlockTime,
   InvalidBlockStamp
 }
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.EmptyScriptWitness
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
@@ -34,6 +35,7 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.node.Node
 import org.bitcoins.server.BitcoinSAppConfig.implicitToWalletConf
+import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.wallet.MockWalletApi
 import org.scalamock.scalatest.MockFactory
@@ -61,7 +63,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val mockNode = mock[Node]
 
-  val chainRoutes = ChainRoutes(mockChainApi)
+  val chainRoutes = ChainRoutes(mockChainApi, RegTest)
 
   val nodeRoutes = NodeRoutes(mockNode)
 
@@ -214,6 +216,44 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(contentType == `application/json`)
         assert(
           responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
+    val blockHeader = BlockHeader(
+      "00e0002094c6692e100ed20d14f8c325c897259749e781d55ed1b7eb1000000000000000309a90b49f5f5a14ffdb2857557f6f27a136943603fb29e65e283dcb27fd886124fee25f57e53019886c0e8b")
+    val blockHeaderDb =
+      BlockHeaderDbHelper.fromBlockHeader(height = 1899697,
+                                          chainWork = BigInt(12345),
+                                          bh = blockHeader)
+
+    "get a block header" in {
+      val chainworkStr = {
+        val bytes = ByteVector(blockHeaderDb.chainWork.toByteArray)
+        val padded = if (bytes.length <= 32) {
+          bytes.padLeft(32)
+        } else bytes
+
+        padded.toHex
+      }
+
+      (mockChainApi
+        .getHeader(_: DoubleSha256DigestBE))
+        .expects(blockHeader.hashBE)
+        .returning(Future.successful(Some(blockHeaderDb)))
+
+      (mockChainApi
+        .getNumberOfConfirmations(_: DoubleSha256DigestBE))
+        .expects(blockHeader.hashBE)
+        .returning(Future.successful(Some(1)))
+
+      val route =
+        chainRoutes.handleCommand(
+          ServerCommand("getblockheader", Arr(Str(blockHeader.hashBE.hex))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":1,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":${blockHeader.difficulty.toDouble},"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}"},"error":null}""")
       }
     }
 
@@ -732,6 +772,28 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    "get a transaction" in {
+      val tx = Transaction(
+        "020000000258e87a21b56daf0c23be8e7070456c336f7cbaa5c8757924f545887bb2abdd750000000000ffffffff838d0427d0ec650a68aa46bb0b098aea4422c071b2ca78352a077959d07cea1d0100000000ffffffff0270aaf00800000000160014d85c2b71d0060b09c9886aeb815e50991dda124d00e1f5050000000016001400aea9a2e5f0f876a588df5546e8742d1d87008f00000000")
+
+      val txDb = TransactionDbHelper.fromTransaction(tx)
+
+      (mockWalletApi
+        .findTransaction(_: DoubleSha256DigestBE))
+        .expects(tx.txIdBE)
+        .returning(Future.successful(Some(txDb)))
+        .anyNumberOfTimes()
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("gettransaction", Arr(Str(tx.txIdBE.hex))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == s"""{"result":"${tx.hex}","error":null}""")
+      }
+    }
+
     "send to an address" in {
       // positive cases
 
@@ -1002,6 +1064,50 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val route = walletRoutes.handleCommand(
         ServerCommand("opreturncommit", Arr(message, Bool(false), Num(4))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
+    "bump fee with rbf" in {
+      (mockWalletApi
+        .bumpFeeRBF(_: DoubleSha256DigestBE, _: FeeUnit))
+        .expects(DoubleSha256DigestBE.empty, SatoshisPerVirtualByte.one)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockWalletApi.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("bumpfeerbf",
+                      Arr(Str(DoubleSha256DigestBE.empty.hex), Num(1))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
+    "bump fee with CPFP" in {
+      (mockWalletApi
+        .bumpFeeCPFP(_: DoubleSha256DigestBE, _: FeeUnit))
+        .expects(DoubleSha256DigestBE.empty, SatoshisPerVirtualByte.one)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockWalletApi.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("bumpfeecpfp",
+                      Arr(Str(DoubleSha256DigestBE.empty.hex), Num(1))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)

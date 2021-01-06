@@ -1,10 +1,10 @@
 package org.bitcoins.rpc.v18
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   AddressInfoResultPostV18,
   AddressInfoResultPreV18
 }
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.rpc.client.common.BitcoindVersion
@@ -29,6 +29,18 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
   clientF.foreach(c => clientAccum.+=(c))
 
   behavior of "BitcoindV18RpcClient"
+
+  it should "be able to get peer info" in {
+    for {
+      (freshClient, otherFreshClient) <- clientPairF
+      infoList <- freshClient.getPeerInfo
+    } yield {
+      assert(infoList.length >= 0)
+      val info = infoList.head
+      assert(info.addnode)
+      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
+    }
+  }
 
   it must "have our BitcoindRpcClient work with .hashCode() and equals" in {
     for {
@@ -94,8 +106,7 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
   it should "get node addresses given a count" ignore {
     for {
       (freshClient, otherFreshClient) <- clientPairF
-      freshclientnode <-
-        freshClient.addNode(freshClient.getDaemon.uri, AddNodeArgument.Add)
+      _ <- freshClient.addNode(freshClient.getDaemon.uri, AddNodeArgument.Add)
       nodeaddress <- freshClient.getNodeAddresses(1)
     } yield {
       assert(nodeaddress.head.address == otherFreshClient.instance.uri)

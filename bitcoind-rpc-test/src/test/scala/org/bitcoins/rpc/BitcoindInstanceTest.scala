@@ -25,7 +25,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
 
   private val sampleConf: Seq[String] = {
     val source = Source.fromURL(getClass.getResource("/sample-bitcoin.conf"))
-    source.getLines.toSeq
+    source.getLines().toSeq
   }
 
   private val datadir: Path = Files.createTempDirectory(null)

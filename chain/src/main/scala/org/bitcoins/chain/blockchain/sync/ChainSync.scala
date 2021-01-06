@@ -26,7 +26,7 @@ abstract class ChainSync extends ChainVerificationLogger {
       getBestBlockHashFunc: () => Future[DoubleSha256DigestBE])(implicit
       ec: ExecutionContext): Future[ChainApi] = {
     val currentTipsF: Future[Vector[BlockHeaderDb]] = {
-      chainHandler.blockHeaderDAO.chainTips
+      chainHandler.blockHeaderDAO.getBestChainTips
     }
 
     //TODO: We are implicitly trusting whatever

@@ -184,13 +184,29 @@ For more information on how to use our built in `cli` to interact with the serve
     - `message` - message to put into OP_RETURN commitment
     - `--hashMessage` - should the message be hashed before commitment
     - `--feerate <value>` - Fee rate in sats per virtual byte
+ - `bumpfeecpfp` `txid` `feerate` - Bump the fee of the given transaction id with a child tx using the given fee rate
+    - `txid` - Id of transaction to bump fee
+    - `feerate` - Fee rate in sats per virtual byte of the child transaction
+ - `bumpfeerbf` `txid` `feerate` - Replace given transaction with one with the new fee rate
+    - `txid` - Id of transaction to bump fee
+    - `feerate` - New fee rate in sats per virtual byte
+ - `gettransaction` `txid` - Get detailed information about in-wallet transaction <txid>
+    - `txid` - The transaction id
  - `lockunspent` `unlock` `transactions` - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.
     - `unlock` - Whether to unlock (true) or lock (false) the specified transactions
     - `transactions` - The transaction outpoints to unlock/lock
- - `walletpassphrasechange` `oldpassphrase` `newpassphrase` - Changes the wallet passphrase
+- `importseed` `walletname` `words` `passphrase` - Imports a mnemonic seed as a new seed file
+   - `walletname` - Name to associate with this seed
+   - `words` - Mnemonic seed words, space separated
+   - `passphrase` - Passphrase to encrypt this seed with
+- `importxprv` `walletname` `xprv` `passphrase` - Imports a mnemonic seed as a new seed file
+   - `walletname` - Name to associate with this seed
+   - `xprv` - base58 encoded extended private key
+   - `passphrase` - Passphrase to encrypt this seed with
+ - `keymanagerpassphrasechange` `oldpassphrase` `newpassphrase` - Changes the wallet passphrase
     - `oldpassphrase` - The current passphrase
     - `newpassphrase` - The new passphrase
- - `walletpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
+ - `keymanagerpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
     - `passphrase` - The passphrase to encrypt the wallet with
 
 #### Network

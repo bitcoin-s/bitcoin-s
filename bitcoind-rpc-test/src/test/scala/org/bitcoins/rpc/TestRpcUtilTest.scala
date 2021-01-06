@@ -18,11 +18,12 @@ class TestRpcUtilTest extends BitcoindRpcTest {
   private lazy val clientsF =
     BitcoindRpcTestUtil.createNodeTriple(clientAccum = clientAccum)
 
-  private def trueLater(delay: Int = 1000): Future[Boolean] =
+  private def trueLater(delay: Int): Future[Boolean] = {
     Future {
       Thread.sleep(delay)
       true
     }
+  }
 
   private def boolLaterDoneAnd(
       bool: Boolean,

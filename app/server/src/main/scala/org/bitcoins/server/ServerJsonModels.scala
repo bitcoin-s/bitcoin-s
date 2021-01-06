@@ -1,29 +1,19 @@
 package org.bitcoins.server
 
-import java.time.Instant
-
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
-import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.AesPassword
+import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE}
 import ujson._
-import upickle.default._
 
 import scala.util.{Failure, Try}
-
-// TODO ID?
-case class ServerCommand(method: String, params: ujson.Arr)
-
-object ServerCommand {
-  implicit val rw: ReadWriter[ServerCommand] = macroRW
-}
 
 case class GetNewAddress(labelOpt: Option[AddressLabelTag])
 
@@ -259,6 +249,91 @@ object KeyManagerPassphraseSet extends ServerJsonModels {
   }
 }
 
+case class ImportSeed(
+    walletName: String,
+    mnemonic: MnemonicCode,
+    passwordOpt: Option[AesPassword])
+
+object ImportSeed extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ImportSeed] = {
+    jsArr.arr.toList match {
+      case walletNameJs :: mnemonicJs :: passJs :: Nil =>
+        Try {
+          val walletName = walletNameJs.str
+
+          val mnemonicWords = mnemonicJs match {
+            case Str(str) => str.split(' ').toVector
+            case Arr(arr) => arr.map(_.str).toVector
+            case Null | False | True | Num(_) | Obj(_) =>
+              throw new IllegalArgumentException(
+                "mnemonic must be a string or array of strings")
+          }
+          val mnemonic = MnemonicCode.fromWords(mnemonicWords)
+
+          val pass = passJs match {
+            case Str(str) =>
+              Some(AesPassword.fromString(str))
+            case Null =>
+              None
+            case Arr(_) | False | True | Num(_) | Obj(_) =>
+              throw new IllegalArgumentException(
+                "password must be a string or null")
+          }
+
+          ImportSeed(walletName, mnemonic, pass)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing walletName, mnemonic, and password argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class ImportXprv(
+    walletName: String,
+    xprv: ExtPrivateKey,
+    passwordOpt: Option[AesPassword])
+
+object ImportXprv extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ImportXprv] = {
+    jsArr.arr.toList match {
+      case walletNameJs :: xprvJs :: passJs :: Nil =>
+        Try {
+          val walletName = walletNameJs.str
+
+          val xprv = ExtPrivateKey.fromString(xprvJs.str)
+
+          val pass = passJs match {
+            case Str(str) =>
+              Some(AesPassword.fromString(str))
+            case Null =>
+              None
+            case Arr(_) | False | True | Bool(_) | Num(_) | Obj(_) =>
+              throw new IllegalArgumentException(
+                "password must be a string or null")
+          }
+
+          ImportXprv(walletName, xprv, pass)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing walletName, xprv, and password argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
 case class CombinePSBTs(psbts: Seq[PSBT])
 
 object CombinePSBTs extends ServerJsonModels {
@@ -316,6 +391,19 @@ object ConvertToPSBT extends ServerJsonModels {
 
     Try(ConvertToPSBT(jsToTx(jsArr.arr.head)))
   }
+}
+
+case class GetBlockHeader(hash: DoubleSha256DigestBE)
+
+object GetBlockHeader extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetBlockHeader] =
+    Try {
+      require(jsArr.arr.size == 1,
+              s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+      GetBlockHeader(DoubleSha256DigestBE(jsArr.arr.head.str))
+    }
 }
 
 case class DecodeRawTransaction(tx: Transaction)
@@ -436,11 +524,28 @@ object Rescan extends ServerJsonModels {
 
 }
 
+case class GetTransaction(txId: DoubleSha256DigestBE)
+
+object GetTransaction extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetTransaction] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(GetTransaction(DoubleSha256DigestBE(jsArr.arr.head.str)))
+  }
+}
+
+trait Broadcastable {
+  def noBroadcast: Boolean
+}
+
 case class SendToAddress(
     address: BitcoinAddress,
     amount: Bitcoins,
     satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
     noBroadcast: Boolean)
+    extends Broadcastable
 
 object SendToAddress extends ServerJsonModels {
 
@@ -587,222 +692,26 @@ object OpReturnCommit extends ServerJsonModels {
   }
 }
 
-// Oracle Models
+case class BumpFee(txId: DoubleSha256DigestBE, feeRate: SatoshisPerVirtualByte)
 
-case class CreateEvent(
-    label: String,
-    maturationTime: Instant,
-    outcomes: Vector[String])
+object BumpFee extends ServerJsonModels {
 
-object CreateEvent extends ServerJsonModels {
-
-  def fromJsArr(jsArr: ujson.Arr): Try[CreateEvent] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[BumpFee] = {
     jsArr.arr.toList match {
-      case labelJs :: maturationTimeJs :: outcomesJs :: Nil =>
+      case txIdJs :: feeRateJs :: Nil =>
         Try {
-          val label = labelJs.str
-          val maturationTime: Instant =
-            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
-          val outcomes = outcomesJs.arr.map(_.str).toVector
-
-          CreateEvent(label, maturationTime, outcomes)
+          val txId = DoubleSha256DigestBE(txIdJs.str)
+          val feeRate = SatoshisPerVirtualByte(Satoshis(feeRateJs.num.toLong))
+          BumpFee(txId, feeRate)
         }
       case Nil =>
         Failure(
-          new IllegalArgumentException("Missing label and outcome arguments"))
+          new IllegalArgumentException("Missing txId and fee rate arguments"))
+
       case other =>
         Failure(
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 2"))
-    }
-  }
-}
-
-case class CreateRangedEvent(
-    eventName: String,
-    maturationTime: Instant,
-    start: Int,
-    stop: Int,
-    step: Int,
-    unit: String,
-    precision: Int)
-
-object CreateRangedEvent extends ServerJsonModels {
-
-  def fromJsArr(jsArr: ujson.Arr): Try[CreateRangedEvent] = {
-    jsArr.arr.toList match {
-      case labelJs :: maturationTimeJs :: startJs :: stopJs :: stepJs :: unitJs :: precisionJs :: Nil =>
-        Try {
-          val label = labelJs.str
-          val maturationTime: Instant =
-            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
-          val start = startJs.num.toInt
-          val stop = stopJs.num.toInt
-          val step = stepJs.num.toInt
-          val unit = unitJs.str
-          val precision = precisionJs.num.toInt
-
-          CreateRangedEvent(label,
-                            maturationTime,
-                            start,
-                            stop,
-                            step,
-                            unit,
-                            precision)
-        }
-      case Nil =>
-        Failure(
-          new IllegalArgumentException(
-            "Missing label, maturationTime, start, stop, and step arguments"))
-      case other =>
-        Failure(
-          new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 5"))
-    }
-  }
-}
-
-case class CreateDigitDecompEvent(
-    eventName: String,
-    maturationTime: Instant,
-    base: Int,
-    isSigned: Boolean,
-    numDigits: Int,
-    unit: String,
-    precision: Int)
-
-object CreateDigitDecompEvent extends ServerJsonModels {
-
-  def fromJsArr(jsArr: ujson.Arr): Try[CreateDigitDecompEvent] = {
-    jsArr.arr.toList match {
-      case labelJs :: maturationTimeJs :: baseJs :: isSignedJs :: numDigitsJs :: unitJs :: precisionJs :: Nil =>
-        Try {
-          val label = labelJs.str
-          val maturationTime: Instant =
-            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
-          val base = baseJs.num.toInt
-          val isSigned = isSignedJs.bool
-          val numDigits = numDigitsJs.num.toInt
-          val unit = unitJs.str
-          val precision = precisionJs.num.toInt
-
-          CreateDigitDecompEvent(label,
-                                 maturationTime,
-                                 base,
-                                 isSigned,
-                                 numDigits,
-                                 unit,
-                                 precision)
-        }
-      case Nil =>
-        Failure(new IllegalArgumentException(
-          "Missing label, maturationTime, base, isSigned, and numDigits arguments"))
-      case other =>
-        Failure(
-          new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 5"))
-    }
-  }
-}
-
-case class SignEvent(oracleEventTLV: OracleEventV0TLV, outcome: String)
-
-object SignEvent extends ServerJsonModels {
-
-  def fromJsArr(jsArr: ujson.Arr): Try[SignEvent] = {
-    jsArr.arr.toList match {
-      case tlvJs :: outcomeJs :: Nil =>
-        Try {
-          val oracleEventTLV = OracleEventV0TLV(tlvJs.str)
-          val outcome = outcomeJs.str
-
-          SignEvent(oracleEventTLV, outcome)
-        }
-      case Nil =>
-        Failure(
-          new IllegalArgumentException(
-            "Missing oracle event tlv and outcome arguments"))
-      case other =>
-        Failure(
-          new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
-    }
-  }
-}
-
-case class SignForRange(oracleEventTLV: OracleEventV0TLV, num: Long)
-
-object SignForRange extends ServerJsonModels {
-
-  def fromJsArr(jsArr: ujson.Arr): Try[SignForRange] = {
-    jsArr.arr.toList match {
-      case tlvJs :: numJs :: Nil =>
-        Try {
-          val oracleEventTLV = OracleEventV0TLV(tlvJs.str)
-          val num = numJs match {
-            case num: Num => num.value
-            case str: Str => str.value.toDouble
-            case _: Value =>
-              throw new IllegalArgumentException(
-                s"Unable to parse $numJs as a number")
-          }
-
-          SignForRange(oracleEventTLV, num.toLong)
-        }
-      case Nil =>
-        Failure(
-          new IllegalArgumentException(
-            "Missing oracle event tlv and num arguments"))
-      case other =>
-        Failure(
-          new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
-    }
-  }
-}
-
-case class SignDigits(oracleEventTLV: OracleEventV0TLV, num: Long)
-
-object SignDigits extends ServerJsonModels {
-
-  def fromJsArr(jsArr: ujson.Arr): Try[SignDigits] = {
-    jsArr.arr.toList match {
-      case tlvJs :: numJs :: Nil =>
-        Try {
-          val oracleEventTLV = OracleEventV0TLV(tlvJs.str)
-          val num = numJs match {
-            case num: Num => num.value
-            case str: Str => str.value.toDouble
-            case _: Value =>
-              throw new IllegalArgumentException(
-                s"Unable to parse $numJs as a number")
-          }
-
-          SignDigits(oracleEventTLV, num.toLong)
-        }
-      case Nil =>
-        Failure(
-          new IllegalArgumentException(
-            "Missing oracle event tlv and num arguments"))
-      case other =>
-        Failure(
-          new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
-    }
-  }
-}
-
-case class GetEvent(oracleEventTLV: OracleEventV0TLV)
-
-object GetEvent extends ServerJsonModels {
-
-  def fromJsArr(jsArr: ujson.Arr): Try[GetEvent] = {
-    require(jsArr.arr.size == 1,
-            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
-    Try {
-      val oracleEventTLV = OracleEventV0TLV(jsArr.arr.head.str)
-
-      GetEvent(oracleEventTLV)
     }
   }
 }

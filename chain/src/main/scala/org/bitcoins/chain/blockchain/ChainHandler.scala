@@ -87,7 +87,7 @@ class ChainHandler(
   }
 
   override def getBestBlockHeader(): Future[BlockHeaderDb] = {
-    val tipsF: Future[Vector[BlockHeaderDb]] = blockHeaderDAO.chainTips
+    val tipsF: Future[Vector[BlockHeaderDb]] = blockHeaderDAO.getBestChainTips
     for {
       tips <- tipsF
       chains = tips.map(t => Blockchain.fromHeaders(Vector(t)))
@@ -172,11 +172,13 @@ class ChainHandler(
   override def processHeaders(
       headers: Vector[BlockHeader]): Future[ChainApi] = {
     val blockchainsF = blockHeaderDAO.getBlockchains()
-    for {
+    val resultF = for {
       blockchains <- blockchainsF
       newChainApi <-
         processHeadersWithChains(headers = headers, blockchains = blockchains)
     } yield newChainApi
+
+    resultF
   }
 
   /**
@@ -673,7 +675,7 @@ class ChainHandler(
       case None => FutureUtil.none
       case Some(blockHeight) =>
         for {
-          tips <- blockHeaderDAO.chainTips
+          tips <- blockHeaderDAO.getBestChainTips
           getNAncestorsFs = tips.map { tip =>
             blockHeaderDAO.getNAncestors(tip.hashBE, tip.height - blockHeight)
           }

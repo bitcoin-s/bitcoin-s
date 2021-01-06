@@ -2,13 +2,24 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.api.wallet.{CoinSelectionAlgo, CoinSelector}
 import org.bitcoins.core.currency._
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.script.EmptyScriptSignature
+import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
+  EmptyTransaction,
+  TransactionConstants,
+  TransactionInput,
+  TransactionOutput
+}
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
+import org.bitcoins.testkit.Implicits.GeneratorOps
+import org.bitcoins.testkit.core.gen.FeeUnitGen
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
@@ -253,6 +264,137 @@ class WalletSendingTest extends BitcoinSWalletTest {
       assert(tx.outputs.size == 1)
       assert(tx.outputs.head.scriptPubKey == testAddress.scriptPubKey)
     }
+  }
+
+  it should "correctly bump the fee rate of a transaction" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    val feeRate = FeeUnitGen.satsPerByte.sampleSome
+
+    for {
+      tx <- wallet.sendToAddress(testAddress, amountToSend, feeRate)
+
+      firstBal <- wallet.getBalance()
+
+      newFeeRate = SatoshisPerByte(feeRate.currencyUnit + Satoshis.one)
+      bumpedTx <- wallet.bumpFeeRBF(tx.txIdBE, newFeeRate)
+
+      txDb1Opt <- wallet.outgoingTxDAO.findByTxId(tx.txIdBE)
+      txDb2Opt <- wallet.outgoingTxDAO.findByTxId(bumpedTx.txIdBE)
+
+      secondBal <- wallet.getBalance()
+    } yield {
+      assert(txDb1Opt.isDefined)
+      assert(txDb2Opt.isDefined)
+      val txDb1 = txDb1Opt.get
+      val txDb2 = txDb2Opt.get
+
+      assert(txDb1.actualFee < txDb2.actualFee)
+      assert(firstBal - secondBal == txDb2.actualFee - txDb1.actualFee)
+    }
+  }
+
+  it should "fail to RBF a confirmed transaction" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    val feeRate = FeeUnitGen.satsPerByte.sampleSome
+    val newFeeRate = SatoshisPerByte(feeRate.currencyUnit + Satoshis.one)
+
+    for {
+      tx <- wallet.sendToAddress(testAddress, amountToSend, feeRate)
+      _ <- wallet.processTransaction(tx, Some(DoubleSha256DigestBE.empty))
+
+      res <- recoverToSucceededIf[IllegalArgumentException] {
+        wallet.bumpFeeRBF(tx.txIdBE, newFeeRate)
+      }
+    } yield res
+  }
+
+  it should "fail to RBF a non-signaling transaction" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    for {
+      addr <- wallet.getNewAddress()
+      utxo <- wallet.listUtxos().map(_.head)
+
+      // Create tx not signaling RBF
+      input = TransactionInput(utxo.outPoint,
+                               EmptyScriptSignature,
+                               TransactionConstants.disableRBFSequence)
+      output =
+        TransactionOutput(utxo.output.value - Satoshis(500), addr.scriptPubKey)
+      tx =
+        BaseTransaction(Int32.two, Vector(input), Vector(output), UInt32.zero)
+      psbt = PSBT.fromUnsignedTx(tx)
+
+      // Have wallet sign and process transaction
+      signedPSBT <- wallet.signPSBT(psbt)
+      signedTx = signedPSBT.finalizePSBT.get.extractTransactionAndValidate.get
+      _ <- wallet.processTransaction(signedTx, None)
+
+      res <- recoverToSucceededIf[IllegalArgumentException] {
+        wallet.bumpFeeRBF(signedTx.txIdBE, SatoshisPerVirtualByte.fromLong(100))
+      }
+    } yield res
+  }
+
+  it should "correctly CPFP a transaction" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+    for {
+      parent <- wallet.sendToAddress(testAddress, amountToSend, None)
+      bumpRate <- wallet.feeRateApi.getFeeRate
+      child <- wallet.bumpFeeCPFP(parent.txIdBE, bumpRate)
+
+      received <- wallet.spendingInfoDAO.findTx(child).map(_.nonEmpty)
+    } yield {
+      // Verify we are only sending to ourself
+      assert(child.outputs.size == 1)
+      assert(received)
+
+      // Verify we are only spending 1 output from the parent tx
+      assert(child.inputs.size == 1)
+      assert(child.inputs.head.previousOutput.txId == parent.txId)
+      assert(child.inputs.head.previousOutput.vout.toInt < parent.outputs.size)
+
+      // Verify fee rate
+      val utxo = parent.outputs(child.inputs.head.previousOutput.vout.toInt)
+      val inputAmount = utxo.value
+      val childFeeRate = bumpRate match {
+        case _: SatoshisPerByte =>
+          SatoshisPerByte.calc(inputAmount, child)
+        case _: SatoshisPerKiloByte =>
+          SatoshisPerKiloByte.calc(inputAmount, child)
+        case _: SatoshisPerVirtualByte =>
+          SatoshisPerVirtualByte.calc(inputAmount, child)
+        case _: SatoshisPerKW =>
+          SatoshisPerKW.calc(inputAmount, child)
+      }
+
+      // Do +/- scale factor because of rounding errors
+      assert(childFeeRate.toLong === bumpRate.toLong +- bumpRate.scaleFactor)
+    }
+  }
+
+  it should "fail to CPFP a confirmed transaction" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    val feeRate = FeeUnitGen.satsPerByte.sampleSome
+
+    for {
+      tx <- wallet.sendToAddress(testAddress, amountToSend, feeRate)
+      _ <- wallet.processTransaction(tx, Some(DoubleSha256DigestBE.empty))
+
+      res <- recoverToSucceededIf[IllegalArgumentException] {
+        wallet.bumpFeeCPFP(tx.txIdBE, feeRate)
+      }
+    } yield res
+  }
+
+  it should "fail to CPFP a transaction we don't own" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    recoverToSucceededIf[RuntimeException](
+      wallet.bumpFeeCPFP(EmptyTransaction.txIdBE, SatoshisPerByte.one))
   }
 
   it should "fail to send from outpoints when already spent" in {

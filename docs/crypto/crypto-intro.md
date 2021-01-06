@@ -15,7 +15,11 @@ The crypto module contains support for AES using the object `AesCrypt` and its c
 
 ## Elliptic Curve Keys and Functions
 
-`ECKey.scala` contains types `ECPublicKey` and `ECPrivateKey` which represent private and public keys for the secp256k1 curve (used by Bitcoin). These keys also implement functions for using them to create and verify `ECDigitalSignature`s and `ECPrivateKey` implements the [`Sign` interface](sign.md). Note that all sensitive information (such as private keys) extends the `MaskToString` interface which overrides the `toString` method to mask the actual result unless `toStringSensitive` is explicitly called. This is done to avoid accidentally logging keys.
+`ECKey.scala` contains types `ECPublicKey` and `ECPrivateKey` which represent private and public keys for the secp256k1 curve (used by Bitcoin).
+There also exists `SchnorrPublicKey` and `SchnorrNonce` that can be used for doing BIP 340 compatible Schnorr signatures. 
+
+These keys also implement functions for using them to create and verify `ECDigitalSignature`s, `SchnorrDigitalSignatures`, and `ECPrivateKey` implements the [`Sign` interface](sign.md). Note that all sensitive information (such as private keys) extends the `MaskToString` interface which overrides the `toString` method to mask the actual result unless `toStringSensitive` is explicitly called.
+This is done to avoid accidentally logging keys.
 
 Utility functions for signatures (such as checking for or flipping to low s) can be found in `DERSignatureUtil`.
 
@@ -27,6 +31,9 @@ Lastly, Bitcoin-S uses Java Native Interface (JNI) bindings to the Bitcoin libra
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 ```
+
+### ECDSA Example
+
 ```scala mdoc:compile-only
 // Randomly generate new key
 val privateKey = ECPrivateKey.freshPrivateKey
@@ -43,4 +50,24 @@ val hash = CryptoUtil.sha256(ByteVector("Hello".getBytes()))
 // Sign and verify signature
 val sig = privateKey.sign(hash)
 val validSig = publicKey.verify(hash, sig)
+```
+
+### Schnorr Example
+
+```scala mdoc:compile-only
+// Randomly generate new key
+val privateKey = ECPrivateKey.freshPrivateKey
+
+// Construct private key from hex
+val privateKeyFixed = ECPrivateKey("6846a082d76e7c34cd2deddc6ef3d4cb3220e6c72c7c9ec03408d60ed976837c")
+
+// Compute schnorr public key from private key
+val publicKey = privateKey.schnorrPublicKey
+
+// Take SHA256 hash
+val hash = CryptoUtil.sha256(ByteVector("Hello".getBytes()))
+
+// Sign and verify signature
+val sig = privateKey.schnorrSign(hash.bytes)
+val validSig = publicKey.verify(hash.bytes, sig)
 ```

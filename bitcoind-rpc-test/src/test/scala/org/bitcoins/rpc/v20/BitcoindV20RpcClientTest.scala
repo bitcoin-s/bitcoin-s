@@ -7,7 +7,6 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
-import org.bitcoins.core.protocol.transaction.EmptyTransaction
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
@@ -31,6 +30,18 @@ class BitcoindV20RpcClientTest extends BitcoindRpcTest {
   it should "be able to start a V20 bitcoind instance" in {
     clientF.map { client =>
       assert(client.version == BitcoindVersion.V20)
+    }
+  }
+
+  it should "be able to get peer info" in {
+    for {
+      (freshClient, otherFreshClient) <- clientPairF
+      infoList <- freshClient.getPeerInfo
+    } yield {
+      assert(infoList.length >= 0)
+      val info = infoList.head
+      assert(info.addnode)
+      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
     }
   }
 

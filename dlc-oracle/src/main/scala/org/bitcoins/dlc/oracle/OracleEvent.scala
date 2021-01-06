@@ -1,9 +1,8 @@
 package org.bitcoins.dlc.oracle
 
 import java.time.Instant
-
-import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.storage.EventDb
@@ -232,6 +231,69 @@ object OracleEvent {
           eventDb.announcementSignature,
           decomp
         )
+    }
+  }
+
+  /**
+    * Verifies if the given attestations sign the outcomes of the given oracle announcement.
+    */
+  def verifyAttestations(
+      announcement: OracleAnnouncementTLV,
+      attestations: Vector[SchnorrDigitalSignature],
+      signingVersion: SigningVersion): Boolean = {
+    val nonces = announcement.eventTLV.nonces
+    if (nonces.size != attestations.size || nonces != attestations.map(_.rx)) {
+      false
+    } else {
+      announcement.eventTLV.eventDescriptor match {
+        case enum: EnumEventDescriptorV0TLV =>
+          require(attestations.size == 1)
+
+          val sig = attestations.head
+          enum.outcomes.exists { outcome =>
+            val attestationType = EnumAttestation(outcome)
+            val hash =
+              signingVersion.calcOutcomeHash(enum, attestationType.bytes)
+            announcement.publicKey.verify(hash, sig)
+          }
+
+        case dd: DigitDecompositionEventDescriptorV0TLV =>
+          require(attestations.nonEmpty)
+
+          val (validSign, attestationsToVerify) =
+            dd match {
+              case _: SignedDigitDecompositionEventDescriptor =>
+                val signOutcomes = Vector(
+                  DigitDecompositionSignAttestation(true),
+                  DigitDecompositionSignAttestation(false))
+
+                val validSign = signOutcomes.exists { attestationType =>
+                  val hash =
+                    signingVersion.calcOutcomeHash(dd, attestationType.bytes)
+                  announcement.publicKey.verify(hash, attestations.head)
+                }
+
+                (validSign, attestations.tail)
+              case _: UnsignedDigitDecompositionEventDescriptor =>
+                (true, attestations)
+            }
+
+          lazy val digitOutcomes =
+            0.until(dd.base.toInt)
+              .map(DigitDecompositionAttestation.apply)
+
+          lazy val validDigits = attestationsToVerify.forall { sig =>
+            digitOutcomes.exists { attestationType =>
+              val hash =
+                signingVersion.calcOutcomeHash(dd, attestationType.bytes)
+              announcement.publicKey.verify(hash, sig)
+            }
+          }
+
+          validSign && validDigits
+
+        case _: RangeEventDescriptorV0TLV => false
+      }
     }
   }
 }

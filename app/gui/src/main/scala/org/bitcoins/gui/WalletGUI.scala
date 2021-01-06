@@ -2,6 +2,10 @@ package org.bitcoins.gui
 
 import javafx.event.{ActionEvent, EventHandler}
 import javafx.scene.image.Image
+import org.bitcoins.cli.CliCommand.GetInfo
+import org.bitcoins.cli.ConsoleCli
+import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.gui.dlc.DLCPane
 import org.bitcoins.gui.settings.SettingsPane
 import scalafx.application.{JFXApp, Platform}
@@ -12,6 +16,8 @@ import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.control.TabPane.TabClosingPolicy
 import scalafx.scene.control._
 import scalafx.scene.layout.{BorderPane, HBox, StackPane, VBox}
+
+import scala.util.{Failure, Success}
 
 object WalletGUI extends JFXApp {
   // Catch unhandled exceptions on FX Application thread
@@ -133,15 +139,40 @@ object WalletGUI extends JFXApp {
     )
   }
 
-  private val walletScene = new Scene {
+  private val walletScene = new Scene(1000, 600) {
     root = rootView
     stylesheets = GlobalData.currentStyleSheets
   }
 
+  val info: BitcoinSServerInfo =
+    ConsoleCli.exec(GetInfo, GlobalData.consoleCliConfig) match {
+      case Failure(exception) =>
+        throw exception
+      case Success(str) =>
+        val json = ujson.read(str)
+        BitcoinSServerInfo.fromJson(json)
+    }
+
+  GlobalData.network = info.network
+
+  val (img, titleStr): (Image, String) = info.network match {
+    case MainNet =>
+      (new Image("/icons/bitcoin-s.png"), "Bitcoin-S Wallet")
+    case TestNet3 =>
+      (new Image("/icons/bitcoin-s-testnet.png"),
+       "Bitcoin-S Wallet - [testnet]")
+    case RegTest =>
+      (new Image("/icons/bitcoin-s-regtest.png"),
+       "Bitcoin-S Wallet - [regtest]")
+    case SigNet =>
+      (new Image("/icons/bitcoin-s-signet.png"), "Bitcoin-S Wallet - [signet]")
+
+  }
+
   stage = new JFXApp.PrimaryStage {
-    title = "Bitcoin-S Wallet"
+    title = titleStr
     scene = walletScene
-    icons.add(new Image("/icons/bitcoin-s.png"))
+    icons.add(img)
   }
 
   private val taskRunner = new TaskRunner(resultArea, glassPane)

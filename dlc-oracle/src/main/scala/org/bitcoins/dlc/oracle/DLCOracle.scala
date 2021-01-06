@@ -1,12 +1,12 @@
 package org.bitcoins.dlc.oracle
 
-import org.bitcoins.commons.jsonmodels.dlc.SigningVersion
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.crypto.{ExtPrivateKeyHardened, MnemonicCode}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
+import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NumberUtil, TimeUtil}
@@ -316,7 +316,12 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
           signEvent(oracleEventTLV.nonces.head, signOutcome).map(db =>
             Vector(db))
         case _: UnsignedDigitDecompositionEventDescriptor =>
-          FutureUtil.emptyVec[EventDb]
+          if (num >= 0) {
+            FutureUtil.emptyVec[EventDb]
+          } else {
+            Future.failed(new IllegalArgumentException(
+              s"Cannot sign a negative number for an unsigned event, got $num"))
+          }
       }
 
     val boundedNum = if (num < eventDescriptorTLV.minNum) {
@@ -366,7 +371,7 @@ object DLCOracle {
       case None           => decryptedMnemonic
     }
     if (!conf.seedExists()) {
-      WalletStorage.writeMnemonicToDisk(conf.kmConf.seedPath, toWrite)
+      WalletStorage.writeSeedToDisk(conf.kmConf.seedPath, toWrite)
     }
 
     val key =

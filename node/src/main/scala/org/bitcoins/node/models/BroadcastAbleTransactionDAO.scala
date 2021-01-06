@@ -68,7 +68,7 @@ final case class BroadcastAbleTransactionDAO()(implicit
     }
 
     private val toTuple: BroadcastAbleTransaction => Option[Tuple] = tx =>
-      Some(tx.transaction.txId.flip, tx.transaction.bytes)
+      Some((tx.transaction.txId.flip, tx.transaction.bytes))
 
     def txid: Rep[DoubleSha256DigestBE] = column("txid", O.PrimaryKey)
     def bytes: Rep[ByteVector] = column("tx_bytes")

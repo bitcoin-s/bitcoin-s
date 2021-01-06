@@ -40,7 +40,7 @@ trait TestDbManagement extends DbManagement {
 case class TestAppConfig(
     private val directory: Path,
     private val conf: Config*)(implicit override val ec: ExecutionContext)
-    extends AppConfig
+    extends DbAppConfig
     with TestDbManagement
     with JdbcProfileComponent[TestAppConfig] {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList

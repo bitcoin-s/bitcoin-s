@@ -28,14 +28,18 @@ object BIP39LockedKeyManager extends BitcoinSLogger {
     BIP39KeyManager] = {
     logger.debug(s"Trying to unlock wallet with seedPath=${kmParams.seedPath}")
     val resultE =
-      WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, passphraseOpt)
+      WalletStorage.decryptSeedFromDisk(kmParams.seedPath, passphraseOpt)
     resultE match {
-      case Right(mnemonic) =>
+      case Right(mnemonic: DecryptedMnemonic) =>
         Right(
-          BIP39KeyManager(mnemonic.mnemonicCode,
-                          kmParams,
-                          bip39PasswordOpt,
-                          mnemonic.creationTime))
+          BIP39KeyManager.fromMnemonic(mnemonic.mnemonicCode,
+                                       kmParams,
+                                       bip39PasswordOpt,
+                                       mnemonic.creationTime))
+
+      case Right(xprv: DecryptedExtPrivKey) =>
+        val km = new BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
+        Right(km)
 
       case Left(result) =>
         result match {

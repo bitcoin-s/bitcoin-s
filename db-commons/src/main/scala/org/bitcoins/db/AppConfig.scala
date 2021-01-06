@@ -1,17 +1,14 @@
 package org.bitcoins.db
 
-import java.nio.file.{Files, Path, Paths}
-
 import com.typesafe.config._
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.BitcoinChainParams
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStopAsync}
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
 
+import java.nio.file.{Files, Path, Paths}
 import scala.concurrent.Future
+import scala.util.Properties
 import scala.util.matching.Regex
-import scala.util.{Failure, Properties, Success, Try}
 
 /**
   * Everything needed to configure functionality
@@ -33,11 +30,6 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
     */
   override def start(): Future[Unit] = {
     FutureUtil.unit
-  }
-
-  /** Releases the thread pool associated with this AppConfig's DB */
-  override def stop(): Future[Unit] = {
-    Future.successful(slickDbConfig.db.close())
   }
 
   /** Sub members of AppConfig should override this type with
@@ -159,35 +151,22 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
     baseDatadir.resolve(lastDirname)
   }
 
-  lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
-    Try {
-      val c = DatabaseConfig.forConfig[JdbcProfile](path =
-                                                      s"bitcoin-s.$moduleName",
-                                                    config = config)
-      logger.debug(s"Resolved DB config: ${ConfigOps(c.config).asReadableJson}")
-      c
-    } match {
-      case Success(value) =>
-        value
-      case Failure(exception) =>
-        logger.error(s"Error when loading database from config: $exception")
-        logger.error(s"Configuration: ${config.asReadableJson}")
-        throw exception
-    }
+  def getConfigStringOpt(path: String): Option[String] = {
+    config.getStringOrNone(path)
   }
 
-  def getConfigStringOpt(path: String): Option[String] = {
-
-    Try(config.getString(path)).toOption match {
-      case Some(str) =>
-        Some(str)
-      case None =>
-        None
-    }
+  def getConfigString(path: String): String = {
+    config.getString(path)
   }
 }
 
 object AppConfig extends BitcoinSLogger {
+
+  def safePathToString(path: Path): String = {
+    val pathStr = path.toString.replace("\\", "/")
+
+    s""""$pathStr"""" // Add quotes around it
+  }
 
   def getBaseConfig(
       baseDatadir: Path,
@@ -205,8 +184,8 @@ object AppConfig extends BitcoinSLogger {
       }
 
       val withDatadir =
-        ConfigFactory.parseString(s"bitcoin-s.datadir = $baseDatadir",
-                                  configOptions)
+        ConfigFactory.parseString(
+          s"bitcoin-s.datadir = ${safePathToString(baseDatadir)}")
       withDatadir.withFallback(config)
     }
 
@@ -260,7 +239,10 @@ object AppConfig extends BitcoinSLogger {
     * both with and without a trailing `/`
     */
   private val defaultDatadirRegex: Regex = {
-    (Properties.userHome + "/.bitcoin-s/(testnet3|mainnet|regtest)/?$").r
+    // Fix for windows
+    val home = Properties.userHome.replace('\\', '/')
+
+    (home + "/.bitcoin-s/(testnet3|mainnet|regtest)/?$").r
   }
 
   /**

@@ -70,7 +70,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
                            expectedResult,
                            "",
                            elements.toString,
-                           Some(witness, amount)))
+                           Some((witness, amount))))
       } else if (elements.size == 5) {
         val scriptPubKeyBytes: ByteVector = parseScriptPubKey(elements(1))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
@@ -112,7 +112,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
                            expectedResult,
                            comments,
                            elements.toString,
-                           Some(witness, amount)))
+                           Some((witness, amount))))
       } else None
     }
 

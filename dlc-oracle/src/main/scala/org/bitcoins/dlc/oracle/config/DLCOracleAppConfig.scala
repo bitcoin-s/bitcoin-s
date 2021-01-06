@@ -1,12 +1,10 @@
 package org.bitcoins.dlc.oracle.config
 
-import java.nio.file.{Files, Path}
-
 import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.hd.HDPurpose
-import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
+import org.bitcoins.core.protocol.tlv.EnumEventDescriptorV0TLV
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
@@ -18,12 +16,13 @@ import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 
+import java.nio.file.{Files, Path}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCOracleAppConfig(
     private val directory: Path,
     private val confs: Config*)(implicit val ec: ExecutionContext)
-    extends AppConfig
+    extends DbAppConfig
     with DbManagement
     with JdbcProfileComponent[DLCOracleAppConfig] {
 
@@ -66,7 +65,7 @@ case class DLCOracleAppConfig(
       if (migrations == 2 || migrations == 3) { // For V2/V3 migrations
         logger.debug(s"Doing V2/V3 Migration")
 
-        val dummyMigrationTLV = EventDescriptorTLV("fdd8060800010564756d6d79")
+        val dummyMigrationTLV = EnumEventDescriptorV0TLV.dummy
 
         val eventDAO = EventDAO()(ec, appConfig)
         for {

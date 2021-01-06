@@ -1,15 +1,5 @@
 package org.bitcoins.db
 
-import java.io.{File, IOException}
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{
-  FileVisitResult,
-  Files,
-  Path,
-  SimpleFileVisitor,
-  StandardOpenOption
-}
-
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.config.MainNet
@@ -18,6 +8,11 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.wallet.config.WalletAppConfig
+
+import java.io.{File, IOException}
+import java.nio.file._
+import java.nio.file.attribute.BasicFileAttributes
+import scala.reflect.io.Directory
 
 class DBConfigTest extends BitcoinSAsyncTest {
 
@@ -33,31 +28,24 @@ class DBConfigTest extends BitcoinSAsyncTest {
       val chainConfig = ChainAppConfig(dataDir)
       val nodeConfig = NodeAppConfig(dataDir)
       val walletConfig = WalletAppConfig(dataDir)
-      val assertF = for {
-        _ <- chainConfig.start()
-        _ <- nodeConfig.start()
-        _ <- walletConfig.start()
-      } yield {
-        val slickChainConfig = chainConfig.slickDbConfig
-        assert(slickChainConfig.profileName == "slick.jdbc.SQLiteProfile")
-        assert(slickChainConfig.config.hasPath("db.numThreads"))
-        assert(slickChainConfig.config.getInt("db.numThreads") == 1)
-        assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
 
-        val slickNodeConfig = nodeConfig.slickDbConfig
-        assert(slickNodeConfig.profileName == "slick.jdbc.SQLiteProfile")
-        assert(slickNodeConfig.config.hasPath("db.numThreads"))
-        assert(slickNodeConfig.config.getInt("db.numThreads") == 1)
-        assert(slickNodeConfig.config.getInt("db.queueSize") == 5000)
+      val slickChainConfig = chainConfig.slickDbConfig
+      assert(slickChainConfig.profileName == "slick.jdbc.SQLiteProfile")
+      assert(slickChainConfig.config.hasPath("db.numThreads"))
+      assert(slickChainConfig.config.getInt("db.numThreads") == 1)
+      assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
 
-        val slickWalletConfig = walletConfig.slickDbConfig
-        assert(slickWalletConfig.profileName == "slick.jdbc.SQLiteProfile")
-        assert(slickWalletConfig.config.hasPath("db.numThreads"))
-        assert(slickWalletConfig.config.getInt("db.numThreads") == 1)
-        assert(slickWalletConfig.config.getInt("db.queueSize") == 5000)
-      }
+      val slickNodeConfig = nodeConfig.slickDbConfig
+      assert(slickNodeConfig.profileName == "slick.jdbc.SQLiteProfile")
+      assert(slickNodeConfig.config.hasPath("db.numThreads"))
+      assert(slickNodeConfig.config.getInt("db.numThreads") == 1)
+      assert(slickNodeConfig.config.getInt("db.queueSize") == 5000)
 
-      assertF
+      val slickWalletConfig = walletConfig.slickDbConfig
+      assert(slickWalletConfig.profileName == "slick.jdbc.SQLiteProfile")
+      assert(slickWalletConfig.config.hasPath("db.numThreads"))
+      assert(slickWalletConfig.config.getInt("db.numThreads") == 1)
+      assert(slickWalletConfig.config.getInt("db.queueSize") == 5000)
     }
   }
 
@@ -119,14 +107,16 @@ class DBConfigTest extends BitcoinSAsyncTest {
           override def visitFile(
               file: Path,
               attrs: BasicFileAttributes): FileVisitResult = {
-            Files.delete(file);
+            val directory = new Directory(file.toFile)
+            directory.deleteRecursively()
             FileVisitResult.CONTINUE
           }
 
           override def postVisitDirectory(
               dir: Path,
               exc: IOException): FileVisitResult = {
-            Files.delete(dir);
+            val directory = new Directory(dir.toFile)
+            directory.deleteRecursively()
             FileVisitResult.CONTINUE
           }
         }

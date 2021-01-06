@@ -16,5 +16,3 @@ graalVMNativeImageOptions ++= Seq(
 )
 
 enablePlugins(JavaAppPackaging, GraalVMNativeImagePlugin)
-
-publish / skip := true

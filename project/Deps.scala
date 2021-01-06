@@ -3,10 +3,10 @@ import sbt._
 object Deps {
 
   object V {
-    val bouncyCastle = "1.67"
+    val bouncyCastle = "1.68"
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
-    val scalacheck = "1.15.1"
+    val scalacheck = "1.15.2"
     val scalaTest = "3.2.3"
 
     val scalaTestPlus =
@@ -14,15 +14,15 @@ object Deps {
     val slf4j = "1.7.30"
     val spray = "1.3.6"
     val zeromq = "0.5.2"
-    val akkav = "10.2.2"
-    val playv = "2.9.1"
+    val akkav = "10.1.13"
+    val playv = "2.9.2"
     val akkaStreamv = "2.6.10"
-    val scodecV = "1.1.22"
+    val scodecV = "1.1.23"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.4"
     val typesafeConfigV = "1.4.1"
 
-    val scalaFxV = "14-R19"
+    val scalaFxV = "15.0.1-R20"
     val javaFxV = "16-ea+5"
 
     val asyncNewScalaV = "0.10.0"
@@ -31,11 +31,13 @@ object Deps {
     val postgresV = "42.2.18"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.3"
-    val sqliteV = "3.32.3.2"
+    val sqliteV = "3.34.0"
     val scalameterV = "0.17"
     val scalamockV = "5.1.0"
-    val scalaCollectionCompatV = "2.3.1"
+    val scalaCollectionCompatV = "2.3.2"
     val pgEmbeddedV = "0.13.3"
+
+    val breezeV = "1.1"
 
     val newMicroPickleV = "0.8.0"
     val newMicroJsonV = newMicroPickleV
@@ -122,6 +124,10 @@ object Deps {
                                javaFxMedia,
                                javaFxSwing,
                                javaFxWeb)
+
+    val breezeViz =
+      ("org.scalanlp" %% "breeze-viz" % V.breezeV withSources () withJavadoc ())
+        .exclude("bouncycastle", "bcprov-jdk14")
 
     val playJson =
       "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
@@ -277,7 +283,8 @@ object Deps {
       Test.logback,
       Test.scalaTest,
       Test.scalacheck,
-      Test.newAsync
+      Test.newAsync,
+      Test.scalaCollectionCompat
     )
 
   val bench = List(
@@ -309,7 +316,7 @@ object Deps {
       Compile.codehaus
     )
 
-  val gui = List(Compile.scalaFx) ++ Compile.javaFxDeps
+  val gui = List(Compile.breezeViz, Compile.scalaFx) ++ Compile.javaFxDeps
 
   def server(scalaVersion: String) =
     List(
@@ -423,4 +430,11 @@ object Deps {
       Compile.newMicroJson,
       Compile.logback
     )
+
+  val serverRoutes = List(
+    Compile.akkaHttp,
+    Compile.akkaActor,
+    Compile.akkaSlf4j,
+    Compile.akkaStream
+  )
 }

@@ -1,12 +1,12 @@
 package org.bitcoins.wallet.models
 
-import java.sql.SQLException
-
 import org.bitcoins.core.api.wallet.db.AddressRecord
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.WalletTestUtil
 
-class AddressDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
+import java.sql.SQLException
+
+class AddressDAOTest extends WalletDAOFixture {
 
   behavior of "AddressDAO"
 
@@ -58,4 +58,25 @@ class AddressDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
       } yield assert(readAddress.contains(createdAddress))
   }
 
+  it should "find by script pub key" in { daos =>
+    val addressDAO = daos.addressDAO
+
+    val addr1 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb)
+    val addr2 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
+                                            addressIndex = 1)
+    val addr3 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
+                                            addressIndex = 2)
+    val spks = Vector(addr1.scriptPubKey, addr2.scriptPubKey)
+
+    for {
+      created1 <- addressDAO.create(addr1)
+      created2 <- addressDAO.create(addr2)
+      created3 <- addressDAO.create(addr3)
+      found <- addressDAO.findByScriptPubKeys(spks)
+    } yield {
+      assert(found.contains(created1))
+      assert(found.contains(created2))
+      assert(!found.contains(created3))
+    }
+  }
 }

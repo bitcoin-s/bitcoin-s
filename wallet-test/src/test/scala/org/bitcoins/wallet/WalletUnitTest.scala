@@ -1,7 +1,5 @@
 package org.bitcoins.wallet
 
-import java.nio.file.Files
-
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.api.wallet.db.{AddressDb, TransactionDbHelper}
 import org.bitcoins.core.hd.HDChainType.{Change, External}
@@ -17,12 +15,12 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError.MnemonicNotFound
 import org.bitcoins.crypto.{AesPassword, ECPublicKey}
-import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.testkit.util.TransactionTestUtil._
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 
+import java.nio.file.Files
 import scala.concurrent.Future
 
 class WalletUnitTest extends BitcoinSWalletTest {
@@ -35,16 +33,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   behavior of "Wallet - unit test"
 
-  it must "write the mnemonic seed to the root datadir -- NOT A NETWORK sub directory" in {
+  it must "write the mnemonic seed in the correct directory" in {
     wallet: Wallet =>
-      //since datadir has the path that relates it to a network ('mainnet'/'testnet'/'regtest')
-      //we need to get the parent of that to find where the encrypted seed should be
-      //this is where the bitcoin-s.conf should live too.
-      val datadir = wallet.walletConfig.baseDatadir
-
-      assert(
-        Files.exists(datadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)))
-
+      assert(Files.exists(wallet.walletConfig.seedPath))
   }
 
   it should "create a new wallet" in { wallet: Wallet =>
@@ -150,31 +141,21 @@ class WalletUnitTest extends BitcoinSWalletTest {
         case Left(err) => err
       }
       errorType match {
-        case KeyManagerUnlockError.MnemonicNotFound => fail(MnemonicNotFound)
-        case KeyManagerUnlockError.BadPassword      =>
-          // If wallet is unencrypted then we shouldn't get a bad password error
-          wallet.walletConfig.aesPasswordOpt match {
-            case Some(_) => succeed
-            case None    => fail()
-          }
-        case KeyManagerUnlockError.JsonParsingError(message) =>
-          // If wallet is encrypted then we shouldn't get a json parsing error
-          wallet.walletConfig.aesPasswordOpt match {
-            case Some(_) => fail(message)
-            case None    => succeed
-          }
+        case KeyManagerUnlockError.MnemonicNotFound          => fail(MnemonicNotFound)
+        case KeyManagerUnlockError.BadPassword               => succeed
+        case KeyManagerUnlockError.JsonParsingError(message) => fail(message)
       }
   }
 
   it should "match block filters" in { wallet: Wallet =>
     for {
-      matched <- wallet.getMatchingBlocks(
+      height <- wallet.chainQueryApi.getFilterCount()
+      matched <- wallet.fetchFiltersInRange(
         scripts = Vector(
           // this is a random address which is included into the test block
           BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").scriptPubKey),
-        startOpt = None,
-        endOpt = None
-      )(system.dispatcher)
+        parallelismLevel = 1
+      )(heightRange = 0.to(height).toVector)
     } yield {
       assert(
         Vector(BlockMatchingResponse(blockHash = testBlockHash,

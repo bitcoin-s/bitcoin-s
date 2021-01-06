@@ -15,7 +15,7 @@ bitcoin-s, the values there take precedence over the ones found in our
 Bitcoin-S data directory.
 
 The resolved configuration gets parsed by
-[`AppConfig`](api/org/bitcoins/db/AppConfig).
+[`AppConfig`](/api/org/bitcoins/db/AppConfig).
 `AppConfig` is an abstract class that's implemented by corresponding case
 classes in the `wallet`, `chain` and `node` projects. Here's some examples of how to
 construct a wallet configuration:
@@ -50,6 +50,10 @@ There are a few command line options available that take precedence over configu
 - `--datadir <directory>`
 
      `datadir` sets the data directory instead of using the default `$HOME/.bitcoin-s`
+
+- `--rpcbind <ip>`
+
+    `rpcbind` sets the interface the rpc server binds to instead of using the default `127.0.0.1`
 
 - `--rpcport <port>`
 
@@ -143,6 +147,13 @@ bitcoin-s {
 
     # settings for wallet module
     wallet {
+        # You can have multiple wallets by setting a different
+        # wallet name for each of them. They will each have
+        # their own unique seed and database or schema,
+        # depending on the database driver.
+        # The wallet name can contain letters, numbers, and underscores '_'.
+        # walletName = MyWallet0
+
         defaultAccountType = legacy # legacy, segwit, nested-segwit
 
         bloomFalsePositiveRate = 0.0001 # percentage
@@ -196,6 +207,9 @@ bitcoin-s {
     server {
         # The port we bind our rpc server on
         rpcport = 9999
+
+        # The ip address we bind our server too
+        rpcbind = "127.0.0.1"
     }
 }
 
@@ -256,7 +270,13 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             driver = org.postgresql.Driver
-            url = "jdbc:postgresql://localhost:5432/database"
+
+            # these 3 options will result into a jdbc url of
+            # "jdbc:postgresql://localhost:5432/database"
+            name = database
+            host = localhost
+            port = 5432
+
             user = "user"
             password = "topsecret"
             numThreads = 5
@@ -289,7 +309,9 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             driver = org.postgresql.Driver
-            url = "jdbc:postgresql://localhost:5432/chaindb"
+            name = chaindb
+            host = localhost
+            port = 5432
             user = "user"
             password = "topsecret"
         }
@@ -298,7 +320,9 @@ bitcoin-s {
         profile = "slick.jdbc.PostgresProfile$"
         db {
             driver = org.postgresql.Driver
-            url = "jdbc:postgresql://localhost:5432/walletdb"
+            name = walletdb
+            host = localhost
+            port = 5432
             user = "user"
             password = "topsecret"
         }

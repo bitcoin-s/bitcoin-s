@@ -3,6 +3,7 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
+import grizzled.slf4j.Logging
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
@@ -18,13 +19,15 @@ import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.server.routes.{BitcoinSRunner, Server}
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val args: Array[String])
-    extends BitcoinSRunner {
+    extends BitcoinSRunner
+    with Logging {
 
   override val actorSystemName = "bitcoin-s-server"
 
@@ -94,7 +97,11 @@ class BitcoinSServerMain(override val args: Array[String])
         _ <- node.start()
         _ <- wallet.start()
         chainApi <- node.chainApiFromDb()
-        binding <- startHttpServer(node, chainApi, wallet, rpcPortOpt)
+        binding <- startHttpServer(nodeApi = node,
+                                   chainApi = chainApi,
+                                   wallet = wallet,
+                                   rpcbindOpt = rpcBindOpt,
+                                   rpcPortOpt = rpcPortOpt)
         _ = {
           logger.info(s"Starting ${nodeConf.nodeType.shortName} node sync")
         }
@@ -151,7 +158,11 @@ class BitcoinSServerMain(override val args: Array[String])
                                                              blockCount)
         }
 
-        binding <- startHttpServer(bitcoind, bitcoind, wallet, rpcPortOpt)
+        binding <- startHttpServer(nodeApi = bitcoind,
+                                   chainApi = bitcoind,
+                                   wallet = wallet,
+                                   rpcbindOpt = rpcBindOpt,
+                                   rpcPortOpt = rpcPortOpt)
         _ = BitcoinSServer.startedFP.success(Future.successful(binding))
       } yield {
         logger.info(s"Done starting Main!")
@@ -266,6 +277,7 @@ class BitcoinSServerMain(override val args: Array[String])
       nodeApi: NodeApi,
       chainApi: ChainApi,
       wallet: Wallet,
+      rpcbindOpt: Option[String],
       rpcPortOpt: Option[Int])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
@@ -274,23 +286,29 @@ class BitcoinSServerMain(override val args: Array[String])
 
     val walletRoutes = WalletRoutes(wallet)
     val nodeRoutes = NodeRoutes(nodeApi)
-    val chainRoutes = ChainRoutes(chainApi)
+    val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
     val coreRoutes = CoreRoutes(Core)
     val server = {
       rpcPortOpt match {
         case Some(rpcport) =>
-          Server(nodeConf,
-                 Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+          Server(conf = nodeConf,
+                 handlers =
+                   Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                 rpcbindOpt = rpcbindOpt,
                  rpcport = rpcport)
         case None =>
           conf.rpcPortOpt match {
             case Some(rpcport) =>
-              Server(nodeConf,
-                     Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                     rpcport)
+              Server(conf = nodeConf,
+                     handlers =
+                       Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                     rpcbindOpt = rpcbindOpt,
+                     rpcport = rpcport)
             case None =>
-              Server(nodeConf,
-                     Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
+              Server(conf = nodeConf,
+                     handlers =
+                       Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                     rpcbindOpt = rpcbindOpt)
           }
       }
     }

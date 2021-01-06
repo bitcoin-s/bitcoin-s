@@ -5,9 +5,6 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class TLVTest extends BitcoinSUnitTest {
 
-  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    generatorDrivenConfigNewCode
-
   "TLV" must "have serialization symmetry" in {
     forAll(TLVGen.tlv) { tlv =>
       assert(TLV(tlv.bytes) == tlv)
@@ -83,6 +80,62 @@ class TLVTest extends BitcoinSUnitTest {
     forAll(TLVGen.oracleAnnouncementV0TLV) { tlv =>
       assert(OracleAnnouncementV0TLV(tlv.bytes) == tlv)
       assert(TLV(tlv.bytes) == tlv)
+    }
+  }
+
+  "ContractInfoV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.contractInfoV0TLV) { contractInfo =>
+      assert(ContractInfoV0TLV(contractInfo.bytes) == contractInfo)
+      assert(TLV(contractInfo.bytes) == contractInfo)
+    }
+  }
+
+  "OracleInfoV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.oracleInfoV0TLV) { oracleInfo =>
+      assert(OracleInfoV0TLV(oracleInfo.bytes) == oracleInfo)
+      assert(TLV(oracleInfo.bytes) == oracleInfo)
+    }
+  }
+
+  "FundingInputV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.fundingInputV0TLV) { fundingInput =>
+      assert(FundingInputV0TLV(fundingInput.bytes) == fundingInput)
+      assert(TLV(fundingInput.bytes) == fundingInput)
+    }
+  }
+
+  "CETSignaturesV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.cetSignaturesV0TLV) { cetSigs =>
+      assert(CETSignaturesV0TLV(cetSigs.bytes) == cetSigs)
+      assert(TLV(cetSigs.bytes) == cetSigs)
+    }
+  }
+
+  "FundingSignaturesV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.fundingSignaturesV0TLV) { fundingSigs =>
+      assert(FundingSignaturesV0TLV(fundingSigs.bytes) == fundingSigs)
+      assert(TLV(fundingSigs.bytes) == fundingSigs)
+    }
+  }
+
+  "DLCOfferTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.dlcOfferTLV) { offer =>
+      assert(DLCOfferTLV(offer.bytes) == offer)
+      assert(TLV(offer.bytes) == offer)
+    }
+  }
+
+  "DLCAcceptTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.dlcAcceptTLV) { accept =>
+      assert(DLCAcceptTLV(accept.bytes) == accept)
+      assert(TLV(accept.bytes) == accept)
+    }
+  }
+
+  "DLCSignTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.dlcSignTLV) { sign =>
+      assert(DLCSignTLV(sign.bytes) == sign)
+      assert(TLV(sign.bytes) == sign)
     }
   }
 }

@@ -109,16 +109,15 @@ case class PSBT(
 
   lazy val estimateWeight: Option[Long] = {
     if (nextRole.order >= PSBTRole.SignerPSBTRole.order) {
-      // Need a exe context for maxScriptSigAndWitnessWeight
-      import scala.concurrent.ExecutionContext.Implicits.global
       val dummySigner = Sign.dummySign(ECPublicKey.freshPublicKey)
 
       val inputWeight =
         inputMaps.zip(transaction.inputs).foldLeft(0L) {
           case (weight, (inputMap, txIn)) =>
-            val (scriptSigLen, maxWitnessLen) = inputMap
+            val signingInfo = inputMap
               .toUTXOSatisfyingInfoUsingSigners(txIn, Vector(dummySigner))
-              .maxScriptSigAndWitnessWeight
+            val scriptSigLen = signingInfo.maxScriptSigLen
+            val maxWitnessLen = signingInfo.maxWitnessLen
 
             weight + 164 + maxWitnessLen + scriptSigLen
         }
