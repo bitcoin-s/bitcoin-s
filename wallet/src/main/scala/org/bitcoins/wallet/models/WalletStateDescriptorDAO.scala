@@ -55,7 +55,7 @@ case class WalletStateDescriptorDAO()(implicit
     Seq] =
     findByPrimaryKeys(ts.map(_.tpe))
 
-  def getSyncHeightOpt(): Future[Option[SyncHeightDescriptor]] = {
+  def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
     read(SyncHeight).map {
       case Some(db) =>
         val desc = SyncHeightDescriptor.fromString(db.descriptor.toString)
@@ -67,7 +67,7 @@ case class WalletStateDescriptorDAO()(implicit
   def updateSyncHeight(
       hash: DoubleSha256DigestBE,
       height: Int): Future[WalletStateDescriptorDb] = {
-    getSyncHeightOpt().flatMap {
+    getSyncDescriptorOpt().flatMap {
       case Some(old) =>
         if (old.height > height) {
           Future.successful(WalletStateDescriptorDb(SyncHeight, old))

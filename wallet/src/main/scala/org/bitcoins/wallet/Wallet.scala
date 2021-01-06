@@ -157,8 +157,8 @@ abstract class Wallet
     }
   }
 
-  def getSyncHeight(): Future[Option[SyncHeightDescriptor]] = {
-    stateDescriptorDAO.getSyncHeightOpt()
+  def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
+    stateDescriptorDAO.getSyncDescriptorOpt()
   }
 
   override def processCompactFilters(
