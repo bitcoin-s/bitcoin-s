@@ -1,5 +1,5 @@
 ---
-id: version-v0.4-getting-setup
+id: version-0.4.0-getting-setup
 title: Getting Bitcoin-S installed on your machine
 original_id: getting-setup
 ---

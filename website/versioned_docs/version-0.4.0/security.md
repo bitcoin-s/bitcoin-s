@@ -1,5 +1,5 @@
 ---
-id: version-v0.4-security
+id: version-0.4.0-security
 title: Security
 original_id: security
 ---
