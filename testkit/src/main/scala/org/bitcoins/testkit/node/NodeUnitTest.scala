@@ -48,7 +48,7 @@ import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
@@ -58,9 +58,6 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
   }
 
   override def afterAll(): Unit = {
-    Await.result(config.chainConf.stop(), 1.minute)
-    Await.result(config.nodeConf.stop(), 1.minute)
-    Await.result(config.walletConf.stop(), 1.minute)
     super[EmbeddedPg].afterAll()
   }
 
@@ -376,11 +373,8 @@ object NodeUnitTest extends P2PLogger {
 
   }
 
-  def destroyNode(node: Node)(implicit
-      config: BitcoinSAppConfig,
-      ec: ExecutionContext): Future[Unit] = {
+  def destroyNode(node: Node)(implicit ec: ExecutionContext): Future[Unit] = {
     for {
-      _ <- ChainUnitTest.destroyAllTables()
       _ <- node.stop()
     } yield ()
   }
@@ -396,6 +390,7 @@ object NodeUnitTest extends P2PLogger {
     val resultF = for {
       _ <- destroyNode(node)
       _ <- ChainUnitTest.destroyBitcoind(bitcoind)
+      _ <- appConfig.stop()
     } yield {
       logger.debug(s"Done with teardown of node connected with bitcoind!")
       ()
