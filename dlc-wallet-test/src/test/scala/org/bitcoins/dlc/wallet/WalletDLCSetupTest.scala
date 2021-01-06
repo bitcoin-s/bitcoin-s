@@ -332,7 +332,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
                                     DLCWalletUtil.dummyPartialSig)))
   }
 
-  it must "setup and execute with lloyd's example" in {
+  it must "setup and execute with oracle example" in {
     FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
@@ -350,11 +350,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
                  drawStr -> Satoshis(betSize / 2)))
 
       val oraclePubKey = SchnorrPublicKey(
-        "156c7d1c7922f0aa1168d9e21ac77ea88bbbe05e24e70a08bbe0519778f2e5da")
+        "bd25c9f473eb5d37e5299b86f2d7b625d01ae0441da428cc65cf19e1c6021db6")
       val oracleNonce = SchnorrNonce(
-        "ea3a68d8749b81682513b0479418d289d17e24d4820df2ce979f1a56a63ca525")
+        "d535016b6d837587ac6375d0044cb60292afb9ca6763483595eb2909c91063af")
       val attestation = FieldElement(
-        "77a5aabd716936411bbe19219bd0b261fae8f0524367268feb264e0a3b215766")
+        "413c05252d4003cd20f0a0901da193d0c7b53b7c6c3e3426e6f106a0ef96e18f")
 
       val oracleInfo = SingleNonceOracleInfo(oraclePubKey, oracleNonce)
 

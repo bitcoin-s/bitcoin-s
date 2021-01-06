@@ -43,15 +43,21 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         ._1
         .outcome
     val initiatorWinSig = DLCWalletUtil.oraclePrivKey
-      .schnorrSignWithNonce(CryptoUtil.sha256(initiatorWinStr).bytes,
-                            DLCWalletUtil.kValue)
+      .schnorrSignWithNonce(
+        CryptoUtil
+          .taggedSha256(initiatorWinStr, "DLC/oracle/attestation/v0")
+          .bytes,
+        DLCWalletUtil.kValue)
 
     // Get a hash that the recipient wins for
     val recipientWinStr =
       info.find(_._2 == Satoshis.zero).get._1.outcome
     val recipientWinSig = DLCWalletUtil.oraclePrivKey
-      .schnorrSignWithNonce(CryptoUtil.sha256(recipientWinStr).bytes,
-                            DLCWalletUtil.kValue)
+      .schnorrSignWithNonce(
+        CryptoUtil
+          .taggedSha256(recipientWinStr, "DLC/oracle/attestation/v0")
+          .bytes,
+        DLCWalletUtil.kValue)
 
     (initiatorWinSig, recipientWinSig)
   }

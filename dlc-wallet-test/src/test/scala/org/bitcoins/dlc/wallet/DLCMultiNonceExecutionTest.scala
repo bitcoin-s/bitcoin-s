@@ -42,7 +42,11 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
     val initiatorWinSigs = initiatorWinVec.zip(kValues).map {
       case (num, kValue) =>
         DLCWalletUtil.oraclePrivKey
-          .schnorrSignWithNonce(CryptoUtil.sha256(num.toString).bytes, kValue)
+          .schnorrSignWithNonce(
+            CryptoUtil
+              .taggedSha256(num.toString, "DLC/oracle/attestation/v0")
+              .bytes,
+            kValue)
     }
 
     val recipientWinVec =
@@ -53,7 +57,11 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
     val recipientWinSigs = recipientWinVec.zip(kValues2).map {
       case (num, kValue) =>
         DLCWalletUtil.oraclePrivKey
-          .schnorrSignWithNonce(CryptoUtil.sha256(num.toString).bytes, kValue)
+          .schnorrSignWithNonce(
+            CryptoUtil
+              .taggedSha256(num.toString, "DLC/oracle/attestation/v0")
+              .bytes,
+            kValue)
     }
 
     (initiatorWinSigs, recipientWinSigs)

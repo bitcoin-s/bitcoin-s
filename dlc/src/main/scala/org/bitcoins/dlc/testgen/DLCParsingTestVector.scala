@@ -155,8 +155,11 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "length" -> Element(tlv.length),
           "outcomes" -> MultiElement(outcomes.map {
             case (outcome, amt) =>
-              NamedMultiElement("outcome" -> CryptoUtil.sha256(outcome).bytes,
-                                "localPayout" -> amt.toUInt64.bytes)
+              NamedMultiElement(
+                "outcome" -> CryptoUtil
+                  .taggedSha256(outcome, "DLC/oracle/attestation/v0")
+                  .bytes,
+                "localPayout" -> amt.toUInt64.bytes)
           })
         )
         DLCTLVTestVector(tlv, "contract_info_v0", fields)

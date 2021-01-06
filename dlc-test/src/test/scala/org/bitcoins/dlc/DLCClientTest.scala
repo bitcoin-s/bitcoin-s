@@ -371,7 +371,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
           outcomes(outcomeIndex.toInt) match {
             case EnumOutcome(outcome) =>
               val sig = oraclePrivKey.schnorrSignWithNonce(
-                CryptoUtil.sha256(outcome).bytes,
+                CryptoUtil
+                  .taggedSha256(outcome, "DLC/oracle/attestation/v0")
+                  .bytes,
                 preCommittedK)
               Vector(sig)
             case UnsignedNumericOutcome(_) => fail("Expected EnumOutcome")
@@ -400,7 +402,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
           digits.zip(preCommittedKs.take(digits.length)).map {
             case (digit, kValue) =>
               oraclePrivKey.schnorrSignWithNonce(
-                CryptoUtil.sha256(digit.toString).bytes,
+                CryptoUtil
+                  .taggedSha256(digit.toString, "DLC/oracle/attestation/v0")
+                  .bytes,
                 kValue)
           }
         }
@@ -560,7 +564,10 @@ class DLCClientTest extends BitcoinSAsyncTest {
       cetFailures = outcomes.map { outcome =>
         val oracleSig =
           oraclePrivKey.schnorrSignWithNonce(
-            CryptoUtil.sha256(outcome.asInstanceOf[EnumOutcome].outcome).bytes,
+            CryptoUtil
+              .taggedSha256(outcome.asInstanceOf[EnumOutcome].outcome,
+                            "DLC/oracle/attestation/v0")
+              .bytes,
             preCommittedK)
 
         for {
@@ -670,10 +677,11 @@ class DLCClientTest extends BitcoinSAsyncTest {
         case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomes) =>
           val outcome = outcomes(outcomeIndex).asInstanceOf[EnumOutcome]
           val oracleSig =
-            oraclePrivKey.schnorrSignWithNonce(CryptoUtil
-                                                 .sha256(outcome.outcome)
-                                                 .bytes,
-                                               preCommittedK)
+            oraclePrivKey.schnorrSignWithNonce(
+              CryptoUtil
+                .taggedSha256(outcome.outcome, "DLC/oracle/attestation/v0")
+                .bytes,
+              preCommittedK)
 
           assertCorrectSigDerivation(offerSetup = offerSetup,
                                      dlcOffer = dlcOffer,
@@ -707,7 +715,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
               .map {
                 case (digit, kVal) =>
                   oraclePrivKey.schnorrSignWithNonce(
-                    CryptoUtil.sha256(digit.toString).bytes,
+                    CryptoUtil
+                      .taggedSha256(digit.toString, "DLC/oracle/attestation/v0")
+                      .bytes,
                     kVal)
               }
 

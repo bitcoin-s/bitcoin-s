@@ -269,7 +269,7 @@ object DLCStatus {
       val (sigPubKey, numSigs) = outcome match {
         case EnumOutcome(outcome) =>
           val sigPoint = oraclePubKey.computeSigPoint(
-            CryptoUtil.sha256(outcome),
+            CryptoUtil.taggedSha256(outcome, "DLC/oracle/attestation/v0"),
             aggregateR(1))
 
           (sigPoint, 1)
