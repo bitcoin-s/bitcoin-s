@@ -1,5 +1,5 @@
 ---
-id: version-v0.4-contributing-website
+id: version-0.4.0-contributing-website
 title: Contributing to the website
 original_id: contributing-website
 ---

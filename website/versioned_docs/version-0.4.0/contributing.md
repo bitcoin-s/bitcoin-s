@@ -1,5 +1,5 @@
 ---
-id: version-v0.4-contributing
+id: version-0.4.0-contributing
 title: Contributing
 original_id: contributing
 ---
