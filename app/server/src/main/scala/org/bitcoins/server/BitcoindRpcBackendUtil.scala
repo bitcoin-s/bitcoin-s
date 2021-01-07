@@ -54,7 +54,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
     for {
       bitcoindHeight <- bitcoind.getBlockCount
-      walletStateOpt <- wallet.getSyncHeight()
+      walletStateOpt <- wallet.getSyncDescriptorOpt()
       _ <- walletStateOpt match {
         case None =>
           for {

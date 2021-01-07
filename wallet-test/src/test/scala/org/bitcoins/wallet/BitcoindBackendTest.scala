@@ -72,7 +72,7 @@ class BitcoindBackendTest extends BitcoinSAsyncTest with EmbeddedPg {
 
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
-      syncHeightOpt <- wallet.getSyncHeight()
+      syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
       assert(balance == amountToSend)
       assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
