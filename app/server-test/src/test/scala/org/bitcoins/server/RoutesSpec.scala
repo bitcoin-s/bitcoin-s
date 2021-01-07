@@ -917,7 +917,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Bech32Address
         .fromString(dummyAddress),
       CETSignatures(dummyOutcomeSigs, dummyPartialSig),
-      None,
+      DLCAccept.NoNegotiationFields,
       Sha256Digest.empty
     )
 

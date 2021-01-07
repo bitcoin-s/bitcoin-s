@@ -40,7 +40,7 @@ case class DLCAcceptDb(
               fundingInputs,
               changeAddress,
               cetSigs,
-              None,
+              DLCAccept.NoNegotiationFields,
               tempContractId)
   }
 
@@ -54,7 +54,7 @@ case class DLCAcceptDb(
                          pubKeys,
                          fundingInputs,
                          changeAddress,
-                         None,
+                         DLCAccept.NoNegotiationFields,
                          tempContractId)
   }
 }

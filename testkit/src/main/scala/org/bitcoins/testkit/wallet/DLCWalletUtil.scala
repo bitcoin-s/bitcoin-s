@@ -145,7 +145,7 @@ object DLCWalletUtil {
     Vector(dummyFundingInputs.last),
     dummyAddress,
     dummyCETSigs,
-    None,
+    DLCAccept.NoNegotiationFields,
     sampleDLCOffer.tempContractId
   )
 

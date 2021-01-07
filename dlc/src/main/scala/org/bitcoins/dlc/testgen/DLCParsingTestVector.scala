@@ -300,6 +300,19 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "contractTimeout" -> Element(contractTimeout.toUInt32)
         )
         DLCMessageTestVector(LnMessage(tlv), "offer_dlc_v0", fields)
+      case NoNegotiationFieldsTLV =>
+        val fields = Vector(
+          "tpe" -> Element(NoNegotiationFieldsTLV.tpe),
+          "length" -> Element(tlv.length)
+        )
+        DLCTLVTestVector(tlv, "no_negotiation_fields", fields)
+      case NegotiationFieldsV1TLV(roundingIntervalsV0TLV) =>
+        val fields = Vector(
+          "tpe" -> Element(NegotiationFieldsV1TLV.tpe),
+          "length" -> Element(tlv.length),
+          "rounding_intervals_v0" -> Element(roundingIntervalsV0TLV)
+        )
+        DLCTLVTestVector(tlv, "negotiation_fields_v1", fields)
       case DLCAcceptTLV(tempContractId,
                         totalCollateralSatoshis,
                         fundingPubKey,
@@ -308,7 +321,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
                         changeSPK,
                         cetSignatures,
                         refundSignature,
-                        roundingIntervals) =>
+                        negotiationFields) =>
         val fields = Vector(
           "tpe" -> Element(UInt16(DLCAcceptTLV.tpe.toInt)),
           "tempContractId" -> Element(tempContractId),
@@ -324,7 +337,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "changeSPK" -> Element(changeSPK.asmBytes),
           "cetSignatures" -> Element(cetSignatures),
           "refundSignature" -> Element(refundSignature.toRawRS),
-          "roundingIntervals" -> Element(roundingIntervals)
+          "negotiationFields" -> Element(negotiationFields)
         )
         DLCMessageTestVector(LnMessage(tlv), "accept_dlc_v0", fields)
       case DLCSignTLV(contractId,

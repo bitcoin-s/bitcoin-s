@@ -2,14 +2,13 @@ package org.bitcoins.dlc.builder
 
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc.{
   DLCFundingInput,
   DLCPublicKeys,
-  DLCTimeouts,
-  RoundingIntervals
+  DLCTimeouts
 }
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
@@ -41,14 +40,13 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     case network: BitcoinNetwork => network
   }
 
-  val DLCAcceptWithoutSigs(
-    acceptTotalCollateral: Satoshis,
-    DLCPublicKeys(acceptFundingKey: ECPublicKey,
-                  acceptFinalAddress: BitcoinAddress),
-    acceptFundingInputs: Vector[DLCFundingInput],
-    acceptChangeAddress: BitcoinAddress,
-    acceptRoundingIntervalsOpt: Option[RoundingIntervals],
-    tempContractId: Sha256Digest) = accept
+  val DLCAcceptWithoutSigs(acceptTotalCollateral: Satoshis,
+                           DLCPublicKeys(acceptFundingKey: ECPublicKey,
+                                         acceptFinalAddress: BitcoinAddress),
+                           acceptFundingInputs: Vector[DLCFundingInput],
+                           acceptChangeAddress: BitcoinAddress,
+                           acceptNegotiationFields: DLCAccept.NegotiationFields,
+                           tempContractId: Sha256Digest) = accept
 
   val totalInput: CurrencyUnit = offerTotalCollateral + acceptTotalCollateral
 
@@ -60,7 +58,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
 
   val oracleAndContractInfo: OracleAndContractInfo =
     oracleAndContractInfoBeforeAccept.updateOnAccept(totalInput.satoshis,
-                                                     acceptRoundingIntervalsOpt)
+                                                     acceptNegotiationFields)
 
   val offerTotalFunding: CurrencyUnit =
     offerFundingInputs.map(_.output.value).sum

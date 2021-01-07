@@ -2,7 +2,11 @@ package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.dlc.DLCMessage.{ContractInfo, OracleInfo}
+import org.bitcoins.core.protocol.dlc.DLCMessage.{
+  ContractInfo,
+  DLCAccept,
+  OracleInfo
+}
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -196,7 +200,7 @@ object TestDLCClient {
       pubKeys = acceptPubKeys,
       fundingInputs = acceptFundingInputs,
       changeAddress = acceptChangeAddress,
-      roundingIntervalsOpt = None,
+      negotiationFields = DLCAccept.NoNegotiationFields,
       tempContractId = offer.tempContractId
     )
 

@@ -164,7 +164,8 @@ object TLV extends TLVParentFactory[TLV] {
     ) ++ EventDescriptorTLV.allFactories ++
       ContractInfoTLV.allFactories ++
       OracleInfoTLV.allFactories ++
-      OracleAnnouncementTLV.allFactories
+      OracleAnnouncementTLV.allFactories ++
+      NegotiationFieldsTLV.allFactories
   }
 
   // Need to override to be able to default to Unknown
@@ -1239,6 +1240,55 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
   }
 }
 
+sealed trait NegotiationFieldsTLV extends TLV
+
+object NegotiationFieldsTLV extends TLVParentFactory[NegotiationFieldsTLV] {
+
+  override val allFactories: Vector[TLVFactory[NegotiationFieldsTLV]] =
+    Vector(NoNegotiationFieldsTLVFactory, NegotiationFieldsV1TLV)
+
+  override val typeName: String = "NegotiationFieldsTLV"
+}
+
+case object NoNegotiationFieldsTLV extends NegotiationFieldsTLV {
+  override val tpe: BigSizeUInt = NoNegotiationFieldsTLVFactory.tpe
+
+  override val value: ByteVector = ByteVector.empty
+}
+
+object NoNegotiationFieldsTLVFactory
+    extends TLVFactory[NoNegotiationFieldsTLV.type] {
+  override val tpe: BigSizeUInt = BigSizeUInt(55334)
+
+  override def fromTLVValue(value: ByteVector): NoNegotiationFieldsTLV.type = {
+    require(value.isEmpty, "NoNegotiationsFieldsTLV must be empty")
+
+    NoNegotiationFieldsTLV
+  }
+}
+
+case class NegotiationFieldsV1TLV(
+    roundingIntervalsV0TLV: RoundingIntervalsV0TLV)
+    extends NegotiationFieldsTLV {
+  override val tpe: BigSizeUInt = NegotiationFieldsV1TLV.tpe
+
+  override val value: ByteVector = {
+    roundingIntervalsV0TLV.bytes
+  }
+}
+
+object NegotiationFieldsV1TLV extends TLVFactory[NegotiationFieldsV1TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(55336)
+
+  override def fromTLVValue(value: ByteVector): NegotiationFieldsV1TLV = {
+    val iter = ValueIterator(value)
+
+    val roundingIntervals = iter.take(RoundingIntervalsV0TLV)
+
+    NegotiationFieldsV1TLV(roundingIntervals)
+  }
+}
+
 case class DLCAcceptTLV(
     tempContractId: Sha256Digest,
     totalCollateralSatoshis: Satoshis,
@@ -1248,17 +1298,11 @@ case class DLCAcceptTLV(
     changeSPK: ScriptPubKey,
     cetSignatures: CETSignaturesTLV,
     refundSignature: ECDigitalSignature,
-    roundingIntervalsV0TLV: RoundingIntervalsV0TLV =
-      RoundingIntervalsV0TLV.noRounding)
+    negotiationFields: NegotiationFieldsTLV)
     extends TLV {
   override val tpe: BigSizeUInt = DLCAcceptTLV.tpe
 
   override val value: ByteVector = {
-    // TODO: Use of rounding intervals option here is a hack
-    val roundingIntervalsBytes =
-      if (roundingIntervalsV0TLV.isEmpty) ByteVector.empty
-      else roundingIntervalsV0TLV.bytes
-
     tempContractId.bytes ++
       satBytes(totalCollateralSatoshis) ++
       fundingPubKey.bytes ++
@@ -1267,7 +1311,7 @@ case class DLCAcceptTLV(
       TLV.encodeScript(changeSPK) ++
       cetSignatures.bytes ++
       refundSignature.toRawRS ++
-      roundingIntervalsBytes
+      negotiationFields.bytes
   }
 }
 
@@ -1286,10 +1330,7 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
     val changeSPK = iter.takeSPK()
     val cetSignatures = iter.take(CETSignaturesV0TLV)
     val refundSignature = ECDigitalSignature.fromRS(iter.take(64))
-    val roundingIntervals =
-      if (iter.current.isEmpty)
-        RoundingIntervalsV0TLV.noRounding
-      else iter.take(RoundingIntervalsV0TLV)
+    val negotiationFields = iter.take(NegotiationFieldsTLV)
 
     DLCAcceptTLV(tempContractId,
                  totalCollateralSatoshis,
@@ -1299,7 +1340,7 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
                  changeSPK,
                  cetSignatures,
                  refundSignature,
-                 roundingIntervals)
+                 negotiationFields)
   }
 }
 

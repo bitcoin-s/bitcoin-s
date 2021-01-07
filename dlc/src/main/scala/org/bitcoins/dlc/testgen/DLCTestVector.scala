@@ -167,7 +167,7 @@ case class ValidTestInputs(
                     acceptParams.payoutAddress),
       acceptParams.fundingInputs,
       acceptParams.changeAddress,
-      None,
+      DLCAccept.NoNegotiationFields,
       offer.tempContractId
     )
 

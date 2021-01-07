@@ -425,23 +425,22 @@ object DLCMessage {
 
     def updateOnAccept(
         newTotalCollateral: Satoshis,
-        roundingIntervalsOpt: Option[
-          RoundingIntervals]): OracleAndContractInfo = {
+        negotiationFields: DLCAccept.NegotiationFields): OracleAndContractInfo = {
       if (newTotalCollateral == totalCollateral) {
         this
       } else {
         offerContractInfo match {
           case _: SingleNonceContractInfo =>
-            if (roundingIntervalsOpt.isDefined) {
+            if (negotiationFields != DLCAccept.NoNegotiationFields) {
               throw new IllegalArgumentException(
-                s"Cannot have rounding intervals for single nonce contract: $roundingIntervalsOpt")
+                s"Cannot have rounding intervals for single nonce contract: $negotiationFields")
             }
             this.copy(totalCollateral = newTotalCollateral)
           case info: MultiNonceContractInfo =>
-            val newRoundingIntervals = roundingIntervalsOpt match {
-              case Some(acceptRoundingIntervals) =>
+            val newRoundingIntervals = negotiationFields match {
+              case DLCAccept.NegotiationFieldsV1(acceptRoundingIntervals) =>
                 info.roundingIntervals.minRoundingWith(acceptRoundingIntervals)
-              case None => info.roundingIntervals
+              case DLCAccept.NoNegotiationFields => info.roundingIntervals
             }
             this.copy(offerContractInfo =
                         info.copy(totalCollateral = newTotalCollateral,
@@ -569,7 +568,7 @@ object DLCMessage {
       pubKeys: DLCPublicKeys,
       fundingInputs: Vector[DLCFundingInput],
       changeAddress: BitcoinAddress,
-      roundingIntervalsOpt: Option[RoundingIntervals],
+      negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest) {
 
     def withSigs(cetSigs: CETSignatures): DLCAccept = {
@@ -579,7 +578,7 @@ object DLCMessage {
         fundingInputs = fundingInputs,
         changeAddress = changeAddress,
         cetSigs = cetSigs,
-        roundingIntervalsOpt = roundingIntervalsOpt,
+        negotiationFields = negotiationFields,
         tempContractId = tempContractId
       )
     }
@@ -591,7 +590,7 @@ object DLCMessage {
       fundingInputs: Vector[DLCFundingInput],
       changeAddress: BitcoinAddress,
       cetSigs: CETSignatures,
-      roundingIntervalsOpt: Option[RoundingIntervals], // TODO: This is a hack
+      negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest)
       extends DLCSetupMessage {
 
@@ -606,8 +605,7 @@ object DLCMessage {
         cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
         refundSignature = ECDigitalSignature.fromFrontOfBytes(
           cetSigs.refundSig.signature.bytes),
-        roundingIntervalsV0TLV =
-          roundingIntervalsOpt.getOrElse(RoundingIntervals.noRounding).toTLV
+        negotiationFields = negotiationFields.toTLV
       )
     }
 
@@ -620,12 +618,39 @@ object DLCMessage {
                            pubKeys,
                            fundingInputs,
                            changeAddress,
-                           roundingIntervalsOpt,
+                           negotiationFields,
                            tempContractId)
     }
   }
 
   object DLCAccept {
+
+    sealed trait NegotiationFields extends TLVSerializable[NegotiationFieldsTLV]
+
+    case object NoNegotiationFields
+        extends TLVSerializable[NoNegotiationFieldsTLV.type]
+        with NegotiationFields {
+      override def toTLV: NoNegotiationFieldsTLV.type = NoNegotiationFieldsTLV
+    }
+
+    case class NegotiationFieldsV1(roundingIntervals: RoundingIntervals)
+        extends TLVSerializable[NegotiationFieldsV1TLV]
+        with NegotiationFields {
+
+      override def toTLV: NegotiationFieldsV1TLV =
+        NegotiationFieldsV1TLV(roundingIntervals.toTLV)
+    }
+
+    object NegotiationFields {
+
+      def fromTLV(tlv: NegotiationFieldsTLV): NegotiationFields = {
+        tlv match {
+          case NoNegotiationFieldsTLV => NoNegotiationFields
+          case NegotiationFieldsV1TLV(roundingIntervalsTLV) =>
+            NegotiationFieldsV1(RoundingIntervals.fromTLV(roundingIntervalsTLV))
+        }
+      }
+    }
 
     def fromTLV(
         accept: DLCAcceptTLV,
@@ -635,9 +660,6 @@ object DLCMessage {
         case CETSignaturesV0TLV(sigs) =>
           outcomes.zip(sigs)
       }
-      val roundingIntervalsOpt =
-        if (accept.roundingIntervalsV0TLV.isEmpty) None
-        else Some(RoundingIntervals.fromTLV(accept.roundingIntervalsV0TLV))
 
       DLCAccept(
         totalCollateral = accept.totalCollateralSatoshis,
@@ -655,7 +677,7 @@ object DLCMessage {
             accept.fundingPubKey,
             ECDigitalSignature(
               accept.refundSignature.bytes :+ HashType.sigHashAll.byte))),
-        roundingIntervalsOpt = roundingIntervalsOpt,
+        negotiationFields = NegotiationFields.fromTLV(accept.negotiationFields),
         tempContractId = accept.tempContractId
       )
     }
