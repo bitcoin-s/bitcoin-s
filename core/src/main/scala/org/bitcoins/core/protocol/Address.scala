@@ -88,7 +88,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
 
   def checksum: Vector[UInt5] = Bech32Address.createChecksum(hrp, data)
 
-  override def scriptPubKey: WitnessScriptPubKey = {
+  override def scriptPubKey: WitnessScriptPubKeyV0 = {
     Bech32Address.fromStringToWitSPK(value).get
   }
 
@@ -99,9 +99,6 @@ sealed abstract class Bech32Address extends BitcoinAddress {
         Sha256Hash160Digest(byteVector)
       case _: P2WSHWitnessSPKV0 =>
         Sha256Digest(byteVector)
-      case _: UnassignedWitnessScriptPubKey =>
-        throw new IllegalArgumentException(
-          s"Cannot parse the hash of an unassigned witness scriptpubkey for bech32 address")
     }
   }
 
@@ -149,7 +146,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   /** Tries to convert the given string a to a
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
     */
-  def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
+  def fromStringToWitSPK(string: String): Try[WitnessScriptPubKeyV0] = {
     val decoded = fromStringT(string)
     decoded.flatMap { bech32Addr =>
       val bytes = bech32Addr.data
@@ -161,7 +158,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
       witVersion match {
         case Some(v) =>
           val witSPK = Try(
-            WitnessScriptPubKey(
+            WitnessScriptPubKeyV0(
               List(v.version) ++ pushOp ++ List(ScriptConstant(progBytes))))
           witSPK match {
             case Success(spk) => Success(spk)
