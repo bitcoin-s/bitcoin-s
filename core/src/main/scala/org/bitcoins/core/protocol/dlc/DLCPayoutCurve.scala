@@ -171,7 +171,7 @@ sealed trait DLCPayoutCurveComponent {
   protected def bigDecimalSats(bd: BigDecimal): Satoshis = {
     Satoshis(
       bd.setScale(6, RoundingMode.HALF_UP)
-        .setScale(0, RoundingMode.FLOOR)
+        .setScale(0, RoundingMode.HALF_UP)
         .toLongExact)
   }
 }
