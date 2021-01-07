@@ -103,6 +103,7 @@ trait CryptoUtil {
     sha256(schnorrAuxTagBytes ++ bytes)
   }
 
+  // The tag "DLC/oracle/attestation/v0"
   private val dlcAttestationTagBytes = {
     ByteVector
       .fromValidHex(
@@ -118,6 +119,7 @@ trait CryptoUtil {
     sha256DLCAttestation(CryptoUtil.serializeForHash(str))
   }
 
+  // The tag "DLC/oracle/announcement/v0"
   private val dlcAnnouncementTagBytes = {
     ByteVector
       .fromValidHex(
