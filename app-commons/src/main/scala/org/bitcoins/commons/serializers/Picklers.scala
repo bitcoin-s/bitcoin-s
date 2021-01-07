@@ -101,8 +101,8 @@ object Picklers {
   implicit val contractInfoPickler: ReadWriter[ContractInfo] =
     readwriter[String].bimap(_.hex, ContractInfo.fromHex)
 
-  implicit val contractInfoTLVPickler: ReadWriter[ContractInfoTLV] =
-    readwriter[String].bimap(_.hex, ContractInfoTLV.fromHex)
+  implicit val contractInfoTLVPickler: ReadWriter[ContractInfoV0TLV] =
+    readwriter[String].bimap(_.hex, ContractInfoV0TLV.fromHex)
 
   implicit val schnorrDigitalSignaturePickler: ReadWriter[
     SchnorrDigitalSignature] =
@@ -164,7 +164,6 @@ object Picklers {
         "paramHash" -> Str(paramHash.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -185,7 +184,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -206,7 +204,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -228,7 +225,6 @@ object Picklers {
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -251,7 +247,6 @@ object Picklers {
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -280,7 +275,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -313,7 +307,6 @@ object Picklers {
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
-        "oracleInfo" -> Str(oracleInfo.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
           timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -338,7 +331,6 @@ object Picklers {
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
-      "oracleInfo" -> Str(oracleInfo.hex),
       "contractInfo" -> Str(contractInfo.hex),
       "contractMaturity" -> Num(
         timeouts.contractMaturity.toUInt32.toLong.toDouble),
@@ -367,8 +359,7 @@ object Picklers {
     val state = DLCState.fromString(obj("state").str)
     val isInitiator = obj("isInitiator").bool
     val tempContractId = Sha256Digest(obj("tempContractId").str)
-    val oracleInfo = OracleInfo(obj("oracleInfo").str)
-    val contractInfoTLV = ContractInfoTLV(obj("contractInfo").str)
+    val contractInfoTLV = ContractInfoV0TLV(obj("contractInfo").str)
     val contractMaturity =
       BlockStamp(UInt32(obj("contractMaturity").num.toLong))
     val contractTimeout = BlockStamp(UInt32(obj("contractTimeout").num.toLong))
@@ -398,7 +389,6 @@ object Picklers {
           paramHash,
           isInitiator,
           tempContractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -411,7 +401,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -424,7 +413,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -437,7 +425,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -451,7 +438,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -465,7 +451,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -484,7 +469,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -501,7 +485,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,

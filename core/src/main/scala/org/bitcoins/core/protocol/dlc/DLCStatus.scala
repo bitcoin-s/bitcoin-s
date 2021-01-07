@@ -25,7 +25,6 @@ sealed trait DLCStatus {
   def isInitiator: Boolean
   def state: DLCState
   def tempContractId: Sha256Digest
-  def oracleInfo: OracleInfo
   def contractInfo: ContractInfo
   def timeouts: DLCTimeouts
   def feeRate: FeeUnit
@@ -59,7 +58,6 @@ object DLCStatus {
       paramHash: Sha256DigestBE,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -74,7 +72,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -89,7 +86,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -104,7 +100,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -120,7 +115,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -136,7 +130,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -155,7 +148,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -175,7 +167,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -244,8 +235,9 @@ object DLCStatus {
     require(cetSigs.size == 2,
             s"There must be only 2 signatures, got ${cetSigs.size}")
 
-    val oraclePubKey = offer.oracleInfo.pubKey
-    val rVals = offer.oracleInfo.nonces
+    val oraclePubKey =
+      offer.oracleInfo.asInstanceOf[SingleOracleInfo].publicKey // FIXME
+    val rVals = offer.oracleInfo.asInstanceOf[SingleOracleInfo].nonces // FIXME
 
     def aggregateR(numSigs: Int): SchnorrNonce = {
       rVals.take(numSigs).map(_.publicKey).reduce(_.add(_)).schnorrNonce
@@ -296,8 +288,8 @@ object DLCStatus {
     val outcomeValues = wCET.outputs.map(_.value).sorted
     val totalCollateral = offer.totalCollateral + accept.totalCollateral
 
-    val possibleMessages = offer.contractInfo match {
-      case DLCMessage.SingleNonceContractInfo(outcomeValueMap) =>
+    val possibleMessages = offer.contractInfo.contractDescriptor match {
+      case DLCMessage.EnumContractDescriptor(outcomeValueMap) =>
         outcomeValueMap
           .filter {
             case (_, amt) =>
@@ -306,8 +298,8 @@ object DLCStatus {
                 .sorted == outcomeValues
           }
           .map(_._1)
-      case info: DLCMessage.MultiNonceContractInfo =>
-        info.outcomeVec
+      case _: DLCMessage.NumericContractDescriptor =>
+        offer.contractInfo.outcomeVecOpt.get
           .filter {
             case (_, amt) =>
               val amts = Vector(amt, totalCollateral - amt)
@@ -350,7 +342,7 @@ object DLCStatus {
     val sigOpt = outcomeSigs.find {
       case (outcome, adaptorSig) =>
         val possibleOracleSig = sigFromMsgAndSigs(outcome, adaptorSig, cetSig)
-        val sigPoint = offer.oracleAndContractInfo.sigPointForOutcome(outcome)
+        val sigPoint = offer.contractInfo.sigPointForOutcome(outcome)
         possibleOracleSig.sig.getPublicKey == sigPoint
     }
 

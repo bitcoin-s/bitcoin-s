@@ -263,9 +263,9 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       .base[ContractInfo, String](_.hex, ContractInfo.fromHex)
   }
 
-  implicit val contractInfoTLVMapper: BaseColumnType[ContractInfoTLV] = {
+  implicit val contractInfoTLVMapper: BaseColumnType[ContractInfoV0TLV] = {
     MappedColumnType
-      .base[ContractInfoTLV, String](_.hex, ContractInfoTLV.fromHex)
+      .base[ContractInfoV0TLV, String](_.hex, ContractInfoV0TLV.fromHex)
   }
 
   implicit val dlcOutcomeTypeMapper: BaseColumnType[DLCOutcomeType] = {

@@ -73,7 +73,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
       builder.offerFundingKey
     }
 
-    val adaptorPoint = builder.oracleAndContractInfo.sigPointForOutcome(outcome)
+    val adaptorPoint = builder.contractInfo.sigPointForOutcome(outcome)
 
     val cet = Await.result(builder.buildCET(outcome), 5.seconds)
 
@@ -93,7 +93,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
   def verifyCETSigs(sigs: Vector[(DLCOutcomeType, ECAdaptorSignature)])(implicit
       ec: ExecutionContext): Future[Boolean] = {
     val correctNumberOfSigs =
-      sigs.size >= builder.oracleAndContractInfo.allOutcomes.length
+      sigs.size >= builder.contractInfo.allOutcomes.length
 
     def runVerify(
         outcomeSigs: Vector[(DLCOutcomeType, ECAdaptorSignature)]): Future[

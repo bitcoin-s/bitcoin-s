@@ -28,7 +28,7 @@ object DLCParsingTestVectorGen
   override def generateTestVectors(): Future[Vector[DLCParsingTestVector]] = {
     Future.successful(
       Vector(
-        DLCTLVGen.contractInfoParsingTestVector(),
+        DLCTLVGen.contractDescriptorParsingTestVector(),
         DLCTLVGen.oracleInfoParsingTestVector(),
         DLCTLVGen.fundingInputParsingTestVector(),
         DLCTLVGen.cetSigsParsingTestVector(),

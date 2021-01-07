@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.builder
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.OracleAndContractInfo
+import org.bitcoins.core.protocol.dlc.DLCMessage.ContractInfo
 import org.bitcoins.core.protocol.dlc.DLCTimeouts
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
@@ -25,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Contract Execution Transactions (CETs)
   */
 case class DLCCETBuilder(
-    oracleAndContractInfo: OracleAndContractInfo,
+    contractInfo: ContractInfo,
     offerFundingKey: ECPublicKey,
     offerFinalSPK: ScriptPubKey,
     acceptFundingKey: ECPublicKey,
@@ -53,7 +53,7 @@ case class DLCCETBuilder(
       ec: ExecutionContext): Future[WitnessTransaction] = {
     val builder = RawTxBuilder().setLockTime(timeouts.contractMaturity.toUInt32)
 
-    val (offerValue, acceptValue) = oracleAndContractInfo.getPayouts(msg)
+    val (offerValue, acceptValue) = contractInfo.getPayouts(msg)
 
     builder += TransactionOutput(offerValue, offerFinalSPK)
     builder += TransactionOutput(acceptValue, acceptFinalSPK)

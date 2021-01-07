@@ -2,13 +2,9 @@ package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAccept,
-  OracleInfo
-}
-import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.dlc.DLCMessage.{ContractInfo, DLCAccept}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -58,7 +54,7 @@ case class TestDLCClient(
 
   private val dlcExecutor = DLCExecutor(dlcTxSigner)
 
-  val messages: Vector[DLCOutcomeType] = offer.oracleAndContractInfo.allOutcomes
+  val messages: Vector[DLCOutcomeType] = offer.contractInfo.allOutcomes
 
   val timeouts: DLCTimeouts = offer.timeouts
 
@@ -127,7 +123,6 @@ object TestDLCClient {
 
   def apply(
       outcomes: ContractInfo,
-      oracleInfo: OracleInfo,
       isInitiator: Boolean,
       fundingPrivKey: ECPrivateKey,
       payoutPrivKey: ECPrivateKey,
@@ -147,8 +142,10 @@ object TestDLCClient {
       network
     )
 
-    val remoteOutcomes: ContractInfo =
-      outcomes.flip((input + remoteInput).satoshis)
+    val remoteOutcomes: ContractInfo = {
+      outcomes.copy(contractDescriptor =
+        outcomes.contractDescriptor.flip((input + remoteInput).satoshis))
+    }
 
     val changeAddress = BitcoinAddress.fromScriptPubKey(changeSPK, network)
     val remoteChangeAddress =
@@ -185,8 +182,7 @@ object TestDLCClient {
     }
 
     val offer = DLCMessage.DLCOffer(
-      oracleAndContractInfo =
-        DLCMessage.OracleAndContractInfo(oracleInfo, offerOutcomes),
+      contractInfo = offerOutcomes,
       pubKeys = offerPubKeys,
       totalCollateral = offerInput.satoshis,
       fundingInputs = offerFundingInputs,
