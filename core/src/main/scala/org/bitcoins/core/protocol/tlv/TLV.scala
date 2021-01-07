@@ -2,9 +2,10 @@ package org.bitcoins.core.protocol.tlv
 
 import java.nio.charset.StandardCharsets
 import java.time.Instant
-
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
+import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.SigningVersion.DLCOracleV0SigningVersion
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.TLV.{
   DecodeTLVResult,
@@ -439,6 +440,12 @@ object PongTLV extends TLVFactory[PongTLV] {
 
 sealed trait EventDescriptorTLV extends TLV {
   def noncesNeeded: Int
+
+  /**
+    * Event descriptors all use the same signing version as of now.
+    * @see https://github.com/discreetlogcontracts/dlcspecs/pull/113
+    */
+  def signingVersion: SigningVersion = DLCOracleV0SigningVersion
 }
 
 object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
