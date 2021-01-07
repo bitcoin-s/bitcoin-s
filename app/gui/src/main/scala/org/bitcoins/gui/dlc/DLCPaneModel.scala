@@ -158,7 +158,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
           val announcementSig =
             privKey.schnorrSign(
               CryptoUtil
-                .taggedSha256(oracleEvent.bytes, "DLC/oracle/announcement/v0")
+                .sha256DLCAnnouncement(oracleEvent.bytes)
                 .bytes)
 
           val announcement =
@@ -176,7 +176,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
               contractInfo.keys.foreach { outcome =>
                 val bytes = outcome.serialized.head
                 val hash = CryptoUtil
-                  .taggedSha256(bytes, "DLC/oracle/attestation/v0")
+                  .sha256DLCAttestation(bytes)
                   .bytes
                 val sig = privKey.schnorrSignWithNonce(hash, kValues.head)
                 builder.append(s"$outcome - ${sig.hex}\n")
@@ -195,7 +195,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
                 max.serialized.zip(kValues.take(max.digits.size)).map {
                   case (bytes, kValue) =>
                     val hash = CryptoUtil
-                      .taggedSha256(bytes, "DLC/oracle/attestation/v0")
+                      .sha256DLCAttestation(bytes)
                       .bytes
                     privKey.schnorrSignWithNonce(hash, kValue)
                 }
@@ -204,7 +204,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
                 middle.serialized.zip(kValues.take(middle.digits.size)).map {
                   case (bytes, kValue) =>
                     val hash = CryptoUtil
-                      .taggedSha256(bytes, "DLC/oracle/attestation/v0")
+                      .sha256DLCAttestation(bytes)
                       .bytes
                     privKey.schnorrSignWithNonce(hash, kValue)
                 }
@@ -213,7 +213,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
                 min.serialized.zip(kValues.take(min.digits.size)).map {
                   case (bytes, kValue) =>
                     val hash = CryptoUtil
-                      .taggedSha256(bytes, "DLC/oracle/attestation/v0")
+                      .sha256DLCAttestation(bytes)
                       .bytes
                     privKey.schnorrSignWithNonce(hash, kValue)
                 }

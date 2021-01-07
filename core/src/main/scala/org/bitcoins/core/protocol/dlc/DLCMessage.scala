@@ -66,7 +66,7 @@ object DLCMessage {
               s"Expected R value of $rValue, got ${sigs.head}")
           } else {
             pubKey.verify(CryptoUtil
-                            .taggedSha256(outcome, "DLC/oracle/attestation/v0")
+                            .sha256DLCAttestation(outcome)
                             .bytes,
                           sigs.head)
           }
@@ -116,11 +116,10 @@ object DLCMessage {
                   sig.rx == nonce,
                   s"Unexpected nonce in ${sig.hex}, expected ${nonce.hex}")
 
-                result && pubKey.verify(
-                  CryptoUtil
-                    .taggedSha256(digit.toString, "DLC/oracle/attestation/v0")
-                    .bytes,
-                  sig)
+                result && pubKey.verify(CryptoUtil
+                                          .sha256DLCAttestation(digit.toString)
+                                          .bytes,
+                                        sig)
             }
       }
     }
@@ -372,8 +371,7 @@ object DLCMessage {
               .find { possibleDigit =>
                 oracleInfo.pubKey.verify(
                   CryptoUtil
-                    .taggedSha256(possibleDigit.toString,
-                                  "DLC/oracle/attestation/v0")
+                    .sha256DLCAttestation(possibleDigit.toString)
                     .bytes,
                   sig)
               }

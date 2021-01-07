@@ -33,18 +33,17 @@ object DLCTxGen {
       SingleNonceOracleInfo(privKey.schnorrPublicKey, kVal.schnorrNonce)
     val realOutcome = contractInfo.keys(contractInfo.size / 2)
     val sig =
-      privKey.schnorrSignWithNonce(
-        CryptoUtil
-          .taggedSha256(realOutcome.outcome, "DLC/oracle/attestation/v0")
-          .bytes,
-        kVal)
+      privKey.schnorrSignWithNonce(CryptoUtil
+                                     .sha256DLCAttestation(realOutcome.outcome)
+                                     .bytes,
+                                   kVal)
     DLCParams(
       oracleInfo,
       SerializedContractInfoEntry.fromContractInfo(contractInfo),
       contractMaturityBound,
       contractTimeout,
       feeRate,
-      CryptoUtil.taggedSha256(realOutcome.outcome, "DLC/oracle/attestation/v0"),
+      CryptoUtil.sha256DLCAttestation(realOutcome.outcome),
       sig
     )
   }

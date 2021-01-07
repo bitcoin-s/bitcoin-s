@@ -55,9 +55,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
       .zip(nonces)
       .map {
         case (bytes, nonce) =>
-          computeSigPoint(
-            CryptoUtil.taggedSha256(bytes, "DLC/oracle/attestation/v0"),
-            nonce)
+          computeSigPoint(CryptoUtil.sha256DLCAttestation(bytes), nonce)
       }
       .reduce(_.add(_))
   }

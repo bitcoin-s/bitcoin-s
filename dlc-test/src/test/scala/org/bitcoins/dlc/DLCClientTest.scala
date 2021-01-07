@@ -372,7 +372,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
             case EnumOutcome(outcome) =>
               val sig = oraclePrivKey.schnorrSignWithNonce(
                 CryptoUtil
-                  .taggedSha256(outcome, "DLC/oracle/attestation/v0")
+                  .sha256DLCAttestation(outcome)
                   .bytes,
                 preCommittedK)
               Vector(sig)
@@ -403,7 +403,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
             case (digit, kValue) =>
               oraclePrivKey.schnorrSignWithNonce(
                 CryptoUtil
-                  .taggedSha256(digit.toString, "DLC/oracle/attestation/v0")
+                  .sha256DLCAttestation(digit.toString)
                   .bytes,
                 kValue)
           }
@@ -565,8 +565,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
         val oracleSig =
           oraclePrivKey.schnorrSignWithNonce(
             CryptoUtil
-              .taggedSha256(outcome.asInstanceOf[EnumOutcome].outcome,
-                            "DLC/oracle/attestation/v0")
+              .sha256DLCAttestation(outcome.asInstanceOf[EnumOutcome].outcome)
               .bytes,
             preCommittedK)
 
@@ -679,7 +678,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
           val oracleSig =
             oraclePrivKey.schnorrSignWithNonce(
               CryptoUtil
-                .taggedSha256(outcome.outcome, "DLC/oracle/attestation/v0")
+                .sha256DLCAttestation(outcome.outcome)
                 .bytes,
               preCommittedK)
 
@@ -716,7 +715,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
                 case (digit, kVal) =>
                   oraclePrivKey.schnorrSignWithNonce(
                     CryptoUtil
-                      .taggedSha256(digit.toString, "DLC/oracle/attestation/v0")
+                      .sha256DLCAttestation(digit.toString)
                       .bytes,
                     kVal)
               }
