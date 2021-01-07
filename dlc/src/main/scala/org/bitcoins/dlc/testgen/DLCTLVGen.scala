@@ -265,6 +265,7 @@ object DLCTLVGen {
               fundingInputs,
               changeAddress,
               cetSignatures,
+              DLCAccept.NoNegotiationFields,
               tempContractId)
   }
 
@@ -318,12 +319,15 @@ object DLCTLVGen {
 
     val tempContractId = offer.tempContractId
 
-    DLCAccept(totalCollateral.satoshis,
-              DLCPublicKeys(fundingPubKey, payoutAddress),
-              fundingInputs,
-              changeAddress,
-              cetSignatures,
-              tempContractId)
+    DLCAccept(
+      totalCollateral.satoshis,
+      DLCPublicKeys(fundingPubKey, payoutAddress),
+      fundingInputs,
+      changeAddress,
+      cetSignatures,
+      DLCAccept.NoNegotiationFields,
+      tempContractId
+    )
   }
 
   def dlcAcceptTLVFromOffer(

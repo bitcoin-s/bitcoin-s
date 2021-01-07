@@ -5,7 +5,11 @@ import org.bitcoins.core.protocol.dlc.DLCMessage.{
   MultiNonceContractInfo,
   SingleNonceContractInfo
 }
-import org.bitcoins.core.protocol.dlc.{DLCPayoutCurve, OutcomePayoutEndpoint}
+import org.bitcoins.core.protocol.dlc.{
+  DLCPayoutCurve,
+  OutcomePayoutEndpoint,
+  RoundingIntervals
+}
 import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.util.NumberUtil
 
@@ -45,12 +49,18 @@ object DLCTestUtil {
     (info, remoteInfo)
   }
 
-  /** Generates a collared forward contract */
+  /** Generates a collared forward contract.
+    *
+    * If roundingIntervals is noRounding and numRounds > 0, then
+    * roundingIntervals is ignored and instead the contract is rounded
+    * in numRounds different ways in between the collars.
+    * Otherwise roundingIntervals is used.
+    */
   def genMultiDigitContractInfo(
       numDigits: Int,
-      totalCollateral: CurrencyUnit): (
-      MultiNonceContractInfo,
-      MultiNonceContractInfo) = {
+      totalCollateral: CurrencyUnit,
+      roundingIntervals: RoundingIntervals = RoundingIntervals.noRounding,
+      numRounds: Int = 0): (MultiNonceContractInfo, MultiNonceContractInfo) = {
     val overMaxValue = Math.pow(10, numDigits).toLong
     // Left collar goes from [0, botCollar]
     val botCollar = NumberUtil.randomLong(overMaxValue / 2)
@@ -71,10 +81,22 @@ object DLCTestUtil {
         OutcomePayoutEndpoint(topCollar, rightVal),
         OutcomePayoutEndpoint(overMaxValue - 1, rightVal)
       ))
+    val roundingIntervalsToUse =
+      if (numRounds > 0 && roundingIntervals == RoundingIntervals.noRounding) {
+        val intervalStarts = 0.until(numRounds).toVector.map { num =>
+          val intervalStart =
+            ((numRounds - num) * botCollar + num * topCollar) / numRounds
+          val roundingMod = 1L << num
+          RoundingIntervals.IntervalStart(BigDecimal(intervalStart),
+                                          roundingMod)
+        }
+        RoundingIntervals(intervalStarts)
+      } else roundingIntervals
     val info = MultiNonceContractInfo(func,
                                       base = 10,
                                       numDigits,
-                                      totalCollateral.satoshis)
+                                      totalCollateral.satoshis,
+                                      roundingIntervalsToUse)
     val remoteInfo = info.flip(totalCollateral.satoshis)
     (info, remoteInfo)
   }

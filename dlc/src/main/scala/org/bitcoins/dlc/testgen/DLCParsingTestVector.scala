@@ -153,21 +153,18 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
         val fields = Vector(
           "tpe" -> Element(ContractInfoV0TLV.tpe),
           "length" -> Element(tlv.length),
-          "outcomes" -> MultiElement(outcomes.toVector.map {
+          "outcomes" -> MultiElement(outcomes.map {
             case (outcome, amt) =>
               NamedMultiElement("outcome" -> CryptoUtil.sha256(outcome).bytes,
                                 "localPayout" -> amt.toUInt64.bytes)
           })
         )
         DLCTLVTestVector(tlv, "contract_info_v0", fields)
-      case ContractInfoV1TLV(base, numDigits, totalCollateral, points) =>
+      case PayoutFunctionV0TLV(points) =>
         val fields = Vector(
-          "tpe" -> Element(ContractInfoV1TLV.tpe),
+          "tpe" -> Element(PayoutFunctionV0TLV.tpe),
           "length" -> Element(tlv.length),
-          "base" -> Element(BigSizeUInt(base)),
-          "numDigits" -> Element(UInt16(numDigits)),
-          "totalCollateral" -> Element(UInt64(totalCollateral.toLong)),
-          "numPoints" -> Element(BigSizeUInt(points.length)),
+          "numPoints" -> Element(UInt16(points.length)),
           "points" -> MultiElement(points.map { point =>
             NamedMultiElement(
               "isEndpoint" -> Element(ByteVector(point.leadingByte)),
@@ -175,6 +172,35 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
               "value" -> Element(UInt64(point.value.toLong))
             )
           })
+        )
+        DLCTLVTestVector(tlv, "payout_function_v0", fields)
+      case RoundingIntervalsV0TLV(intervalStarts) =>
+        val fields = Vector(
+          "tpe" -> Element(RoundingIntervalsV0TLV.tpe),
+          "length" -> Element(tlv.length),
+          "numIntervals" -> Element(UInt16(intervalStarts.length)),
+          "intervals" -> MultiElement(intervalStarts.map {
+            case (intervalStart, roundingMod) =>
+              NamedMultiElement(
+                "beginInterval" -> Element(BigSizeUInt(intervalStart)),
+                "roundingMod" -> Element(BigSizeUInt(roundingMod.toLong))
+              )
+          })
+        )
+        DLCTLVTestVector(tlv, "rounding_intervals_v0", fields)
+      case ContractInfoV1TLV(base,
+                             numDigits,
+                             totalCollateral,
+                             payoutFunction,
+                             roundingIntervals) =>
+        val fields = Vector(
+          "tpe" -> Element(ContractInfoV1TLV.tpe),
+          "length" -> Element(tlv.length),
+          "base" -> Element(BigSizeUInt(base)),
+          "numDigits" -> Element(UInt16(numDigits)),
+          "totalCollateral" -> Element(UInt64(totalCollateral.toLong)),
+          "payoutFunction" -> Element(payoutFunction),
+          "roundingIntervals" -> Element(roundingIntervals)
         )
         DLCTLVTestVector(tlv, "contract_info_v1", fields)
       case OracleInfoV0TLV(pubKey, rValue) =>
@@ -274,6 +300,19 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "contractTimeout" -> Element(contractTimeout.toUInt32)
         )
         DLCMessageTestVector(LnMessage(tlv), "offer_dlc_v0", fields)
+      case NoNegotiationFieldsTLV =>
+        val fields = Vector(
+          "tpe" -> Element(NoNegotiationFieldsTLV.tpe),
+          "length" -> Element(tlv.length)
+        )
+        DLCTLVTestVector(tlv, "no_negotiation_fields", fields)
+      case NegotiationFieldsV1TLV(roundingIntervalsV0TLV) =>
+        val fields = Vector(
+          "tpe" -> Element(NegotiationFieldsV1TLV.tpe),
+          "length" -> Element(tlv.length),
+          "rounding_intervals_v0" -> Element(roundingIntervalsV0TLV)
+        )
+        DLCTLVTestVector(tlv, "negotiation_fields_v1", fields)
       case DLCAcceptTLV(tempContractId,
                         totalCollateralSatoshis,
                         fundingPubKey,
@@ -281,7 +320,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
                         fundingInputs,
                         changeSPK,
                         cetSignatures,
-                        refundSignature) =>
+                        refundSignature,
+                        negotiationFields) =>
         val fields = Vector(
           "tpe" -> Element(UInt16(DLCAcceptTLV.tpe.toInt)),
           "tempContractId" -> Element(tempContractId),
@@ -296,7 +336,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "changeSPKLen" -> Element(UInt16(changeSPK.asmBytes.length)),
           "changeSPK" -> Element(changeSPK.asmBytes),
           "cetSignatures" -> Element(cetSignatures),
-          "refundSignature" -> Element(refundSignature.toRawRS)
+          "refundSignature" -> Element(refundSignature.toRawRS),
+          "negotiationFields" -> Element(negotiationFields)
         )
         DLCMessageTestVector(LnMessage(tlv), "accept_dlc_v0", fields)
       case DLCSignTLV(contractId,

@@ -126,9 +126,7 @@ trait TLVGen {
       (contractInfo, _) =
         DLCTestUtil.genContractInfos(outcomes.toVector, totalInput)
     } yield {
-      ContractInfoV0TLV(contractInfo.outcomeValueMap.map {
-        case (outcome, amt) => outcome.outcome -> amt
-      })
+      contractInfo.toTLV
     }
   }
 
@@ -292,14 +290,17 @@ trait TLVGen {
       cetSigs <- cetSignaturesV0TLV
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
-      DLCAcceptTLV(tempContractId,
-                   totalCollateralSatoshis,
-                   fundingPubKey,
-                   payoutAddress.scriptPubKey,
-                   fundingInputs,
-                   changeAddress.scriptPubKey,
-                   cetSigs,
-                   refundSig)
+      DLCAcceptTLV(
+        tempContractId,
+        totalCollateralSatoshis,
+        fundingPubKey,
+        payoutAddress.scriptPubKey,
+        fundingInputs,
+        changeAddress.scriptPubKey,
+        cetSigs,
+        refundSig,
+        NoNegotiationFieldsTLV
+      )
     }
   }
 
@@ -326,7 +327,8 @@ trait TLVGen {
         fundingInputs,
         changeAddress.scriptPubKey,
         cetSigs,
-        refundSig
+        refundSig,
+        NoNegotiationFieldsTLV
       )
     }
   }

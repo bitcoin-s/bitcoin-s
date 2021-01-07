@@ -4,7 +4,6 @@ import org.bitcoins.core.protocol.dlc.DLCMessage.{
   MultiNonceContractInfo,
   SingleNonceContractInfo
 }
-import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.dlc.DLCStatus
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
@@ -190,15 +189,15 @@ object ViewDLCDialog {
         case MultiNonceContractInfo(outcomeValueFunc,
                                     base,
                                     numDigits,
-                                    totalCollateral) =>
+                                    totalCollateral,
+                                    roundingIntervals) =>
           val previewGraphButton: Button = new Button("Preview Graph") {
             onAction = _ => {
-              DLCPlotUtil.plotCETsWithOriginalCurve(
-                base,
-                numDigits,
-                outcomeValueFunc,
-                totalCollateral,
-                RoundingIntervals.noRounding)
+              DLCPlotUtil.plotCETsWithOriginalCurve(base,
+                                                    numDigits,
+                                                    outcomeValueFunc,
+                                                    totalCollateral,
+                                                    roundingIntervals)
               ()
             }
           }

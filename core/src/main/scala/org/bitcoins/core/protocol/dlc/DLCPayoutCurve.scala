@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.tlv.{PayoutFunctionV0TLV, TLVPoint}
 import org.bitcoins.core.util.{Indexed, NumberUtil}
 
 import scala.math.BigDecimal.RoundingMode
@@ -11,6 +12,15 @@ case class DLCPayoutCurve(points: Vector[OutcomePayoutPoint]) {
             case (p1, p2) => p1.outcome < p2.outcome
           },
           s"Points must be ascending: $points")
+
+  def toTLV: PayoutFunctionV0TLV = {
+    PayoutFunctionV0TLV(points.map { point =>
+      TLVPoint(point.outcome,
+               point.roundedPayout,
+               point.extraPrecision,
+               point.isEndpoint)
+    })
+  }
 
   /** These points (and their indices in this.points) represent the endpoints
     * between which interpolation happens.
@@ -59,6 +69,17 @@ case class DLCPayoutCurve(points: Vector[OutcomePayoutPoint]) {
 
   def apply(outcome: Long, rounding: RoundingIntervals): Satoshis =
     getPayout(outcome, rounding)
+}
+
+object DLCPayoutCurve {
+
+  def fromTLV(tlv: PayoutFunctionV0TLV): DLCPayoutCurve = {
+    DLCPayoutCurve(tlv.points.map { point =>
+      val payoutWithPrecision =
+        point.value.toLong + (BigDecimal(point.extraPrecision) / (1 << 16))
+      OutcomePayoutPoint(point.outcome, payoutWithPrecision, point.isEndpoint)
+    })
+  }
 }
 
 /** A point on a DLC payout curve to be used for interpolation

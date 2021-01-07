@@ -639,6 +639,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         pubKeys = dlcPubKeys,
         fundingInputs = utxos,
         changeAddress = changeAddr,
+        negotiationFields = DLCAccept.NoNegotiationFields,
         tempContractId = offer.tempContractId
       )
 

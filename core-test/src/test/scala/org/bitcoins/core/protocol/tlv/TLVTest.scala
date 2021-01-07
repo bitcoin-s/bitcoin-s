@@ -11,6 +11,11 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
+  it must "have unique types" in {
+    val allTypes = TLV.allFactories.map(_.tpe)
+    assert(allTypes.distinct == allTypes)
+  }
+
   "UnknownTLV" must "have serialization symmetry" in {
     forAll(TLVGen.unknownTLV) { unknown =>
       assert(UnknownTLV(unknown.bytes) == unknown)
