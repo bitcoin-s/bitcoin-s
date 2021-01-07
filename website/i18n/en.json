@@ -344,138 +344,139 @@
       "version-0.3.0/wallet/version-0.3.0-wallet": {
         "title": "Wallet"
       },
-      "version-v0.4/applications/version-v0.4-cli": {
+      "version-0.4.0/applications/version-v0.4-cli": {
         "title": "CLI"
       },
-      "version-v0.4/applications/version-v0.4-configuration": {
+      "version-0.4.0/applications/version-v0.4-configuration": {
         "title": "Application Configuration"
       },
-      "version-v0.4/applications/version-v0.4-dlc": {
+      "version-0.4.0/applications/version-v0.4-dlc": {
         "title": "Executing A DLC with Bitcoin-S"
       },
-      "version-v0.4/applications/version-v0.4-gui": {
+      "version-0.4.0/applications/version-v0.4-gui": {
         "title": "GUI"
       },
-      "version-v0.4/applications/version-v0.4-node": {
+      "version-0.4.0/applications/version-v0.4-node": {
         "title": "Light Client"
       },
-      "version-v0.4/applications/version-v0.4-server": {
+      "version-0.4.0/applications/version-v0.4-server": {
         "title": "Application Server"
       },
-      "version-v0.4/applications/version-v0.4-wallet": {
+      "version-0.4.0/applications/version-v0.4-wallet": {
         "title": "Wallet"
       },
-      "version-v0.4/chain/version-v0.4-chain-query-api": {
+      "version-0.4.0/chain/version-v0.4-chain-query-api": {
         "title": "Chain Query API"
       },
-      "version-v0.4/chain/version-v0.4-chain": {
+      "version-0.4.0/chain/version-v0.4-chain": {
         "title": "Blockchain Verification"
       },
-      "version-v0.4/chain/version-v0.4-filter-sync": {
+      "version-0.4.0/chain/version-v0.4-filter-sync": {
         "title": "Syncing Blockfilters"
       },
-      "version-v0.4/config/version-v0.4-configuration": {
+      "version-0.4.0/config/version-v0.4-configuration": {
         "title": "Application Configuration"
       },
-      "version-v0.4/version-v0.4-contributing-website": {
+      "version-0.4.0/version-0.4.0-contributing-website": {
         "title": "Contributing to the website"
       },
-      "version-v0.4/version-v0.4-contributing": {
+      "version-0.4.0/version-0.4.0-contributing": {
         "title": "Contributing"
       },
-      "version-v0.4/core/version-v0.4-adding-spks": {
+      "version-0.4.0/core/version-v0.4-adding-spks": {
         "title": "Adding New Script Types"
       },
-      "version-v0.4/core/version-v0.4-addresses": {
+      "version-0.4.0/core/version-v0.4-addresses": {
         "title": "Generating Addresses"
       },
-      "version-v0.4/core/version-v0.4-core-intro": {
+      "version-0.4.0/core/version-v0.4-core-intro": {
         "title": "Core Module"
       },
-      "version-v0.4/core/version-v0.4-hd-keys": {
+      "version-0.4.0/core/version-v0.4-hd-keys": {
         "title": "HD Key Generation"
       },
-      "version-v0.4/core/version-v0.4-lightning-network": {
+      "version-0.4.0/core/version-v0.4-lightning-network": {
         "title": "Lightning Network Data Types"
       },
-      "version-v0.4/core/version-v0.4-psbts": {
+      "version-0.4.0/core/version-v0.4-psbts": {
         "title": "Partially Signed Bitcoin Transactions"
       },
-      "version-v0.4/core/version-v0.4-sign": {
+      "version-0.4.0/core/version-v0.4-sign": {
         "title": "Sign API"
       },
-      "version-v0.4/core/version-v0.4-spending-info": {
+      "version-0.4.0/core/version-v0.4-spending-info": {
         "title": "Signing Transactions"
       },
-      "version-v0.4/core/version-v0.4-txbuilder": {
+      "version-0.4.0/core/version-v0.4-txbuilder": {
         "title": "TxBuilder Example"
       },
-      "version-v0.4/crypto/version-v0.4-crypto-intro": {
+      "version-0.4.0/crypto/version-v0.4-crypto-intro": {
         "title": "Crypto Module"
       },
-      "version-v0.4/crypto/version-v0.4-sign": {
+      "version-0.4.0/crypto/version-v0.4-sign": {
         "title": "Sign API"
       },
-      "version-v0.4/fee-provider/version-v0.4-fee-provider": {
+      "version-0.4.0/fee-provider/version-v0.4-fee-provider": {
         "title": "Fee Provider"
       },
-      "version-v0.4/version-v0.4-getting-setup": {
+      "version-0.4.0/version-0.4.0-getting-setup": {
         "title": "Getting Bitcoin-S installed on your machine"
       },
-      "version-v0.4/version-v0.4-getting-started": {
+      "version-0.4.0/version-0.4.0-getting-started": {
         "title": "Intro and Getting Started"
       },
-      "version-v0.4/key-manager/version-v0.4-key-manager": {
+      "version-0.4.0/key-manager/version-v0.4-key-manager": {
         "title": "Key Manager"
       },
-      "version-v0.4/node/version-v0.4-node-api": {
+      "version-0.4.0/node/version-v0.4-node-api": {
         "title": "Node API"
       },
-      "version-v0.4/node/version-v0.4-node": {
+      "version-0.4.0/node/version-v0.4-node": {
         "title": "Light Client"
       },
-      "version-v0.4/rpc/version-v0.4-rpc-eclair": {
+      "version-0.4.0/rpc/version-v0.4-rpc-eclair": {
         "title": "Eclair"
       },
-      "version-v0.4/secp256k1/version-v0.4-jni-modify": {
+      "version-0.4.0/secp256k1/version-v0.4-jni-modify": {
         "title": "Adding to Secp256k1 JNI"
       },
-      "version-v0.4/secp256k1/version-v0.4-secp256k1": {
+      "version-0.4.0/secp256k1/version-v0.4-secp256k1": {
         "title": "Secp256k1"
       },
-      "version-v0.4/version-v0.4-security": {
+      "version-0.4.0/version-0.4.0-security": {
         "title": "Security"
       },
-      "version-v0.4/testkit/version-v0.4-testkit": {
+      "version-0.4.0/testkit/version-v0.4-testkit": {
         "title": "Testkit"
       },
-      "version-v0.4/wallet/version-v0.4-address-tagging": {
+      "version-0.4.0/wallet/version-v0.4-address-tagging": {
         "title": "Address and UTXO tagging"
       },
-      "version-v0.4/wallet/version-v0.4-chain-query-api": {
+      "version-0.4.0/wallet/version-v0.4-chain-query-api": {
         "title": "Chain Query API"
       },
-      "version-v0.4/wallet/version-v0.4-dlc": {
+      "version-0.4.0/wallet/version-v0.4-dlc": {
         "title": "Executing A DLC with Bitcoin-S"
       },
-      "version-v0.4/wallet/version-v0.4-node-api": {
+      "version-0.4.0/wallet/version-v0.4-node-api": {
         "title": "Node API"
       },
-      "version-v0.4/wallet/version-v0.4-wallet-callbacks": {
+      "version-0.4.0/wallet/version-v0.4-wallet-callbacks": {
         "title": "Wallet Callbacks"
       },
-      "version-v0.4/wallet/version-v0.4-wallet-get-address": {
+      "version-0.4.0/wallet/version-v0.4-wallet-get-address": {
         "title": "Wallet Get Address APIs"
       },
-      "version-v0.4/wallet/version-v0.4-wallet-rescan": {
+      "version-0.4.0/wallet/version-v0.4-wallet-rescan": {
         "title": "Wallet Rescans"
       },
-      "version-v0.4/wallet/version-v0.4-wallet": {
+      "version-0.4.0/wallet/version-v0.4-wallet": {
         "title": "Wallet"
       }
     },
     "links": {
       "Docs": "Docs",
+      "Download": "Download",
       "API": "API",
       "Help": "Help"
     },
