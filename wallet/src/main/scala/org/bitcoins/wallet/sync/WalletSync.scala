@@ -47,7 +47,7 @@ trait WalletSync extends BitcoinSLogger {
       accum: Vector[Block],
       getBlock: DoubleSha256DigestBE => Future[Block])(implicit
       ec: ExecutionContext): Future[Vector[Block]] = {
-    val initSyncDescriptorOptF = wallet.getSyncHeight()
+    val initSyncDescriptorOptF = wallet.getSyncDescriptorOpt()
     for {
       syncDescriptorOpt <- initSyncDescriptorOptF
       walletBestHash = syncDescriptorOpt match {

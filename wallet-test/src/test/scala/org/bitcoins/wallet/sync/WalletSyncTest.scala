@@ -30,7 +30,7 @@ class WalletSyncTest extends BitcoinSWalletTest {
     val bitcoindBestHeaderF = bitcoind.getBestBlockHeader()
     for {
       syncedWallet <- syncedWalletF
-      descriptorOpt <- syncedWallet.getSyncHeight()
+      descriptorOpt <- syncedWallet.getSyncDescriptorOpt()
       bitcoindBestHeader <- bitcoindBestHeaderF
     } yield {
       descriptorOpt match {
