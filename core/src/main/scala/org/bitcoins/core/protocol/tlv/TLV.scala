@@ -148,7 +148,7 @@ object TLV extends TLVParentFactory[TLV] {
 
   val typeName = "TLV"
 
-  val allFactories: Vector[TLVFactory[TLV]] = {
+  override lazy val allFactories: Vector[TLVFactory[TLV]] = {
     Vector(ErrorTLV,
            PingTLV,
            PongTLV,
