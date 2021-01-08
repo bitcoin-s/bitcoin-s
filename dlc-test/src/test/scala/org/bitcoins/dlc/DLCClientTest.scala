@@ -24,6 +24,7 @@ import org.bitcoins.dlc.testgen.{DLCTestUtil, TestDLCClient}
 import org.bitcoins.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BytesUtil}
 import org.scalatest.Assertion
+import scodec.bits.BitVector
 
 import scala.concurrent.{Future, Promise}
 
@@ -393,7 +394,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
             (2 * left + right) / 3 + (outcomeIndex % (right - left) / 3)
 
           val fullDigits =
-            NumberUtil.decompose(outcomeNum, base = 10, numOutcomes)
+            NumberUtil.decompose(outcomeNum, base = 2, numOutcomes)
 
           val digits =
             CETCalculator.searchForNumericOutcome(fullDigits, outcomes) match {
@@ -462,15 +463,16 @@ class DLCClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  val numDigitsToTest: Vector[Int] = Vector(2, 3, 5)
+  val numDigitsToTest: Vector[Int] = Vector(4, 5, 10)
 
   def runMultiNonceTests(
       exec: (Long, Int, Boolean) => Future[Assertion]): Future[Assertion] = {
     runTestsForParam(numDigitsToTest) { numDigits =>
       val randDigits = (0 until numDigits).toVector.map { _ =>
-        scala.util.Random.nextInt(10)
+        scala.util.Random.nextInt(2)
       }
-      val num = randDigits.mkString("").toLong
+      val num =
+        BitVector.fromValidBin(randDigits.mkString("")).toLong(signed = false)
 
       exec(num, numDigits, true)
     }
@@ -488,21 +490,24 @@ class DLCClientTest extends BitcoinSAsyncTest {
     val numDigits = 8
 
     val randDigits = (0 until numDigits).toVector.map { _ =>
-      scala.util.Random.nextInt(10)
+      scala.util.Random.nextInt(2)
     }
-    val num = randDigits.mkString("").toLong
+    val num =
+      BitVector.fromValidBin(randDigits.mkString("")).toLong(signed = false)
 
     executeForCase(num, numDigits, isMultiDigit = true)
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the refund case" in {
-    val testFs = numEnumOutcomesToTest.map { numOutcomes =>
-      executeRefundCase(numOutcomes, isMultiNonce = false).flatMap { _ =>
-        executeRefundCase(numOutcomes, isMultiNonce = true)
-      }
+    val testF1 = numEnumOutcomesToTest.map { numOutcomes =>
+      executeRefundCase(numOutcomes, isMultiNonce = false)
     }
 
-    Future.sequence(testFs).map(_ => succeed)
+    val testF2 = numDigitsToTest.map { numDigits =>
+      executeRefundCase(numDigits, isMultiNonce = true)
+    }
+
+    Future.sequence(Vector(testF1, testF2).flatten).map(_ => succeed)
   }
 
   it should "all work for a 100 outcome DLC" in {
@@ -697,12 +702,14 @@ class DLCClientTest extends BitcoinSAsyncTest {
   it should "be able to derive aggregate oracle signature from remote CET signatures" in {
     // Larger numbers of digits make tests take too long.
     // TODO: In the future when bases other than 10 can be used try more digits with base 2
-    val numDigitsToTest = Vector(2, 3)
+    val numDigitsToTest = Vector(5, 9)
     runTestsForParam(numDigitsToTest) { numDigits =>
+      val max = (1L << numDigits) - 1
       val outcomesToTest = 0
         .until(9)
         .toVector
-        .map(num => Vector(num) ++ Vector.fill(numDigits - 1)(0))
+        .map(num => (max / num.toDouble).toLong)
+        .map(num => NumberUtil.decompose(num, 2, numDigits))
 
       setupDLC(numDigits, isMultiDigit = true).flatMap {
         case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomes) =>

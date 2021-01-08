@@ -65,7 +65,7 @@ object DLCTestUtil {
       numRounds: Int = 0): (
       NumericContractDescriptor,
       NumericContractDescriptor) = {
-    val overMaxValue = Math.pow(10, numDigits).toLong
+    val overMaxValue = Math.pow(2, numDigits).toLong
     // Left collar goes from [0, botCollar]
     val botCollar = NumberUtil.randomLong(overMaxValue / 2)
     val halfWindow = scala.math.min(overMaxValue / 4, 2500)
