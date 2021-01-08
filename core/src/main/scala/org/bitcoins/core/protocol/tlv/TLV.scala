@@ -1141,9 +1141,10 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(55342)
 
   val dummy: ContractInfoV0TLV = {
-    ContractInfoV0TLV(Satoshis.zero,
-                      ContractDescriptorV0TLV(Vector.empty),
-                      OracleInfoV0TLV(OracleAnnouncementV0TLV.dummy))
+    ContractInfoV0TLV(
+      Satoshis.zero,
+      ContractDescriptorV0TLV(Vector("dummy" -> Satoshis(10000))),
+      OracleInfoV0TLV(OracleAnnouncementV0TLV.dummy))
   }
 
   override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {

@@ -37,7 +37,7 @@ class DLCMessageTest extends BitcoinSAsyncTest {
   it must "not allow a negative collateral for a DLCOffer" in {
     assertThrows[IllegalArgumentException](
       DLCOffer(
-        OracleAndContractInfo(OracleInfo.dummy, ContractInfo.empty),
+        ContractInfo.dummy,
         DLCPublicKeys(dummyPubKey, dummyAddress),
         Satoshis(-1),
         Vector.empty,

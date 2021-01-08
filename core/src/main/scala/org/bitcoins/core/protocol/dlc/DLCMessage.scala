@@ -385,6 +385,44 @@ object DLCMessage {
     }
   }
 
+  case class ContractDescriptorWithCollateral(
+      totalCollateral: Satoshis,
+      contractDescriptor: ContractDescriptor) {
+
+    /** Vector is always the most significant digits */
+    lazy val outcomeVecOpt: Option[Vector[(Vector[Int], Satoshis)]] = {
+      contractDescriptor match {
+        case _: EnumContractDescriptor => None
+        case descriptor: NumericContractDescriptor =>
+          val outcomeVec = CETCalculator.computeCETs(
+            base = 2,
+            descriptor.numDigits,
+            descriptor.outcomeValueFunc,
+            totalCollateral,
+            descriptor.roundingIntervals)
+
+          Some(outcomeVec)
+      }
+    }
+
+    lazy val allOutcomes: Vector[DLCOutcomeType] = {
+      contractDescriptor match {
+        case descriptor: EnumContractDescriptor => descriptor.keys
+        case _: NumericContractDescriptor =>
+          outcomeVecOpt.get.map {
+            case (outcome, _) => UnsignedNumericOutcome(outcome)
+          }
+      }
+    }
+
+    /** Returns the maximum payout this party could win from this contract */
+    val max: Satoshis = contractDescriptor match {
+      case descriptor: EnumContractDescriptor =>
+        descriptor.values.maxBy(_.toLong)
+      case _: NumericContractDescriptor => totalCollateral
+    }
+  }
+
   case class ContractInfo(
       totalCollateral: Satoshis,
       contractDescriptor: ContractDescriptor,
@@ -396,6 +434,17 @@ object DLCMessage {
                         contractDescriptor.toTLV,
                         oracleInfo.toTLV)
     }
+
+    val descriptorWithCollateral: ContractDescriptorWithCollateral =
+      ContractDescriptorWithCollateral(totalCollateral, contractDescriptor)
+
+    def outcomeVecOpt: Option[Vector[(Vector[Int], Satoshis)]] =
+      descriptorWithCollateral.outcomeVecOpt
+
+    def allOutcomes: Vector[DLCOutcomeType] =
+      descriptorWithCollateral.allOutcomes
+
+    def max: Satoshis = descriptorWithCollateral.max
 
     val descriptorAndInfo: Either[
       (EnumContractDescriptor, EnumOracleInfo),
@@ -412,20 +461,22 @@ object DLCMessage {
             s"All infos must be for the same kind of outcome: $this")
       }
 
-    /** Vector is always the most significant digits */
-    lazy val outcomeVecOpt: Option[Vector[(Vector[Int], Satoshis)]] = {
-      descriptorAndInfo match {
-        case Left(_) => None
-        case Right((descriptor, _)) =>
-          val outcomeVec = CETCalculator.computeCETs(
-            base = 2,
-            descriptor.numDigits,
-            descriptor.outcomeValueFunc,
-            totalCollateral,
-            descriptor.roundingIntervals)
+    lazy val outcomeMap: Map[
+      DLCOutcomeType,
+      (ECPublicKey, Satoshis, Satoshis)] = {
+      val builder =
+        HashMap.newBuilder[DLCOutcomeType, (ECPublicKey, Satoshis, Satoshis)]
 
-          Some(outcomeVec)
+      allOutcomes.foreach { msg =>
+        val offerPayout = apply(msg)
+        val acceptPayout = (totalCollateral - offerPayout).satoshis
+        val adaptorPoint =
+          oracleInfo.asInstanceOf[SingleOracleInfo].sigPoint(msg) // FIXME
+
+        builder.+=(msg -> (adaptorPoint, offerPayout, acceptPayout))
       }
+
+      builder.result()
     }
 
     def apply(outcome: DLCOutcomeType): Satoshis = {
@@ -457,40 +508,6 @@ object DLCMessage {
                 s"Expected UnsignedNumericOutcome: $outcome")
           }
       }
-    }
-
-    lazy val allOutcomes: Vector[DLCOutcomeType] = {
-      descriptorAndInfo match {
-        case Left((descriptor, _)) => descriptor.keys
-        case Right(_) =>
-          outcomeVecOpt.get.map {
-            case (outcome, _) => UnsignedNumericOutcome(outcome)
-          }
-      }
-    }
-
-    /** Returns the maximum payout this party could win from this contract */
-    val max: Satoshis = descriptorAndInfo match {
-      case Left((descriptor, _)) => descriptor.values.maxBy(_.toLong)
-      case Right(_)              => totalCollateral
-    }
-
-    lazy val outcomeMap: Map[
-      DLCOutcomeType,
-      (ECPublicKey, Satoshis, Satoshis)] = {
-      val builder =
-        HashMap.newBuilder[DLCOutcomeType, (ECPublicKey, Satoshis, Satoshis)]
-
-      allOutcomes.foreach { msg =>
-        val offerPayout = apply(msg)
-        val acceptPayout = (totalCollateral - offerPayout).satoshis
-        val adaptorPoint =
-          oracleInfo.asInstanceOf[SingleOracleInfo].sigPoint(msg) // FIXME
-
-        builder.+=(msg -> (adaptorPoint, offerPayout, acceptPayout))
-      }
-
-      builder.result()
     }
 
     def verifySigs(
@@ -588,6 +605,8 @@ object DLCMessage {
   object ContractInfo
       extends TLVDeserializable[ContractInfoV0TLV, ContractInfo](
         ContractInfoV0TLV) {
+
+    lazy val dummy: ContractInfo = fromTLV(ContractInfoV0TLV.dummy)
 
     override def fromTLV(tlv: ContractInfoV0TLV): ContractInfo = {
       ContractInfo(tlv.totalCollateral,
