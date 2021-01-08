@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.MultiNonceContractInfo
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.dlc.DLCMessage.NumericContractDescriptor
 import org.bitcoins.core.protocol.dlc.{
   DLCPayoutCurve,
   OutcomePayoutPoint,
@@ -22,9 +22,10 @@ import scala.util.{Failure, Success, Try}
 
 object InitNumericContractDialog {
 
-  def showAndWait(parentWindow: Window): Option[MultiNonceContractInfo] = {
+  def showAndWait(
+      parentWindow: Window): Option[(Satoshis, NumericContractDescriptor)] = {
     val dialog =
-      new Dialog[Option[MultiNonceContractInfo]]() {
+      new Dialog[Option[(Satoshis, NumericContractDescriptor)]]() {
         initOwner(parentWindow)
         title = "Initialize Demo Oracle"
         headerText = "Enter contract interpolation points"
@@ -151,9 +152,8 @@ object InitNumericContractDialog {
       onAction = _ => addRoundingRow()
     }
 
-    def getContractInfo: Try[MultiNonceContractInfo] = {
+    def getContractInfo: Try[(Satoshis, NumericContractDescriptor)] = {
       Try {
-        val base = baseTF.text.value.toInt
         val numDigits = numDigitsTF.text.value.toInt
         val totalCollateral = Satoshis(totalCollateralTF.text.value.toLong)
 
@@ -186,11 +186,10 @@ object InitNumericContractDialog {
         require(sorted == outcomesValuePoints, "Must be sorted by outcome")
 
         val func = DLCPayoutCurve(outcomesValuePoints)
-        MultiNonceContractInfo(func,
-                               base,
-                               numDigits,
-                               totalCollateral,
-                               RoundingIntervals(roundingIntervalsStarts))
+        (totalCollateral,
+         NumericContractDescriptor(func,
+                                   numDigits,
+                                   RoundingIntervals(roundingIntervalsStarts)))
       }
     }
 
@@ -274,13 +273,12 @@ object InitNumericContractDialog {
         onAction = _ => {
           getContractInfo match {
             case Failure(_) => ()
-            case Success(contractInfo) =>
-              DLCPlotUtil.plotCETsWithOriginalCurve(
-                contractInfo.base,
-                contractInfo.numDigits,
-                contractInfo.outcomeValueFunc,
-                contractInfo.totalCollateral,
-                getRoundingIntervals)
+            case Success((totalCollateral, descriptor)) =>
+              DLCPlotUtil.plotCETsWithOriginalCurve(base = 2,
+                                                    descriptor.numDigits,
+                                                    descriptor.outcomeValueFunc,
+                                                    totalCollateral,
+                                                    getRoundingIntervals)
               ()
           }
         }
@@ -314,8 +312,11 @@ object InitNumericContractDialog {
       } else None
 
     dialog.showAndWait() match {
-      case Some(Some(contractInfo: MultiNonceContractInfo)) =>
-        Some(contractInfo)
+      case Some(
+            Some(
+              (totalCollateral: Satoshis,
+               descriptor: NumericContractDescriptor))) =>
+        Some((totalCollateral, descriptor))
       case Some(_) | None => None
     }
   }

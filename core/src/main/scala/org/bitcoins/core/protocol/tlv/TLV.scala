@@ -784,7 +784,7 @@ case class OracleAnnouncementV0TLV(
     announcementSignature.bytes ++ publicKey.bytes ++ eventTLV.bytes
 
   override def validateSignature: Boolean = {
-    publicKey.verify(CryptoUtil.sha256(eventTLV.bytes).bytes,
+    publicKey.verify(CryptoUtil.sha256DLCAnnouncement(eventTLV.bytes).bytes,
                      announcementSignature)
   }
 }
@@ -808,21 +808,39 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
                                  UInt32.zero,
                                  EnumEventDescriptorV0TLV.dummy,
                                  "dummy")
-    val sig = priv.schnorrSign(CryptoUtil.sha256(event.bytes).bytes)
+    val sig =
+      priv.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
 
     OracleAnnouncementV0TLV(sig, priv.schnorrPublicKey, event)
   }
 
   def dummyForEventsAndKeys(
       privKey: ECPrivateKey,
-      nonceKey: ECPrivateKey,
+      nonce: SchnorrNonce,
       events: Vector[EnumOutcome]): OracleAnnouncementTLV = {
     val event = OracleEventV0TLV(
-      Vector(nonceKey.schnorrNonce),
+      Vector(nonce),
       UInt32.zero,
       EnumEventDescriptorV0TLV(events.map(outcome => outcome.outcome)),
       "dummy")
-    val sig = privKey.schnorrSign(CryptoUtil.sha256(event.bytes).bytes)
+    val sig =
+      privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+
+    OracleAnnouncementV0TLV(sig, privKey.schnorrPublicKey, event)
+  }
+
+  def dummyForKeys(
+      privKey: ECPrivateKey,
+      nonces: Vector[SchnorrNonce]): OracleAnnouncementTLV = {
+    val eventDescriptor = DigitDecompositionEventDescriptorV0TLV(UInt16(2),
+                                                                 isSigned =
+                                                                   false,
+                                                                 nonces.length,
+                                                                 "dummy",
+                                                                 Int32.zero)
+    val event = OracleEventV0TLV(nonces, UInt32.zero, eventDescriptor, "dummy")
+    val sig =
+      privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
 
     OracleAnnouncementV0TLV(sig, privKey.schnorrPublicKey, event)
   }
@@ -1121,6 +1139,12 @@ case class ContractInfoV0TLV(
 
 object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(55342)
+
+  val dummy: ContractInfoV0TLV = {
+    ContractInfoV0TLV(Satoshis.zero,
+                      ContractDescriptorV0TLV(Vector.empty),
+                      OracleInfoV0TLV(OracleAnnouncementV0TLV.dummy))
+  }
 
   override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {
     val iter = ValueIterator(value)

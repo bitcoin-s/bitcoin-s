@@ -115,7 +115,8 @@ trait TLVGen {
     } yield OracleAnnouncementV0TLV(sig, pubkey, eventTLV)
   }
 
-  def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
+  def contractDescriptorV0TLVWithTotalCollateral: Gen[
+    (ContractDescriptorV0TLV, Satoshis)] = {
     for {
       numOutcomes <- Gen.choose(2, 10)
       outcomes <- Gen.listOfN(numOutcomes, StringGenerators.genString)
@@ -123,18 +124,39 @@ trait TLVGen {
         Gen
           .choose(numOutcomes + 1, Long.MaxValue / 10000L)
           .map(Satoshis.apply)
-      (contractInfo, _) =
-        DLCTestUtil.genContractInfos(outcomes.toVector, totalInput)
+      (contractDescriptor, _) =
+        DLCTestUtil.genContractDescriptors(outcomes.toVector, totalInput)
     } yield {
-      contractInfo.toTLV
+      (contractDescriptor.toTLV, totalInput)
     }
+  }
+
+  def contractDescriptorV0TLV: Gen[ContractDescriptorV0TLV] = {
+    contractDescriptorV0TLVWithTotalCollateral.map(_._1)
   }
 
   def oracleInfoV0TLV: Gen[OracleInfoV0TLV] = {
     for {
-      pubKey <- CryptoGenerators.schnorrPublicKey
+      privKey <- CryptoGenerators.privateKey
       rValue <- CryptoGenerators.schnorrNonce
-    } yield OracleInfoV0TLV(pubKey, rValue)
+      outcomes <- Gen.listOf(StringGenerators.genUTF8String)
+    } yield {
+      OracleInfoV0TLV(
+        OracleAnnouncementV0TLV.dummyForEventsAndKeys(
+          privKey,
+          rValue,
+          outcomes.toVector.map(EnumOutcome.apply)))
+    }
+  }
+
+  def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
+    for {
+      (descriptor, totalCollateral) <-
+        contractDescriptorV0TLVWithTotalCollateral
+      oracleInfo <- oracleInfoV0TLV
+    } yield {
+      ContractInfoV0TLV(totalCollateral, descriptor, oracleInfo)
+    }
   }
 
   def oracleInfoV0TLVWithKeys: Gen[
@@ -142,8 +164,13 @@ trait TLVGen {
     for {
       privKey <- CryptoGenerators.privateKey
       kValue <- CryptoGenerators.privateKey
+      outcomes <- Gen.listOf(StringGenerators.genUTF8String)
     } yield {
-      (OracleInfoV0TLV(privKey.schnorrPublicKey, kValue.schnorrNonce),
+      (OracleInfoV0TLV(
+         OracleAnnouncementV0TLV.dummyForEventsAndKeys(
+           privKey,
+           kValue.schnorrNonce,
+           outcomes.toVector.map(EnumOutcome.apply))),
        privKey,
        kValue)
     }
@@ -235,7 +262,6 @@ trait TLVGen {
       chainHash <- Gen.oneOf(
         Networks.knownNetworks.map(_.chainParams.genesisBlock.blockHeader.hash))
       contractInfo <- contractInfoV0TLV
-      oracleInfo <- oracleInfoV0TLV
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
@@ -256,7 +282,6 @@ trait TLVGen {
         0.toByte,
         chainHash,
         contractInfo,
-        oracleInfo,
         fundingPubKey,
         payoutAddress.scriptPubKey,
         totalCollateralSatoshis,
@@ -275,7 +300,10 @@ trait TLVGen {
       offer <- dlcOfferTLV
       (oracleInfo, oraclePrivKey, oracleRValue) <- oracleInfoV0TLVWithKeys
     } yield {
-      (offer.copy(oracleInfo = oracleInfo), oraclePrivKey, oracleRValue)
+      (offer.copy(contractInfo =
+         offer.contractInfo.copy(oracleInfo = oracleInfo)),
+       oraclePrivKey,
+       oracleRValue)
     }
   }
 

@@ -38,33 +38,33 @@ object DLCTLVGen {
 
   def genOracleInfo(
       oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
-      oracleKValue: ECPrivateKey = ECPrivateKey.freshPrivateKey,
+      oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,
       events: Vector[String] =
         Vector("dummy1", "dummy2")): EnumSingleOracleInfo = {
     EnumSingleOracleInfo(
       OracleAnnouncementV0TLV.dummyForEventsAndKeys(
         oraclePrivKey,
-        oracleKValue,
+        oracleRValue,
         events.map(EnumOutcome.apply)))
   }
 
   def genContractInfo(
       oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
-      oracleKValue: ECPrivateKey = ECPrivateKey.freshPrivateKey,
+      oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,
       outcomes: Vector[String] = DLCTestUtil.genOutcomes(3),
       totalInput: CurrencyUnit = defaultAmt * 2): ContractInfo = {
     ContractInfo(totalInput.satoshis,
                  genContractDescriptor(outcomes, totalInput),
-                 genOracleInfo(oraclePrivKey, oracleKValue, outcomes))
+                 genOracleInfo(oraclePrivKey, oracleRValue, outcomes))
   }
 
   def oracleInfoParsingTestVector(
       oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
-      oracleKValue: ECPrivateKey = ECPrivateKey.freshPrivateKey,
+      oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,
       events: Vector[String] =
         Vector("dummy1", "dummy2")): DLCParsingTestVector = {
     DLCParsingTestVector(
-      genOracleInfo(oraclePrivKey, oracleKValue, events).toTLV)
+      genOracleInfo(oraclePrivKey, oracleRValue, events).toTLV)
   }
 
   def p2wpkh(

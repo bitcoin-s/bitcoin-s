@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.DLCMessage.OracleAndContractInfo
+import org.bitcoins.core.protocol.dlc.DLCMessage.ContractInfo
 import org.bitcoins.db.AppConfig
 import org.bitcoins.dlc.testgen.DLCTestUtil
 import org.bitcoins.dlc.wallet.DLCAppConfig
@@ -80,21 +80,22 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
             getBIP39PasswordOpt(),
             Some(segwitWalletConf))(config2, system)
 
-          oracleAndContractInfo =
+          contractInfo =
             if (multiNonce) {
-              DLCWalletUtil.multiNonceOracleAndContractInfo
+              DLCWalletUtil.multiNonceContractInfo
             } else {
               val numOutcomes = 8
               val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
-              val (contractInfo, _) =
-                DLCTestUtil.genContractInfos(outcomes, Satoshis(10000))
+              val (contractDescriptor, _) =
+                DLCTestUtil.genContractDescriptors(outcomes, Satoshis(10000))
 
-              OracleAndContractInfo(DLCWalletUtil.sampleOracleInfo,
-                                    contractInfo)
+              ContractInfo(Satoshis(10000),
+                           contractDescriptor,
+                           DLCWalletUtil.sampleOracleInfo)
             }
 
           (dlcWalletA, dlcWalletB) <-
-            DLCWalletUtil.initDLC(walletA, walletB, oracleAndContractInfo)
+            DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
         } yield (dlcWalletA, dlcWalletB),
       destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
         for {

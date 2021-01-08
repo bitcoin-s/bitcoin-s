@@ -17,23 +17,16 @@ import scala.concurrent.Future
 trait DLCWalletApi { self: WalletApi =>
 
   def createDLCOffer(
-      oracleInfo: OracleInfo,
-      contractInfoTLV: ContractInfoTLV,
+      contractInfoTLV: ContractInfoV0TLV,
       collateral: Satoshis,
       feeRateOpt: Option[FeeUnit],
       locktime: UInt32,
       refundLT: UInt32): Future[DLCOffer] = {
     val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
-    createDLCOffer(oracleInfo,
-                   contractInfo,
-                   collateral,
-                   feeRateOpt,
-                   locktime,
-                   refundLT)
+    createDLCOffer(contractInfo, collateral, feeRateOpt, locktime, refundLT)
   }
 
   def createDLCOffer(
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       collateral: Satoshis,
       feeRateOpt: Option[FeeUnit],
@@ -42,7 +35,6 @@ trait DLCWalletApi { self: WalletApi =>
 
   def registerDLCOffer(dlcOffer: DLCOffer): Future[DLCOffer] = {
     createDLCOffer(
-      dlcOffer.oracleInfo,
       dlcOffer.contractInfo,
       dlcOffer.totalCollateral,
       Some(dlcOffer.feeRate),

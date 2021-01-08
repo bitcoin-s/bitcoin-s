@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.SingleNonceContractInfo
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.dlc.DLCMessage.EnumContractDescriptor
 import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.util.GUIUtil.setNumericInput
@@ -15,9 +15,9 @@ import scala.collection._
 
 object InitEnumContractDialog {
 
-  def showAndWait(parentWindow: Window): Option[SingleNonceContractInfo] = {
+  def showAndWait(parentWindow: Window): Option[EnumContractDescriptor] = {
     val dialog =
-      new Dialog[Option[SingleNonceContractInfo]]() {
+      new Dialog[Option[EnumContractDescriptor]]() {
         initOwner(parentWindow)
         title = "Initialize Demo Oracle"
         headerText = "Enter contract outcomes and their outcome values"
@@ -87,13 +87,13 @@ object InitEnumContractDialog {
             EnumOutcome(str) -> Satoshis(BigInt(value))
         }.toVector
 
-        Some(SingleNonceContractInfo(contractMap))
+        Some(EnumContractDescriptor(contractMap))
       } else None
 
     val result = dialog.showAndWait()
 
     result match {
-      case Some(Some(contractInfo: SingleNonceContractInfo)) =>
+      case Some(Some(contractInfo: EnumContractDescriptor)) =>
         Some(contractInfo)
       case Some(_) | None => None
     }

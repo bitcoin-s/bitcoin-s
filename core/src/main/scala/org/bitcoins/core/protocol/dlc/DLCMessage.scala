@@ -19,11 +19,10 @@ sealed trait DLCMessage
 object DLCMessage {
 
   def calcParamHash(
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts): Sha256DigestBE = {
     CryptoUtil
-      .sha256(oracleInfo.bytes ++ contractInfo.bytes ++ timeouts.bytes)
+      .sha256(contractInfo.bytes ++ timeouts.bytes)
       .flip
   }
 
@@ -72,13 +71,17 @@ object DLCMessage {
       extends TLVDeserializable[OracleInfoV0TLV, SingleOracleInfo](
         OracleInfoV0TLV) {
 
-    def apply(tlv: OracleInfoV0TLV): SingleOracleInfo = {
-      tlv.announcement.eventTLV.eventDescriptor match {
+    def apply(announcement: OracleAnnouncementTLV): SingleOracleInfo = {
+      announcement.eventTLV.eventDescriptor match {
         case _: EnumEventDescriptorV0TLV =>
-          EnumSingleOracleInfo(tlv.announcement)
+          EnumSingleOracleInfo(announcement)
         case _: NumericEventDescriptorTLV =>
-          NumericSingleOracleInfo(tlv.announcement)
+          NumericSingleOracleInfo(announcement)
       }
+    }
+
+    def apply(tlv: OracleInfoV0TLV): SingleOracleInfo = {
+      SingleOracleInfo(tlv.announcement)
     }
 
     override def fromTLV(tlv: OracleInfoV0TLV): SingleOracleInfo = {
@@ -120,6 +123,15 @@ object DLCMessage {
   object EnumSingleOracleInfo
       extends TLVDeserializable[OracleInfoV0TLV, EnumSingleOracleInfo](
         OracleInfoV0TLV) {
+
+    def dummyForKeys(
+        privKey: ECPrivateKey,
+        nonce: SchnorrNonce,
+        events: Vector[EnumOutcome]): EnumSingleOracleInfo = {
+      EnumSingleOracleInfo(
+        OracleAnnouncementV0TLV
+          .dummyForEventsAndKeys(privKey, nonce, events))
+    }
 
     override def fromTLV(tlv: OracleInfoV0TLV): EnumSingleOracleInfo = {
       EnumSingleOracleInfo(tlv.announcement)
@@ -632,8 +644,7 @@ object DLCMessage {
     val oracleInfo: OracleInfo = contractInfo.oracleInfo
     val contractDescriptor: ContractDescriptor = contractInfo.contractDescriptor
 
-    lazy val paramHash: Sha256DigestBE =
-      calcParamHash(oracleInfo, contractInfo, timeouts)
+    lazy val paramHash: Sha256DigestBE = calcParamHash(contractInfo, timeouts)
 
     val tempContractId: Sha256Digest =
       CryptoUtil.sha256(toMessage.bytes)

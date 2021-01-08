@@ -396,7 +396,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     * This is the first step of the initiator
     */
   override def createDLCOffer(
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       collateral: Satoshis,
       feeRateOpt: Option[FeeUnit],
@@ -407,7 +406,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     val timeouts =
       DLCTimeouts(BlockStamp(locktime.toInt), BlockStamp(refundLocktime.toInt))
 
-    val paramHash = DLCMessage.calcParamHash(oracleInfo, contractInfo, timeouts)
+    val paramHash = DLCMessage.calcParamHash(contractInfo, timeouts)
 
     logger.debug(
       s"Checking if DLC Offer has already been made (${paramHash.hex})")
@@ -433,7 +432,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         case None =>
           createNewDLCOffer(
             collateral = collateral,
-            oracleInfo = oracleInfo,
             contractInfo = contractInfo,
             feeRate = satoshisPerVirtualByte,
             timeouts = timeouts
@@ -444,12 +442,11 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
   private def createNewDLCOffer(
       collateral: CurrencyUnit,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       feeRate: SatoshisPerVirtualByte,
       timeouts: DLCTimeouts): Future[DLCOffer] = {
     logger.info("Creating DLC Offer")
-    val paramHash = DLCMessage.calcParamHash(oracleInfo, contractInfo, timeouts)
+    val paramHash = DLCMessage.calcParamHash(contractInfo, timeouts)
 
     for {
       account <- getDefaultAccountForType(AddressType.SegWit)
@@ -476,7 +473,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ = logger.debug(
         s"DLC Offer data collected, creating database entry, ${paramHash.hex}")
 
-      offer = DLCOffer(OracleAndContractInfo(oracleInfo, contractInfo),
+      offer = DLCOffer(contractInfo,
                        dlcPubKeys,
                        collateral.satoshis,
                        utxos,
@@ -1451,7 +1448,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               paramHash,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
-              offerDb.oracleInfo,
               offerDb.contractInfo,
               offerDb.dlcTimeouts,
               offerDb.feeRate,
@@ -1464,7 +1460,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.isInitiator,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,
-              offerDb.oracleInfo,
               offerDb.contractInfo,
               offerDb.dlcTimeouts,
               offerDb.feeRate,
@@ -1477,7 +1472,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.isInitiator,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,
-              offerDb.oracleInfo,
               offerDb.contractInfo,
               offerDb.dlcTimeouts,
               offerDb.feeRate,
@@ -1490,7 +1484,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.isInitiator,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,
-              offerDb.oracleInfo,
               offerDb.contractInfo,
               offerDb.dlcTimeouts,
               offerDb.feeRate,
@@ -1504,7 +1497,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.isInitiator,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,
-              offerDb.oracleInfo,
               offerDb.contractInfo,
               offerDb.dlcTimeouts,
               offerDb.feeRate,
@@ -1518,7 +1510,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.isInitiator,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,
-              offerDb.oracleInfo,
               offerDb.contractInfo,
               offerDb.dlcTimeouts,
               offerDb.feeRate,
@@ -1539,7 +1530,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.isInitiator,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,
-              offerDb.oracleInfo,
               offerDb.contractInfo,
               offerDb.dlcTimeouts,
               offerDb.feeRate,
@@ -1556,7 +1546,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.isInitiator,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,
-              offerDb.oracleInfo,
               offerDb.contractInfo,
               offerDb.dlcTimeouts,
               offerDb.feeRate,

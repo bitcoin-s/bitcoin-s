@@ -31,7 +31,9 @@ object DLCTxGen {
     val kVal = ECPrivateKey.freshPrivateKey
     val oracleInfo = EnumSingleOracleInfo(
       OracleAnnouncementV0TLV
-        .dummyForEventsAndKeys(privKey, kVal, contractDescriptor.keys))
+        .dummyForEventsAndKeys(privKey,
+                               kVal.schnorrNonce,
+                               contractDescriptor.keys))
     val realOutcome = contractDescriptor.keys(contractDescriptor.size / 2)
     val sig =
       privKey.schnorrSignWithNonce(CryptoUtil

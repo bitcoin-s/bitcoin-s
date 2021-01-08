@@ -1,8 +1,8 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  MultiNonceContractInfo,
-  SingleNonceContractInfo
+  EnumContractDescriptor,
+  NumericContractDescriptor
 }
 import org.bitcoins.core.protocol.dlc.{DLCPayoutCurve, DLCStatus}
 import org.bitcoins.gui.GlobalData
@@ -184,28 +184,27 @@ object ViewDLCDialog {
       add(node, columnIndex = 1, rowIndex = row)
 
       row += 1
-      status.contractInfo match {
-        case _: SingleNonceContractInfo => ()
-        case MultiNonceContractInfo(outcomeValueFunc,
-                                    base,
-                                    numDigits,
-                                    totalCollateral,
-                                    roundingIntervals) =>
+      status.contractInfo.contractDescriptor match {
+        case _: EnumContractDescriptor => ()
+        case NumericContractDescriptor(outcomeValueFunc,
+                                       numDigits,
+                                       roundingIntervals) =>
           val previewGraphButton: Button = new Button("Preview Graph") {
             onAction = _ => {
-
               val payoutCurve = if (status.isInitiator) {
                 outcomeValueFunc
               } else {
                 DLCPayoutCurve(outcomeValueFunc.points.map { point =>
-                  point.copy(payout = totalCollateral.toLong - point.payout)
+                  point.copy(payout =
+                    status.totalCollateral.satoshis.toLong - point.payout)
                 })
               }
-              DLCPlotUtil.plotCETsWithOriginalCurve(base,
-                                                    numDigits,
-                                                    payoutCurve,
-                                                    totalCollateral,
-                                                    roundingIntervals)
+              DLCPlotUtil.plotCETsWithOriginalCurve(
+                base = 2,
+                numDigits,
+                payoutCurve,
+                status.contractInfo.totalCollateral,
+                roundingIntervals)
               ()
             }
           }

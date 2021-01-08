@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.tlv.{ContractInfoTLV, OracleInfoTLV}
+import org.bitcoins.core.protocol.tlv.ContractInfoV0TLV
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -68,9 +68,7 @@ case class DLCOfferDAO()(implicit
     def tempContractId: Rep[Sha256Digest] =
       column("temp_contract_id", O.Unique)
 
-    def oracleInfoTLV: Rep[OracleInfoTLV] = column("oracle_info_tlv")
-
-    def contractInfoTLV: Rep[ContractInfoTLV] = column("contract_info")
+    def contractInfoTLV: Rep[ContractInfoV0TLV] = column("contract_info")
 
     def contractMaturity: Rep[BlockTimeStamp] = column("contract_maturity")
 
@@ -89,7 +87,6 @@ case class DLCOfferDAO()(implicit
     def * : ProvenShape[DLCOfferDb] =
       (paramHash,
        tempContractId,
-       oracleInfoTLV,
        contractInfoTLV,
        contractMaturity,
        contractTimeout,
