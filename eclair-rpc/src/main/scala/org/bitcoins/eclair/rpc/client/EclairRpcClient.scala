@@ -5,7 +5,6 @@ import java.net.InetSocketAddress
 import java.nio.file.NoSuchFileException
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
@@ -35,6 +34,7 @@ import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.NodeUri
+import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.AsyncUtil
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
@@ -973,4 +973,9 @@ object EclairRpcClient {
 
   /** The current version we support of Eclair */
   private[bitcoins] val version = "0.4.1"
+
+  /** The bitcoind version that eclair is officially tested & supported with by ACINQ
+    * @see https://github.com/ACINQ/eclair/releases/tag/v0.4
+    */
+  val bitcoindV: BitcoindVersion = BitcoindVersion.V19
 }
