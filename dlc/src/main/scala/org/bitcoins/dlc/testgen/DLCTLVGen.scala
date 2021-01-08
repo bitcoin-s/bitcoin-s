@@ -58,6 +58,15 @@ object DLCTLVGen {
                  genOracleInfo(oraclePrivKey, oracleRValue, outcomes))
   }
 
+  def contractInfoParsingTestVector(
+      oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
+      oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,
+      outcomes: Vector[String] = DLCTestUtil.genOutcomes(3),
+      totalInput: CurrencyUnit = defaultAmt * 2): DLCParsingTestVector = {
+    DLCParsingTestVector(
+      genContractInfo(oraclePrivKey, oracleRValue, outcomes, totalInput).toTLV)
+  }
+
   def oracleInfoParsingTestVector(
       oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
       oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,

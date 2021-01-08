@@ -175,6 +175,16 @@ object DLCMessage {
     }
   }
 
+  object NumericSingleOracleInfo {
+
+    def dummyForKeys(
+        privKey: ECPrivateKey,
+        nonces: Vector[SchnorrNonce]): NumericSingleOracleInfo = {
+      NumericSingleOracleInfo(
+        OracleAnnouncementV0TLV.dummyForKeys(privKey, nonces))
+    }
+  }
+
   sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
       extends OracleInfo
       with TLVSerializable[MultiOracleInfoTLV] {

@@ -3,14 +3,9 @@ package org.bitcoins.dlc
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{UInt16, UInt32}
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  DLCSign,
-  MultiNonceContractInfo,
-  MultiNonceOracleInfo,
-  SingleNonceOracleInfo
-}
-import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
+import org.bitcoins.core.protocol.dlc.DLCMessage._
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{
   DLCOutcomeType,
@@ -202,30 +197,38 @@ class DLCClientTest extends BitcoinSAsyncTest {
       TestDLCClient,
       TestDLCClient,
       Vector[DLCOutcomeType]) = {
-    val (outcomes, remoteOutcomes, strsOrDigits) = if (!isMultiNonce) {
-      val outcomeStrs = DLCTestUtil.genOutcomes(numOutcomes)
+    val outcomeStrs = DLCTestUtil.genOutcomes(numOutcomes)
+    val oracleInfo = if (!isMultiNonce) {
+      EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
+                                        preCommittedR,
+                                        outcomeStrs.map(EnumOutcome.apply))
+    } else {
+      NumericSingleOracleInfo.dummyForKeys(oraclePrivKey,
+                                           preCommittedRs.take(numOutcomes))
+    }
 
-      val (local, remote) =
-        DLCTestUtil.genContractInfos(outcomeStrs, totalInput)
+    val (outcomes, remoteOutcomes, strsOrDigits) = if (!isMultiNonce) {
+
+      val (localDesc, remoteDesc) =
+        DLCTestUtil.genContractDescriptors(outcomeStrs, totalInput)
+      val local = ContractInfo(totalInput.satoshis, localDesc, oracleInfo)
+      val remote = ContractInfo(totalInput.satoshis, remoteDesc, oracleInfo)
+
       (local, remote, outcomeStrs.map(EnumOutcome.apply))
     } else {
-      val (local, remote) =
+      val (localDesc, remoteDesc) =
         DLCTestUtil.genMultiDigitContractInfo(numOutcomes,
                                               totalInput,
                                               numRounds = 4)
-      (local, remote, local.allOutcomes)
-    }
+      val local = ContractInfo(totalInput.satoshis, localDesc, oracleInfo)
+      val remote = ContractInfo(totalInput.satoshis, remoteDesc, oracleInfo)
 
-    val oracleInfo = if (!isMultiNonce) {
-      SingleNonceOracleInfo(oraclePubKey, preCommittedR)
-    } else {
-      MultiNonceOracleInfo(oraclePubKey, preCommittedRs.take(numOutcomes))
+      (local, remote, local.allOutcomes)
     }
 
     // Offer is local
     val dlcOffer: TestDLCClient = TestDLCClient(
       outcomes = outcomes,
-      oracleInfo = oracleInfo,
       isInitiator = true,
       fundingPrivKey = offerFundingPrivKey,
       payoutPrivKey = offerPayoutPrivKey,
@@ -246,7 +249,6 @@ class DLCClientTest extends BitcoinSAsyncTest {
     // Accept is remote
     val dlcAccept: TestDLCClient = TestDLCClient(
       outcomes = remoteOutcomes,
-      oracleInfo = oracleInfo,
       isInitiator = false,
       fundingPrivKey = acceptFundingPrivKey,
       payoutPrivKey = acceptPayoutPrivKey,
@@ -380,8 +382,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
           }
         } else {
           val points =
-            dlcOffer.dlcTxBuilder.oracleAndContractInfo.offerContractInfo
-              .asInstanceOf[MultiNonceContractInfo]
+            dlcOffer.dlcTxBuilder.contractInfo.contractDescriptor
+              .asInstanceOf[NumericContractDescriptor]
               .outcomeValueFunc
               .points
           val left = points(1).outcome
