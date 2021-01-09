@@ -105,7 +105,9 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
       val callback: OnBlockHeadersReceived = (headers: Vector[BlockHeader]) => {
         Future {
-          resultP.success(headers)
+          if (!resultP.isCompleted) {
+            resultP.success(headers)
+          }
           ()
         }
       }
