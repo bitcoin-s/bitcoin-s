@@ -30,7 +30,6 @@ class NeutrinoNodeTest extends NodeUnitTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withNeutrinoNodeFundedWalletBitcoind(test,
-                                         callbacks,
                                          getBIP39PasswordOpt(),
                                          Some(BitcoindVersion.Experimental))
 
@@ -64,6 +63,8 @@ class NeutrinoNodeTest extends NodeUnitTest {
   it must "receive notification that a block occurred on the p2p network" taggedAs UsesExperimentalBitcoind in {
     nodeConnectedWithBitcoind: NeutrinoNodeFundedWalletBitcoind =>
       val node = nodeConnectedWithBitcoind.node
+
+      val _ = node.nodeAppConfig.addCallbacks(callbacks)
       val bitcoind = nodeConnectedWithBitcoind.bitcoindRpc
 
       val assert1F = for {

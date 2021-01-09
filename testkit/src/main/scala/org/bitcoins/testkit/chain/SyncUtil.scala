@@ -5,13 +5,14 @@ import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
 import org.bitcoins.core.api.node
 import org.bitcoins.core.api.node.{NodeApi, NodeChainQueryApi}
 import org.bitcoins.core.gcs.FilterType
-import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.sync.WalletSync
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -43,6 +44,11 @@ abstract class SyncUtil extends BitcoinSLogger {
         case GetBlockFilterResult(filter, header) =>
           FilterWithHeaderHash(filter, header)
       }
+  }
+
+  def getBlockFunc(
+      bitcoind: BitcoindRpcClient): DoubleSha256DigestBE => Future[Block] = {
+    bitcoind.getBlockRaw(_: DoubleSha256DigestBE)
   }
 
   def getNodeApi(bitcoindRpcClient: BitcoindRpcClient)(implicit
@@ -160,6 +166,16 @@ abstract class SyncUtil extends BitcoinSLogger {
     val nodeApi =
       SyncUtil.getNodeApiWalletCallback(bitcoind, walletF)
     node.NodeChainQueryApi(nodeApi, chainQuery)
+  }
+
+  def syncWallet(wallet: Wallet, bitcoind: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): Future[Wallet] = {
+    WalletSync.sync(
+      wallet = wallet,
+      getBlockHeaderFunc = SyncUtil.getBlockHeaderFunc(bitcoind),
+      getBestBlockHashFunc = SyncUtil.getBestBlockHashFunc(bitcoind),
+      getBlock = SyncUtil.getBlockFunc(bitcoind)
+    )
   }
 }
 
