@@ -17,10 +17,9 @@ import org.bitcoins.testkit.node.{
   NodeUnitTest
 }
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.Wallet
 import org.scalatest.FutureOutcome
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
@@ -39,54 +38,19 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     } else {
       withNeutrinoNodeFundedWalletBitcoind(
         test = test,
-        nodeCallbacks = nodeCallbacks,
         bip39PasswordOpt = getBIP39PasswordOpt(),
         versionOpt = Some(BitcoindVersion.Experimental)
-      )
+      )(system, config)
     }
-  }
-
-  private var walletP: Promise[Wallet] = Promise()
-  private var walletF: Future[Wallet] = walletP.future
-
-  after {
-    //reset assertion after a test runs, because we
-    //are doing mutation to work around our callback
-    //limitations, we can't currently modify callbacks
-    //after a NeutrinoNode is constructed :-(
-    walletP = Promise()
-    walletF = walletP.future
   }
 
   val TestAmount = 1.bitcoin
   val FeeRate = SatoshisPerByte(10.sats)
   val TestFees: Satoshis = 2230.sats
 
-  def nodeCallbacks: NodeCallbacks = {
-    val onBlock: OnBlockReceived = { block =>
-      for {
-        wallet <- walletF
-        _ <- wallet.processBlock(block)
-      } yield ()
-    }
-    val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
-      for {
-        wallet <- walletF
-        _ <- wallet.processCompactFilters(blockFilters)
-      } yield ()
-    }
-
-    NodeCallbacks(
-      onBlockReceived = Vector(onBlock),
-      onCompactFiltersReceived = Vector(onCompactFilters)
-    )
-  }
-
   it must "receive information about received payments" taggedAs UsesExperimentalBitcoind in {
     param =>
       val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
-
-      walletP.success(wallet)
 
       def condition(
           expectedConfirmedAmount: CurrencyUnit,
@@ -107,43 +71,50 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         }
       }
 
+      //default wallet utxos are 3BTC, 2BTC, 1BTC
+      //our coin selection algorithm seems to be selecting
+      //the 3BTC utxo to spend, so we should have
+      //confirmed = 2BTC + 1BTC
+      //unconfirmed = 3 BTC - TestAmount - TestFees
       val condition1 = () => {
         condition(
-          expectedConfirmedAmount = 0.sats,
+          expectedConfirmedAmount = 3.bitcoin,
           expectedUnconfirmedAmount =
-            BitcoinSWalletTest.expectedDefaultAmt - TestAmount - TestFees,
+            3.bitcoin - TestAmount - TestFees,
           expectedUtxos = 3,
           expectedAddresses = 7
         )
       }
+
+      //this is just sending TestAmount back to us
+      //so everything should stay the same as above
+      //expected we should have received TestAmount back
+      //and have 1 more address/utxo
       val condition2 = { () =>
         condition(
-          expectedConfirmedAmount = 0.sats,
+          expectedConfirmedAmount = 3.bitcoin,
           expectedUnconfirmedAmount =
-            BitcoinSWalletTest.expectedDefaultAmt - TestFees,
+            (3.bitcoin - TestAmount - TestFees) + TestAmount,
           expectedUtxos = 4,
           expectedAddresses = 8
         )
       }
 
       for {
-        _ <- node.sync()
-        _ <- NodeTestUtil.awaitSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-
         // send
         addr <- bitcoind.getNewAddress
         _ <- wallet.sendToAddress(addr, TestAmount, Some(FeeRate))
 
+        _ <- wallet.getConfirmedBalance()
+        _ <- wallet.getUnconfirmedBalance()
+        _ <- wallet.getBalance()
         _ <-
           bitcoind.getNewAddress
             .flatMap(bitcoind.generateToAddress(1, _))
+        _ <- wallet.getConfirmedBalance()
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-
         _ <- AsyncUtil.awaitConditionF(condition1)
-
         // receive
         address <- wallet.getNewAddress()
         txId <- bitcoind.sendToAddress(address, TestAmount)
@@ -153,10 +124,9 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
           bitcoind.getNewAddress
             .flatMap(bitcoind.generateToAddress(1, _))
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
+        _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-
         _ <- AsyncUtil.awaitConditionF(condition2)
-
         // assert we got the full tx with witness data
         txs <- wallet.listTransactions()
       } yield assert(txs.exists(_.transaction == expectedTx))
@@ -165,8 +135,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
   it must "watch an arbitrary SPK" taggedAs UsesExperimentalBitcoind in {
     param =>
       val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
-
-      walletP.success(wallet)
 
       def generateBlock() =
         for {
@@ -184,10 +152,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       val output = TransactionOutput(sats, spk)
 
       for {
-        _ <- node.sync()
-        _ <- NodeTestUtil.awaitSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-
         // start watching
         _ <- wallet.watchScriptPubKey(spk)
 
@@ -209,8 +173,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     param =>
       val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
-      walletP.success(wallet)
-
       def condition(): Future[Boolean] = {
         for {
           balance <- wallet.getBalance()
@@ -230,10 +192,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         utxos <- wallet.listDefaultAccountUtxos()
         _ = assert(addresses.size == 6)
         _ = assert(utxos.size == 3)
-
-        _ <- node.sync()
-        _ <- NodeTestUtil.awaitSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
         address <- wallet.getNewAddress()
         _ <-

@@ -52,10 +52,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload1 = MerkleBlockMessage(merkleBlock)
         payload2 = TransactionMessage(tx)
 
-        callbacks = NodeCallbacks.onMerkleBlockReceived(callback)
-        _ = nodeConfig.addCallbacks(callbacks)
+        nodeCallbacks = NodeCallbacks(onMerkleBlockReceived = Vector(callback))
+        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload1, sender)
         _ <- dataMessageHandler.handleDataPayload(payload2, sender)
         result <- resultP.future
@@ -82,10 +85,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
         payload = BlockMessage(block)
 
-        callbacks = NodeCallbacks.onBlockReceived(callback)
-        _ = nodeConfig.addCallbacks(callbacks)
+        nodeCallbacks = NodeCallbacks.onBlockReceived(callback)
+        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == block)
@@ -113,9 +119,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload = HeadersMessage(CompactSizeUInt.one, Vector(header))
 
         callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
-        _ = nodeConfig.addCallbacks(callbacks)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi)
+        _ = spv.nodeAppConfig.addCallbacks(callbacks)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
+
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == Vector(header))
@@ -143,10 +153,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload =
           CompactFilterMessage(FilterType.Basic, hash.flip, filter.filter.bytes)
 
-        callbacks = NodeCallbacks.onCompactFilterReceived(callback)
-        _ = nodeConfig.addCallbacks(callbacks)
+        nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
+        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi)
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))

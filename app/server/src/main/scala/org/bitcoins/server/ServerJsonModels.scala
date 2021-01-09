@@ -4,13 +4,15 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParamet
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE}
+import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE, ECPublicKey}
 import ujson._
 
 import scala.util.{Failure, Try}
@@ -326,6 +328,44 @@ object ImportXprv extends ServerJsonModels {
         Failure(
           new IllegalArgumentException(
             "Missing walletName, xprv, and password argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class CreateMultisig(
+    requiredKeys: Int,
+    keys: Vector[ECPublicKey],
+    addressType: AddressType)
+
+object CreateMultisig extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateMultisig] = {
+    jsArr.arr.toList match {
+      case requiredKeysJs :: keysJs :: addressTypeJs :: Nil =>
+        Try {
+          val requiredKeys = requiredKeysJs.num.toInt
+
+          val keys = keysJs.arr.map(value => ECPublicKey(value.str))
+
+          val addrType = AddressType.fromString(addressTypeJs.str)
+          CreateMultisig(requiredKeys, keys.toVector, addrType)
+        }
+      case requiredKeysJs :: keysJs :: Nil =>
+        Try {
+          val requiredKeys = requiredKeysJs.num.toInt
+
+          val keys = keysJs.arr.map(value => ECPublicKey(value.str))
+
+          CreateMultisig(requiredKeys, keys.toVector, SegWit)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing requiredKeys, keys, and addressType argument"))
       case other =>
         Failure(
           new IllegalArgumentException(
