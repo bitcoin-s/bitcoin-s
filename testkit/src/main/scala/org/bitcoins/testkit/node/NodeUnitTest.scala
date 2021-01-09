@@ -176,7 +176,10 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
         node <- NodeUnitTest.createSpvNode(emptyPeer)(system,
                                                       appConfig.chainConf,
                                                       appConfig.nodeConf)
-
+        //we aren't calling node.start(), but we need to call appConfig.start()
+        //to make sure migrations are run
+        _ <- node.chainConfig.start()
+        _ <- node.nodeConfig.start()
       } yield node
     }
 
@@ -474,10 +477,9 @@ object NodeUnitTest extends P2PLogger {
     //these need to be done in order, as the spv node needs to be
     //stopped before the bitcoind node is stopped
     val destroyedF = for {
-      _ <- destroyNode(fundedWalletBitcoind.node)
-      _ <- BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
-      _ = cleanTables(appConfig)
-      _ <- appConfig.stop()
+      _ <- BitcoinSWalletTest.destroyWallet(walletWithBitcoind.wallet)
+      _ <- destroyNodeConnectedWithBitcoind(
+        fundedWalletBitcoind.toNodeConnectedWithBitcoind)
     } yield ()
 
     destroyedF
@@ -524,8 +526,6 @@ object NodeUnitTest extends P2PLogger {
     }
     val chainApiF = for {
       _ <- checkConfigF
-      _ = chainAppConfig.migrate()
-      _ = nodeAppConfig.start()
       chainHandler <- ChainUnitTest.createChainHandler()
     } yield chainHandler
     val nodeF = for {

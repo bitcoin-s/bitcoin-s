@@ -2,6 +2,11 @@ package org.bitcoins.testkit.node
 
 import org.bitcoins.node.{NeutrinoNode, Node, SpvNode}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.testkit.node.fixture.{
+  NeutrinoNodeConnectedWithBitcoind,
+  NodeConnectedWithBitcoind,
+  SpvNodeConnectedWithBitcoind
+}
 import org.bitcoins.wallet.Wallet
 
 /**
@@ -16,6 +21,9 @@ trait NodeFundedWalletBitcoind {
   def wallet: Wallet
   def bitcoindRpc: BitcoindRpcClient
   def bip39PasswordOpt: Option[String]
+
+  /** Helper method to convert from this to a [[NodeConnectedWithBitcoind]] */
+  def toNodeConnectedWithBitcoind: NodeConnectedWithBitcoind
 }
 
 case class SpvNodeFundedWalletBitcoind(
@@ -23,11 +31,21 @@ case class SpvNodeFundedWalletBitcoind(
     wallet: Wallet,
     bitcoindRpc: BitcoindRpcClient,
     bip39PasswordOpt: Option[String])
-    extends NodeFundedWalletBitcoind
+    extends NodeFundedWalletBitcoind {
+
+  override def toNodeConnectedWithBitcoind: SpvNodeConnectedWithBitcoind = {
+    SpvNodeConnectedWithBitcoind(node, bitcoindRpc)
+  }
+}
 
 case class NeutrinoNodeFundedWalletBitcoind(
     node: NeutrinoNode,
     wallet: Wallet,
     bitcoindRpc: BitcoindRpcClient,
     bip39PasswordOpt: Option[String])
-    extends NodeFundedWalletBitcoind
+    extends NodeFundedWalletBitcoind {
+
+  override def toNodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind = {
+    NeutrinoNodeConnectedWithBitcoind(node, bitcoindRpc)
+  }
+}
