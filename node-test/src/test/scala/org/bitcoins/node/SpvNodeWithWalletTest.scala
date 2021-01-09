@@ -24,9 +24,7 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
   override type FixtureParam = SpvNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withSpvNodeFundedWalletBitcoind(test,
-                                    NodeCallbacks.empty,
-                                    getBIP39PasswordOpt())
+    withSpvNodeFundedWalletBitcoind(test, getBIP39PasswordOpt())
   }
 
   val amountFromBitcoind = 1.bitcoin

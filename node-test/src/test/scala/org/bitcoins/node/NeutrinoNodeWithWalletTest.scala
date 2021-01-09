@@ -38,7 +38,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     } else {
       withNeutrinoNodeFundedWalletBitcoind(
         test = test,
-        nodeCallbacks = NodeCallbacks.empty,
         bip39PasswordOpt = getBIP39PasswordOpt(),
         versionOpt = Some(BitcoindVersion.Experimental)
       )(system, config)

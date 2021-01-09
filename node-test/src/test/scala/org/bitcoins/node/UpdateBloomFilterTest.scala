@@ -19,7 +19,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   override type FixtureParam = SpvNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withSpvNodeFundedWalletBitcoind(test, NodeCallbacks.empty, None)
+    withSpvNodeFundedWalletBitcoind(test, None)
   }
 
   it must "update the bloom filter with a TX" in { param =>

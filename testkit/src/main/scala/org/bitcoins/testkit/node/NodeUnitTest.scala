@@ -173,10 +173,9 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
     val nodeBuilder: () => Future[SpvNode] = { () =>
       require(appConfig.nodeType == NodeType.SpvNode)
       for {
-        node <- NodeUnitTest.createSpvNode(emptyPeer, NodeCallbacks.empty)(
-          system,
-          appConfig.chainConf,
-          appConfig.nodeConf)
+        node <- NodeUnitTest.createSpvNode(emptyPeer)(system,
+                                                      appConfig.chainConf,
+                                                      appConfig.nodeConf)
 
       } yield node
     }
@@ -203,8 +202,7 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
         require(appConfig.nodeType == NodeType.SpvNode)
         for {
           bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
-          node <- NodeUnitTest.createSpvNode(createPeer(bitcoind),
-                                             NodeCallbacks.empty)(
+          node <- NodeUnitTest.createSpvNode(createPeer(bitcoind))(
             system,
             appConfig.chainConf,
             appConfig.nodeConf)
@@ -231,9 +229,10 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
           BitcoinSFixture
             .createBitcoindWithFunds(Some(V19))
             .map(_.asInstanceOf[BitcoindV19RpcClient])
-        node <- NodeUnitTest.createSpvNode(
-          createPeer(bitcoind),
-          NodeCallbacks.empty)(system, appConfig.chainConf, appConfig.nodeConf)
+        node <- NodeUnitTest.createSpvNode(createPeer(bitcoind))(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
         started <- node.start()
         _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
       } yield SpvNodeConnectedWithBitcoindV19(node, bitcoind)
@@ -256,10 +255,9 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
       require(appConfig.nodeType == NodeType.NeutrinoNode)
       for {
         bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
-        node <- NodeUnitTest.createNeutrinoNode(bitcoind, NodeCallbacks.empty)(
-          system,
-          appConfig.chainConf,
-          appConfig.nodeConf)
+        node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
+                                                          appConfig.chainConf,
+                                                          appConfig.nodeConf)
       } yield NeutrinoNodeConnectedWithBitcoind(node, bitcoind)
     }
     makeDependentFixture(
@@ -271,16 +269,13 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   def withSpvNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
-      callbacks: NodeCallbacks,
       bip39PasswordOpt: Option[String])(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
 
     makeDependentFixture(
       build = () =>
-        NodeUnitTest.createSpvNodeFundedWalletBitcoind(nodeCallbacks =
-                                                         callbacks,
-                                                       bip39PasswordOpt =
+        NodeUnitTest.createSpvNodeFundedWalletBitcoind(bip39PasswordOpt =
                                                          bip39PasswordOpt,
                                                        versionOpt = Option(V18),
                                                        walletCallbacks =
@@ -294,7 +289,6 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   def withNeutrinoNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
-      nodeCallbacks: NodeCallbacks,
       bip39PasswordOpt: Option[String],
       versionOpt: Option[BitcoindVersion] = None,
       walletCallbacks: WalletCallbacks = WalletCallbacks.empty)(implicit
@@ -304,7 +298,6 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
       build = () =>
         NodeUnitTest
           .createNeutrinoNodeFundedWalletBitcoind(
-            nodeCallbacks = nodeCallbacks,
             bip39PasswordOpt = bip39PasswordOpt,
             versionOpt = versionOpt,
             walletCallbacks = walletCallbacks)(system, appConfig),
@@ -402,7 +395,6 @@ object NodeUnitTest extends P2PLogger {
 
   /** Creates a spv node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
   def createSpvNodeFundedWalletBitcoind(
-      nodeCallbacks: NodeCallbacks,
       walletCallbacks: WalletCallbacks,
       bip39PasswordOpt: Option[String],
       versionOpt: Option[BitcoindVersion] = None)(implicit
@@ -412,7 +404,7 @@ object NodeUnitTest extends P2PLogger {
     require(appConfig.nodeType == NodeType.SpvNode)
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
-      node <- createSpvNode(createPeer(bitcoind), nodeCallbacks)
+      node <- createSpvNode(createPeer(bitcoind))
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoind,
         node,
@@ -439,7 +431,6 @@ object NodeUnitTest extends P2PLogger {
 
   /** Creates a neutrino node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
   def createNeutrinoNodeFundedWalletBitcoind(
-      nodeCallbacks: NodeCallbacks,
       bip39PasswordOpt: Option[String],
       versionOpt: Option[BitcoindVersion],
       walletCallbacks: WalletCallbacks)(implicit
@@ -450,7 +441,7 @@ object NodeUnitTest extends P2PLogger {
     require(appConfig.nodeType == NodeType.NeutrinoNode)
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
-      node <- createNeutrinoNode(bitcoind, nodeCallbacks)
+      node <- createNeutrinoNode(bitcoind)
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoindRpcClient = bitcoind,
         nodeApi = node,
@@ -522,13 +513,11 @@ object NodeUnitTest extends P2PLogger {
   /** Creates a spv node peered with the given bitcoind client
     * This does NOT start the spv node
     */
-  def createSpvNode(peer: Peer, callbacks: NodeCallbacks)(implicit
+  def createSpvNode(peer: Peer)(implicit
       system: ActorSystem,
       chainAppConfig: ChainAppConfig,
       nodeAppConfig: NodeAppConfig): Future[SpvNode] = {
     import system.dispatcher
-
-    nodeAppConfig.addCallbacks(callbacks)
 
     val checkConfigF = Future {
       assert(nodeAppConfig.nodeType == NodeType.SpvNode)
@@ -558,14 +547,11 @@ object NodeUnitTest extends P2PLogger {
   /** Creates a Neutrino node peered with the given bitcoind client, this method
     * also calls [[org.bitcoins.node.Node.start() start]] to start the node
     */
-  def createNeutrinoNode(bitcoind: BitcoindRpcClient, callbacks: NodeCallbacks)(
-      implicit
+  def createNeutrinoNode(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem,
       chainAppConfig: ChainAppConfig,
       nodeAppConfig: NodeAppConfig): Future[NeutrinoNode] = {
     import system.dispatcher
-
-    nodeAppConfig.addCallbacks(callbacks)
 
     val checkConfigF = Future {
       assert(nodeAppConfig.nodeType == NodeType.NeutrinoNode)
