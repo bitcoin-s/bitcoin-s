@@ -176,7 +176,10 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
         node <- NodeUnitTest.createSpvNode(emptyPeer)(system,
                                                       appConfig.chainConf,
                                                       appConfig.nodeConf)
-
+        //we aren't calling node.start(), but we need to call appConfig.start()
+        //to make sure migrations are run
+        _ <- node.chainConfig.start()
+        _ <- node.nodeConfig.start()
       } yield node
     }
 
@@ -523,8 +526,6 @@ object NodeUnitTest extends P2PLogger {
     }
     val chainApiF = for {
       _ <- checkConfigF
-      _ = chainAppConfig.migrate()
-      _ = nodeAppConfig.start()
       chainHandler <- ChainUnitTest.createChainHandler()
     } yield chainHandler
     val nodeF = for {
