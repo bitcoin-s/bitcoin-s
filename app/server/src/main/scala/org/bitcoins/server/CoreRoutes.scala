@@ -5,13 +5,23 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.commons.jsonmodels.{SerializedPSBT, SerializedTransaction}
 import org.bitcoins.core.api.core.CoreApi
+import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
+import org.bitcoins.core.protocol.script.{
+  MultiSignatureScriptPubKey,
+  P2SHScriptPubKey,
+  P2WSHWitnessSPKV0
+}
+import org.bitcoins.server.BitcoinSAppConfig.toChainConf
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
 
 import scala.collection.mutable
 import scala.util.{Failure, Success}
 
-case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
+case class CoreRoutes(core: CoreApi)(implicit
+    system: ActorSystem,
+    config: BitcoinSAppConfig)
     extends ServerRoute {
   import system.dispatcher
 
@@ -153,6 +163,36 @@ case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
             val jsonMap = mutable.LinkedHashMap(jsonVec: _*)
             val json = Obj(jsonMap)
 
+            Server.httpSuccess(json)
+          }
+      }
+
+    case ServerCommand("createmultisig", arr) =>
+      CreateMultisig.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(CreateMultisig(requiredKeys, keys, addressType)) =>
+          complete {
+            val sorted = keys.sortBy(_.hex)
+            val spk = MultiSignatureScriptPubKey(requiredKeys, sorted)
+
+            val address = addressType match {
+              case AddressType.SegWit =>
+                val p2wsh = P2WSHWitnessSPKV0(spk)
+                Bech32Address(p2wsh, config.network)
+              case AddressType.NestedSegWit =>
+                val p2wsh = P2WSHWitnessSPKV0(spk)
+                val p2sh = P2SHScriptPubKey(p2wsh)
+                P2SHAddress(p2sh, config.network)
+              case AddressType.Legacy =>
+                val p2sh = P2SHScriptPubKey(spk)
+                P2SHAddress(p2sh, config.network)
+            }
+
+            val json = Obj(
+              "address" -> Str(address.toString),
+              "redeemScript" -> Str(spk.hex)
+            )
             Server.httpSuccess(json)
           }
       }

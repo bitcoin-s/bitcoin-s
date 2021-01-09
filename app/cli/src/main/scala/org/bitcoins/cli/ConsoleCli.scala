@@ -12,6 +12,8 @@ import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
 import org.bitcoins.core.currency._
+import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
@@ -27,6 +29,7 @@ import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto.{
   AesPassword,
   DoubleSha256DigestBE,
+  ECPublicKey,
   SchnorrDigitalSignature,
   Sha256DigestBE
 }
@@ -1328,6 +1331,40 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      note(sys.props("line.separator") + "=== Util ==="),
+      cmd("createmultisig")
+        .action((_, conf) =>
+          conf.copy(command = CreateMultisig(0, Vector.empty, SegWit)))
+        .text("Creates a multi-signature address with n signature of m keys required.")
+        .children(
+          arg[Int]("nrequired")
+            .text("The number of required signatures out of the n keys.")
+            .required()
+            .action((nRequired, conf) =>
+              conf.copy(command = conf.command match {
+                case createMultisig: CreateMultisig =>
+                  createMultisig.copy(requiredKeys = nRequired)
+                case other => other
+              })),
+          arg[Seq[ECPublicKey]]("keys")
+            .text("The hex-encoded public keys.")
+            .required()
+            .action((keys, conf) =>
+              conf.copy(command = conf.command match {
+                case createMultisig: CreateMultisig =>
+                  createMultisig.copy(keys = keys.toVector)
+                case other => other
+              })),
+          arg[AddressType]("address_type")
+            .text("The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\"")
+            .optional()
+            .action((addrType, conf) =>
+              conf.copy(command = conf.command match {
+                case createMultisig: CreateMultisig =>
+                  createMultisig.copy(addressType = addrType)
+                case other => other
+              }))
+        ),
       checkConfig {
         case Config(NoCommand, _, _, _) =>
           failure("You need to provide a command!")
@@ -1607,6 +1644,12 @@ object ConsoleCli {
         RequestParam("signlargenumber", Seq(up.writeJs(tlv), up.writeJs(num)))
       case GetSignatures(tlv) =>
         RequestParam("getsignatures", Seq(up.writeJs(tlv)))
+
+      case CreateMultisig(requiredKeys, keys, addressType) =>
+        RequestParam("createmultisig",
+                     Seq(up.writeJs(requiredKeys),
+                         up.writeJs(keys),
+                         up.writeJs(addressType)))
 
       case GetVersion =>
         // skip sending to server and just return version number of cli
@@ -1932,5 +1975,11 @@ object CliCommand {
       extends CliCommand
 
   case class GetSignatures(oracleEventV0TLV: OracleEventV0TLV)
+      extends CliCommand
+
+  case class CreateMultisig(
+      requiredKeys: Int,
+      keys: Vector[ECPublicKey],
+      addressType: AddressType)
       extends CliCommand
 }
