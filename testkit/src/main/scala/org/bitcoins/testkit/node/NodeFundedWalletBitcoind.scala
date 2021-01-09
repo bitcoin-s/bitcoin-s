@@ -22,7 +22,7 @@ trait NodeFundedWalletBitcoind {
   def bitcoindRpc: BitcoindRpcClient
   def bip39PasswordOpt: Option[String]
 
-  /** Helper method to convert from */
+  /** Helper method to convert from this to a [[NodeConnectedWithBitcoind]] */
   def toNodeConnectedWithBitcoind: NodeConnectedWithBitcoind
 }
 
