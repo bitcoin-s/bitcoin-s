@@ -9,6 +9,7 @@ import org.bitcoins.core.crypto.{
   MnemonicCode
 }
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc.DLCStatus._
@@ -520,4 +521,10 @@ object Picklers {
 
   implicit val extPrivateKeyPickler: ReadWriter[ExtPrivateKey] =
     readwriter[String].bimap(ExtKey.toString, ExtPrivateKey.fromString)
+
+  implicit val ecPublicKeyPickler: ReadWriter[ECPublicKey] =
+    readwriter[String].bimap(_.hex, ECPublicKey.fromHex)
+
+  implicit val addressTypePickler: ReadWriter[AddressType] =
+    readwriter[String].bimap(_.toString, AddressType.fromString)
 }

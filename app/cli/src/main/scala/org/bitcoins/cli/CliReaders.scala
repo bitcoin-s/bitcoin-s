@@ -9,6 +9,7 @@ import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
 import org.bitcoins.core.currency._
+import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
@@ -333,5 +334,17 @@ object CliReaders {
 
         MnemonicCode.fromWords(words.toVector)
       }
+  }
+
+  implicit val ecPublicKeyReads: Read[ECPublicKey] = new Read[ECPublicKey] {
+    override def arity: Int = 1
+
+    override def reads: String => ECPublicKey = ECPublicKey.fromHex
+  }
+
+  implicit val addressTypeReads: Read[AddressType] = new Read[AddressType] {
+    override def arity: Int = 1
+
+    override def reads: String => AddressType = AddressType.fromString
   }
 }
