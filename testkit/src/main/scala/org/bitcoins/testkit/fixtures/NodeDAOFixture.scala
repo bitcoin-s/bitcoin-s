@@ -12,6 +12,8 @@ case class NodeDAOs(txDAO: BroadcastAbleTransactionDAO)
 /** Provides a fixture where all DAOs used by the node projects are provided */
 trait NodeDAOFixture extends NodeUnitTest {
 
+  implicit protected lazy val nodeConfig: NodeAppConfig = config.nodeConf
+
   private lazy val daos = {
     val tx = BroadcastAbleTransactionDAO()
     NodeDAOs(tx)

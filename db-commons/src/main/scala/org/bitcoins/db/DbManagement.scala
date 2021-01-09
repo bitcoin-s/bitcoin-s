@@ -170,6 +170,17 @@ trait DbManagement extends BitcoinSLogger {
     }
   }
 
+  /** Runs flyway clean
+    *
+    * WARNING:
+    * THIS DELETES ALL DATA IN THE DATABASE, YOU PROBABLY DON'T WANT THIS UNLESS YOU ARE USING TESTS
+    *
+    * @see https://flywaydb.org/documentation/command/clean
+    */
+  private[bitcoins] def clean(): Unit = {
+    flyway.clean()
+  }
+
   private def createDbFileIfDNE(): Unit = {
     //should add a check in here that we are using sqlite
     if (!Files.exists(appConfig.dbPath)) {

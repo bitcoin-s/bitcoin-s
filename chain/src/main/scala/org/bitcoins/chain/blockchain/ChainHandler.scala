@@ -392,7 +392,7 @@ class ChainHandler(
       (minHeightOpt, maxHeightOpt) match {
         case (Some(minHeight), Some(maxHeight)) =>
           logger.info(
-            s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE.hex}")
+            s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best filterheader.blockHash=${maxHeight.blockHashBE.hex}")
           this
         // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
         case (_, _) =>
@@ -439,7 +439,7 @@ class ChainHandler(
       (minHeightOpt, maxHeightOpt) match {
         case (Some(minHeight), Some(maxHeight)) =>
           logger.info(
-            s"Processed filters from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE.hex}")
+            s"Processed filters from height=${minHeight.height} to ${maxHeight.height}. Best filter.blockHash=${maxHeight.blockHashBE.hex}")
           this
         // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
         case (_, _) =>

@@ -1,5 +1,7 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -22,6 +24,13 @@ class PeerMessageHandlerTest extends NodeUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     test(())
   }
+
+  private val cachedConfig = config
+
+  implicit private lazy val nodeAppConfig: NodeAppConfig = cachedConfig.nodeConf
+
+  implicit protected lazy val chainConfig: ChainAppConfig =
+    cachedConfig.chainConf
 
   behavior of "PeerHandler"
 
