@@ -229,6 +229,11 @@ For more information on how to use our built in `cli` to interact with the serve
  - `converttopsbt` `unsignedTx` - Creates an empty psbt from the given transaction
     - `unsignedTx` - serialized unsigned transaction in hex
 
+#### Util 
+ - `createmultisig` `nrequired` `keys` `[address_type]` - Creates a multi-signature address with n signature of m keys required.
+    - `nrequired` - The number of required signatures out of the n keys.
+    - `keys` - The hex-encoded public keys.
+    - `address_type` -The address type to use. Options are "legacy", "p2sh-segwit", and "bech32"
 
 ### Sign PSBT with Wallet Example
 

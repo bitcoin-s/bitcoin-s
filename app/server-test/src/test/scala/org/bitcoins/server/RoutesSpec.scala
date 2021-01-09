@@ -1116,6 +1116,23 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    "create multisig" in {
+      val key1 = ECPublicKey(
+        "0369c68f212ecaf3b3be52acb158a6fd87e469bc08726ef98a3b58401b75da3392")
+      val key2 = ECPublicKey(
+        "02c23222c46b96c5976930319cc4915791fdf5e1ad1203790ff98cb1e7517eed4a")
+
+      val route = coreRoutes.handleCommand(
+        ServerCommand("createmultisig",
+                      Arr(Num(1), Arr(Str(key1.hex), Str(key2.hex)))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":{"address":"bcrt1qjtsq4h0thsy0qftjdfxldxwa4tph7kwuplj6nglvvyehduagqqnssf4l0c","redeemScript":"47512102c23222c46b96c5976930319cc4915791fdf5e1ad1203790ff98cb1e7517eed4a210369c68f212ecaf3b3be52acb158a6fd87e469bc08726ef98a3b58401b75da339252ae"},"error":null}""")
+      }
+    }
+
     "return the peer list" in {
       val route =
         nodeRoutes.handleCommand(ServerCommand("getpeers", Arr()))
