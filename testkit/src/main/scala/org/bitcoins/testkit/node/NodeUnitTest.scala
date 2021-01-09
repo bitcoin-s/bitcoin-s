@@ -474,10 +474,9 @@ object NodeUnitTest extends P2PLogger {
     //these need to be done in order, as the spv node needs to be
     //stopped before the bitcoind node is stopped
     val destroyedF = for {
-      _ <- destroyNode(fundedWalletBitcoind.node)
-      _ <- BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
-      _ = cleanTables(appConfig)
-      _ <- appConfig.stop()
+      _ <- BitcoinSWalletTest.destroyWallet(walletWithBitcoind.wallet)
+      _ <- destroyNodeConnectedWithBitcoind(
+        fundedWalletBitcoind.toNodeConnectedWithBitcoind)
     } yield ()
 
     destroyedF
