@@ -48,6 +48,7 @@ trait WalletSync extends BitcoinSLogger {
       getBlock: DoubleSha256DigestBE => Future[Block])(implicit
       ec: ExecutionContext): Future[Vector[Block]] = {
     val initSyncDescriptorOptF = wallet.getSyncDescriptorOpt()
+    val genesisBlockHashBE = wallet.walletConfig.chain.genesisHashBE
     for {
       syncDescriptorOpt <- initSyncDescriptorOptF
       walletBestHash = syncDescriptorOpt match {
@@ -55,7 +56,9 @@ trait WalletSync extends BitcoinSLogger {
         case None             => wallet.chainParams.genesisHashBE
       }
       currentBlockOpt <- {
-        if (walletBestHash == currentTipBlockHashBE) {
+        if (
+          walletBestHash == currentTipBlockHashBE || currentTipBlockHashBE == genesisBlockHashBE
+        ) {
           Future.successful(None) // done syncing!
         } else {
           getBlock(currentTipBlockHashBE)
