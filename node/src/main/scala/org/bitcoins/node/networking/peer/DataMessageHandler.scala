@@ -13,6 +13,7 @@ import org.bitcoins.node.{NodeType, P2PLogger}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -304,12 +305,13 @@ case class DataMessageHandler(
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
     }
 
-    resultF.failed.foreach {
-      case err =>
-        logger.error(s"Failed to handle data payload=${payload}", err)
+    resultF.failed.foreach { err =>
+      logger.error(s"Failed to handle data payload=${payload}", err)
     }
 
-    resultF
+    resultF.recoverWith {
+      case NonFatal(_) => Future.successful(this)
+    }
   }
 
   private def sendNextGetCompactFilterHeadersCommand(
