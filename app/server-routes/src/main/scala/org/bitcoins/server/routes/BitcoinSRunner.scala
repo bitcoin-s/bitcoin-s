@@ -2,7 +2,14 @@ package org.bitcoins.server.routes
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.core.config._
+import org.bitcoins.core.config.{
+  BitcoinNetwork,
+  BitcoinNetworks,
+  MainNet,
+  RegTest,
+  SigNet,
+  TestNet3
+}
 import org.bitcoins.core.util.{BitcoinSLogger, EnvUtil}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.safePathToString
@@ -62,7 +69,7 @@ trait BitcoinSRunner extends BitcoinSLogger {
     argsWithIndex.find(_._1.toLowerCase == "--conf").map(_._2)
   }
 
-  val datadirConfig: Config =
+  lazy val datadirConfig: Config =
     ConfigFactory.parseString(
       s"bitcoin-s.datadir = ${safePathToString(datadirPath)}")
 
@@ -92,6 +99,12 @@ trait BitcoinSRunner extends BitcoinSLogger {
 
   // start everything!
   final def run(): Unit = {
+    //We need to set the system property before any logger instances
+    //are in instantiated. If we don't do this, we will not log to
+    //the correct location
+    //see: https://github.com/bitcoin-s/bitcoin-s/issues/2496
+    System.setProperty("bitcoins.log.location",
+                       datadirPath.toAbsolutePath.toString)
 
     /** Directory specific for current network */
     val networkDatadir: Path = {
@@ -110,10 +123,7 @@ trait BitcoinSRunner extends BitcoinSLogger {
 
     logger.info(s"version=${EnvUtil.getVersion}")
 
-    // Properly set log location
-    System.setProperty("bitcoins.log.location",
-                       networkDatadir.toAbsolutePath.toString)
-
+    logger.info(s"networkDatadir=${networkDatadir.toAbsolutePath.toString}")
     val runner = startup
     runner.failed.foreach { err =>
       logger.error(s"Failed to startup server!", err)
