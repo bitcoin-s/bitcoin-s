@@ -2,7 +2,14 @@ package org.bitcoins.server.routes
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.core.config._
+import org.bitcoins.core.config.{
+  BitcoinNetwork,
+  BitcoinNetworks,
+  MainNet,
+  RegTest,
+  SigNet,
+  TestNet3
+}
 import org.bitcoins.core.util.{BitcoinSLogger, EnvUtil}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.safePathToString
