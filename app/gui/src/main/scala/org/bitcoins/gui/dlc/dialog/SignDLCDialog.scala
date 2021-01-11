@@ -16,7 +16,8 @@ class SignDLCDialog
                                                  Some(file)
                                                DLCDialog.acceptFileChosenLabel.text =
                                                  file.toString
-                                             }
+                                             },
+                                           DLCDialog.fileChosenStr -> DLCDialog.acceptFileChosenLabel
                                          ),
                                          Vector(DLCDialog.dlcAcceptStr,
                                                 DLCDialog.dlcAcceptFileStr)) {
