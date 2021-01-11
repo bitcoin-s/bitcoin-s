@@ -45,22 +45,22 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
   import BitcoinSWalletTest._
 
   /** Wallet config with data directory set to user temp directory */
-  implicit protected def config: BitcoinSAppConfig =
+  implicit protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
-  implicit protected def walletAppConfig: WalletAppConfig = {
-    config.walletConf
+  implicit protected def getFreshWalletAppConfig: WalletAppConfig = {
+    getFreshConfig.walletConf
   }
 
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(config.walletConf)
+    AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
     super[EmbeddedPg].beforeAll()
   }
 
   override def afterAll(): Unit = {
-    Await.result(config.chainConf.stop(), 1.minute)
-    Await.result(config.nodeConf.stop(), 1.minute)
-    Await.result(config.walletConf.stop(), 1.minute)
+    Await.result(getFreshConfig.chainConf.stop(), 1.minute)
+    Await.result(getFreshConfig.nodeConf.stop(), 1.minute)
+    Await.result(getFreshConfig.walletConf.stop(), 1.minute)
     super[EmbeddedPg].afterAll()
   }
 
@@ -152,7 +152,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
   /** Lets you customize the parameters for the created wallet */
   val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome = {
     walletConfig =>
-      val newWalletConf = walletAppConfig.withOverrides(walletConfig)
+      val newWalletConf = getFreshWalletAppConfig.withOverrides(walletConfig)
       val km = createNewKeyManager()(newWalletConf)
       val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
       makeDependentFixture(
@@ -307,7 +307,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
 
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {
-      val baseConf = config.walletConf
+      val baseConf = getFreshConfig.walletConf
       val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
         Some(StringGenerators.genNonEmptyString.sampleSome)
       } else None

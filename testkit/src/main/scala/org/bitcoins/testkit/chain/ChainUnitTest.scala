@@ -41,9 +41,6 @@ trait ChainUnitTest
     with ChainFixtureHelper
     with CachedChainAppConfig {
 
-  implicit lazy val appConfig: ChainAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
-
   /**
     * Behaves exactly like the default conf, execpt
     * network is set to mainnet
@@ -54,7 +51,7 @@ trait ChainUnitTest
   }
 
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(appConfig)
+    AppConfig.throwIfDefaultDatadir(cachedChainConf)
   }
 
   override def afterAll(): Unit = {

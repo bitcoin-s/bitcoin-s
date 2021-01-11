@@ -23,7 +23,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
 
   override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
 
-  implicit override lazy val appConfig: ChainAppConfig = mainnetAppConfig
+  implicit override lazy val cachedChainConf: ChainAppConfig = mainnetAppConfig
 
   val source: BufferedSource = FileUtil.getFileAsSource("block_headers.json")
   val arrStr: String = source.getLines().next()
