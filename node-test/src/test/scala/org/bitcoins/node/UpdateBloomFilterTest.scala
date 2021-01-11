@@ -13,7 +13,7 @@ import org.scalatest.{BeforeAndAfter, FutureOutcome}
 class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def config: BitcoinSAppConfig =
+  implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = SpvNodeFundedWalletBitcoind

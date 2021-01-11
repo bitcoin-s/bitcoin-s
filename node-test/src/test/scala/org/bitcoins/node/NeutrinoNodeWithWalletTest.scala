@@ -24,7 +24,7 @@ import scala.concurrent.Future
 class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def config: BitcoinSAppConfig =
+  implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
@@ -40,7 +40,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         test = test,
         bip39PasswordOpt = getBIP39PasswordOpt(),
         versionOpt = Some(BitcoindVersion.Experimental)
-      )(system, config)
+      )(system, getFreshConfig)
     }
   }
 
