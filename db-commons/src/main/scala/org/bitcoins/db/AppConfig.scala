@@ -122,8 +122,8 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
   protected lazy val config: Config = {
     val finalConfig = AppConfig.getBaseConfig(baseDatadir, configOverrides)
 
-    logger.debug(s"Resolved bitcoin-s config:")
-    logger.debug(finalConfig.asReadableJson)
+    logger.trace(s"Resolved bitcoin-s config:")
+    logger.trace(finalConfig.asReadableJson)
 
     val resolved = {
       ConfigFactory
