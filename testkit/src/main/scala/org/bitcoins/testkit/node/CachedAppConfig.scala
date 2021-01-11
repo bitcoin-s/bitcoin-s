@@ -20,11 +20,6 @@ sealed trait CachedAppConfig { _: BaseAsyncTest =>
   }
 }
 
-trait CachedChainAppConfig extends CachedAppConfig { _: BaseAsyncTest =>
-
-  implicit protected def appConfig: ChainAppConfig
-}
-
 trait CachedBitcoinSAppConfig { _: BaseAsyncTest =>
 
   implicit protected lazy val cachedConfig: BitcoinSAppConfig =
@@ -45,4 +40,8 @@ trait CachedBitcoinSAppConfig { _: BaseAsyncTest =>
   override def afterAll(): Unit = {
     Await.result(cachedConfig.stop(), akkaTimeout.duration)
   }
+}
+
+trait CachedChainAppConfig extends CachedBitcoinSAppConfig { _: BaseAsyncTest =>
+
 }
