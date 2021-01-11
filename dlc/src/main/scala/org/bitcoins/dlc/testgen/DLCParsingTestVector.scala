@@ -155,7 +155,9 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "length" -> Element(tlv.length),
           "outcomes" -> MultiElement(outcomes.map {
             case (outcome, amt) =>
-              NamedMultiElement("outcome" -> CryptoUtil.sha256(outcome).bytes,
+              NamedMultiElement("outcome" -> CryptoUtil
+                                  .sha256DLCAttestation(outcome)
+                                  .bytes,
                                 "localPayout" -> amt.toUInt64.bytes)
           })
         )

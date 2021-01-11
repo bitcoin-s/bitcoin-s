@@ -65,7 +65,10 @@ object DLCMessage {
             throw new IllegalArgumentException(
               s"Expected R value of $rValue, got ${sigs.head}")
           } else {
-            pubKey.verify(CryptoUtil.sha256(outcome).bytes, sigs.head)
+            pubKey.verify(CryptoUtil
+                            .sha256DLCAttestation(outcome)
+                            .bytes,
+                          sigs.head)
           }
         case UnsignedNumericOutcome(_) =>
           throw new IllegalArgumentException(
@@ -113,7 +116,9 @@ object DLCMessage {
                   sig.rx == nonce,
                   s"Unexpected nonce in ${sig.hex}, expected ${nonce.hex}")
 
-                result && pubKey.verify(CryptoUtil.sha256(digit.toString).bytes,
+                result && pubKey.verify(CryptoUtil
+                                          .sha256DLCAttestation(digit.toString)
+                                          .bytes,
                                         sig)
             }
       }
@@ -365,7 +370,9 @@ object DLCMessage {
             (0 until base)
               .find { possibleDigit =>
                 oracleInfo.pubKey.verify(
-                  CryptoUtil.sha256(possibleDigit.toString).bytes,
+                  CryptoUtil
+                    .sha256DLCAttestation(possibleDigit.toString)
+                    .bytes,
                   sig)
               }
               .getOrElse(throw new IllegalArgumentException(

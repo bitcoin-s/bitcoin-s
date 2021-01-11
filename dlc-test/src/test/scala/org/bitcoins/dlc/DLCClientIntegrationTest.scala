@@ -477,7 +477,9 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         constructAndSetupDLC(numOutcomes)
 
       oracleSig = oraclePrivKey.schnorrSignWithNonce(
-        CryptoUtil.sha256(outcomes(outcomeIndex)).bytes,
+        CryptoUtil
+          .sha256DLCAttestation(outcomes(outcomeIndex))
+          .bytes,
         preCommittedK)
 
       (unilateralDLC, unilateralSetup, otherDLC, otherSetup) = {

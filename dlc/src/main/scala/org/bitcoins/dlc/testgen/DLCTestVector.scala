@@ -139,7 +139,9 @@ object SerializedContractInfoEntry {
     SerializedContractInfoEntry] = {
     contractInfo.map {
       case (EnumOutcome(str), amt) =>
-        SerializedContractInfoEntry(str, CryptoUtil.sha256(str), amt)
+        SerializedContractInfoEntry(str,
+                                    CryptoUtil.sha256DLCAttestation(str),
+                                    amt)
     }.toVector
   }
 }

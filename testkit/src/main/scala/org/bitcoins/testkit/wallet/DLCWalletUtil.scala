@@ -39,10 +39,10 @@ object DLCWalletUtil {
   lazy val loseStr: String = "LOSE"
 
   lazy val winHash: Sha256Digest =
-    CryptoUtil.sha256(winStr)
+    CryptoUtil.sha256DLCAttestation(winStr)
 
   lazy val loseHash: Sha256Digest =
-    CryptoUtil.sha256(loseStr)
+    CryptoUtil.sha256DLCAttestation(loseStr)
 
   lazy val sampleOracleInfo: OracleInfo =
     SingleNonceOracleInfo(oraclePrivKey.schnorrPublicKey, rValue)

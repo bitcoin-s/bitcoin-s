@@ -77,7 +77,7 @@ object DLCTestUtil {
     val func = DLCPayoutCurve(
       Vector(
         OutcomePayoutEndpoint(0, leftVal),
-        OutcomePayoutEndpoint(botCollar, leftVal),
+        OutcomePayoutEndpoint(botCollar + 1, leftVal),
         OutcomePayoutEndpoint(topCollar, rightVal),
         OutcomePayoutEndpoint(overMaxValue - 1, rightVal)
       ))
