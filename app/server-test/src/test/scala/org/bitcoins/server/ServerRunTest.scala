@@ -86,7 +86,7 @@ class ServerRunTest extends BitcoinSAsyncTest {
       // Cleanup
       directory.deleteRecursively()
 
-      val expectedDir = datadir
+      val expectedDir = datadir.resolve("regtest")
 
       // Check the log location was correctly set
       assert(
