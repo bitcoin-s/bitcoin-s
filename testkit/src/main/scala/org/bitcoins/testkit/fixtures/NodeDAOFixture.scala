@@ -21,11 +21,11 @@ trait NodeDAOFixture extends NodeUnitTest with CachedBitcoinSAppConfig {
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => {
-                  nodeConf
+                  cachedNodeConf
                     .start()
                     .map(_ => daos)
                 },
-                destroy = () => destroyAppConfig(nodeConf))(test)
+                destroy = () => destroyAppConfig(cachedNodeConf))(test)
   }
 
   private def destroyAppConfig(nodeConfig: NodeAppConfig): Future[Unit] = {

@@ -25,7 +25,7 @@ class PeerMessageHandlerTest extends NodeUnitTest with CachedBitcoinSAppConfig {
   }
 
   implicit protected lazy val chainConfig: ChainAppConfig =
-    config.chainConf
+    cachedConfig.chainConf
 
   behavior of "PeerHandler"
 

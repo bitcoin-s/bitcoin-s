@@ -13,13 +13,13 @@ class DisconnectedPeerTest extends NodeUnitTest with CachedBitcoinSAppConfig {
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected lazy val config: BitcoinSAppConfig =
+  implicit override protected lazy val cachedConfig: BitcoinSAppConfig =
     getFreshConfig
 
   override type FixtureParam = SpvNode
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withDisconnectedSpvNode(test)(system, config)
+    withDisconnectedSpvNode(test)(system, cachedConfig)
 
   it must "fail to broadcast a transaction when disconnected" in { node =>
     val tx = TransactionGenerators.transaction.sampleSome
