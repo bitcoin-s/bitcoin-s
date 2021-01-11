@@ -784,7 +784,7 @@ case class OracleAnnouncementV0TLV(
     announcementSignature.bytes ++ publicKey.bytes ++ eventTLV.bytes
 
   override def validateSignature: Boolean = {
-    publicKey.verify(CryptoUtil.sha256DLCAnnouncement(eventTLV.bytes).bytes,
+    publicKey.verify(CryptoUtil.sha256(eventTLV.bytes).bytes,
                      announcementSignature)
   }
 }
