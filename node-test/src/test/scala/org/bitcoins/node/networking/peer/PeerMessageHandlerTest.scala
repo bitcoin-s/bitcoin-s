@@ -1,11 +1,10 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeUnitTest
+import org.bitcoins.testkit.node.{CachedBitcoinSAppConfig, NodeUnitTest}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt
@@ -13,10 +12,10 @@ import scala.concurrent.duration.DurationInt
 /**
   * Created by chris on 7/1/16.
   */
-class PeerMessageHandlerTest extends NodeUnitTest {
+class PeerMessageHandlerTest extends NodeUnitTest with CachedBitcoinSAppConfig {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def config: BitcoinSAppConfig =
+  implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
 
   override type FixtureParam = Unit
@@ -24,10 +23,6 @@ class PeerMessageHandlerTest extends NodeUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     test(())
   }
-
-  private val cachedConfig = config
-
-  implicit private lazy val nodeAppConfig: NodeAppConfig = cachedConfig.nodeConf
 
   implicit protected lazy val chainConfig: ChainAppConfig =
     cachedConfig.chainConf

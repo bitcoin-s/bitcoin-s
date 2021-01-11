@@ -19,7 +19,7 @@ import scala.concurrent.{Future, Promise}
 class DataMessageHandlerTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def config: BitcoinSAppConfig =
+  implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = SpvNodeConnectedWithBitcoindV19

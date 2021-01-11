@@ -122,13 +122,13 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
   behavior of "P2PClient"
 
   override def beforeAll(): Unit = {
-    implicit val chainConf = config.chainConf
+    implicit val chainConf = cachedConfig.chainConf
     chainConf.migrate()
     ()
   }
 
   override def afterAll(): Unit = {
-    implicit val chainConf = config.chainConf
+    implicit val chainConf = cachedConfig.chainConf
     val shutdownConfigF = for {
       _ <- chainConf.dropTable("flyway_schema_history")
       _ <- chainConf.dropAll()
@@ -165,8 +165,6 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
     * connection to the specified port
     */
   def connectAndDisconnect(peer: Peer): Future[Assertion] = {
-    implicit val chainConf = config.chainConf
-    implicit val nodeConf = config.nodeConf
 
     val probe = TestProbe()
     val remote = peer.socket

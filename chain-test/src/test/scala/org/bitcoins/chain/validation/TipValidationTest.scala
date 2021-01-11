@@ -15,7 +15,7 @@ class TipValidationTest extends ChainDbUnitTest {
   override type FixtureParam = BlockHeaderDAO
 
   // we're working with mainnet data
-  implicit override lazy val appConfig: ChainAppConfig = mainnetAppConfig
+  implicit override lazy val cachedChainConf: ChainAppConfig = mainnetAppConfig
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)

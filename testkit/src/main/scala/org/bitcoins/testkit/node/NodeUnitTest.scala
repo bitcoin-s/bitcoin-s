@@ -53,7 +53,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(config.nodeConf)
+    AppConfig.throwIfDefaultDatadir(getFreshConfig.nodeConf)
     super[EmbeddedPg].beforeAll()
   }
 
@@ -62,9 +62,10 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
   }
 
   /** Wallet config with data directory set to user temp directory */
-  implicit protected def config: BitcoinSAppConfig
+  implicit protected def getFreshConfig: BitcoinSAppConfig
 
-  implicit override lazy val np: NetworkParameters = config.nodeConf.network
+  implicit override lazy val np: NetworkParameters =
+    getFreshConfig.nodeConf.network
 
   lazy val startedBitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
