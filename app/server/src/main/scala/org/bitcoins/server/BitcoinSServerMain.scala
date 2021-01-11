@@ -3,7 +3,6 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
-import grizzled.slf4j.Logging
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
@@ -26,8 +25,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val args: Array[String])
-    extends BitcoinSRunner
-    with Logging {
+    extends BitcoinSRunner {
 
   override val actorSystemName = "bitcoin-s-server"
 
