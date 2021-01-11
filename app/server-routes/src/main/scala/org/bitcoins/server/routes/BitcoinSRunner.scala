@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.{
   BitcoinNetwork,
-  BitcoinNetworks,
   MainNet,
   RegTest,
   SigNet,
