@@ -10,7 +10,8 @@ CREATE TABLE "wallet_dlcs"
     "oracle_sigs"      VARCHAR(254),
     "funding_outpoint" VARCHAR(254),
     "funding_tx_id"    VARCHAR(254),
-    "closing_tx_id"    VARCHAR(254)
+    "closing_tx_id"    VARCHAR(254),
+    "outcome"          VARCHAR(254)
 );
 CREATE INDEX "wallet_dlcs_param_hash_index" on "wallet_dlcs" ("param_hash");
 
@@ -18,7 +19,6 @@ CREATE TABLE "wallet_dlc_offers"
 (
     "param_hash"        VARCHAR(254) NOT NULL UNIQUE,
     "temp_contract_id"  VARCHAR(254) NOT NULL UNIQUE,
-    "oracle_info_tlv"   VARCHAR(254) NOT NULL,
     "contract_info"     VARCHAR(254) NOT NULL,
     "contract_maturity" VARCHAR(254) NOT NULL,
     "contract_timeout"  VARCHAR(254) NOT NULL,

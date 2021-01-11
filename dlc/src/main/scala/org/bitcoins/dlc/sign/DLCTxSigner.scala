@@ -181,7 +181,7 @@ case class DLCTxSigner(
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcome hash */
   def createRemoteCETSig(msg: DLCOutcomeType): Future[ECAdaptorSignature] = {
-    val adaptorPoint = builder.oracleAndContractInfo.sigPointForOutcome(msg)
+    val adaptorPoint = builder.contractInfo.sigPointForOutcome(msg)
     val hashType = HashType.sigHashAll
     for {
       fundingTx <- builder.buildFundingTx
@@ -281,7 +281,7 @@ case class DLCTxSigner(
 
   /** Creates all of this party's CETSignatures */
   def createCETSigs(): Future[CETSignatures] = {
-    val cetSigFs = builder.oracleAndContractInfo.allOutcomes.map { msg =>
+    val cetSigFs = builder.contractInfo.allOutcomes.map { msg =>
       // Need to wrap in another future so they are all started at once
       // and do not block each other
       Future(createRemoteCETSig(msg).map(msg -> _)).flatten

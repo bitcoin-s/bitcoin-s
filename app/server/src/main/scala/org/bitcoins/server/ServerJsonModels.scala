@@ -628,8 +628,7 @@ object GetDLC extends ServerJsonModels {
 }
 
 case class CreateDLCOffer(
-    announcement: OracleAnnouncementTLV,
-    contractInfoTLV: ContractInfoTLV,
+    contractInfoTLV: ContractInfoV0TLV,
     collateral: Satoshis,
     feeRateOpt: Option[SatoshisPerVirtualByte],
     locktime: UInt32,
@@ -640,16 +639,14 @@ object CreateDLCOffer extends ServerJsonModels {
   def fromJsArr(jsArr: ujson.Arr): Try[CreateDLCOffer] = {
 
     jsArr.arr.toList match {
-      case announcementJs :: contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: Nil =>
+      case contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: Nil =>
         Try {
-          val announcement = jsToOracleAnnouncementTLV(announcementJs)
           val contractInfoTLV = jsToContractInfoTLV(contractInfoJs)
           val collateral = jsToSatoshis(collateralJs)
           val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
           val locktime = jsToUInt32(locktimeJs)
           val refundLT = jsToUInt32(refundLTJs)
-          CreateDLCOffer(announcement,
-                         contractInfoTLV,
+          CreateDLCOffer(contractInfoTLV,
                          collateral,
                          feeRate,
                          locktime,
@@ -1215,10 +1212,10 @@ trait ServerJsonModels {
           "Expected an OracleAnnouncementTLV as a hex string")
     }
 
-  def jsToContractInfoTLV(js: Value): ContractInfoTLV =
+  def jsToContractInfoTLV(js: Value): ContractInfoV0TLV =
     js match {
       case str: Str =>
-        ContractInfoTLV(str.value)
+        ContractInfoV0TLV(str.value)
       case _: Value =>
         throw Value.InvalidData(js, "Expected a ContractInfo as a hex string")
     }

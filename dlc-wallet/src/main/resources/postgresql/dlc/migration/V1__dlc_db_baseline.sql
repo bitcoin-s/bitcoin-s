@@ -11,6 +11,7 @@ CREATE TABLE "wallet_dlcs"
     "funding_outpoint" TEXT,
     "funding_tx_id"    TEXT,
     "closing_tx_id"    TEXT,
+    "outcome"          TEXT,
     constraint "pk_dlc" primary key ("param_hash")
 );
 CREATE INDEX "wallet_dlcs_param_hash_index" on "wallet_dlcs" ("param_hash");
@@ -19,7 +20,6 @@ CREATE TABLE "wallet_dlc_offers"
 (
     "param_hash"        VARCHAR(254) NOT NULL UNIQUE,
     "temp_contract_id"  TEXT         NOT NULL UNIQUE,
-    "oracle_info_tlv"   TEXT         NOT NULL,
     "contract_info"     TEXT         NOT NULL,
     "contract_maturity" TEXT         NOT NULL,
     "contract_timeout"  TEXT         NOT NULL,

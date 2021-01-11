@@ -8,7 +8,6 @@ import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.dlc.DLCMessage.OracleInfo
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
 import org.bitcoins.crypto.NetworkElement
@@ -19,10 +18,8 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 import upickle.default._
 
-import java.time.Instant
-
 import java.nio.file.Files
-
+import java.time.Instant
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -263,23 +260,25 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-              CreateDLCOffer(announcement,
-                             contractInfo,
+              CreateDLCOffer(contractInfo,
                              collateral,
                              feeRateOpt,
                              locktime,
                              refundLT)) =>
           complete {
-            if (!announcement.validateSignature) {
+            val announcements = contractInfo.oracleInfo match {
+              case OracleInfoV0TLV(announcement)     => Vector(announcement)
+              case OracleInfoV1TLV(announcements)    => announcements
+              case OracleInfoV2TLV(announcements, _) => announcements
+            }
+            if (!announcements.forall(_.validateSignature)) {
               throw new RuntimeException(
-                s"Received Oracle announcement with invalid signature! ${announcement.hex}")
+                s"Received Oracle announcement with invalid signature! ${announcements
+                  .map(_.hex)}")
             }
 
-            val oracleInfo = OracleInfo.fromOracleAnnouncement(announcement)
-
             wallet
-              .createDLCOffer(oracleInfo,
-                              contractInfo,
+              .createDLCOffer(contractInfo,
                               collateral,
                               feeRateOpt,
                               locktime,

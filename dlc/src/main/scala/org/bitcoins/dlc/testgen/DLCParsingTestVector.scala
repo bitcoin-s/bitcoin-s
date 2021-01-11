@@ -149,19 +149,6 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
 
   def apply(tlv: TLV): DLCParsingTestVector = {
     tlv match {
-      case ContractInfoV0TLV(outcomes) =>
-        val fields = Vector(
-          "tpe" -> Element(ContractInfoV0TLV.tpe),
-          "length" -> Element(tlv.length),
-          "outcomes" -> MultiElement(outcomes.map {
-            case (outcome, amt) =>
-              NamedMultiElement("outcome" -> CryptoUtil
-                                  .sha256DLCAttestation(outcome)
-                                  .bytes,
-                                "localPayout" -> amt.toUInt64.bytes)
-          })
-        )
-        DLCTLVTestVector(tlv, "contract_info_v0", fields)
       case PayoutFunctionV0TLV(points) =>
         val fields = Vector(
           "tpe" -> Element(PayoutFunctionV0TLV.tpe),
@@ -190,37 +177,71 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           })
         )
         DLCTLVTestVector(tlv, "rounding_intervals_v0", fields)
-      case ContractInfoV1TLV(base,
-                             numDigits,
-                             totalCollateral,
-                             payoutFunction,
-                             roundingIntervals) =>
+      case ContractDescriptorV0TLV(outcomes) =>
         val fields = Vector(
-          "tpe" -> Element(ContractInfoV1TLV.tpe),
+          "tpe" -> Element(ContractDescriptorV0TLV.tpe),
           "length" -> Element(tlv.length),
-          "base" -> Element(BigSizeUInt(base)),
+          "outcomes" -> MultiElement(outcomes.map {
+            case (outcome, amt) =>
+              NamedMultiElement("outcome" -> CryptoUtil.sha256(outcome).bytes,
+                                "localPayout" -> amt.toUInt64.bytes)
+          })
+        )
+        DLCTLVTestVector(tlv, "contract_descriptor_v0", fields)
+      case ContractDescriptorV1TLV(numDigits,
+                                   payoutFunction,
+                                   roundingIntervals) =>
+        val fields = Vector(
+          "tpe" -> Element(ContractDescriptorV1TLV.tpe),
+          "length" -> Element(tlv.length),
           "numDigits" -> Element(UInt16(numDigits)),
-          "totalCollateral" -> Element(UInt64(totalCollateral.toLong)),
           "payoutFunction" -> Element(payoutFunction),
           "roundingIntervals" -> Element(roundingIntervals)
         )
-        DLCTLVTestVector(tlv, "contract_info_v1", fields)
-      case OracleInfoV0TLV(pubKey, rValue) =>
+        DLCTLVTestVector(tlv, "contract_descriptor_v1", fields)
+      case OracleInfoV0TLV(announcement) =>
         val fields = Vector(
           "tpe" -> Element(OracleInfoV0TLV.tpe),
           "length" -> Element(tlv.length),
-          "pubKey" -> Element(pubKey),
-          "rValue" -> Element(rValue)
+          "announcement" -> Element(announcement)
         )
         DLCTLVTestVector(tlv, "oracle_info_v0", fields)
-      case OracleInfoV1TLV(pubKey, nonces) =>
+      case OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage) =>
+        val maximizeCoverageBytes = ByteVector(
+          if (maximizeCoverage) TLV.TRUE_BYTE else TLV.FALSE_BYTE)
+
+        val fields = Vector(
+          "tpe" -> Element(OracleParamsV0TLV.tpe),
+          "length" -> Element(tlv.length),
+          "maxErrorExp" -> Element(UInt16(maxErrorExp)),
+          "minFailExp" -> Element(UInt16(minFailExp)),
+          "maximizeCoverage" -> Element(maximizeCoverageBytes)
+        )
+        DLCTLVTestVector(tlv, "oracle_params_v0", fields)
+      case OracleInfoV1TLV(announcements) =>
         val fields = Vector(
           "tpe" -> Element(OracleInfoV1TLV.tpe),
           "length" -> Element(tlv.length),
-          "pubKey" -> Element(pubKey),
-          "nonces" -> MultiElement(nonces.map(Element(_)))
+          "announcements" -> MultiElement(announcements.map(Element(_)))
         )
         DLCTLVTestVector(tlv, "oracle_info_v1", fields)
+      case OracleInfoV2TLV(oracles, params) =>
+        val fields = Vector(
+          "tpe" -> Element(OracleInfoV2TLV.tpe),
+          "length" -> Element(tlv.length),
+          "announcements" -> MultiElement(oracles.map(Element(_))),
+          "params" -> Element(params)
+        )
+        DLCTLVTestVector(tlv, "oracle_info_v2", fields)
+      case ContractInfoV0TLV(totalCollateral, contractDescriptor, oracleInfo) =>
+        val fields = Vector(
+          "tpe" -> Element(ContractInfoV0TLV.tpe),
+          "length" -> Element(tlv.length),
+          "totalCollateral" -> Element(totalCollateral.toUInt64),
+          "contractDescriptor" -> Element(contractDescriptor),
+          "oracleInfo" -> Element(oracleInfo)
+        )
+        DLCTLVTestVector(tlv, "contract_info_v0", fields)
       case FundingInputV0TLV(prevTx,
                              prevTxVout,
                              sequence,
@@ -272,7 +293,6 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
       case DLCOfferTLV(contractFlags,
                        chainHash,
                        contractInfo,
-                       oracleInfo,
                        fundingPubKey,
                        payoutSPK,
                        totalCollateralSatoshis,
@@ -286,7 +306,6 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "contractFlags" -> Element(ByteVector(contractFlags)),
           "chainHash" -> Element(chainHash),
           "contractInfo" -> Element(contractInfo),
-          "oracleInfo" -> Element(oracleInfo),
           "fundingPubKey" -> Element(fundingPubKey),
           "payoutSPKLen" -> Element(UInt16(payoutSPK.asmBytes.length)),
           "payoutSPK" -> Element(payoutSPK.asmBytes),

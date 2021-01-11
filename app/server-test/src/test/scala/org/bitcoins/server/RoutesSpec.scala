@@ -806,13 +806,11 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Vector("ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562",
              "e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea")
 
-    val contractInfo = SingleNonceContractInfo.fromStringVec(
+    val contractDesc = EnumContractDescriptor.fromStringVec(
       Vector(
         (contractInfoDigests.head, Satoshis(5)),
         (contractInfoDigests.last, Satoshis(4))
       ))
-
-    val contractInfoTLV = contractInfo.toTLV
 
     val contractMaturity = 1580323752
     val contractTimeout = 1581323752
@@ -859,11 +857,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val announcementTLV = OracleAnnouncementV0TLV(
       "fdd8249426cbca0e5366f6688fd837a83d3fe34d103f8d88a3bdc40d648e47e43c6f70a7e65fb85d5de46779604b541ebe74d06b3c316446a6f97fcd23d6de8e1d7b9451f74577f8cab8361962ce642a8da4b1f48f8813ed243203cb50ebba45c789abf0fdd8223000015b0fb6b85a9badee0a826349822db7412f79c71efdd903eac94a10ee10d6e4425fe3da00fdd80604000101620161")
 
-    val oracleInfo = SingleNonceOracleInfo(announcementTLV.publicKey,
-                                           announcementTLV.eventTLV.nonces.head)
+    val oracleInfo = EnumSingleOracleInfo(announcementTLV)
+
+    val contractInfo = ContractInfo(contractDesc, oracleInfo)
+    val contractInfoTLV = contractInfo.toTLV
 
     val offer = DLCOffer(
-      OracleAndContractInfo(oracleInfo, contractInfo),
+      contractInfo,
       dummyDLCKeys,
       Satoshis(2500),
       Vector(fundingInput, fundingInput),
@@ -874,14 +874,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "create a dlc offer" in {
       (mockWalletApi
-        .createDLCOffer(_: OracleInfo,
-                        _: ContractInfoTLV,
+        .createDLCOffer(_: ContractInfoV0TLV,
                         _: Satoshis,
                         _: Option[FeeUnit],
                         _: UInt32,
                         _: UInt32))
         .expects(
-          oracleInfo,
           contractInfoTLV,
           Satoshis(2500),
           Some(SatoshisPerVirtualByte(Satoshis.one)),
@@ -894,7 +892,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         ServerCommand(
           "createdlcoffer",
           Arr(
-            Str(announcementTLV.hex),
             Str(contractInfoTLV.hex),
             Num(2500),
             Num(1),

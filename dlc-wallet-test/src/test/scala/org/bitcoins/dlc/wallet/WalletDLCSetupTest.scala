@@ -3,6 +3,7 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -29,7 +30,6 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
     for {
       offer <- walletA.createDLCOffer(
-        offerData.oracleInfo,
         offerData.contractInfo,
         offerData.totalCollateral,
         Some(offerData.feeRate),
@@ -130,7 +130,6 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       for {
         offer <- walletA.createDLCOffer(
-          offerData.oracleInfo,
           offerData.contractInfo.toTLV,
           offerData.totalCollateral,
           Some(offerData.feeRate),
@@ -226,7 +225,6 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer): Future[DLCAccept] = {
     for {
       offer <- walletA.createDLCOffer(
-        offerData.oracleInfo,
         offerData.contractInfo,
         offerData.totalCollateral,
         Some(offerData.feeRate),
@@ -343,23 +341,17 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       val betSize = 10000
 
-      lazy val contractInfo: ContractInfo =
-        SingleNonceContractInfo.fromStringVec(
+      val contractDescriptor: EnumContractDescriptor =
+        EnumContractDescriptor.fromStringVec(
           Vector(winStr -> Satoshis(betSize),
                  loseStr -> Satoshis.zero,
                  drawStr -> Satoshis(betSize / 2)))
 
-      val oraclePubKey = SchnorrPublicKey(
-        "bd25c9f473eb5d37e5299b86f2d7b625d01ae0441da428cc65cf19e1c6021db6")
-      val oracleNonce = SchnorrNonce(
-        "d535016b6d837587ac6375d0044cb60292afb9ca6763483595eb2909c91063af")
-      val attestation = FieldElement(
-        "413c05252d4003cd20f0a0901da193d0c7b53b7c6c3e3426e6f106a0ef96e18f")
-
-      val oracleInfo = SingleNonceOracleInfo(oraclePubKey, oracleNonce)
+      val oracleInfo = EnumSingleOracleInfo(OracleAnnouncementTLV(
+        "fdd824b4caaec7479cc9d37003f5add6504d035054ffeac8637a990305a45cfecc1062044c3f68b45318f57e41c4544a4a950c0744e2a80854349a3426b00ad86da5090b9e942dc6df2ae87f007b45b0ccd63e6c354d92c4545fc099ea3e137e54492d1efdd822500001a6a09c7c83c50b34f9db560a2e14fef2eab5224c15b18c7114331756364bfce65ffe3800fdd8062400030c44656d6f637261745f77696e0e52657075626c6963616e5f77696e056f746865720161"))
 
       val offerData = DLCOffer(
-        OracleAndContractInfo(oracleInfo, contractInfo),
+        ContractInfo(contractDescriptor, oracleInfo),
         dummyDLCKeys,
         Satoshis(5000),
         Vector(dummyFundingInputs.head),
@@ -368,15 +360,14 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         dummyTimeouts
       )
 
-      val oracleSig = SchnorrDigitalSignature(oracleNonce, attestation)
+      val oracleSig = SchnorrDigitalSignature(
+        "a6a09c7c83c50b34f9db560a2e14fef2eab5224c15b18c7114331756364bfce6c59736cdcfe1e0a89064f846d5dbde0902f82688dde34dc1833965a60240f287")
 
-      val paramHash = DLCMessage.calcParamHash(offerData.oracleInfo,
-                                               offerData.contractInfo,
-                                               offerData.timeouts)
+      val paramHash =
+        DLCMessage.calcParamHash(offerData.contractInfo, offerData.timeouts)
 
       for {
         offer <- walletA.createDLCOffer(
-          offerData.oracleInfo,
           offerData.contractInfo,
           offerData.totalCollateral,
           Some(offerData.feeRate),

@@ -1,9 +1,10 @@
 package org.bitcoins.dlc.wallet
 
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.DLCMessage.{
   ContractInfo,
-  MultiNonceContractInfo,
-  SingleNonceContractInfo
+  EnumContractDescriptor,
+  NumericContractDescriptor
 }
 import org.bitcoins.core.protocol.dlc.DLCState
 import org.bitcoins.core.protocol.dlc.DLCStatus.{
@@ -11,7 +12,6 @@ import org.bitcoins.core.protocol.dlc.DLCStatus.{
   Refunded,
   RemoteClaimed
 }
-import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.crypto.{CryptoUtil, SchnorrDigitalSignature}
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -30,15 +30,15 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   def getSigs(contractInfo: ContractInfo): (
       SchnorrDigitalSignature,
       SchnorrDigitalSignature) = {
-    val info: SingleNonceContractInfo = contractInfo match {
-      case info: SingleNonceContractInfo => info
-      case _: MultiNonceContractInfo =>
+    val desc: EnumContractDescriptor = contractInfo.contractDescriptor match {
+      case desc: EnumContractDescriptor => desc
+      case _: NumericContractDescriptor =>
         throw new IllegalArgumentException("Unexpected Contract Info")
     }
 
     // Get a hash that the initiator wins for
     val initiatorWinStr =
-      info
+      desc
         .maxBy(_._2.toLong)
         ._1
         .outcome
@@ -50,7 +50,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
     // Get a hash that the recipient wins for
     val recipientWinStr =
-      info.find(_._2 == Satoshis.zero).get._1.outcome
+      desc.find(_._2 == Satoshis.zero).get._1.outcome
     val recipientWinSig = DLCWalletUtil.oraclePrivKey
       .schnorrSignWithNonce(CryptoUtil
                               .sha256DLCAttestation(recipientWinStr)

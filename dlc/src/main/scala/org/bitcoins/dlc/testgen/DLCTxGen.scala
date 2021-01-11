@@ -4,11 +4,11 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage.{
   DLCSign,
-  SingleNonceContractInfo,
-  SingleNonceOracleInfo
+  EnumContractDescriptor,
+  EnumSingleOracleInfo
 }
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.tlv.EnumOutcome
+import org.bitcoins.core.protocol.tlv.{EnumOutcome, OracleAnnouncementV0TLV}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -22,16 +22,19 @@ object DLCTxGen {
   import DLCTLVGen._
 
   def dlcParams(
-      contractInfo: SingleNonceContractInfo = genContractInfo(),
+      contractDescriptor: EnumContractDescriptor = genContractDescriptor(),
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200),
       feeRate: SatoshisPerVirtualByte =
         SatoshisPerVirtualByte(Satoshis(5))): DLCParams = {
     val privKey = ECPrivateKey.freshPrivateKey
     val kVal = ECPrivateKey.freshPrivateKey
-    val oracleInfo =
-      SingleNonceOracleInfo(privKey.schnorrPublicKey, kVal.schnorrNonce)
-    val realOutcome = contractInfo.keys(contractInfo.size / 2)
+    val oracleInfo = EnumSingleOracleInfo(
+      OracleAnnouncementV0TLV
+        .dummyForEventsAndKeys(privKey,
+                               kVal.schnorrNonce,
+                               contractDescriptor.keys))
+    val realOutcome = contractDescriptor.keys(contractDescriptor.size / 2)
     val sig =
       privKey.schnorrSignWithNonce(CryptoUtil
                                      .sha256DLCAttestation(realOutcome.outcome)
@@ -39,7 +42,7 @@ object DLCTxGen {
                                    kVal)
     DLCParams(
       oracleInfo,
-      SerializedContractInfoEntry.fromContractInfo(contractInfo),
+      SerializedContractInfoEntry.fromContractDescriptor(contractDescriptor),
       contractMaturityBound,
       contractTimeout,
       feeRate,
@@ -141,10 +144,10 @@ object DLCTxGen {
       acceptInputs: Vector[FundingInputTx],
       numOutcomes: Int = 3): ValidTestInputs = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
-    val contractInfo = genContractInfo(outcomes)
+    val contractDescriptor = genContractDescriptor(outcomes)
 
     validTestInputs(
-      params = dlcParams(contractInfo = contractInfo),
+      params = dlcParams(contractDescriptor = contractDescriptor),
       offerParams = dlcPartyParams(fundingInputTxs = offerInputs),
       acceptParams = dlcPartyParams(fundingInputTxs = acceptInputs)
     )
@@ -205,9 +208,10 @@ object DLCTxGen {
   def randomTxTestVector(numOutcomes: Int)(implicit
       ec: ExecutionContext): Future[DLCTxTestVector] = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
-    val contractInfo = genContractInfo(outcomes)
+    val contractDescriptor = genContractDescriptor(outcomes)
 
-    dlcTxTestVector(validTestInputs(dlcParams(contractInfo = contractInfo)))
+    dlcTxTestVector(
+      validTestInputs(dlcParams(contractDescriptor = contractDescriptor)))
   }
 
   def successTestVector(inputs: ValidTestInputs = validTestInputs())(implicit
@@ -272,8 +276,9 @@ object DLCTxGen {
   def randomSuccessTestVector(numOutcomes: Int)(implicit
       ec: ExecutionContext): Future[SuccessTestVector] = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
-    val contractInfo = genContractInfo(outcomes)
+    val contractDescriptor = genContractDescriptor(outcomes)
 
-    successTestVector(validTestInputs(dlcParams(contractInfo = contractInfo)))
+    successTestVector(
+      validTestInputs(dlcParams(contractDescriptor = contractDescriptor)))
   }
 }

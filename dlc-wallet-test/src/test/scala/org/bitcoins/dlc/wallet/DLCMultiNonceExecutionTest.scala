@@ -3,8 +3,8 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.DLCMessage.{
   ContractInfo,
-  MultiNonceContractInfo,
-  SingleNonceContractInfo
+  EnumContractDescriptor,
+  NumericContractDescriptor
 }
 import org.bitcoins.core.protocol.dlc.DLCState
 import org.bitcoins.core.protocol.dlc.DLCStatus.{Claimed, RemoteClaimed}
@@ -26,14 +26,14 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
   def getSigs(contractInfo: ContractInfo): (
       Vector[SchnorrDigitalSignature],
       Vector[SchnorrDigitalSignature]) = {
-    val multiNonceContractInfo: MultiNonceContractInfo = contractInfo match {
-      case info: MultiNonceContractInfo => info
-      case _: SingleNonceContractInfo =>
+    contractInfo.contractDescriptor match {
+      case _: NumericContractDescriptor => ()
+      case _: EnumContractDescriptor =>
         throw new IllegalArgumentException("Unexpected Contract Info")
     }
 
     val initiatorWinVec =
-      multiNonceContractInfo.outcomeVec
+      contractInfo.outcomeVecOpt.get
         .maxBy(_._2.toLong)
         ._1
 
@@ -49,7 +49,7 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
     }
 
     val recipientWinVec =
-      multiNonceContractInfo.outcomeVec.find(_._2 == Satoshis.zero).get._1
+      contractInfo.outcomeVecOpt.get.find(_._2 == Satoshis.zero).get._1
 
     val kValues2 = DLCWalletUtil.kValues.take(recipientWinVec.size)
 

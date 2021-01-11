@@ -110,9 +110,9 @@ case class DLCPartyParams(
 
   def toOffer(params: DLCParams): DLCOffer = {
     DLCOffer(
-      OracleAndContractInfo(
-        params.oracleInfo,
-        SingleNonceContractInfo(params.contractInfo.map(_.toMapEntry))),
+      ContractInfo(
+        EnumContractDescriptor(params.contractInfo.map(_.toMapEntry)),
+        params.oracleInfo),
       DLCPublicKeys(fundingPrivKey.publicKey, payoutAddress),
       collateral.satoshis,
       fundingInputs,
@@ -135,7 +135,7 @@ case class SerializedContractInfoEntry(
 
 object SerializedContractInfoEntry {
 
-  def fromContractInfo(contractInfo: SingleNonceContractInfo): Vector[
+  def fromContractDescriptor(contractInfo: EnumContractDescriptor): Vector[
     SerializedContractInfoEntry] = {
     contractInfo.map {
       case (EnumOutcome(str), amt) =>
@@ -147,7 +147,7 @@ object SerializedContractInfoEntry {
 }
 
 case class DLCParams(
-    oracleInfo: OracleInfo,
+    oracleInfo: EnumSingleOracleInfo,
     contractInfo: Vector[SerializedContractInfoEntry],
     contractMaturityBound: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
@@ -226,18 +226,8 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
       { element => JsString(element.hex) }
     )
 
-  implicit val oracleInfoFormat: Format[OracleInfo] = Format[OracleInfo](
-    {
-      _.validate[Map[String, String]]
-        .map(map =>
-          SingleNonceOracleInfo(SchnorrPublicKey(map("publicKey")),
-                                SchnorrNonce(map("nonce"))))
-    },
-    { info =>
-      Json.toJson(
-        Map("publicKey" -> info.pubKey.hex, "nonce" -> info.nonces.head.hex))
-    }
-  )
+  implicit val oracleInfoFormat: Format[EnumSingleOracleInfo] = hexFormat(
+    EnumSingleOracleInfo)
 
   implicit val blockTimeStampFormat: Format[BlockTimeStamp] =
     Format[BlockTimeStamp](

@@ -155,6 +155,8 @@ object TLV extends TLVParentFactory[TLV] {
       OracleEventV0TLV,
       RoundingIntervalsV0TLV,
       PayoutFunctionV0TLV,
+      OracleParamsV0TLV,
+      ContractInfoV0TLV,
       FundingInputV0TLV,
       CETSignaturesV0TLV,
       FundingSignaturesV0TLV,
@@ -162,7 +164,7 @@ object TLV extends TLVParentFactory[TLV] {
       DLCAcceptTLV,
       DLCSignTLV
     ) ++ EventDescriptorTLV.allFactories ++
-      ContractInfoTLV.allFactories ++
+      ContractDescriptorTLV.allFactories ++
       OracleInfoTLV.allFactories ++
       OracleAnnouncementTLV.allFactories ++
       NegotiationFieldsTLV.allFactories
@@ -806,26 +808,58 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
                                  UInt32.zero,
                                  EnumEventDescriptorV0TLV.dummy,
                                  "dummy")
-    val sig = priv.schnorrSign(CryptoUtil.sha256(event.bytes).bytes)
+    val sig =
+      priv.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
 
     OracleAnnouncementV0TLV(sig, priv.schnorrPublicKey, event)
   }
+
+  def dummyForEventsAndKeys(
+      privKey: ECPrivateKey,
+      nonce: SchnorrNonce,
+      events: Vector[EnumOutcome]): OracleAnnouncementTLV = {
+    val event = OracleEventV0TLV(
+      Vector(nonce),
+      UInt32.zero,
+      EnumEventDescriptorV0TLV(events.map(outcome => outcome.outcome)),
+      "dummy")
+    val sig =
+      privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+
+    OracleAnnouncementV0TLV(sig, privKey.schnorrPublicKey, event)
+  }
+
+  def dummyForKeys(
+      privKey: ECPrivateKey,
+      nonces: Vector[SchnorrNonce]): OracleAnnouncementTLV = {
+    val eventDescriptor = DigitDecompositionEventDescriptorV0TLV(UInt16(2),
+                                                                 isSigned =
+                                                                   false,
+                                                                 nonces.length,
+                                                                 "dummy",
+                                                                 Int32.zero)
+    val event = OracleEventV0TLV(nonces, UInt32.zero, eventDescriptor, "dummy")
+    val sig =
+      privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+
+    OracleAnnouncementV0TLV(sig, privKey.schnorrPublicKey, event)
+  }
 }
 
-sealed trait ContractInfoTLV extends TLV
+sealed trait ContractDescriptorTLV extends TLV
 
-object ContractInfoTLV extends TLVParentFactory[ContractInfoTLV] {
+object ContractDescriptorTLV extends TLVParentFactory[ContractDescriptorTLV] {
 
-  val allFactories: Vector[TLVFactory[ContractInfoTLV]] =
-    Vector(ContractInfoV0TLV, ContractInfoV1TLV)
+  val allFactories: Vector[TLVFactory[ContractDescriptorTLV]] =
+    Vector(ContractDescriptorV0TLV, ContractDescriptorV1TLV)
 
-  override def typeName: String = "ContractInfoTLV"
+  override def typeName: String = "ContractDescriptorTLV"
 }
 
 /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Messaging.md#version-0-contract_info */
-case class ContractInfoV0TLV(outcomes: Vector[(String, Satoshis)])
-    extends ContractInfoTLV {
-  override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
+case class ContractDescriptorV0TLV(outcomes: Vector[(String, Satoshis)])
+    extends ContractDescriptorTLV {
+  override val tpe: BigSizeUInt = ContractDescriptorV0TLV.tpe
 
   override val value: ByteVector = {
     bigSizePrefixedList[(String, Satoshis)](
@@ -838,10 +872,10 @@ case class ContractInfoV0TLV(outcomes: Vector[(String, Satoshis)])
   }
 }
 
-object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
+object ContractDescriptorV0TLV extends TLVFactory[ContractDescriptorV0TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(42768)
 
-  override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {
+  override def fromTLVValue(value: ByteVector): ContractDescriptorV0TLV = {
     val iter = ValueIterator(value)
 
     val outcomes = iter.takeBigSizePrefixedList { () =>
@@ -851,7 +885,7 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
       outcome -> amt
     }
 
-    ContractInfoV0TLV(outcomes)
+    ContractDescriptorV0TLV(outcomes)
   }
 }
 
@@ -951,41 +985,31 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
   }
 }
 
-case class ContractInfoV1TLV(
-    base: Int,
+case class ContractDescriptorV1TLV(
     numDigits: Int,
-    totalCollateral: Satoshis,
     payoutFunction: PayoutFunctionV0TLV,
     roundingIntervals: RoundingIntervalsV0TLV)
-    extends ContractInfoTLV {
-  override val tpe: BigSizeUInt = ContractInfoV1TLV.tpe
+    extends ContractDescriptorTLV {
+  override val tpe: BigSizeUInt = ContractDescriptorV1TLV.tpe
 
   override val value: ByteVector = {
-    BigSizeUInt(base).bytes ++
-      UInt16(numDigits).bytes ++
-      satBytes(totalCollateral) ++
+    UInt16(numDigits).bytes ++
       payoutFunction.bytes ++
       roundingIntervals.bytes
   }
 }
 
-object ContractInfoV1TLV extends TLVFactory[ContractInfoV1TLV] {
+object ContractDescriptorV1TLV extends TLVFactory[ContractDescriptorV1TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(42784)
 
-  override def fromTLVValue(value: ByteVector): ContractInfoV1TLV = {
+  override def fromTLVValue(value: ByteVector): ContractDescriptorV1TLV = {
     val iter = ValueIterator(value)
 
-    val base = iter.takeBigSize()
     val numDigits = iter.takeU16()
-    val totalCollateral = iter.takeSats()
     val payoutFunction = iter.take(PayoutFunctionV0TLV)
     val roundingIntervals = iter.take(RoundingIntervalsV0TLV)
 
-    ContractInfoV1TLV(base.toInt,
-                      numDigits.toInt,
-                      totalCollateral,
-                      payoutFunction,
-                      roundingIntervals)
+    ContractDescriptorV1TLV(numDigits.toInt, payoutFunction, roundingIntervals)
   }
 }
 
@@ -994,17 +1018,17 @@ sealed trait OracleInfoTLV extends TLV
 object OracleInfoTLV extends TLVParentFactory[OracleInfoTLV] {
 
   override val allFactories: Vector[TLVFactory[OracleInfoTLV]] =
-    Vector(OracleInfoV0TLV, OracleInfoV1TLV)
+    Vector(OracleInfoV0TLV, OracleInfoV1TLV, OracleInfoV2TLV)
 
   override def typeName: String = "OracleInfoTLV"
 }
 
-case class OracleInfoV0TLV(pubKey: SchnorrPublicKey, rValue: SchnorrNonce)
+case class OracleInfoV0TLV(announcement: OracleAnnouncementTLV)
     extends OracleInfoTLV {
   override val tpe: BigSizeUInt = OracleInfoV0TLV.tpe
 
   override val value: ByteVector = {
-    pubKey.bytes ++ rValue.bytes
+    announcement.bytes
   }
 }
 
@@ -1014,21 +1038,20 @@ object OracleInfoV0TLV extends TLVFactory[OracleInfoV0TLV] {
   override def fromTLVValue(value: ByteVector): OracleInfoV0TLV = {
     val iter = ValueIterator(value)
 
-    val pubKey = iter.take(SchnorrPublicKey, 32)
-    val rValue = iter.take(SchnorrNonce, 32)
+    val announcement = iter.take(OracleAnnouncementTLV)
 
-    OracleInfoV0TLV(pubKey, rValue)
+    OracleInfoV0TLV(announcement)
   }
 }
 
-case class OracleInfoV1TLV(
-    pubKey: SchnorrPublicKey,
-    nonces: Vector[SchnorrNonce])
-    extends OracleInfoTLV {
+sealed trait MultiOracleInfoTLV extends OracleInfoTLV
+
+case class OracleInfoV1TLV(oracles: Vector[OracleAnnouncementTLV])
+    extends MultiOracleInfoTLV {
   override val tpe: BigSizeUInt = OracleInfoV1TLV.tpe
 
   override val value: ByteVector = {
-    pubKey.bytes ++ u16PrefixedList(nonces)
+    u16PrefixedList(oracles)
   }
 }
 
@@ -1038,10 +1061,100 @@ object OracleInfoV1TLV extends TLVFactory[OracleInfoV1TLV] {
   override def fromTLVValue(value: ByteVector): OracleInfoV1TLV = {
     val iter = ValueIterator(value)
 
-    val pubKey = iter.take(SchnorrPublicKey, 32)
-    val nonces = iter.takeU16PrefixedList(() => iter.take(SchnorrNonce, 32))
+    val oracles =
+      iter.takeU16PrefixedList(() => iter.take(OracleAnnouncementTLV))
 
-    OracleInfoV1TLV(pubKey, nonces)
+    OracleInfoV1TLV(oracles)
+  }
+}
+
+sealed trait OracleParamsTLV extends TLV
+
+case class OracleParamsV0TLV(
+    maxErrorExp: Int,
+    minFailExp: Int,
+    maximizeCoverage: Boolean)
+    extends OracleParamsTLV {
+  override val tpe: BigSizeUInt = OracleParamsV0TLV.tpe
+
+  override val value: ByteVector = {
+    UInt16(maxErrorExp).bytes ++
+      UInt16(minFailExp).bytes ++
+      boolBytes(maximizeCoverage)
+  }
+}
+
+object OracleParamsV0TLV extends TLVFactory[OracleParamsV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(55338)
+
+  override def fromTLVValue(value: ByteVector): OracleParamsV0TLV = {
+    val iter = ValueIterator(value)
+
+    val maxErrorExp = iter.takeU16().toInt
+    val minFailExp = iter.takeU16().toInt
+    val maximizeCoverage = iter.takeBoolean()
+
+    OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage)
+  }
+}
+
+case class OracleInfoV2TLV(
+    oracles: Vector[OracleAnnouncementTLV],
+    params: OracleParamsTLV)
+    extends MultiOracleInfoTLV {
+  override val tpe: BigSizeUInt = OracleInfoV2TLV.tpe
+
+  override val value: ByteVector = {
+    u16PrefixedList(oracles) ++ params.bytes
+  }
+}
+
+object OracleInfoV2TLV extends TLVFactory[OracleInfoV2TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(55340)
+
+  override def fromTLVValue(value: ByteVector): OracleInfoV2TLV = {
+    val iter = ValueIterator(value)
+
+    val oracles =
+      iter.takeU16PrefixedList(() => iter.take(OracleAnnouncementTLV))
+    val params = iter.take(OracleParamsV0TLV)
+
+    OracleInfoV2TLV(oracles, params)
+  }
+}
+
+case class ContractInfoV0TLV(
+    totalCollateral: Satoshis,
+    contractDescriptor: ContractDescriptorTLV,
+    oracleInfo: OracleInfoTLV)
+    extends TLV {
+  override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
+
+  override val value: ByteVector = {
+    satBytes(totalCollateral) ++
+      contractDescriptor.bytes ++
+      oracleInfo.bytes
+  }
+}
+
+object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(55342)
+
+  val dummy: ContractInfoV0TLV = {
+    ContractInfoV0TLV(
+      Satoshis.zero,
+      ContractDescriptorV0TLV(Vector("dummy" -> Satoshis(10000))),
+      OracleInfoV0TLV(OracleAnnouncementV0TLV.dummy))
+  }
+
+  override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {
+    val iter = ValueIterator(value)
+
+    val totalCollateral = iter.takeSats()
+    val contractDescriptor = iter.take(ContractDescriptorTLV)
+    val oracleInfo = iter.take(OracleInfoTLV)
+
+    ContractInfoV0TLV(totalCollateral, contractDescriptor, oracleInfo)
   }
 }
 
@@ -1174,8 +1287,7 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
 case class DLCOfferTLV(
     contractFlags: Byte,
     chainHash: DoubleSha256Digest,
-    contractInfo: ContractInfoTLV,
-    oracleInfo: OracleInfoTLV,
+    contractInfo: ContractInfoV0TLV,
     fundingPubKey: ECPublicKey,
     payoutSPK: ScriptPubKey,
     totalCollateralSatoshis: Satoshis,
@@ -1191,7 +1303,6 @@ case class DLCOfferTLV(
     ByteVector(contractFlags) ++
       chainHash.bytes ++
       contractInfo.bytes ++
-      oracleInfo.bytes ++
       fundingPubKey.bytes ++
       TLV.encodeScript(payoutSPK) ++
       satBytes(totalCollateralSatoshis) ++
@@ -1211,8 +1322,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
 
     val contractFlags = iter.take(1).head
     val chainHash = iter.take(DoubleSha256Digest, 32)
-    val contractInfo = iter.take(ContractInfoTLV)
-    val oracleInfo = iter.take(OracleInfoTLV)
+    val contractInfo = iter.take(ContractInfoV0TLV)
     val fundingPubKey = iter.take(ECPublicKey, 33)
     val payoutSPK = iter.takeSPK()
     val totalCollateralSatoshis = iter.takeSats()
@@ -1227,7 +1337,6 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
       contractFlags,
       chainHash,
       contractInfo,
-      oracleInfo,
       fundingPubKey,
       payoutSPK,
       totalCollateralSatoshis,

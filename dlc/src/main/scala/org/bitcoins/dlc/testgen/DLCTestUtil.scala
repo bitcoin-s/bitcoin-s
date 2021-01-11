@@ -2,8 +2,8 @@ package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  MultiNonceContractInfo,
-  SingleNonceContractInfo
+  EnumContractDescriptor,
+  NumericContractDescriptor
 }
 import org.bitcoins.core.protocol.dlc.{
   DLCPayoutCurve,
@@ -35,15 +35,17 @@ object DLCTestUtil {
     valsWithOrder.sortBy(_._2).map(_._1)
   }
 
-  def genContractInfos(outcomes: Vector[String], totalInput: CurrencyUnit): (
-      SingleNonceContractInfo,
-      SingleNonceContractInfo) = {
+  def genContractDescriptors(
+      outcomes: Vector[String],
+      totalInput: CurrencyUnit): (
+      EnumContractDescriptor,
+      EnumContractDescriptor) = {
     val outcomeMap =
       outcomes
         .map(EnumOutcome.apply)
         .zip(DLCTestUtil.genValues(outcomes.length, totalInput))
 
-    val info = SingleNonceContractInfo(outcomeMap)
+    val info = EnumContractDescriptor(outcomeMap)
     val remoteInfo = info.flip(totalInput.satoshis)
 
     (info, remoteInfo)
@@ -60,8 +62,10 @@ object DLCTestUtil {
       numDigits: Int,
       totalCollateral: CurrencyUnit,
       roundingIntervals: RoundingIntervals = RoundingIntervals.noRounding,
-      numRounds: Int = 0): (MultiNonceContractInfo, MultiNonceContractInfo) = {
-    val overMaxValue = Math.pow(10, numDigits).toLong
+      numRounds: Int = 0): (
+      NumericContractDescriptor,
+      NumericContractDescriptor) = {
+    val overMaxValue = Math.pow(2, numDigits).toLong
     // Left collar goes from [0, botCollar]
     val botCollar = NumberUtil.randomLong(overMaxValue / 2)
     val halfWindow = scala.math.min(overMaxValue / 4, 2500)
@@ -92,11 +96,8 @@ object DLCTestUtil {
         }
         RoundingIntervals(intervalStarts)
       } else roundingIntervals
-    val info = MultiNonceContractInfo(func,
-                                      base = 10,
-                                      numDigits,
-                                      totalCollateral.satoshis,
-                                      roundingIntervalsToUse)
+    val info =
+      NumericContractDescriptor(func, numDigits, roundingIntervalsToUse)
     val remoteInfo = info.flip(totalCollateral.satoshis)
     (info, remoteInfo)
   }

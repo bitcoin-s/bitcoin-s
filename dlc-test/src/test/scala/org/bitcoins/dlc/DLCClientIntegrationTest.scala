@@ -10,9 +10,13 @@ import org.bitcoins.core.currency.{
 import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
-import org.bitcoins.core.protocol.dlc.DLCMessage.SingleNonceOracleInfo
+import org.bitcoins.core.protocol.dlc.DLCMessage.{
+  ContractInfo,
+  EnumSingleOracleInfo
+}
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionConstants,
@@ -305,12 +309,19 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
 
       val outcomeStrs = DLCTestUtil.genOutcomes(numOutcomes)
 
-      val (outcomes, otherOutcomes) =
-        DLCTestUtil.genContractInfos(outcomeStrs, totalInput)
+      val oracleInfo = EnumSingleOracleInfo.dummyForKeys(
+        oraclePrivKey,
+        preCommittedR,
+        outcomeStrs.map(EnumOutcome.apply))
+
+      val (outcomesDesc, otherOutcomesDesc) =
+        DLCTestUtil.genContractDescriptors(outcomeStrs, totalInput)
+
+      val outcomes = ContractInfo(outcomesDesc, oracleInfo)
+      val otherOutcomes = ContractInfo(otherOutcomesDesc, oracleInfo)
 
       val acceptDLC = TestDLCClient(
         outcomes = outcomes,
-        oracleInfo = SingleNonceOracleInfo(oraclePubKey, preCommittedR),
         isInitiator = false,
         fundingPrivKey = localFundingPrivKey,
         payoutPrivKey = localPayoutPrivKey,
@@ -330,7 +341,6 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
 
       val offerDLC = TestDLCClient(
         outcomes = otherOutcomes,
-        oracleInfo = SingleNonceOracleInfo(oraclePubKey, preCommittedR),
         isInitiator = true,
         fundingPrivKey = remoteFundingPrivKey,
         payoutPrivKey = remotePayoutPrivKey,

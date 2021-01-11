@@ -8,7 +8,11 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
-import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, EnumOutcome}
+import org.bitcoins.core.protocol.tlv.{
+  DLCOutcomeType,
+  EnumOutcome,
+  OracleAnnouncementV0TLV
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -44,15 +48,20 @@ object DLCWalletUtil {
   lazy val loseHash: Sha256Digest =
     CryptoUtil.sha256DLCAttestation(loseStr)
 
+  val sampleOutcomes: Vector[(EnumOutcome, Satoshis)] = Vector(
+    EnumOutcome(winStr) -> Satoshis(10000),
+    EnumOutcome(loseStr) -> Satoshis.zero)
+
+  lazy val sampleContractDescriptor: ContractDescriptor =
+    EnumContractDescriptor(sampleOutcomes)
+
   lazy val sampleOracleInfo: OracleInfo =
-    SingleNonceOracleInfo(oraclePrivKey.schnorrPublicKey, rValue)
+    EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
+                                      rValue,
+                                      sampleOutcomes.map(_._1))
 
   lazy val sampleContractInfo: ContractInfo =
-    SingleNonceContractInfo.fromStringVec(
-      Vector(winStr -> Satoshis(10000), loseStr -> Satoshis.zero))
-
-  lazy val sampleOracleAndContractInfo: OracleAndContractInfo =
-    OracleAndContractInfo(sampleOracleInfo, sampleContractInfo)
+    ContractInfo(Satoshis(10000), sampleContractDescriptor, sampleOracleInfo)
 
   lazy val sampleOracleWinSig: SchnorrDigitalSignature =
     oraclePrivKey.schnorrSignWithNonce(winHash.bytes, kValue)
@@ -62,15 +71,18 @@ object DLCWalletUtil {
 
   val numDigits: Int = 6
 
-  lazy val multiNonceContractInfo: MultiNonceContractInfo =
+  lazy val multiNonceContractDescriptor: NumericContractDescriptor =
     DLCTestUtil.genMultiDigitContractInfo(numDigits, Satoshis(10000))._1
 
-  lazy val multiNonceOracleInfo: MultiNonceOracleInfo =
-    MultiNonceOracleInfo(oraclePrivKey.schnorrPublicKey,
-                         rValues.take(numDigits))
+  lazy val multiNonceOracleInfo: NumericSingleOracleInfo =
+    NumericSingleOracleInfo(
+      OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey,
+                                           rValues.take(numDigits)))
 
-  lazy val multiNonceOracleAndContractInfo: OracleAndContractInfo =
-    OracleAndContractInfo(multiNonceOracleInfo, multiNonceContractInfo)
+  lazy val multiNonceContractInfo: ContractInfo =
+    ContractInfo(Satoshis(10000),
+                 multiNonceContractDescriptor,
+                 multiNonceOracleInfo)
 
   lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(1666335)
   lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1666337)
@@ -115,7 +127,7 @@ object DLCWalletUtil {
   )
 
   lazy val sampleDLCOffer: DLCOffer = DLCOffer(
-    sampleOracleAndContractInfo,
+    sampleContractInfo,
     dummyDLCKeys,
     Satoshis(5000),
     Vector(dummyFundingInputs.head),
@@ -125,12 +137,10 @@ object DLCWalletUtil {
   )
 
   lazy val sampleMultiNonceDLCOffer: DLCOffer =
-    sampleDLCOffer.copy(oracleAndContractInfo = multiNonceOracleAndContractInfo)
+    sampleDLCOffer.copy(contractInfo = multiNonceContractInfo)
 
   lazy val sampleDLCParamHash: Sha256DigestBE =
-    DLCMessage.calcParamHash(sampleOracleInfo,
-                             sampleContractInfo,
-                             dummyTimeouts)
+    DLCMessage.calcParamHash(sampleContractInfo, dummyTimeouts)
 
   lazy val dummyOutcomeSigs: Vector[(DLCOutcomeType, ECAdaptorSignature)] =
     Vector(EnumOutcome(winStr) -> ECAdaptorSignature.dummy,
@@ -174,16 +184,14 @@ object DLCWalletUtil {
   def initDLC(
       fundedWalletA: FundedDLCWallet,
       fundedWalletB: FundedDLCWallet,
-      oracleAndContractInfo: OracleAndContractInfo)(implicit
-      ec: ExecutionContext): Future[
+      contractInfo: ContractInfo)(implicit ec: ExecutionContext): Future[
     (InitializedDLCWallet, InitializedDLCWallet)] = {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
 
     for {
       offer <- walletA.createDLCOffer(
-        oracleInfo = oracleAndContractInfo.oracleInfo,
-        contractInfo = oracleAndContractInfo.offerContractInfo,
+        contractInfo = contractInfo,
         collateral = Satoshis(5000),
         feeRateOpt = None,
         locktime = dummyTimeouts.contractMaturity.toUInt32,

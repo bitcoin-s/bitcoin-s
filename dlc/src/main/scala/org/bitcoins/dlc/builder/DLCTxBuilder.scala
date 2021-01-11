@@ -53,12 +53,12 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   // builder.offer.oracleAndContractInfo should not be used,
   // builder.oracleAndContractInfo should be used instead in case a party
   // is over-collateralized in which case payouts will be incorrect here.
-  private val oracleAndContractInfoBeforeAccept: OracleAndContractInfo =
-    offer.oracleAndContractInfo
+  private val contractInfoBeforeAccept: ContractInfo =
+    offer.contractInfo
 
-  val oracleAndContractInfo: OracleAndContractInfo =
-    oracleAndContractInfoBeforeAccept.updateOnAccept(totalInput.satoshis,
-                                                     acceptNegotiationFields)
+  val contractInfo: ContractInfo =
+    contractInfoBeforeAccept.updateOnAccept(totalInput.satoshis,
+                                            acceptNegotiationFields)
 
   val offerTotalFunding: CurrencyUnit =
     offerFundingInputs.map(_.output.value).sum
@@ -74,7 +74,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
           "Offer change address must have same network as final address")
   require(acceptChangeAddress.networkParameters == network,
           "Accept change address must have same network as final address")
-  require(totalInput >= oracleAndContractInfo.offerContractInfo.max,
+  require(totalInput >= contractInfo.max,
           "Total collateral must add up to max winnings")
   require(
     offerTotalFunding >= offerTotalCollateral,
@@ -87,7 +87,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   def getPayouts(oracleSigs: Vector[SchnorrDigitalSignature]): (
       CurrencyUnit,
       CurrencyUnit) = {
-    oracleAndContractInfo.getPayouts(oracleSigs)
+    contractInfo.getPayouts(oracleSigs)
   }
 
   lazy val fundingTxBuilder: DLCFundingTxBuilder = {
@@ -124,7 +124,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
         OutputReference(fundingOutPoint, fundingTx.outputs.head)
 
       DLCCETBuilder(
-        oracleAndContractInfo = oracleAndContractInfo,
+        contractInfo = contractInfo,
         offerFundingKey = offerFundingKey,
         offerFinalSPK = offerFinalAddress.scriptPubKey,
         acceptFundingKey = acceptFundingKey,
