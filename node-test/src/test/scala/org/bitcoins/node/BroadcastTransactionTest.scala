@@ -18,13 +18,13 @@ import scala.util.control.NonFatal
 class BroadcastTransactionTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def config: BitcoinSAppConfig =
+  implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = SpvNodeConnectedWithBitcoindV19
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeConnectedToBitcoindV19(test)
+    withSpvNodeConnectedToBitcoindV19(test)(system, getFreshConfig)
 
   private val sendAmount = 1.bitcoin
 
