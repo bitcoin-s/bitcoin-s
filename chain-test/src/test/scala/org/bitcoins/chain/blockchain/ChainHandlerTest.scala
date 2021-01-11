@@ -102,7 +102,6 @@ class ChainHandlerTest extends ChainDbUnitTest {
           result <- chainHandler.processHeader(newHeader)
         } yield result
       }
-
   }
 
   // B
