@@ -11,7 +11,8 @@ mainClass := Some("org.bitcoins.server.BitcoinSServerMain")
 nativeImageOptions ++= Seq(
   "--enable-https",
   "--enable-http",
-  "--initialize-at-build-time"
+  "--initialize-at-build-time",
+  "--no-fallback"
 )
 
 packageSummary := "A Bitcoin neutrino node and wallet"
