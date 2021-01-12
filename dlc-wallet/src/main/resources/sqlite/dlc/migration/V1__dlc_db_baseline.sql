@@ -58,7 +58,7 @@ CREATE TABLE "wallet_dlc_cet_sigs"
 (
     "param_hash"   VARCHAR(254) NOT NULL,
     "is_initiator" INTEGER      NOT NULL,
-    "outcome"      VARCHAR(254) NOT NULL,
+    "sig_point"    VARCHAR(254) NOT NULL,
     "signature"    VARCHAR(254) NOT NULL,
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
 );

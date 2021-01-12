@@ -173,12 +173,15 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
             case _: NumericContractDescriptor =>
               builder.append("Oracle sigs:\n")
 
-              val sortedOutcomes = contractInfo.outcomeVecOpt.get.sortBy(_._2)
+              val sortedOutcomes =
+                contractInfo.allOutcomesAndPayouts.sortBy(_._2)
 
-              val max = UnsignedNumericOutcome(sortedOutcomes.last._1)
-              val middle = UnsignedNumericOutcome(
-                sortedOutcomes(sortedOutcomes.size / 2)._1)
-              val min = UnsignedNumericOutcome(sortedOutcomes.head._1)
+              val max = sortedOutcomes.last._1.outcome
+                .asInstanceOf[UnsignedNumericOutcome]
+              val middle = sortedOutcomes(sortedOutcomes.size / 2)._1.outcome
+                .asInstanceOf[UnsignedNumericOutcome]
+              val min = sortedOutcomes.head._1.outcome
+                .asInstanceOf[UnsignedNumericOutcome]
 
               val sigsMax =
                 max.serialized.zip(kValues.take(max.digits.size)).map {

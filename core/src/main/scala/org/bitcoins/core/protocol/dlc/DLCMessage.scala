@@ -490,6 +490,9 @@ object DLCMessage {
     lazy val allOutcomes: Vector[OracleOutcome] =
       allOutcomesAndPayouts.map(_._1)
 
+    val sigPointMap: Map[ECPublicKey, OracleOutcome] =
+      allOutcomes.map(outcome => outcome.sigPoint -> outcome).toMap
+
     lazy val outcomeMap: Map[
       OracleOutcome,
       (ECPublicKey, Satoshis, Satoshis)] = {

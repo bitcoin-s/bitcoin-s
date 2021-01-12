@@ -6,14 +6,14 @@ import org.bitcoins.core.protocol.dlc.DLCMessage.{
   EnumContractDescriptor,
   NumericContractDescriptor
 }
-import org.bitcoins.core.protocol.dlc.DLCState
 import org.bitcoins.core.protocol.dlc.DLCStatus.{
   Claimed,
   Refunded,
   RemoteClaimed
 }
+import org.bitcoins.core.protocol.dlc.{DLCState, OracleSignatures}
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.crypto.{CryptoUtil, SchnorrDigitalSignature}
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.FutureOutcome
@@ -27,9 +27,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
   behavior of "DLCWallet"
 
-  def getSigs(contractInfo: ContractInfo): (
-      SchnorrDigitalSignature,
-      SchnorrDigitalSignature) = {
+  def getSigs(
+      contractInfo: ContractInfo): (OracleSignatures, OracleSignatures) = {
     val desc: EnumContractDescriptor = contractInfo.contractDescriptor match {
       case desc: EnumContractDescriptor => desc
       case _: NumericContractDescriptor =>
@@ -57,7 +56,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                               .bytes,
                             DLCWalletUtil.kValue)
 
-    (initiatorWinSig, recipientWinSig)
+    (OracleSignatures(sampleOracleInfo, Vector(initiatorWinSig)),
+     OracleSignatures(sampleOracleInfo, Vector(recipientWinSig)))
   }
 
   it must "get the correct funding transaction" in { wallets =>

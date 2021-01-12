@@ -100,8 +100,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       assert(refundSigsA.size == 2)
       assert(refundSigsA.forall(refundSigsB.contains))
 
-      assert(sign.cetSigs.outcomeSigs.forall(sig =>
-        outcomeSigs.exists(dbSig => (dbSig.outcome, dbSig.signature) == sig)))
+      assert(sign.cetSigs.outcomeSigs.forall {
+        case (outcome, sig) =>
+          outcomeSigs.exists(dbSig =>
+            (dbSig.sigPoint, dbSig.signature) == (outcome.sigPoint, sig))
+      })
 
       // Test that the Addresses are in the wallet's database
       assert(walletAChange.isDefined)
@@ -198,8 +201,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         assert(refundSigsA.size == 2)
         assert(refundSigsA.forall(refundSigsB.contains))
 
-        assert(sign.cetSigs.outcomeSigs.forall(sig =>
-          outcomeSigs.exists(dbSig => (dbSig.outcome, dbSig.signature) == sig)))
+        assert(sign.cetSigs.outcomeSigs.forall {
+          case (outcome, sig) =>
+            outcomeSigs.exists(dbSig =>
+              (dbSig.sigPoint, dbSig.signature) == (outcome.sigPoint, sig))
+        })
 
         // Test that the Addresses are in the wallet's database
         assert(walletAChange.isDefined)
@@ -363,6 +369,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val oracleSig = SchnorrDigitalSignature(
         "a6a09c7c83c50b34f9db560a2e14fef2eab5224c15b18c7114331756364bfce6c59736cdcfe1e0a89064f846d5dbde0902f82688dde34dc1833965a60240f287")
 
+      val sig = OracleSignatures(oracleInfo, Vector(oracleSig))
+
       val paramHash =
         DLCMessage.calcParamHash(offerData.contractInfo, offerData.timeouts)
 
@@ -421,9 +429,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           assert(refundSigsA.size == 2)
           assert(refundSigsA.forall(refundSigsB.contains))
 
-          assert(sign.cetSigs.outcomeSigs.forall(sig =>
-            outcomeSigs.exists(dbSig =>
-              (dbSig.outcome, dbSig.signature) == sig)))
+          assert(sign.cetSigs.outcomeSigs.forall {
+            case (outcome, sig) =>
+              outcomeSigs.exists(dbSig =>
+                (dbSig.sigPoint, dbSig.signature) == (outcome.sigPoint, sig))
+          })
           // Test that the Addresses are in the wallet's database
           assert(walletAChange.isDefined)
           assert(walletAFinal.isDefined)
@@ -434,8 +444,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         tx <- walletB.broadcastDLCFundingTx(sign.contractId)
         _ <- walletA.processTransaction(tx, None)
 
-        func =
-          (wallet: DLCWallet) => wallet.executeDLC(sign.contractId, oracleSig)
+        func = (wallet: DLCWallet) => wallet.executeDLC(sign.contractId, sig)
         result <- dlcExecutionTest(dlcA = walletA,
                                    dlcB = walletB,
                                    asInitiator = true,

@@ -4,11 +4,11 @@ import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage._
-import org.bitcoins.core.protocol.dlc.DLCStatus
+import org.bitcoins.core.protocol.dlc.{DLCStatus, OracleSignatures}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.Sha256DigestBE
 import org.bitcoins.dlc.wallet.models.DLCDb
 import scodec.bits.ByteVector
 
@@ -64,13 +64,13 @@ trait DLCWalletApi { self: WalletApi =>
   /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
   def executeDLC(
       contractId: ByteVector,
-      oracleSig: SchnorrDigitalSignature): Future[Transaction] =
+      oracleSig: OracleSignatures): Future[Transaction] =
     executeDLC(contractId, Vector(oracleSig))
 
   /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
   def executeDLC(
       contractId: ByteVector,
-      oracleSigs: Vector[SchnorrDigitalSignature]): Future[Transaction]
+      oracleSigs: Vector[OracleSignatures]): Future[Transaction]
 
   /** Creates the refund transaction for the given contractId, does not broadcast it */
   def executeDLCRefund(contractId: ByteVector): Future[Transaction]

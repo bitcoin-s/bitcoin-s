@@ -8,11 +8,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
-import org.bitcoins.core.protocol.tlv.{
-  DLCOutcomeType,
-  EnumOutcome,
-  OracleAnnouncementV0TLV
-}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -55,7 +51,7 @@ object DLCWalletUtil {
   lazy val sampleContractDescriptor: ContractDescriptor =
     EnumContractDescriptor(sampleOutcomes)
 
-  lazy val sampleOracleInfo: OracleInfo =
+  lazy val sampleOracleInfo: EnumSingleOracleInfo =
     EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
                                       rValue,
                                       sampleOutcomes.map(_._1))
@@ -142,9 +138,13 @@ object DLCWalletUtil {
   lazy val sampleDLCParamHash: Sha256DigestBE =
     DLCMessage.calcParamHash(sampleContractInfo, dummyTimeouts)
 
-  lazy val dummyOutcomeSigs: Vector[(DLCOutcomeType, ECAdaptorSignature)] =
-    Vector(EnumOutcome(winStr) -> ECAdaptorSignature.dummy,
-           EnumOutcome(loseStr) -> ECAdaptorSignature.dummy)
+  lazy val dummyOutcomeSigs: Vector[(EnumOracleOutcome, ECAdaptorSignature)] =
+    Vector(
+      EnumOracleOutcome(Vector(sampleOracleInfo),
+                        EnumOutcome(winStr)) -> ECAdaptorSignature.dummy,
+      EnumOracleOutcome(Vector(sampleOracleInfo),
+                        EnumOutcome(loseStr)) -> ECAdaptorSignature.dummy
+    )
 
   lazy val dummyCETSigs: CETSignatures =
     CETSignatures(dummyOutcomeSigs, dummyPartialSig)

@@ -4,10 +4,11 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.DLCMessage.{
   ContractInfo,
   EnumContractDescriptor,
-  NumericContractDescriptor
+  NumericContractDescriptor,
+  NumericSingleOracleInfo
 }
-import org.bitcoins.core.protocol.dlc.DLCState
 import org.bitcoins.core.protocol.dlc.DLCStatus.{Claimed, RemoteClaimed}
+import org.bitcoins.core.protocol.dlc.{DLCState, OracleSignatures}
 import org.bitcoins.core.protocol.tlv.{EnumOutcome, UnsignedNumericOutcome}
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -23,19 +24,24 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
 
   behavior of "DLCWallet"
 
-  def getSigs(contractInfo: ContractInfo): (
-      Vector[SchnorrDigitalSignature],
-      Vector[SchnorrDigitalSignature]) = {
+  def getSigs(
+      contractInfo: ContractInfo): (OracleSignatures, OracleSignatures) = {
     contractInfo.contractDescriptor match {
       case _: NumericContractDescriptor => ()
       case _: EnumContractDescriptor =>
         throw new IllegalArgumentException("Unexpected Contract Info")
     }
 
+    val oracleInfo =
+      NumericSingleOracleInfo.dummyForKeys(oraclePrivKey, rValues)
+
     val initiatorWinVec =
-      contractInfo.outcomeVecOpt.get
+      contractInfo.allOutcomesAndPayouts
         .maxBy(_._2.toLong)
         ._1
+        .outcome
+        .asInstanceOf[UnsignedNumericOutcome]
+        .digits
 
     val kValues = DLCWalletUtil.kValues.take(initiatorWinVec.size)
 
@@ -49,7 +55,13 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
     }
 
     val recipientWinVec =
-      contractInfo.outcomeVecOpt.get.find(_._2 == Satoshis.zero).get._1
+      contractInfo.allOutcomesAndPayouts
+        .find(_._2 == Satoshis.zero)
+        .get
+        ._1
+        .outcome
+        .asInstanceOf[UnsignedNumericOutcome]
+        .digits
 
     val kValues2 = DLCWalletUtil.kValues.take(recipientWinVec.size)
 
@@ -62,7 +74,8 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
                                 kValue)
     }
 
-    (initiatorWinSigs, recipientWinSigs)
+    (OracleSignatures(oracleInfo, initiatorWinSigs),
+     OracleSignatures(oracleInfo, recipientWinSigs))
   }
 
   it must "execute as the initiator" in { wallets =>
