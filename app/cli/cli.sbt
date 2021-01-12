@@ -10,4 +10,4 @@ nativeImageOptions ++= Seq(
   "--enable-https"
 )
 
-enablePlugins(JavaAppPackaging, GraalVMNativeImagePlugin, NativeImagePlugin)
+enablePlugins(JavaAppPackaging, NativeImagePlugin)
