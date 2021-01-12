@@ -19,7 +19,9 @@ import scala.concurrent.Future
 trait ChainApi extends ChainQueryApi {
 
   /**
-    * Adds a block header to our chain project
+    * Adds a block header to our chain project.
+    * This will return a failed future when the
+    * given header is invalid.
     * @param header
     * @return
     */
@@ -29,7 +31,9 @@ trait ChainApi extends ChainQueryApi {
 
   /** Process all of the given headers and returns a new [[ChainApi chain api]]
     * that contains these headers. This method processes headers in the order
-    * that they are given. If the headers are out of order, this method will fail
+    * that they are given. If the headers are out of order, this method will fail.
+    *
+    * This method will also fail when there are zero headers given that are valid.
     * @param headers
     * @return
     */

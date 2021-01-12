@@ -135,35 +135,44 @@ class ChainHandler(
         successfullyValidatedHeaders.distinct
       }
 
-      val chains = blockchainUpdates.map(_.blockchain)
+      if (headersToBeCreated.isEmpty) {
+        //this means we are given zero headers that were valid.
+        //Return a failure in this case to avoid issue 2365
+        //https://github.com/bitcoin-s/bitcoin-s/issues/2365
+        Future.failed(new RuntimeException(
+          s"Failed to connect any headers to our internal chain state, failures=$blockchainUpdates"))
+      } else {
+        val chains = blockchainUpdates.map(_.blockchain)
 
-      val createdF = blockHeaderDAO.createAll(headersToBeCreated)
+        val createdF = blockHeaderDAO.createAll(headersToBeCreated)
 
-      val newChainHandler = ChainHandler(blockHeaderDAO,
-                                         filterHeaderDAO,
-                                         filterDAO,
-                                         blockFilterCheckpoints =
-                                           blockFilterCheckpoints)
+        val newChainHandler = ChainHandler(blockHeaderDAO,
+                                           filterHeaderDAO,
+                                           filterDAO,
+                                           blockFilterCheckpoints =
+                                             blockFilterCheckpoints)
 
-      createdF.map { headers =>
-        if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
-          headersToBeCreated.reverseIterator.foldLeft(FutureUtil.unit) {
-            (acc, header) =>
-              for {
-                _ <- acc
-                _ <-
-                  chainConfig.chainCallbacks
-                    .executeOnBlockHeaderConnectedCallbacks(logger,
-                                                            header.height,
-                                                            header.blockHeader)
-              } yield ()
+        createdF.map { headers =>
+          if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
+            headersToBeCreated.reverseIterator.foldLeft(FutureUtil.unit) {
+              (acc, header) =>
+                for {
+                  _ <- acc
+                  _ <-
+                    chainConfig.chainCallbacks
+                      .executeOnBlockHeaderConnectedCallbacks(
+                        logger,
+                        header.height,
+                        header.blockHeader)
+                } yield ()
+            }
           }
+          chains.foreach { c =>
+            logger.info(
+              s"Processed headers from height=${c.height - headers.length} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
+          }
+          newChainHandler
         }
-        chains.foreach { c =>
-          logger.info(
-            s"Processed headers from height=${c.height - headers.length} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
-        }
-        newChainHandler
       }
     }
   }
