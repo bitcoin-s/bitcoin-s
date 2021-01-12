@@ -18,13 +18,13 @@ jobs:
         include:
           - os: macOS-latest
             uploaded_filename: bitcoin-s-cli-x86_64-apple-darwin
-            local_path: cli/target/native-image/bitcoin-s-cli
+            local_path: app/cli/target/native-image/bitcoin-s-cli
           - os: ubuntu-latest
             uploaded_filename: bitcoin-s-cli-x86_64-pc-linux
-            local_path: cli/target/native-image/bitcoin-s-cli
+            local_path: app/cli/target/native-image/bitcoin-s-cli
           - os: windows-latest
             uploaded_filename: bitcoin-s-cli-x86_64-pc-win32.exe
-            local_path: cli\target\native-image\bitcoin-s-cli.exe
+            local_path: app\cli\target\native-image\bitcoin-s-cli.exe
     steps:
       - uses: actions/checkout@v2
       - uses: olafurpg/setup-scala@v10
