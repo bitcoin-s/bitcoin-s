@@ -1,6 +1,6 @@
 package org.bitcoins.gui.dlc
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.SingleOracleInfo
+import org.bitcoins.core.protocol.dlc.SingleOracleInfo
 import org.bitcoins.core.protocol.dlc.DLCStatus._
 import org.bitcoins.core.protocol.dlc.{AcceptedDLCStatus, DLCStatus}
 import scalafx.beans.property.StringProperty

@@ -1,7 +1,6 @@
 package org.bitcoins.dlc
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.EnumSingleOracleInfo
-import org.bitcoins.core.protocol.dlc.EnumOracleOutcome
+import org.bitcoins.core.protocol.dlc.{EnumOracleOutcome, EnumSingleOracleInfo}
 import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto._

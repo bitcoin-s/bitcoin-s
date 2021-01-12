@@ -10,10 +10,6 @@ import org.bitcoins.core.currency.{
 import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  ContractInfo,
-  EnumSingleOracleInfo
-}
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.EnumOutcome

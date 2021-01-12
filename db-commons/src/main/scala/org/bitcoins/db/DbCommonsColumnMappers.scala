@@ -1,6 +1,6 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.ContractInfo
+import org.bitcoins.core.protocol.dlc.ContractInfo
 import org.bitcoins.commons.jsonmodels.wallet.{
   WalletStateDescriptor,
   WalletStateDescriptorType

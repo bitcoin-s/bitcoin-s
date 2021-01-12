@@ -10,9 +10,8 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc.DLCStatus._
-import org.bitcoins.core.protocol.dlc.{DLCState, DLCStatus, DLCTimeouts}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}

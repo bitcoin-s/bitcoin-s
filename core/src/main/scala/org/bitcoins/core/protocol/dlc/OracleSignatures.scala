@@ -1,10 +1,5 @@
 package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  EnumSingleOracleInfo,
-  NumericSingleOracleInfo,
-  SingleOracleInfo
-}
 import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, UnsignedNumericOutcome}
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, SchnorrDigitalSignature}

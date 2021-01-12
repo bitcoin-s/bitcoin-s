@@ -3,12 +3,7 @@ package org.bitcoins.dlc.testgen
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage._
-import org.bitcoins.core.protocol.dlc.{
-  DLCFundingInput,
-  DLCPublicKeys,
-  DLCTimeouts,
-  EnumOracleOutcome
-}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.{
   ScriptWitness,
   ScriptWitnessV0,

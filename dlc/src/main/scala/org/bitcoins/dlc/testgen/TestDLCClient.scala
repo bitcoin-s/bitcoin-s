@@ -3,7 +3,7 @@ package org.bitcoins.dlc.testgen
 import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.dlc.DLCMessage.{ContractInfo, DLCAccept}
+import org.bitcoins.core.protocol.dlc.DLCMessage.DLCAccept
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction

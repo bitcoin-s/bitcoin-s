@@ -2,12 +2,13 @@ package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  DLCSign,
+import org.bitcoins.core.protocol.dlc.DLCMessage.DLCSign
+import org.bitcoins.core.protocol.dlc.{
   EnumContractDescriptor,
+  EnumOracleOutcome,
+  EnumOracleSignature,
   EnumSingleOracleInfo
 }
-import org.bitcoins.core.protocol.dlc.{EnumOracleOutcome, EnumOracleSignature}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{EnumOutcome, OracleAnnouncementV0TLV}
 import org.bitcoins.core.protocol.transaction._

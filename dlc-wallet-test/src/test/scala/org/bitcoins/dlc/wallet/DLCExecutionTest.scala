@@ -1,17 +1,12 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  ContractInfo,
-  EnumContractDescriptor,
-  NumericContractDescriptor
-}
 import org.bitcoins.core.protocol.dlc.DLCStatus.{
   Claimed,
   Refunded,
   RemoteClaimed
 }
-import org.bitcoins.core.protocol.dlc.{DLCState, OracleSignatures}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.wallet.DLCWalletUtil._

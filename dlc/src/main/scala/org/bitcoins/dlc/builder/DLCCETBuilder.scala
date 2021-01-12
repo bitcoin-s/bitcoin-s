@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.builder
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.ContractInfo
+import org.bitcoins.core.protocol.dlc.ContractInfo
 import org.bitcoins.core.protocol.dlc.{DLCTimeouts, OracleOutcome}
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,

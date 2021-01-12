@@ -291,7 +291,7 @@ object DLCStatus {
     val totalCollateral = offer.totalCollateral + accept.totalCollateral
 
     val possibleMessages = offer.contractInfo.contractDescriptor match {
-      case DLCMessage.EnumContractDescriptor(outcomeValueMap) =>
+      case EnumContractDescriptor(outcomeValueMap) =>
         outcomeValueMap
           .filter {
             case (_, amt) =>
@@ -300,7 +300,7 @@ object DLCStatus {
                 .sorted == outcomeValues
           }
           .map(_._1)
-      case _: DLCMessage.NumericContractDescriptor =>
+      case _: NumericContractDescriptor =>
         offer.contractInfo.allOutcomesAndPayouts
           .filter {
             case (_, amt) =>

@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.DLCMessage.EnumContractDescriptor
+import org.bitcoins.core.protocol.dlc.EnumContractDescriptor
 import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.util.GUIUtil.setNumericInput

@@ -501,7 +501,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the large numeric case" in {
-    val numDigits = 8
+    val numDigits = 17
 
     val randDigits = (0 until numDigits).toVector.map { _ =>
       scala.util.Random.nextInt(2)

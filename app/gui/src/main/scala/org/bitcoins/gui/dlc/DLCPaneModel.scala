@@ -5,7 +5,7 @@ import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.DLCMessage._
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.dlc.DLCStatus
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction

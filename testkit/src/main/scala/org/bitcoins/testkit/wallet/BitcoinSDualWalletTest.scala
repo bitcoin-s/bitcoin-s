@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.DLCMessage.ContractInfo
+import org.bitcoins.core.protocol.dlc.ContractInfo
 import org.bitcoins.db.AppConfig
 import org.bitcoins.dlc.testgen.DLCTestUtil
 import org.bitcoins.dlc.wallet.DLCAppConfig

@@ -4,7 +4,7 @@ import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage._
-import org.bitcoins.core.protocol.dlc.{DLCStatus, OracleSignatures}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit

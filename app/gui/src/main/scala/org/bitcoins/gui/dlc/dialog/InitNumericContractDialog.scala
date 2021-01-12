@@ -1,9 +1,9 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.DLCMessage.NumericContractDescriptor
 import org.bitcoins.core.protocol.dlc.{
   DLCPayoutCurve,
+  NumericContractDescriptor,
   OutcomePayoutPoint,
   RoundingIntervals
 }

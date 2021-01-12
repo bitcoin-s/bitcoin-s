@@ -4,7 +4,6 @@ import java.io.File
 import java.nio.file.Path
 import java.time.{Instant, ZoneId, ZonedDateTime}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
@@ -12,6 +11,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
+import org.bitcoins.core.protocol.dlc.{ContractInfo, OracleInfo}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
