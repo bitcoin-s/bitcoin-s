@@ -1,13 +1,13 @@
 package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
+import org.bitcoins.core.protocol.dlc.OracleOutcome
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.crypto.ECAdaptorSignature
 
 case class SetupDLC(
     fundingTx: Transaction,
-    cets: Map[DLCOutcomeType, CETInfo],
+    cets: Map[OracleOutcome, CETInfo],
     refundTx: Transaction) {
   cets.foreach {
     case (msg, cetInfo) =>

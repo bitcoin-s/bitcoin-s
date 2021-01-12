@@ -217,6 +217,7 @@ object DLCStatus {
     }
   }
 
+  // FIXME: Only works for single oracle right now
   def calculateOutcomeAndSig(
       isInitiator: Boolean,
       offer: DLCOffer,
@@ -237,8 +238,8 @@ object DLCStatus {
             s"There must be only 2 signatures, got ${cetSigs.size}")
 
     val oraclePubKey =
-      offer.oracleInfo.asInstanceOf[SingleOracleInfo].publicKey // FIXME
-    val rVals = offer.oracleInfo.asInstanceOf[SingleOracleInfo].nonces // FIXME
+      offer.oracleInfo.asInstanceOf[SingleOracleInfo].publicKey
+    val rVals = offer.oracleInfo.asInstanceOf[SingleOracleInfo].nonces
 
     def aggregateR(numSigs: Int): SchnorrNonce = {
       rVals.take(numSigs).map(_.publicKey).reduce(_.add(_)).schnorrNonce
@@ -300,7 +301,7 @@ object DLCStatus {
           }
           .map(_._1)
       case _: DLCMessage.NumericContractDescriptor =>
-        offer.contractInfo.outcomeVecOpt.get
+        offer.contractInfo.allOutcomesAndPayouts
           .filter {
             case (_, amt) =>
               val amts = Vector(amt, totalCollateral - amt)
@@ -315,7 +316,15 @@ object DLCStatus {
                 (amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
                 .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
           }
-          .map { case (digits, _) => UnsignedNumericOutcome(digits) }
+          .map {
+            case (outcome, _) =>
+              outcome match {
+                case _: EnumOracleOutcome =>
+                  throw new IllegalArgumentException(
+                    s"Cannot have $outcome with ${offer.contractInfo.contractDescriptor}")
+                case outcome: NumericOracleOutcome => outcome.outcome
+              }
+          }
     }
 
     val (offerCETSig, acceptCETSig) =
@@ -330,26 +339,26 @@ object DLCStatus {
 
     val (cetSig, outcomeSigs) = if (isInitiator) {
       val possibleOutcomeSigs = sign.cetSigs.outcomeSigs.filter {
-        case (msg, _) => possibleMessages.contains(msg)
+        case (msg, _) => possibleMessages.contains(msg.outcome)
       }
       (acceptCETSig, possibleOutcomeSigs)
     } else {
       val possibleOutcomeSigs = accept.cetSigs.outcomeSigs.filter {
-        case (msg, _) => possibleMessages.contains(msg)
+        case (msg, _) => possibleMessages.contains(msg.outcome)
       }
       (offerCETSig, possibleOutcomeSigs)
     }
 
     val sigOpt = outcomeSigs.find {
       case (outcome, adaptorSig) =>
-        val possibleOracleSig = sigFromMsgAndSigs(outcome, adaptorSig, cetSig)
-        val sigPoint = offer.contractInfo.sigPointForOutcome(outcome)
-        possibleOracleSig.sig.getPublicKey == sigPoint
+        val possibleOracleSig =
+          sigFromMsgAndSigs(outcome.outcome, adaptorSig, cetSig)
+        possibleOracleSig.sig.getPublicKey == outcome.sigPoint
     }
 
     sigOpt match {
       case Some((msg, adaptorSig)) =>
-        (sigFromMsgAndSigs(msg, adaptorSig, cetSig), msg)
+        (sigFromMsgAndSigs(msg.outcome, adaptorSig, cetSig), msg.outcome)
       case None =>
         throw new IllegalArgumentException("No Oracle Signature found from CET")
     }

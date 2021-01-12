@@ -1,5 +1,7 @@
 package org.bitcoins.dlc
 
+import org.bitcoins.core.protocol.dlc.DLCMessage.EnumSingleOracleInfo
+import org.bitcoins.core.protocol.dlc.EnumOracleOutcome
 import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto._
@@ -38,6 +40,11 @@ class SetupDLCTest extends BitcoinSAsyncTest {
 
   val invalidRefundTx: Transaction = invalidCET
 
+  val oracleInfo: EnumSingleOracleInfo = EnumSingleOracleInfo.dummyForKeys(
+    ECPrivateKey.freshPrivateKey,
+    ECPublicKey.freshPublicKey.schnorrNonce,
+    Vector(EnumOutcome("WIN"), EnumOutcome("LOSE")))
+
   def setupDLC(
       fundingTx: Transaction = validFundingTx,
       cet0: CETInfo = validCETInfo,
@@ -45,7 +52,9 @@ class SetupDLCTest extends BitcoinSAsyncTest {
       refundTx: Transaction = validRefundTx): SetupDLC = {
     SetupDLC(
       fundingTx = fundingTx,
-      cets = Map(EnumOutcome("WIN") -> cet0, EnumOutcome("LOSE") -> cet1),
+      cets =
+        Map(EnumOracleOutcome(Vector(oracleInfo), EnumOutcome("WIN")) -> cet0,
+            EnumOracleOutcome(Vector(oracleInfo), EnumOutcome("LOSE")) -> cet1),
       refundTx = refundTx
     )
   }

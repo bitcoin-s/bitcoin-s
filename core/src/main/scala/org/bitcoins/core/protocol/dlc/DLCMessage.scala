@@ -53,9 +53,7 @@ object DLCMessage {
     def nonces: Vector[SchnorrNonce] = announcement.eventTLV.nonces
 
     /** The order of the given sigs should correspond to the given outcome. */
-    def verifySigs(
-        outcome: DLCOutcomeType,
-        sigs: Vector[SchnorrDigitalSignature]): Boolean
+    def verifySigs(outcome: DLCOutcomeType, sigs: OracleSignatures): Boolean
 
     /** Computes the signature point (aka signature anticipation) for a given outcome.
       * This point is used for adaptor signing.
@@ -100,18 +98,21 @@ object DLCMessage {
 
     override def verifySigs(
         outcome: DLCOutcomeType,
-        sigs: Vector[SchnorrDigitalSignature]): Boolean = {
+        sigs: OracleSignatures): Boolean = {
       outcome match {
         case EnumOutcome(outcome) =>
-          if (sigs.length != 1) {
-            throw new IllegalArgumentException(
-              s"Expected one signature, got $sigs")
-          } else if (sigs.head.rx != nonce) {
-            throw new IllegalArgumentException(
-              s"Expected R value of $nonce, got ${sigs.head}")
-          } else {
-            publicKey.verify(CryptoUtil.sha256DLCAttestation(outcome).bytes,
-                             sigs.head)
+          sigs match {
+            case _: NumericOracleSignatures =>
+              throw new IllegalArgumentException(
+                s"Expected one signature, got $sigs")
+            case EnumOracleSignature(_, sig) =>
+              if (sig.rx != nonce) {
+                throw new IllegalArgumentException(
+                  s"Expected R value of $nonce, got $sig")
+              } else {
+                publicKey.verify(CryptoUtil.sha256DLCAttestation(outcome).bytes,
+                                 sig)
+              }
           }
         case UnsignedNumericOutcome(_) =>
           throw new IllegalArgumentException(
@@ -148,7 +149,7 @@ object DLCMessage {
 
     override def verifySigs(
         outcome: DLCOutcomeType,
-        sigs: Vector[SchnorrDigitalSignature]): Boolean = {
+        sigs: OracleSignatures): Boolean = {
       require(sigs.nonEmpty, "At least one signature is required")
       require(
         sigs.length <= nonces.length,
@@ -395,44 +396,6 @@ object DLCMessage {
     }
   }
 
-  case class ContractDescriptorWithCollateral(
-      totalCollateral: Satoshis,
-      contractDescriptor: ContractDescriptor) {
-
-    /** Vector is always the most significant digits */
-    lazy val outcomeVecOpt: Option[Vector[(Vector[Int], Satoshis)]] = {
-      contractDescriptor match {
-        case _: EnumContractDescriptor => None
-        case descriptor: NumericContractDescriptor =>
-          val outcomeVec = CETCalculator.computeCETs(
-            base = 2,
-            descriptor.numDigits,
-            descriptor.outcomeValueFunc,
-            totalCollateral,
-            descriptor.roundingIntervals)
-
-          Some(outcomeVec)
-      }
-    }
-
-    lazy val allOutcomes: Vector[DLCOutcomeType] = {
-      contractDescriptor match {
-        case descriptor: EnumContractDescriptor => descriptor.keys
-        case _: NumericContractDescriptor =>
-          outcomeVecOpt.get.map {
-            case (outcome, _) => UnsignedNumericOutcome(outcome)
-          }
-      }
-    }
-
-    /** Returns the maximum payout this party could win from this contract */
-    val max: Satoshis = contractDescriptor match {
-      case descriptor: EnumContractDescriptor =>
-        descriptor.values.maxBy(_.toLong)
-      case _: NumericContractDescriptor => totalCollateral
-    }
-  }
-
   case class ContractInfo(
       totalCollateral: Satoshis,
       contractDescriptor: ContractDescriptor,
@@ -445,16 +408,12 @@ object DLCMessage {
                         oracleInfo.toTLV)
     }
 
-    val descriptorWithCollateral: ContractDescriptorWithCollateral =
-      ContractDescriptorWithCollateral(totalCollateral, contractDescriptor)
-
-    def outcomeVecOpt: Option[Vector[(Vector[Int], Satoshis)]] =
-      descriptorWithCollateral.outcomeVecOpt
-
-    def allOutcomes: Vector[DLCOutcomeType] =
-      descriptorWithCollateral.allOutcomes
-
-    def max: Satoshis = descriptorWithCollateral.max
+    /** Returns the maximum payout this party could win from this contract */
+    val max: Satoshis = contractDescriptor match {
+      case descriptor: EnumContractDescriptor =>
+        descriptor.values.maxBy(_.toLong)
+      case _: NumericContractDescriptor => totalCollateral
+    }
 
     val descriptorAndInfo: Either[
       (EnumContractDescriptor, EnumOracleInfo),
@@ -471,102 +430,127 @@ object DLCMessage {
             s"All infos must be for the same kind of outcome: $this")
       }
 
+    /** Vector is always the most significant digits */
+    lazy val allOutcomesAndPayouts: Vector[(OracleOutcome, Satoshis)] = {
+      descriptorAndInfo match {
+        case Left(
+              (descriptor: EnumContractDescriptor,
+               oracleInfo: EnumSingleOracleInfo)) =>
+          descriptor.keys.map { outcome =>
+            // Safe .get because outcome is from descriptor.keys
+            val payout = descriptor.find(_._1 == outcome).get._2
+            (EnumOracleOutcome(Vector(oracleInfo), outcome), payout)
+          }
+        case Left(
+              (descriptor: EnumContractDescriptor,
+               oracleInfo: EnumMultiOracleInfo)) =>
+          descriptor.keys.map { outcome =>
+            // Safe .get because outcome is from descriptor.keys
+            val payout = descriptor.find(_._1 == outcome).get._2
+            (EnumOracleOutcome(oracleInfo.singleOracleInfos, outcome), payout)
+          }
+        case Right(
+              (descriptor: NumericContractDescriptor,
+               oracleInfo: NumericSingleOracleInfo)) =>
+          val vec = CETCalculator.computeCETs(base = 2,
+                                              descriptor.numDigits,
+                                              descriptor.outcomeValueFunc,
+                                              totalCollateral,
+                                              descriptor.roundingIntervals)
+
+          vec.map {
+            case (digits, amt) =>
+              (NumericOracleOutcome(oracleInfo, UnsignedNumericOutcome(digits)),
+               amt)
+          }
+        case Right(
+              (descriptor: NumericContractDescriptor,
+               oracleInfo: NumericExactMultiOracleInfo)) =>
+          val vec = CETCalculator.computeCETs(base = 2,
+                                              descriptor.numDigits,
+                                              descriptor.outcomeValueFunc,
+                                              totalCollateral,
+                                              descriptor.roundingIntervals)
+
+          vec.map {
+            case (digits, amt) =>
+              val outcome = UnsignedNumericOutcome(digits)
+              (NumericOracleOutcome(
+                 oracleInfo.singleOracleInfos.map((_, outcome))),
+               amt)
+          }
+        case Right(
+              (descriptor: NumericContractDescriptor,
+               oracleInfo: NumericMultiOracleInfo)) =>
+          // FIXME
+          throw new UnsupportedOperationException(s"$descriptor, $oracleInfo")
+      }
+    }
+
+    lazy val allOutcomes: Vector[OracleOutcome] =
+      allOutcomesAndPayouts.map(_._1)
+
     lazy val outcomeMap: Map[
-      DLCOutcomeType,
+      OracleOutcome,
       (ECPublicKey, Satoshis, Satoshis)] = {
       val builder =
-        HashMap.newBuilder[DLCOutcomeType, (ECPublicKey, Satoshis, Satoshis)]
+        HashMap.newBuilder[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)]
 
-      allOutcomes.foreach { msg =>
-        val offerPayout = apply(msg)
-        val acceptPayout = (totalCollateral - offerPayout).satoshis
-        val adaptorPoint =
-          oracleInfo.asInstanceOf[SingleOracleInfo].sigPoint(msg) // FIXME
+      allOutcomesAndPayouts.foreach {
+        case (outcome, offerPayout) =>
+          val acceptPayout = (totalCollateral - offerPayout).satoshis
+          val adaptorPoint = outcome.sigPoint
 
-        builder.+=(msg -> (adaptorPoint, offerPayout, acceptPayout))
+          builder.+=(outcome -> (adaptorPoint, offerPayout, acceptPayout))
       }
 
       builder.result()
     }
 
-    def apply(outcome: DLCOutcomeType): Satoshis = {
-      descriptorAndInfo match {
-        case Left((EnumContractDescriptor(outcomeValueMap), _)) =>
-          outcome match {
-            case outcome: EnumOutcome =>
-              outcomeValueMap
-                .find(_._1 == outcome)
-                .map(_._2)
-                .getOrElse(throw new IllegalArgumentException(
-                  s"No value found for key $outcome"))
-            case UnsignedNumericOutcome(_) =>
-              throw new IllegalArgumentException(
-                s"Expected EnumOutcome: $outcome")
-          }
-        case Right((_, _)) =>
-          outcome match {
-            case UnsignedNumericOutcome(digits) =>
-              CETCalculator.searchForPrefix(digits, outcomeVecOpt.get)(
-                _._1) match {
-                case Some((_, amt)) => amt
-                case None =>
-                  throw new IllegalArgumentException(
-                    s"Unrecognized outcome: $digits")
-              }
-            case EnumOutcome(_) =>
-              throw new IllegalArgumentException(
-                s"Expected UnsignedNumericOutcome: $outcome")
-          }
-      }
-    }
-
     def verifySigs(
-        outcome: DLCOutcomeType,
-        sigs: Vector[SchnorrDigitalSignature]): Boolean = {
-      oracleInfo
-        .asInstanceOf[SingleOracleInfo]
-        .verifySigs(outcome, sigs) // FIXME
+        outcome: OracleOutcome,
+        sigs: Vector[OracleSignatures]): Boolean = {
+      outcome match {
+        case EnumOracleOutcome(_, enumOutcome) =>
+          oracleInfo match {
+            case _: NumericOracleInfo =>
+              throw new IllegalArgumentException(
+                s"Cannot handle $enumOutcome with numeric oracle commitments: $oracleInfo")
+            case _: EnumOracleInfo =>
+              sigs.foldLeft(true) {
+                case (boolSoFar, sig) =>
+                  boolSoFar && sig.verifySignatures(enumOutcome)
+              }
+          }
+        case NumericOracleOutcome(oraclesAndOutcomes) =>
+          oracleInfo match {
+            case _: EnumOracleInfo =>
+              throw new IllegalArgumentException(
+                s"Cannot handle numeric outcomes with enum oracle commitments: $oracleInfo")
+            case _: NumericOracleInfo =>
+              sigs.foldLeft(true) {
+                case (boolSoFar, sig) =>
+                  lazy val numericOutcome =
+                    oraclesAndOutcomes.find(_._1 == sig.oracle).get._2
+                  boolSoFar && sig.verifySignatures(numericOutcome)
+              }
+          }
+      }
     }
 
-    def findOutcome(
-        sigs: Vector[SchnorrDigitalSignature]): Option[DLCOutcomeType] = {
-      contractDescriptor match {
-        case _: EnumContractDescriptor =>
-          allOutcomes.find(verifySigs(_, sigs))
-        case _: NumericContractDescriptor =>
-          val base = 2
-          val digitsSigned = sigs.map { sig =>
-            (0 until base)
-              .find { possibleDigit =>
-                // FIXME
-                oracleInfo
-                  .asInstanceOf[SingleOracleInfo]
-                  .publicKey
-                  .verify(CryptoUtil
-                            .sha256DLCAttestation(possibleDigit.toString)
-                            .bytes,
-                          sig)
-              }
-              .getOrElse(throw new IllegalArgumentException(
-                s"Signature $sig does not match any digit 0-${base - 1}"))
-          }
-
-          CETCalculator.searchForNumericOutcome(digitsSigned, allOutcomes)
-      }
+    def findOutcome(sigs: Vector[OracleSignatures]): Option[OracleOutcome] = {
+      // TODO: Optimize by looking at nonces
+      // TODO: Optimize using NumericOracleSignatures.computeOutcome
+      allOutcomes.find(verifySigs(_, sigs))
     }
 
     def resultOfOutcome(
-        outcome: DLCOutcomeType): (ECPublicKey, Satoshis, Satoshis) = {
+        outcome: OracleOutcome): (ECPublicKey, Satoshis, Satoshis) = {
       outcomeMap(outcome)
     }
 
-    def sigPointForOutcome(outcome: DLCOutcomeType): ECPublicKey = {
-      resultOfOutcome(outcome)._1
-    }
-
     /** Returns the payouts for the signature as (toOffer, toAccept) */
-    def getPayouts(
-        sigs: Vector[SchnorrDigitalSignature]): (Satoshis, Satoshis) = {
+    def getPayouts(sigs: Vector[OracleSignatures]): (Satoshis, Satoshis) = {
       val outcome = findOutcome(sigs) match {
         case Some(outcome) => outcome
         case None =>
@@ -577,7 +561,7 @@ object DLCMessage {
     }
 
     /** Returns the payouts for the outcome as (toOffer, toAccept) */
-    def getPayouts(outcome: DLCOutcomeType): (Satoshis, Satoshis) = {
+    def getPayouts(outcome: OracleOutcome): (Satoshis, Satoshis) = {
       val (_, offerOutcome, acceptOutcome) = resultOfOutcome(outcome)
 
       (offerOutcome, acceptOutcome)
@@ -823,7 +807,7 @@ object DLCMessage {
     def fromTLV(
         accept: DLCAcceptTLV,
         network: NetworkParameters,
-        outcomes: Vector[DLCOutcomeType]): DLCAccept = {
+        outcomes: Vector[OracleOutcome]): DLCAccept = {
       val outcomeSigs = accept.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
           outcomes.zip(sigs)
@@ -894,7 +878,7 @@ object DLCMessage {
     def fromTLV(
         sign: DLCSignTLV,
         fundingPubKey: ECPublicKey,
-        outcomes: Vector[DLCOutcomeType],
+        outcomes: Vector[OracleOutcome],
         fundingOutPoints: Vector[TransactionOutPoint]): DLCSign = {
       val outcomeSigs = sign.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>

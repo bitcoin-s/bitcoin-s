@@ -199,33 +199,39 @@ class DLCClientTest extends BitcoinSAsyncTest {
       TestDLCClient,
       Vector[DLCOutcomeType]) = {
     val outcomeStrs = DLCTestUtil.genOutcomes(numOutcomes)
-    val oracleInfo = if (!isMultiNonce) {
-      EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
-                                        preCommittedR,
-                                        outcomeStrs.map(EnumOutcome.apply))
-    } else {
-      NumericSingleOracleInfo.dummyForKeys(oraclePrivKey,
-                                           preCommittedRs.take(numOutcomes))
-    }
 
-    val (outcomes, remoteOutcomes, strsOrDigits) = if (!isMultiNonce) {
+    val (outcomes, remoteOutcomes, strsOrDigits) =
+      if (!isMultiNonce) {
+        val oracleInfo = EnumSingleOracleInfo.dummyForKeys(
+          oraclePrivKey,
+          preCommittedR,
+          outcomeStrs.map(EnumOutcome.apply))
 
-      val (localDesc, remoteDesc) =
-        DLCTestUtil.genContractDescriptors(outcomeStrs, totalInput)
-      val local = ContractInfo(totalInput.satoshis, localDesc, oracleInfo)
-      val remote = ContractInfo(totalInput.satoshis, remoteDesc, oracleInfo)
+        val (localDesc, remoteDesc) =
+          DLCTestUtil.genContractDescriptors(outcomeStrs, totalInput)
+        val local = ContractInfo(totalInput.satoshis, localDesc, oracleInfo)
+        val remote = ContractInfo(totalInput.satoshis, remoteDesc, oracleInfo)
 
-      (local, remote, outcomeStrs.map(EnumOutcome.apply))
-    } else {
-      val (localDesc, remoteDesc) =
-        DLCTestUtil.genMultiDigitContractInfo(numOutcomes,
-                                              totalInput,
-                                              numRounds = 4)
-      val local = ContractInfo(totalInput.satoshis, localDesc, oracleInfo)
-      val remote = ContractInfo(totalInput.satoshis, remoteDesc, oracleInfo)
+        (local,
+         remote,
+         outcomeStrs
+           .map(EnumOutcome.apply))
+      } else {
+        val oracleInfo = NumericSingleOracleInfo.dummyForKeys(
+          oraclePrivKey,
+          preCommittedRs.take(numOutcomes))
 
-      (local, remote, local.allOutcomes)
-    }
+        val (localDesc, remoteDesc) =
+          DLCTestUtil.genMultiDigitContractInfo(numOutcomes,
+                                                totalInput,
+                                                numRounds = 4)
+        val local = ContractInfo(totalInput.satoshis, localDesc, oracleInfo)
+        val remote = ContractInfo(totalInput.satoshis, remoteDesc, oracleInfo)
+
+        (local,
+         remote,
+         local.allOutcomes.map(_.asInstanceOf[NumericOracleOutcome].outcome))
+      }
 
     // Offer is local
     val dlcOffer: TestDLCClient = TestDLCClient(
@@ -378,7 +384,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
                   .sha256DLCAttestation(outcome)
                   .bytes,
                 preCommittedK)
-              Vector(sig)
+              EnumOracleSignature(
+                dlcOffer.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
+                sig)
             case UnsignedNumericOutcome(_) => fail("Expected EnumOutcome")
           }
         } else {
@@ -402,7 +410,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
               case None                                 => fail(s"Couldn't find outcome for $outcomeIndex")
             }
 
-          digits.zip(preCommittedKs.take(digits.length)).map {
+          val sigs = digits.zip(preCommittedKs.take(digits.length)).map {
             case (digit, kValue) =>
               oraclePrivKey.schnorrSignWithNonce(
                 CryptoUtil
@@ -410,13 +418,19 @@ class DLCClientTest extends BitcoinSAsyncTest {
                   .bytes,
                 kValue)
           }
+
+          NumericOracleSignatures(
+            dlcOffer.offer.oracleInfo.asInstanceOf[NumericSingleOracleInfo],
+            sigs)
         }
 
         for {
           offerOutcome <-
-            dlcOffer.executeDLC(offerSetup, Future.successful(oracleSigs))
+            dlcOffer.executeDLC(offerSetup,
+                                Future.successful(Vector(oracleSigs)))
           acceptOutcome <-
-            dlcAccept.executeDLC(acceptSetup, Future.successful(oracleSigs))
+            dlcAccept.executeDLC(acceptSetup,
+                                 Future.successful(Vector(oracleSigs)))
         } yield {
           assert(offerOutcome.fundingTx == acceptOutcome.fundingTx)
 
@@ -568,23 +582,35 @@ class DLCClientTest extends BitcoinSAsyncTest {
       badOfferCETSigs = BytesUtil.flipBit(offerCETSigs)
       badAcceptCETSigs = BytesUtil.flipBit(acceptCETSigs)
 
-      cetFailures = outcomes.map { outcome =>
-        val oracleSig =
+      cetFailures = outcomes.map { outcomeUncast =>
+        val outcome = outcomeUncast.asInstanceOf[EnumOutcome]
+        val oracleOutcome = EnumOracleOutcome(
+          Vector(
+            offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]),
+          outcome)
+
+        val sig =
           oraclePrivKey.schnorrSignWithNonce(
             CryptoUtil
-              .sha256DLCAttestation(outcome.asInstanceOf[EnumOutcome].outcome)
+              .sha256DLCAttestation(outcome.outcome)
               .bytes,
             preCommittedK)
 
+        val oracleSig = EnumOracleSignature(
+          offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
+          sig)
+
         for {
           _ <- recoverToSucceededIf[RuntimeException] {
-            offerClient.dlcTxSigner.signCET(outcome,
-                                            badAcceptCETSigs(outcome),
+            offerClient.dlcTxSigner.signCET(oracleOutcome,
+                                            badAcceptCETSigs(oracleOutcome),
                                             Vector(oracleSig))
           }
           _ <- recoverToSucceededIf[RuntimeException] {
             acceptClient.dlcTxSigner
-              .signCET(outcome, badOfferCETSigs(outcome), Vector(oracleSig))
+              .signCET(oracleOutcome,
+                       badOfferCETSigs(oracleOutcome),
+                       Vector(oracleSig))
           }
         } yield succeed
       }
@@ -598,7 +624,12 @@ class DLCClientTest extends BitcoinSAsyncTest {
         acceptClient.dlcTxSigner.signRefundTx(badOfferCETSigs.refundSig)
       }
     } yield {
-      outcomes.foreach { outcome =>
+      outcomes.foreach { outcomeUncast =>
+        val outcome = EnumOracleOutcome(
+          Vector(
+            offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]),
+          outcomeUncast.asInstanceOf[EnumOutcome])
+
         assert(offerVerifier.verifyCETSig(outcome, acceptCETSigs(outcome)))
         assert(acceptVerifier.verifyCETSig(outcome, offerCETSigs(outcome)))
       }
@@ -607,7 +638,12 @@ class DLCClientTest extends BitcoinSAsyncTest {
       assert(acceptVerifier.verifyRefundSig(offerCETSigs.refundSig))
       assert(acceptVerifier.verifyRefundSig(acceptCETSigs.refundSig))
 
-      outcomes.foreach { outcome =>
+      outcomes.foreach { outcomeUncast =>
+        val outcome = EnumOracleOutcome(
+          Vector(
+            offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]),
+          outcomeUncast.asInstanceOf[EnumOutcome])
+
         assert(!offerVerifier.verifyCETSig(outcome, badAcceptCETSigs(outcome)))
         assert(!acceptVerifier.verifyCETSig(outcome, badOfferCETSigs(outcome)))
 
@@ -635,6 +671,13 @@ class DLCClientTest extends BitcoinSAsyncTest {
           (pk1.add(pk2), s1.add(s2))
       }
 
+    val sigs = dlcOffer.offer.oracleInfo.asInstanceOf[SingleOracleInfo] match {
+      case oracle: EnumSingleOracleInfo =>
+        EnumOracleSignature(oracle, oracleSigs.head)
+      case oracle: NumericSingleOracleInfo =>
+        NumericOracleSignatures(oracle, oracleSigs)
+    }
+
     val aggSig = SchnorrDigitalSignature(aggR.schnorrNonce, aggS)
 
     for {
@@ -642,9 +685,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
       offerCETSigs <- dlcOffer.dlcTxSigner.createCETSigs()
       offerFundingSigs <- dlcOffer.dlcTxSigner.createFundingTxSigs()
       offerOutcome <-
-        dlcOffer.executeDLC(offerSetup, Future.successful(oracleSigs))
+        dlcOffer.executeDLC(offerSetup, Future.successful(Vector(sigs)))
       acceptOutcome <-
-        dlcAccept.executeDLC(acceptSetup, Future.successful(oracleSigs))
+        dlcAccept.executeDLC(acceptSetup, Future.successful(Vector(sigs)))
 
       builder = DLCTxBuilder(dlcOffer.offer, dlcAccept.accept)
       contractId <- builder.buildFundingTx.map(

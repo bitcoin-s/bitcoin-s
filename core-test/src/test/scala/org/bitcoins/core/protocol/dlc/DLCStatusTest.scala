@@ -176,7 +176,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
             fundingTxId,
             closingTxId,
             sigs.toVector,
-            outcome
+            outcome.outcome
           )
 
         assert(status.state == DLCState.Claimed)
@@ -216,7 +216,7 @@ class DLCStatusTest extends BitcoinSAsyncTest {
             fundingTxId,
             closingTxId,
             sig,
-            outcome
+            outcome.outcome
           )
 
         assert(status.state == DLCState.RemoteClaimed)

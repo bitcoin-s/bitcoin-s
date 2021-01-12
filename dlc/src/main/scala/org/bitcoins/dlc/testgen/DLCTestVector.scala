@@ -6,7 +6,8 @@ import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc.{
   DLCFundingInput,
   DLCPublicKeys,
-  DLCTimeouts
+  DLCTimeouts,
+  EnumOracleOutcome
 }
 import org.bitcoins.core.protocol.script.{
   ScriptWitness,
@@ -185,6 +186,7 @@ case class ValidTestInputs(
         params.contractInfo
           .map(_.preImage)
           .map(EnumOutcome.apply)
+          .map(outcome => EnumOracleOutcome(Vector(params.oracleInfo), outcome))
           .map(builder.buildCET)
       cets <- Future.sequence(cetFs)
       refundTx <- builder.buildRefundTx

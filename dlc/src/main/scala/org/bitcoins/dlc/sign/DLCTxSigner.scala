@@ -4,13 +4,8 @@ import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.TransactionSignatureSerializer
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.dlc.{
-  CETSignatures,
-  DLCFundingInput,
-  FundingSignatures
-}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -66,7 +61,7 @@ case class DLCTxSigner(
   }
 
   /** Return's this party's payout for a given oracle signature */
-  def getPayout(sigs: Vector[SchnorrDigitalSignature]): CurrencyUnit = {
+  def getPayout(sigs: Vector[OracleSignatures]): CurrencyUnit = {
     val (offerPayout, acceptPayout) = builder.getPayouts(sigs)
     if (isInitiator) {
       offerPayout
@@ -180,13 +175,13 @@ case class DLCTxSigner(
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcome hash */
-  def createRemoteCETSig(msg: DLCOutcomeType): Future[ECAdaptorSignature] = {
-    val adaptorPoint = builder.contractInfo.sigPointForOutcome(msg)
+  def createRemoteCETSig(outcome: OracleOutcome): Future[ECAdaptorSignature] = {
+    val adaptorPoint = outcome.sigPoint
     val hashType = HashType.sigHashAll
     for {
       fundingTx <- builder.buildFundingTx
       fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
-      utx <- builder.buildCET(msg)
+      utx <- builder.buildCET(outcome)
       signingInfo = ECSignatureParams(
         P2WSHV0InputInfo(outPoint = fundingOutPoint,
                          amount = fundingTx.outputs.head.value,
@@ -206,14 +201,11 @@ case class DLCTxSigner(
   }
 
   def signCET(
-      msg: DLCOutcomeType,
+      outcome: OracleOutcome,
       remoteAdaptorSig: ECAdaptorSignature,
-      oracleSigs: Vector[SchnorrDigitalSignature]): Future[Transaction] = {
-    val oracleSigSum = oracleSigs
-      .take(msg.serialized.length)
-      .map(_.sig)
-      .reduce(_.add(_))
-      .toPrivateKey
+      oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
+    val oracleSigSum =
+      OracleSignatures.computeAggregateSignature(outcome, oracleSigs)
     val remoteSig =
       oracleSigSum
         .completeAdaptorSignature(remoteAdaptorSig, HashType.sigHashAll.byte)
@@ -221,7 +213,7 @@ case class DLCTxSigner(
     val remotePartialSig = PartialSignature(remoteFundingPubKey, remoteSig)
     for {
       fundingTx <- builder.buildFundingTx
-      utx <- builder.buildCET(msg)
+      utx <- builder.buildCET(outcome)
 
       psbt <-
         PSBT

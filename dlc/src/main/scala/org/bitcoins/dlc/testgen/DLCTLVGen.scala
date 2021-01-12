@@ -176,12 +176,15 @@ object DLCTLVGen {
   }
 
   def cetSigs(
-      outcomes: Vector[DLCOutcomeType] =
+      outcomes: Vector[EnumOutcome] =
         DLCTestUtil.genOutcomes(3).map(EnumOutcome.apply),
+      oracleInfo: EnumSingleOracleInfo = genOracleInfo(),
       fundingPubKey: ECPublicKey =
         ECPublicKey.freshPublicKey): CETSignatures = {
-    CETSignatures(outcomes.map(outcome => outcome -> adaptorSig),
-                  partialSig(fundingPubKey, sigHashByte = false))
+    CETSignatures(
+      outcomes.map(outcome =>
+        EnumOracleOutcome(Vector(oracleInfo), outcome) -> adaptorSig),
+      partialSig(fundingPubKey, sigHashByte = false))
   }
 
   def cetSigsParsingTestVector(numOutcomes: Int = 3): DLCParsingTestVector = {
@@ -329,7 +332,12 @@ object DLCTLVGen {
       offer.contractInfo.max - offer.totalCollateral + overCollateral
 
     val cetSignatures =
-      cetSigs(offer.contractInfo.allOutcomes, fundingPubKey)
+      cetSigs(
+        offer.contractInfo.allOutcomes.map(
+          _.asInstanceOf[EnumOracleOutcome].outcome),
+        offer.contractInfo.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
+        fundingPubKey
+      )
 
     val tempContractId = offer.tempContractId
 
@@ -385,7 +393,12 @@ object DLCTLVGen {
       offer: DLCOffer,
       contractId: ByteVector = hash().bytes): DLCSign = {
     val cetSignatures =
-      cetSigs(offer.contractInfo.allOutcomes, offer.pubKeys.fundingKey)
+      cetSigs(
+        offer.contractInfo.allOutcomes.map(
+          _.asInstanceOf[EnumOracleOutcome].outcome),
+        offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
+        offer.pubKeys.fundingKey
+      )
     val fundingSignatures = fundingSigs(offer.fundingInputs.map(_.outPoint))
     DLCSign(cetSignatures, fundingSignatures, contractId)
   }

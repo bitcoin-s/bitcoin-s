@@ -1,8 +1,11 @@
 package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.dlc.{CETSignatures, FundingSignatures}
-import org.bitcoins.crypto.SchnorrDigitalSignature
+import org.bitcoins.core.protocol.dlc.{
+  CETSignatures,
+  FundingSignatures,
+  OracleSignatures
+}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
 
@@ -68,14 +71,13 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
   }
 
   /** Return's this party's payout for a given oracle signature */
-  def getPayout(sigs: Vector[SchnorrDigitalSignature]): CurrencyUnit = {
+  def getPayout(sigs: Vector[OracleSignatures]): CurrencyUnit = {
     signer.getPayout(sigs)
   }
 
   def executeDLC(
       dlcSetup: SetupDLC,
-      oracleSigs: Vector[SchnorrDigitalSignature]): Future[
-    ExecutedDLCOutcome] = {
+      oracleSigs: Vector[OracleSignatures]): Future[ExecutedDLCOutcome] = {
     val SetupDLC(fundingTx, cetInfos, _) = dlcSetup
 
     val msgOpt = builder.contractInfo.findOutcome(oracleSigs)
@@ -85,7 +87,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
         (msg, cetInfo.remoteSignature)
       case None =>
         throw new IllegalArgumentException(
-          s"Signature does not correspond to any possible outcome! ${oracleSigs.map(_.hex).mkString(", ")}")
+          s"Signature does not correspond to any possible outcome! $oracleSigs")
     }
 
     signer.signCET(msg, remoteAdaptorSig, oracleSigs).map { cet =>

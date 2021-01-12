@@ -6,7 +6,6 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.DLCMessage.{ContractInfo, DLCAccept}
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -54,7 +53,7 @@ case class TestDLCClient(
 
   private val dlcExecutor = DLCExecutor(dlcTxSigner)
 
-  val messages: Vector[DLCOutcomeType] = offer.contractInfo.allOutcomes
+  val messages: Vector[OracleOutcome] = offer.contractInfo.allOutcomes
 
   val timeouts: DLCTimeouts = offer.timeouts
 
@@ -107,7 +106,7 @@ case class TestDLCClient(
 
   def executeDLC(
       dlcSetup: SetupDLC,
-      oracleSigsF: Future[Vector[SchnorrDigitalSignature]]): Future[
+      oracleSigsF: Future[Vector[OracleSignatures]]): Future[
     ExecutedDLCOutcome] = {
     oracleSigsF.flatMap { oracleSigs =>
       dlcExecutor.executeDLC(dlcSetup, oracleSigs)

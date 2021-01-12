@@ -486,11 +486,15 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomes) <-
         constructAndSetupDLC(numOutcomes)
 
-      oracleSig = oraclePrivKey.schnorrSignWithNonce(
+      sig = oraclePrivKey.schnorrSignWithNonce(
         CryptoUtil
           .sha256DLCAttestation(outcomes(outcomeIndex))
           .bytes,
         preCommittedK)
+
+      oracleSig = EnumOracleSignature(
+        offerDLC.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
+        sig)
 
       (unilateralDLC, unilateralSetup, otherDLC, otherSetup) = {
         if (local) {
