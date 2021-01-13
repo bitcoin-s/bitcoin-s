@@ -515,6 +515,45 @@ object CETCalculator {
     prefix ++ halvingDigits.takeWhile(_ == 1)
   }
 
+  private def singleCoveringCETCombinations[T](
+      primaryCET: T,
+      coverCET: T,
+      numOracles: Int): Vector[T] = {
+    Vector(primaryCET) ++ Vector.fill(numOracles - 1)(coverCET)
+  }
+
+  private def inOrOutCombinations[T](
+      in: T,
+      out: T,
+      num: Int): Vector[Vector[T]] = {
+    0.until(num).foldLeft(Vector(Vector.empty[T])) {
+      case (subCombinations, _) =>
+        val firstIn = subCombinations.map(_.prepended(in))
+        val firstOut = subCombinations.map(_.prepended(out))
+
+        firstIn ++ firstOut
+    }
+  }
+
+  private def doubleCoveringCETCombinations[T](
+      primaryCET: T,
+      coverCETInner: T,
+      coverCETOuter: T,
+      numOracles: Int): Vector[Vector[T]] = {
+    inOrOutCombinations(coverCETInner, coverCETOuter, numOracles - 1).map(
+      _.prepended(primaryCET))
+  }
+
+  private def doubleCoveringRestrictedCETCombinations[T](
+      coverCETInner: T,
+      coverCETOuter: T,
+      numOracles: Int): Vector[Vector[T]] = {
+    doubleCoveringCETCombinations(coverCETInner,
+                                  coverCETInner,
+                                  coverCETOuter,
+                                  numOracles).tail
+  }
+
   /** Given the primary oracle's CET, computes the set of CETs needed
     * for two oracles with an allowed difference (which is bounded).
     *
@@ -530,7 +569,11 @@ object CETCalculator {
       cetDigits: Vector[Int],
       maxErrorExp: Int,
       minFailExp: Int,
-      maximizeCoverage: Boolean): Vector[(Vector[Int], Vector[Int])] = {
+      maximizeCoverage: Boolean,
+      numOracles: Int): Vector[Vector[Vector[Int]]] = {
+    require(numOracles > 1,
+            "For single oracle, just use your cetDigits parameter")
+
     val maxNum = (1L << numDigits) - 1
     val maxError = 1L << maxErrorExp
     val halfMaxError = maxError >> 1
@@ -558,7 +601,7 @@ object CETCalculator {
           minCoverMidCET(start, end, minFail, numDigits)
         }
 
-        Vector((cetDigits, coverCET))
+        Vector(singleCoveringCETCombinations(cetDigits, coverCET, numOracles))
       } else if (start < leftErrorCET + minFail) { // case: Left CET
         val coverCET = if (maximizeCoverage) {
           errorCET
@@ -575,9 +618,12 @@ object CETCalculator {
         }
 
         if (leftErrorCET == 0) { // special case: Leftmost CET
-          Vector((cetDigits, coverCET))
+          Vector(singleCoveringCETCombinations(cetDigits, coverCET, numOracles))
         } else {
-          Vector((cetDigits, leftCET), (cetDigits, coverCET))
+          doubleCoveringCETCombinations(cetDigits,
+                                        coverCET,
+                                        leftCET,
+                                        numOracles)
         }
       } else if (end > rightErrorCET - minFail) { // case: Right CET
         val coverCET = if (maximizeCoverage) {
@@ -595,16 +641,19 @@ object CETCalculator {
         }
 
         if (rightErrorCET == maxNum) { // special case: Rightmost CET
-          Vector((cetDigits, coverCET))
+          Vector(singleCoveringCETCombinations(cetDigits, coverCET, numOracles))
         } else {
-          Vector((cetDigits, coverCET), (cetDigits, rightCET))
+          doubleCoveringCETCombinations(cetDigits,
+                                        coverCET,
+                                        rightCET,
+                                        numOracles)
         }
       } else {
         throw new RuntimeException(
           s"Unexpected case: $cetDigits, $numDigits, $maxErrorExp, $minFailExp")
       }
     } else { // case: Large CET
-      val builder = Vector.newBuilder[(Vector[Int], Vector[Int])]
+      val builder = Vector.newBuilder[Vector[Vector[Int]]]
 
       /* zoom of left corner of [start, end]:
        * _____________________________________________________
@@ -625,7 +674,10 @@ object CETCalculator {
           numToVec(start - minFail, numDigits, minFailExp)
         }
 
-        builder.+=((leftInnerCET, leftCET))
+        builder.++=(
+          doubleCoveringRestrictedCETCombinations(leftInnerCET,
+                                                  leftCET,
+                                                  numOracles))
       }
 
       /* [start, end]:
@@ -636,7 +688,8 @@ object CETCalculator {
        * If both oracles are in this range (corresponding to a fixed
        * value payout) then this any difference can be ignored.
        */
-      builder.+=((cetDigits, cetDigits))
+      builder.+=(
+        singleCoveringCETCombinations(cetDigits, cetDigits, numOracles))
 
       /* zoom of right corner of [start, end]:
        * _________________________________________________________
@@ -657,7 +710,10 @@ object CETCalculator {
           numToVec(end + 1, numDigits, minFailExp)
         }
 
-        builder.+=((rightInnerCET, rightCET))
+        builder.++=(
+          doubleCoveringRestrictedCETCombinations(rightInnerCET,
+                                                  rightCET,
+                                                  numOracles))
       }
 
       builder.result()
@@ -665,7 +721,7 @@ object CETCalculator {
   }
 
   /** Given the primary oracle's CETs, computes the set of CETs needed
-    * for two oracles with an allowed difference (which is bounded).
+    * for n oracles with an allowed difference (which is bounded).
     *
     * @param numDigits The number of binary digits signed by the oracles
     * @param primaryCETs CETs corresponding to the primary oracle
@@ -673,14 +729,15 @@ object CETCalculator {
     *                    non-support (failure) is guaranteed
     * @param minFailExp The exponent (of 2) representing the difference up to
     *                   which support is guaranteed
+    * @param numOracles The total number of oracles (including primary) needed for execution
     */
-  def computeSecondOracleCETsBinary(
+  def computeMultiOracleCETsBinary(
       numDigits: Int,
       primaryCETs: Vector[(Vector[Int], Satoshis)],
       maxErrorExp: Int,
       minFailExp: Int,
-      maximizeCoverage: Boolean): Vector[
-    (Vector[Int], Vector[Int], Satoshis)] = {
+      maximizeCoverage: Boolean,
+      numOracles: Int): Vector[(Vector[Vector[Int]], Satoshis)] = {
     require(minFailExp < maxErrorExp)
 
     primaryCETs.flatMap {
@@ -689,12 +746,13 @@ object CETCalculator {
                                   cetDigits,
                                   maxErrorExp,
                                   minFailExp,
-                                  maximizeCoverage)
-          .map { case (d1, d2) => (d1, d2, payout) }
+                                  maximizeCoverage,
+                                  numOracles)
+          .map((_, payout))
     }
   }
 
-  def computeMultiOracleCETs(
+  def computeMultiOracleCETsBinary(
       numDigits: Int,
       function: DLCPayoutCurve,
       totalCollateral: Satoshis,
@@ -703,17 +761,13 @@ object CETCalculator {
       minFailExp: Int,
       maximizeCoverage: Boolean,
       numOracles: Int): Vector[(Vector[Vector[Int]], Satoshis)] = {
-    require(numOracles == 2, "Only 2-oracle threshold is currently supported")
-
     val primaryCETs =
       computeCETs(base = 2, numDigits, function, totalCollateral, rounding)
-    computeSecondOracleCETsBinary(numDigits,
-                                  primaryCETs,
-                                  maxErrorExp,
-                                  minFailExp,
-                                  maximizeCoverage).map {
-      case (primaryDigits, secondaryDigits, amt) =>
-        (Vector(primaryDigits, secondaryDigits), amt)
-    }
+    computeMultiOracleCETsBinary(numDigits,
+                                 primaryCETs,
+                                 maxErrorExp,
+                                 minFailExp,
+                                 maximizeCoverage,
+                                 numOracles)
   }
 }

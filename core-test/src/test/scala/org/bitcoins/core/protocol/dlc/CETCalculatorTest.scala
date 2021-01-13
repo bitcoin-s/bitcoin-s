@@ -324,15 +324,21 @@ class CETCalculatorTest extends BitcoinSUnitTest {
                                               cetDigits = cetDigits,
                                               maxErrorExp = maxErrorExp,
                                               minFailExp = minFailExp,
-                                              maximizeCoverage = true)
+                                              maximizeCoverage = true,
+                                              numOracles = 2)
     val coveringCETsMin =
       CETCalculator.computeCoveringCETsBinary(numDigits = numDigits,
                                               cetDigits = cetDigits,
                                               maxErrorExp = maxErrorExp,
                                               minFailExp = minFailExp,
-                                              maximizeCoverage = false)
+                                              maximizeCoverage = false,
+                                              numOracles = 2)
 
-    (coveringCETsMax, coveringCETsMin)
+    assert(coveringCETsMax.forall(_.length == 2))
+    assert(coveringCETsMin.forall(_.length == 2))
+
+    (coveringCETsMax.map(ds => (ds.head, ds.last)),
+     coveringCETsMin.map(ds => (ds.head, ds.last)))
   }
 
   it should "correctly cover small middle CETs" in {
@@ -360,10 +366,10 @@ class CETCalculatorTest extends BitcoinSUnitTest {
                                    minFailExp = 7)
 
     assert(
-      coveringCETsMax == Vector((cet, Vector(0, 0, 1)), (cet, Vector(0, 1))))
+      coveringCETsMax == Vector((cet, Vector(0, 1)), (cet, Vector(0, 0, 1))))
     assert(
-      coveringCETsMin == Vector((cet, Vector(0, 0, 1, 1, 1, 1)),
-                                (cet, Vector(0, 1, 0, 0, 0))))
+      coveringCETsMin == Vector((cet, Vector(0, 1, 0, 0, 0)),
+                                (cet, Vector(0, 0, 1, 1, 1, 1))))
   }
 
   it should "correctly cover small right CETs" in {

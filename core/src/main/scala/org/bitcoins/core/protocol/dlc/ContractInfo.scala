@@ -105,7 +105,7 @@ case class ContractInfo(
             (descriptor: NumericContractDescriptor,
              oracleInfo: NumericMultiOracleInfo)) =>
         val vec: Vector[(Vector[Vector[Int]], Satoshis)] =
-          CETCalculator.computeMultiOracleCETs(
+          CETCalculator.computeMultiOracleCETsBinary(
             descriptor.numDigits,
             descriptor.outcomeValueFunc,
             totalCollateral,
