@@ -26,8 +26,8 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
         throw new IllegalArgumentException("Unexpected Contract Info")
     }
 
-    val oracleInfo =
-      NumericSingleOracleInfo.dummyForKeys(oraclePrivKey, rValues)
+    val oracleInfo = DLCWalletUtil.multiNonceContractInfo.oracleInfo
+      .asInstanceOf[NumericSingleOracleInfo]
 
     val initiatorWinVec =
       contractInfo.allOutcomesAndPayouts
@@ -36,6 +36,7 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
         .outcome
         .asInstanceOf[UnsignedNumericOutcome]
         .digits
+        .padTo(oracleInfo.nonces.size, 0)
 
     val kValues = DLCWalletUtil.kValues.take(initiatorWinVec.size)
 
@@ -56,6 +57,7 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
         .outcome
         .asInstanceOf[UnsignedNumericOutcome]
         .digits
+        .padTo(oracleInfo.nonces.size, 0)
 
     val kValues2 = DLCWalletUtil.kValues.take(recipientWinVec.size)
 
