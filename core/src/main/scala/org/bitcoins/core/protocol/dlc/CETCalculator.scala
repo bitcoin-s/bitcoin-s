@@ -404,6 +404,18 @@ object CETCalculator {
     computeCETs(base, numDigits, function, totalCollateral, rounding, min, max)
   }
 
+  def combinations[T](oracles: Vector[T], threshold: Int): Vector[Vector[T]] = {
+    if (oracles.length == threshold) {
+      Vector(oracles)
+    } else if (threshold == 1) {
+      oracles.map(Vector(_))
+    } else {
+      combinations(oracles.tail, threshold - 1).map(
+        _.prepended(oracles.head)) ++
+        combinations(oracles.tail, threshold)
+    }
+  }
+
   /** Given binary digits corresponding to a CET, returns the CET's support bounds */
   def computeCETIntervalBinary(
       cet: Vector[Int],
