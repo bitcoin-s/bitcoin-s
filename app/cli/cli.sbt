@@ -2,17 +2,12 @@ name := "bitcoin-s-cli"
 
 libraryDependencies ++= Deps.cli(scalaVersion.value)
 
-graalVMNativeImageOptions ++= Seq(
-  "-H:EnableURLProtocols=http",
+nativeImageOptions ++= Seq(
   "-H:+ReportExceptionStackTraces",
-  // builds a stand-alone image or reports a failure
+  "--initialize-at-build-time",
   "--no-fallback",
-  // without this, we get complaints about Function3
-  // I'm not sure why, though...
-  "--initialize-at-build-time=scala.Function3",
-  "--report-unsupported-elements-at-runtime",
-  "--verbose",
-  "--allow-incomplete-classpath"
+  "--enable-http",
+  "--enable-https"
 )
 
-enablePlugins(JavaAppPackaging, GraalVMNativeImagePlugin)
+enablePlugins(JavaAppPackaging, NativeImagePlugin)
