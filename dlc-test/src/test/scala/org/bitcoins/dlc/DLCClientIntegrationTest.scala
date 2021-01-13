@@ -418,17 +418,10 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
   def runTests(
       exec: (Int, Int, Boolean) => Future[Assertion],
       local: Boolean): Future[Assertion] = {
-    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
-      indicesToTest(numOutcomes).map { outcomeIndex => () =>
+    runTestsForParam(numOutcomesToTest) { numOutcomes =>
+      runTestsForParam(indicesToTest(numOutcomes)) { outcomeIndex =>
         exec(outcomeIndex, numOutcomes, local)
       }
-    }
-
-    testFs.foldLeft(Future.successful(succeed)) {
-      case (resultF, testExec) =>
-        resultF.flatMap { _ =>
-          testExec()
-        }
     }
   }
 
@@ -441,17 +434,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
   }
 
   it should "be able to publish all DLC txs to Regtest for the Refund case" in {
-    val testFs = numOutcomesToTest.map { numOutcomes => () =>
-      for {
-        _ <- executeForRefundCase(numOutcomes)
-      } yield succeed
-    }
-
-    testFs.foldLeft(Future.successful(succeed)) {
-      case (resultF, testExec) =>
-        resultF.flatMap { _ =>
-          testExec()
-        }
+    runTestsForParam(numOutcomesToTest) { numOutcomes =>
+      executeForRefundCase(numOutcomes)
     }
   }
 }
