@@ -61,6 +61,9 @@ case class EnumOracleSignature(
     sig: SchnorrDigitalSignature)
     extends OracleSignatures {
   override def sigs: Vector[SchnorrDigitalSignature] = Vector(sig)
+
+  override def toString: String =
+    s"EnumOracleSignature(${oracle.announcement.publicKey}, $sig)"
 }
 
 case class NumericOracleSignatures(
@@ -87,4 +90,7 @@ case class NumericOracleSignatures(
 
     CETCalculator.searchForNumericOutcome(digitsSigned, possibleOutcomes)
   }
+
+  override def toString: String =
+    s"NumericOracleSignatures(${oracle.announcement.publicKey}, $sigs)"
 }

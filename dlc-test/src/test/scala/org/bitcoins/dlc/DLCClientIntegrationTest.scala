@@ -246,6 +246,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
 
       constructEnumDLCClients(
         numOutcomes,
+        oracleThreshold = 1,
+        numOracles = 1,
         localFundingPrivKey,
         localPayoutPrivKey,
         remoteFundingPrivKey,
@@ -348,8 +350,9 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
       (offerDLC, offerSetup, acceptDLC, acceptSetup, outcomes) <-
         constructAndSetupDLC(numOutcomes)
 
-      oracleSig =
-        genEnumOracleSignature(offerDLC, outcomes(outcomeIndex).outcome)
+      oracleSig = genEnumOracleSignature(
+        offerDLC.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
+        outcomes(outcomeIndex).outcome)
 
       (unilateralDLC, unilateralSetup, otherDLC, otherSetup) = {
         if (local) {

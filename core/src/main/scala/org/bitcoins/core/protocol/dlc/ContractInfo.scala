@@ -149,19 +149,21 @@ case class ContractInfo(
     builder.result()
   }
 
+  // TODO: Needs a lot of optimization
   def verifySigs(
       outcome: OracleOutcome,
       sigs: Vector[OracleSignatures]): Boolean = {
     outcome match {
-      case EnumOracleOutcome(_, enumOutcome) =>
+      case EnumOracleOutcome(oracles, enumOutcome) =>
         oracleInfo match {
           case _: NumericOracleInfo =>
             throw new IllegalArgumentException(
               s"Cannot handle $enumOutcome with numeric oracle commitments: $oracleInfo")
           case _: EnumOracleInfo =>
-            sigs.foldLeft(true) {
-              case (boolSoFar, sig) =>
-                boolSoFar && sig.verifySignatures(enumOutcome)
+            oracles.foldLeft(true) {
+              case (boolSoFar, oracle) =>
+                lazy val sig = sigs.find(_.oracle == oracle)
+                boolSoFar && sig.exists(_.verifySignatures(enumOutcome))
             }
         }
       case NumericOracleOutcome(oraclesAndOutcomes) =>
@@ -170,11 +172,10 @@ case class ContractInfo(
             throw new IllegalArgumentException(
               s"Cannot handle numeric outcomes with enum oracle commitments: $oracleInfo")
           case _: NumericOracleInfo =>
-            sigs.foldLeft(true) {
-              case (boolSoFar, sig) =>
-                lazy val numericOutcome =
-                  oraclesAndOutcomes.find(_._1 == sig.oracle).get._2
-                boolSoFar && sig.verifySignatures(numericOutcome)
+            oraclesAndOutcomes.foldLeft(true) {
+              case (boolSoFar, (oracle, digits)) =>
+                lazy val sig = sigs.find(_.oracle == oracle)
+                boolSoFar && sig.exists(_.verifySignatures(digits))
             }
         }
     }

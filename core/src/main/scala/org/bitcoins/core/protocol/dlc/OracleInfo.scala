@@ -3,7 +3,11 @@ package org.bitcoins.core.protocol.dlc
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 
-sealed trait OracleInfo extends TLVSerializable[OracleInfoTLV]
+sealed trait OracleInfo extends TLVSerializable[OracleInfoTLV] {
+  def threshold: Int
+  def numOracles: Int
+  def singleOracleInfos: Vector[SingleOracleInfo]
+}
 
 sealed trait EnumOracleInfo extends OracleInfo
 sealed trait NumericOracleInfo extends OracleInfo
@@ -23,6 +27,11 @@ object OracleInfo
 sealed trait SingleOracleInfo
     extends OracleInfo
     with TLVSerializable[OracleInfoV0TLV] {
+  override val numOracles: Int = 1
+  override val threshold: Int = 1
+
+  override def singleOracleInfos: Vector[this.type] = Vector(this)
+
   def announcement: OracleAnnouncementTLV
   def publicKey: SchnorrPublicKey = announcement.publicKey
 
@@ -164,7 +173,7 @@ object NumericSingleOracleInfo {
 sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
     extends OracleInfo
     with TLVSerializable[MultiOracleInfoTLV] {
-  def threshold: Int
+  override def numOracles: Int = announcements.length
 
   def announcements: Vector[OracleAnnouncementTLV]
 

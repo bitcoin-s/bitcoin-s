@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{
   DLCOutcomeType,
   EnumOutcome,
+  OracleAnnouncementV0TLV,
   UnsignedNumericOutcome
 }
 import org.bitcoins.core.protocol.transaction._
@@ -30,11 +31,17 @@ import org.bitcoins.dlc.testgen.{DLCTestUtil, TestDLCClient}
 import org.scalatest.{Assertion, Assertions}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Random
 
 trait DLCTest {
 
-  val oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
-  val oraclePubKey: SchnorrPublicKey = oraclePrivKey.schnorrPublicKey
+  val oraclePrivKeys: Vector[ECPrivateKey] =
+    (0 until 10).toVector.map(_ => ECPrivateKey.freshPrivateKey)
+
+  val oraclePubKeys: Vector[SchnorrPublicKey] =
+    oraclePrivKeys.map(_.schnorrPublicKey)
+  val oraclePrivKey: ECPrivateKey = oraclePrivKeys.head
+  val oraclePubKey: SchnorrPublicKey = oraclePubKeys.head
 
   val preCommittedKs: Vector[ECPrivateKey] =
     (0 until 100).toVector.map(_ => ECPrivateKey.freshPrivateKey)
@@ -271,6 +278,8 @@ trait DLCTest {
 
   def constructEnumDLCClients(
       numOutcomes: Int,
+      oracleThreshold: Int,
+      numOracles: Int,
       offerFundingPrivKey: ECPrivateKey = this.offerFundingPrivKey,
       offerPayoutPrivKey: ECPrivateKey = this.offerPayoutPrivKey,
       acceptFundingPrivKey: ECPrivateKey = this.acceptFundingPrivKey,
@@ -289,8 +298,16 @@ trait DLCTest {
     val outcomeStrs = DLCTestUtil.genOutcomes(numOutcomes)
     val outcomes = outcomeStrs.map(EnumOutcome.apply)
 
-    val oracleInfo =
-      EnumSingleOracleInfo.dummyForKeys(oraclePrivKey, preCommittedR, outcomes)
+    val announcements =
+      oraclePrivKeys.take(numOracles).zip(preCommittedRs.take(numOracles)).map {
+        case (privKey, rVal) =>
+          OracleAnnouncementV0TLV.dummyForEventsAndKeys(privKey, rVal, outcomes)
+      }
+    val oracleInfo = if (numOracles == 1) {
+      EnumSingleOracleInfo(announcements.head)
+    } else {
+      EnumMultiOracleInfo(oracleThreshold, announcements)
+    }
 
     val (outcomesDesc, otherOutcomesDesc) =
       DLCTestUtil.genContractDescriptors(outcomeStrs, totalInput)
@@ -367,6 +384,8 @@ trait DLCTest {
   def constructDLCClients(
       numOutcomesOrDigits: Int,
       isNumeric: Boolean,
+      oracleThreshold: Int,
+      numOracles: Int,
       offerFundingPrivKey: ECPrivateKey = this.offerFundingPrivKey,
       offerPayoutPrivKey: ECPrivateKey = this.offerPayoutPrivKey,
       acceptFundingPrivKey: ECPrivateKey = this.acceptFundingPrivKey,
@@ -399,6 +418,8 @@ trait DLCTest {
     } else {
       constructEnumDLCClients(
         numOutcomesOrDigits,
+        oracleThreshold,
+        numOracles,
         offerFundingPrivKey,
         offerPayoutPrivKey,
         acceptFundingPrivKey,
@@ -464,17 +485,16 @@ trait DLCTest {
   }
 
   def genEnumOracleSignature(
-      dlcOffer: TestDLCClient,
-      outcome: String): EnumOracleSignature = {
-    val sig = oraclePrivKey.schnorrSignWithNonce(
-      CryptoUtil
-        .sha256DLCAttestation(outcome)
-        .bytes,
-      preCommittedK)
+      oracleInfo: EnumSingleOracleInfo,
+      outcome: String,
+      privKey: ECPrivateKey = oraclePrivKey,
+      kVal: ECPrivateKey = preCommittedK): EnumOracleSignature = {
+    val sig = privKey.schnorrSignWithNonce(CryptoUtil
+                                             .sha256DLCAttestation(outcome)
+                                             .bytes,
+                                           kVal)
 
-    EnumOracleSignature(
-      dlcOffer.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
-      sig)
+    EnumOracleSignature(oracleInfo, sig)
   }
 
   def computeNumericOracleSignatures(
@@ -526,20 +546,38 @@ trait DLCTest {
       isNumeric: Boolean,
       dlcOffer: TestDLCClient,
       outcomes: Vector[DLCOutcomeType],
-      outcomeIndex: Long): OracleSignatures = {
+      outcomeIndex: Long): Vector[OracleSignatures] = {
 
     if (!isNumeric) {
       outcomes(outcomeIndex.toInt) match {
         case EnumOutcome(outcome) =>
-          genEnumOracleSignature(dlcOffer, outcome)
+          val oracleInfo = dlcOffer.offer.oracleInfo
+
+          val oracleIndices =
+            1.until(oracleInfo.numOracles).toVector.appended(0)
+          val chosenOracles =
+            Random.shuffle(oracleIndices).take(oracleInfo.threshold)
+
+          chosenOracles
+            .map { index =>
+              val singleOracleInfo = oracleInfo.singleOracleInfos(index)
+
+              genEnumOracleSignature(
+                singleOracleInfo.asInstanceOf[EnumSingleOracleInfo],
+                outcome,
+                oraclePrivKeys(index),
+                preCommittedKs(index))
+            }
         case UnsignedNumericOutcome(_) =>
           Assertions.fail("Expected EnumOutcome")
       }
     } else {
-      genNumericOracleSignatures(numOutcomesOrDigits,
-                                 dlcOffer,
-                                 outcomes,
-                                 outcomeIndex)
+      val oracleSig = genNumericOracleSignatures(numOutcomesOrDigits,
+                                                 dlcOffer,
+                                                 outcomes,
+                                                 outcomeIndex)
+
+      Vector(oracleSig)
     }
   }
 
