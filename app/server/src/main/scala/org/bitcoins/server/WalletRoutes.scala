@@ -267,9 +267,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                              refundLT)) =>
           complete {
             val announcements = contractInfo.oracleInfo match {
-              case OracleInfoV0TLV(announcement)     => Vector(announcement)
-              case OracleInfoV1TLV(announcements)    => announcements
-              case OracleInfoV2TLV(announcements, _) => announcements
+              case OracleInfoV0TLV(announcement)        => Vector(announcement)
+              case OracleInfoV1TLV(_, announcements)    => announcements
+              case OracleInfoV2TLV(_, announcements, _) => announcements
             }
             if (!announcements.forall(_.validateSignature)) {
               throw new RuntimeException(

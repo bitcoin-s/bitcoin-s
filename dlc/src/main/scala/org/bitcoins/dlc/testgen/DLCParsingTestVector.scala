@@ -218,17 +218,19 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "maximizeCoverage" -> Element(maximizeCoverageBytes)
         )
         DLCTLVTestVector(tlv, "oracle_params_v0", fields)
-      case OracleInfoV1TLV(announcements) =>
+      case OracleInfoV1TLV(threshold, announcements) =>
         val fields = Vector(
           "tpe" -> Element(OracleInfoV1TLV.tpe),
           "length" -> Element(tlv.length),
+          "threshold" -> Element(UInt16(threshold)),
           "announcements" -> MultiElement(announcements.map(Element(_)))
         )
         DLCTLVTestVector(tlv, "oracle_info_v1", fields)
-      case OracleInfoV2TLV(oracles, params) =>
+      case OracleInfoV2TLV(threshold, oracles, params) =>
         val fields = Vector(
           "tpe" -> Element(OracleInfoV2TLV.tpe),
           "length" -> Element(tlv.length),
+          "threshold" -> Element(UInt16(threshold)),
           "announcements" -> MultiElement(oracles.map(Element(_))),
           "params" -> Element(params)
         )

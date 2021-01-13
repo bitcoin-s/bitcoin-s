@@ -1044,14 +1044,19 @@ object OracleInfoV0TLV extends TLVFactory[OracleInfoV0TLV] {
   }
 }
 
-sealed trait MultiOracleInfoTLV extends OracleInfoTLV
+sealed trait MultiOracleInfoTLV extends OracleInfoTLV {
+  def threshold: Int
+}
 
-case class OracleInfoV1TLV(oracles: Vector[OracleAnnouncementTLV])
+case class OracleInfoV1TLV(
+    threshold: Int,
+    oracles: Vector[OracleAnnouncementTLV])
     extends MultiOracleInfoTLV {
   override val tpe: BigSizeUInt = OracleInfoV1TLV.tpe
 
   override val value: ByteVector = {
-    u16PrefixedList(oracles)
+    UInt16(threshold).bytes ++
+      u16PrefixedList(oracles)
   }
 }
 
@@ -1061,10 +1066,11 @@ object OracleInfoV1TLV extends TLVFactory[OracleInfoV1TLV] {
   override def fromTLVValue(value: ByteVector): OracleInfoV1TLV = {
     val iter = ValueIterator(value)
 
+    val threshold = iter.takeU16().toInt
     val oracles =
       iter.takeU16PrefixedList(() => iter.take(OracleAnnouncementTLV))
 
-    OracleInfoV1TLV(oracles)
+    OracleInfoV1TLV(threshold, oracles)
   }
 }
 
@@ -1099,13 +1105,14 @@ object OracleParamsV0TLV extends TLVFactory[OracleParamsV0TLV] {
 }
 
 case class OracleInfoV2TLV(
+    threshold: Int,
     oracles: Vector[OracleAnnouncementTLV],
     params: OracleParamsTLV)
     extends MultiOracleInfoTLV {
   override val tpe: BigSizeUInt = OracleInfoV2TLV.tpe
 
   override val value: ByteVector = {
-    u16PrefixedList(oracles) ++ params.bytes
+    UInt16(threshold).bytes ++ u16PrefixedList(oracles) ++ params.bytes
   }
 }
 
@@ -1115,11 +1122,12 @@ object OracleInfoV2TLV extends TLVFactory[OracleInfoV2TLV] {
   override def fromTLVValue(value: ByteVector): OracleInfoV2TLV = {
     val iter = ValueIterator(value)
 
+    val threshold = iter.takeU16().toInt
     val oracles =
       iter.takeU16PrefixedList(() => iter.take(OracleAnnouncementTLV))
     val params = iter.take(OracleParamsV0TLV)
 
-    OracleInfoV2TLV(oracles, params)
+    OracleInfoV2TLV(threshold, oracles, params)
   }
 }
 

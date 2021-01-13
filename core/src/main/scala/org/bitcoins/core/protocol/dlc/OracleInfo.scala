@@ -164,7 +164,13 @@ object NumericSingleOracleInfo {
 sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
     extends OracleInfo
     with TLVSerializable[MultiOracleInfoTLV] {
+  def threshold: Int
+
   def announcements: Vector[OracleAnnouncementTLV]
+
+  require(
+    announcements.length >= threshold,
+    s"Cannot have threshold ($threshold) above the number of oracles (${announcements.length})")
 
   // Override this with a val to invoke requirements
   def singleOracleInfos: Vector[T]
@@ -173,7 +179,9 @@ sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
 sealed trait ExactMultiOracleInfo[+T <: SingleOracleInfo]
     extends MultiOracleInfo[T]
     with TLVSerializable[OracleInfoV1TLV] {
-  override def toTLV: OracleInfoV1TLV = OracleInfoV1TLV(announcements)
+
+  override def toTLV: OracleInfoV1TLV =
+    OracleInfoV1TLV(threshold, announcements)
 }
 
 object ExactMultiOracleInfo
@@ -183,9 +191,10 @@ object ExactMultiOracleInfo
 
   def apply(tlv: OracleInfoV1TLV): ExactMultiOracleInfo[SingleOracleInfo] = {
     tlv.oracles.head.eventTLV.eventDescriptor match {
-      case _: EnumEventDescriptorV0TLV => EnumMultiOracleInfo(tlv.oracles)
+      case _: EnumEventDescriptorV0TLV =>
+        EnumMultiOracleInfo(tlv.threshold, tlv.oracles)
       case _: NumericEventDescriptorTLV =>
-        NumericExactMultiOracleInfo(tlv.oracles)
+        NumericExactMultiOracleInfo(tlv.threshold, tlv.oracles)
     }
   }
 
@@ -195,7 +204,9 @@ object ExactMultiOracleInfo
   }
 }
 
-case class EnumMultiOracleInfo(announcements: Vector[OracleAnnouncementTLV])
+case class EnumMultiOracleInfo(
+    threshold: Int,
+    announcements: Vector[OracleAnnouncementTLV])
     extends ExactMultiOracleInfo[EnumSingleOracleInfo]
     with EnumOracleInfo {
 
@@ -204,6 +215,7 @@ case class EnumMultiOracleInfo(announcements: Vector[OracleAnnouncementTLV])
 }
 
 case class NumericExactMultiOracleInfo(
+    threshold: Int,
     announcements: Vector[OracleAnnouncementTLV])
     extends ExactMultiOracleInfo[NumericSingleOracleInfo]
     with NumericOracleInfo {
@@ -213,6 +225,7 @@ case class NumericExactMultiOracleInfo(
 }
 
 case class NumericMultiOracleInfo(
+    threshold: Int,
     announcements: Vector[OracleAnnouncementTLV],
     maxErrorExp: Int,
     minFailExp: Int,
@@ -226,6 +239,7 @@ case class NumericMultiOracleInfo(
 
   override def toTLV: OracleInfoV2TLV = {
     OracleInfoV2TLV(
+      threshold,
       announcements,
       OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage))
   }
@@ -236,11 +250,13 @@ object NumericMultiOracleInfo
       OracleInfoV2TLV) {
 
   def apply(
+      threshold: Int,
       announcements: Vector[OracleAnnouncementTLV],
       params: OracleParamsTLV): NumericMultiOracleInfo = {
     params match {
       case OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage) =>
-        NumericMultiOracleInfo(announcements,
+        NumericMultiOracleInfo(threshold,
+                               announcements,
                                maxErrorExp,
                                minFailExp,
                                maximizeCoverage)
@@ -248,6 +264,6 @@ object NumericMultiOracleInfo
   }
 
   override def fromTLV(tlv: OracleInfoV2TLV): NumericMultiOracleInfo = {
-    NumericMultiOracleInfo(tlv.oracles, tlv.params)
+    NumericMultiOracleInfo(tlv.threshold, tlv.oracles, tlv.params)
   }
 }
