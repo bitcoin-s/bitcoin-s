@@ -404,6 +404,7 @@ object CETCalculator {
     computeCETs(base, numDigits, function, totalCollateral, rounding, min, max)
   }
 
+  /** Computes all combinations of threshold oracles, preserving order. */
   def combinations[T](oracles: Vector[T], threshold: Int): Vector[Vector[T]] = {
     if (oracles.length == threshold) {
       Vector(oracles)
@@ -690,6 +691,29 @@ object CETCalculator {
                                   minFailExp,
                                   maximizeCoverage)
           .map { case (d1, d2) => (d1, d2, payout) }
+    }
+  }
+
+  def computeMultiOracleCETs(
+      numDigits: Int,
+      function: DLCPayoutCurve,
+      totalCollateral: Satoshis,
+      rounding: RoundingIntervals,
+      maxErrorExp: Int,
+      minFailExp: Int,
+      maximizeCoverage: Boolean,
+      numOracles: Int): Vector[(Vector[Vector[Int]], Satoshis)] = {
+    require(numOracles == 2, "Only 2-oracle threshold is currently supported")
+
+    val primaryCETs =
+      computeCETs(base = 2, numDigits, function, totalCollateral, rounding)
+    computeSecondOracleCETsBinary(numDigits,
+                                  primaryCETs,
+                                  maxErrorExp,
+                                  minFailExp,
+                                  maximizeCoverage).map {
+      case (primaryDigits, secondaryDigits, amt) =>
+        (Vector(primaryDigits, secondaryDigits), amt)
     }
   }
 }

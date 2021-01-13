@@ -60,10 +60,14 @@ case class ContractInfo(
       case Left(
             (descriptor: EnumContractDescriptor,
              oracleInfo: EnumMultiOracleInfo)) =>
-        descriptor.keys.map { outcome =>
+        descriptor.keys.flatMap { outcome =>
           // Safe .get because outcome is from descriptor.keys
           val payout = descriptor.find(_._1 == outcome).get._2
-          (EnumOracleOutcome(oracleInfo.singleOracleInfos, outcome), payout)
+          CETCalculator
+            .combinations(oracleInfo.singleOracleInfos, oracleInfo.threshold)
+            .map { oracles =>
+              (EnumOracleOutcome(oracles, outcome), payout)
+            }
         }
       case Right(
             (descriptor: NumericContractDescriptor,
@@ -88,18 +92,39 @@ case class ContractInfo(
                                             totalCollateral,
                                             descriptor.roundingIntervals)
 
-        vec.map {
-          case (digits, amt) =>
-            val outcome = UnsignedNumericOutcome(digits)
-            (NumericOracleOutcome(
-               oracleInfo.singleOracleInfos.map((_, outcome))),
-             amt)
-        }
+        CETCalculator
+          .combinations(oracleInfo.singleOracleInfos, oracleInfo.threshold)
+          .flatMap { oracles =>
+            vec.map {
+              case (digits, amt) =>
+                val outcome = UnsignedNumericOutcome(digits)
+                (NumericOracleOutcome(oracles.map((_, outcome))), amt)
+            }
+          }
       case Right(
             (descriptor: NumericContractDescriptor,
              oracleInfo: NumericMultiOracleInfo)) =>
-        // FIXME
-        throw new UnsupportedOperationException(s"$descriptor, $oracleInfo")
+        val vec: Vector[(Vector[Vector[Int]], Satoshis)] =
+          CETCalculator.computeMultiOracleCETs(
+            descriptor.numDigits,
+            descriptor.outcomeValueFunc,
+            totalCollateral,
+            descriptor.roundingIntervals,
+            oracleInfo.maxErrorExp,
+            oracleInfo.minFailExp,
+            oracleInfo.maximizeCoverage,
+            oracleInfo.threshold
+          )
+
+        CETCalculator
+          .combinations(oracleInfo.singleOracleInfos, oracleInfo.threshold)
+          .flatMap { oracles =>
+            vec.map {
+              case (digitsVec, amt) =>
+                val outcomesVec = digitsVec.map(UnsignedNumericOutcome.apply)
+                (NumericOracleOutcome(oracles.zip(outcomesVec)), amt)
+            }
+          }
     }
   }
 
