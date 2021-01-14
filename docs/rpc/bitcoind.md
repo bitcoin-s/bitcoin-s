@@ -3,18 +3,27 @@ id: rpc-bitcoind
 title: bitcoind/Bitcoin Core
 ---
 
-> Note: `bitcoin-s-bitcoind-rpc` requires you to have `bitcoind` (Bitcoin Core daemon) installed. Grab this at [bitcoincore.org](https://bitcoincore.org/en/download/)
+## Downloading bitcoind
 
-The Bitcoin Core RPC client in Bitcoin-S currently supports the Bitcoin Core 0.16, 0.17, 0.18, and 0.19
+The Bitcoin Core RPC client in Bitcoin-S currently supports the Bitcoin Core
+- 0.16
+- 0.17
+- 0.18
+- 0.19
+- 0.20
+- 0.21
+
 version lines. It can be set up to work with both local and remote Bitcoin Core servers.
 
-You can fetch them using bitcoin-s by running the following sbt command
+You can fetch them using bitcoin-s by running the following sbt command. If you already have bitcoind installed on your machine, you can skip this step.
+
 
 ```bash
 sbt downloadBitcoind
 ```
 
-The binaries will be stored in `$HOME/.bitcoin-s/binaries/bitcoind/`
+The binaries will be stored in `~/.bitcoin-s/binaries/bitcoind/`
+
 
 ## Connecting to a local `bitcoind` instance
 
@@ -75,8 +84,7 @@ First, we create a secure connection to our `bitcoind` instance by setting
 up a SSH tunnel:
 
 ```bash
-$ ssh -L 8332:localhost:8332  \
-         my-cool-user@my-cool-website.com
+ssh -L 8332:localhost:8332 my-cool-user@my-cool-website.com
 ```
 
 > Note: the port number '8332' is the default for mainnet. If you want to
