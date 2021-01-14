@@ -12,6 +12,10 @@ trait DLCDbManagement extends DbManagement {
 
   def ec: ExecutionContext
 
+  private lazy val announcementTable: TableQuery[Table[_]] = {
+    OracleAnnouncementDAO()(ec, appConfig).table
+  }
+
   private lazy val dlcTable: TableQuery[Table[_]] = {
     DLCDAO()(ec, appConfig).table
   }
@@ -44,6 +48,7 @@ trait DLCDbManagement extends DbManagement {
   // the table that key references
   override lazy val allTables: List[TableQuery[Table[_]]] = {
     List(
+      announcementTable,
       dlcTable,
       dlcOfferTable,
       dlcAcceptTable,

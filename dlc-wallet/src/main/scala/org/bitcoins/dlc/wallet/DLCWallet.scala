@@ -1421,9 +1421,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           announcementDAO.findByPublicKey(sig.publicKey).map { dbs =>
             // Nonces should be unique so searching for the first nonce should be safe
             val firstNonce = sig.sigs.head.rx
-            // TODO can we just look at first nonce instead of using `.contains`
             dbs
-              .find(_.announcement.eventTLV.nonces.contains(firstNonce)) match {
+              .find(
+                _.announcement.eventTLV.nonces.headOption
+                  .contains(firstNonce)) match {
               case Some(db) =>
                 acc :+ OracleSignatures(SingleOracleInfo(db.announcement),
                                         sig.sigs)
