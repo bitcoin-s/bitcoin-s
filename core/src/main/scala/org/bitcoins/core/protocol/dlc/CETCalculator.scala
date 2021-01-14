@@ -413,9 +413,8 @@ object CETCalculator {
     } else if (threshold == 1) {
       oracles.map(Vector(_))
     } else {
-      combinations(oracles.tail, threshold - 1).map(
-        _.prepended(oracles.head)) ++
-        combinations(oracles.tail, threshold)
+      combinations(oracles.tail, threshold - 1).map(vec =>
+        oracles.head +: vec) ++ combinations(oracles.tail, threshold)
     }
   }
 
@@ -530,8 +529,8 @@ object CETCalculator {
       num: Int): Vector[Vector[T]] = {
     0.until(num).foldLeft(Vector(Vector.empty[T])) {
       case (subCombinations, _) =>
-        val firstIn = subCombinations.map(_.prepended(in))
-        val firstOut = subCombinations.map(_.prepended(out))
+        val firstIn = subCombinations.map(combos => in +: combos)
+        val firstOut = subCombinations.map(combos => out +: combos)
 
         firstIn ++ firstOut
     }
@@ -543,7 +542,7 @@ object CETCalculator {
       coverCETOuter: T,
       numOracles: Int): Vector[Vector[T]] = {
     inOrOutCombinations(coverCETInner, coverCETOuter, numOracles - 1).map(
-      _.prepended(primaryCET))
+      combos => primaryCET +: combos)
   }
 
   private def doubleCoveringRestrictedCETCombinations[T](
