@@ -177,8 +177,11 @@ object JsonSerializers {
   implicit val networkAddressReads: Reads[NetworkAddress] =
     Json.reads[NetworkAddress]
 
-  implicit val networkInfoReads: Reads[GetNetworkInfoResult] =
-    Json.reads[GetNetworkInfoResult]
+  implicit val geNetworkInfoPreV21Reads: Reads[GetNetworkInfoResultPreV21] =
+    Json.reads[GetNetworkInfoResultPreV21]
+
+  implicit val geNetworkInfoPostV21Reads: Reads[GetNetworkInfoResultPostV21] =
+    Json.reads[GetNetworkInfoResultPostV21]
 
   implicit val satsPerKbReads: Reads[SatoshisPerKiloByte] =
     new Reads[SatoshisPerKiloByte] {
@@ -196,11 +199,14 @@ object JsonSerializers {
           SatoshisPerVirtualByte(Satoshis(num.toBigInt)))(json)
     }
 
-  implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
-    Json.reads[PeerNetworkInfo]
+  implicit val peerNetworkInfoPreV21Reads: Reads[PeerNetworkInfoPreV21] =
+    Json.reads[PeerNetworkInfoPreV21]
+
+  implicit val peerNetworkInfoPostV21Reads: Reads[PeerNetworkInfoPostV21] =
+    Json.reads[PeerNetworkInfoPostV21]
 
   implicit val peerPreV20Reads: Reads[PeerPreV20] = ((__ \ "id").read[Int] and
-    __.read[PeerNetworkInfo] and
+    __.read[PeerNetworkInfoPreV21] and
     (__ \ "version").read[Int] and
     (__ \ "subver").read[String] and
     (__ \ "inbound").read[Boolean] and
@@ -215,8 +221,8 @@ object JsonSerializers {
     (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
     (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(PeerPreV20)
 
-  implicit val peerPostV20Reads: Reads[PeerPostV20] = ((__ \ "id").read[Int] and
-    __.read[PeerNetworkInfo] and
+  implicit val peerV20Reads: Reads[PeerV20] = ((__ \ "id").read[Int] and
+    __.read[PeerNetworkInfoPreV21] and
     (__ \ "version").read[Int] and
     (__ \ "subver").read[String] and
     (__ \ "inbound").read[Boolean] and
@@ -228,7 +234,21 @@ object JsonSerializers {
     (__ \ "whitelisted").read[Boolean] and
     (__ \ "bytessent_per_msg").read[Map[String, Int]] and
     (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
-    (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(PeerPostV20)
+    (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(PeerV20)
+
+  implicit val peerPostV21Reads: Reads[PeerPostV21] = ((__ \ "id").read[Int] and
+    __.read[PeerNetworkInfoPostV21] and
+    (__ \ "version").read[Int] and
+    (__ \ "subver").read[String] and
+    (__ \ "inbound").read[Boolean] and
+    (__ \ "connection_type").read[String] and
+    (__ \ "startingheight").read[Int] and
+    (__ \ "synced_headers").read[Int] and
+    (__ \ "synced_blocks").read[Int] and
+    (__ \ "inflight").read[Vector[Int]] and
+    (__ \ "bytessent_per_msg").read[Map[String, Int]] and
+    (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
+    (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(PeerPostV21)
 
   implicit val nodeBanPostV20Reads: Reads[NodeBanPostV20] =
     Json.reads[NodeBanPostV20]
@@ -478,6 +498,23 @@ object JsonSerializers {
     }
   }
 
+  implicit val addressInfoResultPostV21Reads: Reads[
+    AddressInfoResultPostV21] = {
+    Reads[AddressInfoResultPostV21] { json =>
+      for {
+        isProps <-
+          Json.reads[AddressInfoResultPostV21.AddressInfoIsProps].reads(json)
+        infoWithoutProps <-
+          Json
+            .reads[
+              AddressInfoResultPostV21.AddressInfoResultPostV21WithoutIsProps]
+            .reads(json)
+      } yield {
+        AddressInfoResultPostV21(infoWithoutProps, isProps)
+      }
+    }
+  }
+
   implicit val receivedLabelReads: Reads[ReceivedLabel] =
     Json.reads[ReceivedLabel]
 
@@ -566,6 +603,9 @@ object JsonSerializers {
 
   implicit val testMempoolAcceptResultReads: Reads[TestMempoolAcceptResult] =
     TestMempoolAcceptResultReads
+
+  implicit val indexInfoResultReads: Reads[IndexInfoResult] =
+    Json.reads[IndexInfoResult]
 
   implicit val createWalletResultReads: Reads[CreateWalletResult] =
     Json.reads[CreateWalletResult]

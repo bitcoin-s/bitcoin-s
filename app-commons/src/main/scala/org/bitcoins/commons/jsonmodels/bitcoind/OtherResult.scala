@@ -175,3 +175,6 @@ final case class GetDescriptorInfoResult(
 ) extends OtherResult
 
 final case class SubmitHeaderResult(header: BlockHeader) extends OtherResult
+
+case class IndexInfoResult(synced: Boolean, best_block_height: Int)
+    extends OtherResult

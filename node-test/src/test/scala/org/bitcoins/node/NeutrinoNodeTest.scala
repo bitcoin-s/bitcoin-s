@@ -14,12 +14,11 @@ import org.bitcoins.testkit.node.{
   NodeTestUtil,
   NodeUnitTest
 }
-import org.scalatest.{DoNotDiscover, FutureOutcome}
+import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
-@DoNotDiscover
 class NeutrinoNodeTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
@@ -31,7 +30,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withNeutrinoNodeFundedWalletBitcoind(test,
                                          getBIP39PasswordOpt(),
-                                         Some(BitcoindVersion.Experimental))
+                                         Some(BitcoindVersion.V21))
 
   private var assertionP: Promise[Boolean] = Promise()
   after {
@@ -124,7 +123,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
       startGenF.flatMap { cancellable =>
         //we should expect 5 headers have been announced to us via
         //the send headers message.
-        val ExpectedCount = 113
+        val ExpectedCount = 119
 
         def hasBlocksF =
           RpcUtil.retryUntilSatisfiedF(conditionF = () => {

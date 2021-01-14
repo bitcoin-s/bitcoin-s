@@ -52,8 +52,8 @@ class ServerRunTest extends BitcoinSAsyncTest {
     val confFile = datadir.resolve("bitcoin-s.conf")
 
     for {
-      bitcoind <- BitcoinSFixture.createBitcoindWithFunds(
-        Some(BitcoindVersion.Experimental))
+      bitcoind <-
+        BitcoinSFixture.createBitcoindWithFunds(Some(BitcoindVersion.V21))
 
       // Make it so we connect to the correct bitcoind
       port = bitcoind.instance.uri.getPort

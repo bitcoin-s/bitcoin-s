@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.client.v20
+package org.bitcoins.rpc.client.v21
 
 import akka.actor.ActorSystem
 import org.bitcoins.commons.jsonmodels.bitcoind._
@@ -19,6 +19,7 @@ import org.bitcoins.rpc.client.common.{
   PsbtRpc
 }
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
+import org.bitcoins.rpc.client.v20.{V20AssortedRpc, V20MultisigRpc}
 import org.bitcoins.rpc.config.BitcoindInstance
 import play.api.libs.json._
 
@@ -26,9 +27,9 @@ import scala.concurrent.Future
 import scala.util.Try
 
 /**
-  * Class for creating a BitcoindV20 instance that can access RPCs
+  * Class for creating a BitcoindV21 instance that can access RPCs
   */
-class BitcoindV20RpcClient(override val instance: BitcoindInstance)(implicit
+class BitcoindV21RpcClient(override val instance: BitcoindInstance)(implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
     with DescriptorRpc
@@ -80,7 +81,7 @@ class BitcoindV20RpcClient(override val instance: BitcoindInstance)(implicit
     } yield Vector(filter.filterDb(height))
   }
 
-  override lazy val version: BitcoindVersion = BitcoindVersion.V20
+  override lazy val version: BitcoindVersion = BitcoindVersion.V21
 
   /**
     * $signRawTx
@@ -119,7 +120,7 @@ class BitcoindV20RpcClient(override val instance: BitcoindInstance)(implicit
                                                 Json.toJson(sigHash)))
 }
 
-object BitcoindV20RpcClient {
+object BitcoindV21RpcClient {
 
   /**
     * Creates an RPC client from the given instance.
@@ -128,8 +129,8 @@ object BitcoindV20RpcClient {
     * you. You can use `withActorSystem` if you want to
     * manually specify an actor system for the RPC client.
     */
-  def apply(instance: BitcoindInstance): BitcoindV20RpcClient = {
-    implicit val system =
+  def apply(instance: BitcoindInstance): BitcoindV21RpcClient = {
+    implicit val system: ActorSystem =
       ActorSystem.create(BitcoindRpcClient.ActorSystemName)
     withActorSystem(instance)
   }
@@ -141,13 +142,13 @@ object BitcoindV20RpcClient {
     * over the RPC client.
     */
   def withActorSystem(instance: BitcoindInstance)(implicit
-      system: ActorSystem): BitcoindV20RpcClient =
-    new BitcoindV20RpcClient(instance)(system)
+      system: ActorSystem): BitcoindV21RpcClient =
+    new BitcoindV21RpcClient(instance)(system)
 
   def fromUnknownVersion(
-      rpcClient: BitcoindRpcClient): Try[BitcoindV20RpcClient] =
+      rpcClient: BitcoindRpcClient): Try[BitcoindV21RpcClient] =
     Try {
-      new BitcoindV20RpcClient(rpcClient.instance)(rpcClient.system)
+      new BitcoindV21RpcClient(rpcClient.instance)(rpcClient.system)
     }
 
 }

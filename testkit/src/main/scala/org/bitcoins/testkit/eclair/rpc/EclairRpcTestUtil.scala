@@ -70,6 +70,10 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       bitcoindV: BitcoindVersion =
         EclairRpcClient.bitcoindV): BitcoindInstance = {
     bitcoindV match {
+      case BitcoindVersion.V21 =>
+        BitcoindRpcTestUtil.v21Instance(port = port,
+                                        rpcPort = rpcPort,
+                                        zmqPort = zmqPort)
       case BitcoindVersion.V20 =>
         BitcoindRpcTestUtil.v20Instance(port = port,
                                         rpcPort = rpcPort,

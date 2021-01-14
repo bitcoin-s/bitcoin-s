@@ -26,6 +26,7 @@ import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
+import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
 
 import java.io.File
@@ -65,7 +66,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
     with PsbtRpc
     with UtilRpc {
 
-  override def version: BitcoindVersion = BitcoindVersion.Unknown
+  override def version: BitcoindVersion = instance.getVersion
   require(version == BitcoindVersion.Unknown || version == instance.getVersion,
           s"bitcoind version must be $version, got ${instance.getVersion}")
 
@@ -264,6 +265,7 @@ object BitcoindRpcClient {
       case BitcoindVersion.V18 => BitcoindV18RpcClient.withActorSystem(instance)
       case BitcoindVersion.V19 => BitcoindV19RpcClient.withActorSystem(instance)
       case BitcoindVersion.V20 => BitcoindV20RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V21 => BitcoindV21RpcClient.withActorSystem(instance)
       case BitcoindVersion.Experimental =>
         BitcoindV18RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
@@ -280,9 +282,9 @@ sealed trait BitcoindVersion
 object BitcoindVersion extends StringFactory[BitcoindVersion] {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V20
+  val newest: BitcoindVersion = V21
 
-  val known = Vector(V16, V17, V18, V19, V20, Experimental)
+  val known = Vector(V16, V17, V18, V19, V20, V21, Experimental)
 
   case object V16 extends BitcoindVersion {
     override def toString: String = "v0.16"
@@ -302,6 +304,10 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] {
 
   case object V20 extends BitcoindVersion {
     override def toString: String = "v0.20"
+  }
+
+  case object V21 extends BitcoindVersion {
+    override def toString: String = "v0.21"
   }
 
   case object Experimental extends BitcoindVersion {

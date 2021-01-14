@@ -1,9 +1,8 @@
-import scala.util.Properties
-import scala.collection.JavaConverters._
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.DurationInt
 import java.nio.file.Files
-import java.nio.file.Paths
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
+import scala.util.Properties
 
 name := "bitcoin-s-bitcoind-rpc"
 
@@ -28,7 +27,8 @@ TaskKeys.downloadBitcoind := {
     "0.18.99" // TODO: change this when new version compiled on suredbits server
 
   val versions =
-    List("0.20.1",
+    List("0.21.0",
+         "0.20.1",
          "0.19.0.1",
          "0.18.1",
          "0.17.0.1",
@@ -51,7 +51,10 @@ TaskKeys.downloadBitcoind := {
     val location =
       if (version == experimentalVersion)
         s"https://s3-us-west-1.amazonaws.com/suredbits.com/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
-      else
+      else if (version.init.endsWith("rc")) { // if it is a release candidate
+        val (base, rc) = version.splitAt(version.length - 3)
+        s"https://bitcoincore.org/bin/bitcoin-core-$base/test.$rc/bitcoin-$version-$platform.$suffix"
+      } else
         s"https://bitcoincore.org/bin/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
 
     val expectedEndLocation = binaryDir resolve s"bitcoin-$version"
