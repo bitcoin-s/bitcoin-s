@@ -414,10 +414,10 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       ExecuteDLC.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(ExecuteDLC(contractId, _, noBroadcast)) =>
+        case Success(ExecuteDLC(contractId, sigs, noBroadcast)) =>
           complete {
             for {
-              tx <- wallet.executeDLC(contractId, Vector.empty)
+              tx <- wallet.executeDLC(contractId, sigs)
               _ <- handleBroadcastable(tx, noBroadcast)
             } yield {
               Server.httpSuccess(tx.hex)

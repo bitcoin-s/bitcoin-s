@@ -7,6 +7,10 @@ import org.bitcoins.core.protocol.dlc.DLCStatus.{
   RemoteClaimed
 }
 import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.tlv.{
+  OracleAttestmentTLV,
+  OracleAttestmentV0TLV
+}
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -22,8 +26,9 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
   behavior of "DLCWallet"
 
-  def getSigs(
-      contractInfo: ContractInfo): (OracleSignatures, OracleSignatures) = {
+  def getSigs(contractInfo: ContractInfo): (
+      OracleAttestmentTLV,
+      OracleAttestmentTLV) = {
     val desc: EnumContractDescriptor = contractInfo.contractDescriptor match {
       case desc: EnumContractDescriptor => desc
       case _: NumericContractDescriptor =>
@@ -51,8 +56,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                               .bytes,
                             DLCWalletUtil.kValue)
 
-    (OracleSignatures(sampleOracleInfo, Vector(initiatorWinSig)),
-     OracleSignatures(sampleOracleInfo, Vector(recipientWinSig)))
+    val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
+
+    (OracleAttestmentV0TLV(publicKey, Vector(initiatorWinSig)),
+     OracleAttestmentV0TLV(publicKey, Vector(recipientWinSig)))
   }
 
   it must "get the correct funding transaction" in { wallets =>
@@ -291,7 +298,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     val executeDLCForceCloseF = for {
       contractId <- getContractId(wallets._1.wallet)
 
-      tx <- dlcA.executeDLC(contractId, Vector.empty)
+      tx <- dlcA.executeDLC(contractId, Vector.empty[OracleAttestmentTLV])
     } yield tx
 
     recoverToSucceededIf[IllegalArgumentException](executeDLCForceCloseF)

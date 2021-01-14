@@ -451,6 +451,14 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
         )
 
         DLCMessageTestVector(LnMessage(tlv), "oracle_announcement_v0", fields)
+      case OracleAttestmentV0TLV(pubkey, sigs) =>
+        val fields = Vector(
+          "tpe" -> Element(UInt16(OracleAttestmentV0TLV.tpe.toInt)),
+          "oraclePubKey" -> Element(pubkey),
+          "signatures" -> MultiElement(sigs.map(Element(_)))
+        )
+
+        DLCMessageTestVector(LnMessage(tlv), "oracle_attestment_v0", fields)
       case _: UnknownTLV | _: ErrorTLV | _: PingTLV | _: PongTLV =>
         throw new IllegalArgumentException(
           s"DLCParsingTestVector is only defined for DLC messages and TLVs, got $tlv")

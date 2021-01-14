@@ -334,4 +334,12 @@ object CliReaders {
         MnemonicCode.fromWords(words.toVector)
       }
   }
+
+  implicit val oracleAttestmentTLVReads: Read[OracleAttestmentTLV] =
+    new Read[OracleAttestmentTLV] {
+      override def arity: Int = 1
+
+      override def reads: String => OracleAttestmentTLV =
+        OracleAttestmentTLV.fromHex
+    }
 }

@@ -15,6 +15,13 @@ CREATE TABLE "wallet_dlcs"
 );
 CREATE INDEX "wallet_dlcs_param_hash_index" on "wallet_dlcs" ("param_hash");
 
+CREATE TABLE "oracle_announcements"
+(
+    "announcement" VARCHAR(254) NOT NULL PRIMARY KEY,
+    "pub_key"      VARCHAR(254) NOT NULL
+);
+CREATE INDEX "oracle_announcements_pub_key_index" on "oracle_announcements" ("pub_key");
+
 CREATE TABLE "wallet_dlc_offers"
 (
     "param_hash"        VARCHAR(254) NOT NULL UNIQUE,

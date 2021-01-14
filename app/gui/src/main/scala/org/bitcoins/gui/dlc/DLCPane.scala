@@ -47,18 +47,12 @@ class DLCPane(glassPane: VBox) {
 
   private val enumContractButton = new Button {
     text = "Enum Contract"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onInitContract(true)
-    }
+    onAction = _ => model.onInitEnumContractDialog()
   }
 
   private val numericContractButton = new Button {
     text = "Numeric Contract"
-    onAction = new EventHandler[ActionEvent] {
-
-      override def handle(event: ActionEvent): Unit =
-        model.onInitContract(false)
-    }
+    onAction = _ => model.onInitNumericContractDialog()
   }
 
   private val oracleButtonHBox = new HBox {

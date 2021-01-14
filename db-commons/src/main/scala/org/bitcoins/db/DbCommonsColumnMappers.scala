@@ -374,4 +374,10 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       _.hex,
       EventDescriptorTLV.fromHex)
   }
+
+  implicit val oracleAnnouncementTLV: BaseColumnType[OracleAnnouncementTLV] = {
+    MappedColumnType.base[OracleAnnouncementTLV, String](
+      _.hex,
+      OracleAnnouncementTLV.fromHex)
+  }
 }

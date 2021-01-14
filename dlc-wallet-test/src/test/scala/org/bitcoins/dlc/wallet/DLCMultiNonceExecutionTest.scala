@@ -3,7 +3,7 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.DLCStatus.{Claimed, RemoteClaimed}
 import org.bitcoins.core.protocol.dlc._
-import org.bitcoins.core.protocol.tlv.{EnumOutcome, UnsignedNumericOutcome}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
@@ -18,8 +18,9 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
 
   behavior of "DLCWallet"
 
-  def getSigs(
-      contractInfo: ContractInfo): (OracleSignatures, OracleSignatures) = {
+  def getSigs(contractInfo: ContractInfo): (
+      OracleAttestmentTLV,
+      OracleAttestmentTLV) = {
     contractInfo.contractDescriptor match {
       case _: NumericContractDescriptor => ()
       case _: EnumContractDescriptor =>
@@ -70,8 +71,10 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
                                 kValue)
     }
 
-    (OracleSignatures(oracleInfo, initiatorWinSigs),
-     OracleSignatures(oracleInfo, recipientWinSigs))
+    val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
+
+    (OracleAttestmentV0TLV(publicKey, initiatorWinSigs),
+     OracleAttestmentV0TLV(publicKey, recipientWinSigs))
   }
 
   it must "execute as the initiator" in { wallets =>

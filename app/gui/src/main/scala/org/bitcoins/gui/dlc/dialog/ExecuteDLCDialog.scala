@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand.ExecuteDLC
-import org.bitcoins.crypto.SchnorrDigitalSignature
+import org.bitcoins.core.protocol.tlv.OracleAttestmentTLV
 import scalafx.scene.Node
 import scalafx.scene.control.TextField
 import scodec.bits.ByteVector
@@ -19,7 +19,7 @@ class ExecuteDLCDialog
     val oracleSigsStr = readStringFromNode(inputs(dlcOracleSigStr))
 
     val oracleSigs = oracleSigsStr.split(",").map { str =>
-      SchnorrDigitalSignature.fromHex(str.trim)
+      OracleAttestmentTLV.fromHex(str.trim)
     }
 
     ExecuteDLC(ByteVector.fromValidHex(contractId),

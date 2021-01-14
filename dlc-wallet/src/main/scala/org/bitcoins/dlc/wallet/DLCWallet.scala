@@ -38,6 +38,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
   implicit val dlcConfig: DLCAppConfig
 
+  private[bitcoins] val announcementDAO: OracleAnnouncementDAO =
+    OracleAnnouncementDAO()
   private[bitcoins] val dlcOfferDAO: DLCOfferDAO = DLCOfferDAO()
   private[bitcoins] val dlcAcceptDAO: DLCAcceptDAO = DLCAcceptDAO()
   private[bitcoins] val dlcDAO: DLCDAO = DLCDAO()
@@ -452,7 +454,14 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     logger.info("Creating DLC Offer")
     val paramHash = DLCMessage.calcParamHash(contractInfo, timeouts)
 
+    val announcements =
+      contractInfo.oracleInfo.singleOracleInfos.map(_.announcement)
+
+    val announcementDbs =
+      OracleAnnouncementDbHelper.fromAnnouncements(announcements)
+
     for {
+      _ <- announcementDAO.upsertAll(announcementDbs)
       account <- getDefaultAccountForType(AddressType.SegWit)
       nextIndex <- getNextAvailableIndex(account, HDChainType.External)
       _ <- writeDLCKeysToAddressDb(account, nextIndex)
@@ -530,6 +539,12 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           .findByAccount(dlcDb.account)
           .map(account => (dlcDb, account.get))
       case None =>
+        val announcements =
+          offer.contractInfo.oracleInfo.singleOracleInfos.map(_.announcement)
+
+        val announcementDbs =
+          OracleAnnouncementDbHelper.fromAnnouncements(announcements)
+
         for {
           account <- getDefaultAccountForType(AddressType.SegWit)
           nextIndex <- getNextAvailableIndex(account, HDChainType.External)
@@ -551,6 +566,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           }
           _ <- writeDLCKeysToAddressDb(account, nextIndex)
           writtenDLC <- dlcDAO.create(dlc)
+          _ <- announcementDAO.upsertAll(announcementDbs)
         } yield (writtenDLC, account)
     }
   }
@@ -1392,6 +1408,33 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
       _ <- updateDLCState(contractId, DLCState.Broadcasted)
     } yield tx
+  }
+
+  override def executeDLC(
+      contractId: ByteVector,
+      sigs: Seq[OracleAttestmentTLV]): Future[Transaction] = {
+    require(sigs.nonEmpty, "Must provide at least one oracle signature")
+
+    val getOracleSigs =
+      FutureUtil.foldLeftAsync(Vector.empty[OracleSignatures], sigs) {
+        (acc, sig) =>
+          announcementDAO.findByPublicKey(sig.publicKey).map { dbs =>
+            // Nonces should be unique so searching for the first nonce should be safe
+            val firstNonce = sig.sigs.head.rx
+            // TODO can we just look at first nonce instead of using `.contains`
+            dbs
+              .find(_.announcement.eventTLV.nonces.contains(firstNonce)) match {
+              case Some(db) =>
+                acc :+ OracleSignatures(SingleOracleInfo(db.announcement),
+                                        sig.sigs)
+              case None =>
+                throw new RuntimeException(
+                  s"Cannot find announcement for associated public key, ${sig.publicKey.hex}")
+            }
+          }
+      }
+
+    getOracleSigs.flatMap(sigs => executeDLC(contractId, sigs))
   }
 
   override def executeDLC(

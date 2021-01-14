@@ -111,6 +111,17 @@ trait TLVGen {
     } yield OracleAnnouncementV0TLV(sig, pubkey, eventTLV)
   }
 
+  def oracleAttestmentV0TLV: Gen[OracleAttestmentV0TLV] = {
+    for {
+      pubkey <- CryptoGenerators.schnorrPublicKey
+      numSigs <- Gen.choose(1, 10)
+      sigs <-
+        Gen
+          .listOfN(numSigs, CryptoGenerators.schnorrDigitalSignature)
+          .map(_.toVector)
+    } yield OracleAttestmentV0TLV(pubkey, sigs)
+  }
+
   def contractDescriptorV0TLVWithTotalCollateral: Gen[
     (ContractDescriptorV0TLV, Satoshis)] = {
     for {

@@ -502,4 +502,7 @@ object Picklers {
 
   implicit val extPrivateKeyPickler: ReadWriter[ExtPrivateKey] =
     readwriter[String].bimap(ExtKey.toString, ExtPrivateKey.fromString)
+
+  implicit val oracleAttestmentTLV: ReadWriter[OracleAttestmentTLV] =
+    readwriter[String].bimap(_.hex, OracleAttestmentTLV.fromHex)
 }

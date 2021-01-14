@@ -789,7 +789,7 @@ object BroadcastDLCFundingTx extends ServerJsonModels {
 
 case class ExecuteDLC(
     contractId: ByteVector,
-    oracleSigs: Vector[SchnorrDigitalSignature],
+    oracleSigs: Vector[OracleAttestmentTLV],
     noBroadcast: Boolean)
     extends Broadcastable
 
@@ -800,7 +800,7 @@ object ExecuteDLC extends ServerJsonModels {
       case contractIdJs :: oracleSigsJs :: noBroadcastJs :: Nil =>
         Try {
           val contractId = ByteVector.fromValidHex(contractIdJs.str)
-          val oracleSigs = jsToSchnorrDigitalSignatureVec(oracleSigsJs)
+          val oracleSigs = jsToOracleAttestmentTLVVec(oracleSigsJs)
           val noBroadcast = noBroadcastJs.bool
 
           ExecuteDLC(contractId, oracleSigs, noBroadcast)
@@ -808,7 +808,7 @@ object ExecuteDLC extends ServerJsonModels {
       case Nil =>
         Failure(
           new IllegalArgumentException(
-            "Missing contractId, oracleSig, and noBroadcast arguments"))
+            "Missing contractId, oracleSigs, and noBroadcast arguments"))
       case other =>
         Failure(
           new IllegalArgumentException(
@@ -1310,5 +1310,20 @@ trait ServerJsonModels {
       js: Value): Vector[SchnorrDigitalSignature] = {
     js.arr.foldLeft(Vector.empty[SchnorrDigitalSignature])((vec, sig) =>
       vec :+ jsToSchnorrDigitalSignature(sig))
+  }
+
+  def jsToOracleAttestmentTLV(js: Value): OracleAttestmentTLV =
+    js match {
+      case str: Str =>
+        OracleAttestmentTLV(str.value)
+      case _: Value =>
+        throw Value.InvalidData(
+          js,
+          "Expected a OracleAttestmentTLV as a hex string")
+    }
+
+  def jsToOracleAttestmentTLVVec(js: Value): Vector[OracleAttestmentTLV] = {
+    js.arr.foldLeft(Vector.empty[OracleAttestmentTLV])((vec, tlv) =>
+      vec :+ jsToOracleAttestmentTLV(tlv))
   }
 }
