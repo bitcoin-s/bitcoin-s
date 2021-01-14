@@ -27,7 +27,7 @@ TaskKeys.downloadBitcoind := {
     "0.18.99" // TODO: change this when new version compiled on suredbits server
 
   val versions =
-    List("0.21.0rc5",
+    List("0.21.0",
          "0.20.1",
          "0.19.0.1",
          "0.18.1",
