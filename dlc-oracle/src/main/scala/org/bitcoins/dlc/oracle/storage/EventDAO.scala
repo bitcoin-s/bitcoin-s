@@ -81,6 +81,8 @@ case class EventDAO()(implicit
 
     def attestationOpt: Rep[Option[FieldElement]] = column("attestation")
 
+    def outcomeOpt: Rep[Option[String]] = column("outcome")
+
     def announcementSignature: Rep[SchnorrDigitalSignature] =
       column("announcement_signature")
 
@@ -96,6 +98,7 @@ case class EventDAO()(implicit
        signingVersion,
        maturationTime,
        attestationOpt,
+       outcomeOpt,
        announcementSignature,
        eventDescriptorTLV).<>(EventDb.tupled, EventDb.unapply)
 

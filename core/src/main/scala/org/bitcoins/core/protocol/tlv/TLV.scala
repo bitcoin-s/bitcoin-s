@@ -161,7 +161,8 @@ object TLV extends TLVParentFactory[TLV] {
            DLCSignTLV) ++ EventDescriptorTLV.allFactories ++
       ContractInfoTLV.allFactories ++
       OracleInfoTLV.allFactories ++
-      OracleAnnouncementTLV.allFactories
+      OracleAnnouncementTLV.allFactories ++
+      OracleAttestmentTLV.allFactories
   }
 
   // Need to override to be able to default to Unknown
@@ -827,6 +828,45 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
     val sig = priv.schnorrSign(CryptoUtil.sha256(event.bytes).bytes)
 
     OracleAnnouncementV0TLV(sig, priv.schnorrPublicKey, event)
+  }
+}
+
+sealed trait OracleAttestmentTLV extends TLV {
+  def publicKey: SchnorrPublicKey
+  def sigs: Vector[SchnorrDigitalSignature]
+}
+
+object OracleAttestmentTLV extends TLVParentFactory[OracleAttestmentTLV] {
+
+  val allFactories: Vector[TLVFactory[OracleAttestmentTLV]] =
+    Vector(OracleAttestmentV0TLV)
+
+  override def typeName: String = "OracleAttestmentTLV"
+}
+
+case class OracleAttestmentV0TLV(
+    publicKey: SchnorrPublicKey,
+    sigs: Vector[SchnorrDigitalSignature])
+    extends OracleAttestmentTLV {
+  require(sigs.nonEmpty, "Cannot have 0 signatures")
+  override val tpe: BigSizeUInt = OracleAttestmentV0TLV.tpe
+
+  override val value: ByteVector = {
+    publicKey.bytes ++ u16PrefixedList(sigs)
+  }
+}
+
+object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(55400)
+
+  override def fromTLVValue(value: ByteVector): OracleAttestmentV0TLV = {
+    val iter = ValueIterator(value)
+
+    val pubKey = SchnorrPublicKey(iter.take(32))
+    val sigs =
+      iter.takeU16PrefixedList(() => iter.take(SchnorrDigitalSignature, 64))
+
+    OracleAttestmentV0TLV(pubKey, sigs)
   }
 }
 

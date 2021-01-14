@@ -49,6 +49,7 @@ class EventDAOTest extends DLCOracleDAOFixture {
               sigVersion,
               time,
               None,
+              None,
               dummySig,
               descriptor)
 
@@ -71,6 +72,7 @@ class EventDAOTest extends DLCOracleDAOFixture {
               0,
               sigVersion,
               time,
+              None,
               None,
               dummySig,
               descriptor)

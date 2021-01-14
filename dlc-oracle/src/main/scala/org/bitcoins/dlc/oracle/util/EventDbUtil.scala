@@ -106,6 +106,7 @@ trait EventDbUtil {
           signingVersion = signingVersion,
           maturationTime = oracleAnnouncementV0TLV.eventTLV.maturation,
           attestationOpt = None,
+          outcomeOpt = None,
           announcementSignature = oracleAnnouncementV0TLV.announcementSignature,
           eventDescriptorTLV = oracleAnnouncementV0TLV.eventTLV.eventDescriptor
         )
