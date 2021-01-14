@@ -14,12 +14,11 @@ import org.bitcoins.testkit.node.{
   NodeTestUtil,
   NodeUnitTest
 }
-import org.scalatest.{DoNotDiscover, FutureOutcome}
+import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
-@DoNotDiscover
 class NeutrinoNodeTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
