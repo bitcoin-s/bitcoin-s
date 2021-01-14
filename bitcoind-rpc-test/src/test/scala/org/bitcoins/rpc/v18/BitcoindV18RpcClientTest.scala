@@ -3,6 +3,7 @@ package org.bitcoins.rpc.v18
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   AddressInfoResultPostV18,
+  AddressInfoResultPostV21,
   AddressInfoResultPreV18
 }
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
@@ -131,7 +132,7 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
       info <- client.getAddressInfo(address)
     } yield {
       info match {
-        case _: AddressInfoResultPreV18 =>
+        case _: AddressInfoResultPreV18 | _: AddressInfoResultPostV21 =>
           fail("Was expecting AddressInfoResultPostV18")
         case postV18Info: AddressInfoResultPostV18 =>
           assert(postV18Info.address == address)

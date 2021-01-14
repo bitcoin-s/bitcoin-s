@@ -34,7 +34,24 @@ case class NetTarget(
     time_left_in_cycle: UInt32)
     extends NetworkResult
 
-case class GetNetworkInfoResult(
+trait GetNetworkInfoResult extends NetworkResult {
+  def version: Int
+  def subversion: String
+  def protocolversion: Int
+  def localservices: String
+  def localservicesnames: Option[Vector[ServiceIdentifier]]
+  def localrelay: Boolean
+  def timeoffset: Int
+  def networkactive: Boolean
+  def connections: Int
+  def networks: Vector[Network]
+  def relayfee: Bitcoins
+  def incrementalfee: Bitcoins
+  def localadresses: Option[Vector[NetworkAddress]]
+  def warnings: String
+}
+
+case class GetNetworkInfoResultPreV21(
     version: Int,
     subversion: String,
     protocolversion: Int,
@@ -49,7 +66,26 @@ case class GetNetworkInfoResult(
     incrementalfee: Bitcoins,
     localadresses: Option[Vector[NetworkAddress]],
     warnings: String)
-    extends NetworkResult
+    extends GetNetworkInfoResult
+
+case class GetNetworkInfoResultPostV21(
+    version: Int,
+    subversion: String,
+    protocolversion: Int,
+    localservices: String,
+    localservicesnames: Option[Vector[ServiceIdentifier]],
+    localrelay: Boolean,
+    timeoffset: Int,
+    networkactive: Boolean,
+    connections: Int,
+    connections_in: Int,
+    connections_out: Int,
+    networks: Vector[Network],
+    relayfee: Bitcoins,
+    incrementalfee: Bitcoins,
+    localadresses: Option[Vector[NetworkAddress]],
+    warnings: String)
+    extends GetNetworkInfoResult
 
 case class Network(
     name: String,
@@ -73,7 +109,6 @@ sealed trait Peer extends NetworkResult {
   def synced_headers: Int
   def synced_blocks: Int
   def inflight: Vector[Int]
-  def whitelisted: Boolean
   def bytessent_per_msg: Map[String, Int]
   def bytesrecv_per_msg: Map[String, Int]
   def minfeefilter: Option[SatoshisPerKiloByte]
@@ -81,7 +116,7 @@ sealed trait Peer extends NetworkResult {
 
 case class PeerPreV20(
     id: Int,
-    networkInfo: PeerNetworkInfo,
+    networkInfo: PeerNetworkInfoPreV21,
     version: Int,
     subver: String,
     inbound: Boolean,
@@ -97,9 +132,9 @@ case class PeerPreV20(
     minfeefilter: Option[SatoshisPerKiloByte])
     extends Peer
 
-case class PeerPostV20(
+case class PeerV20(
     id: Int,
-    networkInfo: PeerNetworkInfo,
+    networkInfo: PeerNetworkInfoPreV21,
     version: Int,
     subver: String,
     inbound: Boolean,
@@ -114,7 +149,43 @@ case class PeerPostV20(
     minfeefilter: Option[SatoshisPerKiloByte])
     extends Peer
 
-case class PeerNetworkInfo(
+case class PeerPostV21(
+    id: Int,
+    networkInfo: PeerNetworkInfoPostV21,
+    version: Int,
+    subver: String,
+    inbound: Boolean,
+    connection_type: String,
+    startingheight: Int,
+    synced_headers: Int,
+    synced_blocks: Int,
+    inflight: Vector[Int],
+    bytessent_per_msg: Map[String, Int],
+    bytesrecv_per_msg: Map[String, Int],
+    minfeefilter: Option[SatoshisPerKiloByte])
+    extends Peer {
+  override val addnode: Boolean = connection_type == "manual"
+}
+
+trait PeerNetworkInfo extends NetworkResult {
+  def addr: URI
+  def addrbind: URI
+  def addrlocal: Option[URI]
+  def services: String
+  def servicesnames: Option[Vector[ServiceIdentifier]]
+  def relaytxes: Boolean
+  def lastsend: UInt32
+  def lastrecv: UInt32
+  def bytessent: Int
+  def bytesrecv: Int
+  def conntime: UInt32
+  def timeoffset: Int
+  def pingtime: Option[BigDecimal]
+  def minping: Option[BigDecimal]
+  def pingwait: Option[BigDecimal]
+}
+
+case class PeerNetworkInfoPreV21(
     addr: URI,
     addrbind: URI,
     addrlocal: Option[URI],
@@ -130,7 +201,29 @@ case class PeerNetworkInfo(
     pingtime: Option[BigDecimal],
     minping: Option[BigDecimal],
     pingwait: Option[BigDecimal])
-    extends NetworkResult
+    extends PeerNetworkInfo
+
+case class PeerNetworkInfoPostV21(
+    addr: URI,
+    addrbind: URI,
+    addrlocal: Option[URI],
+    network: String,
+    mapped_as: Option[Int],
+    services: String,
+    servicesnames: Option[Vector[ServiceIdentifier]],
+    relaytxes: Boolean,
+    lastsend: UInt32,
+    lastrecv: UInt32,
+    last_transaction: UInt32,
+    last_block: UInt32,
+    bytessent: Int,
+    bytesrecv: Int,
+    conntime: UInt32,
+    timeoffset: Int,
+    pingtime: Option[BigDecimal],
+    minping: Option[BigDecimal],
+    pingwait: Option[BigDecimal])
+    extends PeerNetworkInfo
 
 trait NodeBan extends NetworkResult {
   def address: URI

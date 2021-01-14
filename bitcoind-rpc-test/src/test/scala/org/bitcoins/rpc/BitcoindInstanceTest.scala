@@ -45,7 +45,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     clientAccum += client
     for {
       firstStarted <- client.isStartedF
-      _ <- client.start()
+      _ <- startClient(client)
       secondStarted <- client.isStartedF
 
       _ <- client.getBalance
@@ -135,7 +135,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     val client = BitcoindRpcClient.withActorSystem(instance)
 
     for {
-      _ <- client.start()
+      _ <- startClient(client)
       _ <- client.getNewAddress.flatMap(client.generateToAddress(101, _))
       balance <- client.getBalance
       _ <- BitcoindRpcTestUtil.stopServers(Vector(client))
