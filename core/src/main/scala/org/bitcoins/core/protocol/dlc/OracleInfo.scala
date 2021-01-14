@@ -53,6 +53,14 @@ sealed trait SingleOracleInfo
     publicKey.computeSigPoint(outcome.serialized, nonces)
   }
 
+  def aggregateNonce(outcome: DLCOutcomeType): SchnorrNonce = {
+    nonces
+      .take(outcome.serialized.length)
+      .map(_.publicKey)
+      .reduce(_.add(_))
+      .schnorrNonce
+  }
+
   override def toTLV: OracleInfoV0TLV = OracleInfoV0TLV(announcement)
 }
 

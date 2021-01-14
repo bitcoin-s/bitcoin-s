@@ -343,7 +343,7 @@ trait DLCTest {
       numDigits: Int,
       oracleThreshold: Int,
       numOracles: Int,
-      paramsOpt: Option[OracleParamsV0TLV] = None,
+      paramsOpt: Option[OracleParamsV0TLV],
       offerFundingPrivKey: ECPrivateKey = this.offerFundingPrivKey,
       offerPayoutPrivKey: ECPrivateKey = this.offerPayoutPrivKey,
       acceptFundingPrivKey: ECPrivateKey = this.acceptFundingPrivKey,
@@ -410,7 +410,7 @@ trait DLCTest {
       isNumeric: Boolean,
       oracleThreshold: Int,
       numOracles: Int,
-      paramsOpt: Option[OracleParamsV0TLV] = None,
+      paramsOpt: Option[OracleParamsV0TLV],
       offerFundingPrivKey: ECPrivateKey = this.offerFundingPrivKey,
       offerPayoutPrivKey: ECPrivateKey = this.offerPayoutPrivKey,
       acceptFundingPrivKey: ECPrivateKey = this.acceptFundingPrivKey,
@@ -525,6 +525,48 @@ trait DLCTest {
     EnumOracleSignature(oracleInfo, sig)
   }
 
+  def genEnumOracleOutcome(
+      chosenOracles: Vector[Int],
+      dlcOffer: TestDLCClient,
+      outcomes: Vector[DLCOutcomeType],
+      outcomeIndex: Long): EnumOracleOutcome = {
+    outcomes(outcomeIndex.toInt) match {
+      case outcome: EnumOutcome =>
+        val oracles = chosenOracles
+          .map(dlcOffer.offer.oracleInfo.singleOracleInfos.apply)
+          .map(_.asInstanceOf[EnumSingleOracleInfo])
+        EnumOracleOutcome(oracles, outcome)
+      case UnsignedNumericOutcome(_) =>
+        Assertions.fail("Expected EnumOutcome")
+    }
+  }
+
+  def genEnumOracleSignatures(
+      outcome: EnumOracleOutcome): Vector[EnumOracleSignature] = {
+    outcome.oracles.map { oracle =>
+      val index = oraclePubKeys.zipWithIndex
+        .find(_._1 == oracle.publicKey)
+        .get
+        ._2
+
+      genEnumOracleSignature(oracle,
+                             outcome.outcome.outcome,
+                             oraclePrivKeys(index),
+                             preCommittedKs(index))
+    }
+  }
+
+  def genEnumOracleSignatures(
+      chosenOracles: Vector[Int],
+      dlcOffer: TestDLCClient,
+      outcomes: Vector[DLCOutcomeType],
+      outcomeIndex: Long): Vector[EnumOracleSignature] = {
+    val outcome =
+      genEnumOracleOutcome(chosenOracles, dlcOffer, outcomes, outcomeIndex)
+
+    genEnumOracleSignatures(outcome)
+  }
+
   def computeNumericOracleSignatures(
       digits: Vector[Int],
       privKey: ECPrivateKey = oraclePrivKey,
@@ -561,21 +603,18 @@ trait DLCTest {
     }
   }
 
-  var temp: Boolean = true
-
   def computeNumericOutcomeWithError(
       numDigits: Int,
       num: Long,
       minFailExp: Int,
       outcomes: Vector[DLCOutcomeType]): Vector[Int] = {
     val error = NumberUtil.randomLong(1L << minFailExp)
-    val direction = temp //Random.nextBoolean()
+    val direction = Random.nextBoolean()
     val directedError = if (direction) {
       error
     } else {
       -error
     }
-    temp = !temp
     val maxVal = (1L << numDigits) - 1
     val numToSign =
       math.min(math.max(0, num + directedError), maxVal)
@@ -588,22 +627,16 @@ trait DLCTest {
     }
   }
 
-  def genNumericOracleSignatures(
+  def genNumericOracleOutcome(
       numDigits: Int,
       chosenOracles: Vector[Int],
       dlcOffer: TestDLCClient,
-      outcomes: Vector[DLCOutcomeType],
-      outcomeIndex: Long,
-      paramsOpt: Option[OracleParamsV0TLV] = None): Vector[
-    NumericOracleSignatures] = {
+      digits: Vector[Int],
+      paramsOpt: Option[OracleParamsV0TLV]): NumericOracleOutcome = {
     dlcOffer.offer.contractInfo.descriptorAndInfo match {
       case Left(_) => Assertions.fail("Expected Numeric Contract")
       case Right(
-            (descriptor: NumericContractDescriptor,
-             oracleInfo: NumericOracleInfo)) =>
-        val digits =
-          computeNumericOutcome(numDigits, descriptor, outcomes, outcomeIndex)
-
+            (_: NumericContractDescriptor, oracleInfo: NumericOracleInfo)) =>
         lazy val num = NumberUtil.fromDigits(digits, base = 2, numDigits)
         lazy val possibleOutcomesOpt = paramsOpt.map {
           case OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage) =>
@@ -620,7 +653,7 @@ trait DLCTest {
             possibleOutcomes
         }
 
-        chosenOracles.map { index =>
+        val oraclesAndOutcomes = chosenOracles.map { index =>
           val singleOracleInfo = oracleInfo.singleOracleInfos(index)
 
           val digitsToSign = if (index == chosenOracles.head) {
@@ -638,13 +671,118 @@ trait DLCTest {
             }
           }
 
-          val sigs =
-            computeNumericOracleSignatures(digitsToSign,
-                                           oraclePrivKeys(index),
-                                           preCommittedKsPerOracle(index))
-
-          NumericOracleSignatures(singleOracleInfo, sigs)
+          (singleOracleInfo, UnsignedNumericOutcome(digitsToSign))
         }
+
+        NumericOracleOutcome(oraclesAndOutcomes)
+    }
+  }
+
+  def genNumericOracleOutcome(
+      numDigits: Int,
+      chosenOracles: Vector[Int],
+      dlcOffer: TestDLCClient,
+      outcomes: Vector[DLCOutcomeType],
+      outcomeIndex: Long,
+      paramsOpt: Option[OracleParamsV0TLV]): NumericOracleOutcome = {
+    dlcOffer.offer.contractInfo.descriptorAndInfo match {
+      case Left(_) => Assertions.fail("Expected Numeric Contract")
+      case Right(
+            (descriptor: NumericContractDescriptor, _: NumericOracleInfo)) =>
+        val digits =
+          computeNumericOutcome(numDigits, descriptor, outcomes, outcomeIndex)
+        genNumericOracleOutcome(numDigits,
+                                chosenOracles,
+                                dlcOffer,
+                                digits,
+                                paramsOpt)
+    }
+  }
+
+  def genNumericOracleSignatures(
+      outcome: NumericOracleOutcome): Vector[NumericOracleSignatures] = {
+    outcome.oraclesAndOutcomes.map {
+      case (singleOracleInfo, digitsToSign) =>
+        val index = oraclePubKeys.zipWithIndex
+          .find(_._1 == singleOracleInfo.publicKey)
+          .get
+          ._2
+
+        val sigs =
+          computeNumericOracleSignatures(digitsToSign.digits,
+                                         oraclePrivKeys(index),
+                                         preCommittedKsPerOracle(index))
+
+        NumericOracleSignatures(singleOracleInfo, sigs)
+    }
+  }
+
+  def genNumericOracleSignatures(
+      numDigits: Int,
+      chosenOracles: Vector[Int],
+      dlcOffer: TestDLCClient,
+      outcomes: Vector[DLCOutcomeType],
+      outcomeIndex: Long,
+      paramsOpt: Option[OracleParamsV0TLV]): Vector[NumericOracleSignatures] = {
+    val outcome = genNumericOracleOutcome(numDigits,
+                                          chosenOracles,
+                                          dlcOffer,
+                                          outcomes,
+                                          outcomeIndex,
+                                          paramsOpt)
+    genNumericOracleSignatures(outcome)
+  }
+
+  def genOracleOutcome(
+      numOutcomesOrDigits: Int,
+      isNumeric: Boolean,
+      dlcOffer: TestDLCClient,
+      outcomes: Vector[DLCOutcomeType],
+      outcomeIndex: Long,
+      paramsOpt: Option[OracleParamsV0TLV]): OracleOutcome = {
+    val oracleInfo = dlcOffer.offer.oracleInfo
+
+    val oracleIndices =
+      0.until(oracleInfo.numOracles).toVector
+    val chosenOracles =
+      Random.shuffle(oracleIndices).take(oracleInfo.threshold).sorted
+
+    if (!isNumeric) {
+      genEnumOracleOutcome(chosenOracles, dlcOffer, outcomes, outcomeIndex)
+    } else {
+      genNumericOracleOutcome(numOutcomesOrDigits,
+                              chosenOracles,
+                              dlcOffer,
+                              outcomes,
+                              outcomeIndex,
+                              paramsOpt)
+    }
+  }
+
+  def genOracleOutcomeAndSignatures(
+      numOutcomesOrDigits: Int,
+      isNumeric: Boolean,
+      dlcOffer: TestDLCClient,
+      outcomes: Vector[DLCOutcomeType],
+      outcomeIndex: Long,
+      paramsOpt: Option[OracleParamsV0TLV]): (
+      OracleOutcome,
+      Vector[OracleSignatures]) = {
+    val outcome = genOracleOutcome(numOutcomesOrDigits,
+                                   isNumeric,
+                                   dlcOffer,
+                                   outcomes,
+                                   outcomeIndex,
+                                   paramsOpt)
+    val sigs = genOracleSignatures(outcome)
+
+    (outcome, sigs)
+  }
+
+  def genOracleSignatures(outcome: OracleOutcome): Vector[OracleSignatures] = {
+    outcome match {
+      case outcome: EnumOracleOutcome    => genEnumOracleSignatures(outcome)
+      case outcome: NumericOracleOutcome => genNumericOracleSignatures(outcome)
     }
   }
 
@@ -654,38 +792,14 @@ trait DLCTest {
       dlcOffer: TestDLCClient,
       outcomes: Vector[DLCOutcomeType],
       outcomeIndex: Long,
-      paramsOpt: Option[OracleParamsV0TLV] = None): Vector[OracleSignatures] = {
-    val oracleInfo = dlcOffer.offer.oracleInfo
-
-    val oracleIndices =
-      0.until(oracleInfo.numOracles).toVector
-    val chosenOracles =
-      Random.shuffle(oracleIndices).take(oracleInfo.threshold).sorted
-
-    if (!isNumeric) {
-      outcomes(outcomeIndex.toInt) match {
-        case EnumOutcome(outcome) =>
-          chosenOracles
-            .map { index =>
-              val singleOracleInfo = oracleInfo.singleOracleInfos(index)
-
-              genEnumOracleSignature(
-                singleOracleInfo.asInstanceOf[EnumSingleOracleInfo],
-                outcome,
-                oraclePrivKeys(index),
-                preCommittedKs(index))
-            }
-        case UnsignedNumericOutcome(_) =>
-          Assertions.fail("Expected EnumOutcome")
-      }
-    } else {
-      genNumericOracleSignatures(numOutcomesOrDigits,
-                                 chosenOracles,
-                                 dlcOffer,
-                                 outcomes,
-                                 outcomeIndex,
-                                 paramsOpt)
-    }
+      paramsOpt: Option[OracleParamsV0TLV]): Vector[OracleSignatures] = {
+    val (_, sigs) = genOracleOutcomeAndSignatures(numOutcomesOrDigits,
+                                                  isNumeric,
+                                                  dlcOffer,
+                                                  outcomes,
+                                                  outcomeIndex,
+                                                  paramsOpt)
+    sigs
   }
 
   def runTestsForParam[T](paramsToTest: Vector[T])(

@@ -328,7 +328,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           DLCStatus.calculateOutcomeAndSig(isInit, offer, accept, sign, cet)
         }
       } yield {
-        dlcDb.copy(outcomeOpt = Some(outcome),
+        dlcDb.copy(outcomeOpt = Some(outcome.outcome), // FIXME
                    oracleSigsOpt = Some(Vector(sig)))
       }
     } else {
