@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.tlv.{
   DLCOutcomeType,
   EnumOutcome,
   OracleAnnouncementV0TLV,
+  OracleParamsV0TLV,
   UnsignedNumericOutcome
 }
 import org.bitcoins.core.protocol.transaction._
@@ -36,16 +37,21 @@ import scala.util.Random
 trait DLCTest {
 
   val oraclePrivKeys: Vector[ECPrivateKey] =
-    (0 until 10).toVector.map(_ => ECPrivateKey.freshPrivateKey)
+    (0 until 50).toVector.map(_ => ECPrivateKey.freshPrivateKey)
 
   val oraclePubKeys: Vector[SchnorrPublicKey] =
     oraclePrivKeys.map(_.schnorrPublicKey)
   val oraclePrivKey: ECPrivateKey = oraclePrivKeys.head
   val oraclePubKey: SchnorrPublicKey = oraclePubKeys.head
 
-  val preCommittedKs: Vector[ECPrivateKey] =
-    (0 until 100).toVector.map(_ => ECPrivateKey.freshPrivateKey)
-  val preCommittedRs: Vector[SchnorrNonce] = preCommittedKs.map(_.schnorrNonce)
+  val preCommittedKsPerOracle: Vector[Vector[ECPrivateKey]] =
+    oraclePrivKeys.map(_ =>
+      (0 until 50).toVector.map(_ => ECPrivateKey.freshPrivateKey))
+
+  val preCommittedRsPerOracle: Vector[Vector[SchnorrNonce]] =
+    preCommittedKsPerOracle.map(_.map(_.schnorrNonce))
+  val preCommittedKs: Vector[ECPrivateKey] = preCommittedKsPerOracle.head
+  val preCommittedRs: Vector[SchnorrNonce] = preCommittedRsPerOracle.head
   val preCommittedK: ECPrivateKey = preCommittedKs.head
   val preCommittedR: SchnorrNonce = preCommittedRs.head
 
@@ -335,6 +341,9 @@ trait DLCTest {
 
   def constructNumericDLCClients(
       numDigits: Int,
+      oracleThreshold: Int,
+      numOracles: Int,
+      paramsOpt: Option[OracleParamsV0TLV] = None,
       offerFundingPrivKey: ECPrivateKey = this.offerFundingPrivKey,
       offerPayoutPrivKey: ECPrivateKey = this.offerPayoutPrivKey,
       acceptFundingPrivKey: ECPrivateKey = this.acceptFundingPrivKey,
@@ -350,14 +359,29 @@ trait DLCTest {
       TestDLCClient,
       TestDLCClient,
       Vector[UnsignedNumericOutcome]) = {
-    val oracleInfo = NumericSingleOracleInfo.dummyForKeys(
-      oraclePrivKey,
-      preCommittedRs.take(numDigits))
-
     val (offerDesc, acceptDesc) =
       DLCTestUtil.genMultiDigitContractInfo(numDigits,
                                             totalInput,
                                             numRounds = 4)
+
+    val announcements =
+      oraclePrivKeys
+        .take(numOracles)
+        .zip(preCommittedRsPerOracle.take(numOracles))
+        .map {
+          case (privKey, rVals) =>
+            OracleAnnouncementV0TLV.dummyForKeys(privKey, rVals.take(numDigits))
+        }
+    val oracleInfo = if (numOracles == 1) {
+      NumericSingleOracleInfo(announcements.head)
+    } else {
+      paramsOpt match {
+        case None => NumericExactMultiOracleInfo(oracleThreshold, announcements)
+        case Some(params) =>
+          NumericMultiOracleInfo(oracleThreshold, announcements, params)
+      }
+    }
+
     val offerInfo = ContractInfo(totalInput.satoshis, offerDesc, oracleInfo)
     val acceptInfo = ContractInfo(totalInput.satoshis, acceptDesc, oracleInfo)
     val outcomes =
@@ -386,6 +410,7 @@ trait DLCTest {
       isNumeric: Boolean,
       oracleThreshold: Int,
       numOracles: Int,
+      paramsOpt: Option[OracleParamsV0TLV] = None,
       offerFundingPrivKey: ECPrivateKey = this.offerFundingPrivKey,
       offerPayoutPrivKey: ECPrivateKey = this.offerPayoutPrivKey,
       acceptFundingPrivKey: ECPrivateKey = this.acceptFundingPrivKey,
@@ -404,6 +429,9 @@ trait DLCTest {
     if (isNumeric) {
       constructNumericDLCClients(
         numOutcomesOrDigits,
+        oracleThreshold,
+        numOracles,
+        paramsOpt,
         offerFundingPrivKey,
         offerPayoutPrivKey,
         acceptFundingPrivKey,
@@ -498,27 +526,26 @@ trait DLCTest {
   }
 
   def computeNumericOracleSignatures(
-      digits: Vector[Int]): Vector[SchnorrDigitalSignature] = {
-    digits.zip(preCommittedKs.take(digits.length)).map {
+      digits: Vector[Int],
+      privKey: ECPrivateKey = oraclePrivKey,
+      kVals: Vector[ECPrivateKey] = preCommittedKs): Vector[
+    SchnorrDigitalSignature] = {
+    digits.zip(kVals.take(digits.length)).map {
       case (digit, kValue) =>
-        oraclePrivKey.schnorrSignWithNonce(
-          CryptoUtil
-            .sha256DLCAttestation(digit.toString)
-            .bytes,
-          kValue)
+        privKey.schnorrSignWithNonce(CryptoUtil
+                                       .sha256DLCAttestation(digit.toString)
+                                       .bytes,
+                                     kValue)
     }
   }
 
-  def genNumericOracleSignatures(
+  def computeNumericOutcome(
       numDigits: Int,
-      dlcOffer: TestDLCClient,
+      desc: NumericContractDescriptor,
       outcomes: Vector[DLCOutcomeType],
-      outcomeIndex: Long): NumericOracleSignatures = {
+      outcomeIndex: Long): Vector[Int] = {
     val points =
-      dlcOffer.dlcTxBuilder.contractInfo.contractDescriptor
-        .asInstanceOf[NumericContractDescriptor]
-        .outcomeValueFunc
-        .points
+      desc.outcomeValueFunc.points
     val left = points(1).outcome
     val right = points(2).outcome
     // Somewhere in the middle third of the interesting values
@@ -528,17 +555,97 @@ trait DLCTest {
     val fullDigits =
       NumberUtil.decompose(outcomeNum, base = 2, numDigits)
 
-    val digits =
-      CETCalculator.searchForNumericOutcome(fullDigits, outcomes) match {
-        case Some(UnsignedNumericOutcome(digits)) => digits
-        case None                                 => Assertions.fail(s"Couldn't find outcome for $outcomeIndex")
-      }
+    CETCalculator.searchForNumericOutcome(fullDigits, outcomes) match {
+      case Some(UnsignedNumericOutcome(digits)) => digits
+      case None                                 => Assertions.fail(s"Couldn't find outcome for $outcomeIndex")
+    }
+  }
 
-    val sigs = computeNumericOracleSignatures(digits)
+  var temp: Boolean = true
 
-    NumericOracleSignatures(
-      dlcOffer.offer.oracleInfo.asInstanceOf[NumericSingleOracleInfo],
-      sigs)
+  def computeNumericOutcomeWithError(
+      numDigits: Int,
+      num: Long,
+      minFailExp: Int,
+      outcomes: Vector[DLCOutcomeType]): Vector[Int] = {
+    val error = NumberUtil.randomLong(1L << minFailExp)
+    val direction = temp //Random.nextBoolean()
+    val directedError = if (direction) {
+      error
+    } else {
+      -error
+    }
+    temp = !temp
+    val maxVal = (1L << numDigits) - 1
+    val numToSign =
+      math.min(math.max(0, num + directedError), maxVal)
+    val fullDigits =
+      NumberUtil.decompose(numToSign, base = 2, numDigits)
+    CETCalculator.searchForNumericOutcome(fullDigits, outcomes) match {
+      case Some(UnsignedNumericOutcome(digits)) => digits
+      case None =>
+        Assertions.fail(s"Couldn't find outcome for $fullDigits in $outcomes")
+    }
+  }
+
+  def genNumericOracleSignatures(
+      numDigits: Int,
+      chosenOracles: Vector[Int],
+      dlcOffer: TestDLCClient,
+      outcomes: Vector[DLCOutcomeType],
+      outcomeIndex: Long,
+      paramsOpt: Option[OracleParamsV0TLV] = None): Vector[
+    NumericOracleSignatures] = {
+    dlcOffer.offer.contractInfo.descriptorAndInfo match {
+      case Left(_) => Assertions.fail("Expected Numeric Contract")
+      case Right(
+            (descriptor: NumericContractDescriptor,
+             oracleInfo: NumericOracleInfo)) =>
+        val digits =
+          computeNumericOutcome(numDigits, descriptor, outcomes, outcomeIndex)
+
+        lazy val num = NumberUtil.fromDigits(digits, base = 2, numDigits)
+        lazy val possibleOutcomesOpt = paramsOpt.map {
+          case OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage) =>
+            val possibleOutcomes = CETCalculator
+              .computeCoveringCETsBinary(numDigits,
+                                         digits,
+                                         maxErrorExp,
+                                         minFailExp,
+                                         maximizeCoverage,
+                                         chosenOracles.length)
+              .map(_.apply(1))
+              .sorted(NumberUtil.lexicographicalOrdering[Int])
+              .map(UnsignedNumericOutcome.apply)
+            possibleOutcomes
+        }
+
+        chosenOracles.map { index =>
+          val singleOracleInfo = oracleInfo.singleOracleInfos(index)
+
+          val digitsToSign = if (index == chosenOracles.head) {
+            digits
+          } else {
+            paramsOpt match {
+              case None => digits
+              case Some(OracleParamsV0TLV(_, minFailExp, _)) =>
+                val possibleOutcomes = possibleOutcomesOpt.get
+
+                computeNumericOutcomeWithError(numDigits,
+                                               num,
+                                               minFailExp,
+                                               possibleOutcomes)
+            }
+          }
+
+          val sigs =
+            computeNumericOracleSignatures(digitsToSign,
+                                           oraclePrivKeys(index),
+                                           preCommittedKsPerOracle(index))
+
+          NumericOracleSignatures(singleOracleInfo, sigs)
+        }
+    }
   }
 
   def genOracleSignatures(
@@ -546,18 +653,18 @@ trait DLCTest {
       isNumeric: Boolean,
       dlcOffer: TestDLCClient,
       outcomes: Vector[DLCOutcomeType],
-      outcomeIndex: Long): Vector[OracleSignatures] = {
+      outcomeIndex: Long,
+      paramsOpt: Option[OracleParamsV0TLV] = None): Vector[OracleSignatures] = {
+    val oracleInfo = dlcOffer.offer.oracleInfo
+
+    val oracleIndices =
+      0.until(oracleInfo.numOracles).toVector
+    val chosenOracles =
+      Random.shuffle(oracleIndices).take(oracleInfo.threshold).sorted
 
     if (!isNumeric) {
       outcomes(outcomeIndex.toInt) match {
         case EnumOutcome(outcome) =>
-          val oracleInfo = dlcOffer.offer.oracleInfo
-
-          val oracleIndices =
-            1.until(oracleInfo.numOracles).toVector.appended(0)
-          val chosenOracles =
-            Random.shuffle(oracleIndices).take(oracleInfo.threshold)
-
           chosenOracles
             .map { index =>
               val singleOracleInfo = oracleInfo.singleOracleInfos(index)
@@ -572,12 +679,12 @@ trait DLCTest {
           Assertions.fail("Expected EnumOutcome")
       }
     } else {
-      val oracleSig = genNumericOracleSignatures(numOutcomesOrDigits,
-                                                 dlcOffer,
-                                                 outcomes,
-                                                 outcomeIndex)
-
-      Vector(oracleSig)
+      genNumericOracleSignatures(numOutcomesOrDigits,
+                                 chosenOracles,
+                                 dlcOffer,
+                                 outcomes,
+                                 outcomeIndex,
+                                 paramsOpt)
     }
   }
 

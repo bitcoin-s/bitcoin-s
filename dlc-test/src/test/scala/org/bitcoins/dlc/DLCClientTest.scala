@@ -4,7 +4,11 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, EnumOutcome}
+import org.bitcoins.core.protocol.tlv.{
+  DLCOutcomeType,
+  EnumOutcome,
+  OracleParamsV0TLV
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, NumberUtil}
@@ -78,7 +82,8 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
       numOutcomes: Int,
       isMultiDigit: Boolean,
       oracleThreshold: Int,
-      numOracles: Int): Future[
+      numOracles: Int,
+      paramsOpt: Option[OracleParamsV0TLV] = None): Future[
     (
         TestDLCClient,
         SetupDLC,
@@ -89,7 +94,8 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
       constructDLCClients(numOutcomes,
                           isMultiDigit,
                           oracleThreshold,
-                          numOracles)
+                          numOracles,
+                          paramsOpt)
 
     for {
       (offerSetup, acceptSetup) <- setupDLC(offerDLC, acceptDLC)
@@ -101,15 +107,21 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
       numOutcomes: Int,
       isMultiDigit: Boolean,
       oracleThreshold: Int,
-      numOracles: Int): Future[Assertion] = {
-    constructAndSetupDLC(numOutcomes, isMultiDigit, oracleThreshold, numOracles)
+      numOracles: Int,
+      paramsOpt: Option[OracleParamsV0TLV] = None): Future[Assertion] = {
+    constructAndSetupDLC(numOutcomes,
+                         isMultiDigit,
+                         oracleThreshold,
+                         numOracles,
+                         paramsOpt)
       .flatMap {
         case (dlcOffer, offerSetup, dlcAccept, acceptSetup, outcomes) =>
           val oracleSigs = genOracleSignatures(numOutcomes,
                                                isMultiDigit,
                                                dlcOffer,
                                                outcomes,
-                                               outcomeIndex)
+                                               outcomeIndex,
+                                               paramsOpt)
 
           for {
             offerOutcome <-
@@ -129,8 +141,13 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
       numOutcomes: Int,
       isMultiNonce: Boolean,
       oracleThreshold: Int,
-      numOracles: Int): Future[Assertion] = {
-    constructAndSetupDLC(numOutcomes, isMultiNonce, oracleThreshold, numOracles)
+      numOracles: Int,
+      paramsOpt: Option[OracleParamsV0TLV] = None): Future[Assertion] = {
+    constructAndSetupDLC(numOutcomes,
+                         isMultiNonce,
+                         oracleThreshold,
+                         numOracles,
+                         paramsOpt)
       .flatMap {
         case (dlcOffer, offerSetup, dlcAccept, acceptSetup, _) =>
           val offerOutcome = dlcOffer.executeRefundDLC(offerSetup)
@@ -144,37 +161,44 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
       }
   }
 
-  val oracleSchemesToTest: Vector[(Int, Int)] =
-    Vector((1, 1), (1, 2), (2, 2), (2, 3), (3, 5))
+  val enumOracleSchemesToTest: Vector[(Int, Int)] =
+    Vector((1, 1), (1, 2), (2, 2), (2, 3), (3, 5), (5, 8))
 
   val numEnumOutcomesToTest: Vector[Int] = Vector(2, 3, 5, 8)
 
   def runSingleNonceTests(
-      exec: (Long, Int, Boolean, Int, Int) => Future[Assertion]): Future[
-    Assertion] = {
+      exec: (Long, Int, Boolean, Int, Int, Option[OracleParamsV0TLV]) => Future[
+        Assertion]): Future[Assertion] = {
     runTestsForParam(numEnumOutcomesToTest) { numOutcomes =>
       runTestsForParam(0.until(numOutcomes).toVector) { outcomeIndex =>
-        runTestsForParam(oracleSchemesToTest) {
+        runTestsForParam(enumOracleSchemesToTest) {
           case (threshold, numOracles) =>
-            exec(outcomeIndex, numOutcomes, false, threshold, numOracles)
+            exec(outcomeIndex, numOutcomes, false, threshold, numOracles, None)
         }
       }
     }
   }
 
+  val numericOracleSchemesToTest: Vector[(Int, Int)] =
+    Vector((1, 1), (2, 2), (2, 3))
   val numDigitsToTest: Vector[Int] = Vector(4, 5, 10)
 
   def runMultiNonceTests(
-      exec: (Long, Int, Boolean, Int, Int) => Future[Assertion]): Future[
-    Assertion] = {
+      exec: (Long, Int, Boolean, Int, Int, Option[OracleParamsV0TLV]) => Future[
+        Assertion]): Future[Assertion] = {
     runTestsForParam(numDigitsToTest) { numDigits =>
-      val randDigits = (0 until numDigits).toVector.map { _ =>
-        scala.util.Random.nextInt(2)
-      }
-      val num =
-        BitVector.fromValidBin(randDigits.mkString("")).toLong(signed = false)
+      runTestsForParam(numericOracleSchemesToTest) {
+        case (threshold, numOracles) =>
+          val randDigits = (0 until numDigits).toVector.map { _ =>
+            scala.util.Random.nextInt(2)
+          }
+          val num =
+            BitVector
+              .fromValidBin(randDigits.mkString(""))
+              .toLong(signed = false)
 
-      exec(num, numDigits, true, 1, 1)
+          exec(num, numDigits, true, threshold, numOracles, None)
+      }
     }
   }
 
@@ -202,22 +226,44 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
                    numOracles = 1)
   }
 
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for a normal multi-oracle numeric case with bounded differences allowed" in {
+    val threshold = 3
+    val numOracles = 5
+    val numDigits = 8
+    val params = OracleParamsV0TLV(maxErrorExp = 4,
+                                   minFailExp = 2,
+                                   maximizeCoverage = false)
+
+    val randDigits = (0 until numDigits).toVector.map { _ =>
+      scala.util.Random.nextInt(2)
+    }
+    val num =
+      BitVector
+        .fromValidBin(randDigits.mkString(""))
+        .toLong(signed = false)
+
+    executeForCase(num,
+                   numDigits,
+                   isMultiDigit = true,
+                   threshold,
+                   numOracles,
+                   Some(params))
+  }
+
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the refund case" in {
-    val testF1 = numEnumOutcomesToTest.map { numOutcomes =>
-      executeRefundCase(numOutcomes,
-                        isMultiNonce = false,
-                        oracleThreshold = 1,
-                        numOracles = 1)
+    runTestsForParam(Vector(false, true)) { isNumeric =>
+      val numOutcomesOrDigitsToTest =
+        if (isNumeric) numDigitsToTest else numEnumOutcomesToTest
+      runTestsForParam(numOutcomesOrDigitsToTest) { numOutcomesOrDigits =>
+        runTestsForParam(numericOracleSchemesToTest) {
+          case (threshold, numOracles) =>
+            executeRefundCase(numOutcomesOrDigits,
+                              isMultiNonce = isNumeric,
+                              oracleThreshold = threshold,
+                              numOracles = numOracles)
+        }
+      }
     }
-
-    val testF2 = numDigitsToTest.map { numDigits =>
-      executeRefundCase(numDigits,
-                        isMultiNonce = true,
-                        oracleThreshold = 1,
-                        numOracles = 1)
-    }
-
-    Future.sequence(Vector(testF1, testF2).flatten).map(_ => succeed)
   }
 
   it should "all work for a 100 outcome DLC" in {

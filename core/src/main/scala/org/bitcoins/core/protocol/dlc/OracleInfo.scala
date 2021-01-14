@@ -9,8 +9,13 @@ sealed trait OracleInfo extends TLVSerializable[OracleInfoTLV] {
   def singleOracleInfos: Vector[SingleOracleInfo]
 }
 
-sealed trait EnumOracleInfo extends OracleInfo
-sealed trait NumericOracleInfo extends OracleInfo
+sealed trait EnumOracleInfo extends OracleInfo {
+  override def singleOracleInfos: Vector[EnumSingleOracleInfo]
+}
+
+sealed trait NumericOracleInfo extends OracleInfo {
+  override def singleOracleInfos: Vector[NumericSingleOracleInfo]
+}
 
 object OracleInfo
     extends TLVDeserializable[OracleInfoTLV, OracleInfo](OracleInfoTLV) {

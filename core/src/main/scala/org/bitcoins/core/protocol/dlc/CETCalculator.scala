@@ -218,7 +218,9 @@ object CETCalculator {
     }
   }
 
-  /** Searches for an UnsignedNumericOutcome corresponding to (prefixing) digits */
+  /** Searches for an UnsignedNumericOutcome corresponding to (prefixing) digits.
+    * Assumes outcomes is ordered.
+    */
   def searchForNumericOutcome(
       digits: Vector[Int],
       outcomes: Vector[DLCOutcomeType]): Option[UnsignedNumericOutcome] = {
