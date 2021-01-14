@@ -123,7 +123,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
       startGenF.flatMap { cancellable =>
         //we should expect 5 headers have been announced to us via
         //the send headers message.
-        val ExpectedCount = 113
+        val ExpectedCount = 119
 
         def hasBlocksF =
           RpcUtil.retryUntilSatisfiedF(conditionF = () => {
