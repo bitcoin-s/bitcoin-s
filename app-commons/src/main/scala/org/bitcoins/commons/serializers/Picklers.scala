@@ -261,11 +261,13 @@ object Picklers {
 
   implicit val claimedW: Writer[Claimed] = writer[Obj].comap { claimed =>
     import claimed._
-    val outcomeJs = outcome match {
-      case EnumOutcome(outcome) =>
-        Str(outcome)
-      case UnsignedNumericOutcome(digits) =>
-        Arr.from(digits.map(num => Num(num)))
+    val (oraclesJs, outcomesJs) = oracleOutcome match {
+      case EnumOracleOutcome(oracles, outcome) =>
+        (Arr.from(oracles.map(o => Str(o.announcement.hex))),
+         Str(outcome.outcome))
+      case numeric: NumericOracleOutcome =>
+        (Arr.from(numeric.oracles.map(_.hex)),
+         Arr.from(numeric.outcomes.map(o => Arr.from(o.digits))))
     }
 
     Obj(
@@ -286,18 +288,21 @@ object Picklers {
       "fundingTxId" -> Str(fundingTxId.hex),
       "closingTxId" -> Str(closingTxId.hex),
       "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
-      "outcome" -> outcomeJs
+      "outcomes" -> outcomesJs,
+      "oracles" -> oraclesJs
     )
   }
 
   implicit val remoteClaimedW: Writer[RemoteClaimed] =
     writer[Obj].comap { remoteClaimed =>
       import remoteClaimed._
-      val outcomeJs = outcome match {
-        case EnumOutcome(outcome) =>
-          Str(outcome)
-        case UnsignedNumericOutcome(digits) =>
-          Arr.from(digits.map(num => Num(num)))
+      val (oraclesJs, outcomesJs) = oracleOutcome match {
+        case EnumOracleOutcome(oracles, outcome) =>
+          (Arr.from(oracles.map(o => Str(o.announcement.hex))),
+           Str(outcome.outcome))
+        case numeric: NumericOracleOutcome =>
+          (Arr.from(numeric.oracles.map(_.hex)),
+           Arr.from(numeric.outcomes.map(o => Arr.from(o.digits))))
       }
 
       Obj(
@@ -318,7 +323,8 @@ object Picklers {
         "fundingTxId" -> Str(fundingTxId.hex),
         "closingTxId" -> Str(closingTxId.hex),
         "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
-        "outcome" -> outcomeJs
+        "outcomes" -> outcomesJs,
+        "oracles" -> oraclesJs
       )
     }
 
@@ -374,12 +380,32 @@ object Picklers {
         .map(value => SchnorrDigitalSignature(value.str))
         .toVector
 
-    lazy val outcomeJs = obj("outcome")
-    lazy val outcome = outcomeJs.strOpt match {
-      case Some(value) => EnumOutcome(value)
+    lazy val outcomesJs = obj("outcomes")
+    lazy val outcomes = outcomesJs.strOpt match {
+      case Some(value) => Vector(EnumOutcome(value))
       case None =>
-        val digits = outcomeJs.arr.map(value => value.num.toInt)
-        UnsignedNumericOutcome(digits.toVector)
+        outcomesJs.arr.map { outcomeJs =>
+          val digits = outcomeJs.arr.map(value => value.num.toInt)
+          UnsignedNumericOutcome(digits.toVector)
+        }.toVector
+    }
+
+    lazy val oraclesJs = obj("oracles")
+    lazy val oracles = oraclesJs.arr.map { value =>
+      val announcementTLV = OracleAnnouncementTLV(value.str)
+      SingleOracleInfo(announcementTLV)
+    }.toVector
+
+    lazy val oracleOutcome = outcomes.head match {
+      case outcome: EnumOutcome =>
+        EnumOracleOutcome(oracles.asInstanceOf[Vector[EnumSingleOracleInfo]],
+                          outcome)
+      case UnsignedNumericOutcome(_) =>
+        val numericOutcomes =
+          outcomes.map(_.asInstanceOf[UnsignedNumericOutcome])
+        val numericOracles =
+          oracles.map(_.asInstanceOf[NumericSingleOracleInfo])
+        NumericOracleOutcome(numericOracles.zip(numericOutcomes))
     }
 
     state match {
@@ -458,7 +484,7 @@ object Picklers {
           fundingTxId,
           closingTxId,
           oracleSigs,
-          outcome
+          oracleOutcome
         )
       case DLCState.RemoteClaimed =>
         require(oracleSigs.size == 1,
@@ -476,7 +502,7 @@ object Picklers {
           fundingTxId,
           closingTxId,
           oracleSigs.head,
-          outcome
+          oracleOutcome
         )
       case DLCState.Refunded =>
         Refunded(

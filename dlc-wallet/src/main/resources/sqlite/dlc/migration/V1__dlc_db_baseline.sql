@@ -11,7 +11,8 @@ CREATE TABLE "wallet_dlcs"
     "funding_outpoint" VARCHAR(254),
     "funding_tx_id"    VARCHAR(254),
     "closing_tx_id"    VARCHAR(254),
-    "outcome"          VARCHAR(254)
+    "outcomes"         VARCHAR(254),
+    "oracles_used"     VARCHAR(254)
 );
 CREATE INDEX "wallet_dlcs_param_hash_index" on "wallet_dlcs" ("param_hash");
 

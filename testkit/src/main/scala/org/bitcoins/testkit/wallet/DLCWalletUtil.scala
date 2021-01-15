@@ -178,7 +178,8 @@ object DLCWalletUtil {
     fundingOutPointOpt = None,
     fundingTxIdOpt = None,
     closingTxIdOpt = None,
-    outcomeOpt = None
+    outcomesOpt = None,
+    oraclesUsedOpt = None
   )
 
   def initDLC(

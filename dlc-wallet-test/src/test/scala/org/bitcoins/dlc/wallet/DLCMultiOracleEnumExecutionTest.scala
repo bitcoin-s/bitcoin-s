@@ -104,7 +104,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
-            verifyingMatchingOracleSigs(statusA, statusB)
+            assert(verifyingMatchingOracleSigs(statusA, statusB))
           case (_, _) => fail()
         }
       }
@@ -142,7 +142,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: RemoteClaimed), Some(statusB: Claimed)) =>
-            verifyingMatchingOracleSigs(statusB, statusA)
+            assert(verifyingMatchingOracleSigs(statusB, statusA))
           case (_, _) => fail()
         }
       }

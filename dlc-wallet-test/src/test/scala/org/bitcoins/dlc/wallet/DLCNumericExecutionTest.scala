@@ -104,7 +104,7 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
-            verifyingMatchingOracleSigs(statusA, statusB)
+            assert(verifyingMatchingOracleSigs(statusA, statusB))
           case (_, _) => fail()
         }
       }
@@ -143,7 +143,7 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: RemoteClaimed), Some(statusB: Claimed)) =>
-            verifyingMatchingOracleSigs(statusB, statusA)
+            assert(verifyingMatchingOracleSigs(statusB, statusA))
           case (_, _) => fail()
         }
       }
@@ -160,26 +160,26 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
   private def verifyingMatchingOracleSigs(
       statusA: Claimed,
       statusB: RemoteClaimed): Boolean = {
-    val outcome = statusB.outcome
-    val numSigs = outcome match {
-      case EnumOutcome(outcome) =>
+    val outcome = statusB.oracleOutcome
+    outcome match {
+      case _: EnumOracleOutcome =>
         throw new RuntimeException(s"Unexpected outcome type, got $outcome")
-      case UnsignedNumericOutcome(digits) => digits.size
+      case numeric: NumericOracleOutcome =>
+        val aggR = numeric.aggregateNonce
+
+        val neededNonces = numeric.oraclesAndOutcomes.flatMap {
+          case (oracle, outcome) =>
+            oracle.nonces.take(outcome.serialized.length)
+        }
+
+        val aggS = statusA.oracleSigs
+          .filter(sig => neededNonces.contains(sig.rx))
+          .map(_.sig)
+          .reduce(_.add(_))
+
+        val aggregateSignature =
+          SchnorrDigitalSignature(aggR, aggS)
+        aggregateSignature == statusB.oracleSig
     }
-
-    val aggR = statusA.oracleSigs
-      .take(numSigs)
-      .map(_.rx.publicKey)
-      .reduce(_.add(_))
-      .schnorrNonce
-
-    val aggS = statusA.oracleSigs
-      .take(numSigs)
-      .map(_.sig)
-      .reduce(_.add(_))
-
-    val aggregateSignature =
-      SchnorrDigitalSignature(aggR, aggS)
-    aggregateSignature == statusB.oracleSig
   }
 }

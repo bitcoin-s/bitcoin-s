@@ -4,7 +4,6 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction.{
   NonWitnessTransaction,
   Transaction,
@@ -45,7 +44,7 @@ sealed trait ClosedDLCStatus extends BroadcastedDLCStatus {
 }
 
 sealed trait ClaimedDLCStatus extends ClosedDLCStatus {
-  def outcome: DLCOutcomeType
+  def oracleOutcome: OracleOutcome
   def oracleSigs: Vector[SchnorrDigitalSignature]
 }
 
@@ -135,7 +134,7 @@ object DLCStatus {
       fundingTxId: DoubleSha256DigestBE,
       closingTxId: DoubleSha256DigestBE,
       oracleSigs: Vector[SchnorrDigitalSignature],
-      outcome: DLCOutcomeType)
+      oracleOutcome: OracleOutcome)
       extends ClaimedDLCStatus {
     override val state: DLCState.Claimed.type = DLCState.Claimed
   }
@@ -153,7 +152,7 @@ object DLCStatus {
       fundingTxId: DoubleSha256DigestBE,
       closingTxId: DoubleSha256DigestBE,
       oracleSig: SchnorrDigitalSignature,
-      outcome: DLCOutcomeType)
+      oracleOutcome: OracleOutcome)
       extends ClaimedDLCStatus {
     override val state: DLCState.RemoteClaimed.type = DLCState.RemoteClaimed
     override val oracleSigs: Vector[SchnorrDigitalSignature] = Vector(oracleSig)

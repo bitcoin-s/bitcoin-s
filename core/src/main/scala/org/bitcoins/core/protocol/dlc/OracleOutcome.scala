@@ -44,6 +44,9 @@ case class NumericOracleOutcome(oraclesAndOutcomes: Vector[
     oraclesAndOutcomes.head._2
   }
 
+  def outcomes: Vector[UnsignedNumericOutcome] =
+    oraclesAndOutcomes.map(_._2)
+
   override lazy val sigPoint: ECPublicKey = {
     oraclesAndOutcomes
       .map {

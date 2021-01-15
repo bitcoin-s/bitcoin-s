@@ -1,6 +1,6 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.protocol.dlc.ContractInfo
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.commons.jsonmodels.wallet.{
   WalletStateDescriptor,
   WalletStateDescriptorType
@@ -11,7 +11,6 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.protocol.dlc.{DLCState, SigningVersion}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
@@ -293,6 +292,54 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       }
     )
   }
+
+  implicit val dlcOutcomeTypeVecMapper: BaseColumnType[
+    Vector[DLCOutcomeType]] = {
+    val enumStr = "Enum:"
+    val unsignedNumStr = "Unsigned:"
+
+    MappedColumnType.base[Vector[DLCOutcomeType], String](
+      vec =>
+        {
+          vec.map {
+            case EnumOutcome(outcome) =>
+              s"$enumStr$outcome"
+            case UnsignedNumericOutcome(digits) =>
+              s"$unsignedNumStr" + digits.mkString("|")
+          }
+        }.mkString,
+      str => {
+        if (str.startsWith(enumStr)) {
+          val strs = str.split(s"$enumStr")
+          strs.toVector.map(s => EnumOutcome(s))
+        } else if (str.startsWith(unsignedNumStr)) {
+          val strs = str.split(s"$unsignedNumStr")
+          strs.toVector.flatMap { data =>
+            if (data.isEmpty) {
+              None
+            } else {
+              val strVec = data.split('|')
+              val ints = strVec.flatMap(_.toIntOption)
+              Some(UnsignedNumericOutcome(ints.toVector))
+            }
+          }
+        } else throw new RuntimeException("Unknown outcome type")
+      }
+    )
+  }
+
+  implicit val singleOracleInfoVecMapper: BaseColumnType[
+    Vector[SingleOracleInfo]] =
+    MappedColumnType.base[Vector[SingleOracleInfo], String](
+      _.map(_.announcement.hex).mkString("|"),
+      str => {
+        val strs = str.split('|').toVector
+        strs.map { str =>
+          val announcementTLV = OracleAnnouncementTLV(str)
+          SingleOracleInfo(announcementTLV)
+        }
+      }
+    )
 
   implicit val blockStampWithFutureMapper: BaseColumnType[BlockTimeStamp] = {
     MappedColumnType.base[BlockTimeStamp, Long](

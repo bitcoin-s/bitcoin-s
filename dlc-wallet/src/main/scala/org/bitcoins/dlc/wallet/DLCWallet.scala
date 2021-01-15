@@ -148,14 +148,28 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
+  private def getOutcomeDbInfo(oracleOutcome: OracleOutcome): (
+      Vector[DLCOutcomeType],
+      Vector[SingleOracleInfo]) = {
+    oracleOutcome match {
+      case EnumOracleOutcome(oracles, outcome) =>
+        (Vector(outcome), oracles)
+      case numeric: NumericOracleOutcome =>
+        (numeric.outcomes, numeric.oracles)
+    }
+  }
+
   private def updateDLCOutcome(
       contractId: ByteVector,
-      outcome: DLCOutcomeType): Future[DLCDb] = {
+      oracleOutcome: OracleOutcome): Future[DLCDb] = {
     dlcDAO.findByContractId(contractId).flatMap {
       case Some(dlcDb) =>
         logger.debug(
-          s"Updating DLC's (${contractId.toHex}) outcome to $outcome")
-        dlcDAO.update(dlcDb.copy(outcomeOpt = Some(outcome)))
+          s"Updating DLC's (${contractId.toHex}) outcome to $oracleOutcome")
+        val (outcomes, oracles) = getOutcomeDbInfo(oracleOutcome)
+        dlcDAO.update(
+          dlcDb.copy(outcomesOpt = Some(outcomes),
+                     oraclesUsedOpt = Some(oracles)))
       case None =>
         Future.failed(
           new NoSuchElementException(
@@ -208,7 +222,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               Future.successful(dlcDb.copy(state = DLCState.Claimed))
             } else {
               val withState = dlcDb.copy(state = DLCState.RemoteClaimed)
-              if (dlcDb.outcomeOpt.isEmpty || dlcDb.oracleSigsOpt.isEmpty) {
+              if (dlcDb.outcomesOpt.isEmpty || dlcDb.oracleSigsOpt.isEmpty) {
                 for {
                   // update so we can calculate correct DLCStatus
                   _ <- dlcDAO.update(withState)
@@ -232,7 +246,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                     // Refunded will not have these set
                     if (updated.state != DLCState.Refunded) {
                       require(
-                        updated.outcomeOpt.isDefined && updated.oracleSigsOpt.isDefined,
+                        updated.outcomesOpt.isDefined && updated.oracleSigsOpt.isDefined,
                         s"Attempted to delete signatures when no outcome or oracle signature was set, $contractId"
                       )
                     }
@@ -251,7 +265,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   }
 
   private def calculateAndSetOutcome(dlcDb: DLCDb): Future[DLCDb] = {
-    if (dlcDb.state == DLCState.RemoteClaimed && dlcDb.outcomeOpt.isEmpty) {
+    if (dlcDb.state == DLCState.RemoteClaimed && dlcDb.outcomesOpt.isEmpty) {
       val paramHash = dlcDb.paramHash
       for {
         offerDbOpt <- dlcOfferDAO.findByParamHash(paramHash)
@@ -328,7 +342,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           DLCStatus.calculateOutcomeAndSig(isInit, offer, accept, sign, cet)
         }
       } yield {
-        dlcDb.copy(outcomeOpt = Some(outcome.outcome),
+        val (outcomes, oracleInfos) = getOutcomeDbInfo(outcome)
+
+        dlcDb.copy(outcomesOpt = Some(outcomes),
+                   oraclesUsedOpt = Some(oracleInfos),
                    oracleSigsOpt = Some(Vector(sig)))
       }
     } else {
@@ -506,7 +523,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         fundingOutPointOpt = None,
         fundingTxIdOpt = None,
         closingTxIdOpt = None,
-        outcomeOpt = None
+        outcomesOpt = None,
+        oraclesUsedOpt = None
       )
 
       dlc <- dlcDAO.create(dlcDb)
@@ -561,7 +579,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               fundingOutPointOpt = None,
               fundingTxIdOpt = None,
               closingTxIdOpt = None,
-              outcomeOpt = None
+              outcomesOpt = None,
+              oraclesUsedOpt = None
             )
           }
           _ <- writeDLCKeysToAddressDb(account, nextIndex)
@@ -1457,7 +1476,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
       _ <- updateDLCOracleSigs(contractId, oracleSigs.flatMap(_.sigs))
       _ <- updateDLCState(contractId, DLCState.Claimed)
-      _ <- updateDLCOutcome(contractId, outcome.outcome)
+      _ <- updateDLCOutcome(contractId, outcome)
       _ <- updateClosingTxId(contractId, tx.txIdBE)
 
       _ <- processTransaction(tx, None)
@@ -1502,6 +1521,25 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           offerDb.totalCollateral
         } else {
           totalCollateral - offerDb.totalCollateral
+        }
+
+        // Only called when safe
+        lazy val oracleOutcome = {
+          val outcomes = dlcDbOpt.get.outcomesOpt.get
+          val oracles = dlcDbOpt.get.oraclesUsedOpt.get
+
+          outcomes.head match {
+            case outcome: EnumOutcome =>
+              EnumOracleOutcome(
+                oracles.asInstanceOf[Vector[EnumSingleOracleInfo]],
+                outcome)
+            case UnsignedNumericOutcome(_) =>
+              val numericOutcomes =
+                outcomes.map(_.asInstanceOf[UnsignedNumericOutcome])
+              val numericOracles =
+                oracles.map(_.asInstanceOf[NumericSingleOracleInfo])
+              NumericOracleOutcome(numericOracles.zip(numericOutcomes))
+          }
         }
 
         val status = dlcDb.state match {
@@ -1580,7 +1618,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.fundingTxIdOpt.get,
               dlcDb.closingTxIdOpt.get,
               dlcDb.oracleSigsOpt.get,
-              dlcDb.outcomeOpt.get
+              oracleOutcome
             )
           case DLCState.RemoteClaimed =>
             val oracleSigs = dlcDb.oracleSigsOpt.get
@@ -1600,7 +1638,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               dlcDb.fundingTxIdOpt.get,
               dlcDb.closingTxIdOpt.get,
               oracleSigs.head,
-              dlcDb.outcomeOpt.get
+              oracleOutcome
             )
           case DLCState.Refunded =>
             Refunded(
