@@ -4,11 +4,7 @@ import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto.SchnorrNonce
 import org.bitcoins.dlc.oracle.storage.{EventDb, EventOutcomeDb}
-import org.bitcoins.dlc.oracle.{
-  DigitDecompositionAttestation,
-  EnumAttestation,
-  RangeAttestation
-}
+import org.bitcoins.dlc.oracle._
 
 trait EventDbUtil {
 

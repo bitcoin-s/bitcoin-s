@@ -64,7 +64,10 @@ sealed trait CompletedOracleEvent extends OracleEvent {
       .map(sigPieces => SchnorrDigitalSignature(sigPieces._1, sigPieces._2))
 
   def oracleAttestmentV0TLV: OracleAttestmentV0TLV =
-    OracleAttestmentV0TLV(pubkey, signatures)
+    OracleAttestmentV0TLV(eventName,
+                          pubkey,
+                          signatures,
+                          outcomes.map(_.outcomeString))
 
   def outcomes: Vector[DLCAttestationType]
 }
