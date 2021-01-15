@@ -9,11 +9,17 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait WalletSync extends BitcoinSLogger {
 
-  def sync(
+  /** Synchronizes the bitcoin-s' wallet by retrieving each block and then calling
+    * [[Wallet.processBlock()]] on the block retrieved
+    *
+    * WARNING: This should not be used on resource constrained devices
+    * as fetching full blocks will use a lot of bandwidth on live networks
+    */
+  def syncFullBlocks(
       wallet: Wallet,
       getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader],
       getBestBlockHashFunc: () => Future[DoubleSha256DigestBE],
-      getBlock: DoubleSha256DigestBE => Future[Block])(implicit
+      getBlockFunc: DoubleSha256DigestBE => Future[Block])(implicit
       ec: ExecutionContext): Future[Wallet] = {
     val bestBlockHashF = getBestBlockHashFunc()
     val bestBlockHeaderF = for {
@@ -26,7 +32,7 @@ trait WalletSync extends BitcoinSLogger {
       blocksToSync <- getBlocksToSync(wallet = wallet,
                                       currentTipBlockHashBE = bestHeader.hashBE,
                                       accum = Vector.empty,
-                                      getBlock = getBlock)
+                                      getBlock = getBlockFunc)
     } yield blocksToSync
 
     val syncedWalletF = for {
