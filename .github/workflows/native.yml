@@ -3,8 +3,8 @@
 name: Native Image bitcoin-s-cli
 on:
   push:
-    branches:
-      - master
+    branches: [master, main, adaptor-dlc]
+    tags: ["*"]
   pull_request:
   release:
     types: [published]
