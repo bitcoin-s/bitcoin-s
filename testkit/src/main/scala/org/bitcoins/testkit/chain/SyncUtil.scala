@@ -168,13 +168,16 @@ abstract class SyncUtil extends BitcoinSLogger {
     node.NodeChainQueryApi(nodeApi, chainQuery)
   }
 
-  def syncWallet(wallet: Wallet, bitcoind: BitcoindRpcClient)(implicit
+  /** Syncs a wallet against bitcoind by retrieving full blocks and then calling
+    * [[Wallet.processBlock()]]
+    */
+  def syncWalletFullBlocks(wallet: Wallet, bitcoind: BitcoindRpcClient)(implicit
       ec: ExecutionContext): Future[Wallet] = {
-    WalletSync.sync(
+    WalletSync.syncFullBlocks(
       wallet = wallet,
       getBlockHeaderFunc = SyncUtil.getBlockHeaderFunc(bitcoind),
       getBestBlockHashFunc = SyncUtil.getBestBlockHashFunc(bitcoind),
-      getBlock = SyncUtil.getBlockFunc(bitcoind)
+      getBlockFunc = SyncUtil.getBlockFunc(bitcoind)
     )
   }
 }
