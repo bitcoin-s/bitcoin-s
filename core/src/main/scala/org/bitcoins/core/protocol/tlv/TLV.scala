@@ -873,16 +873,17 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   }
 }
 
-sealed trait TLVPoint extends NetworkElement {
-  def outcome: Long
-  def value: Satoshis
-  def extraPrecision: Int
+case class TLVPoint(
+    outcome: Long,
+    value: Satoshis,
+    extraPrecision: Int,
+    isEndpoint: Boolean)
+    extends NetworkElement {
 
-  lazy val leadingByte: Byte = {
-    this match {
-      case _: TLVEndpoint => 1.toByte
-      case _: TLVMidpoint => 0.toByte
-    }
+  lazy val leadingByte: Byte = if (isEndpoint) {
+    1.toByte
+  } else {
+    0.toByte
   }
 
   override def bytes: ByteVector = {
@@ -892,12 +893,6 @@ sealed trait TLVPoint extends NetworkElement {
       UInt16(extraPrecision).bytes
   }
 }
-
-case class TLVEndpoint(outcome: Long, value: Satoshis, extraPrecision: Int)
-    extends TLVPoint
-
-case class TLVMidpoint(outcome: Long, value: Satoshis, extraPrecision: Int)
-    extends TLVPoint
 
 object TLVPoint extends Factory[TLVPoint] {
 
@@ -914,11 +909,10 @@ object TLVPoint extends Factory[TLVPoint] {
     val value = UInt64(bytes.drop(1 + outcome.byteSize).take(8))
     val extraPrecision = UInt16(bytes.drop(9 + outcome.byteSize).take(2)).toInt
 
-    if (isEndpoint) {
-      TLVEndpoint(outcome.toLong, Satoshis(value.toLong), extraPrecision)
-    } else {
-      TLVMidpoint(outcome.toLong, Satoshis(value.toLong), extraPrecision)
-    }
+    TLVPoint(outcome = outcome.toLong,
+             value = Satoshis(value.toLong),
+             extraPrecision = extraPrecision,
+             isEndpoint = isEndpoint)
   }
 }
 

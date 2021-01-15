@@ -308,13 +308,7 @@ object DLCMessage {
         val payoutWithPrecision =
           point.value.toLong + (BigDecimal(point.extraPrecision) / (1 << 16))
 
-        point match {
-          case _: TLVEndpoint =>
-            OutcomePayoutEndpoint(point.outcome, payoutWithPrecision)
-          case _: TLVMidpoint =>
-            OutcomePayoutMidpoint(point.outcome, payoutWithPrecision)
-        }
-
+        OutcomePayoutPoint(point.outcome, payoutWithPrecision, point.isEndpoint)
       }
 
       MultiNonceContractInfo(DLCPayoutCurve(points),

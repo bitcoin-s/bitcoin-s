@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.tlv.{TLVEndpoint, TLVMidpoint, TLVPoint}
+import org.bitcoins.core.protocol.tlv.TLVPoint
 import org.bitcoins.core.util.{Indexed, NumberUtil}
 
 import scala.math.BigDecimal.RoundingMode
@@ -105,9 +105,15 @@ sealed trait OutcomePayoutPoint {
   def toTlvPoint: TLVPoint = {
     this match {
       case _: OutcomePayoutEndpoint =>
-        TLVEndpoint(outcome, roundedPayout, extraPrecision)
+        TLVPoint(outcome = outcome,
+                 value = roundedPayout,
+                 extraPrecision = extraPrecision,
+                 isEndpoint = true)
       case _: OutcomePayoutMidpoint =>
-        TLVMidpoint(outcome, roundedPayout, extraPrecision)
+        TLVPoint(outcome = outcome,
+                 value = roundedPayout,
+                 extraPrecision = extraPrecision,
+                 isEndpoint = false)
     }
   }
 }
