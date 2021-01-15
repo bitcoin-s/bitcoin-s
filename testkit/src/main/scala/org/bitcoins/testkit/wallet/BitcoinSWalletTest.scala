@@ -274,8 +274,8 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
           bitcoind = bitcoind,
           bip39PasswordOpt = bip39PasswordOpt)
         fundedWallet <- fundWalletWithBitcoind(walletWithBitcoind)
-        _ <-
-          SyncUtil.syncWallet(wallet = fundedWallet.wallet, bitcoind = bitcoind)
+        _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
+                                           bitcoind = bitcoind)
         _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
       } yield fundedWallet
     }
@@ -294,8 +294,8 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
             .map(_.asInstanceOf[BitcoindV19RpcClient])
         wallet <- createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
         fundedWallet <- fundWalletWithBitcoind(wallet)
-        _ <-
-          SyncUtil.syncWallet(wallet = fundedWallet.wallet, bitcoind = bitcoind)
+        _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
+                                           bitcoind = bitcoind)
         _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
       } yield {
         WalletWithBitcoindV19(fundedWallet.wallet, bitcoind)

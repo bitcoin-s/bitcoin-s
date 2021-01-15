@@ -22,10 +22,10 @@ class WalletSyncTest extends BitcoinSWalletTest {
     val getBlockHeaderFunc = SyncUtil.getBlockHeaderFunc(bitcoind)
 
     val getBlockFunc = SyncUtil.getBlockFunc(bitcoind)
-    val syncedWalletF = WalletSync.sync(wallet,
-                                        getBlockHeaderFunc,
-                                        getBestBlockHashFunc,
-                                        getBlockFunc)
+    val syncedWalletF = WalletSync.syncFullBlocks(wallet,
+                                                  getBlockHeaderFunc,
+                                                  getBestBlockHashFunc,
+                                                  getBlockFunc)
 
     val bitcoindBestHeaderF = bitcoind.getBestBlockHeader()
     for {
