@@ -7,7 +7,8 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{
   DLCOutcomeType,
   EnumOutcome,
-  OracleParamsV0TLV
+  OracleParamsV0TLV,
+  UnsignedNumericOutcome
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
@@ -413,20 +414,37 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
       dlcAccept: TestDLCClient,
       oracleSigs: Vector[OracleSignatures],
       outcome: OracleOutcome): Future[Assertion] = {
-    val (aggR, aggS) = oracleSigs
-      .map(
-        _.sigs
-          .map(sig => (sig.rx.publicKey, sig.sig))
-          .reduce[(ECPublicKey, FieldElement)] {
-            case ((pk1, s1), (pk2, s2)) =>
-              (pk1.add(pk2), s1.add(s2))
-          })
-      .reduce[(ECPublicKey, FieldElement)] {
-        case ((pk1, s1), (pk2, s2)) =>
-          (pk1.add(pk2), s1.add(s2))
-      }
+    val aggR = outcome.aggregateNonce
+    val aggS = outcome match {
+      case EnumOracleOutcome(oracles, _) =>
+        assert(oracles.length == oracleSigs.length)
 
-    val aggSig = SchnorrDigitalSignature(aggR.schnorrNonce, aggS)
+        val sVals = oracleSigs.map {
+          case EnumOracleSignature(oracle, sig) =>
+            assert(oracles.contains(oracle))
+            sig.sig
+          case _: NumericOracleSignatures =>
+            fail("Expected EnumOracleSignature")
+        }
+
+        sVals.reduce(_.add(_))
+      case NumericOracleOutcome(oraclesAndOutcomes) =>
+        assert(oraclesAndOutcomes.length == oracleSigs.length)
+
+        val sVals = oracleSigs.map {
+          case NumericOracleSignatures(oracle, sigs) =>
+            val oracleAndOutcomeOpt = oraclesAndOutcomes.find(_._1 == oracle)
+            assert(oracleAndOutcomeOpt.isDefined)
+            val outcome = oracleAndOutcomeOpt.get._2
+            val sVals = sigs.take(outcome.digits.length).map(_.sig)
+            sVals.reduce(_.add(_))
+          case _: EnumOracleSignature =>
+            fail("Expected NumericOracleSignatures")
+        }
+        sVals.reduce(_.add(_))
+    }
+
+    val aggSig = SchnorrDigitalSignature(aggR, aggS)
 
     for {
       acceptCETSigs <- dlcAccept.dlcTxSigner.createCETSigs()
@@ -459,10 +477,10 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
                                          sign,
                                          offerOutcome.cet)
 
-      assert(offerOracleSig == aggSig)
       assert(offerDLCOutcome == outcome)
-      assert(acceptOracleSig == aggSig)
       assert(acceptDLCOutcome == outcome)
+      assert(offerOracleSig == aggSig)
+      assert(acceptOracleSig == aggSig)
     }
   }
 
@@ -470,25 +488,28 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
     val outcomeIndex = 1
 
     runTestsForParam(numEnumOutcomesToTest) { numOutcomes =>
-      constructAndSetupDLC(numOutcomes,
-                           isMultiDigit = false,
-                           oracleThreshold = 1,
-                           numOracles = 1).flatMap {
-        case (dlcOffer, offerSetup, dlcAccept, acceptSetup, outcomes) =>
-          val (oracleOutcome, sigs) =
-            genOracleOutcomeAndSignatures(numOutcomes,
-                                          isNumeric = false,
-                                          dlcOffer,
-                                          outcomes,
-                                          outcomeIndex,
-                                          paramsOpt = None)
+      runTestsForParam(enumOracleSchemesToTest) {
+        case (threshold, numOracles) =>
+          constructAndSetupDLC(numOutcomes,
+                               isMultiDigit = false,
+                               oracleThreshold = threshold,
+                               numOracles = numOracles).flatMap {
+            case (dlcOffer, offerSetup, dlcAccept, acceptSetup, outcomes) =>
+              val (oracleOutcome, sigs) =
+                genOracleOutcomeAndSignatures(numOutcomes,
+                                              isNumeric = false,
+                                              dlcOffer,
+                                              outcomes,
+                                              outcomeIndex,
+                                              paramsOpt = None)
 
-          assertCorrectSigDerivation(offerSetup = offerSetup,
-                                     dlcOffer = dlcOffer,
-                                     acceptSetup = acceptSetup,
-                                     dlcAccept = dlcAccept,
-                                     oracleSigs = sigs,
-                                     outcome = oracleOutcome)
+              assertCorrectSigDerivation(offerSetup = offerSetup,
+                                         dlcOffer = dlcOffer,
+                                         acceptSetup = acceptSetup,
+                                         dlcAccept = dlcAccept,
+                                         oracleSigs = sigs,
+                                         outcome = oracleOutcome)
+          }
       }
     }
   }
@@ -497,45 +518,62 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
     // Larger numbers of digits make tests take too long.
     val numDigitsToTest = Vector(5, 9)
     runTestsForParam(numDigitsToTest) { numDigits =>
-      val max = (1L << numDigits) - 1
-      val outcomesToTest = 0
-        .until(9)
-        .toVector
-        .map(num => (max / num.toDouble).toLong)
-        .map(num => NumberUtil.decompose(num, 2, numDigits))
+      runTestsForParam(Vector((1, 1), (2, 2), (2, 3))) {
+        case (threshold, numOracles) =>
+          val oracleParamOptsToTest = if (threshold > 1) {
+            Vector(None,
+                   Some(
+                     OracleParamsV0TLV(numDigits - 2,
+                                       numDigits - 4,
+                                       maximizeCoverage = false)))
+          } else Vector(None)
+          runTestsForParam(oracleParamOptsToTest) { oracleParamsOpt =>
+            val max = (1L << numDigits) - 1
+            val outcomesToTest = 0
+              .until(9)
+              .toVector
+              .map(num => (max / num.toDouble).toLong)
+              .map(num => NumberUtil.decompose(num, 2, numDigits))
 
-      constructAndSetupDLC(numDigits,
-                           isMultiDigit = true,
-                           oracleThreshold = 1,
-                           numOracles = 1).flatMap {
-        case (dlcOffer, offerSetup, dlcAccept, acceptSetup, outcomes) =>
-          runTestsForParam(outcomesToTest) { outcomeToTest =>
-            val outcome = CETCalculator
-              .searchForNumericOutcome(outcomeToTest, outcomes)
-              .get
+            constructAndSetupDLC(numDigits,
+                                 isMultiDigit = true,
+                                 oracleThreshold = threshold,
+                                 numOracles = numOracles,
+                                 paramsOpt = oracleParamsOpt).flatMap {
+              case (dlcOffer, offerSetup, dlcAccept, acceptSetup, outcomes) =>
+                runTestsForParam(outcomesToTest) { outcomeToTest =>
+                  val possibleOutcomes = outcomes
+                    .collect { case ds: UnsignedNumericOutcome => ds }
+                    .filter(outcome => outcomeToTest.startsWith(outcome.digits))
+                  val outcome =
+                    possibleOutcomes(Random.nextInt(possibleOutcomes.length))
 
-            val oracleInfo = dlcOffer.offer.oracleInfo
+                  val oracleInfo = dlcOffer.offer.oracleInfo
 
-            val oracleIndices =
-              0.until(oracleInfo.numOracles).toVector
-            val chosenOracles =
-              Random.shuffle(oracleIndices).take(oracleInfo.threshold).sorted
+                  val oracleIndices =
+                    0.until(oracleInfo.numOracles).toVector
+                  val chosenOracles =
+                    Random
+                      .shuffle(oracleIndices)
+                      .take(oracleInfo.threshold)
+                      .sorted
 
-            val oracleOutcome = genNumericOracleOutcome(numDigits,
-                                                        chosenOracles,
-                                                        dlcOffer,
-                                                        outcome.digits,
-                                                        paramsOpt = None
-            ) // FIXME
+                  val oracleOutcome =
+                    genNumericOracleOutcome(chosenOracles,
+                                            dlcOffer,
+                                            outcome.digits,
+                                            oracleParamsOpt)
 
-            val oracleSigs = genNumericOracleSignatures(oracleOutcome)
+                  val oracleSigs = genNumericOracleSignatures(oracleOutcome)
 
-            assertCorrectSigDerivation(offerSetup = offerSetup,
-                                       dlcOffer = dlcOffer,
-                                       acceptSetup = acceptSetup,
-                                       dlcAccept = dlcAccept,
-                                       oracleSigs = oracleSigs,
-                                       outcome = oracleOutcome)
+                  assertCorrectSigDerivation(offerSetup = offerSetup,
+                                             dlcOffer = dlcOffer,
+                                             acceptSetup = acceptSetup,
+                                             dlcAccept = dlcAccept,
+                                             oracleSigs = oracleSigs,
+                                             outcome = oracleOutcome)
+                }
+            }
           }
       }
     }

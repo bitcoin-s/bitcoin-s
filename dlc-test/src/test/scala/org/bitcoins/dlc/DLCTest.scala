@@ -628,7 +628,6 @@ trait DLCTest {
   }
 
   def genNumericOracleOutcome(
-      numDigits: Int,
       chosenOracles: Vector[Int],
       dlcOffer: TestDLCClient,
       digits: Vector[Int],
@@ -637,20 +636,14 @@ trait DLCTest {
       case Left(_) => Assertions.fail("Expected Numeric Contract")
       case Right(
             (_: NumericContractDescriptor, oracleInfo: NumericOracleInfo)) =>
-        lazy val num = NumberUtil.fromDigits(digits, base = 2, numDigits)
-        lazy val possibleOutcomesOpt = paramsOpt.map {
-          case OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage) =>
-            val possibleOutcomes = CETCalculator
-              .computeCoveringCETsBinary(numDigits,
-                                         digits,
-                                         maxErrorExp,
-                                         minFailExp,
-                                         maximizeCoverage,
-                                         chosenOracles.length)
-              .map(_.apply(1))
-              .sorted(NumberUtil.lexicographicalOrdering[Int])
-              .map(UnsignedNumericOutcome.apply)
-            possibleOutcomes
+        lazy val possibleOutcomesOpt = paramsOpt.map { _ =>
+          dlcOffer.offer.contractInfo.allOutcomes
+            .map(
+              _.asInstanceOf[NumericOracleOutcome].oraclesAndOutcomes.map(_._2))
+            .filter(_.head.digits == digits)
+            .map(_.apply(1).digits)
+            .sorted(NumberUtil.lexicographicalOrdering[Int])
+            .map(UnsignedNumericOutcome.apply)
         }
 
         val oraclesAndOutcomes = chosenOracles.map { index =>
@@ -661,13 +654,10 @@ trait DLCTest {
           } else {
             paramsOpt match {
               case None => digits
-              case Some(OracleParamsV0TLV(_, minFailExp, _)) =>
+              case Some(_: OracleParamsV0TLV) =>
                 val possibleOutcomes = possibleOutcomesOpt.get
 
-                computeNumericOutcomeWithError(numDigits,
-                                               num,
-                                               minFailExp,
-                                               possibleOutcomes)
+                possibleOutcomes(Random.nextInt(possibleOutcomes.length)).digits
             }
           }
 
@@ -691,11 +681,7 @@ trait DLCTest {
             (descriptor: NumericContractDescriptor, _: NumericOracleInfo)) =>
         val digits =
           computeNumericOutcome(numDigits, descriptor, outcomes, outcomeIndex)
-        genNumericOracleOutcome(numDigits,
-                                chosenOracles,
-                                dlcOffer,
-                                digits,
-                                paramsOpt)
+        genNumericOracleOutcome(chosenOracles, dlcOffer, digits, paramsOpt)
     }
   }
 
