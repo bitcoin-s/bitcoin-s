@@ -5,76 +5,125 @@ import org.bitcoins.core.protocol.dlc.DLCStatus.{Claimed, RemoteClaimed}
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
+import org.bitcoins.testkit.dlc.DLCTest.genNumericOracleOutcome
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.FutureOutcome
 
-class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
-  type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
+import scala.util.Random
 
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withDualDLCWallets(test, multiNonce = true)
-  }
+class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
+  type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
 
   behavior of "DLCWallet"
 
+  val privateKeys: Vector[ECPrivateKey] =
+    0.until(5).map(_ => ECPrivateKey.freshPrivateKey).toVector
+
+  val kValues: Vector[Vector[ECPrivateKey]] =
+    privateKeys.map(_ =>
+      0.until(numDigits).map(_ => ECPrivateKey.freshPrivateKey).toVector)
+
+  val contractDescriptor: NumericContractDescriptor =
+    DLCWalletUtil.multiNonceContractDescriptor
+
+  val announcements: Vector[OracleAnnouncementTLV] =
+    privateKeys.zip(kValues).map {
+      case (priv, ks) =>
+        OracleAnnouncementV0TLV.dummyForKeys(priv, ks.map(_.schnorrNonce))
+    }
+
+  val threshold = 3
+
+  val oracleInfo: NumericExactMultiOracleInfo =
+    NumericExactMultiOracleInfo(threshold, announcements)
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    withDualDLCWallets(test, contractDescriptor, oracleInfo)
+  }
+
   def getSigs(contractInfo: ContractInfo): (
-      OracleAttestmentTLV,
-      OracleAttestmentTLV) = {
+      Vector[OracleAttestmentTLV],
+      Vector[OracleAttestmentTLV]) = {
     contractInfo.contractDescriptor match {
       case _: NumericContractDescriptor => ()
       case _: EnumContractDescriptor =>
         throw new IllegalArgumentException("Unexpected Contract Info")
     }
 
-    val oracleInfo = DLCWalletUtil.multiNonceContractInfo.oracleInfo
-      .asInstanceOf[NumericSingleOracleInfo]
+    val oracleIndices =
+      0.until(oracleInfo.numOracles).toVector
+    val initChosenOracles =
+      Random.shuffle(oracleIndices).take(oracleInfo.threshold).sorted
 
-    val initiatorWinVec =
+    val initiatorWinOutcome =
       contractInfo.allOutcomesAndPayouts
         .maxBy(_._2.toLong)
         ._1
         .outcome
         .asInstanceOf[UnsignedNumericOutcome]
-        .digits
-        .padTo(oracleInfo.nonces.size, 0)
 
-    val kValues = DLCWalletUtil.kValues.take(initiatorWinVec.size)
+    val initiatorWinVec = initiatorWinOutcome.digits
 
-    val initiatorWinSigs = initiatorWinVec.zip(kValues).map {
-      case (num, kValue) =>
-        DLCWalletUtil.oraclePrivKey
-          .schnorrSignWithNonce(CryptoUtil
-                                  .sha256DLCAttestation(num.toString)
-                                  .bytes,
-                                kValue)
+    val initWinOutcomes: NumericOracleOutcome = genNumericOracleOutcome(
+      initChosenOracles,
+      contractInfo,
+      initiatorWinVec,
+      None)
+
+    val initiatorWinSigs = privateKeys.zip(kValues).flatMap {
+      case (priv, kValues) =>
+        val outcomeOpt = initWinOutcomes.oraclesAndOutcomes.find(
+          _._1.publicKey == priv.schnorrPublicKey)
+
+        outcomeOpt.map { outcome =>
+          val sigs = outcome._2.digits.zip(kValues).map {
+            case (num, kValue) =>
+              val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
+              priv.schnorrSignWithNonce(hash, kValue)
+          }
+
+          OracleAttestmentV0TLV(priv.schnorrPublicKey, sigs)
+        }
     }
 
-    val recipientWinVec =
+    val recipientChosenOracles =
+      Random.shuffle(oracleIndices).take(oracleInfo.threshold).sorted
+
+    val recipientWinOutcome =
       contractInfo.allOutcomesAndPayouts
         .find(_._2 == Satoshis.zero)
         .get
         ._1
         .outcome
         .asInstanceOf[UnsignedNumericOutcome]
-        .digits
-        .padTo(oracleInfo.nonces.size, 0)
 
-    val kValues2 = DLCWalletUtil.kValues.take(recipientWinVec.size)
+    val recipientWinVec = recipientWinOutcome.digits
 
-    val recipientWinSigs = recipientWinVec.zip(kValues2).map {
-      case (num, kValue) =>
-        DLCWalletUtil.oraclePrivKey
-          .schnorrSignWithNonce(CryptoUtil
-                                  .sha256DLCAttestation(num.toString)
-                                  .bytes,
-                                kValue)
+    val recipientWinOutcomes: NumericOracleOutcome = genNumericOracleOutcome(
+      recipientChosenOracles,
+      contractInfo,
+      recipientWinVec,
+      None)
+
+    val recipientWinSigs = privateKeys.zip(kValues).flatMap {
+      case (priv, kValues) =>
+        val outcomeOpt = recipientWinOutcomes.oraclesAndOutcomes.find(
+          _._1.publicKey == priv.schnorrPublicKey)
+
+        outcomeOpt.map { outcome =>
+          val sigs = outcome._2.digits.zip(kValues).map {
+            case (num, kValue) =>
+              val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
+              priv.schnorrSignWithNonce(hash, kValue)
+          }
+
+          OracleAttestmentV0TLV(priv.schnorrPublicKey, sigs)
+        }
     }
 
-    val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
-
-    (OracleAttestmentV0TLV(publicKey, initiatorWinSigs),
-     OracleAttestmentV0TLV(publicKey, recipientWinSigs))
+    // Shuffle to make sure ordering doesn't matter
+    (Random.shuffle(initiatorWinSigs), Random.shuffle(recipientWinSigs))
   }
 
   it must "execute as the initiator" in { wallets =>

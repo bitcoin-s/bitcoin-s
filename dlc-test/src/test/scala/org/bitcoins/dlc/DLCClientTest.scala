@@ -19,6 +19,7 @@ import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.execution._
 import org.bitcoins.dlc.testgen.TestDLCClient
 import org.bitcoins.dlc.verify.DLCSignatureVerifier
+import org.bitcoins.testkit.dlc.DLCTest
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BytesUtil}
 import org.scalatest.Assertion
 import scodec.bits.BitVector
@@ -560,7 +561,7 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
 
                   val oracleOutcome =
                     genNumericOracleOutcome(chosenOracles,
-                                            dlcOffer,
+                                            dlcOffer.offer.contractInfo,
                                             outcome.digits,
                                             oracleParamsOpt)
 

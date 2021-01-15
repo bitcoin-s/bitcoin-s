@@ -1,4 +1,4 @@
-package org.bitcoins.dlc
+package org.bitcoins.testkit.dlc
 
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
@@ -7,26 +7,13 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.tlv.{
-  DLCOutcomeType,
-  EnumOutcome,
-  OracleAnnouncementV0TLV,
-  OracleParamsV0TLV,
-  UnsignedNumericOutcome
-}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{FutureUtil, NumberUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  ECPrivateKey,
-  ECPublicKey,
-  SchnorrDigitalSignature,
-  SchnorrNonce,
-  SchnorrPublicKey
-}
+import org.bitcoins.crypto._
 import org.bitcoins.dlc.execution.SetupDLC
 import org.bitcoins.dlc.testgen.{DLCTestUtil, TestDLCClient}
 import org.scalatest.{Assertion, Assertions}
@@ -629,15 +616,15 @@ trait DLCTest {
 
   def genNumericOracleOutcome(
       chosenOracles: Vector[Int],
-      dlcOffer: TestDLCClient,
+      contractInfo: ContractInfo,
       digits: Vector[Int],
       paramsOpt: Option[OracleParamsV0TLV]): NumericOracleOutcome = {
-    dlcOffer.offer.contractInfo.descriptorAndInfo match {
+    contractInfo.descriptorAndInfo match {
       case Left(_) => Assertions.fail("Expected Numeric Contract")
       case Right(
             (_: NumericContractDescriptor, oracleInfo: NumericOracleInfo)) =>
         lazy val possibleOutcomesOpt = paramsOpt.map { _ =>
-          dlcOffer.offer.contractInfo.allOutcomes
+          contractInfo.allOutcomes
             .map(
               _.asInstanceOf[NumericOracleOutcome].oraclesAndOutcomes.map(_._2))
             .filter(_.head.digits == digits)
@@ -681,7 +668,10 @@ trait DLCTest {
             (descriptor: NumericContractDescriptor, _: NumericOracleInfo)) =>
         val digits =
           computeNumericOutcome(numDigits, descriptor, outcomes, outcomeIndex)
-        genNumericOracleOutcome(chosenOracles, dlcOffer, digits, paramsOpt)
+        genNumericOracleOutcome(chosenOracles,
+                                dlcOffer.offer.contractInfo,
+                                digits,
+                                paramsOpt)
     }
   }
 

@@ -24,6 +24,7 @@ import org.bitcoins.dlc.execution.{
 }
 import org.bitcoins.dlc.testgen.TestDLCClient
 import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.testkit.dlc.DLCTest
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest.Assertion
