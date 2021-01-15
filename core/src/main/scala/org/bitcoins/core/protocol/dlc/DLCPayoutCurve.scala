@@ -83,6 +83,13 @@ sealed trait OutcomePayoutPoint {
   def outcome: Long
   def payout: BigDecimal
 
+  def isEndPoint: Boolean = {
+    this match {
+      case _: OutcomePayoutEndpoint => true
+      case _: OutcomePayoutMidpoint => false
+    }
+  }
+
   def roundedPayout: Satoshis = {
     Satoshis(payout.setScale(0, RoundingMode.FLOOR).toLongExact)
   }
@@ -204,10 +211,9 @@ sealed trait DLCPayoutCurveComponent {
 object DLCPayoutCurveComponent {
 
   def apply(points: Vector[OutcomePayoutPoint]): DLCPayoutCurveComponent = {
-    require(points.head.isInstanceOf[OutcomePayoutEndpoint] && points.last
-              .isInstanceOf[OutcomePayoutEndpoint],
+    require(points.head.isEndPoint && points.last.isEndPoint,
             s"First and last points must be endpoints, $points")
-    require(points.tail.init.forall(!_.isInstanceOf[OutcomePayoutEndpoint]),
+    require(points.tail.init.forall(!_.isEndPoint),
             s"Endpoint detected in middle, $points")
 
     points match {
