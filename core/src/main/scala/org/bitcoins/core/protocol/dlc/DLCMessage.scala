@@ -293,12 +293,7 @@ object DLCMessage {
     }
 
     override lazy val toTLV: ContractInfoV1TLV = {
-      val tlvPoints = outcomeValueFunc.points.map { point =>
-        TLVPoint(point.outcome,
-                 point.roundedPayout,
-                 point.extraPrecision,
-                 point.isEndpoint)
-      }
+      val tlvPoints = outcomeValueFunc.points.map(_.toTlvPoint)
 
       ContractInfoV1TLV(base, numDigits, totalCollateral, tlvPoints)
     }
@@ -312,6 +307,7 @@ object DLCMessage {
       val points = tlv.points.map { point =>
         val payoutWithPrecision =
           point.value.toLong + (BigDecimal(point.extraPrecision) / (1 << 16))
+
         OutcomePayoutPoint(point.outcome, payoutWithPrecision, point.isEndpoint)
       }
 

@@ -300,12 +300,14 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       oracleEventTLV: OracleEventTLV,
       num: Long): Future[OracleEvent] = {
 
-    val eventDescriptorTLV = oracleEventTLV.eventDescriptor match {
-      case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV =>
-        throw new IllegalArgumentException(
-          "Must have a DigitDecomposition event descriptor use signEvent instead")
-      case decomp: DigitDecompositionEventDescriptorV0TLV =>
-        decomp
+    val eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV = {
+      oracleEventTLV.eventDescriptor match {
+        case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV =>
+          throw new IllegalArgumentException(
+            "Must have a DigitDecomposition event descriptor use signEvent instead")
+        case decomp: DigitDecompositionEventDescriptorV0TLV =>
+          decomp
+      }
     }
 
     // Make this a vec so it is easier to add on
@@ -338,9 +340,12 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
                                           eventDescriptorTLV.base.toInt,
                                           eventDescriptorTLV.numDigits.toInt)
 
-    val nonces =
-      if (eventDescriptorTLV.isSigned) oracleEventTLV.nonces.tail
-      else oracleEventTLV.nonces
+    val nonces = eventDescriptorTLV match {
+      case _: UnsignedDigitDecompositionEventDescriptor =>
+        oracleEventTLV.nonces
+      case _: SignedDigitDecompositionEventDescriptor =>
+        oracleEventTLV.nonces.tail
+    }
 
     val digitSigFs = nonces.zipWithIndex.map {
       case (nonce, index) =>

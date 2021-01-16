@@ -603,9 +603,6 @@ sealed trait DigitDecompositionEventDescriptorV0TLV
   require(numDigits > UInt16.zero,
           s"Number of digits must be positive, got $numDigits")
 
-  /** Whether the outcome can be negative */
-  def isSigned: Boolean
-
   /** The number of digits that the oracle will sign */
   def numDigits: UInt16
 
@@ -613,22 +610,32 @@ sealed trait DigitDecompositionEventDescriptorV0TLV
 
   private lazy val maxDigit: NormalizedString = (base.toInt - 1).toString
 
-  override lazy val max: Vector[NormalizedString] = if (isSigned) {
-    NormalizedString("+") +: Vector.fill(numDigits.toInt)(maxDigit)
-  } else {
-    Vector.fill(numDigits.toInt)(maxDigit)
+  override lazy val max: Vector[NormalizedString] = {
+    this match {
+      case _: SignedDigitDecompositionEventDescriptor =>
+        NormalizedString("+") +: Vector.fill(numDigits.toInt)(maxDigit)
+      case _: UnsignedDigitDecompositionEventDescriptor =>
+        Vector.fill(numDigits.toInt)(maxDigit)
+
+    }
   }
 
-  override lazy val minNum: BigInt = if (isSigned) {
-    -maxNum
-  } else {
-    0
+  override lazy val minNum: BigInt = {
+    this match {
+      case _: SignedDigitDecompositionEventDescriptor =>
+        -maxNum
+      case _: UnsignedDigitDecompositionEventDescriptor =>
+        0
+    }
   }
 
-  override lazy val min: Vector[NormalizedString] = if (isSigned) {
-    NormalizedString("-") +: Vector.fill(numDigits.toInt)(maxDigit)
-  } else {
-    Vector.fill(numDigits.toInt)("0")
+  override lazy val min: Vector[NormalizedString] = {
+    this match {
+      case _: SignedDigitDecompositionEventDescriptor =>
+        NormalizedString("-") +: Vector.fill(numDigits.toInt)(maxDigit)
+      case _: UnsignedDigitDecompositionEventDescriptor =>
+        Vector.fill(numDigits.toInt)("0")
+    }
   }
 
   override lazy val step: UInt16 = UInt16.one
@@ -637,16 +644,26 @@ sealed trait DigitDecompositionEventDescriptorV0TLV
     DigitDecompositionEventDescriptorV0TLV.tpe
 
   override lazy val value: ByteVector = {
-    base.bytes ++
-      boolBytes(isSigned) ++
-      strBytes(unit) ++
+    val start = base.bytes
+    val signByte = this match {
+      case _: UnsignedDigitDecompositionEventDescriptor =>
+        boolBytes(false)
+      case _: SignedDigitDecompositionEventDescriptor =>
+        boolBytes(true)
+    }
+    val end = strBytes(unit) ++
       precision.bytes ++
       numDigits.bytes
+    start ++ signByte ++ end
   }
 
   override def noncesNeeded: Int = {
-    if (isSigned) numDigits.toInt + 1
-    else numDigits.toInt
+    this match {
+      case _: SignedDigitDecompositionEventDescriptor =>
+        numDigits.toInt + 1
+      case _: UnsignedDigitDecompositionEventDescriptor =>
+        numDigits.toInt
+    }
   }
 }
 
@@ -656,9 +673,7 @@ case class SignedDigitDecompositionEventDescriptor(
     numDigits: UInt16,
     unit: NormalizedString,
     precision: Int32)
-    extends DigitDecompositionEventDescriptorV0TLV {
-  override val isSigned: Boolean = true
-}
+    extends DigitDecompositionEventDescriptorV0TLV
 
 /** Represents a large range event that is unsigned */
 case class UnsignedDigitDecompositionEventDescriptor(
@@ -666,9 +681,7 @@ case class UnsignedDigitDecompositionEventDescriptor(
     numDigits: UInt16,
     unit: NormalizedString,
     precision: Int32)
-    extends DigitDecompositionEventDescriptorV0TLV {
-  override val isSigned: Boolean = false
-}
+    extends DigitDecompositionEventDescriptorV0TLV
 
 object DigitDecompositionEventDescriptorV0TLV
     extends TLVFactory[DigitDecompositionEventDescriptorV0TLV] {
@@ -895,7 +908,11 @@ object TLVPoint extends Factory[TLVPoint] {
     val outcome = BigSizeUInt(bytes.tail)
     val value = UInt64(bytes.drop(1 + outcome.byteSize).take(8))
     val extraPrecision = UInt16(bytes.drop(9 + outcome.byteSize).take(2)).toInt
-    TLVPoint(outcome.toLong, Satoshis(value.toLong), extraPrecision, isEndpoint)
+
+    TLVPoint(outcome = outcome.toLong,
+             value = Satoshis(value.toLong),
+             extraPrecision = extraPrecision,
+             isEndpoint = isEndpoint)
   }
 }
 
