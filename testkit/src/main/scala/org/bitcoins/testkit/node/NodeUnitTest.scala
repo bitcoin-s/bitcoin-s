@@ -35,7 +35,11 @@ import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
-import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, emptyPeer}
+import org.bitcoins.testkit.node.NodeUnitTest.{
+  createPeer,
+  emptyPeer,
+  syncNeutrinoNode
+}
 import org.bitcoins.testkit.node.fixture.{
   NeutrinoNodeConnectedWithBitcoind,
   NodeConnectedWithBitcoind,
@@ -262,7 +266,9 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
         node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
                                                           appConfig.chainConf,
                                                           appConfig.nodeConf)
-      } yield NeutrinoNodeConnectedWithBitcoind(node, bitcoind)
+        startedNode <- node.start()
+        syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
+      } yield NeutrinoNodeConnectedWithBitcoind(syncedNode, bitcoind)
     }
     makeDependentFixture(
       build = nodeWithBitcoindBuilder,
