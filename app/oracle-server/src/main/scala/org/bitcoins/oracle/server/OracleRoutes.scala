@@ -142,11 +142,13 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
                     }
                     outcomes.map(num => Num(num.toDouble))
                   case decomp: DigitDecompositionEventDescriptorV0TLV =>
-                    val sign = if (decomp.isSigned) {
-                      Vector(Str("+"), Str("-"))
-                    } else {
-                      Vector.empty
+                    val sign = decomp match {
+                      case _: UnsignedDigitDecompositionEventDescriptor =>
+                        Vector.empty
+                      case _: SignedDigitDecompositionEventDescriptor =>
+                        Vector(Str("+"), Str("-"))
                     }
+
                     val digits = 0.until(decomp.numDigits.toInt).map { _ =>
                       0
                         .until(decomp.base.toInt)

@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.tlv.TLVPoint
 import org.bitcoins.core.util.{Indexed, NumberUtil}
 
 import scala.math.BigDecimal.RoundingMode
@@ -15,15 +16,26 @@ case class DLCPayoutCurve(points: Vector[OutcomePayoutPoint]) {
   /** These points (and their indices in this.points) represent the endpoints
     * between which interpolation happens.
     * In other words these endpoints define the pieces of the piecewise function.
+    *
+    * It's important to note that the index returned here is relative to the _entire_
+    * set of points, not the index relative to the set of endpoints.
     */
-  lazy val endpoints: Vector[Indexed[OutcomePayoutPoint]] =
-    Indexed(points).filter(_.element.isEndpoint)
+  lazy val endpoints: Vector[Indexed[OutcomePayoutEndpoint]] = {
+    val endpoints = points.zipWithIndex.collect {
+      case (o: OutcomePayoutEndpoint, idx) => (o, idx)
+    }
+    Indexed.fromGivenIndex(endpoints)
+  }
 
   /** This Vector contains the function pieces between the endpoints */
   lazy val functionComponents: Vector[DLCPayoutCurveComponent] = {
-    endpoints.init.zip(endpoints.tail).map { // All pairs of adjacent endpoints
+    val zipped: Vector[
+      (Indexed[OutcomePayoutEndpoint], Indexed[OutcomePayoutEndpoint])] =
+      endpoints.init.zip(endpoints.tail)
+    zipped.map { // All pairs of adjacent endpoints
       case (Indexed(_, index), Indexed(_, nextIndex)) =>
-        DLCPayoutCurveComponent(points.slice(index, nextIndex + 1))
+        val slice = points.slice(index, nextIndex + 1)
+        DLCPayoutCurveComponent(slice)
     }
   }
 
@@ -70,7 +82,13 @@ case class DLCPayoutCurve(points: Vector[OutcomePayoutPoint]) {
 sealed trait OutcomePayoutPoint {
   def outcome: Long
   def payout: BigDecimal
-  def isEndpoint: Boolean
+
+  def isEndPoint: Boolean = {
+    this match {
+      case _: OutcomePayoutEndpoint => true
+      case _: OutcomePayoutMidpoint => false
+    }
+  }
 
   def roundedPayout: Satoshis = {
     Satoshis(payout.setScale(0, RoundingMode.FLOOR).toLongExact)
@@ -87,6 +105,22 @@ sealed trait OutcomePayoutPoint {
     this match {
       case OutcomePayoutEndpoint(_, _) => OutcomePayoutEndpoint(outcome, payout)
       case OutcomePayoutMidpoint(_, _) => OutcomePayoutMidpoint(outcome, payout)
+    }
+  }
+
+  /** Converts our internal representation to a TLV that can be sent over the wire */
+  def toTlvPoint: TLVPoint = {
+    this match {
+      case _: OutcomePayoutEndpoint =>
+        TLVPoint(outcome = outcome,
+                 value = roundedPayout,
+                 extraPrecision = extraPrecision,
+                 isEndpoint = true)
+      case _: OutcomePayoutMidpoint =>
+        TLVPoint(outcome = outcome,
+                 value = roundedPayout,
+                 extraPrecision = extraPrecision,
+                 isEndpoint = false)
     }
   }
 }
@@ -114,7 +148,6 @@ object OutcomePayoutPoint {
 
 case class OutcomePayoutEndpoint(outcome: Long, payout: BigDecimal)
     extends OutcomePayoutPoint {
-  override val isEndpoint: Boolean = true
 
   def toMidpoint: OutcomePayoutMidpoint = OutcomePayoutMidpoint(outcome, payout)
 }
@@ -128,7 +161,6 @@ object OutcomePayoutEndpoint {
 
 case class OutcomePayoutMidpoint(outcome: Long, payout: BigDecimal)
     extends OutcomePayoutPoint {
-  override val isEndpoint: Boolean = false
 
   def toEndpoint: OutcomePayoutEndpoint = OutcomePayoutEndpoint(outcome, payout)
 }
@@ -179,9 +211,9 @@ sealed trait DLCPayoutCurveComponent {
 object DLCPayoutCurveComponent {
 
   def apply(points: Vector[OutcomePayoutPoint]): DLCPayoutCurveComponent = {
-    require(points.head.isEndpoint && points.last.isEndpoint,
+    require(points.head.isEndPoint && points.last.isEndPoint,
             s"First and last points must be endpoints, $points")
-    require(points.tail.init.forall(!_.isEndpoint),
+    require(points.tail.init.forall(!_.isEndPoint),
             s"Endpoint detected in middle, $points")
 
     points match {
@@ -320,9 +352,10 @@ case class OutcomePayoutCubic(
 /** A polynomial interpolating points and defining a piece of a larger payout curve */
 case class OutcomePayoutPolynomial(points: Vector[OutcomePayoutPoint])
     extends DLCPayoutCurveComponent {
-  require(points.head.isEndpoint && points.last.isEndpoint,
+  require(points.head.isInstanceOf[OutcomePayoutEndpoint] && points.last
+            .isInstanceOf[OutcomePayoutEndpoint],
           s"First and last points must be endpoints, $points")
-  require(points.tail.init.forall(!_.isEndpoint),
+  require(points.tail.init.forall(!_.isInstanceOf[OutcomePayoutEndpoint]),
           s"Endpoint detected in middle, $points")
 
   override lazy val leftEndpoint: OutcomePayoutEndpoint =
