@@ -280,6 +280,10 @@ case class AddressDAO()(implicit
       })
   }
 
+  def findByScriptPubKey(spk: ScriptPubKey): Future[Option[AddressDb]] = {
+    findByScriptPubKeys(Vector(spk)).map(_.headOption)
+  }
+
   def findByScriptPubKeys(
       spks: Vector[ScriptPubKey]): Future[Vector[AddressDb]] = {
     val query = table

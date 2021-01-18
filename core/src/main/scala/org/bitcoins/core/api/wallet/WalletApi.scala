@@ -392,6 +392,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     } yield tx
   }
 
+  def isChange(output: TransactionOutput): Future[Boolean]
 }
 
 /** An HDWallet that uses Neutrino to sync */

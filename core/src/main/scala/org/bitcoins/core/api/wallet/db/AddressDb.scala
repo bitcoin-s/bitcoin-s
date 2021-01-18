@@ -22,6 +22,8 @@ sealed trait AddressDb {
   def scriptType: ScriptType
   def witnessScriptOpt: Option[ScriptWitness]
   def scriptPubKey: ScriptPubKey
+
+  def isChange: Boolean = path.chain.chainType == HDChainType.Change
 }
 
 /** Segwit P2PKH */
