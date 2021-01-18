@@ -859,10 +859,15 @@ case class OracleAttestmentV0TLV(
   override val tpe: BigSizeUInt = OracleAttestmentV0TLV.tpe
 
   override val value: ByteVector = {
+    val outcomesBytes = outcomes.foldLeft(ByteVector.empty) {
+      case (accum, elem) =>
+        accum ++ strBytes(elem)
+    }
+
     strBytes(eventId) ++
       publicKey.bytes ++
       u16PrefixedList(sigs) ++
-      u16PrefixedList(outcomes, strBytes)
+      outcomesBytes
   }
 }
 
@@ -876,7 +881,9 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
     val pubKey = SchnorrPublicKey(iter.take(32))
     val sigs =
       iter.takeU16PrefixedList(() => iter.take(SchnorrDigitalSignature, 64))
-    val outcomes = iter.takeU16PrefixedList(() => iter.takeString())
+    val outcomes = sigs.indices.toVector.map { _ =>
+      iter.takeString()
+    }
 
     OracleAttestmentV0TLV(eventId, pubKey, sigs, outcomes)
   }
