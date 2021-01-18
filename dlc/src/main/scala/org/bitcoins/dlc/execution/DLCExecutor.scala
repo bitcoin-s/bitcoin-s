@@ -2,8 +2,10 @@ package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc.{
+  CETCalculator,
   CETSignatures,
   FundingSignatures,
+  OracleOutcome,
   OracleSignatures
 }
 import org.bitcoins.dlc.builder.DLCTxBuilder
@@ -80,7 +82,14 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
       oracleSigs: Vector[OracleSignatures]): Future[ExecutedDLCOutcome] = {
     val SetupDLC(fundingTx, cetInfos, _) = dlcSetup
 
-    val msgOpt = builder.contractInfo.findOutcome(oracleSigs)
+    val threshold = cetInfos.head._1.oracles.length
+    val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
+
+    var msgOpt: Option[OracleOutcome] = None
+    val _ = sigCombinations.find { sigs =>
+      msgOpt = builder.contractInfo.findOutcome(sigs)
+      msgOpt.isDefined
+    }
     val (msg, remoteAdaptorSig) = msgOpt match {
       case Some(msg) =>
         val cetInfo = cetInfos(msg)
