@@ -387,7 +387,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       server.start().flatMap { res =>
         val createWalletF = for {
           _ <- res.createWallet("")
-          _ <- res.loadWallet("")
         } yield res
 
         createWalletF.recoverWith {
