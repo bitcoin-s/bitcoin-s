@@ -1,5 +1,6 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.core.config.SigNet
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.p2p._
@@ -26,6 +27,30 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withSpvNodeConnectedToBitcoindV19(test)
+
+  it must "catch errors and not fail when processing an invalid payload" in {
+    param: SpvNodeConnectedWithBitcoindV19 =>
+      val SpvNodeConnectedWithBitcoindV19(spv, _) = param
+
+      for {
+        sender <- spv.peerMsgSenderF
+        chainApi <- spv.chainApiFromDb()
+        dataMessageHandler = DataMessageHandler(chainApi)(spv.executionContext,
+                                                          spv.nodeAppConfig,
+                                                          spv.chainConfig)
+
+        // Use signet genesis block header, this should be invalid for regtest
+        invalidPayload =
+          HeadersMessage(Vector(SigNet.chainParams.genesisBlock.blockHeader))
+
+        // Validate that it causes a failure
+        _ <- recoverToSucceededIf[RuntimeException](
+          chainApi.processHeaders(invalidPayload.headers))
+
+        // Verify we handle the payload correctly
+        _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender)
+      } yield succeed
+  }
 
   it must "verify OnMerkleBlock callbacks are executed" in {
     param: FixtureParam =>
