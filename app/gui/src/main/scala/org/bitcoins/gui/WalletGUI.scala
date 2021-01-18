@@ -75,7 +75,7 @@ object WalletGUI extends JFXApp {
     wrapText = true
     text <== StringProperty(
       "Your current balance is: ") + GlobalData.currentBalance + StringProperty(
-      s"\n\n${(0 until 60).map(_ => "-").mkString("")}\n\n") + GlobalData.log
+      s" sats\n\n${(0 until 60).map(_ => "-").mkString}\n\n") + GlobalData.log
   }
 
   private val model = new WalletGUIModel()
