@@ -33,6 +33,8 @@ import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import slick.jdbc.{GetResult, JdbcProfile}
 
+import scala.util.Try
+
 class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   import profile.api._
@@ -319,7 +321,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
               None
             } else {
               val strVec = data.split('|')
-              val ints = strVec.flatMap(_.toIntOption)
+              val ints = strVec.flatMap(s => Try(s.toInt).toOption)
               Some(UnsignedNumericOutcome(ints.toVector))
             }
           }

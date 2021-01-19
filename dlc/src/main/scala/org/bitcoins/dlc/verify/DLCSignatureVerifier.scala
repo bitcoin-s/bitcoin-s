@@ -72,7 +72,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
 
     val adaptorPoint = outcome.sigPoint
 
-    val cet = Await.result(builder.buildCET(outcome), 5.seconds)
+    val cet = Await.result(builder.buildCET(outcome), 15.seconds)
 
     val sigComponent = WitnessTxSigComponentRaw(transaction = cet,
                                                 inputIndex = UInt32.zero,

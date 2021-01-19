@@ -445,6 +445,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
       case OracleAnnouncementV0TLV(sig, pubkey, event) =>
         val fields = Vector(
           "tpe" -> Element(UInt16(OracleAnnouncementV0TLV.tpe.toInt)),
+          "length" -> Element(tlv.length),
           "signature" -> Element(sig),
           "oraclePubKey" -> Element(pubkey),
           "oracleEvent" -> Element(event)
@@ -454,6 +455,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
       case OracleAttestmentV0TLV(pubkey, sigs) =>
         val fields = Vector(
           "tpe" -> Element(UInt16(OracleAttestmentV0TLV.tpe.toInt)),
+          "length" -> Element(tlv.length),
           "oraclePubKey" -> Element(pubkey),
           "signatures" -> MultiElement(sigs.map(Element(_)))
         )
