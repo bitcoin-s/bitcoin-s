@@ -516,6 +516,7 @@ object CETCalculator {
     prefix ++ halvingDigits.takeWhile(_ == 1)
   }
 
+  /** For the case where all secondary oracles have the same single CET */
   private def singleCoveringCETCombinations[T](
       primaryCET: T,
       coverCET: T,
@@ -523,6 +524,9 @@ object CETCalculator {
     Vector(primaryCET) ++ Vector.fill(numOracles - 1)(coverCET)
   }
 
+  /** Generates all `2^num` possible vectors of length num containing
+    * only the elements in and out, in order
+    */
   private def inOrOutCombinations[T](
       in: T,
       out: T,
@@ -536,6 +540,9 @@ object CETCalculator {
     }
   }
 
+  /** For the case where secondary oracles can sign either
+    * coverCETInner or coverCETOuter
+    */
   private def doubleCoveringCETCombinations[T](
       primaryCET: T,
       coverCETInner: T,
@@ -545,6 +552,10 @@ object CETCalculator {
       combos => primaryCET +: combos)
   }
 
+  /** For the case where secondary oracles can sign either
+    * coverCETInner or coverCETOuter, but not all can sign
+    * coverCETInner, and coverCETInner is what the primary signs
+    */
   private def doubleCoveringRestrictedCETCombinations[T](
       coverCETInner: T,
       coverCETOuter: T,
@@ -730,6 +741,8 @@ object CETCalculator {
     *                    non-support (failure) is guaranteed
     * @param minFailExp The exponent (of 2) representing the difference up to
     *                   which support is guaranteed
+    * @param maximizeCoverage The flag that determines whether CETs used in the
+    *                         non-middle small case are maximal or minimal in size
     * @param numOracles The total number of oracles (including primary) needed for execution
     */
   def computeMultiOracleCETsBinary(
@@ -753,6 +766,21 @@ object CETCalculator {
     }
   }
 
+  /** Computes the set of CETs needed for numOracles oracles with an
+    * allowed difference (which is bounded).
+    *
+    * @param numDigits The number of binary digits signed by the oracles
+    * @param function The DLCPayoutCurve to use with primary oracles
+    * @param totalCollateral The funding output's value (ignoring fees)
+    * @param rounding The rounding intervals to use when computing CETs
+    * @param maxErrorExp The exponent (of 2) representing the difference at which
+    *                    non-support (failure) is guaranteed
+    * @param minFailExp The exponent (of 2) representing the difference up to
+    *                   which support is guaranteed
+    * @param maximizeCoverage The flag that determines whether CETs used in the
+    *                         non-middle small case are maximal or minimal in size
+    * @param numOracles The total number of oracles (including primary) needed for execution
+    */
   def computeMultiOracleCETsBinary(
       numDigits: Int,
       function: DLCPayoutCurve,

@@ -77,6 +77,9 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     signer.getPayout(sigs)
   }
 
+  /** Computes closing transactions from a DLCSetup and a set of OracleSignatures.
+    * The Vector[OracleSignatures] may contain more OracleSignatures than are needed.
+    */
   def executeDLC(
       dlcSetup: SetupDLC,
       oracleSigs: Vector[OracleSignatures]): Future[ExecutedDLCOutcome] = {

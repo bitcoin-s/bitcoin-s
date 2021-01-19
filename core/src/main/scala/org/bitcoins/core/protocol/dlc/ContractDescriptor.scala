@@ -4,9 +4,18 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.SeqWrapper
 
+/** Fully determines a set of payouts for a DLC.
+  * These payouts are normally from the point of
+  * view of the offerer, from which the accepter's
+  * payouts can be determined by subtracting from totalCollateral.
+  *
+  * Payouts above totalCollateral may be subject to change
+  * as totalCollateral does not exist in a ContractDescriptor,
+  * which is reusable between DLCs.
+  */
 sealed trait ContractDescriptor extends TLVSerializable[ContractDescriptorTLV] {
 
-  /** Returns the counter-party's ContractInfo corresponding to this one.
+  /** Returns the counter-party's ContractDescriptor corresponding to this one.
     *
     * WARNING: this(outcome) + flip(TC)(outcome) is not guaranteed to equal TC.
     * As such, this should not be used to generate pairs of ContractInfos and
@@ -35,6 +44,7 @@ object ContractDescriptor
   }
 }
 
+/** The ContractDescriptor for enumerated outcome DLCs */
 case class EnumContractDescriptor(
     outcomeValueMap: Vector[(EnumOutcome, Satoshis)])
     extends ContractDescriptor
@@ -74,8 +84,10 @@ object EnumContractDescriptor
   }
 }
 
-/** Contains a deterministically compressed set of outcomes computed from
-  * a given payout curve.
+/** The ContractDescriptor for enumerated outcome DLCs
+  *
+  * Contains a deterministically compressed set of outcomes computed by
+  * interpolation of a given payout curve.
   */
 case class NumericContractDescriptor(
     outcomeValueFunc: DLCPayoutCurve,

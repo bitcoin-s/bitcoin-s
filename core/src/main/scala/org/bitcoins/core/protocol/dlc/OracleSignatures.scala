@@ -4,17 +4,23 @@ import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, UnsignedNumericOutcome}
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, SchnorrDigitalSignature}
 
+/** Corresponds to a set of SchnorrDigitalSignatures given by a single oracle. */
 sealed trait OracleSignatures extends SeqWrapper[SchnorrDigitalSignature] {
+
+  /** This oracle's signatures */
   def sigs: Vector[SchnorrDigitalSignature]
 
+  /** The SingleOracleInfo for the oracle whose signatures are stored here. */
   def oracle: SingleOracleInfo
 
   override def wrapped: Vector[SchnorrDigitalSignature] = sigs
 
+  /** Verifies the signatures against a given outcome. */
   def verifySignatures(outcome: DLCOutcomeType): Boolean = {
     oracle.verifySigs(outcome, this)
   }
 
+  /** Computes the sum of all signature s values. */
   def aggregateSig(outcome: DLCOutcomeType): ECPrivateKey = {
     sigs
       .take(outcome.serialized.length)
@@ -38,6 +44,11 @@ object OracleSignatures {
     }
   }
 
+  /** Computes the aggregate s value from the given signatures to be used
+    * in the given outcome.
+    *
+    * This is what is used to decrypt a CET adaptor signature.
+    */
   def computeAggregateSignature(
       outcome: OracleOutcome,
       sigs: Vector[OracleSignatures]): ECPrivateKey = {
@@ -56,6 +67,7 @@ object OracleSignatures {
   }
 }
 
+/** Wraps a single oracle signature of an Enum event. */
 case class EnumOracleSignature(
     oracle: EnumSingleOracleInfo,
     sig: SchnorrDigitalSignature)
@@ -66,11 +78,13 @@ case class EnumOracleSignature(
     s"EnumOracleSignature(${oracle.announcement.publicKey}, $sig)"
 }
 
+/** Wraps a set of oracle signatures of numeric digits. */
 case class NumericOracleSignatures(
     oracle: NumericSingleOracleInfo,
     sigs: Vector[SchnorrDigitalSignature])
     extends OracleSignatures {
 
+  /** Computes the NumericOutcome to which these signatures correspond. */
   def computeOutcome(
       base: Int,
       possibleOutcomes: Vector[DLCOutcomeType]): Option[

@@ -12,6 +12,16 @@ import org.bitcoins.crypto.ECPublicKey
 
 import scala.collection.immutable.HashMap
 
+/** Fully determines a DLC up to public keys and funding UTXOs to be used.
+  *
+  * Contains all contract and oracle information and provides an external
+  * facing interface which should be used in place of directly accessing
+  * ContractDescriptors or OracleInfos whenever possible to make future
+  * refactoring simpler and to make the code more modular.
+  *
+  * This class also contains lazy vals for all expensive computations
+  * done regarding CETs during DLC setup and execution.
+  */
 case class ContractInfo(
     totalCollateral: Satoshis,
     contractDescriptor: ContractDescriptor,
@@ -24,13 +34,18 @@ case class ContractInfo(
                       oracleInfo.toTLV)
   }
 
-  /** Returns the maximum payout this party could win from this contract */
+  /** Returns the maximum payout the offerer could win from this contract */
   val max: Satoshis = contractDescriptor match {
     case descriptor: EnumContractDescriptor =>
       descriptor.values.maxBy(_.toLong)
     case _: NumericContractDescriptor => totalCollateral
   }
 
+  /** Can be matched on to ensure type agreement between the ContractDescriptor
+    * and the OracleInfo.
+    *
+    * As a side effect this val also acts as a requirement that these match.
+    */
   val descriptorAndInfo: Either[
     (EnumContractDescriptor, EnumOracleInfo),
     (NumericContractDescriptor, NumericOracleInfo)] =
@@ -46,7 +61,7 @@ case class ContractInfo(
           s"All infos must be for the same kind of outcome: $this")
     }
 
-  /** Vector is always the most significant digits */
+  /** Computes the CET set and their corresponding payouts using CETCalculator. */
   lazy val allOutcomesAndPayouts: Vector[(OracleOutcome, Satoshis)] = {
     descriptorAndInfo match {
       case Left(
@@ -128,12 +143,15 @@ case class ContractInfo(
     }
   }
 
+  /** Corresponds with this DLC's CET set */
   lazy val allOutcomes: Vector[OracleOutcome] =
     allOutcomesAndPayouts.map(_._1)
 
+  /** Maps adpator points to their corresponding OracleOutcomes (which correspond to CETs) */
   lazy val sigPointMap: Map[ECPublicKey, OracleOutcome] =
     allOutcomes.map(outcome => outcome.sigPoint -> outcome).toMap
 
+  /** Map OracleOutcomes (which correspond to CETs) to their adpator point and payouts */
   lazy val outcomeMap: Map[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)] = {
     val builder =
       HashMap.newBuilder[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)]
@@ -149,7 +167,12 @@ case class ContractInfo(
     builder.result()
   }
 
-  // TODO: Needs a lot of optimization
+  /** Checks if the given OracleSignatures exactly match the given OracleOutcome.
+    *
+    * Warning: This will return false if too many OracleSignatures are given.
+    *
+    * TODO: Needs a lot of optimization
+    */
   def verifySigs(
       outcome: OracleOutcome,
       sigs: Vector[OracleSignatures]): Boolean = {
@@ -181,12 +204,17 @@ case class ContractInfo(
     }
   }
 
+  /** Searches all possible outcomes for one which corresponds to the given signatures.
+    *
+    * Warning: This will return false if too many OracleSignatures are given.
+    */
   def findOutcome(sigs: Vector[OracleSignatures]): Option[OracleOutcome] = {
     // TODO: Optimize by looking at nonces
     // TODO: Optimize using NumericOracleSignatures.computeOutcome
     allOutcomes.find(verifySigs(_, sigs))
   }
 
+  /** Returns the adaptor point and payouts for a given OracleOutcome */
   def resultOfOutcome(
       outcome: OracleOutcome): (ECPublicKey, Satoshis, Satoshis) = {
     outcomeMap(outcome)
@@ -210,6 +238,13 @@ case class ContractInfo(
     (offerOutcome, acceptOutcome)
   }
 
+  /** A ContractInfo can be constructed by the offerer, but it will not contain new
+    * information which alters the DLC's contract which is received in the accept message.
+    *
+    * Specifically if the total collateral changes or negotiation fields are relevant.
+    *
+    * In these cases, this function should be called to update the ContractInfo.
+    */
   def updateOnAccept(
       newTotalCollateral: Satoshis,
       negotiationFields: DLCAccept.NegotiationFields): ContractInfo = {

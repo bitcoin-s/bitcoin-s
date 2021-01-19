@@ -3,16 +3,27 @@ package org.bitcoins.core.protocol.dlc
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 
+/** Specifies the set of oracles and their corresponding announcements
+  * and parameters to be used in a DLC.
+  */
 sealed trait OracleInfo extends TLVSerializable[OracleInfoTLV] {
+
+  /** The number of oracles required for execution */
   def threshold: Int
+
+  /** The total number of oracles to choose from */
   def numOracles: Int
+
+  /** Each oracle's corresponding SingleOracleInfo */
   def singleOracleInfos: Vector[SingleOracleInfo]
 }
 
+/** Specifies a set of oracles for an Enumerated Outcome DLC */
 sealed trait EnumOracleInfo extends OracleInfo {
   override def singleOracleInfos: Vector[EnumSingleOracleInfo]
 }
 
+/** Specifies a set of oracles for an Numeric Outcome DLC */
 sealed trait NumericOracleInfo extends OracleInfo {
   override def singleOracleInfos: Vector[NumericSingleOracleInfo]
 }
@@ -29,6 +40,7 @@ object OracleInfo
   }
 }
 
+/** Specifies a single oracles' information through an announcement */
 sealed trait SingleOracleInfo
     extends OracleInfo
     with TLVSerializable[OracleInfoV0TLV] {
@@ -38,6 +50,8 @@ sealed trait SingleOracleInfo
   override def singleOracleInfos: Vector[this.type] = Vector(this)
 
   def announcement: OracleAnnouncementTLV
+
+  /** The oracle's public key */
   def publicKey: SchnorrPublicKey = announcement.publicKey
 
   /** The oracle's pre-committed nonces, in the correct order */
@@ -53,6 +67,7 @@ sealed trait SingleOracleInfo
     publicKey.computeSigPoint(outcome.serialized, nonces)
   }
 
+  /** Computes the sum of all nonces used in a given outcome */
   def aggregateNonce(outcome: DLCOutcomeType): SchnorrNonce = {
     nonces
       .take(outcome.serialized.length)
@@ -86,6 +101,9 @@ object SingleOracleInfo
   }
 }
 
+/** Specifies a single oracles' information for an Enumerated Outcome DLC
+  * through an announcement
+  */
 case class EnumSingleOracleInfo(announcement: OracleAnnouncementTLV)
     extends SingleOracleInfo
     with EnumOracleInfo {
@@ -95,6 +113,7 @@ case class EnumSingleOracleInfo(announcement: OracleAnnouncementTLV)
 
   val nonce: SchnorrNonce = announcement.eventTLV.nonces.head
 
+  /** @inheritdoc */
   override def verifySigs(
       outcome: DLCOutcomeType,
       sigs: OracleSignatures): Boolean = {
@@ -138,6 +157,9 @@ object EnumSingleOracleInfo
   }
 }
 
+/** Specifies a single oracles' information for an Numeric Outcome DLC
+  * through an announcement
+  */
 case class NumericSingleOracleInfo(announcement: OracleAnnouncementTLV)
     extends SingleOracleInfo
     with NumericOracleInfo {
@@ -145,6 +167,7 @@ case class NumericSingleOracleInfo(announcement: OracleAnnouncementTLV)
             .isInstanceOf[NumericEventDescriptorTLV],
           s"Numeric OracleInfo requires NumericEventDescriptor, $announcement")
 
+  /** @inheritdoc */
   override def verifySigs(
       outcome: DLCOutcomeType,
       sigs: OracleSignatures): Boolean = {
@@ -183,6 +206,9 @@ object NumericSingleOracleInfo {
   }
 }
 
+/** Represents the oracle information for more than one oracle through
+  * multiple announcements.
+  */
 sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
     extends OracleInfo
     with TLVSerializable[MultiOracleInfoTLV] {
@@ -198,6 +224,9 @@ sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
   def singleOracleInfos: Vector[T]
 }
 
+/** Represents the oracle information for more than one oracle where
+  * all oracles sign exactly corresponding messages.
+  */
 sealed trait ExactMultiOracleInfo[+T <: SingleOracleInfo]
     extends MultiOracleInfo[T]
     with TLVSerializable[OracleInfoV1TLV] {
@@ -226,6 +255,9 @@ object ExactMultiOracleInfo
   }
 }
 
+/** Represents the oracle information for more than one oracle where
+  * all oracles sign exactly corresponding messages from isomorphic Enums.
+  */
 case class EnumMultiOracleInfo(
     threshold: Int,
     announcements: Vector[OracleAnnouncementTLV])
@@ -236,6 +268,9 @@ case class EnumMultiOracleInfo(
     announcements.map(EnumSingleOracleInfo.apply)
 }
 
+/** Represents the oracle information for more than one oracle where
+  * all oracles sign exactly equal numeric outcomes.
+  */
 case class NumericExactMultiOracleInfo(
     threshold: Int,
     announcements: Vector[OracleAnnouncementTLV])
@@ -246,6 +281,9 @@ case class NumericExactMultiOracleInfo(
     announcements.map(NumericSingleOracleInfo.apply)
 }
 
+/** Represents the oracle information and parameters for more than
+  * one oracle where the oracles may be signing slightly different numeric outcomes.
+  */
 case class NumericMultiOracleInfo(
     threshold: Int,
     announcements: Vector[OracleAnnouncementTLV],

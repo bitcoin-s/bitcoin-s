@@ -499,6 +499,7 @@ trait DLCTest {
     }
   }
 
+  /** Computes an EnumOracleSignature for the given outcome and oracle */
   def genEnumOracleSignature(
       oracleInfo: EnumSingleOracleInfo,
       outcome: String,
@@ -554,6 +555,7 @@ trait DLCTest {
     genEnumOracleSignatures(outcome)
   }
 
+  /** Computes an oracle signatures for the given outcome and oracle */
   def computeNumericOracleSignatures(
       digits: Vector[Int],
       privKey: ECPrivateKey = oraclePrivKey,
@@ -568,6 +570,7 @@ trait DLCTest {
     }
   }
 
+  /** Deterministically chooses an outcome from the middle third of the interesting possible outcomes. */
   def computeNumericOutcome(
       numDigits: Int,
       desc: NumericContractDescriptor,
@@ -587,30 +590,6 @@ trait DLCTest {
     CETCalculator.searchForNumericOutcome(fullDigits, outcomes) match {
       case Some(UnsignedNumericOutcome(digits)) => digits
       case None                                 => Assertions.fail(s"Couldn't find outcome for $outcomeIndex")
-    }
-  }
-
-  def computeNumericOutcomeWithError(
-      numDigits: Int,
-      num: Long,
-      minFailExp: Int,
-      outcomes: Vector[DLCOutcomeType]): Vector[Int] = {
-    val error = NumberUtil.randomLong(1L << minFailExp)
-    val direction = Random.nextBoolean()
-    val directedError = if (direction) {
-      error
-    } else {
-      -error
-    }
-    val maxVal = (1L << numDigits) - 1
-    val numToSign =
-      math.min(math.max(0, num + directedError), maxVal)
-    val fullDigits =
-      NumberUtil.decompose(numToSign, base = 2, numDigits)
-    CETCalculator.searchForNumericOutcome(fullDigits, outcomes) match {
-      case Some(UnsignedNumericOutcome(digits)) => digits
-      case None =>
-        Assertions.fail(s"Couldn't find outcome for $fullDigits in $outcomes")
     }
   }
 
@@ -778,6 +757,7 @@ trait DLCTest {
     sigs
   }
 
+  /** Synchronously runs the test function on each paramsToTest in turn. */
   def runTestsForParam[T](paramsToTest: Vector[T])(
       test: T => Future[Assertion])(implicit
       ec: ExecutionContext): Future[Assertion] = {
