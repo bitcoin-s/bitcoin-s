@@ -10,6 +10,7 @@ on:
     types: [published]
 jobs:
   unix:
+    if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
