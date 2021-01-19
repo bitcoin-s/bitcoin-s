@@ -83,14 +83,21 @@ class DLCMultiOracleNumericExecutionTest
         val outcomeOpt = initWinOutcomes.oraclesAndOutcomes.find(
           _._1.publicKey == priv.schnorrPublicKey)
 
-        outcomeOpt.map { outcome =>
-          val sigs = outcome._2.digits.zip(kValues).map {
-            case (num, kValue) =>
-              val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
-              priv.schnorrSignWithNonce(hash, kValue)
-          }
+        outcomeOpt.map {
+          case (oracleInfo, outcome) =>
+            val sigs = outcome.digits.zip(kValues).map {
+              case (num, kValue) =>
+                val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
+                priv.schnorrSignWithNonce(hash, kValue)
+            }
+            val eventId = oracleInfo.announcement.eventTLV match {
+              case v0: OracleEventV0TLV => v0.eventId
+            }
 
-          OracleAttestmentV0TLV(priv.schnorrPublicKey, sigs)
+            OracleAttestmentV0TLV(eventId,
+                                  priv.schnorrPublicKey,
+                                  sigs,
+                                  outcome.digits.map(_.toString))
         }
     }
 
@@ -118,14 +125,21 @@ class DLCMultiOracleNumericExecutionTest
         val outcomeOpt = recipientWinOutcomes.oraclesAndOutcomes.find(
           _._1.publicKey == priv.schnorrPublicKey)
 
-        outcomeOpt.map { outcome =>
-          val sigs = outcome._2.digits.zip(kValues).map {
-            case (num, kValue) =>
-              val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
-              priv.schnorrSignWithNonce(hash, kValue)
-          }
+        outcomeOpt.map {
+          case (oracleInfo, outcome) =>
+            val sigs = outcome.digits.zip(kValues).map {
+              case (num, kValue) =>
+                val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
+                priv.schnorrSignWithNonce(hash, kValue)
+            }
+            val eventId = oracleInfo.announcement.eventTLV match {
+              case v0: OracleEventV0TLV => v0.eventId
+            }
 
-          OracleAttestmentV0TLV(priv.schnorrPublicKey, sigs)
+            OracleAttestmentV0TLV(eventId,
+                                  priv.schnorrPublicKey,
+                                  sigs,
+                                  outcome.digits.map(_.toString))
         }
     }
 

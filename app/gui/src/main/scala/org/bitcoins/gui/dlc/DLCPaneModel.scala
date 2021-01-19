@@ -115,6 +115,10 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
       kValues: Vector[ECPrivateKey],
       contractInfo: ContractInfo): StringBuilder = {
     if (GlobalData.network != MainNet && kValues.nonEmpty) {
+      val eventId = oracleInfo.announcement.eventTLV match {
+        case v0: OracleEventV0TLV => v0.eventId
+      }
+
       builder.append(
         s"Oracle Public Key: ${oracleInfo.publicKey.hex}\nEvent R values: ${oracleInfo.nonces.map(_.hex).mkString(",")}\n\n")
 
@@ -131,7 +135,10 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
               .bytes
             val sig = privKey.schnorrSignWithNonce(hash, kValues.head)
             val sigTlv =
-              OracleAttestmentV0TLV(privKey.schnorrPublicKey, Vector(sig))
+              OracleAttestmentV0TLV(eventId,
+                                    privKey.schnorrPublicKey,
+                                    Vector(sig),
+                                    Vector(outcome.outcome))
 
             builder.append(s"$outcome - ${sigTlv.hex}\n")
           }
@@ -176,15 +183,24 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
             }
 
           val maxSigsStr =
-            OracleAttestmentV0TLV(privKey.schnorrPublicKey, sigsMax).hex
+            OracleAttestmentV0TLV(eventId,
+                                  privKey.schnorrPublicKey,
+                                  sigsMax,
+                                  max.digits.map(_.toString)).hex
           builder.append(s"local win sigs - $maxSigsStr\n\n\n")
 
           val middleSigsStr =
-            OracleAttestmentV0TLV(privKey.schnorrPublicKey, sigsMiddle).hex
+            OracleAttestmentV0TLV(eventId,
+                                  privKey.schnorrPublicKey,
+                                  sigsMiddle,
+                                  middle.digits.map(_.toString)).hex
           builder.append(s"tie sigs - $middleSigsStr\n\n\n")
 
           val minSigsStr =
-            OracleAttestmentV0TLV(privKey.schnorrPublicKey, sigsMin).hex
+            OracleAttestmentV0TLV(eventId,
+                                  privKey.schnorrPublicKey,
+                                  sigsMin,
+                                  min.digits.map(_.toString)).hex
           builder.append(s"remote win sigs - $minSigsStr")
       }
 

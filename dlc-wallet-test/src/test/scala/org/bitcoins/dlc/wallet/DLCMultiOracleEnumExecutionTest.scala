@@ -43,6 +43,11 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
   val oracleInfo: EnumMultiOracleInfo =
     EnumMultiOracleInfo(threshold, announcements)
 
+  def sigsToTake: Int = {
+    val vec = threshold.to(announcements.size).toVector
+    Random.shuffle(vec).head
+  }
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withDualDLCWallets(test, contractDescriptor, oracleInfo)
   }
@@ -58,9 +63,20 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
             ._1
             .outcome
 
+        val eventId = announcements
+          .find(_.publicKey == priv.schnorrPublicKey)
+          .map(_.eventTLV) match {
+          case Some(v0: OracleEventV0TLV) => v0.eventId
+          case None | Some(_) =>
+            throw new RuntimeException("Created unknown oracle event")
+        }
+
         val hash = CryptoUtil.sha256DLCAttestation(initiatorWinStr).bytes
         val initiatorWinSig = priv.schnorrSignWithNonce(hash, kValue)
-        OracleAttestmentV0TLV(priv.schnorrPublicKey, Vector(initiatorWinSig))
+        OracleAttestmentV0TLV(eventId,
+                              priv.schnorrPublicKey,
+                              Vector(initiatorWinSig),
+                              Vector(initiatorWinStr))
     }
 
     val recipientWinSigs = privateKeys.zip(kValues).map {
@@ -69,9 +85,20 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
         val recipientWinStr =
           contractDescriptor.find(_._2 == Satoshis.zero).get._1.outcome
 
+        val eventId = announcements
+          .find(_.publicKey == priv.schnorrPublicKey)
+          .map(_.eventTLV) match {
+          case Some(v0: OracleEventV0TLV) => v0.eventId
+          case None | Some(_) =>
+            throw new RuntimeException("Created unknown oracle event")
+        }
+
         val hash = CryptoUtil.sha256DLCAttestation(recipientWinStr).bytes
         val recipientWinSig = priv.schnorrSignWithNonce(hash, kValue)
-        OracleAttestmentV0TLV(priv.schnorrPublicKey, Vector(recipientWinSig))
+        OracleAttestmentV0TLV(eventId,
+                              priv.schnorrPublicKey,
+                              Vector(recipientWinSig),
+                              Vector(recipientWinStr))
     }
 
     // Shuffle to make sure ordering doesn't matter

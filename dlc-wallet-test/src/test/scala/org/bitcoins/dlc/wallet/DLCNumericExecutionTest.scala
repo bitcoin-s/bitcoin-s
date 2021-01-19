@@ -74,9 +74,18 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
     }
 
     val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
+    val eventId = DLCWalletUtil.sampleOracleInfo.announcement.eventTLV match {
+      case v0: OracleEventV0TLV => v0.eventId
+    }
 
-    (OracleAttestmentV0TLV(publicKey, initiatorWinSigs),
-     OracleAttestmentV0TLV(publicKey, recipientWinSigs))
+    (OracleAttestmentV0TLV(eventId,
+                           publicKey,
+                           initiatorWinSigs,
+                           initiatorWinVec.map(_.toString)),
+     OracleAttestmentV0TLV(eventId,
+                           publicKey,
+                           recipientWinSigs,
+                           recipientWinVec.map(_.toString)))
   }
 
   it must "execute as the initiator" in { wallets =>

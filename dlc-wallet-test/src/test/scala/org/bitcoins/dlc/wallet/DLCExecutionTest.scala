@@ -9,7 +9,8 @@ import org.bitcoins.core.protocol.dlc.DLCStatus.{
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv.{
   OracleAttestmentTLV,
-  OracleAttestmentV0TLV
+  OracleAttestmentV0TLV,
+  OracleEventV0TLV
 }
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.crypto.CryptoUtil
@@ -59,9 +60,18 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                             DLCWalletUtil.kValue)
 
     val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
+    val eventId = DLCWalletUtil.sampleOracleInfo.announcement.eventTLV match {
+      case v0: OracleEventV0TLV => v0.eventId
+    }
 
-    (OracleAttestmentV0TLV(publicKey, Vector(initiatorWinSig)),
-     OracleAttestmentV0TLV(publicKey, Vector(recipientWinSig)))
+    (OracleAttestmentV0TLV(eventId,
+                           publicKey,
+                           Vector(initiatorWinSig),
+                           Vector(initiatorWinStr)),
+     OracleAttestmentV0TLV(eventId,
+                           publicKey,
+                           Vector(recipientWinSig),
+                           Vector(recipientWinStr)))
   }
 
   it must "get the correct funding transaction" in { wallets =>

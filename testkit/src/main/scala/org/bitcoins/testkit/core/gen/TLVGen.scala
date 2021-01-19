@@ -113,13 +113,18 @@ trait TLVGen {
 
   def oracleAttestmentV0TLV: Gen[OracleAttestmentV0TLV] = {
     for {
+      eventId <- StringGenerators.genUTF8String
       pubkey <- CryptoGenerators.schnorrPublicKey
       numSigs <- Gen.choose(1, 10)
       sigs <-
         Gen
           .listOfN(numSigs, CryptoGenerators.schnorrDigitalSignature)
           .map(_.toVector)
-    } yield OracleAttestmentV0TLV(pubkey, sigs)
+      outcomes <-
+        Gen
+          .listOfN(numSigs, StringGenerators.genUTF8String)
+          .map(_.toVector)
+    } yield OracleAttestmentV0TLV(eventId, pubkey, sigs, outcomes)
   }
 
   def contractDescriptorV0TLVWithTotalCollateral: Gen[

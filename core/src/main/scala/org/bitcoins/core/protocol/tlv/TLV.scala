@@ -848,8 +848,10 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
 }
 
 sealed trait OracleAttestmentTLV extends TLV {
+  def eventId: NormalizedString
   def publicKey: SchnorrPublicKey
   def sigs: Vector[SchnorrDigitalSignature]
+  def outcomes: Vector[NormalizedString]
 }
 
 object OracleAttestmentTLV extends TLVParentFactory[OracleAttestmentTLV] {
@@ -861,14 +863,27 @@ object OracleAttestmentTLV extends TLVParentFactory[OracleAttestmentTLV] {
 }
 
 case class OracleAttestmentV0TLV(
+    eventId: NormalizedString,
     publicKey: SchnorrPublicKey,
-    sigs: Vector[SchnorrDigitalSignature])
+    sigs: Vector[SchnorrDigitalSignature],
+    outcomes: Vector[NormalizedString])
     extends OracleAttestmentTLV {
   require(sigs.nonEmpty, "Cannot have 0 signatures")
+  require(
+    outcomes.size == sigs.size,
+    s"Number of outcomes must match number of signatures, ${outcomes.size} != ${sigs.size}")
   override val tpe: BigSizeUInt = OracleAttestmentV0TLV.tpe
 
   override val value: ByteVector = {
-    publicKey.bytes ++ u16PrefixedList(sigs)
+    val outcomesBytes = outcomes.foldLeft(ByteVector.empty) {
+      case (accum, elem) =>
+        accum ++ strBytes(elem)
+    }
+
+    strBytes(eventId) ++
+      publicKey.bytes ++
+      u16PrefixedList(sigs) ++
+      outcomesBytes
   }
 }
 
@@ -878,11 +893,15 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
   override def fromTLVValue(value: ByteVector): OracleAttestmentV0TLV = {
     val iter = ValueIterator(value)
 
-    val pubKey = SchnorrPublicKey(iter.take(32))
+    val eventId = iter.takeString()
+    val pubKey = iter.take(SchnorrPublicKey, 32)
     val sigs =
       iter.takeU16PrefixedList(() => iter.take(SchnorrDigitalSignature, 64))
+    val outcomes = sigs.indices.toVector.map { _ =>
+      iter.takeString()
+    }
 
-    OracleAttestmentV0TLV(pubKey, sigs)
+    OracleAttestmentV0TLV(eventId, pubKey, sigs, outcomes)
   }
 }
 
