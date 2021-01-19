@@ -878,7 +878,7 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
     val iter = ValueIterator(value)
 
     val eventId = iter.takeString()
-    val pubKey = SchnorrPublicKey(iter.take(32))
+    val pubKey = iter.take(SchnorrPublicKey, 32)
     val sigs =
       iter.takeU16PrefixedList(() => iter.take(SchnorrDigitalSignature, 64))
     val outcomes = sigs.indices.toVector.map { _ =>
