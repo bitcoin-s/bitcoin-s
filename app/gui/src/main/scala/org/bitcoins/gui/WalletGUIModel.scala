@@ -2,7 +2,7 @@ package org.bitcoins.gui
 
 import org.bitcoins.cli.CliCommand.{GetBalance, GetNewAddress, SendToAddress}
 import org.bitcoins.cli.ConsoleCli
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.gui.dialog.{GetNewAddressDialog, SendDialog}
 import scalafx.beans.property.{ObjectProperty, StringProperty}
@@ -66,9 +66,11 @@ class WalletGUIModel() {
         taskRunner.run(
           caption = s"Send $amount to $address",
           op = {
+            val sats = Satoshis(amount.toLong)
+
             ConsoleCli.exec(
               SendToAddress(BitcoinAddress.fromString(address),
-                            Bitcoins(BigDecimal(amount)),
+                            Bitcoins(sats),
                             satoshisPerVirtualByte = None,
                             noBroadcast = false),
               GlobalData.consoleCliConfig
@@ -87,10 +89,10 @@ class WalletGUIModel() {
   }
 
   private def updateBalance(): Unit = {
-    ConsoleCli.exec(GetBalance(isSats = false),
+    ConsoleCli.exec(GetBalance(isSats = true),
                     GlobalData.consoleCliConfig) match {
       case Success(commandReturn) =>
-        GlobalData.currentBalance.value = commandReturn.split(' ').head.toDouble
+        GlobalData.currentBalance.value = commandReturn.split(' ').head.toLong
       case Failure(err) =>
         err.printStackTrace()
         val _ = new Alert(AlertType.Error) {
