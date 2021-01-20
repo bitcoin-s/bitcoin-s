@@ -67,7 +67,9 @@ class DLCPane(glassPane: VBox) {
   private val model =
     new DLCPaneModel(resultTextArea, demoOracleArea)
 
-  model.setUp()
+  // This is commented out because it will cause the GUI startup to fail on master
+  // It should be uncommented when on the adaptor-dlc branch
+  //model.setUp()
 
   private val enumContractButton = new Button {
     text = "Enum Contract"

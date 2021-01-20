@@ -20,7 +20,9 @@ object SendDialog {
     dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
 
     val addressTF = new TextField()
-    val amountTF = new TextField()
+    val amountTF = new TextField() {
+      promptText = "(sats)"
+    }
 
     dialog.dialogPane().content = new GridPane {
       hgap = 10
@@ -35,7 +37,7 @@ object SendDialog {
       }
 
       addRow("Address", addressTF)
-      addRow("Amount (in BTC)", amountTF)
+      addRow("Amount", amountTF)
     }
 
     // Enable/Disable OK button depending on whether all data was entered.
