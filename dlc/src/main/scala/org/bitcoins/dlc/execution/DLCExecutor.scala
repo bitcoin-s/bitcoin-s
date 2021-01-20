@@ -79,6 +79,8 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
 
   /** Computes closing transactions from a DLCSetup and a set of OracleSignatures.
     * The Vector[OracleSignatures] may contain more OracleSignatures than are needed.
+    *
+    * TODO: Test over-sharing of OracleSignatures
     */
   def executeDLC(
       dlcSetup: SetupDLC,

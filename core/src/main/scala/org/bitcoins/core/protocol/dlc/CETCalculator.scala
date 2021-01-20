@@ -428,23 +428,6 @@ object CETCalculator {
     (left, right)
   }
 
-  // TODO: Delete this when merging
-  def printToDecimal(
-      input: Vector[(Vector[Int], Vector[Int])],
-      numDigits: Int): Unit = {
-    input.foreach {
-      case (primaryCET, coveringCET) =>
-        val (primaryLeft, primaryRight) =
-          computeCETIntervalBinary(primaryCET, numDigits)
-        val (coveringLeft, coveringRight) =
-          computeCETIntervalBinary(coveringCET, numDigits)
-
-        println()
-        println(s"Primary Oracle in [$primaryLeft, $primaryRight]")
-        println(s"Covering Oracle in [$coveringLeft, $coveringRight]")
-    }
-  }
-
   /** Given the left endpoint of a CET and the number of ignored digits,
     * computes the binary digits for the CET.
     */
