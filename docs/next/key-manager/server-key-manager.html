@@ -113,6 +113,9 @@ It takes in the base58 encoded xprv, wallet name, and an optional passphrase to 
 To do this, you will need the seed file name to be <code>walletName-encrypted-bitcoin-s-seed.json</code> or <code>encrypted-bitcoin-s-seed.json</code>
 if you want it to be the default wallet.
 To load it, just set the <code>bitcoin-s.wallet.walletName</code> config option to the appropriate wallet name.</p>
+<p>When restoring from a backup you should not replace an existing seed file as this can result in a loss of funds.
+If you have a seed file that would replace an existing seed its file name should be prefixed with a different wallet name.
+If you do replace a seed file you will need to delete the old wallet database associated with that wallet.</p>
 <p>You may need to run a wallet rescan to restore funds, this can be done by using the <code>rescan</code> RPC command.</p>
 <p>For example, if you wanted to restore your <code>rickRollWallet</code>, you would place your backup at <code>~/.bitcoin-s/seeds/rickRollWallet-encrypted-bitcoin-s-seed.json</code>
 and then load the wallet using a config with <code>bitcoin-s.wallet.walletName = rickRollWallet</code></p>
