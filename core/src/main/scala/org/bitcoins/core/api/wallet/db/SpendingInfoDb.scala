@@ -3,6 +3,7 @@ package org.bitcoins.core.api.wallet.db
 import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.hd.{
+  HDChainType,
   HDPath,
   LegacyHDPath,
   NestedSegWitHDPath,
@@ -152,6 +153,8 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   def scriptWitnessOpt: Option[ScriptWitness]
 
   val hashType: HashType = HashType.sigHashAll
+
+  def isChange: Boolean = privKeyPath.chain.chainType == HDChainType.Change
 
   /** The current [[org.bitcoins.core.wallet.utxo.TxoState state]] of the utxo */
   def state: TxoState

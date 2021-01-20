@@ -256,4 +256,20 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       assert(after.contains(spkDb))
     }
   }
+
+  it must "correctly identify change addresses" in {
+    fundedWallet: FundedWallet =>
+      val wallet = fundedWallet.wallet
+
+      for {
+        nonChange <- wallet.getNewAddress()
+        output0 = TransactionOutput(Satoshis.zero, nonChange.scriptPubKey)
+        res0 <- wallet.isChange(output0)
+        _ = assert(!res0)
+
+        change <- wallet.getNewChangeAddress()
+        output1 = TransactionOutput(Satoshis.zero, change.scriptPubKey)
+        res1 <- wallet.isChange(output1)
+      } yield assert(res1)
+  }
 }
