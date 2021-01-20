@@ -53,7 +53,7 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
     )
 
     outcome match {
-      case ExecutedDLCOutcome(fundingTx, cet, _) =>
+      case ExecutedDLCOutcome(fundingTx, cet, _, _) =>
         DLCFeeTestUtil.validateFees(dlcOffer.dlcTxBuilder,
                                     fundingTx,
                                     cet,

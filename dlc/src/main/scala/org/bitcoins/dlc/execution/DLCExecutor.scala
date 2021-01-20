@@ -104,7 +104,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     val sigsUsed = sigsUsedOpt.get // Safe because msgOpt is defined if no throw
 
     signer.signCET(msg, remoteAdaptorSig, sigsUsed).map { cet =>
-      ExecutedDLCOutcome(fundingTx, cet, msg)
+      ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
     }
   }
 

@@ -1470,11 +1470,12 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           "Cannot execute a losing outcome")
 
       executed <- executor.executeDLC(setup, oracleSigs)
-      (tx, outcome) = (executed.cet, executed.outcome)
+      (tx, outcome, sigsUsed) =
+        (executed.cet, executed.outcome, executed.sigsUsed)
       _ = logger.info(
         s"Created DLC execution transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
 
-      _ <- updateDLCOracleSigs(contractId, oracleSigs.flatMap(_.sigs))
+      _ <- updateDLCOracleSigs(contractId, sigsUsed.flatMap(_.sigs))
       _ <- updateDLCState(contractId, DLCState.Claimed)
       _ <- updateDLCOutcome(contractId, outcome)
       _ <- updateClosingTxId(contractId, tx.txIdBE)

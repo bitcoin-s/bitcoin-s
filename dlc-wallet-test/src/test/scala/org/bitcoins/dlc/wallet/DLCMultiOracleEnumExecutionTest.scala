@@ -102,9 +102,8 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
     }
 
     // Shuffle to make sure ordering doesn't matter
-    // fixme only using min number of sigs
-    (Random.shuffle(initiatorWinSigs).take(threshold),
-     Random.shuffle(recipientWinSigs).take(threshold))
+    (Random.shuffle(initiatorWinSigs).take(sigsToTake),
+     Random.shuffle(recipientWinSigs).take(sigsToTake))
   }
 
   it must "execute as the initiator" in { wallets =>

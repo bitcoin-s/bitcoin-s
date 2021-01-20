@@ -268,8 +268,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
       builder: DLCTxBuilder): Future[Assertion] = {
     val fundingTx = outcome.fundingTx
     val closingTx = outcome match {
-      case ExecutedDLCOutcome(_, cet, _) => cet
-      case RefundDLCOutcome(_, refundTx) => refundTx
+      case ExecutedDLCOutcome(_, cet, _, _) => cet
+      case RefundDLCOutcome(_, refundTx)    => refundTx
     }
 
     for {
