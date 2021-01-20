@@ -552,7 +552,7 @@ abstract class Wallet
       _ = require(myAddrs.nonEmpty, "Must have an output we own")
 
       changeSpks = myAddrs.flatMap { db =>
-        if (db.path.chain.chainType == HDChainType.Change) {
+        if (db.isChange) {
           Some(db.scriptPubKey)
         } else None
       }
@@ -713,6 +713,14 @@ abstract class Wallet
   }
 
   /** @inheritdoc */
+  override def isChange(output: TransactionOutput): Future[Boolean] = {
+    addressDAO.findByScriptPubKey(output.scriptPubKey).map {
+      case Some(db) => db.isChange
+      case None     => false
+    }
+  }
+
+  /** @inheritdoc */
   override def bumpFeeCPFP(
       txId: DoubleSha256DigestBE,
       feeRate: FeeUnit): Future[Transaction] = {
@@ -736,7 +744,7 @@ abstract class Wallet
         s"No need to fee bump a confirmed transaction, ${blockHashes.map(_.hex)}")
 
       changeSpendingInfos = spendingInfos.flatMap { db =>
-        if (db.privKeyPath.chain.chainType == HDChainType.Change) {
+        if (db.isChange) {
           Some(db)
         } else None
       }
