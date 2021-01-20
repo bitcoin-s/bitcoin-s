@@ -712,6 +712,7 @@ abstract class Wallet
     } yield tx
   }
 
+  /** @inheritdoc */
   override def isChange(output: TransactionOutput): Future[Boolean] = {
     addressDAO.findByScriptPubKey(output.scriptPubKey).map {
       case Some(db) => db.isChange

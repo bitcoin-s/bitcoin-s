@@ -392,6 +392,9 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     } yield tx
   }
 
+  /** Determines if the given output is from this wallet and
+    * is a change output from this wallet
+    */
   def isChange(output: TransactionOutput): Future[Boolean]
 }
 
