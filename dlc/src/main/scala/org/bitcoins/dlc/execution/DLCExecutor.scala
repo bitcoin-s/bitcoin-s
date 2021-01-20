@@ -89,7 +89,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
 
     var msgOpt: Option[OracleOutcome] = None
-    val _ = sigCombinations.find { sigs =>
+    val sigsUsedOpt = sigCombinations.find { sigs =>
       msgOpt = builder.contractInfo.findOutcome(sigs)
       msgOpt.isDefined
     }
@@ -101,8 +101,9 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
         throw new IllegalArgumentException(
           s"Signature does not correspond to any possible outcome! $oracleSigs")
     }
+    val sigsUsed = sigsUsedOpt.get // Safe because msgOpt is defined if no throw
 
-    signer.signCET(msg, remoteAdaptorSig, oracleSigs).map { cet =>
+    signer.signCET(msg, remoteAdaptorSig, sigsUsed).map { cet =>
       ExecutedDLCOutcome(fundingTx, cet, msg)
     }
   }
