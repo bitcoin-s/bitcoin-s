@@ -1,12 +1,13 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.DLCMessage.NumericContractDescriptor
 import org.bitcoins.core.protocol.dlc.{
   DLCPayoutCurve,
+  NumericContractDescriptor,
   OutcomePayoutPoint,
   RoundingIntervals
 }
+import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.DLCPlotUtil
 import org.bitcoins.gui.util.GUIUtil.setNumericInput
@@ -22,10 +23,13 @@ import scala.util.{Failure, Success, Try}
 
 object InitNumericContractDialog {
 
-  def showAndWait(
-      parentWindow: Window): Option[(Satoshis, NumericContractDescriptor)] = {
+  def showAndWait(parentWindow: Window): Option[
+    (Satoshis, NumericContractDescriptor, Option[OracleAnnouncementTLV])] = {
     val dialog =
-      new Dialog[Option[(Satoshis, NumericContractDescriptor)]]() {
+      new Dialog[Option[(
+          Satoshis,
+          NumericContractDescriptor,
+          Option[OracleAnnouncementTLV])]]() {
         initOwner(parentWindow)
         title = "Initialize Demo Oracle"
         headerText = "Enter contract interpolation points"
@@ -47,6 +51,10 @@ object InitNumericContractDialog {
     setNumericInput(baseTF)
     setNumericInput(numDigitsTF)
     setNumericInput(totalCollateralTF)
+
+    val announcementTF = new TextField() {
+      promptText = "(optional)"
+    }
 
     val pointMap: scala.collection.mutable.Map[
       Int,
@@ -235,6 +243,8 @@ object InitNumericContractDialog {
         add(numDigitsTF, 1, 1)
         add(new Label("Total Collateral"), 0, 2)
         add(totalCollateralTF, 1, 2)
+        add(new Label("Announcement"), 0, 3)
+        add(announcementTF, 1, 3)
       }
 
       val outcomes: Node = new VBox {
@@ -306,8 +316,12 @@ object InitNumericContractDialog {
       if (dialogButton == ButtonType.OK) {
         getContractInfo match {
           case Failure(exception) => throw exception
-          case Success(contractInfo) =>
-            Some(contractInfo)
+          case Success((sats, contractInfo)) =>
+            val announcementStr = announcementTF.text.value
+            val announcementOpt = if (announcementStr.nonEmpty) {
+              Some(OracleAnnouncementTLV(announcementStr))
+            } else None
+            Some((sats, contractInfo, announcementOpt))
         }
       } else None
 
@@ -315,8 +329,12 @@ object InitNumericContractDialog {
       case Some(
             Some(
               (totalCollateral: Satoshis,
-               descriptor: NumericContractDescriptor))) =>
-        Some((totalCollateral, descriptor))
+               descriptor: NumericContractDescriptor,
+               announcementOpt: Option[_]))) =>
+        Some(
+          (totalCollateral,
+           descriptor,
+           announcementOpt.asInstanceOf[Option[OracleAnnouncementTLV]]))
       case Some(_) | None => None
     }
   }

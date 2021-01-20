@@ -4,12 +4,7 @@ import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage._
-import org.bitcoins.core.protocol.dlc.{
-  DLCFundingInput,
-  DLCPublicKeys,
-  DLCTimeouts
-}
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
@@ -84,9 +79,8 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
     "Accept funding inputs must add up to at least accept's total collateral")
 
   /** Returns the payouts for the signature as (toOffer, toAccept) */
-  def getPayouts(oracleSigs: Vector[SchnorrDigitalSignature]): (
-      CurrencyUnit,
-      CurrencyUnit) = {
+  def getPayouts(
+      oracleSigs: Vector[OracleSignatures]): (CurrencyUnit, CurrencyUnit) = {
     contractInfo.getPayouts(oracleSigs)
   }
 
@@ -139,7 +133,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   /** Constructs the unsigned Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: DLCOutcomeType): Future[WitnessTransaction] = {
+  def buildCET(msg: OracleOutcome): Future[WitnessTransaction] = {
     for {
       cetBuilder <- cetBuilderF
       cet <- cetBuilder.buildCET(msg)

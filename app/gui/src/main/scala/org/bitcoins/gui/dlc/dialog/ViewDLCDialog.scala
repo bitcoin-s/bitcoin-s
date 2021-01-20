@@ -1,10 +1,6 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  EnumContractDescriptor,
-  NumericContractDescriptor
-}
-import org.bitcoins.core.protocol.dlc.{DLCPayoutCurve, DLCStatus}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
 import scalafx.Includes._

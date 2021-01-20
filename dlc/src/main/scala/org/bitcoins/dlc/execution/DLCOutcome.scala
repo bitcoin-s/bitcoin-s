@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.execution
 
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
+import org.bitcoins.core.protocol.dlc.{OracleOutcome, OracleSignatures}
 import org.bitcoins.core.protocol.transaction.Transaction
 
 sealed trait DLCOutcome {
@@ -10,7 +10,8 @@ sealed trait DLCOutcome {
 case class ExecutedDLCOutcome(
     override val fundingTx: Transaction,
     cet: Transaction,
-    outcome: DLCOutcomeType)
+    outcome: OracleOutcome,
+    sigsUsed: Vector[OracleSignatures])
     extends DLCOutcome
 
 case class RefundDLCOutcome(

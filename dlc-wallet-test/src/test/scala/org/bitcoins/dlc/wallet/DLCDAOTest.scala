@@ -4,12 +4,11 @@ import org.bitcoins.core.api.wallet.db.TransactionDbHelper
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
-import org.bitcoins.core.protocol.tlv.{EnumOutcome, UnsignedNumericOutcome}
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey, Sha256DigestBE}
 import org.bitcoins.db.CRUD
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.testkit.fixtures.DLCDAOFixture
@@ -130,12 +129,12 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       val sig = DLCCETSignatureDb(
         paramHash = paramHash,
         isInitiator = true,
-        outcome = EnumOutcome(DLCWalletUtil.winStr),
+        sigPoint = ECPublicKey.freshPublicKey,
         signature = ECAdaptorSignature.dummy
       )
 
       verifyDatabaseInsertion(sig,
-                              (sig.paramHash, sig.outcome),
+                              (sig.paramHash, sig.sigPoint),
                               sigsDAO,
                               dlcDAO)
   }
@@ -145,17 +144,15 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       val dlcDAO = daos.dlcDAO
       val sigsDAO = daos.dlcSigsDAO
 
-      val outcomes = 0.to(100).toVector
-
       val sig = DLCCETSignatureDb(
         paramHash = paramHash,
         isInitiator = true,
-        outcome = UnsignedNumericOutcome(outcomes),
+        sigPoint = ECPublicKey.freshPublicKey,
         signature = ECAdaptorSignature.dummy
       )
 
       verifyDatabaseInsertion(sig,
-                              (sig.paramHash, sig.outcome),
+                              (sig.paramHash, sig.sigPoint),
                               sigsDAO,
                               dlcDAO)
   }
@@ -168,13 +165,13 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       DLCCETSignatureDb(
         paramHash = paramHash,
         isInitiator = true,
-        outcome = EnumOutcome(DLCWalletUtil.winStr),
+        sigPoint = ECPublicKey.freshPublicKey,
         signature = ECAdaptorSignature.dummy
       ),
       DLCCETSignatureDb(
         paramHash = paramHash,
         isInitiator = false,
-        outcome = EnumOutcome(DLCWalletUtil.loseStr),
+        sigPoint = ECPublicKey.freshPublicKey,
         signature = ECAdaptorSignature.dummy
       )
     )

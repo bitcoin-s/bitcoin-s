@@ -3,11 +3,7 @@ package org.bitcoins.dlc.testgen
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage._
-import org.bitcoins.core.protocol.dlc.{
-  DLCFundingInput,
-  DLCPublicKeys,
-  DLCTimeouts
-}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.{
   ScriptWitness,
   ScriptWitnessV0,
@@ -185,6 +181,7 @@ case class ValidTestInputs(
         params.contractInfo
           .map(_.preImage)
           .map(EnumOutcome.apply)
+          .map(outcome => EnumOracleOutcome(Vector(params.oracleInfo), outcome))
           .map(builder.buildCET)
       cets <- Future.sequence(cetFs)
       refundTx <- builder.buildRefundTx

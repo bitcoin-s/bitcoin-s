@@ -8,6 +8,7 @@ import org.scalatest._
 import scala.concurrent.Future
 
 case class DLCDAOs(
+    announcementDAO: OracleAnnouncementDAO,
     dlcDAO: DLCDAO,
     dlcOfferDAO: DLCOfferDAO,
     dlcAcceptDAO: DLCAcceptDAO,
@@ -19,6 +20,7 @@ case class DLCDAOs(
 trait DLCDAOFixture extends BitcoinSWalletTest {
 
   private lazy val daos: DLCDAOs = {
+    val announcementDAO = OracleAnnouncementDAO()
     val dlc = DLCDAO()
     val dlcOfferDAO = DLCOfferDAO()
     val dlcAcceptDAO = DLCAcceptDAO()
@@ -27,6 +29,7 @@ trait DLCDAOFixture extends BitcoinSWalletTest {
     val dlcRefundSigDAO = DLCRefundSigDAO()
     val dlcRemoteTxDAO = DLCRemoteTxDAO()
     DLCDAOs(
+      announcementDAO = announcementDAO,
       dlcDAO = dlc,
       dlcOfferDAO = dlcOfferDAO,
       dlcAcceptDAO = dlcAcceptDAO,

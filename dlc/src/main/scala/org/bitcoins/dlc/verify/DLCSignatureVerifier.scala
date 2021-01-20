@@ -7,8 +7,7 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.dlc.FundingSignatures
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
+import org.bitcoins.core.protocol.dlc.{FundingSignatures, OracleOutcome}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
@@ -17,8 +16,8 @@ import org.bitcoins.crypto.ECAdaptorSignature
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 /** Responsible for verifying all DLC signatures */
@@ -64,18 +63,16 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
   }
 
   /** Verifies remote's CET signature for a given outcome hash */
-  def verifyCETSig(
-      outcome: DLCOutcomeType,
-      sig: ECAdaptorSignature): Boolean = {
+  def verifyCETSig(outcome: OracleOutcome, sig: ECAdaptorSignature): Boolean = {
     val remoteFundingPubKey = if (isInitiator) {
       builder.acceptFundingKey
     } else {
       builder.offerFundingKey
     }
 
-    val adaptorPoint = builder.contractInfo.sigPointForOutcome(outcome)
+    val adaptorPoint = outcome.sigPoint
 
-    val cet = Await.result(builder.buildCET(outcome), 5.seconds)
+    val cet = Await.result(builder.buildCET(outcome), 15.seconds)
 
     val sigComponent = WitnessTxSigComponentRaw(transaction = cet,
                                                 inputIndex = UInt32.zero,
@@ -90,13 +87,13 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
     remoteFundingPubKey.adaptorVerify(hash.bytes, adaptorPoint, sig)
   }
 
-  def verifyCETSigs(sigs: Vector[(DLCOutcomeType, ECAdaptorSignature)])(implicit
+  def verifyCETSigs(sigs: Vector[(OracleOutcome, ECAdaptorSignature)])(implicit
       ec: ExecutionContext): Future[Boolean] = {
     val correctNumberOfSigs =
       sigs.size >= builder.contractInfo.allOutcomes.length
 
     def runVerify(
-        outcomeSigs: Vector[(DLCOutcomeType, ECAdaptorSignature)]): Future[
+        outcomeSigs: Vector[(OracleOutcome, ECAdaptorSignature)]): Future[
       Boolean] = {
       Future {
         outcomeSigs.foldLeft(true) {

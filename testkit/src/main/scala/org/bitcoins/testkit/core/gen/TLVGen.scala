@@ -1,14 +1,10 @@
 package org.bitcoins.testkit.core.gen
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAccept,
-  DLCOffer
-}
+import org.bitcoins.core.protocol.dlc.DLCMessage.{DLCAccept, DLCOffer}
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.dlc.DLCFundingInputP2WPKHV0
+import org.bitcoins.core.protocol.dlc.{ContractInfo, DLCFundingInputP2WPKHV0}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
@@ -113,6 +109,22 @@ trait TLVGen {
       pubkey <- CryptoGenerators.schnorrPublicKey
       eventTLV <- oracleEventV0TLV
     } yield OracleAnnouncementV0TLV(sig, pubkey, eventTLV)
+  }
+
+  def oracleAttestmentV0TLV: Gen[OracleAttestmentV0TLV] = {
+    for {
+      eventId <- StringGenerators.genUTF8String
+      pubkey <- CryptoGenerators.schnorrPublicKey
+      numSigs <- Gen.choose(1, 10)
+      sigs <-
+        Gen
+          .listOfN(numSigs, CryptoGenerators.schnorrDigitalSignature)
+          .map(_.toVector)
+      outcomes <-
+        Gen
+          .listOfN(numSigs, StringGenerators.genUTF8String)
+          .map(_.toVector)
+    } yield OracleAttestmentV0TLV(eventId, pubkey, sigs, outcomes)
   }
 
   def contractDescriptorV0TLVWithTotalCollateral: Gen[

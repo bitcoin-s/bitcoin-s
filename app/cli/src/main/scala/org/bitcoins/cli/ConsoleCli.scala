@@ -22,12 +22,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{
-  AesPassword,
-  DoubleSha256DigestBE,
-  SchnorrDigitalSignature,
-  Sha256DigestBE
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import scopt.OParser
 import ujson._
@@ -332,7 +327,7 @@ object ConsoleCli {
                   executeDLC.copy(contractId = contractId)
                 case other => other
               })),
-          arg[Seq[SchnorrDigitalSignature]]("oraclesigs")
+          arg[Seq[OracleAttestmentTLV]]("oraclesigs")
             .required()
             .action((sigs, conf) =>
               conf.copy(command = conf.command match {
@@ -1733,7 +1728,7 @@ object CliCommand {
 
   case class ExecuteDLC(
       contractId: ByteVector,
-      oracleSigs: Vector[SchnorrDigitalSignature],
+      oracleSigs: Vector[OracleAttestmentTLV],
       noBroadcast: Boolean)
       extends CliCommand
       with Broadcastable

@@ -2,9 +2,11 @@ package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  DLCSign,
+import org.bitcoins.core.protocol.dlc.DLCMessage.DLCSign
+import org.bitcoins.core.protocol.dlc.{
   EnumContractDescriptor,
+  EnumOracleOutcome,
+  EnumOracleSignature,
   EnumSingleOracleInfo
 }
 import org.bitcoins.core.protocol.script._
@@ -235,7 +237,9 @@ object DLCTxGen {
       .find(_.outcome == inputs.params.realOutcome)
       .map(_.preImage)
       .get
-    val outcome = EnumOutcome(outcomeStr)
+    val outcome =
+      EnumOracleOutcome(Vector(inputs.params.oracleInfo),
+                        EnumOutcome(outcomeStr))
 
     for {
       accpetCETSigs <- acceptSigner.createCETSigs()
@@ -249,11 +253,15 @@ object DLCTxGen {
       offerSignedCET <- offerSigner.signCET(
         outcome,
         accpetCETSigs(outcome),
-        Vector(inputs.params.oracleSignature))
+        Vector(
+          EnumOracleSignature(inputs.params.oracleInfo,
+                              inputs.params.oracleSignature)))
       acceptSignedCET <- acceptSigner.signCET(
         outcome,
         offerCETSigs(outcome),
-        Vector(inputs.params.oracleSignature))
+        Vector(
+          EnumOracleSignature(inputs.params.oracleInfo,
+                              inputs.params.oracleSignature)))
     } yield {
       val accept = acceptWithoutSigs.withSigs(accpetCETSigs)
 

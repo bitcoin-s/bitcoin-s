@@ -218,17 +218,19 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "maximizeCoverage" -> Element(maximizeCoverageBytes)
         )
         DLCTLVTestVector(tlv, "oracle_params_v0", fields)
-      case OracleInfoV1TLV(announcements) =>
+      case OracleInfoV1TLV(threshold, announcements) =>
         val fields = Vector(
           "tpe" -> Element(OracleInfoV1TLV.tpe),
           "length" -> Element(tlv.length),
+          "threshold" -> Element(UInt16(threshold)),
           "announcements" -> MultiElement(announcements.map(Element(_)))
         )
         DLCTLVTestVector(tlv, "oracle_info_v1", fields)
-      case OracleInfoV2TLV(oracles, params) =>
+      case OracleInfoV2TLV(threshold, oracles, params) =>
         val fields = Vector(
           "tpe" -> Element(OracleInfoV2TLV.tpe),
           "length" -> Element(tlv.length),
+          "threshold" -> Element(UInt16(threshold)),
           "announcements" -> MultiElement(oracles.map(Element(_))),
           "params" -> Element(params)
         )
@@ -443,12 +445,24 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
       case OracleAnnouncementV0TLV(sig, pubkey, event) =>
         val fields = Vector(
           "tpe" -> Element(UInt16(OracleAnnouncementV0TLV.tpe.toInt)),
+          "length" -> Element(tlv.length),
           "signature" -> Element(sig),
           "oraclePubKey" -> Element(pubkey),
           "oracleEvent" -> Element(event)
         )
 
         DLCMessageTestVector(LnMessage(tlv), "oracle_announcement_v0", fields)
+      case OracleAttestmentV0TLV(eventId, pubkey, sigs, outcomes) =>
+        val fields = Vector(
+          "tpe" -> Element(UInt16(OracleAttestmentV0TLV.tpe.toInt)),
+          "length" -> Element(tlv.length),
+          "eventId" -> Element(eventId),
+          "oraclePubKey" -> Element(pubkey),
+          "signatures" -> MultiElement(sigs.map(Element(_))),
+          "outcomes" -> MultiElement(outcomes.map(Element(_)))
+        )
+
+        DLCMessageTestVector(LnMessage(tlv), "oracle_attestment_v0", fields)
       case _: UnknownTLV | _: ErrorTLV | _: PingTLV | _: PongTLV =>
         throw new IllegalArgumentException(
           s"DLCParsingTestVector is only defined for DLC messages and TLVs, got $tlv")

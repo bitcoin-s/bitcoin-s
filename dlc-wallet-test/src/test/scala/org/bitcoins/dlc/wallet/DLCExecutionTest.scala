@@ -1,19 +1,19 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  ContractInfo,
-  EnumContractDescriptor,
-  NumericContractDescriptor
-}
-import org.bitcoins.core.protocol.dlc.DLCState
 import org.bitcoins.core.protocol.dlc.DLCStatus.{
   Claimed,
   Refunded,
   RemoteClaimed
 }
+import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.tlv.{
+  OracleAttestmentTLV,
+  OracleAttestmentV0TLV,
+  OracleEventV0TLV
+}
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.crypto.{CryptoUtil, SchnorrDigitalSignature}
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.FutureOutcome
@@ -22,14 +22,16 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withDualDLCWallets(test, multiNonce = false)
+    withDualDLCWallets(test,
+                       DLCWalletUtil.sampleContractDescriptor,
+                       DLCWalletUtil.sampleOracleInfo)
   }
 
   behavior of "DLCWallet"
 
   def getSigs(contractInfo: ContractInfo): (
-      SchnorrDigitalSignature,
-      SchnorrDigitalSignature) = {
+      OracleAttestmentTLV,
+      OracleAttestmentTLV) = {
     val desc: EnumContractDescriptor = contractInfo.contractDescriptor match {
       case desc: EnumContractDescriptor => desc
       case _: NumericContractDescriptor =>
@@ -57,7 +59,19 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                               .bytes,
                             DLCWalletUtil.kValue)
 
-    (initiatorWinSig, recipientWinSig)
+    val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
+    val eventId = DLCWalletUtil.sampleOracleInfo.announcement.eventTLV match {
+      case v0: OracleEventV0TLV => v0.eventId
+    }
+
+    (OracleAttestmentV0TLV(eventId,
+                           publicKey,
+                           Vector(initiatorWinSig),
+                           Vector(initiatorWinStr)),
+     OracleAttestmentV0TLV(eventId,
+                           publicKey,
+                           Vector(recipientWinSig),
+                           Vector(recipientWinStr)))
   }
 
   it must "get the correct funding transaction" in { wallets =>
@@ -296,7 +310,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     val executeDLCForceCloseF = for {
       contractId <- getContractId(wallets._1.wallet)
 
-      tx <- dlcA.executeDLC(contractId, Vector.empty)
+      tx <- dlcA.executeDLC(contractId, Vector.empty[OracleAttestmentTLV])
     } yield tx
 
     recoverToSucceededIf[IllegalArgumentException](executeDLCForceCloseF)

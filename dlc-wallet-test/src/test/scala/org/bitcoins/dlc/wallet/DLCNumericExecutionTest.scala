@@ -1,41 +1,45 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  ContractInfo,
-  EnumContractDescriptor,
-  NumericContractDescriptor
-}
-import org.bitcoins.core.protocol.dlc.DLCState
 import org.bitcoins.core.protocol.dlc.DLCStatus.{Claimed, RemoteClaimed}
-import org.bitcoins.core.protocol.tlv.{EnumOutcome, UnsignedNumericOutcome}
+import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.FutureOutcome
 
-class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
+class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
   type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withDualDLCWallets(test, multiNonce = true)
+    withDualDLCWallets(test,
+                       DLCWalletUtil.multiNonceContractDescriptor,
+                       DLCWalletUtil.multiNonceOracleInfo)
   }
 
   behavior of "DLCWallet"
 
   def getSigs(contractInfo: ContractInfo): (
-      Vector[SchnorrDigitalSignature],
-      Vector[SchnorrDigitalSignature]) = {
+      OracleAttestmentTLV,
+      OracleAttestmentTLV) = {
     contractInfo.contractDescriptor match {
       case _: NumericContractDescriptor => ()
       case _: EnumContractDescriptor =>
         throw new IllegalArgumentException("Unexpected Contract Info")
     }
 
+    val oracleInfo = DLCWalletUtil.multiNonceContractInfo.oracleInfo
+      .asInstanceOf[NumericSingleOracleInfo]
+
     val initiatorWinVec =
-      contractInfo.outcomeVecOpt.get
+      contractInfo.allOutcomesAndPayouts
         .maxBy(_._2.toLong)
         ._1
+        .outcome
+        .asInstanceOf[UnsignedNumericOutcome]
+        .digits
+        .padTo(oracleInfo.nonces.size, 0)
 
     val kValues = DLCWalletUtil.kValues.take(initiatorWinVec.size)
 
@@ -49,7 +53,14 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
     }
 
     val recipientWinVec =
-      contractInfo.outcomeVecOpt.get.find(_._2 == Satoshis.zero).get._1
+      contractInfo.allOutcomesAndPayouts
+        .find(_._2 == Satoshis.zero)
+        .get
+        ._1
+        .outcome
+        .asInstanceOf[UnsignedNumericOutcome]
+        .digits
+        .padTo(oracleInfo.nonces.size, 0)
 
     val kValues2 = DLCWalletUtil.kValues.take(recipientWinVec.size)
 
@@ -62,7 +73,19 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
                                 kValue)
     }
 
-    (initiatorWinSigs, recipientWinSigs)
+    val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
+    val eventId = DLCWalletUtil.sampleOracleInfo.announcement.eventTLV match {
+      case v0: OracleEventV0TLV => v0.eventId
+    }
+
+    (OracleAttestmentV0TLV(eventId,
+                           publicKey,
+                           initiatorWinSigs,
+                           initiatorWinVec.map(_.toString)),
+     OracleAttestmentV0TLV(eventId,
+                           publicKey,
+                           recipientWinSigs,
+                           recipientWinVec.map(_.toString)))
   }
 
   it must "execute as the initiator" in { wallets =>
@@ -90,7 +113,7 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
-            verifyingMatchingOracleSigs(statusA, statusB)
+            assert(verifyingMatchingOracleSigs(statusA, statusB))
           case (_, _) => fail()
         }
       }
@@ -129,7 +152,7 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: RemoteClaimed), Some(statusB: Claimed)) =>
-            verifyingMatchingOracleSigs(statusB, statusA)
+            assert(verifyingMatchingOracleSigs(statusB, statusA))
           case (_, _) => fail()
         }
       }
@@ -146,26 +169,26 @@ class DLCMultiNonceExecutionTest extends BitcoinSDualWalletTest {
   private def verifyingMatchingOracleSigs(
       statusA: Claimed,
       statusB: RemoteClaimed): Boolean = {
-    val outcome = statusB.outcome
-    val numSigs = outcome match {
-      case EnumOutcome(outcome) =>
+    val outcome = statusB.oracleOutcome
+    outcome match {
+      case _: EnumOracleOutcome =>
         throw new RuntimeException(s"Unexpected outcome type, got $outcome")
-      case UnsignedNumericOutcome(digits) => digits.size
+      case numeric: NumericOracleOutcome =>
+        val aggR = numeric.aggregateNonce
+
+        val neededNonces = numeric.oraclesAndOutcomes.flatMap {
+          case (oracle, outcome) =>
+            oracle.nonces.take(outcome.serialized.length)
+        }
+
+        val aggS = statusA.oracleSigs
+          .filter(sig => neededNonces.contains(sig.rx))
+          .map(_.sig)
+          .reduce(_.add(_))
+
+        val aggregateSignature =
+          SchnorrDigitalSignature(aggR, aggS)
+        aggregateSignature == statusB.oracleSig
     }
-
-    val aggR = statusA.oracleSigs
-      .take(numSigs)
-      .map(_.rx.publicKey)
-      .reduce(_.add(_))
-      .schnorrNonce
-
-    val aggS = statusA.oracleSigs
-      .take(numSigs)
-      .map(_.sig)
-      .reduce(_.add(_))
-
-    val aggregateSignature =
-      SchnorrDigitalSignature(aggR, aggS)
-    aggregateSignature == statusB.oracleSig
   }
 }

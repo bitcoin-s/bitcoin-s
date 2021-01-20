@@ -267,9 +267,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                              refundLT)) =>
           complete {
             val announcements = contractInfo.oracleInfo match {
-              case OracleInfoV0TLV(announcement)     => Vector(announcement)
-              case OracleInfoV1TLV(announcements)    => announcements
-              case OracleInfoV2TLV(announcements, _) => announcements
+              case OracleInfoV0TLV(announcement)        => Vector(announcement)
+              case OracleInfoV1TLV(_, announcements)    => announcements
+              case OracleInfoV2TLV(_, announcements, _) => announcements
             }
             if (!announcements.forall(_.validateSignature)) {
               throw new RuntimeException(
@@ -414,10 +414,10 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       ExecuteDLC.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(ExecuteDLC(contractId, oracleSigs, noBroadcast)) =>
+        case Success(ExecuteDLC(contractId, sigs, noBroadcast)) =>
           complete {
             for {
-              tx <- wallet.executeDLC(contractId, oracleSigs)
+              tx <- wallet.executeDLC(contractId, sigs)
               _ <- handleBroadcastable(tx, noBroadcast)
             } yield {
               Server.httpSuccess(tx.hex)

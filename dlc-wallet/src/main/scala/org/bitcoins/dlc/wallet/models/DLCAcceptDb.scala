@@ -2,23 +2,10 @@ package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  DLCAccept,
-  DLCAcceptWithoutSigs
-}
-import org.bitcoins.core.protocol.dlc.{
-  CETSignatures,
-  DLCFundingInput,
-  DLCPublicKeys
-}
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
+import org.bitcoins.core.protocol.dlc.DLCMessage._
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.crypto.{
-  ECAdaptorSignature,
-  ECPublicKey,
-  Sha256Digest,
-  Sha256DigestBE
-}
+import org.bitcoins.crypto._
 
 case class DLCAcceptDb(
     paramHash: Sha256DigestBE,
@@ -30,7 +17,7 @@ case class DLCAcceptDb(
 
   def toDLCAccept(
       fundingInputs: Vector[DLCFundingInput],
-      outcomeSigs: Vector[(DLCOutcomeType, ECAdaptorSignature)],
+      outcomeSigs: Vector[(OracleOutcome, ECAdaptorSignature)],
       refundSig: PartialSignature): DLCAccept = {
     val pubKeys =
       DLCPublicKeys(fundingKey, finalAddress)

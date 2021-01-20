@@ -1,8 +1,13 @@
 package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.dlc.{CETSignatures, FundingSignatures}
-import org.bitcoins.crypto.SchnorrDigitalSignature
+import org.bitcoins.core.protocol.dlc.{
+  CETCalculator,
+  CETSignatures,
+  FundingSignatures,
+  OracleOutcome,
+  OracleSignatures
+}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
 
@@ -68,28 +73,40 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
   }
 
   /** Return's this party's payout for a given oracle signature */
-  def getPayout(sigs: Vector[SchnorrDigitalSignature]): CurrencyUnit = {
+  def getPayout(sigs: Vector[OracleSignatures]): CurrencyUnit = {
     signer.getPayout(sigs)
   }
 
+  /** Computes closing transactions from a DLCSetup and a set of OracleSignatures.
+    * The Vector[OracleSignatures] may contain more OracleSignatures than are needed.
+    *
+    * TODO: Test over-sharing of OracleSignatures
+    */
   def executeDLC(
       dlcSetup: SetupDLC,
-      oracleSigs: Vector[SchnorrDigitalSignature]): Future[
-    ExecutedDLCOutcome] = {
+      oracleSigs: Vector[OracleSignatures]): Future[ExecutedDLCOutcome] = {
     val SetupDLC(fundingTx, cetInfos, _) = dlcSetup
 
-    val msgOpt = builder.contractInfo.findOutcome(oracleSigs)
+    val threshold = cetInfos.head._1.oracles.length
+    val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
+
+    var msgOpt: Option[OracleOutcome] = None
+    val sigsUsedOpt = sigCombinations.find { sigs =>
+      msgOpt = builder.contractInfo.findOutcome(sigs)
+      msgOpt.isDefined
+    }
     val (msg, remoteAdaptorSig) = msgOpt match {
       case Some(msg) =>
         val cetInfo = cetInfos(msg)
         (msg, cetInfo.remoteSignature)
       case None =>
         throw new IllegalArgumentException(
-          s"Signature does not correspond to any possible outcome! ${oracleSigs.map(_.hex).mkString(", ")}")
+          s"Signature does not correspond to any possible outcome! $oracleSigs")
     }
+    val sigsUsed = sigsUsedOpt.get // Safe because msgOpt is defined if no throw
 
-    signer.signCET(msg, remoteAdaptorSig, oracleSigs).map { cet =>
-      ExecutedDLCOutcome(fundingTx, cet, msg)
+    signer.signCET(msg, remoteAdaptorSig, sigsUsed).map { cet =>
+      ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
     }
   }
 

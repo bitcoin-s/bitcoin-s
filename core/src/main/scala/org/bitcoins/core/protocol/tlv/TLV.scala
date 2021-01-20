@@ -167,7 +167,8 @@ object TLV extends TLVParentFactory[TLV] {
       ContractDescriptorTLV.allFactories ++
       OracleInfoTLV.allFactories ++
       OracleAnnouncementTLV.allFactories ++
-      NegotiationFieldsTLV.allFactories
+      NegotiationFieldsTLV.allFactories ++
+      OracleAttestmentTLV.allFactories
   }
 
   // Need to override to be able to default to Unknown
@@ -846,6 +847,64 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
   }
 }
 
+sealed trait OracleAttestmentTLV extends TLV {
+  def eventId: NormalizedString
+  def publicKey: SchnorrPublicKey
+  def sigs: Vector[SchnorrDigitalSignature]
+  def outcomes: Vector[NormalizedString]
+}
+
+object OracleAttestmentTLV extends TLVParentFactory[OracleAttestmentTLV] {
+
+  val allFactories: Vector[TLVFactory[OracleAttestmentTLV]] =
+    Vector(OracleAttestmentV0TLV)
+
+  override def typeName: String = "OracleAttestmentTLV"
+}
+
+case class OracleAttestmentV0TLV(
+    eventId: NormalizedString,
+    publicKey: SchnorrPublicKey,
+    sigs: Vector[SchnorrDigitalSignature],
+    outcomes: Vector[NormalizedString])
+    extends OracleAttestmentTLV {
+  require(sigs.nonEmpty, "Cannot have 0 signatures")
+  require(
+    outcomes.size == sigs.size,
+    s"Number of outcomes must match number of signatures, ${outcomes.size} != ${sigs.size}")
+  override val tpe: BigSizeUInt = OracleAttestmentV0TLV.tpe
+
+  override val value: ByteVector = {
+    val outcomesBytes = outcomes.foldLeft(ByteVector.empty) {
+      case (accum, elem) =>
+        accum ++ strBytes(elem)
+    }
+
+    strBytes(eventId) ++
+      publicKey.bytes ++
+      u16PrefixedList(sigs) ++
+      outcomesBytes
+  }
+}
+
+object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(55400)
+
+  override def fromTLVValue(value: ByteVector): OracleAttestmentV0TLV = {
+    val iter = ValueIterator(value)
+
+    val eventId = iter.takeString()
+    val pubKey = iter.take(SchnorrPublicKey, 32)
+    val sigs =
+      iter.takeU16PrefixedList(() => iter.take(SchnorrDigitalSignature, 64))
+    val outcomes = sigs.indices.toVector.map { _ =>
+      iter.takeString()
+    }
+
+    OracleAttestmentV0TLV(eventId, pubKey, sigs, outcomes)
+  }
+}
+
 sealed trait ContractDescriptorTLV extends TLV
 
 object ContractDescriptorTLV extends TLVParentFactory[ContractDescriptorTLV] {
@@ -1044,14 +1103,19 @@ object OracleInfoV0TLV extends TLVFactory[OracleInfoV0TLV] {
   }
 }
 
-sealed trait MultiOracleInfoTLV extends OracleInfoTLV
+sealed trait MultiOracleInfoTLV extends OracleInfoTLV {
+  def threshold: Int
+}
 
-case class OracleInfoV1TLV(oracles: Vector[OracleAnnouncementTLV])
+case class OracleInfoV1TLV(
+    threshold: Int,
+    oracles: Vector[OracleAnnouncementTLV])
     extends MultiOracleInfoTLV {
   override val tpe: BigSizeUInt = OracleInfoV1TLV.tpe
 
   override val value: ByteVector = {
-    u16PrefixedList(oracles)
+    UInt16(threshold).bytes ++
+      u16PrefixedList(oracles)
   }
 }
 
@@ -1061,10 +1125,11 @@ object OracleInfoV1TLV extends TLVFactory[OracleInfoV1TLV] {
   override def fromTLVValue(value: ByteVector): OracleInfoV1TLV = {
     val iter = ValueIterator(value)
 
+    val threshold = iter.takeU16().toInt
     val oracles =
       iter.takeU16PrefixedList(() => iter.take(OracleAnnouncementTLV))
 
-    OracleInfoV1TLV(oracles)
+    OracleInfoV1TLV(threshold, oracles)
   }
 }
 
@@ -1099,13 +1164,14 @@ object OracleParamsV0TLV extends TLVFactory[OracleParamsV0TLV] {
 }
 
 case class OracleInfoV2TLV(
+    threshold: Int,
     oracles: Vector[OracleAnnouncementTLV],
     params: OracleParamsTLV)
     extends MultiOracleInfoTLV {
   override val tpe: BigSizeUInt = OracleInfoV2TLV.tpe
 
   override val value: ByteVector = {
-    u16PrefixedList(oracles) ++ params.bytes
+    UInt16(threshold).bytes ++ u16PrefixedList(oracles) ++ params.bytes
   }
 }
 
@@ -1115,11 +1181,12 @@ object OracleInfoV2TLV extends TLVFactory[OracleInfoV2TLV] {
   override def fromTLVValue(value: ByteVector): OracleInfoV2TLV = {
     val iter = ValueIterator(value)
 
+    val threshold = iter.takeU16().toInt
     val oracles =
       iter.takeU16PrefixedList(() => iter.take(OracleAnnouncementTLV))
     val params = iter.take(OracleParamsV0TLV)
 
-    OracleInfoV2TLV(oracles, params)
+    OracleInfoV2TLV(threshold, oracles, params)
   }
 }
 

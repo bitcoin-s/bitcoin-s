@@ -829,13 +829,15 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val dummyOracleSig = SchnorrDigitalSignature(
       "65ace55b5d073cc7a1c783fa8c254692c421270fa988247e3c87627ffe804ed06c20bf779da91f82da3311b1d9e0a3a513409a15c66f25201280751177dad24c")
 
+    val dummyOracleAttestment =
+      OracleAttestmentV0TLV("eventId",
+                            dummyPubKey.schnorrPublicKey,
+                            Vector(dummyOracleSig),
+                            Vector("outcome"))
+
     lazy val winStr: String = "WIN"
 
     lazy val loseStr: String = "LOSE"
-
-    lazy val dummyOutcomeSigs: Vector[(EnumOutcome, ECAdaptorSignature)] =
-      Vector(EnumOutcome(winStr) -> ECAdaptorSignature.dummy,
-             EnumOutcome(loseStr) -> ECAdaptorSignature.dummy)
 
     val dummyAddress = "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2"
 
@@ -858,6 +860,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       "fdd8249426cbca0e5366f6688fd837a83d3fe34d103f8d88a3bdc40d648e47e43c6f70a7e65fb85d5de46779604b541ebe74d06b3c316446a6f97fcd23d6de8e1d7b9451f74577f8cab8361962ce642a8da4b1f48f8813ed243203cb50ebba45c789abf0fdd8223000015b0fb6b85a9badee0a826349822db7412f79c71efdd903eac94a10ee10d6e4425fe3da00fdd80604000101620161")
 
     val oracleInfo = EnumSingleOracleInfo(announcementTLV)
+
+    val dummyOutcomeSigs =
+      Vector(
+        EnumOracleOutcome(Vector(oracleInfo),
+                          EnumOutcome(winStr)) -> ECAdaptorSignature.dummy,
+        EnumOracleOutcome(Vector(oracleInfo),
+                          EnumOutcome(loseStr)) -> ECAdaptorSignature.dummy
+      )
 
     val contractInfo = ContractInfo(contractDesc, oracleInfo)
     val contractInfoTLV = contractInfo.toTLV
@@ -974,7 +984,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           fundingOutPointOpt = None,
           fundingTxIdOpt = None,
           closingTxIdOpt = None,
-          outcomeOpt = None
+          outcomesOpt = None,
+          oraclesUsedOpt = None
         )))
 
       val route = walletRoutes.handleCommand(
@@ -1023,14 +1034,15 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "execute a dlc" in {
       (mockWalletApi
-        .executeDLC(_: ByteVector, _: Vector[SchnorrDigitalSignature]))
-        .expects(contractId, Vector(dummyOracleSig))
+        .executeDLC(_: ByteVector, _: Seq[OracleAttestmentTLV]))
+        .expects(contractId, Vector(dummyOracleAttestment))
         .returning(Future.successful(EmptyTransaction))
 
       val route = walletRoutes.handleCommand(
-        ServerCommand(
-          "executedlc",
-          Arr(Str(contractId.toHex), Arr(Str(dummyOracleSig.hex)), Bool(true))))
+        ServerCommand("executedlc",
+                      Arr(Str(contractId.toHex),
+                          Arr(Str(dummyOracleAttestment.hex)),
+                          Bool(true))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
@@ -1042,14 +1054,16 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "execute a dlc with multiple sigs" in {
       (mockWalletApi
-        .executeDLC(_: ByteVector, _: Vector[SchnorrDigitalSignature]))
-        .expects(contractId, Vector(dummyOracleSig, dummyOracleSig))
+        .executeDLC(_: ByteVector, _: Seq[OracleAttestmentTLV]))
+        .expects(contractId,
+                 Vector(dummyOracleAttestment, dummyOracleAttestment))
         .returning(Future.successful(EmptyTransaction))
 
       val route = walletRoutes.handleCommand(
         ServerCommand("executedlc",
                       Arr(Str(contractId.toHex),
-                          Arr(Str(dummyOracleSig.hex), Str(dummyOracleSig.hex)),
+                          Arr(Str(dummyOracleAttestment.hex),
+                              Str(dummyOracleAttestment.hex)),
                           Bool(true))))
 
       Post() ~> route ~> check {
@@ -1062,8 +1076,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "execute a dlc with broadcast" in {
       (mockWalletApi
-        .executeDLC(_: ByteVector, _: Vector[SchnorrDigitalSignature]))
-        .expects(contractId, Vector(dummyOracleSig))
+        .executeDLC(_: ByteVector, _: Seq[OracleAttestmentTLV]))
+        .expects(contractId, Vector(dummyOracleAttestment))
         .returning(Future.successful(EmptyTransaction))
 
       (mockWalletApi.broadcastTransaction _)
@@ -1074,7 +1088,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       val route = walletRoutes.handleCommand(
         ServerCommand("executedlc",
                       Arr(Str(contractId.toHex),
-                          Arr(Str(dummyOracleSig.hex)),
+                          Arr(Str(dummyOracleAttestment.hex)),
                           Bool(false))))
 
       Post() ~> route ~> check {

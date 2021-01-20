@@ -1,15 +1,7 @@
 package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  EnumContractDescriptor,
-  NumericContractDescriptor
-}
-import org.bitcoins.core.protocol.dlc.{
-  DLCPayoutCurve,
-  OutcomePayoutEndpoint,
-  RoundingIntervals
-}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.util.NumberUtil
 

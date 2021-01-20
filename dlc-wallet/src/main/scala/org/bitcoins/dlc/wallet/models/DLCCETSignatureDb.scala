@@ -1,12 +1,11 @@
 package org.bitcoins.dlc.wallet.models
 
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
-import org.bitcoins.crypto.{ECAdaptorSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey, Sha256DigestBE}
 
 case class DLCCETSignatureDb(
     paramHash: Sha256DigestBE,
     isInitiator: Boolean,
-    outcome: DLCOutcomeType,
+    sigPoint: ECPublicKey,
     signature: ECAdaptorSignature) {
-  def toTuple: (DLCOutcomeType, ECAdaptorSignature) = (outcome, signature)
+  def toTuple: (ECPublicKey, ECAdaptorSignature) = (sigPoint, signature)
 }

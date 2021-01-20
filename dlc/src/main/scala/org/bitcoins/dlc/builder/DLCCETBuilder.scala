@@ -1,14 +1,13 @@
 package org.bitcoins.dlc.builder
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.ContractInfo
-import org.bitcoins.core.protocol.dlc.DLCTimeouts
+import org.bitcoins.core.protocol.dlc.ContractInfo
+import org.bitcoins.core.protocol.dlc.{DLCTimeouts, OracleOutcome}
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
   MultiSignatureScriptPubKey,
   P2WSHWitnessV0,
   ScriptPubKey
 }
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.{
   AddWitnessDataFinalizer,
@@ -49,11 +48,11 @@ case class DLCCETBuilder(
   /** Constructs a Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: DLCOutcomeType)(implicit
+  def buildCET(outcome: OracleOutcome)(implicit
       ec: ExecutionContext): Future[WitnessTransaction] = {
     val builder = RawTxBuilder().setLockTime(timeouts.contractMaturity.toUInt32)
 
-    val (offerValue, acceptValue) = contractInfo.getPayouts(msg)
+    val (offerValue, acceptValue) = contractInfo.getPayouts(outcome)
 
     builder += TransactionOutput(offerValue, offerFinalSPK)
     builder += TransactionOutput(acceptValue, acceptFinalSPK)

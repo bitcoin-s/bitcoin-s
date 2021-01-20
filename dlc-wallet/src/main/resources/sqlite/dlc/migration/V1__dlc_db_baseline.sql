@@ -11,9 +11,17 @@ CREATE TABLE "wallet_dlcs"
     "funding_outpoint" VARCHAR(254),
     "funding_tx_id"    VARCHAR(254),
     "closing_tx_id"    VARCHAR(254),
-    "outcome"          VARCHAR(254)
+    "outcomes"         VARCHAR(254),
+    "oracles_used"     VARCHAR(254)
 );
 CREATE INDEX "wallet_dlcs_param_hash_index" on "wallet_dlcs" ("param_hash");
+
+CREATE TABLE "oracle_announcements"
+(
+    "announcement" VARCHAR(254) NOT NULL PRIMARY KEY,
+    "pub_key"      VARCHAR(254) NOT NULL
+);
+CREATE INDEX "oracle_announcements_pub_key_index" on "oracle_announcements" ("pub_key");
 
 CREATE TABLE "wallet_dlc_offers"
 (
@@ -58,7 +66,7 @@ CREATE TABLE "wallet_dlc_cet_sigs"
 (
     "param_hash"   VARCHAR(254) NOT NULL,
     "is_initiator" INTEGER      NOT NULL,
-    "outcome"      VARCHAR(254) NOT NULL,
+    "sig_point"    VARCHAR(254) NOT NULL,
     "signature"    VARCHAR(254) NOT NULL,
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
 );

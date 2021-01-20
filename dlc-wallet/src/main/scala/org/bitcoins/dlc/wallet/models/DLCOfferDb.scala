@@ -2,11 +2,7 @@ package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc.DLCMessage._
-import org.bitcoins.core.protocol.dlc.{
-  DLCFundingInput,
-  DLCPublicKeys,
-  DLCTimeouts
-}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv.ContractInfoV0TLV
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
