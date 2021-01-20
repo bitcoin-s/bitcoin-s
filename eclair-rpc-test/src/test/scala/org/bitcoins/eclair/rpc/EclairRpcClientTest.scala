@@ -13,7 +13,6 @@ import org.bitcoins.core.protocol.ln.channel.{
 }
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln.routing.NodeRoute
 import org.bitcoins.core.protocol.ln.{
   LnHumanReadablePart,
   LnInvoice,
@@ -86,13 +85,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     * so this is a helper val that pairs two connected
     * clients together with an open channel
     */
-//  lazy val clientOtherClientF = {
-//
-//    //use second and third client above since they
-//    //aren't really being used in the tests that use eclairNodesF
-//    secondClientF.flatMap(s => thirdClientF.map(t => (s, t)))
-//  }
-
   lazy val clientF: Future[EclairRpcClient] = secondClientF
   lazy val otherClientF: Future[EclairRpcClient] = thirdClientF
 
@@ -176,7 +168,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             .exists(_.endsWith(".onion")))
         route <- client1.findRoute(invoice, None)
       } yield {
-        route.asInstanceOf[NodeRoute].ids.size == 4
+        route.ids.size == 4
       }).recover {
         case err: RuntimeException
             if err.getMessage.contains("route not found") =>
@@ -195,7 +187,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         .flatMap(_.getInfo)
         .flatMap(info =>
           firstClientF.flatMap(_.findRoute(info.nodeId, MilliSatoshis(100))))
-        .map(route => route.asInstanceOf[NodeRoute].ids.length == 4)
+        .map(route => route.ids.length == 4)
         .recover {
           case err: RuntimeException
               if err.getMessage.contains("route not found") =>
