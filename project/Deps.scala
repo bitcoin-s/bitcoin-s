@@ -3,7 +3,7 @@ import sbt._
 object Deps {
 
   object V {
-    val bouncyCastle = "1.67"
+    val bouncyCastle = "1.68"
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.2"
@@ -15,15 +15,15 @@ object Deps {
     val spray = "1.3.6"
     val zeromq = "0.5.2"
     val akkav = "10.1.13"
-    val playv = "2.9.1"
+    val playv = "2.9.2"
     val akkaStreamv = "2.6.10"
     val scodecV = "1.1.23"
     val junitV = "0.11"
-    val nativeLoaderV = "2.3.4"
+    val nativeLoaderV = "2.3.5"
     val typesafeConfigV = "1.4.1"
 
-    val scalaFxV = "15.0.1-R20"
-    val javaFxV = "16-ea+5"
+    val scalaFxV = "15.0.1-R21"
+    val javaFxV = "16-ea+6"
 
     val asyncNewScalaV = "0.10.0"
 
@@ -34,7 +34,7 @@ object Deps {
     val sqliteV = "3.34.0"
     val scalameterV = "0.17"
     val scalamockV = "5.1.0"
-    val scalaCollectionCompatV = "2.3.1"
+    val scalaCollectionCompatV = "2.3.2"
     val pgEmbeddedV = "0.13.3"
 
     val breezeV = "1.1"
@@ -283,7 +283,8 @@ object Deps {
       Test.logback,
       Test.scalaTest,
       Test.scalacheck,
-      Test.newAsync
+      Test.newAsync,
+      Test.scalaCollectionCompat
     )
 
   val bench = List(
@@ -429,4 +430,11 @@ object Deps {
       Compile.newMicroJson,
       Compile.logback
     )
+
+  val serverRoutes = List(
+    Compile.akkaHttp,
+    Compile.akkaActor,
+    Compile.akkaSlf4j,
+    Compile.akkaStream
+  )
 }

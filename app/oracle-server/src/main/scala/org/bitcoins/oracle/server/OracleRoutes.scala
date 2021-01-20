@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.dlc.oracle._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.keymanager.WalletStorage
-import org.bitcoins.server._
+import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
 
 import scala.util.{Failure, Success}
@@ -142,11 +142,13 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
                     }
                     outcomes.map(num => Num(num.toDouble))
                   case decomp: DigitDecompositionEventDescriptorV0TLV =>
-                    val sign = if (decomp.isSigned) {
-                      Vector(Str("+"), Str("-"))
-                    } else {
-                      Vector.empty
+                    val sign = decomp match {
+                      case _: UnsignedDigitDecompositionEventDescriptor =>
+                        Vector.empty
+                      case _: SignedDigitDecompositionEventDescriptor =>
+                        Vector(Str("+"), Str("-"))
                     }
+
                     val digits = 0.until(decomp.numDigits.toInt).map { _ =>
                       0
                         .until(decomp.base.toInt)

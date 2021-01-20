@@ -6,7 +6,7 @@ title: CLI
 
 ## Bitcoin-s command line interface
 
-The [cli](../../app/cli/) project is meant to be a bitcoin-s command line interface (cli).
+The [cli](/api/org/bitcoins/cli) project is meant to be a bitcoin-s command line interface (cli).
 
 ### Building the command line interface
 

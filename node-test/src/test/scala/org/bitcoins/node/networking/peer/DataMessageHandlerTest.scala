@@ -1,5 +1,6 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.core.config.SigNet
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.p2p._
@@ -19,7 +20,7 @@ import scala.concurrent.{Future, Promise}
 class DataMessageHandlerTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def config: BitcoinSAppConfig =
+  implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = SpvNodeConnectedWithBitcoindV19
@@ -27,11 +28,43 @@ class DataMessageHandlerTest extends NodeUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withSpvNodeConnectedToBitcoindV19(test)
 
+  it must "catch errors and not fail when processing an invalid payload" in {
+    param: SpvNodeConnectedWithBitcoindV19 =>
+      val SpvNodeConnectedWithBitcoindV19(spv, _) = param
+
+      for {
+        sender <- spv.peerMsgSenderF
+        chainApi <- spv.chainApiFromDb()
+        dataMessageHandler = DataMessageHandler(chainApi)(spv.executionContext,
+                                                          spv.nodeAppConfig,
+                                                          spv.chainConfig)
+
+        // Use signet genesis block header, this should be invalid for regtest
+        invalidPayload =
+          HeadersMessage(Vector(SigNet.chainParams.genesisBlock.blockHeader))
+
+        // Validate that it causes a failure
+        _ <- recoverToSucceededIf[RuntimeException](
+          chainApi.processHeaders(invalidPayload.headers))
+
+        // Verify we handle the payload correctly
+        _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender)
+      } yield succeed
+  }
+
   it must "verify OnMerkleBlock callbacks are executed" in {
     param: FixtureParam =>
       val SpvNodeConnectedWithBitcoindV19(spv, bitcoind) = param
 
       val resultP: Promise[(MerkleBlock, Vector[Transaction])] = Promise()
+
+      val callback: OnMerkleBlockReceived = {
+        (merkle: MerkleBlock, txs: Vector[Transaction]) =>
+          Future {
+            resultP.success((merkle, txs))
+            ()
+          }
+      }
 
       for {
         sender <- spv.peerMsgSenderF
@@ -44,21 +77,17 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload1 = MerkleBlockMessage(merkleBlock)
         payload2 = TransactionMessage(tx)
 
-        callback: OnMerkleBlockReceived =
-          (merkle: MerkleBlock, txs: Vector[Transaction]) => {
-            Future {
-              resultP.success((merkle, txs))
-              ()
-            }
-          }
+        nodeCallbacks = NodeCallbacks(onMerkleBlockReceived = Vector(callback))
+        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
 
-        callbacks = NodeCallbacks.onMerkleBlockReceived(callback)
-
-        dataMessageHandler = DataMessageHandler(genesisChainApi, callbacks)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload1, sender)
         _ <- dataMessageHandler.handleDataPayload(payload2, sender)
         result <- resultP.future
-      } yield assert(result == (merkleBlock, Vector(tx)))
+      } yield assert(result == ((merkleBlock, Vector(tx))))
   }
 
   it must "verify OnBlockReceived callbacks are executed" in {
@@ -67,6 +96,12 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
       val resultP: Promise[Block] = Promise()
 
+      val callback: OnBlockReceived = (block: Block) => {
+        Future {
+          resultP.success(block)
+          ()
+        }
+      }
       for {
         sender <- spv.peerMsgSenderF
 
@@ -75,16 +110,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
         payload = BlockMessage(block)
 
-        callback: OnBlockReceived = (block: Block) => {
-          Future {
-            resultP.success(block)
-            ()
-          }
-        }
+        nodeCallbacks = NodeCallbacks.onBlockReceived(callback)
+        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
 
-        callbacks = NodeCallbacks.onBlockReceived(callback)
-
-        dataMessageHandler = DataMessageHandler(genesisChainApi, callbacks)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == block)
@@ -96,6 +128,15 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
       val resultP: Promise[Vector[BlockHeader]] = Promise()
 
+      val callback: OnBlockHeadersReceived = (headers: Vector[BlockHeader]) => {
+        Future {
+          if (!resultP.isCompleted) {
+            resultP.success(headers)
+          }
+          ()
+        }
+      }
+
       for {
         sender <- spv.peerMsgSenderF
 
@@ -104,16 +145,14 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
         payload = HeadersMessage(CompactSizeUInt.one, Vector(header))
 
-        callback: OnBlockHeadersReceived = (headers: Vector[BlockHeader]) => {
-          Future {
-            resultP.success(headers)
-            ()
-          }
-        }
-
         callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
 
-        dataMessageHandler = DataMessageHandler(genesisChainApi, callbacks)
+        _ = spv.nodeAppConfig.addCallbacks(callbacks)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
+
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == Vector(header))
@@ -125,7 +164,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
 
       val resultP: Promise[Vector[(DoubleSha256Digest, GolombFilter)]] =
         Promise()
-
+      val callback: OnCompactFiltersReceived = {
+        (filters: Vector[(DoubleSha256Digest, GolombFilter)]) =>
+          Future {
+            resultP.success(filters)
+            ()
+          }
+      }
       for {
         sender <- spv.peerMsgSenderF
 
@@ -135,17 +180,13 @@ class DataMessageHandlerTest extends NodeUnitTest {
         payload =
           CompactFilterMessage(FilterType.Basic, hash.flip, filter.filter.bytes)
 
-        callback: OnCompactFiltersReceived =
-          (filters: Vector[(DoubleSha256Digest, GolombFilter)]) => {
-            Future {
-              resultP.success(filters)
-              ()
-            }
-          }
+        nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
+        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi)(spv.executionContext,
+                                              spv.nodeAppConfig,
+                                              spv.chainConfig)
 
-        callbacks = NodeCallbacks.onCompactFilterReceived(callback)
-
-        dataMessageHandler = DataMessageHandler(genesisChainApi, callbacks)
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))

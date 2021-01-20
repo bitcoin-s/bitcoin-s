@@ -1,4 +1,4 @@
-package org.bitcoins.server
+package org.bitcoins.server.routes
 
 import akka.actor.ActorSystem
 import akka.event.Logging
@@ -16,6 +16,7 @@ import scala.concurrent.Future
 case class Server(
     conf: AppConfig,
     handlers: Seq[ServerRoute],
+    rpcbindOpt: Option[String],
     rpcport: Int = 9999)(implicit system: ActorSystem)
     extends HttpLogger {
 
@@ -58,9 +59,10 @@ case class Server(
     }
   }
 
-  val route =
+  val route: Route =
     // TODO implement better logging
-    DebuggingDirectives.logRequestResult("http-rpc-server", Logging.InfoLevel) {
+    DebuggingDirectives.logRequestResult(
+      ("http-rpc-server", Logging.InfoLevel)) {
       withErrorHandling {
         pathSingleSlash {
           post {
@@ -78,7 +80,7 @@ case class Server(
 
   def start(): Future[Http.ServerBinding] = {
     val httpFut =
-      Http().bindAndHandle(route, "localhost", rpcport)
+      Http().bindAndHandle(route, rpcbindOpt.getOrElse("localhost"), rpcport)
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }

@@ -26,7 +26,7 @@ import scala.concurrent.Future
 import scala.util.Try
 
 /**
-  * Class for creating a BitcoindV19 instance that can access RPCs
+  * Class for creating a BitcoindV20 instance that can access RPCs
   */
 class BitcoindV20RpcClient(override val instance: BitcoindInstance)(implicit
     actorSystem: ActorSystem)

@@ -305,7 +305,7 @@ class AesCryptTest extends BitcoinSUnitTest {
   }
 
   it must "fail to decrypt with the wrong key" in {
-    forAll(NumberGenerator.bytevector.suchThat(_.nonEmpty)) { bytes =>
+    forAll(NumberGenerator.bytevector.suchThat(_.size > 3)) { bytes =>
       val encrypted = AesCrypt.encrypt(bytes, aesKey)
       val decryptedE = AesCrypt.decrypt(encrypted, badAesKey)
       decryptedE match {

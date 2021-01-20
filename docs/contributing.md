@@ -253,4 +253,4 @@ of all files in `core` project.
 
 Bitcoin-S uses Github Actions to run tests and deploy library and website builds. Generally
 speaking CI has to pass for a PR to get merged. If you make documentation/website only
-changes, you can start your PR title with `Docs:`. This skips running tests on CI.
+changes, you can add the `documentation` label to your PR. This skips running tests on CI.

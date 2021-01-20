@@ -281,6 +281,15 @@ case class SpendingInfoDAO()(implicit
     * Fetches all the incoming TXOs in our DB that are in
     * the transaction with the given TXID
     */
+  def findDbsForTx(txid: DoubleSha256DigestBE): Future[Vector[UTXORecord]] = {
+    val query = table.filter(_.txid === txid)
+    safeDatabase.runVec(query.result)
+  }
+
+  /**
+    * Fetches all the incoming TXOs in our DB that are in
+    * the transaction with the given TXID
+    */
   def findTx(txid: DoubleSha256DigestBE): Future[Vector[SpendingInfoDb]] = {
     val query = table
       .join(spkTable)

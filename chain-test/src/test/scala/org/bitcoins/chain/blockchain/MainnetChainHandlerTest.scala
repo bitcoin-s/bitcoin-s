@@ -1,11 +1,9 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.chain
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.chain.{
   ChainDbUnitTest,
   ChainTestUtil,
@@ -25,7 +23,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
 
   override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
 
-  implicit override lazy val appConfig: ChainAppConfig = mainnetAppConfig
+  implicit override lazy val cachedChainConf: ChainAppConfig = mainnetAppConfig
 
   val source: BufferedSource = FileUtil.getFileAsSource("block_headers.json")
   val arrStr: String = source.getLines().next()

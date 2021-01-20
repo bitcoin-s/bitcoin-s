@@ -25,7 +25,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.4.6")
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.5")
 
 // write markdown files with type-checked Scala
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.14")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.16")
 
 // SQL migrations
 addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.4.2")
@@ -33,3 +33,6 @@ addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.4.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
 
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
+
+//https://github.com/scalameta/sbt-native-image
+addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.0")

@@ -281,7 +281,7 @@ object DLCMessage {
         s"Input total collateral ($totalCollateral) did not match ${this.totalCollateral}")
 
       val flippedFunc = DLCPayoutCurve(outcomeValueFunc.points.map { point =>
-        point.copy(payout = (totalCollateral - point.payout).satoshis)
+        point.copy(payout = totalCollateral.toLong - point.payout)
       })
 
       MultiNonceContractInfo(
@@ -293,9 +293,7 @@ object DLCMessage {
     }
 
     override lazy val toTLV: ContractInfoV1TLV = {
-      val tlvPoints = outcomeValueFunc.points.map { point =>
-        TLVPoint(point.outcome.toLongExact, point.payout, point.isEndpoint)
-      }
+      val tlvPoints = outcomeValueFunc.points.map(_.toTlvPoint)
 
       ContractInfoV1TLV(base, numDigits, totalCollateral, tlvPoints)
     }
@@ -307,7 +305,10 @@ object DLCMessage {
 
     override def fromTLV(tlv: ContractInfoV1TLV): MultiNonceContractInfo = {
       val points = tlv.points.map { point =>
-        OutcomePayoutPoint(point.outcome, point.value, point.isEndpoint)
+        val payoutWithPrecision =
+          point.value.toLong + (BigDecimal(point.extraPrecision) / (1 << 16))
+
+        OutcomePayoutPoint(point.outcome, payoutWithPrecision, point.isEndpoint)
       }
 
       MultiNonceContractInfo(DLCPayoutCurve(points),
@@ -387,7 +388,7 @@ object DLCMessage {
         val offerPayout = offerContractInfo(msg)
         val acceptPayout = (totalCollateral - offerPayout).satoshis
 
-        builder.+=(msg -> (oracleInfo.sigPoint(msg), offerPayout, acceptPayout))
+        builder.+=((msg, (oracleInfo.sigPoint(msg), offerPayout, acceptPayout)))
       }
 
       builder.result()

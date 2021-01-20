@@ -5,13 +5,15 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.bitcoins.node.{NodeCallbacks, NodeType, P2PLogger}
+import org.bitcoins.node.{NodeType, P2PLogger}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -22,7 +24,6 @@ import scala.util.Try
   */
 case class DataMessageHandler(
     chainApi: ChainApi,
-    callbacks: NodeCallbacks,
     initialSyncDone: Option[Promise[Done]] = None,
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     filterHeaderHeightOpt: Option[Int] = None,
@@ -103,21 +104,16 @@ case class DataMessageHandler(
                   filterCount <- chainApi.getFilterCount()
                 } yield (filterHeaderCount, filterCount + 1)
             }
-          newSyncing <-
+          newSyncing =
             if (batchSizeFull) {
-              logger.info(
-                s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
-              for {
-                _ <- sendNextGetCompactFilterCommand(peerMsgSender,
-                                                     filter.blockHash.flip)
-              } yield syncing
+              syncing
             } else {
               val syncing = newFilterHeight < newFilterHeaderHeight
               if (!syncing) {
                 logger.info(s"We are synced")
                 Try(initialSyncDone.map(_.success(Done)))
               }
-              Future.successful(syncing)
+              syncing
             }
           // If we are not syncing or our filter batch is full, process the filters
           filterBatch = currentFilterBatch :+ filter
@@ -130,12 +126,19 @@ case class DataMessageHandler(
               logger.debug(s"Processing ${filterBatch.size} filters")
               for {
                 newChainApi <- chainApi.processFilters(filterBatch)
-                _ <- callbacks.executeOnCompactFiltersReceivedCallbacks(
-                  logger,
-                  blockFilters)
+                _ <-
+                  appConfig.nodeCallbacks
+                    .executeOnCompactFiltersReceivedCallbacks(logger,
+                                                              blockFilters)
               } yield (Vector.empty, newChainApi)
             } else Future.successful((filterBatch, chainApi))
-
+          _ <-
+            if (batchSizeFull) {
+              logger.info(
+                s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
+              sendNextGetCompactFilterCommand(peerMsgSender,
+                                              filter.blockHash.flip)
+            } else FutureUtil.unit
         } yield {
           this.copy(
             chainApi = newChainApi,
@@ -243,7 +246,9 @@ case class DataMessageHandler(
         for {
           newApi <- chainApiF
           newSyncing <- getHeadersF
-          _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(logger, headers)
+          _ <- appConfig.nodeCallbacks.executeOnBlockHeadersReceivedCallbacks(
+            logger,
+            headers)
         } yield {
           this.copy(chainApi = newApi, syncing = newSyncing)
         }
@@ -260,9 +265,11 @@ case class DataMessageHandler(
                 logger.debug("Processing block's header...")
                 for {
                   processedApi <- chainApi.processHeader(block.blockHeader)
-                  _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(
-                    logger,
-                    Vector(block.blockHeader))
+                  _ <-
+                    appConfig.nodeCallbacks
+                      .executeOnBlockHeadersReceivedCallbacks(
+                        logger,
+                        Vector(block.blockHeader))
                 } yield processedApi
               } else Future.successful(chainApi)
             }
@@ -271,24 +278,25 @@ case class DataMessageHandler(
         for {
           newApi <- newApiF
           _ <-
-            callbacks
+            appConfig.nodeCallbacks
               .executeOnBlockReceivedCallbacks(logger, block)
         } yield {
           this.copy(chainApi = newApi)
         }
       case TransactionMessage(tx) =>
-        MerkleBuffers.putTx(tx, callbacks).flatMap { belongsToMerkle =>
-          if (belongsToMerkle) {
-            logger.trace(
-              s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
-            Future.successful(this)
-          } else {
-            logger.trace(
-              s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
-            callbacks
-              .executeOnTxReceivedCallbacks(logger, tx)
-              .map(_ => this)
-          }
+        MerkleBuffers.putTx(tx, appConfig.nodeCallbacks).flatMap {
+          belongsToMerkle =>
+            if (belongsToMerkle) {
+              logger.trace(
+                s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
+              Future.successful(this)
+            } else {
+              logger.trace(
+                s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
+              appConfig.nodeCallbacks
+                .executeOnTxReceivedCallbacks(logger, tx)
+                .map(_ => this)
+            }
         }
       case MerkleBlockMessage(merkleBlock) =>
         MerkleBuffers.putMerkle(merkleBlock)
@@ -297,12 +305,13 @@ case class DataMessageHandler(
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
     }
 
-    resultF.failed.foreach {
-      case err =>
-        logger.error(s"Failed to handle data payload=${payload}", err)
+    resultF.failed.foreach { err =>
+      logger.error(s"Failed to handle data payload=${payload}", err)
     }
 
-    resultF
+    resultF.recoverWith {
+      case NonFatal(_) => Future.successful(this)
+    }
   }
 
   private def sendNextGetCompactFilterHeadersCommand(

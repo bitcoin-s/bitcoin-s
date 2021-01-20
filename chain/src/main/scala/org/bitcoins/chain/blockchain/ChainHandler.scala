@@ -87,7 +87,7 @@ class ChainHandler(
   }
 
   override def getBestBlockHeader(): Future[BlockHeaderDb] = {
-    val tipsF: Future[Vector[BlockHeaderDb]] = blockHeaderDAO.chainTips
+    val tipsF: Future[Vector[BlockHeaderDb]] = blockHeaderDAO.getBestChainTips
     for {
       tips <- tipsF
       chains = tips.map(t => Blockchain.fromHeaders(Vector(t)))
@@ -135,35 +135,44 @@ class ChainHandler(
         successfullyValidatedHeaders.distinct
       }
 
-      val chains = blockchainUpdates.map(_.blockchain)
+      if (headersToBeCreated.isEmpty) {
+        //this means we are given zero headers that were valid.
+        //Return a failure in this case to avoid issue 2365
+        //https://github.com/bitcoin-s/bitcoin-s/issues/2365
+        Future.failed(new RuntimeException(
+          s"Failed to connect any headers to our internal chain state, failures=$blockchainUpdates"))
+      } else {
+        val chains = blockchainUpdates.map(_.blockchain)
 
-      val createdF = blockHeaderDAO.createAll(headersToBeCreated)
+        val createdF = blockHeaderDAO.createAll(headersToBeCreated)
 
-      val newChainHandler = ChainHandler(blockHeaderDAO,
-                                         filterHeaderDAO,
-                                         filterDAO,
-                                         blockFilterCheckpoints =
-                                           blockFilterCheckpoints)
+        val newChainHandler = ChainHandler(blockHeaderDAO,
+                                           filterHeaderDAO,
+                                           filterDAO,
+                                           blockFilterCheckpoints =
+                                             blockFilterCheckpoints)
 
-      createdF.map { headers =>
-        if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
-          headersToBeCreated.reverseIterator.foldLeft(FutureUtil.unit) {
-            (acc, header) =>
-              for {
-                _ <- acc
-                _ <-
-                  chainConfig.chainCallbacks
-                    .executeOnBlockHeaderConnectedCallbacks(logger,
-                                                            header.height,
-                                                            header.blockHeader)
-              } yield ()
+        createdF.map { headers =>
+          if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
+            headersToBeCreated.reverseIterator.foldLeft(FutureUtil.unit) {
+              (acc, header) =>
+                for {
+                  _ <- acc
+                  _ <-
+                    chainConfig.chainCallbacks
+                      .executeOnBlockHeaderConnectedCallbacks(
+                        logger,
+                        header.height,
+                        header.blockHeader)
+                } yield ()
+            }
           }
+          chains.foreach { c =>
+            logger.info(
+              s"Processed headers from height=${c.height - headers.length} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
+          }
+          newChainHandler
         }
-        chains.foreach { c =>
-          logger.info(
-            s"Processed headers from height=${c.height - headers.length} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
-        }
-        newChainHandler
       }
     }
   }
@@ -172,11 +181,13 @@ class ChainHandler(
   override def processHeaders(
       headers: Vector[BlockHeader]): Future[ChainApi] = {
     val blockchainsF = blockHeaderDAO.getBlockchains()
-    for {
+    val resultF = for {
       blockchains <- blockchainsF
       newChainApi <-
         processHeadersWithChains(headers = headers, blockchains = blockchains)
     } yield newChainApi
+
+    resultF
   }
 
   /**
@@ -390,7 +401,7 @@ class ChainHandler(
       (minHeightOpt, maxHeightOpt) match {
         case (Some(minHeight), Some(maxHeight)) =>
           logger.info(
-            s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE.hex}")
+            s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best filterheader.blockHash=${maxHeight.blockHashBE.hex}")
           this
         // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
         case (_, _) =>
@@ -437,7 +448,7 @@ class ChainHandler(
       (minHeightOpt, maxHeightOpt) match {
         case (Some(minHeight), Some(maxHeight)) =>
           logger.info(
-            s"Processed filters from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE.hex}")
+            s"Processed filters from height=${minHeight.height} to ${maxHeight.height}. Best filter.blockHash=${maxHeight.blockHashBE.hex}")
           this
         // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
         case (_, _) =>
@@ -673,7 +684,7 @@ class ChainHandler(
       case None => FutureUtil.none
       case Some(blockHeight) =>
         for {
-          tips <- blockHeaderDAO.chainTips
+          tips <- blockHeaderDAO.getBestChainTips
           getNAncestorsFs = tips.map { tip =>
             blockHeaderDAO.getNAncestors(tip.hashBE, tip.height - blockHeight)
           }

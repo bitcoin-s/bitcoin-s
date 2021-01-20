@@ -139,7 +139,10 @@ sealed abstract class Base58 {
       val decoded = decode(base58)
       val firstByte = decoded.head
       val compressedPubKey = List('K', 'L', 'c').contains(base58.head)
-      if (base58.contains(List('0', 'O', 'l', 'I'))) false
+      val hasInvalidChar: Boolean = {
+        Vector('0', 'O', 'l', 'I').exists(c => base58.contains(c))
+      }
+      if (hasInvalidChar) false
       else if (compressedPubKey) checkCompressedPubKeyValidity(base58)
       else if (isValidAddressPreFixByte(firstByte))
         base58.length >= 26 && base58.length <= 35

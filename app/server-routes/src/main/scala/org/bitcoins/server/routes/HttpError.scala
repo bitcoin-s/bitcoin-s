@@ -1,4 +1,4 @@
-package org.bitcoins.server
+package org.bitcoins.server.routes
 
 /** HTTP errors our server knows how to handle.
   * These gets picked up by the exceptions handler

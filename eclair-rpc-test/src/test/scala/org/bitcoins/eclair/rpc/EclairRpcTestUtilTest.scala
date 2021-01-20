@@ -14,7 +14,7 @@ class EclairRpcTestUtilTest extends BitcoinSAsyncTest {
     for {
       cli <- EclairRpcTestUtil.startedBitcoindRpcClient()
       address <- cli.getNewAddress
-      blocks <- cli.generateToAddress(200, address)
+      _ <- cli.generateToAddress(200, address)
     } yield cli
 
   private val clients =

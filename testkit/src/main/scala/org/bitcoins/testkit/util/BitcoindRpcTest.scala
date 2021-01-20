@@ -6,6 +6,7 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 
 import scala.collection.mutable
+import scala.concurrent.Future
 
 abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
 
@@ -44,5 +45,9 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
   override def afterAll(): Unit = {
     BitcoindRpcTestUtil.stopServers(clientAccum.result())
     super.afterAll()
+  }
+
+  def startClient(client: BitcoindRpcClient): Future[Unit] = {
+    BitcoindRpcTestUtil.startServers(Vector(client))
   }
 }

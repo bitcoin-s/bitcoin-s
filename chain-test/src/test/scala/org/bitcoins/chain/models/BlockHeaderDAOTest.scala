@@ -124,14 +124,14 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       }
   }
 
-  it must "retrieve the chain tip saved in the database" in {
+  it must "retrieve the best chain tip saved in the database" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
 
       val createdF = blockHeaderDAO.create(blockHeader)
 
       val chainTip1F = createdF.flatMap { _ =>
-        blockHeaderDAO.chainTips
+        blockHeaderDAO.getBestChainTips
       }
 
       val assert1F = chainTip1F.map { tips =>
@@ -144,22 +144,68 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       //insert another header and make sure that is the new last header
       assert1F.flatMap { _ =>
         val created2F = blockHeaderDAO.create(blockHeader2)
-        val chainTip2F = created2F.flatMap(_ => blockHeaderDAO.chainTips)
+        val chainTip2F = created2F.flatMap(_ => blockHeaderDAO.getBestChainTips)
 
         chainTip2F.map { tips =>
           assert(tips.length == 1)
           assert(tips.head.blockHeader.hash == blockHeader2.blockHeader.hash)
         }
       }
-
   }
 
   it must "return the genesis block when retrieving block headers from an empty database" in {
     blockHeaderDAO: BlockHeaderDAO =>
-      val chainTipsF = blockHeaderDAO.chainTips
+      val chainTipsF = blockHeaderDAO.getBestChainTips
       chainTipsF.map { tips =>
         assert(tips.headOption == Some(genesisHeaderDb))
       }
+  }
+
+  it must "retrieve all chainTips in the last difficulty interval, not just the heaviest chain tip" in {
+    blockHeaderDAO: BlockHeaderDAO =>
+      val reorgFixtureF = buildBlockHeaderDAOCompetingHeaders(blockHeaderDAO)
+
+      //now we have 2 competing tips, chainTips should return both competing headers
+      val firstAssertionF = for {
+        reorgFixture <- reorgFixtureF
+        headerDb1 = reorgFixture.headerDb1
+        headerDb2 = reorgFixture.headerDb2
+        chainTips <- blockHeaderDAO.getForkedChainTips
+      } yield {
+        assert(chainTips.length == 2)
+        assert(chainTips.contains(headerDb1))
+        assert(chainTips.contains(headerDb2))
+      }
+
+      //ok, now we are going to build a new header off of headerDb1
+      //however, headerDb2 is _still_ a possible chainTip that we can reorg
+      //too. So we should still have both of them returned
+      for {
+        _ <- firstAssertionF
+        reorgFixture <- reorgFixtureF
+        headerD = BlockHeaderHelper.buildNextHeader(reorgFixture.headerDb1)
+        _ <- reorgFixture.blockHeaderDAO.create(headerD)
+        chainTips <- blockHeaderDAO.getForkedChainTips
+      } yield {
+        assert(chainTips.length == 2)
+        assert(chainTips.contains(reorgFixture.headerDb1))
+        assert(chainTips.contains(reorgFixture.headerDb2))
+      }
+  }
+
+  it must "deduplicate blockchains so in reorg situations we do not return duplicates" in {
+    blockHeaderDAO: BlockHeaderDAO =>
+      val reorgFixtureF = buildBlockHeaderDAOCompetingHeaders(blockHeaderDAO)
+
+      //now we have 2 competing tips, so we should return 2 chains
+      val firstAssertionF = for {
+        _ <- reorgFixtureF
+        chains <- blockHeaderDAO.getBlockchains()
+      } yield {
+        assert(chains.length == 2)
+      }
+
+      firstAssertionF
   }
 
   it must "retrieve a block header by height" in {
@@ -331,7 +377,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
     for {
       _ <- blockerHeaderDAO.createAll(Vector(db1, db2))
-      tips <- blockerHeaderDAO.chainTips
+      tips <- blockerHeaderDAO.getBestChainTips
     } yield assert(tips == Vector(db2))
   }
 
@@ -347,8 +393,18 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
       for {
         _ <- blockerHeaderDAO.create(db)
-        tips <- blockerHeaderDAO.chainTips
+        tips <- blockerHeaderDAO.getBestChainTips
       } yield assert(tips == Vector(db))
+  }
+
+  it must "get blockchains from the genesis header" in {
+    blockHeaderDAO: BlockHeaderDAO =>
+      val blockchainsF = blockHeaderDAO.getBlockchains()
+      for {
+        blockchains <- blockchainsF
+      } yield {
+        assert(blockchains.length == 1)
+      }
   }
 
   it must "successfully getBlockchainsBetweenHeights" in {

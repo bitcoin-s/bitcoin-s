@@ -35,7 +35,18 @@ class BitcoindV19RpcClientTest extends BitcoindRpcTest {
     clientF.map { client =>
       assert(client.version == BitcoindVersion.V19)
     }
+  }
 
+  it should "be able to get peer info" in {
+    for {
+      (freshClient, otherFreshClient) <- clientPairF
+      infoList <- freshClient.getPeerInfo
+    } yield {
+      assert(infoList.length >= 0)
+      val info = infoList.head
+      assert(info.addnode)
+      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
+    }
   }
 
   it should "get a block filter given a block hash" in {

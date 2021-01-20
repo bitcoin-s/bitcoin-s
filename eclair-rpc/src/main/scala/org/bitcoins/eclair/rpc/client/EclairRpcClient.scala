@@ -29,6 +29,7 @@ import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.NodeUri
+import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.AsyncUtil
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
@@ -864,7 +865,7 @@ class EclairRpcClient(
                 .get()} for paymentId=${paymentId} for interval=${interval}"))
         } else {
           val resultsF = getSentInfo(paymentId)
-          resultsF.recover {
+          resultsF.failed.foreach {
             case e: Throwable =>
               logger.error(
                 s"Cannot check payment status for paymentId=${paymentId}",
@@ -982,4 +983,9 @@ object EclairRpcClient {
 
   /** The current version we support of Eclair */
   private[bitcoins] val version = "0.5.0"
+
+  /** The bitcoind version that eclair is officially tested & supported with by ACINQ
+    * @see https://github.com/ACINQ/eclair/releases/tag/v0.4
+    */
+  val bitcoindV: BitcoindVersion = BitcoindVersion.V19
 }

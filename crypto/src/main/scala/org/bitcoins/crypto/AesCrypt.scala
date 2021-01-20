@@ -193,7 +193,7 @@ object AesKey {
     * and must be 16, 24 or 32 bytes long.
     */
   def fromBytes(bytes: ByteVector): Option[AesKey] = {
-    if (keylengths.contains(bytes.length)) {
+    if (keylengths.exists(k => k == bytes.length)) {
       Some(AesKey(bytes))
     } else {
       None

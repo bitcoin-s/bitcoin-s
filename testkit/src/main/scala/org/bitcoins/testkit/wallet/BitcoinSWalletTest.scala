@@ -15,8 +15,15 @@ import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.node.{
+  NodeCallbacks,
+  OnBlockReceived,
+  OnCompactFiltersReceived,
+  OnMerkleBlockReceived
+}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.Implicits.GeneratorOps
@@ -38,22 +45,22 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
   import BitcoinSWalletTest._
 
   /** Wallet config with data directory set to user temp directory */
-  implicit protected def config: BitcoinSAppConfig =
+  implicit protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
-  implicit protected def walletAppConfig: WalletAppConfig = {
-    config.walletConf
+  implicit protected def getFreshWalletAppConfig: WalletAppConfig = {
+    getFreshConfig.walletConf
   }
 
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(config.walletConf)
+    AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
     super[EmbeddedPg].beforeAll()
   }
 
   override def afterAll(): Unit = {
-    Await.result(config.chainConf.stop(), 1.minute)
-    Await.result(config.nodeConf.stop(), 1.minute)
-    Await.result(config.walletConf.stop(), 1.minute)
+    Await.result(getFreshConfig.chainConf.stop(), 1.minute)
+    Await.result(getFreshConfig.nodeConf.stop(), 1.minute)
+    Await.result(getFreshConfig.walletConf.stop(), 1.minute)
     super[EmbeddedPg].afterAll()
   }
 
@@ -145,7 +152,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
   /** Lets you customize the parameters for the created wallet */
   val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome = {
     walletConfig =>
-      val newWalletConf = walletAppConfig.withOverrides(walletConfig)
+      val newWalletConf = getFreshWalletAppConfig.withOverrides(walletConfig)
       val km = createNewKeyManager()(newWalletConf)
       val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
       makeDependentFixture(
@@ -263,10 +270,13 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
         bitcoind <-
           BitcoinSFixture
             .createBitcoindWithFunds(None)
-        wallet <- createWalletWithBitcoindCallbacks(bitcoind = bitcoind,
-                                                    bip39PasswordOpt =
-                                                      bip39PasswordOpt)
-        fundedWallet <- fundWalletWithBitcoind(wallet)
+        walletWithBitcoind <- createWalletWithBitcoindCallbacks(
+          bitcoind = bitcoind,
+          bip39PasswordOpt = bip39PasswordOpt)
+        fundedWallet <- fundWalletWithBitcoind(walletWithBitcoind)
+        _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
+                                           bitcoind = bitcoind)
+        _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
       } yield fundedWallet
     }
 
@@ -284,6 +294,9 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
             .map(_.asInstanceOf[BitcoindV19RpcClient])
         wallet <- createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
         fundedWallet <- fundWalletWithBitcoind(wallet)
+        _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
+                                           bitcoind = bitcoind)
+        _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
       } yield {
         WalletWithBitcoindV19(fundedWallet.wallet, bitcoind)
       }
@@ -294,7 +307,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
 
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {
-      val baseConf = config.walletConf
+      val baseConf = getFreshConfig.walletConf
       val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
         Some(StringGenerators.genNonEmptyString.sampleSome)
       } else None
@@ -601,6 +614,13 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield funded
   }
 
+  /** Funds a wallet with bitcoind, this method adds [[BitcoinSWalletTest.createNodeCallbacksForWallet()]]
+    * which processes filters/blocks that can be used to fund the wallet.
+    *
+    * It's important to note that this does NOT synchronize the wallet with a chain state.
+    * This should be done by the caller of this method. A useful method to help you with that
+    * in neutrino node cases is [[BitcoinSWalletTest.awaitWalletBalances]]
+    */
   def fundedWalletAndBitcoind(
       bitcoindRpcClient: BitcoindRpcClient,
       nodeApi: NodeApi,
@@ -616,6 +636,10 @@ object BitcoinSWalletTest extends WalletLogger {
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi,
         bip39PasswordOpt = bip39PasswordOpt)
+      //add callbacks for wallet
+      nodeCallbacks =
+        BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(wallet)
+      _ = config.nodeConf.addCallbacks(nodeCallbacks)
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
@@ -646,22 +670,7 @@ object BitcoinSWalletTest extends WalletLogger {
       )
     } yield fundedAcct1
 
-    //sanity check to make sure we have money
-    for {
-      fundedWallet <- fundedAccount1WalletF
-      balance <- fundedWallet.getBalance(defaultAccount)
-      _ = require(
-        balance == expectedDefaultAmt,
-        s"Funding wallet fixture failed to fund the wallet, got balance=$balance expected=$expectedDefaultAmt")
-
-      account1Balance <- fundedWallet.getBalance(hdAccount1)
-      _ = require(
-        account1Balance == expectedAccount1Amt,
-        s"Funding wallet fixture failed to fund account 1, " +
-          s"got balance=$hdAccount1 expected=$expectedAccount1Amt"
-      )
-
-    } yield pair
+    fundedAccount1WalletF.map(_ => pair)
   }
 
   def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(implicit
@@ -684,6 +693,69 @@ object BitcoinSWalletTest extends WalletLogger {
       _ <- wallet.walletConfig.dropAll()
       _ <- wallet.stop()
     } yield ()
+  }
+
+  /** Constructs callbacks for the wallet from the node to process blocks and compact filters */
+  def createNeutrinoNodeCallbacksForWallet(wallet: Wallet)(implicit
+      ec: ExecutionContext): NodeCallbacks = {
+    val onBlock: OnBlockReceived = { block =>
+      for {
+        _ <- wallet.processBlock(block)
+      } yield ()
+    }
+    val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
+      for {
+        _ <- wallet.processCompactFilters(blockFilters)
+      } yield ()
+    }
+
+    NodeCallbacks(
+      onBlockReceived = Vector(onBlock),
+      onCompactFiltersReceived = Vector(onCompactFilters)
+    )
+  }
+
+  /** Registers a callback to handle merkle blocks given to us by a spv node */
+  def createSpvNodeCallbacksForWallet(wallet: Wallet)(implicit
+      ec: ExecutionContext): NodeCallbacks = {
+    val onMerkleBlockReceived: OnMerkleBlockReceived = {
+      case (merkleBlock, txs) =>
+        for {
+          _ <- wallet.processTransactions(txs,
+                                          Some(merkleBlock.blockHeader.hashBE))
+        } yield ()
+    }
+    NodeCallbacks(onMerkleBlockReceived = Vector(onMerkleBlockReceived))
+  }
+
+  /** Makes sure our wallet is fully funded with the default amounts specified in
+    * [[BitcoinSWalletTest]]. This will future won't be completed until balances satisfy [[isSameWalletBalances()]]
+    */
+  def awaitWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
+      config: BitcoinSAppConfig,
+      system: ActorSystem): Future[Unit] = {
+    AsyncUtil.retryUntilSatisfiedF(conditionF =
+                                     () => isSameWalletBalances(fundedWallet),
+                                   interval = 1.seconds)
+  }
+
+  private def isSameWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
+      config: BitcoinSAppConfig,
+      system: ActorSystem): Future[Boolean] = {
+    import system.dispatcher
+    val defaultAccount = config.walletConf.defaultAccount
+    val hdAccount1 = WalletTestUtil.getHdAccount1(config.walletConf)
+    val expectedDefaultAmt = BitcoinSWalletTest.expectedDefaultAmt
+    val expectedAccount1Amt = BitcoinSWalletTest.expectedAccount1Amt
+    val defaultBalanceF = fundedWallet.wallet.getBalance(defaultAccount)
+    val account1BalanceF = fundedWallet.wallet.getBalance(hdAccount1)
+    for {
+      balance <- defaultBalanceF
+      account1Balance <- account1BalanceF
+    } yield {
+      balance == expectedDefaultAmt &&
+      account1Balance == expectedAccount1Amt
+    }
   }
 
 }

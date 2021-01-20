@@ -156,9 +156,7 @@ object PSBTGenerators {
           }
 
           Future.successful(
-            PSBT(psbt.globalMap, newInputsMaps, psbt.outputMaps),
-            infos,
-            fee)
+            (PSBT(psbt.globalMap, newInputsMaps, psbt.outputMaps), infos, fee))
       }
     }
   }

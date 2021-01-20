@@ -179,7 +179,6 @@ class P2PRpcTest extends BitcoindRpcTest {
 
   it should "be able to submit a new block" in {
     for {
-
       (client1, client2) <-
         BitcoindRpcTestUtil.createUnconnectedNodePair(clientAccum = clientAccum)
       hash <- client2.getNewAddress.flatMap(client2.generateToAddress(1, _))

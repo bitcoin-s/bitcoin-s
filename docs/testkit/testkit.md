@@ -164,7 +164,7 @@ A generator is a piece of code that generates a random object for a data strucut
 There is also a robust set of generators available in the [org.bitcoins.testkit.gen](../../testkit/src/main/scala/org/bitcoins/testkit/core/gen) package.
 This allows you to integrate property based testing into your library and feel confident about implementing your application specific logic correctly.
 
-You can see examples of us using these generators inside of testkit in our [Private Key test cases](../../core-test/src/test/scala/org/bitcoins/core/crypto/ECPrivateKeyTest.scala)
+You can see examples of us using these generators inside of testkit in our [Private Key test cases](https://github.com/bitcoin-s/bitcoin-s/blob/master/crypto-test/src/test/scala/org/bitcoins/crypto/ECPrivateKeyTest.scala)
 
 ### Other modules
 

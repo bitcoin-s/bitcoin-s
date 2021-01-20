@@ -49,7 +49,7 @@ abstract class CachedHttpFeeRateProvider extends HttpFeeRateProvider {
   private def updateFeeRate(): Future[FeeUnit] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
     super.getFeeRate.map { feeRate =>
-      cachedFeeRateOpt = Some(feeRate, TimeUtil.now)
+      cachedFeeRateOpt = Some((feeRate, TimeUtil.now))
       feeRate
     }
   }

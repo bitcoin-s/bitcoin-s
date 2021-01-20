@@ -8,6 +8,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     env:
       DISABLE_SECP256K1: "true"
     steps:

@@ -80,11 +80,48 @@ lazy val `bitcoin-s` = project
     appCommonsTest,
     testkit,
     zmq,
-    oracleServer
+    oracleServer,
+    serverRoutes
+  )
+  .dependsOn(
+    secp256k1jni,
+    chain,
+    chainTest,
+    cli,
+    cliTest,
+    core,
+    coreTest,
+    crypto,
+    cryptoTest,
+    dbCommons,
+    dbCommonsTest,
+    feeProvider,
+    feeProviderTest,
+    dlcOracle,
+    dlcOracleTest,
+    bitcoindRpc,
+    bitcoindRpcTest,
+    bench,
+    eclairRpc,
+    eclairRpcTest,
+    bundle,
+    gui,
+    keyManager,
+    keyManagerTest,
+    node,
+    nodeTest,
+    wallet,
+    walletTest,
+    appServer,
+    appServerTest,
+    appCommons,
+    appCommonsTest,
+    testkit,
+    zmq,
+    oracleServer,
+    serverRoutes
   )
   .settings(CommonSettings.settings: _*)
-  // crossScalaVersions must be set to Nil on the aggregating project
-  .settings(crossScalaVersions := Nil)
   // unidoc aggregates Scaladocs for all subprojects into one big doc
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
@@ -246,13 +283,21 @@ lazy val oracleServer = project
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     dlcOracle,
-    appServer
+    serverRoutes
   )
+
+lazy val serverRoutes = project
+  .in(file("app/server-routes"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(name := "bitcoin-s-server-routes")
+  .settings(libraryDependencies ++= Deps.serverRoutes)
+  .dependsOn(appCommons, dbCommons)
 
 lazy val appServer = project
   .in(file("app/server"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
+    serverRoutes,
     appCommons,
     node,
     chain,
@@ -274,6 +319,9 @@ lazy val appServerTest = project
 lazy val cli = project
   .in(file("app/cli"))
   .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-cli"
+  )
   .dependsOn(
     appCommons
   )
@@ -313,7 +361,7 @@ lazy val chain = project
 
 lazy val chainTest = project
   .in(file("chain-test"))
-  .settings(CommonSettings.testWithDbSettings: _*)
+  .settings(CommonSettings.testSettings: _*)
   .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain-test",
@@ -411,7 +459,7 @@ lazy val node =
 lazy val nodeTest =
   project
     .in(file("node-test"))
-    .settings(CommonSettings.testWithDbSettings: _*)
+    .settings(CommonSettings.testSettings: _*)
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node-test",
@@ -492,7 +540,7 @@ lazy val wallet = project
 
 lazy val walletTest = project
   .in(file("wallet-test"))
-  .settings(CommonSettings.testWithDbSettings: _*)
+  .settings(CommonSettings.testSettings: _*)
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet-test",

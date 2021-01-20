@@ -26,6 +26,7 @@ class NodeRpcTest extends BitcoindRpcTest {
             recoverToSucceededIf[MiscError](client.rescanBlockChain())
           system.scheduler.scheduleOnce(100.millis) {
             client.abortRescan()
+            ()
           }
           rescanFailedF
         }

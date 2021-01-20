@@ -1,7 +1,7 @@
 package org.bitcoins.oracle.server
 
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
-import org.bitcoins.server.{BitcoinSRunner, Server}
+import org.bitcoins.server.routes.{BitcoinSRunner, Server}
 
 import scala.concurrent.Future
 
@@ -22,13 +22,19 @@ class OracleServerMain(override val args: Array[String])
       routes = Seq(OracleRoutes(oracle))
       server = rpcPortOpt match {
         case Some(rpcport) =>
-          Server(conf, routes, rpcport = rpcport)
+          Server(conf = conf,
+                 handlers = routes,
+                 rpcbindOpt = rpcBindOpt,
+                 rpcport = rpcport)
         case None =>
           conf.rpcPortOpt match {
             case Some(rpcport) =>
-              Server(conf, routes, rpcport)
+              Server(conf = conf,
+                     handlers = routes,
+                     rpcbindOpt = rpcBindOpt,
+                     rpcport = rpcport)
             case None =>
-              Server(conf, routes)
+              Server(conf = conf, handlers = routes, rpcbindOpt = rpcBindOpt)
           }
       }
 

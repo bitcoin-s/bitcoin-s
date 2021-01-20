@@ -3,19 +3,23 @@ package org.bitcoins.node
 import org.bitcoins.core.currency._
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.{NodeUnitTest, SpvNodeFundedWalletBitcoind}
+import org.bitcoins.testkit.node.{
+  NodeTestUtil,
+  NodeUnitTest,
+  SpvNodeFundedWalletBitcoind
+}
 import org.scalatest.{BeforeAndAfter, FutureOutcome}
 
 class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def config: BitcoinSAppConfig =
+  implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = SpvNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withSpvNodeFundedWalletBitcoind(test, NodeCallbacks.empty, None)
+    withSpvNodeFundedWalletBitcoind(test, None)
   }
 
   it must "update the bloom filter with a TX" in { param =>
@@ -31,7 +35,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       // this should confirm our TX
       // since we updated the bloom filter
       hash <- rpc.generateToAddress(1, junkAddress).map(_.head)
-
+      _ <- NodeTestUtil.awaitSync(spv, rpc)
       merkleBlock <- rpc.getTxOutProof(Vector(tx.txIdBE), hash)
       txs <- rpc.verifyTxOutProof(merkleBlock)
 

@@ -4,6 +4,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
 import scala.concurrent.Future
@@ -29,10 +30,9 @@ trait BlockchainRpc { self: Client =>
 
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
     self.version match {
-      case BitcoindVersion.V16 | BitcoindVersion.V17 | BitcoindVersion.V18 =>
+      case V16 | V17 | V18 =>
         bitcoindCall[GetBlockChainInfoResultPreV19]("getblockchaininfo")
-      case BitcoindVersion.V20 | BitcoindVersion.V19 |
-          BitcoindVersion.Experimental | BitcoindVersion.Unknown =>
+      case V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[GetBlockChainInfoResultPostV19]("getblockchaininfo")
     }
   }

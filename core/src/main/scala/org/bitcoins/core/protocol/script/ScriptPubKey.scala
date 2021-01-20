@@ -1212,7 +1212,7 @@ sealed abstract class WitnessScriptPubKeyV0 extends WitnessScriptPubKey {
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
 }
 
-object WitnessScriptPubKeyV0 {
+object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
 
   /**
     * Mimics the function to determine if a
@@ -1227,6 +1227,19 @@ object WitnessScriptPubKeyV0 {
     WitnessScriptPubKey.isWitnessScriptPubKey(asm) && asm.headOption.contains(
       OP_0)
   }
+
+  def apply(asm: Seq[ScriptToken]): WitnessScriptPubKeyV0 = fromAsm(asm)
+
+  override def fromAsm(asm: Seq[ScriptToken]): WitnessScriptPubKeyV0 =
+    asm match {
+      case _ if P2WPKHWitnessSPKV0.isValid(asm) =>
+        P2WPKHWitnessSPKV0.fromAsm(asm)
+      case _ if P2WSHWitnessSPKV0.isValid(asm) =>
+        P2WSHWitnessSPKV0.fromAsm(asm)
+      case _ =>
+        sys.error(
+          s"The given asm was not a valid WitnessScriptPubKeyV0, got asm=$asm")
+    }
 }
 
 /**

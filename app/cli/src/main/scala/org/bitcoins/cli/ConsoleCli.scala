@@ -10,7 +10,10 @@ import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
 import org.bitcoins.core.currency._
+import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
@@ -20,11 +23,13 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto.{
   AesPassword,
   DoubleSha256DigestBE,
+  ECPublicKey,
   SchnorrDigitalSignature,
   Sha256DigestBE
 }
@@ -53,6 +58,9 @@ object ConsoleCli {
       opt[Int]("rpcport")
         .action((port, conf) => conf.copy(rpcPort = port))
         .text(s"The port to send our rpc request to on the server"),
+      opt[Unit]("version")
+        .action((_, conf) => conf.copy(command = GetVersion))
+        .hidden(),
       help('h', "help").text("Display this help message and exit"),
       note(sys.props("line.separator") + "Commands:"),
       note(sys.props("line.separator") + "===Blockchain ==="),
@@ -71,6 +79,19 @@ object ConsoleCli {
       cmd("getbestblockhash")
         .action((_, conf) => conf.copy(command = GetBestBlockHash))
         .text(s"Get the best block hash"),
+      cmd("getblockheader")
+        .action((_, conf) =>
+          conf.copy(command = GetBlockHeader(DoubleSha256DigestBE.empty)))
+        .text("Returns information about block header <hash>")
+        .children(
+          arg[DoubleSha256DigestBE]("hash")
+            .text("The block hash")
+            .required()
+            .action((hash, conf) =>
+              conf.copy(command = conf.command match {
+                case gbh: GetBlockHeader => gbh.copy(hash = hash)
+                case other               => other
+              }))),
       cmd("decoderawtransaction")
         .action((_, conf) =>
           conf.copy(command = DecodeRawTransaction(EmptyTransaction)))
@@ -717,6 +738,56 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("bumpfeecpfp")
+        .action((_, conf) =>
+          conf.copy(command = BumpFeeCPFP(DoubleSha256DigestBE.empty,
+                                          SatoshisPerVirtualByte.zero)))
+        .text("Bump the fee of the given transaction id with a child tx using the given fee rate")
+        .children(
+          arg[DoubleSha256DigestBE]("txid")
+            .text("Id of transaction to bump fee")
+            .required()
+            .action((txid, conf) =>
+              conf.copy(command = conf.command match {
+                case cpfp: BumpFeeCPFP =>
+                  cpfp.copy(txId = txid)
+                case other => other
+              })),
+          arg[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate in sats per virtual byte of the child transaction")
+            .required()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case cpfp: BumpFeeCPFP =>
+                  cpfp.copy(feeRate = feeRate)
+                case other => other
+              }))
+        ),
+      cmd("bumpfeerbf")
+        .action((_, conf) =>
+          conf.copy(command = BumpFeeRBF(DoubleSha256DigestBE.empty,
+                                         SatoshisPerVirtualByte.zero)))
+        .text("Replace given transaction with one with the new fee rate")
+        .children(
+          arg[DoubleSha256DigestBE]("txid")
+            .text("Id of transaction to bump fee")
+            .required()
+            .action((txid, conf) =>
+              conf.copy(command = conf.command match {
+                case rbf: BumpFeeRBF =>
+                  rbf.copy(txId = txid)
+                case other => other
+              })),
+          arg[SatoshisPerVirtualByte]("feerate")
+            .text("New fee rate in sats per virtual byte")
+            .required()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case rbf: BumpFeeRBF =>
+                  rbf.copy(feeRate = feeRate)
+                case other => other
+              }))
+        ),
       cmd("gettransaction")
         .action((_, conf) =>
           conf.copy(command = GetTransaction(DoubleSha256DigestBE.empty)))
@@ -754,6 +825,68 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case lockUnspent: LockUnspent =>
                   lockUnspent.copy(outPoints = outPoints.toVector)
+                case other => other
+              }))
+        ),
+      cmd("importseed")
+        .action((_, conf) => conf.copy(command = ImportSeed("", null, None)))
+        .text("Imports a mnemonic seed as a new seed file")
+        .children(
+          arg[String]("walletname")
+            .text("Name to associate with this seed")
+            .required()
+            .action((walletName, conf) =>
+              conf.copy(command = conf.command match {
+                case is: ImportSeed =>
+                  is.copy(walletName = walletName)
+                case other => other
+              })),
+          arg[MnemonicCode]("words")
+            .text("Mnemonic seed words, space separated")
+            .required()
+            .action((mnemonic, conf) =>
+              conf.copy(command = conf.command match {
+                case is: ImportSeed =>
+                  is.copy(mnemonic = mnemonic)
+                case other => other
+              })),
+          arg[AesPassword]("passphrase")
+            .text("Passphrase to encrypt the seed with")
+            .action((password, conf) =>
+              conf.copy(command = conf.command match {
+                case is: ImportSeed =>
+                  is.copy(passwordOpt = Some(password))
+                case other => other
+              }))
+        ),
+      cmd("importxprv")
+        .action((_, conf) => conf.copy(command = ImportXprv("", null, None)))
+        .text("Imports a xprv as a new seed file")
+        .children(
+          arg[String]("walletname")
+            .text("What name to associate with this seed")
+            .required()
+            .action((walletName, conf) =>
+              conf.copy(command = conf.command match {
+                case ix: ImportXprv =>
+                  ix.copy(walletName = walletName)
+                case other => other
+              })),
+          arg[ExtPrivateKey]("xprv")
+            .text("base58 encoded extended private key")
+            .required()
+            .action((xprv, conf) =>
+              conf.copy(command = conf.command match {
+                case ix: ImportXprv =>
+                  ix.copy(xprv = xprv)
+                case other => other
+              })),
+          arg[AesPassword]("passphrase")
+            .text("Passphrase to encrypt this seed with")
+            .action((password, conf) =>
+              conf.copy(command = conf.command match {
+                case ix: ImportXprv =>
+                  ix.copy(passwordOpt = Some(password))
                 case other => other
               }))
         ),
@@ -1198,6 +1331,40 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      note(sys.props("line.separator") + "=== Util ==="),
+      cmd("createmultisig")
+        .action((_, conf) =>
+          conf.copy(command = CreateMultisig(0, Vector.empty, SegWit)))
+        .text("Creates a multi-signature address with n signature of m keys required.")
+        .children(
+          arg[Int]("nrequired")
+            .text("The number of required signatures out of the n keys.")
+            .required()
+            .action((nRequired, conf) =>
+              conf.copy(command = conf.command match {
+                case createMultisig: CreateMultisig =>
+                  createMultisig.copy(requiredKeys = nRequired)
+                case other => other
+              })),
+          arg[Seq[ECPublicKey]]("keys")
+            .text("The hex-encoded public keys.")
+            .required()
+            .action((keys, conf) =>
+              conf.copy(command = conf.command match {
+                case createMultisig: CreateMultisig =>
+                  createMultisig.copy(keys = keys.toVector)
+                case other => other
+              })),
+          arg[AddressType]("address_type")
+            .text("The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\"")
+            .optional()
+            .action((addrType, conf) =>
+              conf.copy(command = conf.command match {
+                case createMultisig: CreateMultisig =>
+                  createMultisig.copy(addressType = addrType)
+                case other => other
+              }))
+        ),
       checkConfig {
         case Config(NoCommand, _, _, _) =>
           failure("You need to provide a command!")
@@ -1355,6 +1522,10 @@ object ConsoleCli {
                          up.writeJs(bitcoins),
                          up.writeJs(feeRateOpt),
                          up.writeJs(algo)))
+      case BumpFeeCPFP(txId, feeRate) =>
+        RequestParam("bumpfeecpfp", Seq(up.writeJs(txId), up.writeJs(feeRate)))
+      case BumpFeeRBF(txId, feeRate) =>
+        RequestParam("bumpfeerbf", Seq(up.writeJs(txId), up.writeJs(feeRate)))
       case OpReturnCommit(message, hashMessage, satoshisPerVirtualByte) =>
         RequestParam("opreturncommit",
                      Seq(up.writeJs(message),
@@ -1370,6 +1541,20 @@ object ConsoleCli {
       case KeyManagerPassphraseSet(password) =>
         RequestParam("keymanagerpassphraseset", Seq(up.writeJs(password)))
 
+      case ImportSeed(walletName, mnemonic, passwordOpt) =>
+        RequestParam("importseed",
+                     Seq(up.writeJs(walletName),
+                         up.writeJs(mnemonic),
+                         up.writeJs(passwordOpt)))
+
+      case ImportXprv(walletName, xprv, passwordOpt) =>
+        RequestParam("importxprv",
+                     Seq(up.writeJs(walletName),
+                         up.writeJs(xprv),
+                         up.writeJs(passwordOpt)))
+
+      case GetBlockHeader(hash) =>
+        RequestParam("getblockheader", Seq(up.writeJs(hash)))
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -1460,6 +1645,16 @@ object ConsoleCli {
       case GetSignatures(tlv) =>
         RequestParam("getsignatures", Seq(up.writeJs(tlv)))
 
+      case CreateMultisig(requiredKeys, keys, addressType) =>
+        RequestParam("createmultisig",
+                     Seq(up.writeJs(requiredKeys),
+                         up.writeJs(keys),
+                         up.writeJs(addressType)))
+
+      case GetVersion =>
+        // skip sending to server and just return version number of cli
+        return Success(EnvUtil.getVersion)
+
       case NoCommand => ???
     }
 
@@ -1536,7 +1731,10 @@ object ConsoleCli {
       params: Seq[ujson.Value.Value] = Nil) {
 
     lazy val toJsonMap: Map[String, ujson.Value] = {
-      Map("method" -> method, "params" -> params)
+      if (params.isEmpty)
+        Map("method" -> method)
+      else
+        Map("method" -> method, "params" -> params)
     }
   }
 }
@@ -1560,6 +1758,10 @@ object CliCommand {
   trait Broadcastable {
     def noBroadcast: Boolean
   }
+
+  sealed trait ServerlessCliCommand extends CliCommand
+
+  case object GetVersion extends ServerlessCliCommand
 
   case object GetInfo extends CliCommand
 
@@ -1640,6 +1842,16 @@ object CliCommand {
       feeRateOpt: Option[SatoshisPerVirtualByte])
       extends CliCommand
 
+  case class BumpFeeCPFP(
+      txId: DoubleSha256DigestBE,
+      feeRate: SatoshisPerVirtualByte)
+      extends CliCommand
+
+  case class BumpFeeRBF(
+      txId: DoubleSha256DigestBE,
+      feeRate: SatoshisPerVirtualByte)
+      extends CliCommand
+
   case class SignPSBT(psbt: PSBT) extends CliCommand
 
   case class LockUnspent(
@@ -1678,6 +1890,18 @@ object CliCommand {
       extends CliCommand
   case class KeyManagerPassphraseSet(password: AesPassword) extends CliCommand
 
+  case class ImportSeed(
+      walletName: String,
+      mnemonic: MnemonicCode,
+      passwordOpt: Option[AesPassword])
+      extends CliCommand
+
+  case class ImportXprv(
+      walletName: String,
+      xprv: ExtPrivateKey,
+      passwordOpt: Option[AesPassword])
+      extends CliCommand
+
   // Node
   case object GetPeers extends CliCommand
   case object Stop extends CliCommand
@@ -1688,6 +1912,7 @@ object CliCommand {
   case object GetBlockCount extends CliCommand
   case object GetFilterCount extends CliCommand
   case object GetFilterHeaderCount extends CliCommand
+  case class GetBlockHeader(hash: DoubleSha256DigestBE) extends CliCommand
   case class DecodeRawTransaction(transaction: Transaction) extends CliCommand
 
   case class Rescan(
@@ -1750,5 +1975,11 @@ object CliCommand {
       extends CliCommand
 
   case class GetSignatures(oracleEventV0TLV: OracleEventV0TLV)
+      extends CliCommand
+
+  case class CreateMultisig(
+      requiredKeys: Int,
+      keys: Vector[ECPublicKey],
+      addressType: AddressType)
       extends CliCommand
 }

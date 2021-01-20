@@ -11,6 +11,11 @@ Bitcoin-s has experimental support for neutrino which is a new lite client propo
 read more about how neutrino works [here](https://suredbits.com/neutrino-what-is-it-and-why-we-need-it/). At this time, 
 bitcoin-s only supports connecting to one trusted peer.
 
+#### Limitations
+
+Currently, the node does not have an active mempool.
+It is only aware of transactions it broadcasts and ones confirmed in blocks.
+
 #### Callbacks
 
 Bitcoin-S support call backs for the following events that happen on the bitcoin p2p network:
@@ -29,10 +34,11 @@ Let's make an easy one
 
 Here is an example of constructing a neutrino node and registering a callback so you can be notified of an event.
 
-To run the example, we need a bitcoind binary that has neutrino support. Unforunately bitcoin core has not merged neutrino
-p2p network support yet ([pr here](https://github.com/bitcoin/bitcoin/pull/16442)) which means that we have built a custom binary and host it ourselves. You need
-to make sure to run `sbt downloadBitcoind` and then look for the `bitcoind` binary with neutrino support in
-`$HOME/.bitcoin-s/binaries/bitcoind/bitcoin-0.18.99/`. This binary is built from the open PR on bitcoin core.
+To run the example, we need a bitcoind binary that has neutrino support.
+Bitcoin Core only has p2p neutrino support as of version 0.21.0.
+You will need to use a version of Bitcoin Core at least as old as 0.21.0.
+For your node to be able to service these filters you will need set
+`blockfilterindex=1` and `peerblockfilters=1` in your `bitcoin.conf` file.
 
 ```scala mdoc:invisible
 import akka.actor.ActorSystem

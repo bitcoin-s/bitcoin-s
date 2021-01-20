@@ -13,7 +13,6 @@ import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
-import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   MockChainQueryApi,

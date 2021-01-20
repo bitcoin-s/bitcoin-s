@@ -1,12 +1,12 @@
 package org.bitcoins.server
 
 import java.time.{ZoneId, ZonedDateTime}
-
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
 import org.bitcoins.core.config.RegTest
@@ -20,6 +20,7 @@ import org.bitcoins.core.protocol.BlockStamp.{
   BlockTime,
   InvalidBlockStamp
 }
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.EmptyScriptWitness
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
@@ -34,6 +35,7 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.node.Node
 import org.bitcoins.server.BitcoinSAppConfig.implicitToWalletConf
+import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.wallet.MockWalletApi
 import org.scalamock.scalatest.MockFactory
@@ -214,6 +216,44 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(contentType == `application/json`)
         assert(
           responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
+    val blockHeader = BlockHeader(
+      "00e0002094c6692e100ed20d14f8c325c897259749e781d55ed1b7eb1000000000000000309a90b49f5f5a14ffdb2857557f6f27a136943603fb29e65e283dcb27fd886124fee25f57e53019886c0e8b")
+    val blockHeaderDb =
+      BlockHeaderDbHelper.fromBlockHeader(height = 1899697,
+                                          chainWork = BigInt(12345),
+                                          bh = blockHeader)
+
+    "get a block header" in {
+      val chainworkStr = {
+        val bytes = ByteVector(blockHeaderDb.chainWork.toByteArray)
+        val padded = if (bytes.length <= 32) {
+          bytes.padLeft(32)
+        } else bytes
+
+        padded.toHex
+      }
+
+      (mockChainApi
+        .getHeader(_: DoubleSha256DigestBE))
+        .expects(blockHeader.hashBE)
+        .returning(Future.successful(Some(blockHeaderDb)))
+
+      (mockChainApi
+        .getNumberOfConfirmations(_: DoubleSha256DigestBE))
+        .expects(blockHeader.hashBE)
+        .returning(Future.successful(Some(1)))
+
+      val route =
+        chainRoutes.handleCommand(
+          ServerCommand("getblockheader", Arr(Str(blockHeader.hashBE.hex))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":1,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":${blockHeader.difficulty.toDouble},"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}"},"error":null}""")
       }
     }
 
@@ -1029,6 +1069,67 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(contentType == `application/json`)
         assert(
           responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
+    "bump fee with rbf" in {
+      (mockWalletApi
+        .bumpFeeRBF(_: DoubleSha256DigestBE, _: FeeUnit))
+        .expects(DoubleSha256DigestBE.empty, SatoshisPerVirtualByte.one)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockWalletApi.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("bumpfeerbf",
+                      Arr(Str(DoubleSha256DigestBE.empty.hex), Num(1))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
+    "bump fee with CPFP" in {
+      (mockWalletApi
+        .bumpFeeCPFP(_: DoubleSha256DigestBE, _: FeeUnit))
+        .expects(DoubleSha256DigestBE.empty, SatoshisPerVirtualByte.one)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockWalletApi.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("bumpfeecpfp",
+                      Arr(Str(DoubleSha256DigestBE.empty.hex), Num(1))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
+    "create multisig" in {
+      val key1 = ECPublicKey(
+        "0369c68f212ecaf3b3be52acb158a6fd87e469bc08726ef98a3b58401b75da3392")
+      val key2 = ECPublicKey(
+        "02c23222c46b96c5976930319cc4915791fdf5e1ad1203790ff98cb1e7517eed4a")
+
+      val route = coreRoutes.handleCommand(
+        ServerCommand("createmultisig",
+                      Arr(Num(1), Arr(Str(key1.hex), Str(key2.hex)))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":{"address":"bcrt1qjtsq4h0thsy0qftjdfxldxwa4tph7kwuplj6nglvvyehduagqqnssf4l0c","redeemScript":"47512102c23222c46b96c5976930319cc4915791fdf5e1ad1203790ff98cb1e7517eed4a210369c68f212ecaf3b3be52acb158a6fd87e469bc08726ef98a3b58401b75da339252ae"},"error":null}""")
       }
     }
 

@@ -15,7 +15,7 @@ import scala.concurrent.duration.DurationInt
 class SpvNodeTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def config: BitcoinSAppConfig =
+  implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = SpvNodeConnectedWithBitcoind
@@ -88,8 +88,8 @@ class SpvNodeTest extends NodeUnitTest {
         //we should expect 5 headers have been announced to us via
         //the send headers message.
         val has6BlocksF = RpcUtil.retryUntilSatisfiedF(
-          conditionF =
-            () => spvNode.chainApiFromDb().flatMap(_.getBlockCount.map(_ == 6)),
+          conditionF = () =>
+            spvNode.chainApiFromDb().flatMap(_.getBlockCount().map(_ == 6)),
           interval = 250.millis)
 
         has6BlocksF.map { _ =>

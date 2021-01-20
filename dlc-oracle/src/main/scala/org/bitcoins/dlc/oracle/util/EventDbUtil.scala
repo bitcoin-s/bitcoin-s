@@ -60,7 +60,12 @@ trait EventDbUtil {
             Vector.empty
         }
 
-        val digitNonces = if (decomp.isSigned) nonces.tail else nonces
+        val digitNonces = decomp match {
+          case _: UnsignedDigitDecompositionEventDescriptor =>
+            nonces
+          case _: SignedDigitDecompositionEventDescriptor =>
+            nonces.tail
+        }
 
         val digitDbs = digitNonces.flatMap { nonce =>
           0.until(decomp.base.toInt).map { num =>

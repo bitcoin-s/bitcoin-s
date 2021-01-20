@@ -35,7 +35,7 @@ class ProcessBlockTest extends BitcoinSWalletTest {
 
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
-      syncHeightOpt <- wallet.getSyncHeight()
+      syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
       assert(utxos.size == 1)
       assert(utxos.head.output.scriptPubKey == addr.scriptPubKey)
@@ -63,7 +63,7 @@ class ProcessBlockTest extends BitcoinSWalletTest {
 
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
-      syncHeightOpt <- wallet.getSyncHeight()
+      syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
       assert(utxos.size == 100)
       assert(balance == Bitcoins(50))
@@ -91,7 +91,7 @@ class ProcessBlockTest extends BitcoinSWalletTest {
 
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
-      syncHeightOpt <- wallet.getSyncHeight()
+      syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
       assert(utxos.size == 100)
       assert(balance == Bitcoins(50))

@@ -8,6 +8,7 @@ import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number.{Int32, UInt16, UInt32}
 import org.bitcoins.core.protocol.dlc.DLCStatus
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
@@ -17,10 +18,31 @@ import scalafx.scene.control.TextArea
 import scalafx.stage.Window
 import upickle.default._
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
   var taskRunner: TaskRunner = _
+
+  lazy val txPrintFunc: String => String = str => {
+    // See if it was an error or not
+    Try(Transaction.fromHex(str)) match {
+      case Failure(_) =>
+        // if it was print the error
+        str
+      case Success(tx) =>
+        s"""|TxId: ${tx.txIdBE.hex}
+            |
+            |url: ${GlobalData.buildTxUrl(tx.txIdBE)}
+            |
+            |If the tx doesn't show up after a few minutes at this url you may need to manually
+            |broadcast the tx with the full hex below
+            |
+            |Link to broadcast: ${GlobalData.broadcastUrl}
+            |
+            |Transaction: ${tx.hex}
+      """.stripMargin
+    }
+  }
 
   // Sadly, it is a Java "pattern" to pass null into
   // constructors to signal that you want some default
@@ -62,7 +84,8 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
 
   def printDLCDialogResult[T <: CliCommand](
       caption: String,
-      dialog: DLCDialog[T]): Unit = {
+      dialog: DLCDialog[T],
+      postProcessStr: String => String = str => str): Unit = {
     val result = dialog.showAndWait(parentWindow.value)
 
     result match {
@@ -71,7 +94,8 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
           caption = caption,
           op = {
             ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
-              case Success(commandReturn) => resultArea.text = commandReturn
+              case Success(commandReturn) =>
+                resultArea.text = postProcessStr(commandReturn)
               case Failure(err) =>
                 err.printStackTrace()
                 resultArea.text = s"Error executing command:\n${err.getMessage}"
@@ -220,15 +244,17 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
   }
 
   def onGetFunding(): Unit = {
-    printDLCDialogResult("GetDLCFundingTx", new GetFundingDLCDialog)
+    printDLCDialogResult("GetDLCFundingTx",
+                         new GetFundingDLCDialog,
+                         txPrintFunc)
   }
 
   def onExecute(): Unit = {
-    printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog)
+    printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog, txPrintFunc)
   }
 
   def onRefund(): Unit = {
-    printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog)
+    printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog, txPrintFunc)
   }
 
   def viewDLC(status: DLCStatus): Unit = {

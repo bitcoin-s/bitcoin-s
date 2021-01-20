@@ -24,9 +24,9 @@ sealed trait AddressGenerator {
 
   def bech32Address: Gen[Bech32Address] =
     for {
-      (witSPK, _) <- ScriptGenerators.assignedWitnessScriptPubKey
+      (witSPKV0, _) <- ScriptGenerators.witnessScriptPubKeyV0
       network <- ChainParamsGenerator.networkParams
-      addr = Bech32Address(witSPK, network)
+      addr = Bech32Address(witSPKV0, network)
     } yield addr
 
   def bitcoinAddress: Gen[BitcoinAddress] =

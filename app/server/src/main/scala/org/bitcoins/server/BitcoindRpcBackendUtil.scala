@@ -54,7 +54,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
     for {
       bitcoindHeight <- bitcoind.getBlockCount
-      walletStateOpt <- wallet.getSyncHeight()
+      walletStateOpt <- wallet.getSyncDescriptorOpt()
       _ <- walletStateOpt match {
         case None =>
           for {
@@ -164,10 +164,17 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
         }
 
         val batchSize = 25
-        val batchedExecutedF = FutureUtil.batchExecute(elements = blockHashes,
-                                                       f = f,
-                                                       init = Vector.empty,
-                                                       batchSize = batchSize)
+        val batchedExecutedF = {
+          for {
+            wallet <- walletF
+            wallet <- FutureUtil.batchExecute[DoubleSha256Digest, Wallet](
+              elements = blockHashes,
+              f = f,
+              init = wallet,
+              batchSize = batchSize)
+          } yield wallet
+
+        }
 
         batchedExecutedF.map { _ =>
           logger.info(

@@ -1,9 +1,10 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeUnitTest
+import org.bitcoins.testkit.node.{CachedBitcoinSAppConfig, NodeUnitTest}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt
@@ -11,10 +12,10 @@ import scala.concurrent.duration.DurationInt
 /**
   * Created by chris on 7/1/16.
   */
-class PeerMessageHandlerTest extends NodeUnitTest {
+class PeerMessageHandlerTest extends NodeUnitTest with CachedBitcoinSAppConfig {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def config: BitcoinSAppConfig =
+  implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
 
   override type FixtureParam = Unit
@@ -22,6 +23,9 @@ class PeerMessageHandlerTest extends NodeUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     test(())
   }
+
+  implicit protected lazy val chainConfig: ChainAppConfig =
+    cachedConfig.chainConf
 
   behavior of "PeerHandler"
 
@@ -35,7 +39,7 @@ class PeerMessageHandlerTest extends NodeUnitTest {
       bitcoindPeerF.flatMap(_ => peerHandlerF.map(_.peerMsgSender.connect()))
 
     val isConnectedF = TestAsyncUtil.retryUntilSatisfiedF(
-      () => p2pClientF.flatMap(_.isConnected),
+      () => p2pClientF.flatMap(_.isConnected()),
       interval = 500.millis
     )
 
@@ -196,6 +200,6 @@ class PeerMessageHandlerTest extends NodeUnitTest {
 
   override def afterAll(): Unit = {
     startedBitcoindF.flatMap(_.stop())
-    super.afterAll
+    super.afterAll()
   }
 }
