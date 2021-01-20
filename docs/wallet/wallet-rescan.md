@@ -4,15 +4,40 @@ id: wallet-rescan
 ---
 
 With [BIP157](https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki) you can cache block filters locally to use
-later for rescans in the case you need to restore your wallets. Our [chain](../applications/chain.md) project gives us
+later for rescans in the case you need to restore your wallets. Our [chain](../chain/chain.md) project gives us
 an API with the ability to query for filters.
+
+### Rescan from CLI
+
+To execute a rescan from the cli because you are restoring a wallet or it has gotten out of sync is fairly simple.
+
+If you have an empty wallet it can be done by simply calling rescan
+```bash
+./bitcoin-s-cli rescan
+```
+
+If your wallet is not empty then you will need to call it with the force command
+```bash
+./bitcoin-s-cli rescan --force
+```
+
+You can also specify start and stop heights
+```bash
+./bitcoin-s-cli rescan --start <start height> --stop <stop height>
+```
+
+By default, if you do not set the start height, the rescan will begin at your wallet's creation time.
+If you wish to ignore this and start from genesis use the `ignorecreationtime` flag
+```bash
+./bitcoin-s-cli rescan --ignorecreationtime
+```
+
+### Code Example
 
 You can rescan your wallet with filters with [`WalletApi.rescanNeutrinoWallet()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/api/wallet/NeutrinoWalletApi.scala#L77)
 
-### Example
-
-To run this example you need to make sure you have access to a bitcoind binary. You can download this with bitcoin-s by doing
-`sbt downloadBitcoind`
+To run this example you need to make sure you have access to a bitcoind binary.
+You can download this with bitcoin-s by doing `sbt downloadBitcoind`
 
 ```scala mdoc:invisible
 import org.bitcoins.testkit.BitcoinSTestAppConfig

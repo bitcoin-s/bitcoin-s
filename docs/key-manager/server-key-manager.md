@@ -83,6 +83,10 @@ To do this, you will need the seed file name to be `walletName-encrypted-bitcoin
 if you want it to be the default wallet.
 To load it, just set the `bitcoin-s.wallet.walletName` config option to the appropriate wallet name.
 
+When restoring from a backup you should not replace an existing seed file as this can result in a loss of funds.
+If you have a seed file that would replace an existing seed its file name should be prefixed with a different wallet name.
+If you do replace a seed file you will need to delete the old wallet database associated with that wallet.
+
 You may need to run a wallet rescan to restore funds, this can be done by using the `rescan` RPC command.
 
 For example, if you wanted to restore your `rickRollWallet`, you would place your backup at `~/.bitcoin-s/seeds/rickRollWallet-encrypted-bitcoin-s-seed.json`
