@@ -290,7 +290,7 @@ class DLCOracleTest extends DLCOracleFixture {
                                     completedEvent.attestation) == sig)
           assert(
             OracleEvent.verifyAttestations(announcement,
-                                           completedEvent.signatures,
+                                           completedEvent.oracleAttestmentV0TLV,
                                            signingVersion =
                                              SigningVersion.latest))
         case _: PendingOracleEvent | _: CompletedOracleEvent =>
@@ -702,7 +702,7 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
         val attestations = event
           .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .signatures
+          .oracleAttestmentV0TLV
         assert(
           OracleEvent.verifyAttestations(announcement,
                                          attestations,
@@ -731,7 +731,7 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
         val attestations = event
           .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .signatures
+          .oracleAttestmentV0TLV
         assert(
           OracleEvent.verifyAttestations(announcement,
                                          attestations,
@@ -766,11 +766,11 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event1.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
         val attestations1 = event1
           .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .signatures
+          .oracleAttestmentV0TLV
         assert(event2.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
         val attestations2 = event2
           .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .signatures
+          .oracleAttestmentV0TLV
 
         assert(
           !OracleEvent.verifyAttestations(announcement1,

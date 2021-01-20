@@ -275,10 +275,15 @@ object OracleEvent {
     */
   def verifyAttestations(
       announcement: OracleAnnouncementTLV,
-      attestations: Vector[SchnorrDigitalSignature],
+      attestationTLV: OracleAttestmentTLV,
       signingVersion: SigningVersion): Boolean = {
+    val attestations = attestationTLV.sigs
     val nonces = announcement.eventTLV.nonces
-    if (nonces.size != attestations.size || nonces != attestations.map(_.rx)) {
+    if (
+      announcement.publicKey != announcement.publicKey ||
+      nonces.size != attestations.size ||
+      nonces != attestations.map(_.rx)
+    ) {
       false
     } else {
       announcement.eventTLV.eventDescriptor match {
