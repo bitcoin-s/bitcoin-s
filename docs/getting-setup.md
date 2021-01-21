@@ -49,7 +49,7 @@ to download the secp256k1 submodule.
 
 You should be able to test your secp256k1 installation by running `sbt core/console` in your bitcoin-s directory and then running
 
->sbt coreTest/test
+`sbt coreTest/test`
 
 ### Optional
 
@@ -57,7 +57,7 @@ You should be able to test your secp256k1 installation by running `sbt core/cons
 
 To verify you are actually using libsecp256k1 rather than our bouncy castle crypto implementation you can do the following
 
->sbt secp256k1jni/console
+`sbt secp256k1jni/console`
 
 and then type in 
 ```scala
@@ -94,8 +94,6 @@ and eclair.
 ```bashrc
 sbt test
 ```
-
-
 
 ## Step 3: Configuration
 
