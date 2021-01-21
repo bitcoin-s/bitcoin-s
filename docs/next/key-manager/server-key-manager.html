@@ -112,7 +112,16 @@ It takes in the base58 encoded xprv, wallet name, and an optional passphrase to 
 <p>To restore from a backed up seed, simply put the seed file in the <code>seeds</code> folder and then load the wallet.
 To do this, you will need the seed file name to be <code>walletName-encrypted-bitcoin-s-seed.json</code> or <code>encrypted-bitcoin-s-seed.json</code>
 if you want it to be the default wallet.
-To load it, just set the <code>bitcoin-s.wallet.walletName</code> config option to the appropriate wallet name.</p>
+To load it, just set the <code>bitcoin-s.wallet.walletName</code> config option to the appropriate wallet name.
+It is also important to remember to set <code>bitcoin-s.wallet.defaultAccountType</code> to the type of wallet you were using on your old wallet.
+As of this writing there are 3 types allowed</p>
+<ul>
+<li>legacy</li>
+<li>nested-segwit</li>
+<li>segwit</li>
+</ul>
+<p>If you fail to set this setting, your wallet could be looking for the wrong script types and not correctly find your funds
+on the blockchain as documented in <a href="https://github.com/bitcoin-s/bitcoin-s/issues/2527">this issue</a>.</p>
 <p>When restoring from a backup you should not replace an existing seed file as this can result in a loss of funds.
 If you have a seed file that would replace an existing seed its file name should be prefixed with a different wallet name.
 If you do replace a seed file you will need to delete the old wallet database associated with that wallet.</p>
