@@ -6,11 +6,10 @@ import java.time.Instant
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.hd.AddressType.SegWit
@@ -30,7 +29,6 @@ import org.bitcoins.crypto.{
   AesPassword,
   DoubleSha256DigestBE,
   ECPublicKey,
-  SchnorrDigitalSignature,
   Sha256DigestBE
 }
 import scodec.bits.ByteVector
@@ -174,23 +172,14 @@ object ConsoleCli {
       cmd("createdlcoffer")
         .action((_, conf) =>
           conf.copy(
-            command = CreateDLCOffer(OracleAnnouncementV0TLV.dummy,
-                                     ContractInfo.empty.toTLV,
+            command = CreateDLCOffer(ContractInfoV0TLV.dummy,
                                      Satoshis.zero,
                                      None,
                                      UInt32.zero,
                                      UInt32.zero)))
         .text("Creates a DLC offer that another party can accept")
         .children(
-          arg[OracleAnnouncementTLV]("oracle")
-            .required()
-            .action((oracle, conf) =>
-              conf.copy(command = conf.command match {
-                case offer: CreateDLCOffer =>
-                  offer.copy(oracle = oracle)
-                case other => other
-              })),
-          arg[ContractInfoTLV]("contractInfo")
+          arg[ContractInfoV0TLV]("contractInfo")
             .required()
             .action((info, conf) =>
               conf.copy(command = conf.command match {
@@ -352,7 +341,7 @@ object ConsoleCli {
                   executeDLC.copy(contractId = contractId)
                 case other => other
               })),
-          arg[Seq[SchnorrDigitalSignature]]("oraclesigs")
+          arg[Seq[OracleAttestmentTLV]]("oraclesigs")
             .required()
             .action((sigs, conf) =>
               conf.copy(command = conf.command match {
@@ -1339,8 +1328,7 @@ object ConsoleCli {
       case GetDLCs => RequestParam("getdlcs")
       case GetDLC(paramHash) =>
         RequestParam("getdlc", Seq(up.writeJs(paramHash)))
-      case CreateDLCOffer(oracle,
-                          contractInfo,
+      case CreateDLCOffer(contractInfo,
                           collateral,
                           feeRateOpt,
                           locktime,
@@ -1348,7 +1336,6 @@ object ConsoleCli {
         RequestParam(
           "createdlcoffer",
           Seq(
-            up.writeJs(oracle),
             up.writeJs(contractInfo),
             up.writeJs(collateral),
             up.writeJs(feeRateOpt),
@@ -1664,8 +1651,7 @@ object CliCommand {
 
   // DLC
   case class CreateDLCOffer(
-      oracle: OracleAnnouncementTLV,
-      contractInfo: ContractInfoTLV,
+      contractInfo: ContractInfoV0TLV,
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
@@ -1698,7 +1684,7 @@ object CliCommand {
 
   case class ExecuteDLC(
       contractId: ByteVector,
-      oracleSigs: Vector[SchnorrDigitalSignature],
+      oracleSigs: Vector[OracleAttestmentTLV],
       noBroadcast: Boolean)
       extends CliCommand
       with Broadcastable

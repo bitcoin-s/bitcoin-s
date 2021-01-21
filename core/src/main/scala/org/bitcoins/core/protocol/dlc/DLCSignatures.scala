@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.protocol.script.ScriptWitnessV0
-import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, FundingSignaturesV0TLV}
+import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.SeqWrapper
@@ -35,13 +35,13 @@ case class FundingSignatures(
 }
 
 case class CETSignatures(
-    outcomeSigs: Vector[(DLCOutcomeType, ECAdaptorSignature)],
+    outcomeSigs: Vector[(OracleOutcome, ECAdaptorSignature)],
     refundSig: PartialSignature)
     extends DLCSignatures {
-  lazy val keys: Vector[DLCOutcomeType] = outcomeSigs.map(_._1)
+  lazy val keys: Vector[OracleOutcome] = outcomeSigs.map(_._1)
   lazy val adaptorSigs: Vector[ECAdaptorSignature] = outcomeSigs.map(_._2)
 
-  def apply(key: DLCOutcomeType): ECAdaptorSignature = {
+  def apply(key: OracleOutcome): ECAdaptorSignature = {
     outcomeSigs
       .find(_._1 == key)
       .map(_._2)

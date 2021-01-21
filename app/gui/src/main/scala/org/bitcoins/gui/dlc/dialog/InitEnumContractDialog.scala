@@ -1,8 +1,8 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.SingleNonceContractInfo
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.tlv.EnumOutcome
+import org.bitcoins.core.protocol.dlc.EnumContractDescriptor
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.util.GUIUtil.setNumericInput
 import scalafx.Includes._
@@ -15,9 +15,11 @@ import scala.collection._
 
 object InitEnumContractDialog {
 
-  def showAndWait(parentWindow: Window): Option[SingleNonceContractInfo] = {
+  def showAndWait(parentWindow: Window): Option[
+    (EnumContractDescriptor, Option[OracleAnnouncementTLV])] = {
     val dialog =
-      new Dialog[Option[SingleNonceContractInfo]]() {
+      new Dialog[
+        Option[(EnumContractDescriptor, Option[OracleAnnouncementTLV])]]() {
         initOwner(parentWindow)
         title = "Initialize Demo Oracle"
         headerText = "Enter contract outcomes and their outcome values"
@@ -29,15 +31,21 @@ object InitEnumContractDialog {
 
     val fields: mutable.Map[Int, (TextField, TextField)] = mutable.Map.empty
 
-    var nextRow: Int = 1
+    val announcementTF = new TextField() {
+      promptText = "(optional)"
+    }
+
+    var nextRow: Int = 2
     val gridPane = new GridPane {
       alignment = Pos.Center
       padding = Insets(top = 10, right = 10, bottom = 10, left = 10)
       hgap = 5
       vgap = 5
 
-      add(new Label("Outcomes"), 0, 0)
-      add(new Label("Values"), 1, 0)
+      add(new Label("Announcement"), 0, 0)
+      add(announcementTF, 1, 0)
+      add(new Label("Outcomes"), 0, 1)
+      add(new Label("Values"), 1, 1)
     }
 
     def addOutcomeRow(): Unit = {
@@ -87,14 +95,24 @@ object InitEnumContractDialog {
             EnumOutcome(str) -> Satoshis(BigInt(value))
         }.toVector
 
-        Some(SingleNonceContractInfo(contractMap))
+        val announcementStr = announcementTF.text.value
+        val announcementOpt = if (announcementStr.nonEmpty) {
+          Some(OracleAnnouncementTLV(announcementStr))
+        } else None
+
+        Some((EnumContractDescriptor(contractMap), announcementOpt))
       } else None
 
     val result = dialog.showAndWait()
 
     result match {
-      case Some(Some(contractInfo: SingleNonceContractInfo)) =>
-        Some(contractInfo)
+      case Some(
+            Some(
+              (contractInfo: EnumContractDescriptor,
+               announcementOpt: Option[_]))) =>
+        Some(
+          (contractInfo,
+           announcementOpt.asInstanceOf[Option[OracleAnnouncementTLV]]))
       case Some(_) | None => None
     }
   }

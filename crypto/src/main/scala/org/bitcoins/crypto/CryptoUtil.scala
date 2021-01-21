@@ -103,6 +103,34 @@ trait CryptoUtil {
     sha256(schnorrAuxTagBytes ++ bytes)
   }
 
+  // The tag "DLC/oracle/attestation/v0"
+  private val dlcAttestationTagBytes = {
+    ByteVector
+      .fromValidHex(
+        "0c2fa46216e6e460e5e3f78555b102c5ac6aecabbfb82b430cf36cdfe04421790c2fa46216e6e460e5e3f78555b102c5ac6aecabbfb82b430cf36cdfe0442179"
+      )
+  }
+
+  def sha256DLCAttestation(bytes: ByteVector): Sha256Digest = {
+    sha256(dlcAttestationTagBytes ++ bytes)
+  }
+
+  def sha256DLCAttestation(str: String): Sha256Digest = {
+    sha256DLCAttestation(CryptoUtil.serializeForHash(str))
+  }
+
+  // The tag "DLC/oracle/announcement/v0"
+  private val dlcAnnouncementTagBytes = {
+    ByteVector
+      .fromValidHex(
+        "6378871e8c99d480fff016e178a371e7e058445eff3023fe158f05aa185ed0e16378871e8c99d480fff016e178a371e7e058445eff3023fe158f05aa185ed0e1"
+      )
+  }
+
+  def sha256DLCAnnouncement(bytes: ByteVector): Sha256Digest = {
+    sha256(dlcAnnouncementTagBytes ++ bytes)
+  }
+
   /** Performs SHA1(bytes). */
   def sha1(bytes: ByteVector): Sha1Digest = {
     val hash = MessageDigest.getInstance("SHA-1").digest(bytes.toArray).toList

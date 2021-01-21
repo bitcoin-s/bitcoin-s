@@ -26,10 +26,8 @@ class OfferDLCDialog
     }
 
     CreateDLCOffer(
-      oracle = OracleAnnouncementV0TLV.fromHex(
-        readStringFromNode(inputs(oracleAnnouncementStr))),
       contractInfo =
-        ContractInfoTLV.fromHex(readStringFromNode(inputs(contractInfoStr))),
+        ContractInfoV0TLV.fromHex(readStringFromNode(inputs(contractInfoStr))),
       collateral = Satoshis(BigInt(readStringFromNode(inputs(collateralStr)))),
       feeRateOpt = feeRate,
       locktime = UInt32(BigInt(readStringFromNode(inputs(locktimeStr)))),
