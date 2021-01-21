@@ -3,13 +3,14 @@
 name: Native Image bitcoin-s-cli
 on:
   push:
-    branches:
-      - master
+    branches: [master, main, adaptor-dlc]
+    tags: ["*"]
   pull_request:
   release:
     types: [published]
 jobs:
   unix:
+    if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
