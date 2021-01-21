@@ -280,7 +280,7 @@ object OracleEvent {
     val attestations = attestationTLV.sigs
     val nonces = announcement.eventTLV.nonces
     if (
-      announcement.publicKey != announcement.publicKey ||
+      announcement.publicKey != attestationTLV.publicKey ||
       nonces.size != attestations.size ||
       nonces != attestations.map(_.rx)
     ) {
