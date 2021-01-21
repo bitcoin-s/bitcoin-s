@@ -128,21 +128,23 @@ case class CompactFilterDAO()(implicit
     table.filter(header => header.height >= from && header.height <= to).result
   }
 
-  /** Gets the heaviest filter from the database */
-  def getBestFilter: Future[Option[CompactFilterDb]] = {
+  private val bestFilterQuery = {
     val join = table
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
 
     val maxQuery = join.map(_._2.chainWork).max
 
-    val query = join.filter(_._2.chainWork === maxQuery).take(1).map(_._1)
+    join
+      .filter(_._2.chainWork === maxQuery)
+      .take(1)
+      .map(_._1)
+      .result
+      .transactionally
+  }
 
-    for {
-      filterOpt <-
-        safeDatabase
-          .run(query.result)
-          .map(_.headOption)
-    } yield filterOpt
+  /** Gets the heaviest filter from the database */
+  def getBestFilter: Future[Option[CompactFilterDb]] = {
+    safeDatabase.run(bestFilterQuery).map(_.headOption)
   }
 }
