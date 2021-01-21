@@ -407,16 +407,16 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     val serverStops = servers.map { s =>
       val stopF = s.stop()
-      FileUtil.deleteTmpDir(s.getDaemon.datadir)
       stopF.onComplete {
         case Failure(exception) =>
           logger.error(s"Could not shut down sever: $exception")
         case Success(_) =>
       }
       for {
-        stop <- stopF
-        _ <- RpcUtil.awaitConditionF(() => s.isStoppedF)
-      } yield stop
+        _ <- stopF
+        _ <- awaitStopped(s)
+        _ <- removeDataDirectory(s)
+      } yield ()
     }
     Future.sequence(serverStops).map(_ => ())
   }
@@ -593,6 +593,32 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     AsyncUtil.retryUntilSatisfiedF(conditionF = () => isDisconnected(),
                                    interval = interval,
                                    maxTries = maxTries)
+  }
+
+  def awaitStopped(
+      client: BitcoindRpcClient,
+      interval: FiniteDuration = 100.milliseconds,
+      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
+    AsyncUtil.retryUntilSatisfiedF(conditionF = { () => client.isStoppedF },
+                                   interval = interval,
+                                   maxTries = maxTries)
+  }
+
+  def removeDataDirectory(
+      client: BitcoindRpcClient,
+      interval: FiniteDuration = 100.milliseconds,
+      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
+    implicit val ec = system.dispatcher
+    AsyncUtil
+      .retryUntilSatisfiedF(conditionF = { () =>
+                              Future {
+                                val dir = client.getDaemon.datadir
+                                FileUtil.deleteTmpDir(dir)
+                                !dir.exists()
+                              }
+                            },
+                            interval = interval,
+                            maxTries = maxTries)
   }
 
   /**
@@ -1033,9 +1059,12 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def deleteNodePair(client1: BitcoindRpcClient, client2: BitcoindRpcClient)(
       implicit executionContext: ExecutionContext): Future[Unit] = {
     val stopsF = List(client1, client2).map { client =>
-      client.stop().map { _ =>
-        FileUtil.deleteTmpDir(client.getDaemon.datadir)
-      }
+      implicit val sys = client.system
+      for {
+        _ <- client.stop()
+        _ <- awaitStopped(client)
+        _ <- removeDataDirectory(client)
+      } yield ()
     }
     Future.sequence(stopsF).map(_ => ())
   }
