@@ -44,6 +44,9 @@
       "core/core-intro": {
         "title": "Core Module"
       },
+      "core/dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
       "core/hd-keys": {
         "title": "HD Key Generation"
       },
@@ -58,6 +61,9 @@
       },
       "core/txbuilder": {
         "title": "TxBuilder Example"
+      },
+      "crypto/adaptor-signatures": {
+        "title": "Adaptor Signatures"
       },
       "crypto/crypto-intro": {
         "title": "Crypto Module"
