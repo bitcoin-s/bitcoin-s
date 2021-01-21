@@ -49,6 +49,17 @@ to download the secp256k1 submodule.
 
 You should be able to test your secp256k1 installation by running `sbt core/console` in your bitcoin-s directory and then running
 
+`sbt coreTest/test`
+
+### Optional
+
+#### Verify libsecp256k1 installation 
+
+To verify you are actually using libsecp256k1 rather than our bouncy castle crypto implementation you can do the following
+
+`sbt secp256k1jni/console`
+
+and then type in 
 ```scala
 scala> import org.bitcoin._
 import org.bitcoin._
@@ -64,14 +75,21 @@ where the important thing is that the function returns `true`, and you can ignor
 
 Note: To exit the `sbt console`, you can execute `:quit`, and for general help, run `:help`.
 
-We will now download all of the bitcoind and eclair binaries needed with the following two commands
+#### Running full test suite
+
+> WARNING: This should not be done on low resource machines. Running the entire test suite requires at minimum of 4GB
+> of RAM on the machine you are running this on.
+
+To run the entire test suite, you need to download all bitcoind instances and eclair instances. This is needed for unit tests
+or binding bitcoin-s to a bitcoind instance if you do not have locally running instances. 
 
 ```bashrc
 sbt downloadBitcoind
 sbt downloadEclair
 ```
 
-Lastly, you can test that your bitcoin-s build is functional by running
+If you want to run the entire test suite you can run the following command after you download bitcoind
+and eclair. 
 
 ```bashrc
 sbt test
