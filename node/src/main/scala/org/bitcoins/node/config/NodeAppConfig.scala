@@ -24,7 +24,7 @@ case class NodeAppConfig(
     with NodeDbManagement
     with JdbcProfileComponent[NodeAppConfig] {
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
-  override protected[bitcoins] def moduleName: String = "node"
+  override protected[bitcoins] def moduleName: String = NodeAppConfig.moduleName
   override protected[bitcoins] type ConfigType = NodeAppConfig
 
   override protected[bitcoins] def newConfigOfType(
@@ -81,6 +81,8 @@ case class NodeAppConfig(
 }
 
 object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
+
+  override val moduleName: String = "node"
 
   /** Constructs a node configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.

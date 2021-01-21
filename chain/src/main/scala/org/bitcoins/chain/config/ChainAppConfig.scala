@@ -24,7 +24,9 @@ case class ChainAppConfig(
     with JdbcProfileComponent[ChainAppConfig] {
 
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
-  override protected[bitcoins] def moduleName: String = "chain"
+
+  override protected[bitcoins] def moduleName: String =
+    ChainAppConfig.moduleName
   override protected[bitcoins] type ConfigType = ChainAppConfig
 
   override protected[bitcoins] def newConfigOfType(
@@ -116,6 +118,8 @@ case class ChainAppConfig(
 }
 
 object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {
+
+  override val moduleName: String = "chain"
 
   /** Constructs a chain verification configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.

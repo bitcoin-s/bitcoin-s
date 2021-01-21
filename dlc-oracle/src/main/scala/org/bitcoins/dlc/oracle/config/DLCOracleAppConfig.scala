@@ -38,7 +38,7 @@ case class DLCOracleAppConfig(
       configOverrides: Seq[Config]): DLCOracleAppConfig =
     DLCOracleAppConfig(directory, configOverrides: _*)
 
-  override def moduleName: String = "oracle"
+  override def moduleName: String = DLCOracleAppConfig.moduleName
 
   override def baseDatadir: Path = directory
 
@@ -158,6 +158,8 @@ case class DLCOracleAppConfig(
 }
 
 object DLCOracleAppConfig extends AppConfigFactory[DLCOracleAppConfig] {
+
+  override val moduleName: String = "oracle"
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): DLCOracleAppConfig =

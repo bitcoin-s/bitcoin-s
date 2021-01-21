@@ -35,7 +35,10 @@ case class WalletAppConfig(
     with WalletDbManagement
     with JdbcProfileComponent[WalletAppConfig] {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList
-  override protected[bitcoins] def moduleName: String = "wallet"
+
+  override protected[bitcoins] def moduleName: String =
+    WalletAppConfig.moduleName
+
   override protected[bitcoins] type ConfigType = WalletAppConfig
 
   override protected[bitcoins] def newConfigOfType(
@@ -227,6 +230,8 @@ case class WalletAppConfig(
 object WalletAppConfig
     extends AppConfigFactory[WalletAppConfig]
     with WalletLogger {
+
+  val moduleName: String = "wallet"
 
   /** Constructs a wallet configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.

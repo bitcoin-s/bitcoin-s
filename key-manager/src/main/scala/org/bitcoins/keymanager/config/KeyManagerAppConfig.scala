@@ -23,7 +23,7 @@ case class KeyManagerAppConfig(
       configOverrides: Seq[Config]): KeyManagerAppConfig =
     KeyManagerAppConfig(directory, configOverrides: _*)
 
-  override def moduleName: String = "keymanager"
+  override def moduleName: String = KeyManagerAppConfig.moduleName
 
   override def baseDatadir: Path = directory
 
@@ -82,6 +82,7 @@ case class KeyManagerAppConfig(
 }
 
 object KeyManagerAppConfig extends AppConfigFactory[KeyManagerAppConfig] {
+  override val moduleName: String = "keymanager"
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): KeyManagerAppConfig =
