@@ -58,7 +58,9 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       complete {
         wallet.getDefaultAccount().map { accountDb =>
           val json = Obj(
-            "rootXpub" -> Str(wallet.keyManager.getRootXPub.toString),
+            "keyManager" -> Obj(
+              "rootXpub" -> Str(wallet.keyManager.getRootXPub.toString)
+            ),
             "xpub" -> Str(accountDb.xpub.toString),
             "hdPath" -> Str(accountDb.hdAccount.toString)
           )
