@@ -88,7 +88,7 @@ As of this writing there are 3 types allowed
 - nested-segwit
 - segwit
 
-If you fail to set this setting, your wallet will be looking for the wrong script types and not correctly find your funds
+If you fail to set this setting, your wallet could be looking for the wrong script types and not correctly find your funds
 on the blockchain as documented in [this issue](https://github.com/bitcoin-s/bitcoin-s/issues/2527).
 
 When restoring from a backup you should not replace an existing seed file as this can result in a loss of funds.
