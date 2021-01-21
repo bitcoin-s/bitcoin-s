@@ -480,6 +480,8 @@ New wallet commands have been added like `signpsbt`, `listreservedutxos`, and mo
 
 The wallet now stores its last sync height to allow for chainApis that are ahead of the wallet.
 
+The wallet now defaults to use native segwit (bc1 addresses) instead of legacy addresses.
+
 #### Commits
 
 f3e81d027df Remove WalletSync.sync() -> WalletSync.syncFullBlocks() (#2522)
