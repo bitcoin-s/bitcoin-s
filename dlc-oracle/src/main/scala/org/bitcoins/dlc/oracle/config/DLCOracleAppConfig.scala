@@ -100,6 +100,14 @@ case class DLCOracleAppConfig(
     }
   }
 
+  def rpcBindOpt: Option[String] = {
+    if (config.hasPath("bitcoin-s.server.rpcbind")) {
+      Some(config.getString("bitcoin-s.server.rpcbind"))
+    } else {
+      None
+    }
+  }
+
   lazy val kmParams: KeyManagerParams =
     KeyManagerParams(kmConf.seedPath,
                      HDPurpose(DLCOracle.R_VALUE_PURPOSE),

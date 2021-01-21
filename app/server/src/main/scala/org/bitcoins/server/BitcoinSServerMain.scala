@@ -286,13 +286,19 @@ class BitcoinSServerMain(override val args: Array[String])
     val nodeRoutes = NodeRoutes(nodeApi)
     val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
     val coreRoutes = CoreRoutes(Core)
+
+    val bindConfOpt = rpcbindOpt match {
+      case Some(rpcbind) => Some(rpcbind)
+      case None          => conf.rpcBindOpt
+    }
+
     val server = {
       rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = nodeConf,
                  handlers =
                    Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                 rpcbindOpt = rpcbindOpt,
+                 rpcbindOpt = bindConfOpt,
                  rpcport = rpcport)
         case None =>
           conf.rpcPortOpt match {
@@ -300,13 +306,13 @@ class BitcoinSServerMain(override val args: Array[String])
               Server(conf = nodeConf,
                      handlers =
                        Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                     rpcbindOpt = rpcbindOpt,
+                     rpcbindOpt = bindConfOpt,
                      rpcport = rpcport)
             case None =>
               Server(conf = nodeConf,
                      handlers =
                        Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                     rpcbindOpt = rpcbindOpt)
+                     rpcbindOpt = bindConfOpt)
           }
       }
     }

@@ -74,6 +74,14 @@ case class BitcoinSAppConfig(
       None
     }
   }
+
+  def rpcBindOpt: Option[String] = {
+    if (config.hasPath("bitcoin-s.server.rpcbind")) {
+      Some(config.getString("bitcoin-s.server.rpcbind"))
+    } else {
+      None
+    }
+  }
 }
 
 /**
