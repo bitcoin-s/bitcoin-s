@@ -277,6 +277,7 @@ object OracleEvent {
       announcement: OracleAnnouncementTLV,
       attestationTLV: OracleAttestmentTLV,
       signingVersion: SigningVersion): Boolean = {
+    val tlvOutcomes = attestationTLV.outcomes
     val attestations = attestationTLV.sigs
     val nonces = announcement.eventTLV.nonces
     if (
@@ -295,13 +296,14 @@ object OracleEvent {
             val attestationType = EnumAttestation(outcome)
             val hash =
               signingVersion.calcOutcomeHash(enum, attestationType.bytes)
-            announcement.publicKey.verify(hash, sig)
+            announcement.publicKey.verify(hash,
+                                          sig) && outcome == tlvOutcomes.head
           }
 
         case dd: DigitDecompositionEventDescriptorV0TLV =>
           require(attestations.nonEmpty)
 
-          val (validSign, attestationsToVerify) =
+          val (validSign, attestationsToVerify, outcomesToVerify) =
             dd match {
               case _: SignedDigitDecompositionEventDescriptor =>
                 val signOutcomes = Vector(
@@ -311,28 +313,33 @@ object OracleEvent {
                 val validSign = signOutcomes.exists { attestationType =>
                   val hash =
                     signingVersion.calcOutcomeHash(dd, attestationType.bytes)
-                  announcement.publicKey.verify(hash, attestations.head)
+                  announcement.publicKey.verify(
+                    hash,
+                    attestations.head) && tlvOutcomes.head.toString == attestationType.outcomeString
                 }
 
-                (validSign, attestations.tail)
+                (validSign, attestations.tail, tlvOutcomes.tail)
               case _: UnsignedDigitDecompositionEventDescriptor =>
-                (true, attestations)
+                (true, attestations, tlvOutcomes)
             }
 
           lazy val digitOutcomes =
             0.until(dd.base.toInt)
               .map(DigitDecompositionAttestation.apply)
 
-          lazy val validDigits = attestationsToVerify.forall { sig =>
-            digitOutcomes.exists { attestationType =>
-              val hash =
-                signingVersion.calcOutcomeHash(dd, attestationType.bytes)
-              announcement.publicKey.verify(hash, sig)
+          lazy val validDigits =
+            attestationsToVerify.zip(outcomesToVerify).forall {
+              case (sig, outcome) =>
+                digitOutcomes.exists { attestationType =>
+                  val hash =
+                    signingVersion.calcOutcomeHash(dd, attestationType.bytes)
+                  announcement.publicKey.verify(
+                    hash,
+                    sig) && attestationType.outcomeString == outcome.toString
+                }
             }
-          }
 
           validSign && validDigits
-
         case _: RangeEventDescriptorV0TLV => false
       }
     }
