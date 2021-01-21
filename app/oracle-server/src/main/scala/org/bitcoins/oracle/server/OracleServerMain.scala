@@ -15,6 +15,11 @@ class OracleServerMain(override val args: Array[String])
     implicit val conf: DLCOracleAppConfig =
       DLCOracleAppConfig(datadir, baseConfig)
 
+    val bindConfOpt = rpcBindOpt match {
+      case Some(rpcbind) => Some(rpcbind)
+      case None          => conf.rpcBindOpt
+    }
+
     for {
       _ <- conf.start()
       oracle <- conf.initialize()
@@ -24,17 +29,17 @@ class OracleServerMain(override val args: Array[String])
         case Some(rpcport) =>
           Server(conf = conf,
                  handlers = routes,
-                 rpcbindOpt = rpcBindOpt,
+                 rpcbindOpt = bindConfOpt,
                  rpcport = rpcport)
         case None =>
           conf.rpcPortOpt match {
             case Some(rpcport) =>
               Server(conf = conf,
                      handlers = routes,
-                     rpcbindOpt = rpcBindOpt,
+                     rpcbindOpt = bindConfOpt,
                      rpcport = rpcport)
             case None =>
-              Server(conf = conf, handlers = routes, rpcbindOpt = rpcBindOpt)
+              Server(conf = conf, handlers = routes, rpcbindOpt = bindConfOpt)
           }
       }
 
