@@ -54,6 +54,18 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
         }
       }
 
+    case ServerCommand("walletinfo", _) =>
+      complete {
+        wallet.getDefaultAccount().map { accountDb =>
+          val json = Obj(
+            "rootXpub" -> Str(wallet.keyManager.getRootXPub.toString),
+            "xpub" -> Str(accountDb.xpub.toString),
+            "hdPath" -> Str(accountDb.hdAccount.toString)
+          )
+          Server.httpSuccess(json)
+        }
+      }
+
     case ServerCommand("getbalance", arr) =>
       GetBalance.fromJsArr(arr) match {
         case Failure(exception) =>

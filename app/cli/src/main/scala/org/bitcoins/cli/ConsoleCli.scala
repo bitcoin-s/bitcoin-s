@@ -168,6 +168,9 @@ object ConsoleCli {
       cmd("isempty")
         .action((_, conf) => conf.copy(command = IsEmpty))
         .text("Checks if the wallet contains any data"),
+      cmd("walletinfo")
+        .action((_, conf) => conf.copy(command = WalletInfo))
+        .text("Returns data about the current wallet being used"),
       cmd("createdlcoffer")
         .action((_, conf) =>
           conf.copy(
@@ -1418,6 +1421,8 @@ object ConsoleCli {
         RequestParam("createnewaccount")
       case IsEmpty =>
         RequestParam("isempty")
+      case WalletInfo =>
+        RequestParam("walletinfo")
       // DLCs
       case GetDLCs => RequestParam("getdlcs")
       case GetDLC(paramHash) =>
@@ -1878,6 +1883,7 @@ object CliCommand {
   case object GetAccounts extends CliCommand
   case object CreateNewAccount extends CliCommand
   case object IsEmpty extends CliCommand
+  case object WalletInfo extends CliCommand
   case class GetBalance(isSats: Boolean) extends CliCommand
   case class GetConfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetUnconfirmedBalance(isSats: Boolean) extends CliCommand
