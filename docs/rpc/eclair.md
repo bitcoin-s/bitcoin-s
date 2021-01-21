@@ -46,7 +46,7 @@ implicit val system = ActorSystem(s"eclair-rpc-${System.currentTimeMillis}")
 implicit val ec = system.dispatcher
 
 val datadirPath = Paths.get("path", "to", "datadir")
-val binaryPath = Paths.get("path", "to", eclair-node-0.5.0-ac08560", "bin","eclair-node.sh)
+val binaryPath = Paths.get("path", "to", "eclair-node-0.5.0-ac08560", "bin", "eclair-node.sh")
 val instance = EclairInstance.fromDatadir(datadirPath.toFile,None)
 val client = new EclairRpcClient(instance, Some(binaryPath.toFile))
 
