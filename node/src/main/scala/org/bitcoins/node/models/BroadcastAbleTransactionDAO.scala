@@ -50,7 +50,7 @@ final case class BroadcastAbleTransactionDAO()(implicit
     import mappers._
 
     val query = table.filter(_.txid === hash.flip)
-    database.run(query.result).map(_.headOption)
+    safeDatabase.run(query.result).map(_.headOption)
   }
 
   /** Table over TXs we can broadcast over the P2P network */

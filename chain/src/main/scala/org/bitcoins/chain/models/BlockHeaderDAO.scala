@@ -223,7 +223,7 @@ case class BlockHeaderDAO()(implicit
 
     val query = table.filter(_.time === time)
 
-    val opt = database.run(query.result).map(_.headOption)
+    val opt = safeDatabase.run(query.result).map(_.headOption)
 
     opt.flatMap {
       case None =>
@@ -249,14 +249,13 @@ case class BlockHeaderDAO()(implicit
 
   def getLowestNoWorkHeight: Future[Int] = {
     val query = lowestNoWorkQuery
-    database.run(query)
+    safeDatabase.run(query)
   }
 
   /** Returns the maximum block height from our database */
   def maxHeight: Future[Int] = {
     val query = maxHeightQuery
-    val result = database.run(query)
-    result
+    safeDatabase.run(query)
   }
 
   private val maxHeightQuery: profile.ProfileAction[
@@ -489,7 +488,7 @@ case class BlockHeaderDAO()(implicit
     headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
   }
 
-  /** Finds a [[org.bitcoins.chain.models.BlockHeaderDb block header]] that satisfies the given predicate, else returns None */
+  /** Finds a [[org.bitcoins.core.api.chain.db.BlockHeaderDb block header]] that satisfies the given predicate, else returns None */
   def find(f: BlockHeaderDb => Boolean)(implicit
       ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
     val chainsF = getBlockchains()

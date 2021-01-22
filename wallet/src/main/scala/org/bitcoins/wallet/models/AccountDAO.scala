@@ -46,7 +46,7 @@ case class AccountDAO()(implicit
       .filter(_.purpose === account.purpose)
       .filter(_.index === account.index)
 
-    database.run(q.result).map {
+    safeDatabase.run(q.result).map {
       case h +: Vector() =>
         Some(h)
       case Vector() =>

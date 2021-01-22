@@ -71,7 +71,7 @@ case class AddressDAO()(implicit
           .headOption
     } yield (addr, spk)
 
-    database
+    safeDatabase
       .run(actions.transactionally)
       .map {
         case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
