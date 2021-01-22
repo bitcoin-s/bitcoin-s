@@ -118,34 +118,45 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     logger.info("Starting node")
     val start = System.currentTimeMillis()
 
-    for {
+    val startConfsF = for {
       _ <- chainAppConfig.start()
       _ <- nodeAppConfig.start()
-      // get chainApi so we don't need to call chainApiFromDb on every call
-      chainApi <- chainApiFromDb()
-      node <- {
-        val isInitializedF = for {
-          _ <- peerMsgSenderF.map(_.connect())
-          _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized,
-                                              interval = 250.millis)
-        } yield ()
+    } yield ()
 
-        isInitializedF.failed.foreach(err =>
-          logger.error(s"Failed to connect with peer=$peer with err=${err}"))
+    val chainApiF = startConfsF.flatMap(_ => chainApiFromDb())
 
-        isInitializedF.map { _ =>
-          logger.info(s"Our peer=$peer has been initialized")
-          logger.info(s"Our node has been full started. It took=${System
-            .currentTimeMillis() - start}ms")
-          this
-        }
+    val startNodeF = {
+      val isInitializedF = for {
+        _ <- peerMsgSenderF.map(_.connect())
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized,
+                                            interval = 250.millis)
+      } yield ()
+
+      isInitializedF.failed.foreach(err =>
+        logger.error(s"Failed to connect with peer=$peer with err=$err"))
+
+      isInitializedF.map { _ =>
+        logger.info(s"Our peer=$peer has been initialized")
+        logger.info(s"Our node has been full started. It took=${System
+          .currentTimeMillis() - start}ms")
+        this
       }
+    }
+
+    val bestHashF = chainApiF.flatMap(_.getBestBlockHash())
+    val bestHeightF = chainApiF.flatMap(_.getBestHashBlockHeight())
+    val filterHeaderCountF = chainApiF.flatMap(_.getFilterHeaderCount())
+    val filterCountF = chainApiF.flatMap(_.getFilterCount())
+
+    for {
+      _ <- startConfsF
+      node <- startNodeF
 
       _ = logger.trace("Fetching node starting point")
-      bestHash <- chainApi.getBestBlockHash()
-      bestHeight <- chainApi.getBestHashBlockHeight()
-      filterCount <- chainApi.getFilterCount()
-      filterHeaderCount <- chainApi.getFilterHeaderCount()
+      bestHash <- bestHashF
+      bestHeight <- bestHeightF
+      filterHeaderCount <- filterHeaderCountF
+      filterCount <- filterCountF
     } yield {
       logger.info(
         s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filters")
