@@ -73,6 +73,15 @@ After doing so you can get the fully signed funding transaction using the `Get F
 
 ### Using the CLI
 
+If using a numeric contract and/or multiple oracles, messages can get very large and sometimes even too large to for the application.
+To solve this there are RPC calls where you can give a file instead of the entire DLC message.
+To output a file you simply just need to pipe the output of a command into a file.
+
+For example:
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli acceptdlcoffer [offer] > myDLCAccept.txt
+```
+
 #### Creating The Offer
 
 Once these terms are agreed to, either party can call on `createdlcoffer` with flags for each of the fields in the table above. For example:
@@ -89,6 +98,12 @@ Upon receiving a DLC Offer from your counter-party, the following command will c
 ./app/cli/target/universal/stage/bitcoin-s-cli acceptdlcoffer [offer]
 ```
 
+or from file:
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli acceptdlcofferfromfile [filepath]
+```
+
 #### Signing The DLC
 
 Upon receiving a DLC Accept message from your counter-party, the following command will generate all of your signatures for this DLC:
@@ -96,6 +111,13 @@ Upon receiving a DLC Accept message from your counter-party, the following comma
 ```bashrc
 ./app/cli/target/universal/stage/bitcoin-s-cli signdlc [accept]
 ```
+
+or from file:
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli signdlcfromfile [filepath]
+```
+
 
 #### Adding DLC Signatures To Your Database
 
@@ -105,6 +127,14 @@ Upon receiving a DLC Sign message from your counter-party, add their signatures 
 ./app/cli/target/universal/stage/bitcoin-s-cli adddlcsigs [sign]
 ```
 
+or from file:
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli adddlcsigsfromfile [filepath]
+```
+
+#### Getting Funding Transaction
+
 You are now fully setup and can generate the fully signed funding transaction for broadcast using
 
 ```bashrc
@@ -112,6 +142,8 @@ You are now fully setup and can generate the fully signed funding transaction fo
 ```
 
 where the `contractId` is in all but the messages other than the DLC Offer message, and is also returned by the `adddlcsigs` command.
+
+Alternatively, you can use the `getdlcs` command to list all of your current DLCs saved in your wallet.
 
 ## Step 4: Executing the DLC
 
