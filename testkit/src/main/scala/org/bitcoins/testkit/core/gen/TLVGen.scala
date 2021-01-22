@@ -111,6 +111,22 @@ trait TLVGen {
     } yield OracleAnnouncementV0TLV(sig, pubkey, eventTLV)
   }
 
+  def oracleAttestmentV0TLV: Gen[OracleAttestmentV0TLV] = {
+    for {
+      eventId <- StringGenerators.genUTF8String
+      pubkey <- CryptoGenerators.schnorrPublicKey
+      numSigs <- Gen.choose(1, 10)
+      sigs <-
+        Gen
+          .listOfN(numSigs, CryptoGenerators.schnorrDigitalSignature)
+          .map(_.toVector)
+      outcomes <-
+        Gen
+          .listOfN(numSigs, StringGenerators.genUTF8String)
+          .map(_.toVector)
+    } yield OracleAttestmentV0TLV(eventId, pubkey, sigs, outcomes)
+  }
+
   def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
     def genValues(size: Int, totalAmount: CurrencyUnit): Vector[Satoshis] = {
       val vals = if (size < 2) {

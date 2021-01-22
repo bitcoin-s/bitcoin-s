@@ -1,6 +1,5 @@
 package org.bitcoins.dlc.oracle
 
-import java.time.Instant
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
@@ -13,6 +12,8 @@ import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{ChainParamsGenerator, TLVGen}
 import org.bitcoins.testkit.fixtures.DLCOracleFixture
+
+import java.time.Instant
 
 class DLCOracleTest extends DLCOracleFixture {
 
@@ -240,6 +241,7 @@ class DLCOracleTest extends DLCOracleFixture {
       event match {
         case completedEvent: CompletedRangeV0OracleEvent =>
           assert(completedEvent.attestation == sig.sig)
+          assert(completedEvent.outcomes == Vector(outcome))
 
           val descriptor = completedEvent.eventDescriptorTLV
           val hash =
@@ -277,6 +279,7 @@ class DLCOracleTest extends DLCOracleFixture {
       event match {
         case completedEvent: CompletedEnumV0OracleEvent =>
           assert(completedEvent.attestation == sig.sig)
+          assert(completedEvent.outcomes == Vector(EnumAttestation(outcome)))
 
           val descriptor = completedEvent.eventDescriptorTLV
           val hash = SigningVersion.latest.calcOutcomeHash(descriptor, outcome)
@@ -287,7 +290,7 @@ class DLCOracleTest extends DLCOracleFixture {
                                     completedEvent.attestation) == sig)
           assert(
             OracleEvent.verifyAttestations(announcement,
-                                           completedEvent.signatures,
+                                           completedEvent.oracleAttestmentV0TLV,
                                            signingVersion =
                                              SigningVersion.latest))
         case _: PendingOracleEvent | _: CompletedOracleEvent =>
@@ -317,6 +320,12 @@ class DLCOracleTest extends DLCOracleFixture {
     } yield {
       event match {
         case completedEvent: CompletedDigitDecompositionV0OracleEvent =>
+          val signOutcome = DigitDecompositionSignAttestation(outcome >= 0)
+          val digitOutcomes = Vector(DigitDecompositionAttestation(3),
+                                     DigitDecompositionAttestation(2),
+                                     DigitDecompositionAttestation(1))
+          assert(completedEvent.outcomes == signOutcome +: digitOutcomes)
+
           val descriptor = completedEvent.eventDescriptorTLV
 
           // Sign Signature Check
@@ -388,6 +397,12 @@ class DLCOracleTest extends DLCOracleFixture {
       } yield {
         event match {
           case completedEvent: CompletedDigitDecompositionV0OracleEvent =>
+            val signOutcome = DigitDecompositionSignAttestation(outcome >= 0)
+            val digitOutcomes = Vector(DigitDecompositionAttestation(7),
+                                       DigitDecompositionAttestation(8),
+                                       DigitDecompositionAttestation(11))
+            assert(completedEvent.outcomes == signOutcome +: digitOutcomes)
+
             val descriptor = completedEvent.eventDescriptorTLV
 
             // Sign Signature Check
@@ -460,6 +475,11 @@ class DLCOracleTest extends DLCOracleFixture {
       } yield {
         event match {
           case completedEvent: CompletedDigitDecompositionV0OracleEvent =>
+            val digitOutcomes = Vector(DigitDecompositionAttestation(0),
+                                       DigitDecompositionAttestation(1),
+                                       DigitDecompositionAttestation(0))
+            assert(completedEvent.outcomes == digitOutcomes)
+
             val descriptor = completedEvent.eventDescriptorTLV
 
             // 100s Place signature Check
@@ -605,6 +625,7 @@ class DLCOracleTest extends DLCOracleFixture {
                 sigVersion,
                 futureTime,
                 None,
+                None,
                 SchnorrDigitalSignature(nonce, FieldElement.one),
                 testDescriptor)
 
@@ -681,7 +702,7 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
         val attestations = event
           .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .signatures
+          .oracleAttestmentV0TLV
         assert(
           OracleEvent.verifyAttestations(announcement,
                                          attestations,
@@ -710,7 +731,7 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
         val attestations = event
           .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .signatures
+          .oracleAttestmentV0TLV
         assert(
           OracleEvent.verifyAttestations(announcement,
                                          attestations,
@@ -745,11 +766,11 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event1.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
         val attestations1 = event1
           .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .signatures
+          .oracleAttestmentV0TLV
         assert(event2.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
         val attestations2 = event2
           .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .signatures
+          .oracleAttestmentV0TLV
 
         assert(
           !OracleEvent.verifyAttestations(announcement1,

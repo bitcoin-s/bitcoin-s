@@ -291,7 +291,8 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       hashBytes = eventOutcomeDb.hashedMessage
       sig = signingKey.schnorrSignWithNonce(hashBytes, kVal)
 
-      updated = eventDb.copy(attestationOpt = Some(sig.sig))
+      updated = eventDb.copy(attestationOpt = Some(sig.sig),
+                             outcomeOpt = Some(outcome.outcomeString))
       _ <- eventDAO.update(updated)
     } yield updated
   }
