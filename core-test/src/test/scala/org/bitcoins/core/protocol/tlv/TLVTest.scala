@@ -83,6 +83,13 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
+  "OracleAttestmentV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.oracleAttestmentV0TLV) { tlv =>
+      assert(OracleAttestmentV0TLV(tlv.bytes) == tlv)
+      assert(TLV(tlv.bytes) == tlv)
+    }
+  }
+
   "ContractInfoV0TLV" must "have serialization symmetry" in {
     forAll(TLVGen.contractInfoV0TLV) { contractInfo =>
       assert(ContractInfoV0TLV(contractInfo.bytes) == contractInfo)

@@ -197,7 +197,13 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
           complete {
             oracle.signEvent(oracleEventTLV, EnumAttestation(outcome)).map {
               eventDb =>
-                Server.httpSuccess(eventDb.sigOpt.get.hex)
+                val oracleEvent = OracleEvent.fromEventDbs(Vector(eventDb))
+                oracleEvent match {
+                  case _: PendingOracleEvent =>
+                    throw new RuntimeException("Failed to sign event")
+                  case event: CompletedOracleEvent =>
+                    Server.httpSuccess(event.oracleAttestmentV0TLV.hex)
+                }
             }
           }
       }
@@ -210,7 +216,13 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
           complete {
             oracle.signEvent(oracleEventTLV, RangeAttestation(num)).map {
               eventDb =>
-                Server.httpSuccess(eventDb.sigOpt.get.hex)
+                val oracleEvent = OracleEvent.fromEventDbs(Vector(eventDb))
+                oracleEvent match {
+                  case _: PendingOracleEvent =>
+                    throw new RuntimeException("Failed to sign event")
+                  case event: CompletedOracleEvent =>
+                    Server.httpSuccess(event.oracleAttestmentV0TLV.hex)
+                }
             }
           }
       }
@@ -222,13 +234,10 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
         case Success(SignDigits(oracleEventTLV, num)) =>
           complete {
             oracle.signDigits(oracleEventTLV, num).map {
-              case event: CompletedDigitDecompositionV0OracleEvent =>
-                val sigsJson = event.signatures.map(sig => Str(sig.hex))
-
-                Server.httpSuccess(sigsJson)
-              case event: OracleEvent =>
-                throw new RuntimeException(
-                  s"Received unexpected event got $event")
+              case _: PendingOracleEvent =>
+                throw new RuntimeException("Failed to sign event")
+              case event: CompletedOracleEvent =>
+                Server.httpSuccess(event.oracleAttestmentV0TLV.hex)
             }
           }
       }

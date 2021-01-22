@@ -161,7 +161,8 @@ object TLV extends TLVParentFactory[TLV] {
            DLCSignTLV) ++ EventDescriptorTLV.allFactories ++
       ContractInfoTLV.allFactories ++
       OracleInfoTLV.allFactories ++
-      OracleAnnouncementTLV.allFactories
+      OracleAnnouncementTLV.allFactories ++
+      OracleAttestmentTLV.allFactories
   }
 
   // Need to override to be able to default to Unknown
@@ -827,6 +828,64 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
     val sig = priv.schnorrSign(CryptoUtil.sha256(event.bytes).bytes)
 
     OracleAnnouncementV0TLV(sig, priv.schnorrPublicKey, event)
+  }
+}
+
+sealed trait OracleAttestmentTLV extends TLV {
+  def eventId: NormalizedString
+  def publicKey: SchnorrPublicKey
+  def sigs: Vector[SchnorrDigitalSignature]
+  def outcomes: Vector[NormalizedString]
+}
+
+object OracleAttestmentTLV extends TLVParentFactory[OracleAttestmentTLV] {
+
+  val allFactories: Vector[TLVFactory[OracleAttestmentTLV]] =
+    Vector(OracleAttestmentV0TLV)
+
+  override def typeName: String = "OracleAttestmentTLV"
+}
+
+case class OracleAttestmentV0TLV(
+    eventId: NormalizedString,
+    publicKey: SchnorrPublicKey,
+    sigs: Vector[SchnorrDigitalSignature],
+    outcomes: Vector[NormalizedString])
+    extends OracleAttestmentTLV {
+  require(sigs.nonEmpty, "Cannot have 0 signatures")
+  require(
+    outcomes.size == sigs.size,
+    s"Number of outcomes must match number of signatures, ${outcomes.size} != ${sigs.size}")
+  override val tpe: BigSizeUInt = OracleAttestmentV0TLV.tpe
+
+  override val value: ByteVector = {
+    val outcomesBytes = outcomes.foldLeft(ByteVector.empty) {
+      case (accum, elem) =>
+        accum ++ strBytes(elem)
+    }
+
+    strBytes(eventId) ++
+      publicKey.bytes ++
+      u16PrefixedList(sigs) ++
+      outcomesBytes
+  }
+}
+
+object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(55400)
+
+  override def fromTLVValue(value: ByteVector): OracleAttestmentV0TLV = {
+    val iter = ValueIterator(value)
+
+    val eventId = iter.takeString()
+    val pubKey = iter.take(SchnorrPublicKey, 32)
+    val sigs =
+      iter.takeU16PrefixedList(() => iter.take(SchnorrDigitalSignature, 64))
+    val outcomes = sigs.indices.toVector.map { _ =>
+      iter.takeString()
+    }
+
+    OracleAttestmentV0TLV(eventId, pubKey, sigs, outcomes)
   }
 }
 

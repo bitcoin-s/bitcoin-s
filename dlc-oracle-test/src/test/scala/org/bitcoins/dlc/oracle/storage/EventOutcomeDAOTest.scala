@@ -45,6 +45,7 @@ class EventOutcomeDAOTest extends DLCOracleDAOFixture {
             sigVersion,
             time,
             None,
+            None,
             SchnorrDigitalSignature(nonce, FieldElement.one),
             descriptor)
 

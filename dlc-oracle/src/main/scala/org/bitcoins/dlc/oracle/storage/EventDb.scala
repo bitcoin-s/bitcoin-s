@@ -27,6 +27,7 @@ case class EventDb(
     signingVersion: SigningVersion,
     maturationTime: Instant,
     attestationOpt: Option[FieldElement],
+    outcomeOpt: Option[String],
     announcementSignature: SchnorrDigitalSignature,
     eventDescriptorTLV: EventDescriptorTLV) {
 

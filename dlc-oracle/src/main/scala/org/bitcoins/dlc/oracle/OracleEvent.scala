@@ -1,11 +1,12 @@
 package org.bitcoins.dlc.oracle
 
-import java.time.Instant
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.storage.EventDb
+
+import java.time.Instant
 
 /** Represents an event that the oracle has committed to
   * Contains all the necessary information to construct
@@ -61,6 +62,14 @@ sealed trait CompletedOracleEvent extends OracleEvent {
     nonces
       .zip(attestations)
       .map(sigPieces => SchnorrDigitalSignature(sigPieces._1, sigPieces._2))
+
+  def oracleAttestmentV0TLV: OracleAttestmentV0TLV =
+    OracleAttestmentV0TLV(eventName,
+                          pubkey,
+                          signatures,
+                          outcomes.map(_.outcomeString))
+
+  def outcomes: Vector[DLCAttestationType]
 }
 
 sealed trait EnumV0OracleEvent extends OracleEvent {
@@ -89,10 +98,13 @@ case class CompletedEnumV0OracleEvent(
     maturationTime: Instant,
     announcementSignature: SchnorrDigitalSignature,
     eventDescriptorTLV: EnumEventDescriptorV0TLV,
+    outcome: EnumAttestation,
     attestation: FieldElement)
     extends CompletedOracleEvent
     with EnumV0OracleEvent {
   override def attestations: Vector[FieldElement] = Vector(attestation)
+
+  override def outcomes: Vector[DLCAttestationType] = Vector(outcome)
 }
 
 sealed trait RangeV0OracleEvent extends OracleEvent {
@@ -121,11 +133,13 @@ case class CompletedRangeV0OracleEvent(
     maturationTime: Instant,
     announcementSignature: SchnorrDigitalSignature,
     eventDescriptorTLV: RangeEventDescriptorV0TLV,
+    outcome: RangeAttestation,
     attestation: FieldElement)
     extends CompletedOracleEvent
     with RangeV0OracleEvent {
   override def attestations: Vector[FieldElement] = Vector(attestation)
 
+  override def outcomes: Vector[DLCAttestationType] = Vector(outcome)
 }
 
 sealed trait DigitDecompositionV0OracleEvent extends OracleEvent {
@@ -151,6 +165,7 @@ case class CompletedDigitDecompositionV0OracleEvent(
     maturationTime: Instant,
     announcementSignature: SchnorrDigitalSignature,
     eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV,
+    outcomes: Vector[DLCAttestationType],
     attestations: Vector[FieldElement])
     extends CompletedOracleEvent
     with DigitDecompositionV0OracleEvent
@@ -165,14 +180,17 @@ object OracleEvent {
     (eventDb.eventDescriptorTLV, eventDb.attestationOpt) match {
       case (enum: EnumEventDescriptorV0TLV, Some(sig)) =>
         require(eventDbs.size == 1, "Enum events may only have one eventDb")
-        CompletedEnumV0OracleEvent(eventDb.pubkey,
-                                   eventDb.nonce,
-                                   eventDb.eventName,
-                                   eventDb.signingVersion,
-                                   eventDb.maturationTime,
-                                   eventDb.announcementSignature,
-                                   enum,
-                                   sig)
+        CompletedEnumV0OracleEvent(
+          eventDb.pubkey,
+          eventDb.nonce,
+          eventDb.eventName,
+          eventDb.signingVersion,
+          eventDb.maturationTime,
+          eventDb.announcementSignature,
+          enum,
+          EnumAttestation(eventDb.outcomeOpt.get),
+          sig
+        )
       case (enum: EnumEventDescriptorV0TLV, None) =>
         require(eventDbs.size == 1, "Enum events may only have one eventDb")
         PendingEnumV0OracleEvent(eventDb.pubkey,
@@ -184,14 +202,17 @@ object OracleEvent {
                                  enum)
       case (range: RangeEventDescriptorV0TLV, Some(sig)) =>
         require(eventDbs.size == 1, "Range events may only have one eventDb")
-        CompletedRangeV0OracleEvent(eventDb.pubkey,
-                                    eventDb.nonce,
-                                    eventDb.eventName,
-                                    eventDb.signingVersion,
-                                    eventDb.maturationTime,
-                                    eventDb.announcementSignature,
-                                    range,
-                                    sig)
+        CompletedRangeV0OracleEvent(
+          eventDb.pubkey,
+          eventDb.nonce,
+          eventDb.eventName,
+          eventDb.signingVersion,
+          eventDb.maturationTime,
+          eventDb.announcementSignature,
+          range,
+          RangeAttestation(eventDb.outcomeOpt.get.toLong),
+          sig
+        )
       case (range: RangeEventDescriptorV0TLV, None) =>
         require(eventDbs.size == 1, "Range events may only have one eventDb")
         PendingRangeV0OracleEvent(eventDb.pubkey,
@@ -208,6 +229,20 @@ object OracleEvent {
 
         val attestations = sortedEventDbs.flatMap(_.attestationOpt)
 
+        val outcomes = decomp match {
+          case _: SignedDigitDecompositionEventDescriptor =>
+            val sign = DigitDecompositionSignAttestation(
+              sortedEventDbs.head.outcomeOpt.get == "+")
+            val digits = sortedEventDbs.tail.map { eventDb =>
+              DigitDecompositionAttestation(eventDb.outcomeOpt.get.toInt)
+            }
+            sign +: digits
+          case _: UnsignedDigitDecompositionEventDescriptor =>
+            sortedEventDbs.map { eventDb =>
+              DigitDecompositionAttestation(eventDb.outcomeOpt.get.toInt)
+            }
+        }
+
         CompletedDigitDecompositionV0OracleEvent(
           eventDb.pubkey,
           sortedEventDbs.map(_.nonce),
@@ -216,6 +251,7 @@ object OracleEvent {
           eventDb.maturationTime,
           eventDb.announcementSignature,
           decomp,
+          outcomes,
           attestations
         )
       case (decomp: DigitDecompositionEventDescriptorV0TLV, None) =>
@@ -239,10 +275,16 @@ object OracleEvent {
     */
   def verifyAttestations(
       announcement: OracleAnnouncementTLV,
-      attestations: Vector[SchnorrDigitalSignature],
+      attestationTLV: OracleAttestmentTLV,
       signingVersion: SigningVersion): Boolean = {
+    val tlvOutcomes = attestationTLV.outcomes
+    val attestations = attestationTLV.sigs
     val nonces = announcement.eventTLV.nonces
-    if (nonces.size != attestations.size || nonces != attestations.map(_.rx)) {
+    if (
+      announcement.publicKey != attestationTLV.publicKey ||
+      nonces.size != attestations.size ||
+      nonces != attestations.map(_.rx)
+    ) {
       false
     } else {
       announcement.eventTLV.eventDescriptor match {
@@ -254,13 +296,14 @@ object OracleEvent {
             val attestationType = EnumAttestation(outcome)
             val hash =
               signingVersion.calcOutcomeHash(enum, attestationType.bytes)
-            announcement.publicKey.verify(hash, sig)
+            announcement.publicKey.verify(hash,
+                                          sig) && outcome == tlvOutcomes.head
           }
 
         case dd: DigitDecompositionEventDescriptorV0TLV =>
           require(attestations.nonEmpty)
 
-          val (validSign, attestationsToVerify) =
+          val (validSign, attestationsToVerify, outcomesToVerify) =
             dd match {
               case _: SignedDigitDecompositionEventDescriptor =>
                 val signOutcomes = Vector(
@@ -270,28 +313,33 @@ object OracleEvent {
                 val validSign = signOutcomes.exists { attestationType =>
                   val hash =
                     signingVersion.calcOutcomeHash(dd, attestationType.bytes)
-                  announcement.publicKey.verify(hash, attestations.head)
+                  announcement.publicKey.verify(
+                    hash,
+                    attestations.head) && tlvOutcomes.head.toString == attestationType.outcomeString
                 }
 
-                (validSign, attestations.tail)
+                (validSign, attestations.tail, tlvOutcomes.tail)
               case _: UnsignedDigitDecompositionEventDescriptor =>
-                (true, attestations)
+                (true, attestations, tlvOutcomes)
             }
 
           lazy val digitOutcomes =
             0.until(dd.base.toInt)
               .map(DigitDecompositionAttestation.apply)
 
-          lazy val validDigits = attestationsToVerify.forall { sig =>
-            digitOutcomes.exists { attestationType =>
-              val hash =
-                signingVersion.calcOutcomeHash(dd, attestationType.bytes)
-              announcement.publicKey.verify(hash, sig)
+          lazy val validDigits =
+            attestationsToVerify.zip(outcomesToVerify).forall {
+              case (sig, outcome) =>
+                digitOutcomes.exists { attestationType =>
+                  val hash =
+                    signingVersion.calcOutcomeHash(dd, attestationType.bytes)
+                  announcement.publicKey.verify(
+                    hash,
+                    sig) && attestationType.outcomeString == outcome.toString
+                }
             }
-          }
 
           validSign && validDigits
-
         case _: RangeEventDescriptorV0TLV => false
       }
     }
