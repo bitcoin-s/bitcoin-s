@@ -24,7 +24,9 @@ case class BitcoindRpcAppConfig(
     private val confs: Config*)(implicit val ec: ExecutionContext)
     extends AppConfig {
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
-  override protected[bitcoins] def moduleName: String = "bitcoind"
+
+  override protected[bitcoins] def moduleName: String =
+    BitcoindRpcAppConfig.moduleName
   override protected[bitcoins] type ConfigType = BitcoindRpcAppConfig
 
   override protected[bitcoins] def newConfigOfType(
@@ -117,6 +119,7 @@ case class BitcoindRpcAppConfig(
 }
 
 object BitcoindRpcAppConfig extends AppConfigFactory[BitcoindRpcAppConfig] {
+  override val moduleName: String = "bitcoind"
 
   /** Constructs a node configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.

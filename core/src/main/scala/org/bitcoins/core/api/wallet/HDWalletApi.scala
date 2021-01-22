@@ -61,7 +61,7 @@ trait HDWalletApi extends WalletApi {
     * Fetches the default account from the DB
     * @return Future[AccountDb]
     */
-  protected[wallet] def getDefaultAccount(): Future[AccountDb]
+  def getDefaultAccount(): Future[AccountDb]
 
   /** Fetches the default account for the given address/account kind
     * @param addressType
