@@ -139,7 +139,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.to-remote-delay-blocks" -> 144,
         "eclair.db.regtest.url" -> "jdbc:sqlite:regtest/",
         "eclair.max-payment-fee" -> 10, // avoid complaints about too high fees
-        "eclair.alias" -> "suredbits"
+        "eclair.alias" -> "suredbits",
+        "eclair.fulfill-safety-before-timeout-blocks" -> 1,
+        "eclair.min-final-expiry-delta-blocks" -> 2
       )
     }
     val c = ConfigFactory.parseMap(configMap.asJava)

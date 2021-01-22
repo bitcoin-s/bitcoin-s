@@ -1,13 +1,13 @@
 package org.bitcoins.testkit.core.gen.ln
 
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
-import org.bitcoins.core.protocol.ln.ShortChannelId
+import org.bitcoins.core.protocol.ln.channel.ShortChannelId
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.{
   FeeBaseMSat,
   FeeProportionalMillionths
 }
 import org.bitcoins.core.protocol.ln.routing.LnRoute
+import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.scalacheck.Gen
 
 trait LnRouteGen {

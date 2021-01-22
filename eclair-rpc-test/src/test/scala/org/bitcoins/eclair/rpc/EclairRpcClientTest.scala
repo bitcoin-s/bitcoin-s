@@ -1,7 +1,5 @@
 package org.bitcoins.eclair.rpc
 
-import java.nio.file.Files
-import java.time.Instant
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
@@ -30,6 +28,8 @@ import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, EclairRpcTestClient}
 import org.scalatest.Assertion
 
+import java.nio.file.Files
+import java.time.Instant
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, _}
 
@@ -64,38 +64,29 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   lazy val eclairNodesF: Future[EclairNodes4] = {
-    bitcoindRpcClientF.flatMap { bitcoindRpcClient =>
-      val nodesF = EclairRpcTestUtil.createNodeLink(bitcoindRpcClient)
-
-      val addedF = nodesF.map { nodes =>
-        clients ++= List(nodes.c1, nodes.c2, nodes.c3, nodes.c4)
-      }
-
-      addedF.flatMap(_ => nodesF)
+    for {
+      bitcoindRpcClient <- bitcoindRpcClientF
+      nodes <- EclairRpcTestUtil.createNodeLink(bitcoindRpcClient)
+    } yield {
+      clients ++= List(nodes.c1, nodes.c2, nodes.c3, nodes.c4)
+      nodes
     }
   }
 
-  lazy val firstClientF = eclairNodesF.map(_.c1)
+  lazy val firstClientF: Future[EclairRpcClient] = eclairNodesF.map(_.c1)
 
-  lazy val secondClientF = eclairNodesF.map(_.c2)
+  lazy val secondClientF: Future[EclairRpcClient] = eclairNodesF.map(_.c2)
 
-  lazy val thirdClientF = eclairNodesF.map(_.c3)
+  lazy val thirdClientF: Future[EclairRpcClient] = eclairNodesF.map(_.c3)
 
-  lazy val fourthClientF = eclairNodesF.map(_.c4)
+  lazy val fourthClientF: Future[EclairRpcClient] = eclairNodesF.map(_.c4)
 
   /** There is specific cases where we just need two clients,
     * so this is a helper val that pairs two connected
     * clients together with an open channel
     */
-  lazy val clientOtherClientF = {
-
-    //use second and third client above since they
-    //aren't really being used in the tests that use eclairNodesF
-    secondClientF.flatMap(s => thirdClientF.map(t => (s, t)))
-  }
-
-  lazy val clientF = clientOtherClientF.map(_._1)
-  lazy val otherClientF = clientOtherClientF.map(_._2)
+  lazy val clientF: Future[EclairRpcClient] = secondClientF
+  lazy val otherClientF: Future[EclairRpcClient] = thirdClientF
 
   private val clients =
     Vector.newBuilder[EclairRpcClient]
@@ -177,7 +168,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             .exists(_.endsWith(".onion")))
         route <- client1.findRoute(invoice, None)
       } yield {
-        route.size == 4
+        route.ids.size == 4
       }).recover {
         case err: RuntimeException
             if err.getMessage.contains("route not found") =>
@@ -196,7 +187,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         .flatMap(_.getInfo)
         .flatMap(info =>
           firstClientF.flatMap(_.findRoute(info.nodeId, MilliSatoshis(100))))
-        .map(route => route.length == 4)
+        .map(route => route.ids.length == 4)
         .recover {
           case err: RuntimeException
               if err.getMessage.contains("route not found") =>
@@ -1026,18 +1017,23 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
   it should "update the relay fee of a channel" in {
     val channelAndFeeF = for {
-      channel <- EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
-      feeOpt <- clientF.flatMap(_.channel(channel).map(_.feeBaseMsat))
+      channelId <-
+        EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
+      client <- clientF
+      channel <- client.channel(channelId)
+      feeOpt = channel.feeBaseMsat
     } yield {
       assert(feeOpt.isDefined)
       assert(feeOpt.get > MilliSatoshis.zero)
-      (channel, feeOpt.get)
+      (channelId, feeOpt.get)
     }
 
     for {
-      (channel, oldFee) <- channelAndFeeF
-      _ <- clientF.flatMap(_.updateRelayFee(channel, oldFee * 2, 1))
-      newFeeOpt <- clientF.flatMap(_.channel(channel).map(_.feeBaseMsat))
+      (channelId, oldFee) <- channelAndFeeF
+      client <- clientF
+      _ <- client.updateRelayFee(channelId, oldFee * 2, 1)
+      channel <- client.channel(channelId)
+      newFeeOpt = channel.feeBaseMsat
     } yield {
       assert(newFeeOpt.isDefined)
       assert(newFeeOpt.get == oldFee * 2)
@@ -1058,9 +1054,11 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     for {
+      client <- clientF
       (channelId, shortChannelId, oldFee) <- channelAndFeeF
-      _ <- clientF.flatMap(_.updateRelayFee(shortChannelId, oldFee * 4, 1))
-      newFeeOpt <- clientF.flatMap(_.channel(channelId).map(_.feeBaseMsat))
+      _ <- client.updateRelayFee(shortChannelId, oldFee * 4, 1)
+      channel <- client.channel(channelId)
+      newFeeOpt = channel.feeBaseMsat
     } yield {
       assert(newFeeOpt.isDefined)
       assert(newFeeOpt.get == oldFee * 4)
@@ -1192,7 +1190,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       pending <- c.listPendingInvoices(from = None, to = None)
     } yield {
       assert(res.nonEmpty)
-      assert(pending.exists(_ == i))
+      assert(pending.contains(i))
     }
   }
 
