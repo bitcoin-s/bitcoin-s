@@ -5,7 +5,7 @@ title: Eclair
 
 This is a RPC client for [Eclair](https://github.com/acinq/eclair). It assumes that a bitcoind instance is running.
 
-Currently this RPC client is written for [v0.4.1](https://github.com/ACINQ/eclair/releases/tag/v0.4.1) version of Eclair.
+Currently this RPC client is written for [v0.5.0](https://github.com/ACINQ/eclair/releases/tag/v0.5.0) version of Eclair.
 
 ## Configuration of Eclair
 
@@ -16,12 +16,12 @@ You can find the configuration we use for our testing infrastrture for eclair [h
 
 ## Starting Eclair
 
-You need to download the jar from the [eclair's github](https://github.com/ACINQ/eclair/releases/tag/v0.4.1).
+You need to download the jar from the [eclair's github](https://github.com/ACINQ/eclair/releases/tag/v0.5.0).
 
-To run Eclair by unzipping the `eclair-node-0.4.1-e5fb281-bin.zip` and then running
+To run Eclair by unzipping the `eclair-node-0.5.0-ac08560-bin.zip` and then running
 
 ```bash
-$ ./eclair-node-0.4-69c538e/bin/eclair-node.sh
+$ ./eclair-node-0.5.0-ac08560/bin/eclair-node.sh
 ```
 
 If you wish to start Eclair from the RPC client, you can do one of the following:
@@ -46,7 +46,7 @@ implicit val system = ActorSystem(s"eclair-rpc-${System.currentTimeMillis}")
 implicit val ec = system.dispatcher
 
 val datadirPath = Paths.get("path", "to", "datadir")
-val binaryPath = Paths.get("path", "to", "eclair-node-0.3.3-12ac145.jar")
+val binaryPath = Paths.get("path", "to", "eclair-node-0.5.0-ac08560", "bin", "eclair-node.sh")
 val instance = EclairInstance.fromDatadir(datadirPath.toFile,None)
 val client = new EclairRpcClient(instance, Some(binaryPath.toFile))
 

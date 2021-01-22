@@ -1,4 +1,4 @@
-package org.bitcoins.core.protocol.ln
+package org.bitcoins.core.protocol.ln.channel
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 

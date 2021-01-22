@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.ln.LnParams.{
   LnBitcoinMainNet,
   LnBitcoinTestNet
 }
+import org.bitcoins.core.protocol.ln.channel.ShortChannelId
 import org.bitcoins.core.protocol.ln.currency.{
   MicroBitcoins,
   MilliBitcoins,

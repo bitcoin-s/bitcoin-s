@@ -1,30 +1,24 @@
 package org.bitcoins.commons.jsonmodels.eclair
 
-import java.net.InetSocketAddress
-import java.time.Instant
-import java.util.UUID
-
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
+import org.bitcoins.core.protocol.ln.channel.{
+  ChannelId,
+  ChannelState,
+  FundedChannelId,
+  ShortChannelId
+}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.{Feature, FeatureSupport, NodeId}
-import org.bitcoins.core.protocol.ln.{
-  LnHumanReadablePart,
-  PaymentPreimage,
-  ShortChannelId
-}
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECDigitalSignature,
-  Sha256Digest,
-  StringFactory
-}
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, PaymentPreimage}
+import org.bitcoins.crypto._
 import play.api.libs.json.JsObject
 
+import java.net.InetSocketAddress
+import java.time.Instant
+import java.util.UUID
 import scala.concurrent.duration.FiniteDuration
 
 sealed abstract class EclairModels
@@ -51,6 +45,23 @@ case class ChannelCommandResult(
       Either[ShortChannelId, FundedChannelId],
       State]
 )
+
+case class UpdateRelayFeeResult(
+    results: Map[Either[ShortChannelId, FundedChannelId], UpdateRelayFee])
+
+sealed trait UpdateRelayFee
+
+object UpdateRelayFee {
+
+  case class OK(
+      channelId: ChannelId,
+      feeBaseMsat: MilliSatoshis,
+      feeProportionalMillionths: Long)
+      extends UpdateRelayFee
+
+  case class Error(message: String) extends UpdateRelayFee
+}
+
 sealed trait State
 
 object ChannelCommandResult extends StringFactory[State] {
@@ -343,7 +354,8 @@ object OutgoingPaymentStatus {
       completedAt: Instant //milliseconds
   ) extends OutgoingPaymentStatus
 
-  case class Failed(failures: Seq[PaymentFailure]) extends OutgoingPaymentStatus
+  case class Failed(failures: Seq[PaymentFailure], completedAt: Instant)
+      extends OutgoingPaymentStatus
 }
 
 case class PaymentFailure(

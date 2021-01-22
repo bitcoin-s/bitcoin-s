@@ -1,10 +1,5 @@
 package org.bitcoins.eclair.rpc.client
 
-import java.io.File
-import java.net.InetSocketAddress
-import java.nio.file.NoSuchFileException
-import java.time.Instant
-import java.util.concurrent.atomic.AtomicInteger
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
@@ -17,15 +12,15 @@ import akka.util.ByteString
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
-import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
-import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln.{
-  LnInvoice,
-  LnParams,
-  PaymentPreimage,
+import org.bitcoins.core.protocol.ln.channel.{
+  ChannelId,
+  FundedChannelId,
   ShortChannelId
 }
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln.routing.{ChannelRoute, NodeRoute, Route}
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.util.{BytesUtil, FutureUtil, StartStopAsync}
@@ -39,6 +34,11 @@ import org.bitcoins.rpc.util.AsyncUtil
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 
+import java.io.File
+import java.net.InetSocketAddress
+import java.nio.file.NoSuchFileException
+import java.time.Instant
+import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.sys.process._
@@ -148,29 +148,30 @@ class EclairRpcClient(
 
   override def findRoute(
       nodeId: NodeId,
-      amountMsat: MilliSatoshis): Future[Vector[NodeId]] = {
-    eclairCall[Vector[NodeId]]("findroutetonode",
-                               "nodeId" -> nodeId.toString,
-                               "amountMsat" -> amountMsat.toBigDecimal.toString)
+      amountMsat: MilliSatoshis): Future[NodeRoute] = {
+    eclairCall[Vector[NodeId]](
+      "findroutetonode",
+      "nodeId" -> nodeId.toString,
+      "amountMsat" -> amountMsat.toBigDecimal.toString).map(NodeRoute.apply)
   }
 
-  override def findRoute(invoice: LnInvoice): Future[Vector[NodeId]] = {
+  override def findRoute(invoice: LnInvoice): Future[NodeRoute] = {
     findRoute(invoice, None)
   }
 
   override def findRoute(
       invoice: LnInvoice,
-      amount: MilliSatoshis): Future[Vector[NodeId]] = {
+      amount: MilliSatoshis): Future[NodeRoute] = {
     findRoute(invoice, Some(amount))
   }
 
   def findRoute(
       invoice: LnInvoice,
-      amountMsat: Option[MilliSatoshis]): Future[Vector[NodeId]] = {
+      amountMsat: Option[MilliSatoshis]): Future[NodeRoute] = {
     val params = Seq(
       Some("invoice" -> invoice.toString),
       amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString)).flatten
-    eclairCall[Vector[NodeId]]("findroute", params: _*)
+    eclairCall[Vector[NodeId]]("findroute", params: _*).map(NodeRoute.apply)
   }
 
   override def forceClose(
@@ -511,16 +512,20 @@ class EclairRpcClient(
 
   def sendToRoute(
       invoice: LnInvoice,
-      route: scala.collection.immutable.Seq[NodeId],
+      route: Route,
       amountMsat: MilliSatoshis,
       paymentHash: Sha256Digest,
       finalCltvExpiry: Long,
       recipientAmountMsat: Option[MilliSatoshis],
       parentId: Option[PaymentId],
       externalId: Option[String]): Future[SendToRouteResult] = {
+    val ids = route match {
+      case NodeRoute(ids)    => "nodeIds" -> ids.mkString(",")
+      case ChannelRoute(ids) => "shortChannelIds" -> ids.mkString(",")
+    }
     val params = Seq(
       "invoice" -> invoice.toString,
-      "route" -> route.iterator.mkString(","),
+      ids,
       "amountMsat" -> amountMsat.toBigDecimal.toString,
       "paymentHash" -> paymentHash.hex,
       "finalCltvExpiry" -> finalCltvExpiry.toString
@@ -533,8 +538,8 @@ class EclairRpcClient(
   override def updateRelayFee(
       channelId: ChannelId,
       feeBaseMsat: MilliSatoshis,
-      feeProportionalMillionths: Long): Future[ChannelCommandResult] = {
-    eclairCall[ChannelCommandResult](
+      feeProportionalMillionths: Long): Future[UpdateRelayFeeResult] = {
+    eclairCall[UpdateRelayFeeResult](
       "updaterelayfee",
       "channelId" -> channelId.hex,
       "feeBaseMsat" -> feeBaseMsat.toLong.toString,
@@ -545,8 +550,8 @@ class EclairRpcClient(
   override def updateRelayFee(
       shortChannelId: ShortChannelId,
       feeBaseMsat: MilliSatoshis,
-      feeProportionalMillionths: Long): Future[ChannelCommandResult] = {
-    eclairCall[ChannelCommandResult](
+      feeProportionalMillionths: Long): Future[UpdateRelayFeeResult] = {
+    eclairCall[UpdateRelayFeeResult](
       "updaterelayfee",
       "shortChannelId" -> shortChannelId.toHumanReadableString,
       "feeBaseMsat" -> feeBaseMsat.toLong.toString,
@@ -904,11 +909,16 @@ class EclairRpcClient(
     val incoming: Sink[Message, Future[Done]] =
       Sink.foreach[Message] {
         case message: TextMessage.Strict =>
-          val parsed: JsValue = Json.parse(message.text)
-          val validated: JsResult[WebSocketEvent] =
-            parsed.validate[WebSocketEvent]
-          val event = parseResult[WebSocketEvent](validated, parsed, "ws")
-          eventHandler(event)
+          try {
+            val parsed: JsValue = Json.parse(message.text)
+            val validated: JsResult[WebSocketEvent] =
+              parsed.validate[WebSocketEvent]
+            val event = parseResult[WebSocketEvent](validated, parsed, "ws")
+            eventHandler(event)
+          } catch {
+            case e: Throwable =>
+              logger.error("Cannot process web-socket event", e)
+          }
         case _: Message => ()
       }
 
@@ -957,7 +967,7 @@ object EclairRpcClient {
   def apply(
       instance: EclairInstance,
       binary: Option[File] = None): EclairRpcClient = {
-    implicit val systme = ActorSystem.create(ActorSystemName)
+    implicit val system = ActorSystem.create(ActorSystemName)
     withActorSystem(instance, binary)
   }
 
@@ -969,10 +979,10 @@ object EclairRpcClient {
       implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "e5fb281"
+  private[bitcoins] val commit = "ac08560"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.4.1"
+  private[bitcoins] val version = "0.5.0"
 
   /** The bitcoind version that eclair is officially tested & supported with by ACINQ
     * @see https://github.com/ACINQ/eclair/releases/tag/v0.4

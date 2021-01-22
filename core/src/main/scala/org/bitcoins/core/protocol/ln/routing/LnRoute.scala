@@ -1,9 +1,7 @@
 package org.bitcoins.core.protocol.ln.routing
 
-import java.math.BigInteger
-
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.ln.ShortChannelId
+import org.bitcoins.core.protocol.ln.channel.ShortChannelId
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.{
   FeeBaseMSat,
@@ -12,6 +10,8 @@ import org.bitcoins.core.protocol.ln.fee.{
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{ECPublicKey, NetworkElement}
 import scodec.bits.ByteVector
+
+import java.math.BigInteger
 
 /**
   * Indicates a node to route through with specific options on the Lightning Network

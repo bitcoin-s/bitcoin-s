@@ -19,7 +19,7 @@ You can find the configuration we use for our testing infrastrture for eclair [h
 
 You need to download the jar from the [eclair's github](https://github.com/ACINQ/eclair/releases/tag/v0.4.1).
 
-To run Eclair by unzipping the `eclair-node-0.4.1-e5fb281-bin.zip` and then running
+To run Eclair by unzipping the `eclair-node-0.5.0-ac08560-bin.zip` and then running
 
 ```bash
 $ ./eclair-node-0.4-69c538e/bin/eclair-node.sh

@@ -1,24 +1,16 @@
 package org.bitcoins.node
 
 import akka.actor.Cancellable
-import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
-import org.bitcoins.testkit.node.{
-  NeutrinoNodeFundedWalletBitcoind,
-  NodeTestUtil,
-  NodeUnitTest
-}
+import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.scalatest.FutureOutcome
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 class NeutrinoNodeTest extends NodeUnitTest {
 

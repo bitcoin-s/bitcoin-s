@@ -1,11 +1,5 @@
 package org.bitcoins.commons.serializers
 
-import java.io.File
-import java.net.{InetAddress, InetSocketAddress, URI}
-import java.nio.file.Path
-import java.time._
-import java.util.UUID
-
 import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
 import org.bitcoins.commons.jsonmodels.bitcoind._
@@ -41,6 +35,11 @@ import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
 import org.bitcoins.crypto._
 import play.api.libs.json._
 
+import java.io.File
+import java.net.{InetAddress, InetSocketAddress, URI}
+import java.nio.file.Path
+import java.time._
+import java.util.UUID
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
@@ -910,6 +909,35 @@ object JsonReaders {
       SerializerUtil.buildJsErrorMsg("jsobject", err)
   }
 
+  implicit val updateRelayFeeResultReads: Reads[UpdateRelayFeeResult] =
+    Reads {
+      case obj: JsObject =>
+        JsSuccess(UpdateRelayFeeResult(obj.value.map { x =>
+          val channelId = Try(FundedChannelId.fromHex(x._1)) match {
+            case Success(id) => Right(id)
+            case Failure(_) =>
+              Left(ShortChannelId.fromHumanReadableString(x._1))
+          }
+          val result = Try(
+            UpdateRelayFee.OK(
+              channelId = FundedChannelId.fromHex(
+                (x._2 \ "channelId").validate[String].get),
+              feeBaseMsat =
+                (x._2 \ "cmd" \ "feeBase").validate[MilliSatoshis].get,
+              feeProportionalMillionths =
+                (x._2 \ "cmd" \ "feeProportionalMillionths").validate[Long].get
+            )) match {
+            case Success(ok) => ok
+            case Failure(_)  => UpdateRelayFee.Error(x._2.toString())
+          }
+          (channelId, result)
+        }.toMap))
+
+      case err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
+          _: JsNumber) =>
+        SerializerUtil.buildJsErrorMsg("jsobject", err)
+    }
+
   implicit val channelUpdateReads: Reads[ChannelUpdate] = {
     Reads { jsValue =>
       for {
@@ -998,7 +1026,7 @@ object JsonReaders {
 
   implicit val paymentFailureTypeReads: Reads[PaymentFailure.Type] = Reads {
     jsValue =>
-      (jsValue \ "name")
+      jsValue
         .validate[String]
         .flatMap { s =>
           s.toLowerCase match {
@@ -1251,10 +1279,13 @@ object JsonReaders {
       for {
         id <- (js \ "id").validate[PaymentId]
         paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
-        failures <- (js \ "failures").validate[Vector[String]]
+        failures <- (js \ "failures").validate[Vector[JsObject]]
         timestamp <- (js \ "timestamp")
           .validate[Instant](instantReadsMilliseconds)
-      } yield WebSocketEvent.PaymentFailed(id, paymentHash, failures, timestamp)
+      } yield WebSocketEvent.PaymentFailed(id,
+                                           paymentHash,
+                                           failures.map(_.toString()),
+                                           timestamp)
     }
 
   implicit val paymentSentEventPartReads: Reads[
