@@ -182,25 +182,22 @@ object ViewDLCDialog {
       row += 1
       status.contractInfo.contractDescriptor match {
         case _: EnumContractDescriptor => ()
-        case NumericContractDescriptor(outcomeValueFunc,
-                                       numDigits,
-                                       roundingIntervals) =>
+        case descriptor: NumericContractDescriptor =>
           val previewGraphButton: Button = new Button("Preview Graph") {
             onAction = _ => {
               val payoutCurve = if (status.isInitiator) {
-                outcomeValueFunc
+                descriptor.outcomeValueFunc
               } else {
-                DLCPayoutCurve(outcomeValueFunc.points.map { point =>
-                  point.copy(payout =
-                    status.totalCollateral.satoshis.toLong - point.payout)
-                })
+                descriptor
+                  .flip(status.totalCollateral.satoshis)
+                  .outcomeValueFunc
               }
               DLCPlotUtil.plotCETsWithOriginalCurve(
                 base = 2,
-                numDigits,
+                descriptor.numDigits,
                 payoutCurve,
                 status.contractInfo.totalCollateral,
-                roundingIntervals)
+                descriptor.roundingIntervals)
               ()
             }
           }
