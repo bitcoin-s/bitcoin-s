@@ -235,7 +235,7 @@ case class SpendingInfoDAO()(implicit
     } yield (utxos, spkDbs)
 
     for {
-      (utxos, spks) <- database.run(filtered)
+      (utxos, spks) <- safeDatabase.run(filtered)
       _ = require(
         utxos.length == outputs.length,
         s"Was given ${outputs.length} outputs, found ${utxos.length} in DB")
@@ -330,7 +330,7 @@ case class SpendingInfoDAO()(implicit
   def _findAllUnspent(): Future[Vector[UTXORecord]] = {
     val query = table.filter(_.state.inSet(TxoState.receivedStates))
 
-    database.run(query.result).map(_.toVector)
+    safeDatabase.run(query.result).map(_.toVector)
   }
 
   def utxoToInfo(utxos: Vector[UTXORecord]): Future[Vector[SpendingInfoDb]] =

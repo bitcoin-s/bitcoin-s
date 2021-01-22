@@ -38,8 +38,7 @@ case class ScriptPubKeyDAO()(implicit
       }
     } yield spk
 
-    database
-      .run(actions.transactionally)
+    safeDatabase.run(actions.transactionally)
   }
 
   case class ScriptPubKeyTable(tag: Tag)
