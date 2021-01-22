@@ -111,8 +111,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
           elements = range.toVector,
           f = fetchFiltersInRange(scripts, parallelismLevel),
           batchSize = batchSize)
-
-        _ <- downloadAndProcessBlocks(matched.map(_.blockHash.flip))
       } yield {
         logger.info(s"Matched ${matched.length} blocks on rescan")
         matched
@@ -260,7 +258,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
   }
 
-  private[wallet] def fetchFiltersInRange(
+  private def fetchFiltersInRange(
       scripts: Vector[ScriptPubKey],
       parallelismLevel: Int)(
       heightRange: Vector[Int]): Future[Vector[BlockMatchingResponse]] = {
@@ -271,6 +269,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         startHeight = startHeight,
         endHeight = endHeight)
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)
+      _ <- downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
     } yield {
       logger.info(
         s"Found ${filtered.length} matches from start=$startHeight to end=$endHeight")
@@ -278,7 +277,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
   }
 
-  private def findMatches(
+  private[wallet] def findMatches(
       filters: Vector[FilterResponse],
       scripts: Vector[ScriptPubKey],
       parallelismLevel: Int): Future[Vector[BlockMatchingResponse]] = {
