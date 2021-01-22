@@ -56,11 +56,11 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
 
     case ServerCommand("walletinfo", _) =>
       complete {
-        val jsonF = getInfo
-        jsonF.map { json =>
+        getInfo.map { json =>
           Server.httpSuccess(json)
         }
       }
+
     case ServerCommand("getbalance", arr) =>
       GetBalance.fromJsArr(arr) match {
         case Failure(exception) =>
@@ -563,7 +563,7 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
   /** Returns information about the state of our wallet */
   def getInfo: Future[Obj] = {
     wallet.getDefaultAccount().map { accountDb =>
-      val json = Obj(
+      Obj(
         WalletAppConfig.moduleName ->
           Obj(
             KeyManagerAppConfig.moduleName -> Obj(
@@ -573,7 +573,6 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
             "hdPath" -> Str(accountDb.hdAccount.toString)
           )
       )
-      json
     }
   }
 }
