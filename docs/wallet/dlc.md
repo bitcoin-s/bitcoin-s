@@ -7,77 +7,11 @@ title: Executing A DLC with Bitcoin-S
 
 ## Step 1: Get Bitcoin-S Setup
 
-See the [setup document](../getting-setup).
+See the [setup document](../getting-setup.md).
 
-Make sure to follow [Step 4](../getting-setup#step-4-optional-discreet-log-contract-branch) to checkout the `adaptor-dlc` feature branch.
+Make sure to follow [Step 4](../getting-setup.md#step-4-optional-discreet-log-contract-branch) to checkout the `adaptor-dlc` feature branch.
 
-## Step 2: Agree On Contract Terms
-
-Both parties must agree on all fields from the table below:
-
-|   Field Name   |                          Format                          |
-| :------------: | :------------------------------------------------------: |
-|   oracleInfo   |            OraclePubKeyHex ++ OracleRValueHex            |
-|  contractInfo  | Hash1Hex ++ 8ByteValue1Hex ++ Hash2Hex ++ 8ByteValue2Hex |
-|   collateral   |                      NumInSatoshis                       |
-|    locktime    |                       LockTimeNum                        |
-| refundlocktime |                       LockTimeNum                        |
-|    feerate     |                  NumInSatoshisPerVByte                   |
-
-Here is an example `oracleInfo` for public key `02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cab` and R value `b1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750`:
-
-```bashrc
-02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cabb1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750
-```
-
-Here is an example `contractInfo` for hashes `c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920f` and `5c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c` with respective Satoshi denominated outcomes of `100000 sats` and `0 sats`:
-
-```bashrc
-c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920fa0860100000000005c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c0000000000000000
-```
-
-And finally, here are the oracle signatures for each hash in order in case you want to test with this contract:
-
-```bashrc
-f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7fbbee821b7166028a6927282830c9452cfcf3c5716c57e43dd4069ca87625010
-```
-
-```bashrc
-f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7af05f01f1ca852cf5454a7dc91cdad7903dc2e67ddb2b3bc9d61dabd8856aa6a
-```
-
-Note: if you wish to setup your own oracle for testing, you can do so by pasting the following into the `sbt core/console`:
-
-```scala
-import org.bitcoins.crypto._
-import org.bitcoins.core.currency._
-import scodec.bits._
-
-val privKey = ECPrivateKey.freshPrivateKey
-val pubKey = privKey.schnorrPublicKey
-val kValue = ECPrivateKey.freshPrivateKey
-val rValue = kValue.schnorrNonce
-
-//the hash the oracle will sign when the bitcoin price is over $9,000
-val winHash = CryptoUtil.sha256(ByteVector("BTC_OVER_9000".getBytes))
-//the hash the oracle with sign when the bitcoin price is under $9,000
-val loseHash = CryptoUtil.sha256(ByteVector("BTC_UNDER_9000".getBytes))
-
-//the amounts received in the case the oracle signs hash of message "BTC_OVER_9000"
-val amtReceivedOnWin = Satoshis(100000)
-
-//the amount received in the case the oracle signs hash of message "BTC_UNDER_9000"
-val amtReceivedOnLoss = Satoshis.zero
-
-(pubKey.bytes ++ rValue.bytes).toHex
-(winHash.bytes ++ amtReceivedOnWin.bytes ++ loseHash.bytes ++ amtReceivedOnLoss.bytes).toHex
-privKey.schnorrSignWithNonce(winHash.bytes, kValue)
-privKey.schnorrSignWithNonce(loseHash.bytes, kValue)
-```
-
-Where you can replace the messages `WIN` and `LOSE` to have the oracle sign any two messages, and replace `Satoshis(100000)` and `Satoshis.zero` to change the outcomes.
-
-## Using the GUI
+### Using the GUI
 
 To first start up the GUI you first need to start your bitcoin-s server and gui with
 
@@ -91,12 +25,34 @@ or if your bitcoin-s server is already running, you can run the standalone gui w
 sbt gui/run
 ```
 
-or by following the instructions for building and running the GUI [here](../getting-setup#step-5-setting-up-a-bitcoin-s-server-neutrino-node)
+or by following the instructions for building and running the GUI [here](../getting-setup.md#step-5-setting-up-a-bitcoin-s-server)
 
-### Step 3: Setup The DLC
+## Step 2: Agree On Contract Terms
 
-If you're a visual learner there is a [video demo](https://www.youtube.com/watch?v=zy1sL2ndcDg) that explains this process in detail. But do note that this demonstrates the old non-adaptor version of DLCs so that the Offer, Accept, Sign protocol is the same, but the contents will be different.
+Both parties must agree on all fields from the table below:
 
+|   Field Name   |                       Description                        |
+| :------------: | :------------------------------------------------------: |
+|  contractInfo  |    Information about payouts and which oracles to use    |
+|   collateral   |        Number of sats the initiator is putting up        |
+|    locktime    |                  Locktime of the CETs                    |
+| refundlocktime |            Locktime of the Refund Transaction            |
+|    feerate     |                 Fee rate in sats/vbyte                   |
+
+> Note: if you wish to set up your own oracle for testing, you can do so by checking out our [oracle rpc server](../oracle/oracle-server.md) or [Krystal Bull](https://github.com/benthecarman/krystal-bull)
+
+## Step 3: Set up The DLC
+
+### Using the GUI 
+
+If you're a visual learner there is a [video demo](https://www.youtube.com/watch?v=zy1sL2ndcDg) that explains this process in detail. 
+But do note that this demonstrates the old non-adaptor version of DLCs so that the Offer, Accept, Sign protocol is the same, but the contents will be different.
+
+If using a numeric contract and/or multiple oracles, messages can get very large and sometimes even too large to for the application.
+To solve this there is an `Export to file` button located under the text box for the messages your wallet will construct.
+This can be used to export a DLC message to a file and then the file can be sent to your counter party.
+If you receive a file from a counter-party, there is an `Import file` button on every dialog you input a DLC message.
+This can be used to import the file of the DLC message from your counter-party.
 
 #### Creating The Offer
 
@@ -115,7 +71,83 @@ Upon receiving a DLC Accept message from your counter-party, you can use the `Si
 Upon receiving a DLC Sign message from your counter-party, add their signatures to your database using the `Add Sigs` button and paste in the message.
 After doing so you can get the fully signed funding transaction using the `Get Funding Tx` button. This will return the fully signed serialized transaction.
 
-### Step 4: Executing the DLC
+### Using the CLI
+
+If using a numeric contract and/or multiple oracles, messages can get very large and sometimes even too large to for the application.
+To solve this there are RPC calls where you can give a file instead of the entire DLC message.
+To output a file you simply just need to pipe the output of a command into a file.
+
+For example:
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli acceptdlcoffer [offer] > myDLCAccept.txt
+```
+
+#### Creating The Offer
+
+Once these terms are agreed to, either party can call on `createdlcoffer` with flags for each of the fields in the table above. For example:
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli createdlcoffer [contractInfo] [collateral] [feerate] [locktime] [refundlocktime]
+```
+
+#### Accepting The Offer
+
+Upon receiving a DLC Offer from your counter-party, the following command will create the serialized accept message:
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli acceptdlcoffer [offer]
+```
+
+or from file:
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli acceptdlcofferfromfile [filepath]
+```
+
+#### Signing The DLC
+
+Upon receiving a DLC Accept message from your counter-party, the following command will generate all of your signatures for this DLC:
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli signdlc [accept]
+```
+
+or from file:
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli signdlcfromfile [filepath]
+```
+
+
+#### Adding DLC Signatures To Your Database
+
+Upon receiving a DLC Sign message from your counter-party, add their signatures to your database by:
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli adddlcsigs [sign]
+```
+
+or from file:
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli adddlcsigsfromfile [filepath]
+```
+
+#### Getting Funding Transaction
+
+You are now fully setup and can generate the fully signed funding transaction for broadcast using
+
+```bashrc
+./app/cli/target/universal/stage/bitcoin-s-cli getdlcfundingtx [contractId]
+```
+
+where the `contractId` is in all but the messages other than the DLC Offer message, and is also returned by the `adddlcsigs` command.
+
+Alternatively, you can use the `getdlcs` command to list all of your current DLCs saved in your wallet.
+
+## Step 4: Executing the DLC
+
+### Using the GUI
 
 #### Execute
 
@@ -124,62 +156,16 @@ This will return a fully signed Contract Execution Transaction for the event sig
 
 #### Refund
 
-If the `refundlocktime` for the DLC has been reached, you can get the fully-signed refund transaction with the `Refund` button.
+If the `refundlocktime` for the DLC has been reached, you can get the fully-signed refund transaction with the `Refund` button and entering the `contractId`.
 
-## Using the CLI
-
-### Step 3: Setup The DLC
-
-#### Creating The Offer
-
-Once these terms are agreed to, either party can call on `createdlcoffer` with flags for each of the fields in the table above. For example:
-
-```bashrc
-./app/cli/target/universal/stage/bitcoin-s-cli createdlcoffer --oracleInfo 02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cabb1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750 --contractInfo c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920fa0860100000000005c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c0000000000000000 --collateral 40000 --locktime 1666720 --refundlocktime 1666730 --feerate 3
-```
-
-This will return a nice pretty-printed JSON offer. To get an offer that can be sent to the counter-party, add the `--escaped` flag to the end of this command.
-
-#### Accepting The Offer
-
-Upon receiving a DLC Offer from your counter-party, the following command will create the serialized accept message:
-
-```bashrc
-./app/cli/target/universal/stage/bitcoin-s-cli acceptdlcoffer --offer [offer] --escaped
-```
-
-#### Signing The DLC
-
-Upon receiving a DLC Accept message from your counter-party, the following command will generate all of your signatures for this DLC:
-
-```bashrc
-./app/cli/target/universal/stage/bitcoin-s-cli signdlc --accept [accept] --escaped
-```
-
-#### Adding DLC Signatures To Your Database
-
-Upon receiving a DLC Sign message from your counter-party, add their signatures to your database by:
-
-```bashrc
-./app/cli/target/universal/stage/bitcoin-s-cli adddlcsigs --sigs [sign]
-```
-
-You are now fully setup and can generate the fully signed funding transaction for broadcast using
-
-```bashrc
-./app/cli/target/universal/stage/bitcoin-s-cli getdlcfundingtx --eventid [eventid]
-```
-
-where the `eventid` is in all but the messages other than the DLC Offer message, and is also returned by the `adddlcsigs` command.
-
-### Step 4: Executing the DLC
+### Using the CLI
 
 #### Execute
 
 Upon receiving an oracle signature, you can execute the DLC unilaterally with
 
 ```bashrc
-./app/cli/target/universal/stage/bitcoin-s-cli executedlc --eventid [eventid] --oraclesig [sig]
+./app/cli/target/universal/stage/bitcoin-s-cli executedlc [contractId] [signatureTLVs]
 ```
 
 which will return fully signed Contract Execution Transaction for the event signed by the oracle.
@@ -189,6 +175,6 @@ which will return fully signed Contract Execution Transaction for the event sign
 If the `refundlocktime` for the DLC has been reached, you can get the fully-signed refund transaction with
 
 ```bashrc
-./app/cli/target/universal/stage/bitcoin-s-cli executedlcrefund --eventid [eventid]
+./app/cli/target/universal/stage/bitcoin-s-cli executedlcrefund [contractId]
 ```
 
