@@ -148,6 +148,7 @@ For more information on how to use our built in `cli` to interact with the serve
     - `--end <value>` - End height
     - `--ignorecreationtime` - Ignores the wallet creation date and will instead do a full rescan
  - `isempty` - Checks if the wallet contains any data
+ - `walletinfo` - Returns data about the current wallet being used
  - `getbalance` `[options]` - Get the wallet balance
     - `--sats ` - Display balance in satoshis
  - `getconfirmedbalance` `[options]` - Get the wallet balance of confirmed utxos

@@ -8,6 +8,8 @@ import scala.concurrent.ExecutionContext
 
 trait AppConfigFactory[C <: AppConfig] {
 
+  def moduleName: String
+
   def fromConfig(config: Config)(implicit ec: ExecutionContext): C = {
     val configDataDir: Path = Paths.get(config.getString("bitcoin-s.datadir"))
     fromDatadir(configDataDir, Vector(config))
