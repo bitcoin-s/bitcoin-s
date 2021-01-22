@@ -69,7 +69,7 @@ trait TxDAO[DbEntryType <: TxDB]
     val q = table
       .filter(_.txIdBE === txIdBE)
 
-    database.run(q.result).map {
+    safeDatabase.run(q.result).map {
       case h +: Vector() =>
         Some(h)
       case Vector() =>
@@ -86,7 +86,7 @@ trait TxDAO[DbEntryType <: TxDB]
 
   def findByTxIdBEs(
       txIdBEs: Vector[DoubleSha256DigestBE]): Future[Vector[DbEntryType]] = {
-    database.run(findByPrimaryKeys(txIdBEs).result).map(_.toVector)
+    safeDatabase.run(findByPrimaryKeys(txIdBEs).result).map(_.toVector)
   }
 }
 
