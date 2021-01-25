@@ -1,7 +1,10 @@
 package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.CETCalculator.MultiOracleDigits
+import org.bitcoins.core.protocol.dlc.CETCalculator.{
+  CETOutcome,
+  MultiOracleDigits
+}
 import org.bitcoins.core.protocol.dlc.DLCMessage.DLCAccept
 import org.bitcoins.core.protocol.tlv.{
   ContractInfoV0TLV,
@@ -95,7 +98,7 @@ case class ContractInfo(
                                             descriptor.roundingIntervals)
 
         vec.map {
-          case (digits, amt) =>
+          case CETOutcome(digits, amt) =>
             (NumericOracleOutcome(oracleInfo, UnsignedNumericOutcome(digits)),
              amt)
         }
@@ -112,7 +115,7 @@ case class ContractInfo(
           .combinations(oracleInfo.singleOracleInfos, oracleInfo.threshold)
           .flatMap { oracles =>
             vec.map {
-              case (digits, amt) =>
+              case CETOutcome(digits, amt) =>
                 val outcome = UnsignedNumericOutcome(digits)
                 (NumericOracleOutcome(oracles.map((_, outcome))), amt)
             }

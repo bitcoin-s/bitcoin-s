@@ -30,7 +30,7 @@ object CETCalculator {
   }
 
   /** A Vector of digits and the payout corresponding to this result */
-  type Outcome = (Digits, Satoshis)
+  case class CETOutcome(digits: Digits, sats: Satoshis)
 
   /** A Vector of MultiOracleDigits and the payout corresponding to this result */
   type MultiOracleOutcome = (MultiOracleDigits, Satoshis)
@@ -390,23 +390,34 @@ object CETCalculator {
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       min: Long,
-      max: Long): Vector[Outcome] = {
+      max: Long): Vector[CETOutcome] = {
     val ranges = splitIntoRanges(min, max, totalCollateral, function, rounding)
 
     ranges.flatMap { range =>
       range match {
         case StartZero(indexFrom, indexTo) =>
-          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map(
-            _ -> Satoshis.zero)
+          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
+            decomp =>
+              val payout = Satoshis.zero
+              CETOutcome(decomp, payout)
+          }
         case StartTotal(indexFrom, indexTo) =>
-          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map(
-            _ -> totalCollateral)
+          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
+            decomp =>
+              val payout = totalCollateral
+              CETOutcome(decomp, payout)
+          }
         case StartFuncConst(indexFrom, indexTo) =>
-          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map(
-            _ -> function(indexFrom, rounding))
+          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
+            decomp =>
+              val payout = function(indexFrom, rounding)
+              CETOutcome(decomp, payout)
+          }
         case StartFunc(indexFrom, indexTo) =>
           indexFrom.to(indexTo).map { num =>
-            NumberUtil.decompose(num, base, numDigits) -> function(num)
+            val decomp = NumberUtil.decompose(num, base, numDigits)
+            val payout = function(num)
+            CETOutcome(decomp, payout)
           }
       }
     }
@@ -420,7 +431,7 @@ object CETCalculator {
       numDigits: Int,
       function: DLCPayoutCurve,
       totalCollateral: Satoshis,
-      rounding: RoundingIntervals): Vector[Outcome] = {
+      rounding: RoundingIntervals): Vector[CETOutcome] = {
     val min = 0
     val max = Math.pow(base, numDigits).toLong - 1
 
@@ -772,7 +783,7 @@ object CETCalculator {
     */
   def computeMultiOracleCETsBinary(
       numDigits: Int,
-      primaryCETs: Vector[Outcome],
+      primaryCETs: Vector[CETOutcome],
       maxErrorExp: Int,
       minFailExp: Int,
       maximizeCoverage: Boolean,
@@ -780,7 +791,7 @@ object CETCalculator {
     require(minFailExp < maxErrorExp)
 
     primaryCETs.flatMap {
-      case (cetDigits, payout) =>
+      case CETOutcome(cetDigits, payout) =>
         computeCoveringCETsBinary(numDigits,
                                   cetDigits,
                                   maxErrorExp,
