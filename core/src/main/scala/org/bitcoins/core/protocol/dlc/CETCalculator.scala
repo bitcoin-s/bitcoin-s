@@ -13,6 +13,18 @@ import scala.annotation.tailrec
 
 object CETCalculator {
 
+  /** A Vector of digits in a given base */
+  type Digits = Vector[Int]
+
+  /** A Vector of Digits corresponding to each oracle in order */
+  type MultiOracleDigits = Vector[Digits]
+
+  /** A Vector of digits and the payout corresponding to this result */
+  type Outcome = (Digits, Satoshis)
+
+  /** A Vector of MultiOracleDigits and the payout corresponding to this result */
+  type MultiOracleOutcome = (MultiOracleDigits, Satoshis)
+
   /** Given a range and a payout function with which to build CETs,
     * the first step is to split the range into sub-ranges which
     * can be compressed or cannot be compressed, represented here
@@ -196,8 +208,8 @@ object CETCalculator {
   }
 
   /** Searches for an outcome which contains a prefix of digits */
-  def searchForPrefix[Outcome](digits: Vector[Int], outcomes: Vector[Outcome])(
-      outcomeToPrefix: Outcome => Vector[Int]): Option[Outcome] = {
+  def searchForPrefix[Outcome](digits: Digits, outcomes: Vector[Outcome])(
+      outcomeToPrefix: Outcome => Digits): Option[Outcome] = {
     val indexOrOverByOne = NumberUtil.search(outcomes, digits, outcomeToPrefix)(
       NumberUtil.lexicographicalOrdering[Int])
 
@@ -222,7 +234,7 @@ object CETCalculator {
     * Assumes outcomes is ordered.
     */
   def searchForNumericOutcome(
-      digits: Vector[Int],
+      digits: Digits,
       outcomes: Vector[DLCOutcomeType]): Option[UnsignedNumericOutcome] = {
     searchForPrefix(digits, outcomes) {
       case outcome: EnumOutcome =>
@@ -239,7 +251,7 @@ object CETCalculator {
     * @param digits The unique digits of the range's start
     * @param base The base the digits are represented in
     */
-  def frontGroupings(digits: Vector[Int], base: Int): Vector[Vector[Int]] = {
+  def frontGroupings(digits: Digits, base: Int): Vector[Digits] = {
     val nonZeroDigits =
       digits.reverse.zipWithIndex.dropWhile(_._1 == 0) // Endpoint Optimization
 
@@ -265,7 +277,7 @@ object CETCalculator {
     * @param digits The unique digits of the range's end
     * @param base The base the digits are represented in
     */
-  def backGroupings(digits: Vector[Int], base: Int): Vector[Vector[Int]] = {
+  def backGroupings(digits: Digits, base: Int): Vector[Digits] = {
     val nonMaxDigits =
       digits.reverse.zipWithIndex.dropWhile(
         _._1 == base - 1
@@ -299,7 +311,7 @@ object CETCalculator {
     */
   def middleGrouping(
       firstDigitStart: Int,
-      firstDigitEnd: Int): Vector[Vector[Int]] = {
+      firstDigitEnd: Int): Vector[Digits] = {
     (firstDigitStart + 1).until(firstDigitEnd).toVector.map { firstDigit =>
       Vector(firstDigit)
     }
@@ -308,11 +320,10 @@ object CETCalculator {
   /** Splits off the shared prefix of start and end represented in the given base
     * and returns the shared prefix and the unique digits of start and of end.
     */
-  def separatePrefix(
-      start: Long,
-      end: Long,
-      base: Int,
-      numDigits: Int): (Vector[Int], Vector[Int], Vector[Int]) = {
+  def separatePrefix(start: Long, end: Long, base: Int, numDigits: Int): (
+      Digits,
+      Digits,
+      Digits) = {
     val startDigits = NumberUtil.decompose(start, base, numDigits)
     val endDigits = NumberUtil.decompose(end, base, numDigits)
 
@@ -333,7 +344,7 @@ object CETCalculator {
       start: Long,
       end: Long,
       base: Int,
-      numDigits: Int): Vector[Vector[Int]] = {
+      numDigits: Int): Vector[Digits] = {
     val (prefixDigits, startDigits, endDigits) =
       separatePrefix(start, end, base, numDigits)
 
@@ -369,7 +380,7 @@ object CETCalculator {
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       min: Long,
-      max: Long): Vector[(Vector[Int], Satoshis)] = {
+      max: Long): Vector[Outcome] = {
     val ranges = splitIntoRanges(min, max, totalCollateral, function, rounding)
 
     ranges.flatMap { range =>
@@ -399,7 +410,7 @@ object CETCalculator {
       numDigits: Int,
       function: DLCPayoutCurve,
       totalCollateral: Satoshis,
-      rounding: RoundingIntervals): Vector[(Vector[Int], Satoshis)] = {
+      rounding: RoundingIntervals): Vector[Outcome] = {
     val min = 0
     val max = Math.pow(base, numDigits).toLong - 1
 
@@ -419,9 +430,7 @@ object CETCalculator {
   }
 
   /** Given binary digits corresponding to a CET, returns the CET's support bounds */
-  def computeCETIntervalBinary(
-      cet: Vector[Int],
-      numDigits: Int): (Long, Long) = {
+  def computeCETIntervalBinary(cet: Digits, numDigits: Int): (Long, Long) = {
     val left = NumberUtil.fromDigits(cet, base = 2, numDigits)
     val right = left + (1L << (numDigits - cet.length)) - 1
 
@@ -431,7 +440,7 @@ object CETCalculator {
   /** Given the left endpoint of a CET and the number of ignored digits,
     * computes the binary digits for the CET.
     */
-  def numToVec(num: Long, numDigits: Int, ignoredDigits: Int): Vector[Int] = {
+  def numToVec(num: Long, numDigits: Int, ignoredDigits: Int): Digits = {
     BitVector
       .fromLong(num, numDigits)
       .toIndexedSeq
@@ -450,7 +459,7 @@ object CETCalculator {
       start: Long,
       end: Long,
       minFail: Long,
-      numDigits: Int): Vector[Int] = {
+      numDigits: Int): Digits = {
     val leftBound = start - minFail
     val leftBoundDigits = NumberUtil.decompose(leftBound, base = 2, numDigits)
     val rightBound = end + minFail
@@ -473,7 +482,7 @@ object CETCalculator {
       end: Long,
       maxErrorExp: Int,
       minFail: Long,
-      numDigits: Int): Vector[Int] = {
+      numDigits: Int): Digits = {
     val rightBound = end + minFail
     val rightBoundDigits = NumberUtil.decompose(rightBound, base = 2, numDigits)
     val (prefix, halvingDigits) =
@@ -490,7 +499,7 @@ object CETCalculator {
       start: Long,
       maxErrorExp: Int,
       minFail: Long,
-      numDigits: Int): Vector[Int] = {
+      numDigits: Int): Digits = {
     val leftBound = start - minFail
     val leftBoundDigits = NumberUtil.decompose(leftBound, base = 2, numDigits)
     val (prefix, halvingDigits) =
@@ -561,11 +570,11 @@ object CETCalculator {
     */
   def computeCoveringCETsBinary(
       numDigits: Int,
-      cetDigits: Vector[Int],
+      cetDigits: Digits,
       maxErrorExp: Int,
       minFailExp: Int,
       maximizeCoverage: Boolean,
-      numOracles: Int): Vector[Vector[Vector[Int]]] = {
+      numOracles: Int): Vector[MultiOracleDigits] = {
     require(numOracles > 1,
             "For single oracle, just use your cetDigits parameter")
 
@@ -648,7 +657,7 @@ object CETCalculator {
           s"Unexpected case: $cetDigits, $numDigits, $maxErrorExp, $minFailExp")
       }
     } else { // case: Large CET
-      val builder = Vector.newBuilder[Vector[Vector[Int]]]
+      val builder = Vector.newBuilder[MultiOracleDigits]
 
       /* zoom of left corner of [start, end]:
        * _____________________________________________________
@@ -730,11 +739,11 @@ object CETCalculator {
     */
   def computeMultiOracleCETsBinary(
       numDigits: Int,
-      primaryCETs: Vector[(Vector[Int], Satoshis)],
+      primaryCETs: Vector[Outcome],
       maxErrorExp: Int,
       minFailExp: Int,
       maximizeCoverage: Boolean,
-      numOracles: Int): Vector[(Vector[Vector[Int]], Satoshis)] = {
+      numOracles: Int): Vector[MultiOracleOutcome] = {
     require(minFailExp < maxErrorExp)
 
     primaryCETs.flatMap {
@@ -772,7 +781,7 @@ object CETCalculator {
       maxErrorExp: Int,
       minFailExp: Int,
       maximizeCoverage: Boolean,
-      numOracles: Int): Vector[(Vector[Vector[Int]], Satoshis)] = {
+      numOracles: Int): Vector[MultiOracleOutcome] = {
     val primaryCETs =
       computeCETs(base = 2, numDigits, function, totalCollateral, rounding)
     computeMultiOracleCETsBinary(numDigits,
