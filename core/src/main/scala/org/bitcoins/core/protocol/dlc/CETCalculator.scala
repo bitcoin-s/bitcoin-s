@@ -33,7 +33,9 @@ object CETCalculator {
   case class CETOutcome(digits: Digits, sats: Satoshis)
 
   /** A Vector of MultiOracleDigits and the payout corresponding to this result */
-  type MultiOracleOutcome = (MultiOracleDigits, Satoshis)
+  case class MultiOracleOutcome(
+      multiOracleDigits: MultiOracleDigits,
+      payout: Satoshis)
 
   /** Given a range and a payout function with which to build CETs,
     * the first step is to split the range into sub-ranges which
@@ -798,7 +800,7 @@ object CETCalculator {
                                   minFailExp,
                                   maximizeCoverage,
                                   numOracles)
-          .map((_, payout))
+          .map(MultiOracleOutcome(_, payout))
     }
   }
 

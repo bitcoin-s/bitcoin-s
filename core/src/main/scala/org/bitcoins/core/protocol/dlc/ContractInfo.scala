@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.dlc
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.CETCalculator.{
   CETOutcome,
-  MultiOracleDigits
+  MultiOracleOutcome
 }
 import org.bitcoins.core.protocol.dlc.DLCMessage.DLCAccept
 import org.bitcoins.core.protocol.tlv.{
@@ -123,7 +123,7 @@ case class ContractInfo(
       case Right(
             (descriptor: NumericContractDescriptor,
              oracleInfo: NumericMultiOracleInfo)) =>
-        val vec: Vector[(MultiOracleDigits, Satoshis)] =
+        val vec: Vector[MultiOracleOutcome] =
           CETCalculator.computeMultiOracleCETsBinary(
             descriptor.numDigits,
             descriptor.outcomeValueFunc,
@@ -139,7 +139,7 @@ case class ContractInfo(
           .combinations(oracleInfo.singleOracleInfos, oracleInfo.threshold)
           .flatMap { oracles =>
             vec.map {
-              case (digitsVec, amt) =>
+              case MultiOracleOutcome(digitsVec, amt) =>
                 val outcomesVec =
                   digitsVec.toVector.map(UnsignedNumericOutcome.apply)
                 (NumericOracleOutcome(oracles.zip(outcomesVec)), amt)

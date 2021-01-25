@@ -291,7 +291,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
       Vector(1, 1, 0) -> func(110)
     )
 
-    val expected =
+    val expected = {
       firstZeroRange ++
         firstFuncRange ++
         firstConstRange ++
@@ -300,6 +300,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
         thirdFuncRange ++
         firstTotalRange ++
         fourthFuncRange
+    }.map(o => CETOutcome(o._1, o._2))
 
     val cetOutcomes =
       CETCalculator.computeCETs(base = 10,
@@ -334,11 +335,11 @@ class CETCalculatorTest extends BitcoinSUnitTest {
                                               maximizeCoverage = false,
                                               numOracles = 2)
 
-    assert(coveringCETsMax.forall(_.length == 2))
-    assert(coveringCETsMin.forall(_.length == 2))
+    assert(coveringCETsMax.forall(_.toVector.length == 2))
+    assert(coveringCETsMin.forall(_.toVector.length == 2))
 
-    (coveringCETsMax.map(ds => (ds.head, ds.last)),
-     coveringCETsMin.map(ds => (ds.head, ds.last)))
+    (coveringCETsMax.map(ds => (ds.toVector.head, ds.toVector.last)),
+     coveringCETsMin.map(ds => (ds.toVector.head, ds.toVector.last)))
   }
 
   it should "correctly cover small middle CETs" in {
