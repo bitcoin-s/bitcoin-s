@@ -21,15 +21,10 @@ and height
 
 >665741
 
-## Syncing a wallet
-
-Bitcoin-s provides a utility object called [`WalletSync`](https://github.com/bitcoin-s/bitcoin-s/blob/f3e81d027dfdda79e26642d5c29d381874ee72da/wallet/src/main/scala/org/bitcoins/wallet/sync/WalletSync.scala#L10)
-that provides useful utilities for syncing a bitcoin-s wallet.
-
 Alternatively, you can retrieve this information with `bitcoin-s-cli`
 
 ```
- ./bitcoin-s-cli walletinfo                                            1 ↵  3273  11:24:24
+ ./bitcoin-s-cli walletinfo
 {
   "wallet": {
     "keymanager": {
@@ -40,6 +35,11 @@ Alternatively, you can retrieve this information with `bitcoin-s-cli`
   }
 }
 ```
+
+## Syncing a wallet
+
+Bitcoin-s provides a utility object called [`WalletSync`](https://github.com/bitcoin-s/bitcoin-s/blob/f3e81d027dfdda79e26642d5c29d381874ee72da/wallet/src/main/scala/org/bitcoins/wallet/sync/WalletSync.scala#L10)
+that provides useful utilities for syncing a bitcoin-s wallet.
 
 ### Syncing wallet for with access to full blocks
 
