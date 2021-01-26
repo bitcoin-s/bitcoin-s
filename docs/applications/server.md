@@ -161,6 +161,7 @@ For more information on how to use our built in `cli` to interact with the serve
  - `getfundedaddresses` - Returns list of all wallet addresses that are holding funds
  - `getunusedaddresses` - Returns list of all wallet addresses that have not been used
  - `getaccounts` - Returns list of all wallet accounts
+ - `walletinfo` - Returns meta information about the wallet
  - `createnewaccount` - Creates a new wallet account
  - `getaddressinfo` `address` - Returns list of all wallet accounts
     - `address` - Address to get information about
