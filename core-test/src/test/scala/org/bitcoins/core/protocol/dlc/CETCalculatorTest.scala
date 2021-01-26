@@ -338,8 +338,8 @@ class CETCalculatorTest extends BitcoinSUnitTest {
     assert(coveringCETsMax.forall(_.toVector.length == 2))
     assert(coveringCETsMin.forall(_.toVector.length == 2))
 
-    (coveringCETsMax.map(ds => (ds.toVector.head, ds.toVector.last)),
-     coveringCETsMin.map(ds => (ds.toVector.head, ds.toVector.last)))
+    (coveringCETsMax.map(ds => (ds.head, ds.last)),
+     coveringCETsMin.map(ds => (ds.head, ds.last)))
   }
 
   it should "correctly cover small middle CETs" in {

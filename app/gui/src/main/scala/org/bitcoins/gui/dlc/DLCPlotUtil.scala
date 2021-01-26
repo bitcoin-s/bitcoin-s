@@ -119,7 +119,7 @@ object DLCPlotUtil {
   }
 
   private def plotCETs(
-      cets: Vector[CETOutcome], //(Vector[Int], Satoshis)
+      cets: Vector[CETOutcome],
       base: Int,
       numDigits: Int,
       executedCETOpt: Option[Vector[Int]]): Figure = {

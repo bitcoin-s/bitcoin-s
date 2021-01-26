@@ -707,7 +707,7 @@ object CETCalculator {
           numToVec(start - minFail, numDigits, minFailExp)
         }
 
-        val doubleCovering: Vector[Vector[Digits]] =
+        val doubleCovering: Vector[MultiOracleDigits] =
           doubleCoveringRestrictedCETCombinations(leftInnerCET,
                                                   leftCET,
                                                   numOracles)
