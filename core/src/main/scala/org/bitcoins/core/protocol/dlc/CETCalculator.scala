@@ -30,7 +30,7 @@ object CETCalculator {
   }
 
   /** A Vector of digits and the payout corresponding to this result */
-  case class CETOutcome(digits: Digits, sats: Satoshis)
+  case class CETOutcome(digits: Digits, payout: Satoshis)
 
   /** A Vector of MultiOracleDigits and the payout corresponding to this result */
   case class MultiOracleOutcome(
@@ -400,26 +400,22 @@ object CETCalculator {
         case StartZero(indexFrom, indexTo) =>
           groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
             decomp =>
-              val payout = Satoshis.zero
-              CETOutcome(decomp, payout)
+              CETOutcome(decomp, payout = Satoshis.zero)
           }
         case StartTotal(indexFrom, indexTo) =>
           groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
             decomp =>
-              val payout = totalCollateral
-              CETOutcome(decomp, payout)
+              CETOutcome(decomp, payout = totalCollateral)
           }
         case StartFuncConst(indexFrom, indexTo) =>
           groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
             decomp =>
-              val payout = function(indexFrom, rounding)
-              CETOutcome(decomp, payout)
+              CETOutcome(decomp, payout = function(indexFrom, rounding))
           }
         case StartFunc(indexFrom, indexTo) =>
           indexFrom.to(indexTo).map { num =>
             val decomp = NumberUtil.decompose(num, base, numDigits)
-            val payout = function(num)
-            CETOutcome(decomp, payout)
+            CETOutcome(decomp, payout = function(num))
           }
       }
     }
