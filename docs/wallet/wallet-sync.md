@@ -21,6 +21,12 @@ and height
 
 >665741
 
+If you have access to a wallet, you can call
+
+[`wallet.getSyncDescriptorOpt`](https://github.com/bitcoin-s/bitcoin-s/blob/36b5fc142715f8ab3ad053465d53dc29ab319790/wallet/src/main/scala/org/bitcoins/wallet/Wallet.scala#L160) to get access to this information
+
+#### Wallet state from the cli
+
 Alternatively, you can retrieve this information with `bitcoin-s-cli`
 
 ```
