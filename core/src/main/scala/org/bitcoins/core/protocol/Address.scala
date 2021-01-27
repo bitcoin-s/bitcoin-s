@@ -105,6 +105,10 @@ sealed abstract class Bech32Address extends BitcoinAddress {
   def expandHrp: Vector[UInt5] = {
     hrp.expand
   }
+
+  def verifyChecksum: Boolean = {
+    Bech32.verifyChecksum(hrp.expand, data ++ checksum)
+  }
 }
 
 object Bech32Address extends AddressFactory[Bech32Address] {
@@ -113,7 +117,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
       networkParameters: NetworkParameters,
       data: Vector[UInt5])
       extends Bech32Address {
-    //require(verifyChecksum(hrp, data), "checksum did not pass")
+    require(verifyChecksum, s"checksum did not pass $checksum")
   }
 
   def empty(network: NetworkParameters = MainNet): Bech32Address =
@@ -192,7 +196,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
       spk: ScriptPubKey,
       np: NetworkParameters): Try[Bech32Address] =
     spk match {
-      case witSPK: WitnessScriptPubKey =>
+      case witSPK: WitnessScriptPubKeyV0 =>
         Success(Bech32Address(witSPK, np))
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
@@ -386,9 +390,9 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
       spk: ScriptPubKey,
       np: NetworkParameters): Try[BitcoinAddress] =
     spk match {
-      case p2pkh: P2PKHScriptPubKey    => Success(P2PKHAddress(p2pkh, np))
-      case p2sh: P2SHScriptPubKey      => Success(P2SHAddress(p2sh, np))
-      case witSPK: WitnessScriptPubKey => Success(Bech32Address(witSPK, np))
+      case p2pkh: P2PKHScriptPubKey      => Success(P2PKHAddress(p2pkh, np))
+      case p2sh: P2SHScriptPubKey        => Success(P2SHAddress(p2sh, np))
+      case witSPK: WitnessScriptPubKeyV0 => Success(Bech32Address(witSPK, np))
       case x @ (_: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
           _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
           _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
