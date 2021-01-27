@@ -117,7 +117,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
       networkParameters: NetworkParameters,
       data: Vector[UInt5])
       extends Bech32Address {
-    require(verifyChecksum, "checksum did not pass")
+    require(verifyChecksum, s"checksum did not pass $checksum")
   }
 
   def empty(network: NetworkParameters = MainNet): Bech32Address =

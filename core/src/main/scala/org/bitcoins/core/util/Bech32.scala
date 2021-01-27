@@ -306,7 +306,9 @@ object Bech32 extends Bech32 {
     'g', 'f', '2', 't', 'v', 'd', 'w', '0', 's', '3', 'j', 'n', '5', '4', 'k',
     'h', 'c', 'e', '6', 'm', 'u', 'a', '7', 'l')
 
-  /** The Bech32 character set for decoding. */
+  /** The Bech32 character set for decoding.
+    * @see https://github.com/sipa/bech32/blob/master/ref/c%2B%2B/bech32.cpp#L33
+    */
   val charsetReversed: Vector[Int] = Vector(
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
