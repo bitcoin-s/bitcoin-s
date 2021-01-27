@@ -335,8 +335,8 @@ class CETCalculatorTest extends BitcoinSUnitTest {
                                               maximizeCoverage = false,
                                               numOracles = 2)
 
-    assert(coveringCETsMax.forall(_.toVector.length == 2))
-    assert(coveringCETsMin.forall(_.toVector.length == 2))
+    assert(coveringCETsMax.forall(_.length == 2))
+    assert(coveringCETsMin.forall(_.length == 2))
 
     (coveringCETsMax.map(ds => (ds.head, ds.last)),
      coveringCETsMin.map(ds => (ds.head, ds.last)))
