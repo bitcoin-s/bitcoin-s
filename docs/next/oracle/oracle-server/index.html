@@ -205,57 +205,6 @@ $ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curlte
 $ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "getsignatures", "params": ["fdd806400374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8000300086f7574636f6d653100086f7574636f6d653200086f7574636f6d6533"]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
 {<span class="hljs-string">"result"</span>:[<span class="hljs-string">"0374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8a65977263a6b6071c29232a516adb0e69e8e049772275dc9fa8d9cfa620960dd"</span>],<span class="hljs-string">"error"</span>:null}
 </code></pre>
-<h4><a class="anchor" aria-hidden="true" id="create-ranged-event-example"></a><a href="#create-ranged-event-example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Create Ranged Event Example</h4>
-<p>Bitcoin-S CLI:</p>
-<pre><code class="hljs css language-bash">$ bitcoin<span class="hljs-_">-s</span>-cli createrangedevent tomorrowTemperature 1701917137 0 100 1 <span class="hljs-string">"degrees F"</span> 0
-fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001
-
-$ bitcoin<span class="hljs-_">-s</span>-cli getevent fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001
-{
-  <span class="hljs-string">"nonces"</span>: [
-    <span class="hljs-string">"5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d0"</span>
-  ],
-  <span class="hljs-string">"eventName"</span>: <span class="hljs-string">"tomorrowTemperature"</span>,
-  <span class="hljs-string">"signingVersion"</span>: <span class="hljs-string">"Mock"</span>,
-  <span class="hljs-string">"maturationTime"</span>: <span class="hljs-string">"2023-12-07T02:45:37Z"</span>,
-  <span class="hljs-string">"announcementSignature"</span>: <span class="hljs-string">"33861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7"</span>,
-  <span class="hljs-string">"eventDescriptorTLV"</span>: <span class="hljs-string">"fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001"</span>,
-  <span class="hljs-string">"eventTLV"</span>: <span class="hljs-string">"fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265"</span>,
-  <span class="hljs-string">"announcementTLV"</span>: <span class="hljs-string">"fdd824a933861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265"</span>,
-  <span class="hljs-string">"attestations"</span>: null,
-  <span class="hljs-string">"signatures"</span>: null,
-  <span class="hljs-string">"outcomes"</span>: [
-    0,
-    1,
-    2,
-  ...
-    98,
-    99,
-    100
-  ]
-}
-
-$ bitcoin<span class="hljs-_">-s</span>-cli signforrange fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001 50
-abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b
-
-$ bitcoin<span class="hljs-_">-s</span>-cli getsignatures fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001
-[
-  <span class="hljs-string">"abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b"</span>
-]
-</code></pre>
-<p>CURL:</p>
-<pre><code class="hljs css language-bash">$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "createrangedevent", "params": ["tomorrowsTemperature", 1701917137, 0, 100, 1, "degrees C", 0]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
-{<span class="hljs-string">"result"</span>:<span class="hljs-string">"fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001"</span>,<span class="hljs-string">"error"</span>:null}
-
-$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "getevent", "params": ["fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001"]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
-{<span class="hljs-string">"result"</span>:{<span class="hljs-string">"nonces"</span>:[<span class="hljs-string">"5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d0"</span>],<span class="hljs-string">"eventName"</span>:<span class="hljs-string">"tomorrowTemperature"</span>,<span class="hljs-string">"signingVersion"</span>:<span class="hljs-string">"Mock"</span>,<span class="hljs-string">"maturationTime"</span>:<span class="hljs-string">"2023-12-07T02:45:37Z"</span>,<span class="hljs-string">"announcementSignature"</span>:<span class="hljs-string">"33861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7"</span>,<span class="hljs-string">"eventDescriptorTLV"</span>:<span class="hljs-string">"fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001"</span>,<span class="hljs-string">"eventTLV"</span>:<span class="hljs-string">"fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265"</span>,<span class="hljs-string">"announcementTLV"</span>:<span class="hljs-string">"fdd824a933861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265"</span>,<span class="hljs-string">"attestations"</span>:null,<span class="hljs-string">"signatures"</span>:null,<span class="hljs-string">"outcomes"</span>:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99]},<span class="hljs-string">"error"</span>:null}
-
-$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "signforrange", "params": ["fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001", 50]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
-{<span class="hljs-string">"result"</span>:<span class="hljs-string">"abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b"</span>,<span class="hljs-string">"error"</span>:null}
-
-$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "getsignatures", "params": ["fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001"]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
-{<span class="hljs-string">"result"</span>:[<span class="hljs-string">"abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b"</span>],<span class="hljs-string">"error"</span>:null}
-</code></pre>
 <h3><a class="anchor" aria-hidden="true" id="digit-decomposition-example"></a><a href="#digit-decomposition-example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Digit Decomposition Example</h3>
 <p>Bitcoin-S CLI:</p>
 <pre><code class="hljs css language-bash">$ bitcoin<span class="hljs-_">-s</span>-cli createdigitdecompevent exampleDecomp 1701917137 10 3 <span class="hljs-string">"units"</span> 0 --signed
