@@ -39,7 +39,7 @@ object BtcHumanReadablePart extends StringFactory[BtcHumanReadablePart] {
   }
 
   override def fromString(str: String): BtcHumanReadablePart =
-    str match {
+    str.toLowerCase match {
       case "bc"   => bc
       case "tb"   => tb
       case "bcrt" => bcrt // Bitcoin Core specific

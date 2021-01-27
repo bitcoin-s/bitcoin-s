@@ -135,20 +135,20 @@ sealed abstract class Bech32 {
       remaining match {
         case Nil => Success(accum.reverse)
         case h :: t =>
-          if (!Bech32.charset.contains(h.toLower)) {
+          if ((h.isUpper && hasLower) || (h.isLower && hasUpper)) {
             Failure(
               new IllegalArgumentException(
-                "Invalid character in data of bech32 address, got: " + h))
+                "Cannot have mixed case for bech32 address"))
           } else {
-            if ((h.isUpper && hasLower) || (h.isLower && hasUpper)) {
+            val value = Bech32.charsetReversed(h.toInt)
+
+            if (value == -1) {
               Failure(
                 new IllegalArgumentException(
-                  "Cannot have mixed case for bech32 address"))
+                  "Invalid character in data of bech32 address, got: " + h))
             } else {
-              val byte = Bech32.charset.indexOf(h.toLower).toByte
-
               loop(remaining = t,
-                   accum = UInt5.fromByte(byte) +: accum,
+                   accum = UInt5.fromByte(value.toByte) +: accum,
                    hasUpper = h.isUpper || hasUpper,
                    hasLower = h.isLower || hasLower)
             }
@@ -305,6 +305,19 @@ object Bech32 extends Bech32 {
   val charset: Vector[Char] = Vector('q', 'p', 'z', 'r', 'y', '9', 'x', '8',
     'g', 'f', '2', 't', 'v', 'd', 'w', '0', 's', '3', 'j', 'n', '5', '4', 'k',
     'h', 'c', 'e', '6', 'm', 'u', 'a', '7', 'l')
+
+  /** The Bech32 character set for decoding.
+    * @see https://github.com/sipa/bech32/blob/master/ref/c%2B%2B/bech32.cpp#L33
+    */
+  val charsetReversed: Vector[Int] = Vector(
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 15, -1, 10, 17, 21, 20, 26, 30, 7,
+    5, -1, -1, -1, -1, -1, -1, -1, 29, -1, 24, 13, 25, 9, 8, 23, -1, 18, 22, 31,
+    27, 19, -1, 1, 0, 3, 16, 11, 28, 12, 14, 6, 4, 2, -1, -1, -1, -1, -1, -1,
+    29, -1, 24, 13, 25, 9, 8, 23, -1, 18, 22, 31, 27, 19, -1, 1, 0, 3, 16, 11,
+    28, 12, 14, 6, 4, 2, -1, -1, -1, -1, -1
+  )
 }
 
 abstract class Bech32HumanReadablePart {
