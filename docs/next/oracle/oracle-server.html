@@ -114,16 +114,6 @@ The native packager offers <a href="https://github.com/sbt/sbt-native-packager#e
 <li><code>maturationtime</code> - The earliest expected time an outcome will be signed, given in epoch second</li>
 <li><code>outcomes</code> - Possible outcomes for this event</li>
 </ul></li>
-<li><code>createrangedevent</code> <code>name</code> <code>maturationtime</code> <code>start</code> <code>stop</code> <code>step</code> - Registers an oracle event with a range of outcomes
-<ul>
-<li><code>name</code> - Name for this event</li>
-<li><code>maturationtime</code> - The earliest expected time an outcome will be signed, given in epoch second</li>
-<li><code>start</code> - The first possible outcome number</li>
-<li><code>stop</code> - The last possible outcome number</li>
-<li><code>step</code> - The increment between each outcome</li>
-<li><code>unit</code> - The unit denomination of the outcome value</li>
-<li><code>precision</code> - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.</li>
-</ul></li>
 <li><code>createdigitdecompevent</code> <code>name</code> <code>maturationtime</code> <code>base</code> <code>numdigits</code> <code>unit</code> <code>precision</code> <code>[signed]</code> - Registers an oracle event that uses digit decomposition when signing the number
 <ul>
 <li><code>name</code>- Name for this event</li>
@@ -139,11 +129,6 @@ The native packager offers <a href="https://github.com/sbt/sbt-native-packager#e
 <li><code>event</code> - The event's oracle event tlv</li>
 </ul></li>
 <li><code>signevent</code> <code>event</code> <code>outcome</code> - Signs an event
-<ul>
-<li><code>event</code> - The event's oracle event tlv</li>
-<li><code>outcome</code>- Outcome to sign for this event</li>
-</ul></li>
-<li><code>signforrange</code> <code>event</code> <code>outcome</code> - Signs an event
 <ul>
 <li><code>event</code> - The event's oracle event tlv</li>
 <li><code>outcome</code>- Outcome to sign for this event</li>
