@@ -93,7 +93,7 @@
 
     <!-- Disable slick logging in server -->
     <logger name="slick" level="OFF"/>
-    <logger name="com.zaxxer" level="OFF"/>
+    <logger name="com.zaxxer" level="INFO"/>
 
     <!-- Get rid of messages like this:
     Connection attempt failed. Backing off new connection

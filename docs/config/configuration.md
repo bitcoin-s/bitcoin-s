@@ -280,20 +280,28 @@ bitcoin-s {
             user = "user"
             password = "topsecret"
             numThreads = 5
+            
+            # http://scala-slick.org/doc/3.3.3/database.html
+            connectionPool = "HikariCP"
+            registerMbeans = true
         }
     }
 
     chain.profile = ${bitcoin-s.common.profile}
     chain.db = ${bitcoin-s.common.db}
- 
+    chain.db.poolName = "chain-connection-pool"
+
     node.profile = ${bitcoin-s.common.profile}
     node.db = ${bitcoin-s.common.db}
+    node.db.poolName = "node-connection-pool"
     
     wallet.profile = ${bitcoin-s.common.profile}
     wallet.db = ${bitcoin-s.common.db}
+    wallet.db.poolName = "wallet-connection-pool"
 
     oracle.profile = ${bitcoin-s.common.profile}
     oracle.db = ${bitcoin-s.common.db}
+    oracle.db.poolName = "oracle-connection-pool"
 }
 ```
 
