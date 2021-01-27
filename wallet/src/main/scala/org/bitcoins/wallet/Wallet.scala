@@ -5,7 +5,11 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
-import org.bitcoins.core.api.wallet.{AnyHDWalletApi, CoinSelectionAlgo}
+import org.bitcoins.core.api.wallet.{
+  AnyHDWalletApi,
+  BlockSyncState,
+  CoinSelectionAlgo
+}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -159,6 +163,15 @@ abstract class Wallet
 
   def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
     stateDescriptorDAO.getSyncDescriptorOpt()
+  }
+
+  override def getSyncState(): Future[BlockSyncState] = {
+    getSyncDescriptorOpt().map {
+      case Some(descriptor) =>
+        BlockSyncState(descriptor.height, descriptor.bestHash)
+      case None =>
+        BlockSyncState(0, chainParams.genesisHashBE)
+    }
   }
 
   override def processCompactFilters(
