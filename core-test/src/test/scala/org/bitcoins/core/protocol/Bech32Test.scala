@@ -29,6 +29,15 @@ class Bech32Test extends BitcoinSUnitTest {
     }
   }
 
+  it must "properly read an uppercase bech32 address" in {
+    val addrStr = "bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf"
+    val addrT = Address.fromStringT(addrStr.toUpperCase)
+    addrT match {
+      case Success(addr: Bech32Address) => assert(addr.value == addrStr)
+      case _                            => fail()
+    }
+  }
+
   it must "follow the example in BIP173" in {
     //https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#examples
     val key = ECPublicKey(
