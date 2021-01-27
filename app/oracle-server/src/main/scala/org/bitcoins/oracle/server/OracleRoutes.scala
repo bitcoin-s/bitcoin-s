@@ -19,11 +19,6 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
     extends ServerRoute {
   import system.dispatcher
 
-  def getDescriptor(
-      announcementTLV: OracleAnnouncementTLV): EventDescriptorTLV = {
-    announcementTLV.eventTLV.eventDescriptor
-  }
-
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
     case ServerCommand("getpublickey", _) =>
       complete {
@@ -41,7 +36,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
     case ServerCommand("listevents", _) =>
       complete {
         oracle.listEvents().map { events =>
-          val strs = events.map(_.eventDescriptorTLV.hex)
+          val strs = events.map(_.announcementTLV.hex)
           val json = Arr.from(strs)
 
           Server.httpSuccess(json)
@@ -56,37 +51,8 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
           complete {
             oracle.createNewEnumEvent(label, maturationTime, outcomes).map {
               announcementTLV =>
-                val descriptor = getDescriptor(announcementTLV)
-                Server.httpSuccess(descriptor.hex)
+                Server.httpSuccess(announcementTLV.hex)
             }
-          }
-      }
-
-    case ServerCommand("createrangedevent", arr) =>
-      CreateRangedEvent.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(
-              CreateRangedEvent(eventName,
-                                maturationTime,
-                                start,
-                                stop,
-                                step,
-                                unit,
-                                precision)) =>
-          complete {
-            oracle
-              .createNewRangedEvent(eventName,
-                                    maturationTime,
-                                    start,
-                                    stop,
-                                    step,
-                                    unit,
-                                    precision)
-              .map { announcementTLV =>
-                val descriptor = getDescriptor(announcementTLV)
-                Server.httpSuccess(descriptor.hex)
-              }
           }
       }
 
@@ -112,8 +78,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
                                          unit,
                                          Int32(precision))
               .map { announcementTLV =>
-                val descriptor = getDescriptor(announcementTLV)
-                Server.httpSuccess(descriptor.hex)
+                Server.httpSuccess(announcementTLV.hex)
               }
           }
       }
@@ -122,9 +87,9 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
       GetEvent.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetEvent(descriptor)) =>
+        case Success(GetEvent(announcementTLV)) =>
           complete {
-            oracle.findEvent(descriptor).map {
+            oracle.findEvent(announcementTLV.eventTLV).map {
               case Some(event: OracleEvent) =>
                 val outcomesJson = event.eventDescriptorTLV match {
                   case enum: EnumEventDescriptorV0TLV =>
@@ -193,10 +158,12 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
       SignEvent.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(SignEvent(oracleEventTLV, outcome)) =>
+        case Success(SignEvent(oracleAnnouncementTLV, outcome)) =>
           complete {
-            oracle.signEvent(oracleEventTLV, EnumAttestation(outcome)).map {
-              eventDb =>
+            oracle
+              .signEvent(oracleAnnouncementTLV.eventTLV,
+                         EnumAttestation(outcome))
+              .map { eventDb =>
                 val oracleEvent = OracleEvent.fromEventDbs(Vector(eventDb))
                 oracleEvent match {
                   case _: PendingOracleEvent =>
@@ -204,26 +171,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
                   case event: CompletedOracleEvent =>
                     Server.httpSuccess(event.oracleAttestmentV0TLV.hex)
                 }
-            }
-          }
-      }
-
-    case ServerCommand("signforrange", arr) =>
-      SignForRange.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(SignForRange(oracleEventTLV, num)) =>
-          complete {
-            oracle.signEvent(oracleEventTLV, RangeAttestation(num)).map {
-              eventDb =>
-                val oracleEvent = OracleEvent.fromEventDbs(Vector(eventDb))
-                oracleEvent match {
-                  case _: PendingOracleEvent =>
-                    throw new RuntimeException("Failed to sign event")
-                  case event: CompletedOracleEvent =>
-                    Server.httpSuccess(event.oracleAttestmentV0TLV.hex)
-                }
-            }
+              }
           }
       }
 
@@ -231,9 +179,9 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
       SignDigits.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(SignDigits(oracleEventTLV, num)) =>
+        case Success(SignDigits(announcementTLV, num)) =>
           complete {
-            oracle.signDigits(oracleEventTLV, num).map {
+            oracle.signDigits(announcementTLV.eventTLV, num).map {
               case _: PendingOracleEvent =>
                 throw new RuntimeException("Failed to sign event")
               case event: CompletedOracleEvent =>
@@ -246,9 +194,9 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
       GetEvent.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetEvent(oracleEventTLV)) =>
+        case Success(GetEvent(announcementTLV)) =>
           complete {
-            oracle.findEvent(oracleEventTLV).map {
+            oracle.findEvent(announcementTLV.eventTLV).map {
               case Some(completed: CompletedOracleEvent) =>
                 Server.httpSuccess(completed.signatures.map(_.hex))
               case None | Some(_: PendingOracleEvent) =>
