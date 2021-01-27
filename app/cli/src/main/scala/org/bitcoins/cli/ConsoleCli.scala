@@ -1095,75 +1095,6 @@ object ConsoleCli {
                 case other => other
               }))
         ),
-      cmd("createrangedevent")
-        .action((_, conf) =>
-          conf.copy(command =
-            CreateRangedEvent("", Instant.MIN, 0, 0, 1, "", 0)))
-        .text("Registers an oracle event with a range of outcomes")
-        .children(
-          arg[String]("name")
-            .text("Name for this event")
-            .required()
-            .action((name, conf) =>
-              conf.copy(command = conf.command match {
-                case createRangedEvent: CreateRangedEvent =>
-                  createRangedEvent.copy(eventName = name)
-                case other => other
-              })),
-          arg[Instant]("maturationtime")
-            .text("The earliest expected time an outcome will be signed, given in epoch second")
-            .required()
-            .action((time, conf) =>
-              conf.copy(command = conf.command match {
-                case createRangedEvent: CreateRangedEvent =>
-                  createRangedEvent.copy(maturationTime = time)
-                case other => other
-              })),
-          arg[Int]("start")
-            .text("The first possible outcome number")
-            .required()
-            .action((start, conf) =>
-              conf.copy(command = conf.command match {
-                case createRangedEvent: CreateRangedEvent =>
-                  createRangedEvent.copy(start = start)
-                case other => other
-              })),
-          arg[Int]("stop")
-            .text("The last possible outcome number")
-            .required()
-            .action((stop, conf) =>
-              conf.copy(command = conf.command match {
-                case createRangedEvent: CreateRangedEvent =>
-                  createRangedEvent.copy(stop = stop)
-                case other => other
-              })),
-          arg[Int]("step")
-            .text("The increment between each outcome")
-            .action((step, conf) =>
-              conf.copy(command = conf.command match {
-                case createRangedEvent: CreateRangedEvent =>
-                  createRangedEvent.copy(step = step)
-                case other => other
-              })),
-          arg[String]("unit")
-            .text("The unit denomination of the outcome value")
-            .action((unit, conf) =>
-              conf.copy(command = conf.command match {
-                case createRangedEvent: CreateRangedEvent =>
-                  createRangedEvent.copy(unit = unit)
-                case other => other
-              })),
-          arg[Int]("precision")
-            .text("The precision of the outcome representing the " +
-              "base exponent by which to multiply the number represented by " +
-              "the composition of the digits to obtain the actual outcome value.")
-            .action((precision, conf) =>
-              conf.copy(command = conf.command match {
-                case createRangedEvent: CreateRangedEvent =>
-                  createRangedEvent.copy(precision = precision)
-                case other => other
-              }))
-        ),
       cmd("createdigitdecompevent")
         .action((_, conf) =>
           conf.copy(command = CreateDigitDecompEvent("",
@@ -1241,13 +1172,13 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetEvent(null)))
         .text("Get an event's details")
         .children(
-          arg[OracleEventV0TLV]("event")
+          arg[OracleAnnouncementTLV]("event")
             .text("The event's oracle event tlv")
             .required()
             .action((oracleEvent, conf) =>
               conf.copy(command = conf.command match {
                 case getEvent: GetEvent =>
-                  getEvent.copy(oracleEventV0TLV = oracleEvent)
+                  getEvent.copy(announcementTLV = oracleEvent)
                 case other => other
               }))
         ),
@@ -1255,13 +1186,13 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = SignEvent(null, "")))
         .text("Signs an event")
         .children(
-          arg[OracleEventV0TLV]("event")
+          arg[OracleAnnouncementTLV]("event")
             .text("The event's oracle event tlv")
             .required()
             .action((event, conf) =>
               conf.copy(command = conf.command match {
                 case signEvent: SignEvent =>
-                  signEvent.copy(oracleEventV0TLV = event)
+                  signEvent.copy(announcementTLV = event)
                 case other => other
               })),
           arg[String]("outcome")
@@ -1274,40 +1205,17 @@ object ConsoleCli {
                 case other => other
               }))
         ),
-      cmd("signforrange")
-        .action((_, conf) => conf.copy(command = SignForRange(null, 0)))
-        .text("Signs a ranged event")
-        .children(
-          arg[OracleEventV0TLV]("event")
-            .text("The event's oracle event tlv")
-            .required()
-            .action((event, conf) =>
-              conf.copy(command = conf.command match {
-                case signRange: SignForRange =>
-                  signRange.copy(oracleEventV0TLV = event)
-                case other => other
-              })),
-          arg[Long]("outcome")
-            .text("Number to sign for this event")
-            .required()
-            .action((num, conf) =>
-              conf.copy(command = conf.command match {
-                case signRange: SignForRange =>
-                  signRange.copy(num = num)
-                case other => other
-              }))
-        ),
       cmd("signdigits")
         .action((_, conf) => conf.copy(command = SignDigits(null, 0)))
         .text("Signs a large range event")
         .children(
-          arg[OracleEventV0TLV]("event")
+          arg[OracleAnnouncementTLV]("event")
             .text("The event's oracle event tlv")
             .required()
             .action((event, conf) =>
               conf.copy(command = conf.command match {
                 case signDigits: SignDigits =>
-                  signDigits.copy(oracleEventV0TLV = event)
+                  signDigits.copy(announcementTLV = event)
                 case other => other
               })),
           arg[Long]("outcome")
@@ -1324,13 +1232,13 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetSignatures(null)))
         .text("Get the signatures from a signed event")
         .children(
-          arg[OracleEventV0TLV]("event")
+          arg[OracleAnnouncementTLV]("event")
             .text("The event descriptor associated with the event to sign")
             .required()
             .action((event, conf) =>
               conf.copy(command = conf.command match {
                 case getSignature: GetSignatures =>
-                  getSignature.copy(oracleEventV0TLV = event)
+                  getSignature.copy(announcementTLV = event)
                 case other => other
               }))
         ),
@@ -1606,24 +1514,6 @@ object ConsoleCli {
         RequestParam(
           "createevent",
           Seq(up.writeJs(label), up.writeJs(time), up.writeJs(outcomes)))
-      case CreateRangedEvent(eventName,
-                             time,
-                             start,
-                             stop,
-                             step,
-                             unit,
-                             precision) =>
-        RequestParam(
-          "createrangedevent",
-          Seq(up.writeJs(eventName),
-              up.writeJs(time),
-              up.writeJs(start),
-              up.writeJs(stop),
-              up.writeJs(step),
-              up.writeJs(unit),
-              up.writeJs(precision))
-        )
-
       case CreateDigitDecompEvent(eventName,
                                   time,
                                   base,
@@ -1643,8 +1533,6 @@ object ConsoleCli {
         )
       case SignEvent(tlv, outcome) =>
         RequestParam("signevent", Seq(up.writeJs(tlv), up.writeJs(outcome)))
-      case SignForRange(tlv, num) =>
-        RequestParam("signforrange", Seq(up.writeJs(tlv), up.writeJs(num)))
       case SignDigits(tlv, num) =>
         RequestParam("signlargenumber", Seq(up.writeJs(tlv), up.writeJs(num)))
       case GetSignatures(tlv) =>
@@ -1943,22 +1831,12 @@ object CliCommand {
   case object GetStakingAddress extends CliCommand
   case object ListEvents extends CliCommand
 
-  case class GetEvent(oracleEventV0TLV: OracleEventV0TLV) extends CliCommand
+  case class GetEvent(announcementTLV: OracleAnnouncementTLV) extends CliCommand
 
   case class CreateEvent(
       label: String,
       maturationTime: Instant,
       outcomes: Seq[String])
-      extends CliCommand
-
-  case class CreateRangedEvent(
-      eventName: String,
-      maturationTime: Instant,
-      start: Int,
-      stop: Int,
-      step: Int,
-      unit: String,
-      precision: Int)
       extends CliCommand
 
   case class CreateDigitDecompEvent(
@@ -1971,16 +1849,13 @@ object CliCommand {
       precision: Int)
       extends CliCommand
 
-  case class SignEvent(oracleEventV0TLV: OracleEventV0TLV, outcome: String)
+  case class SignEvent(announcementTLV: OracleAnnouncementTLV, outcome: String)
       extends CliCommand
 
-  case class SignForRange(oracleEventV0TLV: OracleEventV0TLV, num: Long)
+  case class SignDigits(announcementTLV: OracleAnnouncementTLV, num: Long)
       extends CliCommand
 
-  case class SignDigits(oracleEventV0TLV: OracleEventV0TLV, num: Long)
-      extends CliCommand
-
-  case class GetSignatures(oracleEventV0TLV: OracleEventV0TLV)
+  case class GetSignatures(announcementTLV: OracleAnnouncementTLV)
       extends CliCommand
 
   case class CreateMultisig(

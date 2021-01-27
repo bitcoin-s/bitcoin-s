@@ -41,50 +41,6 @@ object CreateEvent extends ServerJsonModels {
   }
 }
 
-case class CreateRangedEvent(
-    eventName: String,
-    maturationTime: Instant,
-    start: Int,
-    stop: Int,
-    step: Int,
-    unit: String,
-    precision: Int)
-
-object CreateRangedEvent extends ServerJsonModels {
-
-  def fromJsArr(jsArr: ujson.Arr): Try[CreateRangedEvent] = {
-    jsArr.arr.toList match {
-      case labelJs :: maturationTimeJs :: startJs :: stopJs :: stepJs :: unitJs :: precisionJs :: Nil =>
-        Try {
-          val label = labelJs.str
-          val maturationTime: Instant =
-            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
-          val start = startJs.num.toInt
-          val stop = stopJs.num.toInt
-          val step = stepJs.num.toInt
-          val unit = unitJs.str
-          val precision = precisionJs.num.toInt
-
-          CreateRangedEvent(label,
-                            maturationTime,
-                            start,
-                            stop,
-                            step,
-                            unit,
-                            precision)
-        }
-      case Nil =>
-        Failure(
-          new IllegalArgumentException(
-            "Missing label, maturationTime, start, stop, and step arguments"))
-      case other =>
-        Failure(
-          new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 5"))
-    }
-  }
-}
-
 case class CreateDigitDecompEvent(
     eventName: String,
     maturationTime: Instant,
@@ -128,7 +84,9 @@ object CreateDigitDecompEvent extends ServerJsonModels {
   }
 }
 
-case class SignEvent(oracleEventTLV: OracleEventV0TLV, outcome: String)
+case class SignEvent(
+    oracleAnnouncementTLV: OracleAnnouncementTLV,
+    outcome: String)
 
 object SignEvent extends ServerJsonModels {
 
@@ -136,10 +94,10 @@ object SignEvent extends ServerJsonModels {
     jsArr.arr.toList match {
       case tlvJs :: outcomeJs :: Nil =>
         Try {
-          val oracleEventTLV = OracleEventV0TLV(tlvJs.str)
+          val oracleAnnouncementTLV = OracleAnnouncementTLV(tlvJs.str)
           val outcome = outcomeJs.str
 
-          SignEvent(oracleEventTLV, outcome)
+          SignEvent(oracleAnnouncementTLV, outcome)
         }
       case Nil =>
         Failure(
@@ -153,38 +111,7 @@ object SignEvent extends ServerJsonModels {
   }
 }
 
-case class SignForRange(oracleEventTLV: OracleEventV0TLV, num: Long)
-
-object SignForRange extends ServerJsonModels {
-
-  def fromJsArr(jsArr: ujson.Arr): Try[SignForRange] = {
-    jsArr.arr.toList match {
-      case tlvJs :: numJs :: Nil =>
-        Try {
-          val oracleEventTLV = OracleEventV0TLV(tlvJs.str)
-          val num = numJs match {
-            case num: Num => num.value
-            case str: Str => str.value.toDouble
-            case _: Value =>
-              throw new IllegalArgumentException(
-                s"Unable to parse $numJs as a number")
-          }
-
-          SignForRange(oracleEventTLV, num.toLong)
-        }
-      case Nil =>
-        Failure(
-          new IllegalArgumentException(
-            "Missing oracle event tlv and num arguments"))
-      case other =>
-        Failure(
-          new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
-    }
-  }
-}
-
-case class SignDigits(oracleEventTLV: OracleEventV0TLV, num: Long)
+case class SignDigits(oracleAnnouncementTLV: OracleAnnouncementTLV, num: Long)
 
 object SignDigits extends ServerJsonModels {
 
@@ -192,7 +119,7 @@ object SignDigits extends ServerJsonModels {
     jsArr.arr.toList match {
       case tlvJs :: numJs :: Nil =>
         Try {
-          val oracleEventTLV = OracleEventV0TLV(tlvJs.str)
+          val oracleAnnouncementTLV = OracleAnnouncementTLV(tlvJs.str)
           val num = numJs match {
             case num: Num => num.value
             case str: Str => str.value.toDouble
@@ -201,7 +128,7 @@ object SignDigits extends ServerJsonModels {
                 s"Unable to parse $numJs as a number")
           }
 
-          SignDigits(oracleEventTLV, num.toLong)
+          SignDigits(oracleAnnouncementTLV, num.toLong)
         }
       case Nil =>
         Failure(
@@ -215,7 +142,7 @@ object SignDigits extends ServerJsonModels {
   }
 }
 
-case class GetEvent(oracleEventTLV: OracleEventV0TLV)
+case class GetEvent(announcementTLV: OracleAnnouncementTLV)
 
 object GetEvent extends ServerJsonModels {
 
@@ -223,9 +150,9 @@ object GetEvent extends ServerJsonModels {
     require(jsArr.arr.size == 1,
             s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
     Try {
-      val oracleEventTLV = OracleEventV0TLV(jsArr.arr.head.str)
+      val oracleAnnouncementTLV = OracleAnnouncementTLV(jsArr.arr.head.str)
 
-      GetEvent(oracleEventTLV)
+      GetEvent(oracleAnnouncementTLV)
     }
   }
 }
