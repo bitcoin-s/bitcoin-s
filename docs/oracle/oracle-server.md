@@ -173,61 +173,6 @@ $ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getsignatu
 {"result":["0374d9df0a4591e7a9ab16b091df6709220594771b7c0d5c2be6a11c4c452ef8a65977263a6b6071c29232a516adb0e69e8e049772275dc9fa8d9cfa620960dd"],"error":null}
 ```
 
-#### Create Ranged Event Example
-
-Bitcoin-S CLI:
-```bash
-$ bitcoin-s-cli createrangedevent tomorrowTemperature 1701917137 0 100 1 "degrees F" 0
-fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001
-
-$ bitcoin-s-cli getevent fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001
-{
-  "nonces": [
-    "5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d0"
-  ],
-  "eventName": "tomorrowTemperature",
-  "signingVersion": "Mock",
-  "maturationTime": "2023-12-07T02:45:37Z",
-  "announcementSignature": "33861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7",
-  "eventDescriptorTLV": "fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001",
-  "eventTLV": "fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265",
-  "announcementTLV": "fdd824a933861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265",
-  "attestations": null,
-  "signatures": null,
-  "outcomes": [
-    0,
-    1,
-    2,
-  ...
-    98,
-    99,
-    100
-  ]
-}
-
-$ bitcoin-s-cli signforrange fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001 50
-abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b
-
-$ bitcoin-s-cli getsignatures fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001
-[
-  "abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b"
-]
-```
-CURL:
-```bash
-$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "createrangedevent", "params": ["tomorrowsTemperature", 1701917137, 0, 100, 1, "degrees C", 0]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
-{"result":"fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001","error":null}
-
-$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getevent", "params": ["fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
-{"result":{"nonces":["5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d0"],"eventName":"tomorrowTemperature","signingVersion":"Mock","maturationTime":"2023-12-07T02:45:37Z","announcementSignature":"33861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7","eventDescriptorTLV":"fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001","eventTLV":"fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265","announcementTLV":"fdd824a933861a85d7ac7fc3f7b0dcaa891f9deebd2758f72d734a63dcab14f2a9d7f30d6099805367ac05bc747c1232b7211f8bd025478ef2b03418603cf5f52e2466c7fdd82265f8d695520151bc9fbd129be6231f46b0e137b26d8ff91910c0cb6d07f6924968657131d1fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001746f6d6f72726f7754656d7065726174757265","attestations":null,"signatures":null,"outcomes":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99]},"error":null}
-
-$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "signforrange", "params": ["fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001", 50]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
-{"result":"abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b","error":null}
-
-$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getsignatures", "params": ["fdd8082a5858702d9395c60739e16c29e20ada0a49e4baa499f69fbc6b65a88fa9f3a7d000000000000000640001"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
-{"result":["abb84920cb647b1dc2bbbc6b1584af8d0a1a737fe0765d7414ebffcfd9c7057da391ea18b22f695bf8a34caa5a12acbdc917aea95990dbbf9568ca65676e6b7b"],"error":null}
-```
-
 ### Digit Decomposition Example
 
 Bitcoin-S CLI:
