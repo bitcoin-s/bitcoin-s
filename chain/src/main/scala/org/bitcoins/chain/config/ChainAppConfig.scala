@@ -91,10 +91,16 @@ case class ChainAppConfig(
           }
         }
       }
+      _ = startHikariLogger()
     } yield {
       logger.info(s"Applied ${numMigrations} to chain project")
     }
 
+  }
+
+  override def stop(): Future[Unit] = {
+    val _ = stopHikariLogger()
+    FutureUtil.unit
   }
 
   lazy val filterHeaderBatchSize: Int = {

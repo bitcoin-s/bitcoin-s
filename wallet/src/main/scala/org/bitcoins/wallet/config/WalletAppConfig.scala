@@ -5,7 +5,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
-import org.bitcoins.core.util.Mutable
+import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
   KeyManagerParams
@@ -153,9 +153,14 @@ case class WalletAppConfig(
       val numMigrations = {
         migrate()
       }
-
+      val _ = startHikariLogger()
       logger.info(s"Applied $numMigrations to the wallet project")
     }
+  }
+
+  override def stop(): Future[Unit] = {
+    val _ = stopHikariLogger()
+    FutureUtil.unit
   }
 
   /** The path to our encrypted mnemonic seed */

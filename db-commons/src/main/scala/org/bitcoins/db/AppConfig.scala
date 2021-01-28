@@ -107,7 +107,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
   /**
     * Name of the module. `chain`, `wallet`, `node` etc.
     */
-  protected[bitcoins] def moduleName: String
+  private[bitcoins] def moduleName: String
 
   /** Chain parameters for the blockchain we're on */
   lazy val chain: BitcoinChainParams = {

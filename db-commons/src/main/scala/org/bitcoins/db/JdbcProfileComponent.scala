@@ -29,4 +29,31 @@ trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends BitcoinSLogger {
   lazy val database: Database = {
     dbConfig.db
   }
+
+  private[this] var hikariLoggerOpt: Option[HikariLogging] = None
+
+  /** Starts the background logger for hikari */
+  protected def startHikariLogger(): HikariLogging = {
+    hikariLoggerOpt match {
+      case Some(hikarkiLogger) => hikarkiLogger
+      case None                =>
+        //this is needed to get the 'AsyncExecutor' bean below to register properly
+        //dbConfig.database.ioExecutionContext
+        val _ = database.ioExecutionContext
+        //start a new one
+        HikariLogging.fromJdbcProfileComponent(this) match {
+          case Some(hikariLogger) =>
+            hikariLoggerOpt = Some(hikariLogger)
+            hikariLogger
+          case None =>
+            sys.error(s"Could not started hikari logging")
+        }
+    }
+
+  }
+
+  protected def stopHikariLogger(): Unit = {
+    hikariLoggerOpt.foreach(_.stop())
+    ()
+  }
 }
