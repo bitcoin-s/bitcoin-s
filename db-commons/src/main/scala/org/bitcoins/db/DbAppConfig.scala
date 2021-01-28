@@ -7,7 +7,9 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import java.nio.file.{Path, Paths}
+import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success, Try}
 
 abstract class DbAppConfig extends AppConfig {
@@ -119,5 +121,36 @@ abstract class DbAppConfig extends AppConfig {
         logger.error(s"Configuration: ${usedConf.asReadableJson}")
         throw exception
     }
+  }
+
+  lazy val isHikariLoggingEnabled: Boolean = {
+    val hikariLoggingOpt =
+      config.getBooleanOpt(s"bitcoin-s.$moduleName.hikari-logging")
+    hikariLoggingOpt match {
+      case Some(bool) => bool
+      case None       =>
+        //default hikari logging off
+        false
+    }
+  }
+
+  /** Gets how often we should log hikari connection pool stats
+    * if None, this means [[isHikariLoggingEnabled]] is not enabled
+    */
+  lazy val hikariLoggingInterval: Option[Duration] = {
+    if (isHikariLoggingEnabled) {
+      val intervalOpt =
+        config.getDurationOpt(s"bitcoin-s.$moduleName.hikari-logging-interval")
+      val interval = intervalOpt match {
+        case Some(interval) => interval
+        case None           =>
+          //default to 1 minute if nothing is set
+          new FiniteDuration(1, TimeUnit.MINUTES)
+      }
+      Some(interval)
+    } else {
+      None
+    }
+
   }
 }

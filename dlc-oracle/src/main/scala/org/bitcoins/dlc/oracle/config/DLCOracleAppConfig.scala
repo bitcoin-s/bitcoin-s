@@ -62,29 +62,41 @@ case class DLCOracleAppConfig(
       logger.info(s"Applied $numMigrations to the dlc oracle project")
 
       val migrations = migrationsApplied()
-      if (migrations == 2 || migrations == 3) { // For V2/V3 migrations
-        logger.debug(s"Doing V2/V3 Migration")
+      val migrationWorkAroundF =
+        if (migrations == 2 || migrations == 3) { // For V2/V3 migrations
+          logger.debug(s"Doing V2/V3 Migration")
 
-        val dummyMigrationTLV = EnumEventDescriptorV0TLV.dummy
+          val dummyMigrationTLV = EnumEventDescriptorV0TLV.dummy
 
-        val eventDAO = EventDAO()(ec, appConfig)
-        for {
-          // get all old events
-          allEvents <- eventDAO.findByEventDescriptor(dummyMigrationTLV)
-          allOutcomes <- EventOutcomeDAO()(ec, appConfig).findAll()
+          val eventDAO = EventDAO()(ec, appConfig)
+          for {
+            // get all old events
+            allEvents <- eventDAO.findByEventDescriptor(dummyMigrationTLV)
+            allOutcomes <- EventOutcomeDAO()(ec, appConfig).findAll()
 
-          outcomesByNonce = allOutcomes.groupBy(_.nonce)
-          // Update them to have the correct event descriptor
-          updated = allEvents.map { eventDb =>
-            val outcomeDbs = outcomesByNonce(eventDb.nonce)
-            val descriptor =
-              EventOutcomeDbHelper.createEnumEventDescriptor(outcomeDbs)
-            eventDb.copy(eventDescriptorTLV = descriptor)
-          }
+            outcomesByNonce = allOutcomes.groupBy(_.nonce)
+            // Update them to have the correct event descriptor
+            updated = allEvents.map { eventDb =>
+              val outcomeDbs = outcomesByNonce(eventDb.nonce)
+              val descriptor =
+                EventOutcomeDbHelper.createEnumEventDescriptor(outcomeDbs)
+              eventDb.copy(eventDescriptorTLV = descriptor)
+            }
 
-          _ <- eventDAO.upsertAll(updated)
-        } yield ()
-      } else FutureUtil.unit
+            _ <- eventDAO.upsertAll(updated)
+
+          } yield ()
+        } else FutureUtil.unit
+
+      migrationWorkAroundF.map { _ =>
+        if (isHikariLoggingEnabled) {
+          //.get is safe because hikari logging is enabled
+          startHikariLogger(hikariLoggingInterval.get)
+          ()
+        } else {
+          ()
+        }
+      }
     }
   }
 

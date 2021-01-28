@@ -2,6 +2,9 @@ package org.bitcoins
 
 import com.typesafe.config.{Config, ConfigRenderOptions}
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.{Duration, FiniteDuration}
+
 package object db {
 
   implicit class ConfigOps(private val config: Config) extends AnyVal {
@@ -50,6 +53,20 @@ package object db {
       } else {
         None
       }
+    }
+
+    def getBooleanOpt(key: String): Option[Boolean] = {
+      if (config.hasPath(key)) Some(config.getBoolean(key))
+      else None
+    }
+
+    def getDurationOpt(key: String): Option[Duration] = {
+      if (config.hasPath(key)) {
+        val javaDuration = config.getDuration(key)
+        val scalaDuration =
+          new FiniteDuration(javaDuration.toNanos, TimeUnit.NANOSECONDS)
+        Some(scalaDuration)
+      } else None
     }
   }
 }

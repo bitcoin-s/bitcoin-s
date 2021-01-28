@@ -4,7 +4,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.util.Mutable
+import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.db.{AppConfigFactory, DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
@@ -53,9 +53,20 @@ case class NodeAppConfig(
     } yield {
       logger.debug(s"Initializing node setup")
       val numMigrations = migrate()
-
+      val _ = if (isHikariLoggingEnabled) {
+        //.get is safe because hikari logging is enabled
+        startHikariLogger(hikariLoggingInterval.get)
+        ()
+      } else {
+        ()
+      }
       logger.info(s"Applied $numMigrations migrations fro the node project")
     }
+  }
+
+  override def stop(): Future[Unit] = {
+    val _ = stopHikariLogger()
+    FutureUtil.unit
   }
 
   lazy val nodeType: NodeType =

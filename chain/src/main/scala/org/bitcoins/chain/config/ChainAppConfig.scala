@@ -92,9 +92,21 @@ case class ChainAppConfig(
         }
       }
     } yield {
+      if (isHikariLoggingEnabled) {
+        //.get is safe because hikari logging is enabled
+        startHikariLogger(hikariLoggingInterval.get)
+        ()
+      }
+
       logger.info(s"Applied ${numMigrations} to chain project")
+      ()
     }
 
+  }
+
+  override def stop(): Future[Unit] = {
+    val _ = stopHikariLogger()
+    FutureUtil.unit
   }
 
   lazy val filterHeaderBatchSize: Int = {
