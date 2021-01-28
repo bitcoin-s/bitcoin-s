@@ -37,7 +37,9 @@ Alternatively, you can retrieve this information with `bitcoin-s-cli`
       "rootXpub": "..."
     },
     "xpub": "...",
-    "hdPath": "m/84'/0'/0'"
+    "hdPath": "...",
+    "height": 1906239,
+    "blockHash": "00000000dcf1066b8cd764a6104a9b5e95a55cd31adf9107974b2581ac90fdb9"
   }
 }
 ```
