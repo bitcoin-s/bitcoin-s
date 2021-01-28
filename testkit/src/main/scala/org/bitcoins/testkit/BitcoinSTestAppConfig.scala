@@ -21,7 +21,7 @@ object BitcoinSTestAppConfig {
       Some(StringGenerators.genNonEmptyString.sampleSome)
     } else None
 
-    val walletNameConfig: Config = walletNameOpt match {
+    walletNameOpt match {
       case Some(walletName) =>
         ConfigFactory.parseString(
           s"bitcoin-s.wallet.walletName = $walletName"
@@ -29,11 +29,6 @@ object BitcoinSTestAppConfig {
 
       case None => ConfigFactory.empty()
     }
-
-    val boilerplateConfig = configWithEmbeddedDb(project =
-                                                   Some(ProjectType.Wallet),
-                                                 pgUrl = () => None)
-    walletNameConfig.withFallback(boilerplateConfig)
   }
 
   /**

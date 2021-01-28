@@ -91,17 +91,15 @@ case class ChainAppConfig(
           }
         }
       }
-      _ = {
-        if (isHikariLoggingEnabled) {
-          //.get is safe because hikari logging is enabled
-          startHikariLogger(hikariLoggingInterval.get)
-          ()
-        } else {
-          ()
-        }
-      }
     } yield {
+      if (isHikariLoggingEnabled) {
+        //.get is safe because hikari logging is enabled
+        startHikariLogger(hikariLoggingInterval.get)
+        ()
+      }
+
       logger.info(s"Applied ${numMigrations} to chain project")
+      ()
     }
 
   }

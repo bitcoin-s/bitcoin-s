@@ -98,7 +98,7 @@ class AppConfigTest extends BitcoinSAsyncTest {
     ConfigFactory.invalidateCaches()
 
     val walletAppConfig =
-      WalletAppConfig(datadir, BitcoinSTestAppConfig.genWalletNameConf)
+      WalletAppConfig(datadir)
     val assertF = for {
       _ <- walletAppConfig.start()
     } yield {
