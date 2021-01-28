@@ -98,7 +98,31 @@ to ensure the entire module is initialized correctly.
 bitcoin-s {
     datadir = ${HOME}/.bitcoin-s
     network = regtest # regtest, testnet3, mainnet, signet
-
+    dbDefault = {
+      dataSourceClass = slick.jdbc.DatabaseUrlDataSource
+      profile = "slick.jdbc.SQLiteProfile$"
+  
+      db {
+        # for information on parameters available here see
+        # https://scala-slick.org/doc/3.3.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database
+        path = ${bitcoin-s.datadir}/${bitcoin-s.network}/
+        driver = org.sqlite.JDBC
+        user = ""
+        password = ""
+        host = localhost
+        port = 5432
+  
+        # this needs to be set to 1 for SQLITE as it does not support concurrent database operations
+        # see: https://github.com/bitcoin-s/bitcoin-s/pull/1840
+        numThreads = 1
+        queueSize=5000
+        connectionPool = "HikariCP"
+        registerMbeans = true
+      }
+      hikari-logging = false
+      hikari-logging-interval = 1 minute
+    }
+    
     bitcoind-rpc {
         # bitcoind rpc username
         rpcuser = user
@@ -128,6 +152,9 @@ bitcoin-s {
         # (e.g. "neutrino.testnet3.suredbits.com:18333")
         # Port number is optional, the default value is 8333 for mainnet,
         # 18333 for testnet and 18444 for regtest.
+        
+        hikari-logging = true
+        hikari-logging-interval = 1 minute
     }
 
     chain {
@@ -143,6 +170,9 @@ bitcoin-s {
 
             filter-batch-size = 100
         }
+        
+        hikari-logging = true
+        hikari-logging-interval = 1 minute
     }
 
     # settings for wallet module
@@ -171,6 +201,9 @@ bitcoin-s {
         # How long we attempt to generate an address for
         # before we timeout
         addressQueueTimeout = 5 seconds
+        
+        hikari-logging = true
+        hikari-logging-interval = 1 minute
    }
 
     keymanager {
@@ -280,20 +313,28 @@ bitcoin-s {
             user = "user"
             password = "topsecret"
             numThreads = 5
+            
+            # http://scala-slick.org/doc/3.3.3/database.html
+            connectionPool = "HikariCP"
+            registerMbeans = true
         }
     }
 
     chain.profile = ${bitcoin-s.common.profile}
     chain.db = ${bitcoin-s.common.db}
- 
+    chain.db.poolName = "chain-connection-pool"
+
     node.profile = ${bitcoin-s.common.profile}
     node.db = ${bitcoin-s.common.db}
+    node.db.poolName = "node-connection-pool"
     
     wallet.profile = ${bitcoin-s.common.profile}
     wallet.db = ${bitcoin-s.common.db}
+    wallet.db.poolName = "wallet-connection-pool"
 
     oracle.profile = ${bitcoin-s.common.profile}
     oracle.db = ${bitcoin-s.common.db}
+    oracle.db.poolName = "oracle-connection-pool"
 }
 ```
 
