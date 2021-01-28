@@ -291,7 +291,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
       Vector(1, 1, 0) -> func(110)
     )
 
-    val expected =
+    val expected = {
       firstZeroRange ++
         firstFuncRange ++
         firstConstRange ++
@@ -300,6 +300,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
         thirdFuncRange ++
         firstTotalRange ++
         fourthFuncRange
+    }.map(o => CETOutcome(o._1, o._2))
 
     val cetOutcomes =
       CETCalculator.computeCETs(base = 10,
