@@ -153,13 +153,19 @@ case class WalletAppConfig(
       val numMigrations = {
         migrate()
       }
-      val _ = startHikariLogger()
+
+      if (isHikariLoggingEnabled) {
+        //.get is safe because hikari logging is enabled
+        startHikariLogger(hikariLoggingInterval.get)
+      }
       logger.info(s"Applied $numMigrations to the wallet project")
     }
   }
 
   override def stop(): Future[Unit] = {
-    val _ = stopHikariLogger()
+    if (isHikariLoggingEnabled) {
+      val _ = stopHikariLogger()
+    }
     FutureUtil.unit
   }
 

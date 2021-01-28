@@ -128,6 +128,9 @@ bitcoin-s {
         # (e.g. "neutrino.testnet3.suredbits.com:18333")
         # Port number is optional, the default value is 8333 for mainnet,
         # 18333 for testnet and 18444 for regtest.
+        
+        hikari-logging = true
+        hikari-logging-interval = 1 minute
     }
 
     chain {
@@ -143,6 +146,9 @@ bitcoin-s {
 
             filter-batch-size = 100
         }
+        
+        hikari-logging = true
+        hikari-logging-interval = 1 minute
     }
 
     # settings for wallet module
@@ -171,6 +177,9 @@ bitcoin-s {
         # How long we attempt to generate an address for
         # before we timeout
         addressQueueTimeout = 5 seconds
+        
+        hikari-logging = true
+        hikari-logging-interval = 1 minute
    }
 
     keymanager {

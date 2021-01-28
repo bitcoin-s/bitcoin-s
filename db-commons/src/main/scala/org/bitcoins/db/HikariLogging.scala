@@ -14,7 +14,8 @@ import scala.concurrent.duration._
 
 case class HikariLogging(
     hikariDataSource: HikariDataSource,
-    moduleName: String
+    moduleName: String,
+    interval: Duration
 ) extends BitcoinSLogger
     with StartStop[HikariLogging] {
 
@@ -169,8 +170,6 @@ case class HikariLogging(
     logger.info(activityUpdate)
   }
 
-  private val interval = 30.seconds
-
   private[this] var started: Boolean = false
   private[this] var cancelOpt: Option[ScheduledFuture[_]] = None
 
@@ -215,14 +214,18 @@ case class HikariLogging(
 object HikariLogging extends BitcoinSLogger {
   private[db] val scheduler = Executors.newScheduledThreadPool(1)
 
-  /** Returns a started hikari logger if configuration is correct, else None */
+  /** Returns a started hikari logger if configuration is correct, else None
+    * @param jdbcProfileComponent the database component we are logging for
+    * @param interval how often the hikari logs should be output
+    */
   def fromJdbcProfileComponent[T <: DbAppConfig](
-      jdbcProfileComponent: JdbcProfileComponent[T]): Option[HikariLogging] = {
+      jdbcProfileComponent: JdbcProfileComponent[T],
+      interval: Duration): Option[HikariLogging] = {
     val dataSource = jdbcProfileComponent.database.source
     val moduleName = jdbcProfileComponent.appConfig.moduleName
     dataSource match {
       case hikariSource: HikariCPJdbcDataSource =>
-        val started = HikariLogging(hikariSource.ds, moduleName)
+        val started = HikariLogging(hikariSource.ds, moduleName, interval)
           .start()
         Some(started)
       case _: JdbcDataSource =>

@@ -53,7 +53,13 @@ case class NodeAppConfig(
     } yield {
       logger.debug(s"Initializing node setup")
       val numMigrations = migrate()
-      val _ = startHikariLogger()
+      val _ = if (isHikariLoggingEnabled) {
+        //.get is safe because hikari logging is enabled
+        startHikariLogger(hikariLoggingInterval.get)
+        ()
+      } else {
+        ()
+      }
       logger.info(s"Applied $numMigrations migrations fro the node project")
     }
   }

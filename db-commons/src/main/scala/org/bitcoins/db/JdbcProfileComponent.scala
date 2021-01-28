@@ -4,6 +4,8 @@ import org.bitcoins.core.util.BitcoinSLogger
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
+import scala.concurrent.duration.Duration
+
 trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends BitcoinSLogger {
 
   def appConfig: ConfigType
@@ -32,8 +34,10 @@ trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends BitcoinSLogger {
 
   private[this] var hikariLoggerOpt: Option[HikariLogging] = None
 
-  /** Starts the background logger for hikari */
-  protected def startHikariLogger(): HikariLogging = {
+  /** Starts the background logger for hikari
+    * @param interval - how often hikari logs database connection pool information
+    */
+  protected def startHikariLogger(interval: Duration): HikariLogging = {
     hikariLoggerOpt match {
       case Some(hikarkiLogger) => hikarkiLogger
       case None                =>
@@ -41,7 +45,7 @@ trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends BitcoinSLogger {
         //dbConfig.database.ioExecutionContext
         val _ = database.ioExecutionContext
         //start a new one
-        HikariLogging.fromJdbcProfileComponent(this) match {
+        HikariLogging.fromJdbcProfileComponent(this, interval) match {
           case Some(hikariLogger) =>
             hikariLoggerOpt = Some(hikariLogger)
             hikariLogger
