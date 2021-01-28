@@ -98,7 +98,31 @@ to ensure the entire module is initialized correctly.
 bitcoin-s {
     datadir = ${HOME}/.bitcoin-s
     network = regtest # regtest, testnet3, mainnet, signet
-
+    dbDefault = {
+      dataSourceClass = slick.jdbc.DatabaseUrlDataSource
+      profile = "slick.jdbc.SQLiteProfile$"
+  
+      db {
+        # for information on parameters available here see
+        # https://scala-slick.org/doc/3.3.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database
+        path = ${bitcoin-s.datadir}/${bitcoin-s.network}/
+        driver = org.sqlite.JDBC
+        user = ""
+        password = ""
+        host = localhost
+        port = 5432
+  
+        # this needs to be set to 1 for SQLITE as it does not support concurrent database operations
+        # see: https://github.com/bitcoin-s/bitcoin-s/pull/1840
+        numThreads = 1
+        queueSize=5000
+        connectionPool = "HikariCP"
+        registerMbeans = true
+      }
+      hikari-logging = false
+      hikari-logging-interval = 1 minute
+    }
+    
     bitcoind-rpc {
         # bitcoind rpc username
         rpcuser = user

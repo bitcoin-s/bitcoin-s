@@ -230,7 +230,7 @@ object HikariLogging extends BitcoinSLogger {
         Some(started)
       case _: JdbcDataSource =>
         val err = {
-          s"JdbcProfile Component is not a Hikari source=${jdbcProfileComponent}"
+          s"JdbcProfile Component is not a Hikari source=${jdbcProfileComponent.dbConfig.profile}"
         }
         logger.error(err)
         None

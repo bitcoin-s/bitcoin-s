@@ -50,7 +50,7 @@ trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends BitcoinSLogger {
             hikariLoggerOpt = Some(hikariLogger)
             hikariLogger
           case None =>
-            sys.error(s"Could not started hikari logging")
+            sys.error(s"Could not start hikari logging")
         }
     }
 
