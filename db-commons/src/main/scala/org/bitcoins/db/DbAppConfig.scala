@@ -129,8 +129,8 @@ abstract class DbAppConfig extends AppConfig {
     hikariLoggingOpt match {
       case Some(bool) => bool
       case None       =>
-        //default hikari logging on
-        true
+        //default hikari logging off
+        false
     }
   }
 
