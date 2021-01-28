@@ -137,10 +137,9 @@ case class HikariLogging(
   }
 
   private val logHikariStats: Runnable = () => {
-    import scala.jdk.CollectionConverters._
 
     val usageHistogram: Histogram =
-      metricRegistry.getHistograms().asScala.get(poolUsageMetricName).get
+      metricRegistry.getHistograms().get(poolUsageMetricName)
     val usageSnapshot = usageHistogram.getSnapshot()
 
     val poolUsageUpdate = HikariPoolUsageUpdate(
