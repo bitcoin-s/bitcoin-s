@@ -67,6 +67,7 @@
       "testkit/testkit"
     ],
     "DLC Oracle": [
+      "oracle/build-oracle-server",
       "oracle/oracle-server"
     ],
     "Contributing": [

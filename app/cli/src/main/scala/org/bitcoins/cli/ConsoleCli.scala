@@ -1061,7 +1061,7 @@ object ConsoleCli {
         .text(s"Get oracle's staking address"),
       cmd("listevents")
         .action((_, conf) => conf.copy(command = ListEvents))
-        .text(s"Lists all event nonces"),
+        .text(s"Lists all event announcements"),
       cmd("createevent")
         .action((_, conf) =>
           conf.copy(command = CreateEvent("", Instant.MIN, Seq.empty)))
@@ -1169,21 +1169,23 @@ object ConsoleCli {
               }))
         ),
       cmd("getevent")
-        .action((_, conf) => conf.copy(command = GetEvent(null)))
+        .action((_, conf) =>
+          conf.copy(command = GetEvent(OracleAnnouncementV0TLV.dummy)))
         .text("Get an event's details")
         .children(
           arg[OracleAnnouncementTLV]("event")
-            .text("The event's oracle event tlv")
+            .text("The event's oracle announcement tlv")
             .required()
-            .action((oracleEvent, conf) =>
+            .action((announcementTLV, conf) =>
               conf.copy(command = conf.command match {
                 case getEvent: GetEvent =>
-                  getEvent.copy(announcementTLV = oracleEvent)
+                  getEvent.copy(announcementTLV = announcementTLV)
                 case other => other
               }))
         ),
       cmd("signevent")
-        .action((_, conf) => conf.copy(command = SignEvent(null, "")))
+        .action((_, conf) =>
+          conf.copy(command = SignEvent(OracleAnnouncementV0TLV.dummy, "")))
         .text("Signs an event")
         .children(
           arg[OracleAnnouncementTLV]("event")
@@ -1206,11 +1208,12 @@ object ConsoleCli {
               }))
         ),
       cmd("signdigits")
-        .action((_, conf) => conf.copy(command = SignDigits(null, 0)))
+        .action((_, conf) =>
+          conf.copy(command = SignDigits(OracleAnnouncementV0TLV.dummy, 0)))
         .text("Signs a large range event")
         .children(
           arg[OracleAnnouncementTLV]("event")
-            .text("The event's oracle event tlv")
+            .text("The event's oracle announcement tlv")
             .required()
             .action((event, conf) =>
               conf.copy(command = conf.command match {
@@ -1219,7 +1222,7 @@ object ConsoleCli {
                 case other => other
               })),
           arg[Long]("outcome")
-            .text("The event's oracle event tlv")
+            .text("The number to sign")
             .required()
             .action((num, conf) =>
               conf.copy(command = conf.command match {
@@ -1229,11 +1232,12 @@ object ConsoleCli {
               }))
         ),
       cmd("getsignatures")
-        .action((_, conf) => conf.copy(command = GetSignatures(null)))
+        .action((_, conf) =>
+          conf.copy(command = GetSignatures(OracleAnnouncementV0TLV.dummy)))
         .text("Get the signatures from a signed event")
         .children(
           arg[OracleAnnouncementTLV]("event")
-            .text("The event descriptor associated with the event to sign")
+            .text("The oracle announcement associated with the event to sign")
             .required()
             .action((event, conf) =>
               conf.copy(command = conf.command match {
@@ -1508,8 +1512,8 @@ object ConsoleCli {
         RequestParam("getstakingaddress")
       case ListEvents =>
         RequestParam("listevents")
-      case GetEvent(nonce) =>
-        RequestParam("getevent", Seq(up.writeJs(nonce)))
+      case GetEvent(announcementTLV) =>
+        RequestParam("getevent", Seq(up.writeJs(announcementTLV)))
       case CreateEvent(label, time, outcomes) =>
         RequestParam(
           "createevent",
@@ -1534,7 +1538,7 @@ object ConsoleCli {
       case SignEvent(tlv, outcome) =>
         RequestParam("signevent", Seq(up.writeJs(tlv), up.writeJs(outcome)))
       case SignDigits(tlv, num) =>
-        RequestParam("signlargenumber", Seq(up.writeJs(tlv), up.writeJs(num)))
+        RequestParam("signdigits", Seq(up.writeJs(tlv), up.writeJs(num)))
       case GetSignatures(tlv) =>
         RequestParam("getsignatures", Seq(up.writeJs(tlv)))
 
