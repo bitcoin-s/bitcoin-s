@@ -147,4 +147,23 @@ case class CompactFilterDAO()(implicit
   def getBestFilter: Future[Option[CompactFilterDb]] = {
     safeDatabase.run(bestFilterQuery).map(_.headOption)
   }
+
+  private val bestFilterHeightQuery = {
+    val join = table
+      .join(blockHeaderTable)
+      .on(_.blockHash === _.hash)
+
+    val maxQuery = join.map(_._2.chainWork).max
+
+    join
+      .filter(_._2.chainWork === maxQuery)
+      .take(1)
+      .map(_._1.height)
+      .result
+      .transactionally
+  }
+
+  def getBestFilterHeight: Future[Int] = {
+    safeDatabase.run(bestFilterHeightQuery).map(_.headOption.getOrElse(0))
+  }
 }

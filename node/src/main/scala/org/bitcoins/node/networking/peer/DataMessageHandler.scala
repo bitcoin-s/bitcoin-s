@@ -100,9 +100,10 @@ case class DataMessageHandler(
                 Future.successful((filterHeaderHeight, filterHeight + 1))
               case (_, _) => // If either are None
                 for {
-                  filterHeaderCount <- chainApi.getFilterHeaderCount()
-                  filterCount <- chainApi.getFilterCount()
-                } yield (filterHeaderCount, filterCount + 1)
+                  filterHeaderHeight <- chainApi.getFilterHeaderCount()
+                  filterHeight <- chainApi.getFilterCount()
+                } yield (filterHeaderHeight,
+                         if (filterHeight == 0) 0 else filterHeight + 1)
             }
           newSyncing =
             if (batchSizeFull) {
@@ -136,8 +137,7 @@ case class DataMessageHandler(
             if (batchSizeFull) {
               logger.info(
                 s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
-              sendNextGetCompactFilterCommand(peerMsgSender,
-                                              filter.blockHash.flip)
+              sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
             } else FutureUtil.unit
         } yield {
           this.copy(
@@ -352,26 +352,17 @@ case class DataMessageHandler(
 
   private def sendNextGetCompactFilterCommand(
       peerMsgSender: PeerMessageSender,
-      stopHash: DoubleSha256DigestBE): Future[Boolean] =
+      startHeight: Int): Future[Boolean] =
     peerMsgSender.sendNextGetCompactFilterCommand(chainApi = chainApi,
                                                   filterBatchSize =
                                                     chainConfig.filterBatchSize,
-                                                  stopHash = stopHash)
+                                                  startHeight = startHeight)
 
   private def sendFirstGetCompactFilterCommand(
       peerMsgSender: PeerMessageSender): Future[Boolean] =
     for {
       filterCount <- chainApi.getFilterCount()
-      highestFilterOpt <-
-        chainApi
-          .getFiltersAtHeight(filterCount)
-          .map(_.headOption)
-      highestFilterBlockHash =
-        highestFilterOpt
-          .map(_.blockHashBE)
-          .getOrElse(DoubleSha256DigestBE.empty)
-      res <-
-        sendNextGetCompactFilterCommand(peerMsgSender, highestFilterBlockHash)
+      res <- sendNextGetCompactFilterCommand(peerMsgSender, filterCount)
     } yield res
 
   private def handleInventoryMsg(

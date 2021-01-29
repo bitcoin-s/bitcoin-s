@@ -39,10 +39,10 @@ trait ChainApi extends ChainQueryApi {
     */
   def processHeaders(headers: Vector[BlockHeader]): Future[ChainApi]
 
-  /** Gets a [[org.bitcoins.chain.models.BlockHeaderDb]] from the chain's database */
+  /** Gets a [[org.bitcoins.core.api.chain.db.BlockHeaderDb]] from the chain's database */
   def getHeader(hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]]
 
-  /** Gets all [[org.bitcoins.chain.models.BlockHeaderDb]]s at a given height */
+  /** Gets all [[org.bitcoins.core.api.chain.db.BlockHeaderDb]]s at a given height */
   def getHeadersAtHeight(height: Int): Future[Vector[BlockHeaderDb]]
 
   /** Gets the number of blocks in the database */
@@ -83,7 +83,7 @@ trait ChainApi extends ChainQueryApi {
     * Generates a filter header range in form of (startHeight, stopHash) by the given stop hash.
     */
   def nextFilterHeaderBatchRange(
-      prevStopHash: DoubleSha256DigestBE,
+      startHeight: Int,
       batchSize: Int): Future[Option[FilterSyncMarker]]
 
   /**

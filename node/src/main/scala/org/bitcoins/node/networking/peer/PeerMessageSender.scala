@@ -194,11 +194,10 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   private[node] def sendNextGetCompactFilterCommand(
       chainApi: ChainApi,
       filterBatchSize: Int,
-      stopHash: DoubleSha256DigestBE)(implicit
-      ec: ExecutionContext): Future[Boolean] = {
+      startHeight: Int)(implicit ec: ExecutionContext): Future[Boolean] = {
     for {
       filterSyncMarkerOpt <-
-        chainApi.nextFilterHeaderBatchRange(stopHash, filterBatchSize)
+        chainApi.nextFilterHeaderBatchRange(startHeight, filterBatchSize)
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
           logger.info(s"Requesting compact filters from $filterSyncMarker")
