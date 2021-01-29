@@ -254,34 +254,40 @@ case class DataMessageHandler(
         }
       case msg: BlockMessage =>
         val block = msg.block
-        logger.info(
-          s"Received block message with hash ${block.blockHeader.hash.flip.hex}")
 
-        val newApiF = {
-          chainApi
-            .getHeader(block.blockHeader.hashBE)
-            .flatMap { headerOpt =>
-              if (headerOpt.isEmpty) {
-                logger.debug("Processing block's header...")
-                for {
-                  processedApi <- chainApi.processHeader(block.blockHeader)
-                  _ <-
-                    appConfig.nodeCallbacks
-                      .executeOnBlockHeadersReceivedCallbacks(
-                        logger,
-                        Vector(block.blockHeader))
-                } yield processedApi
-              } else Future.successful(chainApi)
-            }
-        }
+        if (syncing) {
+          logger.info(
+            s"Ignoring block message since we are in IBD, hash=${block.blockHeader.hashBE.hex}")
+          Future.successful(this)
+        } else {
+          logger.info(
+            s"Received block message with hash ${block.blockHeader.hash.flip.hex}")
+          val newApiF = {
+            chainApi
+              .getHeader(block.blockHeader.hashBE)
+              .flatMap { headerOpt =>
+                if (headerOpt.isEmpty) {
+                  logger.debug("Processing block's header...")
+                  for {
+                    processedApi <- chainApi.processHeader(block.blockHeader)
+                    _ <-
+                      appConfig.nodeCallbacks
+                        .executeOnBlockHeadersReceivedCallbacks(
+                          logger,
+                          Vector(block.blockHeader))
+                  } yield processedApi
+                } else Future.successful(chainApi)
+              }
+          }
 
-        for {
-          newApi <- newApiF
-          _ <-
-            appConfig.nodeCallbacks
-              .executeOnBlockReceivedCallbacks(logger, block)
-        } yield {
-          this.copy(chainApi = newApi)
+          for {
+            newApi <- newApiF
+            _ <-
+              appConfig.nodeCallbacks
+                .executeOnBlockReceivedCallbacks(logger, block)
+          } yield {
+            this.copy(chainApi = newApi)
+          }
         }
       case TransactionMessage(tx) =>
         MerkleBuffers.putTx(tx, appConfig.nodeCallbacks).flatMap {
