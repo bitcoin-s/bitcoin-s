@@ -142,8 +142,11 @@ object TestDLCClient {
     )
 
     val remoteOutcomes: ContractInfo = {
-      outcomes.copy(contractDescriptor =
-        outcomes.contractDescriptor.flip((input + remoteInput).satoshis))
+      val descriptor =
+        outcomes.contractDescriptor.flip((input + remoteInput).satoshis)
+      val pair =
+        ContractOraclePair.fromDescriptorOracle(descriptor, outcomes.oracleInfo)
+      outcomes.copy(contractOraclePair = pair)
     }
 
     val changeAddress = BitcoinAddress.fromScriptPubKey(changeSPK, network)

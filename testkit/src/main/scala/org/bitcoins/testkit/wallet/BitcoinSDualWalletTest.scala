@@ -64,8 +64,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
   /** Creates 2 funded segwit wallets that have a DLC initiated */
   def withDualDLCWallets(
       test: OneArgAsyncTest,
-      contractDescriptor: ContractDescriptor,
-      oracleInfo: OracleInfo): FutureOutcome = {
+      contractOraclePair: ContractOraclePair): FutureOutcome = {
     makeDependentFixture(
       build = () =>
         for {
@@ -80,8 +79,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
             getBIP39PasswordOpt(),
             Some(segwitWalletConf))(config2, system)
 
-          contractInfo =
-            ContractInfo(Satoshis(10000), contractDescriptor, oracleInfo)
+          contractInfo = ContractInfo(Satoshis(10000), contractOraclePair)
 
           (dlcWalletA, dlcWalletB) <-
             DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
