@@ -279,6 +279,11 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># The ip address we bind our server too</span>
         <span class="hljs-attr">rpcbind</span> = <span class="hljs-string">"127.0.0.1"</span>
     }
+
+    oracle {
+        <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">true</span>
+        <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">1</span> minute
+    }
 }
 
 
