@@ -211,7 +211,7 @@ bitcoin-s {
         # bip39password = "changeMe"
 
         # Password that your seed is encrypted with
-        aespassword = changeMe
+        aesPassword = changeMe
     }
 
     # Bitcoin-S provides manny different fee providers
