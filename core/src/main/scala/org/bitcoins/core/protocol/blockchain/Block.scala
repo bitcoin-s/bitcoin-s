@@ -58,7 +58,7 @@ object Block extends Factory[Block] {
       extends Block {
 
     override def toString: String = {
-      s"Block(blockHeader=${blockHeader}, txCount=${txCount})"
+      s"Block(blockHeader=${blockHeader}, txCount=${txCount.toLong})"
     }
   }
 
