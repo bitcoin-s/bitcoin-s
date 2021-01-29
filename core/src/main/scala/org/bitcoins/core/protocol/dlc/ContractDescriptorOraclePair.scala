@@ -1,5 +1,10 @@
 package org.bitcoins.core.protocol.dlc
 
+/** A pair of [[ContractDescriptor]] and [[OracleInfo]]
+  * This type is meant to ensure consistentcy between various
+  * [[ContractDescriptor]] and [[OracleInfo]] so that you cannot
+  * have an incorrect pairing.
+  */
 sealed trait ContractOraclePair {
   def contractDescriptor: ContractDescriptor
   def oracleInfo: OracleInfo
