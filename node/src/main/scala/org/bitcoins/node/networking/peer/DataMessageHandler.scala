@@ -378,18 +378,19 @@ case class DataMessageHandler(
       invMsg: InventoryMessage,
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
     logger.info(s"Received inv=${invMsg}")
-    val getData = GetDataMessage(invMsg.inventories.map {
+    val getData = GetDataMessage(invMsg.inventories.flatMap {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
         // only request the merkle block if we are spv enabled
         appConfig.nodeType match {
           case NodeType.SpvNode =>
-            Inventory(TypeIdentifier.MsgFilteredBlock, hash)
+            Some(Inventory(TypeIdentifier.MsgFilteredBlock, hash))
           case NodeType.NeutrinoNode | NodeType.FullNode =>
-            Inventory(TypeIdentifier.MsgWitnessBlock, hash)
+            if (syncing) None
+            else Some(Inventory(TypeIdentifier.MsgWitnessBlock, hash))
           case NodeType.BitcoindBackend =>
             throw new RuntimeException("This is impossible")
         }
-      case other: Inventory => other
+      case other: Inventory => Some(other)
     })
     peerMsgSender.sendMsg(getData).map(_ => this)
   }
