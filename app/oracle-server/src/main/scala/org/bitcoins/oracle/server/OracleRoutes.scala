@@ -198,7 +198,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
           complete {
             oracle.findEvent(announcementTLV.eventTLV).map {
               case Some(completed: CompletedOracleEvent) =>
-                Server.httpSuccess(completed.signatures.map(_.hex))
+                Server.httpSuccess(completed.oracleAttestmentV0TLV.hex)
               case None | Some(_: PendingOracleEvent) =>
                 Server.httpSuccess(ujson.Null)
             }
