@@ -244,6 +244,11 @@ bitcoin-s {
         # The ip address we bind our server too
         rpcbind = "127.0.0.1"
     }
+
+    oracle {
+        hikari-logging = true
+        hikari-logging-interval = 1 minute
+    }
 }
 
 
