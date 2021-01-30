@@ -48,14 +48,29 @@ object DLCTLVGen {
         events.map(EnumOutcome.apply)))
   }
 
+  def genEnumContractOraclePair(
+      oraclePrivKey: ECPrivateKey,
+      oracleRValue: SchnorrNonce,
+      outcomes: Vector[String],
+      totalInput: CurrencyUnit): ContractOraclePair.EnumPair = {
+    val contract = genContractDescriptor(outcomes, totalInput)
+
+    val oracleInfo = genOracleInfo(oraclePrivKey, oracleRValue, outcomes)
+    ContractOraclePair.EnumPair(contract, oracleInfo)
+  }
+
   def genContractInfo(
       oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
       oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,
       outcomes: Vector[String] = DLCTestUtil.genOutcomes(3),
       totalInput: CurrencyUnit = defaultAmt * 2): ContractInfo = {
-    ContractInfo(totalInput.satoshis,
-                 genContractDescriptor(outcomes, totalInput),
-                 genOracleInfo(oraclePrivKey, oracleRValue, outcomes))
+    val pair = genEnumContractOraclePair(oraclePrivKey,
+                                         oracleRValue,
+                                         outcomes,
+                                         totalInput)
+
+    //this doesn't ever try numeric contracts?
+    ContractInfo(totalInput.satoshis, pair)
   }
 
   def contractInfoParsingTestVector(

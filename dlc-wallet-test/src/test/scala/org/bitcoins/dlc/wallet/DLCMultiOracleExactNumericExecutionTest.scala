@@ -38,8 +38,11 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
   val oracleInfo: NumericExactMultiOracleInfo =
     NumericExactMultiOracleInfo(threshold, announcements)
 
+  val contractOraclePair =
+    ContractOraclePair.NumericPair(contractDescriptor, oracleInfo)
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withDualDLCWallets(test, contractDescriptor, oracleInfo)
+    withDualDLCWallets(test, contractOraclePair)
   }
 
   def getSigs(contractInfo: ContractInfo): (

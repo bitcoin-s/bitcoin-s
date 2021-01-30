@@ -369,8 +369,11 @@ trait DLCTest {
       }
     }
 
-    val offerInfo = ContractInfo(totalInput.satoshis, offerDesc, oracleInfo)
-    val acceptInfo = ContractInfo(totalInput.satoshis, acceptDesc, oracleInfo)
+    val numericPairOffer = ContractOraclePair.NumericPair(offerDesc, oracleInfo)
+    val numericPairAccept =
+      ContractOraclePair.NumericPair(acceptDesc, oracleInfo)
+    val offerInfo = ContractInfo(totalInput.satoshis, numericPairOffer)
+    val acceptInfo = ContractInfo(totalInput.satoshis, numericPairAccept)
     val outcomes =
       offerInfo.allOutcomes.map(_.asInstanceOf[NumericOracleOutcome].outcome)
 
@@ -598,10 +601,10 @@ trait DLCTest {
       contractInfo: ContractInfo,
       digits: Vector[Int],
       paramsOpt: Option[OracleParamsV0TLV]): NumericOracleOutcome = {
-    contractInfo.descriptorAndInfo match {
-      case Left(_) => Assertions.fail("Expected Numeric Contract")
-      case Right(
-            (_: NumericContractDescriptor, oracleInfo: NumericOracleInfo)) =>
+    contractInfo.contractOraclePair match {
+      case e: ContractOraclePair.EnumPair =>
+        Assertions.fail(s"Expected Numeric Contract, got enum=$e")
+      case ContractOraclePair.NumericPair(_, oracleInfo) =>
         lazy val possibleOutcomesOpt = paramsOpt.map { _ =>
           contractInfo.allOutcomes
             .map(
@@ -631,6 +634,7 @@ trait DLCTest {
         }
 
         NumericOracleOutcome(oraclesAndOutcomes)
+
     }
   }
 
@@ -641,10 +645,10 @@ trait DLCTest {
       outcomes: Vector[DLCOutcomeType],
       outcomeIndex: Long,
       paramsOpt: Option[OracleParamsV0TLV]): NumericOracleOutcome = {
-    dlcOffer.offer.contractInfo.descriptorAndInfo match {
-      case Left(_) => Assertions.fail("Expected Numeric Contract")
-      case Right(
-            (descriptor: NumericContractDescriptor, _: NumericOracleInfo)) =>
+    dlcOffer.offer.contractInfo.contractOraclePair match {
+      case e: ContractOraclePair.EnumPair =>
+        Assertions.fail(s"Expected Numeric Contract, got enum=$e")
+      case ContractOraclePair.NumericPair(descriptor, _) =>
         val digits =
           computeNumericOutcome(numDigits, descriptor, outcomes, outcomeIndex)
         genNumericOracleOutcome(chosenOracles,

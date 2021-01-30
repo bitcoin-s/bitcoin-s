@@ -12,6 +12,7 @@ import org.bitcoins.core.util.SeqWrapper
   * Payouts above totalCollateral may be subject to change
   * as totalCollateral does not exist in a ContractDescriptor,
   * which is reusable between DLCs.
+  * @see https://github.com/discreetlogcontracts/dlcspecs/blob/a8876ed28ed33d5f7d5104f01aa2a8d80d128460/Messaging.md#version-1-contract_descriptor
   */
 sealed trait ContractDescriptor extends TLVSerializable[ContractDescriptorTLV] {
 

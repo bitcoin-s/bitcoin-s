@@ -13,9 +13,7 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
   type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withDualDLCWallets(test,
-                       DLCWalletUtil.multiNonceContractDescriptor,
-                       DLCWalletUtil.multiNonceOracleInfo)
+    withDualDLCWallets(test, DLCWalletUtil.multiNonceContractOraclePair)
   }
 
   behavior of "DLCWallet"

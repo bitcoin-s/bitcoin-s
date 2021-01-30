@@ -48,7 +48,7 @@ object DLCWalletUtil {
     EnumOutcome(winStr) -> Satoshis(10000),
     EnumOutcome(loseStr) -> Satoshis.zero)
 
-  lazy val sampleContractDescriptor: ContractDescriptor =
+  lazy val sampleContractDescriptor: EnumContractDescriptor =
     EnumContractDescriptor(sampleOutcomes)
 
   lazy val sampleOracleInfo: EnumSingleOracleInfo =
@@ -56,8 +56,11 @@ object DLCWalletUtil {
                                       rValue,
                                       sampleOutcomes.map(_._1))
 
+  lazy val sampleContractOraclePair =
+    ContractOraclePair.EnumPair(sampleContractDescriptor, sampleOracleInfo)
+
   lazy val sampleContractInfo: ContractInfo =
-    ContractInfo(Satoshis(10000), sampleContractDescriptor, sampleOracleInfo)
+    ContractInfo(Satoshis(10000), sampleContractOraclePair)
 
   lazy val sampleOracleWinSig: SchnorrDigitalSignature =
     oraclePrivKey.schnorrSignWithNonce(winHash.bytes, kValue)
@@ -75,10 +78,13 @@ object DLCWalletUtil {
       OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey,
                                            rValues.take(numDigits)))
 
+  lazy val multiNonceContractOraclePair = {
+    ContractOraclePair.NumericPair(multiNonceContractDescriptor,
+                                   multiNonceOracleInfo)
+  }
+
   lazy val multiNonceContractInfo: ContractInfo =
-    ContractInfo(Satoshis(10000),
-                 multiNonceContractDescriptor,
-                 multiNonceOracleInfo)
+    ContractInfo(Satoshis(10000), multiNonceContractOraclePair)
 
   lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(1666335)
   lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1666337)

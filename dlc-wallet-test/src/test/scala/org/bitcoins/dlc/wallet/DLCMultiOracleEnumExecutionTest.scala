@@ -43,13 +43,16 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
   val oracleInfo: EnumMultiOracleInfo =
     EnumMultiOracleInfo(threshold, announcements)
 
+  val contractOraclePair =
+    ContractOraclePair.EnumPair(contractDescriptor, oracleInfo)
+
   def sigsToTake: Int = {
     val vec = threshold.to(announcements.size).toVector
     Random.shuffle(vec).head
   }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withDualDLCWallets(test, contractDescriptor, oracleInfo)
+    withDualDLCWallets(test, contractOraclePair)
   }
 
   val getSigs: (Vector[OracleAttestmentTLV], Vector[OracleAttestmentTLV]) = {
