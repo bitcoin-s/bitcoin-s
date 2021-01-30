@@ -317,30 +317,24 @@ class ChainHandler(
 
   /** @inheritdoc */
   override def nextFilterHeaderBatchRange(
-      prevStopHash: DoubleSha256DigestBE,
+      filterHeight: Int,
       batchSize: Int): Future[Option[FilterSyncMarker]] = {
-    val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
-      Future.successful(0)
-    } else {
-      for {
-        prevStopHeaderOpt <- getFilterHeader(prevStopHash)
-        prevStopHeader = prevStopHeaderOpt.getOrElse(
-          throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
-      } yield prevStopHeader.height + 1
-    }
+    val startHeight = if (filterHeight <= 0) 0 else filterHeight + 1
+    val stopHeight = startHeight - 1 + batchSize
 
-    for {
-      startHeight <- startHeightF
-      filterHeaderCount <- getFilterHeaderCount()
-      stopHeight =
-        if (startHeight - 1 + batchSize > filterHeaderCount)
-          filterHeaderCount
-        else startHeight - 1 + batchSize
-      stopBlockOpt <- getFilterHeadersAtHeight(stopHeight).map(_.headOption)
-      stopBlock = stopBlockOpt.getOrElse(
-        throw UnknownBlockHeight(s"Unknown filter header height ${stopHeight}"))
-    } yield {
-      if (startHeight > stopHeight)
+    val stopBlockF =
+      getFilterHeadersAtHeight(stopHeight).map(_.headOption).flatMap {
+        case Some(stopBlock) =>
+          Future.successful(stopBlock)
+        case None =>
+          // This means the stop height is past the filter header height
+          getBestFilterHeader().map(
+            _.getOrElse(throw UnknownBlockHeight(
+              s"Unknown filter header height $stopHeight")))
+      }
+
+    stopBlockF.map { stopBlock =>
+      if (startHeight > stopBlock.height)
         None
       else
         Some(FilterSyncMarker(startHeight, stopBlock.blockHashBE.flip))
@@ -525,13 +519,9 @@ class ChainHandler(
   /** @inheritdoc */
   override def getFilterHeaderCount(): Future[Int] = {
     logger.debug(s"Querying for filter header count")
-    filterHeaderDAO.getBestFilterHeader.map {
-      case Some(filterHeader) =>
-        val height = filterHeader.height
-        logger.debug(s"getFilterHeaderCount result: count=$height")
-        height
-      case None =>
-        0
+    filterHeaderDAO.getBestFilterHeaderHeight.map { height =>
+      logger.debug(s"getFilterHeaderCount result: count=$height")
+      height
     }
   }
 
@@ -639,12 +629,9 @@ class ChainHandler(
   /** @inheritdoc */
   override def getFilterCount(): Future[Int] = {
     logger.debug(s"Querying for filter count")
-    filterDAO.getBestFilter.map {
-      case Some(filter) =>
-        val height = filter.height
-        logger.debug(s"getFilterCount result: count=$height")
-        height
-      case None => 0
+    filterDAO.getBestFilterHeight.map { height =>
+      logger.debug(s"getFilterCount result: count=$height")
+      height
     }
   }
 

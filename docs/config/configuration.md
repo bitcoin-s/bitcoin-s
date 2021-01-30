@@ -168,7 +168,7 @@ bitcoin-s {
             # to keep the sync time fast, however, for regtest it should be small
             # so it does not exceed the chain size.
 
-            filter-batch-size = 100
+            filter-batch-size = 1000
         }
         
         hikari-logging = true
