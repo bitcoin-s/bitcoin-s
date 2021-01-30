@@ -426,8 +426,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       for {
         bestBlock <- chainHandler.getBestBlockHeader()
         bestBlockHashBE = bestBlock.hashBE
-        rangeOpt <-
-          chainHandler.nextFilterHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
+        rangeOpt <- chainHandler.nextFilterHeaderBatchRange(0, 1)
       } yield {
         val marker = rangeOpt.get
         assert(rangeOpt.nonEmpty)

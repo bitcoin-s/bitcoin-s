@@ -153,7 +153,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       _ =
         if (toUpdate.nonEmpty)
           logger.info(s"${toUpdate.size} txos are now confirmed!")
-        else logger.info("No txos to be confirmed")
+        else logger.debug("No txos to be confirmed")
       updated <- spendingInfoDAO.upsertAllSpendingInfoDb(toUpdate.flatten)
     } yield updated
   }

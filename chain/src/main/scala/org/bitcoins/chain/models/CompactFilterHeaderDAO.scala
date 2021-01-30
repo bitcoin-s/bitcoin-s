@@ -145,6 +145,25 @@ case class CompactFilterHeaderDAO()(implicit
     safeDatabase.run(bestFilterHeaderQuery).map(_.headOption)
   }
 
+  private val bestFilterHeaderHeightQuery = {
+    val join = table
+      .join(blockHeaderTable)
+      .on(_.blockHash === _.hash)
+
+    val maxQuery = join.map(_._2.chainWork).max
+
+    join
+      .filter(_._2.chainWork === maxQuery)
+      .take(1)
+      .map(_._1.height)
+      .result
+      .transactionally
+  }
+
+  def getBestFilterHeaderHeight: Future[Int] = {
+    safeDatabase.run(bestFilterHeaderHeightQuery).map(_.headOption.getOrElse(0))
+  }
+
   /** This looks for best filter headers whose [[CompactFilterHeaderDb.blockHashBE]] are associated with the given
     * [[BlockHeaderDb.hashBE]] given as a parameter.
     */
