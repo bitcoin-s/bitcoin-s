@@ -18,9 +18,9 @@ After building the oracle server, you will need to start it with
 
 ## US 2020 Election
 
-In 2020, the United States held a presidential election. Nicolas Dorier and Chris Stewart
-wanted to do a DLC based on the outcome of this presidential election.
-In this example, we are going to walk through
+In 2020, the United States held a presidential election.
+People want to do a DLC based on the outcome, so you decide to be
+their oracle and attest to the winner of the election.
 
 1. Setting up an oracle that can attest to the outcome of the election
 2. Complete the event by attesting to the winner of the election
