@@ -68,7 +68,8 @@
     ],
     "DLC Oracle": [
       "oracle/build-oracle-server",
-      "oracle/oracle-server"
+      "oracle/oracle-server",
+      "oracle/oracle-election-example"
     ],
     "Contributing": [
       "contributing",
