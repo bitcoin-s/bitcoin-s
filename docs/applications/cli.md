@@ -55,7 +55,7 @@ app/cli/target/native-image/bitcoin-s-cli
 ```
 
 We also publish native image binaries every time we merge a commit to master on github.
-As an example, you can [see the artifacts](https://github.com/bitcoin-s/bitcoin-s/runs/1792909760)
+As an example, you can [see the artifacts](https://github.com/bitcoin-s/bitcoin-s/actions?query=workflow%3A%22Native+Image+bitcoin-s-cli%22)
 in the upper right hand corner.
 
 If you don't want to build the `bitcoin-s-cli` yourself, you can download it for your platform there.
