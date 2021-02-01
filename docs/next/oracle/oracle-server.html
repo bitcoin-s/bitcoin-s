@@ -72,7 +72,7 @@ checkout <a href="/docs/next/oracle/build-oracle-server">this page</a>.</p>
 <li><code>getpublickey</code> - Get oracle's public key</li>
 <li><code>getstakingaddress</code> - Get oracle's staking address</li>
 <li><code>listevents</code> - Lists all oracle announcement TLVs</li>
-<li><code>createevent</code> <code>label</code> <code>maturationtime</code> <code>outcomes</code> - Registers an oracle event
+<li><code>createenumevent</code> <code>label</code> <code>maturationtime</code> <code>outcomes</code> - Registers an oracle enum event
 <ul>
 <li><code>label</code> - Label for this event</li>
 <li><code>maturationtime</code> - The earliest expected time an outcome will be signed, given in epoch second</li>
@@ -109,7 +109,7 @@ checkout <a href="/docs/next/oracle/build-oracle-server">this page</a>.</p>
 </ul>
 <h3><a class="anchor" aria-hidden="true" id="create-event-example"></a><a href="#create-event-example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Create Event Example</h3>
 <p>Bitcoin-S CLI:</p>
-<pre><code class="hljs css language-bash">$ bitcoin<span class="hljs-_">-s</span>-cli createevent <span class="hljs-built_in">test</span> 1701917137 <span class="hljs-string">"outcome1,outcome2,outcome3"</span>
+<pre><code class="hljs css language-bash">$ bitcoin<span class="hljs-_">-s</span>-cli createenumevent <span class="hljs-built_in">test</span> 1701917137 <span class="hljs-string">"outcome1,outcome2,outcome3"</span>
 fdd824b0ba0f08e9becbf77019e246ca8a80c027585634dc1aed4b7f67442ada394b40dcb242d8a8c84893a752b93f30ff07525b0604382255ec7392fcc6f230140feb905f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115fdd8224c000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f657131d1fdd8061d0003086f7574636f6d6531086f7574636f6d6532086f7574636f6d65330474657374
 
 $ bitcoin<span class="hljs-_">-s</span>-cli getevent fdd824b0ba0f08e9becbf77019e246ca8a80c027585634dc1aed4b7f67442ada394b40dcb242d8a8c84893a752b93f30ff07525b0604382255ec7392fcc6f230140feb905f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115fdd8224c000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f657131d1fdd8061d0003086f7574636f6d6531086f7574636f6d6532086f7574636f6d65330474657374
@@ -141,7 +141,7 @@ $ bitcoin<span class="hljs-_">-s</span>-cli getsignatures fdd824b0ba0f08e9becbf7
 fdd8687004746573745f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f33fd84ba8eea0a75f1568149f42e8466e1bc3422ea449532d4eeffad8586d14e086f7574636f6d6531
 </code></pre>
 <p>CURL:</p>
-<pre><code class="hljs css language-bash">$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "createevent", "params": ["testEvent", 1701917137, ["outcome1", "outcome2", "outcome3"]]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
+<pre><code class="hljs css language-bash">$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "createenumevent", "params": ["testEvent", 1701917137, ["outcome1", "outcome2", "outcome3"]]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
 {<span class="hljs-string">"result"</span>:<span class="hljs-string">"fdd824b0ba0f08e9becbf77019e246ca8a80c027585634dc1aed4b7f67442ada394b40dcb242d8a8c84893a752b93f30ff07525b0604382255ec7392fcc6f230140feb905f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115fdd8224c000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f657131d1fdd8061d0003086f7574636f6d6531086f7574636f6d6532086f7574636f6d65330474657374"</span>,<span class="hljs-string">"error"</span>:null}
 
 $ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "getevent", "params": ["fdd824b0ba0f08e9becbf77019e246ca8a80c027585634dc1aed4b7f67442ada394b40dcb242d8a8c84893a752b93f30ff07525b0604382255ec7392fcc6f230140feb905f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115fdd8224c000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f657131d1fdd8061d0003086f7574636f6d6531086f7574636f6d6532086f7574636f6d65330474657374"]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
