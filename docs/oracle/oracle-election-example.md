@@ -30,7 +30,7 @@ In this example, we are going to walk through
 The election bet can be represented by an enumerated event. What we mean by this is the outcomes
 for this event can be simply enumerated in a list. There were three possible outcomes for the election
 
-1. "Repulican_win"
+1. "Republican_win"
 2. "Democrat_win"
 3. "other"
 
@@ -38,7 +38,7 @@ The next step is to create an oracle announcement that can be shared with others
 contains cryptographic information that is used by people that want to enter into DLCs to setup
 their bitcoin transactions.
 
-To do this, we need to use the `createevent` rpc. This RPC takes 3 parameters
+To do this, we need to use the `createenumevent` rpc. This RPC takes 3 parameters
 
 1. The label for the event
    we will use `2020-us-election`
@@ -49,26 +49,27 @@ To do this, we need to use the `createevent` rpc. This RPC takes 3 parameters
 
 With all of this information, we can create the event with `bitcoin-s-cli`!
 
->./bitcoin-s-cli createevent 2020-us-election 1612224000 "Republican_win,Democrat_win,other"
+```
+./bitcoin-s-cli createenumevent 2020-us-election 1612224000 "Republican_win,Democrat_win,other"
 fdd824c3988fabec9820690f366271c9ceac00fbec1412075f9b319bb0db1f86460519dd9c61478949f2c00c35aeb8e53a1507616072cb802891e2c189a9fa65a0493de5d3b04a6d7b90c9c43c09ebe5250d583e1c3fc423219b26f6a02ec394a130000afdd8225f0001ae3e30df5a203ad10ee89a909df0c8ccea4836e94e0a5d34c3cdab758fcaee1460189600fdd8062400030e52657075626c6963616e5f77696e0c44656d6f637261745f77696e056f7468657210323032302d75732d656c656374696f6e
+```
 
-Yay! The hex string returned represents an oracle announcement.
+Yay! The hex string returned is an oracle announcement.
 You can submit this on a tool like the [suredbits oracle explorer](https://oracle.suredbits.com)
 so others can find your oracle.
 
-It is important that you store two things
+If you are building infrastructure to automatically sign events, it is important to store two things
 
 1. The oracle announcement above (`fdd824c...`)
 2. The timestamp that the event matures at (`1612224000`)
 
+Now you can schedule jobs to sign the event when the maturation time passes.
+
 ### Signing the outcome for the election bet
 
-Now that we have create an event, we need to wait for the maturation time to pass.
-In the example above, this will be
+In the real world, you would want to wait for the maturation time to pass for your event.
+For the purposes of the demo, we can skip this wait. The winner of the US election was Joe Biden.
 
->Tuesday, February 2, 2021 12:00:00 AM
-
-After that, we need to determine who the winner of the election was. It was Joe Biden!
 Let's sign the event.
 
 ```
