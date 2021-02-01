@@ -1062,17 +1062,17 @@ object ConsoleCli {
       cmd("listevents")
         .action((_, conf) => conf.copy(command = ListEvents))
         .text(s"Lists all event announcements"),
-      cmd("createevent")
+      cmd("createenumevent")
         .action((_, conf) =>
-          conf.copy(command = CreateEvent("", Instant.MIN, Seq.empty)))
-        .text("Registers an oracle event")
+          conf.copy(command = CreateEnumEvent("", Instant.MIN, Seq.empty)))
+        .text("Registers an oracle enum event")
         .children(
           arg[String]("label")
             .text("Label for this event")
             .required()
             .action((label, conf) =>
               conf.copy(command = conf.command match {
-                case createEvent: CreateEvent =>
+                case createEvent: CreateEnumEvent =>
                   createEvent.copy(label = label)
                 case other => other
               })),
@@ -1081,7 +1081,7 @@ object ConsoleCli {
             .required()
             .action((time, conf) =>
               conf.copy(command = conf.command match {
-                case createEvent: CreateEvent =>
+                case createEvent: CreateEnumEvent =>
                   createEvent.copy(maturationTime = time)
                 case other => other
               })),
@@ -1090,7 +1090,7 @@ object ConsoleCli {
             .required()
             .action((outcomes, conf) =>
               conf.copy(command = conf.command match {
-                case createEvent: CreateEvent =>
+                case createEvent: CreateEnumEvent =>
                   createEvent.copy(outcomes = outcomes)
                 case other => other
               }))
@@ -1514,9 +1514,9 @@ object ConsoleCli {
         RequestParam("listevents")
       case GetEvent(announcementTLV) =>
         RequestParam("getevent", Seq(up.writeJs(announcementTLV)))
-      case CreateEvent(label, time, outcomes) =>
+      case CreateEnumEvent(label, time, outcomes) =>
         RequestParam(
-          "createevent",
+          "createenumevent",
           Seq(up.writeJs(label), up.writeJs(time), up.writeJs(outcomes)))
       case CreateDigitDecompEvent(eventName,
                                   time,
@@ -1837,7 +1837,7 @@ object CliCommand {
 
   case class GetEvent(announcementTLV: OracleAnnouncementTLV) extends CliCommand
 
-  case class CreateEvent(
+  case class CreateEnumEvent(
       label: String,
       maturationTime: Instant,
       outcomes: Seq[String])
