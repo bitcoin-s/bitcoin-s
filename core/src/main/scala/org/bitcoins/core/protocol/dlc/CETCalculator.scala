@@ -51,10 +51,10 @@ object CETCalculator {
     * (Note that interpolated functions are allowed
     * to be negative, but we set all negative values to 0).
     */
-  case class RemotePayoutRange(indexFrom: Long, indexTo: Long) extends CETRange
+  case class ZeroPayoutRange(indexFrom: Long, indexTo: Long) extends CETRange
 
   /** This range contains payouts all >= totalCollateral */
-  case class StartTotal(indexFrom: Long, indexTo: Long) extends CETRange
+  case class MaxPayoutRange(indexFrom: Long, indexTo: Long) extends CETRange
 
   /** This range contains payouts that all vary at every step and cannot be compressed */
   case class VariablePayoutRange(indexFrom: Long, indexTo: Long)
@@ -63,7 +63,7 @@ object CETCalculator {
   /** This range contains some constant payout between 0 and totalCollateral (exclusive).
     * To be clear, indexFrom and indexTo are still inclusive values.
     */
-  case class LocalConstantPayoutRange(indexFrom: Long, indexTo: Long)
+  case class ConstantPayoutRange(indexFrom: Long, indexTo: Long)
       extends CETRange
 
   object CETRange {
@@ -74,9 +74,9 @@ object CETCalculator {
         value: Satoshis,
         totalCollateral: Satoshis): CETRange = {
       if (value <= Satoshis.zero) {
-        RemotePayoutRange(index, index)
+        ZeroPayoutRange(index, index)
       } else if (value >= totalCollateral) {
-        StartTotal(index, index)
+        MaxPayoutRange(index, index)
       } else {
         VariablePayoutRange(index, index)
       }
@@ -125,36 +125,35 @@ object CETCalculator {
 
           if (funcValue <= Satoshis.zero) {
             currentRange match {
-              case RemotePayoutRange(indexFrom, _) =>
-                currentRange = RemotePayoutRange(indexFrom, componentEnd)
-              case _: StartTotal | _: VariablePayoutRange |
-                  _: LocalConstantPayoutRange =>
+              case ZeroPayoutRange(indexFrom, _) =>
+                currentRange = ZeroPayoutRange(indexFrom, componentEnd)
+              case _: MaxPayoutRange | _: VariablePayoutRange |
+                  _: ConstantPayoutRange =>
                 rangeBuilder += currentRange
-                currentRange = RemotePayoutRange(componentStart, componentEnd)
+                currentRange = ZeroPayoutRange(componentStart, componentEnd)
             }
           } else if (funcValue >= totalCollateral) {
             currentRange match {
-              case StartTotal(indexFrom, _) =>
-                currentRange = StartTotal(indexFrom, componentEnd)
-              case _: RemotePayoutRange | _: VariablePayoutRange |
-                  _: LocalConstantPayoutRange =>
+              case MaxPayoutRange(indexFrom, _) =>
+                currentRange = MaxPayoutRange(indexFrom, componentEnd)
+              case _: ZeroPayoutRange | _: VariablePayoutRange |
+                  _: ConstantPayoutRange =>
                 rangeBuilder += currentRange
-                currentRange = StartTotal(componentStart, componentEnd)
+                currentRange = MaxPayoutRange(componentStart, componentEnd)
             }
           } else if (num != from && funcValue == prevFunc(num - 1, rounding)) {
             currentRange match {
               case VariablePayoutRange(indexFrom, indexTo) =>
                 rangeBuilder += VariablePayoutRange(indexFrom, indexTo - 1)
-                currentRange = LocalConstantPayoutRange(indexTo, componentEnd)
-              case LocalConstantPayoutRange(indexFrom, _) =>
-                currentRange = LocalConstantPayoutRange(indexFrom, componentEnd)
-              case _: RemotePayoutRange | _: StartTotal =>
+                currentRange = ConstantPayoutRange(indexTo, componentEnd)
+              case ConstantPayoutRange(indexFrom, _) =>
+                currentRange = ConstantPayoutRange(indexFrom, componentEnd)
+              case _: ZeroPayoutRange | _: MaxPayoutRange =>
                 throw new RuntimeException("Something has gone horribly wrong.")
             }
           } else {
             rangeBuilder += currentRange
-            currentRange =
-              LocalConstantPayoutRange(componentStart, componentEnd)
+            currentRange = ConstantPayoutRange(componentStart, componentEnd)
           }
 
           num = componentEnd + 1
@@ -162,7 +161,7 @@ object CETCalculator {
             updateComponent()
             processConstantComponents()
           }
-        case _: DLCPayoutCurveInterval => ()
+        case _: DLCPayoutCurvePiece => ()
       }
     }
 
@@ -178,18 +177,18 @@ object CETCalculator {
       val value = currentFunc(num, rounding)
       if (value <= Satoshis.zero) {
         currentRange match {
-          case RemotePayoutRange(indexFrom, _) =>
-            currentRange = RemotePayoutRange(indexFrom, num)
-          case _: StartTotal | _: VariablePayoutRange |
-              _: LocalConstantPayoutRange =>
+          case ZeroPayoutRange(indexFrom, _) =>
+            currentRange = ZeroPayoutRange(indexFrom, num)
+          case _: MaxPayoutRange | _: VariablePayoutRange |
+              _: ConstantPayoutRange =>
             newRange(value)
         }
       } else if (value >= totalCollateral) {
         currentRange match {
-          case StartTotal(indexFrom, _) =>
-            currentRange = StartTotal(indexFrom, num)
-          case _: RemotePayoutRange | _: VariablePayoutRange |
-              _: LocalConstantPayoutRange =>
+          case MaxPayoutRange(indexFrom, _) =>
+            currentRange = MaxPayoutRange(indexFrom, num)
+          case _: ZeroPayoutRange | _: VariablePayoutRange |
+              _: ConstantPayoutRange =>
             newRange(value)
         }
       } else if (
@@ -201,18 +200,18 @@ object CETCalculator {
         currentRange match {
           case VariablePayoutRange(indexFrom, indexTo) =>
             rangeBuilder += VariablePayoutRange(indexFrom, indexTo - 1)
-            currentRange = LocalConstantPayoutRange(num - 1, num)
-          case LocalConstantPayoutRange(indexFrom, _) =>
-            currentRange = LocalConstantPayoutRange(indexFrom, num)
-          case _: RemotePayoutRange | _: StartTotal =>
+            currentRange = ConstantPayoutRange(num - 1, num)
+          case ConstantPayoutRange(indexFrom, _) =>
+            currentRange = ConstantPayoutRange(indexFrom, num)
+          case _: ZeroPayoutRange | _: MaxPayoutRange =>
             throw new RuntimeException("Something has gone horribly wrong.")
         }
       } else {
         currentRange match {
           case VariablePayoutRange(indexFrom, _) =>
             currentRange = VariablePayoutRange(indexFrom, num)
-          case _: RemotePayoutRange | _: StartTotal |
-              _: LocalConstantPayoutRange =>
+          case _: ZeroPayoutRange | _: MaxPayoutRange |
+              _: ConstantPayoutRange =>
             newRange(value)
         }
       }
@@ -403,17 +402,17 @@ object CETCalculator {
 
     ranges.flatMap { range =>
       range match {
-        case RemotePayoutRange(indexFrom, indexTo) =>
+        case ZeroPayoutRange(indexFrom, indexTo) =>
           groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
             decomp =>
               CETOutcome(decomp, payout = Satoshis.zero)
           }
-        case StartTotal(indexFrom, indexTo) =>
+        case MaxPayoutRange(indexFrom, indexTo) =>
           groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
             decomp =>
               CETOutcome(decomp, payout = totalCollateral)
           }
-        case LocalConstantPayoutRange(indexFrom, indexTo) =>
+        case ConstantPayoutRange(indexFrom, indexTo) =>
           groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
             decomp =>
               CETOutcome(decomp, payout = function(indexFrom, rounding))

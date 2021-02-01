@@ -30,10 +30,10 @@ case class DLCPayoutCurve(points: Vector[OutcomePayoutPoint]) {
     Indexed(points).filter(_.element.isEndpoint)
 
   /** This Vector contains the function pieces between the endpoints */
-  lazy val functionComponents: Vector[DLCPayoutCurveInterval] = {
+  lazy val functionComponents: Vector[DLCPayoutCurvePiece] = {
     endpoints.init.zip(endpoints.tail).map { // All pairs of adjacent endpoints
       case (Indexed(_, index), Indexed(_, nextIndex)) =>
-        DLCPayoutCurveInterval(points.slice(index, nextIndex + 1))
+        DLCPayoutCurvePiece(points.slice(index, nextIndex + 1))
     }
   }
 
@@ -42,7 +42,7 @@ case class DLCPayoutCurve(points: Vector[OutcomePayoutPoint]) {
   /** Returns the function component on which the given oracle outcome is
     * defined, along with its index
     */
-  def componentFor(outcome: Long): Indexed[DLCPayoutCurveInterval] = {
+  def componentFor(outcome: Long): Indexed[DLCPayoutCurvePiece] = {
     val endpointIndex = NumberUtil.search(outcomes, outcome)
     val Indexed(endpoint, _) = endpoints(endpointIndex)
 
@@ -162,7 +162,7 @@ object OutcomePayoutMidpoint {
 }
 
 /** A single piece of a larger piecewise function defined between left and right endpoints */
-sealed trait DLCPayoutCurveInterval {
+sealed trait DLCPayoutCurvePiece {
   def leftEndpoint: OutcomePayoutEndpoint
   def midpoints: Vector[OutcomePayoutMidpoint]
   def rightEndpoint: OutcomePayoutEndpoint
@@ -197,9 +197,9 @@ sealed trait DLCPayoutCurveInterval {
   }
 }
 
-object DLCPayoutCurveInterval {
+object DLCPayoutCurvePiece {
 
-  def apply(points: Vector[OutcomePayoutPoint]): DLCPayoutCurveInterval = {
+  def apply(points: Vector[OutcomePayoutPoint]): DLCPayoutCurvePiece = {
     require(points.head.isEndpoint && points.last.isEndpoint,
             s"First and last points must be endpoints, $points")
     require(points.tail.init.forall(!_.isEndpoint),
@@ -229,7 +229,7 @@ object DLCPayoutCurveInterval {
 case class OutcomePayoutConstant(
     leftEndpoint: OutcomePayoutEndpoint,
     rightEndpoint: OutcomePayoutEndpoint)
-    extends DLCPayoutCurveInterval {
+    extends DLCPayoutCurvePiece {
   require(leftEndpoint.payout == rightEndpoint.payout,
           "Constant function must have same values on endpoints")
 
@@ -243,7 +243,7 @@ case class OutcomePayoutConstant(
 case class OutcomePayoutLine(
     leftEndpoint: OutcomePayoutEndpoint,
     rightEndpoint: OutcomePayoutEndpoint)
-    extends DLCPayoutCurveInterval {
+    extends DLCPayoutCurvePiece {
   override lazy val midpoints: Vector[OutcomePayoutMidpoint] = Vector.empty
 
   lazy val slope: BigDecimal = {
@@ -265,7 +265,7 @@ case class OutcomePayoutQuadratic(
     leftEndpoint: OutcomePayoutEndpoint,
     midpoint: OutcomePayoutMidpoint,
     rightEndpoint: OutcomePayoutEndpoint)
-    extends DLCPayoutCurveInterval {
+    extends DLCPayoutCurvePiece {
   override lazy val midpoints: Vector[OutcomePayoutMidpoint] = Vector(midpoint)
 
   private lazy val (x01, x02, x12) =
@@ -298,7 +298,7 @@ case class OutcomePayoutCubic(
     leftMidpoint: OutcomePayoutMidpoint,
     rightMidpoint: OutcomePayoutMidpoint,
     rightEndpoint: OutcomePayoutEndpoint)
-    extends DLCPayoutCurveInterval {
+    extends DLCPayoutCurvePiece {
 
   override lazy val midpoints: Vector[OutcomePayoutMidpoint] =
     Vector(leftMidpoint, rightMidpoint)
@@ -340,7 +340,7 @@ case class OutcomePayoutCubic(
 
 /** A polynomial interpolating points and defining a piece of a larger payout curve */
 case class OutcomePayoutPolynomial(points: Vector[OutcomePayoutPoint])
-    extends DLCPayoutCurveInterval {
+    extends DLCPayoutCurvePiece {
   require(points.head.isEndpoint && points.last.isEndpoint,
           s"First and last points must be endpoints, $points")
   require(points.tail.init.forall(!_.isEndpoint),
