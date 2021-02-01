@@ -6,10 +6,11 @@ import org.bitcoins.core.protocol.tlv.{
   EnumOutcome,
   UnsignedNumericOutcome
 }
-import org.bitcoins.core.util.{Indexed, NumberUtil}
+import org.bitcoins.core.util.NumberUtil
 import scodec.bits.BitVector
 
 import scala.annotation.tailrec
+import scala.concurrent.{ExecutionContext, Future}
 
 object CETCalculator {
 
@@ -59,10 +60,11 @@ object CETCalculator {
   /** This range contains payouts that all vary at every step and cannot be compressed */
   case class StartFunc(indexFrom: Long, indexTo: Long) extends CETRange
 
-  /** This range contains some constant payout between 0 and totalCollateral (exclusive).
+  /** This range contains some constant payout between 0 and  totalCollateral (exclusive).
     * To be clear, indexFrom and indexTo are still inclusive values.
     */
-  case class StartFuncConst(indexFrom: Long, indexTo: Long) extends CETRange
+  case class StartFuncConst(indexFrom: Long, indexTo: Long, payout: Satoshis)
+      extends CETRange
 
   object CETRange {
 
@@ -72,11 +74,12 @@ object CETCalculator {
         value: Satoshis,
         totalCollateral: Satoshis): CETRange = {
       if (value <= Satoshis.zero) {
-        StartZero(index, index)
+        StartZero(indexFrom = index, indexTo = index)
       } else if (value >= totalCollateral) {
-        StartTotal(index, index)
+        StartTotal(indexFrom = index, indexTo = index)
       } else {
-        StartFunc(index, index)
+        //else assume that it is a constant payout over interval of size 1
+        StartFuncConst(indexFrom = index, indexTo = index, value)
       }
     }
   }
@@ -85,136 +88,148 @@ object CETCalculator {
     * interval [to, from] into CETRanges.
     */
   def splitIntoRanges(
-      from: Long,
-      to: Long,
       totalCollateral: Satoshis,
-      function: DLCPayoutCurve,
+      payoutCurve: DLCPayoutCurve,
       rounding: RoundingIntervals): Vector[CETRange] = {
-    var componentStart = from
-    val Indexed(firstCurrentFunc, firstComponentIndex) =
-      function.componentFor(from)
-    var (currentFunc, componentIndex) = (firstCurrentFunc, firstComponentIndex)
-    var prevFunc = currentFunc
+    val intervals = payoutCurve.functionComponents
+    val typedIntervals = intervals.map { i =>
+      getIntervalType(totalCollateral = totalCollateral,
+                      interval = i,
+                      rounding = rounding,
+                      counter = i.leftEndpoint.outcome,
+                      currentOpt = None)
+    }
+    mergeCetRanges(typedIntervals)
+  }
 
-    val rangeBuilder = Vector.newBuilder[CETRange]
-    var currentRange: CETRange =
-      CETRange(from, currentFunc(from, rounding), totalCollateral)
-
-    var num = from
-
-    def newRange(value: Satoshis): Unit = {
-      rangeBuilder += currentRange
-      currentRange = CETRange(num, value, totalCollateral)
+  /** The asynchronous version of [[splitIntoRanges()]] */
+  def splitIntoRangesF(
+      totalCollateral: Satoshis,
+      payoutCurve: DLCPayoutCurve,
+      rounding: RoundingIntervals)(implicit
+      ec: ExecutionContext): Future[Vector[CETRange]] = {
+    val intervals = payoutCurve.functionComponents
+    val ranges: Vector[Future[CETRange]] = intervals.map { i =>
+      Future {
+        getIntervalType(totalCollateral,
+                        i,
+                        rounding,
+                        i.leftEndpoint.outcome,
+                        None)
+      }
     }
 
-    def updateComponent(): Unit = {
-      componentStart = num
-      prevFunc = currentFunc
-      componentIndex = componentIndex + 1
-      currentFunc = function.functionComponents(componentIndex)
-    }
+    Future
+      .sequence(ranges)
+      .map(mergeCetRanges)
+  }
 
-    @tailrec
-    def processConstantComponents(): Unit = {
-      currentFunc match {
-        case OutcomePayoutConstant(_, rightEndpoint) =>
-          val componentEnd = rightEndpoint.outcome - 1
-          val funcValue = rightEndpoint.roundedPayout
+  @tailrec
+  final def getIntervalType(
+      totalCollateral: Satoshis,
+      interval: DLCPayoutCurveComponent,
+      rounding: RoundingIntervals,
+      counter: Long,
+      currentOpt: Option[CETRange]): CETRange = {
+    if (counter >= interval.rightEndpoint.outcome) {
+      //we've gone through all the points on this interval, yay!
+      currentOpt.get
+    } else if (counter < interval.leftEndpoint.outcome) {
+      //something is seriously wrong, we are counting in the wrong direction!
+      sys.error(
+        s"Cannot have counter less than our starting point, leftEndpoint=${interval.leftEndpoint}, counter=$counter")
+    } else {
+      //we need to apply the payout curve to this point, and then change our current CET range if
+      //the results for this point are different then previous points
+      val payout =
+        interval.apply(counter, rounding) //is applying rounding correct here?
 
-          if (funcValue <= Satoshis.zero) {
-            currentRange match {
-              case StartZero(indexFrom, _) =>
-                currentRange = StartZero(indexFrom, componentEnd)
-              case _: StartTotal | _: StartFunc | _: StartFuncConst =>
-                rangeBuilder += currentRange
-                currentRange = StartZero(componentStart, componentEnd)
-            }
-          } else if (funcValue >= totalCollateral) {
-            currentRange match {
-              case StartTotal(indexFrom, _) =>
-                currentRange = StartTotal(indexFrom, componentEnd)
-              case _: StartZero | _: StartFunc | _: StartFuncConst =>
-                rangeBuilder += currentRange
-                currentRange = StartTotal(componentStart, componentEnd)
-            }
-          } else if (num != from && funcValue == prevFunc(num - 1, rounding)) {
-            currentRange match {
-              case StartFunc(indexFrom, indexTo) =>
-                rangeBuilder += StartFunc(indexFrom, indexTo - 1)
-                currentRange = StartFuncConst(indexTo, componentEnd)
-              case StartFuncConst(indexFrom, _) =>
-                currentRange = StartFuncConst(indexFrom, componentEnd)
-              case _: StartZero | _: StartTotal =>
-                throw new RuntimeException("Something has gone horribly wrong.")
-            }
-          } else {
-            rangeBuilder += currentRange
-            currentRange = StartFuncConst(componentStart, componentEnd)
+      val newRange: CETRange = currentOpt match {
+        case None =>
+          //if none, this is the first point in the payout curve we are evaluating
+          CETRange(counter, payout, totalCollateral)
+        case Some(current) =>
+          current match {
+            case _: StartFunc =>
+              //if we already have variable payouts,
+              //there is no point in continuing to iterate
+              StartFunc(interval.leftEndpoint.outcome,
+                        interval.rightEndpoint.outcome)
+            case z: StartZero =>
+              if (payout <= Satoshis.zero) {
+                //StartZero has payouts <= 0, so if our payout is <= 0 we are good
+                StartZero(z.indexFrom, counter + 1)
+              } else {
+                //else we need to switch to StartFunc because we have variable payouts
+                StartFunc(z.indexFrom, counter + 1)
+              }
+            case t: StartTotal =>
+              if (payout > totalCollateral) {
+                //StartTotal has payouts > totalCollateral, so we can keep this type
+                StartTotal(t.indexFrom, counter + 1)
+              } else {
+                //else we have to switch to StartFunc because we have variable payouts
+                StartFunc(t.indexFrom, counter + 1)
+              }
+            case const: StartFuncConst =>
+              if (payout == const.payout) {
+                //yay! we are still constant
+                StartFuncConst(const.indexFrom, counter + 1, const.payout)
+              } else {
+                //no longer a constant payout, so switch to StartFunc
+                StartFunc(const.indexFrom, counter + 1)
+              }
           }
+      }
 
-          num = componentEnd + 1
-          if (num != to) {
-            updateComponent()
-            processConstantComponents()
+      newRange match {
+        case s: StartFunc =>
+          //we have determined this interval has variable payouts since our new type is 'StartFunc'
+          //stop iterating and just return this fact
+          s.copy(indexTo = interval.rightEndpoint.outcome)
+        case _: StartZero | _: StartTotal | _: StartFuncConst =>
+          getIntervalType(totalCollateral = totalCollateral,
+                          interval = interval,
+                          rounding = rounding,
+                          counter = counter + 1,
+                          currentOpt = Some(newRange))
+      }
+
+    }
+  }
+
+  /** Takes in a vector of CET ranges and merges adjacent ranges that are of the same type.
+    * Example:
+    * Vector(StartZero, StartZero, StartTotal, StartZero, StartZero)
+    *
+    * would be reduced to
+    *
+    * Vector(StartZero, StartTotal, StartZero)
+    */
+  def mergeCetRanges(typedIntervals: Vector[CETRange]): Vector[CETRange] = {
+    if (typedIntervals.isEmpty) {
+      typedIntervals
+    } else {
+      val init = Vector(typedIntervals.head)
+      typedIntervals.tail.foldLeft(init) {
+        case (accum, nextCetRange) =>
+          val result = (accum.last, nextCetRange) match {
+            case (last: StartZero, next: StartZero) =>
+              accum.init.appended(StartZero(last.indexFrom, next.indexTo))
+            case (last: StartTotal, next: StartTotal) =>
+              accum.init.appended(StartTotal(last.indexFrom, next.indexTo))
+            case (last: StartFunc, next: StartFunc) =>
+              accum.init.appended(StartFunc(last.indexFrom, next.indexTo))
+            case (last: StartFuncConst, next: StartFuncConst) =>
+              accum.init.appended(
+                StartFuncConst(last.indexFrom, next.indexTo, next.payout))
+            case (_: CETRange, next: CETRange) =>
+              //adjacent ranges aren't of the same type, so we must preserve them
+              accum.appended(next)
           }
-        case _: DLCPayoutCurveComponent => ()
+          result
       }
     }
-
-    processConstantComponents()
-
-    while (num <= to) {
-      if (num == currentFunc.rightEndpoint.outcome && num != to) {
-        updateComponent()
-
-        processConstantComponents()
-      }
-
-      val value = currentFunc(num, rounding)
-      if (value <= Satoshis.zero) {
-        currentRange match {
-          case StartZero(indexFrom, _) =>
-            currentRange = StartZero(indexFrom, num)
-          case _: StartTotal | _: StartFunc | _: StartFuncConst =>
-            newRange(value)
-        }
-      } else if (value >= totalCollateral) {
-        currentRange match {
-          case StartTotal(indexFrom, _) =>
-            currentRange = StartTotal(indexFrom, num)
-          case _: StartZero | _: StartFunc | _: StartFuncConst =>
-            newRange(value)
-        }
-      } else if (
-        num != from &&
-        (num - 1 >= componentStart && value == currentFunc(num - 1,
-                                                           rounding)) ||
-        (num - 1 < componentStart && value == prevFunc(num - 1, rounding))
-      ) {
-        currentRange match {
-          case StartFunc(indexFrom, indexTo) =>
-            rangeBuilder += StartFunc(indexFrom, indexTo - 1)
-            currentRange = StartFuncConst(num - 1, num)
-          case StartFuncConst(indexFrom, _) =>
-            currentRange = StartFuncConst(indexFrom, num)
-          case _: StartZero | _: StartTotal =>
-            throw new RuntimeException("Something has gone horribly wrong.")
-        }
-      } else {
-        currentRange match {
-          case StartFunc(indexFrom, _) =>
-            currentRange = StartFunc(indexFrom, num)
-          case _: StartZero | _: StartTotal | _: StartFuncConst =>
-            newRange(value)
-        }
-      }
-
-      num += 1
-    }
-
-    rangeBuilder += currentRange
-
-    rangeBuilder.result()
   }
 
   /** Searches for an outcome which contains a prefix of digits */
@@ -391,7 +406,7 @@ object CETCalculator {
       rounding: RoundingIntervals,
       min: Long,
       max: Long): Vector[CETOutcome] = {
-    val ranges = splitIntoRanges(min, max, totalCollateral, function, rounding)
+    val ranges = splitIntoRanges(totalCollateral, function, rounding)
 
     ranges.flatMap { range =>
       range match {
@@ -405,7 +420,7 @@ object CETCalculator {
             decomp =>
               CETOutcome(decomp, payout = totalCollateral)
           }
-        case StartFuncConst(indexFrom, indexTo) =>
+        case StartFuncConst(indexFrom, indexTo, _) =>
           groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
             decomp =>
               CETOutcome(decomp, payout = function(indexFrom, rounding))
