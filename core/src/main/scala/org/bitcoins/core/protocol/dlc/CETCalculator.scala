@@ -53,7 +53,7 @@ object CETCalculator {
     */
   case class ZeroPayoutRange(indexFrom: Long, indexTo: Long) extends CETRange
 
-  /** This range contains payouts all >= totalCollateral */
+  /** This range contains payouts all == totalCollateral */
   case class MaxPayoutRange(indexFrom: Long, indexTo: Long) extends CETRange
 
   /** This range contains payouts that all vary at every step and cannot be compressed */
