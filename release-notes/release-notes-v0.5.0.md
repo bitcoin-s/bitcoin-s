@@ -113,6 +113,8 @@ point to a single `ChainApi` and not get outdated data.
 
 #### Commits
 
+1dacb74edf7 Optimize filter sync and fetching filter heights (#2568)
+
 e44a620ea1a Small cleanups on the chain docs (#2515)
 
 4e285e67469 Make ChainApi.processHeaders() return a failed future in the case we … (#2436)
@@ -133,6 +135,8 @@ The `Cli` module is now published as a library, this should allow other projects
 The `cli` is also published using the `sbt-native-image` plugin. (#2494)
 
 #### Commits
+
+f849ba492f1 Wallet name in walletinfo (#2603)
 
 94c71543fb9 Add createmultisig cli command (#2495)
 
@@ -171,6 +175,12 @@ These are subject to change and if your project is looking to use them
 it is recommended to use [nightly builds](https://bitcoin-s.org/docs/next/getting-started#nightly-builds) to stay up to date.
 
 #### Commits
+
+04cc10effec Add better Block.toString that doesn't blow up logs (#2585)
+
+810ca7c678c Create BlockSyncState type (#2567)
+
+aa0a6f96b8b Bech32 address improvements (#2571)
 
 abc1fdd23fb 2021 01 15 dlc refactors (#2518)
 
@@ -269,6 +279,8 @@ Various improvements to initializing and parsing an `AppConfig`.
 
 #### Commits
 
+c91f81bdbfb Fix all DAOs to use safeDatabase (#2556)
+
 0cc85cc0b3d Simplify DBConfig Test to fix failures (#2459)
 
 00e6a81a2a6 Safely delete files in DBConfigTest (#2451)
@@ -303,6 +315,12 @@ with the [DLC Spec](https://github.com/discreetlogcontracts/dlcspecs).
 
 #### Commits
 
+779eefb6a58 Rename createevent rpc to createenumevent (#2604)
+
+89e3fc54f59 Fix oracle cli to use announcements (#2576)
+
+7cce23abf72 Implement OracleAttestmentV0TLV, save outcome to db (#2516)
+
 166440b34b4 Update DLC Oracle Signing Algo (#2465)
 
 7ad477fdaa2 Don't allow negative outcome for unsigned digit decomp events (#2446)
@@ -329,7 +347,11 @@ fcc6558a651 Increase DLC Oracle test coverage (#2128)
 
 ### Eclair RPC
 
+Eclair RPC is now updated to be compatible with v0.5
+
 #### Commits
+
+d2203f2359f Bump Eclair version (#2405)
 
 e38569db105 Add officially supported version of bitcoind by eclair, also add the ability to specify which version of bitcoind you are using for EclairRpcTestUtil.getBitcoindRpc (#2490)
 
@@ -346,6 +368,8 @@ a08fc0c8a24 Fix BitGo fee provider parser (#2381)
 The GUI's icon now changes based on the network of the running server. The GUI now will update its balance periodically.
 
 #### Commits
+
+827f0f3b6a8 Uniform GUI denominations (#2534)
 
 95935dca34f Make GUI auto-update balance (#2197)
 
@@ -385,6 +409,10 @@ Fixed an issue with parsing unknown messages.
 
 #### Commits
 
+d608a442556 Ignore block messages while syncing (#2587)
+
+ddd47b1cf10 Optimize `node.start()` and fetching filter & filter header heights (#2554)
+
 7e942ba66dc Add unit test to make sure DataMessageHandler exception doesn't stop node (#2536)
 
 da54d2e9fbd 2021 01 11 issue 2493 (#2503)
@@ -413,6 +441,8 @@ Checkout [the docs](https://bitcoin-s.org/docs/0.5.0/getting-setup#option-b-bitc
 Fixed issues where the server wasn't always returning correctly formatted json.
 
 #### Commits
+
+a42601ebacd Fix rpc bind address from config (#2542)
 
 a1a2524b56e Use mainnet for default server (#2453)
 
@@ -458,6 +488,8 @@ The testkit now allows you to set any binary location for bitcoind and eclair.
 
 #### Commits
 
+4bf637a008b Fix 'client1.getDaemon.datadir.exists() was true' (#2544)
+
 d5f162ee09d Fix BitcoindV21RpcClient testkit errors (#2533)
 
 8c918ac0a72 Refactor test case to be more idiomatic in hopes this kills CI failures (#2524)
@@ -483,6 +515,12 @@ The wallet now stores its last sync height to allow for chainApis that are ahead
 The wallet now defaults to use native segwit (bc1 addresses) instead of legacy addresses.
 
 #### Commits
+
+ee7c96245e9 Add walletinfo rpc (#2546)
+
+cba90e5c2bb Fix rescan to fetch blocks during scan (#2540)
+
+36b5fc14271 Create isChange function for wallet (#2535)
 
 f3e81d027df Remove WalletSync.sync() -> WalletSync.syncFullBlocks() (#2522)
 
@@ -521,6 +559,28 @@ f7b97ba36eb Use SubtractFeeFromOutputsFinalizer when sending full utxos (#2072)
 b59a17def0d Add ability to fully spend utxos (#2063)
 
 ### Website & Documentation
+
+61c3b8185e5 Add oracle configuration to example configuration.md (#2592)
+
+0424bd8309a Fix aesPassword config in configuration docs (#2588)
+
+ec65e48a29e Update Oracle Server docs, fix oracle server bugs (#2581)
+
+d5243adf5a9 Add wallet sync documentation (#2565)
+
+7c18083577c Remove range event example from website docs (#2575)
+
+10c54186811 Updated DLC cli docs (#2551)
+
+74884a50d27 Clarify getting-setup.md -- make distinctions between optional steps … (#2528)
+
+f34f35ae2b7 Default to native segwit wallet (#2548)
+
+663d94d1c0c Add comment about using defaultAccountType (#2549)
+
+4a6c45f3137 Add whitepaper to website (#2547)
+
+48918380003 Rescan/Restore wallet docs improvements (#2539)
 
 65919e135b1 Touch up bitcoind docs (#2514)
 
@@ -571,6 +631,22 @@ c857f5e6c7b Change versions in readme (#2065)
 40db826ffc5 docs: Calculate correct hashes in dlc doc (#2059)
 
 ### Other
+
+f2172965221 Update scala-collection-compat to 2.4.1 (#2597)
+
+409373b89db Update metrics-core to 4.1.17 (#2580)
+
+4a1316263f8 2021 01 27 conectionpool (#2578)
+
+3ebf786fcd3 Update website deps (#2573)
+
+23f15dffc71 Update sourcecode to 0.2.3 (#2557)
+
+7bb0b10cd5e Update akka-actor, akka-slf4j, akka-stream, ... to 2.6.11 (#2517)
+
+93fea25c32e Fix native CI workflow for different branches (#2521)
+
+a16018bf172 Update sbt-mdoc to 2.2.16 (#2541)
 
 1903ee30b07 Update native-lib-loader to 2.3.5 (#2523)
 
