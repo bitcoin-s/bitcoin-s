@@ -572,6 +572,7 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
             KeyManagerAppConfig.moduleName -> Obj(
               "rootXpub" -> Str(wallet.keyManager.getRootXPub.toString)
             ),
+            "walletName" -> Str(walletConf.walletNameOpt.getOrElse("")),
             "xpub" -> Str(accountDb.xpub.toString),
             "hdPath" -> Str(accountDb.hdAccount.toString),
             "height" -> Num(walletState.height),
