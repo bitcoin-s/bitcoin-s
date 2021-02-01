@@ -43,7 +43,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
         }
       }
 
-    case ServerCommand("createevent", arr) =>
+    case ServerCommand("createenumevent", arr) =>
       CreateEvent.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
