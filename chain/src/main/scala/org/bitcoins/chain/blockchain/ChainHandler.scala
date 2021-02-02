@@ -956,6 +956,14 @@ object ChainHandler {
                      blockFilterCheckpoints)
   }
 
+  def fromChainHandlerCached(cached: ChainHandlerCached)(implicit
+      ec: ExecutionContext): ChainHandler = {
+    new ChainHandler(blockHeaderDAO = cached.blockHeaderDAO,
+                     filterHeaderDAO = cached.filterHeaderDAO,
+                     filterDAO = cached.filterDAO,
+                     blockFilterCheckpoints = Map.empty)(cached.chainConfig, ec)
+  }
+
   /** Constructs a [[ChainHandler chain handler]] from the state in the database
     * This gives us the guaranteed latest state we have in the database
     */
