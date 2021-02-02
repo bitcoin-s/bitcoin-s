@@ -94,7 +94,8 @@ class BitcoinSServerMain(override val args: Array[String])
         wallet <- configuredWalletF
         _ <- node.start()
         _ <- wallet.start()
-        chainApi <- node.chainApiFromDb()
+        cachedChainApi <- node.chainApiFromDb()
+        chainApi = ChainHandler.fromChainHandlerCached(cachedChainApi)
         binding <- startHttpServer(nodeApi = node,
                                    chainApi = chainApi,
                                    wallet = wallet,
