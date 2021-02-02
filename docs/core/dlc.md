@@ -26,7 +26,7 @@ import org.bitcoins.crypto._
 
 ## DLCPayoutCurve
 
-[DLCPayoutCurve.scala] provides an interface for serializing and evaluating payout curves for DLCs as specified in the [Payout Curve Specification](https://github.com/discreetlogcontracts/dlcspecs/blob/c4fb12d95a4255eabb873611437d05b740bbeccc/PayoutCurve.md). This file supports arbitrary polynomial interpolation.
+[DLCPayoutCurve.scala](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/dlc/DLCPayoutCurve.scala) provides an interface for serializing and evaluating payout curves for DLCs as specified in the [Payout Curve Specification](https://github.com/discreetlogcontracts/dlcspecs/blob/c4fb12d95a4255eabb873611437d05b740bbeccc/PayoutCurve.md). This file supports arbitrary polynomial interpolation.
 
 To approximate a payout curve that is not a piecewise polynomial function, one may either propose a new kind of curve to the specification, or use approximation. For example by feeding `DLCPayoutCurve` a list of `OutcomePayoutEndpoint`s, one receives a linear approximation of their payout curve which takes the sampled points and "connects the dots" with straight lines. Alternatively one can use spline interpolation and sample two midpoints of every spline to get a piecewise cubic interpolation.
 
@@ -71,11 +71,11 @@ val Indexed(line3, _) = curve.componentFor(10000)
 line3(10000)
 ```
 
-While many approaches result in higher fidelity to the original curve than linear approximation, usually it is the case that numeric contracts use [Rounding] which dominates the error so that linear approximation is adequate.
+While many approaches result in higher fidelity to the original curve than linear approximation, usually it is the case that numeric contracts use [Rounding](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/dlc/RoundingIntervals.scala) which dominates the error so that linear approximation is adequate.
 
 ## CETCalculator
 
-[CETCalculator.scala] provides an interface to all Contract Execution Transaction (CET) set computations as specified in the [CET Compression Specification](https://github.com/discreetlogcontracts/dlcspecs/blob/c4fb12d95a4255eabb873611437d05b740bbeccc/CETCompression.md) and the [Multi-Oracle Specification](https://github.com/discreetlogcontracts/dlcspecs/blob/4fb01bc4e15865fa8323caf7e9cebb403b8116a5/MultiOracle.md).
+[CETCalculator.scala](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/dlc/CETCalculator.scala) provides an interface to all Contract Execution Transaction (CET) set computations as specified in the [CET Compression Specification](https://github.com/discreetlogcontracts/dlcspecs/blob/c4fb12d95a4255eabb873611437d05b740bbeccc/CETCompression.md) and the [Multi-Oracle Specification](https://github.com/discreetlogcontracts/dlcspecs/blob/4fb01bc4e15865fa8323caf7e9cebb403b8116a5/MultiOracle.md).
 
 Of particular note, are the functions `computeCETs` and `computeMultiOracleCETsBinary` which compute the entire set of outcomes (corresponding to CETs) for a single oracle and multiple numeric oracles with a bounded difference allowed respectively.
 
@@ -121,19 +121,19 @@ multiOracleCETsWithRounding.length
 
 ## OracleOutcome
 
-[OracleOutcome]s correspond one-to-one with DLC execution paths (and with CETs). An `OracleOutcome` contains information about which oracles signed what, but storing only the information actually used for DLC execution and not extra unneeded information such as what additional oracles signed.
+[OracleOutcome](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/dlc/OracleOutcome.scala)s correspond one-to-one with DLC execution paths (and with CETs). An `OracleOutcome` contains information about which oracles signed what, but storing only the information actually used for DLC execution and not extra unneeded information such as what additional oracles signed.
 
 This trait also exposes an endpoint to the aggregate signature point (aka adaptor point) corresponding to this outcome which is used during CET signing, as well as an endpoint to compute the aggregate nonce.
 
 ## DLCStatus
 
-[DLCStatus.scala] contains the DLC state machine comprised of the states `[Offered, Accepted, Signed, Broadcasted, Confirmed, Claimed, RemoteClaimed, Refunded]` each of which contain all relevant P2P messages and on-chain transactions. 
+[DLCStatus.scala](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/dlc/DLCStatus.scala) contains the DLC state machine comprised of the states `[Offered, Accepted, Signed, Broadcasted, Confirmed, Claimed, RemoteClaimed, Refunded]` each of which contain all relevant P2P messages and on-chain transactions. 
 
 The `DLCStatus` object also contains many useful utility functions to extract and compute various things from a `DLCStatus` such as transaction ids and even computing the [OracleOutcome](#OracleOutcome) and aggregate oracle signature from on-chain information in the case that one's remote counter-party initiates execution.
 
 ## ContractInfo
 
-[ContractInfo] wraps a [ContractDescriptor] and an [OracleInfo] and provides the complete external-facing interface needed during DLC setup and execution. A `ContractInfo` fully determines a DLC up to the choice of public keys and funding UTXOs to be used. One of its most important functions is `allOutcomesAndPayouts` which computes the entire set of [OracleOutcome](#OracleOutcome)s and their corresponding payouts. Most of its other functions utilize that set to do all sorts of things such as retrieving payouts or finding an outcome given `OracleSignatures`.
+[ContractInfo](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/dlc/ContractInfo.scala) wraps a [ContractDescriptor](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/dlc/ContractDescriptor.scala) and an [OracleInfo](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/dlc/OracleInfo.scala) and provides the complete external-facing interface needed during DLC setup and execution. A `ContractInfo` fully determines a DLC up to the choice of public keys and funding UTXOs to be used. One of its most important functions is `allOutcomesAndPayouts` which computes the entire set of [OracleOutcome](#OracleOutcome)s and their corresponding payouts. Most of its other functions utilize that set to do all sorts of things such as retrieving payouts or finding an outcome given `OracleSignatures`.
 
 ```scala mdoc:to-string
 val descriptor = NumericContractDescriptor(curve, numDigits = 15, roundTo100)
@@ -151,7 +151,7 @@ val oracleInfo = NumericMultiOracleInfo(
     maximizeCoverage = false
 )
 
-val contractInfo = ContractInfo(totalCollateral, descriptor, oracleInfo)
+val contractInfo = ContractInfo(totalCollateral, ContractOraclePair.NumericPair(descriptor, oracleInfo))
 contractInfo.max
 contractInfo.allOutcomes.length
 
@@ -162,7 +162,7 @@ contractInfo.getPayouts(outcome)
 
 ## TLV
 
-[TLV.scala] provides protocol agnostic infrastructure for the Type-Length-Value (TLV) serialization format which is used by both the Lightning Network and DLCs. The file contains a sealed trait of all possible TLVs as well as utilities for defining new types.
+[TLV.scala](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/tlv/TLV.scala) provides protocol agnostic infrastructure for the Type-Length-Value (TLV) serialization format which is used by both the Lightning Network and DLCs. The file contains a sealed trait of all possible TLVs as well as utilities for defining new types.
 
 This includes `NormalizedString` a standardized string serialization using varint-prefixed UTF-8 with NFC normalization which has implicit conversions with `String` so that they can be used interchangeably. This also includes a `TLVUtil` trait for serialization and a `ValueIterator` class for deserialization.
 
@@ -170,7 +170,7 @@ Currently, only the most basic Lightning messages are defined (`Ping`, `Pong`, `
 
 ## LnMessage
 
-[LnMessage.scala] provides support for the Lightning Network Message serialization format, which is very similar to the [TLV](#tlv) format with some minor differences so that an `LnMessage` simply wraps a `TLV` and provides the altered serialization format. Likewise one can parse a `LnMessage` using a `TLVFactory` and subsequently unwrap to get the nested `TLV`.
+[LnMessage.scala](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/tlv/LnMessage.scala) provides support for the Lightning Network Message serialization format, which is very similar to the [TLV](#tlv) format with some minor differences so that an `LnMessage` simply wraps a `TLV` and provides the altered serialization format. Likewise one can parse a `LnMessage` using a `TLVFactory` and subsequently unwrap to get the nested `TLV`.
 
 ```scala mdoc:to-string
 val offerTLV = DLCOfferTLV(

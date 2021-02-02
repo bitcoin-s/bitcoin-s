@@ -5,14 +5,32 @@
     "previous": "Previous",
     "tagline": "Bitcoin implementation in Scala",
     "docs": {
+      "applications/chain": {
+        "title": "Blockchain Verification"
+      },
       "applications/cli": {
         "title": "CLI"
+      },
+      "applications/configuration": {
+        "title": "Application configuration"
+      },
+      "applications/dlc": {
+        "title": "Executing A DLC with Bitcoin-S"
+      },
+      "applications/filter-sync": {
+        "title": "Syncing Blockfilters"
       },
       "applications/gui": {
         "title": "GUI"
       },
+      "applications/node": {
+        "title": "Light client"
+      },
       "applications/server": {
         "title": "Application Server"
+      },
+      "applications/wallet": {
+        "title": "Wallet"
       },
       "bips": {
         "title": "Supported BIPs"
@@ -56,6 +74,9 @@
       "core/psbts": {
         "title": "Partially Signed Bitcoin Transactions"
       },
+      "core/sign": {
+        "title": "Sign API"
+      },
       "core/spending-info": {
         "title": "Signing Transactions"
       },
@@ -92,6 +113,12 @@
       "node/node": {
         "title": "Light Client"
       },
+      "oracle/build-oracle-server": {
+        "title": "Building the Oracle Server"
+      },
+      "oracle/oracle-election-example": {
+        "title": "Election Example"
+      },
       "oracle/oracle-server": {
         "title": "Oracle Server"
       },
@@ -119,8 +146,14 @@
       "wallet/address-tagging": {
         "title": "Address and UTXO tagging"
       },
+      "wallet/chain-query-api": {
+        "title": "Chain Query API"
+      },
       "wallet/dlc": {
         "title": "Executing A DLC with Bitcoin-S"
+      },
+      "wallet/node-api": {
+        "title": "Node API"
       },
       "wallet/wallet-callbacks": {
         "title": "Wallet Callbacks"
