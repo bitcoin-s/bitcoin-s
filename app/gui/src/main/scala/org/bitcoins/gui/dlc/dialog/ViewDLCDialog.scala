@@ -1,11 +1,6 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  MultiNonceContractInfo,
-  SingleNonceContractInfo
-}
 import org.bitcoins.core.protocol.dlc._
-import org.bitcoins.core.protocol.dlc.DLCStatus
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
 import scalafx.Includes._
@@ -185,20 +180,24 @@ object ViewDLCDialog {
       add(node, columnIndex = 1, rowIndex = row)
 
       row += 1
-      status.contractInfo match {
-        case _: SingleNonceContractInfo => ()
-        case MultiNonceContractInfo(outcomeValueFunc,
-                                    base,
-                                    numDigits,
-                                    totalCollateral) =>
+      status.contractInfo.contractDescriptor match {
+        case _: EnumContractDescriptor => ()
+        case descriptor: NumericContractDescriptor =>
           val previewGraphButton: Button = new Button("Preview Graph") {
             onAction = _ => {
+              val payoutCurve = if (status.isInitiator) {
+                descriptor.outcomeValueFunc
+              } else {
+                descriptor
+                  .flip(status.totalCollateral.satoshis)
+                  .outcomeValueFunc
+              }
               DLCPlotUtil.plotCETsWithOriginalCurve(
-                base,
-                numDigits,
-                outcomeValueFunc,
-                totalCollateral,
-                RoundingIntervals.noRounding)
+                base = 2,
+                descriptor.numDigits,
+                payoutCurve,
+                status.contractInfo.totalCollateral,
+                descriptor.roundingIntervals)
               ()
             }
           }

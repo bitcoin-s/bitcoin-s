@@ -30,13 +30,18 @@ class DLCMessageTest extends BitcoinSAsyncTest {
   val dummyStr: String =
     "00000000000000000008bba30d4d0fb53dcbffb601557de9f16d257d4f1985b7"
 
+  val dummyOracle: EnumSingleOracleInfo = EnumSingleOracleInfo.dummyForKeys(
+    ECPrivateKey.freshPrivateKey,
+    ECPublicKey.freshPublicKey.schnorrNonce,
+    Vector(EnumOutcome(dummyStr)))
+
   val dummySig: PartialSignature =
     PartialSignature(dummyPubKey, DummyECDigitalSignature)
 
   it must "not allow a negative collateral for a DLCOffer" in {
     assertThrows[IllegalArgumentException](
       DLCOffer(
-        OracleAndContractInfo(OracleInfo.dummy, ContractInfo.empty),
+        ContractInfo.dummy,
         DLCPublicKeys(dummyPubKey, dummyAddress),
         Satoshis(-1),
         Vector.empty,
@@ -53,8 +58,12 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         DLCPublicKeys(dummyPubKey, dummyAddress),
         Vector.empty,
         dummyAddress,
-        CETSignatures(Vector(EnumOutcome(dummyStr) -> ECAdaptorSignature.dummy),
+        CETSignatures(Vector(
+                        EnumOracleOutcome(
+                          Vector(dummyOracle),
+                          EnumOutcome(dummyStr)) -> ECAdaptorSignature.dummy),
                       dummySig),
+        DLCAccept.NoNegotiationFields,
         Sha256Digest.empty
       )
     )

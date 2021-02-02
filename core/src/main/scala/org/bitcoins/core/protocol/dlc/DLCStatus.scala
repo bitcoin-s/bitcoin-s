@@ -4,11 +4,6 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
-import org.bitcoins.core.protocol.tlv.{
-  DLCOutcomeType,
-  EnumOutcome,
-  UnsignedNumericOutcome
-}
 import org.bitcoins.core.protocol.transaction.{
   NonWitnessTransaction,
   Transaction,
@@ -25,8 +20,8 @@ sealed trait DLCStatus {
   def isInitiator: Boolean
   def state: DLCState
   def tempContractId: Sha256Digest
-  def oracleInfo: OracleInfo
   def contractInfo: ContractInfo
+  def oracleInfo: OracleInfo = contractInfo.oracleInfo
   def timeouts: DLCTimeouts
   def feeRate: FeeUnit
   def totalCollateral: CurrencyUnit
@@ -49,7 +44,7 @@ sealed trait ClosedDLCStatus extends BroadcastedDLCStatus {
 }
 
 sealed trait ClaimedDLCStatus extends ClosedDLCStatus {
-  def outcome: DLCOutcomeType
+  def oracleOutcome: OracleOutcome
   def oracleSigs: Vector[SchnorrDigitalSignature]
 }
 
@@ -59,7 +54,6 @@ object DLCStatus {
       paramHash: Sha256DigestBE,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -74,7 +68,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -89,7 +82,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -104,7 +96,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -120,7 +111,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -136,7 +126,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -145,7 +134,7 @@ object DLCStatus {
       fundingTxId: DoubleSha256DigestBE,
       closingTxId: DoubleSha256DigestBE,
       oracleSigs: Vector[SchnorrDigitalSignature],
-      outcome: DLCOutcomeType)
+      oracleOutcome: OracleOutcome)
       extends ClaimedDLCStatus {
     override val state: DLCState.Claimed.type = DLCState.Claimed
   }
@@ -155,7 +144,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -164,7 +152,7 @@ object DLCStatus {
       fundingTxId: DoubleSha256DigestBE,
       closingTxId: DoubleSha256DigestBE,
       oracleSig: SchnorrDigitalSignature,
-      outcome: DLCOutcomeType)
+      oracleOutcome: OracleOutcome)
       extends ClaimedDLCStatus {
     override val state: DLCState.RemoteClaimed.type = DLCState.RemoteClaimed
     override val oracleSigs: Vector[SchnorrDigitalSignature] = Vector(oracleSig)
@@ -175,7 +163,6 @@ object DLCStatus {
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
@@ -230,7 +217,7 @@ object DLCStatus {
       offer: DLCOffer,
       accept: DLCAccept,
       sign: DLCSign,
-      cet: Transaction): (SchnorrDigitalSignature, DLCOutcomeType) = {
+      cet: Transaction): (SchnorrDigitalSignature, OracleOutcome) = {
     val wCET = cet match {
       case wtx: WitnessTransaction => wtx
       case _: NonWitnessTransaction =>
@@ -244,13 +231,6 @@ object DLCStatus {
     require(cetSigs.size == 2,
             s"There must be only 2 signatures, got ${cetSigs.size}")
 
-    val oraclePubKey = offer.oracleInfo.pubKey
-    val rVals = offer.oracleInfo.nonces
-
-    def aggregateR(numSigs: Int): SchnorrNonce = {
-      rVals.take(numSigs).map(_.publicKey).reduce(_.add(_)).schnorrNonce
-    }
-
     /** Extracts an adaptor secret from cetSig assuming it is the completion
       * adaptorSig (which it may not be) and returns the oracle signature if
       * and only if adaptorSig does correspond to cetSig.
@@ -262,25 +242,11 @@ object DLCStatus {
       * @param adaptorSig The adaptor signature corresponding to outcome
       * @param cetSig The actual signature for local's key found on-chain on a CET
       */
-    def sigFromMsgAndSigs(
-        outcome: DLCOutcomeType,
+    def sigFromOutcomeAndSigs(
+        outcome: OracleOutcome,
         adaptorSig: ECAdaptorSignature,
         cetSig: ECDigitalSignature): SchnorrDigitalSignature = {
-      val (sigPubKey, numSigs) = outcome match {
-        case EnumOutcome(outcome) =>
-          val sigPoint = oraclePubKey.computeSigPoint(
-            CryptoUtil.sha256(outcome),
-            aggregateR(1))
-
-          (sigPoint, 1)
-        case UnsignedNumericOutcome(digits) =>
-          val digitBytes =
-            digits.map(d => CryptoUtil.serializeForHash(d.toString))
-          val sigPoint =
-            oraclePubKey.computeSigPoint(digitBytes, rVals.take(digits.length))
-
-          (sigPoint, digits.length)
-      }
+      val sigPubKey = outcome.sigPoint
 
       // This value is either the oracle signature S value or it is
       // useless garbage, but we don't know in this scope, the caller
@@ -290,40 +256,29 @@ object DLCStatus {
           .extractAdaptorSecret(adaptorSig,
                                 ECDigitalSignature(cetSig.bytes.init))
           .fieldElement
-      SchnorrDigitalSignature(aggregateR(numSigs), possibleOracleS)
+
+      SchnorrDigitalSignature(outcome.aggregateNonce, possibleOracleS)
     }
 
     val outcomeValues = wCET.outputs.map(_.value).sorted
-    val totalCollateral = offer.totalCollateral + accept.totalCollateral
+    val totalCollateral = offer.contractInfo.totalCollateral
 
-    val possibleMessages = offer.contractInfo match {
-      case DLCMessage.SingleNonceContractInfo(outcomeValueMap) =>
-        outcomeValueMap
-          .filter {
-            case (_, amt) =>
-              Vector(amt, totalCollateral - amt)
-                .filter(_ >= Policy.dustThreshold)
-                .sorted == outcomeValues
-          }
-          .map(_._1)
-      case info: DLCMessage.MultiNonceContractInfo =>
-        info.outcomeVec
-          .filter {
-            case (_, amt) =>
-              val amts = Vector(amt, totalCollateral - amt)
-                .filter(_ >= Policy.dustThreshold)
-                .sorted
+    val possibleOutcomes = offer.contractInfo.allOutcomesAndPayouts
+      .filter {
+        case (_, amt) =>
+          val amts = Vector(amt, totalCollateral - amt)
+            .filter(_ >= Policy.dustThreshold)
+            .sorted
 
-              // Only messages within 1 satoshi of the on-chain CET's value
-              // should be considered.
-              // Off-by-one is okay because both parties round to the nearest
-              // Satoshi for fees and if both round up they could be off-by-one.
-              Math.abs(
-                (amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
-                .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
-          }
-          .map { case (digits, _) => UnsignedNumericOutcome(digits) }
-    }
+          // Only messages within 1 satoshi of the on-chain CET's value
+          // should be considered.
+          // Off-by-one is okay because both parties round to the nearest
+          // Satoshi for fees and if both round up they could be off-by-one.
+          Math.abs(
+            (amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
+            .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
+      }
+      .map(_._1)
 
     val (offerCETSig, acceptCETSig) =
       if (
@@ -337,26 +292,26 @@ object DLCStatus {
 
     val (cetSig, outcomeSigs) = if (isInitiator) {
       val possibleOutcomeSigs = sign.cetSigs.outcomeSigs.filter {
-        case (msg, _) => possibleMessages.contains(msg)
+        case (outcome, _) => possibleOutcomes.contains(outcome)
       }
       (acceptCETSig, possibleOutcomeSigs)
     } else {
       val possibleOutcomeSigs = accept.cetSigs.outcomeSigs.filter {
-        case (msg, _) => possibleMessages.contains(msg)
+        case (outcome, _) => possibleOutcomes.contains(outcome)
       }
       (offerCETSig, possibleOutcomeSigs)
     }
 
     val sigOpt = outcomeSigs.find {
       case (outcome, adaptorSig) =>
-        val possibleOracleSig = sigFromMsgAndSigs(outcome, adaptorSig, cetSig)
-        val sigPoint = offer.oracleAndContractInfo.sigPointForOutcome(outcome)
-        possibleOracleSig.sig.getPublicKey == sigPoint
+        val possibleOracleSig =
+          sigFromOutcomeAndSigs(outcome, adaptorSig, cetSig)
+        possibleOracleSig.sig.getPublicKey == outcome.sigPoint
     }
 
     sigOpt match {
-      case Some((msg, adaptorSig)) =>
-        (sigFromMsgAndSigs(msg, adaptorSig, cetSig), msg)
+      case Some((outcome, adaptorSig)) =>
+        (sigFromOutcomeAndSigs(outcome, adaptorSig, cetSig), outcome)
       case None =>
         throw new IllegalArgumentException("No Oracle Signature found from CET")
     }

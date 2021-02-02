@@ -1,12 +1,13 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.MultiNonceContractInfo
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.{
   DLCPayoutCurve,
+  NumericContractDescriptor,
   OutcomePayoutPoint,
   RoundingIntervals
 }
+import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.DLCPlotUtil
 import org.bitcoins.gui.util.GUIUtil.setNumericInput
@@ -22,9 +23,13 @@ import scala.util.{Failure, Success, Try}
 
 object InitNumericContractDialog {
 
-  def showAndWait(parentWindow: Window): Option[MultiNonceContractInfo] = {
+  def showAndWait(parentWindow: Window): Option[
+    (Satoshis, NumericContractDescriptor, Option[OracleAnnouncementTLV])] = {
     val dialog =
-      new Dialog[Option[MultiNonceContractInfo]]() {
+      new Dialog[Option[(
+          Satoshis,
+          NumericContractDescriptor,
+          Option[OracleAnnouncementTLV])]]() {
         initOwner(parentWindow)
         title = "Initialize Demo Oracle"
         headerText = "Enter contract interpolation points"
@@ -46,6 +51,10 @@ object InitNumericContractDialog {
     setNumericInput(baseTF)
     setNumericInput(numDigitsTF)
     setNumericInput(totalCollateralTF)
+
+    val announcementTF = new TextField() {
+      promptText = "(optional)"
+    }
 
     val pointMap: scala.collection.mutable.Map[
       Int,
@@ -151,9 +160,8 @@ object InitNumericContractDialog {
       onAction = _ => addRoundingRow()
     }
 
-    def getContractInfo: Try[MultiNonceContractInfo] = {
+    def getContractInfo: Try[(Satoshis, NumericContractDescriptor)] = {
       Try {
-        val base = baseTF.text.value.toInt
         val numDigits = numDigitsTF.text.value.toInt
         val totalCollateral = Satoshis(totalCollateralTF.text.value.toLong)
 
@@ -168,12 +176,28 @@ object InitNumericContractDialog {
               None
             }
         }
+        val roundingIntervalStartsTF = roundingMap.values.toVector
+        val roundingIntervalsStarts = roundingIntervalStartsTF.flatMap {
+          case (outcomeTF, roundingModTF) =>
+            if (
+              outcomeTF.text.value.nonEmpty && roundingModTF.text.value.nonEmpty
+            ) {
+              val outcome = outcomeTF.text.value.toLong
+              val roundingMod = roundingModTF.text.value.toLong
+              Some(
+                RoundingIntervals.IntervalStart(BigDecimal(outcome),
+                                                roundingMod))
+            } else None
+        }
 
         val sorted = outcomesValuePoints.sortBy(_.outcome)
         require(sorted == outcomesValuePoints, "Must be sorted by outcome")
 
         val func = DLCPayoutCurve(outcomesValuePoints)
-        MultiNonceContractInfo(func, base, numDigits, totalCollateral)
+        (totalCollateral,
+         NumericContractDescriptor(func,
+                                   numDigits,
+                                   RoundingIntervals(roundingIntervalsStarts)))
       }
     }
 
@@ -219,6 +243,8 @@ object InitNumericContractDialog {
         add(numDigitsTF, 1, 1)
         add(new Label("Total Collateral"), 0, 2)
         add(totalCollateralTF, 1, 2)
+        add(new Label("Announcement"), 0, 3)
+        add(announcementTF, 1, 3)
       }
 
       val outcomes: Node = new VBox {
@@ -257,13 +283,12 @@ object InitNumericContractDialog {
         onAction = _ => {
           getContractInfo match {
             case Failure(_) => ()
-            case Success(contractInfo) =>
-              DLCPlotUtil.plotCETsWithOriginalCurve(
-                contractInfo.base,
-                contractInfo.numDigits,
-                contractInfo.outcomeValueFunc,
-                contractInfo.totalCollateral,
-                getRoundingIntervals)
+            case Success((totalCollateral, descriptor)) =>
+              DLCPlotUtil.plotCETsWithOriginalCurve(base = 2,
+                                                    descriptor.numDigits,
+                                                    descriptor.outcomeValueFunc,
+                                                    totalCollateral,
+                                                    getRoundingIntervals)
               ()
           }
         }
@@ -291,14 +316,25 @@ object InitNumericContractDialog {
       if (dialogButton == ButtonType.OK) {
         getContractInfo match {
           case Failure(exception) => throw exception
-          case Success(contractInfo) =>
-            Some(contractInfo)
+          case Success((sats, contractInfo)) =>
+            val announcementStr = announcementTF.text.value
+            val announcementOpt = if (announcementStr.nonEmpty) {
+              Some(OracleAnnouncementTLV(announcementStr))
+            } else None
+            Some((sats, contractInfo, announcementOpt))
         }
       } else None
 
     dialog.showAndWait() match {
-      case Some(Some(contractInfo: MultiNonceContractInfo)) =>
-        Some(contractInfo)
+      case Some(
+            Some(
+              (totalCollateral: Satoshis,
+               descriptor: NumericContractDescriptor,
+               announcementOpt: Option[_]))) =>
+        Some(
+          (totalCollateral,
+           descriptor,
+           announcementOpt.asInstanceOf[Option[OracleAnnouncementTLV]]))
       case Some(_) | None => None
     }
   }

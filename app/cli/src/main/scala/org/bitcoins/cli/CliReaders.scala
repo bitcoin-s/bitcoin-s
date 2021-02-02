@@ -4,7 +4,6 @@ import java.io.File
 import java.nio.file.Path
 import java.time.{Instant, ZoneId, ZonedDateTime}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
@@ -13,6 +12,7 @@ import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
+import org.bitcoins.core.protocol.dlc.{ContractInfo, OracleInfo}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -177,10 +177,10 @@ object CliReaders {
       val reads: String => ContractInfo = ContractInfo.fromHex
     }
 
-  implicit val contractInfoTLVReads: Read[ContractInfoTLV] =
-    new Read[ContractInfoTLV] {
+  implicit val contractInfoTLVReads: Read[ContractInfoV0TLV] =
+    new Read[ContractInfoV0TLV] {
       val arity: Int = 1
-      val reads: String => ContractInfoTLV = ContractInfoTLV.fromHex
+      val reads: String => ContractInfoV0TLV = ContractInfoV0TLV.fromHex
     }
 
   implicit val blockStampReads: Read[BlockStamp] =
@@ -335,6 +335,14 @@ object CliReaders {
         MnemonicCode.fromWords(words.toVector)
       }
   }
+
+  implicit val oracleAttestmentTLVReads: Read[OracleAttestmentTLV] =
+    new Read[OracleAttestmentTLV] {
+      override def arity: Int = 1
+
+      override def reads: String => OracleAttestmentTLV =
+        OracleAttestmentTLV.fromHex
+    }
 
   implicit val ecPublicKeyReads: Read[ECPublicKey] = new Read[ECPublicKey] {
     override def arity: Int = 1

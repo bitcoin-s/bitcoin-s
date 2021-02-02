@@ -182,7 +182,6 @@ object DLCDialog {
   val fileChosenStr = ""
 
   val allOfferFields: Map[String, String] = Map[String, String](
-    oracleAnnouncementStr -> "",
     contractInfoStr -> "",
     collateralStr -> "Satoshis",
     feeRateStr -> "sats/vbyte (optional)",

@@ -7,450 +7,20 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
-
-import scala.collection.immutable.HashMap
 
 sealed trait DLCMessage
 
 object DLCMessage {
 
   def calcParamHash(
-      oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts): Sha256DigestBE = {
     CryptoUtil
-      .sha256(oracleInfo.bytes ++ contractInfo.bytes ++ timeouts.bytes)
+      .sha256(contractInfo.bytes ++ timeouts.bytes)
       .flip
-  }
-
-  sealed trait OracleInfo extends TLVSerializable[OracleInfoTLV] {
-    def pubKey: SchnorrPublicKey
-
-    /** The oracle's pre-committed nonces, in the correct order */
-    def nonces: Vector[SchnorrNonce]
-
-    /** The order of the given sigs should correspond to the given outcome. */
-    def verifySigs(
-        outcome: DLCOutcomeType,
-        sigs: Vector[SchnorrDigitalSignature]): Boolean
-
-    /** Computes the signature point (aka signature anticipation) for a given outcome.
-      * This point is used for adaptor signing.
-      */
-    def sigPoint(outcome: DLCOutcomeType): ECPublicKey = {
-      pubKey.computeSigPoint(outcome.serialized, nonces)
-    }
-  }
-
-  case class SingleNonceOracleInfo(
-      pubKey: SchnorrPublicKey,
-      rValue: SchnorrNonce)
-      extends OracleInfo
-      with TLVSerializable[OracleInfoV0TLV] {
-    override def nonces: Vector[SchnorrNonce] = Vector(rValue)
-
-    override def verifySigs(
-        outcome: DLCOutcomeType,
-        sigs: Vector[SchnorrDigitalSignature]): Boolean = {
-      outcome match {
-        case EnumOutcome(outcome) =>
-          if (sigs.length != 1) {
-            throw new IllegalArgumentException(
-              s"Expected one signature, got $sigs")
-          } else if (sigs.head.rx != rValue) {
-            throw new IllegalArgumentException(
-              s"Expected R value of $rValue, got ${sigs.head}")
-          } else {
-            pubKey.verify(CryptoUtil.sha256(outcome).bytes, sigs.head)
-          }
-        case UnsignedNumericOutcome(_) =>
-          throw new IllegalArgumentException(
-            s"Expected EnumOutcome, got $outcome")
-      }
-    }
-
-    override def toTLV: OracleInfoV0TLV = OracleInfoV0TLV(pubKey, rValue)
-  }
-
-  object SingleNonceOracleInfo
-      extends TLVDeserializable[OracleInfoV0TLV, SingleNonceOracleInfo](
-        OracleInfoV0TLV) {
-
-    override def fromTLV(tlv: OracleInfoV0TLV): SingleNonceOracleInfo = {
-      SingleNonceOracleInfo(tlv.pubKey, tlv.rValue)
-    }
-  }
-
-  case class MultiNonceOracleInfo(
-      pubKey: SchnorrPublicKey,
-      nonces: Vector[SchnorrNonce])
-      extends OracleInfo
-      with TLVSerializable[OracleInfoV1TLV] {
-    require(nonces.nonEmpty, "Must contain positive number of nonces.")
-
-    override def verifySigs(
-        outcome: DLCOutcomeType,
-        sigs: Vector[SchnorrDigitalSignature]): Boolean = {
-      require(sigs.nonEmpty, "At least one signature is required")
-      require(
-        sigs.length <= nonces.length,
-        s"Too many signatures (expected at most ${nonces.length}), got $sigs")
-
-      outcome match {
-        case EnumOutcome(_) =>
-          throw new IllegalArgumentException(
-            s"Expected numeric outcome, got $outcome")
-        case UnsignedNumericOutcome(digits) =>
-          digits
-            .zip(sigs.take(digits.length).zip(nonces.take(digits.length)))
-            .foldLeft(digits.length <= sigs.length) {
-              case (result, (digit, (sig, nonce))) =>
-                require(
-                  sig.rx == nonce,
-                  s"Unexpected nonce in ${sig.hex}, expected ${nonce.hex}")
-
-                result && pubKey.verify(CryptoUtil.sha256(digit.toString).bytes,
-                                        sig)
-            }
-      }
-    }
-
-    override def toTLV: OracleInfoV1TLV = OracleInfoV1TLV(pubKey, nonces)
-  }
-
-  object MultiNonceOracleInfo
-      extends TLVDeserializable[OracleInfoV1TLV, MultiNonceOracleInfo](
-        OracleInfoV1TLV) {
-
-    override def fromTLV(tlv: OracleInfoV1TLV): MultiNonceOracleInfo = {
-      MultiNonceOracleInfo(tlv.pubKey, tlv.nonces)
-    }
-  }
-
-  object OracleInfo
-      extends TLVDeserializable[OracleInfoTLV, OracleInfo](OracleInfoTLV) {
-
-    val dummy: OracleInfo = SingleNonceOracleInfo(
-      ECPublicKey.freshPublicKey.schnorrPublicKey,
-      ECPublicKey.freshPublicKey.schnorrNonce)
-
-    def fromOracleAnnouncement(
-        announcement: OracleAnnouncementTLV): OracleInfo = {
-      announcement.eventTLV.eventDescriptor match {
-        case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV =>
-          require(announcement.eventTLV.nonces.size == 1)
-          SingleNonceOracleInfo(announcement.publicKey,
-                                announcement.eventTLV.nonces.head)
-        case _: DigitDecompositionEventDescriptorV0TLV =>
-          MultiNonceOracleInfo(announcement.publicKey,
-                               announcement.eventTLV.nonces)
-      }
-    }
-
-    override def fromTLV(tlv: OracleInfoTLV): OracleInfo = {
-      tlv match {
-        case tlv: OracleInfoV0TLV => SingleNonceOracleInfo.fromTLV(tlv)
-        case tlv: OracleInfoV1TLV => MultiNonceOracleInfo.fromTLV(tlv)
-      }
-    }
-  }
-
-  sealed trait ContractInfo extends TLVSerializable[ContractInfoTLV] {
-
-    /** Returns the counter-party's ContractInfo corresponding to this one.
-      *
-      * WARNING: this(outcome) + flip(TC)(outcome) is not guaranteed to equal TC.
-      * As such, this should not be used to generate pairs of ContractInfos and
-      * should only be used to replace a ContractInfo with another one of the flipped
-      * perspective.
-      * An example case is for MultiNonceContractInfo where flipping the interpolation points
-      * could lead to an off-by-one after rounding so that the sum above gives TC-1.
-      * In this example, only the offerer's ContractInfo should be used.
-      */
-    def flip(totalCollateral: Satoshis): ContractInfo
-    def allOutcomes: Vector[DLCOutcomeType]
-    def apply(outcome: DLCOutcomeType): Satoshis
-
-    /** Returns the maximum payout this party could win from this contract */
-    def max: Satoshis
-  }
-
-  case class SingleNonceContractInfo(
-      outcomeValueMap: Vector[(EnumOutcome, Satoshis)])
-      extends ContractInfo
-      with TLVSerializable[ContractInfoV0TLV]
-      with SeqWrapper[(EnumOutcome, Satoshis)] {
-
-    override def apply(outcome: DLCOutcomeType): Satoshis = {
-      outcome match {
-        case outcome: EnumOutcome =>
-          outcomeValueMap
-            .find(_._1 == outcome)
-            .map(_._2)
-            .getOrElse(throw new IllegalArgumentException(
-              s"No value found for key $outcome"))
-        case UnsignedNumericOutcome(_) =>
-          throw new IllegalArgumentException(s"Expected EnumOutcome: $outcome")
-      }
-    }
-
-    override def wrapped: Vector[(EnumOutcome, Satoshis)] = outcomeValueMap
-
-    def keys: Vector[EnumOutcome] = outcomeValueMap.map(_._1)
-
-    def values: Vector[Satoshis] = outcomeValueMap.map(_._2)
-
-    override def allOutcomes: Vector[DLCOutcomeType] = keys
-
-    override def max: Satoshis = values.maxBy(_.toLong)
-
-    override def toTLV: ContractInfoV0TLV =
-      ContractInfoV0TLV(outcomeValueMap.map {
-        case (outcome, amt) => outcome.outcome -> amt
-      })
-
-    override def flip(totalCollateral: Satoshis): SingleNonceContractInfo = {
-      SingleNonceContractInfo(outcomeValueMap.map {
-        case (hash, amt) => (hash, (totalCollateral - amt).satoshis)
-      })
-    }
-  }
-
-  object SingleNonceContractInfo
-      extends TLVDeserializable[ContractInfoV0TLV, SingleNonceContractInfo](
-        ContractInfoV0TLV) {
-
-    def fromStringVec(
-        vec: Vector[(String, Satoshis)]): SingleNonceContractInfo = {
-      SingleNonceContractInfo(vec.map {
-        case (str, amt) => EnumOutcome(str) -> amt
-      })
-    }
-
-    override def fromTLV(tlv: ContractInfoV0TLV): SingleNonceContractInfo = {
-      fromStringVec(tlv.outcomes)
-    }
-  }
-
-  /** Contains a deterministically compressed set of outcomes computed from
-    * a given payout curve.
-    */
-  case class MultiNonceContractInfo(
-      outcomeValueFunc: DLCPayoutCurve,
-      base: Int,
-      numDigits: Int,
-      totalCollateral: Satoshis)
-      extends ContractInfo
-      with TLVSerializable[ContractInfoV1TLV] {
-
-    /** Vector is always the most significant digits */
-    lazy val outcomeVec: Vector[(Vector[Int], Satoshis)] =
-      CETCalculator.computeCETs(base,
-                                numDigits,
-                                outcomeValueFunc,
-                                totalCollateral,
-                                RoundingIntervals.noRounding)
-
-    override def apply(outcome: DLCOutcomeType): Satoshis = {
-      outcome match {
-        case UnsignedNumericOutcome(digits) =>
-          CETCalculator.searchForPrefix(digits, outcomeVec)(_._1) match {
-            case Some((_, amt)) => amt
-            case None =>
-              throw new IllegalArgumentException(
-                s"Unrecognized outcome: $digits")
-          }
-        case EnumOutcome(_) =>
-          throw new IllegalArgumentException(
-            s"Expected UnsignedNumericOutcome: $outcome")
-      }
-    }
-
-    override lazy val allOutcomes: Vector[DLCOutcomeType] =
-      outcomeVec.map { case (outcome, _) => UnsignedNumericOutcome(outcome) }
-
-    override val max: Satoshis = totalCollateral
-
-    override def flip(totalCollateral: Satoshis): MultiNonceContractInfo = {
-      require(
-        totalCollateral == this.totalCollateral,
-        s"Input total collateral ($totalCollateral) did not match ${this.totalCollateral}")
-
-      val flippedFunc = DLCPayoutCurve(outcomeValueFunc.points.map { point =>
-        point.copy(payout = totalCollateral.toLong - point.payout)
-      })
-
-      MultiNonceContractInfo(
-        flippedFunc,
-        base,
-        numDigits,
-        totalCollateral
-      )
-    }
-
-    override lazy val toTLV: ContractInfoV1TLV = {
-      val tlvPoints = outcomeValueFunc.points.map(_.toTlvPoint)
-
-      ContractInfoV1TLV(base, numDigits, totalCollateral, tlvPoints)
-    }
-  }
-
-  object MultiNonceContractInfo
-      extends TLVDeserializable[ContractInfoV1TLV, MultiNonceContractInfo](
-        ContractInfoV1TLV) {
-
-    override def fromTLV(tlv: ContractInfoV1TLV): MultiNonceContractInfo = {
-      val points = tlv.points.map { point =>
-        val payoutWithPrecision =
-          point.value.toLong + (BigDecimal(point.extraPrecision) / (1 << 16))
-
-        OutcomePayoutPoint(point.outcome, payoutWithPrecision, point.isEndpoint)
-      }
-
-      MultiNonceContractInfo(DLCPayoutCurve(points),
-                             tlv.base,
-                             tlv.numDigits,
-                             tlv.totalCollateral)
-    }
-  }
-
-  object ContractInfo
-      extends TLVDeserializable[ContractInfoTLV, ContractInfo](
-        ContractInfoTLV) {
-
-    val empty: ContractInfo = SingleNonceContractInfo(
-      Vector(EnumOutcome("") -> Satoshis.zero))
-
-    override def fromTLV(tlv: ContractInfoTLV): ContractInfo = {
-      tlv match {
-        case tlv: ContractInfoV0TLV => SingleNonceContractInfo.fromTLV(tlv)
-        case tlv: ContractInfoV1TLV => MultiNonceContractInfo.fromTLV(tlv)
-      }
-    }
-  }
-
-  case class OracleAndContractInfo(
-      oracleInfo: OracleInfo,
-      offerContractInfo: ContractInfo,
-      totalCollateral: Satoshis) {
-    (oracleInfo, offerContractInfo) match {
-      case (_: SingleNonceOracleInfo, info: SingleNonceContractInfo) =>
-        require(
-          info.max <= totalCollateral,
-          s"Cannot have payout larger than totalCollateral ($totalCollateral): $info")
-      case (_: MultiNonceOracleInfo, info: MultiNonceContractInfo) =>
-        require(
-          info.totalCollateral == totalCollateral,
-          s"Expected total collateral of $totalCollateral, got ${info.totalCollateral}")
-      case (_: OracleInfo, _: ContractInfo) =>
-        throw new IllegalArgumentException(
-          s"All infos must be for the same kind of outcome: $this")
-    }
-
-    def verifySigs(
-        outcome: DLCOutcomeType,
-        sigs: Vector[SchnorrDigitalSignature]): Boolean = {
-      oracleInfo.verifySigs(outcome, sigs)
-    }
-
-    def findOutcome(
-        sigs: Vector[SchnorrDigitalSignature]): Option[DLCOutcomeType] = {
-      offerContractInfo match {
-        case SingleNonceContractInfo(_) =>
-          allOutcomes.find(verifySigs(_, sigs))
-        case MultiNonceContractInfo(_, base, _, _) =>
-          val digitsSigned = sigs.map { sig =>
-            (0 until base)
-              .find { possibleDigit =>
-                oracleInfo.pubKey.verify(
-                  CryptoUtil.sha256(possibleDigit.toString).bytes,
-                  sig)
-              }
-              .getOrElse(throw new IllegalArgumentException(
-                s"Signature $sig does not match any digit 0-${base - 1}"))
-          }
-
-          CETCalculator.searchForNumericOutcome(digitsSigned, allOutcomes)
-      }
-    }
-
-    lazy val outcomeMap: Map[
-      DLCOutcomeType,
-      (ECPublicKey, Satoshis, Satoshis)] = {
-      val builder =
-        HashMap.newBuilder[DLCOutcomeType, (ECPublicKey, Satoshis, Satoshis)]
-
-      allOutcomes.foreach { msg =>
-        val offerPayout = offerContractInfo(msg)
-        val acceptPayout = (totalCollateral - offerPayout).satoshis
-
-        builder.+=((msg, (oracleInfo.sigPoint(msg), offerPayout, acceptPayout)))
-      }
-
-      builder.result()
-    }
-
-    def resultOfOutcome(
-        outcome: DLCOutcomeType): (ECPublicKey, Satoshis, Satoshis) = {
-      outcomeMap(outcome)
-    }
-
-    def sigPointForOutcome(outcome: DLCOutcomeType): ECPublicKey = {
-      resultOfOutcome(outcome)._1
-    }
-
-    lazy val allOutcomes: Vector[DLCOutcomeType] =
-      offerContractInfo.allOutcomes
-
-    /** Returns the payouts for the signature as (toOffer, toAccept) */
-    def getPayouts(
-        sigs: Vector[SchnorrDigitalSignature]): (Satoshis, Satoshis) = {
-      val outcome = findOutcome(sigs) match {
-        case Some(outcome) => outcome
-        case None =>
-          throw new IllegalArgumentException(
-            s"Signatures do not correspond to a possible outcome! $sigs")
-      }
-      getPayouts(outcome)
-    }
-
-    /** Returns the payouts for the outcome as (toOffer, toAccept) */
-    def getPayouts(outcome: DLCOutcomeType): (Satoshis, Satoshis) = {
-      val (_, offerOutcome, acceptOutcome) = resultOfOutcome(outcome)
-
-      (offerOutcome, acceptOutcome)
-    }
-
-    def updateTotalCollateral(
-        newTotalCollateral: Satoshis): OracleAndContractInfo = {
-      if (newTotalCollateral == totalCollateral) {
-        this
-      } else {
-        offerContractInfo match {
-          case _: SingleNonceContractInfo =>
-            this.copy(totalCollateral = newTotalCollateral)
-          case info: MultiNonceContractInfo =>
-            this.copy(offerContractInfo =
-                        info.copy(totalCollateral = newTotalCollateral),
-                      totalCollateral = newTotalCollateral)
-        }
-      }
-    }
-  }
-
-  object OracleAndContractInfo {
-
-    def apply(
-        oracleInfo: OracleInfo,
-        offerContractInfo: ContractInfo): OracleAndContractInfo = {
-      OracleAndContractInfo(oracleInfo,
-                            offerContractInfo,
-                            offerContractInfo.max)
-    }
   }
 
   sealed trait DLCSetupMessage extends DLCMessage {
@@ -470,7 +40,7 @@ object DLCMessage {
   /**
     * The initiating party starts the protocol by sending an offer message to the other party.
     *
-    * @param oracleAndContractInfo The oracle public key and R point(s) to use to build the CETs as
+    * @param contractInfo The oracle public key and R point(s) to use to build the CETs as
     *                   well as meta information to identify the oracle to be used in the contract,
     *                   and a map to be used to create CETs.
     * @param pubKeys The relevant public keys that the initiator will be using
@@ -481,7 +51,7 @@ object DLCMessage {
     * @param timeouts        The set of timeouts for the CETs
     */
   case class DLCOffer(
-      oracleAndContractInfo: OracleAndContractInfo,
+      contractInfo: ContractInfo,
       pubKeys: DLCPublicKeys,
       totalCollateral: Satoshis,
       fundingInputs: Vector[DLCFundingInput],
@@ -490,11 +60,10 @@ object DLCMessage {
       timeouts: DLCTimeouts)
       extends DLCSetupMessage {
 
-    val oracleInfo: OracleInfo = oracleAndContractInfo.oracleInfo
-    val contractInfo: ContractInfo = oracleAndContractInfo.offerContractInfo
+    val oracleInfo: OracleInfo = contractInfo.oracleInfo
+    val contractDescriptor: ContractDescriptor = contractInfo.contractDescriptor
 
-    lazy val paramHash: Sha256DigestBE =
-      calcParamHash(oracleInfo, contractInfo, timeouts)
+    lazy val paramHash: Sha256DigestBE = calcParamHash(contractInfo, timeouts)
 
     val tempContractId: Sha256Digest =
       CryptoUtil.sha256(toMessage.bytes)
@@ -507,7 +76,6 @@ object DLCMessage {
         contractFlags = 0x00,
         chainHash = chainHash,
         contractInfo.toTLV,
-        oracleInfo.toTLV,
         fundingPubKey = pubKeys.fundingKey,
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
         totalCollateralSatoshis = totalCollateral,
@@ -530,10 +98,9 @@ object DLCMessage {
       val network = Networks.fromChainHash(offer.chainHash.flip)
 
       val contractInfo = ContractInfo.fromTLV(offer.contractInfo)
-      val oracleInfo = OracleInfo.fromTLV(offer.oracleInfo)
 
       DLCOffer(
-        oracleAndContractInfo = OracleAndContractInfo(oracleInfo, contractInfo),
+        contractInfo = contractInfo,
         pubKeys = DLCPublicKeys(
           offer.fundingPubKey,
           BitcoinAddress.fromScriptPubKey(offer.payoutSPK, network)),
@@ -559,15 +126,19 @@ object DLCMessage {
       pubKeys: DLCPublicKeys,
       fundingInputs: Vector[DLCFundingInput],
       changeAddress: BitcoinAddress,
+      negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest) {
 
     def withSigs(cetSigs: CETSignatures): DLCAccept = {
-      DLCAccept(totalCollateral = totalCollateral,
-                pubKeys = pubKeys,
-                fundingInputs = fundingInputs,
-                changeAddress = changeAddress,
-                cetSigs = cetSigs,
-                tempContractId = tempContractId)
+      DLCAccept(
+        totalCollateral = totalCollateral,
+        pubKeys = pubKeys,
+        fundingInputs = fundingInputs,
+        changeAddress = changeAddress,
+        cetSigs = cetSigs,
+        negotiationFields = negotiationFields,
+        tempContractId = tempContractId
+      )
     }
   }
 
@@ -577,6 +148,7 @@ object DLCMessage {
       fundingInputs: Vector[DLCFundingInput],
       changeAddress: BitcoinAddress,
       cetSigs: CETSignatures,
+      negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest)
       extends DLCSetupMessage {
 
@@ -589,8 +161,9 @@ object DLCMessage {
         fundingInputs = fundingInputs.map(_.toTLV),
         changeSPK = changeAddress.scriptPubKey,
         cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
-        refundSignature =
-          ECDigitalSignature.fromFrontOfBytes(cetSigs.refundSig.signature.bytes)
+        refundSignature = ECDigitalSignature.fromFrontOfBytes(
+          cetSigs.refundSig.signature.bytes),
+        negotiationFields = negotiationFields.toTLV
       )
     }
 
@@ -603,16 +176,44 @@ object DLCMessage {
                            pubKeys,
                            fundingInputs,
                            changeAddress,
+                           negotiationFields,
                            tempContractId)
     }
   }
 
   object DLCAccept {
 
+    sealed trait NegotiationFields extends TLVSerializable[NegotiationFieldsTLV]
+
+    case object NoNegotiationFields
+        extends TLVSerializable[NoNegotiationFieldsTLV.type]
+        with NegotiationFields {
+      override def toTLV: NoNegotiationFieldsTLV.type = NoNegotiationFieldsTLV
+    }
+
+    case class NegotiationFieldsV1(roundingIntervals: RoundingIntervals)
+        extends TLVSerializable[NegotiationFieldsV1TLV]
+        with NegotiationFields {
+
+      override def toTLV: NegotiationFieldsV1TLV =
+        NegotiationFieldsV1TLV(roundingIntervals.toTLV)
+    }
+
+    object NegotiationFields {
+
+      def fromTLV(tlv: NegotiationFieldsTLV): NegotiationFields = {
+        tlv match {
+          case NoNegotiationFieldsTLV => NoNegotiationFields
+          case NegotiationFieldsV1TLV(roundingIntervalsTLV) =>
+            NegotiationFieldsV1(RoundingIntervals.fromTLV(roundingIntervalsTLV))
+        }
+      }
+    }
+
     def fromTLV(
         accept: DLCAcceptTLV,
         network: NetworkParameters,
-        outcomes: Vector[DLCOutcomeType]): DLCAccept = {
+        outcomes: Vector[OracleOutcome]): DLCAccept = {
       val outcomeSigs = accept.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
           outcomes.zip(sigs)
@@ -634,6 +235,7 @@ object DLCMessage {
             accept.fundingPubKey,
             ECDigitalSignature(
               accept.refundSignature.bytes :+ HashType.sigHashAll.byte))),
+        negotiationFields = NegotiationFields.fromTLV(accept.negotiationFields),
         tempContractId = accept.tempContractId
       )
     }
@@ -642,12 +244,7 @@ object DLCMessage {
         accept: DLCAcceptTLV,
         network: NetworkParameters,
         contractInfo: ContractInfo): DLCAccept = {
-      contractInfo match {
-        case info: SingleNonceContractInfo =>
-          fromTLV(accept, network, info.keys)
-        case multi: MultiNonceContractInfo =>
-          fromTLV(accept, network, multi.allOutcomes)
-      }
+      fromTLV(accept, network, contractInfo.allOutcomes)
     }
 
     def fromTLV(accept: DLCAcceptTLV, offer: DLCOffer): DLCAccept = {
@@ -687,7 +284,7 @@ object DLCMessage {
     def fromTLV(
         sign: DLCSignTLV,
         fundingPubKey: ECPublicKey,
-        outcomes: Vector[DLCOutcomeType],
+        outcomes: Vector[OracleOutcome],
         fundingOutPoints: Vector[TransactionOutPoint]): DLCSign = {
       val outcomeSigs = sign.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
@@ -713,18 +310,10 @@ object DLCMessage {
     }
 
     def fromTLV(sign: DLCSignTLV, offer: DLCOffer): DLCSign = {
-      offer.contractInfo match {
-        case info: SingleNonceContractInfo =>
-          fromTLV(sign,
-                  offer.pubKeys.fundingKey,
-                  info.keys,
-                  offer.fundingInputs.map(_.outPoint))
-        case multi: MultiNonceContractInfo =>
-          fromTLV(sign,
-                  offer.pubKeys.fundingKey,
-                  multi.allOutcomes,
-                  offer.fundingInputs.map(_.outPoint))
-      }
+      fromTLV(sign,
+              offer.pubKeys.fundingKey,
+              offer.contractInfo.allOutcomes,
+              offer.fundingInputs.map(_.outPoint))
     }
 
     def fromMessage(sign: LnMessage[DLCSignTLV], offer: DLCOffer): DLCSign = {

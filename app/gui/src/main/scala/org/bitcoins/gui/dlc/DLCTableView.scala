@@ -1,7 +1,8 @@
 package org.bitcoins.gui.dlc
 
-import org.bitcoins.core.protocol.dlc.{AcceptedDLCStatus, DLCStatus}
+import org.bitcoins.core.protocol.dlc.SingleOracleInfo
 import org.bitcoins.core.protocol.dlc.DLCStatus._
+import org.bitcoins.core.protocol.dlc.{AcceptedDLCStatus, DLCStatus}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}
@@ -68,7 +69,11 @@ class DLCTableView(model: DLCPaneModel) {
       text = "Oracle"
       prefWidth = 150
       cellValueFactory = { status =>
-        new StringProperty(status, "Oracle", status.value.oracleInfo.pubKey.hex)
+        new StringProperty(
+          status,
+          "Oracle",
+          status.value.oracleInfo.asInstanceOf[SingleOracleInfo].publicKey.hex
+        ) // FIXME
       }
     }
 
@@ -76,10 +81,14 @@ class DLCTableView(model: DLCPaneModel) {
       text = "Event"
       prefWidth = 150
       cellValueFactory = { status =>
-        new StringProperty(
-          status,
-          "Event",
-          status.value.oracleInfo.nonces.map(_.hex).mkString(""))
+        new StringProperty(status,
+                           "Event",
+                           status.value.oracleInfo
+                             .asInstanceOf[SingleOracleInfo]
+                             .nonces
+                             .map(_.hex)
+                             .mkString("")
+        ) // FIXME
       }
     }
 

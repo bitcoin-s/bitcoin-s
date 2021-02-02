@@ -22,6 +22,8 @@ case class EnumOutcome(outcome: String) extends DLCOutcomeType {
   * If digits.length is less than the the total number of digits to be
   * signed by the oracle then this outcome represents all outcomes prefixed
   * by the given digits.
+  *
+  * I.e. the Vector[Int] is always the most significant digits.
   */
 case class UnsignedNumericOutcome(digits: Vector[Int]) extends DLCOutcomeType {
 
