@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand._
-import org.bitcoins.core.protocol.dlc.DLCMessage.OracleInfo
+import org.bitcoins.core.protocol.dlc.{OracleInfo, SingleOracleInfo}
 import org.bitcoins.core.protocol.tlv._
 import scalafx.scene.Node
 import scalafx.scene.control.Alert.AlertType
@@ -30,8 +30,8 @@ class AcceptDLCDialog
   def validateMatchingAnnouncement(
       offer: LnMessage[DLCOfferTLV],
       announcement: OracleAnnouncementTLV): Boolean = {
-    val fromOffer = OracleInfo.fromTLV(offer.tlv.oracleInfo)
-    val fromAnnouncement = OracleInfo.fromOracleAnnouncement(announcement)
+    val fromOffer = OracleInfo.fromTLV(offer.tlv.contractInfo.oracleInfo)
+    val fromAnnouncement = SingleOracleInfo(announcement)
 
     fromOffer == fromAnnouncement
   }
@@ -58,10 +58,12 @@ class AcceptDLCDialog
           }
         } else {
           new Alert(AlertType.Confirmation) {
+            resizable = true
             initOwner(owner)
             title = "Confirm no Oracle Announcement"
             contentText =
               s"Are you sure you would like sign to accept this DLC Offer without verifying it has the correct oracle?"
+            dialogPane().getScene.getWindow.sizeToScene()
           }.showAndWait() match {
             case Some(ButtonType.OK) => ()
             case None | Some(_)      => throw new RuntimeException("Did not accept")

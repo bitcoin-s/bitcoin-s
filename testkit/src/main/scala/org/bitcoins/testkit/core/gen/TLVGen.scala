@@ -1,14 +1,14 @@
 package org.bitcoins.testkit.core.gen
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.{
-  ContractInfo,
-  DLCOffer,
-  SingleNonceContractInfo
-}
+import org.bitcoins.core.protocol.dlc.DLCMessage.DLCOffer
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.dlc.DLCFundingInputP2WPKHV0
+import org.bitcoins.core.protocol.dlc.{
+  ContractInfo,
+  DLCFundingInputP2WPKHV0,
+  EnumContractDescriptor
+}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
@@ -127,7 +127,8 @@ trait TLVGen {
     } yield OracleAttestmentV0TLV(eventId, pubkey, sigs, outcomes)
   }
 
-  def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
+  def contractDescriptorV0TLVWithTotalCollateral: Gen[
+    (ContractDescriptorV0TLV, Satoshis)] = {
     def genValues(size: Int, totalAmount: CurrencyUnit): Vector[Satoshis] = {
       val vals = if (size < 2) {
         throw new IllegalArgumentException(
@@ -144,15 +145,17 @@ trait TLVGen {
       valsWithOrder.sortBy(_._2).map(_._1)
     }
 
-    def genContractInfos(outcomes: Vector[String], totalInput: CurrencyUnit): (
-        SingleNonceContractInfo,
-        SingleNonceContractInfo) = {
+    def genContractDescriptors(
+        outcomes: Vector[String],
+        totalInput: CurrencyUnit): (
+        EnumContractDescriptor,
+        EnumContractDescriptor) = {
       val outcomeMap =
         outcomes
           .map(EnumOutcome.apply)
           .zip(genValues(outcomes.length, totalInput))
 
-      val info = SingleNonceContractInfo(outcomeMap)
+      val info = EnumContractDescriptor(outcomeMap)
       val remoteInfo = info.flip(totalInput.satoshis)
 
       (info, remoteInfo)
@@ -165,19 +168,39 @@ trait TLVGen {
         Gen
           .choose(numOutcomes + 1, Long.MaxValue / 10000L)
           .map(Satoshis.apply)
-      (contractInfo, _) = genContractInfos(outcomes.toVector, totalInput)
+      (contractDescriptor, _) =
+        genContractDescriptors(outcomes.toVector, totalInput)
     } yield {
-      ContractInfoV0TLV(contractInfo.outcomeValueMap.map {
-        case (outcome, amt) => outcome.outcome -> amt
-      })
+      (contractDescriptor.toTLV, totalInput)
     }
+  }
+
+  def contractDescriptorV0TLV: Gen[ContractDescriptorV0TLV] = {
+    contractDescriptorV0TLVWithTotalCollateral.map(_._1)
   }
 
   def oracleInfoV0TLV: Gen[OracleInfoV0TLV] = {
     for {
-      pubKey <- CryptoGenerators.schnorrPublicKey
+      privKey <- CryptoGenerators.privateKey
       rValue <- CryptoGenerators.schnorrNonce
-    } yield OracleInfoV0TLV(pubKey, rValue)
+      outcomes <- Gen.listOf(StringGenerators.genUTF8String)
+    } yield {
+      OracleInfoV0TLV(
+        OracleAnnouncementV0TLV.dummyForEventsAndKeys(
+          privKey,
+          rValue,
+          outcomes.toVector.map(EnumOutcome.apply)))
+    }
+  }
+
+  def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
+    for {
+      (descriptor, totalCollateral) <-
+        contractDescriptorV0TLVWithTotalCollateral
+      oracleInfo <- oracleInfoV0TLV
+    } yield {
+      ContractInfoV0TLV(totalCollateral, descriptor, oracleInfo)
+    }
   }
 
   def oracleInfoV0TLVWithKeys: Gen[
@@ -185,8 +208,13 @@ trait TLVGen {
     for {
       privKey <- CryptoGenerators.privateKey
       kValue <- CryptoGenerators.privateKey
+      outcomes <- Gen.listOf(StringGenerators.genUTF8String)
     } yield {
-      (OracleInfoV0TLV(privKey.schnorrPublicKey, kValue.schnorrNonce),
+      (OracleInfoV0TLV(
+         OracleAnnouncementV0TLV.dummyForEventsAndKeys(
+           privKey,
+           kValue.schnorrNonce,
+           outcomes.toVector.map(EnumOutcome.apply))),
        privKey,
        kValue)
     }
@@ -278,7 +306,6 @@ trait TLVGen {
       chainHash <- Gen.oneOf(
         Networks.knownNetworks.map(_.chainParams.genesisBlock.blockHeader.hash))
       contractInfo <- contractInfoV0TLV
-      oracleInfo <- oracleInfoV0TLV
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
@@ -299,7 +326,6 @@ trait TLVGen {
         0.toByte,
         chainHash,
         contractInfo,
-        oracleInfo,
         fundingPubKey,
         payoutAddress.scriptPubKey,
         totalCollateralSatoshis,
@@ -318,7 +344,10 @@ trait TLVGen {
       offer <- dlcOfferTLV
       (oracleInfo, oraclePrivKey, oracleRValue) <- oracleInfoV0TLVWithKeys
     } yield {
-      (offer.copy(oracleInfo = oracleInfo), oraclePrivKey, oracleRValue)
+      (offer.copy(contractInfo =
+         offer.contractInfo.copy(oracleInfo = oracleInfo)),
+       oraclePrivKey,
+       oracleRValue)
     }
   }
 
@@ -333,14 +362,17 @@ trait TLVGen {
       cetSigs <- cetSignaturesV0TLV
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
-      DLCAcceptTLV(tempContractId,
-                   totalCollateralSatoshis,
-                   fundingPubKey,
-                   payoutAddress.scriptPubKey,
-                   fundingInputs,
-                   changeAddress.scriptPubKey,
-                   cetSigs,
-                   refundSig)
+      DLCAcceptTLV(
+        tempContractId,
+        totalCollateralSatoshis,
+        fundingPubKey,
+        payoutAddress.scriptPubKey,
+        fundingInputs,
+        changeAddress.scriptPubKey,
+        cetSigs,
+        refundSig,
+        NoNegotiationFieldsTLV
+      )
     }
   }
 
@@ -367,7 +399,8 @@ trait TLVGen {
         fundingInputs,
         changeAddress.scriptPubKey,
         cetSigs,
-        refundSig
+        refundSig,
+        NoNegotiationFieldsTLV
       )
     }
   }

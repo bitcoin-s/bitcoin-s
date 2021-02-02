@@ -1,17 +1,10 @@
 package org.bitcoins.gui.dlc
 
-import java.io.File
-import java.nio.file.Files
-
 import javafx.event.{ActionEvent, EventHandler}
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
 import scalafx.scene.layout._
-import scalafx.stage.FileChooser
-import scalafx.stage.FileChooser.ExtensionFilter
-
-import scala.util.Properties
 
 class DLCPane(glassPane: VBox) {
 
@@ -28,25 +21,8 @@ class DLCPane(glassPane: VBox) {
   }
 
   private val exportButton = new Button("Export Result") {
-    alignmentInParent = Pos.BottomRight
-    onAction = _ => {
-      val txtFilter = new ExtensionFilter("Text Files", "*.txt")
-      val allExtensionFilter = new ExtensionFilter("All Files", "*")
-      val fileChooser = new FileChooser() {
-        extensionFilters.addAll(txtFilter, allExtensionFilter)
-        selectedExtensionFilter = txtFilter
-        initialDirectory = new File(Properties.userHome)
-      }
-
-      val selectedFile = fileChooser.showSaveDialog(null)
-
-      if (selectedFile != null) {
-        val bytes = resultTextArea.text.value.getBytes
-
-        Files.write(selectedFile.toPath, bytes)
-        ()
-      }
-    }
+    alignmentInParent = Pos.BottomLeft
+    onAction = _ => model.exportResult(resultTextArea.text.value)
   }
 
   private val resultArea = new BorderPane() {
@@ -73,18 +49,12 @@ class DLCPane(glassPane: VBox) {
 
   private val enumContractButton = new Button {
     text = "Enum Contract"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onInitContract(true)
-    }
+    onAction = _ => model.onInitEnumContractDialog()
   }
 
   private val numericContractButton = new Button {
     text = "Numeric Contract"
-    onAction = new EventHandler[ActionEvent] {
-
-      override def handle(event: ActionEvent): Unit =
-        model.onInitContract(false)
-    }
+    onAction = _ => model.onInitNumericContractDialog()
   }
 
   private val oracleButtonHBox = new HBox {

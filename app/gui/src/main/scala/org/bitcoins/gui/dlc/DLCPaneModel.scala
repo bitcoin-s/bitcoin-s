@@ -3,24 +3,27 @@ package org.bitcoins.gui.dlc
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
-import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.number.{Int32, UInt16, UInt32}
-import org.bitcoins.core.protocol.dlc.DLCStatus
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.beans.property.ObjectProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.TextArea
-import scalafx.stage.Window
+import scalafx.stage.FileChooser.ExtensionFilter
+import scalafx.stage.{FileChooser, Window}
 import upickle.default._
 
-import scala.util.{Failure, Success, Try}
+import java.io.File
+import java.nio.file.Files
+import scala.util.{Failure, Properties, Success, Try}
 
-class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
+class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
+    extends BitcoinSLogger {
   var taskRunner: TaskRunner = _
 
   lazy val txPrintFunc: String => String = str => {
@@ -107,122 +110,193 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
     }
   }
 
-  def onInitContract(isEnum: Boolean): Unit = {
-    val result = if (isEnum) {
-      InitEnumContractDialog.showAndWait(parentWindow.value)
-    } else {
-      InitNumericContractDialog.showAndWait(parentWindow.value)
+  private def printDummyOracleInfo(
+      builder: StringBuilder,
+      privKey: ECPrivateKey,
+      oracleInfo: SingleOracleInfo,
+      kValues: Vector[ECPrivateKey],
+      contractInfo: ContractInfo): StringBuilder = {
+    if (GlobalData.network != MainNet && kValues.nonEmpty) {
+      val eventId = oracleInfo.announcement.eventTLV match {
+        case v0: OracleEventV0TLV => v0.eventId
+      }
+
+      builder.append(
+        s"Oracle Public Key: ${oracleInfo.publicKey.hex}\nEvent R values: ${oracleInfo.nonces.map(_.hex).mkString(",")}\n\n")
+
+      builder.append(
+        s"Serialized Oracle Announcement: ${oracleInfo.announcement.hex}\n\n")
+
+      contractInfo.contractDescriptor match {
+        case descriptor: EnumContractDescriptor =>
+          builder.append("Outcomes and oracle sigs in order of entry:\n")
+          descriptor.keys.foreach { outcome =>
+            val bytes = outcome.serialized.head
+            val hash = CryptoUtil
+              .sha256DLCAttestation(bytes)
+              .bytes
+            val sig = privKey.schnorrSignWithNonce(hash, kValues.head)
+            val sigTlv =
+              OracleAttestmentV0TLV(eventId,
+                                    privKey.schnorrPublicKey,
+                                    Vector(sig),
+                                    Vector(outcome.outcome))
+
+            builder.append(s"$outcome - ${sigTlv.hex}\n")
+          }
+        case _: NumericContractDescriptor =>
+          builder.append("Oracle sigs:\n")
+
+          val sortedOutcomes =
+            contractInfo.allOutcomesAndPayouts.sortBy(_._2)
+
+          val max = sortedOutcomes.last._1.outcome
+            .asInstanceOf[UnsignedNumericOutcome]
+          val middle = sortedOutcomes(sortedOutcomes.size / 2)._1.outcome
+            .asInstanceOf[UnsignedNumericOutcome]
+          val min = sortedOutcomes.head._1.outcome
+            .asInstanceOf[UnsignedNumericOutcome]
+
+          val sigsMax =
+            max.serialized.zip(kValues.take(max.digits.size)).map {
+              case (bytes, kValue) =>
+                val hash = CryptoUtil
+                  .sha256DLCAttestation(bytes)
+                  .bytes
+                privKey.schnorrSignWithNonce(hash, kValue)
+            }
+
+          val sigsMiddle =
+            middle.serialized.zip(kValues.take(middle.digits.size)).map {
+              case (bytes, kValue) =>
+                val hash = CryptoUtil
+                  .sha256DLCAttestation(bytes)
+                  .bytes
+                privKey.schnorrSignWithNonce(hash, kValue)
+            }
+
+          val sigsMin =
+            min.serialized.zip(kValues.take(min.digits.size)).map {
+              case (bytes, kValue) =>
+                val hash = CryptoUtil
+                  .sha256DLCAttestation(bytes)
+                  .bytes
+                privKey.schnorrSignWithNonce(hash, kValue)
+            }
+
+          val maxSigsStr =
+            OracleAttestmentV0TLV(eventId,
+                                  privKey.schnorrPublicKey,
+                                  sigsMax,
+                                  max.digits.map(_.toString)).hex
+          builder.append(s"local win sigs - $maxSigsStr\n\n\n")
+
+          val middleSigsStr =
+            OracleAttestmentV0TLV(eventId,
+                                  privKey.schnorrPublicKey,
+                                  sigsMiddle,
+                                  middle.digits.map(_.toString)).hex
+          builder.append(s"tie sigs - $middleSigsStr\n\n\n")
+
+          val minSigsStr =
+            OracleAttestmentV0TLV(eventId,
+                                  privKey.schnorrPublicKey,
+                                  sigsMin,
+                                  min.digits.map(_.toString)).hex
+          builder.append(s"remote win sigs - $minSigsStr")
+      }
+
+      GlobalDLCData.lastOracleAnnouncement = oracleInfo.announcement.hex
     }
+    builder
+  }
+
+  def onInitEnumContractDialog(): Unit = {
+    val result = InitEnumContractDialog.showAndWait(parentWindow.value)
 
     result match {
-      case Some(contractInfo) =>
-        val builder = new StringBuilder()
-
-        builder.append(s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
-
+      case Some((contractDescriptor, announcementOpt)) =>
         val privKey = ECPrivateKey.freshPrivateKey
-        val pubKey = privKey.schnorrPublicKey
-        val (kValues, rValues, oracleInfo) = contractInfo match {
-          case SingleNonceContractInfo(_) =>
+
+        val (kValues, oracleInfo) = announcementOpt match {
+          case Some(announcement) =>
+            (Vector.empty, EnumSingleOracleInfo(announcement))
+          case None =>
             val kValue = ECPrivateKey.freshPrivateKey
             val rValue = kValue.schnorrNonce
-            val oracleInfo = SingleNonceOracleInfo(pubKey, rValue)
+            val oracleInfo = EnumSingleOracleInfo(
+              OracleAnnouncementV0TLV
+                .dummyForEventsAndKeys(privKey,
+                                       rValue,
+                                       contractDescriptor.map(_._1).toVector))
 
-            (Vector(kValue), Vector(rValue), oracleInfo)
-          case MultiNonceContractInfo(_, _, numDigits, _) =>
-            val kValues =
-              0.until(numDigits).map(_ => ECPrivateKey.freshPrivateKey).toVector
-            val rValues = kValues.map(_.schnorrNonce)
-            val oracleInfo = MultiNonceOracleInfo(pubKey, rValues)
-
-            (kValues, rValues, oracleInfo)
+            (Vector(kValue), oracleInfo)
         }
+        val builder = new StringBuilder()
 
-        if (GlobalData.network != MainNet) {
-
-          val descriptor = contractInfo match {
-            case SingleNonceContractInfo(outcomeValueMap) =>
-              EnumEventDescriptorV0TLV(outcomeValueMap.map(_._1.outcome))
-            case MultiNonceContractInfo(_, base, numDigits, _) =>
-              UnsignedDigitDecompositionEventDescriptor(UInt16(base),
-                                                        UInt16(numDigits),
-                                                        "units",
-                                                        Int32.zero)
-          }
-
-          val oracleEvent = OracleEventV0TLV(oracleInfo.nonces,
-                                             UInt32.zero,
-                                             descriptor,
-                                             "dummy oracle")
-
-          val announcementSig =
-            privKey.schnorrSign(CryptoUtil.sha256(oracleEvent.bytes).bytes)
-
-          val announcement =
-            OracleAnnouncementV0TLV(announcementSig, pubKey, oracleEvent)
-
-          builder.append(
-            s"Oracle Public Key: ${pubKey.hex}\nEvent R values: ${rValues.map(_.hex).mkString(",")}\n\n")
-
-          builder.append(
-            s"Serialized Oracle Announcement: ${announcement.hex}\n\n")
-
-          contractInfo match {
-            case contractInfo: SingleNonceContractInfo =>
-              builder.append("Outcomes and oracle sigs in order of entry:\n")
-              contractInfo.keys.foreach { outcome =>
-                val bytes = outcome.serialized.head
-                val hash = CryptoUtil.sha256(bytes).bytes
-                val sig = privKey.schnorrSignWithNonce(hash, kValues.head)
-                builder.append(s"$outcome - ${sig.hex}\n")
-              }
-            case contractInfo: MultiNonceContractInfo =>
-              builder.append("Oracle sigs:\n")
-
-              val sortedOutcomes = contractInfo.outcomeVec.sortBy(_._2)
-
-              val max = UnsignedNumericOutcome(sortedOutcomes.last._1)
-              val middle = UnsignedNumericOutcome(
-                sortedOutcomes(sortedOutcomes.size / 2)._1)
-              val min = UnsignedNumericOutcome(sortedOutcomes.head._1)
-
-              val sigsMax =
-                max.serialized.zip(kValues.take(max.digits.size)).map {
-                  case (bytes, kValue) =>
-                    val hash = CryptoUtil.sha256(bytes).bytes
-                    privKey.schnorrSignWithNonce(hash, kValue)
-                }
-
-              val sigsMiddle =
-                middle.serialized.zip(kValues.take(middle.digits.size)).map {
-                  case (bytes, kValue) =>
-                    val hash = CryptoUtil.sha256(bytes).bytes
-                    privKey.schnorrSignWithNonce(hash, kValue)
-                }
-
-              val sigsMin =
-                min.serialized.zip(kValues.take(min.digits.size)).map {
-                  case (bytes, kValue) =>
-                    val hash = CryptoUtil.sha256(bytes).bytes
-                    privKey.schnorrSignWithNonce(hash, kValue)
-                }
-
-              val maxSigsStr = sigsMax.map(_.hex).mkString("\n")
-              builder.append(s"local win sigs - $maxSigsStr\n\n\n")
-
-              val middleSigsStr = sigsMiddle.map(_.hex).mkString("\n")
-              builder.append(s"tie sigs - $middleSigsStr\n\n\n")
-
-              val minSigsStr = sigsMin.map(_.hex).mkString("\n")
-              builder.append(s"remote win sigs - $minSigsStr")
-          }
-
-          GlobalDLCData.lastOracleAnnouncement = announcement.hex
-        }
-
+        val contractInfo = ContractInfo(contractDescriptor, oracleInfo)
+        builder.append(s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
         GlobalDLCData.lastContractInfo = contractInfo.hex
 
+        printDummyOracleInfo(builder,
+                             privKey,
+                             oracleInfo,
+                             kValues,
+                             contractInfo)
+
         oracleInfoArea.text = builder.result()
+      case None => ()
+    }
+  }
+
+  def onInitNumericContractDialog(): Unit = {
+    val result = InitNumericContractDialog.showAndWait(parentWindow.value)
+
+    result match {
+      case Some((totalCol, contractDescriptor, announcementOpt)) =>
+        val privKey = ECPrivateKey.freshPrivateKey
+
+        val (kValues, oracleInfo) = announcementOpt match {
+          case Some(announcement) =>
+            (Vector.empty, EnumSingleOracleInfo(announcement))
+          case None =>
+            val kValues =
+              0.until(contractDescriptor.numDigits)
+                .map(_ => ECPrivateKey.freshPrivateKey)
+                .toVector
+            val rValues = kValues.map(_.schnorrNonce)
+            val oracleInfo = NumericSingleOracleInfo(
+              OracleAnnouncementV0TLV.dummyForKeys(privKey, rValues))
+
+            (kValues, oracleInfo)
+        }
+        val builder = new StringBuilder()
+
+        val pairOpt = ContractOraclePair.fromDescriptorOracleOpt(
+          contractDescriptor,
+          oracleInfo)
+        pairOpt match {
+          case Some(pair) =>
+            val contractInfo =
+              ContractInfo(totalCol, pair)
+            builder.append(
+              s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
+            GlobalDLCData.lastContractInfo = contractInfo.hex
+
+            printDummyOracleInfo(builder,
+                                 privKey,
+                                 oracleInfo,
+                                 kValues,
+                                 contractInfo)
+
+            oracleInfoArea.text = builder.result()
+          case None =>
+            //i think doing nothing is right here?
+            logger.warn(
+              s"Invalid contract/oracle pairing, contract=$contractDescriptor oracle=$oracleInfo")
+            ()
+        }
+
       case None => ()
     }
   }
@@ -263,5 +337,29 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
     ViewDLCDialog.showAndWait(parentWindow.value,
                               updatedStatus.getOrElse(status),
                               this)
+  }
+
+  def exportResult(result: String): Unit = {
+    val txtFilter = new ExtensionFilter("Text Files", "*.txt")
+    val allExtensionFilter = new ExtensionFilter("All Files", "*")
+    val fileChooser = new FileChooser() {
+      extensionFilters.addAll(txtFilter, allExtensionFilter)
+      selectedExtensionFilter = txtFilter
+      initialDirectory = new File(Properties.userHome)
+    }
+
+    val selectedFile = fileChooser.showSaveDialog(null)
+
+    taskRunner.run(
+      "Export Result",
+      op = {
+        if (selectedFile != null) {
+          val bytes = result.getBytes
+
+          Files.write(selectedFile.toPath, bytes)
+          ()
+        }
+      }
+    )
   }
 }

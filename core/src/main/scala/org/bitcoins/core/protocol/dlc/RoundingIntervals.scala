@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.dlc.RoundingIntervals.{
   Interval,
   IntervalStart
 }
+import org.bitcoins.core.protocol.tlv.RoundingIntervalsV0TLV
 import org.bitcoins.core.util.NumberUtil
 
 import scala.annotation.tailrec
@@ -21,6 +22,12 @@ case class RoundingIntervals(intervalStarts: Vector[IntervalStart]) {
               case (i1, i2) => i1.firstOutcome < i2.firstOutcome
             },
             s"Intervals must be ascending: $intervalStarts")
+  }
+
+  def toTLV: RoundingIntervalsV0TLV = {
+    RoundingIntervalsV0TLV(intervalStarts.map {
+      case IntervalStart(outcome, amt) => (outcome.toLongExact, Satoshis(amt))
+    })
   }
 
   /** Returns the rounding interval (start, end, mod) containing the given outcome */
@@ -167,5 +174,11 @@ object RoundingIntervals {
       roundingMod: Long) {
     require(firstOutcome < nextFirstOutcome,
             s"First outcome must come before last, $this")
+  }
+
+  def fromTLV(tlv: RoundingIntervalsV0TLV): RoundingIntervals = {
+    RoundingIntervals(tlv.intervalStarts.map {
+      case (outcome, amt) => IntervalStart(BigDecimal(outcome), amt.toLong)
+    })
   }
 }

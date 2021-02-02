@@ -11,9 +11,8 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc.DLCStatus._
-import org.bitcoins.core.protocol.dlc.{DLCState, DLCStatus, DLCTimeouts}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -102,8 +101,8 @@ object Picklers {
   implicit val contractInfoPickler: ReadWriter[ContractInfo] =
     readwriter[String].bimap(_.hex, ContractInfo.fromHex)
 
-  implicit val contractInfoTLVPickler: ReadWriter[ContractInfoTLV] =
-    readwriter[String].bimap(_.hex, ContractInfoTLV.fromHex)
+  implicit val contractInfoTLVPickler: ReadWriter[ContractInfoV0TLV] =
+    readwriter[String].bimap(_.hex, ContractInfoV0TLV.fromHex)
 
   implicit val schnorrDigitalSignaturePickler: ReadWriter[
     SchnorrDigitalSignature] =
@@ -268,11 +267,13 @@ object Picklers {
 
   implicit val claimedW: Writer[Claimed] = writer[Obj].comap { claimed =>
     import claimed._
-    val outcomeJs = outcome match {
-      case EnumOutcome(outcome) =>
-        Str(outcome)
-      case UnsignedNumericOutcome(digits) =>
-        Arr.from(digits.map(num => Num(num)))
+    val (oraclesJs, outcomesJs) = oracleOutcome match {
+      case EnumOracleOutcome(oracles, outcome) =>
+        (Arr.from(oracles.map(o => Str(o.announcement.hex))),
+         Str(outcome.outcome))
+      case numeric: NumericOracleOutcome =>
+        (Arr.from(numeric.oracles.map(_.hex)),
+         Arr.from(numeric.outcomes.map(o => Arr.from(o.digits))))
     }
 
     Obj(
@@ -294,18 +295,21 @@ object Picklers {
       "fundingTxId" -> Str(fundingTxId.hex),
       "closingTxId" -> Str(closingTxId.hex),
       "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
-      "outcome" -> outcomeJs
+      "outcomes" -> outcomesJs,
+      "oracles" -> oraclesJs
     )
   }
 
   implicit val remoteClaimedW: Writer[RemoteClaimed] =
     writer[Obj].comap { remoteClaimed =>
       import remoteClaimed._
-      val outcomeJs = outcome match {
-        case EnumOutcome(outcome) =>
-          Str(outcome)
-        case UnsignedNumericOutcome(digits) =>
-          Arr.from(digits.map(num => Num(num)))
+      val (oraclesJs, outcomesJs) = oracleOutcome match {
+        case EnumOracleOutcome(oracles, outcome) =>
+          (Arr.from(oracles.map(o => Str(o.announcement.hex))),
+           Str(outcome.outcome))
+        case numeric: NumericOracleOutcome =>
+          (Arr.from(numeric.oracles.map(_.hex)),
+           Arr.from(numeric.outcomes.map(o => Arr.from(o.digits))))
       }
 
       Obj(
@@ -327,7 +331,8 @@ object Picklers {
         "fundingTxId" -> Str(fundingTxId.hex),
         "closingTxId" -> Str(closingTxId.hex),
         "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
-        "outcome" -> outcomeJs
+        "outcomes" -> outcomesJs,
+        "oracles" -> oraclesJs
       )
     }
 
@@ -368,8 +373,7 @@ object Picklers {
     val state = DLCState.fromString(obj("state").str)
     val isInitiator = obj("isInitiator").bool
     val tempContractId = Sha256Digest(obj("tempContractId").str)
-    val oracleInfo = OracleInfo(obj("oracleInfo").str)
-    val contractInfoTLV = ContractInfoTLV(obj("contractInfo").str)
+    val contractInfoTLV = ContractInfoV0TLV(obj("contractInfo").str)
     val contractMaturity =
       BlockStamp(UInt32(obj("contractMaturity").num.toLong))
     val contractTimeout = BlockStamp(UInt32(obj("contractTimeout").num.toLong))
@@ -385,12 +389,32 @@ object Picklers {
         .map(value => SchnorrDigitalSignature(value.str))
         .toVector
 
-    lazy val outcomeJs = obj("outcome")
-    lazy val outcome = outcomeJs.strOpt match {
-      case Some(value) => EnumOutcome(value)
+    lazy val outcomesJs = obj("outcomes")
+    lazy val outcomes = outcomesJs.strOpt match {
+      case Some(value) => Vector(EnumOutcome(value))
       case None =>
-        val digits = outcomeJs.arr.map(value => value.num.toInt)
-        UnsignedNumericOutcome(digits.toVector)
+        outcomesJs.arr.map { outcomeJs =>
+          val digits = outcomeJs.arr.map(value => value.num.toInt)
+          UnsignedNumericOutcome(digits.toVector)
+        }.toVector
+    }
+
+    lazy val oraclesJs = obj("oracles")
+    lazy val oracles = oraclesJs.arr.map { value =>
+      val announcementTLV = OracleAnnouncementTLV(value.str)
+      SingleOracleInfo(announcementTLV)
+    }.toVector
+
+    lazy val oracleOutcome = outcomes.head match {
+      case outcome: EnumOutcome =>
+        EnumOracleOutcome(oracles.asInstanceOf[Vector[EnumSingleOracleInfo]],
+                          outcome)
+      case UnsignedNumericOutcome(_) =>
+        val numericOutcomes =
+          outcomes.map(_.asInstanceOf[UnsignedNumericOutcome])
+        val numericOracles =
+          oracles.map(_.asInstanceOf[NumericSingleOracleInfo])
+        NumericOracleOutcome(numericOracles.zip(numericOutcomes))
     }
 
     state match {
@@ -399,7 +423,6 @@ object Picklers {
           paramHash,
           isInitiator,
           tempContractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -412,7 +435,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -425,7 +447,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -438,7 +459,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -452,7 +472,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -466,7 +485,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -475,7 +493,7 @@ object Picklers {
           fundingTxId,
           closingTxId,
           oracleSigs,
-          outcome
+          oracleOutcome
         )
       case DLCState.RemoteClaimed =>
         require(oracleSigs.size == 1,
@@ -485,7 +503,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -494,7 +511,7 @@ object Picklers {
           fundingTxId,
           closingTxId,
           oracleSigs.head,
-          outcome
+          oracleOutcome
         )
       case DLCState.Refunded =>
         Refunded(
@@ -502,7 +519,6 @@ object Picklers {
           isInitiator,
           tempContractId,
           contractId,
-          oracleInfo,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
@@ -521,6 +537,9 @@ object Picklers {
 
   implicit val extPrivateKeyPickler: ReadWriter[ExtPrivateKey] =
     readwriter[String].bimap(ExtKey.toString, ExtPrivateKey.fromString)
+
+  implicit val oracleAttestmentTLV: ReadWriter[OracleAttestmentTLV] =
+    readwriter[String].bimap(_.hex, OracleAttestmentTLV.fromHex)
 
   implicit val ecPublicKeyPickler: ReadWriter[ECPublicKey] =
     readwriter[String].bimap(_.hex, ECPublicKey.fromHex)

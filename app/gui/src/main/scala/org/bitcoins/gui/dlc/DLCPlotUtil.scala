@@ -2,6 +2,7 @@ package org.bitcoins.gui.dlc
 
 import breeze.plot.{plot, Figure}
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.dlc.CETCalculator.CETOutcome
 import org.bitcoins.core.protocol.dlc.{
   CETCalculator,
   DLCPayoutCurve,
@@ -96,24 +97,21 @@ object DLCPlotUtil {
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       executedCETOpt: Option[Vector[Int]]): Figure = {
-    val cets = CETCalculator.computeCETs(base,
-                                         numDigits,
-                                         function,
-                                         totalCollateral,
-                                         rounding)
+    val cets: Vector[CETOutcome] = CETCalculator.computeCETs(base,
+                                                             numDigits,
+                                                             function,
+                                                             totalCollateral,
+                                                             rounding)
 
     plotCETs(cets, base, numDigits, executedCETOpt)
   }
 
-  def plotCETs(
-      cets: Vector[(Vector[Int], Satoshis)],
-      base: Int,
-      numDigits: Int): Figure = {
+  def plotCETs(cets: Vector[CETOutcome], base: Int, numDigits: Int): Figure = {
     plotCETs(cets, base, numDigits, executedCETOpt = None)
   }
 
   def plotCETs(
-      cets: Vector[(Vector[Int], Satoshis)],
+      cets: Vector[CETOutcome],
       base: Int,
       numDigits: Int,
       executedCET: Vector[Int]): Figure = {
@@ -121,7 +119,7 @@ object DLCPlotUtil {
   }
 
   private def plotCETs(
-      cets: Vector[(Vector[Int], Satoshis)],
+      cets: Vector[CETOutcome],
       base: Int,
       numDigits: Int,
       executedCETOpt: Option[Vector[Int]]): Figure = {
@@ -129,15 +127,15 @@ object DLCPlotUtil {
       NumberUtil.fromDigits(digits, base, numDigits).toInt
     }
 
-    val xs = cets.map(_._1).map(fromDigits)
-    val ys = cets.map(_._2.toLong.toInt)
+    val xs = cets.map(_.digits).map(fromDigits)
+    val ys = cets.map(_.payout.toLong.toInt)
 
     val figure = Figure("DLC Payout Curve")
     val cetPlot = figure.subplot(0)
 
     val canonicalCETOpt = executedCETOpt
       .flatMap { outcome =>
-        CETCalculator.searchForPrefix(outcome, cets.map(_._1))(identity)
+        CETCalculator.searchForPrefix(outcome, cets.map(_.digits))(identity)
       }
       .map(fromDigits)
     val markedCETNumOpt = canonicalCETOpt.map(xs.indexOf)
