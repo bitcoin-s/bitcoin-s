@@ -54,10 +54,9 @@ class BitcoindV20RpcClient(override val instance: BitcoindInstance)(implicit
       Future.sequence(filterFs)
     }
 
-    FutureUtil.batchExecute(elements = allHeights.toVector,
-                            f = f,
-                            init = Vector.empty,
-                            batchSize = 25)
+    FutureUtil.batchAndSyncExecute(elements = allHeights.toVector,
+                                   f = f,
+                                   batchSize = 25)
   }
 
   override def getFilterCount(): Future[Int] = getBlockCount
