@@ -1233,7 +1233,7 @@ case class ContractInfoV0TLV(
 object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(55342)
 
-  val dummy: ContractInfoV0TLV = {
+  lazy val dummy: ContractInfoV0TLV = {
     ContractInfoV0TLV(
       Satoshis.zero,
       ContractDescriptorV0TLV(Vector("dummy" -> Satoshis(10000))),
