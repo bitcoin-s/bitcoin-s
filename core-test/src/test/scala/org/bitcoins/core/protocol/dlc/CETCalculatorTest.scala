@@ -605,7 +605,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
               (math.min(min, start), math.max(max, end))
           })
 
-        assert(primaryInterval == (left, right))
+        assert(primaryInterval == ((left, right)))
 
         val (maxCoverIntervalLeft, maxCoverIntervalRight) =
           primaryAndCoveringIntervalsMax
