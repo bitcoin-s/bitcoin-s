@@ -7,6 +7,7 @@ import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
@@ -21,7 +22,8 @@ import java.io.File
 import java.nio.file.Files
 import scala.util.{Failure, Properties, Success, Try}
 
-class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
+class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
+    extends BitcoinSLogger {
   var taskRunner: TaskRunner = _
 
   lazy val txPrintFunc: String => String = str => {
@@ -270,18 +272,31 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea) {
         }
         val builder = new StringBuilder()
 
-        val contractInfo =
-          ContractInfo(totalCol, contractDescriptor, oracleInfo)
-        builder.append(s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
-        GlobalDLCData.lastContractInfo = contractInfo.hex
+        val pairOpt = ContractOraclePair.fromDescriptorOracleOpt(
+          contractDescriptor,
+          oracleInfo)
+        pairOpt match {
+          case Some(pair) =>
+            val contractInfo =
+              ContractInfo(totalCol, pair)
+            builder.append(
+              s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
+            GlobalDLCData.lastContractInfo = contractInfo.hex
 
-        printDummyOracleInfo(builder,
-                             privKey,
-                             oracleInfo,
-                             kValues,
-                             contractInfo)
+            printDummyOracleInfo(builder,
+                                 privKey,
+                                 oracleInfo,
+                                 kValues,
+                                 contractInfo)
 
-        oracleInfoArea.text = builder.result()
+            oracleInfoArea.text = builder.result()
+          case None =>
+            //i think doing nothing is right here?
+            logger.warn(
+              s"Invalid contract/oracle pairing, contract=$contractDescriptor oracle=$oracleInfo")
+            ()
+        }
+
       case None => ()
     }
   }

@@ -13,17 +13,27 @@ import scala.annotation.tailrec
 
 object CETCalculator {
 
-  /** A Vector of digits in a given base */
+  /** A Vector of digits in a given base.
+    *
+    * For example if we are using base 2 (binary)
+    * This could look like
+    * Vector(0,1,0,1,0,1,1,1,0)
+    *
+    * or if we are using base 16 (hex)
+    * Vector(9,8,10,11,2,3,2,4,1,15)
+    */
   type Digits = Vector[Int]
 
   /** A Vector of Digits corresponding to each oracle in order */
   type MultiOracleDigits = Vector[Digits]
 
   /** A Vector of digits and the payout corresponding to this result */
-  type Outcome = (Digits, Satoshis)
+  case class CETOutcome(digits: Digits, payout: Satoshis)
 
   /** A Vector of MultiOracleDigits and the payout corresponding to this result */
-  type MultiOracleOutcome = (MultiOracleDigits, Satoshis)
+  case class MultiOracleOutcome(
+      multiOracleDigits: MultiOracleDigits,
+      payout: Satoshis)
 
   /** Given a range and a payout function with which to build CETs,
     * the first step is to split the range into sub-ranges which
@@ -41,18 +51,20 @@ object CETCalculator {
     * (Note that interpolated functions are allowed
     * to be negative, but we set all negative values to 0).
     */
-  case class StartZero(indexFrom: Long, indexTo: Long) extends CETRange
+  case class ZeroPayoutRange(indexFrom: Long, indexTo: Long) extends CETRange
 
-  /** This range contains payouts all >= totalCollateral */
-  case class StartTotal(indexFrom: Long, indexTo: Long) extends CETRange
+  /** This range contains payouts all == totalCollateral */
+  case class MaxPayoutRange(indexFrom: Long, indexTo: Long) extends CETRange
 
   /** This range contains payouts that all vary at every step and cannot be compressed */
-  case class StartFunc(indexFrom: Long, indexTo: Long) extends CETRange
+  case class VariablePayoutRange(indexFrom: Long, indexTo: Long)
+      extends CETRange
 
   /** This range contains some constant payout between 0 and totalCollateral (exclusive).
     * To be clear, indexFrom and indexTo are still inclusive values.
     */
-  case class StartFuncConst(indexFrom: Long, indexTo: Long) extends CETRange
+  case class ConstantPayoutRange(indexFrom: Long, indexTo: Long)
+      extends CETRange
 
   object CETRange {
 
@@ -62,11 +74,11 @@ object CETCalculator {
         value: Satoshis,
         totalCollateral: Satoshis): CETRange = {
       if (value <= Satoshis.zero) {
-        StartZero(index, index)
+        ZeroPayoutRange(index, index)
       } else if (value >= totalCollateral) {
-        StartTotal(index, index)
+        MaxPayoutRange(index, index)
       } else {
-        StartFunc(index, index)
+        VariablePayoutRange(index, index)
       }
     }
   }
@@ -113,33 +125,35 @@ object CETCalculator {
 
           if (funcValue <= Satoshis.zero) {
             currentRange match {
-              case StartZero(indexFrom, _) =>
-                currentRange = StartZero(indexFrom, componentEnd)
-              case _: StartTotal | _: StartFunc | _: StartFuncConst =>
+              case ZeroPayoutRange(indexFrom, _) =>
+                currentRange = ZeroPayoutRange(indexFrom, componentEnd)
+              case _: MaxPayoutRange | _: VariablePayoutRange |
+                  _: ConstantPayoutRange =>
                 rangeBuilder += currentRange
-                currentRange = StartZero(componentStart, componentEnd)
+                currentRange = ZeroPayoutRange(componentStart, componentEnd)
             }
           } else if (funcValue >= totalCollateral) {
             currentRange match {
-              case StartTotal(indexFrom, _) =>
-                currentRange = StartTotal(indexFrom, componentEnd)
-              case _: StartZero | _: StartFunc | _: StartFuncConst =>
+              case MaxPayoutRange(indexFrom, _) =>
+                currentRange = MaxPayoutRange(indexFrom, componentEnd)
+              case _: ZeroPayoutRange | _: VariablePayoutRange |
+                  _: ConstantPayoutRange =>
                 rangeBuilder += currentRange
-                currentRange = StartTotal(componentStart, componentEnd)
+                currentRange = MaxPayoutRange(componentStart, componentEnd)
             }
           } else if (num != from && funcValue == prevFunc(num - 1, rounding)) {
             currentRange match {
-              case StartFunc(indexFrom, indexTo) =>
-                rangeBuilder += StartFunc(indexFrom, indexTo - 1)
-                currentRange = StartFuncConst(indexTo, componentEnd)
-              case StartFuncConst(indexFrom, _) =>
-                currentRange = StartFuncConst(indexFrom, componentEnd)
-              case _: StartZero | _: StartTotal =>
+              case VariablePayoutRange(indexFrom, indexTo) =>
+                rangeBuilder += VariablePayoutRange(indexFrom, indexTo - 1)
+                currentRange = ConstantPayoutRange(indexTo, componentEnd)
+              case ConstantPayoutRange(indexFrom, _) =>
+                currentRange = ConstantPayoutRange(indexFrom, componentEnd)
+              case _: ZeroPayoutRange | _: MaxPayoutRange =>
                 throw new RuntimeException("Something has gone horribly wrong.")
             }
           } else {
             rangeBuilder += currentRange
-            currentRange = StartFuncConst(componentStart, componentEnd)
+            currentRange = ConstantPayoutRange(componentStart, componentEnd)
           }
 
           num = componentEnd + 1
@@ -147,7 +161,7 @@ object CETCalculator {
             updateComponent()
             processConstantComponents()
           }
-        case _: DLCPayoutCurveComponent => ()
+        case _: DLCPayoutCurvePiece => ()
       }
     }
 
@@ -163,16 +177,18 @@ object CETCalculator {
       val value = currentFunc(num, rounding)
       if (value <= Satoshis.zero) {
         currentRange match {
-          case StartZero(indexFrom, _) =>
-            currentRange = StartZero(indexFrom, num)
-          case _: StartTotal | _: StartFunc | _: StartFuncConst =>
+          case ZeroPayoutRange(indexFrom, _) =>
+            currentRange = ZeroPayoutRange(indexFrom, num)
+          case _: MaxPayoutRange | _: VariablePayoutRange |
+              _: ConstantPayoutRange =>
             newRange(value)
         }
       } else if (value >= totalCollateral) {
         currentRange match {
-          case StartTotal(indexFrom, _) =>
-            currentRange = StartTotal(indexFrom, num)
-          case _: StartZero | _: StartFunc | _: StartFuncConst =>
+          case MaxPayoutRange(indexFrom, _) =>
+            currentRange = MaxPayoutRange(indexFrom, num)
+          case _: ZeroPayoutRange | _: VariablePayoutRange |
+              _: ConstantPayoutRange =>
             newRange(value)
         }
       } else if (
@@ -182,19 +198,20 @@ object CETCalculator {
         (num - 1 < componentStart && value == prevFunc(num - 1, rounding))
       ) {
         currentRange match {
-          case StartFunc(indexFrom, indexTo) =>
-            rangeBuilder += StartFunc(indexFrom, indexTo - 1)
-            currentRange = StartFuncConst(num - 1, num)
-          case StartFuncConst(indexFrom, _) =>
-            currentRange = StartFuncConst(indexFrom, num)
-          case _: StartZero | _: StartTotal =>
+          case VariablePayoutRange(indexFrom, indexTo) =>
+            rangeBuilder += VariablePayoutRange(indexFrom, indexTo - 1)
+            currentRange = ConstantPayoutRange(num - 1, num)
+          case ConstantPayoutRange(indexFrom, _) =>
+            currentRange = ConstantPayoutRange(indexFrom, num)
+          case _: ZeroPayoutRange | _: MaxPayoutRange =>
             throw new RuntimeException("Something has gone horribly wrong.")
         }
       } else {
         currentRange match {
-          case StartFunc(indexFrom, _) =>
-            currentRange = StartFunc(indexFrom, num)
-          case _: StartZero | _: StartTotal | _: StartFuncConst =>
+          case VariablePayoutRange(indexFrom, _) =>
+            currentRange = VariablePayoutRange(indexFrom, num)
+          case _: ZeroPayoutRange | _: MaxPayoutRange |
+              _: ConstantPayoutRange =>
             newRange(value)
         }
       }
@@ -380,23 +397,30 @@ object CETCalculator {
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       min: Long,
-      max: Long): Vector[Outcome] = {
+      max: Long): Vector[CETOutcome] = {
     val ranges = splitIntoRanges(min, max, totalCollateral, function, rounding)
 
     ranges.flatMap { range =>
       range match {
-        case StartZero(indexFrom, indexTo) =>
-          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map(
-            _ -> Satoshis.zero)
-        case StartTotal(indexFrom, indexTo) =>
-          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map(
-            _ -> totalCollateral)
-        case StartFuncConst(indexFrom, indexTo) =>
-          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map(
-            _ -> function(indexFrom, rounding))
-        case StartFunc(indexFrom, indexTo) =>
+        case ZeroPayoutRange(indexFrom, indexTo) =>
+          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
+            decomp =>
+              CETOutcome(decomp, payout = Satoshis.zero)
+          }
+        case MaxPayoutRange(indexFrom, indexTo) =>
+          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
+            decomp =>
+              CETOutcome(decomp, payout = totalCollateral)
+          }
+        case ConstantPayoutRange(indexFrom, indexTo) =>
+          groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
+            decomp =>
+              CETOutcome(decomp, payout = function(indexFrom, rounding))
+          }
+        case VariablePayoutRange(indexFrom, indexTo) =>
           indexFrom.to(indexTo).map { num =>
-            NumberUtil.decompose(num, base, numDigits) -> function(num)
+            val decomp = NumberUtil.decompose(num, base, numDigits)
+            CETOutcome(decomp, payout = function(num))
           }
       }
     }
@@ -410,7 +434,7 @@ object CETCalculator {
       numDigits: Int,
       function: DLCPayoutCurve,
       totalCollateral: Satoshis,
-      rounding: RoundingIntervals): Vector[Outcome] = {
+      rounding: RoundingIntervals): Vector[CETOutcome] = {
     val min = 0
     val max = Math.pow(base, numDigits).toLong - 1
 
@@ -540,8 +564,10 @@ object CETCalculator {
       coverCETInner: T,
       coverCETOuter: T,
       numOracles: Int): Vector[Vector[T]] = {
-    inOrOutCombinations(coverCETInner, coverCETOuter, numOracles - 1).map(
-      combos => primaryCET +: combos)
+    val combinations =
+      inOrOutCombinations(coverCETInner, coverCETOuter, numOracles - 1)
+
+    combinations.map(combos => primaryCET +: combos)
   }
 
   /** For the case where secondary oracles can sign either
@@ -605,9 +631,11 @@ object CETCalculator {
           minCoverMidCET(start, end, minFail, numDigits)
         }
 
-        Vector(singleCoveringCETCombinations(cetDigits, coverCET, numOracles))
+        val multiOracleDigits =
+          singleCoveringCETCombinations(cetDigits, coverCET, numOracles)
+        Vector(multiOracleDigits)
       } else if (start < leftErrorCET + minFail) { // case: Left CET
-        val coverCET = if (maximizeCoverage) {
+        val coverCET: Digits = if (maximizeCoverage) {
           errorCET
         } else {
           minCoverLeftCET(end, maxErrorExp, minFail, numDigits)
@@ -622,21 +650,25 @@ object CETCalculator {
         }
 
         if (leftErrorCET == 0) { // special case: Leftmost CET
-          Vector(singleCoveringCETCombinations(cetDigits, coverCET, numOracles))
+          val multiOracleDigits: Vector[Digits] =
+            singleCoveringCETCombinations(cetDigits, coverCET, numOracles)
+          Vector(multiOracleDigits)
         } else {
-          doubleCoveringCETCombinations(cetDigits,
-                                        coverCET,
-                                        leftCET,
-                                        numOracles)
+          val doubleCovering: Vector[Vector[Digits]] =
+            doubleCoveringCETCombinations(cetDigits,
+                                          coverCET,
+                                          leftCET,
+                                          numOracles)
+          doubleCovering
         }
       } else if (end > rightErrorCET - minFail) { // case: Right CET
-        val coverCET = if (maximizeCoverage) {
+        val coverCET: Digits = if (maximizeCoverage) {
           errorCET
         } else {
           minCoverRightCET(start, maxErrorExp, minFail, numDigits)
         }
 
-        lazy val rightCET = if (maximizeCoverage) {
+        lazy val rightCET: Digits = if (maximizeCoverage) {
           // CET of width halfMaxError covering [rightErrorCET + 1, rightErrorCET + halfMaxError]
           numToVec(rightErrorCET + 1, numDigits, maxErrorExp - 1)
         } else {
@@ -645,16 +677,20 @@ object CETCalculator {
         }
 
         if (rightErrorCET == maxNum) { // special case: Rightmost CET
-          Vector(singleCoveringCETCombinations(cetDigits, coverCET, numOracles))
+          val singleCover =
+            singleCoveringCETCombinations(cetDigits, coverCET, numOracles)
+          Vector(singleCover)
         } else {
-          doubleCoveringCETCombinations(cetDigits,
-                                        coverCET,
-                                        rightCET,
-                                        numOracles)
+          val doubleCovering: Vector[Vector[Digits]] =
+            doubleCoveringCETCombinations(cetDigits,
+                                          coverCET,
+                                          rightCET,
+                                          numOracles)
+          doubleCovering
         }
       } else {
         throw new RuntimeException(
-          s"Unexpected case: $cetDigits, $numDigits, $maxErrorExp, $minFailExp")
+          s"Unknown CET with case: $cetDigits, $numDigits, $maxErrorExp, $minFailExp")
       }
     } else { // case: Large CET
       val builder = Vector.newBuilder[MultiOracleDigits]
@@ -667,7 +703,7 @@ object CETCalculator {
        * Secondary oracle can be on left side if primary is on right.
        */
       if (start != 0) {
-        val leftInnerCET = if (maximizeCoverage) {
+        val leftInnerCET: Digits = if (maximizeCoverage) {
           numToVec(start, numDigits, maxErrorExp - 1)
         } else {
           numToVec(start, numDigits, minFailExp)
@@ -678,10 +714,13 @@ object CETCalculator {
           numToVec(start - minFail, numDigits, minFailExp)
         }
 
-        builder.++=(
+        val doubleCovering: Vector[MultiOracleDigits] =
           doubleCoveringRestrictedCETCombinations(leftInnerCET,
                                                   leftCET,
-                                                  numOracles))
+                                                  numOracles)
+
+        builder.++=(doubleCovering)
+        builder.result()
       }
 
       /* [start, end]:
@@ -692,8 +731,10 @@ object CETCalculator {
        * If both oracles are in this range (corresponding to a fixed
        * value payout) then this any difference can be ignored.
        */
-      builder.+=(
-        singleCoveringCETCombinations(cetDigits, cetDigits, numOracles))
+      val singleCover =
+        singleCoveringCETCombinations(cetDigits, cetDigits, numOracles)
+
+      builder.+=(singleCover)
 
       /* zoom of right corner of [start, end]:
        * _________________________________________________________
@@ -703,21 +744,21 @@ object CETCalculator {
        * Secondary oracle can be on right side if primary is on left.
        */
       if (end != maxNum) {
-        val rightInnerCET = if (maximizeCoverage) {
+        val rightInnerCET: Digits = if (maximizeCoverage) {
           numToVec(end - halfMaxError + 1, numDigits, maxErrorExp - 1)
         } else {
           numToVec(end - minFail + 1, numDigits, minFailExp)
         }
-        val rightCET = if (maximizeCoverage) {
+        val rightCET: Digits = if (maximizeCoverage) {
           numToVec(end + 1, numDigits, maxErrorExp - 1)
         } else {
           numToVec(end + 1, numDigits, minFailExp)
         }
 
-        builder.++=(
-          doubleCoveringRestrictedCETCombinations(rightInnerCET,
-                                                  rightCET,
-                                                  numOracles))
+        val doubleCover = doubleCoveringRestrictedCETCombinations(rightInnerCET,
+                                                                  rightCET,
+                                                                  numOracles)
+        builder.++=(doubleCover)
       }
 
       builder.result()
@@ -739,7 +780,7 @@ object CETCalculator {
     */
   def computeMultiOracleCETsBinary(
       numDigits: Int,
-      primaryCETs: Vector[Outcome],
+      primaryCETs: Vector[CETOutcome],
       maxErrorExp: Int,
       minFailExp: Int,
       maximizeCoverage: Boolean,
@@ -747,14 +788,14 @@ object CETCalculator {
     require(minFailExp < maxErrorExp)
 
     primaryCETs.flatMap {
-      case (cetDigits, payout) =>
+      case CETOutcome(cetDigits, payout) =>
         computeCoveringCETsBinary(numDigits,
                                   cetDigits,
                                   maxErrorExp,
                                   minFailExp,
                                   maximizeCoverage,
                                   numOracles)
-          .map((_, payout))
+          .map(MultiOracleOutcome(_, payout))
     }
   }
 
