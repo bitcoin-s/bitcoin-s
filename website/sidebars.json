@@ -27,12 +27,14 @@
       "core/adding-spks",
       "core/spending-info",
       "core/psbts",
+      "core/dlc",
       "core/txbuilder",
       "core/lightning-network"
     ],
     "Crypto Module": [
       "crypto/crypto-intro",
-      "crypto/sign"
+      "crypto/sign",
+      "crypto/adaptor-signatures"
     ],
     "Fee Provider": [
       "fee-provider/fee-provider"
