@@ -2,8 +2,7 @@ package org.bitcoins.core.script.control
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 1/8/16.
+/** Created by chris on 1/8/16.
   */
 class ControlOperationsFactoryTest extends BitcoinSUnitTest {
 

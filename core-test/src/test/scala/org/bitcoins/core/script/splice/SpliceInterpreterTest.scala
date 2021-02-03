@@ -5,8 +5,7 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result.ScriptErrorInvalidStackOperation
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 2/4/16.
+/** Created by chris on 2/4/16.
   */
 class SpliceInterpreterTest extends BitcoinSUnitTest {
   val SI = SpliceInterpreter

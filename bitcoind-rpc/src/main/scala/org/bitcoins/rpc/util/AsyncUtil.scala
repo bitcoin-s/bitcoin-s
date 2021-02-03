@@ -29,8 +29,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
     retryUntilSatisfiedF(f, interval, maxTries)
   }
 
-  /**
-    * The returned Future completes when condition becomes true
+  /** The returned Future completes when condition becomes true
     * @param conditionF The condition being waited on
     * @param duration The interval between calls to check condition
     * @param maxTries If condition is tried this many times, the Future fails
@@ -112,8 +111,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Returns a future that resolved when the condition becomes true, the condition
+  /** Returns a future that resolved when the condition becomes true, the condition
     * is checked maxTries times, or overallTimeout is reached
     * @param condition The blocking condition
     * @param duration The interval between calls to check condition
@@ -150,13 +148,11 @@ abstract class AsyncUtil extends BitcoinSLogger {
 
 object AsyncUtil extends AsyncUtil {
 
-  /**
-    * The default interval between async attempts
+  /** The default interval between async attempts
     */
   private[bitcoins] val DEFAULT_INTERVAL: FiniteDuration = 100.milliseconds
 
-  /**
-    * The default number of async attempts before timing out
+  /** The default number of async attempts before timing out
     */
   private[bitcoins] val DEFAULT_MAX_TRIES: Int = 50
 

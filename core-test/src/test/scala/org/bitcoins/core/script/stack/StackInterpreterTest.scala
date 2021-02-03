@@ -6,8 +6,7 @@ import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BytesUtil, ScriptProgramTestUtil}
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 class StackInterpreterTest extends BitcoinSUnitTest {
   val element1 = ScriptConstant("1234")

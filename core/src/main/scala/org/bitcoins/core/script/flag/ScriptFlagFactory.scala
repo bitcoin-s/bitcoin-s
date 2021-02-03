@@ -2,15 +2,13 @@ package org.bitcoins.core.script.flag
 
 import org.bitcoins.crypto.StringFactory
 
-/**
-  * Created by chris on 3/23/16.
+/** Created by chris on 3/23/16.
   * Trait used to create a script flag used to evaluate scripts in a
   * certain way
   */
 trait ScriptFlagFactory extends StringFactory[ScriptFlag] {
 
-  /**
-    * All the [[ScriptFlag]]s found inside of bitcoin core
+  /** All the [[ScriptFlag]]s found inside of bitcoin core
     * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31.
     */
   private def flags =
@@ -46,8 +44,7 @@ trait ScriptFlagFactory extends StringFactory[ScriptFlag] {
     }
   }
 
-  /**
-    * Parses the given list into[[ScriptFlag]]s
+  /** Parses the given list into[[ScriptFlag]]s
     * the strings that do not match a [[ScriptFlag]] are discarded.
     */
   def fromList(list: Seq[String]): Seq[ScriptFlag] = {

@@ -6,8 +6,7 @@ sealed abstract class MultisigHDPath extends HDPath {
 
 object MultisigHDPath extends HDPathFactory[MultisigHDPath] {
 
-  /**
-    * The purpose constant from BIP45
+  /** The purpose constant from BIP45
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0045.mediawiki BIP45]]
     */

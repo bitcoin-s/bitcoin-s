@@ -10,8 +10,7 @@ abstract class BIP32Path extends SeqWrapper[BIP32Node] {
   def path: Vector[BIP32Node]
   override protected lazy val wrapped: Vector[BIP32Node] = path
 
-  /**
-    * BIP32 paths can be subsets/superset of each other.
+  /** BIP32 paths can be subsets/superset of each other.
     * If all elements in a path `p` is included in a path
     * `P`, (i.e. `p` is a subset of `P`), `p.diff(P)`
     * is the elements from `P` that is not in `p`.
@@ -83,9 +82,8 @@ abstract class BIP32Path extends SeqWrapper[BIP32Node] {
 
   override def toString: String =
     path
-      .map {
-        case BIP32Node(index, hardened) =>
-          index.toString + (if (hardened) "'" else "")
+      .map { case BIP32Node(index, hardened) =>
+        index.toString + (if (hardened) "'" else "")
       }
       .fold("m")((accum, curr) => accum + "/" + curr)
 
@@ -96,8 +94,7 @@ abstract class BIP32Path extends SeqWrapper[BIP32Node] {
 object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
   private case class BIP32PathImpl(path: Vector[BIP32Node]) extends BIP32Path
 
-  /**
-    * The empty BIP32 path "m", i.e. a path that does no
+  /** The empty BIP32 path "m", i.e. a path that does no
     * child key derivation
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#the-key-tree BIP44]]
@@ -109,8 +106,7 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
 
   def apply(path: BIP32Node*): BIP32Path = BIP32Path(Vector(path: _*))
 
-  /**
-    * Parses a string representation of a BIP32 path. This is on the form
+  /** Parses a string representation of a BIP32 path. This is on the form
     * of
     *
     * {{{
@@ -178,8 +174,7 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
 case class BIP32Node(index: Int, hardened: Boolean) {
   require(index >= 0, s"BIP32 node index must be positive! Got $index")
 
-  /**
-    * Converts this node to a BIP32 notation
+  /** Converts this node to a BIP32 notation
     * unsigned 32 bit integer
     */
   def toUInt32: UInt32 =

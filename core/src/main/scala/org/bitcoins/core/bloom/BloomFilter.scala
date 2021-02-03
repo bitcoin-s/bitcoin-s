@@ -17,8 +17,7 @@ import scodec.bits.{BitVector, ByteVector}
 import scala.annotation.tailrec
 import scala.util.hashing.MurmurHash3
 
-/**
-  * Implements a bloom filter that abides by the semantics of BIP37
+/** Implements a bloom filter that abides by the semantics of BIP37
   *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki BIP37]].
   * @see [[https://github.com/bitcoin/bitcoin/blob/master/src/bloom.h Bitcoin Core bloom.h]]
@@ -37,8 +36,7 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
   /** An arbitrary value to add to the seed value in the hash function used by the bloom filter. */
   def tweak: UInt32
 
-  /**
-    * A set of flags that control how outpoints corresponding to a matched pubkey script are added to the filter.
+  /** A set of flags that control how outpoints corresponding to a matched pubkey script are added to the filter.
     * See the 'Comparing Transaction Elements to a Bloom Filter' section in this
     * @see [[https://bitcoin.org/en/developer-reference#filterload link]]
     */
@@ -82,8 +80,7 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
   def insert(outPoint: TransactionOutPoint): BloomFilter =
     insert(outPoint.bytes)
 
-  /**
-    * Inserts a public key and it's corresponding hash into the bloom filter
+  /** Inserts a public key and it's corresponding hash into the bloom filter
     *
     * @note The rationale for inserting both the pubkey and its hash is that
     *       in most cases where you have an "interesting pubkey" that you
@@ -134,8 +131,7 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
   /** Checks if `data` contains a [[DoubleSha256Digest Sha256Hash160Digest]] */
   def contains(hash: Sha256Hash160Digest): Boolean = contains(hash.bytes)
 
-  /**
-    * Checks if the transaction's txid, or any of the constants in it's scriptPubKeys/scriptSigs match our BloomFilter
+  /** Checks if the transaction's txid, or any of the constants in it's scriptPubKeys/scriptSigs match our BloomFilter
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
     * for exact details on what is relevant to a bloom filter and what is not relevant
@@ -145,21 +141,21 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
     //pull out all of the constants in the scriptPubKey's
     val constantsWithOutputIndex = scriptPubKeys.zipWithIndex.flatMap {
       case (scriptPubKey, index) =>
-        scriptPubKey.asm.collect {
-          case c: ScriptConstant => (c, index)
+        scriptPubKey.asm.collect { case c: ScriptConstant =>
+          (c, index)
         }
     }
 
     //check if the bloom filter contains any of the script constants in our outputs
-    val constantsOutput = constantsWithOutputIndex.filter {
-      case (c, _) => contains(c.bytes)
+    val constantsOutput = constantsWithOutputIndex.filter { case (c, _) =>
+      contains(c.bytes)
     }
 
     val scriptSigs = transaction.inputs.map(_.scriptSignature)
     val constantsWithInputIndex = scriptSigs.zipWithIndex.flatMap {
       case (scriptSig, index) =>
-        scriptSig.asm.collect {
-          case c: ScriptConstant => (c, index)
+        scriptSig.asm.collect { case c: ScriptConstant =>
+          (c, index)
         }
     }
     //check if the filter contains any of the prevouts in this tx
@@ -167,16 +163,15 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
       transaction.inputs.filter(i => contains(i.previousOutput))
 
     //check if the bloom filter contains any of the script constants in our inputs
-    val constantsInput = constantsWithInputIndex.filter {
-      case (c, _) => contains(c.bytes)
+    val constantsInput = constantsWithInputIndex.filter { case (c, _) =>
+      contains(c.bytes)
     }
 
     constantsOutput.nonEmpty || constantsInput.nonEmpty ||
     containsOutPoint.nonEmpty || contains(transaction.txId)
   }
 
-  /**
-    * Updates this bloom filter to contain the relevant information for the given Transaction
+  /** Updates this bloom filter to contain the relevant information for the given Transaction
     *
     * @see  [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
     * for the exact details on what parts of a transaction is added to the bloom filter
@@ -187,13 +182,12 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
         val scriptPubKeys = transaction.outputs.map(_.scriptPubKey)
         //a sequence of outPoints that need to be inserted into the filter
         val outPoints: Seq[TransactionOutPoint] =
-          scriptPubKeys.zipWithIndex.flatMap {
-            case (scriptPubKey, index) =>
-              // we filter all constants, and create an outpoint if the constant matches our filter
-              scriptPubKey.asm.collect {
-                case c: ScriptConstant if contains(c.bytes) =>
-                  TransactionOutPoint(transaction.txId, UInt32(index))
-              }
+          scriptPubKeys.zipWithIndex.flatMap { case (scriptPubKey, index) =>
+            // we filter all constants, and create an outpoint if the constant matches our filter
+            scriptPubKey.asm.collect {
+              case c: ScriptConstant if contains(c.bytes) =>
+                TransactionOutPoint(transaction.txId, UInt32(index))
+            }
           }
 
         logger.debug("Inserting outPoints: " + outPoints)
@@ -216,8 +210,7 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
 
     }
 
-  /**
-    * Updates a bloom filter according to the rules specified by the
+  /** Updates a bloom filter according to the rules specified by the
     * [[org.bitcoins.core.bloom.BloomUpdateP2PKOnly BloomUpdateP2PKOnly]] flag
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
@@ -240,24 +233,21 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
         case Nil    => accumFilter
       }
     val p2pkOrMultiSigScriptPubKeys: Seq[(ScriptPubKey, Int)] =
-      scriptPubKeysWithIndex.filter {
-        case (s, _) =>
-          s.isInstanceOf[P2PKScriptPubKey] ||
-            s.isInstanceOf[MultiSignatureScriptPubKey]
+      scriptPubKeysWithIndex.filter { case (s, _) =>
+        s.isInstanceOf[P2PKScriptPubKey] ||
+          s.isInstanceOf[MultiSignatureScriptPubKey]
       }
     //gets rid of all asm operations in the scriptPubKey except for the constants
     val scriptConstantsWithOutputIndex: Seq[(ScriptToken, Int)] =
-      p2pkOrMultiSigScriptPubKeys.flatMap {
-        case (scriptPubKey, index) =>
-          (scriptPubKey.asm.map(token => (token, index))).filter {
-            case (token, _) => token.isInstanceOf[ScriptConstant]
-          }
+      p2pkOrMultiSigScriptPubKeys.flatMap { case (scriptPubKey, index) =>
+        (scriptPubKey.asm.map(token => (token, index))).filter {
+          case (token, _) => token.isInstanceOf[ScriptConstant]
+        }
       }
     loop(scriptConstantsWithOutputIndex, this)
   }
 
-  /**
-    * Performs the [[scala.util.hashing.MurmurHash3 MurmurHash3]] on the given hash
+  /** Performs the [[scala.util.hashing.MurmurHash3 MurmurHash3]] on the given hash
     *
     * @param hashNum the nth hash function we are using
     * @param bytes the bytes of the data that needs to be inserted into the
@@ -274,8 +264,7 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
     modded.toInt
   }
 
-  /**
-    * See [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format BIP37]]
+  /** See [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format BIP37]]
     * to see where this number comes from
     */
   private def murmurConstant = UInt32("fba4c795")
@@ -320,8 +309,7 @@ object BloomFilter extends Factory[BloomFilter] with BitcoinSLogger {
                                            UInt32.zero,
                                            BloomUpdateAll)
 
-  /**
-    * Creates a bloom filter based on the number of elements to be inserted into the filter
+  /** Creates a bloom filter based on the number of elements to be inserted into the filter
     * and the desired false positive rate.
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format BIP37]]
@@ -339,8 +327,7 @@ object BloomFilter extends Factory[BloomFilter] with BitcoinSLogger {
   // todo: provide a apply method where you can pass in bloom-able filters
   // through a type class
 
-  /**
-    * Creates a bloom filter based on the number of elements to be inserted into the filter
+  /** Creates a bloom filter based on the number of elements to be inserted into the filter
     * and the desired false positive rate.
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format BIP37]]

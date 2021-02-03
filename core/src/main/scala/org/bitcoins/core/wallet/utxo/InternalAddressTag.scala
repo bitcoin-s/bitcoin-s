@@ -2,22 +2,19 @@ package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.crypto.StringFactory
 
-/**
-  * An AddressTagNames that is native to Bitcoin-S.
+/** An AddressTagNames that is native to Bitcoin-S.
   * InternalAddressTagNames are still usable when using Bitcoin-S
   * as a dependency
   */
 sealed trait InternalAddressTagName extends AddressTagName
 
-/**
-  * An AddressTagType that is native to Bitcoin-S.
+/** An AddressTagType that is native to Bitcoin-S.
   * InternalAddressTagTypes are still usable when using Bitcoin-S
   * as a dependency
   */
 sealed trait InternalAddressTagType extends AddressTagType
 
-/**
-  * An AddressTag that is native to Bitcoin-S.
+/** An AddressTag that is native to Bitcoin-S.
   * InternalAddressTags are still usable when using Bitcoin-S
   * as a dependency
   */

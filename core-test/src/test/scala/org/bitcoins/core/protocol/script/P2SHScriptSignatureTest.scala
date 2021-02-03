@@ -8,8 +8,7 @@ import org.bitcoins.core.script.constant.{
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 
-/**
-  * Created by chris on 3/8/16.
+/** Created by chris on 3/8/16.
   */
 class P2SHScriptSignatureTest extends BitcoinSAsyncTest {
 

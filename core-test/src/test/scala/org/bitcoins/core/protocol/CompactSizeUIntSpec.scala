@@ -3,8 +3,7 @@ package org.bitcoins.core.protocol
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.scalacheck.{Prop, Properties}
 
-/**
-  * Created by chris on 6/29/16.
+/** Created by chris on 6/29/16.
   */
 class CompactSizeUIntSpec extends Properties("CompactSizeUIntSpec") {
 

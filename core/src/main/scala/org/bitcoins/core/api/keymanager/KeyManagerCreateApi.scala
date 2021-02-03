@@ -10,8 +10,7 @@ import scodec.bits.BitVector
 
 trait KeyManagerCreateApi
 
-/**
-  * @define initialize
+/** @define initialize
   *                    Initializes the wallet, generating a wallet seed.
   *                    This seed should be displayed to the user, so they
   *                    can write it down. They should also be prompted
@@ -26,8 +25,7 @@ trait KeyManagerCreateApi
 trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
     extends KeyManagerCreateApi {
 
-  /**
-    * $initialize
+  /** $initialize
     */
   final def initialize(
       aesPasswordOpt: Option[AesPassword],
@@ -38,8 +36,7 @@ trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
                           bip39PasswordOpt = bip39PasswordOpt,
                           kmParams = kmParams)
 
-  /**
-    * $initializeWithEnt
+  /** $initializeWithEnt
     */
   def initializeWithEntropy(
       aesPasswordOpt: Option[AesPassword],
@@ -47,8 +44,7 @@ trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
       bip39PasswordOpt: Option[String],
       kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T]
 
-  /**
-    * Helper method to initialize a [[KeyManagerApi KeyManager]] with a [[MnemonicCode MnemonicCode]]
+  /** Helper method to initialize a [[KeyManagerApi KeyManager]] with a [[MnemonicCode MnemonicCode]]
     *
     * @param mnemonicCode
     * @param kmParams

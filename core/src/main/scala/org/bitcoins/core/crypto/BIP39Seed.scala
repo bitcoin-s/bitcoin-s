@@ -21,14 +21,12 @@ sealed abstract class BIP39Seed extends NetworkElement with MaskedToString {
   }
 }
 
-/**
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki# BIP32]]
+/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki# BIP32]]
   */
 object BIP39Seed extends Factory[BIP39Seed] {
   private case class BIP39SeedImpl(bytes: ByteVector) extends BIP39Seed
 
-  /**
-    * Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
+  /** Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
     * seed from a sequence of bytes. Must be between 16 and 64 bytes.
     */
   override def fromBytes(bytes: ByteVector): BIP39Seed =
@@ -39,8 +37,7 @@ object BIP39Seed extends Factory[BIP39Seed] {
   private val ITERATION_COUNT = 2048
   private val DERIVED_KEY_LENGTH = 512
 
-  /**
-    * Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
+  /** Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
     * seed from a mnemonic code. An optional password can be supplied.
     * @param password Defaults to the empty string
     */
@@ -58,8 +55,7 @@ object BIP39Seed extends Factory[BIP39Seed] {
     BIP39Seed.fromBytes(ByteVector(encodedBytes))
   }
 
-  /**
-    * Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
+  /** Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
     * seed from a mnemonic code. An optional password can be supplied.
     */
   def fromMnemonic(

@@ -7,8 +7,7 @@ import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 5/19/16.
+/** Created by chris on 5/19/16.
   * Represents a block in our blockchain
   * Bitcoin Core implementation:
   * [[https://github.com/bitcoin/bitcoin/blob/master/src/primitives/block.h#L73]]
@@ -20,8 +19,7 @@ sealed abstract class Block extends NetworkElement {
   /** The block header for this block */
   def blockHeader: BlockHeader
 
-  /**
-    * The total number of transactions in this block,
+  /** The total number of transactions in this block,
     * including the coinbase transaction.
     */
   def txCount: CompactSizeUInt
@@ -31,8 +29,7 @@ sealed abstract class Block extends NetworkElement {
 
   override def bytes = RawBlockSerializer.write(this)
 
-  /**
-    * This is the new computation to determine the maximum size of a block as per BIP141
+  /** This is the new computation to determine the maximum size of a block as per BIP141
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#block-size]]
     * The weight of a block is determined as follows:
     *
@@ -46,8 +43,7 @@ sealed abstract class Block extends NetworkElement {
   def blockWeight: Long = transactions.map(_.weight).sum
 }
 
-/**
-  * Companion object for creating Blocks
+/** Companion object for creating Blocks
   */
 object Block extends Factory[Block] {
 

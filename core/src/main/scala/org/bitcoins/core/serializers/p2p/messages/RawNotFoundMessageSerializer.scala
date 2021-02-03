@@ -4,8 +4,7 @@ import org.bitcoins.core.p2p.{InventoryMessage, NotFoundMessage}
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
-/**
-  * Responsible for the serialization and deserialization of a NotFound message on the p2p network
+/** Responsible for the serialization and deserialization of a NotFound message on the p2p network
   * @see https://bitcoin.org/en/developer-reference#notfound
   */
 trait RawNotFoundMessageSerializer

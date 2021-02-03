@@ -31,8 +31,7 @@ object BitcoinSTestAppConfig {
     }
   }
 
-  /**
-    * App configuration suitable for test purposes:
+  /** App configuration suitable for test purposes:
     *
     * 1) Data directory is set to user temp directory
     * 2) Logging is turned down to WARN

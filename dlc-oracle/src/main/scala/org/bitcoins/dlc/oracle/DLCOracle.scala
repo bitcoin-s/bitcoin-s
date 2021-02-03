@@ -348,10 +348,9 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
         oracleEventTLV.nonces.tail
     }
 
-    val digitSigFs = nonces.zipWithIndex.map {
-      case (nonce, index) =>
-        val digit = decomposed(index)
-        signEvent(nonce, DigitDecompositionAttestation(digit))
+    val digitSigFs = nonces.zipWithIndex.map { case (nonce, index) =>
+      val digit = decomposed(index)
+      signEvent(nonce, DigitDecompositionAttestation(digit))
     }
 
     for {

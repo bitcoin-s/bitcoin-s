@@ -13,8 +13,7 @@ import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 import java.net.URI
 import scala.concurrent.Future
 
-/**
-  * This trait defines functionality relating to how
+/** This trait defines functionality relating to how
   * Bitcoin Core connects to and selects its network peers.
   */
 trait P2PRpc { self: Client =>

@@ -2,8 +2,7 @@ package org.bitcoins.core.protocol.ln.channel
 
 import org.bitcoins.crypto.StringFactory
 
-/**
-  * Copied from [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/scala/fr/acinq/eclair/channel/ChannelTypes.scala Eclair]]
+/** Copied from [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/scala/fr/acinq/eclair/channel/ChannelTypes.scala Eclair]]
   */
 sealed trait ChannelState
 

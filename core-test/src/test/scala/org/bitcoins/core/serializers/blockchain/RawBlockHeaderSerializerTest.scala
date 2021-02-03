@@ -6,8 +6,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-/**
-  * Values transmitted in the network are big-endian.
+/** Values transmitted in the network are big-endian.
   * Created by tom on 6/3/16.
   */
 class RawBlockHeaderSerializerTest extends BitcoinSUnitTest {

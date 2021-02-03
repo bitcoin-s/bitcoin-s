@@ -1,7 +1,6 @@
 package org.bitcoins.core.hd
 
-/**
-  * Represents a
+/** Represents a
   * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Account BIP44]],
   * [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
   * and
@@ -57,9 +56,8 @@ object HDAccount {
       false
     } else {
       val zipped = path.zip(account.path)
-      zipped.foldLeft(true) {
-        case (past, (bip32Node, accountNode)) =>
-          past && bip32Node == accountNode
+      zipped.foldLeft(true) { case (past, (bip32Node, accountNode)) =>
+        past && bip32Node == accountNode
       }
     }
   }

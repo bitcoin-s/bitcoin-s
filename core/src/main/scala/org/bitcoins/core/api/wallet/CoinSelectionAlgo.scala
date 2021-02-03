@@ -17,8 +17,7 @@ object CoinSelectionAlgo extends StringFactory[CoinSelectionAlgo] {
     */
   final case object AccumulateLargest extends CoinSelectionAlgo
 
-  /**
-    * Greedily selects from walletUtxos starting with the smallest outputs, skipping outputs with values
+  /** Greedily selects from walletUtxos starting with the smallest outputs, skipping outputs with values
     * below their fees. Good for low fee environments to consolidate UTXOs.
     *
     * Has the potential privacy breach of connecting a ton of UTXOs to one address.

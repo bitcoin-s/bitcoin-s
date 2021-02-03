@@ -11,8 +11,7 @@ import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 2/29/16.
+/** Created by chris on 2/29/16.
   */
 class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
 

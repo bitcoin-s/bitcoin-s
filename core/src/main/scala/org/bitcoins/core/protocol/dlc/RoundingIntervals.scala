@@ -150,13 +150,12 @@ case class RoundingIntervals(intervalStarts: Vector[IntervalStart]) {
   def canonicalForm(): RoundingIntervals = {
     var currentMod: Long = 1L
 
-    val canonicalVec = intervalStarts.filter {
-      case IntervalStart(_, newMod) =>
-        if (newMod == currentMod) false
-        else {
-          currentMod = newMod
-          true
-        }
+    val canonicalVec = intervalStarts.filter { case IntervalStart(_, newMod) =>
+      if (newMod == currentMod) false
+      else {
+        currentMod = newMod
+        true
+      }
     }
 
     RoundingIntervals(canonicalVec)
@@ -177,8 +176,8 @@ object RoundingIntervals {
   }
 
   def fromTLV(tlv: RoundingIntervalsV0TLV): RoundingIntervals = {
-    RoundingIntervals(tlv.intervalStarts.map {
-      case (outcome, amt) => IntervalStart(BigDecimal(outcome), amt.toLong)
+    RoundingIntervals(tlv.intervalStarts.map { case (outcome, amt) =>
+      IntervalStart(BigDecimal(outcome), amt.toLong)
     })
   }
 }

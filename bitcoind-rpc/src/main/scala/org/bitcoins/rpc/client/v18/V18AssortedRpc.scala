@@ -12,8 +12,7 @@ import play.api.libs.json.{JsString, Json}
 
 import scala.concurrent.Future
 
-/**
-  * Assorted Rpc calls for Bitcoin V18
+/** Assorted Rpc calls for Bitcoin V18
   * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/network/getnodeaddresses/]]
   * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/wallet/listwalletdir/]]
   * @see [[https://github.com/bitcoin/bitcoin/commit/e82f6ad6f270f1f101d8853be32fd11eff4ddfb8]]

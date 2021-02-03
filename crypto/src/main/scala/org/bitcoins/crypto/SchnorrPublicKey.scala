@@ -46,8 +46,8 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
       nonces: Vector[SchnorrNonce]): ECPublicKey = {
     bytesToHash
       .zip(nonces)
-      .map {
-        case (bytes, nonce) => computeSigPoint(CryptoUtil.sha256(bytes), nonce)
+      .map { case (bytes, nonce) =>
+        computeSigPoint(CryptoUtil.sha256(bytes), nonce)
       }
       .reduce(_.add(_))
   }

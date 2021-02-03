@@ -3,8 +3,7 @@ package org.bitcoins.core.script.constant
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 4/4/16.
+/** Created by chris on 4/4/16.
   */
 class ScriptNumberFactoryTest extends BitcoinSUnitTest {
 

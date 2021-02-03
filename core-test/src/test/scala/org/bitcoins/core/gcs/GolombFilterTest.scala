@@ -13,29 +13,28 @@ class GolombFilterTest extends BitcoinSAsyncTest {
   behavior of "GolombFilter"
 
   it must "match encoded data for arbitrary GCS parameters" in {
-    forAllParallel(genKey, genPMRand) {
-      case (k, (p, m, rand)) =>
-        val data1 = rand + UInt64.one
-        val data2 = data1 + UInt64.one
-        val data = Vector(data1, data2)
-        val encodedData = GCS.encodeSortedSet(data, p)
-        val filter =
-          GolombFilter(k, m, p, CompactSizeUInt(UInt64(2)), encodedData)
-        val binarySearchMatcher = BinarySearchFilterMatcher(filter)
+    forAllParallel(genKey, genPMRand) { case (k, (p, m, rand)) =>
+      val data1 = rand + UInt64.one
+      val data2 = data1 + UInt64.one
+      val data = Vector(data1, data2)
+      val encodedData = GCS.encodeSortedSet(data, p)
+      val filter =
+        GolombFilter(k, m, p, CompactSizeUInt(UInt64(2)), encodedData)
+      val binarySearchMatcher = BinarySearchFilterMatcher(filter)
 
-        assert(!binarySearchMatcher.matchesHash(rand))
-        assert(binarySearchMatcher.matchesHash(data1))
-        assert(binarySearchMatcher.matchesHash(data2))
-        assert(!binarySearchMatcher.matchesAnyHash(Vector(rand)))
-        assert(binarySearchMatcher.matchesAnyHash(Vector(rand, data1, data2)))
+      assert(!binarySearchMatcher.matchesHash(rand))
+      assert(binarySearchMatcher.matchesHash(data1))
+      assert(binarySearchMatcher.matchesHash(data2))
+      assert(!binarySearchMatcher.matchesAnyHash(Vector(rand)))
+      assert(binarySearchMatcher.matchesAnyHash(Vector(rand, data1, data2)))
 
-        val simpleMatcher = SimpleFilterMatcher(filter)
+      val simpleMatcher = SimpleFilterMatcher(filter)
 
-        assert(!simpleMatcher.matchesHash(rand))
-        assert(simpleMatcher.matchesHash(data1))
-        assert(simpleMatcher.matchesHash(data2))
-        assert(!simpleMatcher.matchesAnyHash(Vector(rand)))
-        assert(simpleMatcher.matchesAnyHash(Vector(rand, data1, data2)))
+      assert(!simpleMatcher.matchesHash(rand))
+      assert(simpleMatcher.matchesHash(data1))
+      assert(simpleMatcher.matchesHash(data2))
+      assert(!simpleMatcher.matchesAnyHash(Vector(rand)))
+      assert(simpleMatcher.matchesAnyHash(Vector(rand, data1, data2)))
     }
   }
 

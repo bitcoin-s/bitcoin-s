@@ -15,8 +15,7 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
-/**
-  * One of the tagged fields on a Lightning Network invoice
+/** One of the tagged fields on a Lightning Network invoice
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields]]
   */
 sealed trait LnTag {
@@ -53,8 +52,7 @@ sealed trait LnTag {
   }
 }
 
-/**
-  * All of the different invoice tags that are currently defined
+/** All of the different invoice tags that are currently defined
   * Refer to BOLT11 for a full list
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields]]
   */
@@ -181,8 +179,7 @@ object LnTag {
     }
   }
 
-  /**
-    * `min_final_ctlv_expiry` is the minimum difference between
+  /** `min_final_ctlv_expiry` is the minimum difference between
     * HTLC CLTV timeout and the current block height, for the
     * terminal case (C). This is denominated in blocks.
     * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#cltv_expiry_delta-selection]]

@@ -6,8 +6,7 @@ import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSerializerHelper}
 import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 
-/**
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfheaders BIP157]]
+/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfheaders BIP157]]
   */
 object RawCompactFilterHeadersMessageSerializer
     extends RawBitcoinSerializer[CompactFilterHeadersMessage] {

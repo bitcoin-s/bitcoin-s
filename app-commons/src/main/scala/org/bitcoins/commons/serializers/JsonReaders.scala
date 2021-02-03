@@ -45,8 +45,7 @@ import scala.util.{Failure, Success, Try}
 
 object JsonReaders {
 
-  /**
-    * Tries to prase the provided JSON into a map with keys of
+  /** Tries to prase the provided JSON into a map with keys of
     * type `K` and values of type `V`
     */
   def mapReads[K, V](js: JsValue)(implicit
@@ -54,8 +53,8 @@ object JsonReaders {
       readsV: Reads[V]): JsResult[Map[K, V]] = {
     js.validate[JsObject].flatMap { jsObj =>
       val jsResults: scala.collection.Seq[(JsResult[K], JsResult[V])] =
-        jsObj.fields.map {
-          case (key, value) => JsString(key).validate[K] -> value.validate[V]
+        jsObj.fields.map { case (key, value) =>
+          JsString(key).validate[K] -> value.validate[V]
         }
 
       val allErrors: scala.collection.Seq[(
@@ -69,9 +68,8 @@ object JsonReaders {
       if (allErrors.nonEmpty) {
         JsError(allErrors)
       } else {
-        JsSuccess(jsResults.collect {
-          case (JsSuccess(k, _), JsSuccess(v, _)) =>
-            k -> v
+        JsSuccess(jsResults.collect { case (JsSuccess(k, _), JsSuccess(v, _)) =>
+          k -> v
         }.toMap)
       }
     }

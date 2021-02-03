@@ -7,14 +7,12 @@ import org.bitcoins.core.serializers.p2p._
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits._
 
-/**
-  * Encapsulated network IP address currently uses the following structure
+/** Encapsulated network IP address currently uses the following structure
   * @see https://bitcoin.org/en/developer-reference#addr
   */
 sealed abstract class NetworkIpAddress extends NetworkElement {
 
-  /**
-    * Added in protocol version 31402.
+  /** Added in protocol version 31402.
     * A time in Unix epoch time format. Nodes advertising their own IP address set this to the current time.
     * Nodes advertising IP addresses they’ve connected to set this to the last time they connected to that node.
     * Other nodes just relaying the IP address should not change the time.
@@ -23,19 +21,16 @@ sealed abstract class NetworkIpAddress extends NetworkElement {
     */
   def time: UInt32
 
-  /**
-    * The services the node advertised in its version message.
+  /** The services the node advertised in its version message.
     */
   def services: ServiceIdentifier
 
-  /**
-    * IPv6 address in big endian byte order.
+  /** IPv6 address in big endian byte order.
     * IPv4 addresses can be provided as IPv4-mapped IPv6 addresses
     */
   def address: InetAddress
 
-  /**
-    * Port number in big endian byte order.
+  /** Port number in big endian byte order.
     * Note that Bitcoin Core will only connect to nodes with non-standard port numbers as
     * a last resort for finding peers. This is to prevent anyone from trying to use the
     * network to disrupt non-Bitcoin services that run on other ports.
@@ -47,8 +42,7 @@ sealed abstract class NetworkIpAddress extends NetworkElement {
 
 object NetworkIpAddress extends Factory[NetworkIpAddress] {
 
-  /**
-    * Writes an IP address to the representation that the p2p network requires.
+  /** Writes an IP address to the representation that the p2p network requires.
     * An IPv6 address is in big endian byte order.
     * An IPv4 address has to be mapped to an IPv6 address.
     *

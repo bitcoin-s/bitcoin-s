@@ -5,16 +5,14 @@ import scalafx.scene.Node
 import scalafx.scene.control.Alert
 import scalafx.scene.control.Alert.AlertType
 
-/**
-  * Runs a background task disabling the `mainView` and main visible `glassPane`.
+/** Runs a background task disabling the `mainView` and main visible `glassPane`.
   * Shows statis using `statusLabel`.
   *
   * Copied from [[https://github.com/scalafx/ScalaFX-Tutorials/blob/master/slick-table/src/main/scala/org/scalafx/slick_table/TaskRunner.scala]]
   */
 class TaskRunner(mainView: Node, glassPane: Node) {
 
-  /**
-    * Run an operation on a separate thread. Return and wait for its completion,
+  /** Run an operation on a separate thread. Return and wait for its completion,
     * then return result of running that operation.
     *
     * A progress indicator is displayed while running the operation.

@@ -10,8 +10,7 @@ import play.api.libs.json.{JsNumber, JsString, Json}
 
 import scala.concurrent.Future
 
-/**
-  * RPC calls related to transaction sending
+/** RPC calls related to transaction sending
   * specific to Bitcoin Core 0.16.
   */
 trait V16SendRpc { self: Client =>

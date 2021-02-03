@@ -152,12 +152,11 @@ class GCSTest extends BitcoinSUnitTest {
         .map(UInt64(_))
     }
 
-    forAll(delta, NumberGenerator.genP) {
-      case (item, p) =>
-        val encoded = GCS.golombEncode(item = item, p = p)
-        val decode = GCS.golombDecode(codedItem = encoded, p = p)
+    forAll(delta, NumberGenerator.genP) { case (item, p) =>
+      val encoded = GCS.golombEncode(item = item, p = p)
+      val decode = GCS.golombDecode(codedItem = encoded, p = p)
 
-        assert(decode == item)
+      assert(decode == item)
     }
   }
 
@@ -217,15 +216,14 @@ class GCSTest extends BitcoinSUnitTest {
         .map(ByteVector(_))
         .map(SipHashKey(_))
 
-    forAll(genPM, genItems, genKey) {
-      case ((p, m), items, k) =>
-        val hashes = GCS.hashedSetConstruct(items, k, m)
-        val sortedHashes = hashes.sortWith(_ < _)
+    forAll(genPM, genItems, genKey) { case ((p, m), items, k) =>
+      val hashes = GCS.hashedSetConstruct(items, k, m)
+      val sortedHashes = hashes.sortWith(_ < _)
 
-        val codedSet = GCS.buildGCS(items, k, p, m)
-        val decodedSet = GCS.golombDecodeSet(codedSet, p)
+      val codedSet = GCS.buildGCS(items, k, p, m)
+      val decodedSet = GCS.golombDecodeSet(codedSet, p)
 
-        assert(decodedSet == sortedHashes)
+      assert(decodedSet == sortedHashes)
     }
 
   }

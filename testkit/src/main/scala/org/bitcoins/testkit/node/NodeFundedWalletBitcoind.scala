@@ -9,8 +9,7 @@ import org.bitcoins.testkit.node.fixture.{
 }
 import org.bitcoins.wallet.Wallet
 
-/**
-  * Creates
+/** Creates
   * 1. a funded bitcoind wallet
   * 2. a funded bitcoin-s wallet
   * 3. a chain handler with the appropriate tables created

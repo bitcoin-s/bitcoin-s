@@ -4,8 +4,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.core.gen.MerkleGenerator
 import org.scalacheck.{Prop, Properties}
 
-/**
-  * Created by chris on 2/13/17.
+/** Created by chris on 2/13/17.
   */
 class PartialMerkleTreeSpec extends Properties("PartialMerkleTreeSpec") {
 

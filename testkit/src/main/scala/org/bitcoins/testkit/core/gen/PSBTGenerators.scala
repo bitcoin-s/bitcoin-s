@@ -56,9 +56,8 @@ object PSBTGenerators {
   }
 
   private def unknownGlobal: Gen[GlobalPSBTRecord.Unknown] = {
-    unknownRecord.map {
-      case (key, value) =>
-        GlobalPSBTRecord.Unknown(key, value)
+    unknownRecord.map { case (key, value) =>
+      GlobalPSBTRecord.Unknown(key, value)
     }
   }
 
@@ -74,9 +73,8 @@ object PSBTGenerators {
   }
 
   private def unknownInput: Gen[InputPSBTRecord.Unknown] = {
-    unknownRecord.map {
-      case (key, value) =>
-        InputPSBTRecord.Unknown(key, value)
+    unknownRecord.map { case (key, value) =>
+      InputPSBTRecord.Unknown(key, value)
     }
   }
 
@@ -91,9 +89,8 @@ object PSBTGenerators {
   }
 
   private def unknownOutput: Gen[OutputPSBTRecord.Unknown] = {
-    unknownRecord.map {
-      case (key, value) =>
-        OutputPSBTRecord.Unknown(key, value)
+    unknownRecord.map { case (key, value) =>
+      OutputPSBTRecord.Unknown(key, value)
     }
   }
 

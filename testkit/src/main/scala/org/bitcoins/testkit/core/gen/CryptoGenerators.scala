@@ -28,40 +28,33 @@ import org.bitcoins.crypto.{
 import org.scalacheck.Gen
 import scodec.bits.{BitVector, ByteVector}
 
-/**
-  * Created by chris on 6/22/16.
+/** Created by chris on 6/22/16.
   */
 sealed abstract class CryptoGenerators {
 
   object entropy {
 
-    /**
-      * Generates 128 bits of entropy
+    /** Generates 128 bits of entropy
       */
     def bits128: Gen[BitVector] = Gen.delay(MnemonicCode.getEntropy128Bits)
 
-    /**
-      * Generates 160 bits of entropy
+    /** Generates 160 bits of entropy
       */
     def bits160: Gen[BitVector] = Gen.delay(MnemonicCode.getEntropy160Bits)
 
-    /**
-      * Generates 192 bits of entropy
+    /** Generates 192 bits of entropy
       */
     def bits192: Gen[BitVector] = Gen.delay(MnemonicCode.getEntropy192Bits)
 
-    /**
-      * Generates 224 bits of entropy
+    /** Generates 224 bits of entropy
       */
     def bits224: Gen[BitVector] = Gen.delay(MnemonicCode.getEntropy224Bits)
 
-    /**
-      * Generates 256 bits of entropy
+    /** Generates 256 bits of entropy
       */
     def bits256: Gen[BitVector] = Gen.delay(MnemonicCode.getEntropy256Bits)
 
-    /**
-      * Generates either 128, 160, 192, 224 or 256 of bits of entropy
+    /** Generates either 128, 160, 192, 224 or 256 of bits of entropy
       */
     def any: Gen[BitVector] =
       Gen.oneOf(bits128, bits160, bits192, bits224, bits256)
@@ -101,8 +94,7 @@ sealed abstract class CryptoGenerators {
       mnemonicCode256Bits
     )
 
-  /**
-    * Generates a BIP39 valid mnemonic
+  /** Generates a BIP39 valid mnemonic
     * phrase
     */
   def mnemonicPhrase: Gen[Vector[String]] =
@@ -110,8 +102,7 @@ sealed abstract class CryptoGenerators {
       code <- mnemonicCode
     } yield code.words
 
-  /**
-    * Generates a valid BIP39 seed from
+  /** Generates a valid BIP39 seed from
     * an mnemonic with no password
     */
   def bip39SeedNoPassword: Gen[BIP39Seed] =
@@ -126,8 +117,7 @@ sealed abstract class CryptoGenerators {
     Gen.asciiStr
   }
 
-  /**
-    * Generates a valid BIP39 seed from
+  /** Generates a valid BIP39 seed from
     * an mnemonic with a random password
     */
   def bip39SeedWithPassword: Gen[BIP39Seed] =
@@ -168,16 +158,14 @@ sealed abstract class CryptoGenerators {
   def schnorrPublicKey: Gen[SchnorrPublicKey] =
     publicKey.map(_.schnorrPublicKey)
 
-  /**
-    * Generate a sequence of private keys
+  /** Generate a sequence of private keys
     * @param num maximum number of keys to generate
     * @return
     */
   def privateKeySeq(num: Int): Gen[Seq[ECPrivateKey]] =
     Gen.listOfN(num, privateKey)
 
-  /**
-    * Generates a sequence of private keys, and determines an amount of 'required' private keys
+  /** Generates a sequence of private keys, and determines an amount of 'required' private keys
     * that a transaction needs to be signed with
     * @param num the maximum number of keys to generate
     * @return
@@ -194,8 +182,7 @@ sealed abstract class CryptoGenerators {
     }
   }
 
-  /**
-    * Generates a random number of private keys less than 15.
+  /** Generates a random number of private keys less than 15.
     * Also generates a random 'requiredSigs' number that a transaction needs to be signed with
     */
   def privateKeySeqWithRequiredSigs: Gen[(Seq[ECPrivateKey], Int)] =
@@ -273,8 +260,7 @@ sealed abstract class CryptoGenerators {
     doubleSha256Digest.map(_.flip)
   }
 
-  /**
-    * Generates a sequence of [[DoubleSha256Digest DoubleSha256Digest]]
+  /** Generates a sequence of [[DoubleSha256Digest DoubleSha256Digest]]
     * @param num the number of digets to generate
     * @return
     */

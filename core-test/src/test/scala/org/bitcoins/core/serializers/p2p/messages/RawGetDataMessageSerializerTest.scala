@@ -7,8 +7,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 7/8/16.
+/** Created by chris on 7/8/16.
   */
 class RawGetDataMessageSerializerTest extends BitcoinSUnitTest {
 

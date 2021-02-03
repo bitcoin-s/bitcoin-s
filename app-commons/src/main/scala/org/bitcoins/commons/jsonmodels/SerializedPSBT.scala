@@ -105,9 +105,8 @@ object SerializedPSBT {
 
   def decodePSBT(psbt: PSBT): SerializedPSBT = {
     val global = decodeGlobalMap(psbt.globalMap)
-    val inputs = psbt.inputMaps.zipWithIndex.map {
-      case (input, index) =>
-        decodeInputMap(input, index)
+    val inputs = psbt.inputMaps.zipWithIndex.map { case (input, index) =>
+      decodeInputMap(input, index)
     }
     val outputs = psbt.outputMaps.map(decodeOutputMap)
 

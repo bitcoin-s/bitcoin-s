@@ -11,8 +11,7 @@ import org.bitcoins.db._
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * This class is responsible for all database access related
+/** This class is responsible for all database access related
   * to [[org.bitcoins.core.protocol.blockchain.BlockHeader]]s in
   * our chain project
   */

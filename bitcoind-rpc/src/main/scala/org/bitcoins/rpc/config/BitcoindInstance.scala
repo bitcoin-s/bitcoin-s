@@ -11,8 +11,7 @@ import org.bitcoins.rpc.client.common.BitcoindVersion
 import scala.sys.process._
 import scala.util.Properties
 
-/**
-  * Created by chris on 4/29/17.
+/** Created by chris on 4/29/17.
   */
 sealed trait BitcoindInstance extends BitcoinSLogger {
 
@@ -138,8 +137,7 @@ object BitcoindInstance {
     }
   }
 
-  /**
-    * Construct a `bitcoind` from the given config file. If no `datadir` setting
+  /** Construct a `bitcoind` from the given config file. If no `datadir` setting
     * is found, the parent directory to the given file is used.
     *
     * @throws  IllegalArgumentException if the given config file does not exist

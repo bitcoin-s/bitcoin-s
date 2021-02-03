@@ -7,8 +7,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 6/1/16.
+/** Created by chris on 6/1/16.
   */
 class RawGetBlocksMessageSerializerTest extends BitcoinSUnitTest {
 

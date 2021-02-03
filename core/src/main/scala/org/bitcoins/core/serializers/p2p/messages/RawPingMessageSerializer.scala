@@ -5,8 +5,7 @@ import org.bitcoins.core.p2p.PingMessage
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
-/**
-  * @see https://bitcoin.org/en/developer-reference#ping
+/** @see https://bitcoin.org/en/developer-reference#ping
   */
 trait RawPingMessageSerializer extends RawBitcoinSerializer[PingMessage] {
 

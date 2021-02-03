@@ -14,8 +14,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 5/24/16.
+/** Created by chris on 5/24/16.
   */
 class ChainParamsTest extends BitcoinSUnitTest {
   val genesisBlock = MainNetChainParams.genesisBlock

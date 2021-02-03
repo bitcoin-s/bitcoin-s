@@ -36,8 +36,7 @@ import scala.concurrent.duration.DurationInt
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
-/**
-  * This is the base trait for Bitcoin Core
+/** This is the base trait for Bitcoin Core
   * RPC clients. It defines no RPC calls
   * except for the a ping. It contains functionality
   * and utilities useful when working with an RPC
@@ -51,8 +50,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
   protected def walletExtension(walletName: String): String =
     s"/wallet/$walletName"
 
-  /**
-    * The log file of the Bitcoin Core daemon
+  /** The log file of the Bitcoin Core daemon
     */
   lazy val logFile: Path = {
 
@@ -73,8 +71,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
   implicit protected val executor: ExecutionContext = system.getDispatcher
   implicit protected val network: NetworkParameters = instance.network
 
-  /**
-    * This is here (and not in JsonWrriters)
+  /** This is here (and not in JsonWrriters)
     * so that the implicit network val is accessible
     */
   implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
@@ -185,8 +182,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
     started
   }
 
-  /**
-    * Checks whether the underlying bitcoind daemon is running
+  /** Checks whether the underlying bitcoind daemon is running
     */
   def isStartedF: Future[Boolean] = {
     def tryPing: Future[Boolean] = {
@@ -222,8 +218,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
     }
   }
 
-  /**
-    * Stop method for BitcoindRpcClient that is stopped, inherits from the StartStop trait
+  /** Stop method for BitcoindRpcClient that is stopped, inherits from the StartStop trait
     * @return A future stopped bitcoindRPC client
     */
   def stop(): Future[BitcoindRpcClient] = {
@@ -237,8 +232,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
     } yield this.asInstanceOf[BitcoindRpcClient]
   }
 
-  /**
-    * Checks whether the underlyind bitcoind daemon is stopped
+  /** Checks whether the underlyind bitcoind daemon is stopped
     * @return A future boolean which represents isstopped or not
     */
   def isStoppedF: Future[Boolean] = {
@@ -265,8 +259,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
       responseF.flatMap(getPayload(_, command, request, parameters))
 
     payloadF.map { payload =>
-      /**
-        * These lines are handy if you want to inspect what's being sent to and
+      /** These lines are handy if you want to inspect what's being sent to and
         * returned from bitcoind before it's parsed into a Scala type. However,
         * there will sensitive material in some of those calls (private keys,
         * XPUBs, balances, etc). It's therefore not a good idea to enable

@@ -9,8 +9,7 @@ import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
 import scala.concurrent.Future
 
-/**
-  * RPC calls related to querying the state of the blockchain
+/** RPC calls related to querying the state of the blockchain
   */
 trait BlockchainRpc { self: Client =>
 

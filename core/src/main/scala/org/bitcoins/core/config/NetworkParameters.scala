@@ -16,14 +16,12 @@ sealed abstract class NetworkParameters {
     chainParams.base58Prefix(Base58Type.ScriptAddress)
   def privateKey: ByteVector = chainParams.base58Prefix(Base58Type.SecretKey)
 
-  /**
-    * @see [[https://github.com/bitcoin/bitcoin/blob/84d0fdce11709c8e26b9c450d47727ab36641437/src/chainparams.cpp Bitcoin Core]]
+  /** @see [[https://github.com/bitcoin/bitcoin/blob/84d0fdce11709c8e26b9c450d47727ab36641437/src/chainparams.cpp Bitcoin Core]]
     *     `chainparams.cpp nDefaultPort`
     */
   def port: Int
 
-  /**
-    * @see [[https://github.com/bitcoin/bitcoin/blob/bccb4d29a8080bf1ecda1fc235415a11d903a680/src/chainparamsbase.cpp Bitcoin Core]]
+  /** @see [[https://github.com/bitcoin/bitcoin/blob/bccb4d29a8080bf1ecda1fc235415a11d903a680/src/chainparamsbase.cpp Bitcoin Core]]
     *     `chainparamsbase.cpp`
     */
   def rpcPort: Int
@@ -35,8 +33,7 @@ sealed abstract class NetworkParameters {
   /** The seeds used to bootstrap the network */
   def dnsSeeds: Seq[String]
 
-  /**
-    * The message start string is designed to be unlikely to occur in normal data.
+  /** The message start string is designed to be unlikely to occur in normal data.
     * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
     * a large 32-bit integer with any alignment.
     * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L108
@@ -59,18 +56,15 @@ sealed abstract class BitcoinNetwork extends NetworkParameters {
 sealed abstract class MainNet extends BitcoinNetwork {
   override def chainParams: MainNetChainParams.type = MainNetChainParams
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def port = 8333
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def rpcPort = 8332
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def dnsSeeds: Vector[String] = {
     Vector(
@@ -85,8 +79,7 @@ sealed abstract class MainNet extends BitcoinNetwork {
     )
   }
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def magicBytes: ByteVector = ByteVector(0xf9, 0xbe, 0xb4, 0xd9)
 
@@ -97,18 +90,15 @@ final case object MainNet extends MainNet
 sealed abstract class TestNet3 extends BitcoinNetwork {
   override def chainParams: TestNetChainParams.type = TestNetChainParams
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def port = 18333
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def rpcPort = 18332
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def dnsSeeds: Seq[String] =
     Seq("testnet-seed.bitcoin.jonasschnelli.ch",
@@ -127,23 +117,19 @@ final case object TestNet3 extends TestNet3
 sealed abstract class RegTest extends BitcoinNetwork {
   override def chainParams: RegTestNetChainParams.type = RegTestNetChainParams
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def port = 18444
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def rpcPort = 18443
 
-  /**
-    * There's no DNS seeds on regtest
+  /** There's no DNS seeds on regtest
     */
   override def dnsSeeds: Nil.type = Nil
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def magicBytes: ByteVector = ByteVector(0xfa, 0xbf, 0xb5, 0xda)
 }
@@ -153,26 +139,22 @@ final case object RegTest extends RegTest
 sealed abstract class SigNet extends BitcoinNetwork {
   override def chainParams: SigNetChainParams = SigNetChainParams()
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def port = 38333
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def rpcPort = 38332
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def dnsSeeds: Seq[String] =
     Seq("178.128.221.177",
         "2a01:7c8:d005:390::5",
         "ntv3mtqw5wt63red.onion:38333")
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def magicBytes: ByteVector = {
     CryptoUtil

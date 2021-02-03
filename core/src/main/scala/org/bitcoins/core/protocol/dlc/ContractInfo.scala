@@ -80,10 +80,9 @@ case class ContractInfo(
                                             totalCollateral,
                                             descriptor.roundingIntervals)
 
-        vec.map {
-          case CETOutcome(digits, amt) =>
-            (NumericOracleOutcome(oracleInfo, UnsignedNumericOutcome(digits)),
-             amt)
+        vec.map { case CETOutcome(digits, amt) =>
+          (NumericOracleOutcome(oracleInfo, UnsignedNumericOutcome(digits)),
+           amt)
         }
       case ContractOraclePair.NumericPair(
             descriptor,
@@ -97,10 +96,9 @@ case class ContractInfo(
         CETCalculator
           .combinations(oracleInfo.singleOracleInfos, oracleInfo.threshold)
           .flatMap { oracles =>
-            vec.map {
-              case CETOutcome(digits, amt) =>
-                val outcome = UnsignedNumericOutcome(digits)
-                (NumericOracleOutcome(oracles.map((_, outcome))), amt)
+            vec.map { case CETOutcome(digits, amt) =>
+              val outcome = UnsignedNumericOutcome(digits)
+              (NumericOracleOutcome(oracles.map((_, outcome))), amt)
             }
           }
       case ContractOraclePair.NumericPair(descriptor: NumericContractDescriptor,
@@ -120,11 +118,10 @@ case class ContractInfo(
         CETCalculator
           .combinations(oracleInfo.singleOracleInfos, oracleInfo.threshold)
           .flatMap { oracles =>
-            vec.map {
-              case MultiOracleOutcome(digitsVec, amt) =>
-                val outcomesVec =
-                  digitsVec.toVector.map(UnsignedNumericOutcome.apply)
-                (NumericOracleOutcome(oracles.zip(outcomesVec)), amt)
+            vec.map { case MultiOracleOutcome(digitsVec, amt) =>
+              val outcomesVec =
+                digitsVec.toVector.map(UnsignedNumericOutcome.apply)
+              (NumericOracleOutcome(oracles.zip(outcomesVec)), amt)
             }
           }
     }
@@ -143,12 +140,11 @@ case class ContractInfo(
     val builder =
       HashMap.newBuilder[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)]
 
-    allOutcomesAndPayouts.foreach {
-      case (outcome, offerPayout) =>
-        val acceptPayout = (totalCollateral - offerPayout).satoshis
-        val adaptorPoint = outcome.sigPoint
+    allOutcomesAndPayouts.foreach { case (outcome, offerPayout) =>
+      val acceptPayout = (totalCollateral - offerPayout).satoshis
+      val adaptorPoint = outcome.sigPoint
 
-        builder.+=((outcome, (adaptorPoint, offerPayout, acceptPayout)))
+      builder.+=((outcome, (adaptorPoint, offerPayout, acceptPayout)))
     }
 
     builder.result()
@@ -170,10 +166,9 @@ case class ContractInfo(
             throw new IllegalArgumentException(
               s"Cannot handle $enumOutcome with numeric oracle commitments: $oracleInfo")
           case _: EnumOracleInfo =>
-            oracles.foldLeft(true) {
-              case (boolSoFar, oracle) =>
-                lazy val sig = sigs.find(_.oracle == oracle)
-                boolSoFar && sig.exists(_.verifySignatures(enumOutcome))
+            oracles.foldLeft(true) { case (boolSoFar, oracle) =>
+              lazy val sig = sigs.find(_.oracle == oracle)
+              boolSoFar && sig.exists(_.verifySignatures(enumOutcome))
             }
         }
       case NumericOracleOutcome(oraclesAndOutcomes) =>

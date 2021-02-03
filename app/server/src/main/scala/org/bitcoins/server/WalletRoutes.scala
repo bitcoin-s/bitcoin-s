@@ -425,12 +425,11 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
     case ServerCommand("getfundedaddresses", _) =>
       complete {
         wallet.listFundedAddresses().map { addressDbs =>
-          val addressAndValues = addressDbs.map {
-            case (addressDb, value) =>
-              Obj(
-                "address" -> Str(addressDb.address.value),
-                "value" -> Num(value.satoshis.toLong.toDouble)
-              )
+          val addressAndValues = addressDbs.map { case (addressDb, value) =>
+            Obj(
+              "address" -> Str(addressDb.address.value),
+              "value" -> Num(value.satoshis.toLong.toDouble)
+            )
           }
 
           Server.httpSuccess(addressAndValues)

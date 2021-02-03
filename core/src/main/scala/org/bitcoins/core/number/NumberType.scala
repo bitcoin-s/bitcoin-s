@@ -6,11 +6,9 @@ import scodec.bits.{ByteOrdering, ByteVector}
 
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 6/4/16.
+/** Created by chris on 6/4/16.
   */
-/**
-  * This abstract class is meant to represent a signed and unsigned number in C
+/** This abstract class is meant to represent a signed and unsigned number in C
   * This is useful for dealing with codebases/protocols that rely on C's
   * unsigned integer types
   */
@@ -27,15 +25,13 @@ sealed abstract class Number[T <: Number[T]]
   def toLong: Long = toBigInt.bigInteger.longValueExact()
   def toBigInt: BigInt = underlying
 
-  /**
-    * This is used to determine the valid amount of bytes in a number
+  /** This is used to determine the valid amount of bytes in a number
     * for instance a UInt8 has an andMask of 0xff
     * a UInt32 has an andMask of 0xffffffff
     */
   def andMask: BigInt
 
-  /**
-    * Factory function to create the underlying T, for instance a UInt32.
+  /** Factory function to create the underlying T, for instance a UInt32.
     * This method must check if the parameter is in the required range.
     */
   def apply: A => T
@@ -87,14 +83,12 @@ sealed abstract class Number[T <: Number[T]]
   override lazy val bytes: ByteVector = BytesUtil.decodeHex(hex)
 }
 
-/**
-  * Represents a signed number in our number system
+/** Represents a signed number in our number system
   * Instances of this are [[Int32]] or [[Int64]]
   */
 sealed abstract class SignedNumber[T <: Number[T]] extends Number[T]
 
-/**
-  * Represents an unsigned number in our number system
+/** Represents an unsigned number in our number system
   * Instances of this are [[UInt32]] or [[UInt64]]
   */
 sealed abstract class UnsignedNumber[T <: Number[T]] extends Number[T]
@@ -128,8 +122,7 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   }
 }
 
-/**
-  * Represents a uint16_t in C
+/** Represents a uint16_t in C
   */
 sealed abstract class UInt16 extends UnsignedNumber[UInt16] {
   override def apply: A => UInt16 = UInt16(_)
@@ -138,8 +131,7 @@ sealed abstract class UInt16 extends UnsignedNumber[UInt16] {
   override def andMask = 0xffffL
 }
 
-/**
-  * Represents a uint32_t in C
+/** Represents a uint32_t in C
   */
 sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   override def apply: A => UInt32 = UInt32(_)
@@ -148,16 +140,14 @@ sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   override def andMask = 0xffffffffL
 }
 
-/**
-  * Represents a uint64_t in C
+/** Represents a uint64_t in C
   */
 sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
   override val hex: String = encodeHex(underlying)
   override def apply: A => UInt64 = UInt64(_)
   override def andMask = 0xffffffffffffffffL
 
-  /**
-    * Converts a [[BigInt]] to a 8 byte hex representation.
+  /** Converts a [[BigInt]] to a 8 byte hex representation.
     * [[BigInt]] will only allocate 1 byte for numbers like 1 which require 1 byte, giving us the hex representation 01
     * this function pads the hex chars to be 0000000000000001
     *
@@ -176,8 +166,7 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
   }
 }
 
-/**
-  * Represents a int32_t in C
+/** Represents a int32_t in C
   */
 sealed abstract class Int32 extends SignedNumber[Int32] {
   override def apply: A => Int32 = Int32(_)
@@ -185,8 +174,7 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
   override val hex: String = BytesUtil.encodeHex(toInt)
 }
 
-/**
-  * Represents a int64_t in C
+/** Represents a int64_t in C
   */
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
@@ -194,8 +182,7 @@ sealed abstract class Int64 extends SignedNumber[Int64] {
   override val hex: String = BytesUtil.encodeHex(toLong)
 }
 
-/**
-  * Represents number types that are bounded by minimum and maximum values
+/** Represents number types that are bounded by minimum and maximum values
   *
   * @tparam T Type of the numbers
   */
@@ -209,8 +196,7 @@ trait BaseNumbers[T] {
   def one: T
 }
 
-/**
-  * Should be implemented inside of any companion
+/** Should be implemented inside of any companion
   * object for a number
   */
 trait NumberObject[T <: Number[T]] extends BaseNumbers[T] {

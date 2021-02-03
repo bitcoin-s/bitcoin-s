@@ -16,8 +16,7 @@ import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import scala.util.Try
 
-/**
-  * Created by chris on 2/19/16.
+/** Created by chris on 2/19/16.
   */
 class TransactionSignatureSerializerTest extends BitcoinSAsyncTest {
 

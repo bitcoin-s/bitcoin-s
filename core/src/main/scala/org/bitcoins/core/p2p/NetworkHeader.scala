@@ -6,8 +6,7 @@ import org.bitcoins.core.serializers.p2p.headers.RawNetworkHeaderSerializer
 import org.bitcoins.crypto.{CryptoUtil, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-/**
-  * Represents a message header on the peer-to-peer network
+/** Represents a message header on the peer-to-peer network
   * @see https://bitcoin.org/en/developer-reference#message-headers
   *
   * @param network Each network has magic bytes indicating the originating network;
@@ -41,8 +40,7 @@ object NetworkHeader extends Factory[NetworkHeader] {
   override def fromBytes(bytes: ByteVector): NetworkHeader =
     RawNetworkHeaderSerializer.read(bytes)
 
-  /**
-    * Creates a network header from it's [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] and [[NetworkPayload]]
+  /** Creates a network header from it's [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] and [[NetworkPayload]]
     * @param network the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] object that indicates what network the payload needs to be sent on
     * @param payload the payload object that needs to be sent on the network
     */

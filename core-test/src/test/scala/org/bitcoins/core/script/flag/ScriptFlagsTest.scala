@@ -2,8 +2,7 @@ package org.bitcoins.core.script.flag
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 3/23/16.
+/** Created by chris on 3/23/16.
   */
 class ScriptFlagsTest extends BitcoinSUnitTest {
 

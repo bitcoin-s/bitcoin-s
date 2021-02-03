@@ -37,8 +37,7 @@ object DLCMessage {
       s"Cannot have a negative totalCollateral, got: ${totalCollateral.toLong}")
   }
 
-  /**
-    * The initiating party starts the protocol by sending an offer message to the other party.
+  /** The initiating party starts the protocol by sending an offer message to the other party.
     *
     * @param contractInfo The oracle public key and R point(s) to use to build the CETs as
     *                   well as meta information to identify the oracle to be used in the contract,

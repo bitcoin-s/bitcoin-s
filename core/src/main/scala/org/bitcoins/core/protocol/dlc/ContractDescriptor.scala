@@ -59,13 +59,13 @@ case class EnumContractDescriptor(
   def values: Vector[Satoshis] = outcomeValueMap.map(_._2)
 
   override def toTLV: ContractDescriptorV0TLV =
-    ContractDescriptorV0TLV(outcomeValueMap.map {
-      case (outcome, amt) => outcome.outcome -> amt
+    ContractDescriptorV0TLV(outcomeValueMap.map { case (outcome, amt) =>
+      outcome.outcome -> amt
     })
 
   override def flip(totalCollateral: Satoshis): EnumContractDescriptor = {
-    EnumContractDescriptor(outcomeValueMap.map {
-      case (hash, amt) => (hash, (totalCollateral - amt).satoshis)
+    EnumContractDescriptor(outcomeValueMap.map { case (hash, amt) =>
+      (hash, (totalCollateral - amt).satoshis)
     })
   }
 }
@@ -75,8 +75,8 @@ object EnumContractDescriptor
       ContractDescriptorV0TLV) {
 
   def fromStringVec(vec: Vector[(String, Satoshis)]): EnumContractDescriptor = {
-    EnumContractDescriptor(vec.map {
-      case (str, amt) => EnumOutcome(str) -> amt
+    EnumContractDescriptor(vec.map { case (str, amt) =>
+      EnumOutcome(str) -> amt
     })
   }
 

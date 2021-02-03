@@ -10,8 +10,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-/**
-  * An aggregation of all the individual tagged fields in a [[org.bitcoins.core.protocol.ln.LnInvoice]]
+/** An aggregation of all the individual tagged fields in a [[org.bitcoins.core.protocol.ln.LnInvoice]]
   */
 sealed abstract class LnTaggedFields
     extends SeqWrapper[LnTag]
@@ -31,8 +30,8 @@ sealed abstract class LnTaggedFields
   override protected lazy val wrapped: Vector[LnTag] = tags
 
   def tag[T <: LnTag: ClassTag]: Option[T] =
-    tags.collectFirst {
-      case t: T => t
+    tags.collectFirst { case t: T =>
+      t
     }
 
   lazy val paymentHash: LnTag.PaymentHashTag =
@@ -85,8 +84,7 @@ sealed abstract class LnTaggedFields
 object LnTaggedFields {
   private case class InvoiceTagImpl(tags: Vector[LnTag]) extends LnTaggedFields
 
-  /**
-    * According to BOLT11 the required fields in a LnInvoice are a payment hash
+  /** According to BOLT11 the required fields in a LnInvoice are a payment hash
     * and either a description, or the hash of the description.
     */
   def apply(

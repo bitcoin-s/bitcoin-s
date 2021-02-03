@@ -109,8 +109,7 @@ case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord])
     super.filterRecords(key, PSBTGlobalKeyId)
   }
 
-  /**
-    * Takes another GlobalPSBTMap and adds all records that are not contained in this GlobalPSBTMap
+  /** Takes another GlobalPSBTMap and adds all records that are not contained in this GlobalPSBTMap
     * @param other GlobalPSBTMap to be combined with
     * @return A GlobalPSBTMap with the combined data of the two GlobalPSBTMaps
     */
@@ -563,19 +562,18 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
           leafOpt,
           s"no conditional branch using $sigs in $conditional could be found")
 
-        leafT.flatMap {
-          case (path, _, spk) =>
-            val finalizedOpt = finalize(spk)
-            finalizedOpt.map { finalized =>
-              val nestedScriptSig = finalized
-                .getRecords(FinalizedScriptSigKeyId)
-                .head
-              val scriptSig =
-                ConditionalScriptSignature.fromNestedScriptSig(
-                  nestedScriptSig.scriptSig,
-                  path)
-              wipeAndAdd(scriptSig)
-            }
+        leafT.flatMap { case (path, _, spk) =>
+          val finalizedOpt = finalize(spk)
+          finalizedOpt.map { finalized =>
+            val nestedScriptSig = finalized
+              .getRecords(FinalizedScriptSigKeyId)
+              .head
+            val scriptSig =
+              ConditionalScriptSignature.fromNestedScriptSig(
+                nestedScriptSig.scriptSig,
+                path)
+            wipeAndAdd(scriptSig)
+          }
         }
       case locktime: LockTimeScriptPubKey =>
         finalize(locktime.nestedScriptPubKey)
@@ -612,8 +610,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     }
   }
 
-  /**
-    * Takes another InputPSBTMap and adds all records that are not contained in this InputPSBTMap
+  /** Takes another InputPSBTMap and adds all records that are not contained in this InputPSBTMap
     * A record's distinctness is determined by its key
     * @param other InputPSBTMap to be combined with
     * @return A InputPSBTMap with the combined data of the two InputPSBTMaps
@@ -622,8 +619,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     InputPSBTMap(distinctByKey(this.elements ++ other.elements))
   }
 
-  /**
-    * Takes the InputPSBTMap returns a NewSpendingInfoFull
+  /** Takes the InputPSBTMap returns a NewSpendingInfoFull
     * that can be used to sign the input
     * @param txIn The transaction input that this InputPSBTMap represents
     * @param signers Signers that will be used to sign the input
@@ -803,8 +799,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     InputPSBTMap(newElements)
   }
 
-  /**
-    * After a discovered vulnerability in BIP-143, this is no longer safe for SegwitV0
+  /** After a discovered vulnerability in BIP-143, this is no longer safe for SegwitV0
     * Check if this satisfies criteria for witness. If it does, delete the NonWitnessOrUnknownUTXO field
     * This is useful for following reasons.
     * 1. Compresses the size of the data
@@ -965,8 +960,7 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord])
     super.filterRecords(key, PSBTOutputKeyId)
   }
 
-  /**
-    * Takes another OutputPSBTMap and adds all records that are not contained in this OutputPSBTMap
+  /** Takes another OutputPSBTMap and adds all records that are not contained in this OutputPSBTMap
     * A record's distinctness is determined by its key
     * @param other OutputPSBTMap to be combined with
     * @return A OutputPSBTMap with the combined data of the two OutputPSBTMaps

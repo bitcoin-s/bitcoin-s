@@ -51,9 +51,8 @@ case class CallbackHandler[C, T <: Callback[C]](
       // Need to wrap in another future so they are all started at once
       // and do not block each other
       Future {
-        callback(param).recover {
-          case NonFatal(err) =>
-            recoverFunc(err)
+        callback(param).recover { case NonFatal(err) =>
+          recoverFunc(err)
         }
       }.flatten
     }

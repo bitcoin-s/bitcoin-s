@@ -5,8 +5,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.flag.ScriptFlag
 
-/**
-  * Created by chris on 5/4/16.
+/** Created by chris on 5/4/16.
   * Used to represent the test cases found inside of tx_valid.json & tx_invalid.json
   * from bitcoin core
   */

@@ -68,8 +68,8 @@ case class Server(
           post {
             entity(as[ServerCommand]) { cmd =>
               val init = PartialFunction.empty[ServerCommand, StandardRoute]
-              val handler = handlers.foldLeft(init) {
-                case (accum, curr) => accum.orElse(curr.handleCommand)
+              val handler = handlers.foldLeft(init) { case (accum, curr) =>
+                accum.orElse(curr.handleCommand)
               }
               handler.orElse(catchAllHandler).apply(cmd)
             }

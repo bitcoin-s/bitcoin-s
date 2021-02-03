@@ -39,8 +39,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   import profile.api._
 
-  /**
-    * If executing something like this:
+  /** If executing something like this:
     *
     * {{{
     * sql"SELECT * FROM sqlite_master where type='table'"

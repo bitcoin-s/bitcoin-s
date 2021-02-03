@@ -4,8 +4,7 @@ sealed trait ScriptResult {
   def description: String
 }
 
-/**
-  * [[https://github.com/bitcoin/bitcoin/blob/master/src/test/script_tests.cpp#L61]]
+/** [[https://github.com/bitcoin/bitcoin/blob/master/src/test/script_tests.cpp#L61]]
   */
 sealed trait ScriptError extends ScriptResult
 
@@ -227,8 +226,7 @@ case object ScriptErrorWitnessPubKeyType extends ScriptError {
   override def description = "WITNESS_PUBKEYTYPE"
 }
 
-/**
-  * Factory companion object for creating ScriptError objects
+/** Factory companion object for creating ScriptError objects
   */
 object ScriptResult {
 

@@ -5,8 +5,7 @@ import org.bitcoins.crypto.ECDigitalSignature
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 4/1/16.
+/** Created by chris on 4/1/16.
   */
 class P2PKHScriptSignatureTest extends BitcoinSUnitTest {
 

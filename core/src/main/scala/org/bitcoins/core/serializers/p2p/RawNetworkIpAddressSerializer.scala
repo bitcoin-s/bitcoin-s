@@ -8,8 +8,7 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
-/**
-  * Responsible for serializing and deserializing network ip address objects on the p2p network
+/** Responsible for serializing and deserializing network ip address objects on the p2p network
   * @see https://bitcoin.org/en/developer-reference#addr
   */
 trait RawNetworkIpAddressSerializer

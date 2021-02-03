@@ -15,8 +15,7 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/**
-  * Set of utilities to analyze, join, and update existing PSBTs
+/** Set of utilities to analyze, join, and update existing PSBTs
   *
   * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/analyzepsbt/]]
   * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/joinpsbts/]]
@@ -59,8 +58,8 @@ trait PsbtRpc {
       replacable: Boolean = false): Future[PSBT] = {
     val outputsJson =
       Json.toJson {
-        outputs.map {
-          case (addr, curr) => addr -> Bitcoins(curr.satoshis)
+        outputs.map { case (addr, curr) =>
+          addr -> Bitcoins(curr.satoshis)
         }
       }
     bitcoindCall[PSBT]("createpsbt",

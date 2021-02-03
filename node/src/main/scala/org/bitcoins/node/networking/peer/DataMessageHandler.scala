@@ -224,8 +224,8 @@ case class DataMessageHandler(
                 // we probably need to sync filters
                 if (
                   appConfig.nodeType == NodeType.NeutrinoNode && (!syncing ||
-                  (filterHeaderHeightOpt.isEmpty &&
-                  filterHeightOpt.isEmpty))
+                    (filterHeaderHeightOpt.isEmpty &&
+                      filterHeightOpt.isEmpty))
                 ) {
                   sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
                 } else {
@@ -309,8 +309,8 @@ case class DataMessageHandler(
       logger.error(s"Failed to handle data payload=${payload}", err)
     }
 
-    resultF.recoverWith {
-      case NonFatal(_) => Future.successful(this)
+    resultF.recoverWith { case NonFatal(_) =>
+      Future.successful(this)
     }
   }
 

@@ -10,8 +10,7 @@ import play.api.libs.json.{JsNumber, JsString, Json}
 
 import scala.concurrent.Future
 
-/**
-  * Assorted Rpc calls for Bitcoin V20
+/** Assorted Rpc calls for Bitcoin V20
   */
 trait V20AssortedRpc { self: Client =>
 

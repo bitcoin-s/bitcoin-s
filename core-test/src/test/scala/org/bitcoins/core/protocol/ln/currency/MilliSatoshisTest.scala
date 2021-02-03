@@ -26,10 +26,9 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
   }
 
   it must "add millisatoshis" in {
-    forAll(LnCurrencyUnitGen.milliSatoshisPair) {
-      case (first, second) =>
-        val bigInt = first.toBigInt + second.toBigInt
-        assert((first + second).toBigInt == bigInt)
+    forAll(LnCurrencyUnitGen.milliSatoshisPair) { case (first, second) =>
+      val bigInt = first.toBigInt + second.toBigInt
+      assert((first + second).toBigInt == bigInt)
     }
   }
 
@@ -39,46 +38,42 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
   } yield (msat, num)
 
   it must "multiply millisatoshis with an int" in {
-    forAll(msatWithNum) {
-      case (msat, bigint) =>
-        val underlyingCalc = msat.toBigInt * bigint
-        assert((msat * bigint).toBigInt == underlyingCalc)
+    forAll(msatWithNum) { case (msat, bigint) =>
+      val underlyingCalc = msat.toBigInt * bigint
+      assert((msat * bigint).toBigInt == underlyingCalc)
     }
   }
 
   it must "multiply millisatoshis with itself" in {
-    forAll(LnCurrencyUnitGen.milliSatoshisPair) {
-      case (first, second) =>
-        val safe = first.multiplySafe(second)
-        val unsafe = first * second
+    forAll(LnCurrencyUnitGen.milliSatoshisPair) { case (first, second) =>
+      val safe = first.multiplySafe(second)
+      val unsafe = first * second
 
-        assert(safe.toOption.contains(unsafe))
+      assert(safe.toOption.contains(unsafe))
 
-        val underlying = first.toBigInt * second.toBigInt
-        assert(unsafe.toBigInt == underlying)
+      val underlying = first.toBigInt * second.toBigInt
+      assert(unsafe.toBigInt == underlying)
     }
   }
 
   it must "subtract msats after adding them" in {
-    forAll(LnCurrencyUnitGen.milliSatoshisPair) {
-      case (first, second) =>
-        val added = first + second
-        val subtracted = added - second
-        assert(subtracted == first)
+    forAll(LnCurrencyUnitGen.milliSatoshisPair) { case (first, second) =>
+      val added = first + second
+      val subtracted = added - second
+      assert(subtracted == first)
     }
   }
 
   it must "subtract msats" in {
-    forAll(LnCurrencyUnitGen.milliSatoshisPair) {
-      case (first, second) =>
-        val subtracted = first subtractSafe second
-        val isPositive = (first.toBigInt - second.toBigInt) >= 0
+    forAll(LnCurrencyUnitGen.milliSatoshisPair) { case (first, second) =>
+      val subtracted = first subtractSafe second
+      val isPositive = (first.toBigInt - second.toBigInt) >= 0
 
-        assert(subtracted.isSuccess == isPositive)
-        if (subtracted.isSuccess) {
-          val underlyingCalc = first.toBigInt - second.toBigInt
-          assert(subtracted.get.toBigInt == underlyingCalc)
-        }
+      assert(subtracted.isSuccess == isPositive)
+      if (subtracted.isSuccess) {
+        val underlyingCalc = first.toBigInt - second.toBigInt
+        assert(subtracted.get.toBigInt == underlyingCalc)
+      }
     }
   }
 

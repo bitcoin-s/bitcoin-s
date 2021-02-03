@@ -3,8 +3,7 @@ package org.bitcoins.core.util.testprotocol
 import org.bitcoins.core.protocol.Address
 import org.bitcoins.crypto.{ECPrivateKey, Sha256Hash160Digest}
 
-/**
-  * Created by tom on 6/14/16.
+/** Created by tom on 6/14/16.
   */
 trait Base58ValidTestCase {
   def addressOrWIFPrivKey: Either[Address, String]

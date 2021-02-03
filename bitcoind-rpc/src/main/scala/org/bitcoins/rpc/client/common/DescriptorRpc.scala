@@ -9,8 +9,7 @@ import play.api.libs.json.{JsString, Json}
 
 import scala.concurrent.Future
 
-/**
-  * RPC calls in V18 that use descriptor to give us output information
+/** RPC calls in V18 that use descriptor to give us output information
   * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/deriveaddresses/]]
   * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/getdescriptorinfo/]]
   */

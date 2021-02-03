@@ -7,8 +7,7 @@ sealed trait HashDigest extends Any with NetworkElement {
   /** The message digest represented in bytes */
   override def bytes: ByteVector
 
-  /**
-    * Flips the endianness of the byte sequence.
+  /** Flips the endianness of the byte sequence.
     * Since bitcoin unfortunately has inconsistent endianness between the protocol
     * level and the presentation level. This is useful for switching between the two.
     * @return
@@ -16,8 +15,7 @@ sealed trait HashDigest extends Any with NetworkElement {
   def flip: HashDigest
 }
 
-/**
-  * Represents the result of SHA1()
+/** Represents the result of SHA1()
   */
 sealed trait Sha1Digest extends Any with HashDigest {
   override def flip: Sha1DigestBE = Sha1DigestBE(bytes.reverse)
@@ -54,8 +52,7 @@ object Sha1DigestBE extends Factory[Sha1DigestBE] {
   }
 }
 
-/**
-  * Represents the result of SHA256()
+/** Represents the result of SHA256()
   */
 sealed trait Sha256Digest extends Any with HashDigest {
   override def flip: Sha256DigestBE = Sha256DigestBE(bytes.reverse)
@@ -83,8 +80,7 @@ object Sha256Digest extends Factory[Sha256Digest] {
 
 }
 
-/**
-  * Represents the result of SHA256()
+/** Represents the result of SHA256()
   */
 sealed trait Sha256DigestBE extends Any with HashDigest {
   override def flip: Sha256Digest = Sha256Digest(bytes.reverse)
@@ -109,8 +105,7 @@ object Sha256DigestBE extends Factory[Sha256DigestBE] {
   lazy val empty: Sha256DigestBE = Sha256DigestBE(ByteVector.low(32))
 }
 
-/**
-  * Represents the result of SHA256(SHA256())
+/** Represents the result of SHA256(SHA256())
   */
 case class DoubleSha256Digest(bytes: ByteVector) extends HashDigest {
   require(bytes.length == 32,
@@ -158,8 +153,7 @@ object DoubleSha256DigestBE extends Factory[DoubleSha256DigestBE] {
   val empty: DoubleSha256DigestBE = DoubleSha256DigestBE(ByteVector.low(32))
 }
 
-/**
-  * Represents the result of RIPEMD160()
+/** Represents the result of RIPEMD160()
   */
 sealed trait RipeMd160Digest extends Any with HashDigest {
   override def flip: RipeMd160DigestBE = RipeMd160DigestBE(bytes.reverse)
@@ -182,8 +176,7 @@ object RipeMd160Digest extends Factory[RipeMd160Digest] {
   }
 }
 
-/**
-  * Represents the result of RIPEMD160() big endian
+/** Represents the result of RIPEMD160() big endian
   */
 sealed trait RipeMd160DigestBE extends Any with HashDigest {
   override def flip: RipeMd160Digest = RipeMd160Digest(bytes.reverse)
@@ -206,8 +199,7 @@ object RipeMd160DigestBE extends Factory[RipeMd160DigestBE] {
   }
 }
 
-/**
-  * Represents the result of RIPEMD160(SHA256())
+/** Represents the result of RIPEMD160(SHA256())
   */
 sealed trait Sha256Hash160Digest extends Any with HashDigest {
 
@@ -232,8 +224,7 @@ object Sha256Hash160Digest extends Factory[Sha256Hash160Digest] {
   }
 }
 
-/**
-  * Represents the result of RIPEMD160(SHA256()) big endian
+/** Represents the result of RIPEMD160(SHA256()) big endian
   */
 sealed trait Sha256Hash160DigestBE extends Any with HashDigest {
   override def flip: Sha256Hash160Digest = Sha256Hash160Digest(bytes.reverse)

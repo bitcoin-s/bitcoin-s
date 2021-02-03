@@ -36,9 +36,8 @@ object BytesUtil {
       case p2wpkh: P2WPKHWitnessV0 =>
         P2WPKHWitnessV0(p2wpkh.pubKey, flipBit(p2wpkh.signature))
       case p2wsh: P2WSHWitnessV0 =>
-        val sigOpt = p2wsh.stack.zipWithIndex.find {
-          case (bytes, _) =>
-            bytes.length >= 67 && bytes.length <= 73
+        val sigOpt = p2wsh.stack.zipWithIndex.find { case (bytes, _) =>
+          bytes.length >= 67 && bytes.length <= 73
         }
 
         sigOpt match {
@@ -62,8 +61,8 @@ object BytesUtil {
   }
 
   def flipBit(cetSigs: CETSignatures): CETSignatures = {
-    val badOutcomeSigs = cetSigs.outcomeSigs.map {
-      case (outcome, sig) => outcome -> flipBit(sig)
+    val badOutcomeSigs = cetSigs.outcomeSigs.map { case (outcome, sig) =>
+      outcome -> flipBit(sig)
     }
     val badRefundSig = flipBit(cetSigs.refundSig)
     CETSignatures(badOutcomeSigs, badRefundSig)

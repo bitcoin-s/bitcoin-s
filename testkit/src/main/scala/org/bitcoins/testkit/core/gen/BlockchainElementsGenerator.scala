@@ -10,8 +10,7 @@ import org.scalacheck.Gen
 
 import scala.annotation.tailrec
 
-/**
-  * Created by tom on 7/6/16.
+/** Created by tom on 7/6/16.
   */
 sealed abstract class BlockchainElementsGenerator {
 
@@ -25,8 +24,7 @@ sealed abstract class BlockchainElementsGenerator {
       header <- blockHeader(allTxs)
     } yield Block(header, allTxs)
 
-  /**
-    * Generates a random [[org.bitcoins.core.protocol.blockchain.Block Block]], note that we limit this
+  /** Generates a random [[org.bitcoins.core.protocol.blockchain.Block Block]], note that we limit this
     * to 10 transactions currently
     */
   def block: Gen[Block] =
@@ -92,8 +90,7 @@ sealed abstract class BlockchainElementsGenerator {
       header <- blockHeader(previousBlockHash, nBits, txs)
     } yield header
 
-  /**
-    * Generates a chain of valid headers of the size specified by num,
+  /** Generates a chain of valid headers of the size specified by num,
     * 'valid' means their nBits are the same and each header properly
     * references the previous block header's hash
     */

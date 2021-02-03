@@ -6,8 +6,7 @@ import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 12/26/15.
+/** Created by chris on 12/26/15.
   * Algebraic data type that represents a transaction input
   */
 sealed abstract class TransactionInput extends NetworkElement {
@@ -25,8 +24,7 @@ case object EmptyTransactionInput extends TransactionInput {
   override def sequence = TransactionConstants.sequence
 }
 
-/**
-  * This represents a coinbase input - these always have a EmptyTransactionOutPoint
+/** This represents a coinbase input - these always have a EmptyTransactionOutPoint
   * and arbitrary data inside the script signature
   */
 sealed abstract class CoinbaseInput extends TransactionInput {
@@ -42,8 +40,7 @@ object TransactionInput extends Factory[TransactionInput] {
       extends TransactionInput
   def empty: TransactionInput = EmptyTransactionInput
 
-  /**
-    * Generates a transaction input from the provided txid and output index.
+  /** Generates a transaction input from the provided txid and output index.
     * A script signature can also be provided, this defaults to an empty signature.
     */
   def fromTxidAndVout(
@@ -80,8 +77,7 @@ object CoinbaseInput {
       sequence: UInt32)
       extends CoinbaseInput
 
-  /**
-    * Creates a coinbase input - coinbase inputs always have an empty outpoint
+  /** Creates a coinbase input - coinbase inputs always have an empty outpoint
     * @param scriptSignature this can contain anything, miners use this to signify support for various protocol BIPs
     * @return the coinbase input
     */

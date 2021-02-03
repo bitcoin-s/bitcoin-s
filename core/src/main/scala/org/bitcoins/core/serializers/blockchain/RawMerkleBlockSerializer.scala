@@ -10,8 +10,7 @@ import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 8/15/16.
+/** Created by chris on 8/15/16.
   * [[https://bitcoin.org/en/developer-reference#merkleblock]]
   */
 sealed abstract class RawMerkleBlockSerializer
@@ -63,8 +62,7 @@ sealed abstract class RawMerkleBlockSerializer
       hashes ++ flagCount.bytes ++ byteVectors
   }
 
-  /**
-    * Parses a sequence of transactions hashes from inside of a merkle block message
+  /** Parses a sequence of transactions hashes from inside of a merkle block message
     * @param bytes the bytes from which the tx hashes are parsed from
     * @param hashCount the amount of tx hashes we need to parse from bytes
     * @return the sequence of tx hashes and the remaining bytes to be parsed into a MerkleBlockMessage

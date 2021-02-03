@@ -32,8 +32,7 @@ import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
 import java.io.File
 import scala.concurrent.Future
 
-/**
-  * This class is not guaranteed to be compatible with any particular
+/** This class is not guaranteed to be compatible with any particular
   * version of Bitcoin Core. It implements RPC calls that are similar
   * across different versions. If you need RPC calls specific to a
   * version, check out
@@ -222,8 +221,7 @@ object BitcoindRpcClient {
     */
   private[rpc] val ActorSystemName = "bitcoind-rpc-client-created-by-bitcoin-s"
 
-  /**
-    * Creates an RPC client from the given instance.
+  /** Creates an RPC client from the given instance.
     *
     * Behind the scenes, we create an actor system for
     * you. You can use `withActorSystem` if you want to
@@ -234,8 +232,7 @@ object BitcoindRpcClient {
     withActorSystem(instance)
   }
 
-  /**
-    * Creates an RPC client from the given instance,
+  /** Creates an RPC client from the given instance,
     * together with the given actor system. This is for
     * advanced users, wher you need fine grained control
     * over the RPC client.
@@ -244,8 +241,7 @@ object BitcoindRpcClient {
       system: ActorSystem): BitcoindRpcClient =
     new BitcoindRpcClient(instance)
 
-  /**
-    * Constructs a RPC client from the given datadir, or
+  /** Constructs a RPC client from the given datadir, or
     * the default datadir if no directory is provided
     */
   def fromDatadir(

@@ -9,8 +9,7 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
-/**
-  * Responsible for serialization and deserialization of VersionMessages on the p2p network
+/** Responsible for serialization and deserialization of VersionMessages on the p2p network
   * @see https://bitcoin.org/en/developer-reference#version
   */
 trait RawVersionMessageSerializer

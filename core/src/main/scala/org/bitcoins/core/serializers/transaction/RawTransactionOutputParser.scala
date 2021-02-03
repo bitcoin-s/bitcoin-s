@@ -9,8 +9,7 @@ import org.bitcoins.core.serializers.{
 }
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/11/16.
+/** Created by chris on 1/11/16.
   * [[https://bitcoin.org/en/developer-reference#txout]]
   */
 sealed abstract class RawTransactionOutputParser
@@ -22,8 +21,7 @@ sealed abstract class RawTransactionOutputParser
     satoshis.bytes ++ output.scriptPubKey.bytes
   }
 
-  /**
-    * Reads a single output from the given bytes, note this is different than
+  /** Reads a single output from the given bytes, note this is different than
     * [[org.bitcoins.core.serializers.transaction.RawTransactionOutputParser.read RawTransactionOutputParser.read]]
     * because it does NOT expect a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]]
     * to be the first element in the byte array indicating how many outputs we have

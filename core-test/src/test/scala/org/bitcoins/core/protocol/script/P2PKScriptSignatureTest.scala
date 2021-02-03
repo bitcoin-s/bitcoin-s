@@ -3,8 +3,7 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.crypto.ECDigitalSignature
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 3/16/16.
+/** Created by chris on 3/16/16.
   */
 class P2PKScriptSignatureTest extends BitcoinSUnitTest {
 

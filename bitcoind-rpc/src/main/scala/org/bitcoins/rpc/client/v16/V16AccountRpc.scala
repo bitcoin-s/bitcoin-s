@@ -10,8 +10,7 @@ import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
 import scala.concurrent.Future
 
-/**
-  * Bitcoin Core prior to version 0.17 had the concept of
+/** Bitcoin Core prior to version 0.17 had the concept of
   * accounts. This has later been removed, and replaced
   * with a label system, as well as functionality for
   * having several distinct wallets active at the same time.

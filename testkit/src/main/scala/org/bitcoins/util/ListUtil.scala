@@ -2,8 +2,7 @@ package org.bitcoins.util
 
 object ListUtil {
 
-  /**
-    * Generates all unique pairs of elements from `xs`
+  /** Generates all unique pairs of elements from `xs`
     */
   def uniquePairs[T](xs: Vector[T]): Vector[(T, T)] =
     for {
@@ -11,8 +10,7 @@ object ListUtil {
       (y, idxY) <- xs.zipWithIndex if idxX < idxY
     } yield (x, y)
 
-  /**
-    * Generates a vector of vectors "rotating" the head element
+  /** Generates a vector of vectors "rotating" the head element
     * over `xs`.
     *
     * {{{

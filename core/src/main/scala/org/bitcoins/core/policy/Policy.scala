@@ -5,15 +5,13 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.script.flag._
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 
-/**
-  * Created by chris on 4/6/16.
+/** Created by chris on 4/6/16.
   * Mimics the policy files found in
   * [[https://github.com/bitcoin/bitcoin/blob/master/src/policy/policy.h Bitcoin Core]]
   */
 sealed abstract class Policy {
 
-  /**
-    * Mandatory script verification flags that all new blocks must comply with for
+  /** Mandatory script verification flags that all new blocks must comply with for
     * them to be valid. (but old blocks may not comply with) Currently just P2SH,
     * but in the future other flags may be added, such as a soft-fork to enforce
     * strict DER encoding.
@@ -23,8 +21,7 @@ sealed abstract class Policy {
     */
   def mandatoryScriptVerifyFlags: Seq[ScriptFlag] = Seq(ScriptVerifyP2SH)
 
-  /**
-    * The default script verify flags used to validate the blockchain
+  /** The default script verify flags used to validate the blockchain
     * and bitcoin transactions
     */
   def standardScriptVerifyFlags: Seq[ScriptFlag] =
@@ -50,8 +47,7 @@ sealed abstract class Policy {
   /** The number of confirmations for a payment to be considered as accepted */
   def confirmations: Long = 6
 
-  /**
-    * Minimum amount of [[org.bitcoins.core.currency.CurrencyUnit CurrencyUnit]]
+  /** Minimum amount of [[org.bitcoins.core.currency.CurrencyUnit CurrencyUnit]]
     * lock in a Channel
     * Currently set to 1 mBTC
     *

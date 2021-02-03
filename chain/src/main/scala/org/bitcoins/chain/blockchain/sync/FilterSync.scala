@@ -57,8 +57,7 @@ abstract class FilterSync extends ChainVerificationLogger {
       filter: GolombFilter,
       blockHeader: BlockHeader)
 
-  /**
-    * Syncs our best filter header to our best block hash
+  /** Syncs our best filter header to our best block hash
     * @param chainApi our current chain state
     * @param ourBestHeader the block header we are going to sync filters up until
     * @param ourBestFilterHeaderOpt the best filter header we have
@@ -110,18 +109,17 @@ abstract class FilterSync extends ChainVerificationLogger {
       for {
         groupedHeaders <- groupedHeadersF
         finalChainApi <- {
-          groupedHeaders.foldLeft(init) {
-            case (apiF, missingHeaders) =>
-              for {
-                api <- apiF
-                bestFilterOpt <- api.getBestFilterHeader()
-                newApi <- {
-                  fetchFiltersForHeaderGroup(api,
-                                             missingHeaders,
-                                             bestFilterOpt,
-                                             getFilterFunc)
-                }
-              } yield newApi
+          groupedHeaders.foldLeft(init) { case (apiF, missingHeaders) =>
+            for {
+              api <- apiF
+              bestFilterOpt <- api.getBestFilterHeader()
+              newApi <- {
+                fetchFiltersForHeaderGroup(api,
+                                           missingHeaders,
+                                           bestFilterOpt,
+                                           getFilterFunc)
+              }
+            } yield newApi
           }
         }
       } yield finalChainApi
@@ -205,32 +203,28 @@ abstract class FilterSync extends ChainVerificationLogger {
     }
     val accum = new mutable.ArrayBuffer[BlockFilterAggregated](filters.length)
 
-    filters.foreach {
-      case (blockHeaderDb, filterWithHash) =>
-        val FilterWithHeaderHash(filter, expectedHeaderHash) = filterWithHash
-        val filterHeader = if (accum.isEmpty) {
-          //first header to connect with our internal headers
-          //that have already been validated
-          FilterHeader(filterHash = filter.hash,
-                       prevHeaderHash = prevFilterHeaderHash)
-        } else {
-          //get previous filter header's hash
-          val prevHeaderHash = accum.last.filterHeader.hash
-          FilterHeader(filterHash = filter.hash,
-                       prevHeaderHash = prevHeaderHash)
-        }
+    filters.foreach { case (blockHeaderDb, filterWithHash) =>
+      val FilterWithHeaderHash(filter, expectedHeaderHash) = filterWithHash
+      val filterHeader = if (accum.isEmpty) {
+        //first header to connect with our internal headers
+        //that have already been validated
+        FilterHeader(filterHash = filter.hash,
+                     prevHeaderHash = prevFilterHeaderHash)
+      } else {
+        //get previous filter header's hash
+        val prevHeaderHash = accum.last.filterHeader.hash
+        FilterHeader(filterHash = filter.hash, prevHeaderHash = prevHeaderHash)
+      }
 
-        if (filterHeader.hash == expectedHeaderHash.flip) {
-          val agg = BlockFilterAggregated(filterHeader,
-                                          filter,
-                                          blockHeaderDb.blockHeader)
-          accum.append(agg)
-        } else {
-          sys.error(
-            s"The header we created was different from the expected hash we received " +
-              s"from an external data source! Something is wrong. Our filterHeader=${filterHeader} " +
-              s"expectedHash=$expectedHeaderHash")
-        }
+      if (filterHeader.hash == expectedHeaderHash.flip) {
+        val agg =
+          BlockFilterAggregated(filterHeader, filter, blockHeaderDb.blockHeader)
+        accum.append(agg)
+      } else {
+        sys.error(s"The header we created was different from the expected hash we received " +
+          s"from an external data source! Something is wrong. Our filterHeader=${filterHeader} " +
+          s"expectedHash=$expectedHeaderHash")
+      }
     }
 
     accum.toVector

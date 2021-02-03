@@ -22,8 +22,7 @@ import org.bitcoins.crypto._
 
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 12/26/15.
+/** Created by chris on 12/26/15.
   */
 sealed abstract class ScriptPubKey extends Script {
   val scriptType: ScriptType
@@ -39,8 +38,7 @@ sealed trait NonWitnessScriptPubKey extends ScriptPubKey
   */
 sealed trait RawScriptPubKey extends NonWitnessScriptPubKey
 
-/**
-  * Represents a
+/** Represents a
   * [[https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh pay-to-pubkey hash script pubkey]]
   *
   * Format: `OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG`
@@ -103,8 +101,7 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
   }
 }
 
-/**
-  * Represents a multisignature script public key
+/** Represents a multisignature script public key
   * https://bitcoin.org/en/developer-guide#multisig
   * Format: <m> <A pubkey> [B pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
   */
@@ -274,8 +271,7 @@ object MultiSignatureScriptPubKey
 
   }
 
-  /**
-    * Checks that the given script token is with the range of the maximum amount of
+  /** Checks that the given script token is with the range of the maximum amount of
     * public keys we can have in a
     * [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]]
     */
@@ -289,8 +285,7 @@ object MultiSignatureScriptPubKey
     }
 }
 
-/**
-  * Represents a [[https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh pay-to-scripthash public key]]
+/** Represents a [[https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh pay-to-scripthash public key]]
   * Format: `OP_HASH160 <Hash160(redeemScript)> OP_EQUAL`
   */
 sealed trait P2SHScriptPubKey extends NonWitnessScriptPubKey {
@@ -346,8 +341,7 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
   def apply(asm: Seq[ScriptToken]): P2SHScriptPubKey = fromAsm(asm)
 }
 
-/**
-  * Represents a [[https://bitcoin.org/en/developer-guide#pubkey pay to public key script public key]]
+/** Represents a [[https://bitcoin.org/en/developer-guide#pubkey pay to public key script public key]]
   * Format: `<pubkey> OP_CHECKSIG`
   */
 sealed trait P2PKScriptPubKey extends RawScriptPubKey {
@@ -436,8 +430,7 @@ object LockTimeScriptPubKey extends ScriptFactory[LockTimeScriptPubKey] {
   }
 }
 
-/**
-  * Represents a scriptPubKey that contains `OP_CHECKLOCKTIMEVERIFY.`
+/** Represents a scriptPubKey that contains `OP_CHECKLOCKTIMEVERIFY.`
   * Adds an absolute/defined locktime condition to any scriptPubKey.
   * [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki BIP65]]
   * Format: `<locktime> OP_CLTV OP_DROP <scriptPubKey>`
@@ -512,8 +505,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
     }
   }
 
-  /**
-    * We need this check because sometimes we can get very lucky in having a non valid
+  /** We need this check because sometimes we can get very lucky in having a non valid
     * lock time script that has the first 4 bytes as a valid locktime script
     * and then the bytes after the first 4 bytes gets lucky and is parsed by our
     * [[org.bitcoins.core.serializers.script.ScriptParser ScriptParser]]
@@ -529,8 +521,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
   }
 }
 
-/**
-  * Represents a scriptPubKey that contains
+/** Represents a scriptPubKey that contains
   * [[org.bitcoins.core.script.locktime.OP_CHECKSEQUENCEVERIFY OP_CHECKSEQUENCEVERIFY]]
   * Adds a relative lockTime condition to any `scriptPubKey`.
   * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki BIP112]]
@@ -1176,8 +1167,7 @@ object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
           "Given asm was not a WitnessScriptPubKey, got: " + asm)
     }
 
-  /**
-    * Checks if the given asm is a valid
+  /** Checks if the given asm is a valid
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
     * Mimics
     * [[https://github.com/bitcoin/bitcoin/blob/14d01309bed59afb08651f2b701ff90371b15b20/src/script/script.cpp#L223-L237 this function]]
@@ -1214,8 +1204,7 @@ sealed abstract class WitnessScriptPubKeyV0 extends WitnessScriptPubKey {
 
 object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
 
-  /**
-    * Mimics the function to determine if a
+  /** Mimics the function to determine if a
     * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] contains a witness
     * A witness program is any valid
     * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] that consists of a 1 byte push op and then a data push
@@ -1242,8 +1231,7 @@ object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
     }
 }
 
-/**
-  * Represents the pay-to-witness-pubkeyhash script pubkey type as defined in
+/** Represents the pay-to-witness-pubkeyhash script pubkey type as defined in
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#P2WPKH BIP141]]
   */
 sealed abstract class P2WPKHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
@@ -1289,8 +1277,7 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
   }
 }
 
-/**
-  * Reprents the pay-to-witness-scripthash script pubkey type as defined in
+/** Reprents the pay-to-witness-scripthash script pubkey type as defined in
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wsh BIP141]]
   */
 sealed abstract class P2WSHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
@@ -1364,8 +1351,7 @@ object UnassignedWitnessScriptPubKey
   def apply(asm: Seq[ScriptToken]): UnassignedWitnessScriptPubKey = fromAsm(asm)
 }
 
-/**
-  * This trait represents the witness commitment found in the coinbase transaction
+/** This trait represents the witness commitment found in the coinbase transaction
   * This is needed to commit to the wtxids of all of the witness transactions, since the merkle tree
   * does not commit to the witnesses for all
   * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
@@ -1414,8 +1400,7 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
           ScriptConstant(commitmentHeader + hash.hex)))
   }
 
-  /**
-    * This determines if the given asm has the correct witness structure according to
+  /** This determines if the given asm has the correct witness structure according to
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure BIP141]]
     */
   def isWitnessCommitment(asm: Seq[ScriptToken]): Boolean = {

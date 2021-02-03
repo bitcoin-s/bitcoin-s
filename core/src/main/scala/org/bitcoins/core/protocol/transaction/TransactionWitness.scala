@@ -6,8 +6,7 @@ import org.bitcoins.core.util.{BytesUtil, SeqWrapper}
 import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 11/21/16.
+/** Created by chris on 11/21/16.
   * The witness data for [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]] in this transaction
   * [[https://github.com/bitcoin/bitcoin/blob/b4e4ba475a5679e09f279aaf2a83dcf93c632bdb/src/primitives/transaction.h#L232-L268]]
   */
@@ -21,8 +20,7 @@ sealed abstract class TransactionWitness
     RawTransactionWitnessParser.write(this)
   }
 
-  /**
-    * Update the `witnesses` index to the given witness
+  /** Update the `witnesses` index to the given witness
     * Pads the witnesses vector if needed to accomodate the new witness
     */
   def updated(index: Int, witness: ScriptWitness): TransactionWitness = {
@@ -40,8 +38,7 @@ sealed abstract class TransactionWitness
     TransactionWitness(scriptWits)
   }
 
-  /**
-    * Pads the existing `witnesses` so that we can insert a witness
+  /** Pads the existing `witnesses` so that we can insert a witness
     * into the given index. If `witnesses` is not properly padded
     * we can have an index out of bounds exception thrown
     * when trying to update the vector.
@@ -94,8 +91,7 @@ object TransactionWitness {
     }
   }
 
-  /**
-    * Creates a [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]] from a
+  /** Creates a [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]] from a
     * [[org.bitcoins.core.protocol.script.ScriptWitness Seq[Option[ScriptWitness]].
     * This constructor is for convinience if a certain input does not spend a
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]

@@ -6,8 +6,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.DoubleSha256Digest
 
-/**
-  * Created by tom on 7/21/16.
+/** Created by tom on 7/21/16.
   */
 trait SignatureHashTestCase {
   def transaction: Transaction

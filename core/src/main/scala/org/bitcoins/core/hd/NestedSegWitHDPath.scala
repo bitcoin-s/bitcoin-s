@@ -6,8 +6,7 @@ sealed abstract class NestedSegWitHDPath extends HDPath {
 
 object NestedSegWitHDPath extends HDPathFactory[NestedSegWitHDPath] {
 
-  /**
-    * The purpose constant from BIP49
+  /** The purpose constant from BIP49
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
     */

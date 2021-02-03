@@ -40,9 +40,8 @@ abstract class SyncUtil extends BitcoinSLogger {
     case header: BlockHeader =>
       val prevFilterResultF =
         bitcoind.getBlockFilter(header.hashBE, filterType)
-      prevFilterResultF.map {
-        case GetBlockFilterResult(filter, header) =>
-          FilterWithHeaderHash(filter, header)
+      prevFilterResultF.map { case GetBlockFilterResult(filter, header) =>
+        FilterWithHeaderHash(filter, header)
       }
   }
 
@@ -60,8 +59,7 @@ abstract class SyncUtil extends BitcoinSLogger {
         bitcoindRpcClient.sendRawTransaction(transaction).map(_ => ())
       }
 
-      /**
-        * Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
+      /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
         */
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
@@ -96,8 +94,7 @@ abstract class SyncUtil extends BitcoinSLogger {
       walletF: Future[Wallet])(implicit ec: ExecutionContext): NodeApi = {
     new NodeApi {
 
-      /**
-        * Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
+      /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
         */
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
@@ -110,9 +107,8 @@ abstract class SyncUtil extends BitcoinSLogger {
             blocks <- blocksF
             wallet <- walletF
             processedWallet <- {
-              FutureUtil.foldLeftAsync(wallet, blocks) {
-                case (wallet, block) =>
-                  wallet.processBlock(block)
+              FutureUtil.foldLeftAsync(wallet, blocks) { case (wallet, block) =>
+                wallet.processBlock(block)
               }
             }
           } yield processedWallet
@@ -141,8 +137,7 @@ abstract class SyncUtil extends BitcoinSLogger {
         }
       }
 
-      /**
-        * Broadcasts the given transaction over the P2P network
+      /** Broadcasts the given transaction over the P2P network
         */
       override def broadcastTransaction(
           transaction: Transaction): Future[Unit] = {

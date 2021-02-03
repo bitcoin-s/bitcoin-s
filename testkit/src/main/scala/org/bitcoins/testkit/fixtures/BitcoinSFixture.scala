@@ -13,8 +13,7 @@ object UsesExperimentalBitcoind extends Tag("UsesExperimentalBitcoind")
 
 trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
 
-  /**
-    * Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
+  /** Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
     * (this version gives the destroy function access to the fixture)
     *
     * Example:
@@ -31,9 +30,8 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
       .flatMap { fixture =>
         test(fixture.asInstanceOf[FixtureParam]).toFuture
       }
-      .recoverWith {
-        case err =>
-          FutureOutcome.failed(err).toFuture
+      .recoverWith { case err =>
+        FutureOutcome.failed(err).toFuture
       }
 
     val destructedF: Future[Outcome] = outcomeF.transformWith {
@@ -53,8 +51,7 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
     new FutureOutcome(destructedF)
   }
 
-  /**
-    * Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
+  /** Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
     * (this version does not give the destroy function access to the fixture, see makeDependentFixture)
     *
     * Example:
@@ -81,8 +78,7 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
     new FutureOutcome(outcomeAfterDestroyF)
   }
 
-  /**
-    * Given two fixture building methods (one dependent on the other), returns a single
+  /** Given two fixture building methods (one dependent on the other), returns a single
     * fixture building method where the fixture is the pair of the two.
     *
     * Example:
@@ -101,8 +97,7 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
       }
     }
 
-  /**
-    * Given two fixture building methods (one dependent on the other) and a wrapper
+  /** Given two fixture building methods (one dependent on the other) and a wrapper
     * for their pair type, returns a single fixture building method where the fixture is wrapper.
     *
     * Example:
@@ -118,13 +113,12 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
       dependentBuilder: T => Future[U],
       wrap: (T, U) => C): () => Future[C] =
     () => {
-      composeBuilders(builder, dependentBuilder)().map {
-        case (first, second) => wrap(first, second)
+      composeBuilders(builder, dependentBuilder)().map { case (first, second) =>
+        wrap(first, second)
       }
     }
 
-  /**
-    * Given two fixture building methods (one dependent on the other) and
+  /** Given two fixture building methods (one dependent on the other) and
     * a function that processes the result of the builders returning a Future,
     * returns a single fixture building method where the fixture is wrapper.
     *

@@ -10,8 +10,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.scalacheck.Gen
 
-/**
-  * Created by chris on 8/12/16.
+/** Created by chris on 8/12/16.
   */
 abstract class MerkleGenerator {
 
@@ -36,8 +35,7 @@ abstract class MerkleGenerator {
       result <- merkleBlockWithInsertedTxIds(txs)
     } yield result
 
-  /**
-    * Returns a [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] created with a [[org.bitcoins.core.bloom.BloomFilter BloomFilter]], with the block it was created from
+  /** Returns a [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] created with a [[org.bitcoins.core.bloom.BloomFilter BloomFilter]], with the block it was created from
     * and the transactions that were matched inside of that block
     * NOTE: Since bloom filters can produce false positives, it is possible that there will be
     * matches in the parital merkle tree that SHOULD NOT be matched. Bloom filters do not guaratnee no
@@ -68,8 +66,7 @@ abstract class MerkleGenerator {
       txMatches <- txIdsWithMatchIndication(randomNum)
     } yield (PartialMerkleTree(txMatches), txMatches)
 
-  /**
-    * Generates a transaction ids with a boolean indicator if they match the bloom filter or not
+  /** Generates a transaction ids with a boolean indicator if they match the bloom filter or not
     * this is useful for testing partial merkle trees as this is how they are built.
     * @return
     */

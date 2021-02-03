@@ -21,15 +21,14 @@ class BlockchainTest extends ChainUnitTest {
 
   behavior of "Blockchain"
 
-  it must "have the correct toString" inFixtured {
-    case ChainFixture.Empty =>
-      val genesis = ChainUnitTest.genesisHeaderDb
-      val headerDb =
-        BlockHeaderHelper.buildNextHeader(genesis)
-      val chain = Blockchain(Vector(headerDb, genesis))
+  it must "have the correct toString" inFixtured { case ChainFixture.Empty =>
+    val genesis = ChainUnitTest.genesisHeaderDb
+    val headerDb =
+      BlockHeaderHelper.buildNextHeader(genesis)
+    val chain = Blockchain(Vector(headerDb, genesis))
 
-      assert(
-        chain.toString == s"BaseBlockchain(tip=$headerDb,last=$genesis,length=2)")
+    assert(
+      chain.toString == s"BaseBlockchain(tip=$headerDb,last=$genesis,length=2)")
   }
 
   it must "connect a new header to the current tip of a blockchain" inFixtured {
@@ -117,23 +116,22 @@ class BlockchainTest extends ChainUnitTest {
       assert(updated.height == chain.height)
   }
 
-  it must "correctly identify a bad tip" inFixtured {
-    case ChainFixture.Empty =>
-      val genesis = ChainUnitTest.genesisHeaderDb
-      val chain = Blockchain(Vector(genesis))
+  it must "correctly identify a bad tip" inFixtured { case ChainFixture.Empty =>
+    val genesis = ChainUnitTest.genesisHeaderDb
+    val chain = Blockchain(Vector(genesis))
 
-      val goodHeader = BlockHeaderHelper.buildNextHeader(genesis).blockHeader
-      val badHeader = BlockHeader(
-        version = goodHeader.version,
-        previousBlockHash = goodHeader.previousBlockHash,
-        merkleRootHash = goodHeader.merkleRootHash,
-        time = goodHeader.time,
-        nBits = UInt32.zero,
-        nonce = goodHeader.nonce
-      )
+    val goodHeader = BlockHeaderHelper.buildNextHeader(genesis).blockHeader
+    val badHeader = BlockHeader(
+      version = goodHeader.version,
+      previousBlockHash = goodHeader.previousBlockHash,
+      merkleRootHash = goodHeader.merkleRootHash,
+      time = goodHeader.time,
+      nBits = UInt32.zero,
+      nonce = goodHeader.nonce
+    )
 
-      val result = Blockchain.connectTip(badHeader, chain)
+    val result = Blockchain.connectTip(badHeader, chain)
 
-      assert(result.isInstanceOf[ConnectTipResult.BadTip])
+    assert(result.isInstanceOf[ConnectTipResult.BadTip])
   }
 }

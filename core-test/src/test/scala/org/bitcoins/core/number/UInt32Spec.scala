@@ -6,8 +6,7 @@ import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.util.Try
 
-/**
-  * Created by chris on 6/16/16.
+/** Created by chris on 6/16/16.
   */
 class UInt32Spec extends Properties("UInt32") with BitcoinSLogger {
 

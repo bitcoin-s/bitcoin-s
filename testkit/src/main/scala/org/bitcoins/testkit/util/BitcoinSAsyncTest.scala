@@ -39,8 +39,7 @@ trait BaseAsyncTest
     ActorSystem(s"${getClass.getSimpleName}-${System.currentTimeMillis()}")
   }
 
-  /**
-    * Needed because the default execution context will become overloaded
+  /** Needed because the default execution context will become overloaded
     * if we do not specify a unique execution context for each suite
     */
   implicit override def executionContext: ExecutionContext =
@@ -118,10 +117,9 @@ trait BaseAsyncTest
     val testRunFs =
       new java.util.concurrent.CopyOnWriteArrayList[Future[Assertion]]
 
-    forAll(genA, genB) {
-      case (inputA, inputB) =>
-        testRunFs.add(func(inputA, inputB))
-        succeed
+    forAll(genA, genB) { case (inputA, inputB) =>
+      testRunFs.add(func(inputA, inputB))
+      succeed
     }
 
     forAllHelper(testRunFs)
@@ -132,10 +130,9 @@ trait BaseAsyncTest
     val testRunFs =
       new java.util.concurrent.CopyOnWriteArrayList[Future[Assertion]]
 
-    forAll(genA, genB, genC) {
-      case (inputA, inputB, inputC) =>
-        testRunFs.add(func(inputA, inputB, inputC))
-        succeed
+    forAll(genA, genB, genC) { case (inputA, inputB, inputC) =>
+      testRunFs.add(func(inputA, inputB, inputC))
+      succeed
     }
 
     forAllHelper(testRunFs)
@@ -150,10 +147,9 @@ trait BaseAsyncTest
     val testRunFs =
       new java.util.concurrent.CopyOnWriteArrayList[Future[Assertion]]
 
-    forAll(genA, genB, genC, genD) {
-      case (inputA, inputB, inputC, inputD) =>
-        testRunFs.add(func(inputA, inputB, inputC, inputD))
-        succeed
+    forAll(genA, genB, genC, genD) { case (inputA, inputB, inputC, inputD) =>
+      testRunFs.add(func(inputA, inputB, inputC, inputD))
+      succeed
     }
 
     forAllHelper(testRunFs)
@@ -215,11 +211,10 @@ trait BaseAsyncTest
     */
   def forAllParallel[A, B, C](genA: Gen[A], genB: Gen[B])(
       func: (A, B) => Assertion): Future[Assertion] = {
-    forAllAsync(genA, genB) {
-      case (inputA, inputB) =>
-        Future {
-          func(inputA, inputB)
-        }
+    forAllAsync(genA, genB) { case (inputA, inputB) =>
+      Future {
+        func(inputA, inputB)
+      }
     }
   }
 
@@ -228,11 +223,10 @@ trait BaseAsyncTest
     */
   def forAllParallel[A, B, C](genA: Gen[A], genB: Gen[B], genC: Gen[C])(
       func: (A, B, C) => Assertion): Future[Assertion] = {
-    forAllAsync(genA, genB, genC) {
-      case (inputA, inputB, inputC) =>
-        Future {
-          func(inputA, inputB, inputC)
-        }
+    forAllAsync(genA, genB, genC) { case (inputA, inputB, inputC) =>
+      Future {
+        func(inputA, inputB, inputC)
+      }
     }
   }
 

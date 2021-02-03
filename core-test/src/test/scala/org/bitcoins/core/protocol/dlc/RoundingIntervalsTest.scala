@@ -15,12 +15,11 @@ class RoundingIntervalsTest extends BitcoinSUnitTest {
   it should "correctly not round" in {
     val anyLongGen = Gen.choose(Long.MinValue, Long.MaxValue)
 
-    forAll(anyLongGen, anyLongGen) {
-      case (outcome, payout) =>
-        val roundedPayout =
-          RoundingIntervals.noRounding.round(outcome, Satoshis(payout))
+    forAll(anyLongGen, anyLongGen) { case (outcome, payout) =>
+      val roundedPayout =
+        RoundingIntervals.noRounding.round(outcome, Satoshis(payout))
 
-        assert(roundedPayout == Satoshis(payout))
+      assert(roundedPayout == Satoshis(payout))
     }
   }
 

@@ -4,8 +4,7 @@ import scodec.bits.ByteVector
 
 import scala.util.Try
 
-/**
-  * Created by chris on 2/26/16.
+/** Created by chris on 2/26/16.
   * Trait to implement ubiquitous factory functions across our codebase
   */
 abstract class Factory[+T] {

@@ -5,8 +5,7 @@ import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import scala.io.Source
 
-/**
-  * Created by chris on 7/15/16.
+/** Created by chris on 7/15/16.
   */
 class BlockTest extends BitcoinSAsyncTest {
 

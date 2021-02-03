@@ -5,8 +5,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 8/31/16.
+/** Created by chris on 8/31/16.
   */
 class RawRejectMessageSerializerTest extends BitcoinSUnitTest {
 

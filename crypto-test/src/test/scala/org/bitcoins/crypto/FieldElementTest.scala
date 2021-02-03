@@ -27,23 +27,21 @@ class FieldElementTest extends BitcoinSUnitTest {
 
   it must "add small numbers correctly" in {
     forAll(CryptoGenerators.smallFieldElement,
-           CryptoGenerators.smallFieldElement) {
-      case (fe1, fe2) =>
-        val feSum = fe1.add(fe2).toBigInteger
-        val bigIntSum = fe1.toBigInteger.add(fe2.toBigInteger)
+           CryptoGenerators.smallFieldElement) { case (fe1, fe2) =>
+      val feSum = fe1.add(fe2).toBigInteger
+      val bigIntSum = fe1.toBigInteger.add(fe2.toBigInteger)
 
-        assert(feSum == bigIntSum)
+      assert(feSum == bigIntSum)
     }
   }
 
   it must "add large numbers correctly" in {
     forAll(CryptoGenerators.largeFieldElement,
-           CryptoGenerators.largeFieldElement) {
-      case (fe1, fe2) =>
-        val feSum = fe1.add(fe2).toBigInteger
-        val bigIntSum = fe1.toBigInteger.add(fe2.toBigInteger).subtract(N)
+           CryptoGenerators.largeFieldElement) { case (fe1, fe2) =>
+      val feSum = fe1.add(fe2).toBigInteger
+      val bigIntSum = fe1.toBigInteger.add(fe2.toBigInteger).subtract(N)
 
-        assert(feSum == bigIntSum)
+      assert(feSum == bigIntSum)
     }
   }
 
@@ -72,12 +70,11 @@ class FieldElementTest extends BitcoinSUnitTest {
 
   it must "multiply small numbers correctly" in {
     forAll(CryptoGenerators.reallySmallFieldElement,
-           CryptoGenerators.reallySmallFieldElement) {
-      case (fe1, fe2) =>
-        val feProduct = fe1.multiply(fe2).toBigInteger
-        val bigIntProduct = fe1.toBigInteger.multiply(fe2.toBigInteger)
+           CryptoGenerators.reallySmallFieldElement) { case (fe1, fe2) =>
+      val feProduct = fe1.multiply(fe2).toBigInteger
+      val bigIntProduct = fe1.toBigInteger.multiply(fe2.toBigInteger)
 
-        assert(feProduct == bigIntProduct)
+      assert(feProduct == bigIntProduct)
     }
   }
 

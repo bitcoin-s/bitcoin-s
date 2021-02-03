@@ -12,8 +12,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/11/16.
+/** Created by chris on 1/11/16.
   * https://bitcoin.org/en/developer-reference#txout
   */
 class RawTransactionOutputParserTest extends BitcoinSUnitTest {

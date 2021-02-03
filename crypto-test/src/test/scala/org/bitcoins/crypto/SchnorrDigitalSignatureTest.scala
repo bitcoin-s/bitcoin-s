@@ -28,26 +28,24 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
   it must "must not reuse R values" in {
     forAll(CryptoGenerators.privateKey,
            NumberGenerator.bytevector(32),
-           NumberGenerator.bytevector(32)) {
-      case (privKey, bytes1, bytes2) =>
-        val sig1 = privKey.schnorrSign(bytes1)
-        val sig2 = privKey.schnorrSign(bytes2)
-        assert(sig1.bytes != sig2.bytes)
-        assert(sig1.rx != sig2.rx)
+           NumberGenerator.bytevector(32)) { case (privKey, bytes1, bytes2) =>
+      val sig1 = privKey.schnorrSign(bytes1)
+      val sig2 = privKey.schnorrSign(bytes2)
+      assert(sig1.bytes != sig2.bytes)
+      assert(sig1.rx != sig2.rx)
     }
   }
 
   it must "generate R values correctly" in {
     forAll(CryptoGenerators.privateKey,
            NumberGenerator.bytevector(32),
-           NumberGenerator.bytevector(32)) {
-      case (privKey, auxRand, bytes) =>
-        val nonce = SchnorrNonce.kFromBipSchnorr(privKey, bytes, auxRand)
+           NumberGenerator.bytevector(32)) { case (privKey, auxRand, bytes) =>
+      val nonce = SchnorrNonce.kFromBipSchnorr(privKey, bytes, auxRand)
 
-        val sig1 = privKey.schnorrSign(bytes, auxRand)
-        val sig2 = privKey.schnorrSignWithNonce(bytes, nonce)
+      val sig1 = privKey.schnorrSign(bytes, auxRand)
+      val sig2 = privKey.schnorrSignWithNonce(bytes, nonce)
 
-        assert(sig1 == sig2)
+      assert(sig1 == sig2)
     }
   }
 
@@ -65,14 +63,13 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
   it must "correctly compute signature points for sigs with fixed nonces" in {
     forAll(CryptoGenerators.privateKey,
            NumberGenerator.bytevector(32),
-           CryptoGenerators.privateKey) {
-      case (privKey, data, nonce) =>
-        val pubKey = privKey.publicKey
-        val sig = privKey.schnorrSignWithNonce(data, nonce)
-        assert(sig.rx == nonce.schnorrNonce)
+           CryptoGenerators.privateKey) { case (privKey, data, nonce) =>
+      val pubKey = privKey.publicKey
+      val sig = privKey.schnorrSignWithNonce(data, nonce)
+      assert(sig.rx == nonce.schnorrNonce)
 
-        val sigPoint = pubKey.schnorrComputePoint(data, sig.rx)
-        assert(sigPoint == sig.sig.toPrivateKey.publicKey)
+      val sigPoint = pubKey.schnorrComputePoint(data, sig.rx)
+      assert(sigPoint == sig.sig.toPrivateKey.publicKey)
     }
   }
 

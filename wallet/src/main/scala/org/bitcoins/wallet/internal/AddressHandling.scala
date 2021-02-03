@@ -22,8 +22,7 @@ import org.bitcoins.wallet._
 import scala.concurrent.{Await, Future, Promise, TimeoutException}
 import scala.util.{Failure, Success}
 
-/**
-  * Provides functionality related to addresses. This includes
+/** Provides functionality related to addresses. This includes
   * enumeratng and creating them, primarily.
   */
 private[wallet] trait AddressHandling extends WalletLogger {
@@ -132,8 +131,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
         (out, TransactionOutPoint(transaction.txId, UInt32(index)))
     }.toVector
 
-  /**
-    * Derives a new address in the wallet for the
+  /** Derives a new address in the wallet for the
     * given account and chain type (change/external).
     * After deriving the address it inserts it into our
     * table of addresses.

@@ -3,8 +3,7 @@ package org.bitcoins.core.script.bitwise
 import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.script.constant.ScriptOperation
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 sealed trait BitwiseOperation extends ScriptOperation
 

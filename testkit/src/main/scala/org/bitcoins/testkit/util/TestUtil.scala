@@ -28,8 +28,7 @@ import org.bitcoins.core.script.stack.OP_DUP
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
 
-/**
-  * Created by chris on 12/2/15.
+/** Created by chris on 12/2/15.
   */
 object TestUtil {
 
@@ -239,8 +238,7 @@ object TestUtil {
     "43410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac"
   def p2pkScriptPubKey = ScriptPubKey(rawP2PKScriptPubKey)
 
-  /**
-    * This is a script sig that doesn't have a signature strictly der encoded
+  /** This is a script sig that doesn't have a signature strictly der encoded
     * Zero-length R is correctly encoded
     */
   def rawScriptSigNotStrictDerEncoded =

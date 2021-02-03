@@ -11,8 +11,7 @@ import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
 import scala.util.Try
 
-/**
-  * Created by chris on 1/25/16.
+/** Created by chris on 1/25/16.
   */
 class ArithmeticInterpreterTest extends BitcoinSUnitTest {
 

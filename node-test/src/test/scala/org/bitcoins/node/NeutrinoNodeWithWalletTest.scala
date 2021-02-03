@@ -69,8 +69,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     val condition1 = () => {
       condition(
         expectedConfirmedAmount = 3.bitcoin,
-        expectedUnconfirmedAmount =
-          3.bitcoin - TestAmount - TestFees,
+        expectedUnconfirmedAmount = 3.bitcoin - TestAmount - TestFees,
         expectedUtxos = 3,
         expectedAddresses = 7
       )

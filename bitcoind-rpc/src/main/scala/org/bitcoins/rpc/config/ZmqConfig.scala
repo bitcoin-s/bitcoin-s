@@ -31,8 +31,7 @@ object ZmqConfig extends BitcoinSLogger {
                   hashTx = hashTx,
                   rawTx = rawTx)
 
-  /**
-    * Creates a `ZmqConfig` with all `URI`s set to
+  /** Creates a `ZmqConfig` with all `URI`s set to
     * `localhost` and the same port
     */
   def fromPort(port: Int): ZmqConfig = {

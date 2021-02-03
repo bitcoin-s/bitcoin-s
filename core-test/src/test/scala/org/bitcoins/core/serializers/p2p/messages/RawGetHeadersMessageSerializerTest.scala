@@ -7,8 +7,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 6/29/16.
+/** Created by chris on 6/29/16.
   */
 class RawGetHeadersMessageSerializerTest extends BitcoinSUnitTest {
   val hex = NodeTestUtil.rawGetHeadersMsg

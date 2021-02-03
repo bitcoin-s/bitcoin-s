@@ -83,8 +83,7 @@ object ChannelCommandResult extends StringFactory[State] {
     }
 }
 
-/**
-  * This is the data model returned by the RPC call
+/** This is the data model returned by the RPC call
   * `channels nodeId`. The content of the objects
   * being returne differ based on whatever state
   * the channel is in. The member of this abstract
@@ -99,8 +98,7 @@ sealed abstract class ChannelInfo {
   def state: ChannelState
 }
 
-/**
-  * This represents the case where the
+/** This represents the case where the
   * [[org.bitcoins.core.protocol.ln.channel.ChannelState ChannelState]] is
   * undetermined
   */
@@ -112,8 +110,7 @@ case class BaseChannelInfo(
     state: ChannelState
 ) extends ChannelInfo
 
-/**
-  * This represents the case where the channel is
+/** This represents the case where the channel is
   * in state `NORMAL` (i.e. an open channel)
   */
 case class OpenChannelInfo(

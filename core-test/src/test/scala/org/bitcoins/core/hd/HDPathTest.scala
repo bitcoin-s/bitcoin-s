@@ -130,78 +130,75 @@ class HDPathTest extends BitcoinSUnitTest {
   }
 
   it must "fail to generate HD paths with an invalid length" in {
-    forAll(HDGenerators.hdPathWithConstructor) {
-      case (hd, hdApply) =>
-        val tooShortPath = hd.path.dropRight(1)
-        val attempt = hdApply(tooShortPath)
-        attempt match {
-          case Success(_) => fail()
-          case Failure(exception) =>
-            assert(exception.getMessage.contains("must have five elements"))
-        }
+    forAll(HDGenerators.hdPathWithConstructor) { case (hd, hdApply) =>
+      val tooShortPath = hd.path.dropRight(1)
+      val attempt = hdApply(tooShortPath)
+      attempt match {
+        case Success(_) => fail()
+        case Failure(exception) =>
+          assert(exception.getMessage.contains("must have five elements"))
+      }
     }
   }
 
   it must "fail to generate HD paths with the wrong hardened index types" in {
-    forAll(HDGenerators.hdPathWithConstructor) {
-      case (hd, hdApply) =>
-        val nonHardenedCoinChildren = hd.path.zipWithIndex.map {
-          case (child, index) =>
-            if (index == LegacyHDPath.COIN_INDEX) child.copy(hardened = false)
-            else child
-        }
+    forAll(HDGenerators.hdPathWithConstructor) { case (hd, hdApply) =>
+      val nonHardenedCoinChildren = hd.path.zipWithIndex.map {
+        case (child, index) =>
+          if (index == LegacyHDPath.COIN_INDEX) child.copy(hardened = false)
+          else child
+      }
 
-        val badCoinAttempt = hdApply(nonHardenedCoinChildren)
+      val badCoinAttempt = hdApply(nonHardenedCoinChildren)
 
-        badCoinAttempt match {
-          case Success(_) => fail()
-          case Failure(exc) =>
-            assert(exc.getMessage.contains("coin type child must be hardened"))
-        }
+      badCoinAttempt match {
+        case Success(_) => fail()
+        case Failure(exc) =>
+          assert(exc.getMessage.contains("coin type child must be hardened"))
+      }
 
-        val nonHardenedAccountChildren = hd.path.zipWithIndex.map {
-          case (child, index) =>
-            if (index == LegacyHDPath.ACCOUNT_INDEX)
-              child.copy(hardened = false)
-            else child
-        }
-        val badAccountAttempt = hdApply(nonHardenedAccountChildren)
+      val nonHardenedAccountChildren = hd.path.zipWithIndex.map {
+        case (child, index) =>
+          if (index == LegacyHDPath.ACCOUNT_INDEX)
+            child.copy(hardened = false)
+          else child
+      }
+      val badAccountAttempt = hdApply(nonHardenedAccountChildren)
 
-        badAccountAttempt match {
-          case Success(_) => fail()
-          case Failure(exc) =>
-            assert(exc.getMessage.contains("account child must be hardened"))
-        }
+      badAccountAttempt match {
+        case Success(_) => fail()
+        case Failure(exc) =>
+          assert(exc.getMessage.contains("account child must be hardened"))
+      }
 
-        val hardenedChainChildren = hd.path.zipWithIndex.map {
-          case (child, index) =>
-            if (index == LegacyHDPath.CHAIN_INDEX) child.copy(hardened = true)
-            else child
-        }
-        val badChainAttempt =
-          hdApply(hardenedChainChildren)
+      val hardenedChainChildren = hd.path.zipWithIndex.map {
+        case (child, index) =>
+          if (index == LegacyHDPath.CHAIN_INDEX) child.copy(hardened = true)
+          else child
+      }
+      val badChainAttempt =
+        hdApply(hardenedChainChildren)
 
-        badChainAttempt match {
-          case Success(_) => fail()
-          case Failure(exc) =>
-            assert(exc.getMessage.contains("chain child must not be hardened"))
-        }
+      badChainAttempt match {
+        case Success(_) => fail()
+        case Failure(exc) =>
+          assert(exc.getMessage.contains("chain child must not be hardened"))
+      }
 
-        val hardenedAddressChildren = hd.path.zipWithIndex.map {
-          case (child, index) =>
-            if (index == LegacyHDPath.ADDRESS_INDEX) child.copy(hardened = true)
-            else child
-        }
-        val badAddrAttempt =
-          hdApply(hardenedAddressChildren)
+      val hardenedAddressChildren = hd.path.zipWithIndex.map {
+        case (child, index) =>
+          if (index == LegacyHDPath.ADDRESS_INDEX) child.copy(hardened = true)
+          else child
+      }
+      val badAddrAttempt =
+        hdApply(hardenedAddressChildren)
 
-        badAddrAttempt match {
-          case Success(_) => fail()
-          case Failure(exc) =>
-            assert(
-              exc.getMessage.contains(
-                "address index child must not be hardened"))
-        }
+      badAddrAttempt match {
+        case Success(_) => fail()
+        case Failure(exc) =>
+          assert(
+            exc.getMessage.contains("address index child must not be hardened"))
+      }
     }
   }
 

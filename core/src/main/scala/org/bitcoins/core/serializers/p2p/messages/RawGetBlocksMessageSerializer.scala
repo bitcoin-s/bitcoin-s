@@ -8,8 +8,7 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
-/**
-  * This trait is responsible for the serialization and deserialization of
+/** This trait is responsible for the serialization and deserialization of
   * getblocks messages in on the p2p network
   * @see https://bitcoin.org/en/developer-reference#getblocks
   */
@@ -36,8 +35,7 @@ trait RawGetBlocksMessageSerializer
       getBlocksMessage.stopHash.bytes
   }
 
-  /**
-    * Helper function to parse block headers from a sequence of bytes
+  /** Helper function to parse block headers from a sequence of bytes
     * Hashes are 32 bytes
     * @param bytes the bytes which need to be parsed into BlockHeader hashes
     * @param compactSizeUInt the p2p network object used to indicate how many block header hashes there are

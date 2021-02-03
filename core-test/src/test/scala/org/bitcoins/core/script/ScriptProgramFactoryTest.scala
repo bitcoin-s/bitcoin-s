@@ -8,8 +8,7 @@ import org.bitcoins.core.script.constant.{OP_0, OP_1}
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 3/31/16.
+/** Created by chris on 3/31/16.
   */
 class ScriptProgramFactoryTest extends BitcoinSUnitTest {
 

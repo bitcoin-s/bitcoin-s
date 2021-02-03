@@ -4,8 +4,7 @@ import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 3/22/16.
+/** Created by chris on 3/22/16.
   */
 class ECDigitalSignatureTest extends BitcoinSUnitTest {
 
@@ -71,30 +70,27 @@ class ECDigitalSignatureTest extends BitcoinSUnitTest {
   it must "must not reuse r values" in {
     forAll(CryptoGenerators.privateKey,
            CryptoGenerators.doubleSha256Digest,
-           CryptoGenerators.doubleSha256Digest) {
-      case (key, hash1, hash2) =>
-        val sig1 = key.sign(hash1)
-        val sig2 = key.sign(hash2)
-        assert(sig1.r != sig2.r)
+           CryptoGenerators.doubleSha256Digest) { case (key, hash1, hash2) =>
+      val sig1 = key.sign(hash1)
+      val sig2 = key.sign(hash2)
+      assert(sig1.r != sig2.r)
     }
   }
 
   it must "must have serialization symmetry with r,s" in {
-    forAll(CryptoGenerators.digitalSignature) {
-      case sig: ECDigitalSignature =>
-        val sig2 = ECDigitalSignature.fromRS(sig.r, sig.s)
+    forAll(CryptoGenerators.digitalSignature) { case sig: ECDigitalSignature =>
+      val sig2 = ECDigitalSignature.fromRS(sig.r, sig.s)
 
-        assert(sig2 == sig)
-        assert(sig2.r == sig.r)
-        assert(sig2.s == sig.s)
+      assert(sig2 == sig)
+      assert(sig2.r == sig.r)
+      assert(sig2.s == sig.s)
     }
   }
 
   it must "must have serialization symmetry toRawRS & fromRS" in {
-    forAll(CryptoGenerators.digitalSignature) {
-      case sig: ECDigitalSignature =>
-        val raw = sig.toRawRS
-        assert(ECDigitalSignature.fromRS(raw) == sig)
+    forAll(CryptoGenerators.digitalSignature) { case sig: ECDigitalSignature =>
+      val raw = sig.toRawRS
+      assert(ECDigitalSignature.fromRS(raw) == sig)
     }
   }
 

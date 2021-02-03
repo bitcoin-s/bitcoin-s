@@ -62,8 +62,7 @@ object TxUtil extends BitcoinSLogger {
     }
   }
 
-  /**
-    * This helper function calculates the appropriate locktime for a transaction.
+  /** This helper function calculates the appropriate locktime for a transaction.
     * To be able to spend [[CLTVScriptPubKey]]'s you need to have the transaction's
     * locktime set to the same value (or higher) than the output it is spending.
     * See BIP65 for more info
@@ -124,8 +123,7 @@ object TxUtil extends BitcoinSLogger {
     loop(utxos, None)
   }
 
-  /**
-    * This helper function calculates the appropriate locktime for a transaction.
+  /** This helper function calculates the appropriate locktime for a transaction.
     * To be able to spend [[CLTVScriptPubKey]]'s you need to have the transaction's
     * locktime set to the same value (or higher) than the output it is spending.
     * See BIP65 for more info
@@ -222,8 +220,7 @@ object TxUtil extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Sets the ScriptSignature for every input in the given transaction to an EmptyScriptSignature
+  /** Sets the ScriptSignature for every input in the given transaction to an EmptyScriptSignature
     * as well as sets the witness to an EmptyWitness
     * @param tx Transaction to empty signatures
     * @return Transaction with no signatures
@@ -280,8 +277,7 @@ object TxUtil extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Checks that the creditingAmount >= destinationAmount
+  /** Checks that the creditingAmount >= destinationAmount
     * and then does a sanity check on the transaction's fee
     */
   def sanityAmountChecks(
@@ -310,8 +306,7 @@ object TxUtil extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Checks if the fee is within a 'valid' range
+  /** Checks if the fee is within a 'valid' range
     *
     * @param estimatedFee the estimated amount of fee we should pay
     * @param actualFee    the actual amount of fee the transaction pays

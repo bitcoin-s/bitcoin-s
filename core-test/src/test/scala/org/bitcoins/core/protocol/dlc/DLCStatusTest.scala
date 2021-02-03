@@ -152,35 +152,34 @@ class DLCStatusTest extends BitcoinSAsyncTest {
       CryptoGenerators.doubleSha256DigestBE,
       CryptoGenerators.doubleSha256DigestBE,
       Gen.listOf(CryptoGenerators.schnorrDigitalSignature)
-    ) {
-      case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sigs) =>
-        val offer = DLCOffer.fromTLV(offerTLV)
+    ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sigs) =>
+      val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.max
+      val totalCollateral = offer.contractInfo.max
 
-        val rand =
-          scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
-        val outcome = offer.contractInfo.allOutcomes(rand)
+      val rand =
+        scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
+      val outcome = offer.contractInfo.allOutcomes(rand)
 
-        val status =
-          DLCStatus.Claimed(
-            offer.paramHash,
-            isInit,
-            offer.tempContractId,
-            contractId,
-            offer.contractInfo,
-            offer.timeouts,
-            offer.feeRate,
-            totalCollateral,
-            offer.totalCollateral,
-            fundingTxId,
-            closingTxId,
-            sigs.toVector,
-            outcome
-          )
+      val status =
+        DLCStatus.Claimed(
+          offer.paramHash,
+          isInit,
+          offer.tempContractId,
+          contractId,
+          offer.contractInfo,
+          offer.timeouts,
+          offer.feeRate,
+          totalCollateral,
+          offer.totalCollateral,
+          fundingTxId,
+          closingTxId,
+          sigs.toVector,
+          outcome
+        )
 
-        assert(status.state == DLCState.Claimed)
-        assert(read[DLCStatus](write(status)) == status)
+      assert(status.state == DLCState.Claimed)
+      assert(read[DLCStatus](write(status)) == status)
     }
   }
 
@@ -192,35 +191,34 @@ class DLCStatusTest extends BitcoinSAsyncTest {
       CryptoGenerators.doubleSha256DigestBE,
       CryptoGenerators.doubleSha256DigestBE,
       CryptoGenerators.schnorrDigitalSignature
-    ) {
-      case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sig) =>
-        val offer = DLCOffer.fromTLV(offerTLV)
+    ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sig) =>
+      val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.max
+      val totalCollateral = offer.contractInfo.max
 
-        val rand =
-          scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
-        val outcome = offer.contractInfo.allOutcomes(rand)
+      val rand =
+        scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
+      val outcome = offer.contractInfo.allOutcomes(rand)
 
-        val status =
-          DLCStatus.RemoteClaimed(
-            offer.paramHash,
-            isInit,
-            offer.tempContractId,
-            contractId,
-            offer.contractInfo,
-            offer.timeouts,
-            offer.feeRate,
-            totalCollateral,
-            offer.totalCollateral,
-            fundingTxId,
-            closingTxId,
-            sig,
-            outcome
-          )
+      val status =
+        DLCStatus.RemoteClaimed(
+          offer.paramHash,
+          isInit,
+          offer.tempContractId,
+          contractId,
+          offer.contractInfo,
+          offer.timeouts,
+          offer.feeRate,
+          totalCollateral,
+          offer.totalCollateral,
+          fundingTxId,
+          closingTxId,
+          sig,
+          outcome
+        )
 
-        assert(status.state == DLCState.RemoteClaimed)
-        assert(read[DLCStatus](write(status)) == status)
+      assert(status.state == DLCState.RemoteClaimed)
+      assert(read[DLCStatus](write(status)) == status)
     }
   }
 
@@ -231,29 +229,28 @@ class DLCStatusTest extends BitcoinSAsyncTest {
       NumberGenerator.bytevector,
       CryptoGenerators.doubleSha256DigestBE,
       CryptoGenerators.doubleSha256DigestBE
-    ) {
-      case (isInit, offerTLV, contractId, fundingTxId, closingTxId) =>
-        val offer = DLCOffer.fromTLV(offerTLV)
+    ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId) =>
+      val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.max
+      val totalCollateral = offer.contractInfo.max
 
-        val status =
-          DLCStatus.Refunded(
-            offer.paramHash,
-            isInit,
-            offer.tempContractId,
-            contractId,
-            offer.contractInfo,
-            offer.timeouts,
-            offer.feeRate,
-            totalCollateral,
-            offer.totalCollateral,
-            fundingTxId,
-            closingTxId
-          )
+      val status =
+        DLCStatus.Refunded(
+          offer.paramHash,
+          isInit,
+          offer.tempContractId,
+          contractId,
+          offer.contractInfo,
+          offer.timeouts,
+          offer.feeRate,
+          totalCollateral,
+          offer.totalCollateral,
+          fundingTxId,
+          closingTxId
+        )
 
-        assert(status.state == DLCState.Refunded)
-        assert(read[DLCStatus](write(status)) == status)
+      assert(status.state == DLCState.Refunded)
+      assert(read[DLCStatus](write(status)) == status)
     }
   }
 }

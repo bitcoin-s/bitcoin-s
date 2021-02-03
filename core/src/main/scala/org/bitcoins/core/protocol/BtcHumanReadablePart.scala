@@ -4,8 +4,7 @@ import org.bitcoins.core.config._
 import org.bitcoins.core.util.Bech32HumanReadablePart
 import org.bitcoins.crypto.StringFactory
 
-/**
-  * Represents the HumanReadablePart of a Bech32 address
+/** Represents the HumanReadablePart of a Bech32 address
   * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki]]
   */
 sealed abstract class BtcHumanReadablePart extends Bech32HumanReadablePart {
@@ -26,8 +25,7 @@ object BtcHumanReadablePart extends StringFactory[BtcHumanReadablePart] {
     override def chars = "tb"
   }
 
-  /**
-    * Represents the HumanReadablePart for a bitcoin regtest bech32 address
+  /** Represents the HumanReadablePart for a bitcoin regtest bech32 address
     *
     * @see Regtest is not covered in the BIP. See
     *      [[https://github.com/bitcoin/bitcoin/issues/12314 this issue]]

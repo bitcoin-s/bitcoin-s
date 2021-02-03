@@ -9,8 +9,7 @@ import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 
-/**
-  * A mnemonic code conforming to [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]].
+/** A mnemonic code conforming to [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]].
   * BIP39 mnemonic codes consist of a varying number of words (most often English,
   * possible with other languages as well) that can be used to generate an
   * [[ExtPrivateKey ExtPrivateKey ]] which again
@@ -33,8 +32,7 @@ sealed abstract class MnemonicCode
           },
           "Entropy checksum is not valid!")
 
-  /**
-    * Checks that the provided entropy has a valid checksum
+  /** Checks that the provided entropy has a valid checksum
     * attached at the end
     */
   private[crypto] def isEntropyWithChecksumValid(
@@ -50,15 +48,13 @@ sealed abstract class MnemonicCode
 
   }
 
-  /**
-    * The mnemonic code itself
+  /** The mnemonic code itself
     */
   def words: Vector[String]
 
   override protected lazy val wrapped: Vector[String] = words
 
-  /**
-    * Returns the entropy initially provided to construct
+  /** Returns the entropy initially provided to construct
     * this mnemonic code
     */
   private[bitcoins] def toEntropy: BitVector = {
@@ -70,8 +66,7 @@ sealed abstract class MnemonicCode
     entropyWithChecksumBits.take(lengthNoEntropy)
   }
 
-  /**
-    * Returns the entropy _with checksum_ originally provided
+  /** Returns the entropy _with checksum_ originally provided
     * to construct this mnemonic code
     */
   private[crypto] def toEntropyWithChecksum: BitVector = {
@@ -118,19 +113,16 @@ sealed abstract class MnemonicCode
   }
 }
 
-/**
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]]
+/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]]
   */
 object MnemonicCode {
 
-  /**
-    * The valid lengths a BIP39 mnemonic code phrase can be, according to
+  /** The valid lengths a BIP39 mnemonic code phrase can be, according to
     * [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]]
     */
   private[crypto] val VALID_LENGTHS = Vector(12, 15, 18, 21, 24)
 
-  /**
-    * Length of bit groups entropy is split into to
+  /** Length of bit groups entropy is split into to
     * derive words from wordlist
     */
   private[crypto] val BIT_GROUP_LENGTH = 11
@@ -138,34 +130,28 @@ object MnemonicCode {
   private case class MnemonicCodeImpl(words: Vector[String])
       extends MnemonicCode
 
-  /**
-    * Creates a mnemonic code from the provided words
+  /** Creates a mnemonic code from the provided words
     */
   def fromWords(words: Vector[String]): MnemonicCode = MnemonicCodeImpl(words)
 
-  /**
-    * Generates a mnemonic code from the given entropy bytes
+  /** Generates a mnemonic code from the given entropy bytes
     */
   def fromEntropy(entropy: ByteVector): MnemonicCode =
     fromEntropy(entropy.bits)
 
-  /**
-    * The minimum number of entropy bits needed to construct a mnemonic code
+  /** The minimum number of entropy bits needed to construct a mnemonic code
     */
   private[crypto] val MIN_ENTROPY_BITS = 128
 
-  /**
-    * The maximum number of entropy bits allowed to construct mnemonic code
+  /** The maximum number of entropy bits allowed to construct mnemonic code
     */
   private[crypto] val MAX_ENTROPY_BITS = 256
 
-  /**
-    * The entropy for a mnemonic code has to be a multiple of 32
+  /** The entropy for a mnemonic code has to be a multiple of 32
     */
   private[crypto] val ENTROPY_MULTIPLE = 32
 
-  /**
-    * Generates a mnemonic code from the given entropy bits
+  /** Generates a mnemonic code from the given entropy bits
     */
   def fromEntropy(entropy: BitVector): MnemonicCode = {
     require(
@@ -205,8 +191,7 @@ object MnemonicCode {
 
   }
 
-  /**
-    * Generates the specified bits of entropy
+  /** Generates the specified bits of entropy
     */
   private def getEntropy(bits: Int): BitVector = {
     require(bits % 8 == 0,
@@ -224,28 +209,23 @@ object MnemonicCode {
     )
   }
 
-  /**
-    * Gets 128 bits of cryptographically secure entropy
+  /** Gets 128 bits of cryptographically secure entropy
     */
   def getEntropy128Bits: BitVector = getEntropy(128)
 
-  /**
-    * Gets 16o bits of cryptographically secure entropy
+  /** Gets 16o bits of cryptographically secure entropy
     */
   def getEntropy160Bits: BitVector = getEntropy(160)
 
-  /**
-    * Gets 192 bits of cryptographically secure entropy
+  /** Gets 192 bits of cryptographically secure entropy
     */
   def getEntropy192Bits: BitVector = getEntropy(192)
 
-  /**
-    * Gets 224 bits of cryptographically secure entropy
+  /** Gets 224 bits of cryptographically secure entropy
     */
   def getEntropy224Bits: BitVector = getEntropy(224)
 
-  /**
-    * Gets 256 bits of cryptographically secure entropy
+  /** Gets 256 bits of cryptographically secure entropy
     */
   def getEntropy256Bits: BitVector = getEntropy(256)
 
@@ -255,8 +235,7 @@ object MnemonicCode {
       entropyAndChecksumBits: Int,
       words: Int)
 
-  /**
-    * Taken from
+  /** Taken from
     * [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic BIP39]]
     */
   private[crypto] def getMnemonicCodeInfo(

@@ -8,8 +8,7 @@ import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 
 import scala.util.Try
 
-/**
-  * Created by chris on 12/26/15.
+/** Created by chris on 12/26/15.
   *
   * We only give standard types to ScriptSignatures that are Policy
   * compliant. This is because if we wanted to be closer to Consensus
@@ -21,8 +20,7 @@ import scala.util.Try
   */
 sealed abstract class ScriptSignature extends Script {
 
-  /**
-    * The digital signatures contained inside of the script signature
+  /** The digital signatures contained inside of the script signature
     * p2pkh script signatures only have one sig
     * p2pk script signatures only have one sigs
     * p2sh script signatures can have m sigs
@@ -68,8 +66,7 @@ case object TrivialTrueScriptSignature extends ScriptSignature {
   }
 }
 
-/**
-  * P2PKH script signatures have only one public key
+/** P2PKH script signatures have only one public key
   * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh
   * P2PKH scriptSigs follow this format
   * <sig> <pubkey>
@@ -105,8 +102,7 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
     )
   }
 
-  /**
-    * Builds a script signature from a digital signature and a public key
+  /** Builds a script signature from a digital signature and a public key
     * this is a pay to public key hash script sig
     */
   def apply(
@@ -138,8 +134,7 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
     }
 }
 
-/**
-  * Represents a pay-to-script-hash script signature
+/** Represents a pay-to-script-hash script signature
   * https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh
   * P2SH scriptSigs have the following format
   * <sig> [sig] [sig...] <redeemScript>
@@ -286,8 +281,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
   }
 }
 
-/**
-  * Represents a multisignature script signature
+/** Represents a multisignature script signature
   * https://bitcoin.org/en/developer-guide#multisig
   * Multisig script sigs have the following format
   * OP_0 <A sig> [B sig] [C sig...]
@@ -335,8 +329,7 @@ object MultiSignatureScriptSignature
     )
   }
 
-  /**
-    * Checks if the given script tokens are a multisignature script sig
+  /** Checks if the given script tokens are a multisignature script sig
     * format: OP_0 <A sig> [B sig] [C sig...]
     *
     * @param asm the asm to check if it falls in the multisignature script sig format
@@ -368,8 +361,7 @@ object MultiSignatureScriptSignature
   }
 }
 
-/**
-  * Represents a pay to public key script signature
+/** Represents a pay to public key script signature
   * https://bitcoin.org/en/developer-guide#pubkey
   * Signature script: <sig>
   */
@@ -450,8 +442,7 @@ sealed trait CLTVScriptSignature extends LockTimeScriptSignature {
   override def toString: String = s"CLTVScriptSignature($scriptSig)"
 }
 
-/**
-  * Note that extend [[org.bitcoins.core.protocol.script.ScriptFactory]] here
+/** Note that extend [[org.bitcoins.core.protocol.script.ScriptFactory]] here
   * but technically ANYTHING can be a [[CLTVScriptSignature]] since the
   * [[CLTVScriptPubKey]] does not manipulate the stack
   */

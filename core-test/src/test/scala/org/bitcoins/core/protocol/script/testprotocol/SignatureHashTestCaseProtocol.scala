@@ -8,8 +8,7 @@ import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.crypto.DoubleSha256Digest
 import spray.json._
 
-/**
-  * Created by tom on 7/21/16.
+/** Created by tom on 7/21/16.
   */
 object SignatureHashTestCaseProtocol extends DefaultJsonProtocol {
 

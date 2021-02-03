@@ -121,18 +121,17 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
   } yield (sat, num)
 
   it must "multiply a satoshi value with an int" in {
-    forAll(satoshiWithInt) {
-      case (sat, int) =>
-        val safeProduct = sat.multiplySafe(int)
-        val underlyingProduct = sat.toBigInt * int
-        if (
-          underlyingProduct < Satoshis.max.toBigInt && underlyingProduct > Satoshis.min.toBigInt
-        ) {
-          assert(safeProduct.isSuccess)
-          assert(safeProduct.get.satoshis.toBigInt == underlyingProduct)
-        } else {
-          assert(safeProduct.isFailure)
-        }
+    forAll(satoshiWithInt) { case (sat, int) =>
+      val safeProduct = sat.multiplySafe(int)
+      val underlyingProduct = sat.toBigInt * int
+      if (
+        underlyingProduct < Satoshis.max.toBigInt && underlyingProduct > Satoshis.min.toBigInt
+      ) {
+        assert(safeProduct.isSuccess)
+        assert(safeProduct.get.satoshis.toBigInt == underlyingProduct)
+      } else {
+        assert(safeProduct.isFailure)
+      }
     }
   }
 
@@ -194,25 +193,23 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
   }
 
   it must "have correct/consistent Numeric functions" in {
-    forAll(smallSatGen, smallSatGen) {
-      case (num1, num2) =>
-        assert(num1 + num2 == CurrencyUnits.plus(num1, num2))
-        assert(num1 - num2 == CurrencyUnits.minus(num1, num2))
-        assert(num1 * num2 == CurrencyUnits.times(num1, num2))
-        assert(-num1 == CurrencyUnits.negate(num1))
-        assert(CurrencyUnits.fromInt(CurrencyUnits.toInt(num1)) == num1)
-        assert(CurrencyUnits.fromInt(CurrencyUnits.toLong(num1).toInt) == num1)
-        assert(CurrencyUnits.fromInt(CurrencyUnits.toFloat(num1).toInt) == num1)
-        assert(
-          CurrencyUnits.fromInt(CurrencyUnits.toDouble(num1).toInt) == num1)
+    forAll(smallSatGen, smallSatGen) { case (num1, num2) =>
+      assert(num1 + num2 == CurrencyUnits.plus(num1, num2))
+      assert(num1 - num2 == CurrencyUnits.minus(num1, num2))
+      assert(num1 * num2 == CurrencyUnits.times(num1, num2))
+      assert(-num1 == CurrencyUnits.negate(num1))
+      assert(CurrencyUnits.fromInt(CurrencyUnits.toInt(num1)) == num1)
+      assert(CurrencyUnits.fromInt(CurrencyUnits.toLong(num1).toInt) == num1)
+      assert(CurrencyUnits.fromInt(CurrencyUnits.toFloat(num1).toInt) == num1)
+      assert(CurrencyUnits.fromInt(CurrencyUnits.toDouble(num1).toInt) == num1)
 
-        assert(CurrencyUnits.parseString("").isEmpty)
-        val str = "Never gonna give you up, never gonna let you down"
-        assert(CurrencyUnits.parseString(str).isEmpty)
-        assert(
-          CurrencyUnits
-            .parseString("12345678900")
-            .contains(Satoshis(12345678900L)))
+      assert(CurrencyUnits.parseString("").isEmpty)
+      val str = "Never gonna give you up, never gonna let you down"
+      assert(CurrencyUnits.parseString(str).isEmpty)
+      assert(
+        CurrencyUnits
+          .parseString("12345678900")
+          .contains(Satoshis(12345678900L)))
     }
   }
 

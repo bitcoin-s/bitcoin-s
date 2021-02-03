@@ -84,15 +84,13 @@ object InitEnumContractDialog {
     // When the OK button is clicked, convert the result to a CreateDLCOffer.
     dialog.resultConverter = dialogButton =>
       if (dialogButton == ButtonType.OK) {
-        val inputs = fields.values.flatMap {
-          case (str, value) =>
-            if (str.text.value.nonEmpty && value.text.value.nonEmpty)
-              Some((str.text(), value.text()))
-            else None
+        val inputs = fields.values.flatMap { case (str, value) =>
+          if (str.text.value.nonEmpty && value.text.value.nonEmpty)
+            Some((str.text(), value.text()))
+          else None
         }
-        val contractMap = inputs.map {
-          case (str, value) =>
-            EnumOutcome(str) -> Satoshis(BigInt(value))
+        val contractMap = inputs.map { case (str, value) =>
+          EnumOutcome(str) -> Satoshis(BigInt(value))
         }.toVector
 
         val announcementStr = announcementTF.text.value

@@ -39,8 +39,7 @@ object WalletStorage extends KeyManagerLogger {
     val XPRV = "xprv"
   }
 
-  /**
-    * Writes the mnemonic to disk.
+  /** Writes the mnemonic to disk.
     * If we encounter a file in the place we're about
     * to write to, an error will be thrown.
     */
@@ -55,8 +54,7 @@ object WalletStorage extends KeyManagerLogger {
     }
   }
 
-  /**
-    * Writes the encrypted mnemonic to disk.
+  /** Writes the encrypted mnemonic to disk.
     * If we encounter a file in the place we're about
     * to write to, an error will be thrown.
     */
@@ -75,8 +73,7 @@ object WalletStorage extends KeyManagerLogger {
     writeSeedJsonToDisk(seedPath, jsObject)
   }
 
-  /**
-    * Writes the unencrypted mnemonic to disk.
+  /** Writes the unencrypted mnemonic to disk.
     * If we encounter a file in the place we're about
     * to write to, an error will be thrown.
     */
@@ -94,8 +91,7 @@ object WalletStorage extends KeyManagerLogger {
     writeSeedJsonToDisk(seedPath, jsObject)
   }
 
-  /**
-    * Writes the unencrypted xprv to disk.
+  /** Writes the unencrypted xprv to disk.
     * If we encounter a file in the place we're about
     * to write to, an error will be thrown.
     */
@@ -111,8 +107,7 @@ object WalletStorage extends KeyManagerLogger {
     writeSeedJsonToDisk(seedPath, jsObject)
   }
 
-  /**
-    * Writes a seed's json output to disk.
+  /** Writes a seed's json output to disk.
     * If we encounter a file in the place we're about
     * to write to, an error will be thrown.
     */
@@ -249,18 +244,17 @@ object WalletStorage extends KeyManagerLogger {
       }
     }
 
-    readJsonTupleEither.flatMap {
-      case (words, rawCreationTime) =>
-        Try(MnemonicCode.fromWords(words)) match {
-          case Failure(_) =>
-            Left(JsonParsingError("JSON contents was incorrectly formatted"))
-          case Success(mnemonicCode) =>
-            logger.debug(s"Parsed contents into a DecryptedMnemonic")
-            val decrypted =
-              DecryptedMnemonic(mnemonicCode,
-                                Instant.ofEpochSecond(rawCreationTime))
-            Right(decrypted)
-        }
+    readJsonTupleEither.flatMap { case (words, rawCreationTime) =>
+      Try(MnemonicCode.fromWords(words)) match {
+        case Failure(_) =>
+          Left(JsonParsingError("JSON contents was incorrectly formatted"))
+        case Success(mnemonicCode) =>
+          logger.debug(s"Parsed contents into a DecryptedMnemonic")
+          val decrypted =
+            DecryptedMnemonic(mnemonicCode,
+                              Instant.ofEpochSecond(rawCreationTime))
+          Right(decrypted)
+      }
     }
   }
 
@@ -284,17 +278,16 @@ object WalletStorage extends KeyManagerLogger {
       }
     }
 
-    readJsonTupleEither.flatMap {
-      case (str, rawCreationTime) =>
-        ExtPrivateKey.fromStringT(str) match {
-          case Failure(_) =>
-            Left(JsonParsingError("JSON contents was correctly formatted"))
-          case Success(xprv) =>
-            logger.debug(s"Parsed contents into a DecryptedMnemonic")
-            val decrypted =
-              DecryptedExtPrivKey(xprv, Instant.ofEpochSecond(rawCreationTime))
-            Right(decrypted)
-        }
+    readJsonTupleEither.flatMap { case (str, rawCreationTime) =>
+      ExtPrivateKey.fromStringT(str) match {
+        case Failure(_) =>
+          Left(JsonParsingError("JSON contents was correctly formatted"))
+        case Success(xprv) =>
+          logger.debug(s"Parsed contents into a DecryptedMnemonic")
+          val decrypted =
+            DecryptedExtPrivKey(xprv, Instant.ofEpochSecond(rawCreationTime))
+          Right(decrypted)
+      }
     }
   }
 
@@ -325,8 +318,7 @@ object WalletStorage extends KeyManagerLogger {
     }
   }
 
-  /**
-    * Reads the wallet mnemonic from disk and tries to parse and
+  /** Reads the wallet mnemonic from disk and tries to parse and
     * decrypt it
     */
   def decryptSeedFromDisk(
@@ -429,16 +421,14 @@ sealed trait ReadMnemonicError { self: Error => }
 
 object ReadMnemonicError {
 
-  /**
-    * Something went wrong while decrypting the mnemonic.
+  /** Something went wrong while decrypting the mnemonic.
     * Most likely the passphrase was bad
     */
   case object DecryptionError
       extends Error(s"Could not decrypt mnemonic!")
       with ReadMnemonicError
 
-  /**
-    * Something went wrong while parsing the encrypted
+  /** Something went wrong while parsing the encrypted
     * mnemonic into valid JSON
     */
   case class JsonParsingError(message: String)

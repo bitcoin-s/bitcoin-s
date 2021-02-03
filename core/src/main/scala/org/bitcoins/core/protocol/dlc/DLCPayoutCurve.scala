@@ -8,8 +8,8 @@ import scala.math.BigDecimal.RoundingMode
 
 /** A DLC payout curve defined by piecewise interpolating points */
 case class DLCPayoutCurve(points: Vector[OutcomePayoutPoint]) {
-  require(points.init.zip(points.tail).forall {
-            case (p1, p2) => p1.outcome < p2.outcome
+  require(points.init.zip(points.tail).forall { case (p1, p2) =>
+            p1.outcome < p2.outcome
           },
           s"Points must be ascending: $points")
 
@@ -171,8 +171,8 @@ sealed trait DLCPayoutCurvePiece {
     case Some(firstMidpoint) =>
       require(leftEndpoint.outcome < firstMidpoint.outcome,
               s"Points must be ascending: $this")
-      require(midpoints.init.zip(midpoints.tail).forall {
-                case (m1, m2) => m1.outcome < m2.outcome
+      require(midpoints.init.zip(midpoints.tail).forall { case (m1, m2) =>
+                m1.outcome < m2.outcome
               },
               s"Points must be ascending: $this")
       require(rightEndpoint.outcome > midpoints.last.outcome,
@@ -360,15 +360,14 @@ case class OutcomePayoutPolynomial(points: Vector[OutcomePayoutPoint])
       val xi = point.outcome
       val yi = point.payout
 
-      val denom = points.foldLeft(BigDecimal(1)) {
-        case (prodSoFar, p) =>
-          val xj = p.outcome
+      val denom = points.foldLeft(BigDecimal(1)) { case (prodSoFar, p) =>
+        val xj = p.outcome
 
-          if (xj == xi) {
-            prodSoFar
-          } else {
-            prodSoFar * (xi - xj)
-          }
+        if (xj == xi) {
+          prodSoFar
+        } else {
+          prodSoFar * (xi - xj)
+        }
       }
 
       yi / denom

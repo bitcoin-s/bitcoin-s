@@ -124,8 +124,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   def emptyScriptSignature = p2pkhScriptSignature.map(_ => EmptyScriptSignature)
 
-  /**
-    * Generates a P2SH script signature
+  /** Generates a P2SH script signature
     *
     * @note the redeem script and the script signature DO NOT evaluate to true
     * if executed by [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
@@ -279,9 +278,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     for {
       (randomScriptPubKey, privKeys) <-
         randomNonP2SHScriptPubKey
-          .suchThat {
-            case (spk, _) =>
-              !redeemScriptTooBig(spk)
+          .suchThat { case (spk, _) =>
+            !redeemScriptTooBig(spk)
           }
       p2sh = P2SHScriptPubKey(randomScriptPubKey)
     } yield (p2sh, privKeys, randomScriptPubKey)
@@ -336,12 +334,10 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   def multiSignatureWithTimeoutScriptPubKey: Gen[
     (MultiSignatureWithTimeoutScriptPubKey, Seq[ECPrivateKey])] = {
-    multiSigScriptPubKey.flatMap {
-      case (multiSig, keys) =>
-        cltvScriptPubKey.map {
-          case (cltv, _) =>
-            (MultiSignatureWithTimeoutScriptPubKey(multiSig, cltv), keys)
-        }
+    multiSigScriptPubKey.flatMap { case (multiSig, keys) =>
+      cltvScriptPubKey.map { case (cltv, _) =>
+        (MultiSignatureWithTimeoutScriptPubKey(multiSig, cltv), keys)
+      }
     }
   }
 
@@ -354,20 +350,17 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   /** Generates a random P2WSHWitnessSPKV0 as well as it's corresponding private keys and redeem script */
   def p2wshSPKV0: Gen[(P2WSHWitnessSPKV0, Seq[ECPrivateKey], ScriptPubKey)] =
     randomNonP2SHScriptPubKey
-      .suchThat {
-        case (spk, _) =>
-          !redeemScriptTooBig(spk)
+      .suchThat { case (spk, _) =>
+        !redeemScriptTooBig(spk)
       }
-      .map {
-        case (spk, privateKey) =>
-          (P2WSHWitnessSPKV0(spk), privateKey, spk)
+      .map { case (spk, privateKey) =>
+        (P2WSHWitnessSPKV0(spk), privateKey, spk)
       }
 
   def witnessScriptPubKeyV0: Gen[(WitnessScriptPubKeyV0, Seq[ECPrivateKey])] =
     Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0.map(truncate))
 
-  /**
-    * Creates an unassigned witness scriptPubKey.
+  /** Creates an unassigned witness scriptPubKey.
     * Currently this is any witness script pubkey besides
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 WitnessScriptPubKeyV0]]
     */
@@ -544,8 +537,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     )
   }
 
-  /**
-    * Generates a `ScriptSignature` corresponding to the type of
+  /** Generates a `ScriptSignature` corresponding to the type of
     * `ScriptPubKey` given.
     * Note: Does NOT generate a correct/valid signature
     */
@@ -571,8 +563,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
             "non standard script pubkey or witness commitment got: " + x)
     }
 
-  /**
-    * Generates a signed `P2PKScriptSignature` that spends the
+  /** Generates a signed `P2PKScriptSignature` that spends the
     * `P2PKScriptPubKey` correctly
     *
     * @return the signed `P2PKScriptSignature`,
@@ -609,8 +600,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
           .asInstanceOf[P2PKScriptSignature]
     } yield (signedScriptSig, scriptPubKey, privateKey)
 
-  /**
-    * Generates a signed `P2PKHScriptSignature` that
+  /** Generates a signed `P2PKHScriptSignature` that
     * spends the `P2PKHScriptPubKey` correctly
     *
     * @return the signed `P2PKHScriptSignature`, the
@@ -678,8 +668,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       (signedScriptSig, spk, privKey)
     }
 
-  /**
-    * Generates a signed
+  /** Generates a signed
     * `MultiSignatureScriptSignature` that spends the
     * `MultiSignatureScriptPubKey` correctly
     * ti
@@ -739,15 +728,14 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       signedConditionalScriptSignature
     )
 
-    signed.flatMap {
-      case (scriptSig, spk, keys) =>
-        conditionalOperation.flatMap { op =>
-          rawScriptPubKey(defaultMaxDepth).map(_._1).map { spk2 =>
-            (ConditionalScriptSignature(scriptSig, true),
-             ConditionalScriptPubKey(op, spk, spk2),
-             keys)
-          }
+    signed.flatMap { case (scriptSig, spk, keys) =>
+      conditionalOperation.flatMap { op =>
+        rawScriptPubKey(defaultMaxDepth).map(_._1).map { spk2 =>
+          (ConditionalScriptSignature(scriptSig, true),
+           ConditionalScriptPubKey(op, spk, spk2),
+           keys)
         }
+      }
     }
   }
 
@@ -776,8 +764,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Generates a signed `P2SHScriptSignature`
+  /** Generates a signed `P2SHScriptSignature`
     * that spends from a `P2SHScriptPubKey` correctly
     *
     * @return the signed `P2SHScriptSignature`,
@@ -814,8 +801,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     }
   }
 
-  /**
-    * @return the signed `CLTVScriptSignature`, the
+  /** @return the signed `CLTVScriptSignature`, the
     *         `CLTVScriptPubKey` it spends, and the
     *         sequences of `ECPrivateKey`
     *         used to sign the scriptSig
@@ -874,8 +860,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
             "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CSVScriptSignature")
     }
 
-  /**
-    * Generates a signed `CLTVScriptSignature` that spends
+  /** Generates a signed `CLTVScriptSignature` that spends
     * from a `CLTVScriptSignature` correctly
     *
     * @return the signed `CSVScriptSignature`, the
@@ -1037,8 +1022,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
              witness,
              wtxSigComponent.amount)
 
-  /**
-    * This function chooses a random signed `ScriptSignature`
+  /** This function chooses a random signed `ScriptSignature`
     * that is NOT a `P2SHScriptSignature`,
     * `CSVScriptSignature`,
     * `CLTVScriptSignature`, or any witness type

@@ -10,8 +10,7 @@ import org.bitcoins.core.script.{
 }
 import org.bitcoins.core.util._
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 sealed abstract class ControlOperationsInterpreter extends BitcoinSLogger {
 
@@ -99,8 +98,7 @@ sealed abstract class ControlOperationsInterpreter extends BitcoinSLogger {
     program.updateScript(program.script.tail).removeCondition()
   }
 
-  /**
-    * Marks transaction as invalid. A standard way of attaching extra data to transactions is to add a zero-value output
+  /** Marks transaction as invalid. A standard way of attaching extra data to transactions is to add a zero-value output
     * with a [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] consisting of
     * [[org.bitcoins.core.script.control.OP_RETURN OP_RETURN]] followed by exactly one pushdata op.
     * Such outputs are provably unspendable,

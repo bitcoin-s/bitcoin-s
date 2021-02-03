@@ -6,8 +6,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 7/26/15.
+/** Created by chris on 7/26/15.
   */
 class CompactSizeUIntTest extends BitcoinSUnitTest {
 

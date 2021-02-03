@@ -8,8 +8,7 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/**
-  * This trait defines functionality related to
+/** This trait defines functionality related to
   * UTXOs (unspent transaction outputs).
   *
   * @see [[https://bitcoin.org/en/developer-guide#term-utxo Bitcoin.org]]

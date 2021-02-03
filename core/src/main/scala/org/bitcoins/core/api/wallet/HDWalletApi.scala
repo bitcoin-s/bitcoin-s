@@ -17,8 +17,7 @@ import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * API for the wallet project.
+/** API for the wallet project.
   *
   * This wallet API is BIP44 compliant.
   *
@@ -57,8 +56,7 @@ trait HDWalletApi extends WalletApi {
     } yield addr
   }
 
-  /**
-    * Fetches the default account from the DB
+  /** Fetches the default account from the DB
     * @return Future[AccountDb]
     */
   def getDefaultAccount(): Future[AccountDb]
@@ -137,8 +135,7 @@ trait HDWalletApi extends WalletApi {
     } yield tx
   }
 
-  /**
-    * Sends money from the specified account
+  /** Sends money from the specified account
     *
     * todo: add error handling to signature
     */
@@ -215,8 +212,7 @@ trait HDWalletApi extends WalletApi {
     } yield tx
   }
 
-  /**
-    * Sends money from the specified account
+  /** Sends money from the specified account
     *
     * todo: add error handling to signature
     */
@@ -281,8 +277,7 @@ trait HDWalletApi extends WalletApi {
     } yield tx
   }
 
-  /**
-    * Sends money from the specified account
+  /** Sends money from the specified account
     *
     * todo: add error handling to signature
     */
@@ -347,8 +342,7 @@ trait HDWalletApi extends WalletApi {
     } yield tx
   }
 
-  /**
-    * Sends money from the specified account
+  /** Sends money from the specified account
     *
     * todo: add error handling to signature
     */
@@ -496,8 +490,7 @@ trait HDWalletApi extends WalletApi {
 
   def createNewAccount(keyManagerParams: KeyManagerParams): Future[HDWalletApi]
 
-  /**
-    * Tries to create a new account in this wallet. Fails if the
+  /** Tries to create a new account in this wallet. Fails if the
     * most recent account has no transaction history, as per
     * BIP44
     *

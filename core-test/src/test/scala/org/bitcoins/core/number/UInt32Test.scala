@@ -3,8 +3,7 @@ package org.bitcoins.core.number
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 6/14/16.
+/** Created by chris on 6/14/16.
   */
 class UInt32Test extends BitcoinSUnitTest {
 

@@ -3,8 +3,7 @@ package org.bitcoins.core.protocol.transaction
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 3/30/16.
+/** Created by chris on 3/30/16.
   */
 class TransactionOutPointTest extends BitcoinSUnitTest {
   "TransactionOutPoint" must "define an empty transaction outpoint" in {

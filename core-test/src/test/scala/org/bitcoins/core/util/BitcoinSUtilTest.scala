@@ -3,8 +3,7 @@ package org.bitcoins.core.util
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
-/**
-  * Created by chris on 4/1/16.
+/** Created by chris on 4/1/16.
   */
 class BitcoinSUtilTest extends BitcoinSUnitTest {
 

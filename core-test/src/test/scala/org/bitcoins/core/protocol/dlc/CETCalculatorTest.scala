@@ -112,16 +112,15 @@ class CETCalculatorTest extends BitcoinSUnitTest {
   }
 
   it should "correctly compute first digit groupings" in {
-    forAll(baseGen, baseGen) {
-      case (digit1, digit2) =>
-        val singleDigitGroupings =
-          CETCalculator.middleGrouping(digit1, digit2)
-        if (digit1 >= digit2 + 1) {
-          assert(singleDigitGroupings == Vector.empty)
-        } else {
-          assert(
-            singleDigitGroupings == (digit1 + 1).until(digit2).map(Vector(_)))
-        }
+    forAll(baseGen, baseGen) { case (digit1, digit2) =>
+      val singleDigitGroupings =
+        CETCalculator.middleGrouping(digit1, digit2)
+      if (digit1 >= digit2 + 1) {
+        assert(singleDigitGroupings == Vector.empty)
+      } else {
+        assert(
+          singleDigitGroupings == (digit1 + 1).until(digit2).map(Vector(_)))
+      }
     }
   }
 
@@ -511,131 +510,125 @@ class CETCalculatorTest extends BitcoinSUnitTest {
       (numDigits, cet, maxError, minFail)
     }
 
-    forAll(gen) {
-      case (numDigits, cet, maxErrorExp, minFailExp) =>
-        val maxError = 1L << maxErrorExp
-        val minFail = 1L << minFailExp
-        val maxVal = (1L << numDigits) - 1
+    forAll(gen) { case (numDigits, cet, maxErrorExp, minFailExp) =>
+      val maxError = 1L << maxErrorExp
+      val minFail = 1L << minFailExp
+      val maxVal = (1L << numDigits) - 1
 
-        val (coveringCETsMax, coveringCETsMin) =
-          computeCoveringCETsMinAndMax(numDigits, cet, maxErrorExp, minFailExp)
+      val (coveringCETsMax, coveringCETsMin) =
+        computeCoveringCETsMinAndMax(numDigits, cet, maxErrorExp, minFailExp)
 
-        assert(coveringCETsMin.length == coveringCETsMax.length)
-        assert(coveringCETsMin.map(_._1).zip(coveringCETsMax.map(_._1)).forall {
-          case (minD, maxD) => minD.startsWith(maxD)
-        })
+      assert(coveringCETsMin.length == coveringCETsMax.length)
+      assert(coveringCETsMin.map(_._1).zip(coveringCETsMax.map(_._1)).forall {
+        case (minD, maxD) => minD.startsWith(maxD)
+      })
 
-        val relevantPrimaryCETs = coveringCETsMax.map(_._1)
+      val relevantPrimaryCETs = coveringCETsMax.map(_._1)
 
-        val (left, right) =
-          CETCalculator.computeCETIntervalBinary(cet, numDigits)
+      val (left, right) =
+        CETCalculator.computeCETIntervalBinary(cet, numDigits)
 
-        val primaryAndCoveringIntervalsMax = coveringCETsMax.map {
-          case (d1, d2) =>
-            val interval1 =
-              CETCalculator.computeCETIntervalBinary(d1, numDigits)
-            val interval2 =
-              CETCalculator.computeCETIntervalBinary(d2, numDigits)
-            (interval1, interval2)
-        }
+      val primaryAndCoveringIntervalsMax = coveringCETsMax.map {
+        case (d1, d2) =>
+          val interval1 =
+            CETCalculator.computeCETIntervalBinary(d1, numDigits)
+          val interval2 =
+            CETCalculator.computeCETIntervalBinary(d2, numDigits)
+          (interval1, interval2)
+      }
 
-        val coveringIntervalsMin = coveringCETsMax.map {
-          case (_, d) => CETCalculator.computeCETIntervalBinary(d, numDigits)
-        }
+      val coveringIntervalsMin = coveringCETsMax.map { case (_, d) =>
+        CETCalculator.computeCETIntervalBinary(d, numDigits)
+      }
 
-        primaryAndCoveringIntervalsMax.zip(coveringIntervalsMin).foreach {
-          case (((primaryLeft, primaryRight), (maxCoverLeft, maxCoverRight)),
-                (minCoverLeft, minCoverRight)) =>
-            assert(maxCoverLeft <= minCoverLeft)
-            assert(maxCoverRight >= minCoverRight)
+      primaryAndCoveringIntervalsMax.zip(coveringIntervalsMin).foreach {
+        case (((primaryLeft, primaryRight), (maxCoverLeft, maxCoverRight)),
+              (minCoverLeft, minCoverRight)) =>
+          assert(maxCoverLeft <= minCoverLeft)
+          assert(maxCoverRight >= minCoverRight)
 
-            if (primaryLeft == maxCoverLeft && primaryRight == maxCoverRight) {
-              assert(minCoverLeft == maxCoverLeft)
-              assert(minCoverRight == maxCoverRight)
-            }
+          if (primaryLeft == maxCoverLeft && primaryRight == maxCoverRight) {
+            assert(minCoverLeft == maxCoverLeft)
+            assert(minCoverRight == maxCoverRight)
+          }
 
-            def assertValidCover(
-                coverLeft: Long,
-                coverRight: Long,
-                maxCoverage: Boolean): Assertion = {
-              if (primaryLeft == coverLeft && primaryRight == coverRight) {
-                succeed
-              } else if (
-                primaryLeft >= coverLeft && primaryRight <= coverRight
-              ) {
-                if (maxCoverage) {
-                  assert(coverRight - coverLeft + 1 == maxError)
+          def assertValidCover(
+              coverLeft: Long,
+              coverRight: Long,
+              maxCoverage: Boolean): Assertion = {
+            if (primaryLeft == coverLeft && primaryRight == coverRight) {
+              succeed
+            } else if (primaryLeft >= coverLeft && primaryRight <= coverRight) {
+              if (maxCoverage) {
+                assert(coverRight - coverLeft + 1 == maxError)
+              } else {
+                val sideToBoundary =
+                  math.max(primaryRight % maxError,
+                           maxError - (primaryLeft % maxError))
+                assert(coverRight - coverLeft + 1 <= 2 * sideToBoundary)
+                assert(coverRight - coverLeft + 1 >= sideToBoundary)
+              }
+
+              assert(
+                primaryLeft - coverLeft >= minFail || coverLeft == 0 || relevantPrimaryCETs.length == 2)
+              assert(primaryRight - coverLeft < maxError)
+              assert(
+                coverRight - primaryRight >= minFail || coverRight == maxVal || relevantPrimaryCETs.length == 2)
+              assert(coverRight - primaryLeft < maxError)
+            } else {
+              val (mostInner, leastInner, mostOuter) =
+                if (primaryLeft <= coverLeft) {
+                  (primaryLeft, primaryRight, coverRight)
                 } else {
-                  val sideToBoundary =
-                    math.max(primaryRight % maxError,
-                             maxError - (primaryLeft % maxError))
-                  assert(coverRight - coverLeft + 1 <= 2 * sideToBoundary)
-                  assert(coverRight - coverLeft + 1 >= sideToBoundary)
+                  (primaryRight, primaryLeft, coverLeft)
                 }
 
-                assert(
-                  primaryLeft - coverLeft >= minFail || coverLeft == 0 || relevantPrimaryCETs.length == 2)
-                assert(primaryRight - coverLeft < maxError)
-                assert(
-                  coverRight - primaryRight >= minFail || coverRight == maxVal || relevantPrimaryCETs.length == 2)
-                assert(coverRight - primaryLeft < maxError)
-              } else {
-                val (mostInner, leastInner, mostOuter) =
-                  if (primaryLeft <= coverLeft) {
-                    (primaryLeft, primaryRight, coverRight)
-                  } else {
-                    (primaryRight, primaryLeft, coverLeft)
-                  }
+              def diff(x: Long, y: Long): Long = math.abs(x - y)
 
-                def diff(x: Long, y: Long): Long = math.abs(x - y)
-
-                assert(diff(leastInner, mostOuter) >= minFail)
-                assert(diff(mostInner, mostOuter) < maxError)
-              }
+              assert(diff(leastInner, mostOuter) >= minFail)
+              assert(diff(mostInner, mostOuter) < maxError)
             }
+          }
 
-            assertValidCover(maxCoverLeft, maxCoverRight, maxCoverage = true)
-            assertValidCover(minCoverLeft, minCoverRight, maxCoverage = false)
-        }
+          assertValidCover(maxCoverLeft, maxCoverRight, maxCoverage = true)
+          assertValidCover(minCoverLeft, minCoverRight, maxCoverage = false)
+      }
 
-        val primaryInterval = primaryAndCoveringIntervalsMax
-          .map(_._1)
-          .reduce[(Long, Long)]({
-            case ((min, max), (start, end)) =>
-              (math.min(min, start), math.max(max, end))
+      val primaryInterval = primaryAndCoveringIntervalsMax
+        .map(_._1)
+        .reduce[(Long, Long)]({ case ((min, max), (start, end)) =>
+          (math.min(min, start), math.max(max, end))
+        })
+
+      assert(primaryInterval == ((left, right)))
+
+      val (maxCoverIntervalLeft, maxCoverIntervalRight) =
+        primaryAndCoveringIntervalsMax
+          .map(_._2)
+          .reduce[(Long, Long)]({ case ((min, max), (start, end)) =>
+            (math.min(min, start), math.max(max, end))
           })
+      val (minCoverIntervalLeft, minCoverIntervalRight) = coveringIntervalsMin
+        .reduce[(Long, Long)]({ case ((min, max), (start, end)) =>
+          (math.min(min, start), math.max(max, end))
+        })
 
-        assert(primaryInterval == ((left, right)))
+      assert(maxCoverIntervalLeft <= minCoverIntervalLeft)
+      assert(maxCoverIntervalRight >= minCoverIntervalRight)
 
-        val (maxCoverIntervalLeft, maxCoverIntervalRight) =
-          primaryAndCoveringIntervalsMax
-            .map(_._2)
-            .reduce[(Long, Long)]({
-              case ((min, max), (start, end)) =>
-                (math.min(min, start), math.max(max, end))
-            })
-        val (minCoverIntervalLeft, minCoverIntervalRight) = coveringIntervalsMin
-          .reduce[(Long, Long)]({
-            case ((min, max), (start, end)) =>
-              (math.min(min, start), math.max(max, end))
-          })
+      assert(
+        left - maxCoverIntervalLeft >= minFail || maxCoverIntervalLeft == 0)
+      assert(left - maxCoverIntervalLeft < maxError)
+      assert(
+        maxCoverIntervalRight - right >= minFail || maxCoverIntervalRight == maxVal)
+      assert(maxCoverIntervalRight - right < maxError)
 
-        assert(maxCoverIntervalLeft <= minCoverIntervalLeft)
-        assert(maxCoverIntervalRight >= minCoverIntervalRight)
-
-        assert(
-          left - maxCoverIntervalLeft >= minFail || maxCoverIntervalLeft == 0)
-        assert(left - maxCoverIntervalLeft < maxError)
-        assert(
-          maxCoverIntervalRight - right >= minFail || maxCoverIntervalRight == maxVal)
-        assert(maxCoverIntervalRight - right < maxError)
-
-        assert(
-          left - minCoverIntervalLeft >= minFail || minCoverIntervalLeft == 0)
-        assert(left - minCoverIntervalLeft < maxError)
-        assert(
-          minCoverIntervalRight - right >= minFail || minCoverIntervalRight == maxVal)
-        assert(minCoverIntervalRight - right < maxError)
+      assert(
+        left - minCoverIntervalLeft >= minFail || minCoverIntervalLeft == 0)
+      assert(left - minCoverIntervalLeft < maxError)
+      assert(
+        minCoverIntervalRight - right >= minFail || minCoverIntervalRight == maxVal)
+      assert(minCoverIntervalRight - right < maxError)
     }
   }
 }

@@ -22,8 +22,7 @@ import java.time.Instant
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * This trait defines methods to interact with the Eclair lightning node via its API.
+/** This trait defines methods to interact with the Eclair lightning node via its API.
   *
   * @see [[https://acinq.github.io/eclair/]]
   */
@@ -35,13 +34,11 @@ trait EclairApi {
 
   def allNodes(): Future[Vector[NodeInfo]]
 
-  /**
-    * List all sent/received/relayed payments
+  /** List all sent/received/relayed payments
     */
   def audit(): Future[AuditResult]
 
-  /**
-    * List all sent/received/relayed payments in the given interval
+  /** List all sent/received/relayed payments in the given interval
     * @param from start timestamp
     * @param to end timestamp
     */
@@ -159,8 +156,7 @@ trait EclairApi {
       fallbackAddress: Option[Address],
       paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice]
 
-  /**
-    * Returns a future that is completed when this invoice has been paid too.
+  /** Returns a future that is completed when this invoice has been paid too.
     * This also publishes the [[IncomingPayment received payment result]] to the event bush
     * when the payment is received
     *
@@ -205,8 +201,7 @@ trait EclairApi {
       maxFeePct: Option[Int],
       externalId: Option[String]): Future[PaymentId]
 
-  /**
-    * Pings eclair to see if a invoice has been paid and returns [[OutgoingPayment PaymentResult]]
+  /** Pings eclair to see if a invoice has been paid and returns [[OutgoingPayment PaymentResult]]
     *
     * @param paymentId the payment id returnned by [[org.bitcoins.eclair.rpc.api.EclairApi.payInvoice payInvoice]]
     * @param interval the ping interval
@@ -256,8 +251,7 @@ trait EclairApi {
       maxFeePct: Option[Int],
       externalId: Option[String]): Future[PaymentId]
 
-  /**
-    * Documented by not implemented in Eclair
+  /** Documented by not implemented in Eclair
     */
   def sendToRoute(
       invoice: LnInvoice,

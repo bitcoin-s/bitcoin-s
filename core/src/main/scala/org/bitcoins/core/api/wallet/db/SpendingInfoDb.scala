@@ -24,8 +24,7 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sign}
 
-/**
-  * DB representation of a native V0
+/** DB representation of a native V0
   * SegWit UTXO
   */
 case class SegwitV0SpendingInfo(
@@ -56,8 +55,7 @@ case class SegwitV0SpendingInfo(
     copy(blockHash = Some(blockHash))
 }
 
-/**
-  * DB representation of a legacy UTXO
+/** DB representation of a legacy UTXO
   */
 case class LegacySpendingInfo(
     outPoint: TransactionOutPoint,
@@ -85,8 +83,7 @@ case class LegacySpendingInfo(
     copy(blockHash = Some(blockHash))
 }
 
-/**
-  * DB representation of a nested segwit V0
+/** DB representation of a nested segwit V0
   * SegWit UTXO
   */
 case class NestedSegwitV0SpendingInfo(
@@ -118,8 +115,7 @@ case class NestedSegwitV0SpendingInfo(
     copy(blockHash = Some(blockHash))
 }
 
-/**
-  * The database level representation of a UTXO.
+/** The database level representation of a UTXO.
   * When storing a UTXO we don't want to store
   * sensitive material such as private keys.
   * We instead store the necessary information

@@ -601,8 +601,7 @@ object NodeUnitTest extends P2PLogger {
     } yield node
   }
 
-  /**
-    * This is needed for postgres, we do not drop tables in between individual tests with postgres
+  /** This is needed for postgres, we do not drop tables in between individual tests with postgres
     * rather an entire test suite shares the same postgres database.
     * therefore, we need to clean the database after each test, so that migrations can be applied during
     * the setup phase for the next test.

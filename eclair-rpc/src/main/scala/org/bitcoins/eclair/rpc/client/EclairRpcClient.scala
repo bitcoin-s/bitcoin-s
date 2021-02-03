@@ -44,8 +44,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.sys.process._
 import scala.util.{Failure, Properties, Success}
 
-/**
-  * @param binary Path to Eclair Jar. If not present, reads
+/** @param binary Path to Eclair Jar. If not present, reads
   *               environment variable `ECLAIR_PATH`
   */
 class EclairRpcClient(
@@ -74,14 +73,12 @@ class EclairRpcClient(
   override def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]] =
     eclairCall[Vector[ChannelUpdate]]("allupdates", "nodeId" -> nodeId.toString)
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def audit(): Future[AuditResult] =
     audit(None, None)
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def audit(
       from: Option[Instant],
@@ -790,8 +787,7 @@ class EclairRpcClient(
     started
   }
 
-  /**
-    * Boolean check to verify the state of the client
+  /** Boolean check to verify the state of the client
     * @return Future Boolean representing if client has started
     */
   def isStarted(): Future[Boolean] = {
@@ -824,16 +820,14 @@ class EclairRpcClient(
     actorSystemF.map(_ => this)
   }
 
-  /**
-    * Checks to see if the client stopped successfully
+  /** Checks to see if the client stopped successfully
     * @return
     */
   def isStopped: Future[Boolean] = {
     isStarted().map(started => !started)
   }
 
-  /**
-    * Pings eclair to see if a invoice has been paid
+  /** Pings eclair to see if a invoice has been paid
     * If the invoice has been paid or the payment has failed, we publish a
     * [[OutgoingPayment]]
     * event to the [[akka.actor.ActorSystem ActorSystem]]'s
@@ -865,11 +859,10 @@ class EclairRpcClient(
                 .get()} for paymentId=${paymentId} for interval=${interval}"))
         } else {
           val resultsF = getSentInfo(paymentId)
-          resultsF.failed.foreach {
-            case e: Throwable =>
-              logger.error(
-                s"Cannot check payment status for paymentId=${paymentId}",
-                e)
+          resultsF.failed.foreach { case e: Throwable =>
+            logger.error(
+              s"Cannot check payment status for paymentId=${paymentId}",
+              e)
           }
           val _ = for {
             results <- resultsF
@@ -958,8 +951,7 @@ object EclairRpcClient {
     */
   private[eclair] val ActorSystemName = "eclair-rpc-client-created-by-bitcoin-s"
 
-  /**
-    * Creates an RPC client from the given instance,
+  /** Creates an RPC client from the given instance,
     * together with the given actor system. This is for
     * advanced users, wher you need fine grained control
     * over the RPC client.
@@ -971,8 +963,7 @@ object EclairRpcClient {
     withActorSystem(instance, binary)
   }
 
-  /**
-    * Constructs a RPC client from the given datadir, or
+  /** Constructs a RPC client from the given datadir, or
     * the default datadir if no directory is provided
     */
   def withActorSystem(instance: EclairInstance, binary: Option[File] = None)(

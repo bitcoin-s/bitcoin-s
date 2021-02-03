@@ -4,8 +4,7 @@ import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 3/23/16.
+/** Created by chris on 3/23/16.
   */
 class DERSignatureUtilTest extends BitcoinSUnitTest {
 
@@ -143,17 +142,16 @@ class DERSignatureUtilTest extends BitcoinSUnitTest {
        "long s length")
     ).map { case (sig, msg) => (ByteVector.fromValidHex(sig), msg) }
 
-    signatures.foreach {
-      case (sig, msg) =>
-        DERSignatureUtil.parseDERLax(sig) match {
-          case None => succeed
-          case Some((r, s)) =>
-            if (r == BigInt(0) || s == BigInt(0)) {
-              succeed
-            } else {
-              fail(s"Successfully parsed bad signature $sig : $msg")
-            }
-        }
+    signatures.foreach { case (sig, msg) =>
+      DERSignatureUtil.parseDERLax(sig) match {
+        case None => succeed
+        case Some((r, s)) =>
+          if (r == BigInt(0) || s == BigInt(0)) {
+            succeed
+          } else {
+            fail(s"Successfully parsed bad signature $sig : $msg")
+          }
+      }
     }
   }
 }

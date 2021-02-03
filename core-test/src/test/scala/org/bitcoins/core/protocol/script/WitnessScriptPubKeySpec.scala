@@ -3,8 +3,7 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.testkit.core.gen.ScriptGenerators
 import org.scalacheck.{Prop, Properties}
 
-/**
-  * Created by chris on 1/3/17.
+/** Created by chris on 1/3/17.
   */
 class WitnessScriptPubKeySpec extends Properties("WitnessScriptPubKeySpec") {
 

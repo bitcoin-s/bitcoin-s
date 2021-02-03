@@ -1,7 +1,6 @@
 package org.bitcoins.core.hd
 
-/**
-  * Represents a
+/** Represents a
   * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#change BIP44]]
   * change chain
   */

@@ -14,8 +14,7 @@ object FileUtil extends BitcoinSLogger {
     scala.io.Source.fromURL(getClass.getResource(s"/$fileName"))
   }
 
-  /**
-    * Deletes the given temporary directory
+  /** Deletes the given temporary directory
     *
     * @throws IllegalArgumentException if the
     *         given directory isn't in the user

@@ -257,16 +257,15 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   }
 
   it should "fail to abandon a transaction which has not been sent" in {
-    clientsF.flatMap {
-      case (client, otherClient) =>
-        otherClient.getNewAddress.flatMap { address =>
-          client
-            .createRawTransaction(Vector(), Map(address -> Bitcoins(1)))
-            .flatMap { tx =>
-              recoverToSucceededIf[InvalidAddressOrKey](
-                client.abandonTransaction(tx.txId))
-            }
-        }
+    clientsF.flatMap { case (client, otherClient) =>
+      otherClient.getNewAddress.flatMap { address =>
+        client
+          .createRawTransaction(Vector(), Map(address -> Bitcoins(1)))
+          .flatMap { tx =>
+            recoverToSucceededIf[InvalidAddressOrKey](
+              client.abandonTransaction(tx.txId))
+          }
+      }
     }
   }
 

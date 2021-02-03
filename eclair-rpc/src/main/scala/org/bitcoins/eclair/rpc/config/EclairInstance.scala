@@ -23,8 +23,7 @@ sealed trait EclairInstance {
   def zmqConfig: Option[ZmqConfig]
 }
 
-/**
-  * @define fromConfigDoc
+/** @define fromConfigDoc
   * Parses a [[com.typesafe.config.Config Config]] in the format of this
   * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
   * file to a
@@ -94,8 +93,7 @@ object EclairInstance {
     fromConfig(config, file.getParentFile, logbackXml)
   }
 
-  /**
-    * $fromConfigDoc
+  /** $fromConfigDoc
     */
   def fromConfig(
       config: Config,
@@ -104,8 +102,7 @@ object EclairInstance {
     fromConfig(config, Some(datadir), logbackXml)
   }
 
-  /**
-    * $fromConfigDoc
+  /** $fromConfigDoc
     */
   def fromConfig(config: Config): EclairInstance = {
     fromConfig(config, None, None)

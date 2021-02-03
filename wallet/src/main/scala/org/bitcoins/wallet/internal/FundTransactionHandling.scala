@@ -83,9 +83,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         confs <- FutureUtil.collect(confFs)
         immatureCoinbases =
           confs
-            .filter {
-              case (_, confsOpt) =>
-                confsOpt.isDefined && confsOpt.get < Consensus.coinbaseMaturity
+            .filter { case (_, confsOpt) =>
+              confsOpt.isDefined && confsOpt.get < Consensus.coinbaseMaturity
             }
             .map(_._1)
       } yield utxoWithTxs.filter(utxo =>
@@ -105,9 +104,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       selectedUtxos <- selectedUtxosF
       change <- getNewChangeAddress(fromAccount)
       utxoSpendingInfos = {
-        selectedUtxos.map {
-          case (utxo, prevTx) =>
-            utxo.toUTXOInfo(keyManager = self.keyManager, prevTx)
+        selectedUtxos.map { case (utxo, prevTx) =>
+          utxo.toUTXOInfo(keyManager = self.keyManager, prevTx)
         }
       }
       _ <-
@@ -124,9 +122,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         s"Spending UTXOs: $utxosStr"
       }
 
-      utxoSpendingInfos.zipWithIndex.foreach {
-        case (utxo, index) =>
-          logger.info(s"UTXO $index details: ${utxo.output}")
+      utxoSpendingInfos.zipWithIndex.foreach { case (utxo, index) =>
+        logger.info(s"UTXO $index details: ${utxo.output}")
       }
 
       val txBuilder = ShufflingNonInteractiveFinalizer.txBuilderFrom(
@@ -138,15 +135,14 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       (txBuilder, utxoSpendingInfos)
     }
 
-    resultF.recoverWith {
-      case NonFatal(error) =>
-        // un-reserve utxos since we failed to create valid spending infos
-        if (markAsReserved) {
-          for {
-            utxos <- selectedUtxosF
-            _ <- unmarkUTXOsAsReserved(utxos.map(_._1))
-          } yield error
-        } else Future.failed(error)
+    resultF.recoverWith { case NonFatal(error) =>
+      // un-reserve utxos since we failed to create valid spending infos
+      if (markAsReserved) {
+        for {
+          utxos <- selectedUtxosF
+          _ <- unmarkUTXOsAsReserved(utxos.map(_._1))
+        } yield error
+      } else Future.failed(error)
     }
 
     resultF

@@ -13,8 +13,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
-/**
-  * This test spins up one test node and [[NetworkSize]] sender nodes, which open channels with the test one.
+/** This test spins up one test node and [[NetworkSize]] sender nodes, which open channels with the test one.
   * Then each sender node sends [[PaymentCount]] payments to the test node one by one. For each payment the
   * test node generates an invoice and the send node pays it using `sendtonode` API call.
   *
@@ -136,10 +135,9 @@ object EclairBench extends App with EclairRpcTestUtil {
                                    NetworkSize,
                                    ChannelAmount,
                                    LogbackXml)
-    log <- runTests(network).recoverWith {
-      case e: Throwable =>
-        e.printStackTrace()
-        Future.successful(Vector.empty[PaymentLogEntry])
+    log <- runTests(network).recoverWith { case e: Throwable =>
+      e.printStackTrace()
+      Future.successful(Vector.empty[PaymentLogEntry])
     }
     _ <- network.shutdown()
   } yield {
@@ -149,9 +147,8 @@ object EclairBench extends App with EclairRpcTestUtil {
         Vector(
           "time,number_of_payments,payment_hash,payment_id,event,payment_sent_at,payment_id_received_at,event_received_at,received_in,completed_in") ++
           log.zipWithIndex
-            .map {
-              case (x, i) =>
-                s"${x.paymentSentAt - first.paymentSentAt},${i + 1},${x.toCSV}"
+            .map { case (x, i) =>
+              s"${x.paymentSentAt - first.paymentSentAt},${i + 1},${x.toCSV}"
             }
       val outputFile = new File(OutputFileName)
       Files.write(outputFile.toPath,

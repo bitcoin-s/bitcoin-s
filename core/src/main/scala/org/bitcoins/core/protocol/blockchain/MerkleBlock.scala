@@ -10,8 +10,7 @@ import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 8/7/16.
+/** Created by chris on 8/7/16.
   */
 sealed abstract class MerkleBlock extends NetworkElement {
 
@@ -41,8 +40,7 @@ object MerkleBlock extends Factory[MerkleBlock] {
       partialMerkleTree: PartialMerkleTree)
       extends MerkleBlock
 
-  /**
-    * Creates a [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] from the given
+  /** Creates a [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] from the given
     * [[org.bitcoins.core.protocol.blockchain.Block Block]] and [[org.bitcoins.core.bloom.BloomFilter BloomFilter]]
     * This function iterates through each transaction inside our block checking if it is relevant to the given bloom filter
     * If it is relevant, it will set a flag to indicate we should include it inside of our

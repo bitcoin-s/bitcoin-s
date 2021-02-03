@@ -3,8 +3,7 @@ package org.bitcoins.core.config
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 6/10/16.
+/** Created by chris on 6/10/16.
   */
 class NetworkParametersTest extends BitcoinSUnitTest {
 

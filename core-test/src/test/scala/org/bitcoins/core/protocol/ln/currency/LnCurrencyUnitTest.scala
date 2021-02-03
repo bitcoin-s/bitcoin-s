@@ -82,18 +82,17 @@ class LnCurrencyUnitTest extends BitcoinSUnitTest {
   } yield (ln, num)
 
   it must "multiply a LnCurrencyUnit value with an int" in {
-    forAll(lnCurrWithInt) {
-      case (ln, int) =>
-        val safeProduct = ln.multiplySafe(int)
-        val underlyingProduct = ln.toBigInt * int
-        if (
-          underlyingProduct <= PicoBitcoins.min.toBigInt && underlyingProduct >= PicoBitcoins.max.toBigInt
-        ) {
-          assert(safeProduct.isSuccess)
-          safeProduct.get.toBigInt == underlyingProduct
-        } else {
-          safeProduct.isFailure
-        }
+    forAll(lnCurrWithInt) { case (ln, int) =>
+      val safeProduct = ln.multiplySafe(int)
+      val underlyingProduct = ln.toBigInt * int
+      if (
+        underlyingProduct <= PicoBitcoins.min.toBigInt && underlyingProduct >= PicoBitcoins.max.toBigInt
+      ) {
+        assert(safeProduct.isSuccess)
+        safeProduct.get.toBigInt == underlyingProduct
+      } else {
+        safeProduct.isFailure
+      }
     }
   }
 

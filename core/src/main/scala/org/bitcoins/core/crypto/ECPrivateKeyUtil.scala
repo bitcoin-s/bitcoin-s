@@ -9,8 +9,7 @@ import scala.util.{Failure, Success, Try}
 
 object ECPrivateKeyUtil {
 
-  /**
-    * Converts a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] to
+  /** Converts a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] to
     * [[https://en.bitcoin.it/wiki/Wallet_import_format WIF]]
     */
   def toWIF(privKey: ECPrivateKey, network: NetworkParameters): String = {
@@ -25,8 +24,7 @@ object ECPrivateKeyUtil {
     Base58.encode(encodedPrivKey)
   }
 
-  /**
-    * Takes in a base58 string and converts it into a private key.
+  /** Takes in a base58 string and converts it into a private key.
     * Private keys starting with 'K', 'L', or 'c' correspond to compressed public keys.
     * https://en.bitcoin.it/wiki/Wallet_import_format
     *
@@ -39,8 +37,7 @@ object ECPrivateKeyUtil {
     ECPrivateKey.fromBytes(privateKeyBytes, isCompressed)
   }
 
-  /**
-    * Takes in WIF private key as a sequence of bytes and determines if it corresponds to a compressed public key.
+  /** Takes in WIF private key as a sequence of bytes and determines if it corresponds to a compressed public key.
     * If the private key corresponds to a compressed public key, the last byte should be 0x01, and
     * the WIF string will have started with K or L instead of 5 (or c instead of 9 on testnet).
     *
@@ -62,8 +59,7 @@ object ECPrivateKeyUtil {
     isCompressed(bytes)
   }
 
-  /**
-    * When decoding a WIF private key, we drop the first byte (network byte), and the last 4 bytes (checksum).
+  /** When decoding a WIF private key, we drop the first byte (network byte), and the last 4 bytes (checksum).
     * If the private key corresponds to a compressed public key, we drop the last byte again.
     * https://en.bitcoin.it/wiki/Wallet_import_format
     * @param WIF Wallet Import Format. Encoded in Base58

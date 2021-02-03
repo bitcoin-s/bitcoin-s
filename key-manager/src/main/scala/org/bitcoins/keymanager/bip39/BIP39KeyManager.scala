@@ -22,8 +22,7 @@ import java.nio.file.Files
 import java.time.Instant
 import scala.util.{Failure, Success, Try}
 
-/**
-  * This is a key manager implementation meant to represent an in memory
+/** This is a key manager implementation meant to represent an in memory
   * BIP39 key manager
   *
   * @param rootExtPrivKey the root seed used for this wallet

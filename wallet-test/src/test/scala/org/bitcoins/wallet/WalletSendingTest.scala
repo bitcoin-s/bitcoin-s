@@ -72,8 +72,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
     for {
       tx <- wallet.sendToAddresses(addresses, amounts, None)
     } yield {
-      val expectedOutputs = addresses.zip(amounts).map {
-        case (addr, amount) => TransactionOutput(amount, addr.scriptPubKey)
+      val expectedOutputs = addresses.zip(amounts).map { case (addr, amount) =>
+        TransactionOutput(amount, addr.scriptPubKey)
       }
       assert(expectedOutputs.diff(tx.outputs).isEmpty)
     }
@@ -103,8 +103,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   it should "correctly send to multiple outputs" in { fundedWallet =>
     val wallet = fundedWallet.wallet
-    val expectedOutputs = addresses.zip(amounts).map {
-      case (addr, amount) => TransactionOutput(amount, addr.scriptPubKey)
+    val expectedOutputs = addresses.zip(amounts).map { case (addr, amount) =>
+      TransactionOutput(amount, addr.scriptPubKey)
     }
 
     for {

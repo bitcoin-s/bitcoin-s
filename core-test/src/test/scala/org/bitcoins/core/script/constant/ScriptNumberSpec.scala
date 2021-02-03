@@ -3,8 +3,7 @@ package org.bitcoins.core.script.constant
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.scalacheck.{Prop, Properties}
 
-/**
-  * Created by tom on 7/5/16.
+/** Created by tom on 7/5/16.
   */
 class ScriptNumberSpec extends Properties("ScriptNumberSpec") {
   property("Additive identity") = Prop.forAll(NumberGenerator.scriptNumbers) {
