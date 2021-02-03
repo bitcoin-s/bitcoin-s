@@ -152,6 +152,8 @@ case class CompactFilterDAO()(implicit
     val join = table
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
+      .sortBy(_._1.height.desc)
+      .take(appConfig.chain.difficultyChangeInterval)
 
     val maxQuery = join.map(_._2.chainWork).max
 
@@ -164,6 +166,11 @@ case class CompactFilterDAO()(implicit
   }
 
   def getBestFilterHeight: Future[Int] = {
-    safeDatabase.run(bestFilterHeightQuery).map(_.headOption.getOrElse(0))
+    val start = System.currentTimeMillis()
+    safeDatabase.run(bestFilterHeightQuery).map { filterHeightOpt =>
+      val now = System.currentTimeMillis()
+      logger.error(s"Took ${now - start}ms to execute getBestFilterHeight")
+      filterHeightOpt.headOption.getOrElse(0)
+    }
   }
 }

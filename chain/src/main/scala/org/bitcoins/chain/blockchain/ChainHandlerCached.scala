@@ -6,8 +6,8 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterHeaderDb}
+import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
