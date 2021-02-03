@@ -33,15 +33,13 @@ class CETCalculatorTest extends BitcoinSUnitTest {
       ))
 
     val expected = Vector(
-      ZeroPayoutRange(0, 20),
+      ConstantPayoutRange(0, 20), // 0
       VariablePayoutRange(21, 39),
       ConstantPayoutRange(40, 50),
-      VariablePayoutRange(51, 69),
-      ZeroPayoutRange(70, 70),
-      VariablePayoutRange(71, 79),
+      VariablePayoutRange(51, 79),
       ConstantPayoutRange(80, 90),
       VariablePayoutRange(91, 98),
-      MaxPayoutRange(99, 108),
+      ConstantPayoutRange(99, 108), // totalCollateral
       VariablePayoutRange(109, 110)
     )
 
