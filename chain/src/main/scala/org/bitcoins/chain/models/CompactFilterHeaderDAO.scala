@@ -125,6 +125,10 @@ case class CompactFilterHeaderDAO()(implicit
     val join = table
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
+      .sortBy(_._1.height.desc)
+      //just take the last 2016 headers, if we have a reorg larger than
+      //this we will not be able to retrieve that header
+      .take(appConfig.chain.difficultyChangeInterval)
 
     val maxQuery = join.map(_._2.chainWork).max
 
@@ -146,22 +150,13 @@ case class CompactFilterHeaderDAO()(implicit
   }
 
   private val bestFilterHeaderHeightQuery = {
-    val join = table
-      .join(blockHeaderTable)
-      .on(_.blockHash === _.hash)
-
-    val maxQuery = join.map(_._2.chainWork).max
-
-    join
-      .filter(_._2.chainWork === maxQuery)
-      .take(1)
-      .map(_._1.height)
-      .result
-      .transactionally
+    bestFilterHeaderQuery.map(_.headOption.map(_.height))
   }
 
   def getBestFilterHeaderHeight: Future[Int] = {
-    safeDatabase.run(bestFilterHeaderHeightQuery).map(_.headOption.getOrElse(0))
+    safeDatabase.run(bestFilterHeaderHeightQuery).map { filterHeaderHeightOpt =>
+      filterHeaderHeightOpt.headOption.getOrElse(0)
+    }
   }
 
   /** This looks for best filter headers whose [[CompactFilterHeaderDb.blockHashBE]] are associated with the given
