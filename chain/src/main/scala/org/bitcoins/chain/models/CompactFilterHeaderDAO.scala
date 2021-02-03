@@ -167,11 +167,7 @@ case class CompactFilterHeaderDAO()(implicit
   }
 
   def getBestFilterHeaderHeight: Future[Int] = {
-    val start = System.currentTimeMillis()
     safeDatabase.run(bestFilterHeaderHeightQuery).map { filterHeaderHeightOpt =>
-      val now = System.currentTimeMillis()
-      logger.error(
-        s"Took ${now - start}ms to execute getBestFilterHeaderHeight")
       filterHeaderHeightOpt.headOption.getOrElse(0)
     }
   }
