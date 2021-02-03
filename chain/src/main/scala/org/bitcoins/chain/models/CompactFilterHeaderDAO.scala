@@ -150,20 +150,7 @@ case class CompactFilterHeaderDAO()(implicit
   }
 
   private val bestFilterHeaderHeightQuery = {
-    val join = table
-      .join(blockHeaderTable)
-      .on(_.blockHash === _.hash)
-      .sortBy(_._1.height.desc)
-      .take(appConfig.chain.difficultyChangeInterval)
-
-    val maxQuery = join.map(_._2.chainWork).max
-
-    join
-      .filter(_._2.chainWork === maxQuery)
-      .take(1)
-      .map(_._1.height)
-      .result
-      .transactionally
+    bestFilterHeaderQuery.map(_.headOption.map(_.height))
   }
 
   def getBestFilterHeaderHeight: Future[Int] = {
