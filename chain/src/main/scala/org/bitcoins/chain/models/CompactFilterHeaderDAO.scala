@@ -125,7 +125,6 @@ case class CompactFilterHeaderDAO()(implicit
     val join = table
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
-      //sort by height as an optimization
       .sortBy(_._1.height.desc)
       //just take the last 2016 headers, if we have a reorg larger than
       //this we will not be able to retrieve that header
