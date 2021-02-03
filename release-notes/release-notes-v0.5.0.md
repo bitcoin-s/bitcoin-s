@@ -1,4 +1,4 @@
-# v0.5.0 - Name Me
+# v0.5.0 - The release who must not be named
 
 ## Running Bitcoin-S
 
@@ -7,7 +7,7 @@ can `unzip bitcoin-s-server-0.5.0.zip` and then run it with `./bin/bitcoin-s-ser
 configure the node properly first, you can find example
 configurations [here](https://bitcoin-s.org/docs/config/configuration#example-configuration-file).
 
-You can also unzip the `bitcoin-s-cli-0.5.0.zip` folder and start using the `bitcoin-s-cli` like this:
+You can then unzip the `bitcoin-s-cli-0.5.0.zip` folder and start using the `bitcoin-s-cli` like this:
 
 ```bashrc
 ./bin/bitcoin-s-cli --help
@@ -83,6 +83,8 @@ setting the `walletName` parameter in the required functions.
 
 #### Commits
 
+940fce433d4 Fix rescans with bitcoind backend (#2605)
+
 648e7d9abac Bitcoind v0.21.0 support (#2414)
 
 3f18ba18d7e Bitcoind Version from String (#2421)
@@ -111,7 +113,11 @@ The `ChainHandler` has been split up into two different types: `ChainHandler` an
 `ChainHandler` uses the chain database to access all data, this is necessary for things like the wallet to be able to
 point to a single `ChainApi` and not get outdated data.
 
+Neutrino syncing should be faster after some optimizations.
+
 #### Commits
+
+d159f3eb5fc Reduce number of rows selected by best filter header/best filter query (#2617)
 
 1dacb74edf7 Optimize filter sync and fetching filter heights (#2568)
 
@@ -158,10 +164,6 @@ c662cf802d1 Make tx an argument for decoderawtransaction (#2155)
 
 8c4308e2c6a Make cli pretty print json (#2130)
 
-### Commons
-
-#### Commits
-
 ### Core
 
 Fixed some bugs with PSBT parsing and adding witness scripts.
@@ -170,11 +172,15 @@ Initial BIP 155 support for sending and receiving addrv2 messages.
 
 Initial BIP 325 support for interacting with Signet.
 
-Experimental TLV support for DLC messaging.
+Experimental TLV support for DLC messaging, data structures, and algorithms.
 These are subject to change and if your project is looking to use them
 it is recommended to use [nightly builds](https://bitcoin-s.org/docs/next/getting-started#nightly-builds) to stay up to date.
 
 #### Commits
+
+0280707eaa5 Make contract info lazy so native image works (#2606)
+
+c4edcb2d5f4 Update dlc before release (#2543)
 
 04cc10effec Add better Block.toString that doesn't blow up logs (#2585)
 
@@ -254,7 +260,8 @@ c2315082d8c Create ExtPrivateKeyHardened (#2073)
 
 ECDSA Adaptor signatures have been added in a basic Java implementation.
 These should be used with caution as they are experimental and still being developed.
-They are currently following the specification located [here](https://github.com/discreetlogcontracts/dlcspecs/pull/114).
+They are based on the specification located [here](https://github.com/discreetlogcontracts/dlcspecs/pull/114),
+however they do not fully follow the specification and will be updated in the future.
 
 Low R Signing should now use the same algorithm as Bitcoin Core.
 Previously our first attempted signature would use different added entropy.
@@ -442,6 +449,8 @@ Fixed issues where the server wasn't always returning correctly formatted json.
 
 #### Commits
 
+db6cd10c2f1 Fix bestblockhash rpc call (#2612)
+
 a42601ebacd Fix rpc bind address from config (#2542)
 
 a1a2524b56e Use mainnet for default server (#2453)
@@ -560,6 +569,16 @@ b59a17def0d Add ability to fully spend utxos (#2063)
 
 ### Website & Documentation
 
+865f1a6d460 DLC + Adaptor Docs (#2552)
+
+8e799a4b245 Update website dependencies to address security warnings (#2607)
+
+edf81251340 Hide chain api creation (#2569)
+
+9f36250646c Add documentation to website for bitcoin-s-cli native image (#2591)
+
+096504b905f Add enum oracle example (#2601)
+
 61c3b8185e5 Add oracle configuration to example configuration.md (#2592)
 
 0424bd8309a Fix aesPassword config in configuration docs (#2588)
@@ -631,6 +650,10 @@ c857f5e6c7b Change versions in readme (#2065)
 40db826ffc5 docs: Calculate correct hashes in dlc doc (#2059)
 
 ### Other
+
+72db35112d3 Fix compiler warning (#2609)
+
+2f00b4a5deb Update sbt to 1.4.7 (#2598)
 
 f2172965221 Update scala-collection-compat to 2.4.1 (#2597)
 
