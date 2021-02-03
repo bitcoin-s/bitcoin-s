@@ -200,10 +200,17 @@ bitcoin-s {
 
 ## Step 6 (Optional): Moving To Testnet
 
-To run your Bitcoin-S Server on testnet, simply change `network = testnet3` and change your `peers = ["neutrino.testnet3.suredbits.com:18333"] ` in your `.bitcoin-s/bitcoin-s.conf` file. This will allow you to connect to Suredbits' neutrino-enabled `bitcoind` node. Keep in mind then when you restart your server, it will begin initial sync which will take many hours as all block filters for all testnet blocks will be downloaded. If you wish to speed this process up, download [this snapshot](https://s3-us-west-2.amazonaws.com/www.suredbits.com/testnet-chaindump-2-25-2020.zip), unzip it and put the file in your `$HOME/.bitcoin-s/testnet3` directory and then from there, run
+To run your Bitcoin-S Server on testnet, simply change `network = testnet3` and change
+your `peers = ["neutrino.testnet3.suredbits.com:18333"] ` in your `.bitcoin-s/bitcoin-s.conf` file.
+This will allow you to connect to Suredbits' neutrino-enabled `bitcoind` node.
+Keep in mind then when you restart your server, it will begin initial sync which will take
+many hours as all block filters for all testnet blocks will be downloaded.
+If you wish to speed this process up,
+download [this snapshot](https://s3-us-west-2.amazonaws.com/www.suredbits.com/chaindb-testnet-2021-02-03.zip), unzip it and put the file in your `$HOME/.bitcoin-s/testnet3` directory and then from there, run
 
 ```bashrc
-cat chaindump.sql | sqlite3 chaindb.sqlite
+$ unzip chaindb-testnet-2021-02-03.zip
+$ mv chaindb.sqlite ~/.bitcoin-s/testnet/
 ```
 
 This should take a couple minutes to execute, but once it is done, you will only have a short while left to sync once you start your server.
