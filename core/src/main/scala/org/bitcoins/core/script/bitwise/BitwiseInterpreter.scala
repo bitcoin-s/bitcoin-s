@@ -13,8 +13,7 @@ import org.bitcoins.core.script.{
 }
 import org.bitcoins.core.util.BitcoinSLogger
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 sealed abstract class BitwiseInterpreter extends BitcoinSLogger {
 

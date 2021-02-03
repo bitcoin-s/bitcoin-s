@@ -6,8 +6,7 @@ sealed abstract class SegWitHDPath extends HDPath {
 
 object SegWitHDPath extends HDPathFactory[SegWitHDPath] {
 
-  /**
-    * The purpose constant from BIP84
+  /** The purpose constant from BIP84
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
     */

@@ -166,8 +166,7 @@ sealed abstract class CreditingTxGen {
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, p2pkWithTimeoutOutput))
   }
 
-  /**
-    * Generates a transaction that has a p2pkh output at the returned index. This
+  /** Generates a transaction that has a p2pkh output at the returned index. This
     * output can be spent by the returned ECPrivateKey
     */
   def p2pkhOutput: Gen[ScriptSignatureParams[InputInfo]] =
@@ -206,9 +205,8 @@ sealed abstract class CreditingTxGen {
   def conditionalOutput: Gen[ScriptSignatureParams[InputInfo]] = {
     ScriptGenerators
       .nonLocktimeConditionalScriptPubKey(ScriptGenerators.defaultMaxDepth)
-      .flatMap {
-        case (conditional, keys) =>
-          build(conditional, keys, None, None)
+      .flatMap { case (conditional, keys) =>
+        build(conditional, keys, None, None)
       }
   }
 
@@ -251,70 +249,68 @@ sealed abstract class CreditingTxGen {
   }
 
   def cltvOutput: Gen[ScriptSignatureParams[InputInfo]] =
-    TransactionGenerators.spendableCLTVValues.flatMap {
-      case (scriptNum, _) =>
-        basicOutput.flatMap { o =>
-          CryptoGenerators.hashType.map { hashType =>
-            val oldOutput = o.output
-            val csvSPK = CLTVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
-            val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
-            val tc = TransactionConstants
-            val oldOutputs = o.prevTransaction.outputs
-            val updated =
-              oldOutputs.updated(o.outPoint.vout.toInt, updatedOutput)
-            val creditingTx =
-              BaseTransaction(tc.validLockVersion, Nil, updated, tc.lockTime)
+    TransactionGenerators.spendableCLTVValues.flatMap { case (scriptNum, _) =>
+      basicOutput.flatMap { o =>
+        CryptoGenerators.hashType.map { hashType =>
+          val oldOutput = o.output
+          val csvSPK = CLTVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
+          val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
+          val tc = TransactionConstants
+          val oldOutputs = o.prevTransaction.outputs
+          val updated =
+            oldOutputs.updated(o.outPoint.vout.toInt, updatedOutput)
+          val creditingTx =
+            BaseTransaction(tc.validLockVersion, Nil, updated, tc.lockTime)
 
-            ScriptSignatureParams(
-              InputInfo(
-                TransactionOutPoint(creditingTx.txId, o.outPoint.vout),
-                updatedOutput,
-                InputInfo.getRedeemScript(o.inputInfo),
-                InputInfo.getScriptWitness(o.inputInfo),
-                ConditionalPath.NoCondition,
-                o.signers.map(_.publicKey)
-              ),
-              creditingTx,
-              o.signers,
-              hashType
-            )
-          }
+          ScriptSignatureParams(
+            InputInfo(
+              TransactionOutPoint(creditingTx.txId, o.outPoint.vout),
+              updatedOutput,
+              InputInfo.getRedeemScript(o.inputInfo),
+              InputInfo.getScriptWitness(o.inputInfo),
+              ConditionalPath.NoCondition,
+              o.signers.map(_.publicKey)
+            ),
+            creditingTx,
+            o.signers,
+            hashType
+          )
         }
+      }
     }
 
   def cltvOutputs: Gen[Seq[ScriptSignatureParams[InputInfo]]] =
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, cltvOutput))
 
   def csvOutput: Gen[ScriptSignatureParams[InputInfo]] =
-    TransactionGenerators.spendableCSVValues.flatMap {
-      case (scriptNum, _) =>
-        basicOutput.flatMap { o =>
-          CryptoGenerators.hashType.map { hashType =>
-            val oldOutput = o.output
-            val csvSPK = CSVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
-            val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
-            val tc = TransactionConstants
-            val oldOutputs = o.prevTransaction.outputs
-            val updated =
-              oldOutputs.updated(o.outPoint.vout.toInt, updatedOutput)
-            val creditingTx =
-              BaseTransaction(tc.validLockVersion, Nil, updated, tc.lockTime)
+    TransactionGenerators.spendableCSVValues.flatMap { case (scriptNum, _) =>
+      basicOutput.flatMap { o =>
+        CryptoGenerators.hashType.map { hashType =>
+          val oldOutput = o.output
+          val csvSPK = CSVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
+          val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
+          val tc = TransactionConstants
+          val oldOutputs = o.prevTransaction.outputs
+          val updated =
+            oldOutputs.updated(o.outPoint.vout.toInt, updatedOutput)
+          val creditingTx =
+            BaseTransaction(tc.validLockVersion, Nil, updated, tc.lockTime)
 
-            ScriptSignatureParams(
-              InputInfo(
-                TransactionOutPoint(creditingTx.txId, o.outPoint.vout),
-                updatedOutput,
-                InputInfo.getRedeemScript(o.inputInfo),
-                InputInfo.getScriptWitness(o.inputInfo),
-                ConditionalPath.NoCondition,
-                o.signers.map(_.publicKey)
-              ),
-              creditingTx,
-              o.signers,
-              hashType
-            )
-          }
+          ScriptSignatureParams(
+            InputInfo(
+              TransactionOutPoint(creditingTx.txId, o.outPoint.vout),
+              updatedOutput,
+              InputInfo.getRedeemScript(o.inputInfo),
+              InputInfo.getScriptWitness(o.inputInfo),
+              ConditionalPath.NoCondition,
+              o.signers.map(_.publicKey)
+            ),
+            creditingTx,
+            o.signers,
+            hashType
+          )
         }
+      }
     }
 
   def csvOutputs: Gen[Seq[ScriptSignatureParams[InputInfo]]] =
@@ -333,18 +329,17 @@ sealed abstract class CreditingTxGen {
     nonP2WSHOutput
       .suchThat(output =>
         !ScriptGenerators.redeemScriptTooBig(output.output.scriptPubKey))
-      .flatMap {
-        case ScriptSignatureParams(info, _, signers, _) =>
-          val spk = info.scriptPubKey
-          spk match {
-            case rspk: RawScriptPubKey =>
-              val scriptWit = P2WSHWitnessV0(rspk)
-              val witSPK = P2WSHWitnessSPKV0(rspk)
-              build(witSPK, signers, None, Some(scriptWit))
-            case _ =>
-              throw new IllegalArgumentException(
-                "nonP2WSHOutput created a non RawScriptPubKey")
-          }
+      .flatMap { case ScriptSignatureParams(info, _, signers, _) =>
+        val spk = info.scriptPubKey
+        spk match {
+          case rspk: RawScriptPubKey =>
+            val scriptWit = P2WSHWitnessV0(rspk)
+            val witSPK = P2WSHWitnessSPKV0(rspk)
+            build(witSPK, signers, None, Some(scriptWit))
+          case _ =>
+            throw new IllegalArgumentException(
+              "nonP2WSHOutput created a non RawScriptPubKey")
+        }
       }
 
   def p2wshOutputs: Gen[Seq[ScriptSignatureParams[InputInfo]]] =
@@ -361,35 +356,31 @@ sealed abstract class CreditingTxGen {
   def random: Gen[ScriptSignatureParams[InputInfo]] =
     nonEmptyOutputs.flatMap { outputs =>
       Gen.choose(0, outputs.size - 1).flatMap { outputIndex: Int =>
-        ScriptGenerators.scriptPubKey.flatMap {
-          case (spk, keys) =>
-            WitnessGenerators.scriptWitness.flatMap { wit: ScriptWitness =>
-              CryptoGenerators.hashType.map { hashType: HashType =>
-                val tc = TransactionConstants
-                val signers: Vector[Sign] = keys.toVector
-                val creditingTx =
-                  BaseTransaction(tc.validLockVersion,
-                                  Nil,
-                                  outputs,
-                                  tc.lockTime)
-                ScriptSignatureParams(
-                  InputInfo(
-                    TransactionOutPoint(creditingTx.txId,
-                                        UInt32.apply(outputIndex)),
-                    TransactionOutput(
-                      creditingTx.outputs(outputIndex).value,
-                      creditingTx.outputs(outputIndex).scriptPubKey),
-                    Some(spk),
-                    Some(wit),
-                    ConditionalPath.NoCondition,
-                    signers.map(_.publicKey)
-                  ),
-                  creditingTx,
-                  signers,
-                  hashType
-                )
-              }
+        ScriptGenerators.scriptPubKey.flatMap { case (spk, keys) =>
+          WitnessGenerators.scriptWitness.flatMap { wit: ScriptWitness =>
+            CryptoGenerators.hashType.map { hashType: HashType =>
+              val tc = TransactionConstants
+              val signers: Vector[Sign] = keys.toVector
+              val creditingTx =
+                BaseTransaction(tc.validLockVersion, Nil, outputs, tc.lockTime)
+              ScriptSignatureParams(
+                InputInfo(
+                  TransactionOutPoint(creditingTx.txId,
+                                      UInt32.apply(outputIndex)),
+                  TransactionOutput(
+                    creditingTx.outputs(outputIndex).value,
+                    creditingTx.outputs(outputIndex).scriptPubKey),
+                  Some(spk),
+                  Some(wit),
+                  ConditionalPath.NoCondition,
+                  signers.map(_.publicKey)
+                ),
+                creditingTx,
+                signers,
+                hashType
+              )
             }
+          }
         }
       }
     }

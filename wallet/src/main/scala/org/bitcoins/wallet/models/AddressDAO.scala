@@ -144,8 +144,8 @@ case class AddressDAO()(implicit
     safeDatabase
       .runVec(query.result)
       .map(res =>
-        res.map {
-          case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+        res.map { case (addrRec, spkRec) =>
+          addrRec.toAddressDb(spkRec.scriptPubKey)
         })
   }
 
@@ -158,8 +158,8 @@ case class AddressDAO()(implicit
       .run(query.result)
       .map(_.headOption)
       .map(res =>
-        res.map {
-          case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+        res.map { case (addrRec, spkRec) =>
+          addrRec.toAddressDb(spkRec.scriptPubKey)
         })
   }
 
@@ -184,8 +184,8 @@ case class AddressDAO()(implicit
     safeDatabase
       .runVec(query.result)
       .map(res =>
-        res.map {
-          case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+        res.map { case (addrRec, spkRec) =>
+          addrRec.toAddressDb(spkRec.scriptPubKey)
         })
   }
 
@@ -198,8 +198,7 @@ case class AddressDAO()(implicit
     safeDatabase.runVec(query.result)
   }
 
-  /**
-    * Finds the most recent change address in the wallet, if any
+  /** Finds the most recent change address in the wallet, if any
     */
   def findMostRecentChange(hdAccount: HDAccount): Future[Option[AddressDb]] = {
     val query =
@@ -207,8 +206,8 @@ case class AddressDAO()(implicit
 
     safeDatabase
       .run(query)
-      .map(_.map {
-        case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+      .map(_.map { case (addrRec, spkRec) =>
+        addrRec.toAddressDb(spkRec.scriptPubKey)
       })
   }
 
@@ -236,9 +235,8 @@ case class AddressDAO()(implicit
     safeDatabase
       .runVec(query.result)
       .map(res =>
-        res.map {
-          case ((addrRec, spkRec), _) =>
-            addrRec.toAddressDb(spkRec.scriptPubKey)
+        res.map { case ((addrRec, spkRec), _) =>
+          addrRec.toAddressDb(spkRec.scriptPubKey)
         })
   }
 
@@ -259,8 +257,8 @@ case class AddressDAO()(implicit
     safeDatabase
       .runVec(query.result)
       .map(res =>
-        res.map {
-          case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+        res.map { case (addrRec, spkRec) =>
+          addrRec.toAddressDb(spkRec.scriptPubKey)
         })
   }
 
@@ -274,9 +272,8 @@ case class AddressDAO()(implicit
 
     safeDatabase
       .runVec(query.result)
-      .map(_.map {
-        case ((addrRec, spkRec), utxoDb) =>
-          (addrRec.toAddressDb(spkRec.scriptPubKey), utxoDb.value)
+      .map(_.map { case ((addrRec, spkRec), utxoDb) =>
+        (addrRec.toAddressDb(spkRec.scriptPubKey), utxoDb.value)
       })
   }
 
@@ -294,8 +291,8 @@ case class AddressDAO()(implicit
     safeDatabase
       .runVec(query.result.transactionally)
       .map(res =>
-        res.map {
-          case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+        res.map { case (addrRec, spkRec) =>
+          addrRec.toAddressDb(spkRec.scriptPubKey)
         })
   }
 
@@ -310,8 +307,7 @@ case class AddressDAO()(implicit
       .headOption
   }
 
-  /**
-    * Finds the most recent external address in the wallet, if any
+  /** Finds the most recent external address in the wallet, if any
     */
   def findMostRecentExternal(
       hdAccount: HDAccount): Future[Option[AddressDb]] = {
@@ -319,13 +315,12 @@ case class AddressDAO()(implicit
       findMostRecentForChain(hdAccount, HDChainType.External)
     safeDatabase
       .run(query)
-      .map(_.map {
-        case (addrRec, spkRec) => addrRec.toAddressDb(spkRec.scriptPubKey)
+      .map(_.map { case (addrRec, spkRec) =>
+        addrRec.toAddressDb(spkRec.scriptPubKey)
       })
   }
 
-  /**
-    * todo: this needs design rework.
+  /** todo: this needs design rework.
     * todo: https://github.com/bitcoin-s/bitcoin-s-core/pull/391#discussion_r274188334
     */
   class AddressTable(tag: Tag)

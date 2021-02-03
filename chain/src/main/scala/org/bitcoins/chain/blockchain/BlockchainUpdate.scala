@@ -41,8 +41,7 @@ object BlockchainUpdate {
     lazy val height: Long = blockchain.height
   }
 
-  /**
-    * Means we failed to update the given blockchain with _ALL_ given headers
+  /** Means we failed to update the given blockchain with _ALL_ given headers
     * This means we could have had a partially successful update, with the headers/blockchain
     * returned in this case class
     */

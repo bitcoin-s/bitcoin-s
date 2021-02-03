@@ -26,8 +26,7 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/**
-  * RPC calls related to wallet management
+/** RPC calls related to wallet management
   * functionality in bitcoind
   */
 trait WalletRpc { self: Client =>
@@ -299,8 +298,7 @@ trait WalletRpc { self: Client =>
     bitcoindCall[LoadWalletResult]("loadwallet", List(JsString(filePath)))
   }
 
-  /**
-    * Change the state of the given wallet flag for a wallet.
+  /** Change the state of the given wallet flag for a wallet.
     */
   def setWalletFlag(
       flag: WalletFlag,
@@ -397,8 +395,7 @@ trait WalletRpc { self: Client =>
     signRawTransactionWithWallet(transaction, None)
   }
 
-  /**
-    * @param blank Not available to versions before v19
+  /** @param blank Not available to versions before v19
     * @param passphrase Not available to versions before v19
     * @return
     */
@@ -451,8 +448,8 @@ trait WalletRpc { self: Client =>
       subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty,
       walletNameOpt: Option[String] = None): Future[DoubleSha256DigestBE] = {
     val jsonOutputs: JsValue = Json.toJson {
-      amounts.map {
-        case (addr, curr) => addr -> Bitcoins(curr.satoshis)
+      amounts.map { case (addr, curr) =>
+        addr -> Bitcoins(curr.satoshis)
       }
     }
     bitcoindCall[DoubleSha256DigestBE](

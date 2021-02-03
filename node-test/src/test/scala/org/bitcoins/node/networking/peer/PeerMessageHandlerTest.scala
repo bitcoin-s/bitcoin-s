@@ -9,8 +9,7 @@ import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt
 
-/**
-  * Created by chris on 7/1/16.
+/** Created by chris on 7/1/16.
   */
 class PeerMessageHandlerTest extends NodeUnitTest with CachedBitcoinSAppConfig {
 

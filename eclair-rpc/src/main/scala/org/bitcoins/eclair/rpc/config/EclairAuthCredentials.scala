@@ -42,8 +42,7 @@ sealed trait EclairAuthCredentials {
   }
 }
 
-/**
-  * @define fromConfigDoc
+/** @define fromConfigDoc
   * Parses a [[com.typesafe.config.Config Config]] in the format of this
   * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
   * file to a
@@ -79,14 +78,12 @@ object EclairAuthCredentials {
     auth.copyWithDatadir(datadir = datadir)
   }
 
-  /**
-    * $fromConfigDoc
+  /** $fromConfigDoc
     */
   def fromConfig(config: Config, datadir: File): EclairAuthCredentials =
     fromConfig(config, Some(datadir))
 
-  /**
-    * $fromConfigDoc
+  /** $fromConfigDoc
     */
   def fromConfig(config: Config): EclairAuthCredentials =
     fromConfig(config, None)

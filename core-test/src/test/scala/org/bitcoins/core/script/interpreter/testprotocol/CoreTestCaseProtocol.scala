@@ -9,8 +9,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
 import scodec.bits.ByteVector
 import spray.json._
 
-/**
-  * Created by chris on 1/18/16.
+/** Created by chris on 1/18/16.
   */
 object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
 
@@ -116,8 +115,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
       } else None
     }
 
-    /**
-      * Parses the script signature asm, it can come in multiple formats
+    /** Parses the script signature asm, it can come in multiple formats
       * such as byte strings i.e. 0x02 0x01 0x00
       * and numbers   1  2
       * look at scirpt_valid.json file for example formats
@@ -132,8 +130,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
       compactSizeUInt.bytes ++ bytes
     }
 
-    /**
-      * Parses a script pubkey asm from the bitcoin core test cases,
+    /** Parses a script pubkey asm from the bitcoin core test cases,
       * example formats:
       * "2 EQUALVERIFY 1 EQUAL"
       * "'Az' EQUAL"

@@ -12,8 +12,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * A unified config class for all submodules of Bitcoin-S
+/** A unified config class for all submodules of Bitcoin-S
   * that accepts configuration. Thanks to implicit definitions
   * in this case class' companion object an instance
   * of this class can be passed in anywhere a wallet,
@@ -84,8 +83,7 @@ case class BitcoinSAppConfig(
   }
 }
 
-/**
-  * Implicit conversions that allow a unified configuration
+/** Implicit conversions that allow a unified configuration
   * to be passed in wherever a specializes one is required
   */
 object BitcoinSAppConfig {

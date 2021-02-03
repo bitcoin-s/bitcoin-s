@@ -787,15 +787,14 @@ object CETCalculator {
       numOracles: Int): Vector[MultiOracleOutcome] = {
     require(minFailExp < maxErrorExp)
 
-    primaryCETs.flatMap {
-      case CETOutcome(cetDigits, payout) =>
-        computeCoveringCETsBinary(numDigits,
-                                  cetDigits,
-                                  maxErrorExp,
-                                  minFailExp,
-                                  maximizeCoverage,
-                                  numOracles)
-          .map(MultiOracleOutcome(_, payout))
+    primaryCETs.flatMap { case CETOutcome(cetDigits, payout) =>
+      computeCoveringCETsBinary(numDigits,
+                                cetDigits,
+                                maxErrorExp,
+                                minFailExp,
+                                maximizeCoverage,
+                                numOracles)
+        .map(MultiOracleOutcome(_, payout))
     }
   }
 

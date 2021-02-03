@@ -12,8 +12,7 @@ import scala.annotation.tailrec
 import scala.math.BigInt
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 2/8/16.
+/** Created by chris on 2/8/16.
   */
 sealed abstract class NumberUtil extends BitcoinSLogger {
 
@@ -74,8 +73,7 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
   /** Converts a hex string to a [[scala.Long Long]]. */
   def toLong(hex: String): Long = toLong(BytesUtil.decodeHex(hex))
 
-  /**
-    * Converts a sequence uint8 `from` base to `to` base
+  /** Converts a sequence uint8 `from` base to `to` base
     * @param pad
     * @param f
     */
@@ -224,15 +222,14 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
       //  (nWord > 0xffff && nSize > 32));
 
       nWordNotZero && ((nSize > 34) ||
-      (nWord > UInt8.max.toBigInt && nSize > 33) ||
-      (nWord > UInt32(0xffffL).toBigInt && nSize > 32))
+        (nWord > UInt8.max.toBigInt && nSize > 33) ||
+        (nWord > UInt32(0xffffL).toBigInt && nSize > 32))
     }
 
     BlockHeader.TargetDifficultyHelper(result.abs(), isNegative, isOverflow)
   }
 
-  /**
-    * Compressed the big integer to be used inside of [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
+  /** Compressed the big integer to be used inside of [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
     * @see [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L226 bitcoin core implementation]]
     * @param bigInteger
     * @return
@@ -308,8 +305,7 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     targetCompression(difficultyHelper.difficulty, difficultyHelper.isNegative)
   }
 
-  /**
-    * Implements this check for overflowing for [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
+  /** Implements this check for overflowing for [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
     * @see [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L220 bitcoin core check]]
     * @param nBits
     * @return
@@ -328,8 +324,8 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
 
     nWord != UInt32.zero && (
       nSize > 34 ||
-      (nWord > UInt32(UInt8.max.toInt) && nSize > 33) ||
-      (nWord > UInt32(0xffff) && nSize > 32)
+        (nWord > UInt32(UInt8.max.toInt) && nSize > 33) ||
+        (nWord > UInt32(0xffff) && nSize > 32)
     )
   }
 

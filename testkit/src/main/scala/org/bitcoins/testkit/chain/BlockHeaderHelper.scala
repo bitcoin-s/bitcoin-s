@@ -19,8 +19,7 @@ import scala.annotation.tailrec
   */
 abstract class BlockHeaderHelper {
 
-  /**
-    * The previous block to this was [[header2]]
+  /** The previous block to this was [[header2]]
     * @see [[https://blockstream.info/block/0000000000000000002339403dedc19ae93f6f3912d364b42f568afa1ba7cfec height #566,093]]
     */
   val header1: BlockHeader = {
@@ -35,8 +34,7 @@ abstract class BlockHeaderHelper {
                                         header1)
   }
 
-  /**
-    * The next block is [[header1]] after this block
+  /** The next block is [[header1]] after this block
     * 000000000000000000250c4b6909c0befc321610d4cd0229ad08ad45a3335eb4
     * @see [[https://blockstream.info/block/000000000000000000250c4b6909c0befc321610d4cd0229ad08ad45a3335eb4 #566,092]]
     */

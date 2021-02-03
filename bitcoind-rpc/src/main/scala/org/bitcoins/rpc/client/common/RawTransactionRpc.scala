@@ -17,8 +17,7 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/**
-  * This trait defines RPC calls relating to interacting
+/** This trait defines RPC calls relating to interacting
   * with raw transactions. This includes creation, decoding
   * funding and sending.
   */
@@ -105,8 +104,7 @@ trait RawTransactionRpc { self: Client =>
     bitcoindCall[Transaction]("getrawtransaction", params)
   }
 
-  /**
-    * @param maxfeerate Set to 0 if you want to enable allowhighfees
+  /** @param maxfeerate Set to 0 if you want to enable allowhighfees
     */
   def sendRawTransaction(
       transaction: Transaction,

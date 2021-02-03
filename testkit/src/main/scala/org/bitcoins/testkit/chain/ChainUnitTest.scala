@@ -41,8 +41,7 @@ trait ChainUnitTest
     with ChainFixtureHelper
     with CachedChainAppConfig {
 
-  /**
-    * Behaves exactly like the default conf, execpt
+  /** Behaves exactly like the default conf, execpt
     * network is set to mainnet
     */
   lazy val mainnetAppConfig: ChainAppConfig = {
@@ -59,8 +58,7 @@ trait ChainUnitTest
     super[BitcoinSFixture].afterAll()
   }
 
-  /**
-    * All untagged tests will be given this tag. Override this if you are using
+  /** All untagged tests will be given this tag. Override this if you are using
     * ChainFixture and the plurality of tests use some fixture other than Empty.
     */
   val defaultTag: ChainFixtureTag = ChainFixtureTag.Empty
@@ -75,8 +73,7 @@ trait ChainUnitTest
                          destroy = destroyFixture)(test)
   }
 
-  /**
-    * This is a wrapper for a tagged test statement that adds a def inFixtured
+  /** This is a wrapper for a tagged test statement that adds a def inFixtured
     * to replace the use of in, which only accepts a FixtureParam => Future[Assertion],
     * whereas inFixtured accepts a PartialFunction and fails the test if it is not
     * defined on the input.
@@ -106,8 +103,7 @@ trait ChainUnitTest
     }
   }
 
-  /**
-    * This is a wrapper for a tagged test statement that adds a def inFixtured
+  /** This is a wrapper for a tagged test statement that adds a def inFixtured
     * to replace the use of in, which only accepts a FixtureParam => Future[Assertion],
     * whereas inFixtured accepts a PartialFunction and fails the test if it is not
     * defined on the input.
@@ -146,8 +142,7 @@ trait ChainUnitTest
       itVerbString: ItVerbString): SugaryItVerbString =
     new SugaryItVerbString(itVerbString)
 
-  /**
-    * Fixture that creates a [[org.bitcoins.chain.models.BlockHeaderTable]]
+  /** Fixture that creates a [[org.bitcoins.chain.models.BlockHeaderTable]]
     * with one row inserted into it, the [[org.bitcoins.core.protocol.blockchain.RegTestNetChainParams]]
     * genesis block
     */
@@ -284,8 +279,7 @@ trait ChainUnitTest
     }
   }
 
-  /**
-    * Creates a [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]] that is linked to our [[org.bitcoins.chain.blockchain.ChainHandler ChainHandler]]
+  /** Creates a [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]] that is linked to our [[org.bitcoins.chain.blockchain.ChainHandler ChainHandler]]
     * via a [[org.bitcoins.zmq.ZMQSubscriber zmq]]. This means messages are passed between bitcoin and our chain handler
     * with a zmq pub/sub message passing
     * @param test the test to be executed with bitcoind and chain handler via zmq
@@ -519,19 +513,18 @@ object ChainUnitTest extends ChainVerificationLogger {
         Future.failed(new RuntimeException(err.toString))
       case JsSuccess(headers, _) =>
         var prevHeaderOpt: Option[BlockHeaderDb] = None
-        val dbHeaders = headers.zipWithIndex.map {
-          case (header, height) =>
-            val chainWork = prevHeaderOpt match {
-              case None => Pow.getBlockProof(header)
-              case Some(prevHeader) =>
-                prevHeader.chainWork + Pow.getBlockProof(header)
-            }
+        val dbHeaders = headers.zipWithIndex.map { case (header, height) =>
+          val chainWork = prevHeaderOpt match {
+            case None => Pow.getBlockProof(header)
+            case Some(prevHeader) =>
+              prevHeader.chainWork + Pow.getBlockProof(header)
+          }
 
-            val newHeader = BlockHeaderDbHelper.fromBlockHeader(height + OFFSET,
-                                                                chainWork,
-                                                                header)
-            prevHeaderOpt = Some(newHeader)
-            newHeader
+          val newHeader = BlockHeaderDbHelper.fromBlockHeader(height + OFFSET,
+                                                              chainWork,
+                                                              header)
+          prevHeaderOpt = Some(newHeader)
+          newHeader
         }
 
         @tailrec

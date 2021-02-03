@@ -8,8 +8,7 @@ import scodec.bits.BitVector
 import scala.annotation.tailrec
 import scala.math._
 
-/**
-  * Created by chris on 8/7/16.
+/** Created by chris on 8/7/16.
   * Represents a subset of known txids inside of a [[org.bitcoins.core.protocol.blockchain.Block Block]]
   * in a way that allows recovery of the txids & merkle root
   * without having to store them all explicitly.
@@ -156,8 +155,7 @@ object PartialMerkleTree {
     PartialMerkleTree(tree, UInt32(txIds.size), bits, hashes)
   }
 
-  /**
-    * @param txMatches indicates whether the given txid matches the bloom filter, the full merkle branch needs
+  /** @param txMatches indicates whether the given txid matches the bloom filter, the full merkle branch needs
     *                  to be included inside of the
     *                  [[org.bitcoins.core.protocol.blockchain.PartialMerkleTree PartialMerkleTree]]
     * @return the binary tree that represents the partial merkle tree, the bits needed to reconstruct this partial
@@ -169,8 +167,7 @@ object PartialMerkleTree {
       Seq[DoubleSha256Digest]) = {
     val maxHeight = calcMaxHeight(txMatches.size)
 
-    /**
-      * This loops through our merkle tree building `bits` so we can instruct another node how to create the partial merkle tree
+    /** This loops through our merkle tree building `bits` so we can instruct another node how to create the partial merkle tree
       * @see [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L78]]
       * @param bits the accumulator for bits indicating how to reconsctruct the partial merkle tree
       * @param hashes the relevant hashes used with bits to reconstruct the merkle tree
@@ -252,8 +249,7 @@ object PartialMerkleTree {
     }
   }
 
-  /**
-    * Function to reconstruct a partial merkle tree
+  /** Function to reconstruct a partial merkle tree
     * @param transactionCount the number of transactions inside of the partial merkle tree
     * @param hashes the hashes used to reconstruct the partial merkle tree
     * @param bits the bits used indicate the structure of the partial merkle tree
@@ -267,8 +263,7 @@ object PartialMerkleTree {
     PartialMerkleTree(tree, transactionCount, bits, hashes)
   }
 
-  /**
-    * This constructor creates a partial from this given [[org.bitcoins.core.util.BinaryTree BinaryTree]]
+  /** This constructor creates a partial from this given [[org.bitcoins.core.util.BinaryTree BinaryTree]]
     * You probably don't want to use this constructor, unless you manually constructed `bits` and the `tree`
     * by hand
     * @param tree the partial merkle tree -- note this is NOT the full merkle tree
@@ -284,8 +279,7 @@ object PartialMerkleTree {
     PartialMerkleTreeImpl(tree, transactionCount, bits, hashes)
   }
 
-  /**
-    * Builds a partial merkle tree
+  /** Builds a partial merkle tree
     * [[https://bitcoin.org/en/developer-reference#parsing-a-merkleblock-message]]
     * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L96]]
     */
@@ -372,8 +366,7 @@ object PartialMerkleTree {
   def calcMaxHeight(numTransactions: Int): Int =
     Math.ceil((log(numTransactions) / log(2))).toInt
 
-  /**
-    * Determines if the right sub tree can exists inside of the partial merkle tree
+  /** Determines if the right sub tree can exists inside of the partial merkle tree
     * This function should only be used to determine if a right sub tree exists when we
     * are building a partial merkle tree from bottom up, NOT TOP DOWN. If we are building a
     * tree from top down use it's counterpart that does NOT take a maxHeight parameter
@@ -394,8 +387,7 @@ object PartialMerkleTree {
     (pos * 2) + 1 < calcTreeWidth(numTransaction, height - 1)
   }
 
-  /**
-    * Enforces the invariant inside of bitcoin core saying we must use all bits
+  /** Enforces the invariant inside of bitcoin core saying we must use all bits
     * in a byte array when reconstruction a partial merkle tree
     * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L174-L175]]
     */

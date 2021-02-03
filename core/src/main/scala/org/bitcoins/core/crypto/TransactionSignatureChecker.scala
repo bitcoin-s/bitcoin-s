@@ -14,8 +14,7 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 2/16/16.
+/** Created by chris on 2/16/16.
   * Responsible for checking digital signatures on inputs against their respective
   * public keys
   */
@@ -45,8 +44,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
                    partialSignature.pubKey,
                    partialSignature.signature)
 
-  /**
-    * Checks the signature of a scriptSig in the spending transaction against the
+  /** Checks the signature of a scriptSig in the spending transaction against the
     * given scriptPubKey & explicitly given public key
     * This is useful for instances of non standard scriptSigs
     *
@@ -144,8 +142,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     }
   }
 
-  /**
-    * This is a helper function to check digital signatures against public keys
+  /** This is a helper function to check digital signatures against public keys
     * if the signature does not match this public key, check it against the next
     * public key in the sequence
     * @param txSignatureComponent the tx signature component that contains all relevant transaction information
@@ -220,8 +217,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
 
   }
 
-  /**
-    * If the NULLFAIL flag is set as defined in BIP146, it checks to make sure all failed signatures were an empty byte vector
+  /** If the NULLFAIL flag is set as defined in BIP146, it checks to make sure all failed signatures were an empty byte vector
     * [[https://github.com/bitcoin/bips/blob/master/bip-0146.mediawiki#NULLFAIL]]
     */
   private def nullFailCheck(

@@ -148,8 +148,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  /**
-    * Please keep this test the very first. All other tests rely on the propagated gossip messages.
+  /** Please keep this test the very first. All other tests rely on the propagated gossip messages.
     */
   it should "wait for all gossip messages get propagated throughout the network and get a route to an invoice" in {
     val hasRoute = () => {
@@ -436,18 +435,17 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
       val isConfirmedF: Future[(ChannelId, Assertion)] = {
         val getIsConfirmed = { (client: EclairRpcClient, _: EclairRpcClient) =>
-          isOpenedF.flatMap {
-            case (chanId, assertion) =>
-              for {
-                bitcoind <- bitcoindRpcClientF
-                address <- bitcoind.getNewAddress
-                _ <- bitcoind.generateToAddress(6, address)
-                _ <- EclairRpcTestUtil.awaitUntilChannelNormal(
-                  client = client,
-                  chanId = chanId
-                )
+          isOpenedF.flatMap { case (chanId, assertion) =>
+            for {
+              bitcoind <- bitcoindRpcClientF
+              address <- bitcoind.getNewAddress
+              _ <- bitcoind.generateToAddress(6, address)
+              _ <- EclairRpcTestUtil.awaitUntilChannelNormal(
+                client = client,
+                chanId = chanId
+              )
 
-              } yield (chanId, assertion)
+            } yield (chanId, assertion)
           }
         }
 
@@ -456,22 +454,21 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
       val isClosedF = {
         val getIsClosed = { (client: EclairRpcClient, _: EclairRpcClient) =>
-          isConfirmedF.flatMap {
-            case (chanId, _) =>
-              val closedF = changeAddrF.flatMap { addr =>
-                val closedF = client.close(chanId, addr.scriptPubKey)
-
-                closedF.flatMap { _ =>
-                  EclairRpcTestUtil.awaitUntilChannelClosing(client, chanId)
-                }
-              }
+          isConfirmedF.flatMap { case (chanId, _) =>
+            val closedF = changeAddrF.flatMap { addr =>
+              val closedF = client.close(chanId, addr.scriptPubKey)
 
               closedF.flatMap { _ =>
-                val chanF = client.channel(chanId)
-                chanF.map { chan =>
-                  assert(chan.state == ChannelState.CLOSING)
-                }
+                EclairRpcTestUtil.awaitUntilChannelClosing(client, chanId)
               }
+            }
+
+            closedF.flatMap { _ =>
+              val chanF = client.channel(chanId)
+              chanF.map { chan =>
+                assert(chan.state == ChannelState.CLOSING)
+              }
+            }
           }
         }
 
@@ -897,28 +894,26 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     val connectedClientsF: Future[EclairNodes4] = {
-      freshClients1F.flatMap {
-        case (freshClient1, freshClient2) =>
-          freshClients2F.flatMap {
-            case (freshClient3, freshClient4) =>
-              clients ++= List(freshClient1,
-                               freshClient2,
-                               freshClient3,
-                               freshClient4)
+      freshClients1F.flatMap { case (freshClient1, freshClient2) =>
+        freshClients2F.flatMap { case (freshClient3, freshClient4) =>
+          clients ++= List(freshClient1,
+                           freshClient2,
+                           freshClient3,
+                           freshClient4)
 
-              val connect1And3 =
-                EclairRpcTestUtil.connectLNNodes(freshClient1, freshClient3)
-              val connect1And4 = connect1And3.flatMap(_ =>
-                EclairRpcTestUtil.connectLNNodes(freshClient1, freshClient4))
-              connect1And3.flatMap { _ =>
-                connect1And4.map { _ =>
-                  EclairNodes4(freshClient1,
-                               freshClient2,
-                               freshClient3,
-                               freshClient4)
-                }
-              }
+          val connect1And3 =
+            EclairRpcTestUtil.connectLNNodes(freshClient1, freshClient3)
+          val connect1And4 = connect1And3.flatMap(_ =>
+            EclairRpcTestUtil.connectLNNodes(freshClient1, freshClient4))
+          connect1And3.flatMap { _ =>
+            connect1And4.map { _ =>
+              EclairNodes4(freshClient1,
+                           freshClient2,
+                           freshClient3,
+                           freshClient4)
+            }
           }
+        }
       }
     }
 
@@ -930,11 +925,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     val openedChannelsF: Future[(ChannelId, ChannelId)] = {
-      connectedClientsF.flatMap {
-        case nodes4: EclairNodes4 =>
-          val chan1F = openChannel(nodes4.c1, nodes4.c2)
-          val chan2F = openChannel(nodes4.c3, nodes4.c4)
-          chan1F.flatMap(chanId1 => chan2F.map(chanId2 => (chanId1, chanId2)))
+      connectedClientsF.flatMap { case nodes4: EclairNodes4 =>
+        val chan1F = openChannel(nodes4.c1, nodes4.c2)
+        val chan2F = openChannel(nodes4.c3, nodes4.c4)
+        chan1F.flatMap(chanId1 => chan2F.map(chanId2 => (chanId1, chanId2)))
       }
     }
 
@@ -964,8 +958,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           ourOpenChannels <-
             firstFreshClient
               .channels(nodeId)
-              .map(_.collect {
-                case open: OpenChannelInfo => open
+              .map(_.collect { case open: OpenChannelInfo =>
+                open
               })
 
           ourChannelUpdates <- firstFreshClient.allUpdates(nodeId)

@@ -6,8 +6,7 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE
 }
 
-/**
-  * Bip 157 Block Filter Headers which commit to a chain of block filters,
+/** Bip 157 Block Filter Headers which commit to a chain of block filters,
   * much in the same way that block headers commit to a block chain
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#filter-headers]]
   */

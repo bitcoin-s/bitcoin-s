@@ -113,8 +113,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     } yield (txDb, written)
   }
 
-  /**
-    * Processes TXs originating from our wallet.
+  /** Processes TXs originating from our wallet.
     * This is called right after we've signed a TX,
     * updating our UTXO state.
     */
@@ -264,8 +263,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     }
   }
 
-  /**
-    * Inserts the UTXO at the given index into our DB, swallowing the
+  /** Inserts the UTXO at the given index into our DB, swallowing the
     * error if any (this is because we're operating on data we've
     * already verified).
     */
@@ -287,8 +285,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
   private case class OutputWithIndex(output: TransactionOutput, index: Int)
 
-  /**
-    * Processes an incoming transaction that already exists in our wallet.
+  /** Processes an incoming transaction that already exists in our wallet.
     * If the incoming transaction has more confirmations than what we
     * have in the DB, we update the TX
     */
@@ -428,8 +425,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     }
   }
 
-  /**
-    * Processes an incoming transaction that's new to us
+  /** Processes an incoming transaction that's new to us
     *
     * @return A list of inserted transaction outputs
     */

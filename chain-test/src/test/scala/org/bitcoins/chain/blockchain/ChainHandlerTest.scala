@@ -78,10 +78,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
     val blockHeaders = headersResult.get
 
-    blockHeaders.reduce[BlockHeader] {
-      case (prev, next) =>
-        assert(next.previousBlockHashBE == prev.hashBE)
-        next
+    blockHeaders.reduce[BlockHeader] { case (prev, next) =>
+      assert(next.previousBlockHashBE == prev.hashBE)
+      next
     }
 
     succeed

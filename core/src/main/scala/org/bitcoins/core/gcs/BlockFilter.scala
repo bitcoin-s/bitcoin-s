@@ -11,8 +11,7 @@ import scodec.bits.ByteVector
 
 object BlockFilter {
 
-  /**
-    * Returns all ScriptPubKeys from a Block's outputs that are relevant
+  /** Returns all ScriptPubKeys from a Block's outputs that are relevant
     * to BIP 158 Basic Block Filters
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#contents]]
     */
@@ -27,8 +26,7 @@ object BlockFilter {
       .map(_.scriptPubKey)
   }
 
-  /**
-    * Given a Block and access to the previous output scripts, constructs a Block Filter for that block
+  /** Given a Block and access to the previous output scripts, constructs a Block Filter for that block
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters]]
     */
   def apply(

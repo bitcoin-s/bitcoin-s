@@ -15,17 +15,16 @@ class MiningRpcTest extends BitcoindRpcTest {
   behavior of "MiningRpc"
 
   it should "be able to get a block template" in {
-    clientsF.flatMap {
-      case (client, _) =>
-        val getBlockF = client.getBlockTemplate()
-        getBlockF
-          .recover {
-            // getblocktemplate is having a bad time on regtest
-            // https://github.com/bitcoin/bitcoin/issues/11379
-            case NotConnected(_)  => succeed
-            case other: Throwable => throw other
-          }
-          .map(_ => succeed)
+    clientsF.flatMap { case (client, _) =>
+      val getBlockF = client.getBlockTemplate()
+      getBlockF
+        .recover {
+          // getblocktemplate is having a bad time on regtest
+          // https://github.com/bitcoin/bitcoin/issues/11379
+          case NotConnected(_)  => succeed
+          case other: Throwable => throw other
+        }
+        .map(_ => succeed)
     }
   }
 

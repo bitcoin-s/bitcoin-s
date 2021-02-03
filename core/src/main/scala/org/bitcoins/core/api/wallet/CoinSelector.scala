@@ -24,8 +24,7 @@ trait CoinSelector {
     accumulate(randomUtxos, outputs, feeRate)
   }
 
-  /**
-    * Greedily selects from walletUtxos starting with the largest outputs, skipping outputs with values
+  /** Greedily selects from walletUtxos starting with the largest outputs, skipping outputs with values
     * below their fees. Better for high fee environments than accumulateSmallestViable.
     */
   def accumulateLargest(
@@ -38,8 +37,7 @@ trait CoinSelector {
     accumulate(sortedUtxos, outputs, feeRate)
   }
 
-  /**
-    * Greedily selects from walletUtxos starting with the smallest outputs, skipping outputs with values
+  /** Greedily selects from walletUtxos starting with the smallest outputs, skipping outputs with values
     * below their fees. Good for low fee environments to consolidate UTXOs.
     *
     * Has the potential privacy breach of connecting a ton of UTXOs to one address.

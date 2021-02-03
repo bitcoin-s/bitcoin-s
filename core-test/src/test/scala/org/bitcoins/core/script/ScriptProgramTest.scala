@@ -3,8 +3,7 @@ package org.bitcoins.core.script
 import org.bitcoins.core.script.constant._
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 2/6/16.
+/** Created by chris on 2/6/16.
   */
 class ScriptProgramTest extends BitcoinSUnitTest {
 

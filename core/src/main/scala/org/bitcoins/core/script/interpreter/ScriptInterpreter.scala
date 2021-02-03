@@ -29,13 +29,11 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
-  /**
-    * Currently bitcoin core limits the maximum number of non-push operations per script
+  /** Currently bitcoin core limits the maximum number of non-push operations per script
     * to 201
     */
   private lazy val MAX_SCRIPT_OPS = 201
@@ -43,8 +41,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
   /** We cannot push an element larger than 520 bytes onto the stack */
   val MAX_PUSH_SIZE: Int = 520
 
-  /**
-    * Runs an entire script though our script programming language and
+  /** Runs an entire script though our script programming language and
     * returns a [[org.bitcoins.core.script.result.ScriptResult ScriptResult]]
     * indicating if the script was valid, or if not what error it encountered
     */
@@ -159,24 +156,21 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Runs the given [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and
+  /** Runs the given [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and
     * return if that script was valid or not
     */
   def runVerify(p: PreExecutionScriptProgram): Boolean = {
     ScriptInterpreter.run(p) == ScriptOk
   }
 
-  /**
-    * Every given [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and returns
+  /** Every given [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and returns
     * it's [[org.bitcoins.core.script.result.ScriptResult ScriptResult]]
     */
   def runAll(programs: Seq[PreExecutionScriptProgram]): Seq[ScriptResult] = {
     programs.map(p => ScriptInterpreter.run(p))
   }
 
-  /**
-    * Runs all the given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] and return
+  /** Runs all the given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] and return
     * if it is valid or not
     */
   def runAllVerify(programs: Seq[PreExecutionScriptProgram]): Boolean = {
@@ -203,14 +197,12 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
       transaction.inputs.size == prevOuts.size,
       s"There must be a prevOut for every input in the transaction, got ${prevOuts.size}")
 
-    prevOuts.zipWithIndex.forall {
-      case (prevOut, index) =>
-        verifyInputScript(transaction, index, prevOut)
+    prevOuts.zipWithIndex.forall { case (prevOut, index) =>
+      verifyInputScript(transaction, index, prevOut)
     }
   }
 
-  /**
-    * P2SH scripts are unique in their evaluation, first the scriptSignature must be added to the stack, next the
+  /** P2SH scripts are unique in their evaluation, first the scriptSignature must be added to the stack, next the
     * p2sh scriptPubKey must be run to make sure the serialized redeem script hashes to the value found in the p2sh
     * scriptPubKey, then finally the serialized redeemScript is decoded and run with the arguments in the p2sh script signature
     * a p2sh script returns true if both of those intermediate steps evaluate to true
@@ -352,8 +344,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
   }
 
-  /**
-    * Runs a segwit script through our interpreter, mimics this functionality in bitcoin core:
+  /** Runs a segwit script through our interpreter, mimics this functionality in bitcoin core:
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1441-L1452]]
     * @param scriptPubKeyExecutedProgram the program with the
     *                                    [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] executed
@@ -412,8 +403,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Verifies a segregated witness program by running it through the interpreter
+  /** Verifies a segregated witness program by running it through the interpreter
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1302]]
     */
   private def verifyWitnessProgram(
@@ -538,8 +528,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * The execution loop for a script
+  /** The execution loop for a script
     *
     * @param program the program whose script needs to be evaluated
     * @return program the final state of the program after being evaluated by the interpreter
@@ -1151,8 +1140,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Checks the validity of a transaction in accordance to bitcoin core's CheckTransaction function
+  /** Checks the validity of a transaction in accordance to bitcoin core's CheckTransaction function
     * https://github.com/bitcoin/bitcoin/blob/f7a21dae5dbf71d5bc00485215e84e6f2b309d0a/src/main.cpp#L939.
     */
   def checkTransaction(transaction: Transaction): Boolean = {
@@ -1195,8 +1183,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
       oldOpCount
     }
 
-  /**
-    * Checks if the transaction contained a witness that we did not use
+  /** Checks if the transaction contained a witness that we did not use
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1515-L1523]]
     * Return true if witness was NOT used, return false if witness was used.
     */
@@ -1225,8 +1212,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     unexpectedWitness
   }
 
-  /**
-    * Helper function used to rebuild a
+  /** Helper function used to rebuild a
     * [[org.bitcoins.core.crypto.WitnessTxSigComponentRebuilt WitnessTxSigComponentRebuilt]]
     * this converts a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
     * into it's corresponding [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]

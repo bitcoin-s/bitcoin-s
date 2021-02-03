@@ -13,8 +13,7 @@ import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.Future
 
-/**
-  * Provides functionality related enumerating accounts. Account
+/** Provides functionality related enumerating accounts. Account
   * creation does not happen here, as that requires an unlocked wallet.
   */
 private[wallet] trait AccountHandling { self: Wallet =>

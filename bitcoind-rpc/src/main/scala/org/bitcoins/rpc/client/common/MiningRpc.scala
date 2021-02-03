@@ -14,8 +14,7 @@ import play.api.libs.json.{JsNumber, JsString, Json}
 
 import scala.concurrent.Future
 
-/**
-  * RPC calls related to mining
+/** RPC calls related to mining
   */
 trait MiningRpc { self: Client =>
 

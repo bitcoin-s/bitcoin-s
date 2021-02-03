@@ -2,8 +2,7 @@ package org.bitcoins.core.hd
 
 import org.bitcoins.core.config._
 
-/**
-  * Represents a
+/** Represents a
   * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Coin_type BIP44]],
   * [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
   * and
@@ -12,8 +11,7 @@ import org.bitcoins.core.config._
   */
 case class HDCoinType(toInt: Int)
 
-/**
-  * @see [[https://github.com/satoshilabs/slips/blob/master/slip-0044.md SLIP-0044]]
+/** @see [[https://github.com/satoshilabs/slips/blob/master/slip-0044.md SLIP-0044]]
   *     central registry of coin types
   */
 object HDCoinType {

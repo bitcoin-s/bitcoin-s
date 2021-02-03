@@ -11,8 +11,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
 import org.bitcoins.crypto.DoubleSha256Digest
 import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
 
-/**
-  * Created by chris on 5/4/16.
+/** Created by chris on 5/4/16.
   */
 object CoreTransactionTestCaseProtocol
     extends DefaultJsonProtocol
@@ -55,8 +54,7 @@ object CoreTransactionTestCaseProtocol
     override def write(testCase: Option[CoreTransactionTestCase]): JsValue = ???
   }
 
-  /**
-    * These are in the following format
+  /** These are in the following format
     * [[prevout hash, prevout index, prevout scriptPubKey, amount], [input 2], ...]
     */
   def parseOutPointsScriptPubKeysAmount(array: JsArray): Seq[

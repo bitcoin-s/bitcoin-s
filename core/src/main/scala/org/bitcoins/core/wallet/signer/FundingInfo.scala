@@ -7,8 +7,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 
-/**
-  * This meant to represent the class used to 'fund' an
+/** This meant to represent the class used to 'fund' an
   * unsigned [[org.bitcoins.core.protocol.transaction.Transaction Transaction]].
   * This is useful for when we have multiple [[org.bitcoins.core.config.NetworkParameters NetworkParameters]]
   * that each have their own transaction type. I.e. we should only be able to have

@@ -15,8 +15,7 @@ trait BytesUtil extends CryptoBytesUtil {
     cmpct.bytes ++ serialized
   }
 
-  /**
-    * Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
+  /** Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
     * Makes sure that we parse the correct amount of elements
     */
   def parseCmpctSizeUIntSeq[T <: NetworkElement](

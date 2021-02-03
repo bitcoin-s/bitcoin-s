@@ -17,13 +17,11 @@ import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 2/8/16.
+/** Created by chris on 2/8/16.
   */
 sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
 
-  /**
-    * Marks transaction as invalid if the top stack item is greater than the transaction's `nLockTime` field,
+  /** Marks transaction as invalid if the top stack item is greater than the transaction's `nLockTime` field,
     * otherwise script evaluation continues as though an `OP_NOP` was executed. Transaction is also invalid if
     * 1. the stack is empty; or
     * 2. the top stack item is negative; or
@@ -85,8 +83,7 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * When executed, if any of the following conditions are true, the script interpreter will terminate with an error:
+  /** When executed, if any of the following conditions are true, the script interpreter will terminate with an error:
     * 1.) the stack is empty; or
     * 2.) the top item on the stack is less than 0; or
     * 3.) the top item on the stack has the disable flag (1 << 31) unset; and
@@ -146,8 +143,7 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * @see Mimics
+  /** @see Mimics
     *      [[https://github.com/bitcoin/bitcoin/blob/e26b62093ae21e89ed7d36a24a6b863f38ec631d/src/script/interpreter.cpp#L1196 this function]]
     *      inside of Bitcoin Core
     *
@@ -223,8 +219,7 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
     true
   }
 
-  /**
-    * Checks if the given
+  /** Checks if the given
     * [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] and
     * [[org.bitcoins.core.number.UInt32 UInt32]] are valid values for spending
     * a OP_CSV value by block height
@@ -241,8 +236,7 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
   def isCSVLockByBlockHeight(scriptNumber: ScriptNumber): Boolean =
     !isCSVLockByRelativeLockTime(scriptNumber)
 
-  /**
-    * Checks if the given [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] and
+  /** Checks if the given [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] and
     * [[org.bitcoins.core.number.UInt32 UInt32]] are valid values
     * for spending an OP_CSV value by time based relative lock time
     */
@@ -276,8 +270,7 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
     txToSequenceMasked
   }
 
-  /**
-    * Checks the locktime of a transaction.
+  /** Checks the locktime of a transaction.
     * @see Mimics
     *      [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1160 this function]]
     *     inside of Bitcoin Core

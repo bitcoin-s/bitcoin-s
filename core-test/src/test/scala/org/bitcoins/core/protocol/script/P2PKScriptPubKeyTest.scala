@@ -3,8 +3,7 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 4/1/16.
+/** Created by chris on 4/1/16.
   */
 class P2PKScriptPubKeyTest extends BitcoinSUnitTest {
 

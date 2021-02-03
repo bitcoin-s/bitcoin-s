@@ -29,16 +29,15 @@ trait BitcoinSRunner extends BitcoinSLogger {
   /** The ip address we are binding the server to */
   lazy val rpcBindOpt: Option[String] = {
     val rpcbindOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcbind")
-    rpcbindOpt.map {
-      case (_, idx) =>
-        args(idx + 1)
+    rpcbindOpt.map { case (_, idx) =>
+      args(idx + 1)
     }
   }
 
   lazy val rpcPortOpt: Option[Int] = {
     val portOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcport")
-    portOpt.map {
-      case (_, idx) => args(idx + 1).toInt
+    portOpt.map { case (_, idx) =>
+      args(idx + 1).toInt
     }
   }
 

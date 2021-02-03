@@ -4,8 +4,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.testkit.core.gen.ScriptGenerators
 import org.scalacheck.{Prop, Properties}
 
-/**
-  * Created by chris on 6/22/16.
+/** Created by chris on 6/22/16.
   */
 class P2PKScriptSignatureSpec
     extends Properties("P2PKSpec")

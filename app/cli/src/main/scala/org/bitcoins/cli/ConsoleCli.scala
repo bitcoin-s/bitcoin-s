@@ -94,14 +94,16 @@ object ConsoleCli {
         .action((_, conf) =>
           conf.copy(command = DecodeRawTransaction(EmptyTransaction)))
         .text(s"Decode the given raw hex transaction")
-        .children(arg[Transaction]("tx")
-          .text("Transaction encoded in hex to decode")
-          .required()
-          .action((tx, conf) =>
-            conf.copy(command = conf.command match {
-              case decode: DecodeRawTransaction => decode.copy(transaction = tx)
-              case other                        => other
-            }))),
+        .children(
+          arg[Transaction]("tx")
+            .text("Transaction encoded in hex to decode")
+            .required()
+            .action((tx, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodeRawTransaction =>
+                  decode.copy(transaction = tx)
+                case other => other
+              }))),
       note(sys.props("line.separator") + "=== Wallet ==="),
       cmd("rescan")
         .action((_, conf) =>

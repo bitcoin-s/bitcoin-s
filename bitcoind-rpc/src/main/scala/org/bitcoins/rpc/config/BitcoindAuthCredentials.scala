@@ -6,8 +6,7 @@ import java.nio.file.{Files, Paths}
 import org.bitcoins.core.config._
 import org.bitcoins.core.util.BitcoinSLogger
 
-/**
-  * This trait contains the information we need to authenticate
+/** This trait contains the information we need to authenticate
   * to a `bitcoind` node.
   */
 sealed trait BitcoindAuthCredentials {
@@ -19,8 +18,7 @@ sealed trait BitcoindAuthCredentials {
 object BitcoindAuthCredentials extends BitcoinSLogger {
   import org.bitcoins.core.compat.JavaConverters._
 
-  /**
-    * Authenticate by providing a username and password.
+  /** Authenticate by providing a username and password.
     * If you are connecting to a local `bitcoind` you
     * should instead use cookie based authentication.
     * If you are connecting to a remote `bitcoind`, you
@@ -41,8 +39,7 @@ object BitcoindAuthCredentials extends BitcoinSLogger {
       password: String
   ) extends BitcoindAuthCredentials
 
-  /**
-    * Authenticate by providing a cookie file
+  /** Authenticate by providing a cookie file
     * found in the `bitcoind` data directory.
     * This is the most secure as well as user
     * friendly way of authenticating, but it
@@ -66,8 +63,7 @@ object BitcoindAuthCredentials extends BitcoinSLogger {
       Paths.get(datadir.toString, middleSegment, ".cookie")
     }
 
-    /**
-      * The cookie is a string looking like
+    /** The cookie is a string looking like
       * `__cookie__:AUTO_GENERATED_PASSWORD`
       */
     def cookie: String = {

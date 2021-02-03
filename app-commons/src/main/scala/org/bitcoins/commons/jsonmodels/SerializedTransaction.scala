@@ -113,20 +113,18 @@ object SerializedTransaction {
   }
 
   def decodeRawTransaction(tx: Transaction): SerializedTransaction = {
-    val inputs = tx.inputs.toVector.zipWithIndex.map {
-      case (input, index) =>
-        val witnessOpt = tx match {
-          case _: NonWitnessTransaction => None
-          case wtx: WitnessTransaction =>
-            Some(wtx.witness.witnesses(index))
-        }
+    val inputs = tx.inputs.toVector.zipWithIndex.map { case (input, index) =>
+      val witnessOpt = tx match {
+        case _: NonWitnessTransaction => None
+        case wtx: WitnessTransaction =>
+          Some(wtx.witness.witnesses(index))
+      }
 
-        decodeTransactionInput(input, witnessOpt)
+      decodeTransactionInput(input, witnessOpt)
     }
 
-    val outputs = tx.outputs.toVector.zipWithIndex.map {
-      case (output, index) =>
-        decodeTransactionOutput(output, index)
+    val outputs = tx.outputs.toVector.zipWithIndex.map { case (output, index) =>
+      decodeTransactionOutput(output, index)
     }
 
     val wtxIdOpt = tx match {

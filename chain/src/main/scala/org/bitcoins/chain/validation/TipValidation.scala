@@ -9,8 +9,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.NumberUtil
 
-/**
-  * Responsible for checking if we can connect two
+/** Responsible for checking if we can connect two
   * block headers together on the blockchain. The checks
   * things like proof of work difficulty, if it
   * references the previous block header correctly etc.

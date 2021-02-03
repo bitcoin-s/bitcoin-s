@@ -10,8 +10,7 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/**
-  * This trait defines RPC calls related to transactions
+/** This trait defines RPC calls related to transactions
   * in Bitcoin Core. These RPC calls generally provide a
   * higher level of abstraction than the ones found in
   * [[org.bitcoins.rpc.client.common.RawTransactionRpc RawTransactionRpc]].

@@ -37,8 +37,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     pw.close()
   }
 
-  /**
-    * Tests that the client can call the isStartedF method
+  /** Tests that the client can call the isStartedF method
     * without throwing and then start
     */
   private def testClientStart(client: BitcoindRpcClient): Future[Assertion] = {
@@ -145,9 +144,8 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
             logger.error(s"Got unexpected balance: $balance")
             fail("Was able to connect to bitcoind after shutting down")
           }
-          .recover {
-            case _: StreamTcpException =>
-              ()
+          .recover { case _: StreamTcpException =>
+            ()
           }
     } yield assert(balance > Bitcoins(0))
 

@@ -43,8 +43,7 @@ case class NodeAppConfig(
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
 
-  /**
-    * Ensures correct tables and other required information is in
+  /** Ensures correct tables and other required information is in
     * place for our node.
     */
   override def start(): Future[Unit] = {
@@ -72,8 +71,7 @@ case class NodeAppConfig(
   lazy val nodeType: NodeType =
     NodeType.fromString(config.getString("bitcoin-s.node.mode"))
 
-  /**
-    * List of peers
+  /** List of peers
     */
   lazy val peers: Vector[String] = {
     val list = config.getStringList("bitcoin-s.node.peers")

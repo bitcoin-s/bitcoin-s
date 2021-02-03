@@ -6,8 +6,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 7/5/16.
+/** Created by chris on 7/5/16.
   */
 class RawHeadersMessageSerializerTest
     extends BitcoinSUnitTest

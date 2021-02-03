@@ -4,8 +4,7 @@ import org.bitcoins.core.number.UInt8
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.scalacheck.{Prop, Properties}
 
-/**
-  * Created by chris on 6/20/16.
+/** Created by chris on 6/20/16.
   */
 class NumberUtilSpec extends Properties("NumberUtilSpec") with BitcoinSLogger {
 
@@ -23,11 +22,10 @@ class NumberUtilSpec extends Properties("NumberUtilSpec") with BitcoinSLogger {
   }
 
   property("convertBits symmetry") = {
-    Prop.forAllNoShrink(NumberGenerator.uInt8s) {
-      case (u8s: Seq[UInt8]) =>
-        val u5s = NumberUtil.convertUInt8sToUInt5s(u8s.toVector)
-        val original: Vector[UInt8] = NumberUtil.convertUInt5sToUInt8(u5s = u5s)
-        original == u8s
+    Prop.forAllNoShrink(NumberGenerator.uInt8s) { case (u8s: Seq[UInt8]) =>
+      val u5s = NumberUtil.convertUInt8sToUInt5s(u8s.toVector)
+      val original: Vector[UInt8] = NumberUtil.convertUInt5sToUInt8(u5s = u5s)
+      original == u8s
     }
   }
 }

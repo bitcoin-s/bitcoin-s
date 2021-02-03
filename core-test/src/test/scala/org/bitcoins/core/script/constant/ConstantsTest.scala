@@ -5,8 +5,7 @@ import scodec.bits.ByteVector
 
 import scala.util.Try
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 class ConstantsTest extends BitcoinSUnitTest {
 

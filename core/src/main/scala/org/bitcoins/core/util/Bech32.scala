@@ -7,8 +7,7 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
-/**
-  * A abstract class representing basic utility functions of Bech32
+/** A abstract class representing basic utility functions of Bech32
   * For more information on Bech32 please seee BIP173
   * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki]]
   */
@@ -17,8 +16,7 @@ sealed abstract class Bech32 {
   private val generators: Vector[Long] =
     Vector(0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3)
 
-  /**
-    * Creates a checksum for the given byte vector according to
+  /** Creates a checksum for the given byte vector according to
     * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
     */
   def createChecksum(u5s: Vector[UInt5]): Vector[UInt5] = {
@@ -36,8 +34,7 @@ sealed abstract class Bech32 {
     result
   }
 
-  /**
-    * Expands the human readable part of a bech32 address as per
+  /** Expands the human readable part of a bech32 address as per
     * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
     */
   def hrpExpand(string: String): Vector[UInt5] = {
@@ -121,8 +118,7 @@ sealed abstract class Bech32 {
 
   def isInHrpRange(char: Char): Boolean = char >= 33 && char <= 126
 
-  /**
-    * Takes in the data portion of a bech32 address and decodes it to a byte array
+  /** Takes in the data portion of a bech32 address and decodes it to a byte array
     * It also checks the validity of the data portion according to BIP173
     */
   def checkDataValidity(data: String): Try[Vector[UInt5]] = {
@@ -162,8 +158,7 @@ sealed abstract class Bech32 {
     payload
   }
 
-  /**
-    * Converts a byte vector to 5bit vector
+  /** Converts a byte vector to 5bit vector
     * and then serializes to bech32
     */
   def encode8bitToString(bytes: ByteVector): String = {
@@ -171,8 +166,7 @@ sealed abstract class Bech32 {
     encode8bitToString(vec)
   }
 
-  /**
-    * Converts a byte vector to 5bit vector
+  /** Converts a byte vector to 5bit vector
     * and then serializes to bech32
     */
   def encode8bitToString(bytes: Vector[UInt8]): String = {
@@ -203,8 +197,7 @@ sealed abstract class Bech32 {
     NumberUtil.convertUInt5sToUInt8(b, pad)
   }
 
-  /**
-    * Validate a Bech32 string, and determine HRP and data.
+  /** Validate a Bech32 string, and determine HRP and data.
     * Fails if HRP is not LN or BTC compatible.
     *
     * @see Mimics
@@ -212,8 +205,8 @@ sealed abstract class Bech32 {
     *      by Sipa
     */
   def splitToHrpAndData(bech32: String): Try[(String, Vector[UInt5])] = {
-    val sepIndexes = bech32.zipWithIndex.filter {
-      case (sep, _) => sep == Bech32.separator
+    val sepIndexes = bech32.zipWithIndex.filter { case (sep, _) =>
+      sep == Bech32.separator
     }
 
     val length = bech32.length
@@ -265,11 +258,10 @@ sealed abstract class Bech32 {
       bech32: String,
       factory: StringFactory[T]): Try[(T, Vector[UInt5])] = {
 
-    splitToHrpAndData(bech32).flatMap {
-      case (hrpString, data) =>
-        factory
-          .fromStringT(hrpString)
-          .map(hrp => (hrp, data))
+    splitToHrpAndData(bech32).flatMap { case (hrpString, data) =>
+      factory
+        .fromStringT(hrpString)
+        .map(hrp => (hrp, data))
     }
   }
 

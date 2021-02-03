@@ -5,8 +5,7 @@ import org.scalacheck.{Prop, Properties}
 
 import scala.util.Try
 
-/**
-  * Created by chris on 6/21/16.
+/** Created by chris on 6/21/16.
   */
 class Int64Spec extends Properties("Int64Spec") {
 

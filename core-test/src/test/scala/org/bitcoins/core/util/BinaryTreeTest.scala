@@ -4,8 +4,7 @@ import org.bitcoins.core.script.constant.{OP_0, OP_1, OP_2, ScriptToken}
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 1/27/16.
+/** Created by chris on 1/27/16.
   */
 class BinaryTreeTest extends BitcoinSUnitTest {
 

@@ -7,8 +7,7 @@ import org.bitcoins.core.util.Bech32
 import org.bitcoins.crypto.{ECDigitalSignature, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-/**
-  * 520 bit digital signature that signs the [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]];
+/** 520 bit digital signature that signs the [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]];
   * See
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#data-part BOLT11]]
   * for more info.

@@ -58,9 +58,8 @@ trait TLVUtil {
   protected def u16PrefixedList[T](
       vec: Vector[T],
       serialize: T => ByteVector): ByteVector = {
-    vec.foldLeft(UInt16(vec.length).bytes) {
-      case (accum, elem) =>
-        accum ++ serialize(elem)
+    vec.foldLeft(UInt16(vec.length).bytes) { case (accum, elem) =>
+      accum ++ serialize(elem)
     }
   }
 
@@ -76,9 +75,8 @@ trait TLVUtil {
   protected def bigSizePrefixedList[T](
       vec: Vector[T],
       serialize: T => ByteVector): ByteVector = {
-    vec.foldLeft(BigSizeUInt(vec.length).bytes) {
-      case (accum, elem) =>
-        accum ++ serialize(elem)
+    vec.foldLeft(BigSizeUInt(vec.length).bytes) { case (accum, elem) =>
+      accum ++ serialize(elem)
     }
   }
 
@@ -449,8 +447,7 @@ object PongTLV extends TLVFactory[PongTLV] {
 sealed trait EventDescriptorTLV extends TLV {
   def noncesNeeded: Int
 
-  /**
-    * Event descriptors all use the same signing version as of now.
+  /** Event descriptors all use the same signing version as of now.
     * @see https://github.com/discreetlogcontracts/dlcspecs/pull/113
     */
   def signingVersion: SigningVersion = DLCOracleV0SigningVersion
@@ -466,8 +463,7 @@ object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
   override def typeName: String = "EventDescriptorTLV"
 }
 
-/**
-  * Describes an event over an enumerated set of outcomes
+/** Describes an event over an enumerated set of outcomes
   * @param outcomes The set of possible outcomes
   * @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Oracle.md#simple-enumeration
   */
@@ -553,8 +549,7 @@ sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
   }
 }
 
-/**
-  * Describes a simple event over a range of numbers
+/** Describes a simple event over a range of numbers
   * @param start The first number in the range
   * @param count The number of possible outcomes
   * @param step The increment between each outcome
@@ -945,10 +940,9 @@ case class ContractDescriptorV0TLV(outcomes: Vector[(String, Satoshis)])
   override val value: ByteVector = {
     bigSizePrefixedList[(String, Satoshis)](
       outcomes,
-      {
-        case (outcome, amt) =>
-          val outcomeBytes = CryptoUtil.serializeForHash(outcome)
-          bigSizePrefix(outcomeBytes) ++ satBytes(amt)
+      { case (outcome, amt) =>
+        val outcomeBytes = CryptoUtil.serializeForHash(outcome)
+        bigSizePrefix(outcomeBytes) ++ satBytes(amt)
       })
   }
 }
@@ -979,10 +973,9 @@ case class RoundingIntervalsV0TLV(intervalStarts: Vector[(Long, Satoshis)])
   override val value: ByteVector = {
     u16PrefixedList[(Long, Satoshis)](
       intervalStarts,
-      {
-        case (outcome, roundingModSats) =>
-          BigSizeUInt(outcome).bytes ++
-            BigSizeUInt(roundingModSats.toLong).bytes
+      { case (outcome, roundingModSats) =>
+        BigSizeUInt(outcome).bytes ++
+          BigSizeUInt(roundingModSats.toLong).bytes
       })
   }
 }

@@ -13,8 +13,7 @@ import org.bitcoins.core.script.{
 import org.bitcoins.core.util.ScriptProgramTestUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 3/30/16.
+/** Created by chris on 3/30/16.
   */
 class LockTimeInterpreterTest extends BitcoinSUnitTest {
   val LTI = LockTimeInterpreter

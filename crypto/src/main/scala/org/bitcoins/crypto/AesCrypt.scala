@@ -8,15 +8,13 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Represents a encrypted cipher text with it's accompanying
+/** Represents a encrypted cipher text with it's accompanying
   * initialization vector (IV). Both the cipher text and the IV
   * is needed to decrypt the cipher text.
   */
 final case class AesEncryptedData(cipherText: ByteVector, iv: AesIV) {
 
-  /**
-    * We serialize IV and ciphertext by prepending the IV
+  /** We serialize IV and ciphertext by prepending the IV
     * to the ciphertext, and converting it to base64.
     * Since the IV is of static length, deserializing is a matter
     * of taking the first bytes as IV, and the rest as
@@ -30,8 +28,7 @@ final case class AesEncryptedData(cipherText: ByteVector, iv: AesIV) {
 
 object AesEncryptedData {
 
-  /**
-    * We serialize IV and ciphertext by prepending the IV
+  /** We serialize IV and ciphertext by prepending the IV
     * to the ciphertext, and converting it to base64.
     * Since the IV is of static length, deserializing is a matter
     * of taking the first bytes as IV, and the rest as
@@ -50,8 +47,7 @@ object AesEncryptedData {
     }
   }
 
-  /**
-    * We serialize IV and ciphertext by prepending the IV
+  /** We serialize IV and ciphertext by prepending the IV
     * to the ciphertext, and converting it to base64.
     * Since the IV is of static length, deserializing is a matter
     * of taking the first bytes as IV, and the rest as
@@ -78,8 +74,7 @@ object AesSalt extends Factory[AesSalt] {
 
   override def fromBytes(bytes: ByteVector): AesSalt = new AesSalt(bytes)
 
-  /**
-    * Generates a random AES salt
+  /** Generates a random AES salt
     * of 32 bytes
     */
   def random: AesSalt = {
@@ -95,8 +90,7 @@ object AesSalt extends Factory[AesSalt] {
 final case class AesPassword private (private val value: String)
     extends MaskedToString {
 
-  /**
-    * Converts this password into an AES key
+  /** Converts this password into an AES key
     *
     * @return A tuple of the derived key and generated salt
     */
@@ -107,8 +101,7 @@ final case class AesPassword private (private val value: String)
     (key, salt)
   }
 
-  /**
-    * Given some salt, converts this password to an AES key
+  /** Given some salt, converts this password to an AES key
     * using PBKDF2 key stretching.
     */
   def toKey(salt: AesSalt): AesKey = {
@@ -171,8 +164,7 @@ final case class AesKey private (bytes: ByteVector)
     extends MaskedToString
     with NetworkElement {
 
-  /**
-    * The Java [[javax.crypto.SecretKey SecretKey]] representation
+  /** The Java [[javax.crypto.SecretKey SecretKey]] representation
     * of this key.
     */
   def toSecretKey: SecretKey =
@@ -206,8 +198,7 @@ object AesKey {
     AesKey.fromValidBytes(bytes)
   }
 
-  /**
-    * Construct a AES key from the given bytes,
+  /** Construct a AES key from the given bytes,
     * throwing an exception if the provided bytes
     * are of invalid length.
     */
@@ -275,13 +266,11 @@ object AesIV {
   }
 }
 
-/**
-  * Provides functionality for encrypting and decrypting with AES
+/** Provides functionality for encrypting and decrypting with AES
   */
 object AesCrypt {
 
-  /**
-    * AES encryption with CFB block cipher mode
+  /** AES encryption with CFB block cipher mode
     * and no padding, such that arbitrary plaintexts
     * can be encrypted.
     */
@@ -302,8 +291,7 @@ object AesCrypt {
     cipher
   }
 
-  /**
-    * Decrypts the provided data
+  /** Decrypts the provided data
     */
   def decrypt(
       encrypted: AesEncryptedData,
@@ -334,8 +322,7 @@ object AesCrypt {
     cipher
   }
 
-  /**
-    * Encrypts the given plaintext, by explicitly passing in a
+  /** Encrypts the given plaintext, by explicitly passing in a
     * intialization vector. This is unsafe if the user passes
     * in a bad IV, so this method is kept private within
     * Bitcoin-S. It is useful for testing purposes, so that's
@@ -355,8 +342,7 @@ object AesCrypt {
 
   }
 
-  /**
-    * Encrypts the given plaintext with the given key.
+  /** Encrypts the given plaintext with the given key.
     */
   def encrypt(plainText: ByteVector, key: AesKey): AesEncryptedData = {
     val iv = AesIV.random

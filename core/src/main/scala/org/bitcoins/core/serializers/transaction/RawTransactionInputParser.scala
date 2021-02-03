@@ -10,8 +10,7 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/13/16.
+/** Created by chris on 1/13/16.
   * https://bitcoin.org/en/developer-reference#txin
   */
 sealed abstract class RawTransactionInputParser

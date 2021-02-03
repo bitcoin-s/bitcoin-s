@@ -7,16 +7,14 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
-/**
-  * Reads and writes a message header on the peer-to-peer network
+/** Reads and writes a message header on the peer-to-peer network
   * @see https://bitcoin.org/en/developer-reference#message-headers
   */
 trait RawNetworkHeaderSerializer
     extends RawBitcoinSerializer[NetworkHeader]
     with BitcoinSLogger {
 
-  /**
-    * Transforms a sequence of bytes into a message header
+  /** Transforms a sequence of bytes into a message header
     * @param bytes the byte representation for a MessageHeader on the peer-to-peer network
     * @return the native object for the MessageHeader
     */
@@ -32,8 +30,7 @@ trait RawNetworkHeaderSerializer
     NetworkHeader(network, commandName, payloadSize, checksum)
   }
 
-  /**
-    * Takes in a message header and serializes it to hex
+  /** Takes in a message header and serializes it to hex
     * @param messageHeader the message header to be serialized
     * @return the hexadecimal representation of the message header
     */

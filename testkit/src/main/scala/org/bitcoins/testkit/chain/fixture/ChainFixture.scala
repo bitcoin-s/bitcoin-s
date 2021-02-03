@@ -3,8 +3,7 @@ package org.bitcoins.testkit.chain.fixture
 import org.bitcoins.chain.blockchain.{ChainHandler, ChainHandlerCached}
 import org.bitcoins.chain.models.BlockHeaderDAO
 
-/**
-  * This ADT represents all Chain test fixtures. If you set this type to be your
+/** This ADT represents all Chain test fixtures. If you set this type to be your
   * FixtureParam and override withFixture to be withChainFixutre, then simply tag
   * tests to specify which fixture that test should receive and then use inFixutred
   * which takes a PartialFunction[ChainFixture, Future[Assertion] ] (i.e. just

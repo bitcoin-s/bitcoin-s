@@ -2,8 +2,7 @@ package org.bitcoins.core.util
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 1/27/16.
+/** Created by chris on 1/27/16.
   */
 trait BinaryTree[+T] {
 
@@ -28,8 +27,7 @@ trait BinaryTree[+T] {
       case Empty      => None
     }
 
-  /**
-    * Creates a sequence with only the leaf values
+  /** Creates a sequence with only the leaf values
     * evaluates as depth first from left to right.
     */
   def toSeqLeafValues: Seq[T] = {
@@ -81,8 +79,7 @@ trait BinaryTree[+T] {
 
   def count[T](t: T): Int = toSeq.count(_ == t)
 
-  /**
-    * Inserts an element into one of the two branches in a [[org.bitcoins.core.util.BinaryTree BinaryTree]].
+  /** Inserts an element into one of the two branches in a [[org.bitcoins.core.util.BinaryTree BinaryTree]].
     * If it cannot insert it because the branches are not empty,
     * it throws a [[scala.RuntimeException RuntimeException]].
     */
@@ -90,8 +87,7 @@ trait BinaryTree[+T] {
     insert(Leaf(t))(tree)
   }
 
-  /**
-    * Inserts a tree into one of the two branches in a [[org.bitcoins.core.util.BinaryTree BinaryTree]]
+  /** Inserts a tree into one of the two branches in a [[org.bitcoins.core.util.BinaryTree BinaryTree]]
     * If it cannot insert it because the branches are not empty,
     * it throws a [[scala.RuntimeException RuntimeException]].
     */

@@ -32,8 +32,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
-/**
-  *  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
+/**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
 trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
@@ -90,8 +89,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     }
   }
 
-  /**
-    * Sends the given P2P to our peer.
+  /** Sends the given P2P to our peer.
     * This method is useful for playing around
     * with P2P messages, therefore marked as
     * `private[node]`.
@@ -254,8 +252,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     } yield res
   }
 
-  /**
-    * Fetches the given blocks from the peers and calls the appropriate [[callbacks]] when done.
+  /** Fetches the given blocks from the peers and calls the appropriate [[callbacks]] when done.
     */
   override def downloadBlocks(
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {

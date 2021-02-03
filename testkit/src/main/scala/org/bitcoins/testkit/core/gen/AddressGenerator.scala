@@ -3,8 +3,7 @@ package org.bitcoins.testkit.core.gen
 import org.bitcoins.core.protocol._
 import org.scalacheck.Gen
 
-/**
-  * Created by chris on 6/12/17.
+/** Created by chris on 6/12/17.
   */
 sealed trait AddressGenerator {
 

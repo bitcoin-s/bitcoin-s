@@ -159,8 +159,7 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
     }
   }
 
-  /**
-    * Helper method to connect to the
+  /** Helper method to connect to the
     * remote node and bind our local
     * connection to the specified port
     */

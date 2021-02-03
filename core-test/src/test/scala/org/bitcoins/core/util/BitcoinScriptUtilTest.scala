@@ -13,8 +13,7 @@ import org.bitcoins.testkit.core.gen.ScriptGenerators
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 3/2/16.
+/** Created by chris on 3/2/16.
   */
 class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
@@ -48,44 +47,39 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
   }
 
   it must "filter out all but the data tokens" in {
-    forAll(ScriptGenerators.p2pkhScriptPubKey) {
-      case (p2pkhScript, _) =>
-        assert(
-          BitcoinScriptUtil
-            .getDataTokens(p2pkhScript.asm)
-            .map(_.bytes) == Vector(p2pkhScript.pubKeyHash.bytes))
+    forAll(ScriptGenerators.p2pkhScriptPubKey) { case (p2pkhScript, _) =>
+      assert(
+        BitcoinScriptUtil
+          .getDataTokens(p2pkhScript.asm)
+          .map(_.bytes) == Vector(p2pkhScript.pubKeyHash.bytes))
     }
 
-    forAll(ScriptGenerators.p2shScriptPubKey) {
-      case (p2shScript, _, _) =>
-        assert(
-          BitcoinScriptUtil
-            .getDataTokens(p2shScript.asm)
-            .map(_.bytes) == Vector(p2shScript.scriptHash.bytes))
+    forAll(ScriptGenerators.p2shScriptPubKey) { case (p2shScript, _, _) =>
+      assert(
+        BitcoinScriptUtil
+          .getDataTokens(p2shScript.asm)
+          .map(_.bytes) == Vector(p2shScript.scriptHash.bytes))
     }
 
-    forAll(ScriptGenerators.p2wshSPKV0) {
-      case (p2wshScript, _, _) =>
-        assert(
-          BitcoinScriptUtil
-            .getDataTokens(p2wshScript.asm)
-            .map(_.bytes) == Vector(p2wshScript.scriptHash.bytes))
+    forAll(ScriptGenerators.p2wshSPKV0) { case (p2wshScript, _, _) =>
+      assert(
+        BitcoinScriptUtil
+          .getDataTokens(p2wshScript.asm)
+          .map(_.bytes) == Vector(p2wshScript.scriptHash.bytes))
     }
 
-    forAll(ScriptGenerators.p2wpkhSPKV0) {
-      case (p2wpkhScript, _) =>
-        assert(
-          BitcoinScriptUtil
-            .getDataTokens(p2wpkhScript.asm)
-            .map(_.bytes) == Vector(p2wpkhScript.pubKeyHash.bytes))
+    forAll(ScriptGenerators.p2wpkhSPKV0) { case (p2wpkhScript, _) =>
+      assert(
+        BitcoinScriptUtil
+          .getDataTokens(p2wpkhScript.asm)
+          .map(_.bytes) == Vector(p2wpkhScript.pubKeyHash.bytes))
     }
 
-    forAll(ScriptGenerators.multiSigScriptPubKey) {
-      case (multiSigScript, _) =>
-        assert(
-          BitcoinScriptUtil
-            .getDataTokens(multiSigScript.asm)
-            .map(_.bytes) == multiSigScript.publicKeys.map(_.bytes))
+    forAll(ScriptGenerators.multiSigScriptPubKey) { case (multiSigScript, _) =>
+      assert(
+        BitcoinScriptUtil
+          .getDataTokens(multiSigScript.asm)
+          .map(_.bytes) == multiSigScript.publicKeys.map(_.bytes))
     }
   }
 

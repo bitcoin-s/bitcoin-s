@@ -72,18 +72,16 @@ case class NumericOracleOutcome(oraclesAndOutcomes: Vector[
 
   override lazy val sigPoint: ECPublicKey = {
     oraclesAndOutcomes
-      .map {
-        case (oracle, outcome) =>
-          oracle.sigPoint(outcome)
+      .map { case (oracle, outcome) =>
+        oracle.sigPoint(outcome)
       }
       .reduce(_.add(_))
   }
 
   override lazy val aggregateNonce: SchnorrNonce = {
     oraclesAndOutcomes
-      .map {
-        case (oracle, outcome) =>
-          oracle.aggregateNonce(outcome)
+      .map { case (oracle, outcome) =>
+        oracle.aggregateNonce(outcome)
       }
       .map(_.publicKey)
       .reduce(_.add(_))

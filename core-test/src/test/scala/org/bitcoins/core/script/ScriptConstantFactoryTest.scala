@@ -4,8 +4,7 @@ import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 4/1/16.
+/** Created by chris on 4/1/16.
   */
 class ScriptConstantFactoryTest extends BitcoinSUnitTest {
 

@@ -29,8 +29,7 @@ import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Provides functionality related to handling UTXOs in our wallet.
+/** Provides functionality related to handling UTXOs in our wallet.
   * The most notable examples of functionality here are enumerating
   * UTXOs in the wallet and importing a UTXO into the wallet for later
   * spending.
@@ -158,8 +157,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     } yield updated
   }
 
-  /**
-    * Tries to convert the provided spk to an address, and then checks if we have
+  /** Tries to convert the provided spk to an address, and then checks if we have
     * it in our address table
     */
   private def findAddress(
@@ -225,8 +223,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
   }
 
-  /**
-    * Adds the provided UTXO to the wallet
+  /** Adds the provided UTXO to the wallet
     */
   protected def addUtxo(
       transaction: Transaction,

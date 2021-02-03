@@ -9,8 +9,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/13/16.
+/** Created by chris on 1/13/16.
   */
 class RawTransactionInputParserTest extends BitcoinSAsyncTest {
 

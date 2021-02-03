@@ -77,9 +77,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
 
     val inputs: Vector[TransactionInput] = txids
       .zip(vouts)
-      .map {
-        case (txid, vout) =>
-          TransactionInput.fromTxidAndVout(txid, UInt32(vout))
+      .map { case (txid, vout) =>
+        TransactionInput.fromTxidAndVout(txid, UInt32(vout))
       }
       .toVector
 
@@ -94,9 +93,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
            "76a914669b857c03a5ed269d5d85a1ffac9ed5d663072788ac")
         .map(ScriptPubKey.fromAsmHex)
 
-    val utxoDeps = inputs.zip(scriptPubKeys).map {
-      case (input, pubKey) =>
-        SignRawTransactionOutputParameter.fromTransactionInput(input, pubKey)
+    val utxoDeps = inputs.zip(scriptPubKeys).map { case (input, pubKey) =>
+      SignRawTransactionOutputParameter.fromTransactionInput(input, pubKey)
     }
 
     for {
@@ -166,31 +164,30 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
   }
 
   it should "list all labels with purposes" in {
-    clientsF.flatMap {
-      case (client, otherClient) =>
-        val sendLabel = "sendLabel"
+    clientsF.flatMap { case (client, otherClient) =>
+      val sendLabel = "sendLabel"
 
-        val isImportDone = () =>
-          client.ping().map(_ => true).recover {
-            case exc if exc.getMessage.contains("rescanning") => false
-            case exc =>
-              logger.error(s"throwing $exc")
-              throw exc
-          }
+      val isImportDone = () =>
+        client.ping().map(_ => true).recover {
+          case exc if exc.getMessage.contains("rescanning") => false
+          case exc =>
+            logger.error(s"throwing $exc")
+            throw exc
+        }
 
-        def importTx(n: Int): Future[Unit] =
-          for {
-            address <- otherClient.getNewAddress
-            _ <- client.importAddress(address, sendLabel + n)
-            _ <- AsyncUtil.retryUntilSatisfiedF(isImportDone)
-          } yield ()
-
+      def importTx(n: Int): Future[Unit] =
         for {
-          _ <- importTx(0)
-          _ <- importTx(1)
-          receiveLabels <- client.listLabels(Some(LabelPurpose.Receive))
-          sendLabels <- client.listLabels(Some(LabelPurpose.Send))
-        } yield assert(receiveLabels != sendLabels)
+          address <- otherClient.getNewAddress
+          _ <- client.importAddress(address, sendLabel + n)
+          _ <- AsyncUtil.retryUntilSatisfiedF(isImportDone)
+        } yield ()
+
+      for {
+        _ <- importTx(0)
+        _ <- importTx(1)
+        receiveLabels <- client.listLabels(Some(LabelPurpose.Receive))
+        sendLabels <- client.listLabels(Some(LabelPurpose.Send))
+      } yield assert(receiveLabels != sendLabels)
     }
   }
 

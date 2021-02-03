@@ -10,8 +10,7 @@ trait TxDB {
   def txIdBE: DoubleSha256DigestBE
 }
 
-/**
-  * Represents a relevant transaction for the wallet that we should be keeping track of
+/** Represents a relevant transaction for the wallet that we should be keeping track of
   * @param txIdBE Transaction ID
   * @param transaction Serialized Transaction
   * @param unsignedTxIdBE Transaction ID of the unsigned transaction

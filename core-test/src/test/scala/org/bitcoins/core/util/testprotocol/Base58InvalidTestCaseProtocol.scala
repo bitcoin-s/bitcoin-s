@@ -4,8 +4,7 @@ import spray.json._
 
 import scala.annotation.tailrec
 
-/**
-  * Created by tom on 6/20/16.
+/** Created by tom on 6/20/16.
   */
 object Base58InvalidTestCaseProtocol extends DefaultJsonProtocol {
 
@@ -24,8 +23,7 @@ object Base58InvalidTestCaseProtocol extends DefaultJsonProtocol {
     override def write(testCase: Seq[Base58InvalidTestCase]): JsValue = ???
   }
 
-  /**
-    * Function to parse the JSON values into a Seq[Base58InvalidTestCase]
+  /** Function to parse the JSON values into a Seq[Base58InvalidTestCase]
     * @param elements
     * @return
     */
@@ -45,8 +43,7 @@ object Base58InvalidTestCaseProtocol extends DefaultJsonProtocol {
     loop(elements.toList, List())
   }
 
-  /**
-    * Helper function to parser
+  /** Helper function to parser
     * @param jsValue
     * @return
     */

@@ -95,8 +95,7 @@ class PsbtRpcTest extends BitcoindRpcTest {
     }
   }
 
-  /**
-    * Join psbt looks at the characteristics of a vector of PSBTs and converts them into a singular PSBT.
+  /** Join psbt looks at the characteristics of a vector of PSBTs and converts them into a singular PSBT.
     * This test takes test vectors from BIP 157 each missing some characteristic covered by the other. When joined
     * together the resulting PSBT represented as a string is very different so we can't just search for parts of either
     * PSBT.

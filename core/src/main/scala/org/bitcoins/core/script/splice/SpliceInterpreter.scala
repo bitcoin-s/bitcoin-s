@@ -8,8 +8,7 @@ import org.bitcoins.core.script.{
 }
 import org.bitcoins.core.util.BitcoinSLogger
 
-/**
-  * Created by chris on 2/4/16.
+/** Created by chris on 2/4/16.
   */
 sealed abstract class SpliceInterpreter extends BitcoinSLogger {
 

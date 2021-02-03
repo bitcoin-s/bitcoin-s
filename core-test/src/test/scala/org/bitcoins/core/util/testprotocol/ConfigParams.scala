@@ -2,8 +2,7 @@ package org.bitcoins.core.util.testprotocol
 
 import spray.json._
 
-/**
-  * Created by tom on 6/14/16.
+/** Created by tom on 6/14/16.
   */
 trait ConfigParams {
   def addrTypeOrIsCompressed: Either[String, Boolean]

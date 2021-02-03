@@ -89,8 +89,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
     val addressesToGenerate = 10
     val addrRange = 0 to addressesToGenerate
 
-    /**
-      * Generate some addresses, and verify that the correct address index is
+    /** Generate some addresses, and verify that the correct address index is
       * being reported
       */
     def testChain(

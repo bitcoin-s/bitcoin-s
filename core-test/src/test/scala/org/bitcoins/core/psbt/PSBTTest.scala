@@ -43,16 +43,14 @@ class PSBTTest extends BitcoinSAsyncTest {
         val oppositeGlobalElements = global.elements.filterNot(e =>
           newGlobal.elements.contains(e)) :+ global.unsignedTransaction
         val oppositeGlobal = GlobalPSBTMap(oppositeGlobalElements.distinct)
-        val oppositeInputs = inputs.zip(newInputs).map {
-          case (map, pruned) =>
-            InputPSBTMap(
-              map.elements.filterNot(e => pruned.elements.contains(e)))
+        val oppositeInputs = inputs.zip(newInputs).map { case (map, pruned) =>
+          InputPSBTMap(map.elements.filterNot(e => pruned.elements.contains(e)))
         }
-        val oppositeOutputs = outputs.zip(newOutputs).map {
-          case (map, pruned) =>
+        val oppositeOutputs =
+          outputs.zip(newOutputs).map { case (map, pruned) =>
             OutputPSBTMap(
               map.elements.filterNot(e => pruned.elements.contains(e)))
-        }
+          }
 
         val psbt2 = PSBT(oppositeGlobal, oppositeInputs, oppositeOutputs)
 
@@ -69,62 +67,63 @@ class PSBTTest extends BitcoinSAsyncTest {
 
         val infoAndTxs = PSBTGenerators.orderSpendingInfos(fullPsbt.transaction,
                                                            utxos.toVector)
-        val updatedPSBT = infoAndTxs.zipWithIndex.foldLeft(emptyPsbt) {
-          case (psbt, (utxo, index)) =>
-            val partUpdatedPsbt = psbt
-              .addUTXOToInput(utxo.prevTransaction, index)
-              .addSigHashTypeToInput(utxo.hashType, index)
+        val updatedPSBT =
+          infoAndTxs.zipWithIndex
+            .foldLeft(emptyPsbt) {
+              case (psbt, (utxo, index)) =>
+                val partUpdatedPsbt = psbt
+                  .addUTXOToInput(utxo.prevTransaction, index)
+                  .addSigHashTypeToInput(utxo.hashType, index)
 
-            (InputInfo.getRedeemScript(utxo.inputInfo),
-             InputInfo.getScriptWitness(utxo.inputInfo)) match {
-              case (Some(redeemScript), Some(scriptWitness)) =>
-                partUpdatedPsbt
-                  .addRedeemOrWitnessScriptToInput(redeemScript, index)
-                  .addScriptWitnessToInput(scriptWitness, index)
-              case (Some(redeemScript), None) =>
-                partUpdatedPsbt
-                  .addRedeemOrWitnessScriptToInput(redeemScript, index)
-              case (None, Some(scriptWitness)) =>
-                partUpdatedPsbt
-                  .addScriptWitnessToInput(scriptWitness, index)
-              case (None, None) =>
-                partUpdatedPsbt
+                (InputInfo.getRedeemScript(utxo.inputInfo),
+                 InputInfo.getScriptWitness(utxo.inputInfo)) match {
+                  case (Some(redeemScript), Some(scriptWitness)) =>
+                    partUpdatedPsbt
+                      .addRedeemOrWitnessScriptToInput(redeemScript, index)
+                      .addScriptWitnessToInput(scriptWitness, index)
+                  case (Some(redeemScript), None) =>
+                    partUpdatedPsbt
+                      .addRedeemOrWitnessScriptToInput(redeemScript, index)
+                  case (None, Some(scriptWitness)) =>
+                    partUpdatedPsbt
+                      .addScriptWitnessToInput(scriptWitness, index)
+                  case (None, None) =>
+                    partUpdatedPsbt
+                }
+
             }
-
-        }
         assert(updatedPSBT == fullPsbt)
     })
   }
 
   it must "correctly construct and sign a PSBT" in {
     forAllAsync(PSBTGenerators.psbtToBeSigned) { psbtWithBuilderF =>
-      psbtWithBuilderF.flatMap {
-        case (psbtNoSigs, utxos, _) =>
-          val infos = utxos.toVector.zipWithIndex.map {
-            case (utxo: ScriptSignatureParams[InputInfo], index) =>
-              (index, utxo)
-          }
-          val signedPSBTF = infos.foldLeft(Future.successful(psbtNoSigs)) {
-            case (unsignedPSBTF, (index, info)) =>
-              unsignedPSBTF.flatMap { unsignedPSBT =>
-                info.toSingles.foldLeft(Future.successful(unsignedPSBT)) {
-                  (psbtToSignF, singleInfo) =>
-                    psbtToSignF.flatMap(
-                      _.sign(index,
-                             singleInfo.signer,
-                             singleInfo.conditionalPath))
-                }
+      psbtWithBuilderF.flatMap { case (psbtNoSigs, utxos, _) =>
+        val infos = utxos.toVector.zipWithIndex.map {
+          case (utxo: ScriptSignatureParams[InputInfo], index) =>
+            (index, utxo)
+        }
+        val signedPSBTF = infos.foldLeft(Future.successful(psbtNoSigs)) {
+          case (unsignedPSBTF, (index, info)) =>
+            unsignedPSBTF.flatMap { unsignedPSBT =>
+              info.toSingles.foldLeft(Future.successful(unsignedPSBT)) {
+                (psbtToSignF, singleInfo) =>
+                  psbtToSignF.flatMap(
+                    _.sign(index,
+                           singleInfo.signer,
+                           singleInfo.conditionalPath))
               }
-          }
-          signedPSBTF.map { signedPSBT =>
-            val finalizedPsbtT = signedPSBT.finalizePSBT
-            finalizedPsbtT match {
-              case Success(finalizedPsbt) =>
-                val txT = finalizedPsbt.extractTransactionAndValidate
-                assert(txT.isSuccess, txT.failed)
-              case Failure(exception) => fail(exception)
             }
+        }
+        signedPSBTF.map { signedPSBT =>
+          val finalizedPsbtT = signedPSBT.finalizePSBT
+          finalizedPsbtT match {
+            case Success(finalizedPsbt) =>
+              val txT = finalizedPsbt.extractTransactionAndValidate
+              assert(txT.isSuccess, txT.failed)
+            case Failure(exception) => fail(exception)
           }
+        }
       }
     }
   }
@@ -133,19 +132,17 @@ class PSBTTest extends BitcoinSAsyncTest {
     forAllAsync(
       PSBTGenerators.psbtWithBuilderAndP2SHOutputs(finalized = false)) {
       psbtWithBuilderF =>
-        psbtWithBuilderF.flatMap {
-          case (psbtEmptyOutputs, _, redeemScripts) =>
-            val psbtWithOutputs =
-              redeemScripts.zipWithIndex.foldLeft(psbtEmptyOutputs)(
-                (psbt, spk) =>
-                  psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
+        psbtWithBuilderF.flatMap { case (psbtEmptyOutputs, _, redeemScripts) =>
+          val psbtWithOutputs =
+            redeemScripts.zipWithIndex.foldLeft(psbtEmptyOutputs)((psbt, spk) =>
+              psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
 
-            val allOutputsValid =
-              psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
-                case (map, spk) =>
-                  map.redeemScriptOpt.contains(RedeemScript(spk))
-              }
-            assert(allOutputsValid)
+          val allOutputsValid =
+            psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
+              case (map, spk) =>
+                map.redeemScriptOpt.contains(RedeemScript(spk))
+            }
+          assert(allOutputsValid)
         }
     }
   }
@@ -154,20 +151,18 @@ class PSBTTest extends BitcoinSAsyncTest {
     forAllAsync(
       PSBTGenerators.psbtWithBuilderAndP2WSHOutputs(finalized = false)) {
       psbtWithBuilderF =>
-        psbtWithBuilderF.flatMap {
-          case (psbtEmptyOutputs, _, redeemScripts) =>
-            val psbtWithOutputs =
-              redeemScripts.zipWithIndex.foldLeft(psbtEmptyOutputs)(
-                (psbt, spk) =>
-                  psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
+        psbtWithBuilderF.flatMap { case (psbtEmptyOutputs, _, redeemScripts) =>
+          val psbtWithOutputs =
+            redeemScripts.zipWithIndex.foldLeft(psbtEmptyOutputs)((psbt, spk) =>
+              psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
 
-            val allOutputsValid =
-              psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
-                case (map, spk) =>
-                  map.witnessScriptOpt.contains(WitnessScript(spk))
+          val allOutputsValid =
+            psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
+              case (map, spk) =>
+                map.witnessScriptOpt.contains(WitnessScript(spk))
 
-              }
-            assert(allOutputsValid)
+            }
+          assert(allOutputsValid)
         }
     }
   }

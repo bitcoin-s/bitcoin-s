@@ -6,8 +6,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-/**
-  * Compact sized unsigned integer, a Bitcoin-native data structure
+/** Compact sized unsigned integer, a Bitcoin-native data structure
   *
   * @see https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
   */
@@ -70,8 +69,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     else 9
   }
 
-  /**
-    * This function is responsible for calculating what the compact size unsigned integer is for a
+  /** This function is responsible for calculating what the compact size unsigned integer is for a
     * sequence of bytes
     * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers.
     */
@@ -94,15 +92,13 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   def calculateCompactSizeUInt(hex: String): CompactSizeUInt =
     calculateCompactSizeUInt(BytesUtil.decodeHex(hex))
 
-  /**
-    * Parses a VarInt from a string of hex characters
+  /** Parses a VarInt from a string of hex characters
     * [[https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers]]
     */
   def parseCompactSizeUInt(hex: String): CompactSizeUInt =
     parseCompactSizeUInt(BytesUtil.decodeHex(hex))
 
-  /**
-    * Parses a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] from a sequence of bytes
+  /** Parses a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] from a sequence of bytes
     * [[https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers]]
     */
   def parseCompactSizeUInt(bytes: ByteVector): CompactSizeUInt = {
@@ -123,8 +119,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
 
   def parse(bytes: ByteVector): CompactSizeUInt = parseCompactSizeUInt(bytes)
 
-  /**
-    * Returns the size of a VarInt in the number of bytes
+  /** Returns the size of a VarInt in the number of bytes
     * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer.
     */
   def parseCompactSizeUIntSize(byte: Byte): Long = {
@@ -138,8 +133,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     else 9
   }
 
-  /**
-    * Parses the [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] from a
+  /** Parses the [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] from a
     * [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]].
     * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers.
     */

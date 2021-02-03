@@ -8,8 +8,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.script.result.ScriptResult
 
-/**
-  * Created by chris on 1/18/16.
+/** Created by chris on 1/18/16.
   * This represents a core test case for valid and invalid scripts
   * the scripts can be seen in the script_tests.json file
   * files.

@@ -7,8 +7,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.scalacheck.{Prop, Properties}
 
-/**
-  * Created by chris on 7/25/16.
+/** Created by chris on 7/25/16.
   */
 class TransactionSignatureCreatorSpec
     extends Properties("TransactionSignatureCreatorSpec")

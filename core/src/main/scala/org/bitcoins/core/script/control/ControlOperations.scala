@@ -3,8 +3,7 @@ package org.bitcoins.core.script.control
 import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.script.constant.ScriptOperation
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 sealed abstract class ControlOperations extends ScriptOperation
 
@@ -21,16 +20,14 @@ case object OP_NOTIF extends ConditionalOperation {
   override val opCode: Int = 100
 }
 
-/**
-  * If the preceding `OP_IF` or `OP_NOTIF` or `OP_ELSE` was not executed then these statements are and
+/** If the preceding `OP_IF` or `OP_NOTIF` or `OP_ELSE` was not executed then these statements are and
   * if the preceding `OP_IF` or `OP_NOTIF` or `OP_ELSE` was executed then these statements are not.
   */
 case object OP_ELSE extends ControlOperations {
   override val opCode: Int = 103
 }
 
-/**
-  * Ends an if/else block. All blocks must end, or the transaction is invalid.
+/** Ends an if/else block. All blocks must end, or the transaction is invalid.
   * An `OP_ENDIF` without `OP_IF` earlier is also invalid.
   */
 case object OP_ENDIF extends ControlOperations {
@@ -42,8 +39,7 @@ case object OP_VERIFY extends ControlOperations {
   override val opCode: Int = 105
 }
 
-/**
-  * Marks transaction as invalid. A standard way of attaching extra data to transactions is to add a zero-value
+/** Marks transaction as invalid. A standard way of attaching extra data to transactions is to add a zero-value
   * output with a scriptPubKey consisting of `OP_RETURN` followed by exactly one pushdata op.
   * Such outputs are provably unspendable, reducing their cost to the network.
   * Currently it is usually considered non-standard

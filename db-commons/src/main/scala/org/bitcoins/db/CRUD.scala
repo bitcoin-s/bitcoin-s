@@ -7,8 +7,7 @@ import slick.lifted.AbstractTable
 import java.sql.SQLException
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * Created by chris on 9/8/16.
+/** Created by chris on 9/8/16.
   * This is an abstract actor that can be used to implement any sort of
   * actor that accesses a Postgres database. It creates
   * read, update, upsert, and delete methods for your actor to call.
@@ -50,8 +49,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
   /** Binding to the actual database itself, this is what is used to run querys */
   def safeDatabase: SafeDatabase = SafeDatabase(this)
 
-  /**
-    * create a record in the database
+  /** create a record in the database
     *
     * @param t - the record to be inserted
     * @return the inserted record
@@ -63,8 +61,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
 
   def createAll(ts: Vector[T]): Future[Vector[T]]
 
-  /**
-    * read a record from the database
+  /** read a record from the database
     *
     * @param id - the id of the record to be read
     * @return Option[T] - the record if found, else none
@@ -103,8 +100,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     }
   }
 
-  /**
-    * delete the corresponding record in the database
+  /** delete the corresponding record in the database
     *
     * @param t - the record to be deleted
     * @return int - the number of rows affected by the deletion
@@ -115,14 +111,12 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     safeDatabase.run(query.delete)
   }
 
-  /**
-    * delete all records from the table
+  /** delete all records from the table
     */
   def deleteAll(): Future[Int] =
     safeDatabase.run(table.delete.transactionally)
 
-  /**
-    * insert the record if it does not exist, update it if it does
+  /** insert the record if it does not exist, update it if it does
     *
     * @param t - the record to inserted / updated
     * @return t - the record that has been inserted / updated
@@ -153,8 +147,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     }
   }
 
-  /**
-    * return all rows that have a certain primary key
+  /** return all rows that have a certain primary key
     *
     * @param id
     * @return Query object corresponding to the selected rows
@@ -166,8 +159,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
   protected def findByPrimaryKeys(
       ids: Vector[PrimaryKeyType]): Query[Table[T], T, Seq]
 
-  /**
-    * return the row that corresponds with this record
+  /** return the row that corresponds with this record
     *
     * @param t - the row to find
     * @return query - the sql query to find this record
@@ -190,8 +182,7 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
   import jdbcProfile.database
   import jdbcProfile.profile.api.actionBasedSQLInterpolation
 
-  /**
-    * SQLite does not enable foreign keys by default. This query is
+  /** SQLite does not enable foreign keys by default. This query is
     * used to enable it. It must be included in all connections to
     * the database.
     */
@@ -202,12 +193,11 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
   private def logAndThrowError(
       action: DBIOAction[_, NoStream, _]): PartialFunction[
     Throwable,
-    Nothing] = {
-    case err: SQLException =>
-      logger.error(
-        s"Error when executing query ${action.getDumpInfo.getNamePlusMainInfo}")
-      logger.error(s"$err")
-      throw err
+    Nothing] = { case err: SQLException =>
+    logger.error(
+      s"Error when executing query ${action.getDumpInfo.getNamePlusMainInfo}")
+    logger.error(s"$err")
+    throw err
   }
 
   /** Runs the given DB action */
@@ -219,8 +209,7 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
     result.recoverWith { logAndThrowError(action) }
   }
 
-  /**
-    * Runs the given DB sequence-returning DB action
+  /** Runs the given DB sequence-returning DB action
     * and converts the result to a vector
     */
   def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(implicit

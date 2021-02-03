@@ -39,8 +39,7 @@ object NodeUri extends StringFactory[NodeUri] {
     fromStringT(uri + defaultPort)
   }
 
-  /**
-    * Assumes format is [nodeId]@[host]:[port]
+  /** Assumes format is [nodeId]@[host]:[port]
     */
   private def parse(validUri: String): NodeUri = {
     //key is 33 bytes in size

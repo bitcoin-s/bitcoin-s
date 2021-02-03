@@ -4,8 +4,7 @@ import org.bitcoins.core.protocol.Address
 import org.bitcoins.crypto.{ECPrivateKey, Sha256Hash160Digest}
 import spray.json._
 
-/**
-  * Created by tom on 6/14/16.
+/** Created by tom on 6/14/16.
   */
 object Base58ValidTestCaseProtocol extends DefaultJsonProtocol {
   import ConfigParamsProtocol._

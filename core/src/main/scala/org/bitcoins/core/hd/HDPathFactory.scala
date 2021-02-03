@@ -15,8 +15,7 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
       chainType: HDChainType,
       addressIndex: Int): PathType
 
-  /**
-    * Tries to generate a HD path from the given path segments
+  /** Tries to generate a HD path from the given path segments
     */
   def apply(children: Vector[BIP32Node]): Try[PathType] =
     Try {
@@ -92,8 +91,7 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
     HDAddress(chain, addressIndex)
   }
 
-  /**
-    * The purpose constant from BIP43
+  /** The purpose constant from BIP43
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki#purpose BIP43]]
     */
@@ -104,23 +102,19 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
 
   lazy val purposeChild: BIP32Node = BIP32Node(PURPOSE, hardened = true)
 
-  /**
-    * The index of the coin segement of a BIP44 path
+  /** The index of the coin segement of a BIP44 path
     */
   final val COIN_INDEX: Int = 1
 
-  /**
-    * The index of the account segement of a BIP44 path
+  /** The index of the account segement of a BIP44 path
     */
   final val ACCOUNT_INDEX: Int = 2
 
-  /**
-    * The index of the chain segement of a BIP44 path
+  /** The index of the chain segement of a BIP44 path
     */
   final val CHAIN_INDEX: Int = 3
 
-  /**
-    * The index of the address segement of a BIP44 path
+  /** The index of the address segement of a BIP44 path
     */
   final val ADDRESS_INDEX: Int = 4
 }

@@ -4,8 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.Int64
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 6/23/16.
+/** Created by chris on 6/23/16.
   */
 trait RawSatoshisSerializer extends RawBitcoinSerializer[Satoshis] {
 

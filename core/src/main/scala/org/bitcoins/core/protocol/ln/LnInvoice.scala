@@ -46,8 +46,7 @@ sealed abstract class LnInvoice {
     amount.map(_.toPicoBitcoins)
   }
 
-  /**
-    * The [[org.bitcoins.core.protocol.ln.node.NodeId NodeId]] that we are paying this invoice too
+  /** The [[org.bitcoins.core.protocol.ln.node.NodeId NodeId]] that we are paying this invoice too
     * We can either recover this with public key recovery from
     * the [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]] or if
     * [[org.bitcoins.core.protocol.ln.LnTag.NodeIdTag LnTag.NodeIdTag]] is
@@ -74,8 +73,7 @@ sealed abstract class LnInvoice {
 
   }
 
-  /**
-    * The data that is hashed and then signed in the
+  /** The data that is hashed and then signed in the
     * [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]
     */
   def signatureData: ByteVector = {
@@ -183,8 +181,8 @@ object LnInvoice extends StringFactory[LnInvoice] with BitcoinSLogger {
 
   override def fromString(bech32String: String): LnInvoice = {
     val sepIndexes = {
-      bech32String.zipWithIndex.filter {
-        case (sep, _) => sep == Bech32.separator
+      bech32String.zipWithIndex.filter { case (sep, _) =>
+        sep == Bech32.separator
       }
     }
     if (sepIndexes.isEmpty) {
@@ -280,8 +278,7 @@ object LnInvoice extends StringFactory[LnInvoice] with BitcoinSLogger {
     LnInvoiceSignature(recoverId = UInt8.zero, signature = sig)
   }
 
-  /**
-    * The easiest way to create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
+  /** The easiest way to create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
     * is by just passing the given pareameters and
     * and then build will create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
     * with a valid [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]
@@ -304,8 +301,7 @@ object LnInvoice extends StringFactory[LnInvoice] with BitcoinSLogger {
               signature = lnInvoiceSignature)
   }
 
-  /**
-    * The easiest way to create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
+  /** The easiest way to create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
     * is by just passing the given parameters and
     * and then build will create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
     * with a valid [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]

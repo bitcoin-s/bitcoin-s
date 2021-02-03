@@ -11,8 +11,7 @@ import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Represents an extended key as defined by BIP32
+/** Represents an extended key as defined by BIP32
   * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki]]
   */
 sealed abstract class ExtKey extends NetworkElement {
@@ -30,14 +29,12 @@ sealed abstract class ExtKey extends NetworkElement {
   /** The fingerprint of the parent key */
   def fingerprint: ByteVector
 
-  /**
-    * Child number. This is ser32(i) for i in xi = xpar/i, with xi the key being serialized.
+  /** Child number. This is ser32(i) for i in xi = xpar/i, with xi the key being serialized.
     * (0x00000000 if master key)
     */
   def childNum: UInt32
 
-  /**
-    * In order to prevent these from depending solely on the key itself,
+  /** In order to prevent these from depending solely on the key itself,
     * we extend both private and public keys first with an extra 256 bits of entropy.
     * This extension, called the chain code,
     * is identical for corresponding private and public keys, and consists of 32 bytes.
@@ -47,8 +44,7 @@ sealed abstract class ExtKey extends NetworkElement {
   /** The key at this path */
   def key: BaseECKey
 
-  /**
-    * Derives the child pubkey at the specified index
+  /** Derives the child pubkey at the specified index
     */
   def deriveChildPubKey(idx: UInt32): Try[ExtPublicKey] =
     this match {
@@ -57,23 +53,20 @@ sealed abstract class ExtKey extends NetworkElement {
       case pub: ExtPublicKey => pub.deriveChildPubKey(idx)
     }
 
-  /**
-    * Derives the child pubkey at the specified index
+  /** Derives the child pubkey at the specified index
     */
   def deriveChildPubKey(idx: Long): Try[ExtPublicKey] = {
     Try(UInt32(idx)).flatMap(deriveChildPubKey)
   }
 
-  /**
-    * Derives the child pubkey at the specified index and
+  /** Derives the child pubkey at the specified index and
     * hardening value
     */
   def deriveChildPubKey(child: BIP32Node): Try[ExtPublicKey] = {
     deriveChildPubKey(child.toUInt32)
   }
 
-  /**
-    * Derives the child pubkey at the specified path
+  /** Derives the child pubkey at the specified path
     */
   def deriveChildPubKey(path: BIP32Path): Try[ExtPublicKey] = {
     this match {
@@ -185,8 +178,7 @@ sealed abstract class ExtPrivateKey
 
   override def key: ECPrivateKey
 
-  /**
-    * Derives the child key corresponding to the given path. The given path
+  /** Derives the child key corresponding to the given path. The given path
     * could signify account levels, one sublevel for each currency, or
     * how to derive change addresses.
     *
@@ -255,9 +247,8 @@ sealed abstract class ExtPrivateKey
   /** Signs the given bytes with the given [[BIP32Path path]] */
   override def deriveAndSignFuture: (
       ByteVector,
-      BIP32Path) => Future[ECDigitalSignature] = {
-    case (bytes, path) =>
-      deriveChildPrivKey(path).signFunction(bytes)
+      BIP32Path) => Future[ECDigitalSignature] = { case (bytes, path) =>
+    deriveChildPrivKey(path).signFunction(bytes)
   }
 
   override def toStringSensitive: String = {
@@ -343,8 +334,7 @@ object ExtPrivateKey
     ExtPrivateKeyImpl(version, depth, fingerprint, child, chainCode, privateKey)
   }
 
-  /**
-    * Hard coded value according to
+  /** Hard coded value according to
     * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#master-key-generation BIP32]]
     */
   private val BIP32_KEY: ByteVector =
@@ -353,8 +343,7 @@ object ExtPrivateKey
       case Right(bytevec)  => bytevec
     }
 
-  /**
-    * Generates a master private key
+  /** Generates a master private key
     * https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#master-key-generation
     */
   def apply(
@@ -454,8 +443,7 @@ object ExtPrivateKeyHardened
     ExtPrivateKey.fromBytes(bytes).toHardened
   }
 
-  /**
-    * Generates a master private key
+  /** Generates a master private key
     * https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#master-key-generation
     */
   def apply(

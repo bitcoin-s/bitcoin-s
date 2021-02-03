@@ -6,8 +6,7 @@ import org.bitcoins.testkit.core.gen.WitnessGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Prop
 
-/**
-  * Created by chris on 11/28/16.
+/** Created by chris on 11/28/16.
   */
 class TransactionWitnessSpec extends BitcoinSUnitTest {
 

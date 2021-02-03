@@ -20,8 +20,7 @@ import play.api.libs.json._
 import scala.concurrent.Future
 import scala.util.Try
 
-/**
-  * This class is compatible with version 0.17 of Bitcoin Core.
+/** This class is compatible with version 0.17 of Bitcoin Core.
   *
   * @see [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient Scaladocs]]
   *
@@ -64,8 +63,7 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(implicit
   override def getFiltersAtHeight(
       height: Int): Future[Vector[CompactFilterDb]] = filtersUnsupported
 
-  /**
-    * $signRawTx
+  /** $signRawTx
     *
     * This RPC call signs the raw transaction with keys found in
     * the Bitcoin Core wallet.
@@ -81,8 +79,7 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(implicit
                                                 Json.toJson(utxoDeps),
                                                 Json.toJson(sigHash)))
 
-  /**
-    * $signRawTx
+  /** $signRawTx
     *
     * This RPC call signs the raw transaction with keys provided
     * manually.
@@ -114,8 +111,7 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(implicit
 
 object BitcoindV17RpcClient {
 
-  /**
-    * Creates an RPC client from the given instance.
+  /** Creates an RPC client from the given instance.
     *
     * Behind the scenes, we create an actor system for
     * you. You can use `withActorSystem` if you want to
@@ -126,8 +122,7 @@ object BitcoindV17RpcClient {
     withActorSystem(instance)
   }
 
-  /**
-    * Creates an RPC client from the given instance,
+  /** Creates an RPC client from the given instance,
     * together with the given actor system. This is for
     * advanced users, wher you need fine grained control
     * over the RPC client.

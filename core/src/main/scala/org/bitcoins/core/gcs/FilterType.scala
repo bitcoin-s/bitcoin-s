@@ -4,8 +4,7 @@ import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits._
 
-/**
-  * Filter types for BIP158 block content filters
+/** Filter types for BIP158 block content filters
   *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters BIP158]]
   */

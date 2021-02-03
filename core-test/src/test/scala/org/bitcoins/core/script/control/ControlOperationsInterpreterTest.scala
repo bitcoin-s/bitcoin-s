@@ -19,8 +19,7 @@ import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 
 import scala.concurrent.Future
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 class ControlOperationsInterpreterTest extends BitcoinSAsyncTest {
 

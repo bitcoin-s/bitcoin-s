@@ -4,8 +4,7 @@ import scodec.bits.{BitVector, ByteVector}
 
 import scala.math.BigInt
 
-/**
-  * Created by chris on 2/26/16.
+/** Created by chris on 2/26/16.
   */
 trait CryptoBytesUtil {
 
@@ -17,8 +16,7 @@ trait CryptoBytesUtil {
 
   def encodeHex(byte: Byte): String = encodeHex(ByteVector(byte))
 
-  /**
-    * Encodes a long number to a hex string, pads it with an extra '0' char
+  /** Encodes a long number to a hex string, pads it with an extra '0' char
     * if the hex string is an odd amount of characters.
     */
   def encodeHex(long: Long): String = {
@@ -68,8 +66,7 @@ trait CryptoBytesUtil {
 
   private val Z: Char = '0'
 
-  /**
-    * Adds the amount padding bytes needed to fix the size of the hex string
+  /** Adds the amount padding bytes needed to fix the size of the hex string
     * for instance, ints are required to be 4 bytes. If the number is just 1
     * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
     * 00000001 instead of just 1.

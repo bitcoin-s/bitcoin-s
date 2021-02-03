@@ -5,8 +5,7 @@ import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 2/17/16.
+/** Created by chris on 2/17/16.
   */
 class ScriptSignatureFactoryTest extends BitcoinSUnitTest {
 

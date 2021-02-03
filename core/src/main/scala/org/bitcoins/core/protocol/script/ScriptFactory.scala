@@ -6,8 +6,7 @@ import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.Factory
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 12/9/16.
+/** Created by chris on 12/9/16.
   */
 trait ScriptFactory[T <: Script] extends Factory[T] {
 
@@ -29,8 +28,7 @@ trait ScriptFactory[T <: Script] extends Factory[T] {
     BitcoinScriptUtil.parseScript(bytes = bytes, f = fromAsm)
   }
 
-  /**
-    * Scripts are serialized with a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] at the beginning
+  /** Scripts are serialized with a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] at the beginning
     * to indicate how long the Script is. This construct assumes the
     * [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]]
     * is NOT passed into the constructor. Only the actual Script program bytes.
@@ -41,8 +39,7 @@ trait ScriptFactory[T <: Script] extends Factory[T] {
     fromBytes(fullBytes)
   }
 
-  /**
-    * Scripts are serialized with a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] at the beginning
+  /** Scripts are serialized with a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] at the beginning
     * to indicate how long the [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]] is
     * . This construct assumes the [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]]
     * is NOT passed into the constructor. Only the actual Script program hex is.

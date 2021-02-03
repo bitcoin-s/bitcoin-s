@@ -10,8 +10,7 @@ import org.scalacheck.Gen
 
 sealed abstract class LnInvoiceGen {
 
-  /**
-    * Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+  /** Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
     * that does not contain a amount
     * @return
     */
@@ -21,8 +20,7 @@ sealed abstract class LnInvoiceGen {
     }
   }
 
-  /**
-    * Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+  /** Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
     * with an amount encoded
     */
   def lnHrpAmt: Gen[LnHumanReadablePart] = {

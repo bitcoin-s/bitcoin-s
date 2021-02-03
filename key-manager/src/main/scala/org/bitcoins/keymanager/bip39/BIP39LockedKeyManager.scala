@@ -15,8 +15,7 @@ import org.bitcoins.keymanager._
 /** Represents a */
 object BIP39LockedKeyManager extends BitcoinSLogger {
 
-  /**
-    * Unlock the wallet by decrypting the [[EncryptedMnemonic]] seed
+  /** Unlock the wallet by decrypting the [[EncryptedMnemonic]] seed
     * @param passphrase the password to decrypt the wallet
     * @param kmParams parameters needed to create the key manager
     */

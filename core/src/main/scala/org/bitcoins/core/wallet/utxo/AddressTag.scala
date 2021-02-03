@@ -19,8 +19,7 @@ trait AddressTagName {
   def !=(at: AddressTagType): Boolean = !(this == at)
 }
 
-/**
-  * An tag for an address. It's name is what it is referred to as
+/** An tag for an address. It's name is what it is referred to as
   * and it's tagType is its parent AddressTagType
   */
 trait AddressTag {

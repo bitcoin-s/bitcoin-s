@@ -9,9 +9,8 @@ import scala.util.Try
 class UInt8Spec extends Properties("UInt8Spec") with BitcoinSLogger {
 
   property("convert uint8 -> byte -> uint8") = {
-    Prop.forAll(NumberGenerator.uInt8) {
-      case u8: UInt8 =>
-        UInt8(UInt8.toByte(u8)) == u8
+    Prop.forAll(NumberGenerator.uInt8) { case u8: UInt8 =>
+      UInt8(UInt8.toByte(u8)) == u8
     }
   }
 

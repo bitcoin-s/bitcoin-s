@@ -6,8 +6,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 3/30/16.
+/** Created by chris on 3/30/16.
   */
 class TransactionInputTest extends BitcoinSUnitTest {
 

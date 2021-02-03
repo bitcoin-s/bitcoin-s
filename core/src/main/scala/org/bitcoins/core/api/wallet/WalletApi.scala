@@ -24,8 +24,7 @@ import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-/**
-  * API for the wallet project.
+/** API for the wallet project.
   *
   * This wallet API is BIP44 compliant.
   *
@@ -47,8 +46,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def stop(): Future[WalletApi]
 
-  /**
-    * Processes the given transaction, updating our DB state if it's relevant to us.
+  /** Processes the given transaction, updating our DB state if it's relevant to us.
     * @param transaction The transaction we're processing
     * @param blockHash Containing block hash
     */
@@ -60,9 +58,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       transactions: Vector[Transaction],
       blockHash: Option[DoubleSha256DigestBE])(implicit
       ec: ExecutionContext): Future[WalletApi] = {
-    transactions.foldLeft(Future.successful(this)) {
-      case (wallet, tx) =>
-        wallet.flatMap(_.processTransaction(tx, blockHash))
+    transactions.foldLeft(Future.successful(this)) { case (wallet, tx) =>
+      wallet.flatMap(_.processTransaction(tx, blockHash))
     }
   }
 
@@ -70,8 +67,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def listTransactions(): Future[Vector[TransactionDb]]
 
-  /**
-    * Takes in a block header and updates our TxoStates to the new chain tip
+  /** Takes in a block header and updates our TxoStates to the new chain tip
     * @param blockHeader Block header we are processing
     */
   def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]]
@@ -151,15 +147,13 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     */
   def clearAllUtxosAndAddresses(): Future[WalletApi]
 
-  /**
-    * Gets a new external address with the specified
+  /** Gets a new external address with the specified
     * type.
     *  @param addressType
     */
   def getNewAddress(addressType: AddressType): Future[BitcoinAddress]
 
-  /**
-    * Gets a new external address
+  /** Gets a new external address
     * Calling this method multiple
     * times will return the same address, until it has
     * received funds.
@@ -172,22 +166,19 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def getNewAddress(tags: Vector[AddressTag]): Future[BitcoinAddress]
 
-  /**
-    * Gets a external address the given AddressType. Calling this
+  /** Gets a external address the given AddressType. Calling this
     * method multiple times will return the same address, until it has
     * received funds.
     */
   def getUnusedAddress(addressType: AddressType): Future[BitcoinAddress]
 
-  /**
-    * Gets a external address. Calling this method multiple
+  /** Gets a external address. Calling this method multiple
     * times will return the same address, until it has
     * received funds.
     */
   def getUnusedAddress: Future[BitcoinAddress]
 
-  /**
-    * Mimics the `getaddressinfo` RPC call in Bitcoin Core
+  /** Mimics the `getaddressinfo` RPC call in Bitcoin Core
     *
     * @param address
     * @return If the address is found in our database `Some(address)`
@@ -307,8 +298,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     } yield tx
   }
 
-  /**
-    * Sends money to the address
+  /** Sends money to the address
     *
     * todo: add error handling to signature
     */
@@ -328,8 +318,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     } yield tx
   }
 
-  /**
-    * Sends funds using the specified outputs
+  /** Sends funds using the specified outputs
     *
     * todo: add error handling to signature
     */
@@ -346,8 +335,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def sendToOutputs(outputs: Vector[TransactionOutput], feeRate: FeeUnit)(
       implicit ec: ExecutionContext): Future[Transaction]
 
-  /**
-    * Sends funds to each address
+  /** Sends funds to each address
     */
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],

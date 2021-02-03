@@ -220,8 +220,7 @@ object LnCurrencyUnits {
   private[currency] val MSAT_TO_PICO = 10
   val zero: LnCurrencyUnit = PicoBitcoins.zero
 
-  /**
-    * For information regarding the rounding of sub-Satoshi values, see
+  /** For information regarding the rounding of sub-Satoshi values, see
     * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#commitment-transaction-outputs BOLT3]]
     */
   def toSatoshi(lnCurrencyUnits: LnCurrencyUnit): Satoshis = {

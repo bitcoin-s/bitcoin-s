@@ -8,8 +8,7 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 5/16/16.
+/** Created by chris on 5/16/16.
   * source of values: [[https://en.bitcoin.it/wiki/Base58Check_encoding]]
   */
 sealed abstract class Base58 {
@@ -72,8 +71,7 @@ sealed abstract class Base58 {
     */
   def encode(byte: Byte): String = encode(ByteVector.fromByte(byte))
 
-  /**
-    * Takes in [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]
+  /** Takes in [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]
     * string and returns sequence of [[scala.Byte Byte]]s.
     * [[https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala]]
     */
@@ -93,8 +91,7 @@ sealed abstract class Base58 {
       case Failure(_)    => false
     }
 
-  /**
-    * Checks a private key that begins with a symbol corresponding that private key to a compressed public key ('K', 'L', 'c').
+  /** Checks a private key that begins with a symbol corresponding that private key to a compressed public key ('K', 'L', 'c').
     * In a Base58-encoded private key corresponding to a compressed public key, the 5th-to-last byte should be 0x01.
     */
   private def checkCompressedPubKeyValidity(base58: String): Boolean = {
@@ -103,8 +100,7 @@ sealed abstract class Base58 {
     compressedByte == 0x01.toByte
   }
 
-  /**
-    * Checks if the string begins with an Address prefix byte/character.
+  /** Checks if the string begins with an Address prefix byte/character.
     * ('1', '3', 'm', 'n', '2')
     */
   private def isValidAddressPreFixByte(byte: Byte): Boolean = {
@@ -112,12 +108,11 @@ sealed abstract class Base58 {
       MainNetChainParams.base58Prefixes(PubKeyAddress) ++ MainNetChainParams
         .base58Prefixes(ScriptAddress) ++
         TestNetChainParams.base58Prefixes(PubKeyAddress) ++ TestNetChainParams
-        .base58Prefixes(ScriptAddress)
+          .base58Prefixes(ScriptAddress)
     validAddressPreFixBytes.toSeq.contains(byte)
   }
 
-  /**
-    * Checks if the string begins with a private key prefix byte/character.
+  /** Checks if the string begins with a private key prefix byte/character.
     * ('5', '9', 'c')
     */
   private def isValidSecretKeyPreFixByte(byte: Byte): Boolean = {
@@ -127,8 +122,7 @@ sealed abstract class Base58 {
     validSecretKeyPreFixBytes.toSeq.contains(byte)
   }
 
-  /**
-    * Checks the validity of a [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] string.
+  /** Checks the validity of a [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] string.
     * A [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] string must not contain ('0', 'O', 'l', 'I').
     * If the string is an address: it must have a valid address prefix byte and  must be between 26-35 characters in length.
     * If the string is a private key: it must have a valid private key prefix byte and must have a byte size of 32.

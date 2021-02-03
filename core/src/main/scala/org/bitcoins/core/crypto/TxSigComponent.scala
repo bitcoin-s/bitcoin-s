@@ -10,8 +10,7 @@ import org.bitcoins.core.wallet.utxo._
 
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 4/6/16.
+/** Created by chris on 4/6/16.
   * Represents a transaction whose input is being checked against the spending conditions of a
   * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
   */
@@ -218,8 +217,7 @@ object TxSigComponent {
   }
 }
 
-/**
-  * The [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]]
+/** The [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]]
   * used to evaluate the the original Satoshi transaction digest algorithm.
   * Basically this is every spk that is not a
   * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] EXCEPT in the case of a
@@ -249,8 +247,7 @@ sealed abstract class P2SHTxSigComponent extends BaseTxSigComponent {
     input.scriptSignature.asInstanceOf[P2SHScriptSignature]
 }
 
-/**
-  * The [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]]
+/** The [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]]
   * used to represent all the components necessarily for
   * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki BIP143]].
   * Examples of these [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]'s
@@ -325,8 +322,7 @@ sealed abstract class WitnessTxSigComponentP2SH
 
 }
 
-/**
-  * This represents a 'rebuilt' [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
+/** This represents a 'rebuilt' [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
   * that was constructed from [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
   * After the
   * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] is rebuilt, we need to use that rebuilt

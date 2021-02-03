@@ -24,8 +24,7 @@ import play.api.libs.json._
 import scala.concurrent.Future
 import scala.util.Try
 
-/**
-  * Class for creating a BitcoindV18 instance that can access RPCs
+/** Class for creating a BitcoindV18 instance that can access RPCs
   * @param instance
   * @param actorSystem
   */
@@ -64,8 +63,7 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(implicit
   override def getFiltersAtHeight(
       height: Int): Future[Vector[CompactFilterDb]] = filtersUnsupported
 
-  /**
-    * $signRawTx
+  /** $signRawTx
     *
     * This RPC call signs the raw transaction with keys found in
     * the Bitcoin Core wallet.
@@ -81,8 +79,7 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(implicit
                                                 Json.toJson(utxoDeps),
                                                 Json.toJson(sigHash)))
 
-  /**
-    * $signRawTx
+  /** $signRawTx
     *
     * This RPC call signs the raw transaction with keys provided
     * manually.
@@ -104,8 +101,7 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(implicit
 
 object BitcoindV18RpcClient {
 
-  /**
-    * Creates an RPC client from the given instance.
+  /** Creates an RPC client from the given instance.
     *
     * Behind the scenes, we create an actor system for
     * you. You can use `withActorSystem` if you want to
@@ -116,8 +112,7 @@ object BitcoindV18RpcClient {
     withActorSystem(instance)
   }
 
-  /**
-    * Creates an RPC client from the given instance,
+  /** Creates an RPC client from the given instance,
     * together with the given actor system. This is for
     * advanced users, where you need fine grained control
     * over the RPC client.

@@ -21,8 +21,7 @@ import scala.annotation.tailrec
 // objects (they have to be in the same file as the trait/class), this was
 // the least ugly workaround I could come up with.
 
-/**
-  * In memory implementation of a blockchain
+/** In memory implementation of a blockchain
   * This data structure maintains the state of a
   * blockchain in memory, the headers can be accessed
   * with [[headers]]. The headers are stored with the most
@@ -100,8 +99,7 @@ private[blockchain] trait BaseBlockChainCompObject
   def fromHeaders(
       headers: scala.collection.immutable.Seq[BlockHeaderDb]): Blockchain
 
-  /**
-    * Attempts to connect the given block header with the given blockchain
+  /** Attempts to connect the given block header with the given blockchain
     * @param header the block header to connect to our chain
     * @param blockchain the blockchain we are attempting to connect to
     */
@@ -223,8 +221,7 @@ private[blockchain] trait BaseBlockChainCompObject
 
   }
 
-  /**
-    * Finds the parent's index of the given header
+  /** Finds the parent's index of the given header
     */
   private def findPrevBlockHeaderIdx(
       header: BlockHeader,

@@ -5,8 +5,7 @@ import scala.annotation.tailrec
 import org.scalatest.compatible.Assertion
 import org.scalatest.exceptions.TestFailedException
 
-/**
-  * Provides extension methods, syntax
+/** Provides extension methods, syntax
   * and other handy implicit values that
   * aid in testing.
   */

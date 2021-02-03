@@ -137,50 +137,47 @@ class RawTxFinalizerTest extends BitcoinSAsyncTest {
   }
 
   it must "shuffle inputs" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs()) {
-      case (inputs, outputs) =>
-        val txBuilder = RawTxBuilder() ++= inputs ++= outputs
-        val finalized = txBuilder.setFinalizer(ShuffleInputsFinalizer)
-        val txsF =
-          FutureUtil.foldLeftAsync(Vector.empty[Transaction], 0 to 20) {
-            (accum, _) => finalized.buildTx().map(_ +: accum)
-          }
-        txsF.map(txs =>
-          assert(
-            inputs.size <= 1 || txs.exists(
-              _.inputs.map(_.previousOutput) != inputs.map(_.outPoint))))
+    forAllAsync(CreditingTxGen.inputsAndOutputs()) { case (inputs, outputs) =>
+      val txBuilder = RawTxBuilder() ++= inputs ++= outputs
+      val finalized = txBuilder.setFinalizer(ShuffleInputsFinalizer)
+      val txsF =
+        FutureUtil.foldLeftAsync(Vector.empty[Transaction], 0 to 20) {
+          (accum, _) => finalized.buildTx().map(_ +: accum)
+        }
+      txsF.map(txs =>
+        assert(
+          inputs.size <= 1 || txs.exists(
+            _.inputs.map(_.previousOutput) != inputs.map(_.outPoint))))
     }
   }
 
   it must "shuffle outputs" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs()) {
-      case (inputs, outputs) =>
-        val txBuilder = RawTxBuilder() ++= inputs ++= outputs
-        val finalized = txBuilder.setFinalizer(ShuffleOutputsFinalizer)
-        val txsF =
-          FutureUtil.foldLeftAsync(Vector.empty[Transaction], 0 to 20) {
-            (accum, _) => finalized.buildTx().map(_ +: accum)
-          }
-        txsF.map(txs =>
-          assert(outputs.size <= 1 || txs.exists(_.outputs != outputs)))
+    forAllAsync(CreditingTxGen.inputsAndOutputs()) { case (inputs, outputs) =>
+      val txBuilder = RawTxBuilder() ++= inputs ++= outputs
+      val finalized = txBuilder.setFinalizer(ShuffleOutputsFinalizer)
+      val txsF =
+        FutureUtil.foldLeftAsync(Vector.empty[Transaction], 0 to 20) {
+          (accum, _) => finalized.buildTx().map(_ +: accum)
+        }
+      txsF.map(txs =>
+        assert(outputs.size <= 1 || txs.exists(_.outputs != outputs)))
     }
   }
 
   it must "shuffle input and outputs" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs()) {
-      case (inputs, outputs) =>
-        val txBuilder = RawTxBuilder() ++= inputs ++= outputs
-        val finalized = txBuilder.setFinalizer(ShuffleFinalizer)
-        val txsF =
-          FutureUtil.foldLeftAsync(Vector.empty[Transaction], 0 to 20) {
-            (accum, _) => finalized.buildTx().map(_ +: accum)
-          }
-        txsF.map { txs =>
-          assert(
-            inputs.size <= 1 || txs.exists(
-              _.inputs.map(_.previousOutput) != inputs.map(_.outPoint)))
-          assert(outputs.size <= 1 || txs.exists(_.outputs != outputs))
+    forAllAsync(CreditingTxGen.inputsAndOutputs()) { case (inputs, outputs) =>
+      val txBuilder = RawTxBuilder() ++= inputs ++= outputs
+      val finalized = txBuilder.setFinalizer(ShuffleFinalizer)
+      val txsF =
+        FutureUtil.foldLeftAsync(Vector.empty[Transaction], 0 to 20) {
+          (accum, _) => finalized.buildTx().map(_ +: accum)
         }
+      txsF.map { txs =>
+        assert(
+          inputs.size <= 1 || txs.exists(
+            _.inputs.map(_.previousOutput) != inputs.map(_.outPoint)))
+        assert(outputs.size <= 1 || txs.exists(_.outputs != outputs))
+      }
     }
   }
 

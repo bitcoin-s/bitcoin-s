@@ -113,11 +113,11 @@ case class RawTxBuilder() {
   @inline final def ++=[T >: TransactionInput with TransactionOutput](
       inputsOrOutputs: Iterable[T]): this.type = {
     val vec = inputsOrOutputs.iterator.toVector
-    val inputs = vec.collect {
-      case input: TransactionInput => input
+    val inputs = vec.collect { case input: TransactionInput =>
+      input
     }
-    val outputs = vec.collect {
-      case output: TransactionOutput => output
+    val outputs = vec.collect { case output: TransactionOutput =>
+      output
     }
 
     addInputs(inputs)

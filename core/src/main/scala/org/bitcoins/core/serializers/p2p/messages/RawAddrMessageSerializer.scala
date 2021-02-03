@@ -8,8 +8,7 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
-/**
-  * Responsible for the serialization and deserialization of AddrMessages
+/** Responsible for the serialization and deserialization of AddrMessages
   * @see https://bitcoin.org/en/developer-reference#addr
   */
 trait RawAddrMessageSerializer extends RawBitcoinSerializer[AddrMessage] {
@@ -29,8 +28,7 @@ trait RawAddrMessageSerializer extends RawBitcoinSerializer[AddrMessage] {
                                   RawNetworkIpAddressSerializer.write)
   }
 
-  /**
-    * Parses ip addresses inside of an AddrMessage
+  /** Parses ip addresses inside of an AddrMessage
     * @param ipCount the number of ip addresses we need to parse from the AddrMessage
     * @param bytes the bytes from which we need to parse the ip addresses
     * @return the parsed ip addresses and the remaining bytes

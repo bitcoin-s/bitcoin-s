@@ -7,8 +7,7 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 
-/**
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfilters BIP157]]
+/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfilters BIP157]]
   */
 object RawGetCompactFiltersMessageSerializer
     extends RawBitcoinSerializer[GetCompactFiltersMessage] {

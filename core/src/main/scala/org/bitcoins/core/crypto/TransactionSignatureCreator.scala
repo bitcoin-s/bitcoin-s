@@ -13,13 +13,11 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * Created by chris on 7/21/16.
+/** Created by chris on 7/21/16.
   */
 sealed abstract class TransactionSignatureCreator {
 
-  /**
-    * Creates a signature from a tx signature component
+  /** Creates a signature from a tx signature component
     *
     * @param txSignatureComponent contains the tx, inputIndex which specify which input we are creating a sig for
     * @param privateKey the private key which we are signing the hash with
@@ -34,8 +32,7 @@ sealed abstract class TransactionSignatureCreator {
     createSig(txSignatureComponent, sign, hashType)
   }
 
-  /**
-    * This is intended to be a low level hardware wallet API.
+  /** This is intended to be a low level hardware wallet API.
     * At a fundamental level, a hardware wallet expects a scodec.bits.ByteVector as input, and returns an [[ECDigitalSignature]]
     * if it is able to sign the scodec.bits.ByteVector's correctly.
     * @param component - the information needed to sign the transaction
@@ -82,8 +79,7 @@ sealed abstract class TransactionSignatureCreator {
     }
   }
 
-  /**
-    * Creates a signature from a tx signature component
+  /** Creates a signature from a tx signature component
     *
     * @param privateKey the private key which we are signing the hash with
     * @param hashType the procedure to use for hashing to transaction
@@ -98,8 +94,7 @@ sealed abstract class TransactionSignatureCreator {
     createSig(spendingTransaction, signingInfo, sign, hashType)
   }
 
-  /**
-    * This is intended to be a low level hardware wallet API.
+  /** This is intended to be a low level hardware wallet API.
     * At a fundamental level, a hardware wallet expects a scodec.bits.ByteVector as input, and returns an [[ECDigitalSignature]]
     * if it is able to sign the scodec.bits.ByteVector's correctly.
     * @param sign - the implementation of the hardware wallet protocol to sign the scodec.bits.ByteVector w/ the given public key

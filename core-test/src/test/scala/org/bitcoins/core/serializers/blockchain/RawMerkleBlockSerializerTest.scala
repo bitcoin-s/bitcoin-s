@@ -11,8 +11,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
-/**
-  * Created by chris on 8/22/16.
+/** Created by chris on 8/22/16.
   */
 class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
 

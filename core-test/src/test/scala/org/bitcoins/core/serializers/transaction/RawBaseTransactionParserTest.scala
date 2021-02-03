@@ -10,8 +10,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/14/16.
+/** Created by chris on 1/14/16.
   */
 class RawBaseTransactionParserTest extends BitcoinSUnitTest {
   val encode = BytesUtil.encodeHex(_: ByteVector)

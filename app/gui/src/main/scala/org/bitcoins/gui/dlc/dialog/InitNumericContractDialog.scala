@@ -166,15 +166,14 @@ object InitNumericContractDialog {
         val totalCollateral = Satoshis(totalCollateralTF.text.value.toLong)
 
         val points = pointMap.values.toVector
-        val outcomesValuePoints = points.flatMap {
-          case (xTF, yTF, checkBox) =>
-            if (xTF.text.value.nonEmpty && yTF.text.value.nonEmpty) {
-              val x = xTF.text.value.toLong
-              val y = yTF.text.value.toLong
-              Some(OutcomePayoutPoint(x, Satoshis(y), checkBox.selected.value))
-            } else {
-              None
-            }
+        val outcomesValuePoints = points.flatMap { case (xTF, yTF, checkBox) =>
+          if (xTF.text.value.nonEmpty && yTF.text.value.nonEmpty) {
+            val x = xTF.text.value.toLong
+            val y = yTF.text.value.toLong
+            Some(OutcomePayoutPoint(x, Satoshis(y), checkBox.selected.value))
+          } else {
+            None
+          }
         }
         val roundingIntervalStartsTF = roundingMap.values.toVector
         val roundingIntervalsStarts = roundingIntervalStartsTF.flatMap {
@@ -220,9 +219,8 @@ object InitNumericContractDialog {
       roundingIntervalsT match {
         case Failure(_) => RoundingIntervals.noRounding
         case Success(intervals) =>
-          RoundingIntervals(intervals.map {
-            case (firstOutcome, roundingMod) =>
-              RoundingIntervals.IntervalStart(firstOutcome, roundingMod)
+          RoundingIntervals(intervals.map { case (firstOutcome, roundingMod) =>
+            RoundingIntervals.IntervalStart(firstOutcome, roundingMod)
           })
       }
     }

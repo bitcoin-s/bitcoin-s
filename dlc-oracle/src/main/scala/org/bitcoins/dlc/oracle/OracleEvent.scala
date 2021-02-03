@@ -270,8 +270,7 @@ object OracleEvent {
     }
   }
 
-  /**
-    * Verifies if the given attestations sign the outcomes of the given oracle announcement.
+  /** Verifies if the given attestations sign the outcomes of the given oracle announcement.
     */
   def verifyAttestations(
       announcement: OracleAnnouncementTLV,

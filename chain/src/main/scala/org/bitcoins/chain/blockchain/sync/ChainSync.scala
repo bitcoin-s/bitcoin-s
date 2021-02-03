@@ -52,8 +52,7 @@ abstract class ChainSync extends ChainVerificationLogger {
 
   }
 
-  /**
-    * Keeps walking backwards on the chain until we match one
+  /** Keeps walking backwards on the chain until we match one
     * of the tips we have in our chain
     * @param chainApi the chain api that represents our current chain state
     * @param tips the best block header we know about

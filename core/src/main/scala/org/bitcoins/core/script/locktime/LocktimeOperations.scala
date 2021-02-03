@@ -3,13 +3,11 @@ package org.bitcoins.core.script.locktime
 import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.script.constant.ScriptOperation
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 sealed trait LocktimeOperation extends ScriptOperation
 
-/**
-  * Marks transaction as invalid if the top stack item is greater than the transaction's nLockTime field,
+/** Marks transaction as invalid if the top stack item is greater than the transaction's nLockTime field,
   * otherwise script evaluation continues as though an OP_NOP was executed. Transaction is also invalid if
   * 1. the stack is empty; or
   * 2. the top stack item is negative; or
@@ -21,8 +19,7 @@ case object OP_CHECKLOCKTIMEVERIFY extends LocktimeOperation {
   override val opCode: Int = 177
 }
 
-/**
-  * When executed, if any of the following conditions are true, the script interpreter will terminate with an error:
+/** When executed, if any of the following conditions are true, the script interpreter will terminate with an error:
   * 1.) the stack is empty; or
   * 2.) the top item on the stack is less than 0; or
   * 3.) the top item on the stack has the disable flag (1 << 31) unset; and

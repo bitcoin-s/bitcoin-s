@@ -43,13 +43,13 @@ class TransactionTest extends BitcoinSUnitTest {
 
   it must
     "wtxid must be the same as the SHA256(SHA256(hex)) of a wtx and " +
-      "wtxid and txid are not the same for witness transactions" in {
-    forAll(TransactionGenerators.witnessTransaction) {
-      wtx: WitnessTransaction =>
-        assert(wtx.wTxId == CryptoUtil.doubleSHA256(wtx.bytes))
-        assert(wtx.wTxId != wtx.txId)
+    "wtxid and txid are not the same for witness transactions" in {
+      forAll(TransactionGenerators.witnessTransaction) {
+        wtx: WitnessTransaction =>
+          assert(wtx.wTxId == CryptoUtil.doubleSHA256(wtx.bytes))
+          assert(wtx.wTxId != wtx.txId)
+      }
     }
-  }
 
   it must "derive the correct txid from the transaction contents" in {
 
@@ -344,8 +344,8 @@ class TransactionTest extends BitcoinSUnitTest {
   private def findInput(
       tx: Transaction,
       outPoint: TransactionOutPoint): Option[(TransactionInput, Int)] = {
-    tx.inputs.zipWithIndex.find {
-      case (input, _) => input.previousOutput == outPoint
+    tx.inputs.zipWithIndex.find { case (input, _) =>
+      input.previousOutput == outPoint
     }
   }
 }

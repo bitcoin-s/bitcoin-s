@@ -184,9 +184,8 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     val sortedVectors = vector.addresses.sortBy(_.path.toString)
     sortedAddresses
       .zip(sortedVectors)
-      .map {
-        case (foundAddress, expectedAddress) =>
-          assert(foundAddress.address == expectedAddress.address)
+      .map { case (foundAddress, expectedAddress) =>
+        assert(foundAddress.address == expectedAddress.address)
       }
   }
 
@@ -204,8 +203,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       .map(_ => ())
   }
 
-  /**
-    * Iterates over the given list of accounts and test vectors, and
+  /** Iterates over the given list of accounts and test vectors, and
     * fetches all the
     * addresses needed to verify the test vector
     */
@@ -213,22 +211,21 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       wallet: Wallet,
       accountsWithVectors: Seq[(AccountDb, TestVector)]): Future[
     Seq[AccountAndAddrsAndVector]] = {
-    FutureUtil.sequentially(accountsWithVectors) {
-      case (acc, vec) =>
-        val addrFutures: Future[Seq[AddressDb]] =
-          FutureUtil.sequentially(vec.addresses) { vector =>
-            val addrFut = vector.chain match {
-              case HDChainType.Change => wallet.getNewChangeAddress(acc)
-              case HDChainType.External =>
-                wallet.getNewAddress(acc)
-            }
-            addrFut.flatMap(wallet.addressDAO.findAddress).map {
-              case Some(addr) => addr
-              case None =>
-                fail(s"Did not find address we just generated in DAO!")
-            }
+    FutureUtil.sequentially(accountsWithVectors) { case (acc, vec) =>
+      val addrFutures: Future[Seq[AddressDb]] =
+        FutureUtil.sequentially(vec.addresses) { vector =>
+          val addrFut = vector.chain match {
+            case HDChainType.Change => wallet.getNewChangeAddress(acc)
+            case HDChainType.External =>
+              wallet.getNewAddress(acc)
           }
-        addrFutures.map(AccountAndAddrsAndVector(acc, _, vec))
+          addrFut.flatMap(wallet.addressDAO.findAddress).map {
+            case Some(addr) => addr
+            case None =>
+              fail(s"Did not find address we just generated in DAO!")
+          }
+        }
+      addrFutures.map(AccountAndAddrsAndVector(acc, _, vec))
     }
   }
 

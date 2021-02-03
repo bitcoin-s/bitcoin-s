@@ -2,8 +2,7 @@ package org.bitcoins.core.script.splice
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 1/22/16.
+/** Created by chris on 1/22/16.
   */
 class SpliceOperationFactoryTest extends BitcoinSUnitTest {
 

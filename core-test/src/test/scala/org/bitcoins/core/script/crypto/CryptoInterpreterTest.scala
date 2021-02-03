@@ -14,8 +14,7 @@ import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
 
 import scala.util.Try
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 class CryptoInterpreterTest extends BitcoinSAsyncTest {
 

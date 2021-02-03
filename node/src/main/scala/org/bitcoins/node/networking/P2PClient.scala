@@ -20,8 +20,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util._
 
-/**
-  * This actor is responsible for creating a connection,
+/** This actor is responsible for creating a connection,
   * relaying messages and closing a connection to our peer on
   * the P2P network. This is the actor that directly interacts
   * with the p2p network. It's responsibly is to deal with low
@@ -59,21 +58,18 @@ case class P2PClientActor(
 
   private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
-  /**
-    * The manager is an actor that handles the underlying low level I/O resources (selectors, channels)
+  /** The manager is an actor that handles the underlying low level I/O resources (selectors, channels)
     * and instantiates workers for specific tasks, such as listening to incoming connections.
     */
   def manager: ActorRef = IO(Tcp)(context.system)
 
-  /**
-    * The parameters for the network we are connected to
+  /** The parameters for the network we are connected to
     */
   val network: NetworkParameters = config.network
 
   private val timeout = 1000.seconds
 
-  /**
-    * TODO: this comment seems wrong?
+  /** TODO: this comment seems wrong?
     *
     * This actor signifies the node we are connected to on the p2p network
     * This is the context we are in after we received a [[Tcp.Connected]] message
@@ -118,8 +114,7 @@ case class P2PClientActor(
         sender() ! handleMetaMsg(metaMsg)
     }
 
-  /**
-    * Handles boiler plate [[Tcp.Message]] types.
+  /** Handles boiler plate [[Tcp.Message]] types.
     *
     * @return the unaligned bytes if we haven't received a full Bitcoin P2P message yet
     */
@@ -137,8 +132,7 @@ case class P2PClientActor(
     }
   }
 
-  /**
-    * This function is responsible for handling a [[Tcp.Event]] algebraic data type
+  /** This function is responsible for handling a [[Tcp.Event]] algebraic data type
     */
   private def handleEvent(
       event: Tcp.Event,
@@ -227,8 +221,7 @@ case class P2PClientActor(
     }
   }
 
-  /**
-    * This function is responsible for handling a [[Tcp.Command]] algebraic data type
+  /** This function is responsible for handling a [[Tcp.Command]] algebraic data type
     */
   private def handleCommand(
       command: Tcp.Command,
@@ -249,8 +242,7 @@ case class P2PClientActor(
         manager ! bind
     }
 
-  /**
-    * Returns the current state of our peer given the [[P2PClient.MetaMsg meta message]]
+  /** Returns the current state of our peer given the [[P2PClient.MetaMsg meta message]]
     */
   private def handleMetaMsg(metaMsg: P2PClient.MetaMsg): Boolean = {
     metaMsg match {
@@ -260,8 +252,7 @@ case class P2PClientActor(
     }
   }
 
-  /**
-    * Sends a network request to our peer on the network
+  /** Sends a network request to our peer on the network
     */
   private def sendNetworkMessage(
       message: NetworkMessage,
@@ -280,8 +271,8 @@ case class P2PClient(actor: ActorRef, peer: Peer) extends P2PLogger {
       timeout: Timeout,
       ec: ExecutionContext): Future[Boolean] = {
     val isConnectedF = actor.ask(P2PClient.IsConnected).mapTo[Boolean]
-    isConnectedF.recoverWith {
-      case _: Throwable => Future.successful(false)
+    isConnectedF.recoverWith { case _: Throwable =>
+      Future.successful(false)
     }
   }
 
@@ -289,8 +280,8 @@ case class P2PClient(actor: ActorRef, peer: Peer) extends P2PLogger {
       timeout: Timeout,
       ec: ExecutionContext): Future[Boolean] = {
     val isInitF = actor.ask(P2PClient.IsInitialized).mapTo[Boolean]
-    isInitF.recoverWith {
-      case _: Throwable => Future.successful(false)
+    isInitF.recoverWith { case _: Throwable =>
+      Future.successful(false)
     }
   }
 
@@ -302,8 +293,8 @@ case class P2PClient(actor: ActorRef, peer: Peer) extends P2PLogger {
 
     //this future can be failed, as we stop the P2PClientActor if we send a disconnect
     //if that actor has been killed, the peer _has_ to have been disconnected
-    isDisconnect.recoverWith {
-      case _: Throwable => Future.successful(true)
+    isDisconnect.recoverWith { case _: Throwable =>
+      Future.successful(true)
     }
   }
 }
@@ -347,8 +338,7 @@ object P2PClient extends P2PLogger {
     P2PClient(actorRef, peer)
   }
 
-  /**
-    * Akka sends messages as one byte stream. There is not a 1 to 1 relationship between byte streams received and
+  /** Akka sends messages as one byte stream. There is not a 1 to 1 relationship between byte streams received and
     * bitcoin protocol messages. This function parses our byte stream into individual network messages
     *
     * @param bytes the bytes that need to be parsed into individual messages

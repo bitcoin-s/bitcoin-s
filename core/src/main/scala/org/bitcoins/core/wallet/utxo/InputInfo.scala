@@ -116,13 +116,12 @@ object InputInfo {
   }
 
   def getPKHPreImage(inputInfo: InputInfo): Option[ECPublicKey] = {
-    getHashPreImages(inputInfo).collectFirst {
-      case pubKey: ECPublicKey => pubKey
+    getHashPreImages(inputInfo).collectFirst { case pubKey: ECPublicKey =>
+      pubKey
     }
   }
 
-  /**
-    * Returns the needed hash pre-images and conditional path that was used to spend the input
+  /** Returns the needed hash pre-images and conditional path that was used to spend the input
     * at inputIndex, this is calculated through the ScriptSignature and ScriptWitness
     */
   def getHashPreImagesAndConditionalPath(
@@ -353,8 +352,8 @@ object RawInputInfo {
       case p2pk: P2PKScriptPubKey =>
         P2PKInputInfo(outPoint, amount, p2pk)
       case p2pkh: P2PKHScriptPubKey =>
-        hashPreImages.collectFirst {
-          case pubKey: ECPublicKey => pubKey
+        hashPreImages.collectFirst { case pubKey: ECPublicKey =>
+          pubKey
         } match {
           case None =>
             throw new IllegalArgumentException(

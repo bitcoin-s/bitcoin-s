@@ -13,8 +13,7 @@ import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by tom on 9/21/16.
+/** Created by tom on 9/21/16.
   */
 class CSVScriptPubKeyTest extends BitcoinSUnitTest {
 

@@ -4,8 +4,7 @@ import org.bitcoins.core.number.Int32
 import org.bitcoins.crypto.{ECDigitalSignature, Factory}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/18/16.
+/** Created by chris on 1/18/16.
   */
 sealed trait HashType {
   def num: Int32
@@ -129,8 +128,7 @@ object HashType extends Factory[HashType] {
   /** The default [[SIGHASH_ALL]] value */
   val sigHashAll = SIGHASH_ALL(sigHashAllByte)
 
-  /**
-    * The default num for [[SIGHASH_ANYONECANPAY]]
+  /** The default num for [[SIGHASH_ANYONECANPAY]]
     * We need this for serialization of [[HashType]]
     * flags inside of [[org.bitcoins.core.crypto.TransactionSignatureSerializer]]
     *
@@ -182,8 +180,7 @@ object HashType extends Factory[HashType] {
   val sigHashSingleAnyoneCanPay = SIGHASH_SINGLE_ANYONECANPAY(
     sigHashSingleAnyoneCanPayNum)
 
-  /**
-    * Checks if the given digital signature has a valid hash type
+  /** Checks if the given digital signature has a valid hash type
     * Mimics this functionality inside of Bitcoin Core
     * https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L186
     */
@@ -192,8 +189,7 @@ object HashType extends Factory[HashType] {
   }
 }
 
-/**
-  * defaultValue is the underlying value of the HashType. The last byte of a signature determines the HashType.
+/** defaultValue is the underlying value of the HashType. The last byte of a signature determines the HashType.
   * https://en.bitcoin.it/wiki/OP_CHECKSIG
   */
 case class SIGHASH_ALL(override val num: Int32) extends HashType {
@@ -201,7 +197,7 @@ case class SIGHASH_ALL(override val num: Int32) extends HashType {
     HashType.isSigHashAll(num),
     "SIGHASH_ALL acts as a 'catch-all' for undefined hashtypes, and has a default " +
       "value of one. Your input was: " + num + ", which is of hashType: " + HashType(
-      num)
+        num)
   )
 }
 

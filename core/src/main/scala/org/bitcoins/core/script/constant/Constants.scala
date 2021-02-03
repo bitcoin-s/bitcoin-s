@@ -8,11 +8,9 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Try}
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
-/**
-  * This is the root class of Script. Every element in the Script language is a
+/** This is the root class of Script. Every element in the Script language is a
   * ScriptToken - think of this the same way you think about Object in Java.
   */
 sealed trait ScriptToken extends NetworkElement {
@@ -24,8 +22,7 @@ sealed trait ScriptToken extends NetworkElement {
   def toLong: Long = ScriptNumberUtil.toLong(bytes)
 }
 
-/**
-  * A script operation is an instruction that takes an input and gives an output
+/** A script operation is an instruction that takes an input and gives an output
   * Think of these as functions.
   */
 trait ScriptOperation extends ScriptToken {
@@ -78,8 +75,7 @@ sealed abstract class ScriptNumber
   def |(that: ScriptNumber): ScriptNumber =
     ScriptNumber(underlying | that.underlying)
 
-  /**
-    * This equality just checks that the underlying scala numbers are equivalent, NOT if the numbers
+  /** This equality just checks that the underlying scala numbers are equivalent, NOT if the numbers
     * are bitwise equivalent in Script. For instance ScriptNumber(0x01).numEqual(ScriptNumber(0x00000000001)) == true
     * but (ScriptNumber(0x01) == (ScriptNumber(0x00000000001))) == false.
     */
@@ -135,8 +131,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
   private case class ScriptNumberImpl(underlying: Long, bytes: ByteVector)
       extends ScriptNumber
 
-  /**
-    * Companion object for [[ScriptNumberImpl]] that gives us access to more constructor types for the
+  /** Companion object for [[ScriptNumberImpl]] that gives us access to more constructor types for the
     * [[ScriptNumberImpl]] case class.
     */
   private object ScriptNumberImpl {
@@ -182,8 +177,7 @@ case object OP_PUSHDATA4 extends ScriptOperation {
   def max = 4294967295L
 }
 
-/**
-  * Represents a [[ScriptNumberOperation]] where the the number in the operation is pushed onto the stack
+/** Represents a [[ScriptNumberOperation]] where the the number in the operation is pushed onto the stack
   * i.e. OP_0 would be push 0 onto the stack, OP_1 would be push 1 onto the stack.
   */
 sealed abstract class ScriptNumberOperation

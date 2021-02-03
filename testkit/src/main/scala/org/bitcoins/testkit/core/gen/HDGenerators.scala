@@ -4,56 +4,48 @@ import org.scalacheck.Gen
 import org.bitcoins.core.hd._
 import scala.util.Try
 
-/**
-  * Generators related to HD wallet functionality
+/** Generators related to HD wallet functionality
   */
 object HDGenerators {
 
-  /**
-    * Generates a BIP 32 path segment
+  /** Generates a BIP 32 path segment
     */
   def bip32Child: Gen[BIP32Node] = Gen.oneOf(softBip32Child, hardBip32Child)
 
-  /**
-    * Generates a non-hardened BIP 32 path segment
+  /** Generates a non-hardened BIP 32 path segment
     */
   def softBip32Child: Gen[BIP32Node] =
     for {
       index <- NumberGenerator.positiveInts
     } yield BIP32Node(index, hardened = false)
 
-  /**
-    * Generates a hardened BIP 32 path segment
+  /** Generates a hardened BIP 32 path segment
     */
   def hardBip32Child: Gen[BIP32Node] =
     for {
       soft <- softBip32Child
     } yield soft.copy(hardened = true)
 
-  /**
-    * Generates a BIP32 path
+  /** Generates a BIP32 path
     */
   def bip32Path: Gen[BIP32Path] =
     for {
       children <- Gen.listOf(bip32Child)
     } yield BIP32Path(children.toVector)
 
-  /**
-    * Generates a non-hardened BIP 32 path
+  /** Generates a non-hardened BIP 32 path
     */
   def softBip32Path: Gen[BIP32Path] =
     for {
       children <- Gen.listOf(softBip32Child)
     } yield BIP32Path(children.toVector)
 
-  /**
-    * Generates a valid BIP44 chain type (external/internal change)
+  /** Generates a valid BIP44 chain type (external/internal change)
     */
   def hdChainType: Gen[HDChainType] =
     Gen.oneOf(HDChainType.Change, HDChainType.External)
 
-  /**
-    * Generates a valid BIP44 chain path
+  /** Generates a valid BIP44 chain path
     */
   def hdChain: Gen[HDChain] =
     for {
@@ -61,8 +53,7 @@ object HDGenerators {
       account <- hdAccount
     } yield HDChain(chainType, account)
 
-  /**
-    * Generates a valid HD coin type
+  /** Generates a valid HD coin type
     */
   def hdCoinType: Gen[HDCoinType] =
     Gen.oneOf(HDCoinType.Testnet, HDCoinType.Bitcoin)
@@ -77,8 +68,7 @@ object HDGenerators {
       coinType <- hdCoinType
     } yield HDCoin(purpose, coinType)
 
-  /**
-    * Generates a valid HD account path
+  /** Generates a valid HD account path
     */
   def hdAccount: Gen[HDAccount] =
     for {
@@ -86,8 +76,7 @@ object HDGenerators {
       int <- NumberGenerator.positiveInts
     } yield HDAccount(coin = coin, index = int)
 
-  /**
-    * Generates a valid HD adddress path
+  /** Generates a valid HD adddress path
     */
   def hdAddress: Gen[HDAddress] =
     for {
@@ -95,8 +84,7 @@ object HDGenerators {
       int <- NumberGenerator.positiveInts
     } yield HDAddress(chain, int)
 
-  /**
-    * Generates a valid BIP44 path
+  /** Generates a valid BIP44 path
     */
   def legacyHdPath: Gen[LegacyHDPath] =
     for {
@@ -146,8 +134,7 @@ object HDGenerators {
       case segwit: SegWitHDPath       => (segwit, SegWitHDPath(_))
     }
 
-  /**
-    * Generates a pair of paths that can be diffed.
+  /** Generates a pair of paths that can be diffed.
     *
     * In code, this means that this is always true:
     * {{{

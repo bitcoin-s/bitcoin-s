@@ -7,13 +7,11 @@ import org.bitcoins.core.script.{
   StartedScriptProgram
 }
 
-/**
-  * Created by chris on 4/20/16.
+/** Created by chris on 4/20/16.
   */
 trait ScriptProgramTestUtil {
 
-  /**
-    * Matches a [[StartedScriptProgram]] to an [[ExecutedScriptProgram]] or else throws an exception
+  /** Matches a [[StartedScriptProgram]] to an [[ExecutedScriptProgram]] or else throws an exception
     * useful for testing purposes.
     */
   def toExecutedScriptProgram(p: StartedScriptProgram): ExecutedScriptProgram =

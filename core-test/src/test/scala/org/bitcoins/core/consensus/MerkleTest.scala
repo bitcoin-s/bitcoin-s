@@ -8,8 +8,7 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.Try
 
-/**
-  * Created by chris on 5/24/16.
+/** Created by chris on 5/24/16.
   */
 class MerkleTest extends BitcoinSUnitTest {
 

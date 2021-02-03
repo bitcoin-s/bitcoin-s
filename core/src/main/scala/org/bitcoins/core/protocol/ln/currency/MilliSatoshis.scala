@@ -7,8 +7,7 @@ import scodec.bits.ByteVector
 
 import scala.math.BigDecimal.RoundingMode
 
-/**
-  * The common currency unit used in the
+/** The common currency unit used in the
   * LN protocol for updating HTLCs.
   *
   * @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
@@ -21,8 +20,7 @@ sealed abstract class MilliSatoshis
 
   protected def underlying: BigInt
 
-  /**
-    * Output example:
+  /** Output example:
     * {{{
     * > MilliSatoshis(10)
     * 10 msat

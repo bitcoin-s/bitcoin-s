@@ -10,8 +10,7 @@ sealed abstract class LnTagPrefix {
   override def toString: String = value.toString
 }
 
-/**
-  * This defines the necessary Lightning Network Tag Prefix's, as specified in BOLT-11
+/** This defines the necessary Lightning Network Tag Prefix's, as specified in BOLT-11
   * Please see: https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields
   */
 object LnTagPrefix extends StringFactory[LnTagPrefix] {
@@ -90,10 +89,9 @@ object LnTagPrefix extends StringFactory[LnTagPrefix] {
       .map(value => (value, Unknown(value)))
       .toMap
 
-    (all ++ allKnown).map {
-      case (_, prefix) =>
-        val index = Bech32.charset.indexOf(prefix.value)
-        (UInt5(index), prefix)
+    (all ++ allKnown).map { case (_, prefix) =>
+      val index = Bech32.charset.indexOf(prefix.value)
+      (UInt5(index), prefix)
     }
   }
 

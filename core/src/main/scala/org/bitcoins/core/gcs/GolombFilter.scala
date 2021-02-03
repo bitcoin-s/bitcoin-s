@@ -10,8 +10,7 @@ import org.bitcoins.crypto.{
 }
 import scodec.bits.{BitVector, ByteVector}
 
-/**
-  * Represents a GCS encoded set with all parameters specified
+/** Represents a GCS encoded set with all parameters specified
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-sets]]
   *
   * TODO: Replace ByteVector with a type for keys

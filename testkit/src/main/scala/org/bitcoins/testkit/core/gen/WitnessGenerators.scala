@@ -11,8 +11,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.ECPrivateKey
 import org.scalacheck.Gen
 
-/**
-  * Created by chris on 11/28/16.
+/** Created by chris on 11/28/16.
   */
 sealed abstract class WitnessGenerators extends BitcoinSLogger {
 
@@ -164,8 +163,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
         WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
     } yield (txWitness, signedWtxSigComponent, privKeys)
 
-  /**
-    * Generates a random signed [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]]
+  /** Generates a random signed [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]]
     * with the corresponding [[org.bitcoins.core.crypto.WitnessTxSigComponent WitnessTxSigComponent]]
     * and [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]]
     */

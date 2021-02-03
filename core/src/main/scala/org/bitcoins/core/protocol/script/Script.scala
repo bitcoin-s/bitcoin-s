@@ -12,16 +12,14 @@ import scodec.bits.ByteVector
   */
 abstract class Script extends NetworkElement {
 
-  /**
-    * Representation of a script in a parsed assembly format
+  /** Representation of a script in a parsed assembly format
     * this data structure can be run through the script interpreter to
     * see if a script evaluates to true
     * used to represent the size of the script serialization
     */
   def asm: Seq[ScriptToken]
 
-  /**
-    * The byte representation of [[asm]], this does NOT have the bytes
+  /** The byte representation of [[asm]], this does NOT have the bytes
     * for the [[org.bitcoins.core.protocol.CompactSizeUInt]] in the script
     */
   val asmBytes: ByteVector = {

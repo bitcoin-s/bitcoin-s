@@ -24,8 +24,7 @@ import org.bitcoins.node.{NodeType, P2PLogger}
 
 import scala.concurrent.{Future, Promise}
 
-/**
-  * Responsible for receiving messages from a peer on the
+/** Responsible for receiving messages from a peer on the
   * p2p network. This is called by [[org.bitcoins.rpc.client.common.Client Client]] when doing the p2p
   * handshake and during the [[PeerMessageReceiverState.Normal Normal]]
   * operations. This is the entry point for handling all received
@@ -124,8 +123,7 @@ class PeerMessageReceiver(
     }
   }
 
-  /**
-    * Handles a [[DataPayload]] message. It checks if the sender is the parent
+  /** Handles a [[DataPayload]] message. It checks if the sender is the parent
     * actor, it sends it to our peer on the network. If the sender was the
     * peer on the network, forward to the actor that spawned our actor
     *
@@ -142,8 +140,7 @@ class PeerMessageReceiver(
     }
   }
 
-  /**
-    * Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
+  /** Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
     *
     * @param payload  the payload we need to do something with
     * @param sender the [[PeerMessageSender]] we can use to initialize an subsequent messages that need to be sent
@@ -274,8 +271,7 @@ object PeerMessageReceiver {
                             peer = peer)
   }
 
-  /**
-    * Creates a peer message receiver that is ready
+  /** Creates a peer message receiver that is ready
     * to be connected to a peer. This can be given to [[org.bitcoins.node.networking.P2PClient.props() P2PClient]]
     * to connect to a peer on the network
     */

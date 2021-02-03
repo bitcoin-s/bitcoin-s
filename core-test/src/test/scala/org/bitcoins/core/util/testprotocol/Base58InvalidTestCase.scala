@@ -1,7 +1,6 @@
 package org.bitcoins.core.util.testprotocol
 
-/**
-  * Created by tom on 6/21/16.
+/** Created by tom on 6/21/16.
   */
 
 trait Base58InvalidTestCase {

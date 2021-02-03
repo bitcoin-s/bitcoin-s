@@ -11,8 +11,7 @@ import org.bitcoins.core.util.ScriptProgramTestUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/24/16.
+/** Created by chris on 1/24/16.
   */
 class ConstantInterpreterTest extends BitcoinSUnitTest {
   val CI = ConstantInterpreter
@@ -125,16 +124,16 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
 
   it must "throw exception when parsing bytes need for a push op for a script token other than" +
     "BytesToPushOntoStack, ScriptNumber, or ScriptConstant" in {
-    val stack = List()
-    val script = List(OP_CHECKMULTISIGVERIFY, ScriptNumber.one, OP_0)
-    val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      val stack = List()
+      val script = List(OP_CHECKMULTISIGVERIFY, ScriptNumber.one, OP_0)
+      val program =
+        TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                     script)
 
-    intercept[IllegalArgumentException] {
-      CI.pushScriptNumberBytesToStack(program)
+      intercept[IllegalArgumentException] {
+        CI.pushScriptNumberBytesToStack(program)
+      }
     }
-  }
 
   it must "return ScriptErrorMinimalData if program contains ScriptVerifyMinimalData flag and 2nd item in script is zero" in {
     val stack = List()
