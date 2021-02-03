@@ -7,14 +7,12 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain._
 import org.bitcoins.core.util.NumberUtil
 
-/**
-  * Implements functions found inside of bitcoin core's
+/** Implements functions found inside of bitcoin core's
   * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp pow.cpp]]
   */
 sealed abstract class Pow {
 
-  /**
-    * Gets the next proof of work requirement for a block
+  /** Gets the next proof of work requirement for a block
     * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L13 Mimics bitcoin core implmentation]]
     */
   def getNetworkWorkRequired(
@@ -86,8 +84,7 @@ sealed abstract class Pow {
     powLimit
   }
 
-  /**
-    * Calculate the next proof of work requirement for our blockchain
+  /** Calculate the next proof of work requirement for our blockchain
     * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L49 bitcoin core implementation]]
     * @param currentTip
     * @param firstBlock

@@ -3,8 +3,7 @@ package org.bitcoins.core.serializers
 import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/11/16.
+/** Created by chris on 1/11/16.
   * A common trait for reading/writing bitcoin objects to/from bytes/hex
   */
 abstract class RawBitcoinSerializer[T] extends BitcoinSLogger {

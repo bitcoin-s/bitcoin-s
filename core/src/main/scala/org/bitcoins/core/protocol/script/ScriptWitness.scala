@@ -16,8 +16,7 @@ import org.bitcoins.crypto.{
 }
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 11/10/16.
+/** Created by chris on 11/10/16.
   * The witness used to evaluate a [[RawScriptPubKey]] inside of Bitcoin
   * [[https://github.com/bitcoin/bitcoin/blob/57b34599b2deb179ff1bd97ffeab91ec9f904d85/src/script/script.h#L648-L660]]
   */
@@ -38,8 +37,7 @@ sealed abstract class ScriptWitnessV0 extends ScriptWitness {
   override val bytes: ByteVector = RawScriptWitnessParser.write(this)
 }
 
-/**
-  * Represents a [[org.bitcoins.core.protocol.script.ScriptWitness]] that is needed to spend a
+/** Represents a [[org.bitcoins.core.protocol.script.ScriptWitness]] that is needed to spend a
   * [[P2WPKHWitnessV0]] scriptPubKey
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wpkh-nested-in-bip16-p2sh]]
   * Format: <pubKey> <signature>
@@ -88,8 +86,7 @@ object P2WPKHWitnessV0 {
     }
 }
 
-/**
-  * Represents a [[ScriptWitness]] that is needed to spend a
+/** Represents a [[ScriptWitness]] that is needed to spend a
   * [[P2WSHWitnessV0]] scriptPubKey
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wsh]]
   * Format: <redeem script> <scriptSig data1> <scriptSig data2> ... <scriptSig dataN>
@@ -173,7 +170,7 @@ object ScriptWitness extends Factory[ScriptWitness] {
     val isPubKey = {
       stack.nonEmpty &&
       (stack.head.size == 33
-      || stack.head.size == 65) &&
+        || stack.head.size == 65) &&
       ECPublicKey.isFullyValid(stack.head)
     }
     if (stack.isEmpty) {

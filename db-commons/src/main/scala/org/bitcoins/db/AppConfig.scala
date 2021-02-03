@@ -10,8 +10,7 @@ import scala.concurrent.Future
 import scala.util.Properties
 import scala.util.matching.Regex
 
-/**
-  * Everything needed to configure functionality
+/** Everything needed to configure functionality
   * of bitcoin-s applications  is found in here.
   *
   * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
@@ -19,8 +18,7 @@ import scala.util.matching.Regex
   */
 abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
-  /**
-    * Starts this project.
+  /** Starts this project.
     * After this future resolves, all operations should be
     * able to be performed correctly.
     *
@@ -47,8 +45,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
     */
   protected[bitcoins] def configOverrides: List[Config]
 
-  /**
-    * This method returns a new `AppConfig`, where every
+  /** This method returns a new `AppConfig`, where every
     * key under `bitcoin-s` overrides the configuration
     * picked up by other means (the `reference.conf`
     * provided by bitcoin-s and the `application.conf`
@@ -76,8 +73,8 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
     val configOverrides = firstOverride +: configs
     if (logger.logger.isTraceEnabled()) {
-      configOverrides.zipWithIndex.foreach {
-        case (c, idx) => logger.trace(s"Override no. $idx: ${c.asReadableJson}")
+      configOverrides.zipWithIndex.foreach { case (c, idx) =>
+        logger.trace(s"Override no. $idx: ${c.asReadableJson}")
       }
     }
     val newConf = {
@@ -104,8 +101,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
     newConf
   }
 
-  /**
-    * Name of the module. `chain`, `wallet`, `node` etc.
+  /** Name of the module. `chain`, `wallet`, `node` etc.
     */
   private[bitcoins] def moduleName: String
 
@@ -233,8 +229,7 @@ object AppConfig extends BitcoinSLogger {
   private[bitcoins] val DEFAULT_BITCOIN_S_DATADIR: Path =
     Paths.get(Properties.userHome, ".bitcoin-s")
 
-  /**
-    * Matches the default data directory location
+  /** Matches the default data directory location
     * with a network appended,
     * both with and without a trailing `/`
     */
@@ -245,8 +240,7 @@ object AppConfig extends BitcoinSLogger {
     (home + "/.bitcoin-s/(testnet3|mainnet|regtest)/?$").r
   }
 
-  /**
-    * Throws if the encountered datadir is the default one. Useful
+  /** Throws if the encountered datadir is the default one. Useful
     * in tests, to make sure you don't blow up important data.
     */
   private[bitcoins] def throwIfDefaultDatadir(config: AppConfig): Unit = {

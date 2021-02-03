@@ -7,8 +7,7 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 11/21/16.
+/** Created by chris on 11/21/16.
   * Serialization of
   * [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]] as defined inside of
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#specification BIP141]]
@@ -16,8 +15,7 @@ import scala.annotation.tailrec
   */
 sealed abstract class RawTransactionWitnessParser {
 
-  /**
-    * We can only tell how many [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]]
+  /** We can only tell how many [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]]
     * we have if we have the number of inputs the transaction creates
     */
   def read(bytes: ByteVector, numInputs: Int): TransactionWitness = {

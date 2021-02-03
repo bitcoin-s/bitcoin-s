@@ -2,8 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 12/23/16.
+/** Created by chris on 12/23/16.
   */
 class WitnessCommitmentTest extends BitcoinSUnitTest {
 

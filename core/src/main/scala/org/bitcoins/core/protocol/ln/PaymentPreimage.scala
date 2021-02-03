@@ -3,8 +3,7 @@ package org.bitcoins.core.protocol.ln
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
-/**
-  * Payment preimage for generating LN invoices.
+/** Payment preimage for generating LN invoices.
   */
 final case class PaymentPreimage(bytes: ByteVector) extends NetworkElement {
   require(bytes.size == 32, s"Payment preimage size must be 32 bytes")

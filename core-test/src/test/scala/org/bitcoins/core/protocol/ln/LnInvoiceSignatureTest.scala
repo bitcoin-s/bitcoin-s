@@ -31,9 +31,8 @@ class LnInvoiceSignatureTest extends BitcoinSUnitTest {
   }
 
   it must "have serialization symmetry" in {
-    forAll(LnInvoiceGen.lnInvoiceSignature) {
-      case sig =>
-        assert(LnInvoiceSignature.fromHex(sig.hex) == sig)
+    forAll(LnInvoiceGen.lnInvoiceSignature) { case sig =>
+      assert(LnInvoiceSignature.fromHex(sig.hex) == sig)
     }
   }
 

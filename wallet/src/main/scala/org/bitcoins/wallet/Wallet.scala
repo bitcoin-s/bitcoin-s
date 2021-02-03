@@ -663,10 +663,9 @@ abstract class Wallet
         _.networkParameters.isSameNetworkBytes(networkParameters)),
       s"Cannot send to address on other network, got ${addresses.map(_.networkParameters)}"
     )
-    val destinations = addresses.zip(amounts).map {
-      case (address, amount) =>
-        logger.info(s"Sending $amount to $address at feerate $feeRate")
-        TransactionOutput(amount, address.scriptPubKey)
+    val destinations = addresses.zip(amounts).map { case (address, amount) =>
+      logger.info(s"Sending $amount to $address at feerate $feeRate")
+      TransactionOutput(amount, address.scriptPubKey)
     }
     sendToOutputs(destinations, feeRate, fromAccount, newTags)
   }

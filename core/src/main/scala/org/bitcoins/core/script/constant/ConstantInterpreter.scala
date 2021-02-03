@@ -10,8 +10,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 1/24/16.
+/** Created by chris on 1/24/16.
   */
 sealed abstract class ConstantInterpreter extends BitcoinSLogger {
 
@@ -115,8 +114,7 @@ sealed abstract class ConstantInterpreter extends BitcoinSLogger {
     } else program.updateStackAndScript(constant :: program.stack, newScript)
   }
 
-  /**
-    * Checks if the MINIMALDATA script flag is set, if so checks if we are using the minimal push operation
+  /** Checks if the MINIMALDATA script flag is set, if so checks if we are using the minimal push operation
     * if we are, then we push the bytes onto the stack.
     */
   private def opPushData(

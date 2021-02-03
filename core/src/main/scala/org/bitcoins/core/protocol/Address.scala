@@ -70,8 +70,7 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
   override def hash: Sha256Hash160Digest
 }
 
-/**
-  * https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+/** https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
   */
 sealed abstract class Bech32Address extends BitcoinAddress {
 
@@ -242,9 +241,8 @@ object P2PKHAddress extends AddressFactory[P2PKHAddress] {
       val networkBytes: Option[(NetworkParameters, ByteVector)] =
         Networks.knownNetworks
           .map(n => (n, n.p2pkhNetworkByte))
-          .find {
-            case (_, bs) =>
-              bytes.startsWith(bs)
+          .find { case (_, bs) =>
+            bytes.startsWith(bs)
           }
       val result: Option[P2PKHAddress] = networkBytes.map {
         case (network, p2pkhNetworkBytes) =>
@@ -294,8 +292,7 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
       networkParameters: NetworkParameters)
       extends P2SHAddress
 
-  /**
-    * Creates a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]] from the given
+  /** Creates a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]] from the given
     * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]],
     * then creates an address from that [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]]
     */
@@ -322,9 +319,8 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
       val networkBytes: Option[(NetworkParameters, ByteVector)] =
         Networks.knownNetworks
           .map(n => (n, n.p2shNetworkByte))
-          .find {
-            case (_, bs) =>
-              bytes.startsWith(bs)
+          .find { case (_, bs) =>
+            bytes.startsWith(bs)
           }
       val result: Option[P2SHAddress] = networkBytes.map {
         case (network, p2shNetworkBytes) =>

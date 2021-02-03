@@ -8,8 +8,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import scodec.bits.{BitVector, ByteVector}
 
-/**
-  * Created by chris on 6/16/16.
+/** Created by chris on 6/16/16.
   */
 trait NumberGenerator {
 
@@ -20,18 +19,15 @@ trait NumberGenerator {
   /** Creates a generator that generates positive long numbers */
   def positiveLongs: Gen[Long] = Gen.choose(0, Long.MaxValue)
 
-  /**
-    * Integers between 0 and Int.MaxValue
+  /** Integers between 0 and Int.MaxValue
     */
   val positiveInts: Gen[Int] = Gen.choose(0, Int.MaxValue)
 
-  /**
-    * Integers between Int.MinValue and -1
+  /** Integers between Int.MinValue and -1
     */
   val negativeInts: Gen[Int] = Gen.choose(Int.MinValue, -1)
 
-  /**
-    * Random integers
+  /** Random integers
     */
   val ints: Gen[Int] = Gen.choose(Int.MinValue, Int.MaxValue)
 
@@ -51,8 +47,7 @@ trait NumberGenerator {
 
   def uInt16: Gen[UInt16] = Gen.choose(0, 65535).map(UInt16(_))
 
-  /**
-    * Generates a number in the range 0 <= x <= 2 ^^32 - 1
+  /** Generates a number in the range 0 <= x <= 2 ^^32 - 1
     * then wraps it in a UInt32
     */
   def uInt32s: Gen[UInt32] =
@@ -69,8 +64,7 @@ trait NumberGenerator {
   def bigIntsUInt64Range: Gen[BigInt] =
     positiveBigInts.filter(_ < (BigInt(1) << 64))
 
-  /**
-    * Generates a number in the range 0 <= x < 2^^64
+  /** Generates a number in the range 0 <= x < 2^^64
     * then wraps it in a UInt64
     */
   def uInt64s: Gen[UInt64] = uInt64
@@ -116,8 +110,7 @@ trait NumberGenerator {
       b <- bytes(num)
     } yield b
 
-  /**
-    * Generates the number of bytes specified by num
+  /** Generates the number of bytes specified by num
     * @param num
     * @return
     */
@@ -136,8 +129,7 @@ trait NumberGenerator {
       vector <- Gen.listOfN(n, bool)
     } yield BitVector.bits(vector)
 
-  /**
-    * Generates a random GCS P parameter.
+  /** Generates a random GCS P parameter.
     *
     * Bit parameter for GCS, cannot be more than 32 as we will have a number too large for a UInt64.
     * @see [[https://github.com/Roasbeef/btcutil/blob/b5d74480bb5b02a15a9266cbeae37ecf9dd6ffca/gcs/gcs.go#L67]]

@@ -16,8 +16,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 1/25/16.
+/** Created by chris on 1/25/16.
   */
 sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
 
@@ -239,8 +238,8 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
       if (
         ScriptFlagUtil.requireMinimalData(program.flags) && (!BitcoinScriptUtil
           .isShortestEncoding(c) ||
-        !BitcoinScriptUtil.isShortestEncoding(b) || !BitcoinScriptUtil
-          .isShortestEncoding(a))
+          !BitcoinScriptUtil.isShortestEncoding(b) || !BitcoinScriptUtil
+            .isShortestEncoding(a))
       ) {
         logger.error(
           "The constant you gave us is not encoded in the shortest way possible")
@@ -264,16 +263,14 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * This function checks if a number is <= 4 bytes in size
+  /** This function checks if a number is <= 4 bytes in size
     * We cannot perform arithmetic operations on bitcoin numbers that are larger than 4 bytes.
     * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L214-L239.
     */
   private def isLargerThan4Bytes(scriptNumber: ScriptNumber): Boolean =
     scriptNumber.bytes.size > 4
 
-  /**
-    * Performs the given arithmetic operation on the stack head
+  /** Performs the given arithmetic operation on the stack head
     * @param program the program whose stack top is used as an argument for the arithmetic operation
     * @param op the arithmetic ooperation that needs to be executed on the number, for instance incrementing by 1
     * @return the program with the result from performing the arithmetic operation pushed onto the top of the stack
@@ -329,8 +326,7 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Performs the given arithmetic operation on the top two stack items
+  /** Performs the given arithmetic operation on the top two stack items
     * @param program the program whose stack top is used as an argument for the arithmetic operation
     * @param op the arithmetic ooperation that needs to be executed on the number, for instance incrementing by 1
     * @return the program with the result from performing the arithmetic operation pushed onto the top of the stack
@@ -396,8 +392,7 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Compares two script numbers with the given boolean operation
+  /** Compares two script numbers with the given boolean operation
     * @param program the program whose two top stack elements are used for the comparison
     * @param op the operation which compares the two script numbers
     * @return the program with either OP_FALSE or OP_TRUE on the stack top
@@ -432,8 +427,7 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Takes the top two stack items, parses them to numbers then executes the op function on them and places the result
+  /** Takes the top two stack items, parses them to numbers then executes the op function on them and places the result
     * onto the stack top
     * @param program the script program whose two top stack items are used as arguments for op
     * @param op the operation that needs to be executed on the two stack top items
@@ -447,8 +441,7 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
     performBinaryArithmeticOperation(program, op)
   }
 
-  /**
-    * Takes the top two stack elements and parses them as script numbers
+  /** Takes the top two stack elements and parses them as script numbers
     * @param program the program whose top two stack elements are being parsed as script numbers
     * @return the tuple with the first element being the first stack element, the second element in the tuple being the second stack element
     */

@@ -9,8 +9,7 @@ import org.bouncycastle.crypto.params.KeyParameter
 import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.{BitVector, ByteVector}
 
-/**
-  * Utility cryptographic functions
+/** Utility cryptographic functions
   */
 trait CryptoUtil {
 
@@ -156,8 +155,7 @@ trait CryptoUtil {
     ripeMd160(serializeForHash(str))
   }
 
-  /**
-    * Calculates `HMAC-SHA512(key, data)`
+  /** Calculates `HMAC-SHA512(key, data)`
     */
   def hmac512(key: ByteVector, data: ByteVector): ByteVector = {
     val hmac512 = new HMac(new SHA512Digest())
@@ -168,8 +166,7 @@ trait CryptoUtil {
     ByteVector(output)
   }
 
-  /**
-    * @param x x coordinate
+  /** @param x x coordinate
     * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
     *         p1.y is even, p2.y is odd
     */
@@ -191,8 +188,7 @@ trait CryptoUtil {
      ECPublicKey(0x03.toByte +: bytes32).toPoint)
   }
 
-  /**
-    * Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
+  /** Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
     * can be verified with both, but only one of them matches that private key that was used to generate the signature.
     *
     * @param signature       signature

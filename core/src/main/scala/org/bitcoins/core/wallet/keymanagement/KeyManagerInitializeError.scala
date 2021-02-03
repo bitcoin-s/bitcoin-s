@@ -13,8 +13,7 @@ object InitializeKeyManagerError {
       extends Error(underlying)
       with KeyManagerInitializeError
 
-  /**
-    * Wallet data was found in the
+  /** Wallet data was found in the
     * specified data directory.
     *
     * @note `bitcoin-s` only supports one wallet

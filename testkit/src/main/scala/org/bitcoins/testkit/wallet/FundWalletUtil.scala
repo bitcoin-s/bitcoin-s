@@ -35,11 +35,10 @@ trait FundWalletUtil extends BitcoinSLogger {
     val txsF = for {
       addresses <- addressesF
     } yield {
-      addresses.zip(amts).map {
-        case (addr, amt) =>
-          val output =
-            TransactionOutput(value = amt, scriptPubKey = addr.scriptPubKey)
-          TransactionTestUtil.buildTransactionTo(output)
+      addresses.zip(amts).map { case (addr, amt) =>
+        val output =
+          TransactionOutput(value = amt, scriptPubKey = addr.scriptPubKey)
+        TransactionTestUtil.buildTransactionTo(output)
       }
     }
 

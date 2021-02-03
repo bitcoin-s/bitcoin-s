@@ -3,8 +3,7 @@ package org.bitcoins.core.protocol.ln.channel
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-/**
-  * There are two types of ChannelIds in the lightning protocol
+/** There are two types of ChannelIds in the lightning protocol
   * There is a 'temporary' channel id used for the hand shake when initially establishing
   * a channel and then a FundedChannelId indicating a channel that has a validly signed tx
   * For more information on the distinction between these two types please read
@@ -13,8 +12,7 @@ import scodec.bits.ByteVector
   */
 sealed abstract class ChannelId extends NetworkElement
 
-/**
-  * Represents the the temporary channelId created in the
+/** Represents the the temporary channelId created in the
   * `open_channel` msg of the
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#the-open_channel-message LN p2p protocol]]
   */
@@ -23,8 +21,7 @@ case class TempChannelId(bytes: ByteVector) extends ChannelId {
           s"ChannelId must be 32 bytes in size, got ${bytes.length}")
 }
 
-/**
-  * Represents the stable ChannelId that represents a channel that has been signed by both parties
+/** Represents the stable ChannelId that represents a channel that has been signed by both parties
   * This is created in the `funding_signed` msg on the
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#the-funding_signed-message LN p2p protocol]].
   *

@@ -7,8 +7,7 @@ import scodec.bits.ByteVector
 case class ShortChannelId(u64: UInt64) extends NetworkElement {
   override def bytes: ByteVector = u64.bytes
 
-  /**
-    * Output example:
+  /** Output example:
     * {{{
     * > ShortChannelId.fromHex("db0000010000")
     * 219x1x0
@@ -16,8 +15,7 @@ case class ShortChannelId(u64: UInt64) extends NetworkElement {
     */
   override def toString: String = toHumanReadableString
 
-  /**
-    * Converts the short channel id into the human readable form defined in BOLT.
+  /** Converts the short channel id into the human readable form defined in BOLT.
     * @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routing-gossip.md  BOLT7]]
     *
     * Output example:

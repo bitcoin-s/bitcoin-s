@@ -120,8 +120,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(sendHeadersMsg)
   }
 
-  /**
-    * Sends a inventory message with the given transactions
+  /** Sends a inventory message with the given transactions
     */
   def sendInventoryMessage(transactions: Transaction*): Future[Unit] = {
     val inventories =
@@ -246,8 +245,7 @@ object PeerMessageSender {
 
   sealed abstract class PeerMessageHandlerMsg
 
-  /**
-    * For when we are done with exchanging version and verack messages
+  /** For when we are done with exchanging version and verack messages
     * This means we can send normal p2p messages now
     */
   case object HandshakeFinished extends PeerMessageHandlerMsg

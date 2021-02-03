@@ -8,8 +8,7 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 12/14/16.
+/** Created by chris on 12/14/16.
   */
 sealed abstract class RawScriptWitnessParser
     extends RawBitcoinSerializer[ScriptWitness] {

@@ -16,9 +16,8 @@ class ScriptWitnessSpec
   }
 
   property("pull redeem script out of p2wsh witness") = {
-    Prop.forAll(ScriptGenerators.rawScriptPubKey) {
-      case (spk, _) =>
-        P2WSHWitnessV0(spk).redeemScript == spk
+    Prop.forAll(ScriptGenerators.rawScriptPubKey) { case (spk, _) =>
+      P2WSHWitnessV0(spk).redeemScript == spk
     }
   }
 

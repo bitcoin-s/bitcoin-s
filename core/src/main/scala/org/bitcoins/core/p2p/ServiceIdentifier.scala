@@ -5,8 +5,7 @@ import org.bitcoins.core.serializers.p2p.messages.RawServiceIdentifierSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement, StringFactory}
 import scodec.bits.ByteVector
 
-/**
-  * Indicates the services that are provided by a node on the P2P network
+/** Indicates the services that are provided by a node on the P2P network
   *
   * @see [[https://bitcoin.org/en/developer-reference#version]]
   * @see [[https://github.com/bitcoin/bitcoin/blob/master/src/protocol.h#L247 protocol.h]]
@@ -20,21 +19,18 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
 
   override def bytes: ByteVector = RawServiceIdentifierSerializer.write(this)
 
-  /**
-    * This node is not a full node.
+  /** This node is not a full node.
     * It may not be able to provide any data except for the transactions it originates.
     */
   lazy val nodeNone: Boolean = num == UInt64.zero
 
-  /**
-    * This is a full node and can be asked for full blocks.
+  /** This is a full node and can be asked for full blocks.
     * It should implement all protocol features available in
     * its self-reported protocol version.
     */
   lazy val nodeNetwork: Boolean = reversedBits(0) // 1 << 0
 
-  /**
-    * This is a full node capable of responding to the
+  /** This is a full node capable of responding to the
     * `getutxo` protocol request. This is not supported
     * by any currently-maintained Bitcoin node.
     *
@@ -43,8 +39,7 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
     */
   lazy val nodeGetUtxo: Boolean = reversedBits(1) // 1 << 1
 
-  /**
-    * This is a full node capable and willing to handle
+  /** This is a full node capable and willing to handle
     * bloom-filtered connections.
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0111.mediawiki BIP111]]
@@ -52,8 +47,7 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
     */
   lazy val nodeBloom: Boolean = reversedBits(2) // 1 << 2
 
-  /**
-    * This is a full node that can be asked for blocks
+  /** This is a full node that can be asked for blocks
     * and transactions including witness data.
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki BIP144]]]
@@ -61,15 +55,13 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
     */
   lazy val nodeWitness: Boolean = reversedBits(3) // 1 << 3
 
-  /**
-    * This is a full node that supports Xtreme Thinblocks.
+  /** This is a full node that supports Xtreme Thinblocks.
     * This is not supported by any currently-maintained
     * Bitcoin node.
     */
   lazy val nodeXthin: Boolean = reversedBits(4) // 1 << 4
 
-  /**
-    * NODE_COMPACT_FILTERS means the node will service basic
+  /** NODE_COMPACT_FILTERS means the node will service basic
     * block filter requests.
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157 BIP157]] and
@@ -81,8 +73,7 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
     */
   lazy val nodeCompactFilters: Boolean = reversedBits(6) // 1 << 6
 
-  /**
-    * this means the same as `nodeNetwork` with the limitation of only
+  /** this means the same as `nodeNetwork` with the limitation of only
     * serving the last 288 (2 days) blocks
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0159.mediawiki BIP159]]
@@ -99,8 +90,7 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
   }
 }
 
-/**
-  * Designated type for any service that does not have value of 0 or 1
+/** Designated type for any service that does not have value of 0 or 1
   */
 sealed trait UnknownService extends ServiceIdentifier {
   override def toString(): String = s"UnknownService(${num.toLong})"
@@ -110,20 +100,17 @@ object ServiceIdentifier
     extends Factory[ServiceIdentifier]
     with StringFactory[ServiceIdentifier] {
 
-  /**
-    * This node is not a full node.
+  /** This node is not a full node.
     * It may not be able to provide any data except for the transactions it originates.
     */
   val NODE_NONE = ServiceIdentifier(UInt64.zero)
 
-  /**
-    * This is a full node and can be asked for full blocks.
+  /** This is a full node and can be asked for full blocks.
     * It should implement all protocol features available in its self-reported protocol version.
     */
   val NODE_NETWORK: ServiceIdentifier = ServiceIdentifier(1 << 0)
 
-  /**
-    * This is a full node capable of responding to the
+  /** This is a full node capable of responding to the
     * `getutxo` protocol request. This is not supported
     * by any currently-maintained Bitcoin node.
     *
@@ -132,8 +119,7 @@ object ServiceIdentifier
     */
   val NODE_GET_UTXO: ServiceIdentifier = ServiceIdentifier(1 << 1)
 
-  /**
-    * This is a full node capable and willing to handle
+  /** This is a full node capable and willing to handle
     * bloom-filtered connections.
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0111.mediawiki BIP111]]
@@ -141,8 +127,7 @@ object ServiceIdentifier
     */
   val NODE_BLOOM: ServiceIdentifier = ServiceIdentifier(1 << 2)
 
-  /**
-    * This is a full node that can be asked for blocks
+  /** This is a full node that can be asked for blocks
     * and transactions including witness data.
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki BIP144]]]
@@ -150,8 +135,7 @@ object ServiceIdentifier
     */
   val NODE_WITNESS: ServiceIdentifier = ServiceIdentifier(1 << 3)
 
-  /**
-    * This is a full node that supports Xtreme Thinblocks.
+  /** This is a full node that supports Xtreme Thinblocks.
     * This is not supported by any currently-maintained
     * Bitcoin node.
     */
@@ -159,8 +143,7 @@ object ServiceIdentifier
 
   val NODE_COMPACT_FILTERS = ServiceIdentifier(1 << 6)
 
-  /**
-    * This means the same as `NODE_NETWORK` with the limitation of only
+  /** This means the same as `NODE_NETWORK` with the limitation of only
     * serving the last 288 (2 days) blocks
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0159.mediawiki BIP159]]

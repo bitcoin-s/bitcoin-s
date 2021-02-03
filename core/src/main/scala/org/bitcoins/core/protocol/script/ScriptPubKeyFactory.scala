@@ -3,8 +3,7 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.core.script.constant._
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/19/16.
+/** Created by chris on 1/19/16.
   */
 sealed trait ScriptPubKeyUpdateIndicator
 

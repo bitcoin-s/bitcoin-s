@@ -125,30 +125,29 @@ class SignerTest extends BitcoinSAsyncTest {
             Future.sequence(sigVecFs)
           }
         } yield {
-          signedTx.inputs.zipWithIndex.foreach {
-            case (input, inputIndex) =>
-              val infoAndIndexOpt = creditingTxsInfos.zipWithIndex
-                .find(_._1.outPoint == input.previousOutput)
-              assert(infoAndIndexOpt.isDefined)
-              val (info, index) = infoAndIndexOpt.get
-              val sigs = singleSigs(index)
+          signedTx.inputs.zipWithIndex.foreach { case (input, inputIndex) =>
+            val infoAndIndexOpt = creditingTxsInfos.zipWithIndex
+              .find(_._1.outPoint == input.previousOutput)
+            assert(infoAndIndexOpt.isDefined)
+            val (info, index) = infoAndIndexOpt.get
+            val sigs = singleSigs(index)
 
-              val expectedSigs =
-                if (InputInfo.getScriptWitness(info.inputInfo).isEmpty) {
-                  input.scriptSignature.signatures
-                } else {
-                  signedTx
-                    .asInstanceOf[WitnessTransaction]
-                    .witness
-                    .witnesses(inputIndex) match {
-                    case p2wpkh: P2WPKHWitnessV0 => Vector(p2wpkh.signature)
-                    case p2wsh: P2WSHWitnessV0   => p2wsh.signatures
-                    case EmptyScriptWitness      => Vector.empty
-                  }
+            val expectedSigs =
+              if (InputInfo.getScriptWitness(info.inputInfo).isEmpty) {
+                input.scriptSignature.signatures
+              } else {
+                signedTx
+                  .asInstanceOf[WitnessTransaction]
+                  .witness
+                  .witnesses(inputIndex) match {
+                  case p2wpkh: P2WPKHWitnessV0 => Vector(p2wpkh.signature)
+                  case p2wsh: P2WSHWitnessV0   => p2wsh.signatures
+                  case EmptyScriptWitness      => Vector.empty
                 }
+              }
 
-              assert(sigs.length == expectedSigs.length)
-              assert(sigs.forall(expectedSigs.contains))
+            assert(sigs.length == expectedSigs.length)
+            assert(sigs.forall(expectedSigs.contains))
           }
 
           succeed

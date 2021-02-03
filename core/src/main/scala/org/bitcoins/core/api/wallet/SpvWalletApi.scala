@@ -4,8 +4,7 @@ import org.bitcoins.core.bloom.BloomFilter
 
 import scala.concurrent.Future
 
-/**
-  * API for the wallet project.
+/** API for the wallet project.
   *
   * This wallet API is BIP44 compliant.
   *
@@ -13,13 +12,11 @@ import scala.concurrent.Future
   */
 trait SpvWalletApi { self: WalletApi =>
 
-  /**
-    * Recreates the account using BIP-44 approach
+  /** Recreates the account using BIP-44 approach
     */
   def rescanSPVWallet(): Future[Unit]
 
-  /**
-    * Retrieves a bloom filter that that can be sent to a P2P network node
+  /** Retrieves a bloom filter that that can be sent to a P2P network node
     * to get information about our transactions, pubkeys and scripts.
     */
   def getBloomFilter(): Future[BloomFilter]

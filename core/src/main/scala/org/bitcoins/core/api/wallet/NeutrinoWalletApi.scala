@@ -11,8 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait NeutrinoWalletApi { self: WalletApi =>
 
-  /**
-    * Processes the give block, updating our DB state if it's relevant to us.
+  /** Processes the give block, updating our DB state if it's relevant to us.
     * @param block The block we're processing
     */
   def processBlock(block: Block): Future[WalletApi]
@@ -26,8 +25,7 @@ trait NeutrinoWalletApi { self: WalletApi =>
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
     WalletApi]
 
-  /**
-    * Iterates over the block filters in order to find filters that match to the given addresses
+  /** Iterates over the block filters in order to find filters that match to the given addresses
     *
     * I queries the filter database for [[batchSize]] filters a time
     * and tries to run [[GolombFilter.matchesAny]] for each filter.
@@ -51,8 +49,7 @@ trait NeutrinoWalletApi { self: WalletApi =>
       parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(implicit
       ec: ExecutionContext): Future[Vector[BlockMatchingResponse]]
 
-  /**
-    * Recreates the account using BIP-157 approach
+  /** Recreates the account using BIP-157 approach
     *
     * DANGER! This method removes all records from the wallet database
     * and creates new ones while the account discovery process.

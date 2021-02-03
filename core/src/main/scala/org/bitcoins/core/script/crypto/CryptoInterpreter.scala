@@ -19,8 +19,7 @@ import org.bitcoins.crypto.{
 }
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 sealed abstract class CryptoInterpreter extends BitcoinSLogger {
 
@@ -64,8 +63,7 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
     executeHashFunction(program, CryptoUtil.sha1(_: ByteVector))
   }
 
-  /**
-    * The entire transaction's outputs, inputs, and script (from the most
+  /** The entire transaction's outputs, inputs, and script (from the most
     * recently-executed OP_CODESEPARATOR to the end) are hashed.
     * The signature used by
     * [[org.bitcoins.core.script.crypto.OP_CHECKSIG OP_CHECKSIG]]
@@ -125,8 +123,7 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * All of the signature checking words will only match signatures to the data
+  /** All of the signature checking words will only match signatures to the data
     * after the most recently-executed
     * [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]].
     */
@@ -143,8 +140,7 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
       .updateLastCodeSeparator(indexOfOpCodeSeparator)
   }
 
-  /**
-    * Compares the first signature against each public key until it finds an ECDSA match.
+  /** Compares the first signature against each public key until it finds an ECDSA match.
     * Starting with the subsequent public key, it compares the second signature against each remaining
     * public key until it finds an ECDSA match. The process is repeated until all signatures have been
     * checked or not enough public keys remain to produce a successful result.
@@ -292,8 +288,7 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * This is a higher order function designed to execute a hash function on the stack top of the program
+  /** This is a higher order function designed to execute a hash function on the stack top of the program
     * For instance, we could pass in CryptoUtil.sha256 function as the `hashFunction` argument, which would then
     * apply sha256 to the stack top
     * @param program the script program whose stack top needs to be hashed

@@ -91,21 +91,20 @@ trait EventDbUtil {
       signingVersion: SigningVersion = SigningVersion.latest): Vector[
     EventDb] = {
     val nonces = oracleAnnouncementV0TLV.eventTLV.nonces
-    nonces.zipWithIndex.map {
-      case (nonce, index) =>
-        EventDb(
-          nonce = nonce,
-          pubkey = oracleAnnouncementV0TLV.publicKey,
-          nonceIndex = index,
-          eventName = eventName,
-          numOutcomes = nonces.size,
-          signingVersion = signingVersion,
-          maturationTime = oracleAnnouncementV0TLV.eventTLV.maturation,
-          attestationOpt = None,
-          outcomeOpt = None,
-          announcementSignature = oracleAnnouncementV0TLV.announcementSignature,
-          eventDescriptorTLV = oracleAnnouncementV0TLV.eventTLV.eventDescriptor
-        )
+    nonces.zipWithIndex.map { case (nonce, index) =>
+      EventDb(
+        nonce = nonce,
+        pubkey = oracleAnnouncementV0TLV.publicKey,
+        nonceIndex = index,
+        eventName = eventName,
+        numOutcomes = nonces.size,
+        signingVersion = signingVersion,
+        maturationTime = oracleAnnouncementV0TLV.eventTLV.maturation,
+        attestationOpt = None,
+        outcomeOpt = None,
+        announcementSignature = oracleAnnouncementV0TLV.announcementSignature,
+        eventDescriptorTLV = oracleAnnouncementV0TLV.eventTLV.eventDescriptor
+      )
     }
   }
 }

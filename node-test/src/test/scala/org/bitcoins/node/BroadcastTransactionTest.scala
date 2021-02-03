@@ -91,9 +91,8 @@ class BroadcastTransactionTest extends NodeUnitTest {
       tx <- createValidTx(rpc)
 
       _ <- attemptBroadcast(tx)
-        .recoverWith {
-          case NonFatal(_) =>
-            attemptBroadcast(tx)
+        .recoverWith { case NonFatal(_) =>
+          attemptBroadcast(tx)
         }
       _ <- rpc.generateToAddress(blocks = 1, junkAddress)
       bitcoindBalancePostBroadcast <- rpc.getBalance

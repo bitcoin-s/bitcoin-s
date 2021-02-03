@@ -2,8 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TransactionTestUtil}
 
-/**
-  * Created by chris on 3/8/16.
+/** Created by chris on 3/8/16.
   */
 class MultiSignatureScriptSignatureTest extends BitcoinSUnitTest {
 

@@ -5,8 +5,7 @@ import org.bitcoins.core.protocol.ln.currency.{LnMultiplier, MilliSatoshis}
 
 sealed abstract class LnPolicy {
 
-  /**
-    * The "amount_msat" field has been artificially limited to a UInt32. This means that the current maximum transaction that can be completed
+  /** The "amount_msat" field has been artificially limited to a UInt32. This means that the current maximum transaction that can be completed
     * over the lightning network is 4294967295 MilliSatoshi.
     * This is a self imposed limit, and is subject to change.
     * Please see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]

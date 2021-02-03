@@ -18,8 +18,7 @@ import scodec.bits._
 
 import scala.concurrent.Future
 
-/**
-  * Created by chris on 9/8/16.
+/** Created by chris on 9/8/16.
   */
 class BlockHeaderDAOTest extends ChainDbUnitTest {
 
@@ -220,10 +219,9 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         }
       }
 
-      val assert1F = getAtHeightF.map {
-        case headers =>
-          assert(headers.head == blockHeader)
-          assert(headers.head.height == 1)
+      val assert1F = getAtHeightF.map { case headers =>
+        assert(headers.head == blockHeader)
+        assert(headers.head.height == 1)
       }
 
       //create one at height 2
@@ -277,10 +275,9 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       //now make sure they are both at height 1
       val getHeightF = created2F.flatMap(_ => blockHeaderDAO.getAtHeight(1))
 
-      getHeightF.map {
-        case headers =>
-          assert(headers.toSet.size == 2)
-          assert(headers.toSet == Set(blockHeader, blockHeader1))
+      getHeightF.map { case headers =>
+        assert(headers.toSet.size == 2)
+        assert(headers.toSet == Set(blockHeader, blockHeader1))
       }
   }
 

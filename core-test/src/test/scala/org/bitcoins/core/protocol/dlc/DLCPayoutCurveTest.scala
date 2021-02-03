@@ -190,24 +190,23 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
            intGen,
            intGen,
            Gen.listOfN(1000, numGen),
-           fourNums) {
-      case (a, b, c, d, outcomes, (x1, x2, x3, x4)) =>
-        def expectedPayout(outcome: BigDecimal): Satoshis = {
-          val value =
-            a * outcome * outcome * outcome + b * outcome * outcome + c * outcome + d
-          val rounded = value.setScale(0, RoundingMode.FLOOR).toLongExact
-          Satoshis(rounded)
-        }
+           fourNums) { case (a, b, c, d, outcomes, (x1, x2, x3, x4)) =>
+      def expectedPayout(outcome: BigDecimal): Satoshis = {
+        val value =
+          a * outcome * outcome * outcome + b * outcome * outcome + c * outcome + d
+        val rounded = value.setScale(0, RoundingMode.FLOOR).toLongExact
+        Satoshis(rounded)
+      }
 
-        val point1 = OutcomePayoutEndpoint(x1, expectedPayout(x1))
-        val point2 = OutcomePayoutMidpoint(x2, expectedPayout(x2))
-        val point3 = OutcomePayoutMidpoint(x3, expectedPayout(x3))
-        val point4 = OutcomePayoutEndpoint(x4, expectedPayout(x4))
-        val cubic = OutcomePayoutCubic(point1, point2, point3, point4)
+      val point1 = OutcomePayoutEndpoint(x1, expectedPayout(x1))
+      val point2 = OutcomePayoutMidpoint(x2, expectedPayout(x2))
+      val point3 = OutcomePayoutMidpoint(x3, expectedPayout(x3))
+      val point4 = OutcomePayoutEndpoint(x4, expectedPayout(x4))
+      val cubic = OutcomePayoutCubic(point1, point2, point3, point4)
 
-        outcomes.foreach { outcome =>
-          assert(cubic(outcome) == expectedPayout(outcome))
-        }
+      outcomes.foreach { outcome =>
+        assert(cubic(outcome) == expectedPayout(outcome))
+      }
     }
   }
 

@@ -9,8 +9,7 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 
-/**
-  * Source for serialization
+/** Source for serialization
   * https://bitcoin.org/en/developer-reference#outpoint
   */
 sealed abstract class RawTransactionOutPointParser

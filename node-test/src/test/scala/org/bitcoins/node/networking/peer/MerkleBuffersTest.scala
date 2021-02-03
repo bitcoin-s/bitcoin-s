@@ -28,57 +28,55 @@ class MerkleBuffersTest extends BitcoinSAsyncTest with CachedBitcoinSAppConfig {
       block <- BlockchainElementsGenerator.block(txs)
     } yield (txs, otherTxs, block)
 
-    forAllAsync(txsAndBlockGen) {
+    forAllAsync(txsAndBlockGen) { case (txs, otherTxs, block) =>
+      var receivedExpectedTXs: Option[Try[Assertion]] = None
+      var callbackCount: Int = 0
+      val callback: OnMerkleBlockReceived = { (_, merkleTxs) =>
+        receivedExpectedTXs = Some(
+          Try(assert(txs == merkleTxs,
+                     "Received TXs in callback was not the ones we put in")))
+        callbackCount = callbackCount + 1
+        FutureUtil.unit
+      }
+      val callbacks = NodeCallbacks(onMerkleBlockReceived = Vector(callback))
 
-      case (txs, otherTxs, block) =>
-        var receivedExpectedTXs: Option[Try[Assertion]] = None
-        var callbackCount: Int = 0
-        val callback: OnMerkleBlockReceived = { (_, merkleTxs) =>
-          receivedExpectedTXs = Some(
-            Try(assert(txs == merkleTxs,
-                       "Received TXs in callback was not the ones we put in")))
-          callbackCount = callbackCount + 1
-          FutureUtil.unit
+      val merkle = MerkleBlock(block, txs.map(_.txId))
+      val _ = MerkleBuffers.putMerkle(merkle)
+
+      val txFs = txs.map { tx =>
+        MerkleBuffers
+          .putTx(tx, callbacks)
+          .map(matches =>
+            assert(
+              matches,
+              s"TX ${tx.txIdBE} did not match any merkle block in MerkleBuffers"))
+      }
+
+      val otherTxFs = otherTxs.map { tx =>
+        MerkleBuffers
+          .putTx(tx, callbacks)
+          .map(matches =>
+            assert(
+              !matches,
+              s"Unrelated TX ${tx.txIdBE} did match merkle block in MerkleBuffers"))
+      }
+
+      for {
+        _ <- Future.sequence(txFs)
+        _ <- Future.sequence(otherTxFs)
+      } yield {
+        assert(callbackCount != 0,
+               "Callback was not called after processing all TXs!")
+
+        assert(callbackCount == 1,
+               s"Callback was called multiple times: $callbackCount")
+
+        receivedExpectedTXs match {
+          case None                     => fail("Callback was never called")
+          case Some(Success(assertion)) => assertion
+          case Some(Failure(exc))       => fail(exc)
         }
-        val callbacks = NodeCallbacks(onMerkleBlockReceived = Vector(callback))
-
-        val merkle = MerkleBlock(block, txs.map(_.txId))
-        val _ = MerkleBuffers.putMerkle(merkle)
-
-        val txFs = txs.map { tx =>
-          MerkleBuffers
-            .putTx(tx, callbacks)
-            .map(matches =>
-              assert(
-                matches,
-                s"TX ${tx.txIdBE} did not match any merkle block in MerkleBuffers"))
-        }
-
-        val otherTxFs = otherTxs.map { tx =>
-          MerkleBuffers
-            .putTx(tx, callbacks)
-            .map(matches =>
-              assert(
-                !matches,
-                s"Unrelated TX ${tx.txIdBE} did match merkle block in MerkleBuffers"))
-        }
-
-        for {
-          _ <- Future.sequence(txFs)
-          _ <- Future.sequence(otherTxFs)
-        } yield {
-          assert(callbackCount != 0,
-                 "Callback was not called after processing all TXs!")
-
-          assert(callbackCount == 1,
-                 s"Callback was called multiple times: $callbackCount")
-
-          receivedExpectedTXs match {
-            case None                     => fail("Callback was never called")
-            case Some(Success(assertion)) => assertion
-            case Some(Failure(exc))       => fail(exc)
-          }
-        }
+      }
 
     }
 

@@ -1,7 +1,6 @@
 package org.bitcoins.core
 
-/**
-  * This package contains different HD wallet
+/** This package contains different HD wallet
   * key derivation paths.
   *
   * @see [[http://bitcoin-s.github.io/bitcoin-s-core/latest/api/ Hierarchical Deterministic Key Creation]]

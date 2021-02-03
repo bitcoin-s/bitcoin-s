@@ -10,8 +10,7 @@ import org.bitcoins.testkit.core.gen.{
 }
 import org.scalacheck.{Prop, Properties}
 
-/**
-  * Created by chris on 7/21/16.
+/** Created by chris on 7/21/16.
   */
 class BitcoinAddressSpec extends Properties("BitcoinAddressSpec") {
 

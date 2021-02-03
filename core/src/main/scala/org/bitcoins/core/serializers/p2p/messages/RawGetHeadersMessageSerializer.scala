@@ -29,8 +29,7 @@ trait RawGetHeadersMessageSerializer
       getHeadersMessage.hashStop.bytes
   }
 
-  /**
-    * Parses hashes inside of [[GetHeadersMessage]]
+  /** Parses hashes inside of [[GetHeadersMessage]]
     *
     * @param bytes     the bytes which the hashes are parsed from
     * @param numHashes the number of hases that need to be parsed

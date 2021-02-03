@@ -7,16 +7,14 @@ import org.bitcoins.crypto.{CryptoUtil, Sha256Digest, Sha256Hash160Digest}
 
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 11/10/16.
+/** Created by chris on 11/10/16.
   * The version of the [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]],
   * this indicates how a [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] is rebuilt.
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program BIP141]]
   */
 sealed trait WitnessVersion extends BitcoinSLogger {
 
-  /**
-    * Rebuilds the full script from the given witness and [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
+  /** Rebuilds the full script from the given witness and [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
     * Either returns the [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
     * it needs to be executed against or the failure that was encountered while rebuilding the witness
     */

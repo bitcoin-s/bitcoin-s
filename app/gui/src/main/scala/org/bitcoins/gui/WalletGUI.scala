@@ -42,8 +42,8 @@ object WalletGUI extends JFXApp {
 
   val rpcPortOpt: Option[Int] = {
     val portOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcport")
-    portOpt.map {
-      case (_, idx) => parameters.raw(idx + 1).toInt
+    portOpt.map { case (_, idx) =>
+      parameters.raw(idx + 1).toInt
     }
   }
 

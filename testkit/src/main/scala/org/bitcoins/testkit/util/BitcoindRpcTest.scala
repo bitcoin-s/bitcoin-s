@@ -32,8 +32,7 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
 
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  /**
-    * Bitcoind RPC clients can be added to this builder
+  /** Bitcoind RPC clients can be added to this builder
     * as they are created in tests. After tests have
     * stopped running (either by succeeding or failing)
     * all clients found in the builder is shut down.

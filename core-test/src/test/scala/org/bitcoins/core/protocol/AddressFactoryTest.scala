@@ -3,8 +3,7 @@ package org.bitcoins.core.protocol
 import org.bitcoins.core.util.Base58
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 3/30/16.
+/** Created by chris on 3/30/16.
   */
 class AddressFactoryTest extends BitcoinSUnitTest {
 

@@ -4,8 +4,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object FutureUtil {
 
-  /**
-    * Executes a series of futures sequentially
+  /** Executes a series of futures sequentially
     *
     * @param items The elements we want to transform into futures
     * @param fun A function that transforms each element into a future
@@ -21,8 +20,7 @@ object FutureUtil {
     } map (_.reverse)
   }
 
-  /**
-    * Executes a series of futures sequentially. It's similar to [[FutureUtil.sequentially()]],
+  /** Executes a series of futures sequentially. It's similar to [[FutureUtil.sequentially()]],
     * but it accepts a collection of futures and executes them one by one.
     * @param items The collection of futures
     * @return The processed elements
@@ -38,8 +36,7 @@ object FutureUtil {
 
   def emptyVec[T]: Future[Vector[T]] = Future.successful(Vector.empty[T])
 
-  /**
-    * Folds over the given elements sequentially in a non-blocking async way
+  /** Folds over the given elements sequentially in a non-blocking async way
     * @param init the initialized value for the accumulator
     * @param items the items we are folding over
     * @param fun the function we are applying to every element that returns a future
@@ -47,11 +44,10 @@ object FutureUtil {
     */
   def foldLeftAsync[T, U](init: T, items: Seq[U])(fun: (T, U) => Future[T])(
       implicit ec: ExecutionContext): Future[T] = {
-    items.foldLeft(Future.successful(init)) {
-      case (accumF, elem) =>
-        accumF.flatMap { accum =>
-          fun(accum, elem)
-        }
+    items.foldLeft(Future.successful(init)) { case (accumF, elem) =>
+      accumF.flatMap { accum =>
+        fun(accum, elem)
+      }
     }
   }
 
@@ -68,12 +64,11 @@ object FutureUtil {
     val batches = elements.grouped(batchSize)
     for {
       batchExecution <- {
-        batches.foldLeft(initF) {
-          case (uF, batch) =>
-            for {
-              _ <- uF
-              executed <- f(batch)
-            } yield executed
+        batches.foldLeft(initF) { case (uF, batch) =>
+          for {
+            _ <- uF
+            executed <- f(batch)
+          } yield executed
         }
       }
     } yield batchExecution

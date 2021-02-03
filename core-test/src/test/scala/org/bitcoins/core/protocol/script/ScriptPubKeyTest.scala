@@ -9,8 +9,7 @@ import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 1/14/16.
+/** Created by chris on 1/14/16.
   */
 class ScriptPubKeyTest extends BitcoinSUnitTest {
 

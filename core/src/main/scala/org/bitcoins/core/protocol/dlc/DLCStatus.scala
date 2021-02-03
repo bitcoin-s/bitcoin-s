@@ -264,19 +264,17 @@ object DLCStatus {
     val totalCollateral = offer.contractInfo.totalCollateral
 
     val possibleOutcomes = offer.contractInfo.allOutcomesAndPayouts
-      .filter {
-        case (_, amt) =>
-          val amts = Vector(amt, totalCollateral - amt)
-            .filter(_ >= Policy.dustThreshold)
-            .sorted
+      .filter { case (_, amt) =>
+        val amts = Vector(amt, totalCollateral - amt)
+          .filter(_ >= Policy.dustThreshold)
+          .sorted
 
-          // Only messages within 1 satoshi of the on-chain CET's value
-          // should be considered.
-          // Off-by-one is okay because both parties round to the nearest
-          // Satoshi for fees and if both round up they could be off-by-one.
-          Math.abs(
-            (amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
-            .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
+        // Only messages within 1 satoshi of the on-chain CET's value
+        // should be considered.
+        // Off-by-one is okay because both parties round to the nearest
+        // Satoshi for fees and if both round up they could be off-by-one.
+        Math.abs((amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
+          .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
       }
       .map(_._1)
 
@@ -302,11 +300,10 @@ object DLCStatus {
       (offerCETSig, possibleOutcomeSigs)
     }
 
-    val sigOpt = outcomeSigs.find {
-      case (outcome, adaptorSig) =>
-        val possibleOracleSig =
-          sigFromOutcomeAndSigs(outcome, adaptorSig, cetSig)
-        possibleOracleSig.sig.getPublicKey == outcome.sigPoint
+    val sigOpt = outcomeSigs.find { case (outcome, adaptorSig) =>
+      val possibleOracleSig =
+        sigFromOutcomeAndSigs(outcome, adaptorSig, cetSig)
+      possibleOracleSig.sig.getPublicKey == outcome.sigPoint
     }
 
     sigOpt match {

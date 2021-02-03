@@ -13,8 +13,7 @@ import scodec.bits.ByteVector
 
 import java.math.BigInteger
 
-/**
-  * Indicates a node to route through with specific options on the Lightning Network
+/** Indicates a node to route through with specific options on the Lightning Network
   * For more details on these settings please see
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#cltv_expiry_delta-selection BOLT2]]
   */

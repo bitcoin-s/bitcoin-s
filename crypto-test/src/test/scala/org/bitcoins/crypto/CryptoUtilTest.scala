@@ -6,8 +6,7 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import scodec.bits._
 
-/**
-  * Created by chris on 1/26/16.
+/** Created by chris on 1/26/16.
   */
 class CryptoUtilTest extends BitcoinSUnitTest {
 
@@ -219,9 +218,8 @@ class CryptoUtilTest extends BitcoinSUnitTest {
           CryptoUtil.ripeMd160
         )
       val hashFuncs = strHashFuncs.zip(byteHashFuncs)
-      assert(hashFuncs.forall {
-        case (strHash, byteHash) =>
-          strHash(str) == byteHash(serialized)
+      assert(hashFuncs.forall { case (strHash, byteHash) =>
+        strHash(str) == byteHash(serialized)
       })
     }
   }

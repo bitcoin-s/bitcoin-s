@@ -2,8 +2,7 @@ package org.bitcoins.core.script.crypto
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 4/2/16.
+/** Created by chris on 4/2/16.
   */
 class CryptoSignatureEvaluationFactoryTest extends BitcoinSUnitTest {
 

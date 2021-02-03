@@ -2,8 +2,7 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 2/26/16.
+/** Created by chris on 2/26/16.
   */
 sealed abstract class ECDigitalSignature extends NetworkElement {
   require(r.signum == 1 || r.signum == 0, s"r must not be negative, got $r")
@@ -21,21 +20,18 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
 
   override def toString: String = "ECDigitalSignature(" + hex + ")"
 
-  /**
-    * Checks if this signature is encoded to DER correctly
+  /** Checks if this signature is encoded to DER correctly
     * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
     * @return boolean representing if the signature is a valid
     */
   def isDEREncoded: Boolean = DERSignatureUtil.isDEREncoded(this)
 
-  /**
-    * Checks if the signature is strictly der encoded as per BIP66
+  /** Checks if the signature is strictly der encoded as per BIP66
     * [[https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki]]
     */
   def isStrictEncoded: Boolean = DERSignatureUtil.isValidSignatureEncoding(this)
 
-  /**
-    * Decodes the digital signature into it's r and s points
+  /** Decodes the digital signature into it's r and s points
     * throws an exception if the given sequence of bytes is not a DER encoded signature
     * @return the (r,s) values for the elliptic curve digital signature
     */
@@ -73,8 +69,7 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
     padded
   }
 
-  /**
-    * Creates a ByteVector with only
+  /** Creates a ByteVector with only
     * the 32byte r value and 32 byte s value
     * in the vector
     */
@@ -90,8 +85,7 @@ case object EmptyDigitalSignature extends ECDigitalSignature {
   override def s: BigInt = r
 }
 
-/**
-  * The point of this case object is to help with fee estimation
+/** The point of this case object is to help with fee estimation
   * an average [[ECDigitalSignature]] is 72 bytes in size
   * Technically this number can vary, 72 bytes is the most
   * likely though according to
@@ -103,8 +97,7 @@ case object DummyECDigitalSignature extends ECDigitalSignature {
   override def s: BigInt = r
 }
 
-/**
-  * The point of this case object is to help with fee estimation
+/** The point of this case object is to help with fee estimation
   * when using low r signing. Technically this number can vary,
   * 71 bytes is the most likely when using low r signing
   */
@@ -157,8 +150,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
 
   def apply(r: BigInt, s: BigInt): ECDigitalSignature = fromRS(r, s)
 
-  /**
-    * Takes in the r and s component of a digital signature and gives back a ECDigitalSignature object
+  /** Takes in the r and s component of a digital signature and gives back a ECDigitalSignature object
     * The ECDigitalSignature object complies with strict der encoding as per BIP62
     * note: That the hash type for the signature CANNOT be added to the digital signature
     *
@@ -183,8 +175,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     fromBytes(bytes)
   }
 
-  /**
-    * Reads a 64 byte bytevector and assumes
+  /** Reads a 64 byte bytevector and assumes
     * the first 32 bytes in the R value,
     * the second 32 is the value
     */
@@ -197,8 +188,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     fromRS(r, s)
   }
 
-  /**
-    * Reads a 64 byte bytevector and assumes
+  /** Reads a 64 byte bytevector and assumes
     * the first 32 bytes in the R value,
     * the second 32 is the value
     */

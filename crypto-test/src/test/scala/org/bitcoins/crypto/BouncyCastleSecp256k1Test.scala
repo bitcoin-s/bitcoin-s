@@ -93,29 +93,27 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
   it must "compute signatures with entropy the same" in {
     forAll(CryptoGenerators.privateKey,
            NumberGenerator.bytevector(32),
-           NumberGenerator.bytevector(32)) {
-      case (privKey, bytes, entropy) =>
-        assert(
-          privKey.signWithEntropy(bytes,
-                                  entropy,
-                                  context = BouncyCastle) == privKey
-            .signWithEntropy(bytes, entropy, context = LibSecp256k1))
+           NumberGenerator.bytevector(32)) { case (privKey, bytes, entropy) =>
+      assert(
+        privKey.signWithEntropy(bytes,
+                                entropy,
+                                context = BouncyCastle) == privKey
+          .signWithEntropy(bytes, entropy, context = LibSecp256k1))
     }
   }
 
   it must "verify signatures the same" in {
     forAll(CryptoGenerators.privateKey,
            NumberGenerator.bytevector(32),
-           CryptoGenerators.digitalSignature) {
-      case (privKey, bytes, badSig) =>
-        val sig = privKey.sign(bytes)
-        val pubKey = privKey.publicKey
-        assert(
-          pubKey.verify(bytes, sig, context = BouncyCastle) == pubKey
-            .verify(bytes, sig, context = LibSecp256k1))
-        assert(
-          pubKey.verify(bytes, badSig, context = BouncyCastle) == pubKey
-            .verify(bytes, badSig, context = LibSecp256k1))
+           CryptoGenerators.digitalSignature) { case (privKey, bytes, badSig) =>
+      val sig = privKey.sign(bytes)
+      val pubKey = privKey.publicKey
+      assert(
+        pubKey.verify(bytes, sig, context = BouncyCastle) == pubKey
+          .verify(bytes, sig, context = LibSecp256k1))
+      assert(
+        pubKey.verify(bytes, badSig, context = BouncyCastle) == pubKey
+          .verify(bytes, badSig, context = LibSecp256k1))
     }
   }
 

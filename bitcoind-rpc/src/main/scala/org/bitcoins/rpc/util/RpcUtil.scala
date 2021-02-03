@@ -20,8 +20,7 @@ abstract class RpcUtil extends AsyncUtil {
     retryUntilSatisfiedF(() => server.isStoppedF, duration, maxTries)
   }
 
-  /**
-    * Generates a random port not in use
+  /** Generates a random port not in use
     */
   @tailrec
   final def randomPort: Int = {

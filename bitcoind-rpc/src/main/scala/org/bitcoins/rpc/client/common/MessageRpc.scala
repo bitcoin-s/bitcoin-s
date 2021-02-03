@@ -7,8 +7,7 @@ import play.api.libs.json.JsString
 
 import scala.concurrent.Future
 
-/**
-  * RPC calls related to the message signing functionality
+/** RPC calls related to the message signing functionality
   * in bitcoind
   */
 trait MessageRpc { self: Client =>

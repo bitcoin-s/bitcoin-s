@@ -107,8 +107,7 @@ sealed abstract class SignerUtils {
 /** The class used to represent a signing process for a specific [[org.bitcoins.core.protocol.script.ScriptPubKey]] type */
 sealed abstract class Signer[-InputType <: InputInfo] extends SignerUtils {
 
-  /**
-    * The method used to sign a bitcoin unspent transaction output
+  /** The method used to sign a bitcoin unspent transaction output
     * @param spendingInfo - The information required for signing
     * @param unsignedTx the external Transaction that needs an input signed
     * @param isDummySignature - do not sign the tx for real, just use a dummy signature this is useful for fee estimation
@@ -127,8 +126,7 @@ sealed abstract class Signer[-InputType <: InputInfo] extends SignerUtils {
     )
   }
 
-  /**
-    * The method used to sign a bitcoin unspent transaction output that is potentially nested
+  /** The method used to sign a bitcoin unspent transaction output that is potentially nested
     * @param spendingInfo - The information required for signing
     * @param unsignedTx the external Transaction that needs an input signed
     * @param isDummySignature - do not sign the tx for real, just use a dummy signature this is useful for fee estimation
@@ -251,8 +249,7 @@ object BitcoinSigner extends SignerUtils {
     }
   }
 
-  /**
-    * Signs the PSBT's input at the given input with the signer, then adds it to the PSBT
+  /** Signs the PSBT's input at the given input with the signer, then adds it to the PSBT
     * in a PartialSignature record
     * @param psbt The PSBT to sign
     * @param inputIndex Index of input to sign

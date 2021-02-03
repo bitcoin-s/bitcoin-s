@@ -7,8 +7,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
-/**
-  * Created by chris on 8/9/16.
+/** Created by chris on 8/9/16.
   */
 class PartialMerkleTreeTests extends BitcoinSUnitTest {
   "PartialMerkleTree" must "from a list of txs and a bit indicating if the tx matched the filter" in {

@@ -3,8 +3,7 @@ package org.bitcoins.core.script.constant
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 6/5/16.
+/** Created by chris on 6/5/16.
   */
 class ScriptNumberUtilTest extends BitcoinSUnitTest {
   "ScriptNumberUtil" must "convert a positive hex number to its corresponding long number" in {

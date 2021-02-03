@@ -6,8 +6,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 8/4/16.
+/** Created by chris on 8/4/16.
   * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#new-messages]]
   */
 sealed abstract class RawBloomFilterSerializer

@@ -7,13 +7,11 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 2/18/16.
+/** Created by chris on 2/18/16.
   */
 sealed abstract class RawSerializerHelper {
 
-  /**
-    * Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
+  /** Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
     * Makes sure that we parse the correct amount of elements
     */
   final def parseCmpctSizeUIntSeq[T <: NetworkElement](
@@ -65,9 +63,8 @@ sealed abstract class RawSerializerHelper {
   }
 
   final def write[T](ts: Seq[T], serializer: T => ByteVector): ByteVector = {
-    ts.foldLeft(ByteVector.empty) {
-      case (accum, t) =>
-        accum ++ serializer(t)
+    ts.foldLeft(ByteVector.empty) { case (accum, t) =>
+      accum ++ serializer(t)
     }
   }
 }

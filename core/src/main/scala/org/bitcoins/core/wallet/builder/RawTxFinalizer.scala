@@ -391,19 +391,18 @@ case class AddFutureFeeFinalizer(
           s"Did not find expected SPK $spk in ${txBuilderResult.outputs.map(_.scriptPubKey)}"))
     }
 
-    val outputsT = outputT.map {
-      case (newOutput, index) =>
-        val subFromChange =
-          Satoshis(futureFee.satoshis.toLong / changeOutputs.length)
-        val outputsMinusChange = txBuilderResult.outputs.map { output =>
-          if (changeSPKs.contains(output.scriptPubKey)) {
-            output.copy(value = output.value - subFromChange)
-          } else {
-            output
-          }
+    val outputsT = outputT.map { case (newOutput, index) =>
+      val subFromChange =
+        Satoshis(futureFee.satoshis.toLong / changeOutputs.length)
+      val outputsMinusChange = txBuilderResult.outputs.map { output =>
+        if (changeSPKs.contains(output.scriptPubKey)) {
+          output.copy(value = output.value - subFromChange)
+        } else {
+          output
         }
+      }
 
-        outputsMinusChange.updated(index, newOutput)
+      outputsMinusChange.updated(index, newOutput)
     }
 
     val txT = outputsT.map { outputs =>
@@ -475,17 +474,16 @@ object SubtractFeeFromOutputsFinalizer {
     val fee = feeRate.calc(tx)
 
     val (outputs, unchangedOutputs) =
-      tx.outputs.zipWithIndex.toVector.partition {
-        case (output, _) => spks.contains(output.scriptPubKey)
+      tx.outputs.zipWithIndex.toVector.partition { case (output, _) =>
+        spks.contains(output.scriptPubKey)
       }
 
     val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
     val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
 
-    val newOutputsWithoutRemainder = outputs.map {
-      case (output, index) =>
-        (TransactionOutput(output.value - feePerOutput, output.scriptPubKey),
-         index)
+    val newOutputsWithoutRemainder = outputs.map { case (output, index) =>
+      (TransactionOutput(output.value - feePerOutput, output.scriptPubKey),
+       index)
     }
     val (lastOutput, lastOutputIndex) = newOutputsWithoutRemainder.last
     val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,

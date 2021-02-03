@@ -4,8 +4,7 @@ import org.bitcoins.core.number.Int32
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 2/27/16.
+/** Created by chris on 2/27/16.
   */
 class HashTypeTest extends BitcoinSUnitTest {
 

@@ -19,8 +19,7 @@ import play.api.libs.json._
 import scala.concurrent.Future
 import scala.util.Try
 
-/**
-  * This class is compatible with version 0.16 of Bitcoin Core.
+/** This class is compatible with version 0.16 of Bitcoin Core.
   *
   * @see [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient Scaladocs]]
   */
@@ -103,8 +102,7 @@ class BitcoindV16RpcClient(override val instance: BitcoindInstance)(implicit
 
 object BitcoindV16RpcClient {
 
-  /**
-    * Creates an RPC client from the given instance.
+  /** Creates an RPC client from the given instance.
     *
     * Behind the scenes, we create an actor system for
     * you. You can use `withActorSystem` if you want to
@@ -115,8 +113,7 @@ object BitcoindV16RpcClient {
     withActorSystem(instance)
   }
 
-  /**
-    * Creates an RPC client from the given instance,
+  /** Creates an RPC client from the given instance,
     * together with the given actor system. This is for
     * advanced users, wher you need fine grained control
     * over the RPC client.

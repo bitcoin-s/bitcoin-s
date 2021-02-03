@@ -35,8 +35,7 @@ abstract class NodeTestUtil extends P2PLogger {
       "02c02b00000000000017a914b0b06365c482eb4eabe6e0630029fb8328ea098487e81c0000000000001976a914938da2b50fd6d8acdfa20e30df0e7d8092f0bc7588ac00000000"
   def transaction = Transaction(rawTransaction)
 
-  /**
-    * Random version message bitcoins created when connecting to a testnet seed
+  /** Random version message bitcoins created when connecting to a testnet seed
     * This does not include the header
     * @return
     */
@@ -44,8 +43,7 @@ abstract class NodeTestUtil extends P2PLogger {
     "7c1101000000000000000000d805833655010000000000000000000000000000000000000000ffff0a940106479d010000000000000000000000000000000000ffff739259bb479d0000000000000000182f626974636f696e732d7370762d6e6f64652f302e302e310000000000"
   def versionMessage = VersionMessage(rawVersionMessage)
 
-  /**
-    * This is a raw network message indicating the version a node is using on the p2p network
+  /** This is a raw network message indicating the version a node is using on the p2p network
     * This has BOTH the header and the payload
     * @return
     */
@@ -53,8 +51,7 @@ abstract class NodeTestUtil extends P2PLogger {
     "0b11090776657273696f6e0000000000660000002f6743da721101000100000000000000e0165b5700000000010000000000000000000000000000000000ffffad1f27a8479d010000000000000000000000000000000000ffff00000000479d68dc32a9948d149b102f5361746f7368693a302e31312e322f7f440d0001"
   def networkMessage = NetworkMessage(rawNetworkMessage)
 
-  /**
-    * This is a get headers message taken from wireshark off of a node that sent the message
+  /** This is a get headers message taken from wireshark off of a node that sent the message
     * @return
     */
   def rawGetHeadersMsg =

@@ -241,9 +241,8 @@ class NumberUtilTest extends BitcoinSUnitTest {
       case (base, num) =>
         val numStr = num.toString
         val expectedBase10 = numStr
-          .foldLeft(Vector.empty[Int]) {
-            case (vec, char) =>
-              vec :+ (char.toInt - '0'.toInt)
+          .foldLeft(Vector.empty[Int]) { case (vec, char) =>
+            vec :+ (char.toInt - '0'.toInt)
           }
         val base10 = NumberUtil.decompose(num, 10, numStr.length)
         assert(base10 == expectedBase10)

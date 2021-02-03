@@ -6,8 +6,7 @@ import spray.json._
 
 import scala.io.Source
 
-/**
-  * Created by tom on 5/17/16.
+/** Created by tom on 5/17/16.
   */
 class Base58Test extends BitcoinSUnitTest {
   "Base58" must "encode byte value of 0 to character of 1" in {

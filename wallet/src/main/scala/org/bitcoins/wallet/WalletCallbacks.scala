@@ -8,8 +8,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * Callbacks for responding to events in the wallet.
+/** Callbacks for responding to events in the wallet.
   * The appropriate callback is executed whenever the wallet finishes,
   * the corresponding function.
   */

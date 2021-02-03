@@ -33,10 +33,9 @@ case class PSBT(
     s"There must be an output map for every output in the global transaction, outputs: ${transaction.outputs}")
 
   require(
-    inputMaps.zip(transaction.inputs).forall {
-      case (inputMap, txIn) =>
-        val prevTxOpt = inputMap.nonWitnessOrUnknownUTXOOpt
-        prevTxOpt.isEmpty || prevTxOpt.get.transactionSpent.txId == txIn.previousOutput.txId
+    inputMaps.zip(transaction.inputs).forall { case (inputMap, txIn) =>
+      val prevTxOpt = inputMap.nonWitnessOrUnknownUTXOOpt
+      prevTxOpt.isEmpty || prevTxOpt.get.transactionSpent.txId == txIn.previousOutput.txId
     },
     "Some of the inputMaps' nonWitnessOrUnknownUTXO txId does not match the unsigned transaction's txId" +
       s", got $inputMaps, ${transaction.inputs}"
@@ -83,9 +82,8 @@ case class PSBT(
 
   /** The next [[PSBTRole]] that should be used for this PSBT */
   lazy val nextRole: PSBTRole = {
-    val roles = inputMaps.zip(transaction.inputs).map {
-      case (inputMap, txIn) =>
-        inputMap.nextRole(txIn)
+    val roles = inputMaps.zip(transaction.inputs).map { case (inputMap, txIn) =>
+      inputMap.nextRole(txIn)
     }
 
     roles.minBy(_.order)
@@ -144,8 +142,7 @@ case class PSBT(
     }
   }
 
-  /**
-    * Combiner defined by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#combiner
+  /** Combiner defined by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#combiner
     * Takes another PSBT and adds all records that are not contained in this PSBT
     * A record's distinctness is determined by its key
     * @param other PSBT to be combined with
@@ -214,8 +211,7 @@ case class PSBT(
     }
   }
 
-  /**
-    * Signs the PSBT's input at the given input with the signer, then adds it to the PSBT
+  /** Signs the PSBT's input at the given input with the signer, then adds it to the PSBT
     * in a PartialSignature record
     * @param inputIndex Index of input to sign
     * @param signer Function or private key used to sign the PSBT
@@ -241,8 +237,7 @@ case class PSBT(
                        isDummySignature = isDummySignature)
   }
 
-  /**
-    * Takes the InputPSBTMap at the given index and returns a NewSpendingInfoFull
+  /** Takes the InputPSBTMap at the given index and returns a NewSpendingInfoFull
     * that can be used to sign the input
     * @param index index of the InputPSBTMap
     * @param signers Signers that will be used to sign the input
@@ -262,8 +257,7 @@ case class PSBT(
                                         conditionalPath)
   }
 
-  /**
-    * Adds tx to the indexed InputPSBTMap to either the NonWitnessOrUnknownUTXO
+  /** Adds tx to the indexed InputPSBTMap to either the NonWitnessOrUnknownUTXO
     * or WitnessUTXO field depending on the tx and available information in the PSBT
     * @param tx Transaction to add to PSBT
     * @param index index of the InputPSBTMap to add tx to
@@ -317,8 +311,7 @@ case class PSBT(
 
   }
 
-  /**
-    * Adds the TransactionOutput to the indexed InputPSBTMap to the WitnessUTXO field
+  /** Adds the TransactionOutput to the indexed InputPSBTMap to the WitnessUTXO field
     * @param output TransactionOutput to add to PSBT
     * @param index index of the InputPSBTMap to add tx to
     * @return PSBT with added tx
@@ -341,8 +334,7 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
-  /**
-    * Adds script to the indexed InputPSBTMap to either the RedeemScript
+  /** Adds script to the indexed InputPSBTMap to either the RedeemScript
     * or WitnessScript field depending on the script and available information in the PSBT
     * @param script ScriptPubKey to add to PSBT
     * @param index index of the InputPSBTMap to add script to
@@ -479,8 +471,7 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
-  /**
-    * Adds script to the indexed OutputPSBTMap to either the RedeemScript
+  /** Adds script to the indexed OutputPSBTMap to either the RedeemScript
     * or WitnessScript field depending on the script and available information in the PSBT
     * @param script ScriptPubKey to add to PSBT
     * @param index index of the OutputPSBTMap to add script to
@@ -582,8 +573,7 @@ case class PSBT(
     maps.updated(index, makeMap(elements))
   }
 
-  /**
-    * Adds the BIP32Path to the indexed InputPSBTMap to the BIP32DerivationPath field
+  /** Adds the BIP32Path to the indexed InputPSBTMap to the BIP32DerivationPath field
     * @param extKey ExtKey to derive key from
     * @param path path of key to add to PSBT
     * @param index index of the InputPSBTMap to add the BIP32Path to
@@ -608,8 +598,7 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
-  /**
-    * Adds the BIP32Path to the indexed OutputPSBTMap to the BIP32DerivationPath field
+  /** Adds the BIP32Path to the indexed OutputPSBTMap to the BIP32DerivationPath field
     * @param extKey ExtKey to derive key from
     * @param path path of key to add to PSBT
     * @param index index of the OutputPSBTMap to add the BIP32Path to
@@ -634,8 +623,7 @@ case class PSBT(
     PSBT(globalMap, inputMaps, newOutputMaps)
   }
 
-  /**
-    * @param hashType HashType to add to the input
+  /** @param hashType HashType to add to the input
     * @param index index of the InputPSBTMap to add the HashType to
     * @return PSBT with added HashType
     */
@@ -757,8 +745,7 @@ case class PSBT(
     }
   }
 
-  /**
-    * Extracts the serialized from the serialized, fully signed transaction from
+  /** Extracts the serialized from the serialized, fully signed transaction from
     * this PSBT and validates the script signatures using the ScriptInterpreter.
     * Only inputs for which UTXO records are present get validated.
     *
@@ -776,13 +763,13 @@ case class PSBT(
   /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#transaction-extractor]] */
   def extractTransaction: Transaction = {
     if (isFinalized) {
-      val newInputs = transaction.inputs.zip(inputMaps).map {
-        case (input, inputMap) =>
+      val newInputs =
+        transaction.inputs.zip(inputMaps).map { case (input, inputMap) =>
           val scriptSigOpt = inputMap.finalizedScriptSigOpt
           val scriptSig =
             scriptSigOpt.map(_.scriptSig).getOrElse(EmptyScriptSignature)
           TransactionInput(input.previousOutput, scriptSig, input.sequence)
-      }
+        }
 
       if (
         inputMaps
@@ -908,8 +895,7 @@ object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
     }
   }
 
-  /**
-    * Creates an empty PSBT with only the global transaction record filled
+  /** Creates an empty PSBT with only the global transaction record filled
     * @param unsignedTx global transaction for the PSBT
     * @return Created PSBT
     */
@@ -943,14 +929,13 @@ object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
     val p2shScriptSigs = inputs
       .map(_.scriptSignature)
       .zipWithIndex
-      .collect {
-        case (p2sh: P2SHScriptSignature, index) => (p2sh, index)
+      .collect { case (p2sh: P2SHScriptSignature, index) =>
+        (p2sh, index)
       }
       .filter(_._1.scriptSignatureNoRedeemScript == EmptyScriptSignature)
 
-    p2shScriptSigs.foldLeft(psbt) {
-      case (psbtSoFar, (p2sh, index)) =>
-        psbtSoFar.addRedeemOrWitnessScriptToInput(p2sh.redeemScript, index)
+    p2shScriptSigs.foldLeft(psbt) { case (psbtSoFar, (p2sh, index)) =>
+      psbtSoFar.addRedeemOrWitnessScriptToInput(p2sh.redeemScript, index)
     }
   }
 
@@ -983,8 +968,8 @@ object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
     require(spendingInfos.length == unsignedTx.inputs.length,
             "Must have a SpendingInfo for every input")
     require(
-      spendingInfos.zip(unsignedTx.inputs).forall {
-        case (info, input) => info.outPoint == input.previousOutput
+      spendingInfos.zip(unsignedTx.inputs).forall { case (info, input) =>
+        info.outPoint == input.previousOutput
       },
       "SpendingInfos must correspond to transaction inputs"
     )

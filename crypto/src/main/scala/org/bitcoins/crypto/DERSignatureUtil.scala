@@ -4,13 +4,11 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 3/23/16.
+/** Created by chris on 3/23/16.
   */
 sealed abstract class DERSignatureUtil {
 
-  /**
-    * Checks if this signature is encoded to DER correctly
+  /** Checks if this signature is encoded to DER correctly
     * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
     * NOTE: This will fail if this signature contains the hash type appended to the end of it
     * @return boolean representing if the signature is a valid
@@ -18,8 +16,7 @@ sealed abstract class DERSignatureUtil {
   def isDEREncoded(signature: ECDigitalSignature): Boolean =
     isDEREncoded(signature.bytes)
 
-  /**
-    * Checks if the bytes are encoded to DER correctly
+  /** Checks if the bytes are encoded to DER correctly
     * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
     * This will fail if this signature contains the hash type appended to the end of it
     * @return boolean representing if the signature is a valid
@@ -49,14 +46,12 @@ sealed abstract class DERSignatureUtil {
     } else true
   }
 
-  /**
-    * Decodes the given digital signature into it's r and s points
+  /** Decodes the given digital signature into it's r and s points
     */
   def decodeSignature(signature: ECDigitalSignature): (BigInt, BigInt) =
     decodeSignature(signature.bytes)
 
-  /**
-    * Decodes the given sequence of bytes into it's r and s points
+  /** Decodes the given sequence of bytes into it's r and s points
     * throws an exception if the given sequence of bytes is not a DER encoded signature
     */
   def decodeSignature(bytes: ByteVector): (BigInt, BigInt) = {
@@ -66,8 +61,7 @@ sealed abstract class DERSignatureUtil {
     }
   }
 
-  /**
-    * This functions implements the strict der encoding rules that were created in BIP66
+  /** This functions implements the strict der encoding rules that were created in BIP66
     * [[https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki]]
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L98]]
     * @param signature the signature to check if they are strictly der encoded
@@ -81,8 +75,7 @@ sealed abstract class DERSignatureUtil {
     }
   }
 
-  /**
-    * This functions implements the strict der encoding rules that were created in BIP66
+  /** This functions implements the strict der encoding rules that were created in BIP66
     * https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L98]]
     * @param bytes the bytes to check if they are strictly der encoded
@@ -173,15 +166,13 @@ sealed abstract class DERSignatureUtil {
     true
   }
 
-  /**
-    * Requires the S value in signatures to be the low version of the S value
+  /** Requires the S value in signatures to be the low version of the S value
     * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
     * @return if the S value is the low version
     */
   def isLowS(signature: ECDigitalSignature): Boolean = isLowS(signature.bytes)
 
-  /**
-    * Requires the S value in signatures to be the low version of the S value
+  /** Requires the S value in signatures to be the low version of the S value
     * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
     * @return if the S value is the low version
     */
@@ -242,11 +233,10 @@ sealed abstract class DERSignatureUtil {
 
     def moveIterForward(steps: Int): Option[ByteVector] = {
       (0 until steps)
-        .foldLeft(Option(ByteVector.empty)) {
-          case (bytesOpt, _) =>
-            bytesOpt.flatMap { bytesSoFar =>
-              nextOption().map(bytesSoFar.:+)
-            }
+        .foldLeft(Option(ByteVector.empty)) { case (bytesOpt, _) =>
+          bytesOpt.flatMap { bytesSoFar =>
+            nextOption().map(bytesSoFar.:+)
+          }
         }
     }
 

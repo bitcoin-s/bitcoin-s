@@ -10,8 +10,7 @@ import play.api.libs.json.{JsBoolean, JsString}
 
 import scala.concurrent.Future
 
-/**
-  * This trait defines RPC calls related to
+/** This trait defines RPC calls related to
   * the mempool of a Bitcoin Core node. The
   * mempool contains all unconfirmed transactions.
   */
@@ -108,9 +107,8 @@ trait MempoolRpc { self: Client =>
       txid: DoubleSha256DigestBE): Future[Option[GetMemPoolEntryResult]] = {
     getMemPoolEntry(txid)
       .map(Some(_))
-      .recover {
-        case _: BitcoindException.InvalidAddressOrKey =>
-          None
+      .recover { case _: BitcoindException.InvalidAddressOrKey =>
+        None
       }
   }
 

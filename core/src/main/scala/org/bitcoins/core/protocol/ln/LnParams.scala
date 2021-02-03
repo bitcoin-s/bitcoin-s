@@ -12,8 +12,7 @@ sealed abstract class LnParams {
 
   def lnPort: Int
 
-  /**
-    * The prefix for generating invoices for a Lightning Invoice. See
+  /** The prefix for generating invoices for a Lightning Invoice. See
     * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md BOLT11]]
     * for more details
     */
@@ -72,8 +71,7 @@ object LnParams {
     vec.toMap
   }
 
-  /**
-    * Returns a [[org.bitcoins.core.protocol.ln.LnParams LnParams]] whose
+  /** Returns a [[org.bitcoins.core.protocol.ln.LnParams LnParams]] whose
     * network prefix matches the given string. See [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#human-readable-part BOLT11 ]]
     * for more details on prefixes.
     */

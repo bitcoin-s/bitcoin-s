@@ -5,8 +5,7 @@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
-/**
-  * Represents the fee we charge for forwarding an HTLC on the Lightning network
+/** Represents the fee we charge for forwarding an HTLC on the Lightning network
   * This is used in the ChannelUpdate and Routing information of a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
   * See
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routing-gossip.md#the-channel_update-message BOLT7]]
@@ -23,8 +22,7 @@ case class FeeBaseMSat(msat: MilliSatoshis) extends NetworkElement {
   }
 }
 
-/**
-  * Represents the proportion of a satoshi we charge for forwarding an HTLC
+/** Represents the proportion of a satoshi we charge for forwarding an HTLC
   * through our channel. I.e. if the forwarded payment is larger, this fee will be larger.
   * See
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routing-gossip.md#the-channel_update-message BOLT7]]

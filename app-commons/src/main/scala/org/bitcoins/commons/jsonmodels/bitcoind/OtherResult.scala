@@ -75,8 +75,7 @@ case class MemoryManager(
     chunks_free: Int)
     extends OtherResult
 
-/**
-  * @note This is defined as a trait
+/** @note This is defined as a trait
   *       and not just a raw case class
   *       (as is done in other RPC return
   *       values) in order to make it possible

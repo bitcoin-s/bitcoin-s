@@ -44,8 +44,7 @@ object TransactionGenerators extends BitcoinSLogger {
 
   def outputs = Gen.listOf(output)
 
-  /**
-    * Outputs that only have a positive amount of satoshis, techinically the bitcoin protocol allows you
+  /** Outputs that only have a positive amount of satoshis, techinically the bitcoin protocol allows you
     * to have negative value outputs
     */
   def realisticOutput: Gen[TransactionOutput] =
@@ -100,15 +99,13 @@ object TransactionGenerators extends BitcoinSLogger {
     val amts = genAmounts(totalAmount)
     val spks = Gen.listOfN(amts.size, ScriptGenerators.scriptPubKey.map(_._1))
     spks.flatMap { s =>
-      s.zip(amts).map {
-        case (spk, amt) =>
-          TransactionOutput(amt, spk)
+      s.zip(amts).map { case (spk, amt) =>
+        TransactionOutput(amt, spk)
       }
     }
   }
 
-  /**
-    *  Creates a small sequence of outputs whose total sum is <= totalAmount
+  /**  Creates a small sequence of outputs whose total sum is <= totalAmount
     * @return Sequence of outputs and corresponding Redeem Scripts
     */
   def smallP2SHOutputs(totalAmount: CurrencyUnit): Gen[
@@ -116,9 +113,8 @@ object TransactionGenerators extends BitcoinSLogger {
     val amts = genAmounts(totalAmount)
     val spks = Gen.listOfN(amts.size, ScriptGenerators.p2shScriptPubKey)
     spks.flatMap { s =>
-      s.zip(amts).map {
-        case ((spk, _, rs), amt) =>
-          (TransactionOutput(amt, spk), rs)
+      s.zip(amts).map { case ((spk, _, rs), amt) =>
+        (TransactionOutput(amt, spk), rs)
       }
     }
   }
@@ -128,9 +124,8 @@ object TransactionGenerators extends BitcoinSLogger {
     val amts = genAmounts(totalAmount)
     val spks = Gen.listOfN(amts.size, ScriptGenerators.p2wshSPKV0)
     spks.flatMap { s =>
-      s.zip(amts).map {
-        case ((spk, _, rs), amt) =>
-          (TransactionOutput(amt, spk), rs)
+      s.zip(amts).map { case ((spk, _, rs), amt) =>
+        (TransactionOutput(amt, spk), rs)
       }
     }
   }
@@ -175,8 +170,7 @@ object TransactionGenerators extends BitcoinSLogger {
     } yield OutputReference(outPoint, output)
   }
 
-  /**
-    * Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction Transaction]]
+  /** Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction Transaction]]
     * This transaction's [[org.bitcoins.core.protocol.transaction.TransactionInput TransactionInput]]s
     * will not evaluate to true inside of the
     * [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]]
@@ -291,8 +285,7 @@ object TransactionGenerators extends BitcoinSLogger {
     } yield tx
   }
 
-  /**
-    * Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
+  /** Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     * [[org.bitcoins.core.protocol.script.P2PKScriptPubKey P2PKScriptPubKey]] from that private key
     * Finally creates a  [[org.bitcoins.core.protocol.transaction.Transaction Transaction]]
     * that spends the [[org.bitcoins.core.protocol.script.P2PKScriptPubKey P2PKScriptPubKey]] correctly
@@ -312,8 +305,7 @@ object TransactionGenerators extends BitcoinSLogger {
         Policy.standardScriptVerifyFlags)
     } yield (signedTxSignatureComponent, privateKey)
 
-  /**
-    * Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
+  /** Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     * [[org.bitcoins.core.protocol.script.P2PKScriptPubKey P2PKHScriptPubKey]] from that private key
     * Finally creates  [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] that spends the
     * [[org.bitcoins.core.protocol.script.P2PKScriptPubKey P2PKHScriptPubKey]] correctly
@@ -333,8 +325,7 @@ object TransactionGenerators extends BitcoinSLogger {
         Policy.standardScriptVerifyFlags)
     } yield (signedTxSignatureComponent, privateKey)
 
-  /**
-    * Creates a sequence of [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
+  /** Creates a sequence of [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     * [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]] from those
     * private keys. Finally creates a [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] that
     * spends the [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]] correctly
@@ -354,8 +345,7 @@ object TransactionGenerators extends BitcoinSLogger {
         Policy.standardScriptVerifyFlags)
     } yield (signedTxSignatureComponent, privateKeys)
 
-  /**
-    * Creates a transaction which contains a
+  /** Creates a transaction which contains a
     * [[org.bitcoins.core.protocol.script.P2SHScriptSignature P2SHScriptSignature]] that correctly spends a
     * [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]]
     */
@@ -381,8 +371,7 @@ object TransactionGenerators extends BitcoinSLogger {
     Gen.oneOf(unspendableCLTVTransaction, spendableCLTVTransaction)
   }
 
-  /**
-    * Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
+  /** Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     * [[org.bitcoins.core.protocol.script.CLTVScriptPubKey CLTVScriptPubKey]] from that private key
     * Finally creates a [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] that CANNNOT spend the
     * [[org.bitcoins.core.protocol.script.CLTVScriptPubKey CLTVScriptPubKey]] because the LockTime requirement
@@ -405,8 +394,7 @@ object TransactionGenerators extends BitcoinSLogger {
                                      Some(txLockTime))
     } yield unspendable
 
-  /**
-    *  Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
+  /**  Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     *  [[org.bitcoins.core.protocol.script.CLTVScriptPubKey CLTVScriptPubKey]] from that private key.
     *  Finally creates a [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] that can successfully
     *  spend the [[org.bitcoins.core.protocol.script.CLTVScriptPubKey CLTVScriptPubKey]]
@@ -425,8 +413,7 @@ object TransactionGenerators extends BitcoinSLogger {
                                    Some(txLockTime))
     } yield spendable
 
-  /**
-    *  Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
+  /**  Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     *  [[org.bitcoins.core.protocol.script.CSVScriptPubKey CSVScriptPubKey]] from that private key.
     *  Finally creates a [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] that can
     *  successfully spend the [[org.bitcoins.core.protocol.script.CSVScriptPubKey CSVScriptPubKey]]
@@ -557,8 +544,7 @@ object TransactionGenerators extends BitcoinSLogger {
         Policy.standardScriptVerifyFlags)
     } yield (signedTxSignatureComponent, privKeys)
 
-  /**
-    * Builds a spending transaction according to bitcoin core
+  /** Builds a spending transaction according to bitcoin core
     * @return the built spending transaction and the input index for the script signature
     */
   def buildSpendingTransaction(
@@ -597,8 +583,7 @@ object TransactionGenerators extends BitcoinSLogger {
     (tx, UInt32.zero)
   }
 
-  /**
-    * Builds a spending transaction according to bitcoin core with max sequence and a locktime of zero.
+  /** Builds a spending transaction according to bitcoin core with max sequence and a locktime of zero.
     * @return the built spending transaction and the input index for the script signature
     */
   def buildSpendingTransaction(
@@ -697,8 +682,7 @@ object TransactionGenerators extends BitcoinSLogger {
                              witness)
   }
 
-  /**
-    * Mimics this test utility found in bitcoin core
+  /** Mimics this test utility found in bitcoin core
     * https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L57
     * @return the transaction and the output index of the scriptPubKey
     */
@@ -719,8 +703,7 @@ object TransactionGenerators extends BitcoinSLogger {
                               amount)
   }
 
-  /**
-    * Builds a crediting transaction with a transaction version parameter.
+  /** Builds a crediting transaction with a transaction version parameter.
     * Example: useful for creating transactions with scripts containing OP_CHECKSEQUENCEVERIFY.
     * @return
     */
@@ -776,8 +759,7 @@ object TransactionGenerators extends BitcoinSLogger {
     (baseTxSigComponent, privKeys)
   }
 
-  /**
-    * Determines if the transaction input's sequence value and CSV script sequence value are of the same type
+  /** Determines if the transaction input's sequence value and CSV script sequence value are of the same type
     * (i.e. determines whether both are a timestamp or block-height)
     */
   private def csvLockTimesOfSameType(
@@ -788,8 +770,7 @@ object TransactionGenerators extends BitcoinSLogger {
                                                sequenceNumbers._2)
   }
 
-  /**
-    * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
+  /** Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
     * sequence mask is always greater than the script sequence mask (i.e. generates values for a validly constructed and spendable CSV transaction)
     */
   def spendableCSVValues: Gen[(ScriptNumber, UInt32)] = {
@@ -797,8 +778,7 @@ object TransactionGenerators extends BitcoinSLogger {
               validScriptNumberAndSequenceForRelativeLockTime)
   }
 
-  /**
-    * To indicate that we should evaulate a [[org.bitcoins.core.script.locktime.OP_CHECKSEQUENCEVERIFY OP_CSV]]
+  /** To indicate that we should evaulate a [[org.bitcoins.core.script.locktime.OP_CHECKSEQUENCEVERIFY OP_CSV]]
     * operation based on
     * blockheight we need 1 << 22 bit turned off. See BIP68 for more details
     */
@@ -869,8 +849,7 @@ object TransactionGenerators extends BitcoinSLogger {
       result
     }
 
-  /**
-    * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that
+  /** Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that
     * the txInput sequence mask is always less than the script sequence mask (i.e. generates values for a validly
     * constructed and NOT spendable CSV transaction).
     */

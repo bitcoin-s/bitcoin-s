@@ -153,9 +153,8 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
             blocks <- blocksF
             wallet <- walletF
             processedWallet <- {
-              FutureUtil.foldLeftAsync(wallet, blocks) {
-                case (wallet, block) =>
-                  wallet.processBlock(block)
+              FutureUtil.foldLeftAsync(wallet, blocks) { case (wallet, block) =>
+                wallet.processBlock(block)
               }
             }
           } yield processedWallet
@@ -183,8 +182,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
         }
       }
 
-      /**
-        * Broadcasts the given transaction over the P2P network
+      /** Broadcasts the given transaction over the P2P network
         */
       override def broadcastTransaction(
           transaction: Transaction): Future[Unit] = {

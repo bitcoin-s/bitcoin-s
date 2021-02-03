@@ -5,8 +5,7 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
-/**
-  * Responsible for serializing and deserializing the
+/** Responsible for serializing and deserializing the
   * service identifier in a network message
   * @see https://bitcoin.org/en/developer-reference#version
   */

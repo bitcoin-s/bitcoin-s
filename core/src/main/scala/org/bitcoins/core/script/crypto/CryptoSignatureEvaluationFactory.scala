@@ -2,8 +2,7 @@ package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.script.ScriptOperationFactory
 
-/**
-  * Created by chris on 3/24/16.
+/** Created by chris on 3/24/16.
   */
 trait CryptoSignatureEvaluationFactory
     extends ScriptOperationFactory[CryptoSignatureEvaluation] {

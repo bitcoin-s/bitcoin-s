@@ -6,8 +6,7 @@ sealed abstract class LegacyHDPath extends HDPath {
 
 object LegacyHDPath extends HDPathFactory[LegacyHDPath] {
 
-  /**
-    * The purpose constant from BIP44
+  /** The purpose constant from BIP44
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#purpose BIP44]]
     */

@@ -4,8 +4,7 @@ import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.p2p.PingMessage
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 6/29/16.
+/** Created by chris on 6/29/16.
   */
 class RawPingMessageSerializerTest extends BitcoinSUnitTest {
 

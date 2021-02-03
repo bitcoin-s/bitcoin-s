@@ -131,9 +131,8 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
       }
       txos <- utxoDAO.findOutputsBeingSpent(transaction)
     } yield {
-      txos.map {
-        case txo =>
-          assert(transaction.inputs.exists(_.previousOutput == txo.outPoint))
+      txos.map { case txo =>
+        assert(transaction.inputs.exists(_.previousOutput == txo.outPoint))
       }.toAssertion
     }
   }

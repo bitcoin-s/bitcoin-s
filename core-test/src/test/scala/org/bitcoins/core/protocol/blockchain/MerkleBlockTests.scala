@@ -7,8 +7,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 8/9/16.
+/** Created by chris on 8/9/16.
   */
 class MerkleBlockTests extends BitcoinSUnitTest {
 

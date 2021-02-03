@@ -189,24 +189,22 @@ class UInt16Test extends BitcoinSUnitTest {
   }
 
   it must "<< correctly" in {
-    forAll(NumberGenerator.uInt16, Gen.choose(0, 16)) {
-      case (u16, shift) =>
-        val r = Try(u16 << shift)
-        val expected = (u16.toInt << shift) & 0xffff
-        if (r.isSuccess && expected <= UInt16.max.toInt) {
-          assert(r.get == UInt16(expected))
-        } else {
-          assert(r.isFailure)
-        }
+    forAll(NumberGenerator.uInt16, Gen.choose(0, 16)) { case (u16, shift) =>
+      val r = Try(u16 << shift)
+      val expected = (u16.toInt << shift) & 0xffff
+      if (r.isSuccess && expected <= UInt16.max.toInt) {
+        assert(r.get == UInt16(expected))
+      } else {
+        assert(r.isFailure)
+      }
     }
   }
 
   it must ">> correctly" in {
-    forAll(NumberGenerator.uInt16, Gen.choose(0, 100)) {
-      case (u16, shift) =>
-        val r = u16 >> shift
-        val expected = if (shift >= 32) 0 else u16.toInt >> shift
-        assert(r == UInt16(expected))
+    forAll(NumberGenerator.uInt16, Gen.choose(0, 100)) { case (u16, shift) =>
+      val r = u16 >> shift
+      val expected = if (shift >= 32) 0 else u16.toInt >> shift
+      assert(r == UInt16(expected))
     }
   }
 }

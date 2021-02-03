@@ -18,8 +18,7 @@ import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
 import scala.annotation.tailrec
 import scala.concurrent._
 
-/**
-  * Chain Handler is meant to be the reference implementation
+/** Chain Handler is meant to be the reference implementation
   * of [[ChainApi ChainApi]], this is the entry point in to the
   * chain project.
   *
@@ -190,8 +189,7 @@ class ChainHandler(
     resultF
   }
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
     getBestBlockHeader().map(_.hashBE)
@@ -415,12 +413,11 @@ class ChainHandler(
       .map(_.sortBy(_.height))
 
     val messagesByBlockHash: Map[DoubleSha256DigestBE, CompactFilterMessage] =
-      messages.groupBy(_.blockHash.flip).map {
-        case (blockHash, messages) =>
-          if (messages.size > 1)
-            return Future.failed(
-              DuplicateFilters("Attempt to process duplicate filters"))
-          (blockHash, messages.head)
+      messages.groupBy(_.blockHash.flip).map { case (blockHash, messages) =>
+        if (messages.size > 1)
+          return Future.failed(
+            DuplicateFilters("Attempt to process duplicate filters"))
+        (blockHash, messages.head)
       }
 
     for {
@@ -566,8 +563,7 @@ class ChainHandler(
     }
   }
 
-  /**
-    * This method retrieves the best [[CompactFilterHeaderDb]] from the database
+  /** This method retrieves the best [[CompactFilterHeaderDb]] from the database
     * without any blockchain context, and then uses the [[CompactFilterHeaderDb.blockHashBE]]
     * to query our block headers database looking for a filter header that is in the best chain
     * @return

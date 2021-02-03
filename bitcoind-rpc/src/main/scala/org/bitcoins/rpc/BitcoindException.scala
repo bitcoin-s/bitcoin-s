@@ -5,8 +5,7 @@ import play.api.libs.json.{JsResult, JsValue}
 import play.api.libs.json.JsError
 import play.api.libs.json.JsSuccess
 
-/**
-  * Represents failures that can happen when using the
+/** Represents failures that can happen when using the
   * `bitcoind` RPC interface.
   *
   * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/rpc/protocol.h#L32 protcol.h]]
@@ -18,8 +17,7 @@ sealed abstract class BitcoindException(private val message: String)
   val code: Int
 }
 
-/**
-  * Wallet errors from `bitcoind` RPC calls
+/** Wallet errors from `bitcoind` RPC calls
   *
   * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/rpc/protocol.h#L32 protcol.h]]
   *      for an enumeration of all error codes used
@@ -95,8 +93,7 @@ object BitcoindException {
     val code: Int = -32602
   }
 
-  /**
-    * InternalError is only used for genuine errors in bitcoind
+  /** InternalError is only used for genuine errors in bitcoind
     * (for example datadir corruption)
     */
   final case class InternalError(private val message: String)

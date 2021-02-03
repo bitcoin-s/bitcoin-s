@@ -5,23 +5,20 @@ import org.scalacheck.Gen
 import java.nio.charset.StandardCharsets
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 6/20/16.
+/** Created by chris on 6/20/16.
   */
 trait StringGenerators {
 
   lazy val validHexChars = "0123456789abcdef".toCharArray
 
-  /**
-    * Generates a hex char
+  /** Generates a hex char
     *
     * @return
     */
   def hexChar: Gen[Char] =
     Gen.choose(0, validHexChars.length - 1).map(validHexChars(_))
 
-  /**
-    * Generates a random hex string
+  /** Generates a random hex string
     *
     * @return
     */

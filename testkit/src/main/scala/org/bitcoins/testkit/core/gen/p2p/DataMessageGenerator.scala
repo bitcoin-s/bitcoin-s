@@ -10,8 +10,7 @@ import org.bitcoins.testkit.core.gen.{
 }
 import org.scalacheck.Gen
 
-/**
-  * Responsible for generating random data message
+/** Responsible for generating random data message
   *
   * @see [[https://bitcoin.org/en/developer-reference#data-messages]]
   */
@@ -48,8 +47,7 @@ trait DataMessageGenerator {
     } yield GetBlocksMessage(protocol, hashes, stopHash)
   }
 
-  /**
-    * Generates a random [[org.bitcoins.core.p2p.GetHeadersMessage]]
+  /** Generates a random [[org.bitcoins.core.p2p.GetHeadersMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#getheaders]]
     */
@@ -80,8 +78,7 @@ trait DataMessageGenerator {
           .suchThat(_.size <= 10)
     } yield HeadersMessage(blockHeaders.toVector)
 
-  /**
-    * Generates a random [[org.bitcoins.core.p2p.TypeIdentifier]]
+  /** Generates a random [[org.bitcoins.core.p2p.TypeIdentifier]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#data-messages]]
     */
@@ -90,8 +87,7 @@ trait DataMessageGenerator {
       num <- Gen.choose(1, 3)
     } yield TypeIdentifier(UInt32(num))
 
-  /**
-    * Generates a random [[org.bitcoins.core.p2p.Inventory]]
+  /** Generates a random [[org.bitcoins.core.p2p.Inventory]]
     * @see [[https://bitcoin.org/en/developer-reference#term-inventory]]
     */
   def inventory: Gen[Inventory] =
@@ -100,8 +96,7 @@ trait DataMessageGenerator {
       hash <- CryptoGenerators.doubleSha256Digest
     } yield Inventory(identifier, hash)
 
-  /**
-    * Generates a random [[org.bitcoins.core.p2p.InventoryMessage]]
+  /** Generates a random [[org.bitcoins.core.p2p.InventoryMessage]]
     * @see [[https://bitcoin.org/en/developer-reference#inv]]
     */
   def inventoryMessages: Gen[InventoryMessage] =
@@ -116,8 +111,7 @@ trait DataMessageGenerator {
     } yield NotFoundMessage(inventories)
   }
 
-  /**
-    * Generate a random [[org.bitcoins.core.p2p.GetDataMessage]]
+  /** Generate a random [[org.bitcoins.core.p2p.GetDataMessage]]
     * @see [[https://bitcoin.org/en/developer-reference#getdata]]
     */
   def getDataMessages: Gen[GetDataMessage] =
@@ -125,8 +119,7 @@ trait DataMessageGenerator {
       invMsgs <- inventoryMessages
     } yield GetDataMessage(invMsgs.inventoryCount, invMsgs.inventories)
 
-  /**
-    * Generates a random [[org.bitcoins.core.p2p.MerkleBlockMessage]]
+  /** Generates a random [[org.bitcoins.core.p2p.MerkleBlockMessage]]
     * @see [[https://bitcoin.org/en/developer-reference#merkleblock]]
     */
   def merkleBlockMessage: Gen[MerkleBlockMessage] =

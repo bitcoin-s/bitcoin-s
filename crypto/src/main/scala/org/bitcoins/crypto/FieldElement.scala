@@ -7,8 +7,7 @@ import scodec.bits.ByteVector
 
 import scala.util.Try
 
-/**
-  * Represents integers modulo the secp256k1 field size: pow(2,256) - 0x1000003D1.
+/** Represents integers modulo the secp256k1 field size: pow(2,256) - 0x1000003D1.
   *
   * Supports arithmetic for these elements including +, -, *, and inverses.
   * Supports 32 byte serialization as is needed for ECPrivateKeys.

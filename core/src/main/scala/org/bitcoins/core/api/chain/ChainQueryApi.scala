@@ -6,8 +6,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * This trait provides methods to query various types of blockchain data.
+/** This trait provides methods to query various types of blockchain data.
   */
 trait ChainQueryApi {
 
@@ -54,31 +53,26 @@ object ChainQueryApi {
   sealed abstract class ChainException(message: String)
       extends RuntimeException(message)
 
-  /**
-    * [[ChainQueryApi]] cannot find a compact
+  /** [[ChainQueryApi]] cannot find a compact
     * filter or header by its filter hash
     */
   case class UnknownFilterHash(message: String) extends ChainException(message)
 
-  /**
-    * [[ChainQueryApi]] cannot find a blockchain
+  /** [[ChainQueryApi]] cannot find a blockchain
     * item by its block hash
     */
   case class UnknownBlockHash(message: String) extends ChainException(message)
 
-  /**
-    * [[ChainQueryApi]] cannot find a blockchain
+  /** [[ChainQueryApi]] cannot find a blockchain
     * item by its height
     */
   case class UnknownBlockHeight(message: String) extends ChainException(message)
 
-  /**
-    * [[ChainQueryApi]] tried to process multiple filters for the same block hash
+  /** [[ChainQueryApi]] tried to process multiple filters for the same block hash
     */
   case class DuplicateFilters(message: String) extends ChainException(message)
 
-  /**
-    * The given block range is invalid
+  /** The given block range is invalid
     */
   case class InvalidBlockRange(message: String) extends ChainException(message)
 

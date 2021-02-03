@@ -6,8 +6,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/12/16.
+/** Created by chris on 1/12/16.
   */
 class RawScriptSignatureParserTest extends BitcoinSUnitTest {
 

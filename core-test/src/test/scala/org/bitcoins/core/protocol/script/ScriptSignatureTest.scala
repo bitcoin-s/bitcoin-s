@@ -21,8 +21,7 @@ import spray.json._
 
 import scala.io.Source
 
-/**
-  * Created by chris on 2/17/16.
+/** Created by chris on 2/17/16.
   */
 class ScriptSignatureTest extends BitcoinSAsyncTest {
 

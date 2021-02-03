@@ -6,8 +6,7 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 5/19/16.
+/** Created by chris on 5/19/16.
   * Serializes block headers
   * https://bitcoin.org/en/developer-reference#block-headers
   */

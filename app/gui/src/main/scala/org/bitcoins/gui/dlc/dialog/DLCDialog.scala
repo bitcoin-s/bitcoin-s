@@ -85,8 +85,8 @@ abstract class DLCDialog[T <: CliCommand](
         nextRow += 1
       }
 
-      fields.foreach {
-        case (fieldStr, filedInput) => addRow(fieldStr, filedInput)
+      fields.foreach { case (fieldStr, filedInput) =>
+        addRow(fieldStr, filedInput)
       }
     }
 
@@ -190,12 +190,11 @@ object DLCDialog {
   )
 
   def constructOfferFields(): Vector[(String, TextField)] =
-    allOfferFields.map {
-      case (label, hint) =>
-        (label,
-         new TextField() {
-           promptText = hint
-         })
+    allOfferFields.map { case (label, hint) =>
+      (label,
+       new TextField() {
+         promptText = hint
+       })
     }.toVector
 
   val dlcOfferStr = "DLC Offer"

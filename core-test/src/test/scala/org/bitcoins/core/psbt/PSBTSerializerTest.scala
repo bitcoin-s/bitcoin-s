@@ -16,8 +16,7 @@ import org.bitcoins.testkit.core.gen.PSBTGenerators
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits._
 
-/**
-  * Test vectors are taken directly from the BIP 174 reference sheet
+/** Test vectors are taken directly from the BIP 174 reference sheet
   * https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
   */
 class PSBTSerializerTest extends BitcoinSAsyncTest {

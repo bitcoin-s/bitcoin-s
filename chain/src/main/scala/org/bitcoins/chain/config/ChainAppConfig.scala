@@ -44,8 +44,7 @@ case class ChainAppConfig(
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
 
-  /**
-    * Checks whether or not the chain project is initialized by
+  /** Checks whether or not the chain project is initialized by
     * trying to read the genesis block header from our block
     * header table
     */
@@ -57,10 +56,9 @@ case class ChainAppConfig(
     isDefinedOptF.foreach { _ =>
       logger.debug(s"Chain project is initialized")
     }
-    isDefinedOptF.recover {
-      case _: Throwable =>
-        logger.info(s"Chain project is not initialized")
-        false
+    isDefinedOptF.recover { case _: Throwable =>
+      logger.info(s"Chain project is not initialized")
+      false
     }
   }
 

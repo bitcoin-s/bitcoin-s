@@ -5,8 +5,7 @@ import org.bitcoins.core.serializers.p2p.RawNetworkMessageSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-/**
-  * Represents a P2P network message
+/** Represents a P2P network message
   */
 sealed abstract class NetworkMessage extends NetworkElement {
   require(
@@ -31,8 +30,7 @@ object NetworkMessage extends Factory[NetworkMessage] {
   def fromBytes(bytes: ByteVector): NetworkMessage =
     RawNetworkMessageSerializer.read(bytes)
 
-  /**
-    * Creates a network message from it's [[NetworkHeader]] and [[NetworkPayload]]
+  /** Creates a network message from it's [[NetworkHeader]] and [[NetworkPayload]]
     * @param header the [[NetworkHeader]] which is being sent across the network
     * @param payload the [[NetworkPayload]] which contains the information being sent across the network
     * @return
@@ -41,8 +39,7 @@ object NetworkMessage extends Factory[NetworkMessage] {
     NetworkMessageImpl(header, payload)
   }
 
-  /**
-    * Creates a [[NetworkMessage]] out of it's [[NetworkPayload]]
+  /** Creates a [[NetworkMessage]] out of it's [[NetworkPayload]]
     * @param network the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] indicating the network which the message is going to be sent on
     * @param payload the payload that needs to be sent across the network
     * @return

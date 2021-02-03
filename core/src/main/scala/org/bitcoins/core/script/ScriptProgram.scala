@@ -7,13 +7,11 @@ import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinScriptUtil
 
-/**
-  * Created by chris on 2/3/16.
+/** Created by chris on 2/3/16.
   */
 sealed trait ScriptProgram {
 
-  /**
-    * This contains all relevant information for hashing and checking a
+  /** This contains all relevant information for hashing and checking a
     * [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]] for
     * a [[org.bitcoins.core.protocol.transaction.Transaction Transaction]].
     */
@@ -33,8 +31,7 @@ sealed trait ScriptProgram {
   /** The alternative stack is used in some Script op codes. */
   def altStack: List[ScriptToken]
 
-  /**
-    * [[org.bitcoins.core.script.flag.ScriptFlag ScriptFlag]] that are run with the script.
+  /** [[org.bitcoins.core.script.flag.ScriptFlag ScriptFlag]] that are run with the script.
     * These flags indicate special conditions that a script needs to be run with.
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31]]
     * @return
@@ -48,8 +45,7 @@ sealed trait ScriptProgram {
   /** Returns true if the stack top is false */
   def stackTopIsFalse: Boolean = !stackTopIsTrue
 
-  /**
-    * Sets a [[org.bitcoins.core.script.result.ScriptError ScriptError]] on a given
+  /** Sets a [[org.bitcoins.core.script.result.ScriptError ScriptError]] on a given
     * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]].
     * @param error the error that the program hit while being executed in the script interpreter
     * @return the ExecutedScriptProgram with the given error set inside of the trait
@@ -57,8 +53,7 @@ sealed trait ScriptProgram {
   def failExecution(error: ScriptError): ExecutedScriptProgram
 }
 
-/**
-  * This represents a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
+/** This represents a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
   * before any script operations have been executed in the
   * [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
   */
@@ -210,8 +205,7 @@ object ConditionalCounter {
     ConditionalCounter(trueCount = 0, falseAndIgnoreCount = 0)
 }
 
-/**
-  * Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is currently being
+/** Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is currently being
   * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
   *
   * @param lastCodeSeparator The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
@@ -298,8 +292,7 @@ case class ExecutionInProgressScriptProgram(
     }
   }
 
-  /**
-    * Removes the flags on the given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
+  /** Removes the flags on the given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
     *
     * @return
     */
@@ -341,8 +334,7 @@ case class ExecutionInProgressScriptProgram(
   }
 }
 
-/**
-  * Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been
+/** Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been
   * evaluated completely by the
   * [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
   *

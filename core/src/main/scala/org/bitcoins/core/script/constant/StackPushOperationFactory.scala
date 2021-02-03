@@ -1,12 +1,10 @@
 package org.bitcoins.core.script.constant
 
-/**
-  * Created by chris on 3/28/16.
+/** Created by chris on 3/28/16.
   */
 trait StackPushOperationFactory {
 
-  /**
-    * Determines if the given token is a stack push operation
+  /** Determines if the given token is a stack push operation
     *
     * @param token the token to be checked to see if it is a stack push operation
     * @return a boolean indicating if the given token was a stack push operation
@@ -16,8 +14,7 @@ trait StackPushOperationFactory {
   val pushDataOperations: Vector[ScriptOperation] =
     Vector(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)
 
-  /**
-    * Gives back all of the script operations that can push data onto the stack
+  /** Gives back all of the script operations that can push data onto the stack
     * The operations are determined according to BIP62
     * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#push-operators
     *

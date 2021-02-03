@@ -3,8 +3,7 @@ package org.bitcoins.core.wallet.fee
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 
-/**
-  * This is meant to be an abstract type that represents different fee unit measurements for
+/** This is meant to be an abstract type that represents different fee unit measurements for
   * blockchains
   */
 sealed abstract class FeeUnit {
@@ -54,8 +53,7 @@ trait FeeUnitFactory[+T <: FeeUnit] {
     */
   def fromLong(long: Long): T
 
-  /**
-    * Calculates the fee rate from the given Transaction.
+  /** Calculates the fee rate from the given Transaction.
     * Uses Math.round for rounding up, which returns the closest long to the argument
     * @param totalInputAmount Total amount being spent by the transaction's inputs
     * @param tx Transaction to calculate the fee rate of
@@ -68,8 +66,7 @@ trait FeeUnitFactory[+T <: FeeUnit] {
   }
 }
 
-/**
-  * Meant to represent the different fee unit types for the bitcoin protocol
+/** Meant to represent the different fee unit types for the bitcoin protocol
   * @see [[https://en.bitcoin.it/wiki/Weight_units]]
   */
 sealed abstract class BitcoinFeeUnit extends FeeUnit
@@ -104,8 +101,7 @@ object SatoshisPerByte extends FeeUnitFactory[SatoshisPerByte] {
   val one: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 }
 
-/**
-  * KiloBytes here are defined as 1000 bytes.
+/** KiloBytes here are defined as 1000 bytes.
   */
 case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
     extends BitcoinFeeUnit {
@@ -155,8 +151,7 @@ object SatoshisPerKiloByte extends FeeUnitFactory[SatoshisPerKiloByte] {
   val one: SatoshisPerKiloByte = SatoshisPerKiloByte(Satoshis.one)
 }
 
-/**
-  * A 'virtual byte' (also known as virtual size) is a new weight measurement that
+/** A 'virtual byte' (also known as virtual size) is a new weight measurement that
   * was created with segregated witness (BIP141). Now 1 'virtual byte'
   * has the weight of 4 bytes in the [[org.bitcoins.core.protocol.transaction.TransactionWitness]]
   * of a [[org.bitcoins.core.protocol.transaction.WitnessTransaction]]
@@ -191,8 +186,7 @@ object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
   val one: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
 }
 
-/**
-  * Weight is used to indicate how 'expensive' the transaction is on the blockchain.
+/** Weight is used to indicate how 'expensive' the transaction is on the blockchain.
   * This use to be a simple calculation before segwit (BIP141). Each byte in the transaction
   * counted as 4 'weight' units. Now with segwit, the
   * [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]]

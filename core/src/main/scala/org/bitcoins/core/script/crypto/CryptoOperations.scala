@@ -3,8 +3,7 @@ package org.bitcoins.core.script.crypto
 import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.script.constant.ScriptOperation
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   * Represents an operation where a cryptographic function is applied
   */
 sealed trait CryptoOperation extends ScriptOperation
@@ -37,16 +36,14 @@ case object OP_HASH256 extends CryptoOperation {
   override val opCode: Int = 170
 }
 
-/**
-  * All of the signature checking words will only match signatures to
+/** All of the signature checking words will only match signatures to
   * the data after the most recently-executed OP_CODESEPARATOR.
   */
 case object OP_CODESEPARATOR extends CryptoOperation {
   override val opCode: Int = 171
 }
 
-/**
-  * The entire transaction's outputs, inputs, and script
+/** The entire transaction's outputs, inputs, and script
   * (from the most recently-executed OP_CODESEPARATOR to the end) are hashed.
   * The signature used by OP_CHECKSIG must be a valid signature for this hash and public key.
   * If it is, 1 is returned, 0 otherwise.
@@ -60,8 +57,7 @@ case object OP_CHECKSIGVERIFY extends CryptoSignatureEvaluation {
   override val opCode: Int = 173
 }
 
-/**
-  * Compares the first signature against each public key until it finds an ECDSA match.
+/** Compares the first signature against each public key until it finds an ECDSA match.
   * Starting with the subsequent public key, it compares the second signature against each remaining public key
   * until it finds an ECDSA match.
   * The process is repeated until all signatures have been checked or not enough public keys remain to produce a successful result.

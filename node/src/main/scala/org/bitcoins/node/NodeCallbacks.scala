@@ -9,8 +9,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * Callbacks for responding to events in the node.
+/** Callbacks for responding to events in the node.
   * The appropriate callback is executed whenever the node receives
   * a `getdata` message matching it.
   */

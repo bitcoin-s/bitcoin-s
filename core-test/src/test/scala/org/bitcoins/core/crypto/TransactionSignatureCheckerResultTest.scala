@@ -2,8 +2,7 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 3/31/16.
+/** Created by chris on 3/31/16.
   */
 class TransactionSignatureCheckerResultTest extends BitcoinSUnitTest {
 

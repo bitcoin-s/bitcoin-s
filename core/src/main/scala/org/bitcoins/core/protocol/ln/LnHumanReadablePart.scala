@@ -74,16 +74,14 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
     fromLnParams(network)
   }
 
-  /**
-    * Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+  /** Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
     * without a [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]] encoded in the invoice
     */
   def fromLnParams(network: LnParams): LnHumanReadablePart = {
     LnHumanReadablePart(network, None)
   }
 
-  /**
-    * Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+  /** Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
     * with the provide [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]] encoded in the invoice
     */
   def apply(
@@ -102,8 +100,7 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
     }
   }
 
-  /**
-    * First two chars MUST be 'ln'
+  /** First two chars MUST be 'ln'
     * Next chars must be the BIP173 currency prefixes. For more information, see
     * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#human-readable-part BOLT11]]
     * and

@@ -11,15 +11,13 @@ import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   * Stack operations implemented in the script programming language
   * https://en.bitcoin.it/wiki/Script#Stack
   */
 sealed abstract class StackInterpreter extends BitcoinSLogger {
 
-  /**
-    * Duplicates the element on top of the stack
+  /** Duplicates the element on top of the stack
     * expects the first element in script to be the OP_DUP operation.
     */
   def opDup(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
@@ -192,8 +190,7 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
     )
   }
 
-  /**
-    * The top three items on the stack are rotated to the left.
+  /** The top three items on the stack are rotated to the left.
     * Ex: x1 x2 x3 -> x2 x3 x1
     */
   def opRot(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
@@ -209,8 +206,7 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * The fifth and sixth items back are moved to the top of the stack.
+  /** The fifth and sixth items back are moved to the top of the stack.
     * Ex. x1 x2 x3 x4 x5 x6 -> x3 x4 x5 x6 x1 x2
     */
   def op2Rot(
@@ -330,8 +326,7 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Executes an operation with the stack top inside of the program as the argument
+  /** Executes an operation with the stack top inside of the program as the argument
     * @param program the program whose stack top is used as an argument for the operation
     * @param op the operation that is executed with the script number on the top of the stack
     * @return the program with the result of the op pushed onto to the top of the stack

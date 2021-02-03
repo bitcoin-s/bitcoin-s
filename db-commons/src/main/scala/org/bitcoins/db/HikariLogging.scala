@@ -47,8 +47,7 @@ case class HikariLogging(
     }
   }
 
-  /**
-    * From the docs:
+  /** From the docs:
     * How long each connection is used before being returned to the pool. This is the "out of pool" or "in-use" time.
     * @see https://github.com/brettwooldridge/HikariCP/wiki/Dropwizard-Metrics
     */
@@ -97,8 +96,7 @@ case class HikariLogging(
     s"com.zaxxer.hikari:type=PoolConfig ($poolName)"
   )
 
-  /**
-    * MBean uses random string incantations for
+  /** MBean uses random string incantations for
     * accessing attributes :-(
     *
     * @see [[https://github.com/brettwooldridge/HikariCP/wiki/MBean-(JMX)-Monitoring-and-Management#programmatic-access HikariCP docs]]
@@ -107,14 +105,12 @@ case class HikariLogging(
     s"com.zaxxer.hikari:type=Pool ($poolName)"
   )
 
-  /**
-    * @see https://github.com/brettwooldridge/HikariCP/wiki/MBean-(JMX)-Monitoring-and-Management
+  /** @see https://github.com/brettwooldridge/HikariCP/wiki/MBean-(JMX)-Monitoring-and-Management
     */
   private lazy val hikariMxBean =
     JMX.newMXBeanProxy(mBeanServer, objectName, classOf[HikariPoolMXBean])
 
-  /**
-    * @see http://slick.lightbend.com/doc/3.3.0/config.html#monitoring
+  /** @see http://slick.lightbend.com/doc/3.3.0/config.html#monitoring
     */
   private lazy val slickMxBean =
     JMX.newMXBeanProxy(mBeanServer, aeBeanName, classOf[AsyncExecutorMXBean])

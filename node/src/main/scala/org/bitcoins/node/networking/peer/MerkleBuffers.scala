@@ -7,8 +7,7 @@ import org.bitcoins.node.{NodeCallbacks, P2PLogger}
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * A buffer of merkleblocks and the transactions associated with them.
+/** A buffer of merkleblocks and the transactions associated with them.
   *
   * When receiving a merkleblock message over the P2P network, the
   * corresponding transactions are sent immediately after. That means

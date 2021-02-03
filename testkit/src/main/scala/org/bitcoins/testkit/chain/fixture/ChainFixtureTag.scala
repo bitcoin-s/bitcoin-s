@@ -2,8 +2,7 @@ package org.bitcoins.testkit.chain.fixture
 
 import org.scalatest.Tag
 
-/**
-  * If a test file uses ChainFixture as its FixtureParam, then
+/** If a test file uses ChainFixture as its FixtureParam, then
   * using these tags will determine which fixture the test will get.
   *
   * Simply add taggedAs FixtureTag._ to your test before calling inFixtured.

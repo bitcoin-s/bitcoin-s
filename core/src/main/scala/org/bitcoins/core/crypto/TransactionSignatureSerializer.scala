@@ -13,8 +13,7 @@ import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 2/16/16.
+/** Created by chris on 2/16/16.
   * Wrapper that serializes like Transaction, but with the modifications
   * required for the signature hash done
   * [[https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/interpreter.cpp#L1016-L1105]]
@@ -23,16 +22,14 @@ import scodec.bits.ByteVector
   */
 sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
 
-  /**
-    * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
+  /** Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
     * actually returns the constant "1" to indicate an error
     */
   private lazy val errorHash: DoubleSha256Digest = DoubleSha256Digest(
     BytesUtil.decodeHex(
       "0100000000000000000000000000000000000000000000000000000000000000"))
 
-  /**
-    * Implements the signature serialization algorithim that Satoshi Nakamoto originally created
+  /** Implements the signature serialization algorithim that Satoshi Nakamoto originally created
     * and the new signature serialization algorithm as specified by
     * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki BIP143]].
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
@@ -232,8 +229,7 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Hashes a [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]] to give the value that needs to be signed
+  /** Hashes a [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]] to give the value that needs to be signed
     * by a [[Sign Sign]] to
     * produce a valid [[ECDigitalSignature ECDigitalSignature]] for a transaction
     */
@@ -269,8 +265,7 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Implements the signature serialization algorithm that Satoshi Nakamoto originally created
+  /** Implements the signature serialization algorithm that Satoshi Nakamoto originally created
     * and the new signature serialization algorithm as specified by
     * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki BIP143]].
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
@@ -302,8 +297,7 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
                           signingInfo.sigVersion)
   }
 
-  /**
-    * Hashes a [[org.bitcoins.core.wallet.utxo.InputSigningInfo InputSigningInfo]] to give the value that needs to be signed
+  /** Hashes a [[org.bitcoins.core.wallet.utxo.InputSigningInfo InputSigningInfo]] to give the value that needs to be signed
     * by a [[org.bitcoins.crypto.Sign Sign]] to
     * produce a valid [[org.bitcoins.crypto.ECDigitalSignature ECDigitalSignature]] for a transaction
     */

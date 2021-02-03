@@ -3,8 +3,7 @@ package org.bitcoins.core.script.splice
 import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.script.constant.ScriptOperation
 
-/**
-  * Created by chris on 1/22/16.
+/** Created by chris on 1/22/16.
   */
 sealed trait SpliceOperation extends ScriptOperation
 

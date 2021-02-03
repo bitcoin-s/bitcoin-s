@@ -10,8 +10,7 @@ import org.bitcoins.crypto.{
 }
 import scodec.bits._
 
-/**
-  * @param txId The transaction id for the crediting transaction for this input
+/** @param txId The transaction id for the crediting transaction for this input
   * @param vout The output index in the parent transaction for the output we are spending
   */
 case class TransactionOutPoint(txId: DoubleSha256Digest, vout: UInt32)
@@ -37,8 +36,7 @@ case class TransactionOutPoint(txId: DoubleSha256Digest, vout: UInt32)
   }
 }
 
-/**
-  * UInt32s cannot hold negative numbers, but sometimes the Bitcoin Protocol
+/** UInt32s cannot hold negative numbers, but sometimes the Bitcoin Protocol
   * requires the vout to be -1, which is serialized as `0xFFFFFFFF`.
   *
   * @see [[https://github.com/bitcoin/bitcoin/blob/d612837814020ae832499d18e6ee5eb919a87907/src/primitives/transaction.h transaction.h]]
@@ -55,8 +53,7 @@ object TransactionOutPoint extends Factory[TransactionOutPoint] {
   def fromBytes(bytes: ByteVector): TransactionOutPoint =
     RawTransactionOutPointParser.read(bytes)
 
-  /**
-    * @param txId The transaction id for the crediting transaction for this input
+  /** @param txId The transaction id for the crediting transaction for this input
     * @param vout The output index in the parent transaction for the output we are spending
     */
   def apply(txId: DoubleSha256DigestBE, vout: UInt32): TransactionOutPoint = {

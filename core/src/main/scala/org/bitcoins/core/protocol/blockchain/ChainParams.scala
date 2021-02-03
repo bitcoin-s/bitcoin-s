@@ -21,8 +21,7 @@ import scodec.bits.{ByteVector, _}
 
 import scala.concurrent.duration.{Duration, DurationInt}
 
-/**
-  * Created by chris on 5/22/16.
+/** Created by chris on 5/22/16.
   * `ChainParams` defines various tweakable parameters of a given instance of the
   * Bitcoin system. There are three: the main network on which people trade goods
   * and services, the public test network which gets reset from time to time and
@@ -50,8 +49,7 @@ sealed abstract class ChainParams {
 
   def genesisHashBE: DoubleSha256DigestBE = genesisHash.flip
 
-  /**
-    * Filter transactions that do not match well-defined patterns
+  /** Filter transactions that do not match well-defined patterns
     * inside of [[org.bitcoins.core.policy.Policy Policy]].
     */
   def requireStandardTransaction: Boolean = true
@@ -59,8 +57,7 @@ sealed abstract class ChainParams {
   /** Takes in a [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] and returns its base58 prefix. */
   def base58Prefix(base58: Base58Type): ByteVector = base58Prefixes(base58)
 
-  /**
-    * The mapping from a [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]to a String.
+  /** The mapping from a [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]to a String.
     * Base58 prefixes for various keys/hashes on the network.
     *
     * @see Bitcoin wiki
@@ -69,8 +66,7 @@ sealed abstract class ChainParams {
     */
   def base58Prefixes: Map[Base58Type, ByteVector]
 
-  /**
-    * Creates the Genesis [[org.bitcoins.core.protocol.blockchain.Block Block]] for this blockchain.
+  /** Creates the Genesis [[org.bitcoins.core.protocol.blockchain.Block Block]] for this blockchain.
     *
     * @see Mimics
     *      [[https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L51 this function]]
@@ -107,8 +103,7 @@ sealed abstract class ChainParams {
                        amount)
   }
 
-  /**
-    * @param timestamp a piece of data to signify when this block was first created - satoshi used an article headline
+  /** @param timestamp a piece of data to signify when this block was first created - satoshi used an article headline
     * @param scriptPubKey the scriptPubKey that needs to be satisfied in able to spend the genesis block reward
     * @param time the time when the miner started hashing the block header
     * @param nonce the nonce used to mine the block
@@ -156,8 +151,7 @@ sealed abstract class ChainParams {
     genesisBlock
   }
 
-  /**
-    * The minimum amount of proof of work required for a block
+  /** The minimum amount of proof of work required for a block
     * [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L70 bitcoin core pow limit]]
     * @return
     */
@@ -178,8 +172,7 @@ sealed abstract class ChainParams {
     */
   def powTargetTimeSpan: Duration
 
-  /**
-    * The targeted interval between blocks
+  /** The targeted interval between blocks
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L74 mainnet]]
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L191 testnet]]
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L286 regtest]]
@@ -194,16 +187,14 @@ sealed abstract class ChainParams {
     (powTargetTimeSpan.toSeconds / powTargetSpacing.toSeconds).toInt
   }
 
-  /**
-    * Whether we should allow minimum difficulty blocks or not
+  /** Whether we should allow minimum difficulty blocks or not
     * As an example you can trivially mine blocks on [[RegTestNetChainParams]] and [[TestNetChainParams]]
     * but not the [[MainNetChainParams]]
     * @return
     */
   def allowMinDifficultyBlocks: Boolean
 
-  /**
-    * Whether this chain supports
+  /** Whether this chain supports
     * proof of work retargeting or not
     * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L72 link]]
     * @return
@@ -222,15 +213,13 @@ sealed abstract class ChainParams {
 
 sealed abstract class BitcoinChainParams extends ChainParams {
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override lazy val powTargetTimeSpan: Duration = {
     14.days
   }
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override lazy val powTargetSpacing: Duration = {
     val time = 10 * 60 //10 minutes * 60 seconds
@@ -240,8 +229,7 @@ sealed abstract class BitcoinChainParams extends ChainParams {
   /** The best chain should have this amount of work */
   def minimumChainWork: BigInteger
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   def network: BitcoinNetwork
 }
@@ -267,8 +255,7 @@ object MainNetChainParams extends BitcoinChainParams {
       Base58Type.ExtSecretKey -> hex"0488ade4"
     )
 
-  /**
-    * The proof of work limit of the bitcoin main network
+  /** The proof of work limit of the bitcoin main network
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L72 mainnet pow limit]]
     * @return
     */
@@ -280,8 +267,7 @@ object MainNetChainParams extends BitcoinChainParams {
     limit
   }
 
-  /**
-    * The minimum amount of chain work on mainnet as of 2019/03/20
+  /** The minimum amount of chain work on mainnet as of 2019/03/20
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L94 mainnet chain work]]
     */
   override lazy val minimumChainWork: BigInteger = {
@@ -290,20 +276,17 @@ object MainNetChainParams extends BitcoinChainParams {
     new BigInteger(1, bytes.toArray)
   }
 
-  /**
-    * Mainnet does not allow trivial difficulty blocks
+  /** Mainnet does not allow trivial difficulty blocks
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L287 mainnet min difficulty]]
     */
   override lazy val allowMinDifficultyBlocks: Boolean = false
 
-  /**
-    * Mainnet allows pow retargetting
+  /** Mainnet allows pow retargetting
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L76 mainnet pow retargetting]]
     */
   override lazy val noRetargeting: Boolean = false
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override lazy val network: BitcoinNetwork = MainNet
 
@@ -334,8 +317,7 @@ object TestNetChainParams extends BitcoinChainParams {
       Base58Type.ExtSecretKey -> hex"04358394"
     )
 
-  /**
-    * Testnet pow limit
+  /** Testnet pow limit
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L189 testnet pow limit]]
     */
   override lazy val powLimit: BigInteger = MainNetChainParams.powLimit
@@ -349,20 +331,17 @@ object TestNetChainParams extends BitcoinChainParams {
     new BigInteger(1, bytes.toArray)
   }
 
-  /**
-    * Testnet allows trivial difficulty blocks
+  /** Testnet allows trivial difficulty blocks
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L192 testnet min difficulty]]
     */
   override lazy val allowMinDifficultyBlocks: Boolean = true
 
-  /**
-    * Testnet allows pow retargetting
+  /** Testnet allows pow retargetting
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L193 testnet pow retargetting]]
     */
   override lazy val noRetargeting: Boolean = false
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override lazy val network: BitcoinNetwork = TestNet3
 
@@ -386,8 +365,7 @@ object RegTestNetChainParams extends BitcoinChainParams {
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     TestNetChainParams.base58Prefixes
 
-  /**
-    * Pow limit on regtest
+  /** Pow limit on regtest
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L284 regtest pow limit]]
     */
   override lazy val powLimit: BigInteger = {
@@ -404,20 +382,17 @@ object RegTestNetChainParams extends BitcoinChainParams {
     BigInteger.valueOf(0)
   }
 
-  /**
-    * Regtest allows trivial difficulty blocks
+  /** Regtest allows trivial difficulty blocks
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L287 regtest min difficulty]]
     */
   override lazy val allowMinDifficultyBlocks: Boolean = true
 
-  /**
-    * Regtest allows pow retargetting
+  /** Regtest allows pow retargetting
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L288 regtest pow retargetting]]
     */
   override lazy val noRetargeting: Boolean = true
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override lazy val network: BitcoinNetwork = RegTest
 
@@ -458,8 +433,7 @@ case class SigNetChainParams(
       Base58Type.ExtSecretKey -> hex"04358394"
     )
 
-  /**
-    * Pow limit on signet
+  /** Pow limit on signet
     * [[https://github.com/bitcoin/bitcoin/blob/e8990f121405af8cd539b904ef082439261e6c93/src/chainparams.cpp#L296 signet pow limit]]
     */
   override lazy val powLimit: BigInteger = {
@@ -468,27 +442,23 @@ case class SigNetChainParams(
     new BigInteger(1, bytes)
   }
 
-  /**
-    * Minimum amount of chain work on signet
+  /** Minimum amount of chain work on signet
     */
   override lazy val minimumChainWork: BigInteger = {
     BigInteger.valueOf(0)
   }
 
-  /**
-    * Signet does not allow trivial difficulty blocks
+  /** Signet does not allow trivial difficulty blocks
     * [[https://github.com/bitcoin/bitcoin/blob/e8990f121405af8cd539b904ef082439261e6c93/src/chainparams.cpp#L292 signet min difficulty]]
     */
   override lazy val allowMinDifficultyBlocks: Boolean = false
 
-  /**
-    * Signet allows pow re targeting
+  /** Signet allows pow re targeting
     * [[https://github.com/bitcoin/bitcoin/blob/e8990f121405af8cd539b904ef082439261e6c93/src/chainparams.cpp#L293 signet pow retargeting]]
     */
   override lazy val noRetargeting: Boolean = false
 
-  /**
-    * @inheritdoc
+  /** @inheritdoc
     */
   override lazy val network: BitcoinNetwork = SigNet
 

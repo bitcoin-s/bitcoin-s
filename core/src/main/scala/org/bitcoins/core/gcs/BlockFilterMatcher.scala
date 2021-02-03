@@ -7,13 +7,11 @@ import scala.annotation.tailrec
 
 sealed trait BlockFilterMatcher {
 
-  /**
-    * Checks if the underlying filter matches the given data
+  /** Checks if the underlying filter matches the given data
     */
   def matches(data: ByteVector): Boolean
 
-  /**
-    * Checks if the underlying filter matches any item from the given collection
+  /** Checks if the underlying filter matches any item from the given collection
     */
   def matchesAny(data: Vector[ByteVector]): Boolean
 }

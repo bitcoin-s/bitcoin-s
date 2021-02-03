@@ -9,14 +9,12 @@ import scodec.bits.{BinStringSyntax, BitVector, ByteVector}
 import scala.annotation.tailrec
 
 // TODO: Replace ByteVector with a type for keys
-/**
-  * Defines all functionality dealing with Golomb-Coded Sets
+/** Defines all functionality dealing with Golomb-Coded Sets
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#GolombCoded_Sets]]
   */
 object GCS {
 
-  /**
-    * Given parameters and data, golomb-encodes the data
+  /** Given parameters and data, golomb-encodes the data
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#set-construction]]
     */
   def buildGCS(
@@ -29,8 +27,7 @@ object GCS {
     encodeSortedSet(sortedHashedValues, p)
   }
 
-  /**
-    * Given parameters and data, constructs a GolombFilter for that data
+  /** Given parameters and data, constructs a GolombFilter for that data
     */
   def buildGolombFilter(
       data: Vector[ByteVector],
@@ -42,8 +39,7 @@ object GCS {
     GolombFilter(key, m, p, CompactSizeUInt(UInt64(data.length)), encodedData)
   }
 
-  /**
-    * Given data, constructs a GolombFilter for that data using Basic Block Filter parameters
+  /** Given data, constructs a GolombFilter for that data using Basic Block Filter parameters
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters]]
     */
   def buildBasicBlockFilter(
@@ -72,8 +68,7 @@ object GCS {
     UInt64.fromHex(digest.toHexString)
   }
 
-  /**
-    * Hashes the item to the range [0, f)
+  /** Hashes the item to the range [0, f)
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects]]
     */
   def hashToRange(item: ByteVector, f: UInt64, key: SipHashKey): UInt64 = {
@@ -84,8 +79,7 @@ object GCS {
     UInt64(bigInt)
   }
 
-  /**
-    * Hashes the items of a set of items
+  /** Hashes the items of a set of items
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects]]
     */
   def hashedSetConstruct(
@@ -105,8 +99,7 @@ object GCS {
     hashedItemsBuilder.result()
   }
 
-  /**
-    * Converts num to unary (6 = 1111110)
+  /** Converts num to unary (6 = 1111110)
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-rice-coding]]
     *
     * TODO: protect against large inputs which cause OutOfMemoryErrors and even larger ones which fail on toInt
@@ -126,8 +119,7 @@ object GCS {
     }
   }
 
-  /**
-    * Encodes a hash into a unary prefix and binary suffix
+  /** Encodes a hash into a unary prefix and binary suffix
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-rice-coding]]
     */
   def golombEncode(item: UInt64, p: UInt8): BitVector = {
@@ -140,8 +132,7 @@ object GCS {
     prefix ++ pBits
   }
 
-  /**
-    * Decodes an item off of the front of a BitVector by reversing [[GCS.golombEncode]]
+  /** Decodes an item off of the front of a BitVector by reversing [[GCS.golombEncode]]
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-rice-coding]]
     */
   def golombDecode(codedItem: BitVector, p: UInt8): UInt64 = {
@@ -187,8 +178,7 @@ object GCS {
     (head, encodedData.drop(prefixSize + p.toInt))
   }
 
-  /**
-    * Decodes all hashes from golomb-encoded data, reversing [[GCS.encodeSortedSet]]
+  /** Decodes all hashes from golomb-encoded data, reversing [[GCS.encodeSortedSet]]
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#set-queryingdecompression]]
     */
   def golombDecodeSet(encodedData: BitVector, p: UInt8): Vector[UInt64] =
@@ -196,8 +186,7 @@ object GCS {
       true
     }
 
-  /**
-    * Decodes all hashes while the given predicate returns true
+  /** Decodes all hashes while the given predicate returns true
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#set-queryingdecompression]]
     */
   def golombDecodeSetsWithPredicate(encodedData: BitVector, p: UInt8)(
@@ -223,8 +212,7 @@ object GCS {
     loop(encoded = encodedData, lastHash = UInt64.zero, Vector.empty)
   }
 
-  /**
-    * Given a set of ascending hashes, golomb-encodes them
+  /** Given a set of ascending hashes, golomb-encodes them
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#set-construction]]
     */
   def encodeSortedSet(hashes: Vector[UInt64], p: UInt8): BitVector = {

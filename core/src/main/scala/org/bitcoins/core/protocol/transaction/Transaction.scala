@@ -8,15 +8,13 @@ import org.bitcoins.core.wallet.builder.RawTxBuilder
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 7/14/15.
+/** Created by chris on 7/14/15.
   */
 sealed abstract class Transaction extends NetworkElement {
 
   override lazy val byteSize = bytes.length
 
-  /**
-    * The `sha256(sha256(tx))` of this transaction,
+  /** The `sha256(sha256(tx))` of this transaction,
     * Note that this is the little endian encoding of the hash, NOT the big endian encoding shown in block
     * explorers. See
     * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation this link]]
@@ -24,8 +22,7 @@ sealed abstract class Transaction extends NetworkElement {
     */
   def txId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
-  /**
-    * This is the BIG ENDIAN encoding for the txid. This is commonly used for
+  /** This is the BIG ENDIAN encoding for the txid. This is commonly used for
     * RPC interfaces and block explorers, this encoding is NOT used at the protocol level
     * For more info see:
     * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
@@ -44,8 +41,7 @@ sealed abstract class Transaction extends NetworkElement {
   /** The locktime for this transaction */
   def lockTime: UInt32
 
-  /**
-    * This is used to indicate how 'expensive' the transction is on the blockchain.
+  /** This is used to indicate how 'expensive' the transction is on the blockchain.
     * This use to be a simple calculation before segwit (BIP141). Each byte in the transaction
     * counted as 4 'weight' units. Now with segwit, the
     * [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]]
@@ -57,14 +53,12 @@ sealed abstract class Transaction extends NetworkElement {
     */
   def weight: Long
 
-  /**
-    * The transaction's virtual size
+  /** The transaction's virtual size
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
     */
   def vsize: Long = Math.ceil(weight / 4.0).toLong
 
-  /**
-    * Base transaction size is the size of the transaction serialised with the witness data stripped
+  /** Base transaction size is the size of the transaction serialised with the witness data stripped
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
     */
   def baseSize: Long =
@@ -208,8 +202,7 @@ case class WitnessTransaction(
     toBaseTx.txId
   }
 
-  /**
-    * The witness transaction id as defined by
+  /** The witness transaction id as defined by
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id BIP141]]
     */
   def wTxId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
@@ -217,16 +210,14 @@ case class WitnessTransaction(
   /** Returns the big endian encoding of the wtxid */
   def wTxIdBE: DoubleSha256DigestBE = wTxId.flip
 
-  /**
-    * Weight calculation in bitcoin for witness txs
+  /** Weight calculation in bitcoin for witness txs
     * [[https://github.com/bitcoin/bitcoin/blob/5961b23898ee7c0af2626c46d5d70e80136578d3/src/consensus/validation.h#L96]]
     */
   override def weight: Long = {
     toBaseTx.byteSize * 3 + byteSize
   }
 
-  /**
-    * Writes a [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] to a hex string
+  /** Writes a [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] to a hex string
     * This is unique from BaseTransaction.bytes in the fact
     * that it adds a 'marker' and 'flag' to indicate that this tx is a
     * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] and has extra
@@ -249,8 +240,7 @@ case class WitnessTransaction(
     } else toBaseTx.bytes
   }
 
-  /**
-    * Updates the [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] at the given index and
+  /** Updates the [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] at the given index and
     * returns a new [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
     * with it's witness vector updated
     */
@@ -262,8 +252,7 @@ case class WitnessTransaction(
 
 object WitnessTransaction extends Factory[WitnessTransaction] {
 
-  /**
-    * This read function is unique to BaseTransaction.fromBytes
+  /** This read function is unique to BaseTransaction.fromBytes
     * in the fact that it reads a 'marker' and 'flag' byte to indicate that this tx is a
     * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]].
     * See [[https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki BIP144 ]] for more details.

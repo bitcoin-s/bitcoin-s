@@ -102,9 +102,8 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
 
     val inputs: Vector[TransactionInput] = txids
       .zip(vouts)
-      .map {
-        case (txid, vout) =>
-          TransactionInput.fromTxidAndVout(txid, UInt32(vout))
+      .map { case (txid, vout) =>
+        TransactionInput.fromTxidAndVout(txid, UInt32(vout))
       }
       .toVector
 
@@ -119,9 +118,8 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
            "76a914669b857c03a5ed269d5d85a1ffac9ed5d663072788ac")
         .map(ScriptPubKey.fromAsmHex)
 
-    val utxoDeps = inputs.zip(scriptPubKeys).map {
-      case (input, pubKey) =>
-        SignRawTransactionOutputParameter.fromTransactionInput(input, pubKey)
+    val utxoDeps = inputs.zip(scriptPubKeys).map { case (input, pubKey) =>
+      SignRawTransactionOutputParameter.fromTransactionInput(input, pubKey)
     }
 
     for {

@@ -41,8 +41,7 @@ object ControlMessageGenerator {
     }
   }
 
-  /**
-    * Generates a random [[org.bitcoins.core.p2p.VersionMessage VersionMessage]]
+  /** Generates a random [[org.bitcoins.core.p2p.VersionMessage VersionMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#version]]
     */
@@ -77,8 +76,7 @@ object ControlMessageGenerator {
       relay
     )
 
-  /**
-    * Generates a [[org.bitcoins.core.p2p.PingMessage]]
+  /** Generates a [[org.bitcoins.core.p2p.PingMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#ping]]
     */
@@ -87,8 +85,7 @@ object ControlMessageGenerator {
       uInt64 <- NumberGenerator.uInt64s
     } yield PingMessage(uInt64)
 
-  /**
-    * Generates a [[org.bitcoins.core.p2p.PongMessage]]
+  /** Generates a [[org.bitcoins.core.p2p.PongMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#pong]]
     */
@@ -103,8 +100,7 @@ object ControlMessageGenerator {
     } yield AddrMessage(addresses)
   }
 
-  /**
-    * Generates a random [[org.bitcoins.core.p2p.ProtocolVersion]]
+  /** Generates a random [[org.bitcoins.core.p2p.ProtocolVersion]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#protocol-versions]]
     */
@@ -113,8 +109,7 @@ object ControlMessageGenerator {
       randomNum <- Gen.choose(0, ProtocolVersion.versions.length - 1)
     } yield ProtocolVersion.versions(randomNum)
 
-  /**
-    * Generates a [[org.bitcoins.core.p2p.ServiceIdentifier]]
+  /** Generates a [[org.bitcoins.core.p2p.ServiceIdentifier]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#version]]
     */
@@ -136,8 +131,7 @@ object ControlMessageGenerator {
 
   def portNumber: Gen[Int] = Gen.choose(0, 65535)
 
-  /**
-    * Creates a [[org.bitcoins.core.p2p.FilterLoadMessage]]
+  /** Creates a [[org.bitcoins.core.p2p.FilterLoadMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#filterload]]
     */
@@ -152,8 +146,7 @@ object ControlMessageGenerator {
                               tweak,
                               flags)
 
-  /**
-    * Creates a [[org.bitcoins.core.p2p.FilterAddMessage]]
+  /** Creates a [[org.bitcoins.core.p2p.FilterAddMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#filteradd]]
     */
@@ -163,8 +156,7 @@ object ControlMessageGenerator {
       elementSize = CompactSizeUInt(UInt64(element.bytes.size))
     } yield FilterAddMessage(elementSize, element.bytes)
 
-  /**
-    * Creates a [[org.bitcoins.core.p2p.RejectMessage]]
+  /** Creates a [[org.bitcoins.core.p2p.RejectMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#reject]]
     */

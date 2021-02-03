@@ -5,8 +5,7 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result.ScriptErrorInvalidStackOperation
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
-/**
-  * Created by chris on 1/6/16.
+/** Created by chris on 1/6/16.
   */
 class BitwiseInterpreterTest extends BitcoinSUnitTest {
 

@@ -34,8 +34,7 @@ object ConnectTipResult {
     lazy val headerDb: BlockHeaderDb = tipUpdateResult.headerDb
   }
 
-  /**
-    * Means we had a reorg happen, aka the header was connected to
+  /** Means we had a reorg happen, aka the header was connected to
     * something that was _not_ our previous best tip
     * @param tipUpdateResult the successful connection
     * @param newChain the new chain where the best tip is the header we passed in

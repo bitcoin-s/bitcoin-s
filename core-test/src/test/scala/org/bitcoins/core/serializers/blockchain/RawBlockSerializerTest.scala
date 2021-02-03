@@ -8,8 +8,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-/**
-  * Created by tom on 6/3/16.
+/** Created by tom on 6/3/16.
   */
 class RawBlockSerializerTest extends BitcoinSUnitTest {
   //genesis block

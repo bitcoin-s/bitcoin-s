@@ -189,24 +189,21 @@ case class SpendingInfoDAO()(implicit
       utxos <- utxoToInfo(all)
     } yield utxos
 
-  /**
-    * Fetches all the incoming TXOs in our DB that are in
+  /** Fetches all the incoming TXOs in our DB that are in
     * the given TX
     */
   def findTx(tx: Transaction): Future[Vector[SpendingInfoDb]] =
     findTx(tx.txIdBE)
 
-  /**
-    * Finds all the outputs being spent in the given
+  /** Finds all the outputs being spent in the given
     * transaction
     */
   def findOutputsBeingSpent(tx: Transaction): Future[Seq[SpendingInfoDb]] = {
 
     def _findOutputsBeingSpent: Future[Seq[UTXORecord]] = {
       val filtered = table
-        .filter {
-          case txo =>
-            txo.outPoint.inSet(tx.inputs.map(_.previousOutput))
+        .filter { case txo =>
+          txo.outPoint.inSet(tx.inputs.map(_.previousOutput))
         }
 
       safeDatabase.run(filtered.result)
@@ -251,8 +248,7 @@ case class SpendingInfoDAO()(implicit
 
   }
 
-  /**
-    * Given a TXID, fetches all incoming TXOs and the address the TXO pays to
+  /** Given a TXID, fetches all incoming TXOs and the address the TXO pays to
     */
   def withAddress(txid: DoubleSha256DigestBE): Future[
     Vector[(SpendingInfoDb, AddressDb)]] = {
@@ -277,8 +273,7 @@ case class SpendingInfoDAO()(implicit
 
   }
 
-  /**
-    * Fetches all the incoming TXOs in our DB that are in
+  /** Fetches all the incoming TXOs in our DB that are in
     * the transaction with the given TXID
     */
   def findDbsForTx(txid: DoubleSha256DigestBE): Future[Vector[UTXORecord]] = {
@@ -286,8 +281,7 @@ case class SpendingInfoDAO()(implicit
     safeDatabase.runVec(query.result)
   }
 
-  /**
-    * Fetches all the incoming TXOs in our DB that are in
+  /** Fetches all the incoming TXOs in our DB that are in
     * the transaction with the given TXID
     */
   def findTx(txid: DoubleSha256DigestBE): Future[Vector[SpendingInfoDb]] = {
@@ -298,9 +292,8 @@ case class SpendingInfoDAO()(implicit
     safeDatabase
       .runVec(filtered.result)
       .map(res =>
-        res.map {
-          case (utxoRec, spkRec) =>
-            utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
+        res.map { case (utxoRec, spkRec) =>
+          utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
         })
   }
 
@@ -313,9 +306,8 @@ case class SpendingInfoDAO()(implicit
     safeDatabase
       .runVec(filtered.result)
       .map(res =>
-        res.map {
-          case (utxoRec, spkRec) =>
-            utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
+        res.map { case (utxoRec, spkRec) =>
+          utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
         })
   }
 
@@ -381,9 +373,8 @@ case class SpendingInfoDAO()(implicit
     safeDatabase
       .runVec(filtered.result)
       .map(res =>
-        res.map {
-          case (utxoRec, spkRec) =>
-            utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
+        res.map { case (utxoRec, spkRec) =>
+          utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
         })
   }
 
@@ -399,9 +390,8 @@ case class SpendingInfoDAO()(implicit
     safeDatabase
       .runVec(filtered.result)
       .map(res =>
-        res.map {
-          case (utxoRec, spkRec) =>
-            utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
+        res.map { case (utxoRec, spkRec) =>
+          utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
         })
   }
 
@@ -421,9 +411,8 @@ case class SpendingInfoDAO()(implicit
     safeDatabase
       .runVec(filtered.result)
       .map(res =>
-        res.map {
-          case (utxoRec, spkRec) =>
-            utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
+        res.map { case (utxoRec, spkRec) =>
+          utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
         })
   }
 
@@ -441,9 +430,8 @@ case class SpendingInfoDAO()(implicit
 
     safeDatabase
       .runVec(query.result)
-      .map(_.map {
-        case (((utxoRecord, spkDb), _), _) =>
-          utxoRecord.toSpendingInfoDb(spkDb.scriptPubKey)
+      .map(_.map { case (((utxoRecord, spkDb), _), _) =>
+        utxoRecord.toSpendingInfoDb(spkDb.scriptPubKey)
       })
   }
 
@@ -468,8 +456,7 @@ case class SpendingInfoDAO()(implicit
       .map(_.map(spk => (spk.scriptPubKey, spk.id.get)).toMap)
   }
 
-  /**
-    * This table stores the necessary information to spend
+  /** This table stores the necessary information to spend
     * a transaction output (TXO) at a later point in time. It
     * also stores how many confirmations it has, whether
     * or not it is spent (i.e. if it is a UTXO or not) and the

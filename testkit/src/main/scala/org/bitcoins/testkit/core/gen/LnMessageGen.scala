@@ -42,9 +42,8 @@ trait LnMessageGen extends TLVGen {
 
   def dlcOfferMessageAcceptMessage: Gen[
     (LnMessage[DLCOfferTLV], LnMessage[DLCAcceptTLV])] = {
-    dlcOfferTLVAcceptTLV.map {
-      case (offer, accept) =>
-        (LnMessage(offer), LnMessage(accept))
+    dlcOfferTLVAcceptTLV.map { case (offer, accept) =>
+      (LnMessage(offer), LnMessage(accept))
     }
   }
 

@@ -2,8 +2,7 @@ package org.bitcoins.core.script.arithmetic
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 1/8/16.
+/** Created by chris on 1/8/16.
   */
 class ArithmeticOperationsFactoryTest extends BitcoinSUnitTest {
   "ArithmeticOperationsFactory" must "match strings with arithmetic operations" in {

@@ -10,8 +10,7 @@ trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends BitcoinSLogger {
 
   def appConfig: ConfigType
 
-  /**
-    * The configuration details for connecting/using the database for our projects
+  /** The configuration details for connecting/using the database for our projects
     * that require database connections
     */
   lazy val dbConfig: DatabaseConfig[JdbcProfile] = {

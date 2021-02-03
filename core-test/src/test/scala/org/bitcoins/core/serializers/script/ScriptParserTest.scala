@@ -17,8 +17,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 1/7/16.
+/** Created by chris on 1/7/16.
   */
 class ScriptParserTest extends BitcoinSUnitTest {
 
@@ -276,8 +275,7 @@ class ScriptParserTest extends BitcoinSUnitTest {
       "76a91414011f7254d96b819c76986c277d115efce6f7b58763ac67210394854aa6eab5b2a8122cc726e9dded053a2184d88256816826d6231c068d4a5b7c820120876475527c21030d417a46946384f88d5f3337267c5e579765875dc4daca813e21734b140639e752ae67a914b43e1b38138a41b37f7cd9a1d274bc63e3a9b5d188ac6868"
     val asm = ScriptParser.fromHex(witScriptHex)
 
-    /**
-      * # To remote node with revocation key
+    /** # To remote node with revocation key
       * OP_DUP OP_HASH160 <RIPEMD160(SHA256(revocationpubkey))> OP_EQUAL
       * OP_IF
       * OP_CHECKSIG
@@ -337,8 +335,7 @@ class ScriptParserTest extends BitcoinSUnitTest {
 
   it must "parse a received htlc" in {
     //https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#received-htlc-outputs
-    /**
-      * # To remote node with revocation key
+    /** # To remote node with revocation key
       * OP_DUP OP_HASH160 <RIPEMD160(SHA256(revocationpubkey))> OP_EQUAL
       * OP_IF
       * OP_CHECKSIG

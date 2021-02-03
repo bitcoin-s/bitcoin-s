@@ -2,8 +2,7 @@ package org.bitcoins.core.script
 
 import org.bitcoins.crypto.StringFactory
 
-/**
-  * The different Bitcoin Script type variations
+/** The different Bitcoin Script type variations
   *
   * @see [[https://github.com/bitcoin/bitcoin/blob/fa6180188b8ab89af97860e6497716405a48bab6/src/script/standard.h#L56 standard.h]]
   *     and [[https://github.com/bitcoin/bitcoin/blob/03732f8644a449af34f4df1bb3b8915fb15ef22c/src/script/standard.cpp#L27 standarc.cpp]]
@@ -33,8 +32,7 @@ sealed abstract class ScriptType {
     }
 }
 
-/**
-  * The different Bitcoin Script type variations
+/** The different Bitcoin Script type variations
   *
   * @see [[https://github.com/bitcoin/bitcoin/blob/fa6180188b8ab89af97860e6497716405a48bab6/src/script/standard.h#L56 standard.h]]
   *     and [[https://github.com/bitcoin/bitcoin/blob/03732f8644a449af34f4df1bb3b8915fb15ef22c/src/script/standard.cpp#L27 standarc.cpp]]

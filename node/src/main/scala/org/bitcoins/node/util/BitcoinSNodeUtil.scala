@@ -2,8 +2,7 @@ package org.bitcoins.node.util
 
 object BitcoinSNodeUtil {
 
-  /**
-    * Creates a unique actor name for a actor
+  /** Creates a unique actor name for a actor
     * @param className
     * @return
     */
@@ -11,8 +10,7 @@ object BitcoinSNodeUtil {
     s"${className}-${System.currentTimeMillis()}"
   }
 
-  /**
-    * Creates a unique actor name for a given class
+  /** Creates a unique actor name for a given class
     * @param className
     * @return
     */

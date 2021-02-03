@@ -10,8 +10,7 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.util.Try
 
-/**
-  * Created by chris on 1/7/16.
+/** Created by chris on 1/7/16.
   */
 sealed abstract class ScriptParser
     extends Factory[Vector[ScriptToken]]
@@ -23,8 +22,7 @@ sealed abstract class ScriptParser
     scriptTokens
   }
 
-  /**
-    * Parses an asm output script of a transaction
+  /** Parses an asm output script of a transaction
     * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
     * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
     */
@@ -44,8 +42,7 @@ sealed abstract class ScriptParser
     }
   }
 
-  /**
-    * Parses a string to a sequence of script tokens
+  /** Parses a string to a sequence of script tokens
     * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
     * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
     */
@@ -145,8 +142,7 @@ sealed abstract class ScriptParser
     }
   }
 
-  /**
-    * Parses a byte array into a the asm operations for a script
+  /** Parses a byte array into a the asm operations for a script
     * will throw an exception if it fails to parse a op code
     */
   private def parse(bytes: ByteVector): Vector[ScriptToken] = {
@@ -174,8 +170,7 @@ sealed abstract class ScriptParser
     redeemScript
   }
 
-  /**
-    * Slices the amount of bytes specified in the bytesToPushOntoStack parameter and then creates a script constant
+  /** Slices the amount of bytes specified in the bytesToPushOntoStack parameter and then creates a script constant
     * from those bytes. Returns the script constant and the byte array without the script constant
     */
   private def sliceConstant(
@@ -186,8 +181,7 @@ sealed abstract class ScriptParser
     (dataConstant, data.slice(finalIndex, data.size))
   }
 
-  /**
-    * Parses the bytes in string format, an example input would look like this
+  /** Parses the bytes in string format, an example input would look like this
     * "0x09 0x00000000 0x00000000 0x10"
     * see [[https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21-L25]]
     * for examples of this
@@ -213,8 +207,7 @@ sealed abstract class ScriptParser
       tail: ByteVector,
       accum: Vector[ScriptToken])
 
-  /**
-    * Parses an operation if the tail is a scodec.bits.ByteVector
+  /** Parses an operation if the tail is a scodec.bits.ByteVector
     * If the operation is a bytesToPushOntoStack, it pushes the number of bytes onto the stack
     * specified by the bytesToPushOntoStack
     * i.e. If the operation was BytesToPushOntoStackImpl(5), it would slice 5 bytes off of the tail and
@@ -240,8 +233,7 @@ sealed abstract class ScriptParser
     }
   }
 
-  /**
-    * Parses OP_PUSHDATA operations correctly. Slices the appropriate amount of bytes off of the tail and pushes
+  /** Parses OP_PUSHDATA operations correctly. Slices the appropriate amount of bytes off of the tail and pushes
     * them onto the accumulator.
     * @param op the script operation that is being parsed, this should be OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 or else it throws an exception
     * @param accum the parsed script tokens so far
@@ -288,8 +280,7 @@ sealed abstract class ScriptParser
     }
   }
 
-  /**
-    * Helper function to build the parsing helper for parsing an OP_PUSHDATA operation
+  /** Helper function to build the parsing helper for parsing an OP_PUSHDATA operation
     * @param op the OP_PUSHDATA operation being added to the accum
     * @param bytesToPushOntoStack the number of bytes that are pushed onto the stack by the OP_PUSHDATA operation
     * @param scriptConstant the constant that is being pushed onto the stack by the OP_PUSHDATA operation

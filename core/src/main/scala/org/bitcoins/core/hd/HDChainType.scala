@@ -1,7 +1,6 @@
 package org.bitcoins.core.hd
 
-/**
-  * Address chain (external vs. change) used by
+/** Address chain (external vs. change) used by
   *
   * Format:
   * m / purpose' / coin_type' / account' / change
@@ -19,8 +18,7 @@ sealed abstract class HDChainType {
 
 object HDChainType {
 
-  /**
-    * External chain is used for addresses that
+  /** External chain is used for addresses that
     * are meant to be visible outside of the
     * wallet (e.g. for receiving payments).
     */
@@ -28,8 +26,7 @@ object HDChainType {
     override val index: Int = 0
   }
 
-  /**
-    * Internal chain is used for addresses which
+  /** Internal chain is used for addresses which
     * are not meant to be visible outside of the
     * wallet and is used for return transaction
     * change

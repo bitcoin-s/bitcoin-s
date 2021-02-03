@@ -4,8 +4,7 @@ import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 6/1/16.
+/** Created by chris on 6/1/16.
   */
 class RawInventoryMessageSerializerTest extends BitcoinSUnitTest {
 

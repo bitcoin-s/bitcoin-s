@@ -3,8 +3,7 @@ package org.bitcoins.core.serializers.p2p.messages
 import org.bitcoins.core.p2p.TypeIdentifier.{MsgBlock, MsgFilteredBlock, MsgTx}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 5/31/16.
+/** Created by chris on 5/31/16.
   */
 class RawTypeIdentifierSerializerTest extends BitcoinSUnitTest {
   val msgTxHex = "01000000"

@@ -17,13 +17,11 @@ import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * Created by chris on 2/16/16.
+/** Created by chris on 2/16/16.
   */
 sealed abstract class BaseECKey extends NetworkElement
 
-/**
-  * Created by chris on 2/16/16.
+/** Created by chris on 2/16/16.
   */
 sealed abstract class ECPrivateKey
     extends BaseECKey
@@ -36,8 +34,7 @@ sealed abstract class ECPrivateKey
       Future(sign(bytes))
   }
 
-  /**
-    * Signs a given sequence of bytes with the signingKey
+  /** Signs a given sequence of bytes with the signingKey
     * @param dataToSign the bytes to be signed
     * @return the digital signature
     */
@@ -106,10 +103,9 @@ sealed abstract class ECPrivateKey
 
   override def signWithEntropyFunction: (
       ByteVector,
-      ByteVector) => Future[ECDigitalSignature] = {
-    case (bytes, entropy) =>
-      import scala.concurrent.ExecutionContext.Implicits.global
-      Future(signWithEntropy(bytes, entropy))
+      ByteVector) => Future[ECDigitalSignature] = { case (bytes, entropy) =>
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Future(signWithEntropy(bytes, entropy))
   }
 
   def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
@@ -376,8 +372,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   }
 }
 
-/**
-  * Created by chris on 2/16/16.
+/** Created by chris on 2/16/16.
   */
 sealed abstract class ECPublicKey extends BaseECKey {
 
@@ -604,8 +599,7 @@ object ECPublicKey extends Factory[ECPublicKey] {
   /** Generates a fresh [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] that has not been used before. */
   def freshPublicKey: ECPublicKey = ECPrivateKey.freshPrivateKey.publicKey
 
-  /**
-    * Checks if the public key is valid according to secp256k1
+  /** Checks if the public key is valid according to secp256k1
     * Mimics this function in bitcoin core
     * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.cpp#L207-L212]]
     */
@@ -633,8 +627,7 @@ object ECPublicKey extends Factory[ECPublicKey] {
     BouncyCastleUtil.validatePublicKey(bytes) && isValid(bytes)
   }
 
-  /**
-    * Mimics the CPubKey::IsValid function in Bitcoin core, this is a consensus rule
+  /** Mimics the CPubKey::IsValid function in Bitcoin core, this is a consensus rule
     * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.h#L158]]
     */
   def isValid(bytes: ByteVector): Boolean = bytes.nonEmpty

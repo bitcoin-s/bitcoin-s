@@ -4,8 +4,7 @@ import org.bitcoins.core.bloom._
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 8/7/16.
+/** Created by chris on 8/7/16.
   */
 abstract class BloomFilterGenerator {
 

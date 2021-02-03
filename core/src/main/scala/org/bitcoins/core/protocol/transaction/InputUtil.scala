@@ -15,8 +15,7 @@ import scala.annotation.tailrec
 
 object InputUtil {
 
-  /**
-    * Returns a valid sequence number for the given [[ScriptNumber]]
+  /** Returns a valid sequence number for the given [[ScriptNumber]]
     * A transaction needs a valid sequence number to spend a OP_CHECKSEQUENCEVERIFY script.
     * See BIP68/112 for more information
     * [[https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki]]
@@ -35,8 +34,7 @@ object InputUtil {
       sequence | TransactionConstants.sequenceLockTimeTypeFlag
     }
 
-  /**
-    * This helper function calculates the appropriate sequence number for each transaction input.
+  /** This helper function calculates the appropriate sequence number for each transaction input.
     * [[CLTVScriptPubKey]] and [[CSVScriptPubKey]]'s need certain sequence numbers on the inputs
     * to make them spendable.
     * See BIP68/112 and BIP65 for more info
@@ -97,8 +95,7 @@ object InputUtil {
     loop(utxos, Nil)
   }
 
-  /**
-    * This helper function calculates the appropriate sequence number for each transaction input.
+  /** This helper function calculates the appropriate sequence number for each transaction input.
     * [[CLTVScriptPubKey]] and [[CSVScriptPubKey]]'s need certain sequence numbers on the inputs
     * to make them spendable.
     * See BIP68/112 and BIP65 for more info

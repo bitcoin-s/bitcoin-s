@@ -8,8 +8,7 @@ import scala.annotation.tailrec
 /** Useful utility functions for the Lightning encoding / decoding */
 abstract class LnUtil extends BitcoinSLogger {
 
-  /**
-    * The formula for this calculation is as follows:
+  /** The formula for this calculation is as follows:
     * Take the length of the Bech32 encoded input and divide it by 32.
     * Take the quotient, and encode this value as Bech32. Take the remainder and encode this value as Bech32.
     * Append these values to produce a valid Lighting Network `data_length` field.

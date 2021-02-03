@@ -23,8 +23,7 @@ object Peer {
     Peer(socket)
   }
 
-  /**
-    * Constructs a peer from the given `bitcoind` instance
+  /** Constructs a peer from the given `bitcoind` instance
     */
   def fromBitcoind(bitcoind: BitcoindInstance): Peer = {
     val socket = new InetSocketAddress(bitcoind.uri.getHost, bitcoind.p2pPort)
