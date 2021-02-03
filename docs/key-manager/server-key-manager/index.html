@@ -1,0 +1,149 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Server Key Manager · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="The [Application Server](/docs/applications/server) supports a Neutrino node and wallet. For its wallet, it uses"/><meta name="docsearch:version" content="0.5.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Server Key Manager · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="The [Application Server](/docs/applications/server) supports a Neutrino node and wallet. For its wallet, it uses"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+              (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+              (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+              m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+              })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+              ga('create', 'UA-61958686-2', 'auto');
+              ga('send', 'pageview');
+            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>0.5.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/core/core-intro" target="_self">Docs</a></li><li class=""><a href="download" target="_self">Download</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Key Manager</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-started">Intro and Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/bips">Supported BIPs</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/applications/cli">CLI</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/server">Application Server</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/gui">GUI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/chain/filter-sync">Syncing Blockfilters</a></li><li class="navListItem"><a class="navItem" href="/docs/chain/chain-query-api">Chain Query API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/core/hd-keys">HD Key Generation</a></li><li class="navListItem"><a class="navItem" href="/docs/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/txbuilder">TxBuilder Example</a></li><li class="navListItem"><a class="navItem" href="/docs/core/lightning-network">Lightning Network Data Types</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Crypto Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/crypto/crypto-intro">Crypto Module</a></li><li class="navListItem"><a class="navItem" href="/docs/crypto/sign">Sign API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Fee Provider</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/fee-provider/fee-provider">Fee Provider</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/key-manager/server-key-manager">Server Key Manager</a></li><li class="navListItem"><a class="navItem" href="/docs/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/node/node">Light Client</a></li><li class="navListItem"><a class="navItem" href="/docs/node/node-api">Node API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-callbacks">Wallet Callbacks</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-get-address">Wallet Get Address APIs</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/address-tagging">Address and UTXO tagging</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-rescan">Wallet Rescans</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-sync">Wallet Sync</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/secp256k1/secp256k1">Secp256k1</a></li><li class="navListItem"><a class="navItem" href="/docs/secp256k1/jni-modify">Adding to Secp256k1 JNI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/testkit/testkit">Testkit</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">DLC Oracle</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/oracle/build-oracle-server">Building the Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/oracle/oracle-server">Oracle Server</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/security">Security</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/key-manager/server-key-manager.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Server Key Manager</h1></header><article><div><span><p>The <a href="/docs/applications/server">Application Server</a> supports a Neutrino node and wallet. For its wallet, it uses
+a <code>BIP39KeyManager</code> for handling its underlying keys and doing cryptographic functions like signing transactions.</p>
+<h3><a class="anchor" aria-hidden="true" id="backups"></a><a href="#backups" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Backups</h3>
+<p>All seeds are stored in the <code>seeds</code> folder inside your bitcoin-s directory, the default location is in <code>~/.bitcoin-s</code>.
+The easiest way to back up your seeds is to simply copy the <code>seeds</code> folder to your secure back up location.</p>
+<p>Do note that if you have a key manager passphrase or a BIP 39 passphrase set for a given seed, you will need these to be
+able to recover the seed.</p>
+<h3><a class="anchor" aria-hidden="true" id="using-multiple-seeds"></a><a href="#using-multiple-seeds" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using multiple seeds</h3>
+<p>You can change which wallet and key manager you are using by setting the <code>bitcoin-s.wallet.walletName</code> config
+option. If it is not set, it will use the default wallet. Different seeds are saved in the <code>seeds</code> folder, and the
+seed's file name will be prefixed with the wallet name.</p>
+<p>For example, if you have a default wallet, and 2 wallets named <code>test-wallet</code> and <code>rickRollWallet</code> your seeds folder will look like:</p>
+<pre><code class="hljs">tree ~/.bitcoin-s/seeds
+/home/suredbits/.bitcoin-s/seeds
+├── <span class="hljs-keyword">encrypted</span>-bitcoin-s-seed.json
+├── test-wallet-<span class="hljs-keyword">encrypted</span>-bitcoin-s-seed.json
+└── rickRollWallet-<span class="hljs-keyword">encrypted</span>-bitcoin-s-seed.json
+</code></pre>
+<p>Currently, Bitcoin-S only supports using a single key manger/wallet at a single instance. When switching wallets, you
+will need to shut down the server and restart it with your modified config.</p>
+<h3><a class="anchor" aria-hidden="true" id="passphrases"></a><a href="#passphrases" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Passphrases</h3>
+<p>Upon creating a wallet it's passphrase and the BIP 39 passphrase will be set to use what is in
+your <a href="/docs/config/configuration">configuration file</a>. The key manager's passphrase is set using
+the <code>bitcoin-s.keymanager.aespassword</code> option, and the BIP 39 passphrase is set using
+the <code>bitcoin-s.keymanager.bip39password</code> option.</p>
+<p>If you do not have the set the <code>aespassword</code> config option on the creation of the key manager, then the seed will be
+saved unencrypted.</p>
+<h4><a class="anchor" aria-hidden="true" id="changing-key-manager-passphrase"></a><a href="#changing-key-manager-passphrase" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Changing Key Manager Passphrase</h4>
+<p>You can set and change your key mananger's passphrase using the <code>keymanagerpassphraseset</code>
+or <code>keymanagerpassphrasechange</code> rpc commands. For more details checkout out
+the <a href="/docs/applications/server#wallet">server docs</a>.</p>
+<p>You cannot change your BIP39 passphrase because this would change the underlying keys. To change this you will need to
+create a new wallet and then send all the UTXOs from the previous wallet to the new one.</p>
+<h3><a class="anchor" aria-hidden="true" id="restoring-a-seed"></a><a href="#restoring-a-seed" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Restoring a Seed</h3>
+<h4><a class="anchor" aria-hidden="true" id="restore-from-mnemonic"></a><a href="#restore-from-mnemonic" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Restore from Mnemonic</h4>
+<p>To restore from a mnemonic seed you can use the <code>importseed</code> cli command.
+It takes in the actual mnemonic seed, wallet name, and an optional passphrase to encrypt the seed.</p>
+<p><strong>Example:</strong></p>
+<pre><code class="hljs">bitcoin-s-cli importseed <span class="hljs-comment">"never gonna give you up never gonna let you down never gonna run around and desert you never gonna make you cry never gonna"</span> <span class="hljs-comment">"rickRollWallet"</span> <span class="hljs-comment">"insecurePassword"</span>
+</code></pre>
+<h4><a class="anchor" aria-hidden="true" id="restore-from-xprv"></a><a href="#restore-from-xprv" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Restore from XPRV</h4>
+<p>To restore from a mnemonic seed you can use the <code>importxprv</code> cli command.
+It takes in the base58 encoded xprv, wallet name, and an optional passphrase to encrypt the seed.</p>
+<p><strong>Example:</strong></p>
+<pre><code class="hljs"><span class="hljs-keyword">bitcoin-s-cli </span>importxprv <span class="hljs-string">"xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7"</span> <span class="hljs-string">"xprvWallet"</span> <span class="hljs-string">"insecurePassword"</span>
+</code></pre>
+<h4><a class="anchor" aria-hidden="true" id="restore-from-backup"></a><a href="#restore-from-backup" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Restore from backup</h4>
+<p>To restore from a backed up seed, simply put the seed file in the <code>seeds</code> folder and then load the wallet.
+To do this, you will need the seed file name to be <code>walletName-encrypted-bitcoin-s-seed.json</code> or <code>encrypted-bitcoin-s-seed.json</code>
+if you want it to be the default wallet.
+To load it, just set the <code>bitcoin-s.wallet.walletName</code> config option to the appropriate wallet name.
+It is also important to remember to set <code>bitcoin-s.wallet.defaultAccountType</code> to the type of wallet you were using on your old wallet.
+As of this writing there are 3 types allowed</p>
+<ul>
+<li>legacy</li>
+<li>nested-segwit</li>
+<li>segwit</li>
+</ul>
+<p>If you fail to set this setting, your wallet could be looking for the wrong script types and not correctly find your funds
+on the blockchain as documented in <a href="https://github.com/bitcoin-s/bitcoin-s/issues/2527">this issue</a>.</p>
+<p>When restoring from a backup you should not replace an existing seed file as this can result in a loss of funds.
+If you have a seed file that would replace an existing seed its file name should be prefixed with a different wallet name.
+If you do replace a seed file you will need to delete the old wallet database associated with that wallet.</p>
+<p>You may need to run a wallet rescan to restore funds, this can be done by using the <code>rescan</code> RPC command.</p>
+<p>For example, if you wanted to restore your <code>rickRollWallet</code>, you would place your backup at <code>~/.bitcoin-s/seeds/rickRollWallet-encrypted-bitcoin-s-seed.json</code>
+and then load the wallet using a config with <code>bitcoin-s.wallet.walletName = rickRollWallet</code></p>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 1/21/2021 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/fee-provider/fee-provider"><span class="arrow-prev">← </span><span>Fee Provider</span></a><a class="docs-next button" href="/docs/key-manager/key-manager"><span>Key Manager</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2021 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '0a510688bf8448e19aeb380377d328d3',
+                indexName: 'bitcoin-s',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>
