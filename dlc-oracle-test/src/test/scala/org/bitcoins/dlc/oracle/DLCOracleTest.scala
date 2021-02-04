@@ -676,12 +676,6 @@ class DLCOracleTest extends DLCOracleFixture {
       }
   }
 
-  it must "fail to create an event in the past" in { dlcOracle: DLCOracle =>
-    assertThrows[IllegalArgumentException] {
-      dlcOracle.createNewEvent("test", Instant.EPOCH, testDescriptor)
-    }
-  }
-
   it must "create and sign a signed digit decomposition event" in {
     dlcOracle: DLCOracle =>
       val eventName = "signed"

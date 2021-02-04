@@ -178,8 +178,6 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
       descriptor: EventDescriptorTLV,
       signingVersion: SigningVersion = SigningVersion.latest): Future[
     OracleAnnouncementTLV] = {
-    require(maturationTime.isAfter(TimeUtil.now),
-            s"Event cannot mature in the past, got $maturationTime")
 
     for {
       indexOpt <- rValueDAO.maxKeyIndex
