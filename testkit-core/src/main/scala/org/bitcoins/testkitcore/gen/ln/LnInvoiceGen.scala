@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.ln.LnTag.NodeIdTag
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.testkitcore.gen.AddressGenerator._
 import org.bitcoins.testkitcore.gen._
 import org.scalacheck.Gen
 
@@ -87,7 +88,7 @@ sealed abstract class LnInvoiceGen {
   }
 
   def fallbackAddress: Gen[LnTag.FallbackAddressTag] = {
-    AddressGenerator.address.map { addr =>
+    Gen.oneOf(p2pkhAddress, p2shAddress, bech32Address).map { addr =>
       LnTag.FallbackAddressTag(addr)
     }
   }

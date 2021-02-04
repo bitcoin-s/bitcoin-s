@@ -4,6 +4,7 @@ import org.bitcoins.core.config._
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptConstant
+import org.bitcoins.core.util.Bech32Encoding.Bech32m
 import org.bitcoins.core.util._
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -106,7 +107,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
   }
 
   def verifyChecksum: Boolean = {
-    Bech32.verifyChecksum(hrp.expand, data ++ checksum)
+    Bech32.verifyChecksum(hrp.expand, data ++ checksum, Bech32Encoding.Bech32)
   }
 }
 
@@ -143,7 +144,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
       hrp: BtcHumanReadablePart,
       bytes: Vector[UInt5]): Vector[UInt5] = {
     val values = hrp.expand ++ bytes
-    Bech32.createChecksum(values)
+    Bech32.createChecksum(values, Bech32Encoding.Bech32)
   }
 
   /** Tries to convert the given string a to a
@@ -181,7 +182,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   /** Decodes bech32 string to the [[org.bitcoins.core.protocol.BtcHumanReadablePart HumanReadablePart]] & data part */
   override def fromString(bech32: String): Bech32Address = {
     val bech32T = for {
-      (hrp, data) <- Bech32.splitToHrpAndData(bech32)
+      (hrp, data) <- Bech32.splitToHrpAndData(bech32, Bech32Encoding.Bech32)
       network = BtcHumanReadablePart.fromString(hrp).network
     } yield Bech32Address(network, data)
 
@@ -208,6 +209,142 @@ object Bech32Address extends AddressFactory[Bech32Address] {
             "Cannot create a address for the scriptPubKey: " + x))
     }
 
+}
+
+/** https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+  */
+sealed abstract class Bech32mAddress extends BitcoinAddress {
+
+  lazy val hrp: BtcHumanReadablePart = BtcHumanReadablePart(networkParameters)
+
+  def data: Vector[UInt5]
+
+  override def value: String = {
+    val all: Vector[UInt5] = data ++ checksum
+    val encoding = Bech32.encode5bitToString(all)
+
+    hrp.toString + Bech32.separator + encoding
+  }
+
+  def checksum: Vector[UInt5] = Bech32mAddress.createChecksum(hrp, data)
+
+  override def scriptPubKey: WitnessScriptPubKey = {
+    val spk = Bech32mAddress.fromStringToWitSPK(value).get
+    require(spk.witnessVersion != WitnessVersion0,
+            "Use bech32 addresses for segwit v0")
+    spk
+  }
+
+  override def hash: HashDigest = {
+    DoubleSha256Digest.empty
+  }
+
+  def expandHrp: Vector[UInt5] = {
+    hrp.expand
+  }
+
+  def verifyChecksum: Boolean = {
+    Bech32.verifyChecksum(hrp.expand, data ++ checksum, Bech32Encoding.Bech32m)
+  }
+}
+
+object Bech32mAddress extends AddressFactory[Bech32mAddress] {
+
+  private case class Bech32mAddressImpl(
+      networkParameters: NetworkParameters,
+      data: Vector[UInt5])
+      extends Bech32mAddress {
+    require(verifyChecksum, "checksum did not pass")
+    require(Try(scriptPubKey).isSuccess, "invalid witness script pub key")
+  }
+
+  def empty(network: NetworkParameters = MainNet): Bech32mAddress =
+    fromScriptPubKey(P2WSHWitnessSPKV0(EmptyScriptPubKey), network)
+
+  def apply(
+      witSPK: WitnessScriptPubKey,
+      networkParameters: NetworkParameters): Bech32mAddress = {
+    //we don't encode the wit version or pushop for program into base5
+    val prog = UInt8.toUInt8s(witSPK.asmBytes.tail.tail)
+    val encoded = Bech32.from8bitTo5bit(prog)
+    val witVersion = witSPK.witnessVersion.version.toInt.toByte
+    Bech32mAddress(networkParameters, Vector(UInt5(witVersion)) ++ encoded)
+  }
+
+  def apply(
+      networkParameters: NetworkParameters,
+      data: Vector[UInt5]): Bech32mAddress = {
+    Bech32mAddressImpl(networkParameters, data)
+  }
+
+  /** Returns a base 5 checksum as specified by BIP173 */
+  def createChecksum(
+      hrp: BtcHumanReadablePart,
+      bytes: Vector[UInt5]): Vector[UInt5] = {
+    val values = hrp.expand ++ bytes
+    Bech32.createChecksum(values, Bech32Encoding.Bech32m)
+  }
+
+  /** Tries to convert the given string a to a
+    * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
+    */
+  def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
+    val decoded = Bech32.splitToHrpAndData(string, Bech32m)
+    decoded.flatMap { case (_, bytes) =>
+      val (v, _) = (bytes.head, bytes.tail)
+      val convertedProg = NumberUtil.convertUInt5sToUInt8(bytes.tail)
+      val progBytes = UInt8.toBytes(convertedProg)
+      val witVersion = WitnessVersion(v.toInt)
+      val pushOp = BitcoinScriptUtil.calculatePushOp(progBytes)
+      witVersion match {
+        case Some(v) =>
+          val witSPK = Try(
+            WitnessScriptPubKey(
+              List(v.version) ++ pushOp ++ List(ScriptConstant(progBytes))))
+          witSPK match {
+            case Success(spk) => Success(spk)
+            case Failure(err) =>
+              Failure(
+                new IllegalArgumentException(
+                  "Failed to decode bech32 into a witSPK: " + err.getMessage))
+          }
+        case None =>
+          Failure(
+            new IllegalArgumentException(
+              "Witness version was not valid, got: " + v))
+      }
+    }
+  }
+
+  /** Decodes bech32 string to the [[org.bitcoins.core.protocol.BtcHumanReadablePart HumanReadablePart]] & data part */
+  override def fromString(bech32m: String): Bech32mAddress = {
+    val bech32T = for {
+      (hrp, data) <- Bech32.splitToHrpAndData(bech32m, Bech32Encoding.Bech32m)
+      network = BtcHumanReadablePart.fromString(hrp).network
+    } yield Bech32mAddress(network, data)
+
+    bech32T match {
+      case Success(bech32m) => bech32m
+      case Failure(exn)     => throw exn
+    }
+  }
+
+  override def fromScriptPubKeyT(
+      spk: ScriptPubKey,
+      np: NetworkParameters): Try[Bech32mAddress] =
+    spk match {
+      case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
+          _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
+          _: P2SHScriptPubKey | _: LockTimeScriptPubKey |
+          _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment | _: WitnessScriptPubKeyV0 |
+          EmptyScriptPubKey) =>
+        Failure(
+          new IllegalArgumentException(
+            "Cannot create a address for the scriptPubKey: " + x))
+      case witSPK: WitnessScriptPubKey =>
+        Success(Bech32mAddress(witSPK, np))
+    }
 }
 
 object P2PKHAddress extends AddressFactory[P2PKHAddress] {
@@ -373,6 +510,7 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
       .fromStringT(value)
       .orElse(P2SHAddress.fromStringT(value))
       .orElse(Bech32Address.fromStringT(value))
+      .orElse(Bech32mAddress.fromStringT(value))
 
     addressT match {
       case Success(addr) => addr
@@ -389,16 +527,16 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
       case p2pkh: P2PKHScriptPubKey      => Success(P2PKHAddress(p2pkh, np))
       case p2sh: P2SHScriptPubKey        => Success(P2SHAddress(p2sh, np))
       case witSPK: WitnessScriptPubKeyV0 => Success(Bech32Address(witSPK, np))
+      case unassigned: UnassignedWitnessScriptPubKey =>
+        Success(Bech32mAddress(unassigned, np))
       case x @ (_: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
           _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
           _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
-          _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
-          EmptyScriptPubKey) =>
+          _: WitnessCommitment | EmptyScriptPubKey) =>
         Failure(
           new IllegalArgumentException(
             "Cannot create a address for the scriptPubKey: " + x))
     }
-
 }
 
 object Address extends AddressFactory[Address] {
