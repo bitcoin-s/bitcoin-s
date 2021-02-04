@@ -1,6 +1,7 @@
 ---
-id: oracle-election-example
+id: version-0.5.0-oracle-election-example
 title: Election Example
+original_id: oracle-election-example
 ---
 
 ## Requirements for example
