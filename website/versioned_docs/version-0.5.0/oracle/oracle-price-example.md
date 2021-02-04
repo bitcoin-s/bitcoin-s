@@ -1,6 +1,7 @@
 ---
-id: oracle-price-example
+id: version-0.5.0-oracle-price-example
 title: Price Example
+original_id: oracle-price-example
 ---
 
 ## Requirements for example
