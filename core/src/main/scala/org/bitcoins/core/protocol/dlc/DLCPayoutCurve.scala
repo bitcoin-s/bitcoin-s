@@ -65,10 +65,24 @@ case class DLCPayoutCurve(points: Vector[OutcomePayoutPoint]) {
     func(outcome, rounding)
   }
 
+  def getPayout(
+      outcome: Long,
+      rounding: RoundingIntervals,
+      totalCollateral: Satoshis): Satoshis = {
+    val Indexed(func, _) = componentFor(outcome)
+    func(outcome, rounding, totalCollateral)
+  }
+
   def apply(outcome: Long): Satoshis = getPayout(outcome)
 
   def apply(outcome: Long, rounding: RoundingIntervals): Satoshis =
     getPayout(outcome, rounding)
+
+  def apply(
+      outcome: Long,
+      rounding: RoundingIntervals,
+      totalCollateral: Satoshis): Satoshis =
+    getPayout(outcome, rounding, totalCollateral)
 }
 
 object DLCPayoutCurve {
@@ -186,6 +200,16 @@ sealed trait DLCPayoutCurvePiece {
 
   def apply(outcome: Long, rounding: RoundingIntervals): Satoshis = {
     rounding.round(outcome, apply(outcome))
+  }
+
+  def apply(
+      outcome: Long,
+      rounding: RoundingIntervals,
+      totalCollateral: Satoshis): Satoshis = {
+    val rounded = rounding.round(outcome, apply(outcome)).toLong
+    val modified = math.min(math.max(rounded, 0), totalCollateral.toLong)
+
+    Satoshis(modified)
   }
 
   /** Returns the largest Long less than or equal to bd (floor function) */
