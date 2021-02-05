@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.constant
 
-import org.bitcoins.core.number.Int64
+import org.bitcoins.core.number.{Int64, NumberCache}
 import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{Factory, NetworkElement}
@@ -93,16 +93,21 @@ sealed abstract class ScriptNumber
   protected val underlying: Long
 }
 
-object ScriptNumber extends Factory[ScriptNumber] {
+object ScriptNumber
+    extends Factory[ScriptNumber]
+    with NumberCache[ScriptNumber] {
+
+  private case class ScriptNumberImpl(underlying: Long, bytes: ByteVector)
+      extends ScriptNumber
 
   /** Represents the number zero inside of bitcoin's script language. */
-  lazy val zero: ScriptNumber = ScriptNumberImpl(0, ByteVector.empty)
+  lazy val zero: ScriptNumber = checkCached(0)
 
   /** Represents the number one inside of bitcoin's script language. */
-  lazy val one: ScriptNumber = ScriptNumberImpl(1)
+  lazy val one: ScriptNumber = checkCached(1)
 
   /** Represents the number negative one inside of bitcoin's script language. */
-  lazy val negativeOne: ScriptNumber = ScriptNumberImpl(-1)
+  lazy val negativeOne: ScriptNumber = checkCached(-1)
 
   /** Bitcoin has a numbering system which has a negative zero. */
   lazy val negativeZero: ScriptNumber = fromHex("80")
@@ -113,7 +118,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
   }
 
   def apply(underlying: Long): ScriptNumber = {
-    if (underlying == 0) zero else apply(ScriptNumberUtil.longToHex(underlying))
+    ScriptNumberImpl(underlying)
   }
 
   def apply(bytes: ByteVector, requireMinimal: Boolean): Try[ScriptNumber] =
@@ -128,8 +133,9 @@ object ScriptNumber extends Factory[ScriptNumber] {
     }
   }
 
-  private case class ScriptNumberImpl(underlying: Long, bytes: ByteVector)
-      extends ScriptNumber
+  override def fromNativeNumber(long: Long): ScriptNumber = {
+    ScriptNumber(long)
+  }
 
   /** Companion object for [[ScriptNumberImpl]] that gives us access to more constructor types for the
     * [[ScriptNumberImpl]] case class.

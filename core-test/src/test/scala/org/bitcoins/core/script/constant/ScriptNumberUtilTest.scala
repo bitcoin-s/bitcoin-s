@@ -174,7 +174,7 @@ class ScriptNumberUtilTest extends BitcoinSUnitTest {
 
   it must "serialize a positive number to the correct hex value" in {
     val hex = ScriptNumberUtil.longToHex(0L)
-    val expectedHex = "00"
+    val expectedHex = ""
     hex must be(expectedHex)
 
     val hex1 = ScriptNumberUtil.longToHex(1)

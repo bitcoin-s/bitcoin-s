@@ -109,7 +109,9 @@ trait ScriptNumberUtil {
     * @return
     */
   def longToHex(long: Long): String = {
-    if (long > -1) {
+    if (long == 0) {
+      ""
+    } else if (long > -1) {
       val bytes = toByteVec(long)
       BytesUtil.flipEndianness(BytesUtil.encodeHex(bytes))
     } else {
