@@ -109,15 +109,20 @@ trait ScriptNumberUtil {
     * @return
     */
   def longToHex(long: Long): String = {
-    if (long > -1) {
+    longToByteVector(long).toHex
+  }
+
+  /** Converts a long number to the bytevec representation in Script */
+  def longToByteVector(long: Long): ByteVector = {
+    if (long == 0) ByteVector.empty
+    else if (long > -1) {
       val bytes = toByteVec(long)
-      BytesUtil.flipEndianness(BytesUtil.encodeHex(bytes))
+      bytes.reverse
     } else {
       val bytes = toByteVec(long.abs)
       //add sign bit
       val negativeNumberBytes = changeSignBitToNegative(bytes)
-      val hex = BytesUtil.encodeHex(negativeNumberBytes.reverse)
-      hex
+      negativeNumberBytes.reverse
     }
   }
 

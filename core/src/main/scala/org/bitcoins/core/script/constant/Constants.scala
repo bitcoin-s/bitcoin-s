@@ -1,12 +1,12 @@
 package org.bitcoins.core.script.constant
 
-import org.bitcoins.core.number.Int64
+import org.bitcoins.core.number.{Int64, NumberCache}
 import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 1/6/16.
   */
@@ -93,27 +93,58 @@ sealed abstract class ScriptNumber
   protected val underlying: Long
 }
 
-object ScriptNumber extends Factory[ScriptNumber] {
+object ScriptNumber
+    extends Factory[ScriptNumber]
+    with NumberCache[ScriptNumber] {
+
+  private case class ScriptNumberImpl(underlying: Long, bytes: ByteVector)
+      extends ScriptNumber
 
   /** Represents the number zero inside of bitcoin's script language. */
-  lazy val zero: ScriptNumber = ScriptNumberImpl(0, ByteVector.empty)
+  lazy val zero: ScriptNumber = checkCached(0)
 
   /** Represents the number one inside of bitcoin's script language. */
-  lazy val one: ScriptNumber = ScriptNumberImpl(1)
+  lazy val one: ScriptNumber = checkCached(1)
 
   /** Represents the number negative one inside of bitcoin's script language. */
-  lazy val negativeOne: ScriptNumber = ScriptNumberImpl(-1)
+  lazy val negativeOne: ScriptNumber = checkCached(-1)
 
   /** Bitcoin has a numbering system which has a negative zero. */
   lazy val negativeZero: ScriptNumber = fromHex("80")
 
-  def fromBytes(bytes: ByteVector) = {
+  override def fromBytes(bytes: ByteVector) = {
     if (bytes.isEmpty) zero
-    else ScriptNumberImpl(ScriptNumberUtil.toLong(bytes), bytes)
+    else if (BitcoinScriptUtil.isShortestEncoding(bytes)) {
+      //if it's the shortest encoding possible, use our cache
+      checkCached(ScriptNumberUtil.toLong(bytes))
+    } else {
+      //else we need to preserve the byte level encoding
+      //as Script at the consensus level does not
+      //enforce minimal encoding of numbers
+      ScriptNumberImpl(ScriptNumberUtil.toLong(bytes), bytes)
+    }
+  }
+
+  def fromBytes(
+      bytes: ByteVector,
+      requireMinimal: Boolean): Try[ScriptNumber] = {
+    if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(bytes)) {
+      Failure(new IllegalArgumentException(
+        s"The given hex was not the shortest encoding for the script number: ${bytes.toHex}"))
+    } else if (requireMinimal) {
+      //our cache contains minimal encoded script numbers
+      //so we can check our cache to try and avoid allocating
+      val number = ScriptNumberUtil.toLong(bytes)
+      Success(checkCached(number))
+    } else {
+      //if minimal encoding is not required, unfortunately we need to
+      //store the byte representation that came off the wire.
+      Try(fromBytes(bytes))
+    }
   }
 
   def apply(underlying: Long): ScriptNumber = {
-    if (underlying == 0) zero else apply(ScriptNumberUtil.longToHex(underlying))
+    checkCached(underlying)
   }
 
   def apply(bytes: ByteVector, requireMinimal: Boolean): Try[ScriptNumber] =
@@ -121,15 +152,15 @@ object ScriptNumber extends Factory[ScriptNumber] {
 
   def apply(hex: String, requireMinimal: Boolean): Try[ScriptNumber] = {
     if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(hex)) {
-      Failure(new IllegalArgumentException(
-        "The given hex was not the shortest encoding for the script number: " + hex))
+      fromBytes(ByteVector.fromValidHex(hex), requireMinimal)
     } else {
-      Try(apply(hex))
+      Try(fromHex(hex))
     }
   }
 
-  private case class ScriptNumberImpl(underlying: Long, bytes: ByteVector)
-      extends ScriptNumber
+  override def fromNativeNumber(long: Long): ScriptNumber = {
+    ScriptNumberImpl(long)
+  }
 
   /** Companion object for [[ScriptNumberImpl]] that gives us access to more constructor types for the
     * [[ScriptNumberImpl]] case class.
@@ -143,12 +174,11 @@ object ScriptNumber extends Factory[ScriptNumber] {
       ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
 
     def apply(underlying: Long): ScriptNumber = {
-      ScriptNumberImpl(
-        underlying,
-        BytesUtil.decodeHex(ScriptNumberUtil.longToHex(underlying)))
+      ScriptNumberImpl(underlying,
+                       ScriptNumberUtil.longToByteVector(underlying))
     }
 
-    def apply(int64: Int64): ScriptNumber = ScriptNumberImpl(int64.toLong)
+    def apply(int64: Int64): ScriptNumber = checkCached(int64.toLong)
   }
 
 }
