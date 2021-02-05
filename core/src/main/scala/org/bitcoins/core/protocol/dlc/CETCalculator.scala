@@ -293,7 +293,7 @@ object CETCalculator {
     * This means the resulting outcomes cover [start, (prefix, digits[0], base-1, ..., base-1)].
     *
     * @param digits The unique digits of the range's start
-    * @param base The base the digits are represented in
+    * @param base   The base the digits are represented in
     */
   def frontGroupings(digits: Digits, base: Int): Vector[Digits] = {
     val nonZeroDigits =
@@ -319,7 +319,7 @@ object CETCalculator {
     * This means the resulting outcomes cover [(prefix, digits[0], 0, ..., 0), end].
     *
     * @param digits The unique digits of the range's end
-    * @param base The base the digits are represented in
+    * @param base   The base the digits are represented in
     */
   def backGroupings(digits: Digits, base: Int): Vector[Digits] = {
     val nonMaxDigits =
@@ -351,7 +351,7 @@ object CETCalculator {
     * [(prefix, firstDigitStart + 1, 0, ..., 0), (prefix, firstDigitEnd-1, base-1, ..., base-1)].
     *
     * @param firstDigitStart The first unique digit of the range's start
-    * @param firstDigitEnd The first unique digit of the range's end
+    * @param firstDigitEnd   The first unique digit of the range's end
     */
   def middleGrouping(
       firstDigitStart: Int,
@@ -464,6 +464,35 @@ object CETCalculator {
     val max = Math.pow(base, numDigits).toLong - 1
 
     computeCETs(base, numDigits, function, totalCollateral, rounding, min, max)
+  }
+
+  def payoutSample(
+      func: Long => Long,
+      numDigits: Int,
+      numPoints: Long): Vector[OutcomePayoutEndpoint] = {
+    val maxVal = (1L << numDigits) - 1
+    0L.until(maxVal, maxVal / numPoints)
+      .toVector
+      .map { outcome =>
+        val payout = func(outcome)
+        OutcomePayoutEndpoint(outcome, payout)
+      }
+      .:+(OutcomePayoutEndpoint(maxVal, func(maxVal)))
+  }
+
+  def payoutSampleByInterval(
+      func: Long => Long,
+      numDigits: Int,
+      interval: Int): Vector[OutcomePayoutEndpoint] = {
+    val maxVal = (1L << numDigits) - 1
+    payoutSample(func, numDigits, maxVal / interval)
+  }
+
+  def lineApprox(
+      func: Long => Long,
+      numDigits: Int,
+      interval: Int): DLCPayoutCurve = {
+    DLCPayoutCurve(payoutSampleByInterval(func, numDigits, interval))
   }
 
   /** Computes all combinations of threshold oracles, preserving order. */
