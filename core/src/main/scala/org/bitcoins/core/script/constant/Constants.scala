@@ -6,7 +6,7 @@ import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 1/6/16.
   */
@@ -112,13 +112,39 @@ object ScriptNumber
   /** Bitcoin has a numbering system which has a negative zero. */
   lazy val negativeZero: ScriptNumber = fromHex("80")
 
-  def fromBytes(bytes: ByteVector) = {
+  override def fromBytes(bytes: ByteVector) = {
     if (bytes.isEmpty) zero
-    else ScriptNumberImpl(ScriptNumberUtil.toLong(bytes), bytes)
+    else if (BitcoinScriptUtil.isShortestEncoding(bytes)) {
+      //if it's the shortest encoding possible, use our cache
+      checkCached(ScriptNumberUtil.toLong(bytes))
+    } else {
+      //else we need to preserve the byte level encoding
+      //as Script at the consensus level does not
+      //enforce minimal encoding of numbers
+      ScriptNumberImpl(ScriptNumberUtil.toLong(bytes), bytes)
+    }
+  }
+
+  def fromBytes(
+      bytes: ByteVector,
+      requireMinimal: Boolean): Try[ScriptNumber] = {
+    if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(bytes)) {
+      Failure(new IllegalArgumentException(
+        s"The given hex was not the shortest encoding for the script number: ${bytes.toHex}"))
+    } else if (requireMinimal) {
+      //our cache contains minimal encoded script numbers
+      //so we can check our cache to try and avoid allocating
+      val number = ScriptNumberUtil.toLong(bytes)
+      Success(checkCached(number))
+    } else {
+      //if minimal encoding is not required, unfortunately we need to
+      //store the byte representation that came off the wire.
+      Try(fromBytes(bytes))
+    }
   }
 
   def apply(underlying: Long): ScriptNumber = {
-    ScriptNumberImpl(underlying)
+    checkCached(underlying)
   }
 
   def apply(bytes: ByteVector, requireMinimal: Boolean): Try[ScriptNumber] =
@@ -126,15 +152,14 @@ object ScriptNumber
 
   def apply(hex: String, requireMinimal: Boolean): Try[ScriptNumber] = {
     if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(hex)) {
-      Failure(new IllegalArgumentException(
-        "The given hex was not the shortest encoding for the script number: " + hex))
+      fromBytes(ByteVector.fromValidHex(hex), requireMinimal)
     } else {
-      Try(apply(hex))
+      Try(fromHex(hex))
     }
   }
 
   override def fromNativeNumber(long: Long): ScriptNumber = {
-    ScriptNumber(long)
+    ScriptNumberImpl(long)
   }
 
   /** Companion object for [[ScriptNumberImpl]] that gives us access to more constructor types for the
