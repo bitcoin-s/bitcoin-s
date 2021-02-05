@@ -208,21 +208,29 @@ trait NumberObject[T <: Number[T]] extends BaseNumbers[T] {
 object UInt5
     extends Factory[UInt5]
     with NumberObject[UInt5]
-    with Bounded[UInt5] {
+    with Bounded[UInt5]
+    with NumberCache[UInt5] {
 
   private case class UInt5Impl(underlying: BigInt) extends UInt5 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  lazy val zero = UInt5(0.toByte)
-  lazy val one = UInt5(1.toByte)
+  lazy val zero = checkCached(0)
+  lazy val one = checkCached(1)
 
   private lazy val minUnderlying: A = 0
   private lazy val maxUnderlying: A = 31
 
   lazy val min = UInt5(minUnderlying)
   lazy val max = UInt5(maxUnderlying)
+
+  /** Max number for UInt5 is 31 */
+  final override val maxCached: Long = 31
+
+  final override def fromNativeNumber(long: Long): UInt5 = {
+    UInt5Impl(long)
+  }
 
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
@@ -245,7 +253,7 @@ object UInt5
   }
 
   def fromByte(byte: Byte): UInt5 = {
-    UInt5Impl(BigInt(byte))
+    checkCached(byte)
   }
 
   def toUInt5(b: Byte): UInt5 = {
@@ -260,14 +268,15 @@ object UInt5
 object UInt8
     extends Factory[UInt8]
     with NumberObject[UInt8]
-    with Bounded[UInt8] {
+    with Bounded[UInt8]
+    with NumberCache[UInt8] {
 
   private case class UInt8Impl(underlying: BigInt) extends UInt8 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
-  lazy val zero = UInt8(0.toShort)
-  lazy val one = UInt8(1.toShort)
+  lazy val zero = checkCached(0.toShort)
+  lazy val one = checkCached(1.toShort)
 
   private lazy val minUnderlying: A = 0
   private lazy val maxUnderlying: A = 255
@@ -275,10 +284,14 @@ object UInt8
   lazy val min = UInt8(minUnderlying)
   lazy val max = UInt8(maxUnderlying)
 
+  final override def fromNativeNumber(long: Long): UInt8 = {
+    UInt8Impl(long)
+  }
+
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
 
-  def apply(short: Short): UInt8 = UInt8(BigInt(short))
+  def apply(short: Short): UInt8 = checkCached(short)
 
   def apply(byte: Byte): UInt8 = toUInt8(byte)
 
@@ -292,7 +305,8 @@ object UInt8
   }
 
   def toUInt8(byte: Byte): UInt8 = {
-    fromBytes(ByteVector.fromByte(byte))
+    val unsigned = ByteVector.fromByte(byte).toInt(signed = false)
+    checkCached(unsigned)
   }
 
   def toByte(uInt8: UInt8): Byte = uInt8.underlying.toByte
@@ -309,26 +323,26 @@ object UInt8
 object UInt16
     extends Factory[UInt16]
     with NumberObject[UInt16]
-    with Bounded[UInt16] {
+    with Bounded[UInt16]
+    with NumberCache[UInt16] {
 
   private case class UInt16Impl(underlying: BigInt) extends UInt16 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  /** Cache from 0 to 128 UInt16 */
-  private val cached: Vector[UInt16] = {
-    0.until(128).map(i => UInt16(BigInt(i))).toVector
-  }
-
-  lazy val zero = cached(0)
-  lazy val one = cached(1)
+  lazy val zero = checkCached(0)
+  lazy val one = checkCached(1)
 
   private lazy val minUnderlying: A = 0
   private lazy val maxUnderlying: A = BigInt(65535L)
 
   lazy val min = zero
   lazy val max = UInt16(maxUnderlying)
+
+  final override def fromNativeNumber(long: Long): UInt16 = {
+    UInt16Impl(long)
+  }
 
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
@@ -347,39 +361,31 @@ object UInt16
   def apply(bigInt: BigInt): UInt16 = {
     UInt16Impl(bigInt)
   }
-
-  /** Checks if we have the number cached, if not allocates a new object to represent the number */
-  private def checkCached(long: Long): UInt16 = {
-    if (long < 128 && long >= 0) cached(long.toInt)
-    else {
-      UInt16(BigInt(long))
-    }
-  }
 }
 
 object UInt32
     extends Factory[UInt32]
     with NumberObject[UInt32]
-    with Bounded[UInt32] {
+    with Bounded[UInt32]
+    with NumberCache[UInt32] {
 
   private case class UInt32Impl(underlying: BigInt) extends UInt32 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  /** Cache from 0 to 256 UInt32 */
-  private val cached: Vector[UInt32] = {
-    0.until(256).map(i => UInt32(BigInt(i))).toVector
-  }
-
-  lazy val zero = cached(0)
-  lazy val one = cached(1)
+  lazy val zero: UInt32 = checkCached(0)
+  lazy val one: UInt32 = checkCached(1)
 
   private lazy val minUnderlying: A = 0
   private lazy val maxUnderlying: A = BigInt(4294967295L)
 
   lazy val min = zero
   lazy val max = UInt32(maxUnderlying)
+
+  final override def fromNativeNumber(long: Long): UInt32 = {
+    UInt32Impl(long)
+  }
 
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
@@ -398,39 +404,27 @@ object UInt32
   def apply(bigInt: BigInt): UInt32 = {
     UInt32Impl(bigInt)
   }
-
-  /** Checks if we have the number cached, if not allocates a new object to represent the number */
-  private def checkCached(long: Long): UInt32 = {
-    if (long < 256 && long >= 0) cached(long.toInt)
-    else {
-      UInt32(BigInt(long))
-    }
-  }
 }
 
 object UInt64
     extends Factory[UInt64]
     with NumberObject[UInt64]
-    with Bounded[UInt64] {
+    with Bounded[UInt64]
+    with NumberCacheBigInt[UInt64] {
 
   private case class UInt64Impl(underlying: BigInt) extends UInt64 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  lazy val zero = cached(0)
-  lazy val one = cached(1)
+  lazy val zero = checkCached(0)
+  lazy val one = checkCached(1)
 
   private lazy val minUnderlying: A = 0
   private lazy val maxUnderlying: A = BigInt("18446744073709551615")
 
   lazy val min = UInt64(minUnderlying)
   lazy val max = UInt64(maxUnderlying)
-
-  /** Cache from 0 to 256 UInt64 */
-  private val cached: Vector[UInt64] = {
-    0.until(256).map(i => UInt64(BigInt(i))).toVector
-  }
 
   lazy val twentyThree = UInt64(BigInt(23)) //p2sh compact size uint
   lazy val twentyFive = UInt64(BigInt(25)) //p2pkh compact size uint
@@ -450,39 +444,42 @@ object UInt64
     checkCached(long)
   }
 
-  def apply(num: BigInt): UInt64 = UInt64Impl(num)
+  def apply(num: BigInt): UInt64 = checkCachedBigInt(num)
 
-  private def checkCached(num: Long): UInt64 = {
-    if (num < 256 && num >= 0) cached(num.toInt)
-    else UInt64Impl(num)
+  final override def fromBigInt(bigInt: BigInt): UInt64 = {
+    UInt64Impl(bigInt)
+  }
+
+  final override def fromNativeNumber(long: Long): UInt64 = {
+    UInt64Impl(long)
   }
 }
 
 object Int32
     extends Factory[Int32]
     with NumberObject[Int32]
-    with Bounded[Int32] {
+    with Bounded[Int32]
+    with NumberCache[Int32] {
 
   private case class Int32Impl(underlying: BigInt) extends Int32 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
-
-  /** Cache from 0 to 256 Int32 */
-  private val cached: Vector[Int32] = {
-    0.until(256).map(i => Int32(BigInt(i))).toVector
-  }
-
   val negOne = Int32(-1)
-  val zero = cached(0)
-  val one = cached(1)
-  val two = cached(2)
+
+  override val zero: Int32 = checkCached(0)
+  override val one: Int32 = checkCached(1)
+  val two = checkCached(2)
 
   private lazy val minUnderlying: A = BigInt(-2147483648)
   private lazy val maxUnderlying: A = BigInt(2147483647)
 
   lazy val min = Int32(minUnderlying)
   lazy val max = Int32(maxUnderlying)
+
+  final override def fromNativeNumber(long: Long): Int32 = {
+    Int32Impl(long)
+  }
 
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
@@ -497,38 +494,31 @@ object Int32
   }
 
   def apply(bigInt: BigInt): Int32 = Int32Impl(bigInt)
-
-  private def checkCached(int: Int): Int32 = {
-    if (int < 256 && int >= 0) cached(int)
-    else {
-      Int32(BigInt(int))
-    }
-  }
 }
 
 object Int64
     extends Factory[Int64]
     with NumberObject[Int64]
-    with Bounded[Int64] {
+    with Bounded[Int64]
+    with NumberCache[Int64] {
 
   private case class Int64Impl(underlying: BigInt) extends Int64 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  /** Cache from 0 to 256 Int64 */
-  private val cached: Vector[Int64] = {
-    0.until(256).map(i => Int64(BigInt(i))).toVector
-  }
-
-  lazy val zero = cached(0)
-  lazy val one = cached(1)
+  lazy val zero = checkCached(0)
+  lazy val one = checkCached(1)
 
   private lazy val minUnderlying: A = -9223372036854775808L
   private lazy val maxUnderlying: A = 9223372036854775807L
 
   lazy val min = Int64(minUnderlying)
   lazy val max = Int64(maxUnderlying)
+
+  final override def fromNativeNumber(long: Long): Int64 = {
+    Int64Impl(long)
+  }
 
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
@@ -543,9 +533,4 @@ object Int64
   }
 
   def apply(bigInt: BigInt): Int64 = Int64Impl(bigInt)
-
-  private def checkCached(long: Long): Int64 = {
-    if (long < 256 && long >= 0) cached(long.toInt)
-    else Int64(BigInt(long))
-  }
 }
