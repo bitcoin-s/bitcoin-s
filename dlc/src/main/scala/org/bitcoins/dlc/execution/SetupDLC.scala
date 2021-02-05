@@ -2,12 +2,16 @@ package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.OracleOutcome
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  WitnessTransaction
+}
 import org.bitcoins.crypto.ECAdaptorSignature
 
 case class SetupDLC(
     fundingTx: Transaction,
-    cets: Map[OracleOutcome, CETInfo],
+    cets: Vector[(OracleOutcome, CETInfo)],
     refundTx: Transaction) {
   cets.foreach { case (msg, cetInfo) =>
     require(
@@ -28,6 +32,15 @@ case class SetupDLC(
                                                                UInt32.zero),
     s"RefundTx is not spending the funding input, ${refundTx.inputs.head}"
   )
+
+  def getCETInfo(outcome: OracleOutcome): CETInfo = {
+    cets.find(_._1 == outcome) match {
+      case Some((_, info)) => info
+      case None =>
+        throw new IllegalArgumentException(
+          s"No CET found for the given outcome $outcome")
+    }
+  }
 }
 
-case class CETInfo(tx: Transaction, remoteSignature: ECAdaptorSignature)
+case class CETInfo(tx: WitnessTransaction, remoteSignature: ECAdaptorSignature)

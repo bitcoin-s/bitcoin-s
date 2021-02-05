@@ -14,7 +14,7 @@ import org.bitcoins.core.util.{FutureUtil, NumberUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
-import org.bitcoins.dlc.execution.SetupDLC
+import org.bitcoins.dlc.execution.{CETInfo, SetupDLC}
 import org.bitcoins.dlc.testgen.{DLCTestUtil, TestDLCClient}
 import org.scalatest.{Assertion, Assertions}
 
@@ -492,8 +492,8 @@ trait DLCTest {
     } yield {
       assert(acceptSetup.fundingTx == offerSetup.fundingTx)
       assert(acceptSetup.refundTx == offerSetup.refundTx)
-      acceptSetup.cets.foreach { case (msg, cetInfo) =>
-        assert(cetInfo.tx == offerSetup.cets(msg).tx)
+      acceptSetup.cets.foreach { case (outcome, CETInfo(cet, _)) =>
+        assert(cet == offerSetup.getCETInfo(outcome).tx)
       }
 
       (offerSetup, acceptSetup)

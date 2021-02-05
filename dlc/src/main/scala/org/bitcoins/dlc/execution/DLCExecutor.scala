@@ -1,13 +1,8 @@
 package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.dlc.{
-  CETCalculator,
-  CETSignatures,
-  FundingSignatures,
-  OracleOutcome,
-  OracleSignatures
-}
+import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
 
@@ -24,7 +19,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
   def setupDLCOffer(cetSigs: CETSignatures): Future[SetupDLC] = {
     require(isInitiator, "You should call setupDLCAccept")
 
-    setupDLC(cetSigs, None)
+    setupDLC(cetSigs, None, None)
   }
 
   /** Constructs the non-initiator's SetupDLC given the initiator's
@@ -33,10 +28,11 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     */
   def setupDLCAccept(
       cetSigs: CETSignatures,
-      fundingSigs: FundingSignatures): Future[SetupDLC] = {
+      fundingSigs: FundingSignatures,
+      cetsOpt: Option[Vector[WitnessTransaction]]): Future[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
-    setupDLC(cetSigs, Some(fundingSigs))
+    setupDLC(cetSigs, Some(fundingSigs), cetsOpt)
   }
 
   /** Constructs a SetupDLC given the necessary signature information
@@ -44,15 +40,21 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     */
   def setupDLC(
       cetSigs: CETSignatures,
-      fundingSigsOpt: Option[FundingSignatures]): Future[SetupDLC] = {
+      fundingSigsOpt: Option[FundingSignatures],
+      cetsOpt: Option[Vector[WitnessTransaction]]): Future[SetupDLC] = {
     if (!isInitiator) {
       require(fundingSigsOpt.isDefined,
               "Accepting party must provide remote funding signatures")
     }
 
     val CETSignatures(outcomeSigs, refundSig) = cetSigs
-    val cetInfoFs = outcomeSigs.map { case (msg, remoteAdaptorSig) =>
-      builder.buildCET(msg).map { cet =>
+    val msgs = outcomeSigs.map(_._1)
+    val cetsF = cetsOpt match {
+      case Some(cets) => Future.successful(cets)
+      case None       => builder.buildCETs(msgs)
+    }
+    val cetInfosF = cetsF.map { cets =>
+      cets.zip(outcomeSigs).map { case (cet, (msg, remoteAdaptorSig)) =>
         msg -> CETInfo(cet, remoteAdaptorSig)
       }
     }
@@ -64,10 +66,10 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
           case None              => builder.buildFundingTx
         }
       }
-      cetInfos <- Future.sequence(cetInfoFs)
+      cetInfos <- cetInfosF
       refundTx <- signer.signRefundTx(refundSig)
     } yield {
-      SetupDLC(fundingTx, cetInfos.toMap, refundTx)
+      SetupDLC(fundingTx, cetInfos, refundTx)
     }
   }
 
@@ -84,9 +86,8 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
   def executeDLC(
       dlcSetup: SetupDLC,
       oracleSigs: Vector[OracleSignatures]): Future[ExecutedDLCOutcome] = {
-    val SetupDLC(fundingTx, cetInfos, _) = dlcSetup
 
-    val threshold = cetInfos.head._1.oracles.length
+    val threshold = dlcSetup.cets.head._1.oracles.length
     val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
 
     var msgOpt: Option[OracleOutcome] = None
@@ -96,7 +97,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     }
     val (msg, remoteAdaptorSig) = msgOpt match {
       case Some(msg) =>
-        val cetInfo = cetInfos(msg)
+        val cetInfo = dlcSetup.getCETInfo(msg)
         (msg, cetInfo.remoteSignature)
       case None =>
         throw new IllegalArgumentException(
@@ -105,7 +106,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     val sigsUsed = sigsUsedOpt.get // Safe because msgOpt is defined if no throw
 
     signer.signCET(msg, remoteAdaptorSig, sigsUsed).map { cet =>
-      ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
+      ExecutedDLCOutcome(dlcSetup.fundingTx, cet, msg, sigsUsed)
     }
   }
 

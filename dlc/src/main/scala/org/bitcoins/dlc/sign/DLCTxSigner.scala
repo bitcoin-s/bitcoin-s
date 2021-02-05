@@ -174,29 +174,94 @@ case class DLCTxSigner(
     }
   }
 
-  /** Signs remote's Contract Execution Transaction (CET) for a given outcome hash */
+  private var _cetSigningInfo: Option[ECSignatureParams[P2WSHV0InputInfo]] =
+    None
+
+  private def cetSigningInfo: Future[ECSignatureParams[P2WSHV0InputInfo]] = {
+    _cetSigningInfo match {
+      case Some(info) => Future.successful(info)
+      case None =>
+        for {
+          fundingTx <- builder.buildFundingTx
+          fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
+        } yield {
+          val signingInfo = ECSignatureParams(
+            P2WSHV0InputInfo(outPoint = fundingOutPoint,
+                             amount = fundingTx.outputs.head.value,
+                             scriptWitness = P2WSHWitnessV0(fundingSPK),
+                             conditionalPath = ConditionalPath.NoCondition),
+            fundingTx,
+            fundingKey,
+            HashType.sigHashAll
+          )
+
+          _cetSigningInfo = Some(signingInfo)
+
+          signingInfo
+        }
+    }
+  }
+
+  /** Signs remote's Contract Execution Transaction (CET) for a given outcome */
   def createRemoteCETSig(outcome: OracleOutcome): Future[ECAdaptorSignature] = {
     val adaptorPoint = outcome.sigPoint
-    val hashType = HashType.sigHashAll
     for {
-      fundingTx <- builder.buildFundingTx
-      fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
       utx <- builder.buildCET(outcome)
-      signingInfo = ECSignatureParams(
-        P2WSHV0InputInfo(outPoint = fundingOutPoint,
-                         amount = fundingTx.outputs.head.value,
-                         scriptWitness = P2WSHWitnessV0(fundingSPK),
-                         conditionalPath = ConditionalPath.NoCondition),
-        fundingTx,
-        fundingKey,
-        hashType
-      )
-      utxWithData = TxUtil.addWitnessData(utx, signingInfo)
-      hashToSign = TransactionSignatureSerializer.hashForSignature(utxWithData,
-                                                                   signingInfo,
-                                                                   hashType)
+      signingInfo <- cetSigningInfo
     } yield {
+      val hashToSign = TransactionSignatureSerializer.hashForSignature(
+        utx,
+        signingInfo,
+        HashType.sigHashAll)
+
       fundingKey.adaptorSign(adaptorPoint, hashToSign.bytes)
+    }
+  }
+
+  /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
+  def createRemoteCETsAndSigs(outcomes: Vector[OracleOutcome]): Future[
+    Vector[(OracleOutcome, WitnessTransaction, ECAdaptorSignature)]] = {
+    for {
+      cetBuilder <- builder.cetBuilderF
+      signingInfo <- cetSigningInfo
+    } yield {
+      outcomes.map { outcome =>
+        val adaptorPoint = outcome.sigPoint
+        val utx = cetBuilder.buildCET(outcome)
+        val hashToSign =
+          TransactionSignatureSerializer.hashForSignature(utx,
+                                                          signingInfo,
+                                                          HashType.sigHashAll)
+
+        (outcome, utx, fundingKey.adaptorSign(adaptorPoint, hashToSign.bytes))
+      }
+    }
+  }
+
+  /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
+  def createRemoteCETSigs(outcomes: Vector[OracleOutcome]): Future[
+    Vector[(OracleOutcome, ECAdaptorSignature)]] = {
+    createRemoteCETsAndSigs(outcomes).map(_.map { case (outcome, _, sig) =>
+      outcome -> sig
+    })
+  }
+
+  /** Signs remote's Contract Execution Transaction (CET) for a given outcomes and their corresponding CETs */
+  def createRemoteSigsGivenCETs(
+      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)]): Future[
+    Vector[(OracleOutcome, ECAdaptorSignature)]] = {
+    for {
+      signingInfo <- cetSigningInfo
+    } yield {
+      outcomesAndCETs.map { case (outcome, utx) =>
+        val adaptorPoint = outcome.sigPoint
+        val hashToSign =
+          TransactionSignatureSerializer.hashForSignature(utx,
+                                                          signingInfo,
+                                                          HashType.sigHashAll)
+
+        outcome -> fundingKey.adaptorSign(adaptorPoint, hashToSign.bytes)
+      }
     }
   }
 
@@ -273,14 +338,30 @@ case class DLCTxSigner(
 
   /** Creates all of this party's CETSignatures */
   def createCETSigs(): Future[CETSignatures] = {
-    val cetSigFs = builder.contractInfo.allOutcomes.map { msg =>
-      // Need to wrap in another future so they are all started at once
-      // and do not block each other
-      Future(createRemoteCETSig(msg).map(msg -> _)).flatten
-    }
-
     for {
-      cetSigs <- Future.sequence(cetSigFs)
+      cetSigs <- createRemoteCETSigs(builder.contractInfo.allOutcomes)
+      refundSig <- createRefundSig()
+    } yield CETSignatures(cetSigs, refundSig)
+  }
+
+  /** Creates all of this party's CETSignatures */
+  def createCETsAndSigs(): Future[
+    (CETSignatures, Vector[WitnessTransaction])] = {
+    for {
+      cetsAndSigs <- createRemoteCETsAndSigs(builder.contractInfo.allOutcomes)
+      refundSig <- createRefundSig()
+    } yield {
+      val (msgs, cets, sigs) = cetsAndSigs.unzip3
+      (CETSignatures(msgs.zip(sigs), refundSig), cets)
+    }
+  }
+
+  /** Creates this party's CETSignatures given the outcomes and their unsigned CETs */
+  def createCETSigs(
+      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)]): Future[
+    CETSignatures] = {
+    for {
+      cetSigs <- createRemoteSigsGivenCETs(outcomesAndCETs)
       refundSig <- createRefundSig()
     } yield CETSignatures(cetSigs, refundSig)
   }

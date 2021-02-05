@@ -1370,7 +1370,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                   case None => throw new RuntimeException("")
                 }
               }
-          executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs))
+          executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs), None)
         }
 
         setupF.map((executor, _))
