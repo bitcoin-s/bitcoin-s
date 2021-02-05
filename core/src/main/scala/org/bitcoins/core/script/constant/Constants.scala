@@ -174,12 +174,11 @@ object ScriptNumber
       ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
 
     def apply(underlying: Long): ScriptNumber = {
-      ScriptNumberImpl(
-        underlying,
-        BytesUtil.decodeHex(ScriptNumberUtil.longToHex(underlying)))
+      ScriptNumberImpl(underlying,
+                       ScriptNumberUtil.longToByteVector(underlying))
     }
 
-    def apply(int64: Int64): ScriptNumber = ScriptNumberImpl(int64.toLong)
+    def apply(int64: Int64): ScriptNumber = checkCached(int64.toLong)
   }
 
 }
