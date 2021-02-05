@@ -1213,8 +1213,8 @@ object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
     * [[https://github.com/bitcoin/bitcoin/blob/449f9b8debcceb61a92043bc7031528a53627c47/src/script/script.cpp#L215-L229]]
     */
   def isValid(asm: Seq[ScriptToken]): Boolean = {
-    WitnessScriptPubKey.isWitnessScriptPubKey(asm) && asm.headOption.contains(
-      OP_0)
+    asm.headOption.contains(OP_0) && WitnessScriptPubKey.isWitnessScriptPubKey(
+      asm)
   }
 
   def apply(asm: Seq[ScriptToken]): WitnessScriptPubKeyV0 = fromAsm(asm)
@@ -1256,8 +1256,8 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
 
   def isValid(asm: Seq[ScriptToken]): Boolean = {
     val asmBytes = BytesUtil.toByteVector(asm)
-    WitnessScriptPubKeyV0.isValid(asm) &&
-    asmBytes.size == 22
+    asmBytes.size == 22 && WitnessScriptPubKeyV0.isValid(asm)
+
   }
 
   def fromHash(hash: Sha256Hash160Digest): P2WPKHWitnessSPKV0 = {
