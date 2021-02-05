@@ -17,15 +17,16 @@ class TxSigComponentTest extends BitcoinSUnitTest {
 
   it should "correctly construct P2SHTxSigComponent" in {
     val p2shNoNest = P2SHScriptPubKey(EmptyScriptPubKey)
-
+    val pubKey = ECPublicKey.freshPublicKey
     val btx = BaseTransaction(
       TransactionConstants.validLockVersion,
       Vector(
         TransactionInput(
           TransactionOutPoint(DoubleSha256Digest.empty, UInt32.zero),
-          P2SHScriptSignature(ConditionalScriptSignature(EmptyScriptSignature,
-                                                         condition = true),
-                              EmptyScriptPubKey),
+          P2SHScriptSignature(scriptSig =
+                                ConditionalScriptSignature(EmptyScriptSignature,
+                                                           condition = true),
+                              redeemScript = P2WPKHWitnessSPKV0(pubKey)),
           TransactionConstants.sequence
         )),
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey)),

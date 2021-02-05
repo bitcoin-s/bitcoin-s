@@ -45,10 +45,11 @@ object NonStandardScriptSignature
   def fromAsm(asm: Seq[ScriptToken]): NonStandardScriptSignature = {
     buildScript(asm = asm.toVector,
                 constructor = NonStandardScriptSignatureImpl(_),
-                invariant = { _ =>
-                  true
-                },
                 errorMsg = "")
+  }
+
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
+    true
   }
 }
 
@@ -61,7 +62,7 @@ case object TrivialTrueScriptSignature extends ScriptSignature {
   override lazy val asm: Vector[ScriptToken] =
     Vector(OP_TRUE)
 
-  def isTrivialTrueScriptSignature(asm: Seq[ScriptToken]): Boolean = {
+  def isValid(asm: Seq[ScriptToken]): Boolean = {
     asm == this.asm
   }
 }
@@ -97,7 +98,6 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
     buildScript(
       asm = asm.toVector,
       constructor = P2PKHScriptSignatureImpl(_),
-      invariant = isP2PKHScriptSig(_),
       errorMsg = s"Given asm was not a P2PKHScriptSignature, got: $asm"
     )
   }
@@ -119,7 +119,7 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
   }
 
   /** Determines if the given asm matches a [[P2PKHScriptSignature]] */
-  def isP2PKHScriptSig(asm: Seq[ScriptToken]): Boolean =
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean =
     asm match {
       case Seq(_: BytesToPushOntoStack,
                maybeSig: ScriptConstant,
@@ -148,7 +148,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
       EmptyScriptPubKey
     } else if (
       scriptSig == EmptyScriptSignature &&
-      WitnessScriptPubKey.isWitnessScriptPubKey(asm.tail)
+      WitnessScriptPubKey.isValidAsm(asm.tail)
     ) {
       //if we have an EmptyScriptSignature, we need to check if the rest of the asm
       //is a Witness script. It is not necessarily a witness script, since this code
@@ -163,7 +163,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
   /** Returns the script signature of this p2shScriptSig with no serialized redeemScript */
   def scriptSignatureNoRedeemScript: ScriptSignature = {
     //witness scriptPubKeys always have EmptyScriptSigs
-    if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) {
+    if (WitnessScriptPubKey.isValidAsm(asm)) {
       EmptyScriptSignature
     } else {
       val asmWithoutRedeemScriptAndPushOp: Try[Seq[ScriptToken]] = Try {
@@ -222,23 +222,33 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
     P2SHScriptSignature(EmptyScriptSignature, witnessScriptPubKey)
   }
 
-  def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
+  override def buildScript(
+      asm: Vector[ScriptToken],
+      constructor: Vector[ScriptToken] => P2SHScriptSignature,
+      errorMsg: String): P2SHScriptSignature = {
     //everything can be a P2SHScriptSignature, thus passing the trivially true function
     //the most important thing to note is we cannot have a P2SHScriptSignature unless
     //we have a P2SHScriptPubKey
     //previously P2SHScriptSignature's redeem script had to be standard scriptPubKey's, this
     //was removed in 0.11 or 0.12 of Bitcoin Core
+    constructor(asm)
+  }
+
+  def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
     buildScript(asm = asm.toVector,
                 constructor = P2SHScriptSignatureImpl(_),
-                invariant = { _ =>
-                  true
-                },
                 errorMsg =
                   s"Given asm tokens are not a p2sh scriptSig, got: $asm")
   }
 
   /** Tests if the given asm tokens are a [[P2SHScriptSignature]] */
-  def isP2SHScriptSig(asm: Seq[ScriptToken]): Boolean = {
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
+    //as noted above, techinically _anything_ can be a p2sh scriptsig
+    //this applies basic checks to see if it's a standard redeemScript
+    //rather than a non standard redeeScript.
+
+    //this will return false if the redeemScript is not a
+    //supported scriptpubkey type in our library
     asm.size > 1 && isRedeemScript(asm.last)
   }
 
@@ -323,7 +333,6 @@ object MultiSignatureScriptSignature
     buildScript(
       asm = asm.toVector,
       constructor = MultiSignatureScriptSignatureImpl(_),
-      invariant = isMultiSignatureScriptSignature(_),
       errorMsg =
         s"The given asm tokens were not a multisignature script sig: $asm"
     )
@@ -335,7 +344,7 @@ object MultiSignatureScriptSignature
     * @param asm the asm to check if it falls in the multisignature script sig format
     * @return boolean indicating if the scriptsignature is a multisignature script signature
     */
-  def isMultiSignatureScriptSignature(asm: Seq[ScriptToken]): Boolean =
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean =
     asm.isEmpty match {
       case true => false
       //case false if (asm.size == 1) => false
@@ -394,12 +403,11 @@ object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
   def fromAsm(asm: Seq[ScriptToken]): P2PKScriptSignature = {
     buildScript(asm.toVector,
                 P2PKScriptSignatureImpl(_),
-                isP2PKScriptSignature(_),
                 "The given asm tokens were not a p2pk script sig: " + asm)
   }
 
   /** P2PK scriptSigs always have the pattern [pushop, digitalSignature] */
-  def isP2PKScriptSignature(asm: Seq[ScriptToken]): Boolean =
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean =
     asm match {
       case Seq(_: BytesToPushOntoStack, _: ScriptConstant) => true
       case _                                               => false
@@ -413,7 +421,6 @@ object P2PKWithTimeoutScriptSignature
     buildScript(
       asm.toVector,
       ConditionalScriptSignature.fromAsm,
-      isP2PKWithTimeoutScriptSignature,
       s"The given asm tokens were not a P2PKWithTimeoutScriptSignature, got $asm"
     )
   }
@@ -424,10 +431,10 @@ object P2PKWithTimeoutScriptSignature
     ConditionalScriptSignature(P2PKScriptSignature(signature), beforeTimeout)
   }
 
-  def isP2PKWithTimeoutScriptSignature(asm: Seq[ScriptToken]): Boolean = {
-    P2PKScriptSignature.isP2PKScriptSignature(
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
+    P2PKScriptSignature.isValidAsm(
       asm.dropRight(1)) && ConditionalScriptSignature
-      .isValidConditionalScriptSig(asm)
+      .isValidAsm(asm)
   }
 }
 
@@ -455,9 +462,6 @@ object CLTVScriptSignature extends ScriptFactory[CLTVScriptSignature] {
   override def fromAsm(asm: Seq[ScriptToken]): CLTVScriptSignature = {
     buildScript(asm = asm.toVector,
                 constructor = CLTVScriptSignatureImpl(_),
-                invariant = { _ =>
-                  true
-                },
                 errorMsg = s"Given asm was not a CLTVScriptSignature $asm")
   }
 
@@ -467,6 +471,10 @@ object CLTVScriptSignature extends ScriptFactory[CLTVScriptSignature] {
 
   def apply(scriptSig: ScriptSignature): CLTVScriptSignature = {
     fromHex(scriptSig.hex)
+  }
+
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
+    true
   }
 }
 
@@ -483,9 +491,6 @@ object CSVScriptSignature extends ScriptFactory[CSVScriptSignature] {
   override def fromAsm(asm: Seq[ScriptToken]): CSVScriptSignature = {
     buildScript(asm = asm.toVector,
                 constructor = CSVScriptSignatureImpl(_),
-                invariant = { _ =>
-                  true
-                },
                 errorMsg = s"Given asm was not a CLTVScriptSignature $asm")
   }
 
@@ -496,11 +501,13 @@ object CSVScriptSignature extends ScriptFactory[CSVScriptSignature] {
   def apply(scriptSig: ScriptSignature): CSVScriptSignature = {
     fromHex(scriptSig.hex)
   }
+
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = true
 }
 
 /** ScriptSignature for both OP_IF and OP_NOTIF ScriptPubKeys */
 sealed trait ConditionalScriptSignature extends ScriptSignature {
-  require(ConditionalScriptSignature.isValidConditionalScriptSig(asm),
+  require(ConditionalScriptSignature.isValidAsm(asm),
           "ConditionalScriptSignature must end in true or false")
 
   def isTrue: Boolean = {
@@ -535,7 +542,6 @@ object ConditionalScriptSignature
   override def fromAsm(asm: Seq[ScriptToken]): ConditionalScriptSignature = {
     buildScript(asm.toVector,
                 ConditionalScriptSignatureImpl.apply,
-                isValidConditionalScriptSig,
                 s"Given asm was not a ConditionalScriptSignature: $asm")
   }
 
@@ -573,7 +579,7 @@ object ConditionalScriptSignature
     }
   }
 
-  def isValidConditionalScriptSig(asm: Seq[ScriptToken]): Boolean = {
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     asm.lastOption.exists(Vector(OP_0, OP_FALSE, OP_1, OP_TRUE).contains)
   }
 }
@@ -593,22 +599,20 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
   def fromAsm(tokens: Seq[ScriptToken]): ScriptSignature =
     tokens match {
       case Nil => EmptyScriptSignature
-      case _
-          if TrivialTrueScriptSignature.isTrivialTrueScriptSignature(tokens) =>
+      case _ if TrivialTrueScriptSignature.isValid(tokens) =>
         TrivialTrueScriptSignature
-      case _ if P2SHScriptSignature.isP2SHScriptSig(tokens) =>
+      case _ if P2SHScriptSignature.isValidAsm(tokens) =>
         P2SHScriptSignature.fromAsm(tokens)
-      case _
-          if ConditionalScriptSignature.isValidConditionalScriptSig(tokens) =>
+      case _ if ConditionalScriptSignature.isValidAsm(tokens) =>
         ConditionalScriptSignature.fromAsm(tokens)
-      case _
-          if MultiSignatureScriptSignature.isMultiSignatureScriptSignature(
-            tokens) =>
+      case _ if MultiSignatureScriptSignature.isValidAsm(tokens) =>
         MultiSignatureScriptSignature.fromAsm(tokens)
-      case _ if P2PKHScriptSignature.isP2PKHScriptSig(tokens) =>
+      case _ if P2PKHScriptSignature.isValidAsm(tokens) =>
         P2PKHScriptSignature.fromAsm(tokens)
-      case _ if P2PKScriptSignature.isP2PKScriptSignature(tokens) =>
+      case _ if P2PKScriptSignature.isValidAsm(tokens) =>
         P2PKScriptSignature.fromAsm(tokens)
       case _ => NonStandardScriptSignature.fromAsm(tokens)
     }
+
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = true
 }

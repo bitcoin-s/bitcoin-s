@@ -278,12 +278,11 @@ case class PSBT(
         val out = tx.outputs(txIn.previousOutput.vout.toInt)
 
         val outIsWitnessScript =
-          WitnessScriptPubKey.isWitnessScriptPubKey(out.scriptPubKey.asm)
+          WitnessScriptPubKey.isValidAsm(out.scriptPubKey.asm)
         val hasWitScript = inputMap.witnessScriptOpt.isDefined
         val hasWitRedeemScript =
           inputMap.redeemScriptOpt.isDefined && WitnessScriptPubKey
-            .isWitnessScriptPubKey(
-              inputMap.redeemScriptOpt.get.redeemScript.asm)
+            .isValidAsm(inputMap.redeemScriptOpt.get.redeemScript.asm)
         val notBIP143Vulnerable = {
           !out.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV0] && !(
             hasWitRedeemScript &&
@@ -317,7 +316,7 @@ case class PSBT(
     * @return PSBT with added tx
     */
   def addWitnessUTXOToInput(output: TransactionOutput, index: Int): PSBT = {
-    require(WitnessScriptPubKey.isWitnessScriptPubKey(output.scriptPubKey.asm),
+    require(WitnessScriptPubKey.isValidAsm(output.scriptPubKey.asm),
             s"Given output was not a Witness UTXO: $output")
     require(
       index < inputMaps.size,
@@ -351,10 +350,10 @@ case class PSBT(
 
     val inputMap = inputMaps(index)
 
-    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
+    val isWitScript = WitnessScriptPubKey.isValidAsm(script.asm)
     val redeemScriptOpt = inputMap.redeemScriptOpt
     val hasRedeemScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
-      .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
+      .isValidAsm(redeemScriptOpt.get.redeemScript.asm)
 
     val elements = if (!isWitScript && hasRedeemScript) {
       inputMap.filterRecords(WitnessScriptKeyId) :+ InputPSBTRecord
@@ -487,9 +486,9 @@ case class PSBT(
 
     val outputMap = outputMaps(index)
     val redeemScriptOpt = outputMap.redeemScriptOpt.map(_.redeemScript)
-    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
+    val isWitScript = WitnessScriptPubKey.isValidAsm(script.asm)
     val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
-      .isWitnessScriptPubKey(redeemScriptOpt.get.asm)
+      .isValidAsm(redeemScriptOpt.get.asm)
 
     val newElement =
       if (!isWitScript && hasWitScript)
