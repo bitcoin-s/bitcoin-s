@@ -234,7 +234,7 @@ object BitcoindRpcClient {
 
   /** Creates an RPC client from the given instance,
     * together with the given actor system. This is for
-    * advanced users, wher you need fine grained control
+    * advanced users, where you need fine grained control
     * over the RPC client.
     */
   def withActorSystem(instance: BitcoindInstance)(implicit

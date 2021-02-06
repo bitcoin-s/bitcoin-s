@@ -272,7 +272,7 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
 
   /** Performs the given arithmetic operation on the stack head
     * @param program the program whose stack top is used as an argument for the arithmetic operation
-    * @param op the arithmetic ooperation that needs to be executed on the number, for instance incrementing by 1
+    * @param op the arithmetic operation that needs to be executed on the number, for instance incrementing by 1
     * @return the program with the result from performing the arithmetic operation pushed onto the top of the stack
     */
   @tailrec
@@ -328,7 +328,7 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
 
   /** Performs the given arithmetic operation on the top two stack items
     * @param program the program whose stack top is used as an argument for the arithmetic operation
-    * @param op the arithmetic ooperation that needs to be executed on the number, for instance incrementing by 1
+    * @param op the arithmetic operation that needs to be executed on the number, for instance incrementing by 1
     * @return the program with the result from performing the arithmetic operation pushed onto the top of the stack
     */
   @tailrec
