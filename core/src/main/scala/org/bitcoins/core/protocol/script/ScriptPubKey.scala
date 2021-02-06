@@ -1247,7 +1247,7 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
 
   def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     val asmBytes = BytesUtil.toByteVector(asm)
-    asmBytes.size == 22 && WitnessScriptPubKeyV0.isValid(asm)
+    asmBytes.size == 22 && WitnessScriptPubKeyV0.isValidAsm(asm)
   }
 
   def fromHash(hash: Sha256Hash160Digest): P2WPKHWitnessSPKV0 = {
