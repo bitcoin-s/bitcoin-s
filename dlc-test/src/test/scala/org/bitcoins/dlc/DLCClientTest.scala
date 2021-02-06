@@ -126,16 +126,27 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
                                                outcomeIndex,
                                                paramsOpt)
 
+          val offerOutcomeAssertionF = dlcOffer
+            .executeDLC(offerSetup, Future.successful(oracleSigs))
+            .map { offerOutcome =>
+              validateOutcome(offerOutcome, dlcOffer, dlcAccept)
+              offerOutcome
+            }
+
+          val acceptOutcomeAssertionF = dlcAccept
+            .executeDLC(acceptSetup, Future.successful(oracleSigs))
+            .map { acceptOutcome =>
+              validateOutcome(acceptOutcome, dlcOffer, dlcAccept)
+              acceptOutcome
+            }
+
           for {
             offerOutcome <-
-              dlcOffer.executeDLC(offerSetup, Future.successful(oracleSigs))
+              offerOutcomeAssertionF
             acceptOutcome <-
-              dlcAccept.executeDLC(acceptSetup, Future.successful(oracleSigs))
+              acceptOutcomeAssertionF
           } yield {
             assert(offerOutcome.fundingTx == acceptOutcome.fundingTx)
-
-            validateOutcome(offerOutcome, dlcOffer, dlcAccept)
-            validateOutcome(acceptOutcome, dlcOffer, dlcAccept)
           }
       }
   }
