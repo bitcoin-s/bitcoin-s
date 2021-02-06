@@ -341,7 +341,6 @@ object P2PKWithTimeoutScriptPubKey
     buildScript(
       asm = asm.toVector,
       constructor = P2PKWithTimeoutScriptPubKeyImpl.apply,
-      invariant = isP2PKWithTimeoutScriptPubKey,
       errorMsg = s"Given asm was not a P2PKWithTimeoutScriptPubKey, got $asm"
     )
   }
@@ -368,7 +367,7 @@ object P2PKWithTimeoutScriptPubKey
     )
   }
 
-  def isP2PKWithTimeoutScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     if (asm.length == 12) {
       val pubKey = ECPublicKey.fromBytes(asm(2).bytes)
       val lockTimeTry = Try(ScriptNumber.fromBytes(asm(5).bytes))
@@ -393,7 +392,7 @@ We now need to ensure that `ScriptPubKey.fromAsm(p2pkWithTimeoutSPK.asm)` return
 ```scala mdoc:compile-only
 asm match {
     case Nil => EmptyScriptPubKey
-    case _ if P2PKWithTimeoutScriptPubKey.isP2PKWithTimeoutScriptPubKey(asm) =>
+    case _ if P2PKWithTimeoutScriptPubKey.isValidAsm(asm) =>
       P2PKWithTimeoutScriptPubKey.fromAsm(asm)
     //...
 }
@@ -430,7 +429,6 @@ object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
   def fromAsm(asm: Seq[ScriptToken]): P2PKScriptSignature = {
     buildScript(asm.toVector,
                 P2PKScriptSignatureImpl(_),
-                isP2PKScriptSignature(_),
                 "The given asm tokens were not a p2pk script sig: " + asm)
   }
 
@@ -442,7 +440,7 @@ object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
   }
 
   /** P2PK scriptSigs always have the pattern [pushop, digitalSignature] */
-  def isP2PKScriptSignature(asm: Seq[ScriptToken]): Boolean = asm match {
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = asm match {
     case Seq(_: BytesToPushOntoStack, _: ScriptConstant) => true
     case _                                               => false
   }
@@ -464,7 +462,6 @@ object P2PKWithTimeoutScriptSignature
     buildScript(
       asm.toVector,
       ConditionalScriptSignature.fromAsm,
-      isP2PKWithTimeoutScriptSignature,
       s"The given asm tokens were not a P2PKWithTimeoutScriptSignature, got $asm"
     )
   }
@@ -475,9 +472,9 @@ object P2PKWithTimeoutScriptSignature
     ConditionalScriptSignature(P2PKScriptSignature(signature), beforeTimeout)
   }
 
-  def isP2PKWithTimeoutScriptSignature(asm: Seq[ScriptToken]): Boolean = {
-    P2PKScriptSignature.isP2PKScriptSignature(asm.dropRight(1)) && ConditionalScriptSignature
-      .isValidConditionalScriptSig(asm)
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
+    P2PKScriptSignature.isValidAsm(asm.dropRight(1)) && ConditionalScriptSignature
+      .isValidAsm(asm)
   }
 }
 ```
@@ -491,7 +488,7 @@ If you added a new `ScriptSignature` type in the previous step, you must add a `
 ```scala mdoc:compile-only
 tokens match {
   //...
-  case _ if P2PKScriptSignature.isP2PKScriptSignature(tokens) =>
+  case _ if P2PKScriptSignature.isValidAsm(tokens) =>
       P2PKScriptSignature.fromAsm(tokens)
   //...
 }

@@ -184,10 +184,7 @@ object TxSigComponent {
         }
       case _: P2SHScriptPubKey =>
         val p2shScriptSig = scriptSig.asInstanceOf[P2SHScriptSignature]
-        if (
-          WitnessScriptPubKey.isWitnessScriptPubKey(
-            p2shScriptSig.redeemScript.asm)
-        ) {
+        if (WitnessScriptPubKey.isValidAsm(p2shScriptSig.redeemScript.asm)) {
           transaction match {
             case _: NonWitnessTransaction =>
               throw new IllegalArgumentException(

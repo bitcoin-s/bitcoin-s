@@ -14,9 +14,8 @@ trait ScriptFactory[T <: Script] extends Factory[T] {
   def buildScript(
       asm: Vector[ScriptToken],
       constructor: Vector[ScriptToken] => T,
-      invariant: Seq[ScriptToken] => Boolean,
       errorMsg: String): T = {
-    if (invariant(asm)) {
+    if (isValidAsm(asm)) {
       constructor(asm)
     } else throw new IllegalArgumentException(errorMsg)
   }
@@ -47,4 +46,7 @@ trait ScriptFactory[T <: Script] extends Factory[T] {
   def fromAsmHex(hex: String): T = {
     fromAsmBytes(BytesUtil.decodeHex(hex))
   }
+
+  /** Determines if the given asm is a valid T */
+  def isValidAsm(asm: Seq[ScriptToken]): Boolean
 }
