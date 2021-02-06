@@ -14,9 +14,7 @@ class MultiSignatureScriptSignatureTest extends BitcoinSUnitTest {
   }
 
   it must "Fail validation if asm is empty" in {
-    assert(
-      !MultiSignatureScriptSignature.isMultiSignatureScriptSignature(
-        Vector.empty))
+    assert(!MultiSignatureScriptSignature.isValidAsm(Vector.empty))
   }
 
 }

@@ -60,7 +60,7 @@ case class UTXORecord(
                            blockHash = blockHash)
 
       case (path: NestedSegWitHDPath, Some(redeemScript), Some(scriptWitness))
-          if WitnessScriptPubKey.isWitnessScriptPubKey(redeemScript.asm) =>
+          if WitnessScriptPubKey.isValidAsm(redeemScript.asm) =>
         NestedSegwitV0SpendingInfo(outpoint,
                                    TransactionOutput(value, scriptPubKey),
                                    path,
