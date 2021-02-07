@@ -321,8 +321,8 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
       BitcoinScriptUtil.removeSignaturesFromScript(signatures,
                                                    p2shScriptSig.asm)
     val sigExists =
-      signatures.map(sig => asmWithoutSigs.exists(_ == ScriptConstant(sig.hex)))
-    sigExists.exists(_ == true) must be(false)
+      signatures.map(sig => asmWithoutSigs.contains(ScriptConstant(sig.hex)))
+    sigExists.contains(true) must be(false)
   }
 
   it must "cast a script token to a boolean value" in {

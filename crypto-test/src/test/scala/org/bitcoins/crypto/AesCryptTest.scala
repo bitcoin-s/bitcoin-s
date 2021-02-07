@@ -26,7 +26,7 @@ class AesCryptTest extends BitcoinSUnitTest {
     *
     * Here's a link to the first test vector:
     * https://gchq.github.io/CyberChef/#recipe=AES_Encrypt(%7B'option':'Hex','string':'2eefdf6ee2dbca83e7b7648a8f9d1897'%7D,%7B'option':'Hex','string':'889dc64377f6d993ef713c995f9c1ee5'%7D,'CFB','Hex','Hex')&input=NzZmZTM1ODgwMDU1ZTFmYWM5NTBmNDg0YTgxNWNkMjI
-    * The other vectors can be repliacted by tweaking the values
+    * The other vectors can be replicated by tweaking the values
     * in the UI.
     */
   it must "decrypt and encrypt some hard coded test vectors" in {

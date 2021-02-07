@@ -349,7 +349,7 @@ object PartialMerkleTree {
     //require(remainingBits.isEmpty, s"Remainging bits should be empty, got ${remainingBits}")
     //we must have used all the hashes provided to us to reconstruct the partial merkle tree as per BIP37
     require(
-      remainingHashes.size == 0,
+      remainingHashes.isEmpty,
       "We should not have any left over hashes after building our partial merkle tree, got: " + remainingHashes)
     //we must not have any matches remaining, unless the remaining bits were use to pad our byte vector to 8 bits
     //for instance, we could have had 5 bits to indicate how to build the merkle tree, but we need to pad it with 3 bits

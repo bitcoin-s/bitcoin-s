@@ -42,7 +42,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
   it must "mark the transaction as invalid if the stack top is negative" in {
     val stack = Seq(ScriptNumber(-1))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val oldInput = TestUtil.transaction.inputs(0)
+    val oldInput = TestUtil.transaction.inputs.head
     val txInputAdjustedSequenceNumber =
       TransactionInput(oldInput.previousOutput,
                        oldInput.scriptSignature,
@@ -75,7 +75,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
   it must "mark the transaction as invalid if the locktime on the tx is < 500000000 && stack top is >= 500000000" in {
     val stack = Seq(ScriptNumber(500000000))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val oldInput = TestUtil.transaction.inputs(0)
+    val oldInput = TestUtil.transaction.inputs.head
     val txInputAdjustedSequenceNumber =
       TransactionInput(oldInput.previousOutput,
                        oldInput.scriptSignature,
@@ -101,7 +101,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
   it must "mark the transaction as invalid if the locktime on the tx is >= 500000000 && stack top is < 500000000" in {
     val stack = Seq(ScriptNumber(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val oldInput = TestUtil.transaction.inputs(0)
+    val oldInput = TestUtil.transaction.inputs.head
     val txInputAdjustedSequenceNumber =
       TransactionInput(oldInput.previousOutput,
                        oldInput.scriptSignature,
@@ -127,7 +127,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
   it must "mark the transaction as invalid if the stack top item is greater than the tx locktime" in {
     val stack = Seq(ScriptNumber(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val oldInput = TestUtil.transaction.inputs(0)
+    val oldInput = TestUtil.transaction.inputs.head
     val txInputAdjustedSequenceNumber =
       TransactionInput(oldInput.previousOutput,
                        oldInput.scriptSignature,
@@ -157,7 +157,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
   it must "mark the transaction as valid if the locktime on the tx is < 500000000 && stack top is < 500000000" in {
     val stack = Seq(ScriptNumber(0))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val oldInput = TestUtil.transaction.inputs(0)
+    val oldInput = TestUtil.transaction.inputs.head
     val txInputAdjustedSequenceNumber =
       TransactionInput(oldInput.previousOutput,
                        oldInput.scriptSignature,
@@ -185,7 +185,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
   it must "mark the transaction as valid if the locktime on the tx is >= 500000000 && stack top is >= 500000000" in {
     val stack = Seq(ScriptNumber(500000000))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val oldInput = TestUtil.transaction.inputs(0)
+    val oldInput = TestUtil.transaction.inputs.head
     val txInputAdjustedSequenceNumber =
       TransactionInput(oldInput.previousOutput,
                        oldInput.scriptSignature,

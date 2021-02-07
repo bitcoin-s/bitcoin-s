@@ -156,7 +156,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
     blockHeaderDAO: BlockHeaderDAO =>
       val chainTipsF = blockHeaderDAO.getBestChainTips
       chainTipsF.map { tips =>
-        assert(tips.headOption == Some(genesisHeaderDb))
+        assert(tips.headOption.contains(genesisHeaderDb))
       }
   }
 

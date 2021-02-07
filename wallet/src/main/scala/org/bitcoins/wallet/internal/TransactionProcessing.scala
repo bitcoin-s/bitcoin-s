@@ -215,7 +215,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       }
 
       processed <- FutureUtil.sequentially(outputsToUse)(markAsPendingSpent)
-    } yield processed.flatten.toVector
+    } yield processed.flatten
 
   }
 

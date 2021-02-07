@@ -190,7 +190,7 @@ case class BitcoindConfig(
     } yield result
   }
 
-  /** Searches the config for a key matchinng the provided
+  /** Searches the config for a key matching the provided
     * string that's _not_ in a section header or prefixed
     * by a network.
     */

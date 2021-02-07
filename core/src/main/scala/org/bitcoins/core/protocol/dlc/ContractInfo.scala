@@ -120,7 +120,7 @@ case class ContractInfo(
           .flatMap { oracles =>
             vec.map { case MultiOracleOutcome(digitsVec, amt) =>
               val outcomesVec =
-                digitsVec.toVector.map(UnsignedNumericOutcome.apply)
+                digitsVec.map(UnsignedNumericOutcome.apply)
               (NumericOracleOutcome(oracles.zip(outcomesVec)), amt)
             }
           }

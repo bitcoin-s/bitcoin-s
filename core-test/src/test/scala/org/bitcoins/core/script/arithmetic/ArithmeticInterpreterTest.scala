@@ -53,7 +53,7 @@ class ArithmeticInterpreterTest extends BitcoinSUnitTest {
 
   }
 
-  it must "perform an OP_1SUB corectly" in {
+  it must "perform an OP_1SUB correctly" in {
     val stack = List(ScriptNumber.zero)
     val script = List(OP_1SUB)
     val program =
@@ -77,7 +77,7 @@ class ArithmeticInterpreterTest extends BitcoinSUnitTest {
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
   }
 
-  it must "perform an OP_SUB corectly" in {
+  it must "perform an OP_SUB correctly" in {
     val stack = List(ScriptNumber.one, ScriptNumber.zero)
     val script = List(OP_SUB)
     val program =
@@ -100,7 +100,7 @@ class ArithmeticInterpreterTest extends BitcoinSUnitTest {
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
   }
 
-  it must "perform an OP_ABS on a negative number corectly" in {
+  it must "perform an OP_ABS on a negative number correctly" in {
     val stack = List(ScriptNumber(-1))
     val script = List(OP_ABS)
     val program =
@@ -299,7 +299,7 @@ class ArithmeticInterpreterTest extends BitcoinSUnitTest {
     newProgram.script.isEmpty must be(true)
   }
 
-  it must "evaulate an OP_NUMEQUAL for two zeros" in {
+  it must "evaluate an OP_NUMEQUAL for two zeros" in {
     val stack = List(ScriptNumber.zero, ScriptNumber.zero)
     val script = List(OP_NUMEQUAL)
     val program =

@@ -133,7 +133,7 @@ If you're looking to set up a DLC Oracle instead go to the [oracle server docs](
 
 We are finally ready to start running some programs! Follow the [instructions here](applications/server.md#building-the-server) to build the server. Then, follow [these instructions](applications/cli.md) to setup the CLI.
 
-There are 2 ways to use the bitcoin-s server. It can either can be as a neutrino node or use bitcoind as a backend.
+There are 2 ways to use the bitcoin-s server. It can either be as a neutrino node or use bitcoind as a backend.
 This can be configured by the configuration option `bitcoin-s.node.mode` choosing either `neutrino` or `bitcoind`.
 
 ### Option A: Neutrino Server
@@ -150,7 +150,7 @@ Testnet:
 `bitcoin-s.node.peers = ["neutrino.testnet3.suredbits.com:18333"]`
 
 If you would like to use your own node you can either use the bitcoind backend option or connect to your own compatible node.
-There is no released version of bitcoind that is neutrino compatible so you will either have to compile the latest `master` yourself, or use the experimental version provided by running `sbt downloadBitcoind`. 
+There is no released version of bitcoind that is neutrino compatible, so you will either have to compile the latest `master` yourself, or use the experimental version provided by running `sbt downloadBitcoind`. 
 
 After building your bitcoin-s server, properly configuring it to be in `neutrino` mode you can start your server with:
 

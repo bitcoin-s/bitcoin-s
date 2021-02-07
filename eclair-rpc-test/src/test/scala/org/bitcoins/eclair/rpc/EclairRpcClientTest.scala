@@ -305,7 +305,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           .lnbcrt(Some(12345.msats.toLnCurrencyUnit))
           .toString)
       assert(invoice.network == LnBitcoinRegTest)
-      assert(invoice.amount == Some(123450.pBTC))
+      assert(invoice.amount.contains(123450.pBTC))
       assert(invoice.isValidSignature)
       assert(
         invoice.timestamp > UInt64(1561063731)
@@ -328,7 +328,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           .lnbcrt(Some(12345.msats.toLnCurrencyUnit))
           .toString)
       assert(invoice.network == LnBitcoinRegTest)
-      assert(invoice.amount == Some(123450.pBTC))
+      assert(invoice.amount.contains(123450.pBTC))
       assert(invoice.isValidSignature)
       assert(
         invoice.timestamp > UInt64(1561063731)
@@ -355,7 +355,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           .lnbcrt(Some(123450.pBTC))
           .toString)
       assert(invoice.network == LnBitcoinRegTest)
-      assert(invoice.amount == Some(123450.pBTC))
+      assert(invoice.amount.contains(123450.pBTC))
       assert(invoice.isValidSignature)
       assert(
         invoice.timestamp > UInt64(1561063731)
@@ -385,7 +385,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           .lnbcrt(Some(12345.msats.toLnCurrencyUnit))
           .toString)
       assert(invoice.network == LnBitcoinRegTest)
-      assert(invoice.amount == Some(123450.pBTC))
+      assert(invoice.amount.contains(123450.pBTC))
       assert(invoice.isValidSignature)
       assert(
         invoice.timestamp > UInt64(1561063731)

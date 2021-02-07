@@ -160,7 +160,7 @@ case class AddressTagDAO()(implicit
           spks.map(spk => BitcoinAddress.fromScriptPubKey(spk, network))
 
         val findByAddressFs = addresses.map(address => findByAddress(address))
-        FutureUtil.collect(findByAddressFs).map(_.toVector.flatten)
+        FutureUtil.collect(findByAddressFs).map(_.flatten)
       }
     }
   }

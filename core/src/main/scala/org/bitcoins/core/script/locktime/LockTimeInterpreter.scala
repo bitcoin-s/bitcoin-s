@@ -38,7 +38,7 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
     val input = program.txSignatureComponent.transaction
       .inputs(program.txSignatureComponent.inputIndex.toInt)
     val transaction = program.txSignatureComponent.transaction
-    if (program.stack.size == 0) {
+    if (program.stack.isEmpty) {
       logger.error(
         "Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because we have no stack items")
       program.failExecution(ScriptErrorInvalidStackOperation)
