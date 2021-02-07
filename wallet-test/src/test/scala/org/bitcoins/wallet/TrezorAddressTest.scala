@@ -254,7 +254,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       accountsWithVectors = {
         assert(accounts.length == testVectors.length)
         val accountsWithVectors = testVectors.map { vec =>
-          assert(accounts.filter(_.hdAccount.index == vec.account).length == 1)
+          assert(accounts.count(_.hdAccount.index == vec.account) == 1)
           accounts.find(_.hdAccount.index == vec.account) match {
             case None =>
               fail(

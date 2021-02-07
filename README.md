@@ -1,7 +1,7 @@
 ![Bitcoin-S logo](website/static/img/bitcoin-s-dark-logo.png)
 [![Build Status](https://github.com/bitcoin-s/bitcoin-s/workflows/Release/badge.svg)](https://github.com/bitcoin-s/bitcoin-s/actions) [![Coverage Status](https://coveralls.io/repos/github/bitcoin-s/bitcoin-s/badge.svg?branch=master)](https://coveralls.io/github/bitcoin-s/bitcoin-s?branch=master) [![Maven Central](https://img.shields.io/badge/Maven%20Central-0.5.0-brightgreen.svg)](https://mvnrepository.com/artifact/org.bitcoin-s) [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/bitcoin-s-core)
 
-Feature rich toolkit for making Bitcoin and Lightning applications
+Feature-rich toolkit for making Bitcoin and Lightning applications
 on the JVM.
 
 For a complete guide on how to get started with Bitcoin-S, see our website at

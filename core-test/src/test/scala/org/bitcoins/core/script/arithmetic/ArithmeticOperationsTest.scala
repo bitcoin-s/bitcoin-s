@@ -6,7 +6,7 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
   */
 class ArithmeticOperationsTest extends BitcoinSUnitTest {
 
-  "ArithmeticOperatoins" must "define OP_1ADD" in {
+  "ArithmeticOperations" must "define OP_1ADD" in {
     OP_1ADD.opCode must be(139)
   }
 
