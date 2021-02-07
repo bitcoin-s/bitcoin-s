@@ -169,7 +169,6 @@
     buildScript(
       asm = asm.toVector,
       constructor = <span class="hljs-type">P2PKWithTimeoutScriptPubKeyImpl</span>.apply,
-      invariant = isP2PKWithTimeoutScriptPubKey,
       errorMsg = <span class="hljs-string">s"Given asm was not a P2PKWithTimeoutScriptPubKey, got <span class="hljs-subst">$asm</span>"</span>
     )
   }
@@ -196,7 +195,7 @@
     )
   }
 
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">isP2PKWithTimeoutScriptPubKey</span></span>(asm: <span class="hljs-type">Seq</span>[<span class="hljs-type">ScriptToken</span>]): <span class="hljs-type">Boolean</span> = {
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">isValidAsm</span></span>(asm: <span class="hljs-type">Seq</span>[<span class="hljs-type">ScriptToken</span>]): <span class="hljs-type">Boolean</span> = {
     <span class="hljs-keyword">if</span> (asm.length == <span class="hljs-number">12</span>) {
       <span class="hljs-keyword">val</span> pubKey = <span class="hljs-type">ECPublicKey</span>.fromBytes(asm(<span class="hljs-number">2</span>).bytes)
       <span class="hljs-keyword">val</span> lockTimeTry = <span class="hljs-type">Try</span>(<span class="hljs-type">ScriptNumber</span>.fromBytes(asm(<span class="hljs-number">5</span>).bytes))
@@ -217,7 +216,7 @@
 <p>We now need to ensure that <code>ScriptPubKey.fromAsm(p2pkWithTimeoutSPK.asm)</code> returns our type. Since <code>P2PKWithTimeoutScriptPubKey extends RawScriptPubKey</code>, this means we must add to <code>RawScriptPubKey.fromAsm</code>. Note that order in this function's <code>match</code> can matter. Since our type is more specific than any other currently existing type, we put our new <code>case</code> at the top:</p>
 <pre><code class="hljs css language-scala">asm <span class="hljs-keyword">match</span> {
     <span class="hljs-keyword">case</span> <span class="hljs-type">Nil</span> =&gt; <span class="hljs-type">EmptyScriptPubKey</span>
-    <span class="hljs-keyword">case</span> _ <span class="hljs-keyword">if</span> <span class="hljs-type">P2PKWithTimeoutScriptPubKey</span>.isP2PKWithTimeoutScriptPubKey(asm) =&gt;
+    <span class="hljs-keyword">case</span> _ <span class="hljs-keyword">if</span> <span class="hljs-type">P2PKWithTimeoutScriptPubKey</span>.isValidAsm(asm) =&gt;
       <span class="hljs-type">P2PKWithTimeoutScriptPubKey</span>.fromAsm(asm)
     <span class="hljs-comment">//...</span>
 }
@@ -250,7 +249,6 @@
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">fromAsm</span></span>(asm: <span class="hljs-type">Seq</span>[<span class="hljs-type">ScriptToken</span>]): <span class="hljs-type">P2PKScriptSignature</span> = {
     buildScript(asm.toVector,
                 <span class="hljs-type">P2PKScriptSignatureImpl</span>(_),
-                isP2PKScriptSignature(_),
                 <span class="hljs-string">"The given asm tokens were not a p2pk script sig: "</span> + asm)
   }
 
@@ -262,7 +260,7 @@
   }
 
   <span class="hljs-comment">/** P2PK scriptSigs always have the pattern [pushop, digitalSignature] */</span>
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">isP2PKScriptSignature</span></span>(asm: <span class="hljs-type">Seq</span>[<span class="hljs-type">ScriptToken</span>]): <span class="hljs-type">Boolean</span> = asm <span class="hljs-keyword">match</span> {
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">isValidAsm</span></span>(asm: <span class="hljs-type">Seq</span>[<span class="hljs-type">ScriptToken</span>]): <span class="hljs-type">Boolean</span> = asm <span class="hljs-keyword">match</span> {
     <span class="hljs-keyword">case</span> <span class="hljs-type">Seq</span>(_: <span class="hljs-type">BytesToPushOntoStack</span>, _: <span class="hljs-type">ScriptConstant</span>) =&gt; <span class="hljs-literal">true</span>
     <span class="hljs-keyword">case</span> _                                               =&gt; <span class="hljs-literal">false</span>
   }
@@ -278,7 +276,6 @@
     buildScript(
       asm.toVector,
       <span class="hljs-type">ConditionalScriptSignature</span>.fromAsm,
-      isP2PKWithTimeoutScriptSignature,
       <span class="hljs-string">s"The given asm tokens were not a P2PKWithTimeoutScriptSignature, got <span class="hljs-subst">$asm</span>"</span>
     )
   }
@@ -289,9 +286,9 @@
     <span class="hljs-type">ConditionalScriptSignature</span>(<span class="hljs-type">P2PKScriptSignature</span>(signature), beforeTimeout)
   }
 
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">isP2PKWithTimeoutScriptSignature</span></span>(asm: <span class="hljs-type">Seq</span>[<span class="hljs-type">ScriptToken</span>]): <span class="hljs-type">Boolean</span> = {
-    <span class="hljs-type">P2PKScriptSignature</span>.isP2PKScriptSignature(asm.dropRight(<span class="hljs-number">1</span>)) &amp;&amp; <span class="hljs-type">ConditionalScriptSignature</span>
-      .isValidConditionalScriptSig(asm)
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">isValidAsm</span></span>(asm: <span class="hljs-type">Seq</span>[<span class="hljs-type">ScriptToken</span>]): <span class="hljs-type">Boolean</span> = {
+    <span class="hljs-type">P2PKScriptSignature</span>.isValidAsm(asm.dropRight(<span class="hljs-number">1</span>)) &amp;&amp; <span class="hljs-type">ConditionalScriptSignature</span>
+      .isValidAsm(asm)
   }
 }
 </code></pre>
@@ -300,7 +297,7 @@
 <p>If you added a new <code>ScriptSignature</code> type in the previous step, you must add a <code>case</code> to the <code>match</code> statement in <code>ScriptSignature.fromAsm</code> at the bottom of <code>ScriptSignature.scala</code>. For <code>P2PKScriptSignature</code> (note that this does not apply to <code>P2PKWithTimeoutScriptSignature</code> since there is no new unique type for this <code>ScriptSignature</code>), this looks like:</p>
 <pre><code class="hljs css language-scala">tokens <span class="hljs-keyword">match</span> {
   <span class="hljs-comment">//...</span>
-  <span class="hljs-keyword">case</span> _ <span class="hljs-keyword">if</span> <span class="hljs-type">P2PKScriptSignature</span>.isP2PKScriptSignature(tokens) =&gt;
+  <span class="hljs-keyword">case</span> _ <span class="hljs-keyword">if</span> <span class="hljs-type">P2PKScriptSignature</span>.isValidAsm(tokens) =&gt;
       <span class="hljs-type">P2PKScriptSignature</span>.fromAsm(tokens)
   <span class="hljs-comment">//...</span>
 }
