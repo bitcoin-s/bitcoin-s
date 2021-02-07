@@ -67,7 +67,7 @@ private[peer] object MerkleBuffers extends P2PLogger {
       logger.trace(
         s"Block=${block.blockHeader.hashBE} has matches=${matches.map(_.flip)}")
 
-      matches.exists(_ == tx.txId)
+      matches.contains(tx.txId)
     } match {
       case None =>
         logger.debug(

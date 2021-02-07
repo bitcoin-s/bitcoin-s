@@ -107,7 +107,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
       txid = DoubleSha256Digest.empty
       result <- client.getMemPoolEntryOpt(txid)
     } yield {
-      assert(result == None)
+      assert(result.isEmpty)
     }
     resultF
   }

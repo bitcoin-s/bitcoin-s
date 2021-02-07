@@ -43,22 +43,22 @@ class ZMQSubscriber(
       val isConnected = subscriber.connect(uri)
 
       if (isConnected) {
-        hashTxListener.map { _ =>
+        hashTxListener.foreach { _ =>
           subscriber.subscribe(HashTx.topic.getBytes(ZMQ.CHARSET))
           logger.debug("subscribed to the transaction hashes from zmq")
         }
 
-        rawTxListener.map { _ =>
+        rawTxListener.foreach { _ =>
           subscriber.subscribe(RawTx.topic.getBytes(ZMQ.CHARSET))
           logger.debug("subscribed to raw transactions from zmq")
         }
 
-        hashBlockListener.map { _ =>
+        hashBlockListener.foreach { _ =>
           subscriber.subscribe(HashBlock.topic.getBytes(ZMQ.CHARSET))
           logger.debug("subscribed to the hashblock stream from zmq")
         }
 
-        rawBlockListener.map { _ =>
+        rawBlockListener.foreach { _ =>
           subscriber.subscribe(RawBlock.topic.getBytes(ZMQ.CHARSET))
           logger.debug("subscribed to raw block stream from zmq")
         }

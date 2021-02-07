@@ -148,7 +148,7 @@ object LnTaggedFields {
           val dataLength = LnUtil.decodeDataLength(dataLengthU5s)
 
           //t is the actual possible payload
-          val payload: Vector[UInt5] = t.take(dataLength.toInt).toVector
+          val payload: Vector[UInt5] = t.take(dataLength.toInt)
 
           val tag = LnTag.fromLnTagPrefix(prefix, payload)
 

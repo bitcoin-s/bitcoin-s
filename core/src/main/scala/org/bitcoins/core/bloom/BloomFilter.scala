@@ -108,7 +108,7 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
     @tailrec
     def loop(remainingBitIndexes: Seq[Int], accum: BitVector): Boolean = {
       if (remainingBitIndexes.isEmpty) {
-        !accum.toIndexedSeq.exists(_ == false)
+        !accum.toIndexedSeq.contains(false)
       } else {
         val currentIndex = remainingBitIndexes.head
         val byteIndex = currentIndex >>> 3
