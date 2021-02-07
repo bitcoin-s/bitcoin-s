@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.tlv.{
   TLVSerializable,
   UnsignedNumericOutcome
 }
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.ECPublicKey
 
 import scala.concurrent.duration.DurationInt
@@ -160,17 +161,15 @@ case class ContractInfo(
     if (allOutcomesAndPayouts.isEmpty) {
       Future.successful(Map.empty)
     } else {
+
       val batchSize = Math.max(allOutcomesAndPayouts.length / parallelism, 1)
 
-      val results = allOutcomesAndPayouts.grouped(batchSize).map {
-        case batch: Vector[(OracleOutcome, Satoshis)] =>
-          Future {
-            executeBatch(batch)
-          }
-      }
-      Future
-        .sequence(results)
-        .map(_.flatten.toMap)
+      val results = FutureUtil.batchAndParallelExecuteSync(
+        allOutcomesAndPayouts,
+        executeBatch(_),
+        batchSize)
+
+      results.map(_.flatten.toMap)
     }
 
   }

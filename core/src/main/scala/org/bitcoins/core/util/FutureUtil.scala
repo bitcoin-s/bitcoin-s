@@ -108,4 +108,17 @@ object FutureUtil {
     val doneF = Future.sequence(execute)
     doneF
   }
+
+  /** Takes in a synchronous function f, and then executes that function on a set of elements in parallel */
+  def batchAndParallelExecuteSync[T, U](
+      elements: Vector[T],
+      f: Vector[T] => U,
+      batchSize: Int)(implicit ec: ExecutionContext): Future[Vector[U]] = {
+    val asyncF: Vector[T] => Future[U] = { case vec: Vector[T] =>
+      Future { f(vec) }
+    }
+    batchAndParallelExecute(elements = elements,
+                            f = asyncF,
+                            batchSize = batchSize)
+  }
 }
