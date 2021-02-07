@@ -34,8 +34,7 @@ import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
 class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
-  private val clientsF = BitcoindRpcTestUtil.createNodePairV18(clientAccum)
-  private val clientF = clientsF.map(_._1)
+  private val clientF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
   private val addressForMiningF = clientF.flatMap(_.getNewAddress)
 
   def publishTransaction(tx: Transaction): Future[Transaction] = {
@@ -358,30 +357,43 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
       outcomeIndex: Int,
       numOutcomes: Int,
       local: Boolean): Future[Assertion] = {
-    for {
-      dlcFixture <-
-        constructAndSetupDLC(numOutcomes)
+    val dlcFixtureF = {
+      constructAndSetupDLC(numOutcomes)
+    }
 
-      oracleSig = genEnumOracleSignature(
-        dlcFixture.offerDLC.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
-        dlcFixture.outcomes(outcomeIndex).outcome)
+    val oracleSigF = dlcFixtureF.map { dlcFixture =>
+      genEnumOracleSignature(oracleInfo = dlcFixture.offerDLC.offer.oracleInfo
+                               .asInstanceOf[EnumSingleOracleInfo],
+                             outcome =
+                               dlcFixture.outcomes(outcomeIndex).outcome)
+    }
 
-      unilateralFixture = {
-        if (local) {
-          dlcFixture
-        } else {
-          dlcFixture.flipContext
-        }
-      }
+    val unilateralFixtureF = dlcFixtureF.map { dlcFixture =>
+      if (local) dlcFixture
+      else dlcFixture.flipContext
+    }
 
+    val unilateralOutcomeF = for {
+      unilateralFixture <- unilateralFixtureF
+      oracleSig <- oracleSigF
       unilateralOutcome <- unilateralFixture.offerDLC.executeDLC(
         unilateralFixture.offerSetup,
         Future.successful(Vector(oracleSig)))
-      otherOutcome <-
-        unilateralFixture.acceptDLC.executeDLC(
-          unilateralFixture.acceptSetup,
-          Future.successful(Vector(oracleSig)))
+    } yield unilateralOutcome
 
+    val otherOutcomeF = for {
+      unilateralFixture <- unilateralFixtureF
+      oracleSig <- oracleSigF
+      otherOutcome <- unilateralFixture.acceptDLC.executeDLC(
+        unilateralFixture.acceptSetup,
+        Future.successful(Vector(oracleSig)))
+    } yield otherOutcome
+
+    for {
+      dlcFixture <- dlcFixtureF
+      unilateralFixture <- unilateralFixtureF
+      unilateralOutcome <- unilateralOutcomeF
+      otherOutcome <- otherOutcomeF
       _ <- recoverToSucceededIf[BitcoindException](
         publishTransaction(unilateralOutcome.cet))
       _ <- waitUntilBlock(
