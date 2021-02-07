@@ -330,12 +330,28 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
     setupDLC(dlcOffer, dlcAccept, _ => fundingTxF, publishTransaction)
   }
 
-  def constructAndSetupDLC(numOutcomes: Int): Future[
-    (TestDLCClient, SetupDLC, TestDLCClient, SetupDLC, Vector[EnumOutcome])] = {
+  case class DLCClientFixture(
+      offerDLC: TestDLCClient,
+      offerSetup: SetupDLC,
+      acceptDLC: TestDLCClient,
+      acceptSetup: SetupDLC,
+      outcomes: Vector[EnumOutcome]) {
+
+    /** Flips the offer/acceptor contexts */
+    def flipContext: DLCClientFixture = {
+      DLCClientFixture(acceptDLC, acceptSetup, offerDLC, offerSetup, outcomes)
+    }
+  }
+
+  def constructAndSetupDLC(numOutcomes: Int): Future[DLCClientFixture] = {
     for {
       (offerDLC, acceptDLC, outcomes) <- constructDLC(numOutcomes)
       (offerSetup, acceptSetup) <- setupDLC(offerDLC, acceptDLC)
-    } yield (offerDLC, offerSetup, acceptDLC, acceptSetup, outcomes)
+    } yield DLCClientFixture(offerDLC,
+                             offerSetup,
+                             acceptDLC,
+                             acceptSetup,
+                             outcomes)
   }
 
   def executeForCase(
@@ -343,37 +359,39 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
       numOutcomes: Int,
       local: Boolean): Future[Assertion] = {
     for {
-      (offerDLC, offerSetup, acceptDLC, acceptSetup, outcomes) <-
+      dlcFixture <-
         constructAndSetupDLC(numOutcomes)
 
       oracleSig = genEnumOracleSignature(
-        offerDLC.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
-        outcomes(outcomeIndex).outcome)
+        dlcFixture.offerDLC.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
+        dlcFixture.outcomes(outcomeIndex).outcome)
 
-      (unilateralDLC, unilateralSetup, otherDLC, otherSetup) = {
+      unilateralFixture = {
         if (local) {
-          (offerDLC, offerSetup, acceptDLC, acceptSetup)
+          dlcFixture
         } else {
-          (acceptDLC, acceptSetup, offerDLC, offerSetup)
+          dlcFixture.flipContext
         }
       }
 
-      unilateralOutcome <- unilateralDLC.executeDLC(
-        unilateralSetup,
+      unilateralOutcome <- unilateralFixture.offerDLC.executeDLC(
+        unilateralFixture.offerSetup,
         Future.successful(Vector(oracleSig)))
       otherOutcome <-
-        otherDLC.executeDLC(otherSetup, Future.successful(Vector(oracleSig)))
+        unilateralFixture.acceptDLC.executeDLC(
+          unilateralFixture.acceptSetup,
+          Future.successful(Vector(oracleSig)))
 
       _ <- recoverToSucceededIf[BitcoindException](
         publishTransaction(unilateralOutcome.cet))
       _ <- waitUntilBlock(
-        unilateralDLC.timeouts.contractMaturity.toUInt32.toInt - 1)
+        unilateralFixture.offerDLC.timeouts.contractMaturity.toUInt32.toInt - 1)
       _ <- recoverToSucceededIf[BitcoindException](
         publishTransaction(unilateralOutcome.cet))
       _ <- waitUntilBlock(
-        unilateralDLC.timeouts.contractMaturity.toUInt32.toInt)
+        unilateralFixture.offerDLC.timeouts.contractMaturity.toUInt32.toInt)
       _ <- publishTransaction(unilateralOutcome.cet)
-      _ <- validateOutcome(unilateralOutcome, offerDLC.dlcTxBuilder)
+      _ <- validateOutcome(unilateralOutcome, dlcFixture.offerDLC.dlcTxBuilder)
     } yield {
       assert(unilateralOutcome.fundingTx == otherOutcome.fundingTx)
       assert(unilateralOutcome.cet.txIdBE == otherOutcome.cet.txIdBE)
@@ -382,23 +400,23 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
 
   def executeForRefundCase(numOutcomes: Int): Future[Assertion] = {
     for {
-      (offerDLC, offerSetup, acceptDLC, acceptSetup, _) <- constructAndSetupDLC(
-        numOutcomes)
+      dlcFixture <- constructAndSetupDLC(numOutcomes)
 
-      acceptOutcome = acceptDLC.executeRefundDLC(acceptSetup)
-      offerOutcome = offerDLC.executeRefundDLC(offerSetup)
+      acceptOutcome = dlcFixture.acceptDLC.executeRefundDLC(
+        dlcFixture.acceptSetup)
+      offerOutcome = dlcFixture.offerDLC.executeRefundDLC(dlcFixture.offerSetup)
 
       _ = assert(offerOutcome.refundTx == acceptOutcome.refundTx)
       refundTx = offerOutcome.refundTx
-      _ = assert(acceptDLC.timeouts == offerDLC.timeouts)
-      timeout = offerDLC.timeouts.contractTimeout.toUInt32.toInt
+      _ = assert(dlcFixture.acceptDLC.timeouts == dlcFixture.offerDLC.timeouts)
+      timeout = dlcFixture.offerDLC.timeouts.contractTimeout.toUInt32.toInt
       _ <- recoverToSucceededIf[BitcoindException](publishTransaction(refundTx))
       _ <- waitUntilBlock(timeout - 1)
       _ <- recoverToSucceededIf[BitcoindException](publishTransaction(refundTx))
       _ <- waitUntilBlock(timeout)
       _ <- publishTransaction(refundTx)
-      _ <- validateOutcome(offerOutcome, offerDLC.dlcTxBuilder)
-      _ <- validateOutcome(acceptOutcome, acceptDLC.dlcTxBuilder)
+      _ <- validateOutcome(offerOutcome, dlcFixture.offerDLC.dlcTxBuilder)
+      _ <- validateOutcome(acceptOutcome, dlcFixture.acceptDLC.dlcTxBuilder)
     } yield {
       assert(acceptOutcome.fundingTx == offerOutcome.fundingTx)
     }
