@@ -14,7 +14,8 @@ import org.bitcoins.core.protocol.tlv.{
 }
 import org.bitcoins.crypto.ECPublicKey
 
-import scala.collection.immutable.HashMap
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /** Fully determines a DLC up to public keys and funding UTXOs to be used.
   *
@@ -137,17 +138,41 @@ case class ContractInfo(
 
   /** Map OracleOutcomes (which correspond to CETs) to their adpator point and payouts */
   lazy val outcomeMap: Map[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)] = {
-    val builder =
-      HashMap.newBuilder[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)]
+    Await.result(
+      outcomeMapParallel()(scala.concurrent.ExecutionContext.Implicits.global),
+      60.seconds)
+  }
 
-    allOutcomesAndPayouts.foreach { case (outcome, offerPayout) =>
+  private def executeBatch(batch: Vector[(OracleOutcome, Satoshis)]): Vector[
+    (OracleOutcome, (ECPublicKey, Satoshis, Satoshis))] = {
+    batch.map { case (outcome, offerPayout) =>
       val acceptPayout = (totalCollateral - offerPayout).satoshis
       val adaptorPoint = outcome.sigPoint
+      (outcome, (adaptorPoint, offerPayout, acceptPayout))
+    }
+  }
 
-      builder.+=((outcome, (adaptorPoint, offerPayout, acceptPayout)))
+  /** Computes the outcome map in parallel. */
+  def outcomeMapParallel(
+      parallelism: Int = Runtime.getRuntime.availableProcessors())(implicit
+      ec: ExecutionContext): Future[
+    Map[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)]] = {
+    if (allOutcomesAndPayouts.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      val batchSize = Math.max(allOutcomesAndPayouts.length / parallelism, 1)
+
+      val results = allOutcomesAndPayouts.grouped(batchSize).map {
+        case batch: Vector[(OracleOutcome, Satoshis)] =>
+          Future {
+            executeBatch(batch)
+          }
+      }
+      Future
+        .sequence(results)
+        .map(_.flatten.toMap)
     }
 
-    builder.result()
   }
 
   /** Checks if the given OracleSignatures exactly match the given OracleOutcome.

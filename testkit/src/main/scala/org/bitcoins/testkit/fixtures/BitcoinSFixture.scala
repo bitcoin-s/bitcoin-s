@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.fixtures
 
 import akka.actor.ActorSystem
+import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
@@ -145,8 +146,14 @@ object BitcoinSFixture {
     import system.dispatcher
     for {
       bitcoind <- createBitcoind(versionOpt = versionOpt)
-      address <- bitcoind.getNewAddress
-      _ <- bitcoind.generateToAddress(blocks = 101, address)
+      genesisAddress <- bitcoind.getNewAddress
+      addresses <- Future.sequence(0.until(5).map(_ => bitcoind.getNewAddress))
+
+      //fund a variety of addresses we so don't just have a single utxo funded
+      _ <- bitcoind.generateToAddress(blocks = 101, genesisAddress)
+      addrWithAmt = addresses.map(addr => (addr, Bitcoins.one)).toMap
+      _ <- bitcoind.sendMany(addrWithAmt)
+      _ <- bitcoind.generateToAddress(6, genesisAddress)
     } yield bitcoind
   }
 
