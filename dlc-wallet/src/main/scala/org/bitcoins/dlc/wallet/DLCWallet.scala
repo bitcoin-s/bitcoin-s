@@ -922,14 +922,14 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                 Future.successful(
                   CETSignatures(outcomeSigs, refundDb.refundSig))
               case None =>
-                signer.createRefundSig().map { sig =>
+                signer.signRefundTx().map { sig =>
                   CETSignatures(outcomeSigs, sig)
                 }
             }
         }
 
       _ = logger.info(s"Creating funding sigs for ${contractId.toHex}")
-      fundingSigs <- signer.createFundingTxSigs()
+      fundingSigs <- signer.signFundingTx()
 
       refundSigDb =
         DLCRefundSigDb(dlc.paramHash, isInitiator = true, cetSigs.refundSig)
@@ -1401,7 +1401,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                 case None => throw new RuntimeException("")
               }
             }
-          signer.signFundingTx(FundingSignatures(remoteSigs))
+          signer.completeFundingTx(FundingSignatures(remoteSigs))
         }
       }
       _ = logger.info(

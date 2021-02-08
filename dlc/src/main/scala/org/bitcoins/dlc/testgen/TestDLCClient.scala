@@ -72,7 +72,7 @@ case class TestDLCClient(
     require(!isInitiator, "You should call setupDLCOffer")
 
     for {
-      (remoteCetSigs, cets) <- dlcTxSigner.createCETsAndSigs()
+      (remoteCetSigs, cets) <- dlcTxSigner.createCETsAndCETSigs()
       _ <- sendSigs(remoteCetSigs)
       (cetSigs, fundingSigs) <- getSigs
       setupDLC <- dlcExecutor.setupDLCAccept(cetSigs, fundingSigs, Some(cets))
@@ -99,7 +99,7 @@ case class TestDLCClient(
         dlcTxSigner.createCETSigs(setupDLCWithoutFundingTxSigs.cets.map {
           case (msg, info) => msg -> info.tx
         })
-      localFundingSigs <- dlcTxSigner.createFundingTxSigs()
+      localFundingSigs <- dlcTxSigner.signFundingTx()
       _ <- sendSigs(cetSigs, localFundingSigs)
       fundingTx <- getFundingTx
     } yield {

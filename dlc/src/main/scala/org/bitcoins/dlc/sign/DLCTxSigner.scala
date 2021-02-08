@@ -68,16 +68,16 @@ case class DLCTxSigner(
   }
 
   /** Creates this party's FundingSignatures */
-  def createFundingTxSigs(): Future[FundingSignatures] = {
+  def signFundingTx(): Future[FundingSignatures] = {
     builder.buildFundingTx.flatMap { fundingTx =>
       DLCTxSigner.signFundingTx(fundingTx, fundingUtxos)
     }
   }
 
   /** Constructs the signed DLC funding transaction given remote FundingSignatures */
-  def signFundingTx(remoteSigs: FundingSignatures): Future[Transaction] = {
+  def completeFundingTx(remoteSigs: FundingSignatures): Future[Transaction] = {
     for {
-      localSigs <- createFundingTxSigs()
+      localSigs <- signFundingTx()
       fundingTx <- builder.buildFundingTx
       signedTxT = DLCTxSigner.completeFundingTx(localSigs,
                                                 remoteSigs,
@@ -109,12 +109,12 @@ case class DLCTxSigner(
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcome */
-  def createRemoteCETSig(outcome: OracleOutcome): Future[ECAdaptorSignature] = {
-    createRemoteCETSigs(Vector(outcome)).map(_.head._2)
+  def signCET(outcome: OracleOutcome): Future[ECAdaptorSignature] = {
+    signCETs(Vector(outcome)).map(_.head._2)
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
-  def createRemoteCETsAndSigs(outcomes: Vector[OracleOutcome]): Future[
+  def buildAndSignCETs(outcomes: Vector[OracleOutcome]): Future[
     Vector[(OracleOutcome, WitnessTransaction, ECAdaptorSignature)]] = {
     for {
       outcomesAndCETs <- builder.buildCETsMap(outcomes)
@@ -125,15 +125,15 @@ case class DLCTxSigner(
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
-  def createRemoteCETSigs(outcomes: Vector[OracleOutcome]): Future[
+  def signCETs(outcomes: Vector[OracleOutcome]): Future[
     Vector[(OracleOutcome, ECAdaptorSignature)]] = {
-    createRemoteCETsAndSigs(outcomes).map(_.map { case (outcome, _, sig) =>
+    buildAndSignCETs(outcomes).map(_.map { case (outcome, _, sig) =>
       outcome -> sig
     })
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes and their corresponding CETs */
-  def createRemoteSigsGivenCETs(
+  def signGivenCETs(
       outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)]): Future[
     Vector[(OracleOutcome, ECAdaptorSignature)]] = {
     cetSigningInfo.map { signingInfo =>
@@ -141,7 +141,7 @@ case class DLCTxSigner(
     }
   }
 
-  def signCET(
+  def completeCET(
       outcome: OracleOutcome,
       remoteAdaptorSig: ECAdaptorSignature,
       oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
@@ -160,7 +160,7 @@ case class DLCTxSigner(
   }
 
   /** Creates this party's signature of the refund transaction */
-  def createRefundSig(): Future[PartialSignature] = {
+  def signRefundTx(): Future[PartialSignature] = {
     for {
       fundingTx <- builder.buildFundingTx
       refundTx <- builder.buildRefundTx
@@ -172,9 +172,9 @@ case class DLCTxSigner(
   }
 
   /** Constructs the signed refund transaction given remote's signature */
-  def signRefundTx(remoteSig: PartialSignature): Future[Transaction] = {
+  def completeRefundTx(remoteSig: PartialSignature): Future[Transaction] = {
     for {
-      localSig <- createRefundSig()
+      localSig <- signRefundTx()
       fundingTx <- builder.buildFundingTx
       uRefundTx <- builder.buildRefundTx
       refundTxT = DLCTxSigner.completeRefundTx(localSig,
@@ -189,17 +189,17 @@ case class DLCTxSigner(
   /** Creates all of this party's CETSignatures */
   def createCETSigs(): Future[CETSignatures] = {
     for {
-      cetSigs <- createRemoteCETSigs(builder.contractInfo.allOutcomes)
-      refundSig <- createRefundSig()
+      cetSigs <- signCETs(builder.contractInfo.allOutcomes)
+      refundSig <- signRefundTx()
     } yield CETSignatures(cetSigs, refundSig)
   }
 
   /** Creates all of this party's CETSignatures */
-  def createCETsAndSigs(): Future[
+  def createCETsAndCETSigs(): Future[
     (CETSignatures, Vector[WitnessTransaction])] = {
     for {
-      cetsAndSigs <- createRemoteCETsAndSigs(builder.contractInfo.allOutcomes)
-      refundSig <- createRefundSig()
+      cetsAndSigs <- buildAndSignCETs(builder.contractInfo.allOutcomes)
+      refundSig <- signRefundTx()
     } yield {
       val (msgs, cets, sigs) = cetsAndSigs.unzip3
       (CETSignatures(msgs.zip(sigs), refundSig), cets)
@@ -211,8 +211,8 @@ case class DLCTxSigner(
       outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)]): Future[
     CETSignatures] = {
     for {
-      cetSigs <- createRemoteSigsGivenCETs(outcomesAndCETs)
-      refundSig <- createRefundSig()
+      cetSigs <- signGivenCETs(outcomesAndCETs)
+      refundSig <- signRefundTx()
     } yield CETSignatures(cetSigs, refundSig)
   }
 }

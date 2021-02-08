@@ -301,17 +301,17 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
     val acceptVerifier = DLCSignatureVerifier(builder, isInitiator = false)
 
     for {
-      offerFundingSigs <- offerClient.dlcTxSigner.createFundingTxSigs()
-      acceptFundingSigs <- acceptClient.dlcTxSigner.createFundingTxSigs()
+      offerFundingSigs <- offerClient.dlcTxSigner.signFundingTx()
+      acceptFundingSigs <- acceptClient.dlcTxSigner.signFundingTx()
 
       badOfferFundingSigs = BytesUtil.flipBit(offerFundingSigs)
       badAcceptFundingSigs = BytesUtil.flipBit(acceptFundingSigs)
 
       _ <- recoverToSucceededIf[RuntimeException] {
-        offerClient.dlcTxSigner.signFundingTx(badAcceptFundingSigs)
+        offerClient.dlcTxSigner.completeFundingTx(badAcceptFundingSigs)
       }
       _ <- recoverToSucceededIf[RuntimeException] {
-        acceptClient.dlcTxSigner.signFundingTx(badOfferFundingSigs)
+        acceptClient.dlcTxSigner.completeFundingTx(badOfferFundingSigs)
       }
     } yield {
       assert(offerVerifier.verifyRemoteFundingSigs(acceptFundingSigs))
@@ -352,15 +352,15 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
 
         for {
           _ <- recoverToSucceededIf[RuntimeException] {
-            offerClient.dlcTxSigner.signCET(oracleOutcome,
-                                            badAcceptCETSigs(oracleOutcome),
-                                            Vector(oracleSig))
+            offerClient.dlcTxSigner.completeCET(oracleOutcome,
+                                                badAcceptCETSigs(oracleOutcome),
+                                                Vector(oracleSig))
           }
           _ <- recoverToSucceededIf[RuntimeException] {
             acceptClient.dlcTxSigner
-              .signCET(oracleOutcome,
-                       badOfferCETSigs(oracleOutcome),
-                       Vector(oracleSig))
+              .completeCET(oracleOutcome,
+                           badOfferCETSigs(oracleOutcome),
+                           Vector(oracleSig))
           }
         } yield succeed
       }
@@ -368,10 +368,10 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
       _ <- Future.sequence(cetFailures)
 
       _ <- recoverToExceptionIf[RuntimeException] {
-        offerClient.dlcTxSigner.signRefundTx(badAcceptCETSigs.refundSig)
+        offerClient.dlcTxSigner.completeRefundTx(badAcceptCETSigs.refundSig)
       }
       _ <- recoverToExceptionIf[RuntimeException] {
-        acceptClient.dlcTxSigner.signRefundTx(badOfferCETSigs.refundSig)
+        acceptClient.dlcTxSigner.completeRefundTx(badOfferCETSigs.refundSig)
       }
     } yield {
       outcomes.foreach { outcomeUncast =>
@@ -449,7 +449,7 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
     for {
       acceptCETSigs <- dlcAccept.dlcTxSigner.createCETSigs()
       offerCETSigs <- dlcOffer.dlcTxSigner.createCETSigs()
-      offerFundingSigs <- dlcOffer.dlcTxSigner.createFundingTxSigs()
+      offerFundingSigs <- dlcOffer.dlcTxSigner.signFundingTx()
       offerOutcome <-
         dlcOffer.executeDLC(offerSetup, Future.successful(oracleSigs))
       acceptOutcome <-

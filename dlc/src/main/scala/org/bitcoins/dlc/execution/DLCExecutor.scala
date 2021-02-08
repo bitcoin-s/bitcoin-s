@@ -62,12 +62,12 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     for {
       fundingTx <- {
         fundingSigsOpt match {
-          case Some(fundingSigs) => signer.signFundingTx(fundingSigs)
+          case Some(fundingSigs) => signer.completeFundingTx(fundingSigs)
           case None              => builder.buildFundingTx
         }
       }
       cetInfos <- cetInfosF
-      refundTx <- signer.signRefundTx(refundSig)
+      refundTx <- signer.completeRefundTx(refundSig)
     } yield {
       SetupDLC(fundingTx, cetInfos, refundTx)
     }
@@ -105,7 +105,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     }
     val sigsUsed = sigsUsedOpt.get // Safe because msgOpt is defined if no throw
 
-    signer.signCET(msg, remoteAdaptorSig, sigsUsed).map { cet =>
+    signer.completeCET(msg, remoteAdaptorSig, sigsUsed).map { cet =>
       ExecutedDLCOutcome(dlcSetup.fundingTx, cet, msg, sigsUsed)
     }
   }

@@ -92,12 +92,12 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   val fundingKeys: Vector[ECPublicKey] =
     Vector(offerFundingKey, acceptFundingKey).sortBy(_.hex)
 
-  /** The 2-of-2 MultiSignatureScriptPubKey to be wrapped in P2WSH and used as the funding output */
-  val fundingMultiSig: MultiSignatureScriptPubKey =
-    MultiSignatureScriptPubKey(2, fundingKeys)
-
-  /** The funding output's P2WSH(MultiSig) ScriptPubKey */
-  val fundingSPK: P2WSHWitnessSPKV0 = P2WSHWitnessSPKV0(fundingMultiSig)
+  /** The 2-of-2 MultiSignatureScriptPubKey to be wrapped in P2WSH and used as the funding output,
+    * and the funding output's P2WSH(MultiSig) ScriptPubKey
+    */
+  val (fundingMultiSig: MultiSignatureScriptPubKey,
+       fundingSPK: P2WSHWitnessSPKV0) =
+    DLCTxBuilder.buildFundingSPKs(fundingKeys)
 
   lazy val fundingTxFinalizer: DualFundingTxFinalizer = {
     DLCTxBuilder.buildFundingTxFinalizer(
@@ -176,6 +176,18 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
 }
 
 object DLCTxBuilder {
+
+  def buildFundingSPKs(fundingPubKeys: Vector[ECPublicKey]): (
+      MultiSignatureScriptPubKey,
+      P2WSHWitnessSPKV0) = {
+    require(fundingPubKeys.length == 2,
+            s"There must be exactly 2 funding keys, got $fundingPubKeys")
+    val multiSigSPK =
+      MultiSignatureScriptPubKey(2, fundingPubKeys.sortBy(_.hex))
+    val p2wshSPK = P2WSHWitnessSPKV0(multiSigSPK)
+
+    (multiSigSPK, p2wshSPK)
+  }
 
   def buildFundingTxFinalizer(
       offerFundingInputs: Vector[DLCFundingInput],

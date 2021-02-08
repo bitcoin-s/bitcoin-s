@@ -244,19 +244,19 @@ object DLCTxGen {
     for {
       accpetCETSigs <- acceptSigner.createCETSigs()
       offerCETSigs <- offerSigner.createCETSigs()
-      offerFundingSigs <- offerSigner.createFundingTxSigs()
+      offerFundingSigs <- offerSigner.signFundingTx()
 
       DLCTransactions(fundingTx, cets, refundTx) <- inputs.buildTransactions
 
-      signedFundingTx <- acceptSigner.signFundingTx(offerFundingSigs)
-      signedRefundTx <- offerSigner.signRefundTx(accpetCETSigs.refundSig)
-      offerSignedCET <- offerSigner.signCET(
+      signedFundingTx <- acceptSigner.completeFundingTx(offerFundingSigs)
+      signedRefundTx <- offerSigner.completeRefundTx(accpetCETSigs.refundSig)
+      offerSignedCET <- offerSigner.completeCET(
         outcome,
         accpetCETSigs(outcome),
         Vector(
           EnumOracleSignature(inputs.params.oracleInfo,
                               inputs.params.oracleSignature)))
-      acceptSignedCET <- acceptSigner.signCET(
+      acceptSignedCET <- acceptSigner.completeCET(
         outcome,
         offerCETSigs(outcome),
         Vector(

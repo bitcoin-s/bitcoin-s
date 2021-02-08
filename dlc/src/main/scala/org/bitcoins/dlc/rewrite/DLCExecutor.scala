@@ -8,7 +8,9 @@ import org.bitcoins.core.protocol.dlc.{
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.crypto.{ECAdaptorSignature, ECPrivateKey, ECPublicKey}
+import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.execution.{ExecutedDLCOutcome, RefundDLCOutcome}
+import org.bitcoins.dlc.sign.DLCTxSigner
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -45,13 +47,17 @@ object DLCExecutor {
     val sigsUsed =
       sigsUsedOpt.get // Safe because msgOpt is defined if no throw
 
-    val cetF = DLCSigner.completeCET(msg,
-                                     fundingKey,
-                                     fundingTx,
-                                     ucet,
-                                     remoteAdaptorSig,
-                                     remoteFundingPubKey,
-                                     sigsUsed)
+    val (fundingMultiSig, _) = DLCTxBuilder.buildFundingSPKs(
+      Vector(fundingKey.publicKey, remoteFundingPubKey))
+
+    val cetF = DLCTxSigner.completeCET(msg,
+                                       fundingKey,
+                                       fundingMultiSig,
+                                       fundingTx,
+                                       ucet,
+                                       remoteAdaptorSig,
+                                       remoteFundingPubKey,
+                                       sigsUsed)
 
     cetF.map { cet =>
       ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
