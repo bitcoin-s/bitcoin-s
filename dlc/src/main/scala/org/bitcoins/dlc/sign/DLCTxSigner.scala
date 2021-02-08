@@ -40,7 +40,7 @@ case class DLCTxSigner(
   }
 
   private val fundingSPK: MultiSignatureScriptPubKey =
-    builder.fundingTxBuilder.fundingMultiSig
+    builder.fundingMultiSig
 
   if (isInitiator) {
     require(fundingKey.publicKey == offer.pubKeys.fundingKey &&
@@ -222,12 +222,11 @@ case class DLCTxSigner(
   def createRemoteCETsAndSigs(outcomes: Vector[OracleOutcome]): Future[
     Vector[(OracleOutcome, WitnessTransaction, ECAdaptorSignature)]] = {
     for {
-      cetBuilder <- builder.cetBuilderF
+      outcomesAndCETs <- builder.buildCETsMap(outcomes)
       signingInfo <- cetSigningInfo
     } yield {
-      outcomes.map { outcome =>
+      outcomesAndCETs.map { case (outcome, utx) =>
         val adaptorPoint = outcome.sigPoint
-        val utx = cetBuilder.buildCET(outcome)
         val hashToSign =
           TransactionSignatureSerializer.hashForSignature(utx,
                                                           signingInfo,

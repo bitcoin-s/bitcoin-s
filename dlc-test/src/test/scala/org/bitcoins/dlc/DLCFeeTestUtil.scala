@@ -14,7 +14,7 @@ object DLCFeeTestUtil extends Assertions {
       fundingTxSigs: Int = 2,
       closingTxSigs: Int = 2): Assertion = {
     val feeRate = builder.feeRate
-    val finalizer = builder.fundingTxBuilder.fundingTxFinalizer
+    val finalizer = builder.fundingTxFinalizer
     val expectedFundingFee =
       finalizer.offerFundingFee + finalizer.acceptFundingFee
     val expectedClosingFee =

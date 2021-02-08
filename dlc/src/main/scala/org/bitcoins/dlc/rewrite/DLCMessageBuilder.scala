@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.DLCMessage.{DLCAccept, DLCOffer, DLCSign}
 import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.Sha256Digest
 import scodec.bits.ByteVector
@@ -51,6 +52,12 @@ object DLCMessageBuilder {
               cetSigs,
               negotiationFields,
               tempContractId)
+  }
+
+  def computeContractId(
+      fundingTx: Transaction,
+      tempContractId: Sha256Digest): ByteVector = {
+    fundingTx.txIdBE.bytes.xor(tempContractId.bytes)
   }
 
   def buildSign(

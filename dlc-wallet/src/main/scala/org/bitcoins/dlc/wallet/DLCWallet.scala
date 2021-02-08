@@ -687,8 +687,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                            finalAddress = dlcPubKeys.payoutAddress,
                            fundingUtxos = spendingInfos)
 
-      fundingBuilder = builder.fundingTxBuilder
-      spkDb = ScriptPubKeyDb(fundingBuilder.fundingSPK)
+      spkDb = ScriptPubKeyDb(builder.fundingSPK)
 
       _ <- scriptPubKeyDAO.create(spkDb)
 
@@ -852,7 +851,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           builder = DLCTxBuilder(offer, accept.withoutSigs)
           fundingTx <- builder.buildFundingTx
           outPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
-          spkDb = ScriptPubKeyDb(builder.fundingTxBuilder.fundingSPK)
+          spkDb = ScriptPubKeyDb(builder.fundingSPK)
           _ <- scriptPubKeyDAO.create(spkDb)
           updatedDLCDb <-
             updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
