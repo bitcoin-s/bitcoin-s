@@ -124,7 +124,6 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
         acceptFundingKey = acceptFundingKey,
         acceptFinalSPK = acceptFinalAddress.scriptPubKey,
         timeouts = offer.timeouts,
-        feeRate = feeRate,
         fundingOutputRef = fundingOutputRef
       )
     }

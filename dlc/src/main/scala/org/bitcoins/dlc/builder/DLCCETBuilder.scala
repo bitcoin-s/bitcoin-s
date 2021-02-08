@@ -10,7 +10,6 @@ import org.bitcoins.core.protocol.script.{
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
   InputInfo,
@@ -28,7 +27,6 @@ case class DLCCETBuilder(
     acceptFundingKey: ECPublicKey,
     acceptFinalSPK: ScriptPubKey,
     timeouts: DLCTimeouts,
-    feeRate: FeeUnit,
     fundingOutputRef: OutputReference) {
 
   private val fundingOutPoint = fundingOutputRef.outPoint
