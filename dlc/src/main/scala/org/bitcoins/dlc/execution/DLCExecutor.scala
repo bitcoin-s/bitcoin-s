@@ -2,7 +2,8 @@ package org.bitcoins.dlc.execution
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc._
-import org.bitcoins.core.protocol.transaction.WitnessTransaction
+import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
 
@@ -86,32 +87,72 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
   def executeDLC(
       dlcSetup: SetupDLC,
       oracleSigs: Vector[OracleSignatures]): Future[ExecutedDLCOutcome] = {
-
-    val threshold = dlcSetup.cets.head._1.oracles.length
-    val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
-
-    var msgOpt: Option[OracleOutcome] = None
-    val sigsUsedOpt = sigCombinations.find { sigs =>
-      msgOpt = builder.contractInfo.findOutcome(sigs)
-      msgOpt.isDefined
+    val remoteFundingPubKey = if (isInitiator) {
+      builder.acceptFundingKey
+    } else {
+      builder.offerFundingKey
     }
-    val (msg, remoteAdaptorSig) = msgOpt match {
-      case Some(msg) =>
-        val cetInfo = dlcSetup.getCETInfo(msg)
-        (msg, cetInfo.remoteSignature)
-      case None =>
-        throw new IllegalArgumentException(
-          s"Signature does not correspond to any possible outcome! $oracleSigs")
-    }
-    val sigsUsed = sigsUsedOpt.get // Safe because msgOpt is defined if no throw
 
-    signer.completeCET(msg, remoteAdaptorSig, sigsUsed).map { cet =>
-      ExecutedDLCOutcome(dlcSetup.fundingTx, cet, msg, sigsUsed)
-    }
+    DLCExecutor.executeDLC(dlcSetup.cets,
+                           oracleSigs,
+                           signer.fundingKey,
+                           remoteFundingPubKey,
+                           builder.contractInfo,
+                           dlcSetup.fundingTx)
   }
 
   def executeRefundDLC(dlcSetup: SetupDLC): RefundDLCOutcome = {
     val SetupDLC(fundingTx, _, refundTx) = dlcSetup
     RefundDLCOutcome(fundingTx, refundTx)
+  }
+}
+
+object DLCExecutor {
+
+  def executeDLC(
+      remoteCETInfos: Vector[(OracleOutcome, CETInfo)],
+      oracleSigs: Vector[OracleSignatures],
+      fundingKey: ECPrivateKey,
+      remoteFundingPubKey: ECPublicKey,
+      contractInfo: ContractInfo, // TODO: compute in overload
+      fundingTx: Transaction // TODO: compute in overload
+  )(implicit ec: ExecutionContext): Future[ExecutedDLCOutcome] = {
+    val threshold = contractInfo.oracleInfo.threshold
+    val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
+
+    var msgOpt: Option[OracleOutcome] = None
+    val sigsUsedOpt = sigCombinations.find { sigs =>
+      msgOpt = contractInfo.findOutcome(sigs)
+      msgOpt.isDefined
+    }
+
+    val msgAndCETInfoOpt = msgOpt.flatMap { msg =>
+      remoteCETInfos.find(_._1 == msg)
+    }
+
+    val (msg, ucet, remoteAdaptorSig) = msgAndCETInfoOpt match {
+      case Some((msg, CETInfo(ucet, remoteSig))) => (msg, ucet, remoteSig)
+      case None =>
+        throw new IllegalArgumentException(
+          s"Signature does not correspond to any possible outcome! $oracleSigs")
+    }
+    val sigsUsed =
+      sigsUsedOpt.get // Safe because msgOpt is defined if no throw
+
+    val (fundingMultiSig, _) = DLCTxBuilder.buildFundingSPKs(
+      Vector(fundingKey.publicKey, remoteFundingPubKey))
+
+    val cetF = DLCTxSigner.completeCET(msg,
+                                       fundingKey,
+                                       fundingMultiSig,
+                                       fundingTx,
+                                       ucet,
+                                       remoteAdaptorSig,
+                                       remoteFundingPubKey,
+                                       sigsUsed)
+
+    cetF.map { cet =>
+      ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
+    }
   }
 }
