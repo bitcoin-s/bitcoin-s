@@ -1,0 +1,124 @@
+package org.bitcoins.dlc.rewrite
+
+import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.dlc.{ContractInfo, OracleOutcome}
+import org.bitcoins.core.protocol.script.P2WSHWitnessV0
+import org.bitcoins.core.protocol.transaction.{
+  NonWitnessTransaction,
+  Transaction,
+  WitnessTransaction
+}
+import org.bitcoins.crypto.{
+  ECAdaptorSignature,
+  ECDigitalSignature,
+  ECPublicKey,
+  SchnorrDigitalSignature
+}
+
+object DLCUtil {
+
+  /** Extracts an adaptor secret from cetSig assuming it is the completion
+    * adaptorSig (which it may not be) and returns the oracle signature if
+    * and only if adaptorSig does correspond to cetSig.
+    *
+    * This method is used to search through possible cetSigs until the correct
+    * one is found by validating the returned signature.
+    *
+    * @param outcome A potential outcome that could have been executed for
+    * @param adaptorSig The adaptor signature corresponding to outcome
+    * @param cetSig The actual signature for local's key found on-chain on a CET
+    */
+  private def sigFromOutcomeAndSigs(
+      outcome: OracleOutcome,
+      adaptorSig: ECAdaptorSignature,
+      cetSig: ECDigitalSignature): SchnorrDigitalSignature = {
+    val sigPubKey = outcome.sigPoint
+
+    // This value is either the oracle signature S value or it is
+    // useless garbage, but we don't know in this scope, the caller
+    // must do further work to check this.
+    val possibleOracleS =
+      sigPubKey
+        .extractAdaptorSecret(adaptorSig, ECDigitalSignature(cetSig.bytes.init))
+        .fieldElement
+
+    SchnorrDigitalSignature(outcome.aggregateNonce, possibleOracleS)
+  }
+
+  def computeOutcome(
+      completedSig: ECDigitalSignature,
+      possibleAdaptorSigs: Vector[(OracleOutcome, ECAdaptorSignature)]): (
+      SchnorrDigitalSignature,
+      OracleOutcome) = {
+    val sigOpt = possibleAdaptorSigs.find { case (outcome, adaptorSig) =>
+      val possibleOracleSig =
+        sigFromOutcomeAndSigs(outcome, adaptorSig, completedSig)
+      possibleOracleSig.sig.getPublicKey == outcome.sigPoint
+    }
+
+    sigOpt match {
+      case Some((outcome, adaptorSig)) =>
+        (sigFromOutcomeAndSigs(outcome, adaptorSig, completedSig), outcome)
+      case None =>
+        throw new IllegalArgumentException("No Oracle Signature found from CET")
+    }
+  }
+
+  def computeOutcome(
+      isInitiator: Boolean,
+      offerFundingKey: ECPublicKey,
+      acceptFundingKey: ECPublicKey,
+      contractInfo: ContractInfo,
+      localAdaptorSigs: Vector[(OracleOutcome, ECAdaptorSignature)],
+      cet: Transaction): (SchnorrDigitalSignature, OracleOutcome) = {
+    val wCET = cet match {
+      case wtx: WitnessTransaction => wtx
+      case _: NonWitnessTransaction =>
+        throw new IllegalArgumentException(s"Expected Witness CET: $cet")
+    }
+
+    val cetSigs = wCET.witness.head
+      .asInstanceOf[P2WSHWitnessV0]
+      .signatures
+
+    require(cetSigs.size == 2,
+            s"There must be only 2 signatures, got ${cetSigs.size}")
+
+    val outcomeValues = wCET.outputs.map(_.value).sorted
+    val totalCollateral = contractInfo.totalCollateral
+
+    val possibleOutcomes = contractInfo.allOutcomesAndPayouts
+      .filter { case (_, amt) =>
+        val amts = Vector(amt, totalCollateral - amt)
+          .filter(_ >= Policy.dustThreshold)
+          .sorted
+
+        // Only messages within 1 satoshi of the on-chain CET's value
+        // should be considered.
+        // Off-by-one is okay because both parties round to the nearest
+        // Satoshi for fees and if both round up they could be off-by-one.
+        Math.abs((amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
+          .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
+      }
+      .map(_._1)
+
+    val (offerCETSig, acceptCETSig) =
+      if (offerFundingKey.hex.compareTo(acceptFundingKey.hex) > 0) {
+        (cetSigs.last, cetSigs.head)
+      } else {
+        (cetSigs.head, cetSigs.last)
+      }
+
+    val outcomeSigs = localAdaptorSigs.filter { case (outcome, _) =>
+      possibleOutcomes.contains(outcome)
+    }
+
+    val cetSig = if (isInitiator) {
+      acceptCETSig
+    } else {
+      offerCETSig
+    }
+
+    computeOutcome(cetSig, outcomeSigs)
+  }
+}
