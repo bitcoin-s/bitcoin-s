@@ -191,9 +191,11 @@ object DLC extends BitcoinSLogger {
 
   def adaptorSignCET(
       outcome: OracleOutcome,
+      cet: WitnessTransaction, // TODO: compute in overload
+      cetSigningInfo: ECSignatureParams[
+        P2WSHV0InputInfo
+      ], // TODO: compute in overload
       fundingKey: ECPrivateKey): ECAdaptorSignature = {
-    val cet: WitnessTransaction = ???
-    val cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo] = ???
     val adaptorPoint = outcome.sigPoint
     val hashToSign =
       TransactionSignatureSerializer.hashForSignature(cet,
@@ -204,11 +206,13 @@ object DLC extends BitcoinSLogger {
   }
 
   def adaptorSignCETs(
-      outcomes: OracleOutcome,
+      outcomesAndCETs: Vector[
+        (OracleOutcome, WitnessTransaction)
+      ], // TODO: compute in overload
+      cetSigningInfo: ECSignatureParams[
+        P2WSHV0InputInfo
+      ], // TODO: compute in overload
       fundingKey: ECPrivateKey): Vector[(OracleOutcome, ECAdaptorSignature)] = {
-    val outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)] = ???
-    val cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo] = ???
-
     outcomesAndCETs.map { case (outcome, cet) =>
       val adaptorPoint = outcome.sigPoint
       val hashToSign =
@@ -256,10 +260,12 @@ object DLC extends BitcoinSLogger {
   }
 
   // TODO: do this directly without touching PSBTs
-  def signRefundTx(fundingKey: ECPrivateKey, remoteFundingKey: ECPublicKey)(
-      implicit ec: ExecutionContext): Future[PartialSignature] = {
-    val fundingTx: Transaction = ???
-    val refundTx: WitnessTransaction = ???
+  def signRefundTx(
+      fundingKey: ECPrivateKey,
+      remoteFundingKey: ECPublicKey,
+      fundingTx: Transaction, // TODO: compute in overload
+      refundTx: WitnessTransaction // TODO: compute in overload
+  )(implicit ec: ExecutionContext): Future[PartialSignature] = {
     val fundingKeys =
       Vector(fundingKey.publicKey, remoteFundingKey).sortBy(_.hex)
     val fundingSPK = MultiSignatureScriptPubKey(2, fundingKeys)
@@ -303,11 +309,12 @@ object DLC extends BitcoinSLogger {
   // TODO: add method for Vector[(OracleOutcome, ECAdaptorSignature)] once implemented
   def validateCETSignature(
       outcome: OracleOutcome,
-      sig: ECAdaptorSignature): Boolean = {
-    val fundingTx: Transaction = ???
-    val remoteFundingPubKey: ECPublicKey = ???
+      sig: ECAdaptorSignature,
+      remoteFundingPubKey: ECPublicKey,
+      fundingTx: Transaction, // TODO: compute in overload
+      cet: WitnessTransaction // TODO: compute in overload
+  ): Boolean = {
     val adaptorPoint = outcome.sigPoint
-    val cet: WitnessTransaction = ???
 
     val sigComponent = WitnessTxSigComponentRaw(transaction = cet,
                                                 inputIndex = UInt32.zero,
@@ -322,10 +329,11 @@ object DLC extends BitcoinSLogger {
     remoteFundingPubKey.adaptorVerify(hash.bytes, adaptorPoint, sig)
   }
 
-  def validateRefundTx(refundSig: PartialSignature): Boolean = {
-    val fundingTx: Transaction = ???
-    val refundTx: WitnessTransaction = ???
-
+  def validateRefundSignature(
+      refundSig: PartialSignature,
+      fundingTx: Transaction, // TODO: compute in overload
+      refundTx: WitnessTransaction // TODO: compute in overload
+  ): Boolean = {
     val sigComponent = WitnessTxSigComponentRaw(transaction = refundTx,
                                                 inputIndex = UInt32.zero,
                                                 output = fundingTx.outputs.head,
@@ -342,14 +350,15 @@ object DLC extends BitcoinSLogger {
       .isValid
   }
 
-  def signFundingTx()(implicit
-      ec: ExecutionContext): Future[FundingSignatures] = {
+  def signFundingTx(
+      fundingTx: Transaction, // TODO: compute in overload
+      fundingUtxos: Vector[
+        ScriptSignatureParams[InputInfo]
+      ] // TODO: compute in overload
+  )(implicit ec: ExecutionContext): Future[FundingSignatures] = {
     val sigFs =
       Vector.newBuilder[Future[(TransactionOutPoint, ScriptWitnessV0)]]
 
-    val fundingTx: Transaction = ???
-
-    val fundingUtxos: Vector[ScriptSignatureParams[InputInfo]] = ???
     val fundingInputs: Vector[DLCFundingInput] =
       fundingUtxos.map(DLCFundingInput.fromInputSigningInfo(_))
 
@@ -394,21 +403,20 @@ object DLC extends BitcoinSLogger {
     }
   }
 
-  def buildSign(contractId: ByteVector): DLCSign = {
-    val cetSigs: CETSignatures = ???
-    val fundingSigs: FundingSignatures = ???
-
+  def buildSign(
+      cetSigs: CETSignatures, // TODO: compute in overload
+      fundingSigs: FundingSignatures, // TODO: compute in overload
+      contractId: ByteVector): DLCSign = {
     DLCSign(cetSigs, fundingSigs, contractId)
   }
 
   // TODO: Don't use PSBT
   def validateFundingSigs(
+      fundingTx: Transaction, // TODO: compute in overload
       fundingSigs: FundingSignatures,
       isInitiator: Boolean,
       offerFundingInputs: Vector[DLCFundingInput],
       acceptFundingInputs: Vector[DLCFundingInput]): Boolean = {
-    val fundingTx = ???
-
     val (remoteTweak, remoteFundingInputs) = if (isInitiator) {
       (offerFundingInputs.length, acceptFundingInputs)
     } else {
@@ -454,13 +462,12 @@ object DLC extends BitcoinSLogger {
   def completeCET(
       outcome: OracleOutcome,
       fundingKey: ECPrivateKey,
+      fundingTx: Transaction, // TODO: compute in overload
+      ucet: WitnessTransaction, // TODO: compute in overload
       remoteAdaptorSig: ECAdaptorSignature,
       remoteFundingPubKey: ECPublicKey,
       oracleSigs: Vector[OracleSignatures])(implicit
       ec: ExecutionContext): Future[WitnessTransaction] = {
-    val fundingTx: Transaction = ???
-    val utx: WitnessTransaction = ???
-
     val fundingKeys =
       Vector(fundingKey.publicKey, remoteFundingPubKey).sortBy(_.hex)
     val fundingSPK = MultiSignatureScriptPubKey(2, fundingKeys)
@@ -475,7 +482,7 @@ object DLC extends BitcoinSLogger {
     for {
       psbt <-
         PSBT
-          .fromUnsignedTx(utx)
+          .fromUnsignedTx(ucet)
           .addUTXOToInput(fundingTx, index = 0)
           .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
           .addSignature(remotePartialSig, inputIndex = 0)
@@ -492,10 +499,11 @@ object DLC extends BitcoinSLogger {
       remoteAdaptorSigs: Vector[(OracleOutcome, ECAdaptorSignature)],
       oracleSigs: Vector[OracleSignatures],
       fundingKey: ECPrivateKey,
-      remoteFundingPubKey: ECPublicKey)(implicit
-      ec: ExecutionContext): Future[ExecutedDLCOutcome] = {
-    val contractInfo: ContractInfo = ???
-    val fundingTx: Transaction = ???
+      remoteFundingPubKey: ECPublicKey,
+      contractInfo: ContractInfo, // TODO: compute in overload
+      fundingTx: Transaction, // TODO: compute in overload
+      ucet: WitnessTransaction // TODO: compute in overload
+  )(implicit ec: ExecutionContext): Future[ExecutedDLCOutcome] = {
     val threshold = contractInfo.oracleInfo.threshold
     val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
 
@@ -519,6 +527,8 @@ object DLC extends BitcoinSLogger {
 
     val cetF = completeCET(msg,
                            fundingKey,
+                           fundingTx,
+                           ucet,
                            remoteAdaptorSig,
                            remoteFundingPubKey,
                            sigsUsed)
@@ -528,10 +538,10 @@ object DLC extends BitcoinSLogger {
     }
   }
 
-  def executeRefund(): RefundDLCOutcome = {
-    val fundingTx: Transaction = ???
-    val refundTx: WitnessTransaction = ???
-
+  def executeRefund(
+      fundingTx: Transaction, // TODO: compute in overload
+      refundTx: WitnessTransaction // TODO: compute in overload
+  ): RefundDLCOutcome = {
     RefundDLCOutcome(fundingTx, refundTx)
   }
 
