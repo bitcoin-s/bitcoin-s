@@ -1,7 +1,6 @@
-package org.bitcoins.dlc.rewrite
+package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.dlc.{ContractInfo, OracleOutcome}
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.transaction.{
   NonWitnessTransaction,
