@@ -21,14 +21,13 @@ import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 /** Responsible for verifying all DLC signatures */
 case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
     extends BitcoinSLogger {
-  private lazy val fundingTx = Await.result(builder.buildFundingTx, 5.seconds)
+  private def fundingTx: Transaction = builder.buildFundingTx
 
   def verifyRemoteFundingSigs(remoteSigs: FundingSignatures): Boolean = {
     DLCSignatureVerifier.validateRemoteFundingSigs(fundingTx,
@@ -45,7 +44,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
     } else {
       builder.offerFundingKey
     }
-    val cet = Await.result(builder.buildCET(outcome), 15.seconds)
+    val cet = builder.buildCET(outcome)
 
     DLCSignatureVerifier.validateCETSignature(outcome,
                                               sig,
@@ -78,7 +77,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
 
   /** Verifies remote's refund signature */
   def verifyRefundSig(sig: PartialSignature): Boolean = {
-    val refundTx = Await.result(builder.buildRefundTx, 5.seconds)
+    val refundTx = builder.buildRefundTx
 
     DLCSignatureVerifier.validateRefundSignature(sig, fundingTx, refundTx)
   }

@@ -546,8 +546,12 @@ case class DualFundingTxFinalizer(
   lazy val (offerFutureFee, offerFundingFee) =
     computeFees(offerInputs, offerPayoutSPK, offerChangeSPK)
 
+  lazy val offerFees: CurrencyUnit = offerFutureFee + offerFundingFee
+
   lazy val (acceptFutureFee, acceptFundingFee) =
     computeFees(acceptInputs, acceptPayoutSPK, acceptChangeSPK)
+
+  lazy val acceptFees: CurrencyUnit = acceptFutureFee + acceptFundingFee
 
   override def buildTx(txBuilderResult: RawTxBuilderResult)(implicit
       ec: ExecutionContext): Future[Transaction] = {

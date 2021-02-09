@@ -50,24 +50,22 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
 
     val CETSignatures(outcomeSigs, refundSig) = cetSigs
     val msgs = outcomeSigs.map(_._1)
-    val cetsF = cetsOpt match {
-      case Some(cets) => Future.successful(cets)
+    val cets = cetsOpt match {
+      case Some(cets) => cets
       case None       => builder.buildCETs(msgs)
     }
-    val cetInfosF = cetsF.map { cets =>
+    val cetInfos =
       cets.zip(outcomeSigs).map { case (cet, (msg, remoteAdaptorSig)) =>
         msg -> CETInfo(cet, remoteAdaptorSig)
       }
-    }
 
     for {
       fundingTx <- {
         fundingSigsOpt match {
           case Some(fundingSigs) => signer.completeFundingTx(fundingSigs)
-          case None              => builder.buildFundingTx
+          case None              => Future.successful(builder.buildFundingTx)
         }
       }
-      cetInfos <- cetInfosF
       refundTx <- signer.completeRefundTx(refundSig)
     } yield {
       SetupDLC(fundingTx, cetInfos, refundTx)

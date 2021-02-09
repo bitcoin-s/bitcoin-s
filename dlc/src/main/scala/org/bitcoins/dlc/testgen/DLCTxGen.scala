@@ -193,22 +193,20 @@ object DLCTxGen {
     }
   }
 
-  def dlcTxTestVector(inputs: ValidTestInputs = validTestInputs())(implicit
-      ec: ExecutionContext): Future[DLCTxTestVector] = {
+  def dlcTxTestVector(
+      inputs: ValidTestInputs = validTestInputs()): DLCTxTestVector = {
     DLCTxTestVector.fromInputs(inputs)
   }
 
   def dlcTxTestVectorWithTxInputs(
       offerInputs: Vector[FundingInputTx],
       acceptInputs: Vector[FundingInputTx],
-      numOutcomes: Int = 3)(implicit
-      ec: ExecutionContext): Future[DLCTxTestVector] = {
+      numOutcomes: Int = 3): DLCTxTestVector = {
     dlcTxTestVector(
       validTestInputsForInputs(offerInputs, acceptInputs, numOutcomes))
   }
 
-  def randomTxTestVector(numOutcomes: Int)(implicit
-      ec: ExecutionContext): Future[DLCTxTestVector] = {
+  def randomTxTestVector(numOutcomes: Int): DLCTxTestVector = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
     val contractDescriptor = genContractDescriptor(outcomes)
 
@@ -246,7 +244,7 @@ object DLCTxGen {
       offerCETSigs <- offerSigner.createCETSigs()
       offerFundingSigs <- offerSigner.signFundingTx()
 
-      DLCTransactions(fundingTx, cets, refundTx) <- inputs.buildTransactions
+      DLCTransactions(fundingTx, cets, refundTx) = inputs.buildTransactions
 
       signedFundingTx <- acceptSigner.completeFundingTx(offerFundingSigs)
       signedRefundTx <- offerSigner.completeRefundTx(accpetCETSigs.refundSig)

@@ -69,21 +69,18 @@ case class DLCTxSigner(
 
   /** Creates this party's FundingSignatures */
   def signFundingTx(): Future[FundingSignatures] = {
-    builder.buildFundingTx.flatMap { fundingTx =>
-      DLCTxSigner.signFundingTx(fundingTx, fundingUtxos)
-    }
+    DLCTxSigner.signFundingTx(builder.buildFundingTx, fundingUtxos)
   }
 
   /** Constructs the signed DLC funding transaction given remote FundingSignatures */
   def completeFundingTx(remoteSigs: FundingSignatures): Future[Transaction] = {
     for {
       localSigs <- signFundingTx()
-      fundingTx <- builder.buildFundingTx
       signedTxT = DLCTxSigner.completeFundingTx(localSigs,
                                                 remoteSigs,
                                                 offer.fundingInputs,
                                                 accept.fundingInputs,
-                                                fundingTx)
+                                                builder.buildFundingTx)
       signedTx <- Future.fromTry(signedTxT)
     } yield signedTx
   }
@@ -91,117 +88,99 @@ case class DLCTxSigner(
   private var _cetSigningInfo: Option[ECSignatureParams[P2WSHV0InputInfo]] =
     None
 
-  private def cetSigningInfo: Future[ECSignatureParams[P2WSHV0InputInfo]] = {
+  private def cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo] = {
     _cetSigningInfo match {
-      case Some(info) => Future.successful(info)
+      case Some(info) => info
       case None =>
-        builder.buildFundingTx.map { fundingTx =>
-          val signingInfo =
-            DLCTxSigner.buildCETSigningInfo(fundingTx,
-                                            builder.fundingMultiSig,
-                                            fundingKey)
+        val signingInfo =
+          DLCTxSigner.buildCETSigningInfo(builder.buildFundingTx,
+                                          builder.fundingMultiSig,
+                                          fundingKey)
 
-          _cetSigningInfo = Some(signingInfo)
+        _cetSigningInfo = Some(signingInfo)
 
-          signingInfo
-        }
+        signingInfo
     }
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcome */
-  def signCET(outcome: OracleOutcome): Future[ECAdaptorSignature] = {
-    signCETs(Vector(outcome)).map(_.head._2)
+  def signCET(outcome: OracleOutcome): ECAdaptorSignature = {
+    signCETs(Vector(outcome)).head._2
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
-  def buildAndSignCETs(outcomes: Vector[OracleOutcome]): Future[
-    Vector[(OracleOutcome, WitnessTransaction, ECAdaptorSignature)]] = {
-    for {
-      outcomesAndCETs <- builder.buildCETsMap(outcomes)
-      signingInfo <- cetSigningInfo
-    } yield {
-      DLCTxSigner.buildAndSignCETs(outcomesAndCETs, signingInfo, fundingKey)
-    }
+  def buildAndSignCETs(outcomes: Vector[OracleOutcome]): Vector[
+    (OracleOutcome, WitnessTransaction, ECAdaptorSignature)] = {
+    val outcomesAndCETs = builder.buildCETsMap(outcomes)
+    DLCTxSigner.buildAndSignCETs(outcomesAndCETs, cetSigningInfo, fundingKey)
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
-  def signCETs(outcomes: Vector[OracleOutcome]): Future[
-    Vector[(OracleOutcome, ECAdaptorSignature)]] = {
-    buildAndSignCETs(outcomes).map(_.map { case (outcome, _, sig) =>
+  def signCETs(outcomes: Vector[OracleOutcome]): Vector[
+    (OracleOutcome, ECAdaptorSignature)] = {
+    buildAndSignCETs(outcomes).map { case (outcome, _, sig) =>
       outcome -> sig
-    })
+    }
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes and their corresponding CETs */
   def signGivenCETs(
-      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)]): Future[
-    Vector[(OracleOutcome, ECAdaptorSignature)]] = {
-    cetSigningInfo.map { signingInfo =>
-      DLCTxSigner.signCETs(outcomesAndCETs, signingInfo, fundingKey)
-    }
+      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)]): Vector[
+    (OracleOutcome, ECAdaptorSignature)] = {
+    DLCTxSigner.signCETs(outcomesAndCETs, cetSigningInfo, fundingKey)
   }
 
   def completeCET(
       outcome: OracleOutcome,
       remoteAdaptorSig: ECAdaptorSignature,
       oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
-    for {
-      fundingTx <- builder.buildFundingTx
-      utx <- builder.buildCET(outcome)
-      cet <- DLCTxSigner.completeCET(outcome,
-                                     fundingKey,
-                                     builder.fundingMultiSig,
-                                     fundingTx,
-                                     utx,
-                                     remoteAdaptorSig,
-                                     remoteFundingPubKey,
-                                     oracleSigs)
-    } yield cet
+    DLCTxSigner.completeCET(outcome,
+                            fundingKey,
+                            builder.fundingMultiSig,
+                            builder.buildFundingTx,
+                            builder.buildCET(outcome),
+                            remoteAdaptorSig,
+                            remoteFundingPubKey,
+                            oracleSigs)
   }
 
   /** Creates this party's signature of the refund transaction */
   def signRefundTx(): Future[PartialSignature] = {
-    for {
-      fundingTx <- builder.buildFundingTx
-      refundTx <- builder.buildRefundTx
-      refundSig <- DLCTxSigner.signRefundTx(fundingKey,
-                                            remoteFundingPubKey,
-                                            fundingTx,
-                                            refundTx)
-    } yield refundSig
+    DLCTxSigner.signRefundTx(fundingKey,
+                             remoteFundingPubKey,
+                             builder.buildFundingTx,
+                             builder.buildRefundTx)
   }
 
   /** Constructs the signed refund transaction given remote's signature */
   def completeRefundTx(remoteSig: PartialSignature): Future[Transaction] = {
     for {
       localSig <- signRefundTx()
-      fundingTx <- builder.buildFundingTx
-      uRefundTx <- builder.buildRefundTx
       refundTxT = DLCTxSigner.completeRefundTx(localSig,
                                                remoteSig,
                                                builder.fundingMultiSig,
-                                               fundingTx,
-                                               uRefundTx)
+                                               builder.buildFundingTx,
+                                               builder.buildRefundTx)
       refundTx <- Future.fromTry(refundTxT)
     } yield refundTx
   }
 
   /** Creates all of this party's CETSignatures */
   def createCETSigs(): Future[CETSignatures] = {
-    for {
-      cetSigs <- signCETs(builder.contractInfo.allOutcomes)
-      refundSig <- signRefundTx()
-    } yield CETSignatures(cetSigs, refundSig)
+    val cetSigs = signCETs(builder.contractInfo.allOutcomes)
+
+    signRefundTx().map { refundSig =>
+      CETSignatures(cetSigs, refundSig)
+    }
   }
 
   /** Creates all of this party's CETSignatures */
   def createCETsAndCETSigs(): Future[
     (CETSignatures, Vector[WitnessTransaction])] = {
-    for {
-      cetsAndSigs <- buildAndSignCETs(builder.contractInfo.allOutcomes)
-      refundSig <- signRefundTx()
-    } yield {
-      val (msgs, cets, sigs) = cetsAndSigs.unzip3
+    val cetsAndSigs = buildAndSignCETs(builder.contractInfo.allOutcomes)
+    val (msgs, cets, sigs) = cetsAndSigs.unzip3
+
+    signRefundTx().map { refundSig =>
       (CETSignatures(msgs.zip(sigs), refundSig), cets)
     }
   }
@@ -210,10 +189,11 @@ case class DLCTxSigner(
   def createCETSigs(
       outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)]): Future[
     CETSignatures] = {
-    for {
-      cetSigs <- signGivenCETs(outcomesAndCETs)
-      refundSig <- signRefundTx()
-    } yield CETSignatures(cetSigs, refundSig)
+    val cetSigs = signGivenCETs(outcomesAndCETs)
+
+    signRefundTx().map { refundSig =>
+      CETSignatures(cetSigs, refundSig)
+    }
   }
 }
 

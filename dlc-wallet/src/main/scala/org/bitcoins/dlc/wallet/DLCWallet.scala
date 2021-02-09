@@ -48,9 +48,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigDAO = DLCRefundSigDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
-  private def calcContractId(
-      offer: DLCOffer,
-      accept: DLCAccept): Future[ByteVector] = {
+  private def calcContractId(offer: DLCOffer, accept: DLCAccept): ByteVector = {
     val builder = DLCTxBuilder(offer, accept.withoutSigs)
     builder.calcContractId
   }
@@ -70,7 +68,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             new IllegalArgumentException(
               s"No DLCDb found with paramHash ${paramHash.hex}"))
       }
-      contractId <- calcContractId(offer, accept)
+      contractId = calcContractId(offer, accept)
 
       newDLCDb = dlcDb.copy(contractIdOpt = Some(contractId))
       _ = logger.debug(s"Updating DLC contract Ids")
@@ -679,7 +677,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
       builder = DLCTxBuilder(offer, acceptWithoutSigs)
 
-      contractId <- builder.calcContractId
+      contractId = builder.calcContractId
 
       signer = DLCTxSigner(builder = builder,
                            isInitiator = false,
@@ -757,7 +755,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ = logger.info(
         s"Created DLCAccept for tempContractId ${offer.tempContractId.hex} with contract Id ${contractId.toHex}")
 
-      fundingTx <- builder.buildFundingTx
+      fundingTx = builder.buildFundingTx
       outPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
       _ <- updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
     } yield accept
@@ -849,7 +847,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           dlcDb <- updateDLCContractIds(offer, accept)
 
           builder = DLCTxBuilder(offer, accept.withoutSigs)
-          fundingTx <- builder.buildFundingTx
+          fundingTx = builder.buildFundingTx
           outPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
           spkDb = ScriptPubKeyDb(builder.fundingSPK)
           _ <- scriptPubKeyDAO.create(spkDb)
@@ -1385,7 +1383,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       fundingTx <- {
         if (dlcDb.isInitiator) {
           // TODO: If this is called after seeing the funding tx on-chain, it should return that one
-          signer.builder.buildFundingTx
+          Future.successful(signer.builder.buildFundingTx)
         } else {
           val remoteSigs = fundingInputs
             .filter(_.isInitiator)

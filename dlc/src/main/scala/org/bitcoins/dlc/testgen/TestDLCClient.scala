@@ -20,8 +20,7 @@ import org.bitcoins.dlc.execution.{
 }
 import org.bitcoins.dlc.sign.DLCTxSigner
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 /** This case class allows for the construction and execution of
   * Discreet Log Contracts between two parties running on this machine (for tests).
@@ -57,8 +56,7 @@ case class TestDLCClient(
 
   val timeouts: DLCTimeouts = offer.timeouts
 
-  lazy val fundingTx: Transaction =
-    Await.result(dlcTxBuilder.buildFundingTx, 5.seconds)
+  def fundingTx: Transaction = dlcTxBuilder.buildFundingTx
 
   lazy val fundingTxIdBE: DoubleSha256DigestBE = fundingTx.txIdBE
 

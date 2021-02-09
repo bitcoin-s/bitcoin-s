@@ -454,11 +454,11 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
         dlcOffer.executeDLC(offerSetup, Future.successful(oracleSigs))
       acceptOutcome <-
         dlcAccept.executeDLC(acceptSetup, Future.successful(oracleSigs))
-
-      builder = DLCTxBuilder(dlcOffer.offer, dlcAccept.accept)
-      contractId <- builder.buildFundingTx.map(
-        _.txIdBE.bytes.xor(dlcAccept.accept.tempContractId.bytes))
     } yield {
+      val builder = DLCTxBuilder(dlcOffer.offer, dlcAccept.accept)
+      val contractId = builder.buildFundingTx.txIdBE.bytes
+        .xor(dlcAccept.accept.tempContractId.bytes)
+
       val offer = dlcOffer.offer
       val accept = dlcOffer.accept.withSigs(acceptCETSigs)
       val sign = DLCSign(offerCETSigs, offerFundingSigs, contractId)

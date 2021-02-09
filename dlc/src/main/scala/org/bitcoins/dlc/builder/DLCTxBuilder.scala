@@ -3,15 +3,13 @@ package org.bitcoins.dlc.builder
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
-import org.bitcoins.core.wallet.builder.{
-  DualFundingTxFinalizer,
-  RawTxBuilderWithFinalizer
-}
+import org.bitcoins.core.wallet.builder.DualFundingTxFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
@@ -21,10 +19,7 @@ import org.bitcoins.core.wallet.utxo.{
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
-import scala.concurrent.{ExecutionContext, Future}
-
-case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
-    ec: ExecutionContext) {
+case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
 
   val DLCOffer(_,
                DLCPublicKeys(offerFundingKey: ECPublicKey,
@@ -113,7 +108,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
   }
 
   /** Constructs the unsigned funding transaction */
-  lazy val buildFundingTx: Future[Transaction] = {
+  lazy val buildFundingTx: Transaction = {
     DLCTxBuilder.buildFundingTransaction(
       offerInput = offerTotalCollateral,
       acceptInput = acceptTotalCollateral,
@@ -122,56 +117,54 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs)(implicit
       offerChangeSPK = offerChangeAddress.scriptPubKey,
       acceptChangeSPK = acceptChangeAddress.scriptPubKey,
       fundingSPK = fundingSPK,
-      fundingTxFinalizer = fundingTxFinalizer
+      finalizer = fundingTxFinalizer
     )
   }
 
-  lazy val calcContractId: Future[ByteVector] = {
-    buildFundingTx.map(fundingTx =>
-      DLCMessage.computeContractId(fundingTx, accept.tempContractId))
+  private def fundingTx: Transaction = {
+    buildFundingTx
+  }
+
+  lazy val calcContractId: ByteVector = {
+    DLCMessage.computeContractId(fundingTx, accept.tempContractId)
   }
 
   /** Constructs the unsigned Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: OracleOutcome): Future[WitnessTransaction] = {
-    buildCETs(Vector(msg)).map(_.head)
+  def buildCET(msg: OracleOutcome): WitnessTransaction = {
+    buildCETs(Vector(msg)).head
   }
 
-  def buildCETsMap(msgs: Vector[OracleOutcome]): Future[
-    Vector[(OracleOutcome, WitnessTransaction)]] = {
-    buildFundingTx.map { fundingTx =>
-      DLCTxBuilder
-        .buildCETs(msgs,
-                   contractInfo,
-                   offerFundingKey,
-                   offerFinalAddress.scriptPubKey,
-                   acceptFundingKey,
-                   acceptFinalAddress.scriptPubKey,
-                   offer.timeouts,
-                   fundingTx)
-    }
+  def buildCETsMap(msgs: Vector[OracleOutcome]): Vector[
+    (OracleOutcome, WitnessTransaction)] = {
+    DLCTxBuilder
+      .buildCETs(msgs,
+                 contractInfo,
+                 offerFundingKey,
+                 offerFinalAddress.scriptPubKey,
+                 acceptFundingKey,
+                 acceptFinalAddress.scriptPubKey,
+                 offer.timeouts,
+                 fundingTx)
   }
 
-  def buildCETs(
-      msgs: Vector[OracleOutcome]): Future[Vector[WitnessTransaction]] = {
-    buildCETsMap(msgs).map(_.map(_._2))
+  def buildCETs(msgs: Vector[OracleOutcome]): Vector[WitnessTransaction] = {
+    buildCETsMap(msgs).map(_._2)
   }
 
   /** Constructs the unsigned refund transaction */
-  lazy val buildRefundTx: Future[WitnessTransaction] = {
-    buildFundingTx.map { fundingTx =>
-      DLCTxBuilder.buildRefundTx(
-        offerTotalCollateral,
-        offerFundingKey,
-        offerFinalAddress.scriptPubKey,
-        acceptTotalCollateral,
-        acceptFundingKey,
-        acceptFinalAddress.scriptPubKey,
-        fundingTx,
-        offer.timeouts
-      )
-    }
+  lazy val buildRefundTx: WitnessTransaction = {
+    DLCTxBuilder.buildRefundTx(
+      offerTotalCollateral,
+      offerFundingKey,
+      offerFinalAddress.scriptPubKey,
+      acceptTotalCollateral,
+      acceptFundingKey,
+      acceptFinalAddress.scriptPubKey,
+      fundingTx,
+      offer.timeouts
+    )
   }
 }
 
@@ -210,7 +203,6 @@ object DLCTxBuilder {
     )
   }
 
-  // TODO: De-futurify
   def buildFundingTransaction(
       offerInput: CurrencyUnit,
       acceptInput: CurrencyUnit,
@@ -219,8 +211,7 @@ object DLCTxBuilder {
       offerChangeSPK: ScriptPubKey,
       acceptChangeSPK: ScriptPubKey,
       fundingSPK: P2WSHWitnessSPKV0,
-      fundingTxFinalizer: DualFundingTxFinalizer)(implicit
-      ec: ExecutionContext): Future[Transaction] = {
+      finalizer: DualFundingTxFinalizer): Transaction = {
     // The total collateral of both parties combined
     val totalInput: CurrencyUnit = offerInput + acceptInput
 
@@ -239,36 +230,32 @@ object DLCTxBuilder {
       acceptTotalFunding >= acceptInput,
       "Accept funding inputs must add up to at least accept's total collateral")
 
-    val builder = RawTxBuilderWithFinalizer(fundingTxFinalizer)
-
-    builder += TransactionOutput(totalInput, fundingSPK)
-    builder += TransactionOutput(offerTotalFunding - offerInput, offerChangeSPK)
-    builder += TransactionOutput(acceptTotalFunding - acceptInput,
-                                 acceptChangeSPK)
-
-    offerFundingInputs.foreach { ref =>
+    val inputs = (offerFundingInputs ++ acceptFundingInputs).map { ref =>
       val scriptSig = ref.redeemScriptOpt match {
         case Some(redeemScript) => P2SHScriptSignature(redeemScript)
         case None               => EmptyScriptSignature
       }
 
-      builder += TransactionInput(ref.outPoint,
-                                  scriptSig,
-                                  TransactionConstants.sequence)
+      TransactionInput(ref.outPoint, scriptSig, TransactionConstants.sequence)
     }
 
-    acceptFundingInputs.foreach { ref =>
-      val scriptSig = ref.redeemScriptOpt match {
-        case Some(redeemScript) => P2SHScriptSignature(redeemScript)
-        case None               => EmptyScriptSignature
-      }
+    val fundingValue =
+      totalInput + finalizer.offerFutureFee + finalizer.acceptFutureFee
+    val offerChangeValue =
+      offerTotalFunding - offerInput - finalizer.offerFees
+    val acceptChangeValue =
+      acceptTotalFunding - acceptInput - finalizer.acceptFees
 
-      builder += TransactionInput(ref.outPoint,
-                                  scriptSig,
-                                  TransactionConstants.sequence)
-    }
+    val outputs = Vector(
+      TransactionOutput(fundingValue, fundingSPK),
+      TransactionOutput(offerChangeValue, offerChangeSPK),
+      TransactionOutput(acceptChangeValue, acceptChangeSPK)
+    ).filter(_.value >= Policy.dustThreshold)
 
-    builder.buildTx()
+    BaseTransaction(TransactionConstants.validLockVersion,
+                    inputs,
+                    outputs,
+                    UInt32.zero)
   }
 
   def buildCET(
@@ -339,7 +326,6 @@ object DLCTxBuilder {
               fundingOutputRef)
   }
 
-  // TODO: clean up
   def buildRefundTx(
       offerInput: CurrencyUnit,
       offerFundingKey: ECPublicKey,
@@ -359,17 +345,23 @@ object DLCTxBuilder {
       conditionalPath = ConditionalPath.NoCondition
     )
 
+    val fundingInput = TransactionInput(fundingOutPoint,
+                                        EmptyScriptSignature,
+                                        TransactionConstants.disableRBFSequence)
+
+    val outputs = Vector(TransactionOutput(offerInput, offerFinalSPK),
+                         TransactionOutput(acceptInput, acceptFinalSPK))
+
+    val witness = TransactionWitness.fromWitOpt(
+      Vector(InputInfo.getScriptWitness(fundingInfo))
+    )
+
     WitnessTransaction(
       TransactionConstants.validLockVersion,
-      Vector(
-        TransactionInput(fundingOutPoint,
-                         EmptyScriptSignature,
-                         TransactionConstants.disableRBFSequence)),
-      Vector(TransactionOutput(offerInput, offerFinalSPK),
-             TransactionOutput(acceptInput, acceptFinalSPK)),
+      Vector(fundingInput),
+      outputs,
       timeouts.contractTimeout.toUInt32,
-      TransactionWitness.fromWitOpt(
-        Vector(InputInfo.getScriptWitness(fundingInfo)))
+      witness
     )
   }
 

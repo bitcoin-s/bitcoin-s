@@ -425,12 +425,8 @@ object DLCTLVGen {
   }
 
   def dlcSignFromOfferAndAccept(offer: DLCOffer, accept: DLCAccept): DLCSign = {
-    import scala.concurrent.duration.DurationInt
-    import scala.concurrent.{Await, ExecutionContext}
-
-    val builder =
-      DLCTxBuilder(offer, accept.withoutSigs)(ExecutionContext.global)
-    val fundingTx = Await.result(builder.buildFundingTx, 5.seconds)
+    val builder = DLCTxBuilder(offer, accept.withoutSigs)
+    val fundingTx = builder.buildFundingTx
     val contractId = fundingTx.txIdBE.bytes.xor(accept.tempContractId.bytes)
 
     dlcSignFromOffer(offer, contractId)
