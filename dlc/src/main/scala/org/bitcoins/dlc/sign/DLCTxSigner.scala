@@ -253,21 +253,15 @@ object DLCTxSigner {
 
   def signCET(
       outcome: OracleOutcome,
-      cet: WitnessTransaction, // TODO: compute in overload
-      cetSigningInfo: ECSignatureParams[
-        P2WSHV0InputInfo
-      ], // TODO: compute in overload
+      cet: WitnessTransaction,
+      cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
       fundingKey: ECPrivateKey): ECAdaptorSignature = {
     signCETs(Vector((outcome, cet)), cetSigningInfo, fundingKey).head._2
   }
 
   def signCETs(
-      outcomesAndCETs: Vector[
-        (OracleOutcome, WitnessTransaction)
-      ], // TODO: compute in overload
-      cetSigningInfo: ECSignatureParams[
-        P2WSHV0InputInfo
-      ], // TODO: compute in overload
+      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)],
+      cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
       fundingKey: ECPrivateKey): Vector[(OracleOutcome, ECAdaptorSignature)] = {
     buildAndSignCETs(outcomesAndCETs, cetSigningInfo, fundingKey).map {
       case (outcome, _, sig) => outcome -> sig
@@ -275,12 +269,8 @@ object DLCTxSigner {
   }
 
   def buildAndSignCETs(
-      outcomesAndCETs: Vector[
-        (OracleOutcome, WitnessTransaction)
-      ], // TODO: compute in overload
-      cetSigningInfo: ECSignatureParams[
-        P2WSHV0InputInfo
-      ], // TODO: compute in overload
+      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)],
+      cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
       fundingKey: ECPrivateKey): Vector[
     (OracleOutcome, WitnessTransaction, ECAdaptorSignature)] = {
     outcomesAndCETs.map { case (outcome, cet) =>
@@ -300,8 +290,8 @@ object DLCTxSigner {
       outcome: OracleOutcome,
       fundingKey: ECPrivateKey,
       fundingMultiSig: MultiSignatureScriptPubKey,
-      fundingTx: Transaction, // TODO: compute in overload
-      ucet: WitnessTransaction, // TODO: compute in overload
+      fundingTx: Transaction,
+      ucet: WitnessTransaction,
       remoteAdaptorSig: ECAdaptorSignature,
       remoteFundingPubKey: ECPublicKey,
       oracleSigs: Vector[OracleSignatures])(implicit
@@ -333,8 +323,8 @@ object DLCTxSigner {
   def signRefundTx(
       fundingKey: ECPrivateKey,
       remoteFundingKey: ECPublicKey,
-      fundingTx: Transaction, // TODO: compute in overload
-      refundTx: WitnessTransaction // TODO: compute in overload
+      fundingTx: Transaction,
+      refundTx: WitnessTransaction
   )(implicit ec: ExecutionContext): Future[PartialSignature] = {
     val fundingKeys =
       Vector(fundingKey.publicKey, remoteFundingKey).sortBy(_.hex)
@@ -378,10 +368,8 @@ object DLCTxSigner {
   }
 
   def signFundingTx(
-      fundingTx: Transaction, // TODO: compute in overload
-      fundingUtxos: Vector[
-        ScriptSignatureParams[InputInfo]
-      ] // TODO: compute in overload
+      fundingTx: Transaction,
+      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]]
   )(implicit ec: ExecutionContext): Future[FundingSignatures] = {
     val sigFs =
       Vector.newBuilder[Future[(TransactionOutPoint, ScriptWitnessV0)]]

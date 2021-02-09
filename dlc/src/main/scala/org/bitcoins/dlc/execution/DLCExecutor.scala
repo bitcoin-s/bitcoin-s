@@ -114,8 +114,8 @@ object DLCExecutor {
       oracleSigs: Vector[OracleSignatures],
       fundingKey: ECPrivateKey,
       remoteFundingPubKey: ECPublicKey,
-      contractInfo: ContractInfo, // TODO: compute in overload
-      fundingTx: Transaction // TODO: compute in overload
+      contractInfo: ContractInfo,
+      fundingTx: Transaction
   )(implicit ec: ExecutionContext): Future[ExecutedDLCOutcome] = {
     val threshold = contractInfo.oracleInfo.threshold
     val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)

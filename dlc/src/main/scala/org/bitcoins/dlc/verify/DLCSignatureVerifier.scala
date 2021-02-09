@@ -86,13 +86,12 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
 
 object DLCSignatureVerifier extends BitcoinSLogger {
 
-  // TODO: add method for Vector[(OracleOutcome, ECAdaptorSignature)] once implemented
   def validateCETSignature(
       outcome: OracleOutcome,
       sig: ECAdaptorSignature,
       remoteFundingPubKey: ECPublicKey,
-      fundingTx: Transaction, // TODO: compute in overload
-      cet: WitnessTransaction // TODO: compute in overload
+      fundingTx: Transaction,
+      cet: WitnessTransaction
   ): Boolean = {
     val adaptorPoint = outcome.sigPoint
 
@@ -111,8 +110,8 @@ object DLCSignatureVerifier extends BitcoinSLogger {
 
   def validateRefundSignature(
       refundSig: PartialSignature,
-      fundingTx: Transaction, // TODO: compute in overload
-      refundTx: WitnessTransaction // TODO: compute in overload
+      fundingTx: Transaction,
+      refundTx: WitnessTransaction
   ): Boolean = {
     val sigComponent = WitnessTxSigComponentRaw(transaction = refundTx,
                                                 inputIndex = UInt32.zero,
@@ -132,7 +131,7 @@ object DLCSignatureVerifier extends BitcoinSLogger {
 
   // TODO: Don't use PSBT
   def validateRemoteFundingSigs(
-      fundingTx: Transaction, // TODO: compute in overload
+      fundingTx: Transaction,
       fundingSigs: FundingSignatures,
       localIsInitiator: Boolean,
       offerFundingInputs: Vector[DLCFundingInput],
