@@ -69,8 +69,9 @@ case class TestDLCClient(
       getSigs: Future[(CETSignatures, FundingSignatures)]): Future[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
+    val (remoteCetSigs, cets) = dlcTxSigner.createCETsAndCETSigs()
+
     for {
-      (remoteCetSigs, cets) <- dlcTxSigner.createCETsAndCETSigs()
       _ <- sendSigs(remoteCetSigs)
       (cetSigs, fundingSigs) <- getSigs
       setupDLC <- dlcExecutor.setupDLCAccept(cetSigs, fundingSigs, Some(cets))
@@ -93,7 +94,7 @@ case class TestDLCClient(
     for {
       cetSigs <- getSigs
       setupDLCWithoutFundingTxSigs <- dlcExecutor.setupDLCOffer(cetSigs)
-      cetSigs <-
+      cetSigs =
         dlcTxSigner.createCETSigs(setupDLCWithoutFundingTxSigs.cets.map {
           case (msg, info) => msg -> info.tx
         })
@@ -109,7 +110,7 @@ case class TestDLCClient(
       dlcSetup: SetupDLC,
       oracleSigsF: Future[Vector[OracleSignatures]]): Future[
     ExecutedDLCOutcome] = {
-    oracleSigsF.flatMap { oracleSigs =>
+    oracleSigsF.map { oracleSigs =>
       dlcExecutor.executeDLC(dlcSetup, oracleSigs)
     }
   }

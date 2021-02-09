@@ -690,7 +690,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ <- scriptPubKeyDAO.create(spkDb)
 
       _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
-      cetSigs <- signer.createCETSigs()
+      cetSigs = signer.createCETSigs()
 
       _ = logger.debug(
         s"DLC Accept data collected, creating database entry, ${dlc.paramHash.hex}")
@@ -898,15 +898,14 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       cetSigs <-
         if (mySigs.isEmpty) {
           logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
-          for {
-            sigs <- signer.createCETSigs()
-            sigDbs = sigs.outcomeSigs.map(sig =>
-              DLCCETSignatureDb(dlc.paramHash,
-                                isInitiator = true,
-                                sig._1.sigPoint,
-                                sig._2))
-            _ <- dlcSigsDAO.createAll(sigDbs)
-          } yield sigs
+          val sigs = signer.createCETSigs()
+          val sigDbs = sigs.outcomeSigs.map(sig =>
+            DLCCETSignatureDb(dlc.paramHash,
+                              isInitiator = true,
+                              sig._1.sigPoint,
+                              sig._2))
+
+          dlcSigsDAO.createAll(sigDbs).map(_ => sigs)
         } else {
           logger.debug(s"CET Sigs already created for ${contractId.toHex}")
           val outcomeSigs = mySigs.map { dbSig =>
@@ -915,14 +914,11 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           }
           dlcRefundSigDAO
             .findByParamHash(dlc.paramHash, isInit = true)
-            .flatMap {
+            .map {
               case Some(refundDb) =>
-                Future.successful(
-                  CETSignatures(outcomeSigs, refundDb.refundSig))
+                CETSignatures(outcomeSigs, refundDb.refundSig)
               case None =>
-                signer.signRefundTx().map { sig =>
-                  CETSignatures(outcomeSigs, sig)
-                }
+                CETSignatures(outcomeSigs, signer.signRefundTx)
             }
         }
 
@@ -1459,7 +1455,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         throw new UnsupportedOperationException(
           "Cannot execute a losing outcome")
 
-      executed <- executor.executeDLC(setup, oracleSigs)
+      executed = executor.executeDLC(setup, oracleSigs)
       (tx, outcome, sigsUsed) =
         (executed.cet, executed.outcome, executed.sigsUsed)
       _ = logger.info(

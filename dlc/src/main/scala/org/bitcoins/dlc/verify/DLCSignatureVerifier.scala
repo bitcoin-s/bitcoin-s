@@ -128,7 +128,7 @@ object DLCSignatureVerifier extends BitcoinSLogger {
       .isValid
   }
 
-  // TODO: Don't use PSBT
+  // TODO: Without PSBTs
   def validateRemoteFundingSigs(
       fundingTx: Transaction,
       fundingSigs: FundingSignatures,

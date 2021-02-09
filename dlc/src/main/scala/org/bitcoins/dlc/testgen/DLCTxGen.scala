@@ -239,28 +239,32 @@ object DLCTxGen {
       EnumOracleOutcome(Vector(inputs.params.oracleInfo),
                         EnumOutcome(outcomeStr))
 
+    val accpetCETSigs = acceptSigner.createCETSigs()
+    val offerCETSigs = offerSigner.createCETSigs()
+
     for {
-      accpetCETSigs <- acceptSigner.createCETSigs()
-      offerCETSigs <- offerSigner.createCETSigs()
       offerFundingSigs <- offerSigner.signFundingTx()
 
       DLCTransactions(fundingTx, cets, refundTx) = inputs.buildTransactions
 
       signedFundingTx <- acceptSigner.completeFundingTx(offerFundingSigs)
-      signedRefundTx <- offerSigner.completeRefundTx(accpetCETSigs.refundSig)
-      offerSignedCET <- offerSigner.completeCET(
+    } yield {
+      val signedRefundTx = offerSigner.completeRefundTx(accpetCETSigs.refundSig)
+
+      val offerSignedCET = offerSigner.completeCET(
         outcome,
         accpetCETSigs(outcome),
         Vector(
           EnumOracleSignature(inputs.params.oracleInfo,
                               inputs.params.oracleSignature)))
-      acceptSignedCET <- acceptSigner.completeCET(
+
+      val acceptSignedCET = acceptSigner.completeCET(
         outcome,
         offerCETSigs(outcome),
         Vector(
           EnumOracleSignature(inputs.params.oracleInfo,
                               inputs.params.oracleSignature)))
-    } yield {
+
       val accept = acceptWithoutSigs.withSigs(accpetCETSigs)
 
       val contractId = fundingTx.txIdBE.bytes.xor(accept.tempContractId.bytes)

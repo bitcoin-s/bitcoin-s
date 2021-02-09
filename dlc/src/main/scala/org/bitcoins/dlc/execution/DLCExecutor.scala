@@ -66,8 +66,9 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
           case None              => Future.successful(builder.buildFundingTx)
         }
       }
-      refundTx <- signer.completeRefundTx(refundSig)
     } yield {
+      val refundTx = signer.completeRefundTx(refundSig)
+
       SetupDLC(fundingTx, cetInfos, refundTx)
     }
   }
@@ -84,7 +85,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
     */
   def executeDLC(
       dlcSetup: SetupDLC,
-      oracleSigs: Vector[OracleSignatures]): Future[ExecutedDLCOutcome] = {
+      oracleSigs: Vector[OracleSignatures]): ExecutedDLCOutcome = {
     val remoteFundingPubKey = if (isInitiator) {
       builder.acceptFundingKey
     } else {
@@ -114,7 +115,7 @@ object DLCExecutor {
       remoteFundingPubKey: ECPublicKey,
       contractInfo: ContractInfo,
       fundingTx: Transaction
-  )(implicit ec: ExecutionContext): Future[ExecutedDLCOutcome] = {
+  ): ExecutedDLCOutcome = {
     val threshold = contractInfo.oracleInfo.threshold
     val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
 
@@ -140,17 +141,18 @@ object DLCExecutor {
     val (fundingMultiSig, _) = DLCTxBuilder.buildFundingSPKs(
       Vector(fundingKey.publicKey, remoteFundingPubKey))
 
-    val cetF = DLCTxSigner.completeCET(msg,
-                                       fundingKey,
-                                       fundingMultiSig,
-                                       fundingTx,
-                                       ucet,
-                                       remoteAdaptorSig,
-                                       remoteFundingPubKey,
-                                       sigsUsed)
+    val signingInfo =
+      DLCTxSigner.buildCETSigningInfo(fundingTx, fundingMultiSig, fundingKey)
 
-    cetF.map { cet =>
-      ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
-    }
+    val cet = DLCTxSigner.completeCET(msg,
+                                      signingInfo,
+                                      fundingMultiSig,
+                                      fundingTx,
+                                      ucet,
+                                      remoteAdaptorSig,
+                                      remoteFundingPubKey,
+                                      sigsUsed)
+
+    ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
   }
 }
