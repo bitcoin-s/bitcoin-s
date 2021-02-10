@@ -4,7 +4,6 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.transaction._
 
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future}
 
 /** The mutable transaction builder which collects:
   *   - Unsigned inputs (script signature will be ignored)
@@ -149,7 +148,7 @@ case class RawTxBuilderWithFinalizer[F <: RawTxFinalizer](
     finalizer: F) {
 
   /** Completes the builder and finalizes the result */
-  def buildTx()(implicit ec: ExecutionContext): Future[Transaction] = {
+  def buildTx(): Transaction = {
     finalizer.buildTx(builder.result())
   }
 

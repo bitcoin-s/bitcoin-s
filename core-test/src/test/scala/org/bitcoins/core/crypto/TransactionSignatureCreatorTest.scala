@@ -121,46 +121,40 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
 
   it should "have old and new createSig functions agree" in {
 
-    forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
-        val unsignedTxF = StandardNonInteractiveFinalizer
+        val spendingTx = StandardNonInteractiveFinalizer
           .txFrom(outputs = destinations,
                   utxos = creditingTxsInfo,
                   feeRate = fee,
                   changeSPK = changeSPK)
 
-        val correctSigsF = unsignedTxF.flatMap { spendingTx =>
-          val assertFs = creditingTxsInfo.flatMap { signInfo =>
+        val correctSigs =
+          creditingTxsInfo.flatMap { signInfo =>
             signInfo.signers.map { signer =>
               val txSignatureComponent =
                 TxSigComponent(signInfo.inputInfo, spendingTx)
 
-              @nowarn val oldSigF =
+              val oldSig =
                 TransactionSignatureCreator.createSig(txSignatureComponent,
-                                                      signer.signFunction,
+                                                      signer.sign(_),
                                                       signInfo.hashType)
-              for {
-                oldSig <- oldSigF
-                newSig <-
-                  TransactionSignatureCreator.createSig(spendingTx,
-                                                        signInfo,
-                                                        signer.signFunction,
-                                                        signInfo.hashType)
-              } yield {
-                (oldSig.r == newSig.r) &&
-                (oldSig.s == newSig.s) &&
-                (oldSig.hex == newSig.hex)
-              }
+
+              val newSig =
+                TransactionSignatureCreator.createSig(spendingTx,
+                                                      signInfo,
+                                                      signer.sign(_),
+                                                      signInfo.hashType)
+
+              (oldSig.r == newSig.r) &&
+              (oldSig.s == newSig.s) &&
+              (oldSig.hex == newSig.hex)
             }
           }
 
-          Future.sequence(assertFs)
-        }
-
-        correctSigsF.map(x => assert(x.forall(_ == true)))
+        assert(correctSigs.forall(_ == true))
     }
   }
 

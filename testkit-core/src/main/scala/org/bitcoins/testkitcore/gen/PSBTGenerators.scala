@@ -18,7 +18,6 @@ import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
-import scala.concurrent.{ExecutionContext, Future}
 
 object PSBTGenerators {
 
@@ -107,54 +106,46 @@ object PSBTGenerators {
       .map(_.groupBy(_.key).map(_._2.head).toVector)
   }
 
-  def psbtWithUnknowns(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
+  def psbtWithUnknowns: Gen[PSBT] = {
     for {
-      psbtF <- Gen.frequency((6, fullNonFinalizedPSBT), (1, finalizedPSBT))
+      psbt <- Gen.frequency((6, fullNonFinalizedPSBT), (1, finalizedPSBT))
       globals <- unknownGlobals
       inputs <- unknownInputs
       outputs <- unknownOutputs
     } yield {
-      psbtF.map { psbt =>
-        val newGlobal = GlobalPSBTMap(psbt.globalMap.elements ++ globals)
-        val newInputMaps =
-          psbt.inputMaps.map(map => InputPSBTMap(map.elements ++ inputs))
-        val newOutputMaps =
-          psbt.outputMaps.map(map => OutputPSBTMap(map.elements ++ outputs))
+      val newGlobal = GlobalPSBTMap(psbt.globalMap.elements ++ globals)
+      val newInputMaps =
+        psbt.inputMaps.map(map => InputPSBTMap(map.elements ++ inputs))
+      val newOutputMaps =
+        psbt.outputMaps.map(map => OutputPSBTMap(map.elements ++ outputs))
 
-        PSBT(newGlobal, newInputMaps, newOutputMaps)
-      }
+      PSBT(newGlobal, newInputMaps, newOutputMaps)
     }
   }
 
-  def psbtWithUnknownVersion(implicit
-      ec: ExecutionContext): Gen[Future[PSBT]] = {
+  def psbtWithUnknownVersion: Gen[PSBT] = {
     for {
-      psbtF <- psbtWithUnknowns
+      psbt <- psbtWithUnknowns
       versionNumber <- Gen.choose(min = PSBT.knownVersions.last.toLong,
                                   max = UInt32.max.toLong)
     } yield {
-      psbtF.map { psbt =>
-        val newGlobal = GlobalPSBTMap(
-          psbt.globalMap.elements :+ Version(UInt32(versionNumber)))
+      val newGlobal = GlobalPSBTMap(
+        psbt.globalMap.elements :+ Version(UInt32(versionNumber)))
 
-        PSBT(newGlobal, psbt.inputMaps, psbt.outputMaps)
-      }
+      PSBT(newGlobal, psbt.inputMaps, psbt.outputMaps)
     }
   }
 
-  def psbtToBeSigned(implicit ec: ExecutionContext): Gen[
-    Future[(PSBT, Seq[ScriptSignatureParams[InputInfo]], FeeUnit)]] = {
-    psbtWithBuilder(finalized = false).map { psbtAndBuilderF =>
-      psbtAndBuilderF.flatMap {
-        case (psbt, FinalizedTxWithSigningInfo(_, infos), fee) =>
-          val newInputsMaps = psbt.inputMaps.map { map =>
-            InputPSBTMap(map.elements.filterNot(element =>
-              PSBTInputKeyId.fromBytes(element.key) == PartialSignatureKeyId))
-          }
+  def psbtToBeSigned: Gen[
+    (PSBT, Seq[ScriptSignatureParams[InputInfo]], FeeUnit)] = {
+    psbtWithBuilder(finalized = false).map {
+      case (psbt, FinalizedTxWithSigningInfo(_, infos), fee) =>
+        val newInputsMaps = psbt.inputMaps.map { map =>
+          InputPSBTMap(map.elements.filterNot(element =>
+            PSBTInputKeyId.fromBytes(element.key) == PartialSignatureKeyId))
+        }
 
-          Future.successful(
-            (PSBT(psbt.globalMap, newInputsMaps, psbt.outputMaps), infos, fee))
-      }
+        (PSBT(psbt.globalMap, newInputsMaps, psbt.outputMaps), infos, fee)
     }
   }
 
@@ -179,8 +170,7 @@ object PSBTGenerators {
       creditingTxsInfo: Seq[ScriptSignatureParams[InputInfo]],
       destinations: Seq[TransactionOutput],
       changeSPK: ScriptPubKey,
-      fee: FeeUnit)(implicit
-  ec: ExecutionContext): Future[(PSBT, FinalizedTxWithSigningInfo, FeeUnit)] = {
+      fee: FeeUnit): (PSBT, FinalizedTxWithSigningInfo, FeeUnit) = {
     val lockTime = TxUtil.calcLockTime(creditingTxsInfo).get
     val inputs =
       InputUtil.calcSequenceForInputs(creditingTxsInfo)
@@ -193,25 +183,25 @@ object PSBTGenerators {
       changeSPK)
     builder.setFinalizer(finalizer)
 
-    for {
-      unsignedTx <- builder.setFinalizer(finalizer).buildTx()
+    val unsignedTx = builder.setFinalizer(finalizer).buildTx()
 
-      orderedTxInfos = orderSpendingInfos(unsignedTx, creditingTxsInfo.toVector)
+    val orderedTxInfos =
+      orderSpendingInfos(unsignedTx, creditingTxsInfo.toVector)
 
-      psbt <- {
-        if (finalized) {
-          PSBT.finalizedFromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
-        } else {
-          PSBT.fromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
-        }
+    val psbt =
+      if (finalized) {
+        PSBT.finalizedFromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
+      } else {
+        PSBT.fromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
       }
-    } yield (psbt,
-             FinalizedTxWithSigningInfo(unsignedTx, creditingTxsInfo.toVector),
-             fee)
+
+    (psbt,
+     FinalizedTxWithSigningInfo(unsignedTx, creditingTxsInfo.toVector),
+     fee)
   }
 
-  def psbtWithBuilder(finalized: Boolean)(implicit ec: ExecutionContext): Gen[
-    Future[(PSBT, FinalizedTxWithSigningInfo, FeeUnit)]] = {
+  def psbtWithBuilder(
+      finalized: Boolean): Gen[(PSBT, FinalizedTxWithSigningInfo, FeeUnit)] = {
     for {
       (creditingTxsInfo, destinations) <- CreditingTxGen.inputsAndOutputs()
       (changeSPK, _) <- ScriptGenerators.scriptPubKey
@@ -234,9 +224,8 @@ object PSBTGenerators {
   def psbtWithBuilderAndP2SHOutputs(
       finalized: Boolean,
       outputGen: CurrencyUnit => Gen[Seq[(TransactionOutput, ScriptPubKey)]] =
-        TransactionGenerators.smallP2SHOutputs)(implicit
-      ec: ExecutionContext): Gen[
-    Future[(PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])]] = {
+        TransactionGenerators.smallP2SHOutputs): Gen[
+    (PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])] = {
     for {
       (creditingTxsInfo, outputs) <-
         CreditingTxGen.inputsAndP2SHOutputs(destinationGenerator = outputGen)
@@ -250,34 +239,33 @@ object PSBTGenerators {
       }
       fee <- FeeUnitGen.feeUnit(maxFee)
     } yield {
-      val pAndB = psbtAndBuilderFromInputs(finalized = finalized,
-                                           creditingTxsInfo = creditingTxsInfo,
-                                           destinations = outputs.map(_._1),
-                                           changeSPK = changeSPK._1,
-                                           fee = fee)
+      val p = psbtAndBuilderFromInputs(finalized = finalized,
+                                       creditingTxsInfo = creditingTxsInfo,
+                                       destinations = outputs.map(_._1),
+                                       changeSPK = changeSPK._1,
+                                       fee = fee)
 
-      pAndB.map(p => (p._1, p._2, outputs.map(_._2)))
+      (p._1, p._2, outputs.map(_._2))
     }
   }
 
-  def psbtWithBuilderAndP2WSHOutputs(finalized: Boolean)(implicit
-      ec: ExecutionContext): Gen[
-    Future[(PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])]] =
+  def psbtWithBuilderAndP2WSHOutputs(finalized: Boolean): Gen[
+    (PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])] =
     psbtWithBuilderAndP2SHOutputs(finalized,
                                   TransactionGenerators.smallP2WSHOutputs)
 
-  def finalizedPSBTWithBuilder(implicit ec: ExecutionContext): Gen[
-    Future[(PSBT, FinalizedTxWithSigningInfo, FeeUnit)]] = {
+  def finalizedPSBTWithBuilder: Gen[
+    (PSBT, FinalizedTxWithSigningInfo, FeeUnit)] = {
     psbtWithBuilder(finalized = true)
   }
 
-  def finalizedPSBT(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
-    finalizedPSBTWithBuilder.map(_.map(_._1))
+  def finalizedPSBT: Gen[PSBT] = {
+    finalizedPSBTWithBuilder.map(_._1)
   }
 
   /** Generates a PSBT that is ready to be finalized but where no input map has been finalized */
-  def fullNonFinalizedPSBT(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
-    psbtWithBuilder(finalized = false).map(_.map(_._1))
+  def fullNonFinalizedPSBT: Gen[PSBT] = {
+    psbtWithBuilder(finalized = false).map(_._1)
   }
 
   def pruneGlobal(globalMap: GlobalPSBTMap): GlobalPSBTMap = {
@@ -300,21 +288,19 @@ object PSBTGenerators {
   /** Generates an arbitrary unfinalized PSBT by generating a full unfinalized PSBT
     * and randomly removing records
     */
-  def arbitraryPSBT(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
-    psbtWithUnknowns.map { psbtF =>
-      psbtF.map { psbt =>
-        val global = psbt.globalMap
-        val inputs = psbt.inputMaps
-        val outputs = psbt.outputMaps
+  def arbitraryPSBT: Gen[PSBT] = {
+    psbtWithUnknowns.map { psbt =>
+      val global = psbt.globalMap
+      val inputs = psbt.inputMaps
+      val outputs = psbt.outputMaps
 
-        val newGlobal = pruneGlobal(global)
-        val newInputs =
-          inputs.map(input => InputPSBTMap(pruneVec(input.elements)))
-        val newOutputs =
-          outputs.map(output => OutputPSBTMap(pruneVec(output.elements)))
+      val newGlobal = pruneGlobal(global)
+      val newInputs =
+        inputs.map(input => InputPSBTMap(pruneVec(input.elements)))
+      val newOutputs =
+        outputs.map(output => OutputPSBTMap(pruneVec(output.elements)))
 
-        PSBT(newGlobal, newInputs, newOutputs)
-      }
+      PSBT(newGlobal, newInputs, newOutputs)
     }
   }
 }

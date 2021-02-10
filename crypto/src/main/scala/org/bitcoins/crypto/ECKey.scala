@@ -4,8 +4,7 @@ import scodec.bits.ByteVector
 
 import java.math.BigInteger
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext.Implicits
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 /** Created by chris on 2/16/16.
   */
@@ -18,11 +17,6 @@ sealed abstract class ECPrivateKey
     with Sign
     with MaskedToString {
 
-  override def signFunction: ByteVector => Future[ECDigitalSignature] = {
-    bytes =>
-      Future.successful(sign(bytes))
-  }
-
   /** Signs a given sequence of bytes with the signingKey
     * @param dataToSign the bytes to be signed
     * @return the digital signature
@@ -33,21 +27,10 @@ sealed abstract class ECPrivateKey
 
   def sign(hash: HashDigest): ECDigitalSignature = sign(hash.bytes)
 
-  def signFuture(hash: HashDigest)(implicit
-      ec: ExecutionContext): Future[ECDigitalSignature] =
-    Future(sign(hash))
-
   override def signWithEntropy(
       bytes: ByteVector,
       entropy: ByteVector): ECDigitalSignature = {
     CryptoUtil.signWithEntropy(this, bytes, entropy)
-  }
-
-  override def signWithEntropyFunction: (
-      ByteVector,
-      ByteVector) => Future[ECDigitalSignature] = { case (bytes, entropy) =>
-    import scala.concurrent.ExecutionContext.Implicits.global
-    Future(signWithEntropy(bytes, entropy))
   }
 
   def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
@@ -156,7 +139,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   def fromBytes(bytes: ByteVector, isCompressed: Boolean): ECPrivateKey = {
 
     if (bytes.size == 32)
-      ECPrivateKeyImpl(bytes, isCompressed, Implicits.global)
+      ECPrivateKeyImpl(bytes, isCompressed, ExecutionContext.global)
     else if (bytes.size < 32) {
       //means we need to pad the private key with 0 bytes so we have 32 bytes
       ECPrivateKey.fromBytes(bytes.padLeft(32), isCompressed)
@@ -279,7 +262,7 @@ object ECPublicKey extends Factory[ECPublicKey] {
   }
 
   override def fromBytes(bytes: ByteVector): ECPublicKey = {
-    ECPublicKeyImpl(bytes, Implicits.global)
+    ECPublicKeyImpl(bytes, ExecutionContext.global)
   }
 
   def apply(): ECPublicKey = freshPublicKey

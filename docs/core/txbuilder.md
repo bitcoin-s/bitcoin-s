@@ -106,7 +106,7 @@ val finalizer = StandardNonInteractiveFinalizer(
     changeSPK)
 
 // We can now finalize the tx builder result from earlier with this finalizer
-val unsignedTxF: Future[Transaction] = finalizer.buildTx(builderResult)
+val unsignedTx: Transaction = finalizer.buildTx(builderResult)
 
 // We now turn to signing the unsigned transaction
 // this contains all the information we need to
@@ -129,16 +129,12 @@ val utxoInfos: Vector[ScriptSignatureParams[InputInfo]] = Vector(utxoInfo)
 //   1: one input
 //   2: outputs (destination and change outputs)
 //   3: a fee rate of 1 satoshi/byte
-val signedTx: Transaction = {
-  val signedTxF = unsignedTxF.flatMap { unsignedTx =>
-    RawTxSigner.sign(
-        utx = unsignedTx,
-        utxoInfos = utxoInfos,
-        expectedFeeRate = feeRate
-    )
-  }
-  Await.result(signedTxF, 30.seconds)
-}
+val signedTx: Transaction =
+  RawTxSigner.sign(
+      utx = unsignedTx,
+      utxoInfos = utxoInfos,
+      expectedFeeRate = feeRate
+  )
 ```
 
 ```scala mdoc:to-string

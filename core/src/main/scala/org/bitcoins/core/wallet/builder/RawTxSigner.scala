@@ -11,9 +11,6 @@ import org.bitcoins.core.wallet.utxo.{
   UnassignedSegwitNativeInputInfo
 }
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
-
 /** Transactions that have been finalized by a RawTxFinalizer are passed as inputs
   * to a sign function here in order to generate fully signed transactions.
   *
@@ -51,21 +48,20 @@ object RawTxSigner {
 
   def sign(
       utx: Transaction,
-      utxoInfos: Vector[ScriptSignatureParams[InputInfo]])(implicit
-      ec: ExecutionContext): Future[Transaction] = {
+      utxoInfos: Vector[ScriptSignatureParams[InputInfo]]): Transaction = {
     sign(utx, utxoInfos, emptyInvariant, dummySign = false)
   }
 
-  def sign(txWithInfo: FinalizedTxWithSigningInfo, expectedFeeRate: FeeUnit)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
+  def sign(
+      txWithInfo: FinalizedTxWithSigningInfo,
+      expectedFeeRate: FeeUnit): Transaction = {
     sign(txWithInfo.finalizedTx, txWithInfo.infos, expectedFeeRate)
   }
 
   def sign(
       utx: Transaction,
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
-      expectedFeeRate: FeeUnit)(implicit
-      ec: ExecutionContext): Future[Transaction] = {
+      expectedFeeRate: FeeUnit): Transaction = {
 
     val invariants = feeInvariant(expectedFeeRate)
 
@@ -78,8 +74,7 @@ object RawTxSigner {
       expectedFeeRate: FeeUnit,
       userInvariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction) => Boolean)(implicit
-      ec: ExecutionContext): Future[Transaction] = {
+          Transaction) => Boolean): Transaction = {
 
     val invariants = addFeeRateInvariant(expectedFeeRate, userInvariants)
 
@@ -91,8 +86,7 @@ object RawTxSigner {
       expectedFeeRate: FeeUnit,
       userInvariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction) => Boolean)(implicit
-      ec: ExecutionContext): Future[Transaction] = {
+          Transaction) => Boolean): Transaction = {
 
     val invariants = addFeeRateInvariant(expectedFeeRate, userInvariants)
 
@@ -108,8 +102,7 @@ object RawTxSigner {
       invariants: (
           Vector[ScriptSignatureParams[InputInfo]],
           Transaction) => Boolean,
-      dummySign: Boolean)(implicit
-      ec: ExecutionContext): Future[Transaction] = {
+      dummySign: Boolean): Transaction = {
     require(
       utxoInfos.length == utx.inputs.length,
       s"Must provide exactly one UTXOSatisfyingInfo per input, ${utxoInfos.length} != ${utx.inputs.length}")
@@ -119,70 +112,56 @@ object RawTxSigner {
               utx.inputs.exists(_.previousOutput == utxo.outPoint)),
             "All UTXOSatisfyingInfos must correspond to an input.")
 
-    val signedTxF =
+    val signedTx =
       if (
         utxoInfos.exists(
           _.inputInfo.isInstanceOf[UnassignedSegwitNativeInputInfo])
       ) {
-        Future.fromTry(TxBuilderError.NoSigner)
+        throw TxBuilderError.NoSigner.exception
       } else {
         val builder = RawTxBuilder()
           .setVersion(utx.version)
           .setLockTime(utx.lockTime) ++= utx.outputs
 
-        val inputAndWitnessFs = utxoInfos.map { utxo =>
-          val txSigCompF =
+        val inputsAndWitnesses = utxoInfos.map { utxo =>
+          val txSigComp =
             BitcoinSigner.sign(utxo, utx, isDummySignature = dummySign)
-          txSigCompF.map { txSigComp =>
-            val scriptWitnessOpt = TxSigComponent.getScriptWitness(txSigComp)
+          val scriptWitnessOpt = TxSigComponent.getScriptWitness(txSigComp)
 
-            (txSigComp.input, scriptWitnessOpt)
-          }
+          (txSigComp.input, scriptWitnessOpt)
         }
 
         val witnessesBuilder = Vector.newBuilder[Option[ScriptWitness]]
 
-        val inputsAddedToBuilderF =
-          Future.sequence(inputAndWitnessFs).map { inputsAndWitnesses =>
-            utx.inputs.foreach { unsignedInput =>
-              val (input, witnessOpt) = inputsAndWitnesses
-                .find(_._1.previousOutput == unsignedInput.previousOutput)
-                .get
+        utx.inputs.foreach { unsignedInput =>
+          val (input, witnessOpt) = inputsAndWitnesses
+            .find(_._1.previousOutput == unsignedInput.previousOutput)
+            .get
 
-              witnessesBuilder += witnessOpt
-              builder += input
-            }
-          }
+          witnessesBuilder += witnessOpt
+          builder += input
+        }
 
-        for {
-          _ <- inputsAddedToBuilderF
-          btx <- builder.setFinalizer(RawFinalizer).buildTx()
-        } yield {
-          val txWitness =
-            TransactionWitness.fromWitOpt(witnessesBuilder.result())
+        val btx = builder.setFinalizer(RawFinalizer).buildTx()
 
-          txWitness match {
-            case EmptyWitness(_) => btx
-            case _: TransactionWitness =>
-              WitnessTransaction(btx.version,
-                                 btx.inputs,
-                                 btx.outputs,
-                                 btx.lockTime,
-                                 txWitness)
-          }
+        val txWitness =
+          TransactionWitness.fromWitOpt(witnessesBuilder.result())
+
+        txWitness match {
+          case EmptyWitness(_) => btx
+          case _: TransactionWitness =>
+            WitnessTransaction(btx.version,
+                               btx.inputs,
+                               btx.outputs,
+                               btx.lockTime,
+                               txWitness)
         }
       }
 
-    signedTxF.flatMap { signedTx =>
-      val txT: Try[Transaction] = {
-        if (invariants(utxoInfos, signedTx)) {
-          Success(signedTx)
-        } else {
-          TxBuilderError.FailedUserInvariants
-        }
-      }
-
-      Future.fromTry(txT)
+    if (invariants(utxoInfos, signedTx)) {
+      signedTx
+    } else {
+      throw TxBuilderError.FailedUserInvariants.exception
     }
   }
 }

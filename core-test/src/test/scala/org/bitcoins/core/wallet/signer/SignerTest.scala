@@ -28,14 +28,11 @@ import org.bitcoins.testkitcore.gen.{
   ScriptGenerators,
   TransactionGenerators
 }
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.annotation.nowarn
-import scala.concurrent.{ExecutionContext, Future}
 
-class SignerTest extends BitcoinSJvmTest {
-
-  implicit val ec: ExecutionContext = ExecutionContext.global
+class SignerTest extends BitcoinSUnitTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -75,7 +72,7 @@ class SignerTest extends BitcoinSJvmTest {
       .sample(CreditingTxGen.p2wpkhOutput)
       .asInstanceOf[ScriptSignatureParams[P2WPKHV0InputInfo]]
     val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
-    recoverToSucceededIf[IllegalArgumentException] {
+    assertThrows[IllegalArgumentException] {
       P2WPKHSigner.sign(dumbSpendingInfo, tx, isDummySignature = false, p2wpkh)
     }
   }
@@ -86,116 +83,104 @@ class SignerTest extends BitcoinSJvmTest {
       .sample(CreditingTxGen.p2wshOutput)
       .asInstanceOf[ScriptSignatureParams[P2WSHV0InputInfo]]
     val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
-    recoverToSucceededIf[IllegalArgumentException] {
+    assertThrows[IllegalArgumentException] {
       P2WSHSigner.sign(dumbSpendingInfo, tx, isDummySignature = false, p2wsh)
     }
   }
 
   it must "sign a mix of spks in a tx and then verify that single signing agrees" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfos, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
 
-        for {
-          unsignedTx <-
-            StandardNonInteractiveFinalizer.txFrom(destinations,
-                                                   creditingTxsInfos,
-                                                   fee,
-                                                   changeSPK)
-          signedTx <-
-            RawTxSigner.sign(unsignedTx, creditingTxsInfos.toVector, fee)
+        val unsignedTx =
+          StandardNonInteractiveFinalizer.txFrom(destinations,
+                                                 creditingTxsInfos,
+                                                 fee,
+                                                 changeSPK)
 
-          singleSigs: Vector[Vector[ECDigitalSignature]] <- {
-            val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
-              creditingTxsInfos.toVector.map(_.toSingles)
-            val sigVecFs = singleInfosVec.map { singleInfos =>
-              val sigFs = singleInfos.map { singleInfo =>
-                val keyAndSigF =
-                  BitcoinSigner.signSingle(singleInfo,
-                                           unsignedTx,
-                                           isDummySignature = false)
+        val signedTx =
+          RawTxSigner.sign(unsignedTx, creditingTxsInfos.toVector, fee)
 
-                keyAndSigF.map(_.signature)
+        val singleSigs: Vector[Vector[ECDigitalSignature]] = {
+          val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
+            creditingTxsInfos.toVector.map(_.toSingles)
+          singleInfosVec.map { singleInfos =>
+            singleInfos.map { singleInfo =>
+              val keyAndSig =
+                BitcoinSigner.signSingle(singleInfo,
+                                         unsignedTx,
+                                         isDummySignature = false)
+
+              keyAndSig.signature
+            }
+          }
+        }
+
+        signedTx.inputs.zipWithIndex.foreach { case (input, inputIndex) =>
+          val infoAndIndexOpt = creditingTxsInfos.zipWithIndex
+            .find(_._1.outPoint == input.previousOutput)
+          assert(infoAndIndexOpt.isDefined)
+          val (info, index) = infoAndIndexOpt.get
+          val sigs = singleSigs(index)
+
+          val expectedSigs =
+            if (InputInfo.getScriptWitness(info.inputInfo).isEmpty) {
+              input.scriptSignature.signatures
+            } else {
+              signedTx
+                .asInstanceOf[WitnessTransaction]
+                .witness
+                .witnesses(inputIndex) match {
+                case p2wpkh: P2WPKHWitnessV0 => Vector(p2wpkh.signature)
+                case p2wsh: P2WSHWitnessV0   => p2wsh.signatures
+                case EmptyScriptWitness      => Vector.empty
               }
-
-              Future.sequence(sigFs)
             }
 
-            Future.sequence(sigVecFs)
-          }
-        } yield {
-          signedTx.inputs.zipWithIndex.foreach { case (input, inputIndex) =>
-            val infoAndIndexOpt = creditingTxsInfos.zipWithIndex
-              .find(_._1.outPoint == input.previousOutput)
-            assert(infoAndIndexOpt.isDefined)
-            val (info, index) = infoAndIndexOpt.get
-            val sigs = singleSigs(index)
-
-            val expectedSigs =
-              if (InputInfo.getScriptWitness(info.inputInfo).isEmpty) {
-                input.scriptSignature.signatures
-              } else {
-                signedTx
-                  .asInstanceOf[WitnessTransaction]
-                  .witness
-                  .witnesses(inputIndex) match {
-                  case p2wpkh: P2WPKHWitnessV0 => Vector(p2wpkh.signature)
-                  case p2wsh: P2WSHWitnessV0   => p2wsh.signatures
-                  case EmptyScriptWitness      => Vector.empty
-                }
-              }
-
-            assert(sigs.length == expectedSigs.length)
-            assert(sigs.forall(expectedSigs.contains))
-          }
-
-          succeed
+          assert(sigs.length == expectedSigs.length)
+          assert(sigs.forall(expectedSigs.contains))
         }
+
+        succeed
     }
   }
 
   it should "have old and new doSign functions agree" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
-        val unsignedTxF = StandardNonInteractiveFinalizer
+        val spendingTx = StandardNonInteractiveFinalizer
           .txFrom(outputs = destinations,
                   utxos = creditingTxsInfo,
                   feeRate = fee,
                   changeSPK = changeSPK)
 
-        val correctSigsF = unsignedTxF.flatMap { spendingTx =>
-          val assertFs = creditingTxsInfo.flatMap { signInfo =>
+        val correctSigs =
+          creditingTxsInfo.flatMap { signInfo =>
             signInfo.signers.map { signer =>
               val txSignatureComponent =
                 TxSigComponent(signInfo.inputInfo, spendingTx)
-              @nowarn val oldSigF = BitcoinSigner.doSign(txSignatureComponent,
-                                                         signer.signFunction,
-                                                         signInfo.hashType,
-                                                         isDummySignature =
-                                                           false)
-              for {
-                oldSig <- oldSigF
-                newSig <- BitcoinSigner.doSign(spendingTx,
-                                               signInfo,
-                                               signer.signFunction,
-                                               signInfo.hashType,
-                                               isDummySignature = false)
-              } yield {
-                (oldSig.r == newSig.r) &&
-                (oldSig.s == newSig.s) &&
-                (oldSig.hex == newSig.hex)
-              }
+              @nowarn val oldSig = BitcoinSigner.doSign(txSignatureComponent,
+                                                        signer.sign,
+                                                        signInfo.hashType,
+                                                        isDummySignature =
+                                                          false)
+
+              val newSig = BitcoinSigner.doSign(spendingTx,
+                                                signInfo,
+                                                signer.sign,
+                                                signInfo.hashType,
+                                                isDummySignature = false)
+
+              (oldSig.r == newSig.r) &&
+              (oldSig.s == newSig.s) &&
+              (oldSig.hex == newSig.hex)
             }
           }
 
-          Future.sequence(assertFs)
-        }
-
-        correctSigsF.map(x => assert(x.forall(_ == true)))
+        assert(correctSigs.forall(_ == true))
     }
   }
 
@@ -270,58 +255,51 @@ class SignerTest extends BitcoinSJvmTest {
   }
 
   it must "sign p2wsh inputs correctly when provided no witness data" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs(CreditingTxGen.p2wshOutputs),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(CreditingTxGen.p2wshOutputs),
+           ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfos, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
-        for {
-          unsignedTx <-
-            StandardNonInteractiveFinalizer.txFrom(destinations,
-                                                   creditingTxsInfos,
-                                                   fee,
-                                                   changeSPK)
+        val unsignedTx =
+          StandardNonInteractiveFinalizer.txFrom(destinations,
+                                                 creditingTxsInfos,
+                                                 fee,
+                                                 changeSPK)
 
-          singleSigs: Vector[Vector[PartialSignature]] <- {
-            val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
-              creditingTxsInfos.toVector.map(_.toSingles)
-            val sigVecFs = singleInfosVec.map { singleInfos =>
-              val sigFs = singleInfos.map { singleInfo =>
-                val wtx =
-                  WitnessTransaction(unsignedTx.version,
-                                     unsignedTx.inputs,
-                                     unsignedTx.outputs,
-                                     unsignedTx.lockTime,
-                                     EmptyWitness.fromInputs(unsignedTx.inputs))
-                BitcoinSigner.signSingle(singleInfo,
-                                         wtx,
-                                         isDummySignature = false)
+        val singleSigs: Vector[Vector[PartialSignature]] = {
+          val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
+            creditingTxsInfos.toVector.map(_.toSingles)
+          singleInfosVec.map { singleInfos =>
+            singleInfos.map { singleInfo =>
+              val wtx =
+                WitnessTransaction(unsignedTx.version,
+                                   unsignedTx.inputs,
+                                   unsignedTx.outputs,
+                                   unsignedTx.lockTime,
+                                   EmptyWitness.fromInputs(unsignedTx.inputs))
+              BitcoinSigner.signSingle(singleInfo,
+                                       wtx,
+                                       isDummySignature = false)
 
-              }
-
-              Future.sequence(sigFs)
             }
-
-            Future.sequence(sigVecFs)
           }
-        } yield {
-
-          val psbt =
-            creditingTxsInfos.foldLeft(PSBT.fromUnsignedTx(unsignedTx)) {
-              (psbt, spendInfo) =>
-                val idx = inputIndex(spendInfo, unsignedTx)
-                psbt
-                  .addUTXOToInput(spendInfo.prevTransaction, idx)
-                  .addScriptWitnessToInput(
-                    InputInfo.getScriptWitness(spendInfo.inputInfo).get,
-                    idx)
-                  .addSignatures(singleSigs(idx), idx)
-            }
-
-          val signedTx = psbt.finalizePSBT.get.extractTransactionAndValidate
-
-          assert(verifyScripts(signedTx.get, creditingTxsInfos.toVector))
         }
+
+        val psbt =
+          creditingTxsInfos.foldLeft(PSBT.fromUnsignedTx(unsignedTx)) {
+            (psbt, spendInfo) =>
+              val idx = inputIndex(spendInfo, unsignedTx)
+              psbt
+                .addUTXOToInput(spendInfo.prevTransaction, idx)
+                .addScriptWitnessToInput(
+                  InputInfo.getScriptWitness(spendInfo.inputInfo).get,
+                  idx)
+                .addSignatures(singleSigs(idx), idx)
+          }
+
+        val signedTx = psbt.finalizePSBT.get.extractTransactionAndValidate
+
+        assert(verifyScripts(signedTx.get, creditingTxsInfos.toVector))
     }
   }
 }
