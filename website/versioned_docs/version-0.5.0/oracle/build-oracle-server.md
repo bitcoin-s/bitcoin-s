@@ -5,11 +5,11 @@ original_id: build-oracle-server
 ---
 
 The Oracle Server is a DLC Oracle with functionality for creating events and attesting to them.
-The Oracle Server is interactable through the RPC interface.
+You can interact with the oracle server with `bitcoin-s-cli` or `curl`
 
 The following a guide is for how to build the oracle server.
 If you are looking for the documentation on how to use the oracle server,
-checkout [this page](oracle-server.md)
+checkout [this page](oracle-server.md).
 
 ## Step 1: Java and Scala
 
@@ -83,6 +83,6 @@ You can also pass in a custom `rpcport` to bind to
 ./app/oracle-server/target/universal/stage/bin/bitcoin-s-oracle-server --rpcport 12345
 ```
 
-For more information on configuring the server please see our [configuration](../config/configuration.md) document
+For more information on configuring the server please see our [configuration](../config/configuration.md) document.
 
-For more information on how to use our built in `cli` to interact with the server please see [cli.md](../applications/cli.md)
+For more information on how to use our built in `cli` to interact with the server please see the [cli docs](../applications/cli.md).

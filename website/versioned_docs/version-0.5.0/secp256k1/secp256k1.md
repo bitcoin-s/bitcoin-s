@@ -70,12 +70,12 @@ Here is an example of calling bouncy castle methods in `ECKey`
 val privKey = ECPrivateKey.freshPrivateKey
 // privKey: ECPrivateKey = Masked(ECPrivateKeyImpl)
 val publicKey = privKey.publicKeyWithBouncyCastle
-// publicKey: ECPublicKey = ECPublicKey(02b967793f6d2af1a140d09a50da7bc79eab92302c6bc6726e3a35b6aa99abc8b2)
+// publicKey: ECPublicKey = ECPublicKey(0322b9a4188a8b9541d8d4e6be9e418ff7ab44d8655cb63145703939e6a348ef43)
 val dataToSign = DoubleSha256Digest.empty
 // dataToSign: DoubleSha256Digest = DoubleSha256Digest(0000000000000000000000000000000000000000000000000000000000000000)
 
 val signature = privKey.signWithBouncyCastle(dataToSign.bytes)
-// signature: ECDigitalSignature = ECDigitalSignature(3044022010e33d10f53d6359662468321879d745940981648c252c6f862621087c7441b7022029c40ee3bad3116bb1a9027fd871df4247ef5b28007cda88eaf0535e66681676)
+// signature: ECDigitalSignature = ECDigitalSignature(3045022100b24cc0a8e9f778899db470dce18b7902e87881343484fc7c0c32058f8a73ddff022027d0600df4a69a12ad03f5a23736be58fcdd4ca2c14b202ef9a643d1632fde6b)
 
 val verified = publicKey.verifyWithBouncyCastle(dataToSign.bytes, signature)
 // verified: Boolean = true

@@ -169,7 +169,7 @@ bitcoin-s {
             # to keep the sync time fast, however, for regtest it should be small
             # so it does not exceed the chain size.
 
-            filter-batch-size = 100
+            filter-batch-size = 1000
         }
         
         hikari-logging = true
@@ -212,7 +212,7 @@ bitcoin-s {
         # bip39password = "changeMe"
 
         # Password that your seed is encrypted with
-        aespassword = changeMe
+        aesPassword = changeMe
     }
 
     # Bitcoin-S provides manny different fee providers
@@ -244,6 +244,11 @@ bitcoin-s {
 
         # The ip address we bind our server too
         rpcbind = "127.0.0.1"
+    }
+
+    oracle {
+        hikari-logging = true
+        hikari-logging-interval = 1 minute
     }
 }
 

@@ -10,7 +10,8 @@
     "Applications": [
       "version-0.5.0-applications/cli",
       "version-0.5.0-applications/server",
-      "version-0.5.0-applications/gui"
+      "version-0.5.0-applications/gui",
+      "version-0.5.0-applications/server-systemd"
     ],
     "Chain": [
       "version-0.5.0-chain/chain",
