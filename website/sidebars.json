@@ -10,7 +10,8 @@
     "Applications": [
       "applications/cli",
       "applications/server",
-      "applications/gui"
+      "applications/gui",
+      "applications/server-systemd"
     ],
     "Chain": [
       "chain/chain",
