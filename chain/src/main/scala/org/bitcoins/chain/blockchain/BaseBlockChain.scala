@@ -33,7 +33,7 @@ import scala.annotation.tailrec
   */
 private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
 
-  protected[blockchain] def compObjectfromHeaders(
+  protected[blockchain] def compObjectFromHeaders(
       headers: scala.collection.immutable.Seq[BlockHeaderDb]): Blockchain
 
   lazy val tip: BlockHeaderDb = headers.head
@@ -58,7 +58,7 @@ private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
   def fromHeader(header: BlockHeaderDb): Option[Blockchain] = {
     val headerIdxOpt = findHeaderIdx(header.hashBE)
     headerIdxOpt.map { idx =>
-      val newChain = this.compObjectfromHeaders(headers.splitAt(idx)._2)
+      val newChain = this.compObjectFromHeaders(headers.splitAt(idx)._2)
       require(newChain.tip == header)
       newChain
     }
