@@ -4,7 +4,7 @@ title: Building the Oracle Server
 ---
 
 The Oracle Server is a DLC Oracle with functionality for creating events and attesting to them.
-The Oracle Server is interactable through the RPC interface.
+You can interact with the oracle server with `bitcoin-s-cli` or `curl`
 
 The following a guide is for how to build the oracle server.
 If you are looking for the documentation on how to use the oracle server,

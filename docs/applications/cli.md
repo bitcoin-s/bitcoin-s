@@ -18,14 +18,14 @@ $ sbt cli/universal:stage
 After running that command you should find the executable here:
 
 ```bash
-bitcoin-s/app/cli/target/universal/stage/bin/bitcoin-s-cli
+./app/cli/target/universal/stage/bin/bitcoin-s-cli
 ```
 
 ### Executing commands
 You can ask the client for help with
 
 ```bash
- ./app/cli/target/universal/stage/bin/bitcoin-s-cli --help
+./app/cli/target/universal/stage/bin/bitcoin-s-cli --help
 Usage: bitcoin-s-cli [options] [<cmd>]
 
   -n, --network <value>  Select the active network.
