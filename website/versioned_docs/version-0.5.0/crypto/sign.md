@@ -51,13 +51,13 @@ val extPrivKey = ExtPrivateKey(ExtKeyVersion.SegWitMainNetPriv)
 // extPrivKey: ExtPrivateKey = Masked(ExtPrivateKeyImpl)
 
 extPrivKey.sign(DoubleSha256Digest.empty.bytes)
-// res0: ECDigitalSignature = ECDigitalSignature(3045022100c911f42f331c0569d1b9b77026df50b39bb683ba81f6991a4131e9bc5276f796022014a0fa786ac3e5d8443fe98e5feda55f8639f599e344e5d5b50d345aee3f008d)
+// res0: ECDigitalSignature = ECDigitalSignature(30440220530bbdcebde7df249e63340120dde70badb0c2a7d6f2e4ab4ccc34a99e0be85d0220118d3d5be4d95a65b52d42d3b9312ce8c201621cd7d02c7d706c46fd2ed9a5e4)
 
 val path = BIP32Path(Vector(BIP32Node(0,false)))
 // path: BIP32Path = m/0
 
 extPrivKey.sign(DoubleSha256Digest.empty.bytes,path)
-// res1: ECDigitalSignature = ECDigitalSignature(3044022021022d5aed760a932276f35908a9b8d6865be7f31e8f16479dfdfbae6a314b3602203c9265bd2632417904dabefe8ebaac3fe832ccf9997e81d92e0606e62e7061ba)
+// res1: ECDigitalSignature = ECDigitalSignature(30440220776d7530cfc12ce376e38bd23e71a95177830205a26518812afd4f7516858c6a022077cbd5a19761434f84b6b442788f02cc37b930acf169c13f13f1b6930ce1ea78)
 ```
 
 With `ExtSign`, you can use `ExtPrivateKey` to sign transactions inside of `TxBuilder` since `UTXOSpendingInfo` takes in `Sign` as a parameter. 

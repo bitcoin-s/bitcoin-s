@@ -134,7 +134,7 @@ If you're looking to set up a DLC Oracle instead go to the [oracle server docs](
 
 We are finally ready to start running some programs! Follow the [instructions here](applications/server.md#building-the-server) to build the server. Then, follow [these instructions](applications/cli.md) to setup the CLI.
 
-There are 2 ways to use the bitcoin-s server. It can either can be as a neutrino node or use bitcoind as a backend.
+There are 2 ways to use the bitcoin-s server. It can either be as a neutrino node or use bitcoind as a backend.
 This can be configured by the configuration option `bitcoin-s.node.mode` choosing either `neutrino` or `bitcoind`.
 
 ### Option A: Neutrino Server
@@ -151,7 +151,7 @@ Testnet:
 `bitcoin-s.node.peers = ["neutrino.testnet3.suredbits.com:18333"]`
 
 If you would like to use your own node you can either use the bitcoind backend option or connect to your own compatible node.
-There is no released version of bitcoind that is neutrino compatible so you will either have to compile the latest `master` yourself, or use the experimental version provided by running `sbt downloadBitcoind`. 
+There is no released version of bitcoind that is neutrino compatible, so you will either have to compile the latest `master` yourself, or use the experimental version provided by running `sbt downloadBitcoind`. 
 
 After building your bitcoin-s server, properly configuring it to be in `neutrino` mode you can start your server with:
 
@@ -201,10 +201,17 @@ bitcoin-s {
 
 ## Step 6 (Optional): Moving To Testnet
 
-To run your Bitcoin-S Server on testnet, simply change `network = testnet3` and change your `peers = ["neutrino.testnet3.suredbits.com:18333"] ` in your `.bitcoin-s/bitcoin-s.conf` file. This will allow you to connect to Suredbits' neutrino-enabled `bitcoind` node. Keep in mind then when you restart your server, it will begin initial sync which will take many hours as all block filters for all testnet blocks will be downloaded. If you wish to speed this process up, download [this snapshot](https://s3-us-west-2.amazonaws.com/www.suredbits.com/testnet-chaindump-2-25-2020.zip), unzip it and put the file in your `$HOME/.bitcoin-s/testnet3` directory and then from there, run
+To run your Bitcoin-S Server on testnet, simply change `network = testnet3` and change
+your `peers = ["neutrino.testnet3.suredbits.com:18333"] ` in your `.bitcoin-s/bitcoin-s.conf` file.
+This will allow you to connect to Suredbits' neutrino-enabled `bitcoind` node.
+Keep in mind then when you restart your server, it will begin initial sync which will take
+many hours as all block filters for all testnet blocks will be downloaded.
+If you wish to speed this process up,
+download [this snapshot](https://s3-us-west-2.amazonaws.com/www.suredbits.com/chaindb-testnet-2021-02-03.zip), unzip it and put the file in your `$HOME/.bitcoin-s/testnet3` directory and then from there, run
 
 ```bashrc
-cat chaindump.sql | sqlite3 chaindb.sqlite
+$ unzip chaindb-testnet-2021-02-03.zip
+$ mv chaindb.sqlite ~/.bitcoin-s/testnet/
 ```
 
 This should take a couple minutes to execute, but once it is done, you will only have a short while left to sync once you start your server.

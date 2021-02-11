@@ -5,18 +5,18 @@ original_id: oracle-server
 ---
 
 The Oracle Server is a DLC Oracle with functionality for creating events and attesting to them.
-The Oracle Server is interactable through the RPC interface.
+You can interact with the oracle server with `bitcoin-s-cli` or `curl`
 
 The following a guide is for interacting with the oracle
 If you are looking for the documentation on how to build the oracle server,
-checkout [this page](build-oracle-server.md)
+checkout [this page](build-oracle-server.md).
 
 ## Server Endpoints
 
 - `getpublickey` - Get oracle's public key
 - `getstakingaddress` - Get oracle's staking address
 - `listevents` - Lists all oracle announcement TLVs
-- `createevent` `label` `maturationtime` `outcomes` - Registers an oracle event
+- `createenumevent` `label` `maturationtime` `outcomes` - Registers an oracle enum event
   - `label` - Label for this event
   - `maturationtime` - The earliest expected time an outcome will be signed, given in epoch second
   - `outcomes` - Possible outcomes for this event
@@ -43,7 +43,7 @@ checkout [this page](build-oracle-server.md)
 
 Bitcoin-S CLI:
 ```bash
-$ bitcoin-s-cli createevent test 1701917137 "outcome1,outcome2,outcome3"
+$ bitcoin-s-cli createenumevent test 1701917137 "outcome1,outcome2,outcome3"
 fdd824b0ba0f08e9becbf77019e246ca8a80c027585634dc1aed4b7f67442ada394b40dcb242d8a8c84893a752b93f30ff07525b0604382255ec7392fcc6f230140feb905f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115fdd8224c000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f657131d1fdd8061d0003086f7574636f6d6531086f7574636f6d6532086f7574636f6d65330474657374
 
 $ bitcoin-s-cli getevent fdd824b0ba0f08e9becbf77019e246ca8a80c027585634dc1aed4b7f67442ada394b40dcb242d8a8c84893a752b93f30ff07525b0604382255ec7392fcc6f230140feb905f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115fdd8224c000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f657131d1fdd8061d0003086f7574636f6d6531086f7574636f6d6532086f7574636f6d65330474657374
@@ -77,7 +77,7 @@ fdd8687004746573745f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e521
 
 CURL:
 ```bash
-$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "createevent", "params": ["testEvent", 1701917137, ["outcome1", "outcome2", "outcome3"]]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+$ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "createenumevent", "params": ["testEvent", 1701917137, ["outcome1", "outcome2", "outcome3"]]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
 {"result":"fdd824b0ba0f08e9becbf77019e246ca8a80c027585634dc1aed4b7f67442ada394b40dcb242d8a8c84893a752b93f30ff07525b0604382255ec7392fcc6f230140feb905f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115fdd8224c000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f657131d1fdd8061d0003086f7574636f6d6531086f7574636f6d6532086f7574636f6d65330474657374","error":null}
 
 $ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getevent", "params": ["fdd824b0ba0f08e9becbf77019e246ca8a80c027585634dc1aed4b7f67442ada394b40dcb242d8a8c84893a752b93f30ff07525b0604382255ec7392fcc6f230140feb905f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115fdd8224c000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f657131d1fdd8061d0003086f7574636f6d6531086f7574636f6d6532086f7574636f6d65330474657374"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
