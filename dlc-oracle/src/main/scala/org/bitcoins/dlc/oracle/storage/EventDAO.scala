@@ -46,6 +46,12 @@ case class EventDAO()(implicit
     findAll().map(_.filter(_.attestationOpt.isEmpty))
   }
 
+  def findByEventName(name: String): Future[Vector[EventDb]] = {
+    val query = table.filter(_.eventName === name)
+
+    safeDatabase.runVec(query.result.transactionally)
+  }
+
   def findByEventDescriptor(
       descriptorTLV: EventDescriptorTLV): Future[Vector[EventDb]] = {
     val query = table.filter(_.eventDescriptorTLV === descriptorTLV)

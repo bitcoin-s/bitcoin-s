@@ -103,6 +103,14 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     }
   }
 
+  def findEvent(eventName: String): Future[Option[OracleEvent]] = {
+    eventDAO.findByEventName(eventName).map { dbs =>
+      if (dbs.isEmpty) {
+        None
+      } else Some(OracleEvent.fromEventDbs(dbs))
+    }
+  }
+
   def createNewLargeRangedEvent(
       eventName: String,
       maturationTime: Instant,
@@ -182,6 +190,9 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
             s"Event cannot mature in the past, got $maturationTime")
 
     for {
+      dbs <- eventDAO.findByEventName(eventName)
+      _ = require(dbs.isEmpty, s"Event name ($eventName) is already being used")
+
       indexOpt <- rValueDAO.maxKeyIndex
       firstIndex = indexOpt match {
         case Some(value) => value + 1
@@ -232,6 +243,18 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     } yield {
       OracleEvent.fromEventDbs(eventDbs).announcementTLV
     }
+  }
+
+  def signEvent(
+      eventName: String,
+      outcome: DLCAttestationType): Future[EventDb] = {
+    for {
+      eventDbs <- eventDAO.findByEventName(eventName)
+      _ = require(eventDbs.size == 1,
+                  "Use signLargeRange for signing multi nonce outcomes")
+
+      sign <- signEvent(eventDbs.head.nonce, outcome)
+    } yield sign
   }
 
   def signEvent(
@@ -295,6 +318,15 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
                              outcomeOpt = Some(outcome.outcomeString))
       _ <- eventDAO.update(updated)
     } yield updated
+  }
+
+  def signDigits(eventName: String, num: Long): Future[OracleEvent] = {
+    for {
+      eventOpt <- findEvent(eventName)
+      _ = require(eventOpt.isDefined,
+                  s"No event found by event name $eventName")
+      res <- signDigits(eventOpt.get.announcementTLV.eventTLV, num)
+    } yield res
   }
 
   def signDigits(

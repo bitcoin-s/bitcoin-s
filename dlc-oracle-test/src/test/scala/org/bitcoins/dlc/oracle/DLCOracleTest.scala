@@ -85,6 +85,15 @@ class DLCOracleTest extends DLCOracleFixture {
       }
   }
 
+  it must "fail to create an event with the same name" in {
+    dlcOracle: DLCOracle =>
+      for {
+        _ <- dlcOracle.createNewEvent("test", futureTime, testDescriptor)
+        res <- recoverToSucceededIf[IllegalArgumentException](
+          dlcOracle.createNewEvent("test", futureTime, testDescriptor))
+      } yield res
+  }
+
   it must "create an enum new event and get its details" in {
     dlcOracle: DLCOracle =>
       val time = futureTime
