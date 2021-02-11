@@ -7,7 +7,15 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
+/** There exists 2 different kinds of bech32 encodings: bech32 & bech32m
+  * @see https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+  * @see https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki
+  */
 sealed abstract class Bech32Encoding {
+
+  /** The constant that is XORed into the checksum
+    * @see https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki#bech32m
+    */
   def constant: Int
 }
 
@@ -23,7 +31,7 @@ object Bech32Encoding {
 }
 
 /** A abstract class representing basic utility functions of Bech32
-  * For more information on Bech32 please seee BIP173
+  * For more information on Bech32 please see BIP173
   * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki]]
   */
 sealed abstract class Bech32 {
