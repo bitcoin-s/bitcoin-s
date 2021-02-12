@@ -1,6 +1,9 @@
 package org.bitcoins.crypto
 
+import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.{BitVector, ByteVector}
+
+import java.math.BigInteger
 
 /** Trait that should be extended by specific runtimes like javascript
   * or the JVM to support crypto functions needed for bitcoin-s
@@ -22,7 +25,9 @@ trait CryptoRuntime {
 
   def sha256(bytes: ByteVector): Sha256Digest
 
-  def sha256(str: String): Sha256Digest
+  def sha256(str: String): Sha256Digest = {
+    sha256(serializeForHash(str))
+  }
 
   def sha256(bitVector: BitVector): Sha256Digest = {
     sha256(bitVector.toByteVector)
@@ -89,6 +94,12 @@ trait CryptoRuntime {
   def sha256DLCAnnouncement(bytes: ByteVector): Sha256Digest = {
     sha256(dlcAnnouncementTagBytes ++ bytes)
   }
+
+  /** @param x x coordinate
+    * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
+    *         p1.y is even, p2.y is odd
+    */
+  def recoverPoint(x: BigInteger): (ECPoint, ECPoint)
 
   /** Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
     * can be verified with both, but only one of them matches that private key that was used to generate the signature.
