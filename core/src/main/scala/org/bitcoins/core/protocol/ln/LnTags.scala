@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.ln
 
 import java.nio.charset.Charset
+
 import org.bitcoins.core.config.{MainNet, NetworkParameters}
 import org.bitcoins.core.number.{UInt32, UInt5, UInt8}
 import org.bitcoins.core.protocol._
@@ -9,7 +10,7 @@ import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0}
 import org.bitcoins.core.util.{Bech32, SeqWrapper}
-import org.bitcoins.crypto.{CryptoTrait, Sha256Digest, Sha256Hash160Digest}
+import org.bitcoins.crypto.{CryptoUtil, Sha256Digest, Sha256Hash160Digest}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -134,7 +135,7 @@ object LnTag {
     }
   }
 
-  case class DescriptionTag(string: String) extends LnTag with CryptoTrait {
+  case class DescriptionTag(string: String) extends LnTag {
     override val prefix: LnTagPrefix = LnTagPrefix.Description
 
     def descBytes: ByteVector = {
@@ -142,7 +143,7 @@ object LnTag {
     }
 
     def descriptionHashTag: LnTag.DescriptionHashTag = {
-      val hash = cryptoRuntime.sha256(descBytes)
+      val hash = CryptoUtil.sha256(descBytes)
       LnTag.DescriptionHashTag(hash)
     }
 

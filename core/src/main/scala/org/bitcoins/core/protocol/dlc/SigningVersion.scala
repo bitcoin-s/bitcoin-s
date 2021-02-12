@@ -1,10 +1,10 @@
 package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.crypto.{CryptoTrait, SchnorrNonce, StringFactory}
+import org.bitcoins.crypto.{CryptoUtil, SchnorrNonce, StringFactory}
 import scodec.bits.ByteVector
 
-sealed abstract class SigningVersion extends CryptoTrait {
+sealed abstract class SigningVersion {
 
   /** Calculates the tweak for the oracle's pre-committed nonce */
   def calcNonceTweak(nonce: SchnorrNonce, eventName: String): ByteVector
@@ -21,11 +21,11 @@ sealed abstract class SigningVersion extends CryptoTrait {
   final def calcOutcomeHash(
       descriptor: EventDescriptorTLV,
       string: String): ByteVector = {
-    calcOutcomeHash(descriptor, cryptoRuntime.serializeForHash(string))
+    calcOutcomeHash(descriptor, CryptoUtil.serializeForHash(string))
   }
 }
 
-object SigningVersion extends StringFactory[SigningVersion] with CryptoTrait {
+object SigningVersion extends StringFactory[SigningVersion] {
 
   /** Initial signing version that was created, not a part of any spec */
   final case object Mock extends SigningVersion {
@@ -33,18 +33,18 @@ object SigningVersion extends StringFactory[SigningVersion] with CryptoTrait {
     override def calcNonceTweak(
         nonce: SchnorrNonce,
         eventName: String): ByteVector = {
-      val bytes = nonce.bytes ++ cryptoRuntime.serializeForHash(eventName)
+      val bytes = nonce.bytes ++ CryptoUtil.serializeForHash(eventName)
 
-      cryptoRuntime.taggedSha256(bytes, "DLCv0/Nonce").bytes
+      CryptoUtil.taggedSha256(bytes, "DLCv0/Nonce").bytes
     }
 
     override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
-      cryptoRuntime.taggedSha256(eventTLV.bytes, "DLCv0/Announcement").bytes
+      CryptoUtil.taggedSha256(eventTLV.bytes, "DLCv0/Announcement").bytes
 
     override def calcOutcomeHash(
         descriptor: EventDescriptorTLV,
         byteVector: ByteVector): ByteVector =
-      cryptoRuntime.taggedSha256(byteVector, "DLCv0/Outcome").bytes
+      CryptoUtil.taggedSha256(byteVector, "DLCv0/Outcome").bytes
   }
 
   /** Used before we had an actual signing algorithm in the spec */
@@ -53,13 +53,13 @@ object SigningVersion extends StringFactory[SigningVersion] with CryptoTrait {
     override def calcNonceTweak(
         nonce: SchnorrNonce,
         eventName: String): ByteVector = {
-      val bytes = nonce.bytes ++ cryptoRuntime.serializeForHash(eventName)
+      val bytes = nonce.bytes ++ CryptoUtil.serializeForHash(eventName)
 
-      cryptoRuntime.taggedSha256(bytes, "BasicSHA256").bytes
+      CryptoUtil.taggedSha256(bytes, "BasicSHA256").bytes
     }
 
     override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
-      cryptoRuntime.sha256(eventTLV.bytes).bytes
+      CryptoUtil.sha256(eventTLV.bytes).bytes
 
     override def calcOutcomeHash(
         descriptor: EventDescriptorTLV,
@@ -67,7 +67,7 @@ object SigningVersion extends StringFactory[SigningVersion] with CryptoTrait {
       descriptor match {
         case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV |
             _: DigitDecompositionEventDescriptorV0TLV =>
-          cryptoRuntime.sha256(byteVector).bytes
+          CryptoUtil.sha256(byteVector).bytes
       }
     }
   }
@@ -78,13 +78,13 @@ object SigningVersion extends StringFactory[SigningVersion] with CryptoTrait {
     override def calcNonceTweak(
         nonce: SchnorrNonce,
         eventName: String): ByteVector = {
-      val bytes = nonce.bytes ++ cryptoRuntime.serializeForHash(eventName)
+      val bytes = nonce.bytes ++ CryptoUtil.serializeForHash(eventName)
 
-      cryptoRuntime.taggedSha256(bytes, "DLC/oracle/nonce/v0").bytes
+      CryptoUtil.taggedSha256(bytes, "DLC/oracle/nonce/v0").bytes
     }
 
     override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
-      cryptoRuntime
+      CryptoUtil
         .taggedSha256(eventTLV.bytes, "DLC/oracle/announcement/v0")
         .bytes
 
@@ -94,7 +94,7 @@ object SigningVersion extends StringFactory[SigningVersion] with CryptoTrait {
       descriptor match {
         case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV |
             _: DigitDecompositionEventDescriptorV0TLV =>
-          cryptoRuntime
+          CryptoUtil
             .taggedSha256(byteVector, "DLC/oracle/attestation/v0")
             .bytes
       }

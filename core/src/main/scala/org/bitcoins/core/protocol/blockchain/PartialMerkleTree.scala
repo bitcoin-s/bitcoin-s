@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util._
-import org.bitcoins.crypto.{CryptoTrait, DoubleSha256Digest}
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 import scodec.bits.BitVector
 
 import scala.annotation.tailrec
@@ -135,7 +135,7 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
   }
 }
 
-object PartialMerkleTree extends CryptoTrait {
+object PartialMerkleTree {
 
   private case class PartialMerkleTreeImpl(
       tree: BinaryTree[DoubleSha256Digest],
@@ -245,7 +245,7 @@ object PartialMerkleTree extends CryptoTrait {
       val rightHash = if (existsRightSubTree(pos, txIds.size, height)) {
         calcHash(height - 1, (pos * 2) + 1, txIds)
       } else leftHash
-      cryptoRuntime.doubleSHA256(leftHash.bytes ++ rightHash.bytes)
+      CryptoUtil.doubleSHA256(leftHash.bytes ++ rightHash.bytes)
     }
   }
 
@@ -333,7 +333,7 @@ object PartialMerkleTree extends CryptoTrait {
               (rightNode, rightRemainingHashes, rightRemainingBits)
             } else (leftNode, leftRemainingHashes, leftRemainingBits)
           }
-          val nodeHash = cryptoRuntime.doubleSHA256(
+          val nodeHash = CryptoUtil.doubleSHA256(
             leftNode.value.get.bytes ++ rightNode.value.get.bytes)
           val node = Node(nodeHash, leftNode, rightNode)
           (node, rightRemainingHashes, rightRemainingBits)

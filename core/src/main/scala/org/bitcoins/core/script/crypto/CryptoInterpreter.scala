@@ -12,7 +12,7 @@ import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 import org.bitcoins.crypto.{
-  CryptoTrait,
+  CryptoUtil,
   ECDigitalSignature,
   ECPublicKey,
   HashDigest
@@ -21,16 +21,14 @@ import scodec.bits.ByteVector
 
 /** Created by chris on 1/6/16.
   */
-sealed abstract class CryptoInterpreter
-    extends CryptoTrait
-    with BitcoinSLogger {
+sealed abstract class CryptoInterpreter extends BitcoinSLogger {
 
   /** The input is hashed twice: first with SHA-256 and then with RIPEMD-160. */
   def opHash160(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_HASH160),
             "Script operation must be OP_HASH160")
-    executeHashFunction(program, cryptoRuntime.sha256Hash160(_: ByteVector))
+    executeHashFunction(program, CryptoUtil.sha256Hash160(_: ByteVector))
   }
 
   /** The input is hashed using RIPEMD-160. */
@@ -38,7 +36,7 @@ sealed abstract class CryptoInterpreter
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_RIPEMD160),
             "Script operation must be OP_RIPEMD160")
-    executeHashFunction(program, cryptoRuntime.ripeMd160(_: ByteVector))
+    executeHashFunction(program, CryptoUtil.ripeMd160(_: ByteVector))
   }
 
   /** The input is hashed using SHA-256. */
@@ -46,7 +44,7 @@ sealed abstract class CryptoInterpreter
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_SHA256),
             "Script operation must be OP_SHA256")
-    executeHashFunction(program, cryptoRuntime.sha256(_: ByteVector))
+    executeHashFunction(program, CryptoUtil.sha256(_: ByteVector))
   }
 
   /** The input is hashed two times with SHA-256. */
@@ -54,7 +52,7 @@ sealed abstract class CryptoInterpreter
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_HASH256),
             "Script operation must be OP_HASH256")
-    executeHashFunction(program, cryptoRuntime.doubleSHA256(_: ByteVector))
+    executeHashFunction(program, CryptoUtil.doubleSHA256(_: ByteVector))
   }
 
   /** The input is hashed using SHA-1. */
@@ -62,7 +60,7 @@ sealed abstract class CryptoInterpreter
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_SHA1),
             "Script top must be OP_SHA1")
-    executeHashFunction(program, cryptoRuntime.sha1(_: ByteVector))
+    executeHashFunction(program, CryptoUtil.sha1(_: ByteVector))
   }
 
   /** The entire transaction's outputs, inputs, and script (from the most

@@ -2,12 +2,12 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.util.{Base58, BytesUtil}
-import org.bitcoins.crypto.{CryptoTrait, ECPrivateKey}
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
-object ECPrivateKeyUtil extends CryptoTrait {
+object ECPrivateKeyUtil {
 
   /** Converts a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] to
     * [[https://en.bitcoin.it/wiki/Wallet_import_format WIF]]
@@ -18,7 +18,7 @@ object ECPrivateKeyUtil extends CryptoTrait {
     val fullBytes =
       if (privKey.isCompressed) networkByte ++ (privKey.bytes ++ ByteVector(1))
       else networkByte ++ privKey.bytes
-    val hash = cryptoRuntime.doubleSHA256(fullBytes)
+    val hash = CryptoUtil.doubleSHA256(fullBytes)
     val checksum = hash.bytes.take(4)
     val encodedPrivKey = fullBytes ++ checksum
     Base58.encode(encodedPrivKey)

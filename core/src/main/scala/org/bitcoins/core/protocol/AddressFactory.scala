@@ -2,13 +2,11 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.crypto.{CryptoTrait, StringFactory}
+import org.bitcoins.crypto.StringFactory
 
 import scala.util.{Failure, Success, Try}
 
-abstract class AddressFactory[T <: Address]
-    extends StringFactory[T]
-    with CryptoTrait {
+abstract class AddressFactory[T <: Address] extends StringFactory[T] {
 
   /** Same as fromString, but throws the exception */
   @deprecated(s"Use fromString() instead", "2020-08-24")

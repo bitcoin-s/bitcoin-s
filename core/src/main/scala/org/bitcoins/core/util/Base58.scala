@@ -2,7 +2,7 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.protocol.blockchain._
-import org.bitcoins.crypto.CryptoTrait
+import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -11,7 +11,7 @@ import scala.util.{Failure, Success, Try}
 /** Created by chris on 5/16/16.
   * source of values: [[https://en.bitcoin.it/wiki/Base58Check_encoding]]
   */
-sealed abstract class Base58 extends CryptoTrait {
+sealed abstract class Base58 {
   import Base58Type._
 
   val base58Characters =
@@ -31,7 +31,7 @@ sealed abstract class Base58 extends CryptoTrait {
         val data: ByteVector = splitSeqs._1
         val checksum: ByteVector = splitSeqs._2
         val actualChecksum: ByteVector =
-          cryptoRuntime.doubleSHA256(data).bytes.take(4)
+          CryptoUtil.doubleSHA256(data).bytes.take(4)
         if (checksum == actualChecksum) Success(data)
         else Failure(new IllegalArgumentException("checksums don't validate"))
       }

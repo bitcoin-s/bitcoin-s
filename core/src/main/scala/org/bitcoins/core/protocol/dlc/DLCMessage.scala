@@ -13,12 +13,12 @@ import scodec.bits.ByteVector
 
 sealed trait DLCMessage
 
-object DLCMessage extends CryptoTrait {
+object DLCMessage {
 
   def calcParamHash(
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts): Sha256DigestBE = {
-    cryptoRuntime
+    CryptoUtil
       .sha256(contractInfo.bytes ++ timeouts.bytes)
       .flip
   }
@@ -65,7 +65,7 @@ object DLCMessage extends CryptoTrait {
     lazy val paramHash: Sha256DigestBE = calcParamHash(contractInfo, timeouts)
 
     val tempContractId: Sha256Digest =
-      cryptoRuntime.sha256(toMessage.bytes)
+      CryptoUtil.sha256(toMessage.bytes)
 
     def toTLV: DLCOfferTLV = {
       val chainHash =

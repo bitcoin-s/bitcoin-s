@@ -1,7 +1,7 @@
 package org.bitcoins.core.gcs
 
 import org.bitcoins.crypto.{
-  CryptoTrait,
+  CryptoUtil,
   DoubleSha256Digest,
   DoubleSha256DigestBE
 }
@@ -12,11 +12,10 @@ import org.bitcoins.crypto.{
   */
 case class FilterHeader(
     filterHash: DoubleSha256Digest,
-    prevHeaderHash: DoubleSha256Digest)
-    extends CryptoTrait {
+    prevHeaderHash: DoubleSha256Digest) {
 
   val hash: DoubleSha256Digest = {
-    cryptoRuntime.doubleSHA256(filterHash.bytes ++ prevHeaderHash.bytes)
+    CryptoUtil.doubleSHA256(filterHash.bytes ++ prevHeaderHash.bytes)
   }
 
   /** Given the next Block Filter, constructs the next Block Filter Header */

@@ -106,8 +106,7 @@ object SingleOracleInfo
   */
 case class EnumSingleOracleInfo(announcement: OracleAnnouncementTLV)
     extends SingleOracleInfo
-    with EnumOracleInfo
-    with CryptoTrait {
+    with EnumOracleInfo {
   require(announcement.eventTLV.eventDescriptor
             .isInstanceOf[EnumEventDescriptorV0TLV],
           s"Enum OracleInfo requires EnumEventDescriptor, $announcement")
@@ -129,9 +128,8 @@ case class EnumSingleOracleInfo(announcement: OracleAnnouncementTLV)
               throw new IllegalArgumentException(
                 s"Expected R value of $nonce, got $sig")
             } else {
-              publicKey.verify(
-                cryptoRuntime.sha256DLCAttestation(outcome).bytes,
-                sig)
+              publicKey.verify(CryptoUtil.sha256DLCAttestation(outcome).bytes,
+                               sig)
             }
         }
       case UnsignedNumericOutcome(_) =>
@@ -164,8 +162,7 @@ object EnumSingleOracleInfo
   */
 case class NumericSingleOracleInfo(announcement: OracleAnnouncementTLV)
     extends SingleOracleInfo
-    with NumericOracleInfo
-    with CryptoTrait {
+    with NumericOracleInfo {
   require(announcement.eventTLV.eventDescriptor
             .isInstanceOf[NumericEventDescriptorTLV],
           s"Numeric OracleInfo requires NumericEventDescriptor, $announcement")
@@ -192,7 +189,7 @@ case class NumericSingleOracleInfo(announcement: OracleAnnouncementTLV)
                       s"Unexpected nonce in ${sig.hex}, expected ${nonce.hex}")
 
               result && publicKey.verify(
-                cryptoRuntime.sha256DLCAttestation(digit.toString).bytes,
+                CryptoUtil.sha256DLCAttestation(digit.toString).bytes,
                 sig)
           }
     }

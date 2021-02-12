@@ -1,9 +1,10 @@
 package org.bitcoins.core.crypto
 
 import java.security.SecureRandom
+
 import org.bitcoins.core.crypto.words.EnglishWordsBip39
 import org.bitcoins.core.util.SeqWrapper
-import org.bitcoins.crypto.{CryptoTrait, MaskedToString}
+import org.bitcoins.crypto.{CryptoUtil, MaskedToString}
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
@@ -17,8 +18,7 @@ import scala.annotation.tailrec
   */
 sealed abstract class MnemonicCode
     extends SeqWrapper[String]
-    with MaskedToString
-    with CryptoTrait {
+    with MaskedToString {
   require(
     MnemonicCode.VALID_LENGTHS.contains(words.length), {
       val validLengths = MnemonicCode.VALID_LENGTHS.mkString(", ")
@@ -41,8 +41,7 @@ sealed abstract class MnemonicCode
     val codeInfo = MnemonicCode.getMnemonicCodeInfo(words)
     val entropyNoChecksum = entropyWithChecksum.take(codeInfo.entropyBits)
 
-    val hashedEntropy =
-      cryptoRuntime.sha256(entropyNoChecksum).bytes.toBitVector
+    val hashedEntropy = CryptoUtil.sha256(entropyNoChecksum).bytes.toBitVector
     val checksum = hashedEntropy.take(codeInfo.checksumLength)
 
     entropyNoChecksum ++ checksum == entropyWithChecksum
@@ -116,7 +115,7 @@ sealed abstract class MnemonicCode
 
 /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]]
   */
-object MnemonicCode extends CryptoTrait {
+object MnemonicCode {
 
   /** The valid lengths a BIP39 mnemonic code phrase can be, according to
     * [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]]
@@ -173,7 +172,7 @@ object MnemonicCode extends CryptoTrait {
     val ENTROPY_CHECKSUM_DIVISOR = 32
     val checksumLength = entropy.length / ENTROPY_CHECKSUM_DIVISOR
 
-    val hashedEntropy = cryptoRuntime.sha256(entropy)
+    val hashedEntropy = CryptoUtil.sha256(entropy)
     val hashedEntropyBits = hashedEntropy.bytes.toBitVector
     val checkSum = hashedEntropyBits.take(checksumLength)
     val entropyWithChecksum = entropy ++ checkSum
