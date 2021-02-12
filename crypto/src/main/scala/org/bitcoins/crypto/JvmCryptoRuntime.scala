@@ -1,9 +1,15 @@
 package org.bitcoins.crypto
 
 import org.bitcoin.NativeSecp256k1
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
+import org.bouncycastle.crypto.generators.ECKeyPairGenerator
 import org.bouncycastle.crypto.macs.HMac
-import org.bouncycastle.crypto.params.KeyParameter
+import org.bouncycastle.crypto.params.{
+  ECKeyGenerationParameters,
+  ECPrivateKeyParameters,
+  KeyParameter
+}
 import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
@@ -14,11 +20,16 @@ trait JvmCryptoRuntime extends CryptoRuntime {
   private[this] lazy val secureRandom = new SecureRandom()
 
   override def freshPrivateKey: ECPrivateKey = {
-    val array = new Array[Byte](32)
-    secureRandom.nextBytes(array)
-    require(array.exists(_ != 0),
-            s"Array did not contain sufficient entropy, got all zero bytes!")
-    ECPrivateKey.fromBytes(ByteVector(array))
+    val generator: ECKeyPairGenerator = new ECKeyPairGenerator
+    val keyGenParams: ECKeyGenerationParameters =
+      new ECKeyGenerationParameters(CryptoParams.curve, secureRandom)
+    generator.init(keyGenParams)
+    val keypair: AsymmetricCipherKeyPair = generator.generateKeyPair
+    val privParams: ECPrivateKeyParameters =
+      keypair.getPrivate.asInstanceOf[ECPrivateKeyParameters]
+    val priv: BigInteger = privParams.getD
+    val bytes = ByteVector(priv.toByteArray)
+    ECPrivateKey.fromBytes(bytes)
   }
 
   /** @param x x coordinate

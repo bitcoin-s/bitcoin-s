@@ -14,7 +14,8 @@ import java.math.BigInteger
   */
 trait CryptoUtil extends CryptoRuntime {
 
-  private lazy val cryptoRuntime = CryptoContext.cryptoRuntime
+  /** The underlying runtime for the specific platform we are running on */
+  private lazy val cryptoRuntime: CryptoRuntime = CryptoContext.cryptoRuntime
 
   override def freshPrivateKey: ECPrivateKey = {
     cryptoRuntime.freshPrivateKey
