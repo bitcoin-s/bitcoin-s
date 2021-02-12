@@ -21,6 +21,7 @@ project/plugins/project/
 .worksheet
 .idea/*
 *.iml
+.bsp
 
 # secp256k1 ignore files
 bench_inv
