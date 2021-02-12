@@ -1,8 +1,9 @@
 package org.bitcoins.crypto
 
-import java.math.BigInteger
-import java.security.MessageDigest
+import org.bitcoin.NativeSecp256k1
 
+import java.math.BigInteger
+import java.security.{MessageDigest, SecureRandom}
 import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
 import org.bouncycastle.crypto.macs.HMac
 import org.bouncycastle.crypto.params.KeyParameter
@@ -11,7 +12,35 @@ import scodec.bits.{BitVector, ByteVector}
 
 /** Utility cryptographic functions
   */
-trait CryptoUtil {
+trait CryptoUtil extends CryptoRuntime {
+  private[this] lazy val secureRandom = new SecureRandom()
+
+  override def freshPrivateKey: ECPrivateKey = {
+    val array = new Array[Byte](32)
+    secureRandom.nextBytes(array)
+    require(array.exists(_ != 0),
+            s"Array did not contain sufficient entropy, got all zero bytes!")
+    ECPrivateKey.fromBytes(ByteVector(array))
+  }
+
+  override def toPublicKey(
+      privateKey: ECPrivateKey,
+      isCompressed: Boolean): ECPublicKey = {
+    CryptoContext.default match {
+      case CryptoContext.BouncyCastle =>
+        BouncyCastleUtil.computePublicKey(privateKey)
+      case CryptoContext.LibSecp256k1 =>
+        val pubKeyBytes: Array[Byte] =
+          NativeSecp256k1.computePubkey(privateKey.bytes.toArray, isCompressed)
+        val pubBytes = ByteVector(pubKeyBytes)
+        require(
+          ECPublicKey.isFullyValid(pubBytes),
+          s"secp256k1 failed to generate a valid public key, got: ${CryptoBytesUtil
+            .encodeHex(pubBytes)}")
+        ECPublicKey(pubBytes)
+    }
+
+  }
 
   def normalize(str: String): String = {
     java.text.Normalizer.normalize(str, java.text.Normalizer.Form.NFC)
@@ -22,7 +51,7 @@ trait CryptoUtil {
   }
 
   /** Does the following computation: RIPEMD160(SHA256(hex)). */
-  def sha256Hash160(bytes: ByteVector): Sha256Hash160Digest = {
+  override def sha256Hash160(bytes: ByteVector): Sha256Hash160Digest = {
     val hash = ripeMd160(sha256(bytes).bytes).bytes
     Sha256Hash160Digest(hash)
   }
@@ -31,18 +60,12 @@ trait CryptoUtil {
     sha256Hash160(serializeForHash(str))
   }
 
-  /** Performs sha256(sha256(bytes)). */
-  def doubleSHA256(bytes: ByteVector): DoubleSha256Digest = {
-    val hash: ByteVector = sha256(sha256(bytes).bytes).bytes
-    DoubleSha256Digest(hash)
-  }
-
   def doubleSHA256(str: String): DoubleSha256Digest = {
     doubleSHA256(serializeForHash(str))
   }
 
   /** Takes sha256(bytes). */
-  def sha256(bytes: ByteVector): Sha256Digest = {
+  override def sha256(bytes: ByteVector): Sha256Digest = {
     val hash = MessageDigest.getInstance("SHA-256").digest(bytes.toArray)
     Sha256Digest(ByteVector(hash))
   }
@@ -141,7 +164,7 @@ trait CryptoUtil {
   }
 
   /** Performs RIPEMD160(bytes). */
-  def ripeMd160(bytes: ByteVector): RipeMd160Digest = {
+  override def ripeMd160(bytes: ByteVector): RipeMd160Digest = {
     //from this tutorial http://rosettacode.org/wiki/RIPEMD-160#Scala
     val messageDigest = new RIPEMD160Digest
     val raw = bytes.toArray
