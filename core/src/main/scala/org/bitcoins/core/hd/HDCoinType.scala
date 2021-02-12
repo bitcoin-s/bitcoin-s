@@ -19,15 +19,15 @@ sealed trait HDCoinType {
 object HDCoinType {
 
   final case object Bitcoin extends HDCoinType {
-    override def toInt: Int = 0
+    override val toInt: Int = 0
   }
 
   final case object Testnet extends HDCoinType {
-    override def toInt: Int = 1
+    override val toInt: Int = 1
   }
 
   final case class UnknownCoinType(int: Int) extends HDCoinType {
-    override def toInt: Int = int
+    override val toInt: Int = int
   }
 
   lazy val all: Vector[HDCoinType] = Vector(Bitcoin, Testnet)
