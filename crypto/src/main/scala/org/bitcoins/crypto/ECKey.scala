@@ -1,15 +1,8 @@
 package org.bitcoins.crypto
 
 import java.math.BigInteger
-import java.security.SecureRandom
 
 import org.bitcoin.NativeSecp256k1
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair
-import org.bouncycastle.crypto.generators.ECKeyPairGenerator
-import org.bouncycastle.crypto.params.{
-  ECKeyGenerationParameters,
-  ECPrivateKeyParameters
-}
 import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
@@ -358,17 +351,8 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   def freshPrivateKey: ECPrivateKey = freshPrivateKey(true)
 
   def freshPrivateKey(isCompressed: Boolean): ECPrivateKey = {
-    val secureRandom = new SecureRandom
-    val generator: ECKeyPairGenerator = new ECKeyPairGenerator
-    val keyGenParams: ECKeyGenerationParameters =
-      new ECKeyGenerationParameters(CryptoParams.curve, secureRandom)
-    generator.init(keyGenParams)
-    val keypair: AsymmetricCipherKeyPair = generator.generateKeyPair
-    val privParams: ECPrivateKeyParameters =
-      keypair.getPrivate.asInstanceOf[ECPrivateKeyParameters]
-    val priv: BigInteger = privParams.getD
-    val bytes = ByteVector(priv.toByteArray)
-    ECPrivateKey.fromBytes(bytes, isCompressed)
+    val priv = CryptoUtil.freshPrivateKey
+    ECPrivateKey.fromBytes(priv.bytes, isCompressed)
   }
 }
 
