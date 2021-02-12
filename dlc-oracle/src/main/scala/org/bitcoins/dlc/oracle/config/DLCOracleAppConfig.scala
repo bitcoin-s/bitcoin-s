@@ -104,13 +104,7 @@ case class DLCOracleAppConfig(
     config.getConfig("bitcoin-s.server")
   }
 
-  def rpcPortOpt: Option[Int] = {
-    if (serverConf.hasPath("bitcoin-s.server.rpcport")) {
-      Some(serverConf.getInt("bitcoin-s.server.rpcport"))
-    } else {
-      None
-    }
-  }
+  def rpcPort: Int = config.getInt("bitcoin-s.server.rpcport")
 
   def rpcBindOpt: Option[String] = {
     if (config.hasPath("bitcoin-s.server.rpcbind")) {

@@ -10,8 +10,6 @@ class OracleServerMain(override val args: Array[String])
 
   override val actorSystemName = "bitcoin-s-oracle"
 
-  override val defaultRpcPort: Int = 9998
-
   override def startup: Future[Unit] = {
 
     implicit val conf: DLCOracleAppConfig =
@@ -34,18 +32,10 @@ class OracleServerMain(override val args: Array[String])
                  rpcbindOpt = bindConfOpt,
                  rpcport = rpcport)
         case None =>
-          conf.rpcPortOpt match {
-            case Some(rpcport) =>
-              Server(conf = conf,
-                     handlers = routes,
-                     rpcbindOpt = bindConfOpt,
-                     rpcport = rpcport)
-            case None =>
-              Server(conf = conf,
-                     handlers = routes,
-                     rpcbindOpt = bindConfOpt,
-                     rpcport = defaultRpcPort)
-          }
+          Server(conf = conf,
+                 handlers = routes,
+                 rpcbindOpt = bindConfOpt,
+                 rpcport = conf.rpcPort)
       }
 
       _ <- server.start()

@@ -29,8 +29,6 @@ class BitcoinSServerMain(override val args: Array[String])
 
   override val actorSystemName = "bitcoin-s-server"
 
-  override val defaultRpcPort: Int = 9999
-
   implicit lazy val conf: BitcoinSAppConfig =
     BitcoinSAppConfig(datadir, baseConfig)
 
@@ -304,20 +302,11 @@ class BitcoinSServerMain(override val args: Array[String])
                  rpcbindOpt = bindConfOpt,
                  rpcport = rpcport)
         case None =>
-          conf.rpcPortOpt match {
-            case Some(rpcport) =>
-              Server(conf = nodeConf,
-                     handlers =
-                       Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                     rpcbindOpt = bindConfOpt,
-                     rpcport = rpcport)
-            case None =>
-              Server(conf = nodeConf,
-                     handlers =
-                       Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                     rpcbindOpt = bindConfOpt,
-                     rpcport = defaultRpcPort)
-          }
+          Server(conf = nodeConf,
+                 handlers =
+                   Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                 rpcbindOpt = bindConfOpt,
+                 rpcport = conf.rpcPort)
       }
     }
     server.start()

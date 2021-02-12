@@ -17,8 +17,6 @@ trait BitcoinSRunner extends BitcoinSLogger {
 
   def actorSystemName: String
 
-  def defaultRpcPort: Int
-
   implicit lazy val system: ActorSystem = {
     val system = ActorSystem(actorSystemName, baseConfig)
     system.log.info("Akka logger started")
