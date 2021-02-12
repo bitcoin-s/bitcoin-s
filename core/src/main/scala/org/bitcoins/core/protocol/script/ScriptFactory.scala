@@ -3,12 +3,12 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
-import org.bitcoins.crypto.Factory
+import org.bitcoins.crypto.{CryptoTrait, Factory}
 import scodec.bits.ByteVector
 
 /** Created by chris on 12/9/16.
   */
-trait ScriptFactory[T <: Script] extends Factory[T] {
+trait ScriptFactory[T <: Script] extends Factory[T] with CryptoTrait {
 
   /** Builds a script from the given asm with the given constructor if the invariant holds true, else throws an error */
   def buildScript(

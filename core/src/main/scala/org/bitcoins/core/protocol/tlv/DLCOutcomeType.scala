@@ -1,10 +1,10 @@
 package org.bitcoins.core.protocol.tlv
 
-import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.crypto.CryptoTrait
 import scodec.bits.ByteVector
 
 /** Represents a DLC event that could be signed by an oracle */
-sealed trait DLCOutcomeType {
+sealed trait DLCOutcomeType extends CryptoTrait {
 
   /** The ByteVectors to be signed by the oracle using pre-committed nonces */
   def serialized: Vector[ByteVector]
@@ -14,7 +14,7 @@ sealed trait DLCOutcomeType {
 case class EnumOutcome(outcome: String) extends DLCOutcomeType {
 
   override lazy val serialized: Vector[ByteVector] =
-    Vector(CryptoUtil.serializeForHash(outcome))
+    Vector(cryptoRuntime.serializeForHash(outcome))
 }
 
 /** An outcome from a multi-nonce unsigned numeric event type.
@@ -28,5 +28,5 @@ case class EnumOutcome(outcome: String) extends DLCOutcomeType {
 case class UnsignedNumericOutcome(digits: Vector[Int]) extends DLCOutcomeType {
 
   override lazy val serialized: Vector[ByteVector] =
-    digits.map(digit => CryptoUtil.serializeForHash(digit.toString))
+    digits.map(digit => cryptoRuntime.serializeForHash(digit.toString))
 }

@@ -3,7 +3,7 @@ package org.bitcoins.core.gcs
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.{
-  CryptoUtil,
+  CryptoTrait,
   DoubleSha256Digest,
   DoubleSha256DigestBE,
   NetworkElement
@@ -21,12 +21,13 @@ case class GolombFilter(
     p: UInt8,
     n: CompactSizeUInt,
     encodedData: BitVector)
-    extends NetworkElement {
+    extends NetworkElement
+    with CryptoTrait {
   lazy val f: UInt64 = n.num * m
 
   /** The hash of this serialized filter */
   lazy val hash: DoubleSha256Digest = {
-    CryptoUtil.doubleSHA256(this.bytes)
+    cryptoRuntime.doubleSHA256(this.bytes)
   }
 
   lazy val hashBE: DoubleSha256DigestBE = {

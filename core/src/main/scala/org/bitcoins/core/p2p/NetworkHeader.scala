@@ -3,7 +3,7 @@ package org.bitcoins.core.p2p
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.serializers.p2p.headers.RawNetworkHeaderSerializer
-import org.bitcoins.crypto.{CryptoUtil, Factory, NetworkElement}
+import org.bitcoins.crypto.{CryptoTrait, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 /** Represents a message header on the peer-to-peer network
@@ -33,7 +33,7 @@ case class NetworkHeader(
 
 }
 
-object NetworkHeader extends Factory[NetworkHeader] {
+object NetworkHeader extends Factory[NetworkHeader] with CryptoTrait {
 
   val bytesSize = 24
 
@@ -47,7 +47,7 @@ object NetworkHeader extends Factory[NetworkHeader] {
   def apply(
       network: NetworkParameters,
       payload: NetworkPayload): NetworkHeader = {
-    val checksum = CryptoUtil.doubleSHA256(payload.bytes)
+    val checksum = cryptoRuntime.doubleSHA256(payload.bytes)
     NetworkHeader(network,
                   payload.commandName,
                   UInt32(payload.bytes.size),

@@ -135,7 +135,7 @@ object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
   }
 }
 
-sealed trait InputPSBTRecord extends PSBTRecord {
+sealed trait InputPSBTRecord extends PSBTRecord with CryptoTrait {
   override type KeyId <: PSBTInputKeyId
 }
 
@@ -271,7 +271,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   case class RIPEMD160PreImage(preImage: ByteVector) extends InputPSBTRecord {
     override type KeyId = RIPEMD160PreImageKeyId.type
 
-    val hash: RipeMd160Digest = CryptoUtil.ripeMd160(preImage)
+    val hash: RipeMd160Digest = cryptoRuntime.ripeMd160(preImage)
 
     lazy val hashBE: RipeMd160DigestBE = hash.flip
 
@@ -283,7 +283,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   case class SHA256PreImage(preImage: ByteVector) extends InputPSBTRecord {
     override type KeyId = SHA256PreImageKeyId.type
 
-    val hash: Sha256Digest = CryptoUtil.sha256(preImage)
+    val hash: Sha256Digest = cryptoRuntime.sha256(preImage)
 
     lazy val hashBE: Sha256DigestBE = hash.flip
 
@@ -295,7 +295,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   case class HASH160PreImage(preImage: ByteVector) extends InputPSBTRecord {
     override type KeyId = HASH160PreImageKeyId.type
 
-    val hash: Sha256Hash160Digest = CryptoUtil.sha256Hash160(preImage)
+    val hash: Sha256Hash160Digest = cryptoRuntime.sha256Hash160(preImage)
 
     lazy val hashBE: Sha256Hash160DigestBE = hash.flip
 
@@ -307,7 +307,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   case class HASH256PreImage(preImage: ByteVector) extends InputPSBTRecord {
     override type KeyId = HASH256PreImageKeyId.type
 
-    val hash: DoubleSha256Digest = CryptoUtil.doubleSHA256(preImage)
+    val hash: DoubleSha256Digest = cryptoRuntime.doubleSHA256(preImage)
 
     lazy val hashBE: DoubleSha256DigestBE = hash.flip
 

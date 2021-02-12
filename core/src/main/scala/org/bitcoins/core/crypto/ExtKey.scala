@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
 /** Represents an extended key as defined by BIP32
   * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki]]
   */
-sealed abstract class ExtKey extends NetworkElement {
+sealed abstract class ExtKey extends NetworkElement with CryptoTrait {
   require(bytes.size == 78,
           "ExtKey must be 78 bytes in size, got: " + bytes.size)
 
@@ -107,7 +107,10 @@ sealed abstract class ExtKey extends NetworkElement {
 
 }
 
-object ExtKey extends Factory[ExtKey] with StringFactory[ExtKey] {
+object ExtKey
+    extends Factory[ExtKey]
+    with StringFactory[ExtKey]
+    with CryptoTrait {
   val hardenedIdx: UInt32 = UInt32(NumberUtil.pow2(31).toLong)
 
   val masterFingerprint: ByteVector = hex"00000000"
@@ -153,7 +156,7 @@ object ExtKey extends Factory[ExtKey] with StringFactory[ExtKey] {
 
   def toString(extKey: ExtKey): String = {
     val bytes = extKey.bytes
-    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    val checksum = cryptoRuntime.doubleSHA256(bytes).bytes.take(4)
     val encoded = Base58.encode(bytes ++ checksum)
     require(Base58.decodeCheck(encoded).isSuccess)
     encoded
@@ -198,7 +201,7 @@ sealed abstract class ExtPrivateKey
       //derive non hardened key
       key.publicKey.bytes ++ idx.bytes
     }
-    val hmac = CryptoUtil.hmac512(chainCode.bytes, data)
+    val hmac = cryptoRuntime.hmac512(chainCode.bytes, data)
     val (il, ir) = hmac.splitAt(32)
     //should be ECGroup addition
     //parse256(IL) + kpar (mod n)
@@ -212,7 +215,7 @@ sealed abstract class ExtPrivateKey
         sum.bytes
     }
     val childKey = ECPrivateKey(tweak)
-    val fp = CryptoUtil.sha256Hash160(key.publicKey.bytes).bytes.take(4)
+    val fp = cryptoRuntime.sha256Hash160(key.publicKey.bytes).bytes.take(4)
     ExtPrivateKey(version, depth + UInt8.one, fp, idx, ChainCode(ir), childKey)
   }
 
@@ -262,7 +265,8 @@ sealed abstract class ExtPrivateKey
 
 object ExtPrivateKey
     extends Factory[ExtPrivateKey]
-    with StringFactory[ExtPrivateKey] {
+    with StringFactory[ExtPrivateKey]
+    with CryptoTrait {
 
   private case class ExtPrivateKeyImpl(
       version: ExtKeyPrivVersion,
@@ -314,7 +318,7 @@ object ExtPrivateKey
   override def fromBytes(bytes: ByteVector): ExtPrivateKey = {
     require(bytes.size == 78, "ExtPrivateKey can only be 78 bytes")
     val base58 =
-      Base58.encode(bytes ++ CryptoUtil.doubleSHA256(bytes).bytes.take(4))
+      Base58.encode(bytes ++ cryptoRuntime.doubleSHA256(bytes).bytes.take(4))
     ExtKey.fromStringT(base58) match {
       case Success(priv: ExtPrivateKey) => priv
       case Success(_: ExtPublicKey) =>
@@ -355,7 +359,7 @@ object ExtPrivateKey
       case None        => ECPrivateKey().bytes
     }
     val i =
-      CryptoUtil.hmac512(key = BIP32_KEY, data = seed)
+      cryptoRuntime.hmac512(key = BIP32_KEY, data = seed)
     val (masterPrivBytes, chaincodeBytes) = i.splitAt(32)
     val masterPrivKey = ECPrivateKey(masterPrivBytes)
     val chaincode = ChainCode(chaincodeBytes)
@@ -473,7 +477,7 @@ sealed abstract class ExtPublicKey extends ExtKey {
           "Cannot derive hardened child from extended public key"))
     } else {
       val data = key.bytes ++ idx.bytes
-      val hmac = CryptoUtil.hmac512(chainCode.bytes, data)
+      val hmac = cryptoRuntime.hmac512(chainCode.bytes, data)
       val (il, ir) = hmac.splitAt(32)
       val priv = ECPrivateKey(il)
       val childPubKey = CryptoContext.default match {
@@ -492,7 +496,7 @@ sealed abstract class ExtPublicKey extends ExtKey {
       //and one should proceed with the next value for i.
       //https://botbot.me/freenode/bitcoin-wizards/2017-11-20/?tz=America/Chicago
       val cc = ChainCode(ir)
-      val fp = CryptoUtil.sha256Hash160(key.bytes).bytes.take(4)
+      val fp = cryptoRuntime.sha256Hash160(key.bytes).bytes.take(4)
       Success(
         ExtPublicKey(version, depth + UInt8.one, fp, idx, cc, childPubKey))
     }
@@ -501,7 +505,8 @@ sealed abstract class ExtPublicKey extends ExtKey {
 
 object ExtPublicKey
     extends Factory[ExtPublicKey]
-    with StringFactory[ExtPublicKey] {
+    with StringFactory[ExtPublicKey]
+    with CryptoTrait {
 
   private case class ExtPublicKeyImpl(
       version: ExtKeyPubVersion,
@@ -546,7 +551,7 @@ object ExtPublicKey
   override def fromBytes(bytes: ByteVector): ExtPublicKey = {
     require(bytes.size == 78, "ExtPublicKey can only be 78 bytes")
     val base58 =
-      Base58.encode(bytes ++ CryptoUtil.doubleSHA256(bytes).bytes.take(4))
+      Base58.encode(bytes ++ cryptoRuntime.doubleSHA256(bytes).bytes.take(4))
     ExtKey.fromStringT(base58) match {
       case Success(_: ExtPrivateKey) =>
         throw new IllegalArgumentException(

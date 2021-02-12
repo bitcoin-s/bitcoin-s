@@ -1,7 +1,7 @@
 package org.bitcoins.core.api.chain.db
 
 import org.bitcoins.core.gcs.{BlockFilter, FilterType, GolombFilter}
-import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
+import org.bitcoins.crypto.{CryptoTrait, DoubleSha256DigestBE}
 import scodec.bits.ByteVector
 
 case class CompactFilterDb(
@@ -9,9 +9,10 @@ case class CompactFilterDb(
     filterType: FilterType,
     bytes: ByteVector,
     height: Int,
-    blockHashBE: DoubleSha256DigestBE) {
+    blockHashBE: DoubleSha256DigestBE)
+    extends CryptoTrait {
   require(
-    CryptoUtil.doubleSHA256(bytes).flip == hashBE,
+    cryptoRuntime.doubleSHA256(bytes).flip == hashBE,
     s"Bytes must hash to hashBE! It looks like you didn't construct CompactFilterDb correctly")
 
   def golombFilter: GolombFilter =
@@ -24,7 +25,7 @@ case class CompactFilterDb(
   }
 }
 
-object CompactFilterDbHelper {
+object CompactFilterDbHelper extends CryptoTrait {
 
   def fromGolombFilter(
       golombFilter: GolombFilter,
@@ -36,7 +37,7 @@ object CompactFilterDbHelper {
       filterBytes: ByteVector,
       blockHash: DoubleSha256DigestBE,
       height: Int): CompactFilterDb =
-    CompactFilterDb(CryptoUtil.doubleSHA256(filterBytes).flip,
+    CompactFilterDb(cryptoRuntime.doubleSHA256(filterBytes).flip,
                     FilterType.Basic,
                     filterBytes,
                     height,

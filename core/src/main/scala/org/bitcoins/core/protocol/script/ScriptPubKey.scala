@@ -62,7 +62,7 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
   }
 
   def apply(pubKey: ECPublicKey): P2PKHScriptPubKey = {
-    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+    val hash = cryptoRuntime.sha256Hash160(pubKey.bytes)
     P2PKHScriptPubKey(hash)
   }
 
@@ -305,7 +305,7 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
   }
 
   def apply(scriptPubKey: ScriptPubKey): P2SHScriptPubKey = {
-    val hash = CryptoUtil.sha256Hash160(scriptPubKey.asmBytes)
+    val hash = cryptoRuntime.sha256Hash160(scriptPubKey.asmBytes)
     P2SHScriptPubKey(hash)
   }
 
@@ -1261,7 +1261,7 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
     require(
       pubKey.isCompressed,
       s"Public key must be compressed to be used in a segwit script, see BIP143")
-    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+    val hash = cryptoRuntime.sha256Hash160(pubKey.bytes)
     val pushop = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
   }
@@ -1304,7 +1304,7 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
     require(
       BitcoinScriptUtil.isOnlyCompressedPubKey(spk),
       s"Public key must be compressed to be used in a segwit script, see BIP143")
-    val hash = CryptoUtil.sha256(spk.asmBytes)
+    val hash = cryptoRuntime.sha256(spk.asmBytes)
     val pushop = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
   }

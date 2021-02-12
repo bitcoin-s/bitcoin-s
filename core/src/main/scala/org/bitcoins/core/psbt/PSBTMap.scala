@@ -15,7 +15,9 @@ import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-sealed trait PSBTMap[+RecordType <: PSBTRecord] extends NetworkElement {
+sealed trait PSBTMap[+RecordType <: PSBTRecord]
+    extends NetworkElement
+    with CryptoTrait {
   require(elements.map(_.key).groupBy(identity).values.forall(_.length == 1),
           s"All keys must be unique. Got: $elements")
 
@@ -211,7 +213,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         Vector.empty
       case p2pk: P2PKScriptPubKey =>
         if (partialSignatures.isEmpty) {
-          Vector(CryptoUtil.sha256Hash160(p2pk.publicKey.bytes))
+          Vector(cryptoRuntime.sha256Hash160(p2pk.publicKey.bytes))
         } else Vector.empty
       case p2pkh: P2PKHScriptPubKey =>
         if (partialSignatures.isEmpty) {
@@ -221,7 +223,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         if (partialSignatures.size < multi.requiredSigs) {
           val keys = multi.publicKeys.filterNot(key =>
             partialSignatures.exists(_.pubKey == key))
-          keys.map(key => CryptoUtil.sha256Hash160(key.bytes)).toVector
+          keys.map(key => cryptoRuntime.sha256Hash160(key.bytes)).toVector
         } else Vector.empty
       case p2wpkh: P2WPKHWitnessSPKV0 =>
         if (partialSignatures.isEmpty) {
@@ -229,8 +231,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         } else Vector.empty
       case p2pkTime: P2PKWithTimeoutScriptPubKey =>
         if (partialSignatures.isEmpty) {
-          val keyA = CryptoUtil.sha256Hash160(p2pkTime.pubKey.bytes)
-          val keyB = CryptoUtil.sha256Hash160(p2pkTime.lockTime.bytes)
+          val keyA = cryptoRuntime.sha256Hash160(p2pkTime.pubKey.bytes)
+          val keyB = cryptoRuntime.sha256Hash160(p2pkTime.lockTime.bytes)
           Vector(keyA, keyB)
         } else Vector.empty
       case _: P2WSHWitnessSPKV0 =>
@@ -518,7 +520,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
                            Vector(p2pkh.pubKeyHash),
                            p2pkh))
             case p2pk: P2PKScriptPubKey =>
-              val hash = CryptoUtil.sha256Hash160(p2pk.publicKey.bytes)
+              val hash = cryptoRuntime.sha256Hash160(p2pk.publicKey.bytes)
               builder += ((ConditionalPath.fromBranch(path),
                            Vector(hash),
                            p2pk))
@@ -530,7 +532,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
                              multiSig))
               } else {
                 val hashes = multiSig.publicKeys.toVector.map(pubKey =>
-                  CryptoUtil.sha256Hash160(pubKey.bytes))
+                  cryptoRuntime.sha256Hash160(pubKey.bytes))
                 builder += ((ConditionalPath.fromBranch(path),
                              hashes,
                              multiSig))
@@ -548,7 +550,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         // Find the conditional leaf with the pubkeys for which sigs are provided
         // Hashes are used since we only have the pubkey hash in the p2pkh case
         val sigs = getRecords(PartialSignatureKeyId)
-        val hashes = sigs.map(sig => CryptoUtil.sha256Hash160(sig.pubKey.bytes))
+        val hashes =
+          sigs.map(sig => cryptoRuntime.sha256Hash160(sig.pubKey.bytes))
         addLeaves(conditional, Vector.empty)
         val leaves = builder.result()
 

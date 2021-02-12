@@ -1,7 +1,7 @@
 package org.bitcoins.core.config
 
 import org.bitcoins.core.protocol.blockchain._
-import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE, StringFactory}
+import org.bitcoins.crypto.{CryptoTrait, DoubleSha256DigestBE, StringFactory}
 import scodec.bits.ByteVector
 
 sealed abstract class NetworkParameters {
@@ -136,7 +136,7 @@ sealed abstract class RegTest extends BitcoinNetwork {
 
 final case object RegTest extends RegTest
 
-sealed abstract class SigNet extends BitcoinNetwork {
+sealed abstract class SigNet extends BitcoinNetwork with CryptoTrait {
   override def chainParams: SigNetChainParams = SigNetChainParams()
 
   /** @inheritdoc
@@ -157,7 +157,7 @@ sealed abstract class SigNet extends BitcoinNetwork {
   /** @inheritdoc
     */
   override def magicBytes: ByteVector = {
-    CryptoUtil
+    cryptoRuntime
       .doubleSHA256(chainParams.signetChallenge.bytes)
       .bytes
       .take(4)

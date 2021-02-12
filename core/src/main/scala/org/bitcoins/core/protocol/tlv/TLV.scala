@@ -18,7 +18,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
-sealed trait TLV extends NetworkElement with TLVUtil {
+sealed trait TLV extends NetworkElement with TLVUtil with CryptoTrait {
   def tpe: BigSizeUInt
   def value: ByteVector
 
@@ -30,7 +30,7 @@ sealed trait TLV extends NetworkElement with TLVUtil {
     tpe.bytes ++ length.bytes ++ value
   }
 
-  def sha256: Sha256Digest = CryptoUtil.sha256(bytes)
+  def sha256: Sha256Digest = cryptoRuntime.sha256(bytes)
 }
 
 trait TLVUtil {
@@ -317,9 +317,11 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
   }
 }
 
-case class NormalizedString(private val str: String) extends NetworkElement {
+case class NormalizedString(private val str: String)
+    extends NetworkElement
+    with CryptoTrait {
 
-  val normStr: String = CryptoUtil.normalize(str)
+  val normStr: String = cryptoRuntime.normalize(str)
 
   override def equals(other: Any): Boolean = {
     other match {
@@ -331,7 +333,7 @@ case class NormalizedString(private val str: String) extends NetworkElement {
 
   override def toString: String = normStr
 
-  override def bytes: ByteVector = CryptoUtil.serializeForHash(normStr)
+  override def bytes: ByteVector = cryptoRuntime.serializeForHash(normStr)
 }
 
 object NormalizedString extends StringFactory[NormalizedString] {
@@ -807,7 +809,9 @@ case class OracleAnnouncementV0TLV(
   }
 }
 
-object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
+object OracleAnnouncementV0TLV
+    extends TLVFactory[OracleAnnouncementV0TLV]
+    with CryptoTrait {
   override val tpe: BigSizeUInt = BigSizeUInt(55332)
 
   override def fromTLVValue(value: ByteVector): OracleAnnouncementV0TLV = {
@@ -827,7 +831,7 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
                                  EnumEventDescriptorV0TLV.dummy,
                                  "dummy")
     val sig =
-      priv.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+      priv.schnorrSign(cryptoRuntime.sha256DLCAnnouncement(event.bytes).bytes)
 
     OracleAnnouncementV0TLV(sig, priv.schnorrPublicKey, event)
   }
@@ -842,7 +846,8 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
       EnumEventDescriptorV0TLV(events.map(outcome => outcome.outcome)),
       "dummy")
     val sig =
-      privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+      privKey.schnorrSign(
+        cryptoRuntime.sha256DLCAnnouncement(event.bytes).bytes)
 
     OracleAnnouncementV0TLV(sig, privKey.schnorrPublicKey, event)
   }
@@ -858,7 +863,8 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
                                                                  Int32.zero)
     val event = OracleEventV0TLV(nonces, UInt32.zero, eventDescriptor, "dummy")
     val sig =
-      privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+      privKey.schnorrSign(
+        cryptoRuntime.sha256DLCAnnouncement(event.bytes).bytes)
 
     OracleAnnouncementV0TLV(sig, privKey.schnorrPublicKey, event)
   }
@@ -934,14 +940,15 @@ object ContractDescriptorTLV extends TLVParentFactory[ContractDescriptorTLV] {
 
 /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Messaging.md#version-0-contract_info */
 case class ContractDescriptorV0TLV(outcomes: Vector[(String, Satoshis)])
-    extends ContractDescriptorTLV {
+    extends ContractDescriptorTLV
+    with CryptoTrait {
   override val tpe: BigSizeUInt = ContractDescriptorV0TLV.tpe
 
   override val value: ByteVector = {
     bigSizePrefixedList[(String, Satoshis)](
       outcomes,
       { case (outcome, amt) =>
-        val outcomeBytes = CryptoUtil.serializeForHash(outcome)
+        val outcomeBytes = cryptoRuntime.serializeForHash(outcome)
         bigSizePrefix(outcomeBytes) ++ satBytes(amt)
       })
   }

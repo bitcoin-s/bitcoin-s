@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.transaction.{
   WitnessTransaction
 }
 import org.bitcoins.core.util._
-import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
+import org.bitcoins.crypto.{CryptoTrait, DoubleSha256Digest}
 
 import scala.annotation.tailrec
 
@@ -16,7 +16,7 @@ import scala.annotation.tailrec
   * Mimics this functionality inside of bitcoin core
   * [[https://github.com/bitcoin/bitcoin/blob/master/src/consensus/merkle.cpp]]
   */
-trait Merkle extends BitcoinSLogger {
+trait Merkle extends BitcoinSLogger with CryptoTrait {
 
   type MerkleTree = BinaryTree[DoubleSha256Digest]
 
@@ -78,7 +78,7 @@ trait Merkle extends BitcoinSLogger {
   /** Computes the merkle tree of two sub merkle trees */
   def computeTree(tree1: MerkleTree, tree2: MerkleTree): MerkleTree = {
     val bytes = tree1.value.get.bytes ++ tree2.value.get.bytes
-    val hash = CryptoUtil.doubleSHA256(bytes)
+    val hash = cryptoRuntime.doubleSHA256(bytes)
     Node(hash, tree1, tree2)
   }
 

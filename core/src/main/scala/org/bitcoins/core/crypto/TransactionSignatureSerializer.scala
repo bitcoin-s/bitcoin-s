@@ -10,7 +10,7 @@ import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
-import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
+import org.bitcoins.crypto.{CryptoTrait, DoubleSha256Digest}
 import scodec.bits.ByteVector
 
 /** Created by chris on 2/16/16.
@@ -20,7 +20,9 @@ import scodec.bits.ByteVector
   * bitcoinj version of this
   * [[https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008]]
   */
-sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
+sealed abstract class TransactionSignatureSerializer
+    extends BitcoinSLogger
+    with CryptoTrait {
 
   /** Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
     * actually returns the constant "1" to indicate an error
@@ -187,7 +189,7 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
         val outPointHash: ByteVector = if (isNotAnyoneCanPay) {
           val prevOuts = spendingTransaction.inputs.map(_.previousOutput)
           val bytes: ByteVector = BytesUtil.toByteVector(prevOuts)
-          CryptoUtil.doubleSHA256(bytes).bytes
+          cryptoRuntime.doubleSHA256(bytes).bytes
         } else emptyHash.bytes
 
         val sequenceHash: ByteVector =
@@ -195,20 +197,20 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
             val sequences = spendingTransaction.inputs.map(_.sequence)
             val littleEndianSeq =
               sequences.foldLeft(ByteVector.empty)(_ ++ _.bytes.reverse)
-            CryptoUtil.doubleSHA256(littleEndianSeq).bytes
+            cryptoRuntime.doubleSHA256(littleEndianSeq).bytes
           } else emptyHash.bytes
 
         val outputHash: ByteVector =
           if (isNotSigHashSingle && isNotSigHashNone) {
             val outputs = spendingTransaction.outputs
             val bytes = BytesUtil.toByteVector(outputs)
-            CryptoUtil.doubleSHA256(bytes).bytes
+            cryptoRuntime.doubleSHA256(bytes).bytes
           } else if (
             HashType.isSigHashSingle(hashType.num) &&
             inputIndex < UInt32(spendingTransaction.outputs.size)
           ) {
             val output = spendingTransaction.outputs(inputIndexInt)
-            val bytes = CryptoUtil
+            val bytes = cryptoRuntime
               .doubleSHA256(RawTransactionOutputParser.write(output))
               .bytes
             bytes
@@ -261,7 +263,7 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
         "Serialized tx for signature: " + BytesUtil.encodeHex(
           serializedTxForSignature))
       logger.trace("HashType: " + hashType.num)
-      CryptoUtil.doubleSHA256(serializedTxForSignature)
+      cryptoRuntime.doubleSHA256(serializedTxForSignature)
     }
   }
 
@@ -327,7 +329,7 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
         "Serialized tx for signature: " + BytesUtil.encodeHex(
           serializedTxForSignature))
       logger.trace("HashType: " + hashType.num)
-      CryptoUtil.doubleSHA256(serializedTxForSignature)
+      cryptoRuntime.doubleSHA256(serializedTxForSignature)
     }
   }
 

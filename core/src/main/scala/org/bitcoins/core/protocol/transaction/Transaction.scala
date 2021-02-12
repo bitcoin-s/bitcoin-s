@@ -10,7 +10,7 @@ import scodec.bits.ByteVector
 
 /** Created by chris on 7/14/15.
   */
-sealed abstract class Transaction extends NetworkElement {
+sealed abstract class Transaction extends NetworkElement with CryptoTrait {
 
   override lazy val byteSize = bytes.length
 
@@ -20,7 +20,7 @@ sealed abstract class Transaction extends NetworkElement {
     * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation this link]]
     * for more info
     */
-  def txId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
+  def txId: DoubleSha256Digest = cryptoRuntime.doubleSHA256(bytes)
 
   /** This is the BIG ENDIAN encoding for the txid. This is commonly used for
     * RPC interfaces and block explorers, this encoding is NOT used at the protocol level
@@ -205,7 +205,7 @@ case class WitnessTransaction(
   /** The witness transaction id as defined by
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id BIP141]]
     */
-  def wTxId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
+  def wTxId: DoubleSha256Digest = cryptoRuntime.doubleSHA256(bytes)
 
   /** Returns the big endian encoding of the wtxid */
   def wTxIdBE: DoubleSha256DigestBE = wTxId.flip

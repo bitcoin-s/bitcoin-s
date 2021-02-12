@@ -22,7 +22,10 @@ import scala.util.hashing.MurmurHash3
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki BIP37]].
   * @see [[https://github.com/bitcoin/bitcoin/blob/master/src/bloom.h Bitcoin Core bloom.h]]
   */
-sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
+sealed abstract class BloomFilter
+    extends NetworkElement
+    with BitcoinSLogger
+    with CryptoTrait {
 
   /** How large the bloom filter is, in Bytes */
   def filterSize: CompactSizeUInt
@@ -95,7 +98,7 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
     */
   def insert(pubkey: ECPublicKey): BloomFilter = {
     val pubkeyBytes = pubkey.bytes
-    val hash = CryptoUtil.sha256Hash160(pubkeyBytes)
+    val hash = cryptoRuntime.sha256Hash160(pubkeyBytes)
     insert(pubkeyBytes).insert(hash)
   }
 

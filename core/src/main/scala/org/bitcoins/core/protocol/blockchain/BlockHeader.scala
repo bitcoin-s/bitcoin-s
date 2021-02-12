@@ -18,7 +18,7 @@ import scodec.bits.ByteVector
   * @see Bitcoin Core implementation:
   * https://github.com/bitcoin/bitcoin/blob/master/src/primitives/block.h#L20
   */
-sealed trait BlockHeader extends NetworkElement {
+sealed trait BlockHeader extends NetworkElement with CryptoTrait {
 
   /** The block version number indicates which set of block validation rules to follow.
     * See the list of block versions below.
@@ -100,7 +100,7 @@ sealed trait BlockHeader extends NetworkElement {
   def nonce: UInt32
 
   /** Returns the block's hash in the protocol level little endian encoding */
-  lazy val hash: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
+  lazy val hash: DoubleSha256Digest = cryptoRuntime.doubleSHA256(bytes)
 
   /** Returns the block hash in big endian format, this is useful for rpc
     * and block explorer debugging. This is *not* used in the core protocol itself.

@@ -14,7 +14,7 @@ case class SchnorrNonce(bytes: ByteVector) extends NetworkElement {
   }
 }
 
-object SchnorrNonce extends Factory[SchnorrNonce] {
+object SchnorrNonce extends Factory[SchnorrNonce] with CryptoTrait {
 
   def fromBytes(bytes: ByteVector): SchnorrNonce = {
     new SchnorrNonce(SchnorrPublicKey.fromBytes(bytes).bytes)
@@ -26,10 +26,10 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
       auxRand: ByteVector): ECPrivateKey = {
     val privKeyForUse = privKey.schnorrKey
 
-    val randHash = CryptoUtil.sha256SchnorrAuxRand(auxRand).bytes
+    val randHash = cryptoRuntime.sha256SchnorrAuxRand(auxRand).bytes
     val maskedKey = randHash.xor(privKeyForUse.bytes)
 
-    val nonceHash = CryptoUtil.sha256SchnorrNonce(
+    val nonceHash = cryptoRuntime.sha256SchnorrNonce(
       maskedKey ++ privKey.schnorrPublicKey.bytes ++ message)
 
     ECPrivateKey(nonceHash.bytes).nonceKey
