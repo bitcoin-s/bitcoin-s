@@ -84,9 +84,7 @@ object SigningVersion extends StringFactory[SigningVersion] {
     }
 
     override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
-      CryptoUtil
-        .taggedSha256(eventTLV.bytes, "DLC/oracle/announcement/v0")
-        .bytes
+      CryptoUtil.sha256DLCAnnouncement(eventTLV.bytes).bytes
 
     override def calcOutcomeHash(
         descriptor: EventDescriptorTLV,
@@ -94,9 +92,7 @@ object SigningVersion extends StringFactory[SigningVersion] {
       descriptor match {
         case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV |
             _: DigitDecompositionEventDescriptorV0TLV =>
-          CryptoUtil
-            .taggedSha256(byteVector, "DLC/oracle/attestation/v0")
-            .bytes
+          CryptoUtil.sha256DLCAttestation(byteVector).bytes
       }
     }
   }
