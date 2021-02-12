@@ -6,9 +6,7 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.util.Try
 
-case class SchnorrPublicKey(bytes: ByteVector)
-    extends NetworkElement
-    with CryptoTrait {
+case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   require(bytes.length == 32,
           s"Schnorr public keys must be 32 bytes, got $bytes")
   require(Try(publicKey).isSuccess,
@@ -49,7 +47,7 @@ case class SchnorrPublicKey(bytes: ByteVector)
     bytesToHash
       .zip(nonces)
       .map { case (bytes, nonce) =>
-        computeSigPoint(cryptoRuntime.sha256(bytes), nonce)
+        computeSigPoint(CryptoUtil.sha256(bytes), nonce)
       }
       .reduce(_.add(_))
   }
