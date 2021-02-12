@@ -24,4 +24,12 @@ object CryptoContext {
       }
     }
   }
+
+  /** The platform specific cryptographic functions required to run bitcoin-s */
+  lazy val cryptoRuntime: CryptoRuntime = {
+    default match {
+      case LibSecp256k1 => JvmCryptoRuntime
+      case BouncyCastle => JvmCryptoRuntime
+    }
+  }
 }
