@@ -100,10 +100,6 @@ case class DLCOracleAppConfig(
     }
   }
 
-  def serverConf: Config = {
-    config.getConfig("bitcoin-s.server")
-  }
-
   def rpcPort: Int = config.getInt("bitcoin-s.server.rpcport")
 
   def rpcBindOpt: Option[String] = {
