@@ -1150,6 +1150,79 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("createdigitdecompevent")
+        .action((_, conf) =>
+          conf.copy(command = CreateDigitDecompEvent("",
+                                                     Instant.MIN,
+                                                     0,
+                                                     isSigned = false,
+                                                     0,
+                                                     "",
+                                                     0)))
+        .text("Registers an oracle event that uses digit decomposition when signing the number")
+        .children(
+          arg[String]("name")
+            .text("Name for this event")
+            .required()
+            .action((name, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(eventName = name)
+                case other => other
+              })),
+          arg[Instant]("maturationtime")
+            .text("The earliest expected time an outcome will be signed, given in epoch second")
+            .required()
+            .action((time, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(maturationTime = time)
+                case other => other
+              })),
+          arg[Int]("base")
+            .text("The base in which the outcome value is decomposed")
+            .required()
+            .action((base, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(base = base)
+                case other => other
+              })),
+          arg[Int]("numdigits")
+            .text("The max number of digits the outcome can have")
+            .action((num, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(numDigits = num)
+                case other => other
+              })),
+          opt[Unit]("signed")
+            .text("Whether the outcomes can be negative")
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(isSigned = true)
+                case other => other
+              })),
+          arg[String]("unit")
+            .text("The unit denomination of the outcome value")
+            .action((unit, conf) =>
+              conf.copy(command = conf.command match {
+                case createRangedEvent: CreateDigitDecompEvent =>
+                  createRangedEvent.copy(unit = unit)
+                case other => other
+              })),
+          arg[Int]("precision")
+            .text("The precision of the outcome representing the " +
+              "base exponent by which to multiply the number represented by " +
+              "the composition of the digits to obtain the actual outcome value.")
+            .action((precision, conf) =>
+              conf.copy(command = conf.command match {
+                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                  createLargeRangedEvent.copy(precision = precision)
+                case other => other
+              }))
+        ),
       cmd("getevent")
         .action((_, conf) => conf.copy(command = GetEvent("")))
         .text("Get an event's details")
@@ -1509,6 +1582,23 @@ object ConsoleCli {
               up.writeJs(unit),
               up.writeJs(precision))
         )
+      case CreateDigitDecompEvent(eventName,
+                                  time,
+                                  base,
+                                  isSigned,
+                                  numDigits,
+                                  unit,
+                                  precision) =>
+        RequestParam(
+          "createdigitdecompevent",
+          Seq(up.writeJs(eventName),
+              up.writeJs(time),
+              up.writeJs(base),
+              up.writeJs(isSigned),
+              up.writeJs(numDigits),
+              up.writeJs(unit),
+              up.writeJs(precision))
+        )
       case SignEvent(eventName, outcome) =>
         RequestParam("signevent",
                      Seq(up.writeJs(eventName), up.writeJs(outcome)))
@@ -1865,6 +1955,16 @@ object CliCommand {
       extends OracleServerCliCommand
 
   case class SignEvent(eventName: String, outcome: String)
+      extends OracleServerCliCommand
+
+  case class CreateDigitDecompEvent(
+      eventName: String,
+      maturationTime: Instant,
+      base: Int,
+      isSigned: Boolean,
+      numDigits: Int,
+      unit: String,
+      precision: Int)
       extends OracleServerCliCommand
 
   case class SignDigits(eventName: String, num: Long)

@@ -26,6 +26,14 @@ checkout [this page](build-oracle-server.md).
   - `unit` - The unit denomination of the outcome value
   - `precision` - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.
   - `--signed`- Whether the outcomes can be negative
+- `createdigitdecompevent` `name` `maturationtime` `base` `numdigits` `unit` `precision` `[signed]` - Registers an oracle event that uses digit decomposition when signing the number
+  - `name`- Name for this event
+  - `maturationtime` - The earliest expected time an outcome will be signed, given in epoch second
+  - `base` - The base in which the outcome value is decomposed
+  - `numdigits` - The max number of digits the outcome can have
+  - `unit` - The unit denomination of the outcome value
+  - `precision` - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.
+  - `--signed`- Whether the outcomes can be negative
 - `getevent` `event` - Get an event's details
   - `eventName` - The event's name
 - `signevent` `event` `outcome` - Signs an event

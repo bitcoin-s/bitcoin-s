@@ -81,6 +81,49 @@ object CreateNumericEvent extends ServerJsonModels {
   }
 }
 
+case class CreateDigitDecompEvent(
+    eventName: String,
+    maturationTime: Instant,
+    base: Int,
+    isSigned: Boolean,
+    numDigits: Int,
+    unit: String,
+    precision: Int)
+
+object CreateDigitDecompEvent extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateDigitDecompEvent] = {
+    jsArr.arr.toList match {
+      case labelJs :: maturationTimeJs :: baseJs :: isSignedJs :: numDigitsJs :: unitJs :: precisionJs :: Nil =>
+        Try {
+          val label = labelJs.str
+          val maturationTime: Instant =
+            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
+          val base = baseJs.num.toInt
+          val isSigned = isSignedJs.bool
+          val numDigits = numDigitsJs.num.toInt
+          val unit = unitJs.str
+          val precision = precisionJs.num.toInt
+
+          CreateDigitDecompEvent(label,
+                                 maturationTime,
+                                 base,
+                                 isSigned,
+                                 numDigits,
+                                 unit,
+                                 precision)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException(
+          "Missing label, maturationTime, base, isSigned, and numDigits arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 5"))
+    }
+  }
+}
+
 case class SignEvent(eventName: String, outcome: String)
 
 object SignEvent extends ServerJsonModels {

@@ -70,12 +70,39 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
           complete {
 
             val numDigits =
-              Math.ceil(Math.log10(maxValue) / Math.log10(2)).toInt
+              Math.ceil(Math.log10(maxValue.toDouble) / Math.log10(2)).toInt
 
             oracle
               .createNewLargeRangedEvent(eventName,
                                          maturationTime,
                                          UInt16(2),
+                                         isSigned,
+                                         numDigits,
+                                         unit,
+                                         Int32(precision))
+              .map { announcementTLV =>
+                Server.httpSuccess(announcementTLV.hex)
+              }
+          }
+      }
+
+    case ServerCommand("createdigitdecompevent", arr) =>
+      CreateDigitDecompEvent.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(
+              CreateDigitDecompEvent(eventName,
+                                     maturationTime,
+                                     base,
+                                     isSigned,
+                                     numDigits,
+                                     unit,
+                                     precision)) =>
+          complete {
+            oracle
+              .createNewLargeRangedEvent(eventName,
+                                         maturationTime,
+                                         UInt16(base),
                                          isSigned,
                                          numDigits,
                                          unit,
