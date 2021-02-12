@@ -69,11 +69,11 @@ class HDPathTest extends BitcoinSUnitTest {
   behavior of "HDCoinType"
 
   it must "correctly represent Bitcoin and Testnet coins" in {
-    HDCoinType(0) must be(HDCoinType.Bitcoin)
-    HDCoinType(1) must be(HDCoinType.Testnet)
+    HDCoinType.fromInt(0) must be(HDCoinType.Bitcoin)
+    HDCoinType.fromInt(1) must be(HDCoinType.Testnet)
     forAll(NumberGenerator.ints.suchThat(i =>
       !HDCoinType.all.map(_.toInt).contains(i))) { i =>
-      HDCoinType(i).toInt must be(i)
+      HDCoinType.fromInt(i) must be(HDCoinType.UnknownCoinType(i))
       HDCoinType.fromKnown(i) must be(None)
     }
   }
