@@ -71,7 +71,7 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
             "The address index child must not be hardened!")
 
     val chainType = HDChainType.fromInt(chainChild.index)
-    val coinType = HDCoinType(coinChild.index)
+    val coinType = HDCoinType.fromInt(coinChild.index)
 
     apply(coin = coinType,
           accountIndex = accountChild.index,
