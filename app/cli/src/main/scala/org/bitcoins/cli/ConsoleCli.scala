@@ -1,8 +1,5 @@
 package org.bitcoins.cli
 
-import java.io.File
-import java.nio.file.Path
-import java.time.Instant
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
@@ -36,6 +33,9 @@ import scopt.OParser
 import ujson._
 import upickle.{default => up}
 
+import java.io.File
+import java.nio.file.Path
+import java.time.Instant
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
@@ -1642,19 +1642,26 @@ object Config {
 }
 
 sealed abstract class CliCommand {
-  def defaultPort: Int = 9999
+  def defaultPort: Int
 }
 
 object CliCommand {
-  case object NoCommand extends CliCommand
+
+  case object NoCommand extends CliCommand {
+    override def defaultPort: Int = 9999
+  }
 
   trait Broadcastable {
     def noBroadcast: Boolean
   }
 
-  sealed trait ServerlessCliCommand extends CliCommand
+  sealed trait ServerlessCliCommand extends CliCommand {
+    override def defaultPort: Int = 9999
+  }
 
-  sealed trait AppServerCliCommand extends CliCommand
+  sealed trait AppServerCliCommand extends CliCommand {
+    override def defaultPort: Int = 9999
+  }
 
   sealed trait OracleServerCliCommand extends CliCommand {
     override def defaultPort: Int = 9998
