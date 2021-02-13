@@ -6,7 +6,6 @@ import java.nio.file._
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
 import org.bitcoins.node.NodeType
 import org.bitcoins.node.config.NodeAppConfig
@@ -42,11 +41,11 @@ case class BitcoindRpcAppConfig(
       case NodeType.BitcoindBackend =>
         client.start().map(_ => ())
       case NodeType.SpvNode | NodeType.NeutrinoNode | NodeType.FullNode =>
-        FutureUtil.unit
+        Future.unit
     }
   }
 
-  override def stop(): Future[Unit] = FutureUtil.unit
+  override def stop(): Future[Unit] = Future.unit
 
   lazy val DEFAULT_BINARY_PATH: File =
     BitcoindInstance.DEFAULT_BITCOIND_LOCATION

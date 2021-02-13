@@ -110,7 +110,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       }
       _ <-
         if (markAsReserved) markUTXOsAsReserved(selectedUtxos.map(_._1))
-        else FutureUtil.unit
+        else Future.unit
     } yield {
       logger.info {
         val utxosStr = utxoSpendingInfos

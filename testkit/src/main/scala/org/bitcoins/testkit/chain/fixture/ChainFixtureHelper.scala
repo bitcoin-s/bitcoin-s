@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.chain.fixture
 
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.chain.fixture.ChainFixture.{
   BitcoindZmqChainHandlerWithBlock,
@@ -46,7 +45,7 @@ trait ChainFixtureHelper { this: ChainUnitTest =>
 
   def destroyFixture(fixture: ChainFixture): Future[Any] = {
     fixture match {
-      case Empty                      => FutureUtil.unit
+      case Empty                      => Future.unit
       case GenisisBlockHeaderDAO(_)   => ChainUnitTest.destroyAllTables()
       case PopulatedBlockHeaderDAO(_) => ChainUnitTest.destroyAllTables()
       case GenisisChainHandler(_)     => ChainUnitTest.destroyAllTables()

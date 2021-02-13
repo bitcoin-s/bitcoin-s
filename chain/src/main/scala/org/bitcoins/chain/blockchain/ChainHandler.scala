@@ -79,7 +79,7 @@ class ChainHandler(
         //since we have same chainwork, just take the oldest tip
         //as that's "more likely" to have been propagated first
         //and had more miners building on top of it
-        chainsByWork.sortBy(_.tip.time).head.tip
+        chainsByWork.minBy(_.tip.time).tip
       }
     }
     bestHeader
@@ -153,7 +153,7 @@ class ChainHandler(
 
         createdF.map { headers =>
           if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
-            headersToBeCreated.reverseIterator.foldLeft(FutureUtil.unit) {
+            headersToBeCreated.reverseIterator.foldLeft(Future.unit) {
               (acc, header) =>
                 for {
                   _ <- acc
@@ -198,38 +198,26 @@ class ChainHandler(
   protected def nextBlockHeaderBatchRangeWithChains(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int,
-      blockchains: Vector[Blockchain]): Future[Option[FilterSyncMarker]] = {
-    for {
-      prevBlockHeaderOpt <- getHeader(prevStopHash)
-      headerOpt <- prevBlockHeaderOpt match {
-        case Some(_) =>
-          findNextHeader(prevBlockHeaderOpt, batchSize, blockchains)
-        case None =>
-          if (prevStopHash == DoubleSha256DigestBE.empty) {
-            for {
-              next <- findNextHeader(None, batchSize, blockchains)
-            } yield next
-          } else {
-            Future.successful(None)
-          }
-      }
-    } yield {
-      headerOpt
-    }
-  }
+      blockchains: Vector[Blockchain]): Future[Option[FilterSyncMarker]] = for {
+    prevBlockHeaderOpt <- getHeader(prevStopHash)
+    headerOpt <-
+      if (prevBlockHeaderOpt.isDefined)
+        findNextHeader(prevBlockHeaderOpt, batchSize, blockchains)
+      else if (prevStopHash == DoubleSha256DigestBE.empty)
+        findNextHeader(None, batchSize, blockchains)
+      else Future.successful(None)
+  } yield headerOpt
 
   /** @inheritdoc */
   override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
-      batchSize: Int): Future[Option[FilterSyncMarker]] = {
-    val blockchainsF = blockHeaderDAO.getBlockchains()
+      batchSize: Int): Future[Option[FilterSyncMarker]] =
     for {
-      blockchains <- blockchainsF
+      blockchains <- blockHeaderDAO.getBlockchains()
       syncMarkerOpt <- nextBlockHeaderBatchRangeWithChains(prevStopHash,
                                                            batchSize,
                                                            blockchains)
     } yield syncMarkerOpt
-  }
 
   /** Finds the next header in the chain. Uses chain work to break ties
     * returning only the header in the chain with the most work
@@ -384,7 +372,7 @@ class ChainHandler(
                 s"Previous filter header does not exist: $firstFilter"
               )
           }
-        } else FutureUtil.unit
+        } else Future.unit
       _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
     } yield {
       val minHeightOpt = filterHeadersToCreate.minByOption(_.height)

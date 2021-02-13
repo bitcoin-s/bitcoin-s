@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.util
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -87,7 +87,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
 
     conditionF().flatMap { condition =>
       if (condition) {
-        FutureUtil.unit
+        Future.unit
       } else if (counter == maxTries) {
         Future.failed(RpcRetryException(
           s"Condition timed out after $maxTries attempts with interval=$interval waiting periods",
@@ -99,7 +99,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
         system.scheduler.scheduleOnce(delay = interval, runnable = runnable)
 
         p.future.flatMap {
-          case true => FutureUtil.unit
+          case true => Future.unit
           case false =>
             retryUntilSatisfiedWithCounter(conditionF = conditionF,
                                            interval = interval,

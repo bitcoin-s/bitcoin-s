@@ -13,7 +13,7 @@ import org.bitcoins.core.util.NumberUtil
 sealed abstract class Pow {
 
   /** Gets the next proof of work requirement for a block
-    * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L13 Mimics bitcoin core implmentation]]
+    * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L13 Mimics bitcoin core implementation]]
     */
   def getNetworkWorkRequired(
       newPotentialTip: BlockHeader,
@@ -76,7 +76,7 @@ sealed abstract class Pow {
                                       chainParams)
           case None =>
             throw new RuntimeException(
-              s"Could not find block at height=${firstHeight} out of ${blockchain.length} headers to calculate pow difficutly change")
+              s"Could not find block at height=$firstHeight out of ${blockchain.length} headers to calculate pow difficulty change")
         }
 
       }
@@ -120,7 +120,7 @@ sealed abstract class Pow {
         bnNew = powLimit
       }
 
-      val newTarget = NumberUtil.targetCompression(bnNew, false)
+      val newTarget = NumberUtil.targetCompression(bnNew, isNegative = false)
 
       newTarget
     }

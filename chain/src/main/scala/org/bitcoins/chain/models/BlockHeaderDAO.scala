@@ -59,7 +59,7 @@ case class BlockHeaderDAO()(implicit
     table.filter(_.hash.inSet(hashes))
   }
 
-  /** Retrives the ancestor for the given block header at the given height
+  /** Retrieves the ancestor for the given block header at the given height
     * @param child
     * @param height
     * @return
@@ -71,37 +71,29 @@ case class BlockHeaderDAO()(implicit
      * To avoid making many database reads, we make one database read for all
      * possibly useful block headers.
      */
-    val headersF = getBetweenHeights(from = height, to = child.height - 1)
+    lazy val headersF = getBetweenHeights(from = height, to = child.height - 1)
 
     /*
      * We then bucket sort these headers by height so that any ancestor can be found
      * in linear time assuming a bounded number of contentious tips.
      */
     val headersByHeight: Array[Vector[BlockHeaderDb]] =
-      new Array[Vector[BlockHeaderDb]](_length = (child.height - height).toInt)
-
-    /*
-     * I believe Array's of Objects are instantiated with null, which is evil,
-     * and so we start by giving each element of the array a Vector.empty.
-     */
-    headersByHeight.indices.foreach(index =>
-      headersByHeight(index) = Vector.empty)
+      Array.fill(child.height - height)(Vector.empty[BlockHeaderDb])
 
     // Bucket sort
     headersF.map { headers =>
       headers.foreach { header =>
-        val index = (header.height - height).toInt
+        val index = header.height - height
         headersByHeight(index) = headersByHeight(index).:+(header)
       }
 
-      // Now that the bucket sort is done, we get rid of mutability
-      val groupedByHeightHeaders: List[Vector[BlockHeaderDb]] =
-        headersByHeight.toList
+      val groupedByHeightHeaders: Array[Vector[BlockHeaderDb]] =
+        headersByHeight.reverse
 
       @tailrec
       def loop(
           currentHeader: BlockHeaderDb,
-          headersByDescHeight: List[Vector[BlockHeaderDb]]): Option[
+          headersByDescHeight: Array[Vector[BlockHeaderDb]]): Option[
         BlockHeaderDb] = {
         if (currentHeader.height == height) {
           Some(currentHeader)
@@ -116,7 +108,7 @@ case class BlockHeaderDAO()(implicit
         }
       }
 
-      loop(child, groupedByHeightHeaders.reverse)
+      loop(child, groupedByHeightHeaders)
     }
   }
 

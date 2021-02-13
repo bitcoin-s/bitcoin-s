@@ -1,7 +1,7 @@
 package org.bitcoins.core.api
 
 import grizzled.slf4j.Logger
-import org.bitcoins.core.util.{FutureUtil, SeqWrapper}
+import org.bitcoins.core.util.SeqWrapper
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -29,7 +29,7 @@ trait Callback3[T1, T2, T3] extends Callback[(T1, T2, T3)] {
 object Callback {
 
   /** Does nothing */
-  def noop[T]: T => Future[Unit] = _ => FutureUtil.unit
+  def noop[T]: T => Future[Unit] = _ => Future.unit
 }
 
 /** Manages a set of callbacks, should be used to manage execution and logging if needed */

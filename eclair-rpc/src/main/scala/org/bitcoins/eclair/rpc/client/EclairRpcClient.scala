@@ -23,7 +23,7 @@ import org.bitcoins.core.protocol.ln.routing.{ChannelRoute, NodeRoute, Route}
 import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
-import org.bitcoins.core.util.{BytesUtil, FutureUtil, StartStopAsync}
+import org.bitcoins.core.util.{BytesUtil, StartStopAsync}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.eclair.rpc.api._
@@ -815,7 +815,7 @@ class EclairRpcClient(
     val actorSystemF = if (system.name == EclairRpcClient.ActorSystemName) {
       system.terminate()
     } else {
-      FutureUtil.unit
+      Future.unit
     }
     actorSystemF.map(_ => this)
   }
