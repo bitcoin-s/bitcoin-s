@@ -13,7 +13,6 @@ import org.bitcoins.core.api.chain._
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{
@@ -257,7 +256,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   override def downloadBlocks(
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
     if (blockHashes.isEmpty) {
-      FutureUtil.unit
+      Future.unit
     } else {
       for {
         peerMsgSender <- peerMsgSenderF

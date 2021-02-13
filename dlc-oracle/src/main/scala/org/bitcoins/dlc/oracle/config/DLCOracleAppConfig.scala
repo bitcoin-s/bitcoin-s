@@ -5,7 +5,6 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.protocol.tlv.EnumEventDescriptorV0TLV
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver._
@@ -86,7 +85,7 @@ case class DLCOracleAppConfig(
             _ <- eventDAO.upsertAll(updated)
 
           } yield ()
-        } else FutureUtil.unit
+        } else Future.unit
 
       migrationWorkAroundF.map { _ =>
         if (isHikariLoggingEnabled) {

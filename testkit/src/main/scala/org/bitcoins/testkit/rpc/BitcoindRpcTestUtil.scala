@@ -22,7 +22,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.core.util.{BitcoinSLogger, EnvUtil, FutureUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, EnvUtil}
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
@@ -993,7 +993,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       seenBlock <- hasSeenBlock(receiver, blockHash)
       _ <-
         if (seenBlock) {
-          FutureUtil.unit
+          Future.unit
         } else {
           sender
             .getBlockRaw(blockHash)

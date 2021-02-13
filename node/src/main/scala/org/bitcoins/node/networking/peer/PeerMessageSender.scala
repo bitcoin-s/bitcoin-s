@@ -10,7 +10,6 @@ import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
@@ -52,12 +51,12 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       case true =>
         logger.info(s"Disconnecting peer at socket=${socket}")
         (client.actor ! Tcp.Close)
-        FutureUtil.unit
+        Future.unit
       case false =>
         val err =
           s"Cannot disconnect client that is not connected to socket=${socket}!"
         logger.warn(err)
-        FutureUtil.unit
+        Future.unit
     }
 
   }
@@ -237,7 +236,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
     val newtworkMsg = NetworkMessage(conf.network, msg)
     client.actor ! newtworkMsg
-    FutureUtil.unit
+    Future.unit
   }
 }
 

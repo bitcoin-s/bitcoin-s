@@ -330,7 +330,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
     val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
       FileUtil.deleteTmpDir(walletAppConfig.datadir)
       walletAppConfig.stop()
-      FutureUtil.unit
+      Future.unit
     }
     makeDependentFixture(builder, destroy = destroy)(test)
   }
@@ -356,10 +356,10 @@ object BitcoinSWalletTest extends WalletLogger {
   object MockNodeApi extends NodeApi {
 
     override def broadcastTransaction(transaction: Transaction): Future[Unit] =
-      FutureUtil.unit
+      Future.unit
 
     override def downloadBlocks(
-        blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = FutureUtil.unit
+        blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.unit
 
   }
 

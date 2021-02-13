@@ -153,7 +153,7 @@ class ChainHandler(
 
         createdF.map { headers =>
           if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
-            headersToBeCreated.reverseIterator.foldLeft(FutureUtil.unit) {
+            headersToBeCreated.reverseIterator.foldLeft(Future.unit) {
               (acc, header) =>
                 for {
                   _ <- acc
@@ -372,7 +372,7 @@ class ChainHandler(
                 s"Previous filter header does not exist: $firstFilter"
               )
           }
-        } else FutureUtil.unit
+        } else Future.unit
       _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
     } yield {
       val minHeightOpt = filterHeadersToCreate.minByOption(_.height)

@@ -5,7 +5,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
-import org.bitcoins.core.util.{FutureUtil, Mutable}
+import org.bitcoins.core.util.Mutable
 import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
   KeyManagerParams
@@ -166,7 +166,7 @@ case class WalletAppConfig(
     if (isHikariLoggingEnabled) {
       val _ = stopHikariLogger()
     }
-    FutureUtil.unit
+    Future.unit
   }
 
   /** The path to our encrypted mnemonic seed */

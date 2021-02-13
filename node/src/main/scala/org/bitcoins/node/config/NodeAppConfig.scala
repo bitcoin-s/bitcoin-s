@@ -4,7 +4,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.util.{FutureUtil, Mutable}
+import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.{AppConfigFactory, DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
@@ -65,7 +65,7 @@ case class NodeAppConfig(
 
   override def stop(): Future[Unit] = {
     val _ = stopHikariLogger()
-    FutureUtil.unit
+    Future.unit
   }
 
   lazy val nodeType: NodeType =

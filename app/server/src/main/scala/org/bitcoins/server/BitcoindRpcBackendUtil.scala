@@ -61,7 +61,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
             utxos <- wallet.listUtxos()
             lastConfirmedOpt = utxos.filter(_.blockHash.isDefined).lastOption
             _ <- lastConfirmedOpt match {
-              case None => FutureUtil.unit
+              case None => Future.unit
               case Some(utxo) =>
                 for {
                   heightOpt <- bitcoind.getBlockHeight(utxo.blockHash.get)
@@ -70,7 +70,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
                       logger.info(
                         s"Last utxo occurred at block $height, syncing from there")
                       doSync(height, bitcoindHeight)
-                    case None => FutureUtil.unit
+                    case None => Future.unit
                   }
                 } yield ()
             }
@@ -240,7 +240,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
           } else if (prevCount > count) {
             Future.failed(new RuntimeException(
               s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
-          } else FutureUtil.unit
+          } else Future.unit
         }
         ()
       }

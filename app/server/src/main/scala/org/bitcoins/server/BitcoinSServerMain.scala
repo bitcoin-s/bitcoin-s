@@ -10,7 +10,7 @@ import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.feeprovider.FeeProviderName._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
@@ -209,7 +209,7 @@ class BitcoinSServerMain(override val args: Array[String])
     }
     lazy val onHeaders: OnBlockHeadersReceived = { headers =>
       if (headers.isEmpty) {
-        FutureUtil.unit
+        Future.unit
       } else {
         wallet.updateUtxoPendingStates().map(_ => ())
       }
