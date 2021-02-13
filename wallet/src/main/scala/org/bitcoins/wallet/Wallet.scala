@@ -114,7 +114,7 @@ abstract class Wallet
           logger.info(
             s"Missing relevant ${utxos.size} wallet transactions, fetching their blocks..")
           nodeApi.downloadBlocks(blockHashes.distinct)
-        } else FutureUtil.unit
+        } else Future.unit
     } yield ()
 
   private def checkRootAccount: Future[Unit] = {
@@ -133,7 +133,7 @@ abstract class Wallet
               s"It is possible we have a different key manager being used than expected, key manager=$keyManager"
           Future.failed(new RuntimeException(errorMsg))
         } else {
-          FutureUtil.unit
+          Future.unit
         }
       case None =>
         val errorMsg = s"Missing root xpub for account $account in database"
@@ -187,7 +187,7 @@ abstract class Wallet
           val matcher = SimpleFilterMatcher(blockFilter)
           if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
             nodeApi.downloadBlocks(Vector(blockHash))
-          } else FutureUtil.unit
+          } else Future.unit
       }
       hash = blockFilters.last._1.flip
       height <- chainQueryApi.getBlockHeight(hash)

@@ -6,7 +6,7 @@ import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
-import org.bitcoins.core.util.{FutureUtil, Mutable}
+import org.bitcoins.core.util.Mutable
 import org.bitcoins.db._
 
 import java.nio.file.Path
@@ -73,7 +73,7 @@ case class ChainAppConfig(
       isInit <- isStarted()
       _ <- {
         if (isInit) {
-          FutureUtil.unit
+          Future.unit
         } else {
           val genesisHeader =
             BlockHeaderDbHelper.fromBlockHeader(
@@ -85,7 +85,7 @@ case class ChainAppConfig(
           val bhCreatedF = blockHeaderDAO.create(genesisHeader)
           bhCreatedF.flatMap { _ =>
             logger.info(s"Inserted genesis block header into DB")
-            FutureUtil.unit
+            Future.unit
           }
         }
       }
@@ -104,7 +104,7 @@ case class ChainAppConfig(
 
   override def stop(): Future[Unit] = {
     val _ = stopHikariLogger()
-    FutureUtil.unit
+    Future.unit
   }
 
   lazy val filterHeaderBatchSize: Int = {

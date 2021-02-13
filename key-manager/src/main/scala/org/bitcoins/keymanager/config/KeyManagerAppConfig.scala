@@ -2,7 +2,6 @@ package org.bitcoins.keymanager.config
 
 import com.typesafe.config.Config
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db._
 import org.bitcoins.keymanager.WalletStorage
@@ -61,10 +60,10 @@ case class KeyManagerAppConfig(
       Files.createDirectories(newDefaultFile.getParent)
       Files.copy(oldDefaultFile, newDefaultFile)
     }
-    FutureUtil.unit
+    Future.unit
   }
 
-  override def stop(): Future[Unit] = FutureUtil.unit
+  override def stop(): Future[Unit] = Future.unit
 
   lazy val aesPasswordOpt: Option[AesPassword] = {
     val passOpt = config.getStringOrNone(s"bitcoin-s.$moduleName.aesPassword")

@@ -30,8 +30,6 @@ object FutureUtil {
     FutureUtil.sequentially(items)(x => x)
   }
 
-  val unit: Future[Unit] = Future.successful(())
-
   def none[T]: Future[Option[T]] = Future.successful(Option.empty[T])
 
   def emptyVec[T]: Future[Vector[T]] = Future.successful(Vector.empty[T])

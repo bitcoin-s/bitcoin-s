@@ -5,7 +5,6 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
@@ -138,7 +137,7 @@ case class DataMessageHandler(
               logger.info(
                 s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
               sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
-            } else FutureUtil.unit
+            } else Future.unit
         } yield {
           this.copy(
             chainApi = newChainApi,

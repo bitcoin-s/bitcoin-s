@@ -122,7 +122,7 @@ trait DbManagement extends BitcoinSLogger {
       ec: ExecutionContext): Future[Unit] =
     appConfig.schemaName match {
       case None =>
-        FutureUtil.unit
+        Future.unit
       case Some(schema) =>
         val sql =
           if (createIfNotExists)

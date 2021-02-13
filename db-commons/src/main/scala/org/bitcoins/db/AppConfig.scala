@@ -3,7 +3,7 @@ package org.bitcoins.db
 import com.typesafe.config._
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.BitcoinChainParams
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStopAsync}
+import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
 
 import java.nio.file.{Files, Path, Paths}
 import scala.concurrent.Future
@@ -27,7 +27,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
     * something else entirely.
     */
   override def start(): Future[Unit] = {
-    FutureUtil.unit
+    Future.unit
   }
 
   /** Sub members of AppConfig should override this type with

@@ -20,7 +20,7 @@ import org.bitcoins.core.config.{
   TestNet3
 }
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStopAsync}
+import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
@@ -227,7 +227,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
       _ <- {
         if (system.name == BitcoindRpcClient.ActorSystemName) {
           system.terminate()
-        } else FutureUtil.unit
+        } else Future.unit
       }
     } yield this.asInstanceOf[BitcoindRpcClient]
   }

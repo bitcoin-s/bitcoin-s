@@ -150,14 +150,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
   private def pruneUnusedAddresses(): Future[Unit] = {
     for {
       addressDbs <- addressDAO.findAll()
-      _ <- addressDbs.foldLeft(FutureUtil.unit) { (prevF, addressDb) =>
+      _ <- addressDbs.foldLeft(Future.unit) { (prevF, addressDb) =>
         for {
           _ <- prevF
           spendingInfoDbs <-
             spendingInfoDAO.findByScriptPubKeyId(addressDb.scriptPubKeyId)
           _ <-
             if (spendingInfoDbs.isEmpty) addressDAO.delete(addressDb)
-            else FutureUtil.unit
+            else Future.unit
         } yield ()
       }
     } yield ()
@@ -193,7 +193,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
   private def downloadAndProcessBlocks(
       blocks: Vector[DoubleSha256Digest]): Future[Unit] = {
     logger.info(s"Requesting ${blocks.size} block(s)")
-    blocks.foldLeft(FutureUtil.unit) { (prevF, blockHash) =>
+    blocks.foldLeft(Future.unit) { (prevF, blockHash) =>
       val completedF = subscribeForBlockProcessingCompletionSignal(blockHash)
       for {
         _ <- prevF
