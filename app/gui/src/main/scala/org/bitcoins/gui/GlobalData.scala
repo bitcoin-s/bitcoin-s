@@ -33,7 +33,7 @@ object GlobalData {
       case None =>
         Config(debug = debug)
       case Some(rpcPort) =>
-        Config(debug = debug, rpcPort = rpcPort)
+        Config(debug = debug, rpcPortOpt = Some(rpcPort))
     }
 
   lazy val broadcastUrl: String = GlobalData.network match {

@@ -302,19 +302,11 @@ class BitcoinSServerMain(override val args: Array[String])
                  rpcbindOpt = bindConfOpt,
                  rpcport = rpcport)
         case None =>
-          conf.rpcPortOpt match {
-            case Some(rpcport) =>
-              Server(conf = nodeConf,
-                     handlers =
-                       Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                     rpcbindOpt = bindConfOpt,
-                     rpcport = rpcport)
-            case None =>
-              Server(conf = nodeConf,
-                     handlers =
-                       Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
-                     rpcbindOpt = bindConfOpt)
-          }
+          Server(conf = nodeConf,
+                 handlers =
+                   Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                 rpcbindOpt = bindConfOpt,
+                 rpcport = conf.rpcPort)
       }
     }
     server.start()

@@ -1,8 +1,5 @@
 package org.bitcoins.cli
 
-import java.io.File
-import java.nio.file.Path
-import java.time.Instant
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
@@ -36,6 +33,9 @@ import scopt.OParser
 import ujson._
 import upickle.{default => up}
 
+import java.io.File
+import java.nio.file.Path
+import java.time.Instant
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
@@ -54,7 +54,7 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(debug = true))
         .text("Print debugging information"),
       opt[Int]("rpcport")
-        .action((port, conf) => conf.copy(rpcPort = port))
+        .action((port, conf) => conf.copy(rpcPortOpt = Some(port)))
         .text(s"The port to send our rpc request to on the server"),
       opt[Unit]("version")
         .action((_, conf) => conf.copy(command = GetVersion))
@@ -1629,27 +1629,47 @@ case class Config(
     command: CliCommand = CliCommand.NoCommand,
     network: Option[NetworkParameters] = None,
     debug: Boolean = false,
-    rpcPort: Int = 9999
-)
+    rpcPortOpt: Option[Int] = None) {
+
+  val rpcPort: Int = rpcPortOpt match {
+    case Some(port) => port
+    case None       => command.defaultPort
+  }
+}
 
 object Config {
   val empty: Config = Config()
 }
 
-sealed abstract class CliCommand
+sealed abstract class CliCommand {
+  def defaultPort: Int
+}
 
 object CliCommand {
-  case object NoCommand extends CliCommand
+
+  case object NoCommand extends CliCommand {
+    override def defaultPort: Int = 9999
+  }
 
   trait Broadcastable {
     def noBroadcast: Boolean
   }
 
-  sealed trait ServerlessCliCommand extends CliCommand
+  sealed trait ServerlessCliCommand extends CliCommand {
+    override def defaultPort: Int = 9999
+  }
+
+  sealed trait AppServerCliCommand extends CliCommand {
+    override def defaultPort: Int = 9999
+  }
+
+  sealed trait OracleServerCliCommand extends CliCommand {
+    override def defaultPort: Int = 9998
+  }
 
   case object GetVersion extends ServerlessCliCommand
 
-  case object GetInfo extends CliCommand
+  case object GetInfo extends AppServerCliCommand
 
   // DLC
   case class CreateDLCOffer(
@@ -1658,45 +1678,46 @@ object CliCommand {
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLT: UInt32)
-      extends CliCommand
+      extends AppServerCliCommand
 
-  sealed trait AcceptDLCCliCommand extends CliCommand
+  sealed trait AcceptDLCCliCommand extends AppServerCliCommand
 
   case class AcceptDLCOffer(offer: LnMessage[DLCOfferTLV])
       extends AcceptDLCCliCommand
 
   case class AcceptDLCOfferFromFile(path: Path) extends AcceptDLCCliCommand
 
-  sealed trait SignDLCCliCommand extends CliCommand
+  sealed trait SignDLCCliCommand extends AppServerCliCommand
 
   case class SignDLC(accept: LnMessage[DLCAcceptTLV]) extends SignDLCCliCommand
 
   case class SignDLCFromFile(path: Path) extends SignDLCCliCommand
 
-  sealed trait AddDLCSigsCliCommand extends CliCommand
+  sealed trait AddDLCSigsCliCommand extends AppServerCliCommand
 
   case class AddDLCSigs(sigs: LnMessage[DLCSignTLV])
       extends AddDLCSigsCliCommand
 
   case class AddDLCSigsFromFile(path: Path) extends AddDLCSigsCliCommand
 
-  case class GetDLCFundingTx(contractId: ByteVector) extends CliCommand
+  case class GetDLCFundingTx(contractId: ByteVector) extends AppServerCliCommand
 
-  case class BroadcastDLCFundingTx(contractId: ByteVector) extends CliCommand
+  case class BroadcastDLCFundingTx(contractId: ByteVector)
+      extends AppServerCliCommand
 
   case class ExecuteDLC(
       contractId: ByteVector,
       oracleSigs: Vector[OracleAttestmentTLV],
       noBroadcast: Boolean)
-      extends CliCommand
+      extends AppServerCliCommand
       with Broadcastable
 
   case class ExecuteDLCRefund(contractId: ByteVector, noBroadcast: Boolean)
-      extends CliCommand
+      extends AppServerCliCommand
       with Broadcastable
 
-  case object GetDLCs extends CliCommand
-  case class GetDLC(paramHash: Sha256DigestBE) extends CliCommand
+  case object GetDLCs extends AppServerCliCommand
+  case class GetDLC(paramHash: Sha256DigestBE) extends AppServerCliCommand
 
   // Wallet
   case class SendToAddress(
@@ -1704,7 +1725,7 @@ object CliCommand {
       amount: Bitcoins,
       satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
       noBroadcast: Boolean)
-      extends CliCommand
+      extends AppServerCliCommand
       with Broadcastable
 
   case class SendFromOutPoints(
@@ -1712,94 +1733,105 @@ object CliCommand {
       destination: BitcoinAddress,
       amount: Bitcoins,
       feeRateOpt: Option[SatoshisPerVirtualByte])
-      extends CliCommand
+      extends AppServerCliCommand
 
   case class SendWithAlgo(
       destination: BitcoinAddress,
       amount: Bitcoins,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       algo: CoinSelectionAlgo)
-      extends CliCommand
+      extends AppServerCliCommand
 
   case class OpReturnCommit(
       message: String,
       hashMessage: Boolean,
       feeRateOpt: Option[SatoshisPerVirtualByte])
-      extends CliCommand
+      extends AppServerCliCommand
 
   case class BumpFeeCPFP(
       txId: DoubleSha256DigestBE,
       feeRate: SatoshisPerVirtualByte)
-      extends CliCommand
+      extends AppServerCliCommand
 
   case class BumpFeeRBF(
       txId: DoubleSha256DigestBE,
       feeRate: SatoshisPerVirtualByte)
-      extends CliCommand
+      extends AppServerCliCommand
 
-  case class SignPSBT(psbt: PSBT) extends CliCommand
+  case class SignPSBT(psbt: PSBT) extends AppServerCliCommand
 
   case class LockUnspent(
       unlock: Boolean,
       outPoints: Vector[LockUnspentOutputParameter])
-      extends CliCommand
+      extends AppServerCliCommand
 
   case class LabelAddress(address: BitcoinAddress, label: AddressLabelTag)
-      extends CliCommand
+      extends AppServerCliCommand
 
-  case class GetAddressTags(address: BitcoinAddress) extends CliCommand
+  case class GetAddressTags(address: BitcoinAddress) extends AppServerCliCommand
 
-  case class GetAddressLabels(address: BitcoinAddress) extends CliCommand
+  case class GetAddressLabels(address: BitcoinAddress)
+      extends AppServerCliCommand
 
-  case class DropAddressLabels(address: BitcoinAddress) extends CliCommand
+  case class DropAddressLabels(address: BitcoinAddress)
+      extends AppServerCliCommand
 
-  case class GetNewAddress(labelOpt: Option[AddressLabelTag]) extends CliCommand
-  case object GetUtxos extends CliCommand
-  case object ListReservedUtxos extends CliCommand
-  case object GetAddresses extends CliCommand
-  case object GetSpentAddresses extends CliCommand
-  case object GetFundedAddresses extends CliCommand
-  case object GetUnusedAddresses extends CliCommand
-  case object GetAccounts extends CliCommand
-  case object CreateNewAccount extends CliCommand
-  case object IsEmpty extends CliCommand
-  case object WalletInfo extends CliCommand
-  case class GetBalance(isSats: Boolean) extends CliCommand
-  case class GetConfirmedBalance(isSats: Boolean) extends CliCommand
-  case class GetUnconfirmedBalance(isSats: Boolean) extends CliCommand
-  case class GetAddressInfo(address: BitcoinAddress) extends CliCommand
-  case class GetTransaction(txId: DoubleSha256DigestBE) extends CliCommand
+  case class GetNewAddress(labelOpt: Option[AddressLabelTag])
+      extends AppServerCliCommand
+  case object GetUtxos extends AppServerCliCommand
+  case object ListReservedUtxos extends AppServerCliCommand
+  case object GetAddresses extends AppServerCliCommand
+  case object GetSpentAddresses extends AppServerCliCommand
+  case object GetFundedAddresses extends AppServerCliCommand
+  case object GetUnusedAddresses extends AppServerCliCommand
+  case object GetAccounts extends AppServerCliCommand
+  case object CreateNewAccount extends AppServerCliCommand
+  case object IsEmpty extends AppServerCliCommand
+  case object WalletInfo extends AppServerCliCommand
+  case class GetBalance(isSats: Boolean) extends AppServerCliCommand
+  case class GetConfirmedBalance(isSats: Boolean) extends AppServerCliCommand
+  case class GetUnconfirmedBalance(isSats: Boolean) extends AppServerCliCommand
+  case class GetAddressInfo(address: BitcoinAddress) extends AppServerCliCommand
+
+  case class GetTransaction(txId: DoubleSha256DigestBE)
+      extends AppServerCliCommand
 
   case class KeyManagerPassphraseChange(
       oldPassword: AesPassword,
       newPassword: AesPassword)
-      extends CliCommand
-  case class KeyManagerPassphraseSet(password: AesPassword) extends CliCommand
+      extends AppServerCliCommand
+
+  case class KeyManagerPassphraseSet(password: AesPassword)
+      extends AppServerCliCommand
 
   case class ImportSeed(
       walletName: String,
       mnemonic: MnemonicCode,
       passwordOpt: Option[AesPassword])
-      extends CliCommand
+      extends AppServerCliCommand
 
   case class ImportXprv(
       walletName: String,
       xprv: ExtPrivateKey,
       passwordOpt: Option[AesPassword])
-      extends CliCommand
+      extends AppServerCliCommand
 
   // Node
-  case object GetPeers extends CliCommand
-  case object Stop extends CliCommand
-  case class SendRawTransaction(tx: Transaction) extends CliCommand
+  case object GetPeers extends AppServerCliCommand
+  case object Stop extends AppServerCliCommand
+  case class SendRawTransaction(tx: Transaction) extends AppServerCliCommand
 
   // Chain
-  case object GetBestBlockHash extends CliCommand
-  case object GetBlockCount extends CliCommand
-  case object GetFilterCount extends CliCommand
-  case object GetFilterHeaderCount extends CliCommand
-  case class GetBlockHeader(hash: DoubleSha256DigestBE) extends CliCommand
-  case class DecodeRawTransaction(transaction: Transaction) extends CliCommand
+  case object GetBestBlockHash extends AppServerCliCommand
+  case object GetBlockCount extends AppServerCliCommand
+  case object GetFilterCount extends AppServerCliCommand
+  case object GetFilterHeaderCount extends AppServerCliCommand
+
+  case class GetBlockHeader(hash: DoubleSha256DigestBE)
+      extends AppServerCliCommand
+
+  case class DecodeRawTransaction(transaction: Transaction)
+      extends AppServerCliCommand
 
   case class Rescan(
       addressBatchSize: Option[Int],
@@ -1807,29 +1839,36 @@ object CliCommand {
       endBlock: Option[BlockStamp],
       force: Boolean,
       ignoreCreationTime: Boolean)
-      extends CliCommand
+      extends AppServerCliCommand
 
   // PSBT
-  case class DecodePSBT(psbt: PSBT) extends CliCommand
-  case class CombinePSBTs(psbts: Seq[PSBT]) extends CliCommand
-  case class JoinPSBTs(psbts: Seq[PSBT]) extends CliCommand
-  case class FinalizePSBT(psbt: PSBT) extends CliCommand
-  case class ExtractFromPSBT(psbt: PSBT) extends CliCommand
-  case class ConvertToPSBT(transaction: Transaction) extends CliCommand
-  case class AnalyzePSBT(psbt: PSBT) extends CliCommand
+  case class DecodePSBT(psbt: PSBT) extends AppServerCliCommand
+  case class CombinePSBTs(psbts: Seq[PSBT]) extends AppServerCliCommand
+  case class JoinPSBTs(psbts: Seq[PSBT]) extends AppServerCliCommand
+  case class FinalizePSBT(psbt: PSBT) extends AppServerCliCommand
+  case class ExtractFromPSBT(psbt: PSBT) extends AppServerCliCommand
+  case class ConvertToPSBT(transaction: Transaction) extends AppServerCliCommand
+  case class AnalyzePSBT(psbt: PSBT) extends AppServerCliCommand
+
+  case class CreateMultisig(
+      requiredKeys: Int,
+      keys: Vector[ECPublicKey],
+      addressType: AddressType)
+      extends AppServerCliCommand
 
   // Oracle
-  case object GetPublicKey extends CliCommand
-  case object GetStakingAddress extends CliCommand
-  case object ListEvents extends CliCommand
+  case object GetPublicKey extends OracleServerCliCommand
+  case object GetStakingAddress extends OracleServerCliCommand
+  case object ListEvents extends OracleServerCliCommand
 
-  case class GetEvent(announcementTLV: OracleAnnouncementTLV) extends CliCommand
+  case class GetEvent(announcementTLV: OracleAnnouncementTLV)
+      extends OracleServerCliCommand
 
   case class CreateEnumEvent(
       label: String,
       maturationTime: Instant,
       outcomes: Seq[String])
-      extends CliCommand
+      extends OracleServerCliCommand
 
   case class CreateDigitDecompEvent(
       eventName: String,
@@ -1839,20 +1878,14 @@ object CliCommand {
       numDigits: Int,
       unit: String,
       precision: Int)
-      extends CliCommand
+      extends OracleServerCliCommand
 
   case class SignEvent(announcementTLV: OracleAnnouncementTLV, outcome: String)
-      extends CliCommand
+      extends OracleServerCliCommand
 
   case class SignDigits(announcementTLV: OracleAnnouncementTLV, num: Long)
-      extends CliCommand
+      extends OracleServerCliCommand
 
   case class GetSignatures(announcementTLV: OracleAnnouncementTLV)
-      extends CliCommand
-
-  case class CreateMultisig(
-      requiredKeys: Int,
-      keys: Vector[ECPublicKey],
-      addressType: AddressType)
-      extends CliCommand
+      extends OracleServerCliCommand
 }

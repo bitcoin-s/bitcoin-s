@@ -32,15 +32,10 @@ class OracleServerMain(override val args: Array[String])
                  rpcbindOpt = bindConfOpt,
                  rpcport = rpcport)
         case None =>
-          conf.rpcPortOpt match {
-            case Some(rpcport) =>
-              Server(conf = conf,
-                     handlers = routes,
-                     rpcbindOpt = bindConfOpt,
-                     rpcport = rpcport)
-            case None =>
-              Server(conf = conf, handlers = routes, rpcbindOpt = bindConfOpt)
-          }
+          Server(conf = conf,
+                 handlers = routes,
+                 rpcbindOpt = bindConfOpt,
+                 rpcport = conf.rpcPort)
       }
 
       _ <- server.start()

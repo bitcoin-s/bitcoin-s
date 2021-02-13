@@ -1,7 +1,5 @@
 package org.bitcoins.server
 
-import java.nio.file.{Path, Paths}
-
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.StartStopAsync
@@ -10,6 +8,7 @@ import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 
+import java.nio.file.{Path, Paths}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** A unified config class for all submodules of Bitcoin-S
@@ -66,13 +65,7 @@ case class BitcoinSAppConfig(
     resolved
   }
 
-  def rpcPortOpt: Option[Int] = {
-    if (config.hasPath("bitcoin-s.server.rpcport")) {
-      Some(config.getInt("bitcoin-s.server.rpcport"))
-    } else {
-      None
-    }
-  }
+  def rpcPort: Int = config.getInt("bitcoin-s.server.rpcport")
 
   def rpcBindOpt: Option[String] = {
     if (config.hasPath("bitcoin-s.server.rpcbind")) {

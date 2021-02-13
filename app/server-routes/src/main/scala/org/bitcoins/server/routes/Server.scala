@@ -17,7 +17,7 @@ case class Server(
     conf: AppConfig,
     handlers: Seq[ServerRoute],
     rpcbindOpt: Option[String],
-    rpcport: Int = 9999)(implicit system: ActorSystem)
+    rpcport: Int)(implicit system: ActorSystem)
     extends HttpLogger {
 
   import system.dispatcher
