@@ -7,6 +7,9 @@ import org.bitcoins.core.protocol.tlv.{
 }
 import org.bitcoins.crypto.{ECPublicKey, SchnorrNonce}
 
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
+
 /** OracleOutcomes are in one-to-one correspondence with Contract
   * Execution Transactions (CETs) and are defined by a set of oracles
   * needed to execute with a given CET, representing a certain outcome
@@ -39,8 +42,12 @@ case class EnumOracleOutcome(
     outcome: EnumOutcome)
     extends OracleOutcome {
 
-  override lazy val sigPoint: ECPublicKey = {
+  private val sigPointF = Future {
     oracles.map(_.sigPoint(outcome)).reduce(_.add(_))
+  }(ExecutionContext.global)
+
+  override lazy val sigPoint: ECPublicKey = {
+    Await.result(sigPointF, 10.seconds)
   }
 
   override lazy val aggregateNonce: SchnorrNonce = {
@@ -70,12 +77,16 @@ case class NumericOracleOutcome(oraclesAndOutcomes: Vector[
   def outcomes: Vector[UnsignedNumericOutcome] =
     oraclesAndOutcomes.map(_._2)
 
-  override lazy val sigPoint: ECPublicKey = {
+  private val sigPointF = Future {
     oraclesAndOutcomes
       .map { case (oracle, outcome) =>
         oracle.sigPoint(outcome)
       }
       .reduce(_.add(_))
+  }(ExecutionContext.global)
+
+  override lazy val sigPoint: ECPublicKey = {
+    Await.result(sigPointF, 20.seconds)
   }
 
   override lazy val aggregateNonce: SchnorrNonce = {
