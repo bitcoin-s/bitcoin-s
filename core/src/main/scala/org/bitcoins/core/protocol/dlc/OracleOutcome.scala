@@ -86,7 +86,7 @@ case class NumericOracleOutcome(oraclesAndOutcomes: Vector[
   }(ExecutionContext.global)
 
   override lazy val sigPoint: ECPublicKey = {
-    Await.result(sigPointF, 10.seconds)
+    Await.result(sigPointF, 20.seconds)
   }
 
   override lazy val aggregateNonce: SchnorrNonce = {
