@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc.DLCMessage._
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -211,7 +211,8 @@ object DLCStatus {
       offer: DLCOffer,
       accept: DLCAccept,
       sign: DLCSign,
-      cet: Transaction): (SchnorrDigitalSignature, OracleOutcome) = {
+      cet: WitnessTransaction): Option[
+    (SchnorrDigitalSignature, OracleOutcome)] = {
     val localAdaptorSigs = if (isInitiator) {
       sign.cetSigs.outcomeSigs
     } else {

@@ -459,18 +459,22 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
       val sign = DLCSign(offerCETSigs, offerFundingSigs, contractId)
 
       val (offerOracleSig, offerDLCOutcome) =
-        DLCStatus.calculateOutcomeAndSig(isInitiator = true,
-                                         offer,
-                                         accept,
-                                         sign,
-                                         acceptOutcome.cet)
+        DLCStatus
+          .calculateOutcomeAndSig(isInitiator = true,
+                                  offer,
+                                  accept,
+                                  sign,
+                                  acceptOutcome.cet)
+          .get
 
       val (acceptOracleSig, acceptDLCOutcome) =
-        DLCStatus.calculateOutcomeAndSig(isInitiator = false,
-                                         offer,
-                                         accept,
-                                         sign,
-                                         offerOutcome.cet)
+        DLCStatus
+          .calculateOutcomeAndSig(isInitiator = false,
+                                  offer,
+                                  accept,
+                                  sign,
+                                  offerOutcome.cet)
+          .get
 
       assert(offerDLCOutcome == outcome)
       assert(acceptDLCOutcome == outcome)

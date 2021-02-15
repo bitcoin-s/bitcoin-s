@@ -128,8 +128,7 @@ case class DLCTxSigner(
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes and their corresponding CETs */
-  def signGivenCETs(
-      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)]): Vector[
+  def signGivenCETs(outcomesAndCETs: Vector[OutcomeCETPair]): Vector[
     (OracleOutcome, ECAdaptorSignature)] = {
     DLCTxSigner.signCETs(outcomesAndCETs, cetSigningInfo, fundingKey)
   }
@@ -184,9 +183,7 @@ case class DLCTxSigner(
   }
 
   /** Creates this party's CETSignatures given the outcomes and their unsigned CETs */
-  def createCETSigs(
-      outcomesAndCETs: Vector[
-        (OracleOutcome, WitnessTransaction)]): CETSignatures = {
+  def createCETSigs(outcomesAndCETs: Vector[OutcomeCETPair]): CETSignatures = {
     val cetSigs = signGivenCETs(outcomesAndCETs)
     val refundSig = signRefundTx
 
@@ -233,11 +230,13 @@ object DLCTxSigner {
       cet: WitnessTransaction,
       cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
       fundingKey: ECPrivateKey): ECAdaptorSignature = {
-    signCETs(Vector((outcome, cet)), cetSigningInfo, fundingKey).head._2
+    signCETs(Vector(OutcomeCETPair(outcome, cet)),
+             cetSigningInfo,
+             fundingKey).head._2
   }
 
   def signCETs(
-      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)],
+      outcomesAndCETs: Vector[OutcomeCETPair],
       cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
       fundingKey: ECPrivateKey): Vector[(OracleOutcome, ECAdaptorSignature)] = {
     buildAndSignCETs(outcomesAndCETs, cetSigningInfo, fundingKey).map {
@@ -246,11 +245,11 @@ object DLCTxSigner {
   }
 
   def buildAndSignCETs(
-      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)],
+      outcomesAndCETs: Vector[OutcomeCETPair],
       cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
       fundingKey: ECPrivateKey): Vector[
     (OracleOutcome, WitnessTransaction, ECAdaptorSignature)] = {
-    outcomesAndCETs.map { case (outcome, cet) =>
+    outcomesAndCETs.map { case OutcomeCETPair(outcome, cet) =>
       val adaptorPoint = outcome.sigPoint
       val hashToSign =
         TransactionSignatureSerializer.hashForSignature(cet,

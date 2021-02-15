@@ -96,7 +96,7 @@ case class TestDLCClient(
       setupDLCWithoutFundingTxSigs <- dlcExecutor.setupDLCOffer(cetSigs)
       cetSigs =
         dlcTxSigner.createCETSigs(setupDLCWithoutFundingTxSigs.cets.map {
-          case (msg, info) => msg -> info.tx
+          case (msg, info) => OutcomeCETPair(msg, info.tx)
         })
       localFundingSigs <- dlcTxSigner.signFundingTx()
       _ <- sendSigs(cetSigs, localFundingSigs)

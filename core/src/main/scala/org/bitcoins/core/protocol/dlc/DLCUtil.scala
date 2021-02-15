@@ -2,19 +2,23 @@ package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
-import org.bitcoins.core.protocol.transaction.{
-  NonWitnessTransaction,
-  Transaction,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.crypto.{
   ECAdaptorSignature,
   ECDigitalSignature,
   ECPublicKey,
-  SchnorrDigitalSignature
+  SchnorrDigitalSignature,
+  Sha256Digest
 }
+import scodec.bits.ByteVector
 
 object DLCUtil {
+
+  def computeContractId(
+      fundingTx: Transaction,
+      tempContractId: Sha256Digest): ByteVector = {
+    fundingTx.txIdBE.bytes.xor(tempContractId.bytes)
+  }
 
   /** Extracts an adaptor secret from cetSig assuming it is the completion
     * adaptorSig (which it may not be) and returns the oracle signature if
@@ -46,20 +50,16 @@ object DLCUtil {
 
   def computeOutcome(
       completedSig: ECDigitalSignature,
-      possibleAdaptorSigs: Vector[(OracleOutcome, ECAdaptorSignature)]): (
-      SchnorrDigitalSignature,
-      OracleOutcome) = {
+      possibleAdaptorSigs: Vector[(OracleOutcome, ECAdaptorSignature)]): Option[
+    (SchnorrDigitalSignature, OracleOutcome)] = {
     val sigOpt = possibleAdaptorSigs.find { case (outcome, adaptorSig) =>
       val possibleOracleSig =
         sigFromOutcomeAndSigs(outcome, adaptorSig, completedSig)
       possibleOracleSig.sig.getPublicKey == outcome.sigPoint
     }
 
-    sigOpt match {
-      case Some((outcome, adaptorSig)) =>
-        (sigFromOutcomeAndSigs(outcome, adaptorSig, completedSig), outcome)
-      case None =>
-        throw new IllegalArgumentException("No Oracle Signature found from CET")
+    sigOpt.map { case (outcome, adaptorSig) =>
+      (sigFromOutcomeAndSigs(outcome, adaptorSig, completedSig), outcome)
     }
   }
 
@@ -69,21 +69,16 @@ object DLCUtil {
       acceptFundingKey: ECPublicKey,
       contractInfo: ContractInfo,
       localAdaptorSigs: Vector[(OracleOutcome, ECAdaptorSignature)],
-      cet: Transaction): (SchnorrDigitalSignature, OracleOutcome) = {
-    val wCET = cet match {
-      case wtx: WitnessTransaction => wtx
-      case _: NonWitnessTransaction =>
-        throw new IllegalArgumentException(s"Expected Witness CET: $cet")
-    }
-
-    val cetSigs = wCET.witness.head
+      cet: WitnessTransaction): Option[
+    (SchnorrDigitalSignature, OracleOutcome)] = {
+    val cetSigs = cet.witness.head
       .asInstanceOf[P2WSHWitnessV0]
       .signatures
 
     require(cetSigs.size == 2,
             s"There must be only 2 signatures, got ${cetSigs.size}")
 
-    val outcomeValues = wCET.outputs.map(_.value).sorted
+    val outcomeValues = cet.outputs.map(_.value).sorted
     val totalCollateral = contractInfo.totalCollateral
 
     val possibleOutcomes = contractInfo.allOutcomesAndPayouts

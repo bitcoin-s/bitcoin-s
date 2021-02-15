@@ -29,7 +29,7 @@ class SetupDLCTest extends BitcoinSAsyncTest {
 
   val validCETInfo: CETInfo = CETInfo(validCET, dummyAdaptorSig)
 
-  val validRefundTx: Transaction = Transaction(
+  val validRefundTx: WitnessTransaction = WitnessTransaction(
     "0200000000010112eb723473aa9ec2a91d82072b054feb4660389dc33ec407ff5836ff1ade73490000000000feffffff02ace0f50500000000160014f161d1f494c1617a385f4480687b49826b5287ecabe0f50500000000160014ea0f8ed8de8f6190bc67a2cf19f75bea97d0d582040047304402206e204681682139ca91abca8a090c05d335c3077bcaa801d73ade4d30cf14befc0220114da42320f563f8df7ba29bfb26549b58b4dfc40d8af3a8e352b2da180fa9f001483045022100a9aa4a45d89d936762041cc2793700c3c6228326648a66228c4e265c9938337c0220024637e716c702176bde6029342ac42118a1af774ca6fb7a8225a31b15b1c839014752210258d139dc2f0507bd2b01794ff04530fd614a86dded69fd944da1942bcf748a7e2103eaf8df8e339381a19dfa5e37a4ce3c04ad3dc62f8d57774d92154e6d26ef06a452ae7d37265f")
 
   // These 2 can be the same, we only need them to have 1 input so we can do the correct checks
@@ -37,7 +37,7 @@ class SetupDLCTest extends BitcoinSAsyncTest {
     "02000000000101bdaa2ea7eea92a88f357bd8af92003286c5acb9e9b51006d2394b47afa1c7a040000000000ffffffff018a831e000000000017a914b80e1c53b48628277bd2cb63d9d111c8fbcecdda870400483045022100ee40ca5537b5a9e9aeb04e659a8e7ec8c2d4a33dd8f8e620c98561a9e87f2db802200c1a9e35464412b0c4c28125e0279807b1b0df649a10dbfce41fa52722d71ede01483045022100cea1701d3b7fc9ca7f83cfed3fbd43853d243249a0ece0ec7fbefe51d3c526df02202fed76ce12e54793961ef3611cefcd684c40ba4b640bb3a01abee7c1dd0fab6a01475221031454ce0a0354aadf6bd13f4e27c1287d33534dd02e249d4455341d528b7ea7192103ab051b06e850b33196ddd80b43084883a29c854c0c5a924b273cbe4b1c3a228452ae00000000"
   )
 
-  val invalidRefundTx: Transaction = invalidCET
+  val invalidRefundTx: WitnessTransaction = invalidCET
 
   val oracleInfo: EnumSingleOracleInfo = EnumSingleOracleInfo.dummyForKeys(
     ECPrivateKey.freshPrivateKey,
@@ -48,7 +48,7 @@ class SetupDLCTest extends BitcoinSAsyncTest {
       fundingTx: Transaction = validFundingTx,
       cet0: CETInfo = validCETInfo,
       cet1: CETInfo = validCETInfo,
-      refundTx: Transaction = validRefundTx): SetupDLC = {
+      refundTx: WitnessTransaction = validRefundTx): SetupDLC = {
     SetupDLC(
       fundingTx = fundingTx,
       cets = Vector(

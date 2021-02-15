@@ -275,7 +275,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         sigDbs <- dlcSigsDAO.findByParamHash(paramHash)
 
         cet <-
-          transactionDAO.read(dlcDb.closingTxIdOpt.get).map(_.get.transaction)
+          transactionDAO
+            .read(dlcDb.closingTxIdOpt.get)
+            .map(_.get.transaction.asInstanceOf[WitnessTransaction])
 
         (sig, outcome) = {
           val offerDb = offerDbOpt.get
@@ -336,7 +338,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             DLCSign(cetSigs, FundingSignatures(fundingSigs), contractId)
           }
 
-          DLCStatus.calculateOutcomeAndSig(isInit, offer, accept, sign, cet)
+          DLCStatus.calculateOutcomeAndSig(isInit, offer, accept, sign, cet).get
         }
       } yield {
         val (outcomes, oracleInfos) = getOutcomeDbInfo(outcome)

@@ -108,6 +108,11 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
 
 object DLCExecutor {
 
+  /** Given DLC setup data and oracle signatures, computes the OracleOutcome and a fully signed CET.
+    *
+    * This function will fail if no threshold-sized subset of the oracle signatures corresponds to
+    * a valid set of expected oracle signatures as per the oracle announcements in the ContractInfo.
+    */
   def executeDLC(
       remoteCETInfos: Vector[(OracleOutcome, CETInfo)],
       oracleSigs: Vector[OracleSignatures],

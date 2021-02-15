@@ -126,7 +126,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
   }
 
   lazy val calcContractId: ByteVector = {
-    DLCMessage.computeContractId(fundingTx, accept.tempContractId)
+    DLCUtil.computeContractId(fundingTx, accept.tempContractId)
   }
 
   /** Constructs the unsigned Contract Execution Transaction (CET)
@@ -136,8 +136,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
     buildCETs(Vector(msg)).head
   }
 
-  def buildCETsMap(msgs: Vector[OracleOutcome]): Vector[
-    (OracleOutcome, WitnessTransaction)] = {
+  def buildCETsMap(msgs: Vector[OracleOutcome]): Vector[OutcomeCETPair] = {
     DLCTxBuilder
       .buildCETs(msgs,
                  contractInfo,
@@ -150,7 +149,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
   }
 
   def buildCETs(msgs: Vector[OracleOutcome]): Vector[WitnessTransaction] = {
-    buildCETsMap(msgs).map(_._2)
+    buildCETsMap(msgs).map(_.wtx)
   }
 
   /** Constructs the unsigned refund transaction */
@@ -225,10 +224,12 @@ object DLCTxBuilder {
 
     require(
       offerTotalFunding >= offerInput,
-      "Offer funding inputs must add up to at least offer's total collateral")
+      s"Offer funding inputs must add up to at least offer's total collateral, offerTotalFunding=$offerTotalFunding offerInput=$offerInput"
+    )
     require(
       acceptTotalFunding >= acceptInput,
-      "Accept funding inputs must add up to at least accept's total collateral")
+      s"Accept funding inputs must add up to at least accept's total collateral, acceptTotalFunding=$acceptTotalFunding acceptInput=$acceptInput"
+    )
 
     val inputs = (offerFundingInputs ++ acceptFundingInputs).map { ref =>
       val scriptSig = ref.redeemScriptOpt match {
@@ -267,14 +268,14 @@ object DLCTxBuilder {
       acceptFinalSPK: ScriptPubKey,
       timeouts: DLCTimeouts,
       fundingOutputRef: OutputReference): WitnessTransaction = {
-    val Vector((_, cet)) = buildCETs(Vector(outcome),
-                                     contractInfo,
-                                     offerFundingKey,
-                                     offerFinalSPK,
-                                     acceptFundingKey,
-                                     acceptFinalSPK,
-                                     timeouts,
-                                     fundingOutputRef)
+    val Vector(OutcomeCETPair(_, cet)) = buildCETs(Vector(outcome),
+                                                   contractInfo,
+                                                   offerFundingKey,
+                                                   offerFinalSPK,
+                                                   acceptFundingKey,
+                                                   acceptFinalSPK,
+                                                   timeouts,
+                                                   fundingOutputRef)
 
     cet
   }
@@ -287,8 +288,7 @@ object DLCTxBuilder {
       acceptFundingKey: ECPublicKey,
       acceptFinalSPK: ScriptPubKey,
       timeouts: DLCTimeouts,
-      fundingOutputRef: OutputReference): Vector[
-    (OracleOutcome, WitnessTransaction)] = {
+      fundingOutputRef: OutputReference): Vector[OutcomeCETPair] = {
     val builder =
       DLCCETBuilder(contractInfo,
                     offerFundingKey,
@@ -299,7 +299,7 @@ object DLCTxBuilder {
                     fundingOutputRef)
 
     outcomes.map { outcome =>
-      (outcome, builder.buildCET(outcome))
+      OutcomeCETPair(outcome, builder.buildCET(outcome))
     }
   }
 
@@ -311,7 +311,7 @@ object DLCTxBuilder {
       acceptFundingKey: ECPublicKey,
       acceptFinalSPK: ScriptPubKey,
       timeouts: DLCTimeouts,
-      fundingTx: Transaction): Vector[(OracleOutcome, WitnessTransaction)] = {
+      fundingTx: Transaction): Vector[OutcomeCETPair] = {
     val fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
     val fundingOutputRef =
       OutputReference(fundingOutPoint, fundingTx.outputs.head)

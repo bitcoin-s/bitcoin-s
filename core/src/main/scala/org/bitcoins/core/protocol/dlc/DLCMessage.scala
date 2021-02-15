@@ -4,7 +4,7 @@ import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -21,12 +21,6 @@ object DLCMessage {
     CryptoUtil
       .sha256(contractInfo.bytes ++ timeouts.bytes)
       .flip
-  }
-
-  def computeContractId(
-      fundingTx: Transaction,
-      tempContractId: Sha256Digest): ByteVector = {
-    fundingTx.txIdBE.bytes.xor(tempContractId.bytes)
   }
 
   sealed trait DLCSetupMessage extends DLCMessage {

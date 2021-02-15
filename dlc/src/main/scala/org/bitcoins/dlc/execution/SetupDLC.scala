@@ -12,7 +12,7 @@ import org.bitcoins.crypto.ECAdaptorSignature
 case class SetupDLC(
     fundingTx: Transaction,
     cets: Vector[(OracleOutcome, CETInfo)],
-    refundTx: Transaction) {
+    refundTx: WitnessTransaction) {
   cets.foreach { case (msg, cetInfo) =>
     require(
       cetInfo.tx.inputs.size == 1,
