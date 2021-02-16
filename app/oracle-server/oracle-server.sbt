@@ -13,7 +13,7 @@ packageSummary := "A DLC Oracle"
 packageDescription := "A basic DLC oracle that allows you to commit to events and sign them"
 
 //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
-dockerBaseImage := "openjdk:16-jdk-buster"
+dockerBaseImage := "openjdk"
 
 packageName in Docker := packageName.value
 

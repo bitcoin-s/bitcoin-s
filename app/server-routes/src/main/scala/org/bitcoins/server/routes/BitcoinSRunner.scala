@@ -19,7 +19,7 @@ trait BitcoinSRunner extends BitcoinSLogger {
 
   implicit lazy val system: ActorSystem = {
     val system = ActorSystem(actorSystemName, baseConfig)
-    system.log.info("Akka logger started")
+    system.log.info("Akka started")
     system
   }
   implicit lazy val ec: ExecutionContext = system.dispatcher
