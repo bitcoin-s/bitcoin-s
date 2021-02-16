@@ -7,7 +7,7 @@ object Deps {
     val dropwizardMetricsV = "4.1.17" //https://github.com/dropwizard/metrics
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
-    val scalacheck = "1.15.2"
+    val scalacheck = "1.15.3"
     val scalaTest = "3.2.3"
 
     val scalaTestPlus =
