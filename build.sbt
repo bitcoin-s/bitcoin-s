@@ -203,8 +203,7 @@ lazy val secp256k1jni = project
     coverageEnabled := false
   )
 
-/**
-  * If you want sbt projects to depend on each other in
+/** If you want sbt projects to depend on each other in
   * slighly nonstandard ways, the way to do it is through
   * stringly typed syntax.
   *
@@ -549,12 +548,9 @@ lazy val walletTest = project
   .dependsOn(core % testAndCompile, testkit, wallet)
   .enablePlugins(FlywayPlugin)
 
-lazy val oracleDbSettings = dbFlywaySettings("oracle")
-
 lazy val dlcOracle = project
   .in(file("dlc-oracle"))
   .settings(CommonSettings.prodSettings: _*)
-  .settings(oracleDbSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-oracle",
     libraryDependencies ++= Deps.dlcOracle
