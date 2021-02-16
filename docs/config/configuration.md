@@ -254,6 +254,10 @@ bitcoin-s {
 
         hikari-logging = true
         hikari-logging-interval = 1 minute
+
+        db {
+          path = ${bitcoin-s.datadir}/oracle/
+        }
     }
 }
 
