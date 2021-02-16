@@ -12,4 +12,13 @@ packageSummary := "A DLC Oracle"
 
 packageDescription := "A basic DLC oracle that allows you to commit to events and sign them"
 
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, DockerPlugin)
+
+//https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
+dockerBaseImage := "openjdk"
+
+packageName in Docker := packageName.value
+
+version in Docker := version.value
+
+dockerExposedPorts ++= Seq(9998)
