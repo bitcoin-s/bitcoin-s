@@ -48,9 +48,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigDAO = DLCRefundSigDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
-  private def calcContractId(
-      offer: DLCOffer,
-      accept: DLCAccept): Future[ByteVector] = {
+  private def calcContractId(offer: DLCOffer, accept: DLCAccept): ByteVector = {
     val builder = DLCTxBuilder(offer, accept.withoutSigs)
     builder.calcContractId
   }
@@ -70,7 +68,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             new IllegalArgumentException(
               s"No DLCDb found with paramHash ${paramHash.hex}"))
       }
-      contractId <- calcContractId(offer, accept)
+      contractId = calcContractId(offer, accept)
 
       newDLCDb = dlcDb.copy(contractIdOpt = Some(contractId))
       _ = logger.debug(s"Updating DLC contract Ids")
@@ -277,7 +275,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         sigDbs <- dlcSigsDAO.findByParamHash(paramHash)
 
         cet <-
-          transactionDAO.read(dlcDb.closingTxIdOpt.get).map(_.get.transaction)
+          transactionDAO
+            .read(dlcDb.closingTxIdOpt.get)
+            .map(_.get.transaction.asInstanceOf[WitnessTransaction])
 
         (sig, outcome) = {
           val offerDb = offerDbOpt.get
@@ -338,7 +338,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             DLCSign(cetSigs, FundingSignatures(fundingSigs), contractId)
           }
 
-          DLCStatus.calculateOutcomeAndSig(isInit, offer, accept, sign, cet)
+          DLCStatus.calculateOutcomeAndSig(isInit, offer, accept, sign, cet).get
         }
       } yield {
         val (outcomes, oracleInfos) = getOutcomeDbInfo(outcome)
@@ -679,7 +679,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
       builder = DLCTxBuilder(offer, acceptWithoutSigs)
 
-      contractId <- builder.calcContractId
+      contractId = builder.calcContractId
 
       signer = DLCTxSigner(builder = builder,
                            isInitiator = false,
@@ -687,13 +687,12 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                            finalAddress = dlcPubKeys.payoutAddress,
                            fundingUtxos = spendingInfos)
 
-      fundingBuilder = builder.fundingTxBuilder
-      spkDb = ScriptPubKeyDb(fundingBuilder.fundingSPK)
+      spkDb = ScriptPubKeyDb(builder.fundingSPK)
 
       _ <- scriptPubKeyDAO.create(spkDb)
 
       _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
-      cetSigs <- signer.createCETSigs()
+      cetSigs = signer.createCETSigs()
 
       _ = logger.debug(
         s"DLC Accept data collected, creating database entry, ${dlc.paramHash.hex}")
@@ -758,7 +757,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ = logger.info(
         s"Created DLCAccept for tempContractId ${offer.tempContractId.hex} with contract Id ${contractId.toHex}")
 
-      fundingTx <- builder.buildFundingTx
+      fundingTx = builder.buildFundingTx
       outPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
       _ <- updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
     } yield accept
@@ -850,9 +849,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           dlcDb <- updateDLCContractIds(offer, accept)
 
           builder = DLCTxBuilder(offer, accept.withoutSigs)
-          fundingTx <- builder.buildFundingTx
+          fundingTx = builder.buildFundingTx
           outPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
-          spkDb = ScriptPubKeyDb(builder.fundingTxBuilder.fundingSPK)
+          spkDb = ScriptPubKeyDb(builder.fundingSPK)
           _ <- scriptPubKeyDAO.create(spkDb)
           updatedDLCDb <-
             updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
@@ -901,15 +900,14 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       cetSigs <-
         if (mySigs.isEmpty) {
           logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
-          for {
-            sigs <- signer.createCETSigs()
-            sigDbs = sigs.outcomeSigs.map(sig =>
-              DLCCETSignatureDb(dlc.paramHash,
-                                isInitiator = true,
-                                sig._1.sigPoint,
-                                sig._2))
-            _ <- dlcSigsDAO.createAll(sigDbs)
-          } yield sigs
+          val sigs = signer.createCETSigs()
+          val sigDbs = sigs.outcomeSigs.map(sig =>
+            DLCCETSignatureDb(dlc.paramHash,
+                              isInitiator = true,
+                              sig._1.sigPoint,
+                              sig._2))
+
+          dlcSigsDAO.createAll(sigDbs).map(_ => sigs)
         } else {
           logger.debug(s"CET Sigs already created for ${contractId.toHex}")
           val outcomeSigs = mySigs.map { dbSig =>
@@ -918,19 +916,16 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           }
           dlcRefundSigDAO
             .findByParamHash(dlc.paramHash, isInit = true)
-            .flatMap {
+            .map {
               case Some(refundDb) =>
-                Future.successful(
-                  CETSignatures(outcomeSigs, refundDb.refundSig))
+                CETSignatures(outcomeSigs, refundDb.refundSig)
               case None =>
-                signer.createRefundSig().map { sig =>
-                  CETSignatures(outcomeSigs, sig)
-                }
+                CETSignatures(outcomeSigs, signer.signRefundTx)
             }
         }
 
       _ = logger.info(s"Creating funding sigs for ${contractId.toHex}")
-      fundingSigs <- signer.createFundingTxSigs()
+      fundingSigs <- signer.signFundingTx()
 
       refundSigDb =
         DLCRefundSigDb(dlc.paramHash, isInitiator = true, cetSigs.refundSig)
@@ -1386,7 +1381,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       fundingTx <- {
         if (dlcDb.isInitiator) {
           // TODO: If this is called after seeing the funding tx on-chain, it should return that one
-          signer.builder.buildFundingTx
+          Future.successful(signer.builder.buildFundingTx)
         } else {
           val remoteSigs = fundingInputs
             .filter(_.isInitiator)
@@ -1402,7 +1397,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                 case None => throw new RuntimeException("")
               }
             }
-          signer.signFundingTx(FundingSignatures(remoteSigs))
+          signer.completeFundingTx(FundingSignatures(remoteSigs))
         }
       }
       _ = logger.info(
@@ -1462,7 +1457,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         throw new UnsupportedOperationException(
           "Cannot execute a losing outcome")
 
-      executed <- executor.executeDLC(setup, oracleSigs)
+      executed = executor.executeDLC(setup, oracleSigs)
       (tx, outcome, sigsUsed) =
         (executed.cet, executed.outcome, executed.sigsUsed)
       _ = logger.info(

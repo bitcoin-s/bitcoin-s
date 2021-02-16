@@ -20,8 +20,7 @@ import org.bitcoins.dlc.execution.{
 }
 import org.bitcoins.dlc.sign.DLCTxSigner
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 /** This case class allows for the construction and execution of
   * Discreet Log Contracts between two parties running on this machine (for tests).
@@ -57,8 +56,7 @@ case class TestDLCClient(
 
   val timeouts: DLCTimeouts = offer.timeouts
 
-  lazy val fundingTx: Transaction =
-    Await.result(dlcTxBuilder.buildFundingTx, 5.seconds)
+  def fundingTx: Transaction = dlcTxBuilder.buildFundingTx
 
   lazy val fundingTxIdBE: DoubleSha256DigestBE = fundingTx.txIdBE
 
@@ -71,8 +69,9 @@ case class TestDLCClient(
       getSigs: Future[(CETSignatures, FundingSignatures)]): Future[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
+    val (remoteCetSigs, cets) = dlcTxSigner.createCETsAndCETSigs()
+
     for {
-      (remoteCetSigs, cets) <- dlcTxSigner.createCETsAndSigs()
       _ <- sendSigs(remoteCetSigs)
       (cetSigs, fundingSigs) <- getSigs
       setupDLC <- dlcExecutor.setupDLCAccept(cetSigs, fundingSigs, Some(cets))
@@ -95,11 +94,11 @@ case class TestDLCClient(
     for {
       cetSigs <- getSigs
       setupDLCWithoutFundingTxSigs <- dlcExecutor.setupDLCOffer(cetSigs)
-      cetSigs <-
+      cetSigs =
         dlcTxSigner.createCETSigs(setupDLCWithoutFundingTxSigs.cets.map {
-          case (msg, info) => msg -> info.tx
+          case (msg, info) => OutcomeCETPair(msg, info.tx)
         })
-      localFundingSigs <- dlcTxSigner.createFundingTxSigs()
+      localFundingSigs <- dlcTxSigner.signFundingTx()
       _ <- sendSigs(cetSigs, localFundingSigs)
       fundingTx <- getFundingTx
     } yield {
@@ -111,7 +110,7 @@ case class TestDLCClient(
       dlcSetup: SetupDLC,
       oracleSigsF: Future[Vector[OracleSignatures]]): Future[
     ExecutedDLCOutcome] = {
-    oracleSigsF.flatMap { oracleSigs =>
+    oracleSigsF.map { oracleSigs =>
       dlcExecutor.executeDLC(dlcSetup, oracleSigs)
     }
   }

@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.tlv.{
   EnumOutcome,
   UnsignedNumericOutcome
 }
+import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.crypto.{ECPublicKey, SchnorrNonce}
 
 /** OracleOutcomes are in one-to-one correspondence with Contract
@@ -97,3 +98,6 @@ object NumericOracleOutcome {
     NumericOracleOutcome(Vector((oracleInfo, outcome)))
   }
 }
+
+/** An oracle outcome and it's corresponding CET */
+case class OutcomeCETPair(outcome: OracleOutcome, wtx: WitnessTransaction)

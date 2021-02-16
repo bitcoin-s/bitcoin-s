@@ -2,8 +2,6 @@ package org.bitcoins.dlc.testgen
 
 import play.api.libs.json.{Format, JsResult, JsValue, Json}
 
-import scala.concurrent.{ExecutionContext, Future}
-
 case class DLCTxTestVector(inputs: ValidTestInputs, txs: DLCTransactions)
     extends TestVector {
 
@@ -13,9 +11,8 @@ case class DLCTxTestVector(inputs: ValidTestInputs, txs: DLCTransactions)
 
 object DLCTxTestVector extends TestVectorParser[DLCTxTestVector] {
 
-  def fromInputs(inputs: ValidTestInputs)(implicit
-      ec: ExecutionContext): Future[DLCTxTestVector] = {
-    inputs.buildTransactions.map(txs => DLCTxTestVector(inputs, txs))
+  def fromInputs(inputs: ValidTestInputs): DLCTxTestVector = {
+    DLCTxTestVector(inputs, inputs.buildTransactions)
   }
 
   import SuccessTestVector.validTestInputsFormat

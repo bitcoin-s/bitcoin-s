@@ -19,20 +19,23 @@ object DLCTxTestVectorGen
 
   override val inputStr: String = "inputs"
 
-  override def generateFromInput: ValidTestInputs => Future[DLCTxTestVector] =
-    DLCTxTestVector.fromInputs
+  override def generateFromInput: ValidTestInputs => Future[DLCTxTestVector] = {
+    inputs: ValidTestInputs =>
+      Future.successful(DLCTxTestVector.fromInputs(inputs))
+  }
 
   override def generateTestVectors(): Future[Vector[DLCTxTestVector]] = {
     val numOutcomesTests = Vector(2, 3, 5, 8).map(DLCTxGen.randomTxTestVector)
 
     val nonP2WPKHInputTests =
-      DLCTxGen.nonP2WPKHInputs.map(DLCTxGen.dlcTxTestVector(_))
+      DLCTxGen.nonP2WPKHInputs.map(DLCTxGen.dlcTxTestVector)
 
     val numInputs = Vector(1, 2, 3, 8)
 
     val multiInputTests =
-      DLCTxGen.multiInputTests(numInputs).map(DLCTxGen.dlcTxTestVector(_))
+      DLCTxGen.multiInputTests(numInputs).map(DLCTxGen.dlcTxTestVector)
 
-    Future.sequence(numOutcomesTests ++ nonP2WPKHInputTests ++ multiInputTests)
+    Future.successful(
+      numOutcomesTests ++ nonP2WPKHInputTests ++ multiInputTests)
   }
 }

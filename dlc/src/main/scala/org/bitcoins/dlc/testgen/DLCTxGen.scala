@@ -193,22 +193,20 @@ object DLCTxGen {
     }
   }
 
-  def dlcTxTestVector(inputs: ValidTestInputs = validTestInputs())(implicit
-      ec: ExecutionContext): Future[DLCTxTestVector] = {
+  def dlcTxTestVector(
+      inputs: ValidTestInputs = validTestInputs()): DLCTxTestVector = {
     DLCTxTestVector.fromInputs(inputs)
   }
 
   def dlcTxTestVectorWithTxInputs(
       offerInputs: Vector[FundingInputTx],
       acceptInputs: Vector[FundingInputTx],
-      numOutcomes: Int = 3)(implicit
-      ec: ExecutionContext): Future[DLCTxTestVector] = {
+      numOutcomes: Int = 3): DLCTxTestVector = {
     dlcTxTestVector(
       validTestInputsForInputs(offerInputs, acceptInputs, numOutcomes))
   }
 
-  def randomTxTestVector(numOutcomes: Int)(implicit
-      ec: ExecutionContext): Future[DLCTxTestVector] = {
+  def randomTxTestVector(numOutcomes: Int): DLCTxTestVector = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
     val contractDescriptor = genContractDescriptor(outcomes)
 
@@ -241,28 +239,32 @@ object DLCTxGen {
       EnumOracleOutcome(Vector(inputs.params.oracleInfo),
                         EnumOutcome(outcomeStr))
 
+    val accpetCETSigs = acceptSigner.createCETSigs()
+    val offerCETSigs = offerSigner.createCETSigs()
+
     for {
-      accpetCETSigs <- acceptSigner.createCETSigs()
-      offerCETSigs <- offerSigner.createCETSigs()
-      offerFundingSigs <- offerSigner.createFundingTxSigs()
+      offerFundingSigs <- offerSigner.signFundingTx()
 
-      DLCTransactions(fundingTx, cets, refundTx) <- inputs.buildTransactions
+      DLCTransactions(fundingTx, cets, refundTx) = inputs.buildTransactions
 
-      signedFundingTx <- acceptSigner.signFundingTx(offerFundingSigs)
-      signedRefundTx <- offerSigner.signRefundTx(accpetCETSigs.refundSig)
-      offerSignedCET <- offerSigner.signCET(
+      signedFundingTx <- acceptSigner.completeFundingTx(offerFundingSigs)
+    } yield {
+      val signedRefundTx = offerSigner.completeRefundTx(accpetCETSigs.refundSig)
+
+      val offerSignedCET = offerSigner.completeCET(
         outcome,
         accpetCETSigs(outcome),
         Vector(
           EnumOracleSignature(inputs.params.oracleInfo,
                               inputs.params.oracleSignature)))
-      acceptSignedCET <- acceptSigner.signCET(
+
+      val acceptSignedCET = acceptSigner.completeCET(
         outcome,
         offerCETSigs(outcome),
         Vector(
           EnumOracleSignature(inputs.params.oracleInfo,
                               inputs.params.oracleSignature)))
-    } yield {
+
       val accept = acceptWithoutSigs.withSigs(accpetCETSigs)
 
       val contractId = fundingTx.txIdBE.bytes.xor(accept.tempContractId.bytes)

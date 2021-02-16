@@ -28,8 +28,6 @@ import org.bitcoins.dlc.builder.DLCTxBuilder
 import play.api.libs.json._
 import scodec.bits.ByteVector
 
-import scala.concurrent.{ExecutionContext, Future}
-
 sealed trait DLCTestVector extends TestVector
 
 object DLCTestVector extends TestVectorParser[DLCTestVector] {
@@ -168,23 +166,20 @@ case class ValidTestInputs(
       offer.tempContractId
     )
 
-  def builder(implicit ec: ExecutionContext): DLCTxBuilder =
-    DLCTxBuilder(offer, accept)
+  def builder: DLCTxBuilder = DLCTxBuilder(offer, accept)
 
-  def buildTransactions(implicit
-      ec: ExecutionContext): Future[DLCTransactions] = {
+  def buildTransactions: DLCTransactions = {
     val builder = this.builder
-    for {
-      fundingTx <- builder.buildFundingTx
-      cetFs =
-        params.contractInfo
-          .map(_.preImage)
-          .map(EnumOutcome.apply)
-          .map(outcome => EnumOracleOutcome(Vector(params.oracleInfo), outcome))
-          .map(builder.buildCET)
-      cets <- Future.sequence(cetFs)
-      refundTx <- builder.buildRefundTx
-    } yield DLCTransactions(fundingTx, cets, refundTx)
+    val fundingTx = builder.buildFundingTx
+    val cets =
+      params.contractInfo
+        .map(_.preImage)
+        .map(EnumOutcome.apply)
+        .map(outcome => EnumOracleOutcome(Vector(params.oracleInfo), outcome))
+        .map(builder.buildCET)
+    val refundTx = builder.buildRefundTx
+
+    DLCTransactions(fundingTx, cets, refundTx)
   }
 }
 

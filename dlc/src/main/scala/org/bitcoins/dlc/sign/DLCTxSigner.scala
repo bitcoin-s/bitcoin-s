@@ -1,7 +1,10 @@
 package org.bitcoins.dlc.sign
 
 import org.bitcoins.core.config.BitcoinNetwork
-import org.bitcoins.core.crypto.TransactionSignatureSerializer
+import org.bitcoins.core.crypto.{
+  TransactionSignatureCreator,
+  TransactionSignatureSerializer
+}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc._
@@ -15,9 +18,10 @@ import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
+import scala.util.{Failure, Success, Try}
 
 /** Responsible for constructing all DLC signatures
   * and signed transactions
@@ -38,9 +42,6 @@ case class DLCTxSigner(
   } else {
     offer.pubKeys.fundingKey
   }
-
-  private val fundingSPK: MultiSignatureScriptPubKey =
-    builder.fundingTxBuilder.fundingMultiSig
 
   if (isInitiator) {
     require(fundingKey.publicKey == offer.pubKeys.fundingKey &&
@@ -71,299 +72,122 @@ case class DLCTxSigner(
   }
 
   /** Creates this party's FundingSignatures */
-  def createFundingTxSigs(): Future[FundingSignatures] = {
-    val sigFs =
-      Vector.newBuilder[Future[(TransactionOutPoint, ScriptWitnessV0)]]
-
-    for {
-      fundingTx <- builder.buildFundingTx
-
-      _ = {
-        fundingUtxos.foreach { utxo =>
-          val sigComponentF =
-            BitcoinSigner.sign(utxo, fundingTx, isDummySignature = false)
-          val witnessF = sigComponentF.flatMap { sigComponent =>
-            sigComponent.transaction match {
-              case wtx: WitnessTransaction =>
-                val witness = wtx.witness(sigComponent.inputIndex.toInt)
-                if (witness == EmptyScriptWitness) {
-                  Future.failed(
-                    new RuntimeException(
-                      s"Funding Inputs must be SegWit: $utxo"))
-                } else {
-                  Future.successful(witness)
-                }
-              case _: NonWitnessTransaction =>
-                Future.failed(
-                  new RuntimeException(s"Funding Inputs must be SegWit: $utxo"))
-            }
-          }
-
-          sigFs += witnessF.flatMap {
-            case witness: ScriptWitnessV0 =>
-              Future.successful((utxo.outPoint, witness))
-            case witness: ScriptWitness =>
-              Future.failed(
-                new RuntimeException(s"Unrecognized script witness: $witness"))
-          }
-        }
-      }
-
-      sigs <- Future.sequence(sigFs.result())
-    } yield {
-      val sigsMap = sigs.toMap
-
-      val fundingInputs = if (isInitiator) {
-        offer.fundingInputs
-      } else {
-        accept.fundingInputs
-      }
-
-      val sigsVec = fundingInputs.map { input =>
-        input.outPoint -> sigsMap(input.outPoint)
-      }
-
-      FundingSignatures(sigsVec)
-    }
+  def signFundingTx(): Future[FundingSignatures] = {
+    DLCTxSigner.signFundingTx(builder.buildFundingTx, fundingUtxos)
   }
 
   /** Constructs the signed DLC funding transaction given remote FundingSignatures */
-  def signFundingTx(remoteSigs: FundingSignatures): Future[Transaction] = {
-    val fundingInputs = offer.fundingInputs ++ accept.fundingInputs
-
-    val psbtF = for {
-      localSigs <- createFundingTxSigs()
-      allSigs = localSigs.merge(remoteSigs)
-      fundingTx <- builder.buildFundingTx
-    } yield {
-      fundingInputs.zipWithIndex.foldLeft(
-        PSBT.fromUnsignedTxWithP2SHScript(fundingTx)) {
-        case (psbt, (fundingInput, index)) =>
-          val witness = allSigs(fundingInput.outPoint)
-
-          psbt
-            .addUTXOToInput(fundingInput.prevTx, index)
-            .addFinalizedScriptWitnessToInput(fundingInput.scriptSignature,
-                                              witness,
-                                              index)
-      }
-    }
-
-    psbtF.flatMap { psbt =>
-      val finalizedT = if (psbt.isFinalized) {
-        Success(psbt)
-      } else {
-        psbt.finalizePSBT
-      }
-
-      val txT = finalizedT.flatMap(_.extractTransactionAndValidate)
-      Future.fromTry(txT)
-    }
-  }
-
-  private def findSigInPSBT(
-      psbt: PSBT,
-      pubKey: ECPublicKey): Future[PartialSignature] = {
-    val sigOpt = psbt.inputMaps.head.partialSignatures
-      .find(_.pubKey == pubKey)
-
-    sigOpt match {
-      case None =>
-        Future.failed(new RuntimeException("No signature found after signing"))
-      case Some(partialSig) => Future.successful(partialSig)
-    }
+  def completeFundingTx(remoteSigs: FundingSignatures): Future[Transaction] = {
+    for {
+      localSigs <- signFundingTx()
+      signedTxT = DLCTxSigner.completeFundingTx(localSigs,
+                                                remoteSigs,
+                                                offer.fundingInputs,
+                                                accept.fundingInputs,
+                                                builder.buildFundingTx)
+      signedTx <- Future.fromTry(signedTxT)
+    } yield signedTx
   }
 
   private var _cetSigningInfo: Option[ECSignatureParams[P2WSHV0InputInfo]] =
     None
 
-  private def cetSigningInfo: Future[ECSignatureParams[P2WSHV0InputInfo]] = {
+  private def cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo] = {
     _cetSigningInfo match {
-      case Some(info) => Future.successful(info)
+      case Some(info) => info
       case None =>
-        for {
-          fundingTx <- builder.buildFundingTx
-          fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
-        } yield {
-          val signingInfo = ECSignatureParams(
-            P2WSHV0InputInfo(outPoint = fundingOutPoint,
-                             amount = fundingTx.outputs.head.value,
-                             scriptWitness = P2WSHWitnessV0(fundingSPK),
-                             conditionalPath = ConditionalPath.NoCondition),
-            fundingTx,
-            fundingKey,
-            HashType.sigHashAll
-          )
+        val signingInfo =
+          DLCTxSigner.buildCETSigningInfo(builder.buildFundingTx,
+                                          builder.fundingMultiSig,
+                                          fundingKey)
 
-          _cetSigningInfo = Some(signingInfo)
+        _cetSigningInfo = Some(signingInfo)
 
-          signingInfo
-        }
+        signingInfo
     }
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcome */
-  def createRemoteCETSig(outcome: OracleOutcome): Future[ECAdaptorSignature] = {
-    val adaptorPoint = outcome.sigPoint
-    for {
-      utx <- builder.buildCET(outcome)
-      signingInfo <- cetSigningInfo
-    } yield {
-      val hashToSign = TransactionSignatureSerializer.hashForSignature(
-        utx,
-        signingInfo,
-        HashType.sigHashAll)
-
-      fundingKey.adaptorSign(adaptorPoint, hashToSign.bytes)
-    }
+  def signCET(outcome: OracleOutcome): ECAdaptorSignature = {
+    signCETs(Vector(outcome)).head._2
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
-  def createRemoteCETsAndSigs(outcomes: Vector[OracleOutcome]): Future[
-    Vector[(OracleOutcome, WitnessTransaction, ECAdaptorSignature)]] = {
-    for {
-      cetBuilder <- builder.cetBuilderF
-      signingInfo <- cetSigningInfo
-    } yield {
-      outcomes.map { outcome =>
-        val adaptorPoint = outcome.sigPoint
-        val utx = cetBuilder.buildCET(outcome)
-        val hashToSign =
-          TransactionSignatureSerializer.hashForSignature(utx,
-                                                          signingInfo,
-                                                          HashType.sigHashAll)
-
-        (outcome, utx, fundingKey.adaptorSign(adaptorPoint, hashToSign.bytes))
-      }
-    }
+  def buildAndSignCETs(outcomes: Vector[OracleOutcome]): Vector[
+    (OracleOutcome, WitnessTransaction, ECAdaptorSignature)] = {
+    val outcomesAndCETs = builder.buildCETsMap(outcomes)
+    DLCTxSigner.buildAndSignCETs(outcomesAndCETs, cetSigningInfo, fundingKey)
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
-  def createRemoteCETSigs(outcomes: Vector[OracleOutcome]): Future[
-    Vector[(OracleOutcome, ECAdaptorSignature)]] = {
-    createRemoteCETsAndSigs(outcomes).map(_.map { case (outcome, _, sig) =>
+  def signCETs(outcomes: Vector[OracleOutcome]): Vector[
+    (OracleOutcome, ECAdaptorSignature)] = {
+    buildAndSignCETs(outcomes).map { case (outcome, _, sig) =>
       outcome -> sig
-    })
+    }
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes and their corresponding CETs */
-  def createRemoteSigsGivenCETs(
-      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)]): Future[
-    Vector[(OracleOutcome, ECAdaptorSignature)]] = {
-    for {
-      signingInfo <- cetSigningInfo
-    } yield {
-      outcomesAndCETs.map { case (outcome, utx) =>
-        val adaptorPoint = outcome.sigPoint
-        val hashToSign =
-          TransactionSignatureSerializer.hashForSignature(utx,
-                                                          signingInfo,
-                                                          HashType.sigHashAll)
-
-        outcome -> fundingKey.adaptorSign(adaptorPoint, hashToSign.bytes)
-      }
-    }
+  def signGivenCETs(outcomesAndCETs: Vector[OutcomeCETPair]): Vector[
+    (OracleOutcome, ECAdaptorSignature)] = {
+    DLCTxSigner.signCETs(outcomesAndCETs, cetSigningInfo, fundingKey)
   }
 
-  def signCET(
+  def completeCET(
       outcome: OracleOutcome,
       remoteAdaptorSig: ECAdaptorSignature,
-      oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
-    val oracleSigSum =
-      OracleSignatures.computeAggregateSignature(outcome, oracleSigs)
-    val remoteSig =
-      oracleSigSum
-        .completeAdaptorSignature(remoteAdaptorSig, HashType.sigHashAll.byte)
-
-    val remotePartialSig = PartialSignature(remoteFundingPubKey, remoteSig)
-    for {
-      fundingTx <- builder.buildFundingTx
-      utx <- builder.buildCET(outcome)
-
-      psbt <-
-        PSBT
-          .fromUnsignedTx(utx)
-          .addUTXOToInput(fundingTx, index = 0)
-          .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-          .addSignature(remotePartialSig, inputIndex = 0)
-          .sign(inputIndex = 0, fundingKey)
-
-      cetT = psbt.finalizePSBT.flatMap(_.extractTransactionAndValidate)
-      cet <- Future.fromTry(cetT)
-    } yield {
-      cet
-    }
-  }
-
-  /** Creates a PSBT of the refund transaction which contain's this
-    * party's signature
-    */
-  def createPartiallySignedRefundTx(): Future[PSBT] = {
-    for {
-      fundingTx <- builder.buildFundingTx
-      utx <- builder.buildRefundTx
-      psbt <-
-        PSBT
-          .fromUnsignedTx(utx)
-          .addUTXOToInput(fundingTx, index = 0)
-          .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-          .sign(inputIndex = 0, fundingKey)
-    } yield {
-      psbt
-    }
+      oracleSigs: Vector[OracleSignatures]): WitnessTransaction = {
+    DLCTxSigner.completeCET(
+      outcome,
+      cetSigningInfo,
+      builder.fundingMultiSig,
+      builder.buildFundingTx,
+      builder.buildCET(outcome),
+      remoteAdaptorSig,
+      remoteFundingPubKey,
+      oracleSigs
+    )
   }
 
   /** Creates this party's signature of the refund transaction */
-  def createRefundSig(): Future[PartialSignature] = {
-    for {
-      psbt <- createPartiallySignedRefundTx()
-      signature <- findSigInPSBT(psbt, fundingKey.publicKey)
-    } yield {
-      signature
-    }
+  lazy val signRefundTx: PartialSignature = {
+    DLCTxSigner.signRefundTx(cetSigningInfo, builder.buildRefundTx)
   }
 
   /** Constructs the signed refund transaction given remote's signature */
-  def signRefundTx(remoteSig: PartialSignature): Future[Transaction] = {
-    for {
-      unsignedPSBT <- createPartiallySignedRefundTx()
-      psbt = unsignedPSBT.addSignature(remoteSig, inputIndex = 0)
+  def completeRefundTx(remoteSig: PartialSignature): WitnessTransaction = {
+    val localSig = signRefundTx
 
-      refundTxT = psbt.finalizePSBT.flatMap(_.extractTransactionAndValidate)
-      refundTx <- Future.fromTry(refundTxT)
-    } yield {
-      refundTx
-    }
+    DLCTxSigner.completeRefundTx(localSig,
+                                 remoteSig,
+                                 builder.fundingMultiSig,
+                                 builder.buildFundingTx,
+                                 builder.buildRefundTx)
   }
 
   /** Creates all of this party's CETSignatures */
-  def createCETSigs(): Future[CETSignatures] = {
-    for {
-      cetSigs <- createRemoteCETSigs(builder.contractInfo.allOutcomes)
-      refundSig <- createRefundSig()
-    } yield CETSignatures(cetSigs, refundSig)
+  def createCETSigs(): CETSignatures = {
+    val cetSigs = signCETs(builder.contractInfo.allOutcomes)
+    val refundSig = signRefundTx
+
+    CETSignatures(cetSigs, refundSig)
   }
 
   /** Creates all of this party's CETSignatures */
-  def createCETsAndSigs(): Future[
-    (CETSignatures, Vector[WitnessTransaction])] = {
-    for {
-      cetsAndSigs <- createRemoteCETsAndSigs(builder.contractInfo.allOutcomes)
-      refundSig <- createRefundSig()
-    } yield {
-      val (msgs, cets, sigs) = cetsAndSigs.unzip3
-      (CETSignatures(msgs.zip(sigs), refundSig), cets)
-    }
+  def createCETsAndCETSigs(): (CETSignatures, Vector[WitnessTransaction]) = {
+    val cetsAndSigs = buildAndSignCETs(builder.contractInfo.allOutcomes)
+    val (msgs, cets, sigs) = cetsAndSigs.unzip3
+    val refundSig = signRefundTx
+
+    (CETSignatures(msgs.zip(sigs), refundSig), cets)
   }
 
   /** Creates this party's CETSignatures given the outcomes and their unsigned CETs */
-  def createCETSigs(
-      outcomesAndCETs: Vector[(OracleOutcome, WitnessTransaction)]): Future[
-    CETSignatures] = {
-    for {
-      cetSigs <- createRemoteSigsGivenCETs(outcomesAndCETs)
-      refundSig <- createRefundSig()
-    } yield CETSignatures(cetSigs, refundSig)
+  def createCETSigs(outcomesAndCETs: Vector[OutcomeCETPair]): CETSignatures = {
+    val cetSigs = signGivenCETs(outcomesAndCETs)
+    val refundSig = signRefundTx
+
+    CETSignatures(cetSigs, refundSig)
   }
 }
 
@@ -380,5 +204,225 @@ object DLCTxSigner {
     val payoutAddr =
       Bech32Address(P2WPKHWitnessSPKV0(payoutPrivKey.publicKey), network)
     DLCTxSigner(builder, isInitiator, fundingKey, payoutAddr, fundingUtxos)
+  }
+
+  def buildCETSigningInfo(
+      fundingTx: Transaction,
+      fundingMultiSig: MultiSignatureScriptPubKey,
+      fundingKey: ECPrivateKey): ECSignatureParams[P2WSHV0InputInfo] = {
+    val fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
+
+    ECSignatureParams(
+      P2WSHV0InputInfo(
+        outPoint = fundingOutPoint,
+        amount = fundingTx.outputs.head.value,
+        scriptWitness = P2WSHWitnessV0(fundingMultiSig),
+        conditionalPath = ConditionalPath.NoCondition
+      ),
+      fundingTx,
+      fundingKey,
+      HashType.sigHashAll
+    )
+  }
+
+  def signCET(
+      outcome: OracleOutcome,
+      cet: WitnessTransaction,
+      cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
+      fundingKey: ECPrivateKey): ECAdaptorSignature = {
+    signCETs(Vector(OutcomeCETPair(outcome, cet)),
+             cetSigningInfo,
+             fundingKey).head._2
+  }
+
+  def signCETs(
+      outcomesAndCETs: Vector[OutcomeCETPair],
+      cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
+      fundingKey: ECPrivateKey): Vector[(OracleOutcome, ECAdaptorSignature)] = {
+    buildAndSignCETs(outcomesAndCETs, cetSigningInfo, fundingKey).map {
+      case (outcome, _, sig) => outcome -> sig
+    }
+  }
+
+  def buildAndSignCETs(
+      outcomesAndCETs: Vector[OutcomeCETPair],
+      cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
+      fundingKey: ECPrivateKey): Vector[
+    (OracleOutcome, WitnessTransaction, ECAdaptorSignature)] = {
+    outcomesAndCETs.map { case OutcomeCETPair(outcome, cet) =>
+      val adaptorPoint = outcome.sigPoint
+      val hashToSign =
+        TransactionSignatureSerializer.hashForSignature(cet,
+                                                        cetSigningInfo,
+                                                        HashType.sigHashAll)
+
+      val adaptorSig = fundingKey.adaptorSign(adaptorPoint, hashToSign.bytes)
+      (outcome, cet, adaptorSig)
+    }
+  }
+
+  // TODO: Without PSBTs
+  def completeCET(
+      outcome: OracleOutcome,
+      cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
+      fundingMultiSig: MultiSignatureScriptPubKey,
+      fundingTx: Transaction,
+      ucet: WitnessTransaction,
+      remoteAdaptorSig: ECAdaptorSignature,
+      remoteFundingPubKey: ECPublicKey,
+      oracleSigs: Vector[OracleSignatures]): WitnessTransaction = {
+    val signLowR: ByteVector => ECDigitalSignature =
+      cetSigningInfo.signer.signLowR(_: ByteVector)(ExecutionContext.global)
+    val localSig = TransactionSignatureCreator.createSig(ucet,
+                                                         cetSigningInfo,
+                                                         signLowR,
+                                                         HashType.sigHashAll)
+    val oracleSigSum =
+      OracleSignatures.computeAggregateSignature(outcome, oracleSigs)
+    val remoteSig =
+      oracleSigSum
+        .completeAdaptorSignature(remoteAdaptorSig, HashType.sigHashAll.byte)
+
+    val localParitalSig =
+      PartialSignature(cetSigningInfo.signer.publicKey, localSig)
+    val remotePartialSig = PartialSignature(remoteFundingPubKey, remoteSig)
+
+    val psbt =
+      PSBT
+        .fromUnsignedTx(ucet)
+        .addUTXOToInput(fundingTx, index = 0)
+        .addScriptWitnessToInput(P2WSHWitnessV0(fundingMultiSig), index = 0)
+        .addSignature(localParitalSig, inputIndex = 0)
+        .addSignature(remotePartialSig, inputIndex = 0)
+
+    val cetT = psbt.finalizePSBT
+      .flatMap(_.extractTransactionAndValidate)
+      .map(_.asInstanceOf[WitnessTransaction])
+
+    cetT match {
+      case Success(cet) => cet.asInstanceOf[WitnessTransaction]
+      case Failure(err) => throw err
+    }
+  }
+
+  def signRefundTx(
+      refundSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
+      refundTx: WitnessTransaction
+  ): PartialSignature = {
+    val fundingPubKey = refundSigningInfo.signer.publicKey
+
+    val signLowR: ByteVector => ECDigitalSignature =
+      refundSigningInfo.signer.signLowR(_: ByteVector)(ExecutionContext.global)
+    val sig = TransactionSignatureCreator.createSig(refundTx,
+                                                    refundSigningInfo,
+                                                    signLowR,
+                                                    HashType.sigHashAll)
+
+    PartialSignature(fundingPubKey, sig)
+  }
+
+  // TODO: Without PSBTs
+  def completeRefundTx(
+      localSig: PartialSignature,
+      remoteSig: PartialSignature,
+      fundingMultiSig: MultiSignatureScriptPubKey,
+      fundingTx: Transaction,
+      uRefundTx: WitnessTransaction): WitnessTransaction = {
+    val psbt = PSBT
+      .fromUnsignedTx(uRefundTx)
+      .addUTXOToInput(fundingTx, index = 0)
+      .addScriptWitnessToInput(P2WSHWitnessV0(fundingMultiSig), index = 0)
+      .addSignature(localSig, inputIndex = 0)
+      .addSignature(remoteSig, inputIndex = 0)
+
+    val refundTxT = psbt.finalizePSBT
+      .flatMap(_.extractTransactionAndValidate)
+      .map(_.asInstanceOf[WitnessTransaction])
+
+    refundTxT match {
+      case Success(refundTx) => refundTx
+      case Failure(err)      => throw err
+    }
+  }
+
+  def signFundingTx(
+      fundingTx: Transaction,
+      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]]
+  )(implicit ec: ExecutionContext): Future[FundingSignatures] = {
+    val sigFs =
+      Vector.newBuilder[Future[(TransactionOutPoint, ScriptWitnessV0)]]
+
+    val fundingInputs: Vector[DLCFundingInput] =
+      fundingUtxos.map(DLCFundingInput.fromInputSigningInfo(_))
+
+    fundingUtxos.foreach { utxo =>
+      val sigComponentF =
+        BitcoinSigner.sign(utxo, fundingTx, isDummySignature = false)
+      val witnessF = sigComponentF.flatMap { sigComponent =>
+        sigComponent.transaction match {
+          case wtx: WitnessTransaction =>
+            val witness = wtx.witness(sigComponent.inputIndex.toInt)
+            if (witness == EmptyScriptWitness) {
+              Future.failed(
+                new RuntimeException(s"Funding Inputs must be SegWit: $utxo"))
+            } else {
+              Future.successful(witness)
+            }
+          case _: NonWitnessTransaction =>
+            Future.failed(
+              new RuntimeException(s"Funding Inputs must be SegWit: $utxo"))
+        }
+      }
+
+      sigFs += witnessF.flatMap {
+        case witness: ScriptWitnessV0 =>
+          Future.successful((utxo.outPoint, witness))
+        case witness: ScriptWitness =>
+          Future.failed(
+            new RuntimeException(s"Unrecognized script witness: $witness"))
+      }
+    }
+
+    val sigsF = Future.sequence(sigFs.result())
+
+    sigsF.map { sigs =>
+      val sigsMap = sigs.toMap
+
+      val sigsVec = fundingInputs.map { input =>
+        input.outPoint -> sigsMap(input.outPoint)
+      }
+
+      FundingSignatures(sigsVec)
+    }
+  }
+
+  def completeFundingTx(
+      localSigs: FundingSignatures,
+      remoteSigs: FundingSignatures,
+      offerFundingInputs: Vector[DLCFundingInput],
+      acceptFundingInputs: Vector[DLCFundingInput],
+      fundingTx: Transaction): Try[Transaction] = {
+    val fundingInputs = offerFundingInputs ++ acceptFundingInputs
+    val allSigs = localSigs.merge(remoteSigs)
+
+    val psbt = fundingInputs.zipWithIndex.foldLeft(
+      PSBT.fromUnsignedTxWithP2SHScript(fundingTx)) {
+      case (psbt, (fundingInput, index)) =>
+        val witness = allSigs(fundingInput.outPoint)
+
+        psbt
+          .addUTXOToInput(fundingInput.prevTx, index)
+          .addFinalizedScriptWitnessToInput(fundingInput.scriptSignature,
+                                            witness,
+                                            index)
+    }
+
+    val finalizedT = if (psbt.isFinalized) {
+      Success(psbt)
+    } else {
+      psbt.finalizePSBT
+    }
+
+    finalizedT.flatMap(_.extractTransactionAndValidate)
   }
 }

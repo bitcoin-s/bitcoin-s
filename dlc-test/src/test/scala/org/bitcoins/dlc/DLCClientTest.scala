@@ -301,17 +301,17 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
     val acceptVerifier = DLCSignatureVerifier(builder, isInitiator = false)
 
     for {
-      offerFundingSigs <- offerClient.dlcTxSigner.createFundingTxSigs()
-      acceptFundingSigs <- acceptClient.dlcTxSigner.createFundingTxSigs()
+      offerFundingSigs <- offerClient.dlcTxSigner.signFundingTx()
+      acceptFundingSigs <- acceptClient.dlcTxSigner.signFundingTx()
 
       badOfferFundingSigs = BytesUtil.flipBit(offerFundingSigs)
       badAcceptFundingSigs = BytesUtil.flipBit(acceptFundingSigs)
 
       _ <- recoverToSucceededIf[RuntimeException] {
-        offerClient.dlcTxSigner.signFundingTx(badAcceptFundingSigs)
+        offerClient.dlcTxSigner.completeFundingTx(badAcceptFundingSigs)
       }
       _ <- recoverToSucceededIf[RuntimeException] {
-        acceptClient.dlcTxSigner.signFundingTx(badOfferFundingSigs)
+        acceptClient.dlcTxSigner.completeFundingTx(badOfferFundingSigs)
       }
     } yield {
       assert(offerVerifier.verifyRemoteFundingSigs(acceptFundingSigs))
@@ -335,76 +335,70 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
     val offerVerifier = DLCSignatureVerifier(builder, isInitiator = true)
     val acceptVerifier = DLCSignatureVerifier(builder, isInitiator = false)
 
-    for {
-      offerCETSigs <- offerClient.dlcTxSigner.createCETSigs()
-      acceptCETSigs <- acceptClient.dlcTxSigner.createCETSigs()
+    val offerCETSigs = offerClient.dlcTxSigner.createCETSigs()
+    val acceptCETSigs = acceptClient.dlcTxSigner.createCETSigs()
 
-      badOfferCETSigs = BytesUtil.flipBit(offerCETSigs)
-      badAcceptCETSigs = BytesUtil.flipBit(acceptCETSigs)
+    val badOfferCETSigs = BytesUtil.flipBit(offerCETSigs)
+    val badAcceptCETSigs = BytesUtil.flipBit(acceptCETSigs)
 
-      cetFailures = outcomes.map { outcomeUncast =>
-        val outcome = outcomeUncast.asInstanceOf[EnumOutcome]
-        val oracleInfo =
-          offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]
-        val oracleOutcome = EnumOracleOutcome(Vector(oracleInfo), outcome)
+    outcomes.foreach { outcomeUncast =>
+      val outcome = outcomeUncast.asInstanceOf[EnumOutcome]
+      val oracleInfo =
+        offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]
+      val oracleOutcome = EnumOracleOutcome(Vector(oracleInfo), outcome)
 
-        val oracleSig = genEnumOracleSignature(oracleInfo, outcome.outcome)
+      val oracleSig = genEnumOracleSignature(oracleInfo, outcome.outcome)
 
-        for {
-          _ <- recoverToSucceededIf[RuntimeException] {
-            offerClient.dlcTxSigner.signCET(oracleOutcome,
+      assertThrows[RuntimeException] {
+        offerClient.dlcTxSigner.completeCET(oracleOutcome,
                                             badAcceptCETSigs(oracleOutcome),
                                             Vector(oracleSig))
-          }
-          _ <- recoverToSucceededIf[RuntimeException] {
-            acceptClient.dlcTxSigner
-              .signCET(oracleOutcome,
+      }
+
+      assertThrows[RuntimeException] {
+        acceptClient.dlcTxSigner
+          .completeCET(oracleOutcome,
                        badOfferCETSigs(oracleOutcome),
                        Vector(oracleSig))
-          }
-        } yield succeed
       }
-
-      _ <- Future.sequence(cetFailures)
-
-      _ <- recoverToExceptionIf[RuntimeException] {
-        offerClient.dlcTxSigner.signRefundTx(badAcceptCETSigs.refundSig)
-      }
-      _ <- recoverToExceptionIf[RuntimeException] {
-        acceptClient.dlcTxSigner.signRefundTx(badOfferCETSigs.refundSig)
-      }
-    } yield {
-      outcomes.foreach { outcomeUncast =>
-        val outcome = EnumOracleOutcome(
-          Vector(
-            offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]),
-          outcomeUncast.asInstanceOf[EnumOutcome])
-
-        assert(offerVerifier.verifyCETSig(outcome, acceptCETSigs(outcome)))
-        assert(acceptVerifier.verifyCETSig(outcome, offerCETSigs(outcome)))
-      }
-      assert(offerVerifier.verifyRefundSig(acceptCETSigs.refundSig))
-      assert(offerVerifier.verifyRefundSig(offerCETSigs.refundSig))
-      assert(acceptVerifier.verifyRefundSig(offerCETSigs.refundSig))
-      assert(acceptVerifier.verifyRefundSig(acceptCETSigs.refundSig))
-
-      outcomes.foreach { outcomeUncast =>
-        val outcome = EnumOracleOutcome(
-          Vector(
-            offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]),
-          outcomeUncast.asInstanceOf[EnumOutcome])
-
-        assert(!offerVerifier.verifyCETSig(outcome, badAcceptCETSigs(outcome)))
-        assert(!acceptVerifier.verifyCETSig(outcome, badOfferCETSigs(outcome)))
-
-        assert(!offerVerifier.verifyCETSig(outcome, offerCETSigs(outcome)))
-        assert(!acceptVerifier.verifyCETSig(outcome, acceptCETSigs(outcome)))
-      }
-      assert(!offerVerifier.verifyRefundSig(badAcceptCETSigs.refundSig))
-      assert(!offerVerifier.verifyRefundSig(badOfferCETSigs.refundSig))
-      assert(!acceptVerifier.verifyRefundSig(badOfferCETSigs.refundSig))
-      assert(!acceptVerifier.verifyRefundSig(badAcceptCETSigs.refundSig))
     }
+
+    assertThrows[RuntimeException] {
+      offerClient.dlcTxSigner.completeRefundTx(badAcceptCETSigs.refundSig)
+    }
+
+    assertThrows[RuntimeException] {
+      acceptClient.dlcTxSigner.completeRefundTx(badOfferCETSigs.refundSig)
+    }
+
+    outcomes.foreach { outcomeUncast =>
+      val outcome = EnumOracleOutcome(
+        Vector(offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]),
+        outcomeUncast.asInstanceOf[EnumOutcome])
+
+      assert(offerVerifier.verifyCETSig(outcome, acceptCETSigs(outcome)))
+      assert(acceptVerifier.verifyCETSig(outcome, offerCETSigs(outcome)))
+    }
+    assert(offerVerifier.verifyRefundSig(acceptCETSigs.refundSig))
+    assert(offerVerifier.verifyRefundSig(offerCETSigs.refundSig))
+    assert(acceptVerifier.verifyRefundSig(offerCETSigs.refundSig))
+    assert(acceptVerifier.verifyRefundSig(acceptCETSigs.refundSig))
+
+    outcomes.foreach { outcomeUncast =>
+      val outcome = EnumOracleOutcome(
+        Vector(offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]),
+        outcomeUncast.asInstanceOf[EnumOutcome])
+
+      assert(!offerVerifier.verifyCETSig(outcome, badAcceptCETSigs(outcome)))
+      assert(!acceptVerifier.verifyCETSig(outcome, badOfferCETSigs(outcome)))
+
+      assert(!offerVerifier.verifyCETSig(outcome, offerCETSigs(outcome)))
+      assert(!acceptVerifier.verifyCETSig(outcome, acceptCETSigs(outcome)))
+    }
+    assert(!offerVerifier.verifyRefundSig(badAcceptCETSigs.refundSig))
+    assert(!offerVerifier.verifyRefundSig(badOfferCETSigs.refundSig))
+    assert(!acceptVerifier.verifyRefundSig(badOfferCETSigs.refundSig))
+    assert(!acceptVerifier.verifyRefundSig(badAcceptCETSigs.refundSig))
   }
 
   def assertCorrectSigDerivation(
@@ -446,36 +440,41 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
 
     val aggSig = SchnorrDigitalSignature(aggR, aggS)
 
+    val acceptCETSigs = dlcAccept.dlcTxSigner.createCETSigs()
+    val offerCETSigs = dlcOffer.dlcTxSigner.createCETSigs()
+
     for {
-      acceptCETSigs <- dlcAccept.dlcTxSigner.createCETSigs()
-      offerCETSigs <- dlcOffer.dlcTxSigner.createCETSigs()
-      offerFundingSigs <- dlcOffer.dlcTxSigner.createFundingTxSigs()
+      offerFundingSigs <- dlcOffer.dlcTxSigner.signFundingTx()
       offerOutcome <-
         dlcOffer.executeDLC(offerSetup, Future.successful(oracleSigs))
       acceptOutcome <-
         dlcAccept.executeDLC(acceptSetup, Future.successful(oracleSigs))
-
-      builder = DLCTxBuilder(dlcOffer.offer, dlcAccept.accept)
-      contractId <- builder.buildFundingTx.map(
-        _.txIdBE.bytes.xor(dlcAccept.accept.tempContractId.bytes))
     } yield {
+      val builder = DLCTxBuilder(dlcOffer.offer, dlcAccept.accept)
+      val contractId = builder.buildFundingTx.txIdBE.bytes
+        .xor(dlcAccept.accept.tempContractId.bytes)
+
       val offer = dlcOffer.offer
       val accept = dlcOffer.accept.withSigs(acceptCETSigs)
       val sign = DLCSign(offerCETSigs, offerFundingSigs, contractId)
 
       val (offerOracleSig, offerDLCOutcome) =
-        DLCStatus.calculateOutcomeAndSig(isInitiator = true,
-                                         offer,
-                                         accept,
-                                         sign,
-                                         acceptOutcome.cet)
+        DLCStatus
+          .calculateOutcomeAndSig(isInitiator = true,
+                                  offer,
+                                  accept,
+                                  sign,
+                                  acceptOutcome.cet)
+          .get
 
       val (acceptOracleSig, acceptDLCOutcome) =
-        DLCStatus.calculateOutcomeAndSig(isInitiator = false,
-                                         offer,
-                                         accept,
-                                         sign,
-                                         offerOutcome.cet)
+        DLCStatus
+          .calculateOutcomeAndSig(isInitiator = false,
+                                  offer,
+                                  accept,
+                                  sign,
+                                  offerOutcome.cet)
+          .get
 
       assert(offerDLCOutcome == outcome)
       assert(acceptDLCOutcome == outcome)

@@ -14,9 +14,6 @@ import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.testgen.DLCTestUtil
 import org.scalacheck.Gen
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext}
-
 trait TLVGen {
 
   def unknownTpe: Gen[BigSizeUInt] = {
@@ -410,9 +407,8 @@ trait TLVGen {
       val deserOffer = DLCOffer.fromTLV(offer)
       val builder =
         DLCTxBuilder(deserOffer,
-                     DLCAccept.fromTLV(accept, deserOffer).withoutSigs)(
-          ExecutionContext.global)
-      val fundingTx = Await.result(builder.buildFundingTx, 5.seconds)
+                     DLCAccept.fromTLV(accept, deserOffer).withoutSigs)
+      val fundingTx = builder.buildFundingTx
       val contractId = fundingTx.txIdBE.bytes.xor(accept.tempContractId.bytes)
 
       DLCSignTLV(contractId, cetSigs, refundSig, fundingSigs)
