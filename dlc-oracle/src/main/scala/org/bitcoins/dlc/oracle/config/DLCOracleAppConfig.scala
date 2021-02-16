@@ -15,7 +15,7 @@ import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCOracleAppConfig(
@@ -121,10 +121,11 @@ case class DLCOracleAppConfig(
   def seedExists(): Boolean = kmConf.seedExists()
 
   def exists(): Boolean = {
+    val dbPath = config.getString("bitcoin-s.oracle.db.path")
     lazy val hasDb = this.driver match {
       case PostgreSQL => true
       case SQLite =>
-        Files.exists(datadir.resolve("oracle.sqlite"))
+        Files.exists(Paths.get(dbPath))
     }
     seedExists() && hasDb
   }
