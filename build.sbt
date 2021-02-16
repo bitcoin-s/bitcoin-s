@@ -203,8 +203,7 @@ lazy val secp256k1jni = project
     coverageEnabled := false
   )
 
-/**
-  * If you want sbt projects to depend on each other in
+/** If you want sbt projects to depend on each other in
   * slighly nonstandard ways, the way to do it is through
   * stringly typed syntax.
   *
@@ -281,10 +280,14 @@ lazy val appCommonsTest = project
 lazy val oracleServer = project
   .in(file("app/oracle-server"))
   .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "universal"
+  )
   .dependsOn(
     dlcOracle,
     serverRoutes
   )
+  .enablePlugins(JavaAppPackaging, DockerPlugin)
 
 lazy val serverRoutes = project
   .in(file("app/server-routes"))

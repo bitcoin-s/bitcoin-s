@@ -12,13 +12,15 @@ packageSummary := "A DLC Oracle"
 
 packageDescription := "A basic DLC oracle that allows you to commit to events and sign them"
 
-enablePlugins(JavaAppPackaging, DockerPlugin)
-
 //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
-dockerBaseImage := "openjdk"
+dockerBaseImage := "openjdk:16-jdk-buster"
 
 packageName in Docker := packageName.value
 
 version in Docker := version.value
 
 dockerExposedPorts ++= Seq(9998)
+
+dockerEntrypoint := Seq("/opt/docker/bin/bitcoin-s-oracle-server",
+                        "--conf",
+                        "/opt/docker/docker-application.conf")
