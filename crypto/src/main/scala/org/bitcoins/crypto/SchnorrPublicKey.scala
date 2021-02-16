@@ -44,12 +44,27 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   def computeSigPoint(
       bytesToHash: Vector[ByteVector],
       nonces: Vector[SchnorrNonce]): ECPublicKey = {
-    bytesToHash
-      .zip(nonces)
-      .map { case (bytes, nonce) =>
-        computeSigPoint(CryptoUtil.sha256(bytes), nonce)
+    // TODO: when combine function is ported from secp, use that instead for nonces
+    val bytesAndNonces = bytesToHash.zip(nonces)
+
+    val hashesAndNoncePoints = bytesAndNonces.map { case (bytes, nonce) =>
+      val eBytes = CryptoUtil
+        .sha256SchnorrChallenge(
+          nonce.bytes ++ this.bytes ++ CryptoUtil
+            .sha256DLCAttestation(bytes)
+            .bytes)
+        .bytes
+      val e = ECPrivateKey(eBytes)
+      (e, nonce.publicKey)
+    }
+
+    val (aggHashes, aggNonces) =
+      hashesAndNoncePoints.reduce[(ECPrivateKey, ECPublicKey)] {
+        case ((aggHash, aggPoint), (hash, nonce)) =>
+          (aggHash.add(hash), aggPoint.add(nonce))
       }
-      .reduce(_.add(_))
+
+    this.publicKey.tweakMultiply(aggHashes.fieldElement).add(aggNonces)
   }
 
   // TODO: match on CryptoContext once secp version is added
