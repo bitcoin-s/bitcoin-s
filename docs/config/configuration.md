@@ -247,7 +247,7 @@ bitcoin-s {
 
     oracle {
         # The port we bind our rpc server on
-        rpcport = 9999
+        rpcport = 9998
 
         # The ip address we bind our server too
         rpcbind = "127.0.0.1"
