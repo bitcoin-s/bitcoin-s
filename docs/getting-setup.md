@@ -29,13 +29,13 @@ Simply follow the instructions in [this short blog](https://www.scala-lang.org/2
 Now, it is time to clone the [Bitcoin-S repository](https://github.com/bitcoin-s/bitcoin-s/) by running
 
 ```bashrc
-git clone --recursive git@github.com:bitcoin-s/bitcoin-s.git
+git clone --depth 100 --recursive git@github.com:bitcoin-s/bitcoin-s.git
 ```
 
 or alternatively, if you do not have ssh setup with github, you can run
 
 ```bashrc
-git clone --recursive https://github.com/bitcoin-s/bitcoin-s.git
+git clone --depth 100 --recursive https://github.com/bitcoin-s/bitcoin-s.git
 ```
 
 Next, you will want to execute the commands
