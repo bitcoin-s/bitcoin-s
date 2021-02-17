@@ -41,10 +41,12 @@ to download the secp256k1 submodule, this is so cryptographic functions like sig
 
 ## Step 3: Building the Oracle Server
 
+### Java Binary
+
 You can build the oracle server with the [sbt native packager](https://github.com/sbt/sbt-native-packager).
 The native packager offers [numerous ways to package the project](https://github.com/sbt/sbt-native-packager#examples).
 
-In this example we are going to use `stage` which will produce bash scripts we can easily execute. You can stage the server with the following command.
+In this example we are going to use `universal:stage` which will produce bash scripts we can easily execute. You can stage the server with the following command.
 
 ```bash
 sbt oracleServer/universal:stage
@@ -62,8 +64,48 @@ Alternatively you can run the server by just using:
 sbt oracleServer/run
 ```
 
+### Docker
+
+The oracle server also has docker support. You can build a docker image with the following commands
+
+```
+sbt "oracleServer/compile;oracleServer/docker:stage"
+```
+
+This will build a `Dockerfile` that is located in `app/oracle-server/target/docker/stage`
+
+You can publish to your local docker repository by using `docker:publishLocal` instead of `docker:stage`
+
+You can now build the docker image with
+
+```
+docker build app/oracle-server/target/docker/stage/ -t oracle-server
+```
+
+Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
+you can interact with the running container with `bitcoin-s-cli` or `curl`. By default, our oracle
+server listens for requests on port `9998`.
+
+This means we need to forward requests on the host machine to the docker container correctly.
+
+This can be done with the following command
+```
+docker run -d -p 9998:9998 oracle-server:latest
+```
+
+Now you can send requests with `bitcoin-s-cli` or `curl`.
+Here is an example with `bitcoin-s-cli`
+```
+./bitcoin-s-cli getpublickey
+c9c9fe2772330b0d61a2efbfacabf5cab1137710a69f0e12f1eb3dbb74f7ea54
+```
+
+For more information on build configuration options with `sbt` please see the [sbt native packager docs](https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html#tasks)
+
+
 ## Step 4: Configuration
 
+### Java binary configuration
 If you would like to pass in a custom datadir for your server, you can do
 
 ```bash
@@ -85,3 +127,9 @@ You can also pass in a custom `rpcport` to bind to
 For more information on configuring the server please see our [configuration](../config/configuration.md) document.
 
 For more information on how to use our built in `cli` to interact with the server please see the [cli docs](../applications/cli.md).
+
+### Docker configuration
+
+Currently our docker configuration only allows for configuration at build time _not_ runtime.
+
+To the configuration file for the docker application is called [docker-application.conf](../../app/oracle-server/src/universal/docker-application.conf)
