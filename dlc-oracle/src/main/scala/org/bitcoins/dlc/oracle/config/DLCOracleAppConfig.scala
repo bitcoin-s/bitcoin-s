@@ -55,9 +55,14 @@ case class DLCOracleAppConfig(
       if (Files.notExists(datadir)) {
         Files.createDirectories(datadir)
       }
-      val numMigrations = {
-        migrate()
+
+      // Move old db in network folder to oracle folder
+      val oldNetworkLocation = datadir.resolve("oracle.sqlite")
+      if (!exists() && Files.exists(oldNetworkLocation)) {
+        Files.move(oldNetworkLocation, dbPath)
       }
+
+      val numMigrations = migrate()
       logger.info(s"Applied $numMigrations to the dlc oracle project")
 
       val migrations = migrationsApplied()
@@ -83,7 +88,6 @@ case class DLCOracleAppConfig(
             }
 
             _ <- eventDAO.upsertAll(updated)
-
           } yield ()
         } else Future.unit
 
@@ -123,8 +127,7 @@ case class DLCOracleAppConfig(
   def exists(): Boolean = {
     lazy val hasDb = this.driver match {
       case PostgreSQL => true
-      case SQLite =>
-        Files.exists(datadir.resolve("oracle.sqlite"))
+      case SQLite     => Files.exists(dbPath)
     }
     seedExists() && hasDb
   }
