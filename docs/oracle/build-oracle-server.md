@@ -69,7 +69,7 @@ sbt oracleServer/run
 The oracle server also has docker support. You can build a docker image with the following commands
 
 ```
-sbt "oracleServer/compile;oracleServer/docker:stage"
+sbt "oracleServer/docker:stage"
 ```
 
 This will build a `Dockerfile` that is located in `app/oracle-server/target/docker/stage`

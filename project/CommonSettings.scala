@@ -1,7 +1,10 @@
 // these two imports are needed for sbt syntax to work
-import java.nio.file.Paths
+import com.typesafe.sbt.SbtNativePackager.Docker
+import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
+import java.nio.file.Paths
 import com.typesafe.sbt.packager.Keys.maintainer
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.dockerBaseImage
 import sbt._
 import sbt.Keys._
 
@@ -49,7 +52,7 @@ object CommonSettings {
       s == "-Ywarn-unused-import"
         || s == "-Ywarn-unused"
         || s == "-Xfatal-warnings"
-      //for 2.13 -- they use different compiler opts
+        //for 2.13 -- they use different compiler opts
         || s == "-Xlint:unused")),
     //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
     scalacOptions in (Compile, doc) ~= (_ filterNot (s =>
@@ -138,6 +141,20 @@ object CommonSettings {
   ) ++ settings
 
   lazy val prodSettings: Seq[Setting[_]] = settings
+
+  lazy val appSettings: Seq[Setting[_]] = prodSettings ++ Vector(
+    //gives us the 'universal' directory in build artifacts
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "universal"
+  )
+
+  lazy val dockerSettings: Seq[Setting[_]] = {
+    Vector(
+      //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
+      dockerBaseImage := "openjdk",
+      packageName in Docker := packageName.value,
+      version in Docker := version.value
+    )
+  }
 
   lazy val binariesPath =
     Paths.get(Properties.userHome, ".bitcoin-s", "binaries")

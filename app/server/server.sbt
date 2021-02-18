@@ -13,4 +13,8 @@ packageSummary := "A Bitcoin neutrino node and wallet"
 packageDescription := "Runs a Bitcoin neutrino node and wallet, has functionality " +
   "for many different modes and configuration options, see more at https://bitcoin-s.org/docs/applications/server"
 
-enablePlugins(JavaAppPackaging)
+dockerExposedPorts ++= Seq(9999)
+
+dockerEntrypoint := Seq("/opt/docker/bin/bitcoin-s-server",
+                        "--conf",
+                        "/opt/docker/docker-application.conf")

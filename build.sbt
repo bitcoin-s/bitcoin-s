@@ -279,10 +279,8 @@ lazy val appCommonsTest = project
 
 lazy val oracleServer = project
   .in(file("app/oracle-server"))
-  .settings(CommonSettings.prodSettings: _*)
-  .settings(
-    Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "universal"
-  )
+  .settings(CommonSettings.appSettings: _*)
+  .settings(CommonSettings.dockerSettings: _*)
   .dependsOn(
     dlcOracle,
     serverRoutes
@@ -298,7 +296,8 @@ lazy val serverRoutes = project
 
 lazy val appServer = project
   .in(file("app/server"))
-  .settings(CommonSettings.prodSettings: _*)
+  .settings(CommonSettings.appSettings: _*)
+  .settings(CommonSettings.dockerSettings: _*)
   .dependsOn(
     serverRoutes,
     appCommons,
@@ -309,6 +308,7 @@ lazy val appServer = project
     feeProvider,
     zmq
   )
+  .enablePlugins(JavaAppPackaging, DockerPlugin)
 
 lazy val appServerTest = project
   .in(file("app/server-test"))
