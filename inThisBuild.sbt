@@ -18,3 +18,8 @@ excludeLintKeys in Global ++= Set(
   Keys.mainClass,
   com.typesafe.sbt.SbtGit.GitKeys.gitRemoteRepo
 )
+
+//needed so that we can use our versions with docker
+//see: https://github.com/dwijnand/sbt-dynver#portable-version-strings
+//https://github.com/bitcoin-s/bitcoin-s/issues/2672
+dynverSeparator in ThisBuild := "-"
