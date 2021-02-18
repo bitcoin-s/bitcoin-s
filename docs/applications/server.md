@@ -16,6 +16,7 @@ The server project provides a away to access information from these three projec
 
 ### Building the server
 
+#### Java binary
 You can build the server with the [sbt native packager](https://github.com/sbt/sbt-native-packager).
 The native packager offers [numerous ways to package the project](https://github.com/sbt/sbt-native-packager#examples).
 
@@ -30,6 +31,42 @@ This will produce a script to execute bitcoin-s which you can start with
 ```bash
 ./app/server/target/universal/stage/bin/bitcoin-s-server
 ```
+
+#### Docker
+
+The oracle server also has docker support. You can build a docker image with the following commands
+
+```
+sbt "appServer/docker:stage"
+```
+
+This will build a `Dockerfile` that is located in `app/server/target/docker/stage`
+
+You can now build the docker image with
+
+```
+docker build app/server/target/docker/stage/ -t app-server
+```
+
+Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
+you can interact with the running container with `bitcoin-s-cli` or `curl`. By default, our oracle
+server listens for requests on port `9999`.
+
+This means we need to forward requests on the host machine to the docker container correctly.
+
+This can be done with the following command
+```
+docker run -d -p 9999:9999 app-server:latest
+```
+
+Now you can send requests with `bitcoin-s-cli` or `curl`.
+Here is an example with `bitcoin-s-cli`
+```
+./bitcoin-s-cli getblockcount
+10000
+```
+
+For more information on build configuration options with `sbt` please see the [sbt native packager docs](https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html#tasks)
 
 ### Configuration
 
