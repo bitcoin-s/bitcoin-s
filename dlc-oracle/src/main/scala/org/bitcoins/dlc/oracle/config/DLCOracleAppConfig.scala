@@ -15,7 +15,7 @@ import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCOracleAppConfig(
@@ -55,9 +55,14 @@ case class DLCOracleAppConfig(
       if (Files.notExists(datadir)) {
         Files.createDirectories(datadir)
       }
-      val numMigrations = {
-        migrate()
+
+      // Move old db in network folder to oracle folder
+      val oldNetworkLocation = datadir.resolve("oracle.sqlite")
+      if (!exists() && Files.exists(oldNetworkLocation)) {
+        Files.move(oldNetworkLocation, dbPath)
       }
+
+      val numMigrations = migrate()
       logger.info(s"Applied $numMigrations to the dlc oracle project")
 
       val migrations = migrationsApplied()
@@ -83,7 +88,6 @@ case class DLCOracleAppConfig(
             }
 
             _ <- eventDAO.upsertAll(updated)
-
           } yield ()
         } else Future.unit
 
@@ -121,11 +125,9 @@ case class DLCOracleAppConfig(
   def seedExists(): Boolean = kmConf.seedExists()
 
   def exists(): Boolean = {
-    val dbPath = config.getString("bitcoin-s.oracle.db.path")
     lazy val hasDb = this.driver match {
       case PostgreSQL => true
-      case SQLite =>
-        Files.exists(Paths.get(dbPath))
+      case SQLite     => Files.exists(dbPath)
     }
     seedExists() && hasDb
   }
