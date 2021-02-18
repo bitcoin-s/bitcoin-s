@@ -287,7 +287,7 @@ trait ServerJsonModels {
     try {
       js match {
         case Str(value) => format.parse(value)
-        case Num(value) => format.parse(String.format("%.0f", value))
+        case Num(value) => format.parse("%.0f".format(value))
         case Null | Obj(_) | Arr(_) | _: Bool =>
           throw new Exception
       }
