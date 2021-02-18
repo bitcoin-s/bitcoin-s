@@ -552,12 +552,9 @@ lazy val walletTest = project
   .dependsOn(core % testAndCompile, testkit, wallet)
   .enablePlugins(FlywayPlugin)
 
-lazy val oracleDbSettings = dbFlywaySettings("oracle")
-
 lazy val dlcOracle = project
   .in(file("dlc-oracle"))
   .settings(CommonSettings.prodSettings: _*)
-  .settings(oracleDbSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-oracle",
     libraryDependencies ++= Deps.dlcOracle
