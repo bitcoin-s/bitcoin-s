@@ -37,7 +37,7 @@ This will produce a script to execute bitcoin-s which you can start with
 The oracle server also has docker support. You can build a docker image with the following commands
 
 ```
-sbt "appServer/compile;appServer/docker:stage"
+sbt "appServer/docker:stage"
 ```
 
 This will build a `Dockerfile` that is located in `app/server/target/docker/stage`
