@@ -2,7 +2,7 @@
 name: CI to Docker Hub
 on:
   push:
-    branches: [ main ]
+    branches: [master, main, adaptor-dlc]
     tags: ["*"]
 jobs:
   build:
