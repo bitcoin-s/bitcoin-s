@@ -43,14 +43,14 @@ To do this, we need to use the `createenumevent` rpc. This RPC takes 3 parameter
 1. The label for the event
    we will use `2020-us-election`
 2. the maturation time for the event in seconds since the epoch.
-   For our example we will use `1612224000` (Tuesday, February 2, 2021 12:00:00 AM).
+   For our example we will use `20210120` (Jan 1, 2021)
    You will need to adjust this for your local testing. You can use [this](https://www.epochconverter.com/seconds-days-since-y0) tool to calculate one
 3. The outcomes, which we listed above "Republican_win,Democrat_win,other"
 
 With all of this information, we can create the event with `bitcoin-s-cli`!
 
 ```
-./bitcoin-s-cli createenumevent 2020-us-election 1612224000 "Republican_win,Democrat_win,other"
+./bitcoin-s-cli createenumevent 2020-us-election 20210120 "Republican_win,Democrat_win,other"
 fdd824c3988fabec9820690f366271c9ceac00fbec1412075f9b319bb0db1f86460519dd9c61478949f2c00c35aeb8e53a1507616072cb802891e2c189a9fa65a0493de5d3b04a6d7b90c9c43c09ebe5250d583e1c3fc423219b26f6a02ec394a130000afdd8225f0001ae3e30df5a203ad10ee89a909df0c8ccea4836e94e0a5d34c3cdab758fcaee1460189600fdd8062400030e52657075626c6963616e5f77696e0c44656d6f637261745f77696e056f7468657210323032302d75732d656c656374696f6e
 ```
 
@@ -92,7 +92,7 @@ If you use the `getevent` rpc along the oracle announcement, you can see the eve
   ],
   "eventName": "2020-us-election",
   "signingVersion": "DLCOracleV0SigningVersion",
-  "maturationTime": "2021-02-02T00:00:00Z",
+  "maturationTime": "2021-01-20T00:00:00Z",
   "announcementSignature": "988fabec9820690f366271c9ceac00fbec1412075f9b319bb0db1f86460519dd9c61478949f2c00c35aeb8e53a1507616072cb802891e2c189a9fa65a0493de5",
   "eventDescriptorTLV": "fdd8062400030e52657075626c6963616e5f77696e0c44656d6f637261745f77696e056f74686572",
   "eventTLV": "fdd8225f0001ae3e30df5a203ad10ee89a909df0c8ccea4836e94e0a5d34c3cdab758fcaee1460189600fdd8062400030e52657075626c6963616e5f77696e0c44656d6f637261745f77696e056f7468657210323032302d75732d656c656374696f6e",

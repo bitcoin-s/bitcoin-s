@@ -8,12 +8,15 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.AesPassword
 import ujson._
 
+import java.text.SimpleDateFormat
 import java.time.Instant
+import java.util.Date
+import scala.util.control.NonFatal
 import scala.util.{Failure, Try}
 
 case class CreateEvent(
     label: String,
-    maturationTime: Instant,
+    maturationTime: Date,
     outcomes: Vector[String])
 
 object CreateEvent extends ServerJsonModels {
@@ -23,8 +26,7 @@ object CreateEvent extends ServerJsonModels {
       case labelJs :: maturationTimeJs :: outcomesJs :: Nil =>
         Try {
           val label = labelJs.str
-          val maturationTime: Instant =
-            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
+          val maturationTime = jsToDate(maturationTimeJs)
           val outcomes = outcomesJs.arr.map(_.str).toVector
 
           CreateEvent(label, maturationTime, outcomes)
@@ -42,9 +44,9 @@ object CreateEvent extends ServerJsonModels {
 
 case class CreateNumericEvent(
     eventName: String,
-    maturationTime: Instant,
+    maturationTime: Date,
+    minValue: Long,
     maxValue: Long,
-    isSigned: Boolean,
     unit: String,
     precision: Int)
 
@@ -52,20 +54,19 @@ object CreateNumericEvent extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[CreateNumericEvent] = {
     jsArr.arr.toList match {
-      case labelJs :: maturationTimeJs :: maxJs :: isSignedJs :: unitJs :: precisionJs :: Nil =>
+      case labelJs :: maturationTimeJs :: minJs :: maxJs :: unitJs :: precisionJs :: Nil =>
         Try {
           val label = labelJs.str
-          val maturationTime: Instant =
-            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
+          val maturationTime = jsToDate(maturationTimeJs)
+          val minValue = minJs.num.toLong
           val maxValue = maxJs.num.toLong
-          val isSigned = isSignedJs.bool
           val unit = unitJs.str
           val precision = precisionJs.num.toInt
 
           CreateNumericEvent(label,
                              maturationTime,
+                             minValue,
                              maxValue,
-                             isSigned,
                              unit,
                              precision)
         }
@@ -279,6 +280,22 @@ trait ServerJsonModels {
       .fromString(js.str)
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
+
+  def jsToDate(js: Value): Date = {
+    val format = new SimpleDateFormat("yyyyMMdd")
+
+    try {
+      js match {
+        case Str(value) => format.parse(value)
+        case Num(value) => format.parse(String.format("%.0f", value))
+        case Null | Obj(_) | Arr(_) | _: Bool =>
+          throw new Exception
+      }
+    } catch {
+      case NonFatal(_) =>
+        throw Value.InvalidData(js, "Expected a date in the format YYYYMMDD")
+    }
+  }
 
   def nullToOpt(value: Value): Option[Value] =
     value match {

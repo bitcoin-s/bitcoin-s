@@ -27,7 +27,9 @@ import upickle.default._
 
 import java.io.File
 import java.nio.file.Path
+import java.text.SimpleDateFormat
 import java.time.Instant
+import java.util.Date
 
 object Picklers {
 
@@ -71,6 +73,11 @@ object Picklers {
 
   implicit val instantPickler: ReadWriter[Instant] =
     readwriter[Long].bimap(_.getEpochSecond, Instant.ofEpochSecond)
+
+  private val dateFormat = new SimpleDateFormat("yyyyMMdd")
+
+  implicit val datePickler: ReadWriter[Date] =
+    readwriter[String].bimap(dateFormat.format, dateFormat.parse)
 
   implicit val aesPasswordPickler: ReadWriter[AesPassword] =
     readwriter[String].bimap(_.toStringSensitive, AesPassword.fromString)

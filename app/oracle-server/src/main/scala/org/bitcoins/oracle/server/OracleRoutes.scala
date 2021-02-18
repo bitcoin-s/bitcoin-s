@@ -49,10 +49,11 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
           reject(ValidationRejection("failure", Some(exception)))
         case Success(CreateEvent(label, maturationTime, outcomes)) =>
           complete {
-            oracle.createNewEnumEvent(label, maturationTime, outcomes).map {
-              announcementTLV =>
+            oracle
+              .createNewEnumEvent(label, maturationTime.toInstant, outcomes)
+              .map { announcementTLV =>
                 Server.httpSuccess(announcementTLV.hex)
-            }
+              }
           }
       }
 
@@ -63,18 +64,19 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
         case Success(
               CreateNumericEvent(eventName,
                                  maturationTime,
+                                 minValue,
                                  maxValue,
-                                 isSigned,
                                  unit,
                                  precision)) =>
           complete {
 
+            val isSigned = minValue < 0
             val numDigits =
-              Math.ceil(Math.log10(maxValue.toDouble) / Math.log10(2)).toInt
+              Math.ceil(Math.log(maxValue.toDouble) / Math.log(2)).toInt
 
             oracle
               .createNewLargeRangedEvent(eventName,
-                                         maturationTime,
+                                         maturationTime.toInstant,
                                          UInt16(2),
                                          isSigned,
                                          numDigits,

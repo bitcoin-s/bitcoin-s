@@ -1,8 +1,5 @@
 package org.bitcoins.cli
 
-import java.io.File
-import java.nio.file.Path
-import java.time.{Instant, ZoneId, ZonedDateTime}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
@@ -22,6 +19,12 @@ import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import scopt._
+
+import java.io.File
+import java.nio.file.Path
+import java.text.SimpleDateFormat
+import java.time.{Instant, ZoneId, ZonedDateTime}
+import java.util.{Date, TimeZone}
 
 /** scopt readers for parsing CLI params and options */
 object CliReaders {
@@ -118,6 +121,18 @@ object CliReaders {
 
       override def reads: String => Instant =
         str => Instant.ofEpochSecond(str.toLong)
+    }
+
+  implicit val dateReads: Read[Date] =
+    new Read[Date] {
+      override def arity: Int = 1
+
+      override def reads: String => Date =
+        str => {
+          val format = new SimpleDateFormat("yyyyMMdd")
+          format.setTimeZone(TimeZone.getTimeZone("UTC"))
+          format.parse(str)
+        }
     }
 
   implicit val aesPasswordReads: Read[AesPassword] = new Read[AesPassword] {

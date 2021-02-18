@@ -36,6 +36,7 @@ import upickle.{default => up}
 import java.io.File
 import java.nio.file.Path
 import java.time.Instant
+import java.util.Date
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
@@ -1055,7 +1056,7 @@ object ConsoleCli {
         .text(s"Lists all event announcements"),
       cmd("createenumevent")
         .action((_, conf) =>
-          conf.copy(command = CreateEnumEvent("", Instant.MIN, Seq.empty)))
+          conf.copy(command = CreateEnumEvent("", new Date(), Seq.empty)))
         .text("Registers an oracle enum event")
         .children(
           arg[String]("label")
@@ -1067,13 +1068,13 @@ object ConsoleCli {
                   createEvent.copy(label = label)
                 case other => other
               })),
-          arg[Instant]("maturationtime")
-            .text("The earliest expected time an outcome will be signed, given in epoch second")
+          arg[Date]("maturationtime")
+            .text("The earliest expected time an outcome will be signed, given in the format YYYYMMDD")
             .required()
-            .action((time, conf) =>
+            .action((date, conf) =>
               conf.copy(command = conf.command match {
                 case createEvent: CreateEnumEvent =>
-                  createEvent.copy(maturationTime = time)
+                  createEvent.copy(maturationTime = date)
                 case other => other
               })),
           arg[Seq[String]]("outcomes")
@@ -1089,9 +1090,9 @@ object ConsoleCli {
       cmd("createnumericevent")
         .action((_, conf) =>
           conf.copy(command = CreateNumericEvent(eventName = "",
-                                                 maturationTime = Instant.MIN,
+                                                 maturationTime = new Date(),
+                                                 minValue = 0,
                                                  maxValue = 0,
-                                                 isSigned = false,
                                                  unit = "",
                                                  precision = 0)))
         .text("Registers an oracle event that uses digit decomposition when signing the number")
@@ -1105,13 +1106,22 @@ object ConsoleCli {
                   createNumericEvent.copy(eventName = name)
                 case other => other
               })),
-          arg[Instant]("maturationtime")
-            .text("The earliest expected time an outcome will be signed, given in epoch second")
+          arg[Date]("maturationtime")
+            .text("The earliest expected time an outcome will be signed, given in YYYYMMDD")
             .required()
-            .action((time, conf) =>
+            .action((date, conf) =>
               conf.copy(command = conf.command match {
                 case createNumericEvent: CreateNumericEvent =>
-                  createNumericEvent.copy(maturationTime = time)
+                  createNumericEvent.copy(maturationTime = date)
+                case other => other
+              })),
+          arg[Long]("minvalue")
+            .text("Minimum value of this event")
+            .required()
+            .action((min, conf) =>
+              conf.copy(command = conf.command match {
+                case createNumericEvent: CreateNumericEvent =>
+                  createNumericEvent.copy(minValue = min)
                 case other => other
               })),
           arg[Long]("maxvalue")
@@ -1121,14 +1131,6 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case createNumericEvent: CreateNumericEvent =>
                   createNumericEvent.copy(maxValue = max)
-                case other => other
-              })),
-          opt[Unit]("signed")
-            .text("Whether the outcomes can be negative")
-            .action((_, conf) =>
-              conf.copy(command = conf.command match {
-                case createNumericEvent: CreateNumericEvent =>
-                  createNumericEvent.copy(isSigned = true)
                 case other => other
               })),
           arg[String]("unit")
@@ -1569,16 +1571,16 @@ object ConsoleCli {
           Seq(up.writeJs(label), up.writeJs(time), up.writeJs(outcomes)))
       case CreateNumericEvent(eventName,
                               time,
+                              minValue,
                               maxValue,
-                              isSigned,
                               unit,
                               precision) =>
         RequestParam(
           "createnumericevent",
           Seq(up.writeJs(eventName),
               up.writeJs(time),
+              up.writeJs(minValue),
               up.writeJs(maxValue),
-              up.writeJs(isSigned),
               up.writeJs(unit),
               up.writeJs(precision))
         )
@@ -1941,20 +1943,17 @@ object CliCommand {
 
   case class CreateEnumEvent(
       label: String,
-      maturationTime: Instant,
+      maturationTime: Date,
       outcomes: Seq[String])
       extends OracleServerCliCommand
 
   case class CreateNumericEvent(
       eventName: String,
-      maturationTime: Instant,
+      maturationTime: Date,
+      minValue: Long,
       maxValue: Long,
-      isSigned: Boolean,
       unit: String,
       precision: Int)
-      extends OracleServerCliCommand
-
-  case class SignEvent(eventName: String, outcome: String)
       extends OracleServerCliCommand
 
   case class CreateDigitDecompEvent(
@@ -1965,6 +1964,9 @@ object CliCommand {
       numDigits: Int,
       unit: String,
       precision: Int)
+      extends OracleServerCliCommand
+
+  case class SignEvent(eventName: String, outcome: String)
       extends OracleServerCliCommand
 
   case class SignDigits(eventName: String, num: Long)
