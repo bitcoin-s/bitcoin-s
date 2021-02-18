@@ -8,7 +8,7 @@ object Deps {
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.3"
-    val scalaTest = "3.2.3"
+    val scalaTest = "3.2.4"
 
     val scalaTestPlus =
       "3.2.1.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
