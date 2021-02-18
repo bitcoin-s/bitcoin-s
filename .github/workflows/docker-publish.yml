@@ -2,6 +2,8 @@
 name: CI to Docker Hub
 on:
   pull_request:
+    branches: [ master, main, adaptor-dlc ]
+    tags: [ "*" ]
   push:
     branches: [master, main, adaptor-dlc]
     tags: ["*"]
