@@ -1,6 +1,7 @@
 # https://docs.docker.com/ci-cd/github-actions/
 name: CI to Docker Hub
 on:
+  pull_request:
   push:
     branches: [master, main, adaptor-dlc]
     tags: ["*"]
