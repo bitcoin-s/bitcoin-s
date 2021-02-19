@@ -1,9 +1,9 @@
 package org.bitcoins.testkit.util
 
-import java.io.File
-import java.nio.file.{Path, Paths}
 import org.bitcoins.core.util.BitcoinSLogger
 
+import java.io.File
+import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
 import scala.util.{Properties, Random}
 
@@ -29,7 +29,13 @@ object FileUtil extends BitcoinSLogger {
     } else if (!dir.isDirectory) {
       dir.delete()
     } else {
-      dir.listFiles().foreach(deleteTmpDir)
+      val filesOpt = Option(dir.listFiles())
+      filesOpt match {
+        case Some(files) =>
+          files.foreach(deleteTmpDir)
+        case None =>
+        //do nothing since list files must have returned null
+      }
       dir.delete()
     }
   }
