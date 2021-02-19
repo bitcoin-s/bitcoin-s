@@ -85,10 +85,9 @@ We publish docker images to docker hub on every PR merge and tag on github.
 You can obtain the images for both the app server and oracle server on these
 docker hub repos
 
-[oracle-server](https://hub.docker.com/r/bitcoinscala/bitcoin-s-oracle-server/tags?page=1&ordering=last_updated)
+[bitcoin-s docker hub repo](https://hub.docker.com/r/bitcoinscala/bitcoin-s-server/tags?page=1&ordering=last_updated)
 
-[bitcoin-s](https://hub.docker.com/r/bitcoinscala/bitcoin-s-server/tags?page=1&ordering=last_updated)
-
+[oracle-server docker hub repo](https://hub.docker.com/r/bitcoinscala/bitcoin-s-oracle-server/tags?page=1&ordering=last_updated)
 
 ## Building JARs yourself
 
