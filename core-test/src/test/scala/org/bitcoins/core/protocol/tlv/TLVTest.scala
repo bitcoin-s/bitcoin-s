@@ -5,6 +5,15 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class TLVTest extends BitcoinSUnitTest {
 
+  "NormalizedString" must "correctly compare" in {
+    val original =
+      "G�\u0006=ẁ7\u007F8�\u0001 �\u0001z �/�\u001F��\u0001\u0001��\u0001�d\u0012\u0001� �\u007F���\u0001�\u0001��9�\u0001\u007F��\u007F\u0001'��\u0001�\u001B���\u001F"
+    val normalized =
+      "G�\u0006=ẁ7\u007F8�\u0001 �\u0001z �/�\u001F��\u0001\u0001��\u0001�d\u0012\u0001� �\u007F���\u0001�\u0001��9�\u0001\u007F��\u007F\u0001'��\u0001�\u001B���\u001F"
+
+    assert(NormalizedString(original) == NormalizedString(normalized))
+  }
+
   "TLV" must "have serialization symmetry" in {
     forAll(TLVGen.tlv) { tlv =>
       assert(TLV(tlv.bytes) == tlv)
