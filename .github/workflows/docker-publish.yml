@@ -2,7 +2,7 @@
 name: CI to Docker Hub
 on:
   push:
-    branches: [master, main, adaptor-dlc, 2021-02-18-github-docker-workflow]
+    branches: [master, main, adaptor-dlc]
     tags: ["*"]
 jobs:
   build:
@@ -19,5 +19,3 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       - name: Build and push
         run: sbt "oracleServer/docker:publish;appServer/docker:publish"
-      - name: Image digest
-        run: echo ${{ steps.docker_build.outputs.digest }}
