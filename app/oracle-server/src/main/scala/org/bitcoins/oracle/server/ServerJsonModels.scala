@@ -8,15 +8,14 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.AesPassword
 import ujson._
 
-import java.text.SimpleDateFormat
 import java.time.Instant
-import java.util.Date
+import java.time.format.DateTimeFormatter
 import scala.util.control.NonFatal
 import scala.util.{Failure, Try}
 
 case class CreateEvent(
     label: String,
-    maturationTime: Date,
+    maturationTime: Instant,
     outcomes: Vector[String])
 
 object CreateEvent extends ServerJsonModels {
@@ -26,7 +25,7 @@ object CreateEvent extends ServerJsonModels {
       case labelJs :: maturationTimeJs :: outcomesJs :: Nil =>
         Try {
           val label = labelJs.str
-          val maturationTime = jsToDate(maturationTimeJs)
+          val maturationTime = jsISOtoInstant(maturationTimeJs)
           val outcomes = outcomesJs.arr.map(_.str).toVector
 
           CreateEvent(label, maturationTime, outcomes)
@@ -44,7 +43,7 @@ object CreateEvent extends ServerJsonModels {
 
 case class CreateNumericEvent(
     eventName: String,
-    maturationTime: Date,
+    maturationTime: Instant,
     minValue: Long,
     maxValue: Long,
     unit: String,
@@ -57,7 +56,7 @@ object CreateNumericEvent extends ServerJsonModels {
       case labelJs :: maturationTimeJs :: minJs :: maxJs :: unitJs :: precisionJs :: Nil =>
         Try {
           val label = labelJs.str
-          val maturationTime = jsToDate(maturationTimeJs)
+          val maturationTime = jsISOtoInstant(maturationTimeJs)
           val minValue = minJs.num.toLong
           val maxValue = maxJs.num.toLong
           val unit = unitJs.str
@@ -281,19 +280,18 @@ trait ServerJsonModels {
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 
-  def jsToDate(js: Value): Date = {
-    val format = new SimpleDateFormat("yyyyMMdd")
-
+  def jsISOtoInstant(js: Value): Instant = {
     try {
       js match {
-        case Str(value) => format.parse(value)
-        case Num(value) => format.parse("%.0f".format(value))
-        case Null | Obj(_) | Arr(_) | _: Bool =>
+        case Str(str) =>
+          val ta = DateTimeFormatter.ISO_INSTANT.parse(str)
+          Instant.from(ta)
+        case Null | Obj(_) | Arr(_) | _: Bool | _: Num =>
           throw new Exception
       }
     } catch {
       case NonFatal(_) =>
-        throw Value.InvalidData(js, "Expected a date in the format YYYYMMDD")
+        throw Value.InvalidData(js, "Expected a date given in ISO 8601 format")
     }
   }
 

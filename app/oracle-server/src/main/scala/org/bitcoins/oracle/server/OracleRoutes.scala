@@ -50,7 +50,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
         case Success(CreateEvent(label, maturationTime, outcomes)) =>
           complete {
             oracle
-              .createNewEnumEvent(label, maturationTime.toInstant, outcomes)
+              .createNewEnumEvent(label, maturationTime, outcomes)
               .map { announcementTLV =>
                 Server.httpSuccess(announcementTLV.hex)
               }
@@ -76,7 +76,7 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
 
             oracle
               .createNewLargeRangedEvent(eventName,
-                                         maturationTime.toInstant,
+                                         maturationTime,
                                          UInt16(2),
                                          isSigned,
                                          numDigits,
@@ -169,6 +169,8 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
                   "eventName" -> Str(event.eventName),
                   "signingVersion" -> Str(event.signingVersion.toString),
                   "maturationTime" -> Str(event.maturationTime.toString),
+                  "maturationTimeEpoch" -> Num(
+                    event.maturationTime.getEpochSecond.toDouble),
                   "announcementSignature" -> Str(
                     event.announcementSignature.hex),
                   "eventDescriptorTLV" -> Str(event.eventDescriptorTLV.hex),

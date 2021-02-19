@@ -48,7 +48,7 @@ Here we will give examples of each that result in the same event/announcement.
 The `createnumericevent` takes 6 arguments
 
 1. the name for the event (`bitcoin-s-price-example`)
-2. maturation time in the format `YYYYMMDD` (`20210204`)
+2. maturation time in ISO 8601 format (`"2021-02-04T00:00:00Z"`)
 3. minimum value (`0`)
 4. maximum value (`131071`)
 5. units (`BTC/USD`)

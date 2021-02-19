@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
@@ -22,9 +23,8 @@ import scopt._
 
 import java.io.File
 import java.nio.file.Path
-import java.text.SimpleDateFormat
 import java.time.{Instant, ZoneId, ZonedDateTime}
-import java.util.{Date, TimeZone}
+import java.util.Date
 
 /** scopt readers for parsing CLI params and options */
 object CliReaders {
@@ -127,12 +127,7 @@ object CliReaders {
     new Read[Date] {
       override def arity: Int = 1
 
-      override def reads: String => Date =
-        str => {
-          val format = new SimpleDateFormat("yyyyMMdd")
-          format.setTimeZone(TimeZone.getTimeZone("UTC"))
-          format.parse(str)
-        }
+      override def reads: String => Date = TimeUtil.iso8601ToDate
     }
 
   implicit val aesPasswordReads: Read[AesPassword] = new Read[AesPassword] {

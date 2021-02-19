@@ -1069,7 +1069,7 @@ object ConsoleCli {
                 case other => other
               })),
           arg[Date]("maturationtime")
-            .text("The earliest expected time an outcome will be signed, given in the format YYYYMMDD")
+            .text("The earliest expected time an outcome will be signed, given in ISO 8601 format")
             .required()
             .action((date, conf) =>
               conf.copy(command = conf.command match {
@@ -1107,7 +1107,7 @@ object ConsoleCli {
                 case other => other
               })),
           arg[Date]("maturationtime")
-            .text("The earliest expected time an outcome will be signed, given in YYYYMMDD")
+            .text("The earliest expected time an outcome will be signed, given in ISO 8601 format")
             .required()
             .action((date, conf) =>
               conf.copy(command = conf.command match {
