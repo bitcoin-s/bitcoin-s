@@ -325,6 +325,8 @@ case class NormalizedString(private val str: String) extends NetworkElement {
     other match {
       case otherStr: String =>
         normStr == otherStr
+      case otherNorm: NormalizedString =>
+        normStr == otherNorm.normStr
       case _ => other.equals(str)
     }
   }
