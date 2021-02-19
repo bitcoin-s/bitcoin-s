@@ -3,7 +3,7 @@ import com.typesafe.sbt.SbtNativePackager.Docker
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.Paths
-import com.typesafe.sbt.packager.Keys.maintainer
+import com.typesafe.sbt.packager.Keys.{dockerRepository, maintainer}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.dockerBaseImage
 import sbt._
 import sbt.Keys._
@@ -151,6 +151,7 @@ object CommonSettings {
     Vector(
       //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
       dockerBaseImage := "openjdk",
+      dockerRepository := Some("bitcoinscala"),
       packageName in Docker := packageName.value,
       version in Docker := version.value
     )
