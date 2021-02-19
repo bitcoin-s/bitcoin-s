@@ -71,6 +71,7 @@
 </ol>
 <p>The server project provides a away to access information from these three projects via a JSON RPC.</p>
 <h3><a class="anchor" aria-hidden="true" id="building-the-server"></a><a href="#building-the-server" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Building the server</h3>
+<h4><a class="anchor" aria-hidden="true" id="java-binary"></a><a href="#java-binary" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Java binary</h4>
 <p>You can build the server with the <a href="https://github.com/sbt/sbt-native-packager">sbt native packager</a>.
 The native packager offers <a href="https://github.com/sbt/sbt-native-packager#examples">numerous ways to package the project</a>.</p>
 <p>In this example we are going to use <code>stage</code> which will produce bash scripts we can easily execute. You can stage the server with the following command.</p>
@@ -79,6 +80,27 @@ The native packager offers <a href="https://github.com/sbt/sbt-native-packager#e
 <p>This will produce a script to execute bitcoin-s which you can start with</p>
 <pre><code class="hljs css language-bash">./app/server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-server
 </code></pre>
+<h4><a class="anchor" aria-hidden="true" id="docker"></a><a href="#docker" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Docker</h4>
+<p>The oracle server also has docker support. You can build a docker image with the following commands</p>
+<pre><code class="hljs"><span class="hljs-keyword">sbt </span><span class="hljs-string">"appServer/docker:stage"</span>
+</code></pre>
+<p>This will build a <code>Dockerfile</code> that is located in <code>app/server/target/docker/stage</code></p>
+<p>You can now build the docker image with</p>
+<pre><code class="hljs">docker build app/<span class="hljs-keyword">server</span>/target/docker/stage/ -t app-<span class="hljs-keyword">server</span>
+</code></pre>
+<p>Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
+you can interact with the running container with <code>bitcoin-s-cli</code> or <code>curl</code>. By default, our oracle
+server listens for requests on port <code>9999</code>.</p>
+<p>This means we need to forward requests on the host machine to the docker container correctly.</p>
+<p>This can be done with the following command</p>
+<pre><code class="hljs">docker run -d -p <span class="hljs-number">9999</span>:<span class="hljs-number">9999</span> app-server:latest
+</code></pre>
+<p>Now you can send requests with <code>bitcoin-s-cli</code> or <code>curl</code>.
+Here is an example with <code>bitcoin-s-cli</code></p>
+<pre><code class="hljs">./bitcoin-s-cli getblockcount
+<span class="hljs-number">10000</span>
+</code></pre>
+<p>For more information on build configuration options with <code>sbt</code> please see the <a href="https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html#tasks">sbt native packager docs</a></p>
 <h3><a class="anchor" aria-hidden="true" id="configuration"></a><a href="#configuration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Configuration</h3>
 <p>If you would like to pass in a custom datadir for your server, you can do</p>
 <pre><code class="hljs css language-bash">./app/server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-server --datadir /path/to/datadir/
