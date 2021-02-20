@@ -15,6 +15,7 @@ import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class AddressHandlingTest extends BitcoinSWalletTest {
   type FixtureParam = FundedWallet
@@ -107,7 +108,8 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       //we want to make sure everything                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              is done processing before we assert
       //we failed
       val allCompletedF =
-        AsyncUtil.retryUntilSatisfied(generatedF.forall(_.isCompleted))
+        AsyncUtil.retryUntilSatisfied(generatedF.forall(_.isCompleted),
+                                      250.millis)
       val addressesF = allCompletedF.flatMap { _ =>
         Future.sequence {
           generatedF
