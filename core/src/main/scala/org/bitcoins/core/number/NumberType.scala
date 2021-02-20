@@ -80,7 +80,7 @@ sealed abstract class Number[T <: Number[T]]
     }
   }
 
-  override lazy val bytes: ByteVector = BytesUtil.decodeHex(hex)
+  override def bytes: ByteVector = BytesUtil.decodeHex(hex)
 }
 
 /** Represents a signed number in our number system
@@ -106,13 +106,14 @@ sealed abstract class UInt5 extends UnsignedNumber[UInt5] {
 
   def toUInt8: UInt8 = UInt8(toInt)
 
-  override val hex: String = toUInt8.hex
+  override val bytes: ByteVector = toUInt8.bytes
 }
 
 sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   override def apply: A => UInt8 = UInt8(_)
 
-  override val hex: String = BytesUtil.encodeHex(toInt.toShort).slice(2, 4)
+  override val bytes: ByteVector = ByteVector.fromInt(toInt, size = 1)
+  /*  override val hex: String = BytesUtil.encodeHex(toInt.toShort).slice(2, 4)*/
 
   override def andMask = 0xff
 
@@ -127,6 +128,7 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
 sealed abstract class UInt16 extends UnsignedNumber[UInt16] {
   override def apply: A => UInt16 = UInt16(_)
   override def hex: String = BytesUtil.encodeHex(toInt.toShort)
+  /*override val bytes: ByteVector = ByteVector.fromInt(toInt, size = 2)*/
 
   override def andMask = 0xffffL
 }
@@ -135,15 +137,25 @@ sealed abstract class UInt16 extends UnsignedNumber[UInt16] {
   */
 sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   override def apply: A => UInt32 = UInt32(_)
-  override def hex: String = BytesUtil.encodeHex(toLong).slice(8, 16)
-
+  /*  override def hex: String = BytesUtil.encodeHex(toLong).slice(8, 16)*/
+  override val bytes: ByteVector = ByteVector.fromLong(toLong, 4)
   override def andMask = 0xffffffffL
 }
 
 /** Represents a uint64_t in C
   */
 sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
-  override val hex: String = encodeHex(underlying)
+
+  override val bytes = {
+    if (underlying.isValidLong) {
+      //optimization, if our number fits into a long
+      //we can get much better performance from ByteVector
+      ByteVector.fromLong(underlying.toLong, 8)
+    } else {
+      //else just do what we were doing before
+      ByteVector.fromValidHex(encodeHex(bigInt = underlying))
+    }
+  }
   override def apply: A => UInt64 = UInt64(_)
   override def andMask = 0xffffffffffffffffL
 
