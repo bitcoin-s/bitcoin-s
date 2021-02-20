@@ -88,7 +88,7 @@ class BloomFilterTest extends BitcoinSUnitTest {
     // for 2 keys
     val numElements = 4
     val bloom = BloomFilter(numElements = numElements,
-                            falsePositiveRate = 0.001,
+                            falsePositiveRate = 0.000001,
                             tweak = UInt32(100),
                             BloomUpdateNone)
 
