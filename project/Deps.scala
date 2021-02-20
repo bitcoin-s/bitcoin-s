@@ -201,7 +201,7 @@ object Deps {
     val spray =
       "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
 
-    val akkaHttp =
+    val akkaHttpTestkit =
       "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
 
     val akkaStream =
@@ -282,7 +282,7 @@ object Deps {
 
   def bitcoindRpcTest(scalaVersion: String) =
     List(
-      Test.akkaHttp,
+      Test.akkaHttpTestkit,
       Test.akkaStream,
       Test.logback,
       Test.scalaTest,
@@ -349,7 +349,7 @@ object Deps {
   )
 
   val eclairRpcTest = List(
-    Test.akkaHttp,
+    Test.akkaHttpTestkit,
     Test.akkaStream,
     Test.logback,
     Test.scalaTest,
@@ -419,7 +419,7 @@ object Deps {
 
   val walletServerTest = List(
     Test.scalaMock,
-    Test.akkaHttp,
+    Test.akkaHttpTestkit,
     Test.akkaStream,
     Test.akkaTestkit
   )
