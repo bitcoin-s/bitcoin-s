@@ -406,7 +406,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       val stopF = s.stop()
       stopF.onComplete {
         case Failure(exception) =>
-          logger.error(s"Could not shut down sever: $exception")
+          logger.error(s"Could not shut down bitcoind server: $exception")
         case Success(_) =>
       }
       for {
