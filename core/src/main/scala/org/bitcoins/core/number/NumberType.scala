@@ -183,7 +183,8 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
 sealed abstract class Int32 extends SignedNumber[Int32] {
   override def apply: A => Int32 = Int32(_)
   override def andMask = 0xffffffff
-  override val hex: String = BytesUtil.encodeHex(toInt)
+  /*override val hex: String = BytesUtil.encodeHex(toInt)*/
+  override val bytes: ByteVector = ByteVector.fromInt(i = toInt, size = 4)
 }
 
 /** Represents a int64_t in C
@@ -191,7 +192,8 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
   override def andMask = 0xffffffffffffffffL
-  override val hex: String = BytesUtil.encodeHex(toLong)
+  /*override val hex: String = BytesUtil.encodeHex(toLong)*/
+  override val bytes: ByteVector = ByteVector.fromLong(l = toLong, size = 8)
 }
 
 /** Represents number types that are bounded by minimum and maximum values
