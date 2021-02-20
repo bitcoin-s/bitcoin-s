@@ -2,10 +2,9 @@ package org.bitcoins.rpc.client.common
 
 import java.nio.file.{Files, Path}
 import java.util.UUID
-
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.model._
 import akka.stream.StreamTcpException
 import akka.util.ByteString
@@ -302,8 +301,11 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
         HttpCredentials.createBasicHttpCredentials(username, password))
   }
 
+  /** Cached http client to send requests to bitcoind with */
+  private lazy val httpClient: HttpExt = Http(system)
+
   protected def sendRequest(req: HttpRequest): Future[HttpResponse] = {
-    Http(system).singleRequest(req)
+    httpClient.singleRequest(req)
   }
 
   /** Parses the payload of the given response into JSON.
