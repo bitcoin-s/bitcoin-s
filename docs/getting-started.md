@@ -19,35 +19,12 @@ have feedback on how to make your lives easier, please reach out on [slack](http
 
 Then go to [this document](getting-setup.md).
 
-## REPL
-
-You can try out Bitcoin-S in a REPL in a matter of seconds. Run the provided
-["try bitcoin-s"](https://github.com/bitcoin-s/bitcoin-s-core/blob/master/try-bitcoin-s.sh)
-script, which has no dependencies other than an installed *Java 8*. The script
-downloads and installs [Coursier](https://get-coursier.io/) and uses it to
-fetch the [Ammonite](https://ammonite.io) REPL and the latest version of
-Bitcoin-S. It then drops you into immediately into a REPL session.
-
-```bash
-$ curl -s https://raw.githubusercontent.com/bitcoin-s/bitcoin-s/master/try-bitcoin-s.sh | bash
-Loading...
-Welcome the Bitcoin-S REPL, powered by Ammonite
-Check out our documentation and examples at
-https://bitcoin-s.org/docs/getting-started
-@ val priv = ECPrivateKey()
-@ val pub = priv.publicKey
-@ val spk = P2WPKHWitnessSPKV0(pub)
-@ val address = Bech32Address(spk, MainNet)
-@ address.value # Tada! You've just made a Bech32 address
-res4: String = "bc1q7ynsz7tamtnvlmts4snrl7e98jc9d8gqwsjsr5"
-```
-
-## Getting prebuilt JARs
+## Getting prebuilt artifacts
 
 If you want to add Bitcoin-S to your project, follow the
 instructions for your build tool
 
-### sbt
+### Jars
 
 Add this to your `build.sbt`:
 
@@ -102,9 +79,15 @@ The repo for snapshots, which are published after everytime something is merged 
 
 https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
-### Mill
+### Docker
 
-TODO
+We publish docker images to docker hub on every PR merge and tag on github.
+You can obtain the images for both the app server and oracle server on these
+docker hub repos
+
+[bitcoin-s docker hub repo](https://hub.docker.com/r/bitcoinscala/bitcoin-s-server/tags?page=1&ordering=last_updated)
+
+[oracle-server docker hub repo](https://hub.docker.com/r/bitcoinscala/bitcoin-s-oracle-server/tags?page=1&ordering=last_updated)
 
 ## Building JARs yourself
 

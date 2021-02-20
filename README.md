@@ -9,7 +9,7 @@ For a complete guide on how to get started with Bitcoin-S, see our website at
 
 ### Getting started
 
-https://bitcoin-s.org/docs/getting-setup
+https://bitcoin-s.org/docs/getting-started
 
 ### Adding bitcoin-s to your library
 
@@ -45,3 +45,13 @@ libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit" % "0.5.0"
 libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "0.5.0"
 
 ```
+
+#### Docker images
+
+We publish docker images to docker hub on every PR merge and tag on github.
+You can obtain the images for both the app server and oracle server on these
+docker hub repos
+
+[bitcoin-s docker hub repo](https://hub.docker.com/r/bitcoinscala/bitcoin-s-server/tags?page=1&ordering=last_updated)
+
+[oracle-server docker hub repo](https://hub.docker.com/r/bitcoinscala/bitcoin-s-oracle-server/tags?page=1&ordering=last_updated)

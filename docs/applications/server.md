@@ -4,7 +4,7 @@ title: Application Server
 ---
 
 
-### App server
+## App server
 
 The server project is the aggregation of these three sub projects
 
@@ -14,9 +14,9 @@ The server project is the aggregation of these three sub projects
 
 The server project provides a away to access information from these three projects via a JSON RPC.
 
-### Building the server
+## Building the server
 
-#### Java binary
+### Java binary
 You can build the server with the [sbt native packager](https://github.com/sbt/sbt-native-packager).
 The native packager offers [numerous ways to package the project](https://github.com/sbt/sbt-native-packager#examples).
 
@@ -32,10 +32,17 @@ This will produce a script to execute bitcoin-s which you can start with
 ./app/server/target/universal/stage/bin/bitcoin-s-server
 ```
 
-#### Docker
+### Docker
 
 The oracle server also has docker support. You can build a docker image with the following commands
 
+#### Using an existing docker image
+
+We publish docker images on every PR that is merged to bitcoin-s.
+
+You can find the docker repo for the app server [here](https://hub.docker.com/r/bitcoinscala/bitcoin-s-server/tags?page=1&ordering=last_updated)
+
+#### Building a docker image
 ```
 sbt "appServer/docker:stage"
 ```
@@ -68,7 +75,7 @@ Here is an example with `bitcoin-s-cli`
 
 For more information on build configuration options with `sbt` please see the [sbt native packager docs](https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html#tasks)
 
-### Configuration
+## Configuration
 
 If you would like to pass in a custom datadir for your server, you can do
 

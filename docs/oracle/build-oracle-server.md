@@ -66,7 +66,14 @@ sbt oracleServer/run
 
 ### Docker
 
-The oracle server also has docker support. You can build a docker image with the following commands
+#### Using an existing docker image
+
+We publish docker images on every PR that is merged to bitcoin-s.
+
+You can find the docker repo for the oracle server [here](https://hub.docker.com/r/bitcoinscala/bitcoin-s-oracle-server/tags?page=1&ordering=last_updated)
+
+#### Building our own docker image
+You can build a docker image with the following commands
 
 ```
 sbt "oracleServer/docker:stage"
@@ -101,7 +108,6 @@ c9c9fe2772330b0d61a2efbfacabf5cab1137710a69f0e12f1eb3dbb74f7ea54
 ```
 
 For more information on build configuration options with `sbt` please see the [sbt native packager docs](https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html#tasks)
-
 
 ## Step 4: Configuration
 
