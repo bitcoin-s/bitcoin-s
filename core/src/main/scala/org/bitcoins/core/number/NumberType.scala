@@ -79,8 +79,6 @@ sealed abstract class Number[T <: Number[T]]
       Success(())
     }
   }
-
-  override lazy val bytes: ByteVector = BytesUtil.decodeHex(hex)
 }
 
 /** Represents a signed number in our number system
@@ -100,21 +98,21 @@ sealed abstract class UnsignedNumber[T <: Number[T]] extends Number[T]
 sealed abstract class UInt5 extends UnsignedNumber[UInt5] {
   override def apply: A => UInt5 = UInt5(_)
 
-  override def andMask: BigInt = 0x1f
+  override val andMask: BigInt = 0x1f
 
   def byte: Byte = toInt.toByte
 
   def toUInt8: UInt8 = UInt8(toInt)
 
-  override val hex: String = toUInt8.hex
+  override val bytes: ByteVector = toUInt8.bytes
 }
 
 sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   override def apply: A => UInt8 = UInt8(_)
 
-  override val hex: String = BytesUtil.encodeHex(toInt.toShort).slice(2, 4)
+  override val bytes: ByteVector = ByteVector.fromInt(toInt, size = 1)
 
-  override def andMask = 0xff
+  override val andMask = 0xff
 
   def toUInt5: UInt5 = {
     //this will throw if not in range of a UInt5, come back and look later
@@ -126,26 +124,35 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   */
 sealed abstract class UInt16 extends UnsignedNumber[UInt16] {
   override def apply: A => UInt16 = UInt16(_)
-  override def hex: String = BytesUtil.encodeHex(toInt.toShort)
+  override val bytes: ByteVector = ByteVector.fromInt(toInt, size = 2)
 
-  override def andMask = 0xffffL
+  override val andMask = 0xffffL
 }
 
 /** Represents a uint32_t in C
   */
 sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   override def apply: A => UInt32 = UInt32(_)
-  override def hex: String = BytesUtil.encodeHex(toLong).slice(8, 16)
-
-  override def andMask = 0xffffffffL
+  override val bytes: ByteVector = ByteVector.fromLong(toLong, 4)
+  override val andMask = 0xffffffffL
 }
 
 /** Represents a uint64_t in C
   */
 sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
-  override val hex: String = encodeHex(underlying)
+
+  override val bytes: ByteVector = {
+    if (underlying.isValidLong) {
+      //optimization, if our number fits into a long
+      //we can get much better performance from ByteVector
+      ByteVector.fromLong(underlying.toLong, 8)
+    } else {
+      //else just do what we were doing before
+      ByteVector.fromValidHex(encodeHex(bigInt = underlying))
+    }
+  }
   override def apply: A => UInt64 = UInt64(_)
-  override def andMask = 0xffffffffffffffffL
+  override val andMask = 0xffffffffffffffffL
 
   /** Converts a [[BigInt]] to a 8 byte hex representation.
     * [[BigInt]] will only allocate 1 byte for numbers like 1 which require 1 byte, giving us the hex representation 01
@@ -170,16 +177,16 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
   */
 sealed abstract class Int32 extends SignedNumber[Int32] {
   override def apply: A => Int32 = Int32(_)
-  override def andMask = 0xffffffff
-  override val hex: String = BytesUtil.encodeHex(toInt)
+  override val andMask = 0xffffffff
+  override val bytes: ByteVector = ByteVector.fromInt(i = toInt, size = 4)
 }
 
 /** Represents a int64_t in C
   */
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
-  override def andMask = 0xffffffffffffffffL
-  override val hex: String = BytesUtil.encodeHex(toLong)
+  override val andMask = 0xffffffffffffffffL
+  override val bytes: ByteVector = ByteVector.fromLong(l = toLong, size = 8)
 }
 
 /** Represents number types that are bounded by minimum and maximum values
