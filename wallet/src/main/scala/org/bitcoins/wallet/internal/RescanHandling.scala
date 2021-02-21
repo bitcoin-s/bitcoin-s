@@ -216,7 +216,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
         startOpt = startOpt,
         endOpt = endOpt)(ExecutionContext.fromExecutor(threadPool))
     } yield {
-      threadPool.shutdown()
       blocks.sortBy(_.blockHeight).map(_.blockHash.flip)
     }
 
@@ -260,8 +259,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
   private def fetchFiltersInRange(
       scripts: Vector[ScriptPubKey],
-      parallelismLevel: Int)(
-      heightRange: Vector[Int]): Future[Vector[BlockMatchingResponse]] = {
+      parallelismLevel: Int)(heightRange: Vector[Int])(implicit
+      ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
     val startHeight = heightRange.head
     val endHeight = heightRange.last
     for {
@@ -280,7 +279,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
   private[wallet] def findMatches(
       filters: Vector[FilterResponse],
       scripts: Vector[ScriptPubKey],
-      parallelismLevel: Int): Future[Vector[BlockMatchingResponse]] = {
+      parallelismLevel: Int)(implicit
+      ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
     if (filters.isEmpty) {
       logger.info("No Filters to check against")
       Future.successful(Vector.empty)
