@@ -8,7 +8,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
@@ -43,7 +43,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
   override def processBlock(block: Block): Future[Wallet] = {
     logger.info(s"Processing block=${block.blockHeader.hash.flip}")
-
+    val start = TimeUtil.currentEpochMs
     val resF = for {
       newWallet <- block.transactions.foldLeft(Future.successful(this)) {
         (acc, transaction) =>
@@ -67,9 +67,12 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
     f.onComplete(failure =>
       signalBlockProcessingCompletion(block.blockHeader.hash, failure))
-    f.foreach(_ =>
+
+    f.foreach { _ =>
+      val stop = TimeUtil.currentEpochMs
       logger.info(
-        s"Finished processing of block=${block.blockHeader.hash.flip}."))
+        s"Finished processing of block=${block.blockHeader.hash.flip}. It took ${stop - start}ms")
+    }
     f.failed.foreach(e =>
       logger.error(s"Error processing of block=${block.blockHeader.hash.flip}.",
                    e))
