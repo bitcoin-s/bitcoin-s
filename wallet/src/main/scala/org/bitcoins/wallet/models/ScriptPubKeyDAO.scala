@@ -41,6 +41,19 @@ case class ScriptPubKeyDAO()(implicit
     safeDatabase.run(actions.transactionally)
   }
 
+  /** Finds a scriptPubKey in the database, if it exists */
+  def findScriptPubKey(spk: ScriptPubKey): Future[Option[ScriptPubKeyDb]] = {
+    val foundVecF = findScriptPubKeys(Vector(spk))
+    foundVecF.map(_.headOption)
+  }
+
+  /** Searches for the given set of spks and returns the ones that exist in the db */
+  def findScriptPubKeys(
+      spks: Vector[ScriptPubKey]): Future[Vector[ScriptPubKeyDb]] = {
+    val query = table.filter(_.scriptPubKey.inSet(spks))
+    safeDatabase.runVec(query.result)
+  }
+
   case class ScriptPubKeyTable(tag: Tag)
       extends TableAutoInc[ScriptPubKeyDb](tag, schemaName, "pub_key_scripts") {
 

@@ -414,7 +414,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
   private def getRelevantOutputs(
       transaction: Transaction): Future[Seq[OutputWithIndex]] = {
-    scriptPubKeyDAO.findAll().map { addrs =>
+    val spks = transaction.outputs.map(_.scriptPubKey)
+    scriptPubKeyDAO.findScriptPubKeys(spks.toVector).map { addrs =>
       val withIndex =
         transaction.outputs.zipWithIndex
       withIndex.collect {
@@ -452,17 +453,16 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           s"Found $count relevant output(s) in transaction=${transaction.txIdBE.hex}: $outputStr")
 
         val totalIncoming = outputsWithIndex.map(_.output.value).sum
-
+        val spks = outputsWithIndex.map(_.output.scriptPubKey)
+        val spksInDbF = addressDAO.findByScriptPubKeys(spks.toVector)
         for {
           (txDb, _) <- insertIncomingTransaction(transaction, totalIncoming)
-
-          addrs <- addressDAO.findAllAddresses()
+          spksInDb <- spksInDbF
           ourOutputs = outputsWithIndex.collect {
             case OutputWithIndex(out, idx)
-                if addrs.map(_.scriptPubKey).contains(out.scriptPubKey) =>
+                if spksInDb.map(_.scriptPubKey).contains(out.scriptPubKey) =>
               OutputWithIndex(out, idx)
           }
-
           prevTagDbs <-
             addressTagDAO.findTx(txDb.transaction, networkParameters)
           prevTags = prevTagDbs.map(_.addressTag)
