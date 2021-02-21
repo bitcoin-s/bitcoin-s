@@ -83,4 +83,16 @@ class ScriptPubKeyDAOTest extends WalletDAOFixture {
     }
   }
 
+  it must "find a scriptPubKey" in { daos =>
+    val scriptPubKeyDAO = daos.scriptPubKeyDAO
+    val pkh = P2PKHScriptPubKey(ECPublicKey.freshPublicKey)
+    val notInDb = P2PKHScriptPubKey(ECPublicKey.freshPublicKey)
+    for {
+      _ <- scriptPubKeyDAO.createIfNotExists(ScriptPubKeyDb(pkh))
+      found <- scriptPubKeyDAO.findScriptPubKeys(Vector(pkh, notInDb))
+    } yield {
+      assert(found.length == 1)
+      assert(found.head.scriptPubKey == pkh)
+    }
+  }
 }

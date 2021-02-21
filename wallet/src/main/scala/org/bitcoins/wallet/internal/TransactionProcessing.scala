@@ -8,7 +8,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
@@ -43,7 +43,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
   override def processBlock(block: Block): Future[Wallet] = {
     logger.info(s"Processing block=${block.blockHeader.hash.flip}")
-
+    val start = TimeUtil.currentEpochMs
     val resF = for {
       newWallet <- block.transactions.foldLeft(Future.successful(this)) {
         (acc, transaction) =>
@@ -67,9 +67,12 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
     f.onComplete(failure =>
       signalBlockProcessingCompletion(block.blockHeader.hash, failure))
-    f.foreach(_ =>
+
+    f.foreach { _ =>
+      val stop = TimeUtil.currentEpochMs
       logger.info(
-        s"Finished processing of block=${block.blockHeader.hash.flip}."))
+        s"Finished processing of block=${block.blockHeader.hash.flip}. It took ${stop - start}ms")
+    }
     f.failed.foreach(e =>
       logger.error(s"Error processing of block=${block.blockHeader.hash.flip}.",
                    e))
@@ -414,7 +417,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
   private def getRelevantOutputs(
       transaction: Transaction): Future[Seq[OutputWithIndex]] = {
-    scriptPubKeyDAO.findAll().map { addrs =>
+    val spks = transaction.outputs.map(_.scriptPubKey)
+    scriptPubKeyDAO.findScriptPubKeys(spks.toVector).map { addrs =>
       val withIndex =
         transaction.outputs.zipWithIndex
       withIndex.collect {
@@ -452,17 +456,16 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           s"Found $count relevant output(s) in transaction=${transaction.txIdBE.hex}: $outputStr")
 
         val totalIncoming = outputsWithIndex.map(_.output.value).sum
-
+        val spks = outputsWithIndex.map(_.output.scriptPubKey)
+        val spksInDbF = addressDAO.findByScriptPubKeys(spks.toVector)
         for {
           (txDb, _) <- insertIncomingTransaction(transaction, totalIncoming)
-
-          addrs <- addressDAO.findAllAddresses()
+          spksInDb <- spksInDbF
           ourOutputs = outputsWithIndex.collect {
             case OutputWithIndex(out, idx)
-                if addrs.map(_.scriptPubKey).contains(out.scriptPubKey) =>
+                if spksInDb.map(_.scriptPubKey).contains(out.scriptPubKey) =>
               OutputWithIndex(out, idx)
           }
-
           prevTagDbs <-
             addressTagDAO.findTx(txDb.transaction, networkParameters)
           prevTags = prevTagDbs.map(_.addressTag)
