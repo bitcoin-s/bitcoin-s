@@ -3,9 +3,9 @@ package org.bitcoins.oracle.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.dlc.oracle._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
@@ -13,7 +13,7 @@ import ujson._
 
 import scala.util.{Failure, Success}
 
-case class OracleRoutes(oracle: DLCOracle)(implicit
+case class OracleRoutes(oracle: DLCOracleApi)(implicit
     system: ActorSystem,
     conf: DLCOracleAppConfig)
     extends ServerRoute {
@@ -22,12 +22,12 @@ case class OracleRoutes(oracle: DLCOracle)(implicit
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
     case ServerCommand("getpublickey", _) =>
       complete {
-        Server.httpSuccess(oracle.publicKey.hex)
+        Server.httpSuccess(oracle.publicKey().hex)
       }
 
     case ServerCommand("getstakingaddress", _) =>
       complete {
-        val network = oracle.conf.network
+        val network = conf.network
         val address = oracle.stakingAddress(network)
 
         Server.httpSuccess(address.toString)

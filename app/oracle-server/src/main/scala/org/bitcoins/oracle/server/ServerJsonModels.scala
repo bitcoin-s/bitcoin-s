@@ -5,11 +5,11 @@ import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.AesPassword
 import ujson._
 
 import java.time.Instant
-import java.time.format.DateTimeFormatter
 import scala.util.control.NonFatal
 import scala.util.{Failure, Try}
 
@@ -70,13 +70,12 @@ object CreateNumericEvent extends ServerJsonModels {
                              precision)
         }
       case Nil =>
-        Failure(
-          new IllegalArgumentException(
-            "Missing label, maturationTime, maxValue, and isSigned arguments"))
+        Failure(new IllegalArgumentException(
+          "Missing label, maturationTime, minValue, maxValue, units, and precision arguments"))
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 4"))
+            s"Bad number of arguments: ${other.length}. Expected: 6"))
     }
   }
 }
@@ -115,11 +114,11 @@ object CreateDigitDecompEvent extends ServerJsonModels {
         }
       case Nil =>
         Failure(new IllegalArgumentException(
-          "Missing label, maturationTime, base, isSigned, and numDigits arguments"))
+          "Missing label, maturationTime, base, isSigned, numDigits, units, and precision arguments"))
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 5"))
+            s"Bad number of arguments: ${other.length}. Expected: 7"))
     }
   }
 }
@@ -284,8 +283,8 @@ trait ServerJsonModels {
     try {
       js match {
         case Str(str) =>
-          val ta = DateTimeFormatter.ISO_INSTANT.parse(str)
-          Instant.from(ta)
+          val date = TimeUtil.iso8601ToDate(str)
+          date.toInstant
         case Null | Obj(_) | Arr(_) | _: Bool | _: Num =>
           throw new Exception
       }

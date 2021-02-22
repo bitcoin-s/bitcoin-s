@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.oracle.config
 
 import com.typesafe.config.Config
+import org.bitcoins.core.api.dlcoracle.db.EventOutcomeDbHelper
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.hd.HDPurpose
@@ -148,7 +149,7 @@ case class DLCOracleAppConfig(
                                           SegWitMainNetPriv,
                                           aesPasswordOpt,
                                           bip39PasswordOpt)
-    val oracle = DLCOracle(key)(this)
+    val oracle = new DLCOracle(key)(this)
 
     start().map(_ => oracle)
   }

@@ -1,8 +1,10 @@
 package org.bitcoins.core.util
 
+import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.format.DateTimeFormatter
-import java.util.Date
+import java.util.{Date, TimeZone}
+import scala.util.{Failure, Success, Try}
 
 object TimeUtil {
 
@@ -17,9 +19,20 @@ object TimeUtil {
   }
 
   def iso8601ToDate(str: String): Date = {
-    val ta = DateTimeFormatter.ISO_INSTANT.parse(str)
-    val instant = Instant.from(ta)
-    Date.from(instant)
+    val isoT = Try {
+      val ta = DateTimeFormatter.ISO_INSTANT.parse(str)
+      val instant = Instant.from(ta)
+      Date.from(instant)
+    }
+
+    isoT match {
+      case Success(date) => date
+      case Failure(_)    =>
+        // handle no time & timezone
+        val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"))
+        dateFormat.parse(str)
+    }
   }
 
   def iso8601ToString(date: Date): String = {

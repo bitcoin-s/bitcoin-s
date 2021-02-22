@@ -81,6 +81,7 @@ lazy val `bitcoin-s` = project
     testkit,
     zmq,
     oracleServer,
+    oracleServerTest,
     serverRoutes
   )
   .dependsOn(
@@ -119,6 +120,7 @@ lazy val `bitcoin-s` = project
     testkit,
     zmq,
     oracleServer,
+    oracleServerTest,
     serverRoutes
   )
   .settings(CommonSettings.settings: _*)
@@ -286,6 +288,15 @@ lazy val oracleServer = project
     serverRoutes
   )
   .enablePlugins(JavaAppPackaging, DockerPlugin)
+
+lazy val oracleServerTest = project
+  .in(file("app/oracle-server-test"))
+  .settings(CommonSettings.testSettings)
+  .settings(libraryDependencies ++= Deps.walletServerTest)
+  .dependsOn(
+    oracleServer,
+    testkit
+  )
 
 lazy val serverRoutes = project
   .in(file("app/server-routes"))

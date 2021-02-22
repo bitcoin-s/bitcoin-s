@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.oracle.storage
 
+import org.bitcoins.core.api.dlcoracle.db.{EventDb, EventOutcomeDb}
 import org.bitcoins.crypto.SchnorrNonce
 import org.bitcoins.db.{CRUD, DbCommonsColumnMappers, SlickUtil}
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig

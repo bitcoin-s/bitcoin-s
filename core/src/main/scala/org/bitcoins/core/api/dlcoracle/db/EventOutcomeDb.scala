@@ -1,4 +1,4 @@
-package org.bitcoins.dlc.oracle.storage
+package org.bitcoins.core.api.dlcoracle.db
 
 import org.bitcoins.core.protocol.tlv.EnumEventDescriptorV0TLV
 import org.bitcoins.crypto.SchnorrNonce

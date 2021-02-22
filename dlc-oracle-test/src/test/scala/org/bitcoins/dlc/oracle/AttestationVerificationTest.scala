@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.oracle
 
+import org.bitcoins.core.api.dlcoracle.OracleEvent
 import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv.{
   OracleAnnouncementV0TLV,
