@@ -22,4 +22,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: Compile website
-        run: sbt ++2.13.4 docs/mdoc
+        run: sbt ++2.13.5 docs/mdoc
