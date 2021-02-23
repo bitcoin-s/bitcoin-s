@@ -1,7 +1,5 @@
 package org.bitcoins.core.protocol.tlv
 
-import java.nio.charset.StandardCharsets
-import java.time.Instant
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.dlc.SigningVersion
@@ -17,6 +15,9 @@ import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
+
+import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 sealed trait TLV extends NetworkElement with TLVUtil {
   def tpe: BigSizeUInt
@@ -921,6 +922,18 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
     }
 
     OracleAttestmentV0TLV(eventId, pubKey, sigs, outcomes)
+  }
+
+  lazy val dummy: OracleAttestmentV0TLV = {
+    val eventId = NormalizedString("dummy")
+    val key = ECPrivateKey.freshPrivateKey
+    val outcome = NormalizedString("outcome")
+    val sig = key.schnorrSign(CryptoUtil.sha256DLCAttestation(outcome).bytes)
+
+    OracleAttestmentV0TLV(eventId,
+                          key.schnorrPublicKey,
+                          Vector(sig),
+                          Vector(outcome))
   }
 }
 

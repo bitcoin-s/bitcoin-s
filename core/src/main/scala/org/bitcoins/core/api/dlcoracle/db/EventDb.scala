@@ -1,11 +1,16 @@
-package org.bitcoins.dlc.oracle.storage
+package org.bitcoins.core.api.dlcoracle.db
 
+import org.bitcoins.core.api.dlcoracle.OracleEvent
 import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
+import org.bitcoins.crypto.{
+  FieldElement,
+  SchnorrDigitalSignature,
+  SchnorrNonce,
+  SchnorrPublicKey
+}
 
 import java.time.Instant
-import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.crypto._
-import org.bitcoins.dlc.oracle.OracleEvent
 
 /** These represent individual events at the nonce level
   * You can aggregate 1 to n EventDbs into an [[OracleEvent]] to get all of the information

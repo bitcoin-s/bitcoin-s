@@ -1,5 +1,7 @@
 package org.bitcoins.dlc.oracle
 
+import org.bitcoins.core.api.dlcoracle._
+import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.crypto.{ExtPrivateKeyHardened, MnemonicCode}
@@ -19,9 +21,10 @@ import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
-case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
+class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
     val conf: DLCOracleAppConfig)
-    extends BitcoinSLogger {
+    extends DLCOracleApi
+    with BitcoinSLogger {
 
   implicit val ec: ExecutionContext = conf.ec
 
@@ -48,9 +51,9 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     extPrivateKey.deriveChildPrivKey(path).key
   }
 
-  val publicKey: SchnorrPublicKey = signingKey.schnorrPublicKey
+  override val publicKey: SchnorrPublicKey = signingKey.schnorrPublicKey
 
-  def stakingAddress(network: BitcoinNetwork): Bech32Address =
+  override def stakingAddress(network: BitcoinNetwork): Bech32Address =
     Bech32Address(P2WPKHWitnessSPKV0(publicKey.publicKey), network)
 
   protected[bitcoins] val rValueDAO: RValueDAO = RValueDAO()
@@ -84,18 +87,20 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     priv.add(tweak)
   }
 
-  def listEventDbs(): Future[Vector[EventDb]] = eventDAO.findAll()
+  override def listEventDbs(): Future[Vector[EventDb]] = eventDAO.findAll()
 
-  def listPendingEventDbs(): Future[Vector[EventDb]] = eventDAO.getPendingEvents
+  override def listPendingEventDbs(): Future[Vector[EventDb]] =
+    eventDAO.getPendingEvents
 
-  def listEvents(): Future[Vector[OracleEvent]] = {
+  override def listEvents(): Future[Vector[OracleEvent]] = {
     eventDAO.findAll().map { eventDbs =>
       val events = eventDbs.groupBy(_.announcementSignature)
       events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
     }
   }
 
-  def findEvent(oracleEventTLV: OracleEventTLV): Future[Option[OracleEvent]] = {
+  override def findEvent(
+      oracleEventTLV: OracleEventTLV): Future[Option[OracleEvent]] = {
     eventDAO.findByOracleEventTLV(oracleEventTLV).map { dbs =>
       if (dbs.isEmpty) {
         None
@@ -103,7 +108,15 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     }
   }
 
-  def createNewLargeRangedEvent(
+  override def findEvent(eventName: String): Future[Option[OracleEvent]] = {
+    eventDAO.findByEventName(eventName).map { dbs =>
+      if (dbs.isEmpty) {
+        None
+      } else Some(OracleEvent.fromEventDbs(dbs))
+    }
+  }
+
+  override def createNewDigitDecompEvent(
       eventName: String,
       maturationTime: Instant,
       base: UInt16,
@@ -124,7 +137,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     createNewEvent(eventName, maturationTime, descriptorTLV)
   }
 
-  def createNewRangedEvent(
+  override def createNewRangedEvent(
       eventName: String,
       maturationTime: Instant,
       start: Int,
@@ -140,7 +153,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
                          unit,
                          Int32(precision))
 
-  def createNewRangedEvent(
+  override def createNewRangedEvent(
       eventName: String,
       maturationTime: Instant,
       start: Int32,
@@ -159,7 +172,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     createNewEvent(eventName, maturationTime, descriptorTLV)
   }
 
-  def createNewEnumEvent(
+  override def createNewEnumEvent(
       eventName: String,
       maturationTime: Instant,
       outcomes: Vector[String]): Future[OracleAnnouncementTLV] = {
@@ -172,7 +185,7 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     createNewEvent(eventName, maturationTime, descriptorTLV)
   }
 
-  def createNewEvent(
+  override def createNewEvent(
       eventName: String,
       maturationTime: Instant,
       descriptor: EventDescriptorTLV,
@@ -182,6 +195,9 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
             s"Event cannot mature in the past, got $maturationTime")
 
     for {
+      dbs <- eventDAO.findByEventName(eventName)
+      _ = require(dbs.isEmpty, s"Event name ($eventName) is already being used")
+
       indexOpt <- rValueDAO.maxKeyIndex
       firstIndex = indexOpt match {
         case Some(value) => value + 1
@@ -234,9 +250,21 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     }
   }
 
-  def signEvent(
+  override def signEnumEvent(
+      eventName: String,
+      outcome: EnumAttestation): Future[EventDb] = {
+    for {
+      eventDbs <- eventDAO.findByEventName(eventName)
+      _ = require(eventDbs.size == 1,
+                  "Use signLargeRange for signing multi nonce outcomes")
+
+      sign <- signEvent(eventDbs.head.nonce, outcome)
+    } yield sign
+  }
+
+  override def signEnumEvent(
       oracleEventTLV: OracleEventTLV,
-      outcome: DLCAttestationType): Future[EventDb] = {
+      outcome: EnumAttestation): Future[EventDb] = {
     for {
       eventDbs <- eventDAO.findByOracleEventTLV(oracleEventTLV)
       _ = require(eventDbs.size == 1,
@@ -246,7 +274,10 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     } yield sign
   }
 
-  def signEvent(
+  /** Signs the event for the single nonce
+    * This will be called multiple times by signDigits for each nonce
+    */
+  override def signEvent(
       nonce: SchnorrNonce,
       outcome: DLCAttestationType): Future[EventDb] = {
     for {
@@ -297,7 +328,16 @@ case class DLCOracle(private val extPrivateKey: ExtPrivateKeyHardened)(implicit
     } yield updated
   }
 
-  def signDigits(
+  override def signDigits(eventName: String, num: Long): Future[OracleEvent] = {
+    for {
+      eventOpt <- findEvent(eventName)
+      _ = require(eventOpt.isDefined,
+                  s"No event found by event name $eventName")
+      res <- signDigits(eventOpt.get.announcementTLV.eventTLV, num)
+    } yield res
+  }
+
+  override def signDigits(
       oracleEventTLV: OracleEventTLV,
       num: Long): Future[OracleEvent] = {
 
@@ -384,6 +424,6 @@ object DLCOracle {
                                           SegWitMainNetPriv,
                                           passwordOpt,
                                           bip39PasswordOpt)
-    DLCOracle(key)
+    new DLCOracle(key)
   }
 }

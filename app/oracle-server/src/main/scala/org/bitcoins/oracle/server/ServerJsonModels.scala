@@ -3,13 +3,14 @@ package org.bitcoins.oracle.server
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.AesPassword
 import ujson._
 
 import java.time.Instant
+import scala.util.control.NonFatal
 import scala.util.{Failure, Try}
 
 case class CreateEvent(
@@ -24,8 +25,7 @@ object CreateEvent extends ServerJsonModels {
       case labelJs :: maturationTimeJs :: outcomesJs :: Nil =>
         Try {
           val label = labelJs.str
-          val maturationTime: Instant =
-            Instant.ofEpochSecond(maturationTimeJs.num.toLong)
+          val maturationTime = jsISOtoInstant(maturationTimeJs)
           val outcomes = outcomesJs.arr.map(_.str).toVector
 
           CreateEvent(label, maturationTime, outcomes)
@@ -37,6 +37,45 @@ object CreateEvent extends ServerJsonModels {
         Failure(
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class CreateNumericEvent(
+    eventName: String,
+    maturationTime: Instant,
+    minValue: Long,
+    maxValue: Long,
+    unit: String,
+    precision: Int)
+
+object CreateNumericEvent extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateNumericEvent] = {
+    jsArr.arr.toList match {
+      case labelJs :: maturationTimeJs :: minJs :: maxJs :: unitJs :: precisionJs :: Nil =>
+        Try {
+          val label = labelJs.str
+          val maturationTime = jsISOtoInstant(maturationTimeJs)
+          val minValue = minJs.num.toLong
+          val maxValue = maxJs.num.toLong
+          val unit = unitJs.str
+          val precision = precisionJs.num.toInt
+
+          CreateNumericEvent(label,
+                             maturationTime,
+                             minValue,
+                             maxValue,
+                             unit,
+                             precision)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException(
+          "Missing label, maturationTime, minValue, maxValue, units, and precision arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 6"))
     }
   }
 }
@@ -75,29 +114,26 @@ object CreateDigitDecompEvent extends ServerJsonModels {
         }
       case Nil =>
         Failure(new IllegalArgumentException(
-          "Missing label, maturationTime, base, isSigned, and numDigits arguments"))
+          "Missing label, maturationTime, base, isSigned, numDigits, units, and precision arguments"))
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 5"))
+            s"Bad number of arguments: ${other.length}. Expected: 7"))
     }
   }
 }
 
-case class SignEvent(
-    oracleAnnouncementTLV: OracleAnnouncementTLV,
-    outcome: String)
+case class SignEvent(eventName: String, outcome: String)
 
 object SignEvent extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[SignEvent] = {
     jsArr.arr.toList match {
-      case tlvJs :: outcomeJs :: Nil =>
+      case nameJs :: outcomeJs :: Nil =>
         Try {
-          val oracleAnnouncementTLV = OracleAnnouncementTLV(tlvJs.str)
           val outcome = outcomeJs.str
 
-          SignEvent(oracleAnnouncementTLV, outcome)
+          SignEvent(nameJs.str, outcome)
         }
       case Nil =>
         Failure(
@@ -111,15 +147,14 @@ object SignEvent extends ServerJsonModels {
   }
 }
 
-case class SignDigits(oracleAnnouncementTLV: OracleAnnouncementTLV, num: Long)
+case class SignDigits(eventName: String, num: Long)
 
 object SignDigits extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[SignDigits] = {
     jsArr.arr.toList match {
-      case tlvJs :: numJs :: Nil =>
+      case nameJs :: numJs :: Nil =>
         Try {
-          val oracleAnnouncementTLV = OracleAnnouncementTLV(tlvJs.str)
           val num = numJs match {
             case num: Num => num.value
             case str: Str => str.value.toDouble
@@ -128,7 +163,7 @@ object SignDigits extends ServerJsonModels {
                 s"Unable to parse $numJs as a number")
           }
 
-          SignDigits(oracleAnnouncementTLV, num.toLong)
+          SignDigits(nameJs.str, num.toLong)
         }
       case Nil =>
         Failure(
@@ -142,7 +177,7 @@ object SignDigits extends ServerJsonModels {
   }
 }
 
-case class GetEvent(announcementTLV: OracleAnnouncementTLV)
+case class GetEvent(eventName: String)
 
 object GetEvent extends ServerJsonModels {
 
@@ -150,9 +185,7 @@ object GetEvent extends ServerJsonModels {
     require(jsArr.arr.size == 1,
             s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
     Try {
-      val oracleAnnouncementTLV = OracleAnnouncementTLV(jsArr.arr.head.str)
-
-      GetEvent(oracleAnnouncementTLV)
+      GetEvent(jsArr.arr.head.str)
     }
   }
 }
@@ -245,6 +278,21 @@ trait ServerJsonModels {
       .fromString(js.str)
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
+
+  def jsISOtoInstant(js: Value): Instant = {
+    try {
+      js match {
+        case Str(str) =>
+          val date = TimeUtil.iso8601ToDate(str)
+          date.toInstant
+        case Null | Obj(_) | Arr(_) | _: Bool | _: Num =>
+          throw new Exception
+      }
+    } catch {
+      case NonFatal(_) =>
+        throw Value.InvalidData(js, "Expected a date given in ISO 8601 format")
+    }
+  }
 
   def nullToOpt(value: Value): Option[Value] =
     value match {
