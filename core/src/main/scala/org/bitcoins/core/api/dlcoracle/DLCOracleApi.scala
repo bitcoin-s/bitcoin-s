@@ -26,7 +26,7 @@ trait DLCOracleApi {
 
   def findEvent(eventName: String): Future[Option[OracleEvent]]
 
-  def createNewLargeRangedEvent(
+  def createNewDigitDecompEvent(
       eventName: String,
       maturationTime: Instant,
       base: UInt16,
@@ -65,11 +65,13 @@ trait DLCOracleApi {
       signingVersion: SigningVersion = SigningVersion.latest): Future[
     OracleAnnouncementTLV]
 
-  def signEvent(eventName: String, outcome: DLCAttestationType): Future[EventDb]
+  def signEnumEvent(
+      eventName: String,
+      outcome: EnumAttestation): Future[EventDb]
 
-  def signEvent(
+  def signEnumEvent(
       oracleEventTLV: OracleEventTLV,
-      outcome: DLCAttestationType): Future[EventDb]
+      outcome: EnumAttestation): Future[EventDb]
 
   def signEvent(
       nonce: SchnorrNonce,

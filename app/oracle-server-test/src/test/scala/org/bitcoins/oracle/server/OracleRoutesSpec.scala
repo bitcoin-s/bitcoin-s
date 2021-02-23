@@ -159,7 +159,7 @@ class OracleRoutesSpec
 
     "create numeric event" in {
       (mockOracleApi
-        .createNewLargeRangedEvent(_: String,
+        .createNewDigitDecompEvent(_: String,
                                    _: Instant,
                                    _: UInt16,
                                    _: Boolean,
@@ -194,7 +194,7 @@ class OracleRoutesSpec
 
     "create numeric event with just date" in {
       (mockOracleApi
-        .createNewLargeRangedEvent(_: String,
+        .createNewDigitDecompEvent(_: String,
                                    _: Instant,
                                    _: UInt16,
                                    _: Boolean,
@@ -229,7 +229,7 @@ class OracleRoutesSpec
 
     "create digit decomp event" in {
       (mockOracleApi
-        .createNewLargeRangedEvent(_: String,
+        .createNewDigitDecompEvent(_: String,
                                    _: Instant,
                                    _: UInt16,
                                    _: Boolean,
@@ -265,7 +265,7 @@ class OracleRoutesSpec
 
     "sign enum event" in {
       (mockOracleApi
-        .signEvent(_: String, _: DLCAttestationType))
+        .signEnumEvent(_: String, _: EnumAttestation))
         .expects("id", EnumAttestation("outcome"))
         .returning(Future.successful(dummyEventDb))
 

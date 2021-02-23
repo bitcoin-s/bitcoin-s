@@ -279,7 +279,7 @@ class DLCOracleTest extends DLCOracleFixture {
         dlcOracle.createNewEvent("test", futureTime, descriptorV0TLV)
 
       signedEventDb <-
-        dlcOracle.signEvent(announcement.eventTLV, EnumAttestation(outcome))
+        dlcOracle.signEnumEvent(announcement.eventTLV, EnumAttestation(outcome))
       eventOpt <- dlcOracle.findEvent(announcement.eventTLV)
     } yield {
       assert(eventOpt.isDefined)
@@ -314,7 +314,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
     for {
       announcement <-
-        dlcOracle.createNewLargeRangedEvent(eventName = "test",
+        dlcOracle.createNewDigitDecompEvent(eventName = "test",
                                             maturationTime = futureTime,
                                             base = UInt16(10),
                                             isSigned = true,
@@ -391,7 +391,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
       for {
         announcement <-
-          dlcOracle.createNewLargeRangedEvent(eventName = "test",
+          dlcOracle.createNewDigitDecompEvent(eventName = "test",
                                               maturationTime = futureTime,
                                               base = UInt16(16),
                                               isSigned = true,
@@ -469,7 +469,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
       for {
         announcement <-
-          dlcOracle.createNewLargeRangedEvent(eventName = "test",
+          dlcOracle.createNewDigitDecompEvent(eventName = "test",
                                               maturationTime = futureTime,
                                               base = UInt16(2),
                                               isSigned = false,
@@ -579,7 +579,7 @@ class DLCOracleTest extends DLCOracleFixture {
     dlcOracle: DLCOracle =>
       for {
         announcement <-
-          dlcOracle.createNewLargeRangedEvent(eventName = "test",
+          dlcOracle.createNewDigitDecompEvent(eventName = "test",
                                               maturationTime = futureTime,
                                               base = UInt16(2),
                                               isSigned = false,

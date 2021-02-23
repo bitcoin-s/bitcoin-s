@@ -116,7 +116,7 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
     }
   }
 
-  override def createNewLargeRangedEvent(
+  override def createNewDigitDecompEvent(
       eventName: String,
       maturationTime: Instant,
       base: UInt16,
@@ -250,9 +250,9 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
     }
   }
 
-  override def signEvent(
+  override def signEnumEvent(
       eventName: String,
-      outcome: DLCAttestationType): Future[EventDb] = {
+      outcome: EnumAttestation): Future[EventDb] = {
     for {
       eventDbs <- eventDAO.findByEventName(eventName)
       _ = require(eventDbs.size == 1,
@@ -262,9 +262,9 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
     } yield sign
   }
 
-  override def signEvent(
+  override def signEnumEvent(
       oracleEventTLV: OracleEventTLV,
-      outcome: DLCAttestationType): Future[EventDb] = {
+      outcome: EnumAttestation): Future[EventDb] = {
     for {
       eventDbs <- eventDAO.findByOracleEventTLV(oracleEventTLV)
       _ = require(eventDbs.size == 1,
@@ -274,6 +274,9 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
     } yield sign
   }
 
+  /** Signs the event for the single nonce
+    * This will be called multiple times by signDigits for each nonce
+    */
   override def signEvent(
       nonce: SchnorrNonce,
       outcome: DLCAttestationType): Future[EventDb] = {

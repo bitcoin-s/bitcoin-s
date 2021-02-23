@@ -924,7 +924,7 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
     OracleAttestmentV0TLV(eventId, pubKey, sigs, outcomes)
   }
 
-  val dummy: OracleAttestmentV0TLV = {
+  lazy val dummy: OracleAttestmentV0TLV = {
     val eventId = NormalizedString("dummy")
     val key = ECPrivateKey.freshPrivateKey
     val outcome = NormalizedString("outcome")

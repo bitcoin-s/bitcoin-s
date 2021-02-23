@@ -75,7 +75,7 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
               Math.ceil(Math.log(maxValue.toDouble) / Math.log(2)).toInt
 
             oracle
-              .createNewLargeRangedEvent(eventName,
+              .createNewDigitDecompEvent(eventName,
                                          maturationTime,
                                          UInt16(2),
                                          isSigned,
@@ -102,7 +102,7 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                                      precision)) =>
           complete {
             oracle
-              .createNewLargeRangedEvent(eventName,
+              .createNewDigitDecompEvent(eventName,
                                          maturationTime,
                                          UInt16(base),
                                          isSigned,
@@ -193,7 +193,7 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
         case Success(SignEvent(eventName, outcome)) =>
           complete {
             oracle
-              .signEvent(eventName, EnumAttestation(outcome))
+              .signEnumEvent(eventName, EnumAttestation(outcome))
               .map { eventDb =>
                 val oracleEvent = OracleEvent.fromEventDbs(Vector(eventDb))
                 oracleEvent match {
