@@ -254,33 +254,41 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
 
   /** Detects if the given script token is a redeem script */
   def isRedeemScript(token: ScriptToken): Boolean = {
-    val redeemScript: ScriptPubKey = parseRedeemScript(token)
-
-    def isStandardNonP2SH(
-        spk: ScriptPubKey,
-        isRecursiveCall: Boolean): Boolean = {
-      spk match {
-        case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
-            _: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
-            _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
-          true
-        case EmptyScriptPubKey => isRecursiveCall // Fine if nested
-        case conditional: ConditionalScriptPubKey =>
-          isStandardNonP2SH(conditional.firstSPK,
-                            isRecursiveCall = true) && isStandardNonP2SH(
-            conditional.secondSPK,
-            isRecursiveCall = true)
-        case locktime: LockTimeScriptPubKey =>
-          Try(locktime.locktime).isSuccess &&
-            isStandardNonP2SH(locktime.nestedScriptPubKey,
-                              isRecursiveCall = true)
-        case _: NonStandardScriptPubKey | _: WitnessCommitment |
-            _: P2SHScriptPubKey =>
-          false
-      }
+    token match {
+      case _: ScriptNumberOperation | _: ScriptOperation =>
+        //more cheap checks, we can't have a redeemScript
+        //if the token is OP_0/OP_1/OP_CHECKSIG etc
+        false
+      case constant: ScriptConstant =>
+        val redeemScript: ScriptPubKey = parseRedeemScript(constant)
+        isStandardNonP2SH(redeemScript, isRecursiveCall = false)
     }
+  }
 
-    isStandardNonP2SH(redeemScript, isRecursiveCall = false)
+  private def isStandardNonP2SH(
+      spk: ScriptPubKey,
+      isRecursiveCall: Boolean): Boolean = {
+    spk match {
+      case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
+          _: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
+          _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
+        true
+      case EmptyScriptPubKey => isRecursiveCall // Fine if nested
+      case conditional: ConditionalScriptPubKey =>
+        isStandardNonP2SH(conditional.firstSPK,
+                          isRecursiveCall = true) && isStandardNonP2SH(
+          conditional.secondSPK,
+          isRecursiveCall = true)
+      case locktime: LockTimeScriptPubKey =>
+        if (Try(locktime.locktime).isSuccess) {
+          isStandardNonP2SH(locktime.nestedScriptPubKey, isRecursiveCall = true)
+        } else {
+          false
+        }
+      case _: NonStandardScriptPubKey | _: WitnessCommitment |
+          _: P2SHScriptPubKey =>
+        false
+    }
   }
 
   /** Parses a redeem script from the given script token */

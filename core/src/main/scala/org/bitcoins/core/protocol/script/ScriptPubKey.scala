@@ -1176,15 +1176,21 @@ object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
     // ScriptConstantImpl(ByteVector(37 bytes, 0x0021020afd6012af90835558c68365a370b7e6cd1c0d4664a8656c8c7847185cb5db6651ae)))
 
     //we can also have a LockTimeScriptPubKey with a nested 0 public key multisig script, need to check that as well
-    val bytes = BytesUtil.toByteVector(asm)
 
+    //it turns out this method gets called a lot when we attempt
+    //to type check spks, so let's do a cheap check before deserializing
+    //everything to a byte vector which is expensive
     val firstOp = asm.headOption
-    if (bytes.size < 4 || bytes.size > 42) false
-    else if (!validWitVersions.contains(firstOp.getOrElse(OP_1NEGATE))) false
-    else if (MultiSignatureScriptPubKey.isValidAsm(asm)) false
-    else if (LockTimeScriptPubKey.isValidAsm(asm)) false
-    else if (asm(1).toLong + 2 == bytes.size) true
-    else false
+    if (!validWitVersions.contains(firstOp.getOrElse(OP_1NEGATE))) {
+      false
+    } else {
+      val bytes = BytesUtil.toByteVector(asm)
+      if (bytes.length < 4 || bytes.length > 42) false
+      else if (MultiSignatureScriptPubKey.isValidAsm(asm)) false
+      else if (LockTimeScriptPubKey.isValidAsm(asm)) false
+      else if (asm(1).toLong + 2 == bytes.size) true
+      else false
+    }
   }
 }
 
