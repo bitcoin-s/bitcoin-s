@@ -18,6 +18,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
@@ -28,6 +29,7 @@ import upickle.default._
 import java.io.File
 import java.nio.file.Path
 import java.time.Instant
+import java.util.Date
 
 object Picklers {
 
@@ -71,6 +73,9 @@ object Picklers {
 
   implicit val instantPickler: ReadWriter[Instant] =
     readwriter[Long].bimap(_.getEpochSecond, Instant.ofEpochSecond)
+
+  implicit val datePickler: ReadWriter[Date] =
+    readwriter[String].bimap(TimeUtil.iso8601ToString, TimeUtil.iso8601ToDate)
 
   implicit val aesPasswordPickler: ReadWriter[AesPassword] =
     readwriter[String].bimap(_.toStringSensitive, AesPassword.fromString)

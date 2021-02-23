@@ -106,6 +106,22 @@ object BitcoinSTestAppConfig {
                                             pgUrl) +: config): _*)
   }
 
+  def getDLCOracleAppConfig(config: Config*)(implicit
+      ec: ExecutionContext): DLCOracleAppConfig = {
+    val overrideConf = KeyManagerTestUtil.aesPasswordOpt match {
+      case Some(value) =>
+        ConfigFactory.parseString {
+          s"""
+             |bitcoin-s.oracle.aesPassword = $value
+      """.stripMargin
+        }
+      case None =>
+        ConfigFactory.empty()
+    }
+
+    DLCOracleAppConfig(tmpDir(), overrideConf +: config: _*)
+  }
+
   def getDLCOracleWithEmbeddedDbTestConfig(
       pgUrl: () => Option[String],
       config: Config*)(implicit ec: ExecutionContext): DLCOracleAppConfig = {

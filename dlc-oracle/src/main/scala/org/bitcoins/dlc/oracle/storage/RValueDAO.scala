@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.oracle.storage
 
+import org.bitcoins.core.api.dlcoracle.db.RValueDb
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.crypto.SchnorrNonce
 import org.bitcoins.db.{CRUD, DbCommonsColumnMappers, SlickUtil}

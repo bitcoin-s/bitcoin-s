@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.oracle.storage
 
+import org.bitcoins.core.api.dlcoracle.db.{EventDb, RValueDb}
 import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv.{
   EventDescriptorTLV,
@@ -44,6 +45,12 @@ case class EventDAO()(implicit
 
   def getPendingEvents: Future[Vector[EventDb]] = {
     findAll().map(_.filter(_.attestationOpt.isEmpty))
+  }
+
+  def findByEventName(name: String): Future[Vector[EventDb]] = {
+    val query = table.filter(_.eventName === name)
+
+    safeDatabase.runVec(query.result.transactionally)
   }
 
   def findByEventDescriptor(
