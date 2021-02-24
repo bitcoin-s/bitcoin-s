@@ -70,7 +70,7 @@ object ViewDLCDialog {
       add(getLabel("Event Id"), 0, row)
       add(
         getTextField(
-          status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId),
+          status.oracleInfos.head.singleOracleInfos.head.announcement.eventTLV.eventId),
         columnIndex = 1,
         rowIndex = row)
 
@@ -217,7 +217,7 @@ object ViewDLCDialog {
       // TODO : Refund button and discriminator
 
       row += 1
-      status.contractInfo.contractDescriptor match {
+      status.contractInfo.contractDescriptors.head match {
         case _: EnumContractDescriptor => ()
         case descriptor: NumericContractDescriptor =>
           val previewGraphButton: Button = new Button("Preview Graph") {

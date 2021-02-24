@@ -21,7 +21,8 @@ class DLCTableView(model: DLCPaneModel) {
       prefWidth = 230
       cellValueFactory = { status =>
         val eventIdStr =
-          status.value.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
+          status.value.oracleInfos.head.singleOracleInfos.head.announcement.eventTLV.eventId
+
         new StringProperty(status, "Event Id", eventIdStr)
       }
     }
