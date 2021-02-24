@@ -94,6 +94,27 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def isValidPubKey(bytes: ByteVector): Boolean = ???
 
   override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean = ???
+
+  override def schnorrSign(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      auxRand: ByteVector): SchnorrDigitalSignature = ???
+
+  override def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature = ???
+
+  override def schnorrVerify(
+      data: ByteVector,
+      schnorrPubKey: SchnorrPublicKey,
+      signature: SchnorrDigitalSignature): Boolean = ???
+
+  override def schnorrComputeSigPoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      pubKey: SchnorrPublicKey,
+      compressed: Boolean): ECPublicKey = ???
 }
 
 object BCryptoCryptoRuntime extends BCryptoCryptoRuntime

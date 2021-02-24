@@ -12,25 +12,8 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   require(Try(publicKey).isSuccess,
           s"Schnorr public key must be a valid x coordinate, got $bytes")
 
-  // TODO: match on CryptoContext once secp version is added
   def verify(data: ByteVector, signature: SchnorrDigitalSignature): Boolean = {
-    verifyWithBouncyCastle(data, signature)
-  }
-
-  /*
-  def verifyWithSecp(
-      data: ByteVector,
-      signature: SchnorrDigitalSignature): Boolean = {
-    NativeSecp256k1.schnorrVerify(signature.bytes.toArray,
-                                  data.toArray,
-                                  bytes.toArray)
-  }
-   */
-
-  def verifyWithBouncyCastle(
-      data: ByteVector,
-      signature: SchnorrDigitalSignature): Boolean = {
-    BouncyCastleUtil.schnorrVerify(data, this, signature)
+    CryptoContext.cryptoRuntime.schnorrVerify(data, this, signature)
   }
 
   def computeSigPoint(data: ByteVector, nonce: SchnorrNonce): ECPublicKey = {
@@ -67,33 +50,14 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
     this.publicKey.tweakMultiply(aggHashes.fieldElement).add(aggNonces)
   }
 
-  // TODO: match on CryptoContext once secp version is added
   def computeSigPoint(
       data: ByteVector,
       nonce: SchnorrNonce,
       compressed: Boolean): ECPublicKey = {
-    computeSigPointWithBouncyCastle(data, nonce, compressed)
-  }
-
-  /*
-  def computeSigPointWithSecp(
-      data: ByteVector,
-      nonce: SchnorrNonce,
-      compressed: Boolean = true): ECPublicKey = {
-    val sigPointBytes = NativeSecp256k1.schnorrComputeSigPoint(
-      data.toArray,
-      nonce.bytes.toArray,
-      bytes.toArray,
-      compressed)
-    ECPublicKey(ByteVector(sigPointBytes))
-  }
-   */
-
-  def computeSigPointWithBouncyCastle(
-      data: ByteVector,
-      nonce: SchnorrNonce,
-      compressed: Boolean = true): ECPublicKey = {
-    BouncyCastleUtil.schnorrComputeSigPoint(data, nonce, this, compressed)
+    CryptoContext.cryptoRuntime.schnorrComputeSigPoint(data,
+                                                       nonce,
+                                                       this,
+                                                       compressed)
   }
 
   def publicKey: ECPublicKey = {

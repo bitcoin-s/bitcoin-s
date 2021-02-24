@@ -4,6 +4,7 @@ import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.{BitVector, ByteVector}
 
 import java.math.BigInteger
+import scala.util.{Failure, Success, Try}
 
 /** Trait that should be extended by specific runtimes like javascript
   * or the JVM to support crypto functions needed for bitcoin-s
@@ -170,4 +171,25 @@ trait CryptoRuntime {
   def isValidPubKey(bytes: ByteVector): Boolean
 
   def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean
+
+  def schnorrSign(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      auxRand: ByteVector): SchnorrDigitalSignature
+
+  def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature
+
+  def schnorrVerify(
+      data: ByteVector,
+      schnorrPubKey: SchnorrPublicKey,
+      signature: SchnorrDigitalSignature): Boolean
+
+  def schnorrComputeSigPoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      pubKey: SchnorrPublicKey,
+      compressed: Boolean): ECPublicKey
 }

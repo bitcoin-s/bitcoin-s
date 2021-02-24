@@ -143,6 +143,31 @@ trait CryptoUtil extends CryptoRuntime {
 
   override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean =
     cryptoRuntime.isFullyValidWithBouncyCastle(bytes)
+
+  override def schnorrSign(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      auxRand: ByteVector): SchnorrDigitalSignature =
+    cryptoRuntime.schnorrSign(dataToSign, privateKey, auxRand)
+
+  override def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature =
+    cryptoRuntime.schnorrSignWithNonce(dataToSign, privateKey, nonceKey)
+
+  override def schnorrVerify(
+      data: ByteVector,
+      schnorrPubKey: SchnorrPublicKey,
+      signature: SchnorrDigitalSignature): Boolean =
+    cryptoRuntime.schnorrVerify(data, schnorrPubKey, signature)
+
+  override def schnorrComputeSigPoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      pubKey: SchnorrPublicKey,
+      compressed: Boolean): ECPublicKey =
+    cryptoRuntime.schnorrComputeSigPoint(data, nonce, pubKey, compressed)
 }
 
 object CryptoUtil extends CryptoUtil

@@ -58,54 +58,16 @@ sealed abstract class ECPrivateKey
     schnorrSign(dataToSign, auxRand)
   }
 
-  // TODO: match on CryptoContext once secp version is added
   def schnorrSign(
       dataToSign: ByteVector,
       auxRand: ByteVector): SchnorrDigitalSignature = {
-    schnorrSignWithBouncyCastle(dataToSign, auxRand)
+    CryptoContext.cryptoRuntime.schnorrSign(dataToSign, this, auxRand)
   }
 
-  /*
-  def schnorrSignWithSecp(
-      dataToSign: ByteVector,
-      auxRand: ByteVector): SchnorrDigitalSignature = {
-    val sigBytes =
-      NativeSecp256k1.schnorrSign(dataToSign.toArray,
-                                  bytes.toArray,
-                                  auxRand.toArray)
-    SchnorrDigitalSignature(ByteVector(sigBytes))
-  }
-   */
-
-  def schnorrSignWithBouncyCastle(
-      dataToSign: ByteVector,
-      auxRand: ByteVector): SchnorrDigitalSignature = {
-    BouncyCastleUtil.schnorrSign(dataToSign, this, auxRand)
-  }
-
-  // TODO: match on CryptoContext once secp version is added
   def schnorrSignWithNonce(
       dataToSign: ByteVector,
       nonce: ECPrivateKey): SchnorrDigitalSignature = {
-    schnorrSignWithNonceWithBouncyCastle(dataToSign, nonce)
-  }
-
-  /*
-  def schnorrSignWithNonceWithSecp(
-      dataToSign: ByteVector,
-      nonce: ECPrivateKey): SchnorrDigitalSignature = {
-    val sigBytes =
-      NativeSecp256k1.schnorrSignWithNonce(dataToSign.toArray,
-                                           bytes.toArray,
-                                           nonce.bytes.toArray)
-    SchnorrDigitalSignature(ByteVector(sigBytes))
-  }
-   */
-
-  def schnorrSignWithNonceWithBouncyCastle(
-      dataToSign: ByteVector,
-      nonce: ECPrivateKey): SchnorrDigitalSignature = {
-    BouncyCastleUtil.schnorrSignWithNonce(dataToSign, this, nonce)
+    CryptoContext.cryptoRuntime.schnorrSignWithNonce(dataToSign, this, nonce)
   }
 
   // TODO: match on CryptoContext once secp version is added

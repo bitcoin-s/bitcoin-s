@@ -14,6 +14,7 @@ import scodec.bits.ByteVector
 
 import java.math.BigInteger
 import java.security.{MessageDigest, SecureRandom}
+import scala.util.{Failure, Success, Try}
 
 trait BouncycastleCryptoRuntime extends CryptoRuntime {
   private[this] lazy val secureRandom = new SecureRandom()
@@ -182,6 +183,81 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
 
   override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean =
     bytes.nonEmpty && isValidPubKey(bytes)
+
+  override def schnorrSign(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    val nonceKey =
+      SchnorrNonce.kFromBipSchnorr(privateKey, dataToSign, auxRand)
+
+    schnorrSignWithNonce(dataToSign, privateKey, nonceKey)
+  }
+
+  override def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
+    val rx = nonceKey.schnorrNonce
+    val k = nonceKey.nonceKey.fieldElement
+    val x = privateKey.schnorrKey.fieldElement
+    val e = CryptoContext.cryptoRuntime
+      .sha256SchnorrChallenge(
+        rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign)
+      .bytes
+
+    val challenge = x.multiply(FieldElement(e))
+    val sig = k.add(challenge)
+
+    SchnorrDigitalSignature(rx, sig)
+  }
+
+  override def schnorrVerify(
+      data: ByteVector,
+      schnorrPubKey: SchnorrPublicKey,
+      signature: SchnorrDigitalSignature): Boolean = {
+    val rx = signature.rx
+    val sT = Try(signature.sig.toPrivateKey)
+
+    sT match {
+      case Success(s) =>
+        val eBytes = CryptoContext.cryptoRuntime
+          .sha256SchnorrChallenge(rx.bytes ++ schnorrPubKey.bytes ++ data)
+          .bytes
+
+        val e = FieldElement(eBytes)
+        val negE = e.negate
+
+        val sigPoint = s.publicKey
+        val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
+        val computedR = challengePoint.add(sigPoint)
+        val yCoord = computedR.toPoint.getRawYCoord
+
+        yCoord != null && !yCoord.testBitZero() && computedR.schnorrNonce == rx
+      case Failure(_) => false
+    }
+  }
+
+  override def schnorrComputeSigPoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      pubKey: SchnorrPublicKey,
+      compressed: Boolean): ECPublicKey = {
+    val eBytes = CryptoContext.cryptoRuntime
+      .sha256SchnorrChallenge(nonce.bytes ++ pubKey.bytes ++ data)
+      .bytes
+
+    val e = FieldElement(eBytes)
+
+    val compressedSigPoint =
+      nonce.publicKey.add(pubKey.publicKey.tweakMultiply(e))
+
+    if (compressed) {
+      compressedSigPoint
+    } else {
+      compressedSigPoint.decompressed
+    }
+  }
 
 }
 

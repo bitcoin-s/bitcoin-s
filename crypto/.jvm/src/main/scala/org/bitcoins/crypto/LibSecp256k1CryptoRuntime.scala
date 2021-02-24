@@ -207,6 +207,54 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
   override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean =
     bytes.nonEmpty && BouncycastleCryptoRuntime.isValidPubKey(bytes)
 
+  // TODO: add native implementation
+  override def schnorrSign(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+//    val sigBytes =
+//      NativeSecp256k1.schnorrSign(dataToSign.toArray,
+//                                  privateKey.bytes.toArray,
+//                                  auxRand.toArray)
+//    SchnorrDigitalSignature(ByteVector(sigBytes))
+    BouncycastleCryptoRuntime.schnorrSign(dataToSign, privateKey, auxRand)
+  }
+
+  // TODO: add native implementation
+  override def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
+//    val sigBytes =
+//      NativeSecp256k1.schnorrSignWithNonce(dataToSign.toArray,
+//                                           privateKey.bytes.toArray,
+//                                           nonceKey.bytes.toArray)
+//    SchnorrDigitalSignature(ByteVector(sigBytes))
+    BouncycastleCryptoRuntime.schnorrSignWithNonce(dataToSign,
+                                                   privateKey,
+                                                   nonceKey)
+  }
+
+  // TODO: add native implementation
+  override def schnorrVerify(
+      data: ByteVector,
+      schnorrPubKey: SchnorrPublicKey,
+      signature: SchnorrDigitalSignature): Boolean = {
+    BouncycastleCryptoRuntime.schnorrVerify(data, schnorrPubKey, signature)
+  }
+
+  // TODO: add native implementation
+  override def schnorrComputeSigPoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      pubKey: SchnorrPublicKey,
+      compressed: Boolean): ECPublicKey = {
+    BouncycastleCryptoRuntime.schnorrComputeSigPoint(data,
+                                                     nonce,
+                                                     pubKey,
+                                                     compressed)
+  }
+
 }
 
 object LibSecp256k1CryptoRuntime extends LibSecp256k1CryptoRuntime
