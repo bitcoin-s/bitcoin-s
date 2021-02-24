@@ -15,7 +15,7 @@ object Deps {
     val slf4j = "1.7.30"
     val spray = "1.3.6"
     val zeromq = "0.5.2"
-    val akkav = "10.1.13"
+    val akkav = "10.1.14"
     val playv = "2.9.2"
     val akkaStreamv = "2.6.13"
     val scodecV = "1.1.24"
