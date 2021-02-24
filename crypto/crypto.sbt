@@ -1,7 +1,7 @@
 name := "bitcoin-s-crypto"
 
-libraryDependencies ++= Deps.crypto
+//libraryDependencies ++= Deps.crypto
 
-CommonSettings.prodSettings
+//CommonSettings.prodSettings
 
 dependsOn(Projects.secp256k1jni)

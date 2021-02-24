@@ -20,9 +20,11 @@ case class ECAdaptorSignature(bytes: ByteVector) extends NetworkElement {
   val dleqProofS: FieldElement = FieldElement(dleqProof.drop(33).take(32))
   val dleqProofE: FieldElement = FieldElement(dleqProof.drop(65))
 
-  require(ECPublicKey.isFullyValidWithBouncyCastle(tweakedNonce.bytes),
+  require(CryptoContext.cryptoRuntime.isFullyValidWithBouncyCastle(
+            tweakedNonce.bytes),
           s"Tweaked nonce (R) must be a valid public key: $tweakedNonce")
-  require(ECPublicKey.isFullyValidWithBouncyCastle(untweakedNonce.bytes),
+  require(CryptoContext.cryptoRuntime.isFullyValidWithBouncyCastle(
+            untweakedNonce.bytes),
           s"Untweaked nonce (R') must be a valid public key: $untweakedNonce")
 }
 

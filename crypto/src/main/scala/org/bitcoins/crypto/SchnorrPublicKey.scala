@@ -48,9 +48,9 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
     val bytesAndNonces = bytesToHash.zip(nonces)
 
     val hashesAndNoncePoints = bytesAndNonces.map { case (bytes, nonce) =>
-      val eBytes = CryptoUtil
+      val eBytes = CryptoContext.cryptoRuntime
         .sha256SchnorrChallenge(
-          nonce.bytes ++ this.bytes ++ CryptoUtil
+          nonce.bytes ++ this.bytes ++ CryptoContext.cryptoRuntime
             .sha256DLCAttestation(bytes)
             .bytes)
         .bytes
@@ -99,12 +99,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   def publicKey: ECPublicKey = {
     val pubKeyBytes = ByteVector.fromByte(2) ++ bytes
 
-    val validPubKey = CryptoContext.default match {
-      case CryptoContext.LibSecp256k1 =>
-        NativeSecp256k1.isValidPubKey(pubKeyBytes.toArray)
-      case CryptoContext.BouncyCastle =>
-        BouncyCastleUtil.validatePublicKey(pubKeyBytes)
-    }
+    val validPubKey = CryptoContext.cryptoRuntime.isValidPubKey(pubKeyBytes)
 
     require(
       validPubKey,

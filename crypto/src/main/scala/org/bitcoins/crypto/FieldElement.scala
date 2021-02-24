@@ -2,7 +2,6 @@ package org.bitcoins.crypto
 
 import java.math.BigInteger
 
-import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
 import scala.util.Try
@@ -52,7 +51,7 @@ case class FieldElement(bytes: ByteVector) extends NetworkElement {
     FieldElement.negate(this)
   }
 
-  def getPoint: ECPoint = FieldElement.computePoint(this)
+//  def getPoint: ECPoint = FieldElement.computePoint(this)
 
   def getPublicKey: ECPublicKey = toPrivateKey.publicKey
 
@@ -92,7 +91,7 @@ object FieldElement extends Factory[FieldElement] {
   val nMinusOne: FieldElement = FieldElement(
     "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140")
 
-  private val G: ECPoint = CryptoParams.curve.getG
+//  private val G: ECPoint = CryptoParams.curve.getG
   private val N: BigInteger = CryptoParams.curve.getN
 
   private def getBigInteger(bytes: ByteVector): BigInteger = {
@@ -120,7 +119,8 @@ object FieldElement extends Factory[FieldElement] {
     FieldElement(neg)
   }
 
-  def computePoint(fe: FieldElement): ECPoint = G.multiply(fe.toBigInteger)
+  // TODO: implement me!
+//  def computePoint(fe: FieldElement): ECPoint = G.multiply(fe.toBigInteger)
 
   /** Computes the inverse (mod M) of the input using the Euclidean Algorithm (log time)
     * Cribbed from [[https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/]]

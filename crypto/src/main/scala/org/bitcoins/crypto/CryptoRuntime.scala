@@ -10,6 +10,8 @@ import java.math.BigInteger
   */
 trait CryptoRuntime {
 
+  val cryptoContext: CryptoContext
+
   /** Generates a 32 byte private key */
   def freshPrivateKey: ECPrivateKey
 
@@ -80,7 +82,7 @@ trait CryptoRuntime {
   }
 
   def sha256DLCAttestation(str: String): Sha256Digest = {
-    sha256DLCAttestation(CryptoUtil.serializeForHash(str))
+    sha256DLCAttestation(serializeForHash(str))
   }
 
   // The tag "DLC/oracle/announcement/v0"
@@ -136,4 +138,36 @@ trait CryptoRuntime {
   def sha256SchnorrNonce(bytes: ByteVector): Sha256Digest = {
     sha256(schnorrNonceTagBytes ++ bytes)
   }
+
+  def publicKey(privateKey: ECPrivateKey): ECPublicKey
+
+  def sign(privateKey: ECPrivateKey, dataToSign: ByteVector): ECDigitalSignature
+
+  def signWithEntropy(
+      privateKey: ECPrivateKey,
+      bytes: ByteVector,
+      entropy: ByteVector): ECDigitalSignature
+
+  def secKeyVerify(privateKeybytes: ByteVector): Boolean
+
+  def verify(
+      publicKey: ECPublicKey,
+      data: ByteVector,
+      signature: ECDigitalSignature): Boolean
+
+  def decompressed(publicKey: ECPublicKey): ECPublicKey
+
+  def tweakMultiply(publicKey: ECPublicKey, tweak: FieldElement): ECPublicKey
+
+  def add(pk1: ECPrivateKey, pk2: ECPrivateKey): ECPrivateKey
+
+  def add(bytes: ByteVector, pk2: ECPrivateKey): ByteVector
+
+  def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey
+
+  def pubKeyTweakAdd(pubkey: ECPublicKey, privkey: ECPrivateKey): ECPublicKey
+
+  def isValidPubKey(bytes: ByteVector): Boolean
+
+  def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean
 }

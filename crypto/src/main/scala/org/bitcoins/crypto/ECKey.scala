@@ -1,9 +1,8 @@
 package org.bitcoins.crypto
 
-import java.math.BigInteger
-
-import org.bitcoin.NativeSecp256k1
 import org.bouncycastle.math.ec.ECPoint
+
+import java.math.BigInteger
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -32,27 +31,7 @@ sealed abstract class ECPrivateKey
     * @return the digital signature
     */
   override def sign(dataToSign: ByteVector): ECDigitalSignature = {
-    sign(dataToSign, CryptoContext.default)
-  }
-
-  def sign(
-      dataToSign: ByteVector,
-      context: CryptoContext): ECDigitalSignature = {
-    require(dataToSign.length == 32 && bytes.length <= 32)
-    context match {
-      case CryptoContext.LibSecp256k1 => signWithSecp(dataToSign)
-      case CryptoContext.BouncyCastle => signWithBouncyCastle(dataToSign)
-    }
-  }
-
-  def signWithSecp(dataToSign: ByteVector): ECDigitalSignature = {
-    val signature =
-      NativeSecp256k1.sign(dataToSign.toArray, bytes.toArray)
-    ECDigitalSignature(ByteVector(signature))
-  }
-
-  def signWithBouncyCastle(dataToSign: ByteVector): ECDigitalSignature = {
-    BouncyCastleUtil.sign(dataToSign, this)
+    CryptoContext.cryptoRuntime.sign(this, dataToSign)
   }
 
   def sign(hash: HashDigest): ECDigitalSignature = sign(hash.bytes)
@@ -64,34 +43,7 @@ sealed abstract class ECPrivateKey
   override def signWithEntropy(
       bytes: ByteVector,
       entropy: ByteVector): ECDigitalSignature = {
-    signWithEntropy(bytes, entropy, CryptoContext.default)
-  }
-
-  def signWithEntropy(
-      bytes: ByteVector,
-      entropy: ByteVector,
-      context: CryptoContext): ECDigitalSignature = {
-    context match {
-      case CryptoContext.LibSecp256k1 => signWithEntropyWithSecp(bytes, entropy)
-      case CryptoContext.BouncyCastle =>
-        signWithEntropyWithBouncyCastle(bytes, entropy)
-    }
-  }
-
-  def signWithEntropyWithSecp(
-      bytes: ByteVector,
-      entropy: ByteVector): ECDigitalSignature = {
-    val sigBytes = NativeSecp256k1.signWithEntropy(bytes.toArray,
-                                                   this.bytes.toArray,
-                                                   entropy.toArray)
-
-    ECDigitalSignature(ByteVector(sigBytes))
-  }
-
-  def signWithEntropyWithBouncyCastle(
-      bytes: ByteVector,
-      entropy: ByteVector): ECDigitalSignature = {
-    BouncyCastleUtil.signWithEntropy(bytes, this, entropy)
+    CryptoContext.cryptoRuntime.signWithEntropy(this, bytes, entropy)
   }
 
   override def signWithEntropyFunction: (
@@ -231,53 +183,15 @@ sealed abstract class ECPrivateKey
   }
 
   def add(other: ECPrivateKey): ECPrivateKey = {
-    add(other, CryptoContext.default)
-  }
-
-  def add(other: ECPrivateKey, context: CryptoContext): ECPrivateKey = {
-    context match {
-      case CryptoContext.LibSecp256k1 => addWithSecp(other)
-      case CryptoContext.BouncyCastle => addWithBouncyCastle(other)
-    }
-  }
-
-  def addWithSecp(other: ECPrivateKey): ECPrivateKey = {
-    val sumBytes =
-      NativeSecp256k1.privKeyTweakAdd(bytes.toArray, other.bytes.toArray)
-    ECPrivateKey(ByteVector(sumBytes))
-  }
-
-  def addWithBouncyCastle(other: ECPrivateKey): ECPrivateKey = {
-    fieldElement.add(other.fieldElement).toPrivateKey
+    CryptoContext.cryptoRuntime.add(this, other)
   }
 
   /** Signifies if the this private key corresponds to a compressed public key */
   def isCompressed: Boolean
 
-  override def publicKey: ECPublicKey = publicKey(CryptoContext.default)
-
   /** Derives the public for a the private key */
-  def publicKey(context: CryptoContext): ECPublicKey = {
-    context match {
-      case CryptoContext.LibSecp256k1 => publicKeyWithSecp
-      case CryptoContext.BouncyCastle => publicKeyWithBouncyCastle
-    }
-  }
-
-  def publicKeyWithSecp: ECPublicKey = {
-    val pubKeyBytes: Array[Byte] =
-      NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
-    val pubBytes = ByteVector(pubKeyBytes)
-    require(
-      ECPublicKey.isFullyValid(pubBytes),
-      s"secp256k1 failed to generate a valid public key, got: ${CryptoBytesUtil
-        .encodeHex(pubBytes)}")
-    ECPublicKey(pubBytes)
-  }
-
-  def publicKeyWithBouncyCastle: ECPublicKey = {
-    BouncyCastleUtil.computePublicKey(this)
-  }
+  override def publicKey: ECPublicKey =
+    CryptoContext.cryptoRuntime.publicKey(this)
 
   def schnorrPublicKey: SchnorrPublicKey = {
     SchnorrPublicKey(publicKey.bytes)
@@ -299,15 +213,8 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
       isCompressed: Boolean,
       ec: ExecutionContext)
       extends ECPrivateKey {
-    CryptoContext.default match {
-      case CryptoContext.LibSecp256k1 =>
-        require(NativeSecp256k1.secKeyVerify(bytes.toArray),
-                s"Invalid key according to secp256k1, hex: ${bytes.toHex}")
-      case CryptoContext.BouncyCastle =>
-        require(CryptoParams.curve.getCurve
-                  .isValidFieldElement(new BigInteger(1, bytes.toArray)),
-                s"Invalid key according to Bouncy Castle, hex: ${bytes.toHex}")
-    }
+    require(CryptoContext.cryptoRuntime.secKeyVerify(bytes),
+            s"Invalid key, hex: ${bytes.toHex}")
   }
 
   def apply(bytes: ByteVector, isCompressed: Boolean)(implicit
@@ -351,7 +258,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   def freshPrivateKey: ECPrivateKey = freshPrivateKey(true)
 
   def freshPrivateKey(isCompressed: Boolean): ECPrivateKey = {
-    val priv = CryptoUtil.freshPrivateKey
+    val priv = CryptoContext.cryptoRuntime.freshPrivateKey
     ECPrivateKey.fromBytes(priv.bytes, isCompressed)
   }
 }
@@ -368,41 +275,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
     * [[org.bitcoins.crypto.ECPublicKey ECPublicKey]].
     */
   def verify(data: ByteVector, signature: ECDigitalSignature): Boolean = {
-    verify(data, signature, CryptoContext.default)
-  }
-
-  def verify(
-      data: ByteVector,
-      signature: ECDigitalSignature,
-      context: CryptoContext): Boolean = {
-    context match {
-      case CryptoContext.LibSecp256k1 => verifyWithSecp(data, signature)
-      case CryptoContext.BouncyCastle => verifyWithBouncyCastle(data, signature)
-    }
-  }
-
-  def verifyWithSecp(
-      data: ByteVector,
-      signature: ECDigitalSignature): Boolean = {
-    val result =
-      NativeSecp256k1.verify(data.toArray,
-                             signature.bytes.toArray,
-                             bytes.toArray)
-
-    if (!result) {
-      //if signature verification fails with libsecp256k1 we need to use our old
-      //verification function from spongy castle, this is needed because early blockchain
-      //transactions can have weird non strict der encoded digital signatures
-      //bitcoin core implements this functionality here:
-      //https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.cpp#L16-L165
-      verifyWithBouncyCastle(data, signature)
-    } else result
-  }
-
-  def verifyWithBouncyCastle(
-      data: ByteVector,
-      signature: ECDigitalSignature): Boolean = {
-    BouncyCastleUtil.verifyDigitalSignature(data, this, signature)
+    CryptoContext.cryptoRuntime.verify(this, data, signature)
   }
 
   def verify(hex: String, signature: ECDigitalSignature): Boolean =
@@ -488,25 +361,8 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def isFullyValid: Boolean = ECPublicKey.isFullyValid(bytes)
 
   /** Returns the decompressed version of this [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] */
-  def decompressed: ECPublicKey = decompressed(CryptoContext.default)
-
-  def decompressed(context: CryptoContext): ECPublicKey = {
-    context match {
-      case CryptoContext.LibSecp256k1 => decompressedWithSecp
-      case CryptoContext.BouncyCastle => decompressedWithBouncyCastle
-    }
-  }
-
-  def decompressedWithSecp: ECPublicKey = {
-    if (isCompressed) {
-      val decompressed = NativeSecp256k1.decompress(bytes.toArray)
-      ECPublicKey.fromBytes(ByteVector(decompressed))
-    } else this
-  }
-
-  def decompressedWithBouncyCastle: ECPublicKey = {
-    BouncyCastleUtil.decompressPublicKey(this)
-  }
+  def decompressed: ECPublicKey =
+    CryptoContext.cryptoRuntime.decompressed(this)
 
   /** Decodes a [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] in bitcoin-s
     * to a [[org.bouncycastle.math.ec.ECPoint ECPoint]] data structure that is internal to the
@@ -522,38 +378,11 @@ sealed abstract class ECPublicKey extends BaseECKey {
     * Note: if this ever becomes a bottleneck, secp256k1_ec_pubkey_combine should
     * get wrapped in NativeSecp256k1 to speed things up.
     */
-  def add(otherKey: ECPublicKey): ECPublicKey = {
-    addWithBouncyCastle(otherKey)
-  }
-
-  def addWithBouncyCastle(otherKey: ECPublicKey): ECPublicKey = {
-    val sumPoint = toPoint.add(otherKey.toPoint)
-
-    ECPublicKey.fromPoint(sumPoint)
-  }
+  def add(otherKey: ECPublicKey): ECPublicKey =
+    CryptoContext.cryptoRuntime.add(this, otherKey)
 
   def tweakMultiply(tweak: FieldElement): ECPublicKey = {
-    tweakMultiply(tweak, CryptoContext.default)
-  }
-
-  def tweakMultiply(
-      tweak: FieldElement,
-      context: CryptoContext): ECPublicKey = {
-    context match {
-      case CryptoContext.LibSecp256k1 => tweakMultiplyWithSecp(tweak)
-      case CryptoContext.BouncyCastle => tweakMultiplyWithBouncyCastle(tweak)
-    }
-  }
-
-  def tweakMultiplyWithSecp(tweak: FieldElement): ECPublicKey = {
-    val mulBytes = NativeSecp256k1.pubKeyTweakMul(bytes.toArray,
-                                                  tweak.bytes.toArray,
-                                                  isCompressed)
-    ECPublicKey(ByteVector(mulBytes))
-  }
-
-  def tweakMultiplyWithBouncyCastle(tweak: FieldElement): ECPublicKey = {
-    BouncyCastleUtil.pubKeyTweakMul(this, tweak.bytes)
+    CryptoContext.cryptoRuntime.tweakMultiply(this, tweak)
   }
 }
 
@@ -587,29 +416,8 @@ object ECPublicKey extends Factory[ECPublicKey] {
     * Mimics this function in bitcoin core
     * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.cpp#L207-L212]]
     */
-  def isFullyValid(bytes: ByteVector): Boolean = {
-    isFullyValid(bytes, CryptoContext.default)
-  }
-
-  def isFullyValid(bytes: ByteVector, context: CryptoContext): Boolean = {
-    context match {
-      case CryptoContext.LibSecp256k1 => isFullyValidWithSecp(bytes)
-      case CryptoContext.BouncyCastle => isFullyValidWithBouncyCastle(bytes)
-    }
-  }
-
-  def isFullyValidWithSecp(bytes: ByteVector): Boolean = {
-    try {
-      NativeSecp256k1.isValidPubKey(bytes.toArray) && isValid(bytes)
-    } catch {
-      case scala.util.control.NonFatal(_) =>
-        false
-    }
-  }
-
-  def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean = {
-    BouncyCastleUtil.validatePublicKey(bytes) && isValid(bytes)
-  }
+  def isFullyValid(bytes: ByteVector): Boolean =
+    isValid(bytes) && CryptoContext.cryptoRuntime.isValidPubKey(bytes)
 
   /** Mimics the CPubKey::IsValid function in Bitcoin core, this is a consensus rule
     * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.h#L158]]
