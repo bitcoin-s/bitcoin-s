@@ -2,7 +2,7 @@ package org.bitcoins.dlc.oracle.config
 
 import com.typesafe.config.Config
 import org.bitcoins.core.api.dlcoracle.db.EventOutcomeDbHelper
-import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.config._
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.protocol.tlv.EnumEventDescriptorV0TLV
@@ -61,8 +61,18 @@ case class DLCOracleAppConfig(
         Files.createDirectories(datadir)
       }
 
+      val networkDir = {
+        val lastDirname = network match {
+          case MainNet  => "mainnet"
+          case TestNet3 => "testnet3"
+          case RegTest  => "regtest"
+          case SigNet   => "signet"
+        }
+        baseDatadir.resolve(lastDirname)
+      }
+
       // Move old db in network folder to oracle folder
-      val oldNetworkLocation = datadir.resolve("oracle.sqlite")
+      val oldNetworkLocation = networkDir.resolve("oracle.sqlite")
       if (!exists() && Files.exists(oldNetworkLocation)) {
         Files.move(oldNetworkLocation, dbPath)
       }
