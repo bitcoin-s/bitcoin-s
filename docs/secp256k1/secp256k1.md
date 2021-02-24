@@ -74,12 +74,15 @@ Here is an example of calling bouncy castle methods in `ECKey`
 ```scala mdoc:to-string
 
 val privKey = ECPrivateKey.freshPrivateKey
-val publicKey = privKey.publicKeyWithBouncyCastle
+// calls bouncy castle indirectly via CryptoContext
+val publicKey = privKey.publicKey
 val dataToSign = DoubleSha256Digest.empty
 
-val signature = privKey.signWithBouncyCastle(dataToSign.bytes)
+// calls bouncy castle indirectly via CryptoContext
+val signature = privKey.sign(dataToSign.bytes)
 
-val verified = publicKey.verifyWithBouncyCastle(dataToSign.bytes, signature)
+// calls bouncy castle indirectly via CryptoContext
+val verified = publicKey.verify(dataToSign.bytes, signature)
 
 println(s"Verified with bouncy castle=${verified}")
 
