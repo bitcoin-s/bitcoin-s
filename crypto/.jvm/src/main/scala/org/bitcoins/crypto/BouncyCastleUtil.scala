@@ -162,7 +162,7 @@ object BouncyCastleUtil {
     val rx = nonceKey.schnorrNonce
     val k = nonceKey.nonceKey.fieldElement
     val x = privateKey.schnorrKey.fieldElement
-    val e = CryptoUtil
+    val e = CryptoContext.cryptoRuntime
       .sha256SchnorrChallenge(
         rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign)
       .bytes
@@ -182,7 +182,7 @@ object BouncyCastleUtil {
 
     sT match {
       case Success(s) =>
-        val eBytes = CryptoUtil
+        val eBytes = CryptoContext.cryptoRuntime
           .sha256SchnorrChallenge(rx.bytes ++ schnorrPubKey.bytes ++ data)
           .bytes
 
@@ -204,7 +204,7 @@ object BouncyCastleUtil {
       nonce: SchnorrNonce,
       pubKey: SchnorrPublicKey,
       compressed: Boolean): ECPublicKey = {
-    val eBytes = CryptoUtil
+    val eBytes = CryptoContext.cryptoRuntime
       .sha256SchnorrChallenge(nonce.bytes ++ pubKey.bytes ++ data)
       .bytes
 
@@ -243,7 +243,9 @@ object AdaptorStuff {
       adaptorPoint: ECPublicKey,
       dataToSign: ByteVector): ECAdaptorSignature = {
     // Include dataToSign and adaptor in nonce derivation
-    val hash = CryptoUtil.sha256(dataToSign ++ serializePoint(adaptorPoint))
+    val hash =
+      CryptoContext.cryptoRuntime.sha256(
+        dataToSign ++ serializePoint(adaptorPoint))
     val k = DLEQStuff.dleqNonceFunc(hash.bytes,
                                     privateKey.fieldElement,
                                     "ECDSAAdaptorNon")
@@ -361,7 +363,7 @@ object DLEQStuff {
       fe: FieldElement,
       algoName: String): FieldElement = {
     val kBytes =
-      CryptoUtil.taggedSha256(fe.bytes ++ hash, algoName).bytes
+      CryptoContext.cryptoRuntime.taggedSha256(fe.bytes ++ hash, algoName).bytes
     FieldElement(kBytes)
   }
 
@@ -372,7 +374,7 @@ object DLEQStuff {
       r2: ECPublicKey,
       p1: ECPublicKey,
       p2: ECPublicKey): ByteVector = {
-    CryptoUtil
+    CryptoContext.cryptoRuntime
       .taggedSha256(
         serializePoint(adaptorPoint) ++ serializePoint(r1) ++ serializePoint(
           r2) ++ serializePoint(p1) ++ serializePoint(p2),
@@ -392,7 +394,7 @@ object DLEQStuff {
 
     // hash(Y || fe*G || fe*Y)
     val hash =
-      CryptoUtil
+      CryptoContext.cryptoRuntime
         .sha256(
           serializePoint(adaptorPoint) ++ serializePoint(p1) ++ serializePoint(
             p2))
