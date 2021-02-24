@@ -259,6 +259,32 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     }
   }
 
+  override def adaptorSign(
+      key: ECPrivateKey,
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature = {
+    AdaptorStuff.adaptorSign(key, adaptorPoint, msg)
+  }
+
+  override def adaptorComplete(
+      key: ECPrivateKey,
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
+    AdaptorStuff.adaptorComplete(key, adaptorSignature.adaptedSig)
+  }
+
+  override def extractAdaptorSecret(
+      signature: ECDigitalSignature,
+      adaptorSignature: ECAdaptorSignature,
+      key: ECPublicKey): ECPrivateKey = {
+    AdaptorStuff.extractAdaptorSecret(signature, adaptorSignature, key)
+  }
+
+  override def adaptorVerify(
+      adaptorSignature: ECAdaptorSignature,
+      key: ECPublicKey,
+      msg: ByteVector,
+      adaptorPoint: ECPublicKey): Boolean =
+    AdaptorStuff.adaptorVerify(adaptorSignature, key, msg, adaptorPoint)
 }
 
 object BouncycastleCryptoRuntime extends BouncycastleCryptoRuntime

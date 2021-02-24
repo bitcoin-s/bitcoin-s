@@ -192,4 +192,24 @@ trait CryptoRuntime {
       nonce: SchnorrNonce,
       pubKey: SchnorrPublicKey,
       compressed: Boolean): ECPublicKey
+
+  def adaptorSign(
+      key: ECPrivateKey,
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature
+
+  def adaptorComplete(
+      key: ECPrivateKey,
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature
+
+  def extractAdaptorSecret(
+      signature: ECDigitalSignature,
+      adaptorSignature: ECAdaptorSignature,
+      key: ECPublicKey): ECPrivateKey
+
+  def adaptorVerify(
+      adaptorSignature: ECAdaptorSignature,
+      key: ECPublicKey,
+      msg: ByteVector,
+      adaptorPoint: ECPublicKey): Boolean
 }

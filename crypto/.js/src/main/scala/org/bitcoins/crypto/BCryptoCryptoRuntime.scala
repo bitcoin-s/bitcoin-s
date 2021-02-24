@@ -115,6 +115,26 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       nonce: SchnorrNonce,
       pubKey: SchnorrPublicKey,
       compressed: Boolean): ECPublicKey = ???
+
+  override def adaptorSign(
+      key: ECPrivateKey,
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature = ???
+
+  override def adaptorComplete(
+      key: ECPrivateKey,
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = ???
+
+  override def extractAdaptorSecret(
+      signature: ECDigitalSignature,
+      adaptorSignature: ECAdaptorSignature,
+      key: ECPublicKey): ECPrivateKey = ???
+
+  override def adaptorVerify(
+      adaptorSignature: ECAdaptorSignature,
+      key: ECPublicKey,
+      msg: ByteVector,
+      adaptorPoint: ECPublicKey): Boolean = ???
 }
 
 object BCryptoCryptoRuntime extends BCryptoCryptoRuntime

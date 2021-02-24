@@ -168,6 +168,30 @@ trait CryptoUtil extends CryptoRuntime {
       pubKey: SchnorrPublicKey,
       compressed: Boolean): ECPublicKey =
     cryptoRuntime.schnorrComputeSigPoint(data, nonce, pubKey, compressed)
+
+  override def adaptorSign(
+      key: ECPrivateKey,
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature =
+    cryptoRuntime.adaptorSign(key, adaptorPoint, msg)
+
+  override def adaptorComplete(
+      key: ECPrivateKey,
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature =
+    cryptoRuntime.adaptorComplete(key, adaptorSignature)
+
+  override def extractAdaptorSecret(
+      signature: ECDigitalSignature,
+      adaptorSignature: ECAdaptorSignature,
+      key: ECPublicKey): ECPrivateKey =
+    cryptoRuntime.extractAdaptorSecret(signature, adaptorSignature, key)
+
+  override def adaptorVerify(
+      adaptorSignature: ECAdaptorSignature,
+      key: ECPublicKey,
+      msg: ByteVector,
+      adaptorPoint: ECPublicKey): Boolean =
+    cryptoRuntime.adaptorVerify(adaptorSignature, key, msg, adaptorPoint)
 }
 
 object CryptoUtil extends CryptoUtil

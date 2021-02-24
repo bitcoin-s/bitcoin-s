@@ -86,7 +86,7 @@ object AesSalt extends Factory[AesSalt] {
 }
 
 // we enforce the non-empty password length in the companion object
-// to be able to make this extend AnyVal, and not be boxed at bitcoin-s-crypto-runtime-factory
+// to be able to make this extend AnyVal, and not be boxed at runtime
 final case class AesPassword private (private val value: String)
     extends MaskedToString {
 
