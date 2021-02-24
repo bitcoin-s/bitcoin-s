@@ -29,7 +29,7 @@ import scala.util.{Failure, Success, Try}
 case class DLCTxSigner(
     builder: DLCTxBuilder,
     isInitiator: Boolean,
-    fundingKey: ECPrivateKey,
+    fundingKey: AdaptorSign,
     finalAddress: BitcoinAddress,
     fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(implicit
     ec: ExecutionContext) {
@@ -209,7 +209,7 @@ object DLCTxSigner {
   def buildCETSigningInfo(
       fundingTx: Transaction,
       fundingMultiSig: MultiSignatureScriptPubKey,
-      fundingKey: ECPrivateKey): ECSignatureParams[P2WSHV0InputInfo] = {
+      fundingKey: Sign): ECSignatureParams[P2WSHV0InputInfo] = {
     val fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
 
     ECSignatureParams(
@@ -238,7 +238,7 @@ object DLCTxSigner {
   def signCETs(
       outcomesAndCETs: Vector[OutcomeCETPair],
       cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
-      fundingKey: ECPrivateKey): Vector[(OracleOutcome, ECAdaptorSignature)] = {
+      fundingKey: AdaptorSign): Vector[(OracleOutcome, ECAdaptorSignature)] = {
     buildAndSignCETs(outcomesAndCETs, cetSigningInfo, fundingKey).map {
       case (outcome, _, sig) => outcome -> sig
     }
@@ -247,7 +247,7 @@ object DLCTxSigner {
   def buildAndSignCETs(
       outcomesAndCETs: Vector[OutcomeCETPair],
       cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
-      fundingKey: ECPrivateKey): Vector[
+      fundingKey: AdaptorSign): Vector[
     (OracleOutcome, WitnessTransaction, ECAdaptorSignature)] = {
     outcomesAndCETs.map { case OutcomeCETPair(outcome, cet) =>
       val adaptorPoint = outcome.sigPoint

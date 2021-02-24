@@ -127,3 +127,10 @@ object Sign {
     constant(EmptyDigitalSignature, publicKey)
   }
 }
+
+trait AdaptorSign extends Sign {
+
+  def adaptorSign(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature
+}

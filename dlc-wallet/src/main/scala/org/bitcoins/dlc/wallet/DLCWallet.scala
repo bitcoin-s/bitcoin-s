@@ -1,7 +1,5 @@
 package org.bitcoins.dlc.wallet
 
-import java.time.Instant
-
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -9,11 +7,11 @@ import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
+import org.bitcoins.core.hd._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc.DLCStatus._
 import org.bitcoins.core.protocol.dlc._
-import org.bitcoins.core.hd.{AddressType, BIP32Path, HDChainType}
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
@@ -32,6 +30,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
@@ -654,16 +653,16 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       changeSPK = txBuilder.finalizer.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
       changeAddr = Bech32Address(changeSPK, network)
 
-      // todo change to a ExtSign.deriveAndSignFuture
-      extPrivKey =
-        keyManager.rootExtPrivKey.deriveChildPrivKey(account.hdAccount)
+      bip32Path = BIP32Path(
+        account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
+                                         BIP32Node(dlc.keyIndex,
+                                                   hardened = false)))
+
+      privKeyPath = HDPath.fromString(bip32Path.toString)
+      fundingPrivKey =
+        keyManager.toSign(privKeyPath)
 
       dlcPubKeys = calcDLCPubKeys(account.xpub, dlc.keyIndex)
-
-      fundingPrivKey =
-        extPrivKey
-          .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${dlc.keyIndex}"))
-          .key
 
       _ = require(dlcPubKeys.fundingKey == fundingPrivKey.publicKey,
                   "Did not derive the same funding private and public key")
@@ -1272,19 +1271,19 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
                                    dlcAccept = dlcAccept,
                                    fundingInputsDb = fundingInputsDb)
     } yield {
-      val extPrivKey =
-        keyManager.rootExtPrivKey.deriveChildPrivKey(dlcDb.account)
-
       val (fundingKey, payoutAddress) = if (dlcDb.isInitiator) {
         (dlcOffer.fundingKey, dlcOffer.payoutAddress)
       } else {
         (dlcAccept.fundingKey, dlcAccept.finalAddress)
       }
 
-      val fundingPrivKey =
-        extPrivKey
-          .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${dlcDb.keyIndex}"))
-          .key
+      val bip32Path = BIP32Path(
+        dlcDb.account.path ++ Vector(BIP32Node(0, hardened = false),
+                                     BIP32Node(dlcDb.keyIndex,
+                                               hardened = false)))
+
+      val privKeyPath = HDPath.fromString(bip32Path.toString)
+      val fundingPrivKey = keyManager.toSign(privKeyPath)
 
       require(fundingKey == fundingPrivKey.publicKey)
 

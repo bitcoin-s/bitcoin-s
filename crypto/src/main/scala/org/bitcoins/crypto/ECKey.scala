@@ -25,7 +25,7 @@ sealed abstract class BaseECKey extends NetworkElement
   */
 sealed abstract class ECPrivateKey
     extends BaseECKey
-    with Sign
+    with AdaptorSign
     with MaskedToString {
 
   override def signFunction: ByteVector => Future[ECDigitalSignature] = {
@@ -187,7 +187,7 @@ sealed abstract class ECPrivateKey
     BouncyCastleUtil.schnorrSignWithNonce(dataToSign, this, nonce)
   }
 
-  def adaptorSign(
+  override def adaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector): ECAdaptorSignature = {
     adaptorSign(adaptorPoint, msg, CryptoContext.default)

@@ -14,7 +14,7 @@ import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerInitializeError,
   KeyManagerParams
 }
-import org.bitcoins.crypto.{AesPassword, Sign}
+import org.bitcoins.crypto.{AdaptorSign, AesPassword}
 import org.bitcoins.keymanager._
 import scodec.bits.BitVector
 
@@ -35,7 +35,7 @@ import scala.util.{Failure, Success, Try}
   * @see https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
   */
 class BIP39KeyManager(
-    private[bitcoins] val rootExtPrivKey: ExtPrivateKey,
+    private[this] val rootExtPrivKey: ExtPrivateKey,
     val kmParams: KeyManagerParams,
     val creationTime: Instant)
     extends BIP39KeyManagerApi
@@ -54,7 +54,7 @@ class BIP39KeyManager(
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO
     */
-  def toSign(privKeyPath: HDPath): Sign = {
+  def toSign(privKeyPath: HDPath): AdaptorSign = {
     val xpriv =
       rootExtPrivKey.deriveChildPrivKey(privKeyPath)
 

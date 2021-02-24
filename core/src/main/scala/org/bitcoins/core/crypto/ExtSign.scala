@@ -1,14 +1,14 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.crypto.{ECDigitalSignature, Sign}
+import org.bitcoins.crypto.{AdaptorSign, ECDigitalSignature}
 import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 /** A signing interface for [[ExtKey]] */
-trait ExtSign extends Sign {
+trait ExtSign extends AdaptorSign {
 
   def deriveAndSignFuture: (ByteVector, BIP32Path) => Future[ECDigitalSignature]
 
