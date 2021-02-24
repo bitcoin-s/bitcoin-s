@@ -192,10 +192,10 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             .map(_.toVector)
 
         case txos: Vector[SpendingInfoDb] =>
-          FutureUtil
-            .sequentially(txos)(txo =>
-              processExistingIncomingTxo(transaction, blockHashOpt, txo))
-            .map(_.toVector)
+          val processedVec = txos.map { txo =>
+            processExistingIncomingTxo(transaction, blockHashOpt, txo)
+          }
+          Future.sequence(processedVec)
       }
 
   protected def processOutgoingUtxos(
@@ -217,7 +217,11 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           outputsBeingSpent
       }
 
-      processed <- FutureUtil.sequentially(outputsToUse)(markAsPendingSpent)
+      processed <- Future
+        .sequence {
+          outputsToUse.map(markAsPendingSpent)
+        }
+        .map(_.toVector)
     } yield processed.flatten
 
   }
@@ -235,9 +239,11 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     logger.debug(
       s"Processing transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
 
+    val incomingF = processIncomingUtxos(transaction, blockHashOpt, newTags)
+    val outgoingF = processOutgoingUtxos(transaction, blockHashOpt)
     for {
-      incoming <- processIncomingUtxos(transaction, blockHashOpt, newTags)
-      outgoing <- processOutgoingUtxos(transaction, blockHashOpt)
+      incoming <- incomingF
+      outgoing <- outgoingF
       _ <- walletCallbacks.executeOnTransactionProcessed(logger, transaction)
     } yield {
       ProcessTxResult(incoming, outgoing)
@@ -393,7 +399,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     }
 
     stateF.flatMap { state =>
-      FutureUtil.sequentially(outputsWithIndex) { out =>
+      val outputsVec = outputsWithIndex.map { out =>
         processUtxo(
           transaction,
           out.index,
@@ -401,6 +407,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           blockHash = blockHashOpt
         )
       }
+      Future.sequence(outputsVec)
     }
   }
 
@@ -456,29 +463,48 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           s"Found $count relevant output(s) in transaction=${transaction.txIdBE.hex}: $outputStr")
 
         val totalIncoming = outputsWithIndex.map(_.output.value).sum
+
         val spks = outputsWithIndex.map(_.output.scriptPubKey)
         val spksInDbF = addressDAO.findByScriptPubKeys(spks.toVector)
-        for {
-          (txDb, _) <- insertIncomingTransaction(transaction, totalIncoming)
+
+        val ourOutputsF = for {
           spksInDb <- spksInDbF
-          ourOutputs = outputsWithIndex.collect {
+        } yield {
+          outputsWithIndex.collect {
             case OutputWithIndex(out, idx)
                 if spksInDb.map(_.scriptPubKey).contains(out.scriptPubKey) =>
               OutputWithIndex(out, idx)
           }
+        }
+
+        val txDbF: Future[(TransactionDb, IncomingTransactionDb)] =
+          insertIncomingTransaction(transaction, totalIncoming)
+
+        val prevTagsDbF = for {
+          (txDb, _) <- txDbF
           prevTagDbs <-
             addressTagDAO.findTx(txDb.transaction, networkParameters)
+        } yield prevTagDbs
+
+        val newTagsF = for {
+          ourOutputs <- ourOutputsF
+          prevTagDbs <- prevTagsDbF
           prevTags = prevTagDbs.map(_.addressTag)
-          tagsToUse =
-            prevTags
-              .filterNot(tag => newTags.contains(tag)) ++ newTags
+          tagsToUse = prevTags
+            .filterNot(tag => newTags.contains(tag)) ++ newTags
           newTagDbs = ourOutputs.flatMap { out =>
             val address = BitcoinAddress
               .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
             tagsToUse.map(tag => AddressTagDb(address, tag))
           }
-          _ <- addressTagDAO.createAll(newTagDbs.toVector)
+          created <- addressTagDAO.createAll(newTagDbs.toVector)
+        } yield created
+
+        for {
+          (txDb, _) <- txDbF
+          ourOutputs <- ourOutputsF
           utxos <- addUTXOsFut(ourOutputs, txDb.transaction, blockHashOpt)
+          _ <- newTagsF
         } yield utxos
     }
   }
