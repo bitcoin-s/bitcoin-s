@@ -50,6 +50,10 @@ case class DLCOracleAppConfig(
   /** The path to our encrypted mnemonic seed */
   lazy val seedPath: Path = kmConf.seedPath
 
+  override lazy val datadir: Path = {
+    baseDatadir.resolve("oracle")
+  }
+
   override def start(): Future[Unit] = {
     logger.debug(s"Initializing dlc oracle setup")
     super.start().flatMap { _ =>
