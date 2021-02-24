@@ -52,8 +52,8 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
         s"Field element cannot have more than 32 bytes, got $bytes from $x")
     }
 
-    (ECPublicKey(0x02.toByte +: bytes32).toPoint,
-     ECPublicKey(0x03.toByte +: bytes32).toPoint)
+    (BouncyCastleUtil.decodePoint(ECPublicKey(0x02.toByte +: bytes32)),
+     BouncyCastleUtil.decodePoint(ECPublicKey(0x03.toByte +: bytes32)))
   }
 
   override def recoverPublicKey(
@@ -76,8 +76,8 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       .subtract(curve.getG.multiply(m))
       .multiply(r.modInverse(curve.getN))
 
-    val pub1 = ECPublicKey.fromPoint(Q1)
-    val pub2 = ECPublicKey.fromPoint(Q2)
+    val pub1 = BouncyCastleUtil.decodePubKey(Q1)
+    val pub2 = BouncyCastleUtil.decodePubKey(Q2)
     (pub1, pub2)
   }
 
@@ -166,9 +166,10 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   }
 
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
-    val sumPoint = pk1.toPoint.add(pk2.toPoint)
+    val sumPoint =
+      BouncyCastleUtil.decodePoint(pk1).add(BouncyCastleUtil.decodePoint(pk2))
 
-    ECPublicKey.fromPoint(sumPoint)
+    BouncyCastleUtil.decodePubKey(sumPoint)
   }
 
   def pubKeyTweakAdd(
@@ -231,7 +232,7 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
         val sigPoint = s.publicKey
         val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
         val computedR = challengePoint.add(sigPoint)
-        val yCoord = computedR.toPoint.getRawYCoord
+        val yCoord = BouncyCastleUtil.decodePoint(computedR).getRawYCoord
 
         yCoord != null && !yCoord.testBitZero() && computedR.schnorrNonce == rx
       case Failure(_) => false

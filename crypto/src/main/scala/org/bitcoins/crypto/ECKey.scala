@@ -1,7 +1,5 @@
 package org.bitcoins.crypto
 
-import org.bouncycastle.math.ec.ECPoint
-
 import java.math.BigInteger
 import scodec.bits.ByteVector
 
@@ -105,7 +103,8 @@ sealed abstract class ECPrivateKey
   }
 
   def negate: ECPrivateKey = {
-    val negPrivKeyNum = CryptoParams.curve.getN
+    val negPrivKeyNum = new BigInteger( // CryptoParams.curve.getN
+      "115792089237316195423570985008687907852837564279074904382605163141518161494337")
       .subtract(new BigInteger(1, bytes.toArray))
     ECPrivateKey(ByteVector(negPrivKeyNum.toByteArray))
   }
@@ -256,15 +255,6 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def decompressed: ECPublicKey =
     CryptoContext.cryptoRuntime.decompressed(this)
 
-  /** Decodes a [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] in bitcoin-s
-    * to a [[org.bouncycastle.math.ec.ECPoint ECPoint]] data structure that is internal to the
-    * bouncy castle library
-    * @return
-    */
-  def toPoint: ECPoint = {
-    BouncyCastleUtil.decodePoint(bytes)
-  }
-
   /** Adds this ECPublicKey to another as points and returns the resulting ECPublicKey.
     *
     * Note: if this ever becomes a bottleneck, secp256k1_ec_pubkey_combine should
@@ -315,12 +305,4 @@ object ECPublicKey extends Factory[ECPublicKey] {
     * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.h#L158]]
     */
   def isValid(bytes: ByteVector): Boolean = bytes.nonEmpty
-
-  /** Creates a [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] from the
-    * [[org.bouncycastle.math.ec.ECPoint ECPoint]] data structure used internally inside of Bouncy Castle
-    */
-  def fromPoint(p: ECPoint, isCompressed: Boolean = true): ECPublicKey = {
-    val bytes = p.getEncoded(isCompressed)
-    ECPublicKey.fromBytes(ByteVector(bytes))
-  }
 }
