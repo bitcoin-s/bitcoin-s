@@ -15,6 +15,10 @@ packageDescription := "Runs a Bitcoin neutrino node and wallet, has functionalit
 
 dockerExposedPorts ++= Seq(9999)
 
-dockerEntrypoint := Seq("/opt/docker/bin/bitcoin-s-server",
-                        "--conf",
-                        "/opt/docker/docker-application.conf")
+dockerEntrypoint := Seq("/opt/docker/bin/bitcoin-s-server")
+
+//this passes in our default configuration for docker
+//you can override this by passing in a custom configuration
+//when the docker container is started by using bind mount
+//https://docs.docker.com/storage/bind-mounts/#start-a-container-with-a-bind-mount
+dockerCmd ++= Seq("--conf", "/opt/docker/docker-application.conf")
