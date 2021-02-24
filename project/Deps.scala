@@ -4,7 +4,7 @@ object Deps {
 
   object V {
     val bouncyCastle = "1.68"
-    val dropwizardMetricsV = "4.1.17" //https://github.com/dropwizard/metrics
+    val dropwizardMetricsV = "4.1.18" //https://github.com/dropwizard/metrics
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.3"
@@ -17,7 +17,7 @@ object Deps {
     val zeromq = "0.5.2"
     val akkav = "10.1.13"
     val playv = "2.9.2"
-    val akkaStreamv = "2.6.11"
+    val akkaStreamv = "2.6.13"
     val scodecV = "1.1.24"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.5"

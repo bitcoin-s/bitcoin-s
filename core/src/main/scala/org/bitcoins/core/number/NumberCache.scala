@@ -46,6 +46,11 @@ trait NumberCacheBigInt[T] extends NumberCache[T] {
   /** The max number cached (inclusive) */
   def maxCachedBigInt: BigInt = BigInt(maxCached)
 
+  /** [[org.bitcoins.core.protocol.CompactSizeUInt]] uses a UInt64
+    * which means we have larger uint64s used on a regular basis
+    */
+  override def maxCached: Long = 2048
+
   /** Checks if the given number is cached
     * if not, allocates a new object to represent the number
     */

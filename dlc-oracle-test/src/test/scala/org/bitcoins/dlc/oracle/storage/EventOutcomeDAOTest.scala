@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.oracle.storage
 
-import java.time.Instant
+import org.bitcoins.core.api.dlcoracle.db.{EventDb, EventOutcomeDb, RValueDb}
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
@@ -10,6 +10,8 @@ import org.bitcoins.testkit.Implicits.GeneratorOps
 import org.bitcoins.testkit.core.gen.TLVGen
 import org.bitcoins.testkit.fixtures.DLCOracleDAOFixture
 import scodec.bits.ByteVector
+
+import java.time.Instant
 
 class EventOutcomeDAOTest extends DLCOracleDAOFixture {
 

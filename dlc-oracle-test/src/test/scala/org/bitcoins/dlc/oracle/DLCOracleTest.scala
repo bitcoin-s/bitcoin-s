@@ -1,5 +1,7 @@
 package org.bitcoins.dlc.oracle
 
+import org.bitcoins.core.api.dlcoracle.db._
+import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
@@ -8,7 +10,6 @@ import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
-import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{ChainParamsGenerator, TLVGen}
 import org.bitcoins.testkit.fixtures.DLCOracleFixture
@@ -83,6 +84,15 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(events.size == 2)
         assert(events.forall(_.eventDescriptorTLV == testDescriptor))
       }
+  }
+
+  it must "fail to create an event with the same name" in {
+    dlcOracle: DLCOracle =>
+      for {
+        _ <- dlcOracle.createNewEvent("test", futureTime, testDescriptor)
+        res <- recoverToSucceededIf[IllegalArgumentException](
+          dlcOracle.createNewEvent("test", futureTime, testDescriptor))
+      } yield res
   }
 
   it must "create an enum new event and get its details" in {
@@ -269,7 +279,7 @@ class DLCOracleTest extends DLCOracleFixture {
         dlcOracle.createNewEvent("test", futureTime, descriptorV0TLV)
 
       signedEventDb <-
-        dlcOracle.signEvent(announcement.eventTLV, EnumAttestation(outcome))
+        dlcOracle.signEnumEvent(announcement.eventTLV, EnumAttestation(outcome))
       eventOpt <- dlcOracle.findEvent(announcement.eventTLV)
     } yield {
       assert(eventOpt.isDefined)
@@ -304,7 +314,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
     for {
       announcement <-
-        dlcOracle.createNewLargeRangedEvent(eventName = "test",
+        dlcOracle.createNewDigitDecompEvent(eventName = "test",
                                             maturationTime = futureTime,
                                             base = UInt16(10),
                                             isSigned = true,
@@ -381,7 +391,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
       for {
         announcement <-
-          dlcOracle.createNewLargeRangedEvent(eventName = "test",
+          dlcOracle.createNewDigitDecompEvent(eventName = "test",
                                               maturationTime = futureTime,
                                               base = UInt16(16),
                                               isSigned = true,
@@ -459,7 +469,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
       for {
         announcement <-
-          dlcOracle.createNewLargeRangedEvent(eventName = "test",
+          dlcOracle.createNewDigitDecompEvent(eventName = "test",
                                               maturationTime = futureTime,
                                               base = UInt16(2),
                                               isSigned = false,
@@ -569,7 +579,7 @@ class DLCOracleTest extends DLCOracleFixture {
     dlcOracle: DLCOracle =>
       for {
         announcement <-
-          dlcOracle.createNewLargeRangedEvent(eventName = "test",
+          dlcOracle.createNewDigitDecompEvent(eventName = "test",
                                               maturationTime = futureTime,
                                               base = UInt16(2),
                                               isSigned = false,

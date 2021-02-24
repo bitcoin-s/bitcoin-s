@@ -1,4 +1,4 @@
-package org.bitcoins.dlc.oracle
+package org.bitcoins.core.api.dlcoracle
 
 import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
