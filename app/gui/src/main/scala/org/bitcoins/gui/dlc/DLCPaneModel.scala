@@ -200,7 +200,7 @@ class DLCPaneModel(val resultArea: TextArea) extends Logging {
 
   def cancelDLC(status: DLCStatus): Unit = {
     val eventId =
-      status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
+      status.oracleInfos.head.singleOracleInfos.head.announcement.eventTLV.eventId
 
     val confirmed = status.state match {
       case DLCState.Offered | DLCState.Accepted =>

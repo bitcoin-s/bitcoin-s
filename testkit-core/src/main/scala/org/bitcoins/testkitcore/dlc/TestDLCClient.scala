@@ -153,11 +153,21 @@ object TestDLCClient {
     )
 
     val remoteOutcomes: ContractInfo = {
-      val descriptor =
-        outcomes.contractDescriptor.flip((input + remoteInput).satoshis)
-      val pair =
-        ContractOraclePair.fromDescriptorOracle(descriptor, outcomes.oracleInfo)
-      outcomes.copy(contractOraclePair = pair)
+      val descriptors =
+        outcomes.contractDescriptors.map(_.flip((input + remoteInput).satoshis))
+
+      val contracts = descriptors.zip(outcomes.oracleInfos).map {
+        case (descriptor, oracleInfo) =>
+          val pair =
+            ContractOraclePair.fromDescriptorOracle(descriptor, oracleInfo)
+          SingleContractInfo(outcomes.totalCollateral, pair)
+      }
+
+      outcomes match {
+        case _: SingleContractInfo => contracts.head
+        case _: DisjointUnionContractInfo =>
+          DisjointUnionContractInfo(contracts)
+      }
     }
 
     val changeAddress = BitcoinAddress.fromScriptPubKey(changeSPK, network)
@@ -219,6 +229,13 @@ object TestDLCClient {
       timeouts = timeouts
     )
 
+    val negotiationFields = offerOutcomes match {
+      case _: SingleContractInfo => DLCAccept.NoNegotiationFields
+      case DisjointUnionContractInfo(contracts) =>
+        DLCAccept.NegotiationFieldsV2(
+          contracts.map(_ => DLCAccept.NoNegotiationFields))
+    }
+
     val accept = DLCMessage.DLCAcceptWithoutSigs(
       totalCollateral = acceptInput.satoshis,
       pubKeys = acceptPubKeys,
@@ -226,7 +243,7 @@ object TestDLCClient {
       changeAddress = acceptChangeAddress,
       payoutSerialId = acceptPayoutSerialId,
       changeSerialId = acceptChangeSerialId,
-      negotiationFields = DLCAccept.NoNegotiationFields,
+      negotiationFields = negotiationFields,
       tempContractId = offer.tempContractId
     )
 

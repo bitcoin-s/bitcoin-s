@@ -40,7 +40,7 @@ case class SingleOracleDLCTemplate(
   override val toContractInfo: ContractInfo = {
     val pair: NumericPair =
       ContractOraclePair.NumericPair(contractDescriptor, oracleInfo)
-    ContractInfo(totalCollateral.satoshis, pair)
+    SingleContractInfo(totalCollateral.satoshis, pair)
   }
 }
 
@@ -71,7 +71,7 @@ case class MultiOracleDLCTemplate(
   override val toContractInfo: ContractInfo = {
     val pair: NumericPair =
       ContractOraclePair.NumericPair(contractDescriptor, oracleInfo)
-    ContractInfo(totalCollateral.satoshis, pair)
+    SingleContractInfo(totalCollateral.satoshis, pair)
   }
 }
 
