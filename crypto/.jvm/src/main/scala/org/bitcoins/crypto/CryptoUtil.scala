@@ -14,7 +14,7 @@ import java.math.BigInteger
   */
 trait CryptoUtil extends CryptoRuntime {
 
-  /** The underlying bitcoin-s-crypto-runtime-factory for the specific platform we are running on */
+  /** The underlying runtime for the specific platform we are running on */
   private lazy val cryptoRuntime: CryptoRuntime = CryptoContext.cryptoRuntime
 
   override lazy val cryptoContext: CryptoContext = cryptoRuntime.cryptoContext
@@ -43,7 +43,7 @@ trait CryptoUtil extends CryptoRuntime {
   }
 
   def doubleSHA256(str: String): DoubleSha256Digest = {
-    doubleSHA256(serializeForHash(str))
+    cryptoRuntime.doubleSHA256(serializeForHash(str))
   }
 
   /** Takes sha256(bytes). */
@@ -52,7 +52,7 @@ trait CryptoUtil extends CryptoRuntime {
   }
 
   def taggedSha256(str: String, tag: String): Sha256Digest = {
-    taggedSha256(serializeForHash(str), tag)
+    cryptoRuntime.taggedSha256(serializeForHash(str), tag)
   }
 
   /** Performs SHA1(bytes). */
@@ -61,7 +61,7 @@ trait CryptoUtil extends CryptoRuntime {
   }
 
   def sha1(str: String): Sha1Digest = {
-    sha1(serializeForHash(str))
+    cryptoRuntime.sha1(serializeForHash(str))
   }
 
   /** Performs RIPEMD160(bytes). */
@@ -70,7 +70,7 @@ trait CryptoUtil extends CryptoRuntime {
   }
 
   def ripeMd160(str: String): RipeMd160Digest = {
-    ripeMd160(serializeForHash(str))
+    cryptoRuntime.ripeMd160(serializeForHash(str))
   }
 
   /** Calculates `HMAC-SHA512(key, data)`
