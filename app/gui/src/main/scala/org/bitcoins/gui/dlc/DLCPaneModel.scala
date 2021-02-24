@@ -13,6 +13,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   EnumSingleOracleInfo,
   NumericContractDescriptor,
   NumericSingleOracleInfo,
+  SingleContractInfo,
   SingleOracleInfo
 }
 import org.bitcoins.core.protocol.tlv._
@@ -136,7 +137,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
       builder.append(
         s"Serialized Oracle Announcement: ${oracleInfo.announcement.hex}\n\n")
 
-      contractInfo.contractDescriptor match {
+      contractInfo.contractDescriptors.head match {
         case descriptor: EnumContractDescriptor =>
           builder.append("Outcomes and oracle sigs in order of entry:\n")
           descriptor.keys.foreach { outcome =>
@@ -243,7 +244,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
         }
         val builder = new StringBuilder()
 
-        val contractInfo = ContractInfo(contractDescriptor, oracleInfo)
+        val contractInfo = SingleContractInfo(contractDescriptor, oracleInfo)
         builder.append(s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
         GlobalDLCData.lastContractInfo = contractInfo.hex
 
@@ -287,7 +288,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
         pairOpt match {
           case Some(pair) =>
             val contractInfo =
-              ContractInfo(totalCol, pair)
+              SingleContractInfo(totalCol, pair)
             builder.append(
               s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
             GlobalDLCData.lastContractInfo = contractInfo.hex

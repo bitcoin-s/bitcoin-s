@@ -30,7 +30,8 @@ class AcceptDLCDialog
   def validateMatchingAnnouncement(
       offer: LnMessage[DLCOfferTLV],
       announcement: OracleAnnouncementTLV): Boolean = {
-    val fromOffer = OracleInfo.fromTLV(offer.tlv.contractInfo.oracleInfo)
+    val fromOffer = OracleInfo.fromTLV(
+      offer.tlv.contractInfo.asInstanceOf[ContractInfoV0TLV].oracleInfo)
     val fromAnnouncement = SingleOracleInfo(announcement)
 
     fromOffer == fromAnnouncement

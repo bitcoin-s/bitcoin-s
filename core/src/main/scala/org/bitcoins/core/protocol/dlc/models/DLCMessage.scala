@@ -100,8 +100,10 @@ object DLCMessage {
       changeSerialId != fundOutputSerialId,
       s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)")
 
-    val oracleInfo: OracleInfo = contractInfo.oracleInfo
-    val contractDescriptor: ContractDescriptor = contractInfo.contractDescriptor
+    val oracleInfos: Vector[OracleInfo] = contractInfo.oracleInfos
+
+    val contractDescriptors: Vector[ContractDescriptor] =
+      contractInfo.contractDescriptors
 
     lazy val paramHash: Sha256DigestBE = calcParamHash(contractInfo, timeouts)
 
@@ -115,7 +117,7 @@ object DLCMessage {
       DLCOfferTLV(
         contractFlags = 0x00,
         chainHash = chainHash,
-        contractInfo.toTLV,
+        contractInfo = contractInfo.toTLV,
         fundingPubKey = pubKeys.fundingKey,
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
         payoutSerialId = payoutSerialId,
@@ -261,6 +263,18 @@ object DLCMessage {
         NegotiationFieldsV1TLV(roundingIntervals.toTLV)
     }
 
+    case class NegotiationFieldsV2(
+        nestedNegotiationFields: Vector[NegotiationFields])
+        extends TLVSerializable[NegotiationFieldsV2TLV]
+        with NegotiationFields {
+      require(
+        nestedNegotiationFields.forall(!_.isInstanceOf[NegotiationFieldsV2]))
+
+      override def toTLV: NegotiationFieldsV2TLV = {
+        NegotiationFieldsV2TLV(nestedNegotiationFields.map(_.toTLV))
+      }
+    }
+
     object NegotiationFields {
 
       def fromTLV(tlv: NegotiationFieldsTLV): NegotiationFields = {
@@ -268,6 +282,9 @@ object DLCMessage {
           case NoNegotiationFieldsTLV => NoNegotiationFields
           case NegotiationFieldsV1TLV(roundingIntervalsTLV) =>
             NegotiationFieldsV1(RoundingIntervals.fromTLV(roundingIntervalsTLV))
+          case NegotiationFieldsV2TLV(nestedNegotiationFields) =>
+            NegotiationFieldsV2(
+              nestedNegotiationFields.map(NegotiationFields.fromTLV))
         }
       }
     }

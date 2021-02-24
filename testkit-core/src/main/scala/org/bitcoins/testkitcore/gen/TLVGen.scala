@@ -319,8 +319,9 @@ trait TLVGen {
       offer <- dlcOfferTLV
       (oracleInfo, oraclePrivKey, oracleRValue) <- oracleInfoV0TLVWithKeys
     } yield {
-      (offer.copy(contractInfo =
-         offer.contractInfo.copy(oracleInfo = oracleInfo)),
+      (offer.copy(contractInfo = offer.contractInfo
+         .asInstanceOf[ContractInfoV0TLV]
+         .copy(oracleInfo = oracleInfo)),
        oraclePrivKey,
        oracleRValue)
     }

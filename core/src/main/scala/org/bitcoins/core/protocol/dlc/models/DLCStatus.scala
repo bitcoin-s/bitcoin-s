@@ -20,7 +20,7 @@ sealed trait DLCStatus {
   def state: DLCState
   def tempContractId: Sha256Digest
   def contractInfo: ContractInfo
-  def oracleInfo: OracleInfo = contractInfo.oracleInfo
+  def oracleInfos: Vector[OracleInfo] = contractInfo.oracleInfos
   def timeouts: DLCTimeouts
   def feeRate: FeeUnit
   def totalCollateral: CurrencyUnit

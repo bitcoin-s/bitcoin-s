@@ -234,6 +234,22 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "oracleInfo" -> Element(oracleInfo)
         )
         DLCTLVTestVector(tlv, "contract_info_v0", fields)
+      case ContractInfoV1TLV(totalCollateral, contracts) =>
+        val fields = Vector(
+          "tpe" -> Element(ContractInfoV1TLV.tpe),
+          "length" -> Element(tlv.length),
+          "totalCollateral" -> Element(totalCollateral.toUInt64),
+          "numDisjointEvents" -> Element(BigSizeUInt(contracts.length)),
+          "contracts" -> MultiElement(contracts.map {
+            case (descriptor, oracleInfo) =>
+              NamedMultiElement(
+                Vector(
+                  "contractDescriptor" -> Element(descriptor),
+                  "oracleInfo" -> Element(oracleInfo)
+                ))
+          })
+        )
+        DLCTLVTestVector(tlv, "contract_info_v1", fields)
       case FundingInputV0TLV(inputSerialId,
                              prevTx,
                              prevTxVout,
@@ -334,6 +350,14 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "rounding_intervals_v0" -> Element(roundingIntervalsV0TLV)
         )
         DLCTLVTestVector(tlv, "negotiation_fields_v1", fields)
+      case NegotiationFieldsV2TLV(nestedNegotiationFields) =>
+        val fields = Vector(
+          "tpe" -> Element(NegotiationFieldsV2TLV.tpe),
+          "length" -> Element(tlv.length),
+          "nested_negotiation_fields" -> MultiElement(
+            nestedNegotiationFields.map(Element(_)))
+        )
+        DLCTLVTestVector(tlv, "negotiation_fields_v2", fields)
       case DLCAcceptTLV(tempContractId,
                         totalCollateralSatoshis,
                         fundingPubKey,

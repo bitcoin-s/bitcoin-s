@@ -75,7 +75,10 @@ class DLCTableView(model: DLCPaneModel) {
         new StringProperty(
           status,
           "Oracle",
-          status.value.oracleInfo.asInstanceOf[SingleOracleInfo].publicKey.hex
+          status.value.oracleInfos.head
+            .asInstanceOf[SingleOracleInfo]
+            .publicKey
+            .hex
         ) // FIXME
       }
     }
@@ -86,7 +89,7 @@ class DLCTableView(model: DLCPaneModel) {
       cellValueFactory = { status =>
         new StringProperty(status,
                            "Event",
-                           status.value.oracleInfo
+                           status.value.oracleInfos.head
                              .asInstanceOf[SingleOracleInfo]
                              .nonces
                              .map(_.hex)

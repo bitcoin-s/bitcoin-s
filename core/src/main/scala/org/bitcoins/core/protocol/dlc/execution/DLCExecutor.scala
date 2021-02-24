@@ -132,7 +132,18 @@ object DLCExecutor {
       fundingTx: Transaction,
       fundOutputIndex: Int
   ): ExecutedDLCOutcome = {
-    val threshold = contractInfo.oracleInfo.threshold
+    val sigOracles = oracleSigs.map(_.oracle)
+
+    val oracleInfoOpt = contractInfo.oracleInfos.find { oracleInfo =>
+      oracleInfo.threshold <= oracleSigs.length &&
+      sigOracles.forall(oracleInfo.singleOracleInfos.contains)
+    }
+
+    val oracleInfo = oracleInfoOpt.getOrElse(
+      throw new IllegalArgumentException(
+        s"Signatures do not correspond to any possible outcome! $oracleSigs"))
+
+    val threshold = oracleInfo.threshold
     val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
 
     var msgOpt: Option[OracleOutcome] = None

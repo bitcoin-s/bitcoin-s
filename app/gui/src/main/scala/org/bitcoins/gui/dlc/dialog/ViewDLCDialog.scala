@@ -87,7 +87,7 @@ object ViewDLCDialog {
       row += 1
       add(new Label("Oracle Info:"), 0, row)
       add(new TextField() {
-            text = status.oracleInfo.hex
+            text = status.oracleInfos.head.hex
             editable = false
           },
           columnIndex = 1,
@@ -184,7 +184,7 @@ object ViewDLCDialog {
       add(node, columnIndex = 1, rowIndex = row)
 
       row += 1
-      status.contractInfo.contractDescriptor match {
+      status.contractInfo.contractDescriptors.head match {
         case _: EnumContractDescriptor => ()
         case descriptor: NumericContractDescriptor =>
           val previewGraphButton: Button = new Button("Preview Graph") {
