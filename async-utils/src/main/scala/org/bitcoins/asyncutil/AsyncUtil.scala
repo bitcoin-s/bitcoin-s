@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.util
+package org.bitcoins.asyncutil
 
 import org.bitcoins.core.util.BitcoinSLogger
 

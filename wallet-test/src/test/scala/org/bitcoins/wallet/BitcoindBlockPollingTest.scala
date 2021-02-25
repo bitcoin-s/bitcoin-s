@@ -1,8 +1,8 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency._
 import org.bitcoins.db.AppConfig
-import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.BitcoinSAsyncTest

@@ -2,6 +2,7 @@ package org.bitcoins.node
 
 import akka.Done
 import akka.actor.ActorSystem
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.bloom.BloomFilter
@@ -10,7 +11,6 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.{Future, Promise}
 

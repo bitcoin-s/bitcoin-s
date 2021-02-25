@@ -9,6 +9,7 @@ import akka.http.scaladsl.model._
 import akka.stream.StreamTcpException
 import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonParseException
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config.{
@@ -27,7 +28,6 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
   PasswordBased
 }
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
-import org.bitcoins.rpc.util.AsyncUtil
 import play.api.libs.json._
 
 import scala.concurrent._

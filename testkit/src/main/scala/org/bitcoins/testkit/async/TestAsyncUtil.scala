@@ -1,13 +1,12 @@
 package org.bitcoins.testkit.async
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 
-abstract class TestAsyncUtil
-    extends org.bitcoins.rpc.util.AsyncUtil
-    with Serializable {
+abstract class TestAsyncUtil extends AsyncUtil with Serializable {
 
   override protected def retryUntilSatisfiedWithCounter(
       conditionF: () => Future[Boolean],
