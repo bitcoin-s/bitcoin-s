@@ -1,14 +1,12 @@
 package org.bitcoins.testkit.async
 
-import akka.actor.ActorSystem
+import org.bitcoins.asyncutil.AsyncUtil
 import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 
-abstract class TestAsyncUtil
-    extends org.bitcoins.rpc.util.AsyncUtil
-    with Serializable {
+abstract class TestAsyncUtil extends AsyncUtil with Serializable {
 
   override protected def retryUntilSatisfiedWithCounter(
       conditionF: () => Future[Boolean],
@@ -16,7 +14,7 @@ abstract class TestAsyncUtil
       counter: Int,
       maxTries: Int,
       stackTrace: Array[StackTraceElement])(implicit
-      system: ActorSystem): Future[Unit] = {
+      ec: ExecutionContext): Future[Unit] = {
     val retryF = super
       .retryUntilSatisfiedWithCounter(conditionF,
                                       duration,
@@ -24,7 +22,7 @@ abstract class TestAsyncUtil
                                       maxTries,
                                       stackTrace)
 
-    TestAsyncUtil.transformRetryToTestFailure(retryF)(system.dispatcher)
+    TestAsyncUtil.transformRetryToTestFailure(retryF)
   }
 }
 

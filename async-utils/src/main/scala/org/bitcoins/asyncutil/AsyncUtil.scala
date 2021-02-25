@@ -1,8 +1,8 @@
-package org.bitcoins.rpc.util
+package org.bitcoins.asyncutil
 
-import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
 
+import java.util.concurrent.{Executors, TimeUnit}
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -24,7 +24,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       condition: => Boolean,
       interval: FiniteDuration = AsyncUtil.DEFAULT_INTERVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(implicit
-      system: ActorSystem): Future[Unit] = {
+      ec: ExecutionContext): Future[Unit] = {
     val f = () => Future.successful(condition)
     retryUntilSatisfiedF(f, interval, maxTries)
   }
@@ -40,7 +40,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       conditionF: () => Future[Boolean],
       interval: FiniteDuration = AsyncUtil.DEFAULT_INTERVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(implicit
-      system: ActorSystem): Future[Unit] = {
+      ec: ExecutionContext): Future[Unit] = {
     val stackTrace: Array[StackTraceElement] =
       Thread.currentThread().getStackTrace
 
@@ -81,10 +81,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       counter: Int = 0,
       maxTries: Int,
       stackTrace: Array[StackTraceElement])(implicit
-      system: ActorSystem): Future[Unit] = {
-
-    import system.dispatcher
-
+      ec: ExecutionContext): Future[Unit] = {
     conditionF().flatMap { condition =>
       if (condition) {
         Future.unit
@@ -96,7 +93,8 @@ abstract class AsyncUtil extends BitcoinSLogger {
         val p = Promise[Boolean]()
         val runnable = retryRunnable(condition, p)
 
-        system.scheduler.scheduleOnce(delay = interval, runnable = runnable)
+        AsyncUtil.scheduler
+          .schedule(runnable, interval.toMillis, TimeUnit.MILLISECONDS)
 
         p.future.flatMap {
           case true => Future.unit
@@ -122,7 +120,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       condition: () => Boolean,
       interval: FiniteDuration = AsyncUtil.DEFAULT_INTERVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(implicit
-      system: ActorSystem): Future[Unit] = {
+      ec: ExecutionContext): Future[Unit] = {
 
     //type hackery here to go from () => Boolean to () => Future[Boolean]
     //to make sure we re-evaluate every time retryUntilSatisfied is called
@@ -137,7 +135,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       conditionF: () => Future[Boolean],
       interval: FiniteDuration = AsyncUtil.DEFAULT_INTERVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(implicit
-      system: ActorSystem): Future[Unit] = {
+      ec: ExecutionContext): Future[Unit] = {
 
     retryUntilSatisfiedF(conditionF = conditionF,
                          interval = interval,
@@ -148,6 +146,8 @@ abstract class AsyncUtil extends BitcoinSLogger {
 
 object AsyncUtil extends AsyncUtil {
 
+  private[bitcoins] val scheduler = Executors.newScheduledThreadPool(2)
+
   /** The default interval between async attempts
     */
   private[bitcoins] val DEFAULT_INTERVAL: FiniteDuration = 100.milliseconds
@@ -155,5 +155,4 @@ object AsyncUtil extends AsyncUtil {
   /** The default number of async attempts before timing out
     */
   private[bitcoins] val DEFAULT_MAX_TRIES: Int = 50
-
 }

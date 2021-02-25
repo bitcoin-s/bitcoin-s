@@ -1,5 +1,6 @@
 package org.bitcoins.rpc.common
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResultPreV19
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddNodeArgument,
@@ -9,7 +10,6 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 

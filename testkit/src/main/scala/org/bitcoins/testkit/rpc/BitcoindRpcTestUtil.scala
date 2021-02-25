@@ -4,6 +4,7 @@ import java.io.File
 import java.net.URI
 import java.nio.file.{Files, Path}
 import akka.actor.ActorSystem
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetBlockWithTransactionsResult,
@@ -43,7 +44,7 @@ import org.bitcoins.rpc.config.{
   BitcoindInstance,
   ZmqConfig
 }
-import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil}
 import org.bitcoins.util.ListUtil
 
@@ -589,6 +590,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       client: BitcoindRpcClient,
       interval: FiniteDuration = 100.milliseconds,
       maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
     AsyncUtil.retryUntilSatisfiedF(conditionF = { () => client.isStoppedF },
                                    interval = interval,
                                    maxTries = maxTries)

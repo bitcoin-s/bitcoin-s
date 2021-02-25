@@ -2,6 +2,7 @@ package org.bitcoins.node
 
 import akka.Done
 import akka.actor.ActorSystem
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -25,7 +26,6 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageSender
 }
-import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}

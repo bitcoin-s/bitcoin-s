@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
@@ -30,7 +31,6 @@ import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.NodeUri
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.rpc.util.AsyncUtil
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 

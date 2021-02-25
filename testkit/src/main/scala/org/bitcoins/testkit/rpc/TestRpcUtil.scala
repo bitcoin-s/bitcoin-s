@@ -1,9 +1,8 @@
 package org.bitcoins.testkit.rpc
 
-import akka.actor.ActorSystem
 import org.bitcoins.testkit.async.TestAsyncUtil
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 
 abstract class TestRpcUtil extends org.bitcoins.rpc.util.RpcUtil {
@@ -14,7 +13,7 @@ abstract class TestRpcUtil extends org.bitcoins.rpc.util.RpcUtil {
       counter: Int,
       maxTries: Int,
       stackTrace: Array[StackTraceElement])(implicit
-      system: ActorSystem): Future[Unit] = {
+      ec: ExecutionContext): Future[Unit] = {
     val retryF = super
       .retryUntilSatisfiedWithCounter(conditionF,
                                       duration,
@@ -22,7 +21,7 @@ abstract class TestRpcUtil extends org.bitcoins.rpc.util.RpcUtil {
                                       maxTries,
                                       stackTrace)
 
-    TestAsyncUtil.transformRetryToTestFailure(retryF)(system.dispatcher)
+    TestAsyncUtil.transformRetryToTestFailure(retryF)
   }
 }
 
