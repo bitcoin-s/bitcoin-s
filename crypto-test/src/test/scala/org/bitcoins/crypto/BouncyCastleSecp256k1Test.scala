@@ -57,8 +57,6 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
                 NumberGenerator.bytevector(33))
     forAll(keyOrGarbageGen) { bytes =>
       assert(
-//        ECPublicKey.isFullyValid(bytes, context = BouncyCastle) ==
-//          ECPublicKey.isFullyValid(bytes, context = LibSecp256k1)
         LibSecp256k1CryptoRuntime.isValidPubKey(bytes) ==
           BouncycastleCryptoRuntime.isValidPubKey(bytes)
       )

@@ -102,10 +102,12 @@ sealed abstract class ECPrivateKey
     }
   }
 
+  // CryptoParams.curve.getN
+  private val N: BigInteger = new BigInteger(
+    "115792089237316195423570985008687907852837564279074904382605163141518161494337")
+
   def negate: ECPrivateKey = {
-    val negPrivKeyNum = new BigInteger( // CryptoParams.curve.getN
-      "115792089237316195423570985008687907852837564279074904382605163141518161494337")
-      .subtract(new BigInteger(1, bytes.toArray))
+    val negPrivKeyNum = N.subtract(new BigInteger(1, bytes.toArray))
     ECPrivateKey(ByteVector(negPrivKeyNum.toByteArray))
   }
 
