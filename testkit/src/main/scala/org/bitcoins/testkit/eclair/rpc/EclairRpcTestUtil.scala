@@ -244,6 +244,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       client: EclairApi,
       chanId: ChannelId,
       state: ChannelState)(implicit system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
     logger.debug(s"Awaiting ${chanId} to enter ${state} state")
     def isState(): Future[Boolean] = {
       val chanF = client.channel(chanId)
@@ -294,6 +295,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       failFast: Boolean)(implicit
       system: ActorSystem,
       tag: ClassTag[T]): Future[Unit] = {
+    import system.dispatcher
     logger.debug(
       s"Awaiting payment ${paymentId} to enter ${tag.runtimeClass.getName} state")
 
@@ -336,6 +338,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       maxTries: Int = 60)(implicit
       system: ActorSystem,
       tag: ClassTag[T]): Future[Unit] = {
+    import system.dispatcher
     logger.debug(
       s"Awaiting payment ${paymentHash} to enter ${tag.runtimeClass.getName} state")
 
@@ -719,21 +722,21 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     * Fails the future if they are not sychronized within the given timeout.
     */
   def awaitEclairInSync(eclair: EclairRpcClient, bitcoind: BitcoindRpcClient)(
-      implicit
-      system: ActorSystem,
-      ec: ExecutionContext): Future[Unit] = {
-
-    def clientInSync(client: EclairRpcClient, bitcoind: BitcoindRpcClient)(
-        implicit ec: ExecutionContext): Future[Boolean] =
-      for {
-        blockCount <- bitcoind.getBlockCount
-        info <- client.getInfo
-      } yield info.blockHeight == blockCount
-
+      implicit system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
     TestAsyncUtil.retryUntilSatisfiedF(conditionF =
                                          () => clientInSync(eclair, bitcoind),
                                        interval = 1.seconds)
   }
+
+  private def clientInSync(
+      client: EclairRpcClient,
+      bitcoind: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): Future[Boolean] =
+    for {
+      blockCount <- bitcoind.getBlockCount
+      info <- client.getInfo
+    } yield info.blockHeight == blockCount
 
   /** Shuts down an eclair daemon and the bitcoind daemon it is associated with
     */

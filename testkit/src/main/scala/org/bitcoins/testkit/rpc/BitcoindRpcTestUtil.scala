@@ -589,6 +589,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       client: BitcoindRpcClient,
       interval: FiniteDuration = 100.milliseconds,
       maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
     AsyncUtil.retryUntilSatisfiedF(conditionF = { () => client.isStoppedF },
                                    interval = interval,
                                    maxTries = maxTries)
