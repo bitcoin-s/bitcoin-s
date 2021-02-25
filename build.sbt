@@ -115,6 +115,7 @@ lazy val `bitcoin-s` = project
     appServerTest,
     appCommons,
     appCommonsTest,
+    testkitCore,
     testkit,
     zmq,
     oracleServer,
@@ -304,7 +305,7 @@ lazy val coreTest = project
   )
   .dependsOn(
     core % testAndCompile,
-    testkit
+    testkitCore
   )
 
 lazy val asyncUtils = project

@@ -1,7 +1,7 @@
 package org.bitcoins.core.script
 
 import org.bitcoins.core.script.constant._
-import org.bitcoins.testkit.util.TestUtil
+import org.bitcoins.testkitcore.util.TestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 2/6/16.

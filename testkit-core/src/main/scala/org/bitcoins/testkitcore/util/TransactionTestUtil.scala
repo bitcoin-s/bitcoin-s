@@ -1,4 +1,4 @@
-package org.bitcoins.testkit.util
+package org.bitcoins.testkitcore.util
 
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}

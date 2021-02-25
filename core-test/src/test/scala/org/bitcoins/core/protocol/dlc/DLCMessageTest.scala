@@ -9,9 +9,9 @@ import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-class DLCMessageTest extends BitcoinSAsyncTest {
+class DLCMessageTest extends BitcoinSJvmTest {
   behavior of "DLCMessage"
 
   it must "not allow a DLCTimeout where the contract times out before it matures" in {

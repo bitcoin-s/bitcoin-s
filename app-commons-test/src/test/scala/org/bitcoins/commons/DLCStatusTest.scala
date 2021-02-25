@@ -1,13 +1,14 @@
-package org.bitcoins.core.protocol.dlc
+package org.bitcoins.commons
 
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.DLCMessage._
+import org.bitcoins.core.protocol.dlc.{DLCState, DLCStatus}
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator, TLVGen}
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalacheck.Gen
 import upickle.default._
 
-class DLCStatusTest extends BitcoinSAsyncTest {
+class DLCStatusTest extends BitcoinSJvmTest {
   behavior of "DLCStatus"
 
   it must "have json symmetry in DLCStatus.Offered" in {

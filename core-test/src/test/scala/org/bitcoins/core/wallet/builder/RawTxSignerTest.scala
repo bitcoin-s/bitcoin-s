@@ -22,9 +22,9 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-class RawTxSignerTest extends BitcoinSAsyncTest {
+class RawTxSignerTest extends BitcoinSJvmTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode

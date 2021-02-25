@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.crypto.ECDigitalSignature
-import org.bitcoins.testkit.util.TestUtil
+import org.bitcoins.testkitcore.util.TestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 3/16/16.

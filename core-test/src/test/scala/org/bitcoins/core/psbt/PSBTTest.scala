@@ -10,13 +10,13 @@ import org.bitcoins.core.psbt.OutputPSBTRecord.{RedeemScript, WitnessScript}
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkitcore.gen._
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import scodec.bits._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class PSBTTest extends BitcoinSAsyncTest {
+class PSBTTest extends BitcoinSJvmTest {
 
   behavior of "PSBT"
 

@@ -12,9 +12,9 @@ import org.bitcoins.testkitcore.gen.{
   ScriptGenerators,
   TransactionGenerators
 }
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-class InputInfoTest extends BitcoinSAsyncTest {
+class InputInfoTest extends BitcoinSJvmTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode

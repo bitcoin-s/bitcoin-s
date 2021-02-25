@@ -1,4 +1,4 @@
-package org.bitcoins.core.api
+package org.bitcoins.wallet
 
 import org.bitcoins.core.api.wallet.CoinSelector
 import org.bitcoins.core.api.wallet.db.{SegwitV0SpendingInfo, SpendingInfoDb}
@@ -7,13 +7,13 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.{
   CryptoGenerators,
   TransactionGenerators,
   WitnessGenerators
 }
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.scalatest.FutureOutcome
 
 class CoinSelectorTest extends BitcoinSWalletTest {

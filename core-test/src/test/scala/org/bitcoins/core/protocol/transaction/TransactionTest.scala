@@ -15,7 +15,7 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkitcore.gen.TransactionGenerators
-import org.bitcoins.testkit.util.TestUtil
+import org.bitcoins.testkitcore.util.TestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 import spray.json._

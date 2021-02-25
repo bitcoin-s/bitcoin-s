@@ -28,12 +28,12 @@ import org.bitcoins.testkitcore.gen.{
   ScriptGenerators,
   TransactionGenerators
 }
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
 import scala.annotation.nowarn
 import scala.concurrent.{ExecutionContext, Future}
 
-class SignerTest extends BitcoinSAsyncTest {
+class SignerTest extends BitcoinSJvmTest {
 
   implicit val ec: ExecutionContext = ExecutionContext.global
 

@@ -1,13 +1,15 @@
 package org.bitcoins.core.api
 
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalatest.Assertion
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Success
 
-class CallbackTest extends BitcoinSAsyncTest {
+class CallbackTest extends BitcoinSJvmTest {
 
   val testTimeout: FiniteDuration = 10.seconds
 
@@ -15,12 +17,16 @@ class CallbackTest extends BitcoinSAsyncTest {
     val promise = Promise[Assertion]()
 
     val f1: Callback[Unit] = _ => {
-      system.scheduler.scheduleOnce(testTimeout) {
+
+      val runnable: Runnable = () => {
         if (!promise.isCompleted) {
           promise.failure(
             new RuntimeException("2nd callback did not start before timeout"))
         }
       }
+      AsyncUtil.scheduler.schedule(runnable,
+                                   testTimeout.toMillis,
+                                   TimeUnit.MILLISECONDS)
       promise.future.map(_ => ())
     }
 

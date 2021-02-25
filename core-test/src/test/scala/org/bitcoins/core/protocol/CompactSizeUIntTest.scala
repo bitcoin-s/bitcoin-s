@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.testkit.util.TestUtil
+import org.bitcoins.testkitcore.util.TestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 

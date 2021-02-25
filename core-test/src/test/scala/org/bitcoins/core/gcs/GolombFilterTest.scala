@@ -6,10 +6,11 @@ import org.bitcoins.crypto.{DoubleSha256Digest, SipHashKey}
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.gen.CryptoGenerators._
 import org.bitcoins.testkitcore.gen.NumberGenerator
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalacheck.Gen
 import scodec.bits.{ByteVector, _}
 
-class GolombFilterTest extends BitcoinSAsyncTest {
+class GolombFilterTest extends BitcoinSJvmTest {
   behavior of "GolombFilter"
 
   it must "match encoded data for arbitrary GCS parameters" in {

@@ -1,10 +1,9 @@
-package org.bitcoins.testkit.util
+package org.bitcoins.testkitcore.util
 
 import org.bitcoins.core.crypto.BaseTxSigComponent
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
   P2SHScriptSignature,
@@ -16,6 +15,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutput
 }
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._

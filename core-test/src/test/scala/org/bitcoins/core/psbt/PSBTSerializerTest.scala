@@ -13,13 +13,13 @@ import org.bitcoins.core.psbt.InputPSBTRecord.ProofOfReservesCommitment
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkitcore.gen.PSBTGenerators
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import scodec.bits._
 
 /** Test vectors are taken directly from the BIP 174 reference sheet
   * https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
   */
-class PSBTSerializerTest extends BitcoinSAsyncTest {
+class PSBTSerializerTest extends BitcoinSJvmTest {
 
   val validPsbts: Vector[ByteVector] = Vector(
     // PSBT with one P2PKH input. Outputs are empty

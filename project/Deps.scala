@@ -422,6 +422,7 @@ object Deps {
   }
 
   val testkitCore = List(
+    Compile.newMicroPickle,
     Compile.scalaCollectionCompat,
     Compile.scalacheck,
     Compile.scalaTest,

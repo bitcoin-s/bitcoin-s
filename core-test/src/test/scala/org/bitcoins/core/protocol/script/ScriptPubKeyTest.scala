@@ -7,7 +7,7 @@ import org.bitcoins.core.script.stack.OP_DUP
 import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.CryptoGenerators
-import org.bitcoins.testkit.util.TestUtil
+import org.bitcoins.testkitcore.util.TestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 1/14/16.

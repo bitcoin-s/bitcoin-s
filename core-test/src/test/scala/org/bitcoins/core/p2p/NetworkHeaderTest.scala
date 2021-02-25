@@ -4,7 +4,7 @@ import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.CryptoUtil
-import org.bitcoins.testkit.node.NodeTestUtil
+import org.bitcoins.testkitcore.node.NodeMessageTestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -13,13 +13,18 @@ import scala.util.Random
 class NetworkHeaderTest extends BitcoinSUnitTest {
 
   "MessageHeader" must "must create a message header for a message" in {
-    val messageHeader = NetworkHeader(TestNet3, NodeTestUtil.versionMessage)
+    val messageHeader =
+      NetworkHeader(TestNet3, NodeMessageTestUtil.versionMessage)
     messageHeader.network must be(TestNet3)
-    messageHeader.commandName must be(NodeTestUtil.versionMessage.commandName)
+    messageHeader.commandName must be(
+      NodeMessageTestUtil.versionMessage.commandName)
     messageHeader.payloadSize must be(
-      UInt32(NodeTestUtil.versionMessage.bytes.size))
+      UInt32(NodeMessageTestUtil.versionMessage.bytes.size))
     messageHeader.checksum must be(
-      CryptoUtil.doubleSHA256(NodeTestUtil.versionMessage.bytes).bytes.take(4))
+      CryptoUtil
+        .doubleSHA256(NodeMessageTestUtil.versionMessage.bytes)
+        .bytes
+        .take(4))
   }
 
   it must "build the correct message header for a verack message" in {
