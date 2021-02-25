@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db.EventDb
-import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
+import org.bitcoins.core.config._
 import org.bitcoins.core.number.{Int32, UInt16}
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.SigningVersion
@@ -90,7 +90,7 @@ class OracleRoutesSpec
     "get staking address" in {
       (mockOracleApi
         .stakingAddress(_: BitcoinNetwork))
-        .expects(RegTest)
+        .expects(MainNet)
         .returning(testAddress)
 
       val route =
