@@ -172,6 +172,9 @@ object Deps {
     // HTTP client lib
     val sttp = "com.softwaremill.sttp" %% "core" % V.sttpV
 
+    val scalaCollectionCompat =
+      "org.scala-lang.modules" %% "scala-collection-compat" % V.scalaCollectionCompatV
+
     val scalacheck =
       "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
 
@@ -419,6 +422,7 @@ object Deps {
   }
 
   val testkitCore = List(
+    Compile.scalaCollectionCompat,
     Compile.scalacheck,
     Compile.scalaTest,
     Compile.scalaTestPlus,
