@@ -38,7 +38,7 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
     *         p1.y is even, p2.y is odd
     */
-  override def recoverPoint(x: BigInteger): (ECPoint, ECPoint) = {
+  def recoverPoint(x: BigInteger): (ECPoint, ECPoint) = {
     val bytes = ByteVector(x.toByteArray)
 
     val bytes32 = if (bytes.length < 32) {
@@ -286,6 +286,17 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       msg: ByteVector,
       adaptorPoint: ECPublicKey): Boolean =
     AdaptorStuff.adaptorVerify(adaptorSignature, key, msg, adaptorPoint)
+
+  override def decodeSignature(
+      signature: ECDigitalSignature): (BigInt, BigInt) =
+    DERSignatureUtil.decodeSignature(signature)
+
+  override def isValidSignatureEncoding(
+      signature: ECDigitalSignature): Boolean =
+    DERSignatureUtil.isValidSignatureEncoding(signature)
+
+  override def isDEREncoded(signature: ECDigitalSignature): Boolean =
+    DERSignatureUtil.isDEREncoded(signature)
 }
 
 object BouncycastleCryptoRuntime extends BouncycastleCryptoRuntime

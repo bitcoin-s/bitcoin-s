@@ -86,8 +86,7 @@ lazy val `bitcoin-s` = project
     core,
     coreTest,
     cryptoJVM,
-    // TODO uncomment this
-//    cryptoJS,
+    cryptoJS,
     cryptoTest,
     dbCommons,
     dbCommonsTest,
@@ -127,8 +126,7 @@ lazy val `bitcoin-s` = project
     core,
     coreTest,
     cryptoJVM,
-    // TODO uncomment this
-//    cryptoJS,
+    cryptoJS,
     cryptoTest,
     dbCommons,
     dbCommonsTest,

@@ -1,6 +1,5 @@
 package org.bitcoins.crypto
 
-import org.bitcoin.NativeSecp256k1
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

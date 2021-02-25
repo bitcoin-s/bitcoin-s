@@ -13,13 +13,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
   override def freshPrivateKey: ECPrivateKey =
     BouncycastleCryptoRuntime.freshPrivateKey
 
-  /** @param x x coordinate
-    * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
-    *         p1.y is even, p2.y is odd
-    */
-  override def recoverPoint(x: BigInteger): (ECPoint, ECPoint) =
-    BouncycastleCryptoRuntime.recoverPoint(x)
-
   override def recoverPublicKey(
       signature: ECDigitalSignature,
       message: ByteVector): (ECPublicKey, ECPublicKey) =
@@ -270,6 +263,17 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
                                             msg,
                                             adaptorPoint)
   }
+
+  override def decodeSignature(
+      signature: ECDigitalSignature): (BigInt, BigInt) =
+    BouncycastleCryptoRuntime.decodeSignature(signature)
+
+  override def isValidSignatureEncoding(
+      signature: ECDigitalSignature): Boolean =
+    BouncycastleCryptoRuntime.isValidSignatureEncoding(signature)
+
+  override def isDEREncoded(signature: ECDigitalSignature): Boolean =
+    BouncycastleCryptoRuntime.isDEREncoded(signature)
 }
 
 object LibSecp256k1CryptoRuntime extends LibSecp256k1CryptoRuntime

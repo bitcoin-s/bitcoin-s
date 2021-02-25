@@ -1,6 +1,5 @@
 package org.bitcoins.crypto
 
-import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
 import scala.scalajs.js
@@ -38,12 +37,6 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def hmac512(key: ByteVector, data: ByteVector): ByteVector = ???
 
   override def normalize(str: String): String = ???
-
-  /** @param x x coordinate
-    * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
-    *         p1.y is even, p2.y is odd
-    */
-  override def recoverPoint(x: BigInteger): (ECPoint, ECPoint) = ???
 
   /** Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
     * can be verified with both, but only one of them matches that private key that was used to generate the signature.
@@ -135,6 +128,14 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       key: ECPublicKey,
       msg: ByteVector,
       adaptorPoint: ECPublicKey): Boolean = ???
+
+  override def decodeSignature(
+      signature: ECDigitalSignature): (scala.BigInt, scala.BigInt) = ???
+
+  override def isValidSignatureEncoding(
+      signature: ECDigitalSignature): Boolean = ???
+
+  override def isDEREncoded(signature: ECDigitalSignature): Boolean = ???
 }
 
 object BCryptoCryptoRuntime extends BCryptoCryptoRuntime
