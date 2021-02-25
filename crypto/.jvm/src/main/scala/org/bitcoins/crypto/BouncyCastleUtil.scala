@@ -180,7 +180,7 @@ object AdaptorStuff {
       dataToSign: ByteVector): ECAdaptorSignature = {
     // Include dataToSign and adaptor in nonce derivation
     val hash =
-      CryptoContext.cryptoRuntime.sha256(
+      BouncycastleCryptoRuntime.sha256(
         dataToSign ++ serializePoint(adaptorPoint))
     val k = DLEQStuff.dleqNonceFunc(hash.bytes,
                                     privateKey.fieldElement,
@@ -299,7 +299,7 @@ object DLEQStuff {
       fe: FieldElement,
       algoName: String): FieldElement = {
     val kBytes =
-      CryptoContext.cryptoRuntime.taggedSha256(fe.bytes ++ hash, algoName).bytes
+      BouncycastleCryptoRuntime.taggedSha256(fe.bytes ++ hash, algoName).bytes
     FieldElement(kBytes)
   }
 
@@ -310,7 +310,7 @@ object DLEQStuff {
       r2: ECPublicKey,
       p1: ECPublicKey,
       p2: ECPublicKey): ByteVector = {
-    CryptoContext.cryptoRuntime
+    BouncycastleCryptoRuntime
       .taggedSha256(
         serializePoint(adaptorPoint) ++ serializePoint(r1) ++ serializePoint(
           r2) ++ serializePoint(p1) ++ serializePoint(p2),
@@ -330,7 +330,7 @@ object DLEQStuff {
 
     // hash(Y || fe*G || fe*Y)
     val hash =
-      CryptoContext.cryptoRuntime
+      BouncycastleCryptoRuntime
         .sha256(
           serializePoint(adaptorPoint) ++ serializePoint(p1) ++ serializePoint(
             p2))

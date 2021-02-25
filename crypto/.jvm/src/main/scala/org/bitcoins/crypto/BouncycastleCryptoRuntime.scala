@@ -202,10 +202,8 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     val rx = nonceKey.schnorrNonce
     val k = nonceKey.nonceKey.fieldElement
     val x = privateKey.schnorrKey.fieldElement
-    val e = CryptoContext.cryptoRuntime
-      .sha256SchnorrChallenge(
-        rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign)
-      .bytes
+    val e = sha256SchnorrChallenge(
+      rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign).bytes
 
     val challenge = x.multiply(FieldElement(e))
     val sig = k.add(challenge)
@@ -222,9 +220,8 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
 
     sT match {
       case Success(s) =>
-        val eBytes = CryptoContext.cryptoRuntime
-          .sha256SchnorrChallenge(rx.bytes ++ schnorrPubKey.bytes ++ data)
-          .bytes
+        val eBytes = sha256SchnorrChallenge(
+          rx.bytes ++ schnorrPubKey.bytes ++ data).bytes
 
         val e = FieldElement(eBytes)
         val negE = e.negate
@@ -244,9 +241,8 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       nonce: SchnorrNonce,
       pubKey: SchnorrPublicKey,
       compressed: Boolean): ECPublicKey = {
-    val eBytes = CryptoContext.cryptoRuntime
-      .sha256SchnorrChallenge(nonce.bytes ++ pubKey.bytes ++ data)
-      .bytes
+    val eBytes = sha256SchnorrChallenge(
+      nonce.bytes ++ pubKey.bytes ++ data).bytes
 
     val e = FieldElement(eBytes)
 
