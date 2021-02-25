@@ -1,6 +1,6 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class FieldElementTest extends BitcoinSUnitTest {

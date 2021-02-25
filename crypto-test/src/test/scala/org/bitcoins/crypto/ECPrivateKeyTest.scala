@@ -2,7 +2,7 @@ package org.bitcoins.crypto
 
 import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
-import org.bitcoins.testkit.core.gen.{
+import org.bitcoins.testkitcore.gen.{
   ChainParamsGenerator,
   CryptoGenerators,
   NumberGenerator

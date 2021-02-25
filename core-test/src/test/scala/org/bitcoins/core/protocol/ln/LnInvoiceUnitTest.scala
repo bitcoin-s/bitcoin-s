@@ -20,7 +20,7 @@ import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.util.Bech32
 import org.bitcoins.crypto._
-import org.bitcoins.testkit.core.gen.ln.LnInvoiceGen
+import org.bitcoins.testkitcore.gen.ln.LnInvoiceGen
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 

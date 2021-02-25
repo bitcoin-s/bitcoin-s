@@ -10,8 +10,8 @@ import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.{ChainParamsGenerator, TLVGen}
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.{ChainParamsGenerator, TLVGen}
 import org.bitcoins.testkit.fixtures.DLCOracleFixture
 
 import java.time.Instant

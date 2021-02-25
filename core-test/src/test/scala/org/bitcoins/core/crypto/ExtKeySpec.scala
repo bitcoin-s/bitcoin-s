@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.{Gen, Prop}
 

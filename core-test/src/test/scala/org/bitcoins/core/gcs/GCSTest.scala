@@ -3,7 +3,7 @@ package org.bitcoins.core.gcs
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.crypto.SipHashKey
-import org.bitcoins.testkit.core.gen.NumberGenerator
+import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import scodec.bits.{BinStringSyntax, ByteVector}

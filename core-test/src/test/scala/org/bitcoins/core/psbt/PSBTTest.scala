@@ -9,7 +9,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.{
 import org.bitcoins.core.psbt.OutputPSBTRecord.{RedeemScript, WitnessScript}
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto.CryptoUtil
-import org.bitcoins.testkit.core.gen._
+import org.bitcoins.testkitcore.gen._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits._
 

@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.script.constant.{OP_FALSE, OP_TRUE}
-import org.bitcoins.testkit.core.gen.{NumberGenerator, ScriptGenerators}
+import org.bitcoins.testkitcore.gen.{NumberGenerator, ScriptGenerators}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class ConditionalScriptSignatureTest extends BitcoinSUnitTest {

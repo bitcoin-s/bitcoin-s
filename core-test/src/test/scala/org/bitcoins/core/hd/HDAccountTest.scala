@@ -1,6 +1,6 @@
 package org.bitcoins.core.hd
 
-import org.bitcoins.testkit.core.gen.HDGenerators
+import org.bitcoins.testkitcore.gen.HDGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.testkit.wallet.WalletTestUtil
 

@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.testkit.core.gen.ScriptGenerators
+import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.scalacheck.{Prop, Properties}
 
 /** Created by chris on 6/22/16.

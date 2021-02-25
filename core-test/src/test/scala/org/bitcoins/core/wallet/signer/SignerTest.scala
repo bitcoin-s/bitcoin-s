@@ -22,7 +22,7 @@ import org.bitcoins.core.wallet.builder.{
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.ECDigitalSignature
-import org.bitcoins.testkit.core.gen.{
+import org.bitcoins.testkitcore.gen.{
   CreditingTxGen,
   GenUtil,
   ScriptGenerators,

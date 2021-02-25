@@ -9,7 +9,7 @@ import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.{OP_NOP, OP_RESERVED}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
-import org.bitcoins.testkit.core.gen.ScriptGenerators
+import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 

@@ -17,7 +17,7 @@ import org.bitcoins.crypto.{
   ECPrivateKey,
   EmptyDigitalSignature
 }
-import org.bitcoins.testkit.core.gen.{CreditingTxGen, ScriptGenerators}
+import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TransactionTestUtil}
 import scodec.bits.ByteVector
 

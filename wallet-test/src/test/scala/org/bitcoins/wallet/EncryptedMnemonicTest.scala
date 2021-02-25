@@ -3,8 +3,8 @@ package org.bitcoins.wallet
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager._
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.{Failure, Success}

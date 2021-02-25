@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.crypto.{DummyECDigitalSignature, ECPrivateKey}
-import org.bitcoins.testkit.core.gen.WitnessGenerators
+import org.bitcoins.testkitcore.gen.WitnessGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Prop
 

@@ -20,8 +20,8 @@ import org.bitcoins.crypto.{
   LowRDummyECDigitalSignature,
   Sign
 }
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.{CreditingTxGen, ScriptGenerators}
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class RawTxSignerTest extends BitcoinSAsyncTest {

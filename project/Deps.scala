@@ -418,6 +418,13 @@ object Deps {
     )
   }
 
+  val testkitCore = List(
+    Compile.scalacheck,
+    Compile.scalaTest,
+    Compile.scalaTestPlus,
+    Compile.slf4j
+  )
+
   val testkit = Def.setting {
     List(
       Compile.slf4j,

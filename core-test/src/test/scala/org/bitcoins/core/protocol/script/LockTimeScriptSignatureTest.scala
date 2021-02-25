@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.testkit.core.gen.ScriptGenerators
+import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class LockTimeScriptSignatureTest extends BitcoinSUnitTest {

@@ -543,6 +543,13 @@ lazy val nodeTest =
     )
     .enablePlugins(FlywayPlugin)
 
+lazy val testkitCore = project
+  .in(file("testkit-core"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(name := "bitcoin-s-testkit-core",
+            libraryDependencies ++= Deps.testkitCore)
+  .dependsOn(core, crypto)
+
 lazy val testkit = project
   .in(file("testkit"))
   .settings(CommonSettings.prodSettings: _*)
@@ -560,7 +567,8 @@ lazy val testkit = project
     node,
     wallet,
     zmq,
-    dlcOracle
+    dlcOracle,
+    testkitCore
   )
 
 lazy val docs = project

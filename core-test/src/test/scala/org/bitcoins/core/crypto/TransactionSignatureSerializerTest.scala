@@ -11,7 +11,7 @@ import org.bitcoins.core.util._
 import org.bitcoins.core.wallet.builder.StandardNonInteractiveFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.testkit.core.gen.{CreditingTxGen, ScriptGenerators}
+import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import scala.util.Try

@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.DLCMessage._
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator, TLVGen}
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 import upickle.default._

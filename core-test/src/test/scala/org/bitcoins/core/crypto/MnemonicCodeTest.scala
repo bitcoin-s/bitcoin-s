@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.Assertion
 import play.api.libs.json._

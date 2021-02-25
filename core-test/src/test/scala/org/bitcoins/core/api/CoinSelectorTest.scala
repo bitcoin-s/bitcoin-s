@@ -7,8 +7,8 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.{
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.{
   CryptoGenerators,
   TransactionGenerators,
   WitnessGenerators

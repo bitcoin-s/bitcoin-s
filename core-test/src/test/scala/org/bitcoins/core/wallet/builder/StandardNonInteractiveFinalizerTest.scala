@@ -13,8 +13,8 @@ import org.bitcoins.core.wallet.utxo.{
   UnassignedSegwitNativeInputInfo
 }
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.ScriptGenerators
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {

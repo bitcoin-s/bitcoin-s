@@ -12,7 +12,7 @@ import org.bitcoins.core.psbt.GlobalPSBTRecord.XPubKey
 import org.bitcoins.core.psbt.InputPSBTRecord.ProofOfReservesCommitment
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.testkit.core.gen.PSBTGenerators
+import org.bitcoins.testkitcore.gen.PSBTGenerators
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits._
 

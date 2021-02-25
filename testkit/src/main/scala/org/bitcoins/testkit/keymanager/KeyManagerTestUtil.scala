@@ -9,7 +9,7 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.scalacheck.Gen
 
 import scala.annotation.tailrec

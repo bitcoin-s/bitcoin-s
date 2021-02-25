@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
+import org.bitcoins.testkitcore.gen.BlockchainElementsGenerator
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import scala.io.Source

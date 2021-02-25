@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, HDGenerators}
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, HDGenerators}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class ExtSignTest extends BitcoinSAsyncTest {

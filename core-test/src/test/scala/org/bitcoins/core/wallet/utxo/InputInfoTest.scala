@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
-import org.bitcoins.testkit.core.gen.{
+import org.bitcoins.testkitcore.gen.{
   CreditingTxGen,
   GenUtil,
   ScriptGenerators,

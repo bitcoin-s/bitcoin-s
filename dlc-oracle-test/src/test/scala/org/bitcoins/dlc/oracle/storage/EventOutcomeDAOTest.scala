@@ -6,8 +6,8 @@ import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
-import org.bitcoins.testkit.Implicits.GeneratorOps
-import org.bitcoins.testkit.core.gen.TLVGen
+import org.bitcoins.testkitcore.Implicits.GeneratorOps
+import org.bitcoins.testkitcore.gen.TLVGen
 import org.bitcoins.testkit.fixtures.DLCOracleDAOFixture
 import scodec.bits.ByteVector
 

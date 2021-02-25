@@ -1,7 +1,7 @@
 package org.bitcoins.core.p2p
 
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.testkit.core.gen.p2p.P2PGenerator
+import org.bitcoins.testkitcore.gen.p2p.P2PGenerator
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 

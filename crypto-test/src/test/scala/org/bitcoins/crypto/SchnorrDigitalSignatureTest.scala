@@ -1,7 +1,7 @@
 package org.bitcoins.crypto
 
 import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
