@@ -1,7 +1,7 @@
 package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.p2p.TypeIdentifier.{MsgBlock, MsgFilteredBlock, MsgTx}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 5/31/16.
   */

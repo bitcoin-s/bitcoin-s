@@ -292,7 +292,7 @@ lazy val cryptoTest = project
   )
   .dependsOn(
     cryptoJVM % testAndCompile,
-    testkit
+    testkitCore
   )
 
 lazy val coreTest = project

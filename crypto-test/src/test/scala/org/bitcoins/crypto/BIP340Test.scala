@@ -1,6 +1,6 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
 import scodec.bits.ByteVector
 

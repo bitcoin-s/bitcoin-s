@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.tlv
 
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.testkitcore.gen.LnMessageGen
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 class LnMessageTest extends BitcoinSUnitTest {

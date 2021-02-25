@@ -11,7 +11,7 @@ import org.bitcoins.core.serializers.transaction.{
   RawTransactionInputParser,
   RawTransactionOutputParser
 }
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 class RawSerializerHelperTest extends BitcoinSUnitTest {

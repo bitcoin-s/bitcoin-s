@@ -5,7 +5,7 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager._
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.CryptoGenerators
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.util.{Failure, Success}
 

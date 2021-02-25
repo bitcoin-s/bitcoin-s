@@ -2,7 +2,8 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.ECDigitalSignature
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkit.util.TestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Created by chris on 4/1/16.

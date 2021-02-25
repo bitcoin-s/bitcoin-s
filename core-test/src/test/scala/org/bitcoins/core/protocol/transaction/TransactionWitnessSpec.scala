@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.transaction
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.crypto.{DummyECDigitalSignature, ECPrivateKey}
 import org.bitcoins.testkitcore.gen.WitnessGenerators
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Prop
 
 /** Created by chris on 11/28/16.

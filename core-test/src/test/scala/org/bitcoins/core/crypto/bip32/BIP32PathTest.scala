@@ -7,7 +7,7 @@ import org.bitcoins.testkitcore.gen.{
   HDGenerators,
   NumberGenerator
 }
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import scodec.bits._
 

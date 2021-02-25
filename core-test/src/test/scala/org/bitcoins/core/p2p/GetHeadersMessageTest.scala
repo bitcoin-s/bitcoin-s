@@ -4,7 +4,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkitcore.gen.p2p.DataMessageGenerator
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class GetHeadersMessageTest extends BitcoinSUnitTest {
 

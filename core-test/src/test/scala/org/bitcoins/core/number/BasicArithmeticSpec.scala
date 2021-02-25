@@ -1,7 +1,7 @@
 package org.bitcoins.core.number
 
 import org.bitcoins.testkitcore.gen.NumberGenerator
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class BasicArithmeticSpec extends BitcoinSUnitTest {
 

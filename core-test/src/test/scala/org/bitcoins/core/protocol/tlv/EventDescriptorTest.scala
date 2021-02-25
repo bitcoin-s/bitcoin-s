@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.tlv
 
 import org.bitcoins.core.number.{Int32, UInt16, UInt32}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.collection.immutable.NumericRange
 import scala.math.Numeric.BigDecimalAsIfIntegral

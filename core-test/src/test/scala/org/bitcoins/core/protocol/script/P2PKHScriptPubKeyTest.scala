@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.CryptoGenerators
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class P2PKHScriptPubKeyTest extends BitcoinSUnitTest {
 

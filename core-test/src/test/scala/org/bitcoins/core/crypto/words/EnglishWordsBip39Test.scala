@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto.words
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.io.Source
 

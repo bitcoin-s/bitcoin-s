@@ -4,7 +4,7 @@ import org.bitcoins.commons.jsonmodels.{SerializedPSBT, SerializedTransaction}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.psbt.{GlobalPSBTRecord, OutputPSBTRecord, PSBT}
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 
 class SerializedPSBTTest extends BitcoinSUnitTest {

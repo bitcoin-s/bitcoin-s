@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.ln
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkitcore.gen.ln.LnInvoiceGen
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class LnInvoiceSignatureTest extends BitcoinSUnitTest {
 

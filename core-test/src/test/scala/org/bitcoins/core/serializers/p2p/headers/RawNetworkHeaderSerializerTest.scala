@@ -3,7 +3,7 @@ package org.bitcoins.core.serializers.p2p.headers
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.NetworkPayload
 import org.bitcoins.testkit.node.NodeTestUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 
 class RawNetworkHeaderSerializerTest extends BitcoinSUnitTest {

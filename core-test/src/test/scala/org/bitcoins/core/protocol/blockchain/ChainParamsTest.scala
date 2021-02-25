@@ -1,7 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
 import java.math.BigInteger
-
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
@@ -12,7 +11,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 5/24/16.
   */

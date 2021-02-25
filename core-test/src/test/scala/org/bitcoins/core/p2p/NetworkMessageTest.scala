@@ -1,7 +1,7 @@
 package org.bitcoins.core.p2p
 
 import org.bitcoins.testkit.node.NodeTestUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class NetworkMessageTest extends BitcoinSUnitTest {
 

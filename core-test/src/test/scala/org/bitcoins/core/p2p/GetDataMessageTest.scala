@@ -2,7 +2,7 @@ package org.bitcoins.core.p2p
 
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.gen.p2p.DataMessageGenerator
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class GetDataMessageTest extends BitcoinSUnitTest {
 

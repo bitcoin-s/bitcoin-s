@@ -7,7 +7,7 @@ import org.bitcoins.testkitcore.gen.{
   CryptoGenerators,
   NumberGenerator
 }
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class ECPrivateKeyTest extends BitcoinSUnitTest {
   it must "create a private key from its hex representation" in {

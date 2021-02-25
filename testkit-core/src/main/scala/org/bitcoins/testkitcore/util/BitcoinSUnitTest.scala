@@ -1,13 +1,13 @@
-package org.bitcoins.testkit.util
+package org.bitcoins.testkitcore.util
 
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Shrink
 import org.scalactic.anyvals.PosInt
 import org.scalatest.concurrent.TimeLimitedTests
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.Span
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.concurrent.duration.DurationInt
 

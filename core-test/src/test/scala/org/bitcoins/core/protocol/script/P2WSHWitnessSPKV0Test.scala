@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.crypto.ECPrivateKey
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class P2WSHWitnessSPKV0Test extends BitcoinSUnitTest {
   val uncompressed = ECPrivateKey(false).publicKey

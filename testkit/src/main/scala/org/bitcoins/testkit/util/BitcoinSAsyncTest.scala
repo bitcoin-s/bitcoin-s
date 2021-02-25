@@ -7,6 +7,7 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
 import org.scalatest._
@@ -33,18 +34,6 @@ trait BaseAsyncTest
 
   implicit def chainParams: ChainParams = np.chainParams
 
-  implicit lazy val akkaTimeout = Timeout(10.seconds)
-
-  implicit val system: ActorSystem = {
-    ActorSystem(s"${getClass.getSimpleName}-${System.currentTimeMillis()}")
-  }
-
-  /** Needed because the default execution context will become overloaded
-    * if we do not specify a unique execution context for each suite
-    */
-  implicit override def executionContext: ExecutionContext =
-    system.dispatcher
-
   override lazy val timeLimit: Span = 5.minutes
 
   /** This def ensures that shrinks are disabled for all calls to forAll.
@@ -54,10 +43,6 @@ trait BaseAsyncTest
     * of the generator you want to enable shrinking on.
     */
   implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny[T]
-
-  override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
-  }
 
   /** The configuration for property based tests in our testing suite
     * @see http://www.scalatest.org/user_guide/writing_scalacheck_style_properties
@@ -299,6 +284,12 @@ trait BaseAsyncTest
   }
 }
 
+trait BitcoinSJvmTest extends AsyncFlatSpec with BaseAsyncTest {
+
+  implicit override def executionContext: ExecutionContext =
+    scala.concurrent.ExecutionContext.global
+}
+
 /** A trait that uses [[AsyncFlatSpec]] to execute tests
   * This is different than [[BitcoinsBaseAsyncTest]] in the sense that
   * it extends [[AsyncFlatSpec]]. Some test cases in bitcoin-s we want
@@ -307,7 +298,23 @@ trait BaseAsyncTest
   *
   * This test trait should be used for async tests that do NOT use a fixture.
   */
-trait BitcoinSAsyncTest extends AsyncFlatSpec with BaseAsyncTest
+trait BitcoinSAsyncTest extends AsyncFlatSpec with BaseAsyncTest {
+  implicit lazy val akkaTimeout = Timeout(10.seconds)
+
+  implicit val system: ActorSystem = {
+    ActorSystem(s"${getClass.getSimpleName}-${System.currentTimeMillis()}")
+  }
+
+  /** Needed because the default execution context will become overloaded
+    * if we do not specify a unique execution context for each suite
+    */
+  implicit override def executionContext: ExecutionContext =
+    system.dispatcher
+
+  override def afterAll(): Unit = {
+    TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
+  }
+}
 
 /** A trait that uses [[FixtureAsyncFlatSpec AsyncFlatSpec]] to execute tests
   * This is different than [[BitcoinSAsyncTest BitcoinSAsyncTest]] as you can use a fixture

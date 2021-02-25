@@ -2,7 +2,7 @@ package org.bitcoins.core.currency
 
 import org.bitcoins.core.number.Int64
 import org.bitcoins.testkitcore.gen.CurrencyUnitGenerator
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 
 import scala.util.Try

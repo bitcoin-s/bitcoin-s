@@ -10,7 +10,7 @@ import org.bitcoins.crypto.{
   DummyECDigitalSignature,
   ECPublicKey
 }
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class TxSigComponentTest extends BitcoinSUnitTest {
   behavior of "TxSigComponent"

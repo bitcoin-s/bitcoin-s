@@ -8,7 +8,7 @@ import org.bitcoins.testkitcore.gen.{
   HDGenerators,
   NumberGenerator
 }
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.HexStringSyntax
 
 import scala.util.{Failure, Success, Try}

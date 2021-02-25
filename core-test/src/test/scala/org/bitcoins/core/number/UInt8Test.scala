@@ -1,6 +1,6 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 class UInt8Test extends BitcoinSUnitTest {

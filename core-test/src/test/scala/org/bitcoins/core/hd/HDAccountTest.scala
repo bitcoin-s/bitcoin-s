@@ -1,8 +1,8 @@
 package org.bitcoins.core.hd
 
 import org.bitcoins.testkitcore.gen.HDGenerators
-import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.testkit.wallet.WalletTestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class HDAccountTest extends BitcoinSUnitTest {
 

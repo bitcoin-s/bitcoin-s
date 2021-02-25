@@ -1,6 +1,6 @@
 package org.bitcoins.core.gcs
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 class FilterTypeTest extends BitcoinSUnitTest {

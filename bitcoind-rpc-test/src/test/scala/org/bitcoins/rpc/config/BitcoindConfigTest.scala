@@ -2,7 +2,8 @@ package org.bitcoins.rpc.config
 
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, FileUtil}
+import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class BitcoindConfigTest extends BitcoinSUnitTest {
 

@@ -2,7 +2,7 @@ package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Created by chris on 1/11/16.

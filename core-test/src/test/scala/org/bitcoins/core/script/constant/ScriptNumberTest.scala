@@ -1,7 +1,7 @@
 package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.number.Int64
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 1/25/16.
   */

@@ -8,7 +8,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.ScriptGenerators
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class InputSigningInfoTest extends BitcoinSUnitTest {
   behavior of "InputSigningInfo"

@@ -1,6 +1,6 @@
 package org.bitcoins.core.p2p
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class ProtocolVersionTest extends BitcoinSUnitTest {
 
