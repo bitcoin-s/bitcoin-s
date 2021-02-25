@@ -27,10 +27,10 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
     val privKeyForUse = privKey.schnorrKey
 
     val randHash =
-      CryptoContext.cryptoRuntime.sha256SchnorrAuxRand(auxRand).bytes
+      CryptoUtil.sha256SchnorrAuxRand(auxRand).bytes
     val maskedKey = randHash.xor(privKeyForUse.bytes)
 
-    val nonceHash = CryptoContext.cryptoRuntime.sha256SchnorrNonce(
+    val nonceHash = CryptoUtil.sha256SchnorrNonce(
       maskedKey ++ privKey.schnorrPublicKey.bytes ++ message)
 
     ECPrivateKey(nonceHash.bytes).nonceKey

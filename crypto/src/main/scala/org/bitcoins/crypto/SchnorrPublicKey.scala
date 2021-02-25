@@ -12,7 +12,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
           s"Schnorr public key must be a valid x coordinate, got $bytes")
 
   def verify(data: ByteVector, signature: SchnorrDigitalSignature): Boolean = {
-    CryptoContext.cryptoRuntime.schnorrVerify(data, this, signature)
+    CryptoUtil.schnorrVerify(data, this, signature)
   }
 
   def computeSigPoint(data: ByteVector, nonce: SchnorrNonce): ECPublicKey = {
@@ -30,9 +30,9 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
     val bytesAndNonces = bytesToHash.zip(nonces)
 
     val hashesAndNoncePoints = bytesAndNonces.map { case (bytes, nonce) =>
-      val eBytes = CryptoContext.cryptoRuntime
+      val eBytes = CryptoUtil
         .sha256SchnorrChallenge(
-          nonce.bytes ++ this.bytes ++ CryptoContext.cryptoRuntime
+          nonce.bytes ++ this.bytes ++ CryptoUtil
             .sha256DLCAttestation(bytes)
             .bytes)
         .bytes
@@ -53,16 +53,13 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
       data: ByteVector,
       nonce: SchnorrNonce,
       compressed: Boolean): ECPublicKey = {
-    CryptoContext.cryptoRuntime.schnorrComputeSigPoint(data,
-                                                       nonce,
-                                                       this,
-                                                       compressed)
+    CryptoUtil.schnorrComputeSigPoint(data, nonce, this, compressed)
   }
 
   def publicKey: ECPublicKey = {
     val pubKeyBytes = ByteVector.fromByte(2) ++ bytes
 
-    val validPubKey = CryptoContext.cryptoRuntime.isValidPubKey(pubKeyBytes)
+    val validPubKey = CryptoUtil.isValidPubKey(pubKeyBytes)
 
     require(
       validPubKey,

@@ -1,7 +1,5 @@
 package org.bitcoins.crypto
 
-import java.math.BigInteger
-
 import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.params.{
   ECPrivateKeyParameters,
@@ -11,6 +9,7 @@ import org.bouncycastle.crypto.signers.{ECDSASigner, HMacDSAKCalculator}
 import org.bouncycastle.math.ec.{ECCurve, ECPoint}
 import scodec.bits.ByteVector
 
+import java.math.BigInteger
 import scala.util.Try
 
 object BouncyCastleUtil {

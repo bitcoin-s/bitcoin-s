@@ -3,8 +3,6 @@ package org.bitcoins.crypto
 import scala.scalajs.js
 import scala.scalajs.js.annotation._
 
-import scala.scalajs.js._
-
 /** Scala wrapper for
   * https://github.com/bcoin-org/bcrypto/blob/4db0feecde86bce71b0c33d31f7178fb14e7381f/lib/js/sha256.js#L54
   */

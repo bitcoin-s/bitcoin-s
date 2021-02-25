@@ -2,8 +2,6 @@ package org.bitcoins.crypto
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation._
-import scala.scalajs.js._
-import org.bitcoins.crypto.Buffer
 
 @js.native
 @JSImport("bcrypto/lib/random.js", JSImport.Namespace)

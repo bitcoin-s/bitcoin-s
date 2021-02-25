@@ -1,8 +1,8 @@
 package org.bitcoins.crypto
 
-import java.math.BigInteger
 import scodec.bits.ByteVector
 
+import java.math.BigInteger
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.{ExecutionContext, Future}
@@ -29,7 +29,7 @@ sealed abstract class ECPrivateKey
     * @return the digital signature
     */
   override def sign(dataToSign: ByteVector): ECDigitalSignature = {
-    CryptoContext.cryptoRuntime.sign(this, dataToSign)
+    CryptoUtil.sign(this, dataToSign)
   }
 
   def sign(hash: HashDigest): ECDigitalSignature = sign(hash.bytes)
@@ -41,7 +41,7 @@ sealed abstract class ECPrivateKey
   override def signWithEntropy(
       bytes: ByteVector,
       entropy: ByteVector): ECDigitalSignature = {
-    CryptoContext.cryptoRuntime.signWithEntropy(this, bytes, entropy)
+    CryptoUtil.signWithEntropy(this, bytes, entropy)
   }
 
   override def signWithEntropyFunction: (
@@ -59,24 +59,24 @@ sealed abstract class ECPrivateKey
   def schnorrSign(
       dataToSign: ByteVector,
       auxRand: ByteVector): SchnorrDigitalSignature = {
-    CryptoContext.cryptoRuntime.schnorrSign(dataToSign, this, auxRand)
+    CryptoUtil.schnorrSign(dataToSign, this, auxRand)
   }
 
   def schnorrSignWithNonce(
       dataToSign: ByteVector,
       nonce: ECPrivateKey): SchnorrDigitalSignature = {
-    CryptoContext.cryptoRuntime.schnorrSignWithNonce(dataToSign, this, nonce)
+    CryptoUtil.schnorrSignWithNonce(dataToSign, this, nonce)
   }
 
   def adaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector): ECAdaptorSignature = {
-    CryptoContext.cryptoRuntime.adaptorSign(this, adaptorPoint, msg)
+    CryptoUtil.adaptorSign(this, adaptorPoint, msg)
   }
 
   def completeAdaptorSignature(
       adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
-    CryptoContext.cryptoRuntime.adaptorComplete(this, adaptorSignature)
+    CryptoUtil.adaptorComplete(this, adaptorSignature)
   }
 
   def completeAdaptorSignature(
@@ -110,7 +110,7 @@ sealed abstract class ECPrivateKey
   }
 
   def add(other: ECPrivateKey): ECPrivateKey = {
-    CryptoContext.cryptoRuntime.add(this, other)
+    CryptoUtil.add(this, other)
   }
 
   /** Signifies if the this private key corresponds to a compressed public key */
@@ -118,7 +118,7 @@ sealed abstract class ECPrivateKey
 
   /** Derives the public for a the private key */
   override def publicKey: ECPublicKey =
-    CryptoContext.cryptoRuntime.publicKey(this)
+    CryptoUtil.publicKey(this)
 
   def schnorrPublicKey: SchnorrPublicKey = {
     SchnorrPublicKey(publicKey.bytes)
@@ -140,8 +140,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
       isCompressed: Boolean,
       ec: ExecutionContext)
       extends ECPrivateKey {
-    require(CryptoContext.cryptoRuntime.secKeyVerify(bytes),
-            s"Invalid key, hex: ${bytes.toHex}")
+    require(CryptoUtil.secKeyVerify(bytes), s"Invalid key, hex: ${bytes.toHex}")
   }
 
   def apply(bytes: ByteVector, isCompressed: Boolean)(implicit
@@ -185,7 +184,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   def freshPrivateKey: ECPrivateKey = freshPrivateKey(true)
 
   def freshPrivateKey(isCompressed: Boolean): ECPrivateKey = {
-    val priv = CryptoContext.cryptoRuntime.freshPrivateKey
+    val priv = CryptoUtil.freshPrivateKey
     ECPrivateKey.fromBytes(priv.bytes, isCompressed)
   }
 }
@@ -202,7 +201,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
     * [[org.bitcoins.crypto.ECPublicKey ECPublicKey]].
     */
   def verify(data: ByteVector, signature: ECDigitalSignature): Boolean = {
-    CryptoContext.cryptoRuntime.verify(this, data, signature)
+    CryptoUtil.verify(this, data, signature)
   }
 
   def verify(hex: String, signature: ECDigitalSignature): Boolean =
@@ -229,18 +228,13 @@ sealed abstract class ECPublicKey extends BaseECKey {
       msg: ByteVector,
       adaptorPoint: ECPublicKey,
       adaptorSignature: ECAdaptorSignature): Boolean = {
-    CryptoContext.cryptoRuntime.adaptorVerify(adaptorSignature,
-                                              this,
-                                              msg,
-                                              adaptorPoint)
+    CryptoUtil.adaptorVerify(adaptorSignature, this, msg, adaptorPoint)
   }
 
   def extractAdaptorSecret(
       adaptorSignature: ECAdaptorSignature,
       signature: ECDigitalSignature): ECPrivateKey = {
-    CryptoContext.cryptoRuntime.extractAdaptorSecret(signature,
-                                                     adaptorSignature,
-                                                     this)
+    CryptoUtil.extractAdaptorSecret(signature, adaptorSignature, this)
   }
 
   override def toString: String = "ECPublicKey(" + hex + ")"
@@ -253,7 +247,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
   /** Returns the decompressed version of this [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] */
   def decompressed: ECPublicKey =
-    CryptoContext.cryptoRuntime.decompressed(this)
+    CryptoUtil.decompressed(this)
 
   /** Adds this ECPublicKey to another as points and returns the resulting ECPublicKey.
     *
@@ -261,10 +255,10 @@ sealed abstract class ECPublicKey extends BaseECKey {
     * get wrapped in NativeSecp256k1 to speed things up.
     */
   def add(otherKey: ECPublicKey): ECPublicKey =
-    CryptoContext.cryptoRuntime.add(this, otherKey)
+    CryptoUtil.add(this, otherKey)
 
   def tweakMultiply(tweak: FieldElement): ECPublicKey = {
-    CryptoContext.cryptoRuntime.tweakMultiply(this, tweak)
+    CryptoUtil.tweakMultiply(this, tweak)
   }
 }
 
@@ -299,7 +293,7 @@ object ECPublicKey extends Factory[ECPublicKey] {
     * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.cpp#L207-L212]]
     */
   def isFullyValid(bytes: ByteVector): Boolean =
-    isValid(bytes) && CryptoContext.cryptoRuntime.isValidPubKey(bytes)
+    isValid(bytes) && CryptoUtil.isValidPubKey(bytes)
 
   /** Mimics the CPubKey::IsValid function in Bitcoin core, this is a consensus rule
     * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.h#L158]]

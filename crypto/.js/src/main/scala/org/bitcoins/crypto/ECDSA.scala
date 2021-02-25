@@ -3,8 +3,6 @@ package org.bitcoins.crypto
 import scala.scalajs.js
 import scala.scalajs.js.annotation._
 
-import scala.scalajs.js._
-
 /** Scala wrapper for
   * https://github.com/bcoin-org/bcrypto/blob/master/lib/js/ecdsa.js
   */

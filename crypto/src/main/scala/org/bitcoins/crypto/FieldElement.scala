@@ -1,8 +1,8 @@
 package org.bitcoins.crypto
 
-import java.math.BigInteger
 import scodec.bits.ByteVector
 
+import java.math.BigInteger
 import scala.util.Try
 
 /** Represents integers modulo the secp256k1 field size: pow(2,256) - 0x1000003D1.

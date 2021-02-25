@@ -1,10 +1,7 @@
 package org.bitcoins.crypto
 
 import org.bitcoin.NativeSecp256k1
-import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
-
-import java.math.BigInteger
 
 trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
 
