@@ -37,15 +37,20 @@ lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
+    asyncUtils,
     appCommons
   )
-lazy val eclairRpc = project in file("eclair-rpc")
+
+lazy val eclairRpc = project
+  .in(file("eclair-rpc"))
+  .dependsOn(asyncUtils, bitcoindRpc)
 
 // quoting the val name this way makes it appear as
 // 'bitcoin-s' in sbt/bloop instead of 'bitcoins'
 lazy val `bitcoin-s` = project
   .in(file("."))
   .aggregate(
+    asyncUtils,
     secp256k1jni,
     chain,
     chainTest,
@@ -267,6 +272,12 @@ lazy val coreTest = project
     testkit
   )
 
+lazy val asyncUtils = project
+  .in(file("async-utils"))
+  .settings(CommonSettings.prodSettings)
+  .settings(name := "bitcoin-s-async-utils")
+  .dependsOn(core)
+
 lazy val appCommons = project
   .in(file("app-commons"))
   .settings(CommonSettings.prodSettings: _*)
@@ -463,6 +474,7 @@ lazy val node =
       libraryDependencies ++= Deps.node
     )
     .dependsOn(
+      asyncUtils,
       core,
       chain,
       dbCommons,
@@ -500,6 +512,7 @@ lazy val testkit = project
     name := "bitcoin-s-testkit"
   )
   .dependsOn(
+    asyncUtils,
     core % testAndCompile,
     appServer,
     chain,

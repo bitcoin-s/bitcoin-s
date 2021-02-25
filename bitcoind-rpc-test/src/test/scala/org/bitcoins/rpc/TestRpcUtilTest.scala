@@ -1,11 +1,11 @@
 package org.bitcoins.rpc
 
-import java.io.File
+import org.bitcoins.asyncutil.AsyncUtil
 
+import java.io.File
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.util.AsyncUtil.RpcRetryException
-import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{BitcoindRpcTest, FileUtil}
 
@@ -48,7 +48,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
   }
 
   it should "fail if condition is false" in {
-    recoverToSucceededIf[RpcRetryException] {
+    recoverToSucceededIf[AsyncUtil.RpcRetryException] {
       AsyncUtil.retryUntilSatisfiedF(conditionF =
                                        () => Future.successful(false),
                                      interval = 0.millis)
@@ -70,7 +70,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
   }
 
   it should "timeout if condition is false" in {
-    recoverToSucceededIf[RpcRetryException] {
+    recoverToSucceededIf[AsyncUtil.RpcRetryException] {
       AsyncUtil
         .awaitCondition(condition = () => false, interval = 0.millis)
         .map(_ => succeed)

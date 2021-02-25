@@ -6,8 +6,6 @@ name := "bitcoin-s-eclair-rpc"
 
 libraryDependencies ++= Deps.eclairRpc
 
-dependsOn(Projects.bitcoindRpc)
-
 CommonSettings.prodSettings
 
 TaskKeys.downloadEclair := {

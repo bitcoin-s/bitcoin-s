@@ -3,10 +3,10 @@ package org.bitcoins.testkit.util
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import akka.util.Timeout
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.util.AsyncUtil
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
 import org.scalatest._

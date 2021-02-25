@@ -1,5 +1,6 @@
 package org.bitcoins.eclair.rpc
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
@@ -22,7 +23,6 @@ import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, EclairRpcTestClient}

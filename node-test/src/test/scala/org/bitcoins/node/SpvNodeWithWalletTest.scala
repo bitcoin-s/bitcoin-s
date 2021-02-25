@@ -1,8 +1,8 @@
 package org.bitcoins.node
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency._
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.{
