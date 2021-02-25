@@ -11,7 +11,7 @@ import org.bouncycastle.crypto.signers.{ECDSASigner, HMacDSAKCalculator}
 import org.bouncycastle.math.ec.{ECCurve, ECPoint}
 import scodec.bits.ByteVector
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 object BouncyCastleUtil {
 
@@ -23,12 +23,23 @@ object BouncyCastleUtil {
   }
 
   def pubKeyTweakMul(publicKey: ECPublicKey, tweak: ByteVector): ECPublicKey = {
-    val point = publicKey.toPoint.multiply(getBigInteger(tweak))
-    ECPublicKey.fromPoint(point, publicKey.isCompressed)
+    val point = decodePoint(publicKey).multiply(getBigInteger(tweak))
+    decodePubKey(point, publicKey.isCompressed)
   }
 
   def decodePoint(bytes: ByteVector): ECPoint = {
     curve.decodePoint(bytes.toArray)
+  }
+
+  def decodePoint(pubKey: ECPublicKey): ECPoint = {
+    decodePoint(pubKey.bytes)
+  }
+
+  def decodePubKey(
+      point: ECPoint,
+      isCompressed: Boolean = true): ECPublicKey = {
+    val bytes = point.getEncoded(isCompressed)
+    ECPublicKey.fromBytes(ByteVector(bytes))
   }
 
   def validatePublicKey(bytes: ByteVector): Boolean = {
@@ -38,8 +49,8 @@ object BouncyCastleUtil {
   }
 
   def pubKeyTweakMul(pubKey: ECPublicKey, tweak: FieldElement): ECPublicKey = {
-    val tweakedPoint = pubKey.toPoint.multiply(tweak.toBigInteger)
-    ECPublicKey.fromPoint(tweakedPoint, pubKey.isCompressed)
+    val tweakedPoint = decodePoint(pubKey).multiply(tweak.toBigInteger)
+    decodePubKey(tweakedPoint, pubKey.isCompressed)
   }
 
   def decompressPublicKey(publicKey: ECPublicKey): ECPublicKey = {
@@ -155,7 +166,8 @@ object AdaptorStuff {
       k: FieldElement,
       r: ECPublicKey,
       privateKey: ECPrivateKey): FieldElement = {
-    val rx = FieldElement(r.toPoint.getXCoord.toBigInteger)
+    val rx = FieldElement(
+      BouncyCastleUtil.decodePoint(r).getXCoord.toBigInteger)
     val x = privateKey.fieldElement
     val m = FieldElement(dataToSign)
     val kInv = k.inverse
