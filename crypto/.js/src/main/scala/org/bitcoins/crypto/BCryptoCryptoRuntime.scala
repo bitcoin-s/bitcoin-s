@@ -2,6 +2,10 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
+/**
+  * This is an implementation of [[CryptoRuntime]] that defaults to
+  * Bcrypto (https://github.com/bcoin-org/bcrypto) when possible.
+  */
 trait BCryptoCryptoRuntime extends CryptoRuntime {
   override val cryptoContext: CryptoContext = CryptoContext.BCrypto
 
