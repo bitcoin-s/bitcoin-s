@@ -136,6 +136,33 @@ For more information on how to use our built in `cli` to interact with the serve
 
 ### Docker configuration
 
-Currently our docker configuration only allows for configuration at build time _not_ runtime.
+You can use bitcoin-s with docker volumes. You can also pass in a custom configuration at container runtime.
 
-To the configuration file for the docker application is called [docker-application.conf](../../app/oracle-server/src/universal/docker-application.conf)
+#### Using a docker volume
+
+```basrc
+docker volume create bitcoin-s
+docker run -p 9998:9998 \
+--mount source=bitcoin-s,target=/home/bitcoin-s/ oracle-server:latest
+```
+
+Now you can re-use this volume across container runs. It will keep the same oracle database
+and seeds directory located at `/home/bitcoin-s/.bitcoin-s/seeds` in the volume.
+
+#### Using a custom bitcoin-s configuration with docker
+
+You can also specify a custom bitcoin-s configuration at container runtime.
+You can mount the configuration file on the docker container and that
+configuration will be used in the docker container runtime rather than
+the default one we provide [here](https://github.com/bitcoin-s/bitcoin-s/blob/master/app/oracle-server/src/universal/docker-application.conf)
+
+You can do this with the following command
+
+```bashrc
+docker run -p 9998:9998 \
+--mount type=bind,source=/my/new/config/,target=/home/bitcoin-s/.bitcoin-s/ \
+oracle-server:latest --conf /home/bitcoin-s/.bitcoin-s/bitcoin-s.conf
+```
+
+Note: If you adjust the `bitcoin-s.oracle.rpcport` setting you will need to adjust
+the `-p 9998:9998` port mapping on the docker container to adjust for this.
