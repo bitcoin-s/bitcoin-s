@@ -3,7 +3,7 @@ package org.bitcoins.testkit.wallet
 import org.bitcoins.core.crypto.WitnessTxSigComponent
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{BIP32Path, HDAccount}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
@@ -120,22 +120,33 @@ object DLCWalletUtil {
     UInt32.zero)
 
   val dummyFundingInputs = Vector(
-    DLCFundingInputP2WPKHV0(dummyPrevTx,
+    DLCFundingInputP2WPKHV0(UInt64.zero,
+                            dummyPrevTx,
                             UInt32.zero,
                             TransactionConstants.sequence),
-    DLCFundingInputP2WPKHV0(dummyPrevTx,
+    DLCFundingInputP2WPKHV0(UInt64.one,
+                            dummyPrevTx,
                             UInt32.one,
                             TransactionConstants.sequence)
   )
 
+  lazy val sampleOfferPayoutSerialId: UInt64 = DLCMessage.genSerialId()
+  lazy val sampleOfferChangeSerialId: UInt64 = DLCMessage.genSerialId()
+
+  lazy val sampleFundOutputSerialId: UInt64 =
+    DLCMessage.genSerialId(Vector(sampleOfferChangeSerialId))
+
   lazy val sampleDLCOffer: DLCOffer = DLCOffer(
-    sampleContractInfo,
-    dummyDLCKeys,
-    Satoshis(5000),
-    Vector(dummyFundingInputs.head),
-    dummyAddress,
-    SatoshisPerVirtualByte(Satoshis(3)),
-    dummyTimeouts
+    contractInfo = sampleContractInfo,
+    pubKeys = dummyDLCKeys,
+    totalCollateral = Satoshis(5000),
+    fundingInputs = Vector(dummyFundingInputs.head),
+    changeAddress = dummyAddress,
+    payoutSerialId = sampleOfferPayoutSerialId,
+    changeSerialId = sampleOfferChangeSerialId,
+    fundOutputSerialId = sampleFundOutputSerialId,
+    feeRate = SatoshisPerVirtualByte(Satoshis(3)),
+    timeouts = dummyTimeouts
   )
 
   lazy val sampleMultiNonceDLCOffer: DLCOffer =
@@ -155,14 +166,22 @@ object DLCWalletUtil {
   lazy val dummyCETSigs: CETSignatures =
     CETSignatures(dummyOutcomeSigs, dummyPartialSig)
 
+  lazy val sampleAcceptPayoutSerialId: UInt64 =
+    DLCMessage.genSerialId(Vector(sampleOfferPayoutSerialId))
+
+  lazy val sampleAcceptChangeSerialId: UInt64 = DLCMessage.genSerialId(
+    Vector(sampleOfferChangeSerialId, sampleFundOutputSerialId))
+
   lazy val sampleDLCAccept: DLCAccept = DLCAccept(
-    Satoshis(5000),
-    dummyDLCKeys,
-    Vector(dummyFundingInputs.last),
-    dummyAddress,
-    dummyCETSigs,
-    DLCAccept.NoNegotiationFields,
-    sampleDLCOffer.tempContractId
+    totalCollateral = Satoshis(5000),
+    pubKeys = dummyDLCKeys,
+    fundingInputs = Vector(dummyFundingInputs.last),
+    changeAddress = dummyAddress,
+    payoutSerialId = sampleAcceptPayoutSerialId,
+    changeSerialId = sampleAcceptChangeSerialId,
+    cetSigs = dummyCETSigs,
+    negotiationFields = DLCAccept.NoNegotiationFields,
+    tempContractId = sampleDLCOffer.tempContractId
   )
 
   lazy val dummyFundingSignatures: FundingSignatures = FundingSignatures(
@@ -275,13 +294,19 @@ object DLCWalletUtil {
         else dlcA.processTransaction(tx, None)
       }
 
+      dlcDb <- dlcA.dlcDAO.findByContractId(contractId)
+
       _ <- verifyProperlySetTxIds(dlcA)
       _ <- verifyProperlySetTxIds(dlcB)
     } yield {
       assert(tx.inputs.size == 1)
       assert(tx.outputs.size == expectedOutputs)
       assert(ScriptInterpreter.checkTransaction(tx))
-      verifyInput(tx, 0, fundingTx.outputs.head)
+
+      val fundOutputIndex = dlcDb.get.fundingOutPointOpt.get.vout.toInt
+      val fundingOutput = fundingTx.outputs(fundOutputIndex)
+
+      verifyInput(tx, 0, fundingOutput)
     }
   }
 

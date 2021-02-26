@@ -1,7 +1,5 @@
 package org.bitcoins.core.protocol.tlv
 
-import java.nio.charset.StandardCharsets
-import java.time.Instant
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.dlc.SigningVersion
@@ -17,6 +15,9 @@ import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
+
+import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 sealed trait TLV extends NetworkElement with TLVUtil {
   def tpe: BigSizeUInt
@@ -1244,9 +1245,12 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   }
 }
 
-sealed trait FundingInputTLV extends TLV
+sealed trait FundingInputTLV extends TLV {
+  def inputSerialId: UInt64
+}
 
 case class FundingInputV0TLV(
+    inputSerialId: UInt64,
     prevTx: Transaction,
     prevTxVout: UInt32,
     sequence: UInt32,
@@ -1275,7 +1279,8 @@ case class FundingInputV0TLV(
     val redeemScript =
       redeemScriptOpt.getOrElse(EmptyScriptPubKey)
 
-    u16Prefix(prevTx.bytes) ++
+    inputSerialId.bytes ++
+      u16Prefix(prevTx.bytes) ++
       prevTxVout.bytes ++
       sequence.bytes ++
       maxWitnessLen.bytes ++
@@ -1289,6 +1294,7 @@ object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
   override def fromTLVValue(value: ByteVector): FundingInputV0TLV = {
     val iter = ValueIterator(value)
 
+    val serialId = iter.takeU64()
     val prevTx = iter.takeU16Prefixed(iter.take(Transaction, _))
     val prevTxVout = iter.takeU32()
     val sequence = iter.takeU32()
@@ -1299,10 +1305,11 @@ object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
       case wspk: WitnessScriptPubKey => Some(wspk)
       case _: NonWitnessScriptPubKey =>
         throw new IllegalArgumentException(
-          s"Redeem Script must be Segwith SPK: $redeemScript")
+          s"Redeem Script must be Segwit SPK: $redeemScript")
     }
 
-    FundingInputV0TLV(prevTx,
+    FundingInputV0TLV(serialId,
+                      prevTx,
                       prevTxVout,
                       sequence,
                       maxWitnessLen,
@@ -1376,13 +1383,20 @@ case class DLCOfferTLV(
     contractInfo: ContractInfoV0TLV,
     fundingPubKey: ECPublicKey,
     payoutSPK: ScriptPubKey,
+    payoutSerialId: UInt64,
     totalCollateralSatoshis: Satoshis,
     fundingInputs: Vector[FundingInputTLV],
     changeSPK: ScriptPubKey,
+    changeSerialId: UInt64,
+    fundOutputSerialId: UInt64,
     feeRate: SatoshisPerVirtualByte,
     contractMaturityBound: BlockTimeStamp,
     contractTimeout: BlockTimeStamp)
     extends TLV {
+  require(
+    changeSerialId != fundOutputSerialId,
+    s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)")
+
   override val tpe: BigSizeUInt = DLCOfferTLV.tpe
 
   override val value: ByteVector = {
@@ -1391,9 +1405,12 @@ case class DLCOfferTLV(
       contractInfo.bytes ++
       fundingPubKey.bytes ++
       TLV.encodeScript(payoutSPK) ++
+      payoutSerialId.bytes ++
       satBytes(totalCollateralSatoshis) ++
       u16PrefixedList(fundingInputs) ++
       TLV.encodeScript(changeSPK) ++
+      changeSerialId.bytes ++
+      fundOutputSerialId.bytes ++
       satBytes(feeRate.currencyUnit.satoshis) ++
       contractMaturityBound.toUInt32.bytes ++
       contractTimeout.toUInt32.bytes
@@ -1411,10 +1428,13 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
     val contractInfo = iter.take(ContractInfoV0TLV)
     val fundingPubKey = iter.take(ECPublicKey, 33)
     val payoutSPK = iter.takeSPK()
+    val payoutSerialId = iter.takeU64()
     val totalCollateralSatoshis = iter.takeSats()
     val fundingInputs =
       iter.takeU16PrefixedList(() => iter.take(FundingInputV0TLV))
     val changeSPK = iter.takeSPK()
+    val changeSerialId = iter.takeU64()
+    val fundingOutputSerialId = iter.takeU64()
     val feeRate = SatoshisPerVirtualByte(iter.takeSats())
     val contractMaturityBound = BlockTimeStamp(iter.takeU32())
     val contractTimeout = BlockTimeStamp(iter.takeU32())
@@ -1425,9 +1445,12 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
       contractInfo,
       fundingPubKey,
       payoutSPK,
+      payoutSerialId,
       totalCollateralSatoshis,
       fundingInputs,
       changeSPK,
+      changeSerialId,
+      fundingOutputSerialId,
       feeRate,
       contractMaturityBound,
       contractTimeout
@@ -1489,8 +1512,10 @@ case class DLCAcceptTLV(
     totalCollateralSatoshis: Satoshis,
     fundingPubKey: ECPublicKey,
     payoutSPK: ScriptPubKey,
+    payoutSerialId: UInt64,
     fundingInputs: Vector[FundingInputTLV],
     changeSPK: ScriptPubKey,
+    changeSerialId: UInt64,
     cetSignatures: CETSignaturesTLV,
     refundSignature: ECDigitalSignature,
     negotiationFields: NegotiationFieldsTLV)
@@ -1502,8 +1527,10 @@ case class DLCAcceptTLV(
       satBytes(totalCollateralSatoshis) ++
       fundingPubKey.bytes ++
       TLV.encodeScript(payoutSPK) ++
+      payoutSerialId.bytes ++
       u16PrefixedList(fundingInputs) ++
       TLV.encodeScript(changeSPK) ++
+      changeSerialId.bytes ++
       cetSignatures.bytes ++
       refundSignature.toRawRS ++
       negotiationFields.bytes
@@ -1520,22 +1547,28 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
     val totalCollateralSatoshis = iter.takeSats()
     val fundingPubKey = iter.take(ECPublicKey, 33)
     val payoutSPK = iter.takeSPK()
+    val payoutSerialId = iter.takeU64()
     val fundingInputs =
       iter.takeU16PrefixedList(() => iter.take(FundingInputV0TLV))
     val changeSPK = iter.takeSPK()
+    val changeSerialId = iter.takeU64()
     val cetSignatures = iter.take(CETSignaturesV0TLV)
     val refundSignature = ECDigitalSignature.fromRS(iter.take(64))
     val negotiationFields = iter.take(NegotiationFieldsTLV)
 
-    DLCAcceptTLV(tempContractId,
-                 totalCollateralSatoshis,
-                 fundingPubKey,
-                 payoutSPK,
-                 fundingInputs,
-                 changeSPK,
-                 cetSignatures,
-                 refundSignature,
-                 negotiationFields)
+    DLCAcceptTLV(
+      tempContractId,
+      totalCollateralSatoshis,
+      fundingPubKey,
+      payoutSPK,
+      payoutSerialId,
+      fundingInputs,
+      changeSPK,
+      changeSerialId,
+      cetSignatures,
+      refundSignature,
+      negotiationFields
+    )
   }
 }
 

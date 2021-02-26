@@ -7,8 +7,8 @@ import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
-import org.bitcoins.core.hd._
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.hd.{AddressType, BIP32Path, HDChainType, _}
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc.DLCStatus._
 import org.bitcoins.core.protocol.dlc._
@@ -487,7 +487,11 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         fromTagOpt = None,
         markAsReserved = true
       )
-      utxos = spendingInfos.map(DLCFundingInput.fromInputSigningInfo(_))
+
+      serialIds = DLCMessage.genSerialIds(spendingInfos.size)
+      utxos = spendingInfos.zip(serialIds).map { case (utxo, id) =>
+        DLCFundingInput.fromInputSigningInfo(utxo, id)
+      }
 
       changeSPK =
         txBuilder.finalizer.changeSPK
@@ -500,13 +504,22 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ = logger.debug(
         s"DLC Offer data collected, creating database entry, ${paramHash.hex}")
 
-      offer = DLCOffer(contractInfo,
-                       dlcPubKeys,
-                       collateral.satoshis,
-                       utxos,
-                       changeAddr,
-                       feeRate,
-                       timeouts)
+      payoutSerialId = DLCMessage.genSerialId()
+      changeSerialId = DLCMessage.genSerialId()
+      fundOutputSerialId = DLCMessage.genSerialId(Vector(changeSerialId))
+
+      offer = DLCOffer(
+        contractInfo = contractInfo,
+        pubKeys = dlcPubKeys,
+        totalCollateral = collateral.satoshis,
+        fundingInputs = utxos,
+        changeAddress = changeAddr,
+        payoutSerialId = payoutSerialId,
+        changeSerialId = changeSerialId,
+        fundOutputSerialId = fundOutputSerialId,
+        feeRate = feeRate,
+        timeouts = timeouts
+      )
 
       dlcDb = DLCDb(
         paramHash = paramHash,
@@ -528,15 +541,17 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
       dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(offer)
 
-      dlcInputs = spendingInfos.map(funding =>
+      dlcInputs = spendingInfos.zip(utxos).map { case (utxo, fundingInput) =>
         DLCFundingInputDb(
           paramHash = dlc.paramHash,
           isInitiator = true,
-          outPoint = funding.outPoint,
-          output = funding.output,
-          redeemScriptOpt = InputInfo.getRedeemScript(funding.inputInfo),
-          witnessScriptOpt = InputInfo.getScriptWitness(funding.inputInfo)
-        ))
+          inputSerialId = fundingInput.inputSerialId,
+          outPoint = utxo.outPoint,
+          output = utxo.output,
+          redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
+          witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
+        )
+      }
 
       _ = logger.info(
         s"Created offer with tempContractId ${offer.tempContractId.hex}")
@@ -648,7 +663,12 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       )
       network = networkParameters.asInstanceOf[BitcoinNetwork]
 
-      utxos = spendingInfos.map(DLCFundingInput.fromInputSigningInfo(_))
+      serialIds = DLCMessage.genSerialIds(
+        spendingInfos.size,
+        offer.fundingInputs.map(_.inputSerialId))
+      utxos = spendingInfos.zip(serialIds).map { case (utxo, id) =>
+        DLCFundingInput.fromInputSigningInfo(utxo, id)
+      }
 
       changeSPK = txBuilder.finalizer.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
       changeAddr = Bech32Address(changeSPK, network)
@@ -667,11 +687,17 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ = require(dlcPubKeys.fundingKey == fundingPrivKey.publicKey,
                   "Did not derive the same funding private and public key")
 
+      payoutSerialId = DLCMessage.genSerialId(Vector(offer.payoutSerialId))
+      changeSerialId = DLCMessage.genSerialId(
+        Vector(offer.fundOutputSerialId, offer.changeSerialId))
+
       acceptWithoutSigs = DLCAcceptWithoutSigs(
         totalCollateral = collateral.satoshis,
         pubKeys = dlcPubKeys,
         fundingInputs = utxos,
         changeAddress = changeAddr,
+        payoutSerialId = payoutSerialId,
+        changeSerialId = changeSerialId,
         negotiationFields = DLCAccept.NoNegotiationFields,
         tempContractId = offer.tempContractId
       )
@@ -701,8 +727,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         tempContractId = offer.tempContractId,
         fundingKey = dlcPubKeys.fundingKey,
         finalAddress = dlcPubKeys.payoutAddress,
+        payoutSerialId = payoutSerialId,
         totalCollateral = collateral,
-        changeAddress = changeAddr
+        changeAddress = changeAddr,
+        changeSerialId = changeSerialId
       )
 
       sigsDbs = cetSigs.outcomeSigs.map(sig =>
@@ -720,6 +748,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         DLCFundingInputDb(
           paramHash = dlc.paramHash,
           isInitiator = true,
+          inputSerialId = funding.inputSerialId,
           outPoint = funding.outPoint,
           output = funding.output,
           redeemScriptOpt = funding.redeemScriptOpt,
@@ -729,15 +758,17 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       offerPrevTxs = offer.fundingInputs.map(funding =>
         TransactionDbHelper.fromTransaction(funding.prevTx))
 
-      acceptInputs = spendingInfos.map(utxo =>
+      acceptInputs = spendingInfos.zip(utxos).map { case (utxo, fundingInput) =>
         DLCFundingInputDb(
           paramHash = dlc.paramHash,
           isInitiator = false,
+          inputSerialId = fundingInput.inputSerialId,
           outPoint = utxo.outPoint,
           output = utxo.output,
           redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
           witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
-        ))
+        )
+      }
 
       accept =
         dlcAcceptDb.toDLCAccept(utxos, cetSigs.outcomeSigs, cetSigs.refundSig)
@@ -757,7 +788,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         s"Created DLCAccept for tempContractId ${offer.tempContractId.hex} with contract Id ${contractId.toHex}")
 
       fundingTx = builder.buildFundingTx
-      outPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
+      outPoint = TransactionOutPoint(fundingTx.txId,
+                                     UInt32(builder.fundOutputIndex))
       _ <- updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
     } yield accept
   }
@@ -793,6 +825,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           DLCFundingInputDb(
             paramHash = paramHash,
             isInitiator = false,
+            inputSerialId = funding.inputSerialId,
             outPoint = funding.outPoint,
             output = funding.output,
             redeemScriptOpt = funding.redeemScriptOpt,
@@ -849,7 +882,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
           builder = DLCTxBuilder(offer, accept.withoutSigs)
           fundingTx = builder.buildFundingTx
-          outPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
+          outPoint = TransactionOutPoint(fundingTx.txId,
+                                         UInt32(builder.fundOutputIndex))
           spkDb = ScriptPubKeyDb(builder.fundingSPK)
           _ <- scriptPubKeyDAO.create(spkDb)
           updatedDLCDb <-

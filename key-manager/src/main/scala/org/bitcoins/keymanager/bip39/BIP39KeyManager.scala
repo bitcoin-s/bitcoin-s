@@ -26,7 +26,6 @@ import scala.util.{Failure, Success, Try}
   * BIP39 key manager
   *
   * @param rootExtPrivKey the root seed used for this wallet
-  *                       FIXME Temporary public, should be private,
   *                       This is still required to make the
   *                       DLCClient from the wallet,
   *                       can change back to private val when

@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.builder
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.{ContractInfo, DLCTimeouts, OracleOutcome}
 import org.bitcoins.core.protocol.script.{
@@ -24,8 +25,10 @@ case class DLCCETBuilder(
     contractInfo: ContractInfo,
     offerFundingKey: ECPublicKey,
     offerFinalSPK: ScriptPubKey,
+    offerSerialId: UInt64,
     acceptFundingKey: ECPublicKey,
     acceptFinalSPK: ScriptPubKey,
+    acceptSerialId: UInt64,
     timeouts: DLCTimeouts,
     fundingOutputRef: OutputReference) {
 
@@ -64,7 +67,10 @@ case class DLCCETBuilder(
     val (offerPayout, acceptPayout) = contractInfo.getPayouts(outcome)
 
     val outputs =
-      Vector(cetOfferOutput(offerPayout), cetAcceptOutput(acceptPayout))
+      Vector((cetOfferOutput(offerPayout), offerSerialId),
+             (cetAcceptOutput(acceptPayout), acceptSerialId))
+        .sortBy(_._2)
+        .map(_._1)
         .filter(_.value >= Policy.dustThreshold)
 
     WitnessTransaction(TransactionConstants.validLockVersion,

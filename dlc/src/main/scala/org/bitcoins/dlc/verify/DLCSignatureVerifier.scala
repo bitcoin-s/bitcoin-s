@@ -22,7 +22,7 @@ import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /** Responsible for verifying all DLC signatures */
 case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
@@ -50,6 +50,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
                                               sig,
                                               remoteFundingPubKey,
                                               fundingTx,
+                                              builder.fundOutputIndex,
                                               cet)
   }
 
@@ -79,7 +80,10 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
   def verifyRefundSig(sig: PartialSignature): Boolean = {
     val refundTx = builder.buildRefundTx
 
-    DLCSignatureVerifier.validateRefundSignature(sig, fundingTx, refundTx)
+    DLCSignatureVerifier.validateRefundSignature(sig,
+                                                 fundingTx,
+                                                 builder.fundOutputIndex,
+                                                 refundTx)
   }
 }
 
@@ -90,14 +94,16 @@ object DLCSignatureVerifier extends BitcoinSLogger {
       sig: ECAdaptorSignature,
       remoteFundingPubKey: ECPublicKey,
       fundingTx: Transaction,
+      fundOutputIndex: Int,
       cet: WitnessTransaction
   ): Boolean = {
     val adaptorPoint = outcome.sigPoint
 
-    val sigComponent = WitnessTxSigComponentRaw(transaction = cet,
-                                                inputIndex = UInt32.zero,
-                                                output = fundingTx.outputs.head,
-                                                flags = Policy.standardFlags)
+    val sigComponent = WitnessTxSigComponentRaw(
+      transaction = cet,
+      inputIndex = UInt32.zero,
+      output = fundingTx.outputs(fundOutputIndex),
+      flags = Policy.standardFlags)
 
     val hashType = HashType(
       ByteVector(0.toByte, 0.toByte, 0.toByte, HashType.sigHashAll.byte))
@@ -110,12 +116,14 @@ object DLCSignatureVerifier extends BitcoinSLogger {
   def validateRefundSignature(
       refundSig: PartialSignature,
       fundingTx: Transaction,
+      fundOutputIndex: Int,
       refundTx: WitnessTransaction
   ): Boolean = {
-    val sigComponent = WitnessTxSigComponentRaw(transaction = refundTx,
-                                                inputIndex = UInt32.zero,
-                                                output = fundingTx.outputs.head,
-                                                flags = Policy.standardFlags)
+    val sigComponent = WitnessTxSigComponentRaw(
+      transaction = refundTx,
+      inputIndex = UInt32.zero,
+      output = fundingTx.outputs(fundOutputIndex),
+      flags = Policy.standardFlags)
 
     TransactionSignatureChecker
       .checkSignature(
@@ -135,31 +143,41 @@ object DLCSignatureVerifier extends BitcoinSLogger {
       localIsInitiator: Boolean,
       offerFundingInputs: Vector[DLCFundingInput],
       acceptFundingInputs: Vector[DLCFundingInput]): Boolean = {
-    val (remoteTweak, remoteFundingInputs) = if (localIsInitiator) {
-      (offerFundingInputs.length, acceptFundingInputs)
-    } else {
-      (0, offerFundingInputs)
-    }
+    val fundingInputs = offerFundingInputs ++ acceptFundingInputs
+
+    val serialIdMap =
+      fundingInputs
+        .map(input => input.outPoint -> input.inputSerialId)
+        .toMap
+
+    val serialIds = fundingInputs.map(_.inputSerialId).sorted
+
+    val remoteFundingInputs =
+      if (localIsInitiator) acceptFundingInputs
+      else offerFundingInputs
 
     val psbt = PSBT.fromUnsignedTxWithP2SHScript(fundingTx)
 
     fundingSigs.zipWithIndex
       .foldLeft(true) { case (ret, ((outPoint, witness), index)) =>
-        val idx = index + remoteTweak
+        val serialId = serialIdMap(outPoint)
+        val idx = serialIds.indexOf(serialId)
         if (ret) {
           if (psbt.transaction.inputs(idx).previousOutput != outPoint) {
             logger.error("Adding signature for incorrect input")
 
             false
           } else {
-            val fundingInput = remoteFundingInputs(index)
+            Try {
+              val fundingInput = remoteFundingInputs(index)
 
-            psbt
-              .addUTXOToInput(fundingInput.prevTx, idx)
-              .addFinalizedScriptWitnessToInput(fundingInput.scriptSignature,
-                                                witness,
-                                                idx)
-              .finalizeInput(idx) match {
+              psbt
+                .addUTXOToInput(fundingInput.prevTx, idx)
+                .addFinalizedScriptWitnessToInput(fundingInput.scriptSignature,
+                                                  witness,
+                                                  idx)
+                .finalizeInput(idx)
+            }.flatten match {
               case Success(finalized) =>
                 finalized.verifyFinalizedInput(idx)
               case Failure(_) =>

@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.tlv.ContractInfoV0TLV
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -78,11 +79,17 @@ case class DLCOfferDAO()(implicit
 
     def payoutAddress: Rep[BitcoinAddress] = column("payout_address")
 
+    def payoutSerialId: Rep[UInt64] = column("payout_serial_id")
+
     def totalCollateral: Rep[CurrencyUnit] = column("total_collateral")
 
     def feeRate: Rep[SatoshisPerVirtualByte] = column("fee_rate")
 
     def changeAddress: Rep[BitcoinAddress] = column("change_address")
+
+    def changeSerialId: Rep[UInt64] = column("change_serial_id")
+
+    def fundOutputSerialId: Rep[UInt64] = column("fund_output_serial_id")
 
     def * : ProvenShape[DLCOfferDb] =
       (paramHash,
@@ -92,9 +99,12 @@ case class DLCOfferDAO()(implicit
        contractTimeout,
        fundingKey,
        payoutAddress,
+       payoutSerialId,
        totalCollateral,
        feeRate,
-       changeAddress).<>(DLCOfferDb.tupled, DLCOfferDb.unapply)
+       changeAddress,
+       changeSerialId,
+       fundOutputSerialId).<>(DLCOfferDb.tupled, DLCOfferDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_offer", sourceColumns = paramHash)

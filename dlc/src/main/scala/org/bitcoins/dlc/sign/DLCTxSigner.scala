@@ -6,7 +6,7 @@ import org.bitcoins.core.crypto.{
   TransactionSignatureSerializer
 }
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -47,8 +47,11 @@ case class DLCTxSigner(
     require(fundingKey.publicKey == offer.pubKeys.fundingKey &&
               finalAddress == offer.pubKeys.payoutAddress,
             "Given keys do not match public key and address in offer")
-    require(fundingUtxos.map(
-              DLCFundingInput.fromInputSigningInfo(_)) == offer.fundingInputs,
+    val fundingUtxosAsInputs =
+      fundingUtxos.zip(offer.fundingInputs).map { case (utxo, fund) =>
+        DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
+      }
+    require(fundingUtxosAsInputs == offer.fundingInputs,
             "Funding ScriptSignatureParams did not match offer funding inputs")
   } else {
     require(
@@ -56,8 +59,11 @@ case class DLCTxSigner(
         finalAddress == accept.pubKeys.payoutAddress,
       "Given keys do not match public key and address in accept"
     )
-    require(fundingUtxos.map(
-              DLCFundingInput.fromInputSigningInfo(_)) == accept.fundingInputs,
+    val fundingUtxosAsInputs =
+      fundingUtxos.zip(accept.fundingInputs).map { case (utxo, fund) =>
+        DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
+      }
+    require(fundingUtxosAsInputs == accept.fundingInputs,
             "Funding ScriptSignatureParams did not match accept funding inputs")
   }
 
@@ -73,7 +79,19 @@ case class DLCTxSigner(
 
   /** Creates this party's FundingSignatures */
   def signFundingTx(): Future[FundingSignatures] = {
-    DLCTxSigner.signFundingTx(builder.buildFundingTx, fundingUtxos)
+    val fundingInputs =
+      if (isInitiator) builder.offerFundingInputs
+      else builder.acceptFundingInputs
+
+    val utxos =
+      fundingUtxos
+        .zip(fundingInputs)
+        .map { case (utxo, fundingInput) =>
+          (utxo, fundingInput.inputSerialId)
+        }
+        .sortBy(_._2)
+
+    DLCTxSigner.signFundingTx(builder.buildFundingTx, utxos)
   }
 
   /** Constructs the signed DLC funding transaction given remote FundingSignatures */
@@ -97,7 +115,8 @@ case class DLCTxSigner(
       case Some(info) => info
       case None =>
         val signingInfo =
-          DLCTxSigner.buildCETSigningInfo(builder.buildFundingTx,
+          DLCTxSigner.buildCETSigningInfo(builder.fundOutputIndex,
+                                          builder.buildFundingTx,
                                           builder.fundingMultiSig,
                                           fundingKey)
 
@@ -207,15 +226,17 @@ object DLCTxSigner {
   }
 
   def buildCETSigningInfo(
+      fundOutputIndex: Int,
       fundingTx: Transaction,
       fundingMultiSig: MultiSignatureScriptPubKey,
       fundingKey: Sign): ECSignatureParams[P2WSHV0InputInfo] = {
-    val fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
+    val fundingOutPoint =
+      TransactionOutPoint(fundingTx.txId, UInt32(fundOutputIndex))
 
     ECSignatureParams(
       P2WSHV0InputInfo(
         outPoint = fundingOutPoint,
-        amount = fundingTx.outputs.head.value,
+        amount = fundingTx.outputs(fundOutputIndex).value,
         scriptWitness = P2WSHWitnessV0(fundingMultiSig),
         conditionalPath = ConditionalPath.NoCondition
       ),
@@ -347,15 +368,17 @@ object DLCTxSigner {
 
   def signFundingTx(
       fundingTx: Transaction,
-      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]]
+      fundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)]
   )(implicit ec: ExecutionContext): Future[FundingSignatures] = {
     val sigFs =
       Vector.newBuilder[Future[(TransactionOutPoint, ScriptWitnessV0)]]
 
     val fundingInputs: Vector[DLCFundingInput] =
-      fundingUtxos.map(DLCFundingInput.fromInputSigningInfo(_))
+      fundingUtxos.map { case (utxo, serialId) =>
+        DLCFundingInput.fromInputSigningInfo(utxo, serialId)
+      }
 
-    fundingUtxos.foreach { utxo =>
+    fundingUtxos.foreach { case (utxo, _) =>
       val sigComponentF =
         BitcoinSigner.sign(utxo, fundingTx, isDummySignature = false)
       val witnessF = sigComponentF.flatMap { sigComponent =>
@@ -402,7 +425,8 @@ object DLCTxSigner {
       offerFundingInputs: Vector[DLCFundingInput],
       acceptFundingInputs: Vector[DLCFundingInput],
       fundingTx: Transaction): Try[Transaction] = {
-    val fundingInputs = offerFundingInputs ++ acceptFundingInputs
+    val fundingInputs =
+      (offerFundingInputs ++ acceptFundingInputs).sortBy(_.inputSerialId)
     val allSigs = localSigs.merge(remoteSigs)
 
     val psbt = fundingInputs.zipWithIndex.foldLeft(

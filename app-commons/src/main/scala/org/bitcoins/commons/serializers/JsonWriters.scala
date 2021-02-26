@@ -5,7 +5,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   WalletCreateFundedPsbtOptions
 }
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
@@ -80,6 +80,10 @@ object JsonWriters {
 
   implicit object UInt32Writes extends Writes[UInt32] {
     override def writes(o: UInt32): JsValue = JsNumber(o.toLong)
+  }
+
+  implicit object UInt64Writes extends Writes[UInt64] {
+    override def writes(o: UInt64): JsValue = JsNumber(o.toLong)
   }
 
   implicit object TransactionWrites extends Writes[Transaction] {

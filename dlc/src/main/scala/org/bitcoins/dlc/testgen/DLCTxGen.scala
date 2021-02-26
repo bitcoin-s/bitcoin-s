@@ -1,14 +1,9 @@
 package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.dlc.DLCMessage.DLCSign
-import org.bitcoins.core.protocol.dlc.{
-  EnumContractDescriptor,
-  EnumOracleOutcome,
-  EnumOracleSignature,
-  EnumSingleOracleInfo
-}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{EnumOutcome, OracleAnnouncementV0TLV}
 import org.bitcoins.core.protocol.transaction._
@@ -67,7 +62,8 @@ object DLCTxGen {
       scriptWitness: ScriptWitnessV0 = P2WPKHWitnessV0(
         ECPublicKey.freshPublicKey),
       amt: CurrencyUnit = defaultAmt * 2,
-      lockTime: UInt32 = UInt32.zero): FundingInputTx = {
+      lockTime: UInt32 = UInt32.zero,
+      serialId: UInt64 = DLCMessage.genSerialId()): FundingInputTx = {
     val (spk, scriptWit) = redeemScriptOpt match {
       case Some(wspk) => (P2SHScriptPubKey(wspk), scriptWitness)
       case None =>
@@ -93,7 +89,7 @@ object DLCTxGen {
                              outputs,
                              lockTime)
 
-    FundingInputTx(tx, idx, privKeys, redeemScriptOpt, scriptWit)
+    FundingInputTx(serialId, tx, idx, privKeys, redeemScriptOpt, scriptWit)
   }
 
   def multiSigFundingInputTx(
@@ -125,13 +121,19 @@ object DLCTxGen {
       collateral: CurrencyUnit = defaultAmt,
       fundingInputTxs: Vector[FundingInputTx] = Vector(fundingInputTx()),
       changeAddress: BitcoinAddress = address(),
+      changeSerialId: UInt64 = DLCMessage.genSerialId(),
       fundingPrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
-      payoutAddress: BitcoinAddress = address()): DLCPartyParams = {
+      payoutAddress: BitcoinAddress = address(),
+      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
+      fundOutputSerialId: UInt64 = DLCMessage.genSerialId()): DLCPartyParams = {
     DLCPartyParams(collateral,
                    fundingInputTxs,
                    changeAddress,
+                   changeSerialId,
                    fundingPrivKey,
-                   payoutAddress)
+                   payoutAddress,
+                   payoutSerialId,
+                   fundOutputSerialId)
   }
 
   def validTestInputs(

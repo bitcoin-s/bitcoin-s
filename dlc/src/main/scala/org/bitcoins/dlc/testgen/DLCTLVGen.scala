@@ -2,10 +2,10 @@ package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
-import org.bitcoins.core.number.{UInt16, UInt32}
+import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
+import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
-import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
@@ -129,12 +129,14 @@ object DLCTLVGen {
   }
 
   def fundingInput(
+      inputSerialId: UInt64 = DLCMessage.genSerialId(),
       prevTx: Transaction = inputTransaction(),
       prevTxVout: UInt32 = UInt32.zero,
       sequence: UInt32 = TransactionConstants.sequence,
       maxWitnessLen: UInt16 = UInt16(107),
       redeemScriptOpt: Option[WitnessScriptPubKey] = None): DLCFundingInput = {
-    DLCFundingInput(prevTx,
+    DLCFundingInput(inputSerialId,
+                    prevTx,
                     prevTxVout,
                     sequence,
                     maxWitnessLen,
@@ -142,6 +144,7 @@ object DLCTLVGen {
   }
 
   def fundingInputParsingTestVector(
+      inputSerialId: UInt64 = DLCMessage.genSerialId(),
       prevTx: Transaction = inputTransaction(),
       prevTxVout: UInt32 = UInt32.zero,
       sequence: UInt32 = TransactionConstants.sequence,
@@ -149,7 +152,8 @@ object DLCTLVGen {
       redeemScriptOpt: Option[WitnessScriptPubKey] =
         None): DLCParsingTestVector = {
     DLCParsingTestVector(
-      fundingInput(prevTx,
+      fundingInput(inputSerialId,
+                   prevTx,
                    prevTxVout,
                    sequence,
                    maxWitnessLen,
@@ -223,9 +227,12 @@ object DLCTLVGen {
       contractInfo: ContractInfo = genContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
+      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
       totalCollateral: Satoshis = defaultAmt,
       fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
+      changeSerialId: UInt64 = DLCMessage.genSerialId(),
+      fundOutputSerialId: UInt64 = DLCMessage.genSerialId(),
       feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte.one,
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200)): DLCOffer = {
@@ -235,6 +242,9 @@ object DLCTLVGen {
       totalCollateral,
       fundingInputs,
       changeAddress,
+      payoutSerialId,
+      changeSerialId,
+      fundOutputSerialId,
       feeRate,
       DLCTimeouts(contractMaturityBound, contractTimeout)
     )
@@ -244,76 +254,102 @@ object DLCTLVGen {
       contractInfo: ContractInfo = genContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
+      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
       totalCollateral: Satoshis = defaultAmt,
       fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
+      changeSerialId: UInt64 = DLCMessage.genSerialId(),
+      fundOutputSerialId: UInt64 = DLCMessage.genSerialId(),
       feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte.one,
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200)): DLCOfferTLV = {
-    dlcOffer(contractInfo,
-             fundingPubKey,
-             payoutAddress,
-             totalCollateral,
-             fundingInputs,
-             changeAddress,
-             feeRate,
-             contractMaturityBound,
-             contractTimeout).toTLV
+    dlcOffer(
+      contractInfo,
+      fundingPubKey,
+      payoutAddress,
+      payoutSerialId,
+      totalCollateral,
+      fundingInputs,
+      changeAddress,
+      changeSerialId,
+      fundOutputSerialId,
+      feeRate,
+      contractMaturityBound,
+      contractTimeout
+    ).toTLV
   }
 
   def dlcOfferParsingTestVector(
       contractInfo: ContractInfo = genContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
+      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
       totalCollateral: Satoshis = defaultAmt,
       fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
+      changeSerialId: UInt64 = DLCMessage.genSerialId(),
+      fundOutputSerialId: UInt64 = DLCMessage.genSerialId(),
       feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte.one,
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp =
         BlockTimeStamp(200)): DLCParsingTestVector = {
     DLCParsingTestVector(
-      dlcOfferTLV(contractInfo,
-                  fundingPubKey,
-                  payoutAddress,
-                  totalCollateral,
-                  fundingInputs,
-                  changeAddress,
-                  feeRate,
-                  contractMaturityBound,
-                  contractTimeout))
+      dlcOfferTLV(
+        contractInfo,
+        fundingPubKey,
+        payoutAddress,
+        payoutSerialId,
+        totalCollateral,
+        fundingInputs,
+        changeAddress,
+        changeSerialId,
+        fundOutputSerialId,
+        feeRate,
+        contractMaturityBound,
+        contractTimeout
+      ))
   }
 
   def dlcAccept(
       totalCollateral: Satoshis = defaultAmt,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
+      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
       fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
+      changeSerialId: UInt64 = DLCMessage.genSerialId(),
       cetSignatures: CETSignatures = cetSigs(),
       tempContractId: Sha256Digest = hash()): DLCAccept = {
-    DLCAccept(totalCollateral,
-              DLCPublicKeys(fundingPubKey, payoutAddress),
-              fundingInputs,
-              changeAddress,
-              cetSignatures,
-              DLCAccept.NoNegotiationFields,
-              tempContractId)
+    DLCAccept(
+      totalCollateral,
+      DLCPublicKeys(fundingPubKey, payoutAddress),
+      fundingInputs,
+      changeAddress,
+      payoutSerialId,
+      changeSerialId,
+      cetSignatures,
+      DLCAccept.NoNegotiationFields,
+      tempContractId
+    )
   }
 
   def dlcAcceptTLV(
       totalCollateral: Satoshis = defaultAmt,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
+      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
       fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
+      changeSerialId: UInt64 = DLCMessage.genSerialId(),
       cetSignatures: CETSignatures = cetSigs(),
       tempContractId: Sha256Digest = hash()): DLCAcceptTLV = {
     dlcAccept(totalCollateral,
               fundingPubKey,
               payoutAddress,
+              payoutSerialId,
               fundingInputs,
               changeAddress,
+              changeSerialId,
               cetSignatures,
               tempContractId).toTLV
   }
@@ -322,16 +358,20 @@ object DLCTLVGen {
       totalCollateral: Satoshis = defaultAmt,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
+      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
       fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
+      changeSerialId: UInt64 = DLCMessage.genSerialId(),
       cetSignatures: CETSignatures = cetSigs(),
       tempContractId: Sha256Digest = hash()): DLCParsingTestVector = {
     DLCParsingTestVector(
       dlcAcceptTLV(totalCollateral,
                    fundingPubKey,
                    payoutAddress,
+                   payoutSerialId,
                    fundingInputs,
                    changeAddress,
+                   changeSerialId,
                    cetSignatures,
                    tempContractId))
   }
@@ -341,8 +381,10 @@ object DLCTLVGen {
       overCollateral: Satoshis = Satoshis.zero,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
+      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
       fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
-      changeAddress: BitcoinAddress = address()): DLCAccept = {
+      changeAddress: BitcoinAddress = address(),
+      changeSerialId: UInt64 = DLCMessage.genSerialId()): DLCAccept = {
     val totalCollateral =
       offer.contractInfo.max - offer.totalCollateral + overCollateral
 
@@ -361,6 +403,8 @@ object DLCTLVGen {
       DLCPublicKeys(fundingPubKey, payoutAddress),
       fundingInputs,
       changeAddress,
+      payoutSerialId,
+      changeSerialId,
       cetSignatures,
       DLCAccept.NoNegotiationFields,
       tempContractId
@@ -372,14 +416,18 @@ object DLCTLVGen {
       overCollateral: Satoshis = Satoshis.zero,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
+      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
       fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
-      changeAddress: BitcoinAddress = address()): DLCAcceptTLV = {
+      changeAddress: BitcoinAddress = address(),
+      changeSerialId: UInt64 = DLCMessage.genSerialId()): DLCAcceptTLV = {
     dlcAcceptFromOffer(offer,
                        overCollateral,
                        fundingPubKey,
                        payoutAddress,
+                       payoutSerialId,
                        fundingInputs,
-                       changeAddress).toTLV
+                       changeAddress,
+                       changeSerialId).toTLV
   }
 
   def dlcSign(

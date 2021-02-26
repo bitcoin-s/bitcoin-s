@@ -2,9 +2,13 @@ package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.dlc.DLCMessage.{DLCAccept, DLCOffer}
-import org.bitcoins.core.protocol.dlc.{ContractInfo, DLCFundingInputP2WPKHV0}
+import org.bitcoins.core.protocol.dlc.{
+  ContractInfo,
+  DLCFundingInputP2WPKHV0,
+  DLCMessage
+}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
@@ -185,7 +189,8 @@ trait TLVGen {
     }
   }
 
-  def fundingInputP2WPKHTLV: Gen[FundingInputV0TLV] = {
+  def fundingInputP2WPKHTLV(ignoreSerialIds: Vector[UInt64] =
+    Vector.empty): Gen[FundingInputV0TLV] = {
     for {
       prevTx <- TransactionGenerators.realisticTransactionWitnessOut
       prevTxVout <- Gen.choose(0, prevTx.outputs.length - 1)
@@ -202,20 +207,26 @@ trait TLVGen {
           wtx.copy(outputs = wtx.outputs.updated(prevTxVout, newOutput))
       }
     } yield {
-      DLCFundingInputP2WPKHV0(newPrevTx, UInt32(prevTxVout), sequence).toTLV
+      DLCFundingInputP2WPKHV0(DLCMessage.genSerialId(ignoreSerialIds),
+                              newPrevTx,
+                              UInt32(prevTxVout),
+                              sequence).toTLV
     }
   }
 
-  def fundingInputV0TLV: Gen[FundingInputV0TLV] = {
-    fundingInputP2WPKHTLV // Soon to be Gen.oneOf
+  def fundingInputV0TLV(ignoreSerialIds: Vector[UInt64] = Vector.empty): Gen[
+    FundingInputV0TLV] = {
+    fundingInputP2WPKHTLV(ignoreSerialIds) // Soon to be Gen.oneOf
   }
 
   def fundingInputV0TLVs(
-      collateralNeeded: CurrencyUnit): Gen[Vector[FundingInputV0TLV]] = {
+      collateralNeeded: CurrencyUnit,
+      ignoreSerialIds: Vector[UInt64] = Vector.empty): Gen[
+    Vector[FundingInputV0TLV]] = {
     for {
       numInputs <- Gen.choose(0, 5)
-      inputs <- Gen.listOfN(numInputs, fundingInputV0TLV)
-      input <- fundingInputV0TLV
+      inputs <- Gen.listOfN(numInputs, fundingInputV0TLV(ignoreSerialIds))
+      input <- fundingInputV0TLV(ignoreSerialIds)
     } yield {
       val totalFunding =
         inputs.foldLeft[CurrencyUnit](Satoshis.zero)(_ + _.output.value)
@@ -273,9 +284,12 @@ trait TLVGen {
       contractInfo <- contractInfoV0TLV
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
+      payoutSerialId <- NumberGenerator.uInt64
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       fundingInputs <- fundingInputV0TLVs(totalCollateralSatoshis)
       changeAddress <- AddressGenerator.bitcoinAddress
+      changeSerialId <- NumberGenerator.uInt64
+      fundOutputSerialId <- NumberGenerator.uInt64.suchThat(_ != changeSerialId)
       feeRate <- CurrencyUnitGenerator.positiveRealistic.map(
         SatoshisPerVirtualByte.apply)
       timeout1 <- NumberGenerator.uInt32s
@@ -288,17 +302,20 @@ trait TLVGen {
       }
 
       DLCOfferTLV(
-        0.toByte,
-        chainHash,
-        contractInfo,
-        fundingPubKey,
-        payoutAddress.scriptPubKey,
-        totalCollateralSatoshis,
-        fundingInputs,
-        changeAddress.scriptPubKey,
-        feeRate,
-        contractMaturityBound,
-        contractTimeout
+        contractFlags = 0.toByte,
+        chainHash = chainHash,
+        contractInfo = contractInfo,
+        fundingPubKey = fundingPubKey,
+        payoutSPK = payoutAddress.scriptPubKey,
+        payoutSerialId = payoutSerialId,
+        totalCollateralSatoshis = totalCollateralSatoshis,
+        fundingInputs = fundingInputs,
+        changeSPK = changeAddress.scriptPubKey,
+        changeSerialId = changeSerialId,
+        fundOutputSerialId = fundOutputSerialId,
+        feeRate = feeRate,
+        contractMaturityBound = contractMaturityBound,
+        contractTimeout = contractTimeout
       )
     }
   }
@@ -322,8 +339,10 @@ trait TLVGen {
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
+      payoutSerialId <- NumberGenerator.uInt64
       fundingInputs <- fundingInputV0TLVs(totalCollateralSatoshis)
       changeAddress <- AddressGenerator.bitcoinAddress
+      changeSerialId <- NumberGenerator.uInt64
       cetSigs <- cetSignaturesV0TLV
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
@@ -332,8 +351,10 @@ trait TLVGen {
         totalCollateralSatoshis,
         fundingPubKey,
         payoutAddress.scriptPubKey,
+        payoutSerialId,
         fundingInputs,
         changeAddress.scriptPubKey,
+        changeSerialId,
         cetSigs,
         refundSig,
         NoNegotiationFieldsTLV
@@ -347,12 +368,18 @@ trait TLVGen {
     for {
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
+      payoutSerialId <- NumberGenerator.uInt64.suchThat(
+        _ != offer.payoutSerialId)
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       totalCollateral = scala.math.max(
         (contractInfo.max - offer.totalCollateralSatoshis).satoshis.toLong,
         totalCollateralSatoshis.toLong)
-      fundingInputs <- fundingInputV0TLVs(Satoshis(totalCollateral))
+      fundingInputs <- fundingInputV0TLVs(
+        Satoshis(totalCollateral),
+        offer.fundingInputs.map(_.inputSerialId))
       changeAddress <- AddressGenerator.bitcoinAddress
+      changeSerialId <- NumberGenerator.uInt64.suchThat(num =>
+        num != offer.changeSerialId && num != offer.fundOutputSerialId)
       cetSigs <- cetSignaturesV0TLV(contractInfo.allOutcomes.length)
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
@@ -361,8 +388,10 @@ trait TLVGen {
         Satoshis(totalCollateral),
         fundingPubKey,
         payoutAddress.scriptPubKey,
+        payoutSerialId,
         fundingInputs,
         changeAddress.scriptPubKey,
+        changeSerialId,
         cetSigs,
         refundSig,
         NoNegotiationFieldsTLV
@@ -442,7 +471,7 @@ trait TLVGen {
       oracleAnnouncementV0TLV,
       contractInfoV0TLV,
       oracleInfoV0TLV,
-      fundingInputV0TLV,
+      fundingInputV0TLV(),
       cetSignaturesV0TLV,
       fundingSignaturesV0TLV,
       dlcOfferTLV,

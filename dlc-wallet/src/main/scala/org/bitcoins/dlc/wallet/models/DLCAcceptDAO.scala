@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.crypto.{ECPublicKey, Sha256Digest, Sha256DigestBE}
 import org.bitcoins.db.{CRUD, SlickUtil}
@@ -71,17 +72,23 @@ case class DLCAcceptDAO()(implicit
 
     def payoutAddress: Rep[BitcoinAddress] = column("payout_address")
 
+    def payoutSerialId: Rep[UInt64] = column("payout_serial_id")
+
     def totalCollateral: Rep[CurrencyUnit] = column("total_collateral")
 
     def changeAddress: Rep[BitcoinAddress] = column("change_address")
+
+    def changeSerialId: Rep[UInt64] = column("change_serial_id")
 
     def * : ProvenShape[DLCAcceptDb] =
       (paramHash,
        tempContractId,
        fundingKey,
        payoutAddress,
+       payoutSerialId,
        totalCollateral,
-       changeAddress).<>(DLCAcceptDb.tupled, DLCAcceptDb.unapply)
+       changeAddress,
+       changeSerialId).<>(DLCAcceptDb.tupled, DLCAcceptDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey(name = "pk_dlc_accept", sourceColumns = paramHash)

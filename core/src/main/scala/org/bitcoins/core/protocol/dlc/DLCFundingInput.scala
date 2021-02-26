@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.core.number.{UInt16, UInt32}
+import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.FundingInputV0TLV
 import org.bitcoins.core.protocol.transaction._
@@ -8,6 +8,7 @@ import org.bitcoins.core.wallet.builder.DualFundingInput
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 
 sealed trait DLCFundingInput {
+  def inputSerialId: UInt64
   def prevTx: Transaction
   def prevTxVout: UInt32
   def sequence: UInt32
@@ -39,6 +40,7 @@ sealed trait DLCFundingInput {
 
   lazy val toTLV: FundingInputV0TLV = {
     FundingInputV0TLV(
+      inputSerialId,
       prevTx,
       prevTxVout,
       sequence,
@@ -54,6 +56,7 @@ sealed trait DLCFundingInput {
 object DLCFundingInput {
 
   def apply(
+      inputSerialId: UInt64,
       prevTx: Transaction,
       prevTxVout: UInt32,
       sequence: UInt32,
@@ -63,7 +66,8 @@ object DLCFundingInput {
       case _: P2SHScriptPubKey =>
         redeemScriptOpt match {
           case Some(redeemScript) =>
-            DLCFundingInputP2SHSegwit(prevTx,
+            DLCFundingInputP2SHSegwit(inputSerialId,
+                                      prevTx,
                                       prevTxVout,
                                       sequence,
                                       maxWitnessLen,
@@ -76,9 +80,13 @@ object DLCFundingInput {
         require(
           maxWitnessLen == UInt16(107) || maxWitnessLen == UInt16(108),
           s"P2WPKH max witness length must be 107 or 108, got $maxWitnessLen")
-        DLCFundingInputP2WPKHV0(prevTx, prevTxVout, sequence)
+        DLCFundingInputP2WPKHV0(inputSerialId, prevTx, prevTxVout, sequence)
       case _: P2WSHWitnessSPKV0 =>
-        DLCFundingInputP2WSHV0(prevTx, prevTxVout, sequence, maxWitnessLen)
+        DLCFundingInputP2WSHV0(inputSerialId,
+                               prevTx,
+                               prevTxVout,
+                               sequence,
+                               maxWitnessLen)
       case spk: UnassignedWitnessScriptPubKey =>
         throw new IllegalArgumentException(s"Unknown segwit version: $spk")
       case spk: RawScriptPubKey =>
@@ -88,6 +96,7 @@ object DLCFundingInput {
 
   def fromTLV(fundingInput: FundingInputV0TLV): DLCFundingInput = {
     DLCFundingInput(
+      fundingInput.inputSerialId,
       fundingInput.prevTx,
       fundingInput.prevTxVout,
       fundingInput.sequence,
@@ -98,8 +107,10 @@ object DLCFundingInput {
 
   def fromInputSigningInfo(
       info: ScriptSignatureParams[InputInfo],
+      inputSerialId: UInt64,
       sequence: UInt32 = TransactionConstants.sequence): DLCFundingInput = {
     DLCFundingInput(
+      inputSerialId,
       info.prevTransaction,
       info.outPoint.vout,
       sequence,
@@ -112,6 +123,7 @@ object DLCFundingInput {
 }
 
 case class DLCFundingInputP2WPKHV0(
+    inputSerialId: UInt64,
     prevTx: Transaction,
     prevTxVout: UInt32,
     sequence: UInt32)
@@ -124,6 +136,7 @@ case class DLCFundingInputP2WPKHV0(
 }
 
 case class DLCFundingInputP2WSHV0(
+    inputSerialId: UInt64,
     prevTx: Transaction,
     prevTxVout: UInt32,
     sequence: UInt32,
@@ -136,6 +149,7 @@ case class DLCFundingInputP2WSHV0(
 }
 
 case class DLCFundingInputP2SHSegwit(
+    inputSerialId: UInt64,
     prevTx: Transaction,
     prevTxVout: UInt32,
     sequence: UInt32,

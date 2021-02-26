@@ -2,7 +2,7 @@ package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.api.wallet.db.TransactionDbHelper
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
@@ -72,6 +72,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val input = DLCFundingInputDb(
       paramHash = paramHash,
       isInitiator = true,
+      inputSerialId = UInt64.zero,
       outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
       output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
       redeemScriptOpt = None,
@@ -90,6 +91,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
         DLCFundingInputDb(
           paramHash = paramHash,
           isInitiator = true,
+          inputSerialId = UInt64.zero,
           outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           redeemScriptOpt = None,
@@ -98,6 +100,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
         DLCFundingInputDb(
           paramHash = paramHash,
           isInitiator = false,
+          inputSerialId = UInt64.one,
           outPoint = TransactionOutPoint(testBlockHash, UInt32.one),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           redeemScriptOpt = None,
@@ -106,6 +109,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
         DLCFundingInputDb(
           paramHash = paramHash,
           isInitiator = true,
+          inputSerialId = UInt64(2),
           outPoint = TransactionOutPoint(testBlockHash, UInt32(3)),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           redeemScriptOpt = None,

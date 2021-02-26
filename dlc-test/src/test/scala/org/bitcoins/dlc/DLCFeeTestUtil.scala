@@ -27,7 +27,7 @@ object DLCFeeTestUtil extends Assertions {
     val fundingOutput = fundingTx.outputs.map(_.value).sum
     val actualFundingFee = fundingInput - fundingOutput
 
-    val closingInput = fundingTx.outputs.head.value
+    val closingInput = fundingTx.outputs(builder.fundOutputIndex).value
     val closingOutput = closingTx.outputs.map(_.value).sum
     val actualClosingFee = closingInput - closingOutput
 

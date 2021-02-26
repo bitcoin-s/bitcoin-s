@@ -6,15 +6,7 @@ import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto.{CryptoUtil, NetworkElement}
 import org.bitcoins.dlc.testgen.ByteVectorWrapper._
-import play.api.libs.json.{
-  JsArray,
-  JsError,
-  JsObject,
-  JsResult,
-  JsString,
-  JsSuccess,
-  JsValue
-}
+import play.api.libs.json._
 import scodec.bits.ByteVector
 
 sealed trait DLCParsingTestVector extends TestVector {
@@ -242,7 +234,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "oracleInfo" -> Element(oracleInfo)
         )
         DLCTLVTestVector(tlv, "contract_info_v0", fields)
-      case FundingInputV0TLV(prevTx,
+      case FundingInputV0TLV(inputSerialId,
+                             prevTx,
                              prevTxVout,
                              sequence,
                              maxWitnessLen,
@@ -253,6 +246,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
         val fields = Vector(
           "tpe" -> Element(FundingInputV0TLV.tpe),
           "length" -> Element(tlv.length),
+          "inputSerialId" -> Element(inputSerialId),
           "prevTxLen" -> Element(UInt16(prevTx.byteSize)),
           "prevTx" -> Element(prevTx),
           "prevTxVout" -> Element(prevTxVout),
@@ -295,9 +289,12 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
                        contractInfo,
                        fundingPubKey,
                        payoutSPK,
+                       payoutSerialId,
                        totalCollateralSatoshis,
                        fundingInputs,
                        changeSPK,
+                       changeSerialId,
+                       fundOutputSerialId,
                        feeRate,
                        contractMaturityBound,
                        contractTimeout) =>
@@ -309,6 +306,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "fundingPubKey" -> Element(fundingPubKey),
           "payoutSPKLen" -> Element(UInt16(payoutSPK.asmBytes.length)),
           "payoutSPK" -> Element(payoutSPK.asmBytes),
+          "payoutSerialId" -> Element(payoutSerialId),
           "totalCollateralSatoshis" -> Element(
             totalCollateralSatoshis.toUInt64),
           "fundingInputsLen" -> Element(UInt16(fundingInputs.length)),
@@ -316,6 +314,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
             fundingInputs.map(input => Element(input.bytes))),
           "changeSPKLen" -> Element(UInt16(changeSPK.asmBytes.length)),
           "changeSPK" -> Element(changeSPK.asmBytes),
+          "changeSerialId" -> Element(changeSerialId),
+          "fundOutputSerialId" -> Element(fundOutputSerialId),
           "feeRate" -> Element(feeRate.currencyUnit.satoshis.toUInt64),
           "contractMaturityBound" -> Element(contractMaturityBound.toUInt32),
           "contractTimeout" -> Element(contractTimeout.toUInt32)
@@ -338,8 +338,10 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
                         totalCollateralSatoshis,
                         fundingPubKey,
                         payoutSPK,
+                        payoutSerialId,
                         fundingInputs,
                         changeSPK,
+                        changeSerialId,
                         cetSignatures,
                         refundSignature,
                         negotiationFields) =>
@@ -351,11 +353,13 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "fundingPubKey" -> Element(fundingPubKey),
           "payoutSPKLen" -> Element(UInt16(payoutSPK.asmBytes.length)),
           "payoutSPK" -> Element(payoutSPK.asmBytes),
+          "payoutSerialId" -> Element(payoutSerialId),
           "fundingInputsLen" -> Element(UInt16(fundingInputs.length)),
           "fundingInputs" -> new MultiElement(
             fundingInputs.map(input => Element(input.bytes))),
           "changeSPKLen" -> Element(UInt16(changeSPK.asmBytes.length)),
           "changeSPK" -> Element(changeSPK.asmBytes),
+          "changeSerialId" -> Element(changeSerialId),
           "cetSignatures" -> Element(cetSignatures),
           "refundSignature" -> Element(refundSignature.toRawRS),
           "negotiationFields" -> Element(negotiationFields)
