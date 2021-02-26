@@ -77,6 +77,7 @@ For more information on build configuration options with `sbt` please see the [s
 
 ## Configuration
 
+### Java binary configuration
 If you would like to pass in a custom datadir for your server, you can do
 
 ```bash
@@ -99,9 +100,42 @@ For more information on configuring the server please see our [configuration](..
 
 For more information on how to use our built in `cli` to interact with the server please see [cli.md](cli.md)
 
-### Server Endpoints
+### Docker configuration
 
-#### Blockchain
+You can use bitcoin-s with docker volumes. You can also pass in a custom configuration at container runtime.
+
+#### Using a docker volume
+
+```basrc
+docker volume create bitcoin-s
+docker run -p 9999:9999 \
+--mount source=bitcoin-s,target=/home/bitcoin-s/ app-server:latest
+```
+
+Now you can re-use this volume across container runs. It will keep the same oracle database
+and seeds directory located at `/home/bitcoin-s/.bitcoin-s/seeds` in the volume.
+
+#### Using a custom bitcoin-s configuration with docker
+
+You can also specify a custom bitcoin-s configuration at container runtime.
+You can mount the configuration file on the docker container and that
+configuration will be used in the docker container runtime rather than
+the default one we provide [here](https://github.com/bitcoin-s/bitcoin-s/blob/master/app/oracle-server/src/universal/docker-application.conf)
+
+You can do this with the following command
+
+```bashrc
+docker run -p 9999:9999 \
+--mount type=bind,source=/my/new/config/,target=/home/bitcoin-s/.bitcoin-s/ \
+app-server:latest --conf /home/bitcoin-s/.bitcoin-s/bitcoin-s.conf
+```
+
+Note: If you adjust the `bitcoin-s.server.rpcport` setting you will need to adjust
+the `-p 9999:9999` port mapping on the docker container to adjust for this.
+
+## Server Endpoints
+
+### Blockchain
 
  - `getblockcount` - Get the current block height
  - `getfiltercount` - Get the number of filters
@@ -110,7 +144,7 @@ For more information on how to use our built in `cli` to interact with the serve
  - `decoderawtransaction` `tx` - `Decode the given raw hex transaction`
      - `tx` - Transaction encoded in hex to decode
 
-#### Wallet
+### Wallet
  - `rescan` `[options]` - Rescan for wallet UTXOs
     - `--force` - Clears existing wallet records. Warning! Use with caution!
     - `--batch-size <value>` - Number of filters that can be matched in one batch
@@ -181,13 +215,13 @@ For more information on how to use our built in `cli` to interact with the serve
  - `keymanagerpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
     - `passphrase` - The passphrase to encrypt the wallet with
 
-#### Network
+### Network
  - `getpeers` - List the connected peers
  - `stop` - Request a graceful shutdown of Bitcoin-S
  - `sendrawtransaction` `tx` `Broadcasts the raw transaction`
     - `tx` - Transaction serialized in hex
 
-#### PSBT
+### PSBT
  - `decodepsbt` `psbt` - Return a JSON object representing the serialized, base64-encoded partially signed Bitcoin transaction.
     - `psbt` - PSBT serialized in hex or base64 format
  - `combinepsbts` `psbts` - Combines all the given PSBTs
@@ -201,13 +235,13 @@ For more information on how to use our built in `cli` to interact with the serve
  - `converttopsbt` `unsignedTx` - Creates an empty psbt from the given transaction
     - `unsignedTx` - serialized unsigned transaction in hex
 
-#### Util 
+### Util
  - `createmultisig` `nrequired` `keys` `[address_type]` - Creates a multi-signature address with n signature of m keys required.
     - `nrequired` - The number of required signatures out of the n keys.
     - `keys` - The hex-encoded public keys.
     - `address_type` -The address type to use. Options are "legacy", "p2sh-segwit", and "bech32"
 
-### Sign PSBT with Wallet Example
+## Sign PSBT with Wallet Example
 
 Bitcoin-S CLI:
 
