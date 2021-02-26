@@ -3,8 +3,7 @@ package org.bitcoins.crypto
 import org.bitcoin.NativeSecp256k1
 import scodec.bits.ByteVector
 
-/**
-  * This is an implementation of [[CryptoRuntime]] that defaults to libsecp256k1
+/** This is an implementation of [[CryptoRuntime]] that defaults to libsecp256k1
   * (https://github.com/bitcoin-core/secp256k1) when possible. All unsupported functions
   * are delegated to [[BouncycastleCryptoRuntime]].
   */

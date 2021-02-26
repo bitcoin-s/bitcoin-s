@@ -16,8 +16,7 @@ import java.math.BigInteger
 import java.security.{MessageDigest, SecureRandom}
 import scala.util.{Failure, Success, Try}
 
-/**
-  * This is an implementation of [[CryptoRuntime]] that defaults to Bouncy Castle (https://bouncycastle.org/)
+/** This is an implementation of [[CryptoRuntime]] that defaults to Bouncy Castle (https://bouncycastle.org/)
   * and [[java.security]].
   */
 trait BouncycastleCryptoRuntime extends CryptoRuntime {
