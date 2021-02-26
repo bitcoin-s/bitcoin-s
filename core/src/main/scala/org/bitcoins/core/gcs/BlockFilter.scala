@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.{DoubleSha256Digest, SipHashKey}
 import scodec.bits.ByteVector
 
 object BlockFilter {

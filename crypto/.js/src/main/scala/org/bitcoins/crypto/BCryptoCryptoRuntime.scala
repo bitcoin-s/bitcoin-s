@@ -127,6 +127,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       signature: ECDigitalSignature): Boolean = ???
 
   override def isDEREncoded(signature: ECDigitalSignature): Boolean = ???
+
+  override def sipHash(item: ByteVector, key: SipHashKey): Long = ???
 }
 
 object BCryptoCryptoRuntime extends BCryptoCryptoRuntime

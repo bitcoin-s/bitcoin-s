@@ -271,6 +271,9 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
 
   override def isDEREncoded(signature: ECDigitalSignature): Boolean =
     BouncycastleCryptoRuntime.isDEREncoded(signature)
+
+  override def sipHash(item: ByteVector, key: SipHashKey): Long =
+    BouncycastleCryptoRuntime.sipHash(item, key)
 }
 
 object LibSecp256k1CryptoRuntime extends LibSecp256k1CryptoRuntime

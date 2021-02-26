@@ -3,7 +3,7 @@ package org.bitcoins.crypto
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator
-import org.bouncycastle.crypto.macs.HMac
+import org.bouncycastle.crypto.macs.{HMac, SipHash}
 import org.bouncycastle.crypto.params.{
   ECKeyGenerationParameters,
   ECPrivateKeyParameters,
@@ -293,6 +293,24 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
 
   override def isDEREncoded(signature: ECDigitalSignature): Boolean =
     DERSignatureUtil.isDEREncoded(signature)
+
+  override def sipHash(item: ByteVector, key: SipHashKey): Long = {
+    val sipHashCParam = 2
+    val sipHashDParam = 4
+
+    val sh = new SipHash(sipHashCParam, sipHashDParam)
+
+    val keyParam = new KeyParameter(key.bytes.toArray)
+
+    sh.init(keyParam)
+
+    val offset = 0
+
+    sh.update(item.toArray, offset, item.length.toInt)
+
+    sh.doFinal()
+  }
+
 }
 
 object BouncycastleCryptoRuntime extends BouncycastleCryptoRuntime

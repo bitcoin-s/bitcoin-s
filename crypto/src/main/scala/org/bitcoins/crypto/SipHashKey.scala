@@ -1,6 +1,5 @@
-package org.bitcoins.core.gcs
+package org.bitcoins.crypto
 
-import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
 case class SipHashKey(bytes: ByteVector) extends NetworkElement {

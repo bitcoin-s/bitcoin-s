@@ -208,4 +208,7 @@ trait CryptoRuntime {
   def isValidSignatureEncoding(signature: ECDigitalSignature): Boolean
 
   def isDEREncoded(signature: ECDigitalSignature): Boolean
+
+  /** https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects */
+  def sipHash(item: ByteVector, key: SipHashKey): Long
 }

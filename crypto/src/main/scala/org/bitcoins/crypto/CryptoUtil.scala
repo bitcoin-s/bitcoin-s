@@ -192,6 +192,9 @@ trait CryptoUtil extends CryptoRuntime {
 
   override def isDEREncoded(signature: ECDigitalSignature): Boolean =
     cryptoRuntime.isDEREncoded(signature)
+
+  override def sipHash(item: ByteVector, key: SipHashKey): Long =
+    cryptoRuntime.sipHash(item, key)
 }
 
 object CryptoUtil extends CryptoUtil
