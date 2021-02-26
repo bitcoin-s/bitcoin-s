@@ -3,7 +3,12 @@ import com.typesafe.sbt.SbtNativePackager.Docker
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.Paths
-import com.typesafe.sbt.packager.Keys.{dockerRepository, maintainer}
+import com.typesafe.sbt.packager.Keys.{
+  daemonUser,
+  daemonUserUid,
+  dockerRepository,
+  maintainer
+}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.dockerBaseImage
 import sbt._
 import sbt.Keys._
@@ -152,6 +157,10 @@ object CommonSettings {
       //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
       dockerBaseImage := "openjdk",
       dockerRepository := Some("bitcoinscala"),
+      //set the user to be 'bitcoin-s' rather than
+      //the default provided by sbt native packager
+      //which is 'demiourgos728'
+      daemonUser in Docker := "bitcoin-s",
       packageName in Docker := packageName.value,
       version in Docker := version.value
     )
