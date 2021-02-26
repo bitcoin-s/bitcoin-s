@@ -53,5 +53,5 @@ class OracleServerMain(override val args: Array[String])
 }
 
 object OracleServerMain extends App {
-  new OracleServerMain(args).run()
+  new OracleServerMain(args).run(Some("oracle"))
 }
