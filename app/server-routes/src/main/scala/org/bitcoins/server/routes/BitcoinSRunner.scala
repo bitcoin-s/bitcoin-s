@@ -90,45 +90,46 @@ trait BitcoinSRunner extends BitcoinSLogger {
   def startup: Future[Unit]
 
   // start everything!
-  final def run(): Unit = {
+  final def run(customFinalDirOpt: Option[String] = None): Unit = {
 
-    /** Directory specific for current network */
-    val networkDatadir: Path = {
-      val networkStr: String =
-        baseConfig.getString("bitcoin-s.network")
+    /** Directory specific for current network or custom dir */
+    val usedDir: Path = customFinalDirOpt match {
+      case Some(dir) => datadir.resolve(dir)
+      case None =>
+        val networkStr: String =
+          baseConfig.getString("bitcoin-s.network")
 
-      val network: BitcoinNetwork = networkStr.toLowerCase match {
-        case "mainnet"  => MainNet
-        case "main"     => MainNet
-        case "testnet3" => TestNet3
-        case "testnet"  => TestNet3
-        case "test"     => TestNet3
-        case "regtest"  => RegTest
-        case "signet"   => SigNet
-        case "sig"      => SigNet
-        case _: String =>
-          throw new IllegalArgumentException(s"Invalid network $networkStr")
-      }
+        val network: BitcoinNetwork = networkStr.toLowerCase match {
+          case "mainnet"  => MainNet
+          case "main"     => MainNet
+          case "testnet3" => TestNet3
+          case "testnet"  => TestNet3
+          case "test"     => TestNet3
+          case "regtest"  => RegTest
+          case "signet"   => SigNet
+          case "sig"      => SigNet
+          case _: String =>
+            throw new IllegalArgumentException(s"Invalid network $networkStr")
+        }
 
-      val lastDirname = network match {
-        case MainNet  => "mainnet"
-        case TestNet3 => "testnet3"
-        case RegTest  => "regtest"
-        case SigNet   => "signet"
-      }
-      datadir.resolve(lastDirname)
+        val lastDirname = network match {
+          case MainNet  => "mainnet"
+          case TestNet3 => "testnet3"
+          case RegTest  => "regtest"
+          case SigNet   => "signet"
+        }
+        datadir.resolve(lastDirname)
     }
 
     //We need to set the system property before any logger instances
     //are in instantiated. If we don't do this, we will not log to
     //the correct location
     //see: https://github.com/bitcoin-s/bitcoin-s/issues/2496
-    System.setProperty("bitcoins.log.location",
-                       networkDatadir.toAbsolutePath.toString)
+    System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
 
     logger.info(s"version=${EnvUtil.getVersion}")
 
-    logger.info(s"networkDatadir=${networkDatadir.toAbsolutePath.toString}")
+    logger.info(s"using directory ${usedDir.toAbsolutePath.toString}")
     val runner = startup
     runner.failed.foreach { err =>
       logger.error(s"Failed to startup server!", err)

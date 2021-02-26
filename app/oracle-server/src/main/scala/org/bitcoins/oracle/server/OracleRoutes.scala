@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.core.api.dlcoracle._
+import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
@@ -27,8 +28,7 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
 
     case ServerCommand("getstakingaddress", _) =>
       complete {
-        val network = conf.network
-        val address = oracle.stakingAddress(network)
+        val address = oracle.stakingAddress(MainNet)
 
         Server.httpSuccess(address.toString)
       }
