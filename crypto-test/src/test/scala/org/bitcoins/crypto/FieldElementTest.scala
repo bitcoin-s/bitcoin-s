@@ -10,7 +10,7 @@ class FieldElementTest extends BitcoinSUnitTest {
 
   behavior of "FieldElement"
 
-  private val N = CryptoParams.curve.getN
+  private val N = CryptoParams.getN
 
   it must "have serialization symmetry" in {
     forAll(CryptoGenerators.fieldElement) { fe =>

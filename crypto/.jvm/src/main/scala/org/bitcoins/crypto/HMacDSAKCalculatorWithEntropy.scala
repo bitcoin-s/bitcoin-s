@@ -29,7 +29,7 @@ class HMacDSAKCalculatorWithEntropy(digest: Digest, entropy: ByteVector)
   private val K = new Array[Byte](hMac.getMacSize)
   private val V = new Array[Byte](hMac.getMacSize)
 
-  private var n = CryptoParams.curve.getN
+  private var n = BouncyCastleCryptoParams.curve.getN
 
   override def isDeterministic = true
 

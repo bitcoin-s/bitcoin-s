@@ -14,8 +14,8 @@ import scala.util.Try
 
 object BouncyCastleUtil {
 
-  private val curve: ECCurve = CryptoParams.curve.getCurve
-  private val G: ECPoint = CryptoParams.curve.getG
+  private val curve: ECCurve = BouncyCastleCryptoParams.curve.getCurve
+  private val G: ECPoint = BouncyCastleCryptoParams.curve.getG
 
   private def getBigInteger(bytes: ByteVector): BigInteger = {
     new BigInteger(1, bytes.toArray)
@@ -81,7 +81,7 @@ object BouncyCastleUtil {
       new HMacDSAKCalculator(new SHA256Digest()))
     val privKey: ECPrivateKeyParameters =
       new ECPrivateKeyParameters(getBigInteger(privateKey.bytes),
-                                 CryptoParams.curve)
+                                 BouncyCastleCryptoParams.curve)
     signer.init(true, privKey)
     val components: Array[BigInteger] =
       signer.generateSignature(dataToSign.toArray)
@@ -114,7 +114,7 @@ object BouncyCastleUtil {
       new HMacDSAKCalculatorWithEntropy(new SHA256Digest(), entropy))
     val privKey: ECPrivateKeyParameters =
       new ECPrivateKeyParameters(getBigInteger(privateKey.bytes),
-                                 CryptoParams.curve)
+                                 BouncyCastleCryptoParams.curve)
     signer.init(true, privKey)
     val components: Array[BigInteger] =
       signer.generateSignature(dataToSign.toArray)
@@ -138,7 +138,7 @@ object BouncyCastleUtil {
     val resultTry = Try {
       val publicKeyParams =
         new ECPublicKeyParameters(decodePoint(publicKey.bytes),
-                                  CryptoParams.curve)
+                                  BouncyCastleCryptoParams.curve)
 
       val signer = new ECDSASigner
       signer.init(false, publicKeyParams)
