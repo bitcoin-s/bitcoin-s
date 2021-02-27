@@ -1,7 +1,5 @@
 package org.bitcoins.crypto
 
-import org.bitcoin.NativeSecp256k1
-import org.bitcoins.crypto.CryptoContext.{BouncyCastle, LibSecp256k1}
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen

@@ -3,7 +3,6 @@ package org.bitcoins.core.gcs
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.{DoubleSha256Digest, SipHashKey}
-import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.gen.CryptoGenerators._
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest

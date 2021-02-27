@@ -549,7 +549,7 @@ lazy val testkitCore = project
   .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-testkit-core",
             libraryDependencies ++= Deps.testkitCore)
-  .dependsOn(asyncUtils, core, crypto)
+  .dependsOn(asyncUtils, core, cryptoJVM)
 
 lazy val testkit = project
   .in(file("testkit"))
