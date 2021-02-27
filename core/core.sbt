@@ -1,3 +1,5 @@
-name := "bitcoin-s-core"
+//name := "bitcoin-s-core"
 
-CommonSettings.prodSettings
+//libraryDependencies ++= Deps.core
+
+//CommonSettings.prodSettings

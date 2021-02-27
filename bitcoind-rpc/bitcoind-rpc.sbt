@@ -8,8 +8,6 @@ name := "bitcoin-s-bitcoind-rpc"
 
 libraryDependencies ++= Deps.bitcoindRpc
 
-dependsOn(Projects.core)
-
 CommonSettings.prodSettings
 
 TaskKeys.downloadBitcoind := {
