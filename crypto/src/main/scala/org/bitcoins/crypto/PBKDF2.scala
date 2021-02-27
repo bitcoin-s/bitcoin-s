@@ -1,8 +1,9 @@
 package org.bitcoins.crypto
 
+import scodec.bits.ByteVector
+
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.{SecretKey, SecretKeyFactory}
-import scodec.bits.ByteVector
 
 /** @define keyStretch Derives the provided value and salt to a secret key
   *                    using the PBKDF2 key derivation function

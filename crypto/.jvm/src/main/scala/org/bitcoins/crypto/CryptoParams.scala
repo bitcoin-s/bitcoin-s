@@ -1,10 +1,10 @@
 package org.bitcoins.crypto
 
-import java.math.BigInteger
-
 import org.bouncycastle.asn1.sec.SECNamedCurves
 import org.bouncycastle.asn1.x9.X9ECParameters
 import org.bouncycastle.crypto.params.ECDomainParameters
+
+import java.math.BigInteger
 
 /** Created by chris on 3/29/16.
   * This trait represents all of the default parameters for our elliptic curve

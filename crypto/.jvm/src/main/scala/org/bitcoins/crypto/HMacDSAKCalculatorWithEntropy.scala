@@ -1,14 +1,14 @@
 package org.bitcoins.crypto
 
-import java.math.BigInteger
-import java.security.SecureRandom
-
 import org.bouncycastle.crypto.Digest
 import org.bouncycastle.crypto.macs.HMac
 import org.bouncycastle.crypto.params.KeyParameter
 import org.bouncycastle.crypto.signers.DSAKCalculator
 import org.bouncycastle.util.{Arrays, BigIntegers}
 import scodec.bits.ByteVector
+
+import java.math.BigInteger
+import java.security.SecureRandom
 
 /** Entirely copied from [[org.bouncycastle.crypto.signers.HMacDSAKCalculator HMacDSAKCalculator]]
   * with an added entropy parameter as well as two lines added adding the entropy to the hash.

@@ -1,3 +1,4 @@
+import Deps.V
 import com.typesafe.sbt.SbtGit.GitKeys._
 
 import scala.util.Properties
@@ -30,8 +31,39 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
 }
 
 import Projects._
-lazy val crypto = project in file("crypto")
-lazy val core = project in file("core") dependsOn crypto
+
+lazy val commonJsSettings = {
+  Seq(
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.CommonJSModule)
+    }
+  )
+}
+
+lazy val crypto = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .settings(
+    name := "bitcoin-s-crypto"
+  )
+  .jvmSettings(
+    libraryDependencies ++= Seq(
+      "org.scala-js" %% "scalajs-stubs" % "1.0.0" % "provided",
+      "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
+    )
+  )
+  .jsSettings(commonJsSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scodec" %%% "scodec-bits" % V.scodecV withSources () withJavadoc ()
+    )
+  )
+  .in(file("crypto"))
+
+lazy val cryptoJS = crypto.js
+
+lazy val cryptoJVM = crypto.jvm.dependsOn(secp256k1jni)
+
+lazy val core = project in file("core") dependsOn cryptoJVM
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
@@ -58,7 +90,8 @@ lazy val `bitcoin-s` = project
     cliTest,
     core,
     coreTest,
-    crypto,
+    cryptoJVM,
+    cryptoJS,
     cryptoTest,
     dbCommons,
     dbCommonsTest,
@@ -97,7 +130,8 @@ lazy val `bitcoin-s` = project
     cliTest,
     core,
     coreTest,
-    crypto,
+    cryptoJVM,
+    cryptoJS,
     cryptoTest,
     dbCommons,
     dbCommonsTest,
@@ -257,7 +291,7 @@ lazy val cryptoTest = project
     name := "bitcoin-s-crypto-test"
   )
   .dependsOn(
-    crypto % testAndCompile,
+    cryptoJVM % testAndCompile,
     testkit
   )
 

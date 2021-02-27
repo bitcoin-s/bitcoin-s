@@ -17,7 +17,8 @@ class BIP340Test extends BitcoinSUnitTest {
       msg: ByteVector,
       expectedSig: SchnorrDigitalSignature): Assertion = {
     val secpSig = secKey.schnorrSign(msg, auxRand)
-    val bouncyCastleSig = BouncyCastleUtil.schnorrSign(msg, secKey, auxRand)
+    val bouncyCastleSig =
+      BouncycastleCryptoRuntime.schnorrSign(msg, secKey, auxRand)
     assert(secpSig == expectedSig,
            s"Test $index failed signing for libsecp256k1")
     assert(bouncyCastleSig == expectedSig,
@@ -33,7 +34,8 @@ class BIP340Test extends BitcoinSUnitTest {
       expectedResult: Boolean,
       comment: String): Assertion = {
     val secpResult = pubKey.verify(msg, sig)
-    val bouncyCastleResult = BouncyCastleUtil.schnorrVerify(msg, pubKey, sig)
+    val bouncyCastleResult =
+      BouncycastleCryptoRuntime.schnorrVerify(msg, pubKey, sig)
     assert(secpResult == expectedResult,
            s"Test $index failed verification for libsecp256k1: $comment")
     assert(bouncyCastleResult == expectedResult,

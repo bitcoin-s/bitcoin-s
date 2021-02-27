@@ -26,7 +26,8 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
       auxRand: ByteVector): ECPrivateKey = {
     val privKeyForUse = privKey.schnorrKey
 
-    val randHash = CryptoUtil.sha256SchnorrAuxRand(auxRand).bytes
+    val randHash =
+      CryptoUtil.sha256SchnorrAuxRand(auxRand).bytes
     val maskedKey = randHash.xor(privKeyForUse.bytes)
 
     val nonceHash = CryptoUtil.sha256SchnorrNonce(
