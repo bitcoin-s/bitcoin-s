@@ -6,7 +6,8 @@ import org.bitcoins.crypto.{
   CryptoUtil,
   DoubleSha256Digest,
   DoubleSha256DigestBE,
-  NetworkElement
+  NetworkElement,
+  SipHashKey
 }
 import scodec.bits.{BitVector, ByteVector}
 

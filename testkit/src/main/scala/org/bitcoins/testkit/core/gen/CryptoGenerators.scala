@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.gcs.SipHashKey
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.{core, crypto}
@@ -23,7 +22,8 @@ import org.bitcoins.crypto.{
   SchnorrPublicKey,
   Sha256Digest,
   Sha256DigestBE,
-  Sha256Hash160Digest
+  Sha256Hash160Digest,
+  SipHashKey
 }
 import org.scalacheck.Gen
 import scodec.bits.{BitVector, ByteVector}

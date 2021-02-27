@@ -1,11 +1,10 @@
 package org.bitcoins.crypto
 
-import java.security.SecureRandom
-
-import javax.crypto.spec.{IvParameterSpec, SecretKeySpec}
-import javax.crypto.{BadPaddingException, Cipher, SecretKey}
 import scodec.bits.ByteVector
 
+import java.security.SecureRandom
+import javax.crypto.spec.{IvParameterSpec, SecretKeySpec}
+import javax.crypto.{BadPaddingException, Cipher, SecretKey}
 import scala.util.{Failure, Success, Try}
 
 /** Represents a encrypted cipher text with it's accompanying

@@ -36,3 +36,8 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
 
 //https://github.com/scalameta/sbt-native-image
 addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.0")
+
+// Scala.js
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.5.0")
+
+addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.0.0")

@@ -2,8 +2,7 @@ package org.bitcoins.core.gcs
 
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bouncycastle.crypto.macs.SipHash
-import org.bouncycastle.crypto.params.KeyParameter
+import org.bitcoins.crypto.{CryptoUtil, SipHashKey}
 import scodec.bits.{BinStringSyntax, BitVector, ByteVector}
 
 import scala.annotation.tailrec
@@ -49,21 +48,7 @@ object GCS {
   }
 
   private def sipHash(item: ByteVector, key: SipHashKey): UInt64 = {
-    // https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects
-    val sipHashCParam = 2
-    val sipHashDParam = 4
-
-    val sh = new SipHash(sipHashCParam, sipHashDParam)
-
-    val keyParam = new KeyParameter(key.bytes.toArray)
-
-    sh.init(keyParam)
-
-    val offset = 0
-
-    sh.update(item.toArray, offset, item.length.toInt)
-
-    val digest = sh.doFinal()
+    val digest = CryptoUtil.sipHash(item, key)
 
     UInt64.fromHex(digest.toHexString)
   }

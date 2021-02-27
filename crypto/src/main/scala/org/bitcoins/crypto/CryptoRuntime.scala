@@ -1,14 +1,13 @@
 package org.bitcoins.crypto
 
-import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.{BitVector, ByteVector}
-
-import java.math.BigInteger
 
 /** Trait that should be extended by specific runtimes like javascript
   * or the JVM to support crypto functions needed for bitcoin-s
   */
 trait CryptoRuntime {
+
+  val cryptoContext: CryptoContext
 
   /** Generates a 32 byte private key */
   def freshPrivateKey: ECPrivateKey
@@ -80,7 +79,7 @@ trait CryptoRuntime {
   }
 
   def sha256DLCAttestation(str: String): Sha256Digest = {
-    sha256DLCAttestation(CryptoUtil.serializeForHash(str))
+    sha256DLCAttestation(serializeForHash(str))
   }
 
   // The tag "DLC/oracle/announcement/v0"
@@ -94,12 +93,6 @@ trait CryptoRuntime {
   def sha256DLCAnnouncement(bytes: ByteVector): Sha256Digest = {
     sha256(dlcAnnouncementTagBytes ++ bytes)
   }
-
-  /** @param x x coordinate
-    * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
-    *         p1.y is even, p2.y is odd
-    */
-  def recoverPoint(x: BigInteger): (ECPoint, ECPoint)
 
   /** Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
     * can be verified with both, but only one of them matches that private key that was used to generate the signature.
@@ -136,4 +129,86 @@ trait CryptoRuntime {
   def sha256SchnorrNonce(bytes: ByteVector): Sha256Digest = {
     sha256(schnorrNonceTagBytes ++ bytes)
   }
+
+  def publicKey(privateKey: ECPrivateKey): ECPublicKey
+
+  def sign(privateKey: ECPrivateKey, dataToSign: ByteVector): ECDigitalSignature
+
+  def signWithEntropy(
+      privateKey: ECPrivateKey,
+      bytes: ByteVector,
+      entropy: ByteVector): ECDigitalSignature
+
+  def secKeyVerify(privateKeybytes: ByteVector): Boolean
+
+  def verify(
+      publicKey: ECPublicKey,
+      data: ByteVector,
+      signature: ECDigitalSignature): Boolean
+
+  def decompressed(publicKey: ECPublicKey): ECPublicKey
+
+  def tweakMultiply(publicKey: ECPublicKey, tweak: FieldElement): ECPublicKey
+
+  def add(pk1: ECPrivateKey, pk2: ECPrivateKey): ECPrivateKey
+
+  def add(bytes: ByteVector, pk2: ECPrivateKey): ByteVector
+
+  def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey
+
+  def pubKeyTweakAdd(pubkey: ECPublicKey, privkey: ECPrivateKey): ECPublicKey
+
+  def isValidPubKey(bytes: ByteVector): Boolean
+
+  def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean
+
+  def schnorrSign(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      auxRand: ByteVector): SchnorrDigitalSignature
+
+  def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature
+
+  def schnorrVerify(
+      data: ByteVector,
+      schnorrPubKey: SchnorrPublicKey,
+      signature: SchnorrDigitalSignature): Boolean
+
+  def schnorrComputeSigPoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      pubKey: SchnorrPublicKey,
+      compressed: Boolean): ECPublicKey
+
+  def adaptorSign(
+      key: ECPrivateKey,
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature
+
+  def adaptorComplete(
+      key: ECPrivateKey,
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature
+
+  def extractAdaptorSecret(
+      signature: ECDigitalSignature,
+      adaptorSignature: ECAdaptorSignature,
+      key: ECPublicKey): ECPrivateKey
+
+  def adaptorVerify(
+      adaptorSignature: ECAdaptorSignature,
+      key: ECPublicKey,
+      msg: ByteVector,
+      adaptorPoint: ECPublicKey): Boolean
+
+  def decodeSignature(signature: ECDigitalSignature): (BigInt, BigInt)
+
+  def isValidSignatureEncoding(signature: ECDigitalSignature): Boolean
+
+  def isDEREncoded(signature: ECDigitalSignature): Boolean
+
+  /** https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects */
+  def sipHash(item: ByteVector, key: SipHashKey): Long
 }

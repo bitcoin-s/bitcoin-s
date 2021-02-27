@@ -1,10 +1,8 @@
 package org.bitcoins.crypto
 
-import java.math.BigInteger
-
-import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
+import java.math.BigInteger
 import scala.util.Try
 
 /** Represents integers modulo the secp256k1 field size: pow(2,256) - 0x1000003D1.
@@ -52,8 +50,6 @@ case class FieldElement(bytes: ByteVector) extends NetworkElement {
     FieldElement.negate(this)
   }
 
-  def getPoint: ECPoint = FieldElement.computePoint(this)
-
   def getPublicKey: ECPublicKey = toPrivateKey.publicKey
 
   def inverse: FieldElement = FieldElement.computeInverse(this)
@@ -92,8 +88,13 @@ object FieldElement extends Factory[FieldElement] {
   val nMinusOne: FieldElement = FieldElement(
     "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140")
 
-  private val G: ECPoint = CryptoParams.curve.getG
-  private val N: BigInteger = CryptoParams.curve.getN
+  // CryptoParams.curve.getG
+  private val G: ECPublicKey = ECPublicKey(
+    "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
+
+  // CryptoParams.curve.getN
+  private val N: BigInteger = new BigInteger(
+    "115792089237316195423570985008687907852837564279074904382605163141518161494337")
 
   private def getBigInteger(bytes: ByteVector): BigInteger = {
     new BigInteger(1, bytes.toArray)
@@ -120,7 +121,7 @@ object FieldElement extends Factory[FieldElement] {
     FieldElement(neg)
   }
 
-  def computePoint(fe: FieldElement): ECPoint = G.multiply(fe.toBigInteger)
+  def computePoint(fe: FieldElement): ECPublicKey = G.tweakMultiply(fe)
 
   /** Computes the inverse (mod M) of the input using the Euclidean Algorithm (log time)
     * Cribbed from [[https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/]]

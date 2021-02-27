@@ -24,19 +24,19 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
     * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
     * @return boolean representing if the signature is a valid
     */
-  def isDEREncoded: Boolean = DERSignatureUtil.isDEREncoded(this)
+  def isDEREncoded: Boolean = CryptoUtil.isDEREncoded(this)
 
   /** Checks if the signature is strictly der encoded as per BIP66
     * [[https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki]]
     */
-  def isStrictEncoded: Boolean = DERSignatureUtil.isValidSignatureEncoding(this)
+  def isStrictEncoded: Boolean = CryptoUtil.isValidSignatureEncoding(this)
 
   /** Decodes the digital signature into it's r and s points
     * throws an exception if the given sequence of bytes is not a DER encoded signature
     * @return the (r,s) values for the elliptic curve digital signature
     */
   lazy val decodeSignature: (BigInt, BigInt) =
-    DERSignatureUtil.decodeSignature(this)
+    CryptoUtil.decodeSignature(this)
 
   /** Represents the r value found in a elliptic curve digital signature */
   def r: BigInt = {

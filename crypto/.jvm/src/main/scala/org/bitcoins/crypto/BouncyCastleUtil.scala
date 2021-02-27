@@ -1,7 +1,5 @@
 package org.bitcoins.crypto
 
-import java.math.BigInteger
-
 import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.params.{
   ECPrivateKeyParameters,
@@ -11,7 +9,8 @@ import org.bouncycastle.crypto.signers.{ECDSASigner, HMacDSAKCalculator}
 import org.bouncycastle.math.ec.{ECCurve, ECPoint}
 import scodec.bits.ByteVector
 
-import scala.util.{Failure, Success, Try}
+import java.math.BigInteger
+import scala.util.Try
 
 object BouncyCastleUtil {
 
@@ -23,12 +22,23 @@ object BouncyCastleUtil {
   }
 
   def pubKeyTweakMul(publicKey: ECPublicKey, tweak: ByteVector): ECPublicKey = {
-    val point = publicKey.toPoint.multiply(getBigInteger(tweak))
-    ECPublicKey.fromPoint(point, publicKey.isCompressed)
+    val point = decodePoint(publicKey).multiply(getBigInteger(tweak))
+    decodePubKey(point, publicKey.isCompressed)
   }
 
   def decodePoint(bytes: ByteVector): ECPoint = {
     curve.decodePoint(bytes.toArray)
+  }
+
+  def decodePoint(pubKey: ECPublicKey): ECPoint = {
+    decodePoint(pubKey.bytes)
+  }
+
+  def decodePubKey(
+      point: ECPoint,
+      isCompressed: Boolean = true): ECPublicKey = {
+    val bytes = point.getEncoded(isCompressed)
+    ECPublicKey.fromBytes(ByteVector(bytes))
   }
 
   def validatePublicKey(bytes: ByteVector): Boolean = {
@@ -38,8 +48,8 @@ object BouncyCastleUtil {
   }
 
   def pubKeyTweakMul(pubKey: ECPublicKey, tweak: FieldElement): ECPublicKey = {
-    val tweakedPoint = pubKey.toPoint.multiply(tweak.toBigInteger)
-    ECPublicKey.fromPoint(tweakedPoint, pubKey.isCompressed)
+    val tweakedPoint = decodePoint(pubKey).multiply(tweak.toBigInteger)
+    decodePubKey(tweakedPoint, pubKey.isCompressed)
   }
 
   def decompressPublicKey(publicKey: ECPublicKey): ECPublicKey = {
@@ -144,81 +154,6 @@ object BouncyCastleUtil {
     }
     resultTry.getOrElse(false)
   }
-
-  def schnorrSign(
-      dataToSign: ByteVector,
-      privateKey: ECPrivateKey,
-      auxRand: ByteVector): SchnorrDigitalSignature = {
-    val nonceKey =
-      SchnorrNonce.kFromBipSchnorr(privateKey, dataToSign, auxRand)
-
-    schnorrSignWithNonce(dataToSign, privateKey, nonceKey)
-  }
-
-  def schnorrSignWithNonce(
-      dataToSign: ByteVector,
-      privateKey: ECPrivateKey,
-      nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
-    val rx = nonceKey.schnorrNonce
-    val k = nonceKey.nonceKey.fieldElement
-    val x = privateKey.schnorrKey.fieldElement
-    val e = CryptoUtil
-      .sha256SchnorrChallenge(
-        rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign)
-      .bytes
-
-    val challenge = x.multiply(FieldElement(e))
-    val sig = k.add(challenge)
-
-    SchnorrDigitalSignature(rx, sig)
-  }
-
-  def schnorrVerify(
-      data: ByteVector,
-      schnorrPubKey: SchnorrPublicKey,
-      signature: SchnorrDigitalSignature): Boolean = {
-    val rx = signature.rx
-    val sT = Try(signature.sig.toPrivateKey)
-
-    sT match {
-      case Success(s) =>
-        val eBytes = CryptoUtil
-          .sha256SchnorrChallenge(rx.bytes ++ schnorrPubKey.bytes ++ data)
-          .bytes
-
-        val e = FieldElement(eBytes)
-        val negE = e.negate
-
-        val sigPoint = s.publicKey
-        val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
-        val computedR = challengePoint.add(sigPoint)
-        val yCoord = computedR.toPoint.getRawYCoord
-
-        yCoord != null && !yCoord.testBitZero() && computedR.schnorrNonce == rx
-      case Failure(_) => false
-    }
-  }
-
-  def schnorrComputeSigPoint(
-      data: ByteVector,
-      nonce: SchnorrNonce,
-      pubKey: SchnorrPublicKey,
-      compressed: Boolean): ECPublicKey = {
-    val eBytes = CryptoUtil
-      .sha256SchnorrChallenge(nonce.bytes ++ pubKey.bytes ++ data)
-      .bytes
-
-    val e = FieldElement(eBytes)
-
-    val compressedSigPoint =
-      nonce.publicKey.add(pubKey.publicKey.tweakMultiply(e))
-
-    if (compressed) {
-      compressedSigPoint
-    } else {
-      compressedSigPoint.decompressed
-    }
-  }
 }
 
 object AdaptorStuff {
@@ -230,7 +165,8 @@ object AdaptorStuff {
       k: FieldElement,
       r: ECPublicKey,
       privateKey: ECPrivateKey): FieldElement = {
-    val rx = FieldElement(r.toPoint.getXCoord.toBigInteger)
+    val rx = FieldElement(
+      BouncyCastleUtil.decodePoint(r).getXCoord.toBigInteger)
     val x = privateKey.fieldElement
     val m = FieldElement(dataToSign)
     val kInv = k.inverse
@@ -243,7 +179,9 @@ object AdaptorStuff {
       adaptorPoint: ECPublicKey,
       dataToSign: ByteVector): ECAdaptorSignature = {
     // Include dataToSign and adaptor in nonce derivation
-    val hash = CryptoUtil.sha256(dataToSign ++ serializePoint(adaptorPoint))
+    val hash =
+      BouncycastleCryptoRuntime.sha256(
+        dataToSign ++ serializePoint(adaptorPoint))
     val k = DLEQStuff.dleqNonceFunc(hash.bytes,
                                     privateKey.fieldElement,
                                     "ECDSAAdaptorNon")
@@ -361,7 +299,7 @@ object DLEQStuff {
       fe: FieldElement,
       algoName: String): FieldElement = {
     val kBytes =
-      CryptoUtil.taggedSha256(fe.bytes ++ hash, algoName).bytes
+      BouncycastleCryptoRuntime.taggedSha256(fe.bytes ++ hash, algoName).bytes
     FieldElement(kBytes)
   }
 
@@ -372,7 +310,7 @@ object DLEQStuff {
       r2: ECPublicKey,
       p1: ECPublicKey,
       p2: ECPublicKey): ByteVector = {
-    CryptoUtil
+    BouncycastleCryptoRuntime
       .taggedSha256(
         serializePoint(adaptorPoint) ++ serializePoint(r1) ++ serializePoint(
           r2) ++ serializePoint(p1) ++ serializePoint(p2),
@@ -392,7 +330,7 @@ object DLEQStuff {
 
     // hash(Y || fe*G || fe*Y)
     val hash =
-      CryptoUtil
+      BouncycastleCryptoRuntime
         .sha256(
           serializePoint(adaptorPoint) ++ serializePoint(p1) ++ serializePoint(
             p2))
