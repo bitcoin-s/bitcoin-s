@@ -46,16 +46,11 @@ lazy val crypto = crossProject(JVMPlatform, JSPlatform)
     name := "bitcoin-s-crypto"
   )
   .jvmSettings(
-    libraryDependencies ++= Seq(
-      "org.scala-js" %% "scalajs-stubs" % "1.0.0" % "provided",
-      "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
-    )
+    libraryDependencies ++= Deps.cryptoJVM
   )
   .jsSettings(commonJsSettings)
   .settings(
-    libraryDependencies ++= Seq(
-      "org.scodec" %%% "scodec-bits" % V.scodecV withSources () withJavadoc ()
-    )
+    libraryDependencies ++= Deps.crypto.value
   )
   .in(file("crypto"))
 
@@ -63,7 +58,10 @@ lazy val cryptoJS = crypto.js
 
 lazy val cryptoJVM = crypto.jvm.dependsOn(secp256k1jni)
 
-lazy val core = project in file("core") dependsOn cryptoJVM
+lazy val core = project
+  .in(file("core"))
+  .settings(libraryDependencies ++= Deps.core.value)
+  .dependsOn(cryptoJVM)
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
@@ -288,7 +286,8 @@ lazy val cryptoTest = project
   .in(file("crypto-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(
-    name := "bitcoin-s-crypto-test"
+    name := "bitcoin-s-crypto-test",
+    libraryDependencies ++= Deps.cryptoTest.value
   )
   .dependsOn(
     cryptoJVM % testAndCompile,
@@ -299,7 +298,8 @@ lazy val coreTest = project
   .in(file("core-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(
-    name := "bitcoin-s-core-test"
+    name := "bitcoin-s-core-test",
+    libraryDependencies ++= Deps.coreTest.value
   )
   .dependsOn(
     core % testAndCompile,
@@ -434,7 +434,7 @@ lazy val dbCommons = project
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-db-commons",
-    libraryDependencies ++= Deps.dbCommons
+    libraryDependencies ++= Deps.dbCommons.value
   )
   .dependsOn(core, appCommons)
 
@@ -451,7 +451,7 @@ lazy val feeProvider = project
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-fee-provider",
-    libraryDependencies ++= Deps.feeProvider
+    libraryDependencies ++= Deps.feeProvider.value
   )
   .dependsOn(core, appCommons)
 
@@ -460,14 +460,15 @@ lazy val feeProviderTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-fee-provider-test",
-    libraryDependencies ++= Deps.feeProviderTest
+    libraryDependencies ++= Deps.feeProviderTest.value
   )
   .dependsOn(core, core % testAndCompile, testkit)
 
 lazy val zmq = project
   .in(file("zmq"))
   .settings(CommonSettings.prodSettings: _*)
-  .settings(name := "bitcoin-s-zmq", libraryDependencies ++= Deps.bitcoindZmq)
+  .settings(name := "bitcoin-s-zmq",
+            libraryDependencies ++= Deps.bitcoindZmq.value)
   .dependsOn(
     core % testAndCompile
   )
@@ -475,6 +476,8 @@ lazy val zmq = project
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
   .settings(CommonSettings.testSettings: _*)
+  .settings(name := "bitcoin-s-bitcoind-rpc-test",
+            libraryDependencies ++= Deps.bitcoindRpcTest.value)
   .dependsOn(core % testAndCompile, testkit)
 
 lazy val bench = project
@@ -491,7 +494,7 @@ lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(
-    libraryDependencies ++= Deps.eclairRpcTest,
+    libraryDependencies ++= Deps.eclairRpcTest.value,
     name := "bitcoin-s-eclair-rpc-test"
   )
   .dependsOn(core % testAndCompile, testkit)
@@ -530,7 +533,7 @@ lazy val nodeTest =
       // Scalatest issue:
       // https://github.com/scalatest/scalatest/issues/556
       Test / fork := false,
-      libraryDependencies ++= Deps.nodeTest
+      libraryDependencies ++= Deps.nodeTest.value
     )
     .dependsOn(
       core % testAndCompile,
@@ -543,7 +546,8 @@ lazy val testkit = project
   .in(file("testkit"))
   .settings(CommonSettings.prodSettings: _*)
   .settings(
-    name := "bitcoin-s-testkit"
+    name := "bitcoin-s-testkit",
+    libraryDependencies ++= Deps.testkit.value
   )
   .dependsOn(
     asyncUtils,
@@ -561,6 +565,7 @@ lazy val testkit = project
 lazy val docs = project
   .in(file("bitcoin-s-docs")) // important: it must not be docs/
   .settings(CommonSettings.testSettings: _*)
+  .settings(libraryDependencies ++= Deps.docs.value)
   .dependsOn(
     bitcoindRpc,
     chain,
