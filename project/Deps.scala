@@ -1,4 +1,5 @@
 import sbt._
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 object Deps {
 
@@ -54,6 +55,7 @@ object Deps {
 
     val sourcecodeV = "0.2.3"
 
+    val scalaJsStubsV = "1.0.0"
     // CLI deps
     val scoptV = "4.0.0"
     val sttpV = "1.7.2"
@@ -66,7 +68,8 @@ object Deps {
       "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
 
     val scodec =
-      "org.scodec" %% "scodec-bits" % V.scodecV withSources () withJavadoc ()
+      Def.setting(
+        "org.scodec" %%% "scodec-bits" % V.scodecV withSources () withJavadoc ())
 
     val slf4j =
       "org.slf4j" % "slf4j-api" % V.slf4j % "provided" withSources () withJavadoc ()
@@ -172,8 +175,12 @@ object Deps {
     val scalacheck =
       "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
 
+    val scalaJsStubs =
+      "org.scala-js" %% "scalajs-stubs" % V.scalaJsStubsV % "provided"
+
     val scalaTest =
-      "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
+      Def.setting(
+        "org.scalatest" %%% "scalatest" % V.scalaTest withSources () withJavadoc ())
 
     val scalaTestPlus =
       "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ()
@@ -195,7 +202,9 @@ object Deps {
     val logback = Compile.logback % "test"
     val grizzledSlf4j = Compile.grizzledSlf4j % "test"
     val scalacheck = Compile.scalacheck % "test"
-    val scalaTest = Compile.scalaTest % "test"
+
+    val scalaTest = Def.setting(
+      "org.scalatest" %%% "scalatest" % V.scalaTest % "test" withSources () withJavadoc ())
     val scalaMock = "org.scalamock" %% "scalamock" % V.scalamockV
 
     val spray =
@@ -236,43 +245,60 @@ object Deps {
       Compile.slf4j
     )
 
-  val core = List(
+  def core = Def.setting {
+    List(
+      Compile.bouncycastle,
+      Compile.scodec.value,
+      Compile.slf4j,
+      Compile.grizzledSlf4j
+    )
+  }
+
+  val cryptoJVM = List(
     Compile.bouncycastle,
-    Compile.scodec,
-    Compile.slf4j,
-    Compile.grizzledSlf4j
+    Compile.scalaJsStubs
   )
 
-  val crypto = List(
-    Compile.bouncycastle,
-    Compile.scodec
-  )
+  def crypto: Def.Initialize[Seq[ModuleID]] = {
+    Def.setting {
+      List(
+        Compile.scodec.value,
+        Test.scalaTest.value
+      )
+    }
+  }
 
   val secp256k1jni = List(
     Compile.nativeLoader,
     Test.junitInterface
   )
 
-  val coreTest = List(
-    Test.junitInterface,
-    Test.logback,
-    Test.scalaTest,
-    Test.spray,
-    Test.playJson,
-    Test.scalaCollectionCompat
-  )
+  def coreTest = Def.setting {
+    List(
+      Test.junitInterface,
+      Test.logback,
+      Test.scalaTest.value,
+      Test.spray,
+      Test.playJson,
+      Test.scalaCollectionCompat
+    )
+  }
 
-  val cryptoTest = List(
-    Test.scalaTest
-  )
+  def cryptoTest = Def.setting {
+    List(
+      Test.scalaTest.value
+    )
+  }
 
-  val bitcoindZmq = List(
-    Compile.zeromq,
-    Compile.slf4j,
-    Test.logback,
-    Test.scalacheck,
-    Test.scalaTest
-  )
+  def bitcoindZmq = Def.setting {
+    List(
+      Compile.zeromq,
+      Compile.slf4j,
+      Test.logback,
+      Test.scalacheck,
+      Test.scalaTest.value
+    )
+  }
 
   val bitcoindRpc = List(
     Compile.akkaHttp,
@@ -280,34 +306,37 @@ object Deps {
     Compile.typesafeConfig
   )
 
-  def bitcoindRpcTest(scalaVersion: String) =
+  def bitcoindRpcTest = Def.setting {
     List(
       Test.akkaHttpTestkit,
       Test.akkaStream,
       Test.logback,
-      Test.scalaTest,
+      Test.scalaTest.value,
       Test.scalacheck,
       Test.newAsync,
       Test.scalaCollectionCompat
     )
+  }
 
   val bench = List(
     "org.slf4j" % "slf4j-api" % V.slf4j withSources () withJavadoc (),
     Compile.logback
   )
 
-  val dbCommons = List(
-    Compile.dropwizardMetrics,
-    Compile.flyway,
-    Compile.slick,
-    Compile.sourcecode,
-    Compile.logback,
-    Compile.sqlite,
-    Compile.postgres,
-    Compile.slickHikari,
-    Test.scalaTest,
-    Test.pgEmbedded
-  )
+  def dbCommons = Def.setting {
+    List(
+      Compile.dropwizardMetrics,
+      Compile.flyway,
+      Compile.slick,
+      Compile.sourcecode,
+      Compile.logback,
+      Compile.sqlite,
+      Compile.postgres,
+      Compile.slickHikari,
+      Test.scalaTest.value,
+      Test.pgEmbedded
+    )
+  }
 
   def cli(scalaVersion: String) =
     List(
@@ -348,24 +377,30 @@ object Deps {
     Compile.slf4j
   )
 
-  val eclairRpcTest = List(
-    Test.akkaHttpTestkit,
-    Test.akkaStream,
-    Test.logback,
-    Test.scalaTest,
-    Test.scalacheck
-  )
+  def eclairRpcTest = Def.setting {
+    List(
+      Test.akkaHttpTestkit,
+      Test.akkaStream,
+      Test.logback,
+      Test.scalaTest.value,
+      Test.scalacheck
+    )
+  }
 
-  val feeProvider = List(
-    Compile.akkaHttp,
-    Compile.akkaActor,
-    Compile.akkaStream
-  )
+  def feeProvider = Def.setting {
+    List(
+      Compile.akkaHttp,
+      Compile.akkaActor,
+      Compile.akkaStream
+    )
+  }
 
-  val feeProviderTest = List(
-    Test.akkaTestkit,
-    Test.scalaTest
-  )
+  def feeProviderTest = Def.setting {
+    List(
+      Test.akkaTestkit,
+      Test.scalaTest.value
+    )
+  }
 
   val node = List(
     Compile.akkaActor,
@@ -375,20 +410,24 @@ object Deps {
     Compile.sqlite
   )
 
-  val nodeTest = List(
-    Test.akkaTestkit,
-    Test.scalaTest,
-    Test.pgEmbedded
-  )
+  val nodeTest = Def.setting {
+    List(
+      Test.akkaTestkit,
+      Test.scalaTest.value,
+      Test.pgEmbedded
+    )
+  }
 
-  val testkit = List(
-    Compile.slf4j,
-    Compile.scalacheck,
-    Compile.scalaTest,
-    Compile.scalaTestPlus,
-    Compile.pgEmbedded,
-    Test.akkaTestkit
-  )
+  val testkit = Def.setting {
+    List(
+      Compile.slf4j,
+      Compile.scalacheck,
+      Compile.scalaTest.value,
+      Compile.scalaTestPlus,
+      Compile.pgEmbedded,
+      Test.akkaTestkit
+    )
+  }
 
   def keyManager(scalaVersion: String) =
     List(
@@ -411,11 +450,13 @@ object Deps {
     Test.pgEmbedded
   )
 
-  val docs = List(
-    Compile.logback,
-    Test.scalaTest,
-    Test.logback
-  )
+  def docs = Def.setting {
+    List(
+      Compile.logback,
+      Test.scalaTest.value,
+      Test.logback
+    )
+  }
 
   val walletServerTest = List(
     Test.scalaMock,
