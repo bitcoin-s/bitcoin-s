@@ -421,16 +421,18 @@ object Deps {
     )
   }
 
-  val testkitCore = List(
-    Compile.newMicroPickle,
-    Compile.scalaCollectionCompat,
-    Compile.scalacheck,
-    Compile.scalaTest,
-    Compile.scalaTestPlus,
-    Compile.slf4j
-  )
+  def testkitCore = Def.setting {
+    List(
+      Compile.newMicroPickle,
+      Compile.scalaCollectionCompat,
+      Compile.scalacheck,
+      Compile.scalaTest.value,
+      Compile.scalaTestPlus,
+      Compile.slf4j
+    )
+  }
 
-  val testkit = Def.setting {
+  def testkit = Def.setting {
     List(
       Compile.slf4j,
       Compile.scalacheck,
