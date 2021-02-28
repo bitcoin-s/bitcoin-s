@@ -192,9 +192,8 @@ sealed abstract class DERSignatureUtil {
     val sigLowS =
       if (isLowS(signature)) signature
       else
-        ECDigitalSignature(
-          signature.r,
-          CryptoParams.curve.getN.subtract(signature.s.bigInteger))
+        ECDigitalSignature(signature.r,
+                           CryptoParams.getN.subtract(signature.s.bigInteger))
     require(DERSignatureUtil.isLowS(sigLowS))
     sigLowS
   }

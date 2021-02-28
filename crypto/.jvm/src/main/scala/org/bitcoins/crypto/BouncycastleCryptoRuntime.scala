@@ -27,7 +27,8 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   override def freshPrivateKey: ECPrivateKey = {
     val generator: ECKeyPairGenerator = new ECKeyPairGenerator
     val keyGenParams: ECKeyGenerationParameters =
-      new ECKeyGenerationParameters(CryptoParams.curve, secureRandom)
+      new ECKeyGenerationParameters(BouncyCastleCryptoParams.curve,
+                                    secureRandom)
     generator.init(keyGenParams)
     val keypair: AsymmetricCipherKeyPair = generator.generateKeyPair
     val privParams: ECPrivateKeyParameters =
@@ -63,7 +64,7 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       signature: ECDigitalSignature,
       message: ByteVector): (ECPublicKey, ECPublicKey) = {
 
-    val curve = CryptoParams.curve
+    val curve = BouncyCastleCryptoParams.curve
     val (r, s) = (signature.r.bigInteger, signature.s.bigInteger)
 
     val m = new BigInteger(1, message.toArray)
@@ -140,7 +141,7 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     BouncyCastleUtil.signWithEntropy(bytes, privateKey, entropy)
 
   override def secKeyVerify(privateKeyBytes: ByteVector): Boolean =
-    CryptoParams.curve.getCurve
+    BouncyCastleCryptoParams.curve.getCurve
       .isValidFieldElement(new BigInteger(1, privateKeyBytes.toArray))
 
   override def verify(

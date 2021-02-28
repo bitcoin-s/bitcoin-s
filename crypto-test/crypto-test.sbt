@@ -1,7 +1,3 @@
-name := "bitcoin-s-crypto-test"
-
-libraryDependencies ++= Deps.cryptoTest
-
 publishArtifact := false
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck,
