@@ -8,12 +8,12 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+import scala.util.Random
 
 sealed trait DLCMessage
 
@@ -29,8 +29,14 @@ object DLCMessage {
 
   @tailrec
   def genSerialId(notEqualTo: Vector[UInt64] = Vector.empty): UInt64 = {
-    val rand = NumberUtil.randomLong(Long.MaxValue)
-    val res = UInt64(rand)
+    val rand = {
+      // Copy of Random.nextBytes(Int)
+      // Not available for older versions
+      val bytes = new Array[Byte](0 max 8)
+      Random.nextBytes(bytes)
+      bytes
+    }
+    val res = UInt64(ByteVector(rand))
 
     if (notEqualTo.contains(res)) genSerialId(notEqualTo)
     else res
