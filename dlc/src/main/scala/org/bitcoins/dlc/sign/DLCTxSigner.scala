@@ -6,7 +6,7 @@ import org.bitcoins.core.crypto.{
   TransactionSignatureSerializer
 }
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -87,9 +87,9 @@ case class DLCTxSigner(
       fundingUtxos
         .zip(fundingInputs)
         .map { case (utxo, fundingInput) =>
-          (utxo, fundingInput.inputSerialId)
+          SpendingInfoWithSerialId(utxo, fundingInput.inputSerialId)
         }
-        .sortBy(_._2)
+        .sortBy(_.serialId)
 
     DLCTxSigner.signFundingTx(builder.buildFundingTx, utxos)
   }
@@ -368,17 +368,17 @@ object DLCTxSigner {
 
   def signFundingTx(
       fundingTx: Transaction,
-      fundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)]
+      fundingUtxos: Vector[SpendingInfoWithSerialId]
   )(implicit ec: ExecutionContext): Future[FundingSignatures] = {
     val sigFs =
       Vector.newBuilder[Future[(TransactionOutPoint, ScriptWitnessV0)]]
 
     val fundingInputs: Vector[DLCFundingInput] =
-      fundingUtxos.map { case (utxo, serialId) =>
+      fundingUtxos.map { case SpendingInfoWithSerialId(utxo, serialId) =>
         DLCFundingInput.fromInputSigningInfo(utxo, serialId)
       }
 
-    fundingUtxos.foreach { case (utxo, _) =>
+    fundingUtxos.foreach { case SpendingInfoWithSerialId(utxo, _) =>
       val sigComponentF =
         BitcoinSigner.sign(utxo, fundingTx, isDummySignature = false)
       val witnessF = sigComponentF.flatMap { sigComponent =>

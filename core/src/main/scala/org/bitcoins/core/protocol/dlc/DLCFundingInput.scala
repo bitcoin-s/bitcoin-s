@@ -163,3 +163,11 @@ case class DLCFundingInputP2SHSegwit(
 
   override val redeemScriptOpt: Option[WitnessScriptPubKey] = Some(redeemScript)
 }
+
+case class SpendingInfoWithSerialId(
+    spendingInfo: ScriptSignatureParams[InputInfo],
+    serialId: UInt64) {
+
+  def toDLCFundingInput: DLCFundingInput =
+    DLCFundingInput.fromInputSigningInfo(spendingInfo, serialId)
+}

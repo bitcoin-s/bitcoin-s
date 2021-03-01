@@ -133,7 +133,7 @@ object TestDLCClient {
       remotePayoutSerialId: UInt64,
       input: CurrencyUnit,
       remoteInput: CurrencyUnit,
-      fundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)],
+      fundingUtxos: Vector[SpendingInfoWithSerialId],
       remoteFundingInputs: Vector[DLCFundingInput],
       timeouts: DLCTimeouts,
       feeRate: SatoshisPerVirtualByte,
@@ -178,8 +178,7 @@ object TestDLCClient {
        pubKeys,
        payoutSerialId,
        input,
-       fundingUtxos.map(utxo =>
-         DLCFundingInput.fromInputSigningInfo(utxo._1, utxo._2)),
+       fundingUtxos.map(_.toDLCFundingInput),
        changeAddress,
        changeSerialId,
        remotePubKeys,
@@ -199,8 +198,7 @@ object TestDLCClient {
        pubKeys,
        payoutSerialId,
        input,
-       fundingUtxos.map(utxo =>
-         DLCFundingInput.fromInputSigningInfo(utxo._1, utxo._2)),
+       fundingUtxos.map(_.toDLCFundingInput),
        changeAddress,
        changeSerialId)
     }
@@ -234,6 +232,6 @@ object TestDLCClient {
                   isInitiator,
                   fundingPrivKey,
                   payoutPrivKey,
-                  fundingUtxos.map(_._1))
+                  fundingUtxos.map(_.spendingInfo))
   }
 }

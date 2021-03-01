@@ -296,13 +296,15 @@ object DLCTxBuilder {
     val acceptChangeValue =
       acceptTotalFunding - acceptInput - finalizer.acceptFees
 
-    val outputs = Vector(
+    val outputsWithSerialId = Vector(
       (TransactionOutput(fundingValue, fundingSPK), fundOutputSerialId),
       (TransactionOutput(offerChangeValue, offerChangeSPK),
        offerChangeSerialId),
       (TransactionOutput(acceptChangeValue, acceptChangeSPK),
        acceptChangeSerialId)
-    ).sortBy(_._2).map(_._1).filter(_.value >= Policy.dustThreshold)
+    )
+
+    val outputs = sortAndFilterOutputs(outputsWithSerialId)
 
     BaseTransaction(TransactionConstants.validLockVersion,
                     inputs,
@@ -416,12 +418,11 @@ object DLCTxBuilder {
                                         EmptyScriptSignature,
                                         TransactionConstants.disableRBFSequence)
 
-    val outputs =
+    val outputsWithSerialId =
       Vector((TransactionOutput(offerInput, offerFinalSPK), offerSerialId),
              (TransactionOutput(acceptInput, acceptFinalSPK), acceptSerialId))
-        .sortBy(_._2)
-        .map(_._1)
-        .filter(_.value >= Policy.dustThreshold)
+
+    val outputs = sortAndFilterOutputs(outputsWithSerialId)
 
     val witness = TransactionWitness.fromWitOpt(
       Vector(InputInfo.getScriptWitness(fundingInfo))
@@ -463,5 +464,14 @@ object DLCTxBuilder {
                   acceptSerialId,
                   fundingOutputRef,
                   timeouts)
+  }
+
+  def sortAndFilterOutputs(
+      outputsWithSerialId: Vector[(TransactionOutput, UInt64)]): Vector[
+    TransactionOutput] = {
+    outputsWithSerialId
+      .sortBy(_._2)
+      .map(_._1)
+      .filter(_.value >= Policy.dustThreshold)
   }
 }

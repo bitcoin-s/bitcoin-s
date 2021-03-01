@@ -90,28 +90,32 @@ trait DLCTest {
   )
 
   val offerFundingUtxos = Vector(
-    (ScriptSignatureParams(
-       P2WPKHV0InputInfo(outPoint = TransactionOutPoint(offerFundingTx.txId,
-                                                        UInt32.zero),
-                         amount = offerInput,
-                         pubKey = inputPubKeyOffer),
-       prevTransaction = offerFundingTx,
-       signer = inputPrivKeyOffer,
-       hashType = HashType.sigHashAll
-     ),
-     UInt64.zero),
-    (ScriptSignatureParams(
-       P2WSHV0InputInfo(
-         outPoint = TransactionOutPoint(offerFundingTx2.txId, UInt32.zero),
-         amount = offerInput,
-         scriptWitness = P2WSHWitnessV0(offerNestedSPK),
-         ConditionalPath.nonNestedTrue
-       ),
-       prevTransaction = offerFundingTx2,
-       signer = inputPrivKeyOffer2A,
-       hashType = HashType.sigHashAll
-     ),
-     UInt64.one)
+    SpendingInfoWithSerialId(
+      ScriptSignatureParams(
+        P2WPKHV0InputInfo(outPoint = TransactionOutPoint(offerFundingTx.txId,
+                                                         UInt32.zero),
+                          amount = offerInput,
+                          pubKey = inputPubKeyOffer),
+        prevTransaction = offerFundingTx,
+        signer = inputPrivKeyOffer,
+        hashType = HashType.sigHashAll
+      ),
+      UInt64.zero
+    ),
+    SpendingInfoWithSerialId(
+      ScriptSignatureParams(
+        P2WSHV0InputInfo(
+          outPoint = TransactionOutPoint(offerFundingTx2.txId, UInt32.zero),
+          amount = offerInput,
+          scriptWitness = P2WSHWitnessV0(offerNestedSPK),
+          ConditionalPath.nonNestedTrue
+        ),
+        prevTransaction = offerFundingTx2,
+        signer = inputPrivKeyOffer2A,
+        hashType = HashType.sigHashAll
+      ),
+      UInt64.one
+    )
   )
 
   val offerFundingInputs: Vector[DLCFundingInput] =
@@ -120,12 +124,13 @@ trait DLCTest {
                               offerFundingTx,
                               UInt32.zero,
                               TransactionConstants.sequence),
-      DLCFundingInputP2WSHV0(UInt64.one,
-                             offerFundingTx2,
-                             UInt32.zero,
-                             TransactionConstants.sequence,
-                             maxWitnessLen =
-                               UInt16(offerFundingUtxos.last._1.maxWitnessLen))
+      DLCFundingInputP2WSHV0(
+        UInt64.one,
+        offerFundingTx2,
+        UInt32.zero,
+        TransactionConstants.sequence,
+        maxWitnessLen =
+          UInt16(offerFundingUtxos.last.spendingInfo.maxWitnessLen))
     )
 
   val acceptFundingTx: Transaction = BaseTransaction(
@@ -160,28 +165,32 @@ trait DLCTest {
   )
 
   val acceptFundingUtxos = Vector(
-    (ScriptSignatureParams(
-       P2WPKHV0InputInfo(outPoint = TransactionOutPoint(acceptFundingTx.txId,
-                                                        UInt32.zero),
-                         amount = acceptInput,
-                         pubKey = inputPubKeyAccept),
-       prevTransaction = acceptFundingTx,
-       signer = inputPrivKeyAccept,
-       hashType = HashType.sigHashAll
-     ),
-     UInt64(3)),
-    (ScriptSignatureParams(
-       P2SHNestedSegwitV0InputInfo(
-         outPoint = TransactionOutPoint(acceptFundingTx2.txId, UInt32.zero),
-         amount = acceptInput,
-         scriptWitness = P2WSHWitnessV0(acceptNestedSPK),
-         ConditionalPath.NoCondition
-       ),
-       prevTransaction = acceptFundingTx2,
-       signers = Vector(inputPrivKeyAccept2A, inputPrivKeyAccept2B),
-       hashType = HashType.sigHashAll
-     ),
-     UInt64(4))
+    SpendingInfoWithSerialId(
+      ScriptSignatureParams(
+        P2WPKHV0InputInfo(outPoint = TransactionOutPoint(acceptFundingTx.txId,
+                                                         UInt32.zero),
+                          amount = acceptInput,
+                          pubKey = inputPubKeyAccept),
+        prevTransaction = acceptFundingTx,
+        signer = inputPrivKeyAccept,
+        hashType = HashType.sigHashAll
+      ),
+      UInt64(3)
+    ),
+    SpendingInfoWithSerialId(
+      ScriptSignatureParams(
+        P2SHNestedSegwitV0InputInfo(
+          outPoint = TransactionOutPoint(acceptFundingTx2.txId, UInt32.zero),
+          amount = acceptInput,
+          scriptWitness = P2WSHWitnessV0(acceptNestedSPK),
+          ConditionalPath.NoCondition
+        ),
+        prevTransaction = acceptFundingTx2,
+        signers = Vector(inputPrivKeyAccept2A, inputPrivKeyAccept2B),
+        hashType = HashType.sigHashAll
+      ),
+      UInt64(4)
+    )
   )
 
   val acceptFundingInputs: Vector[DLCFundingInput] =
@@ -195,7 +204,8 @@ trait DLCTest {
         prevTx = acceptFundingTx2,
         prevTxVout = UInt32.zero,
         sequence = TransactionConstants.sequence,
-        maxWitnessLen = UInt16(acceptFundingUtxos.last._1.maxWitnessLen),
+        maxWitnessLen =
+          UInt16(acceptFundingUtxos.last.spendingInfo.maxWitnessLen),
         redeemScript = P2WSHWitnessSPKV0(acceptNestedSPK)
       )
     )
@@ -237,10 +247,10 @@ trait DLCTest {
       offerPayoutPrivKey: ECPrivateKey = this.offerPayoutPrivKey,
       acceptFundingPrivKey: ECPrivateKey = this.acceptFundingPrivKey,
       acceptPayoutPrivKey: ECPrivateKey = this.acceptPayoutPrivKey,
-      offerFundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)] =
+      offerFundingUtxos: Vector[SpendingInfoWithSerialId] =
         this.offerFundingUtxos,
       offerFundingInputs: Vector[DLCFundingInput] = this.offerFundingInputs,
-      acceptFundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)] =
+      acceptFundingUtxos: Vector[SpendingInfoWithSerialId] =
         this.acceptFundingUtxos,
       acceptFundingInputs: Vector[DLCFundingInput] = this.acceptFundingInputs,
       feeRate: SatoshisPerVirtualByte = this.feeRate,
@@ -305,10 +315,10 @@ trait DLCTest {
       offerPayoutPrivKey: ECPrivateKey = this.offerPayoutPrivKey,
       acceptFundingPrivKey: ECPrivateKey = this.acceptFundingPrivKey,
       acceptPayoutPrivKey: ECPrivateKey = this.acceptPayoutPrivKey,
-      offerFundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)] =
+      offerFundingUtxos: Vector[SpendingInfoWithSerialId] =
         this.offerFundingUtxos,
       offerFundingInputs: Vector[DLCFundingInput] = this.offerFundingInputs,
-      acceptFundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)] =
+      acceptFundingUtxos: Vector[SpendingInfoWithSerialId] =
         this.acceptFundingUtxos,
       acceptFundingInputs: Vector[DLCFundingInput] = this.acceptFundingInputs,
       feeRate: SatoshisPerVirtualByte = this.feeRate,
@@ -363,10 +373,10 @@ trait DLCTest {
       offerPayoutPrivKey: ECPrivateKey = this.offerPayoutPrivKey,
       acceptFundingPrivKey: ECPrivateKey = this.acceptFundingPrivKey,
       acceptPayoutPrivKey: ECPrivateKey = this.acceptPayoutPrivKey,
-      offerFundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)] =
+      offerFundingUtxos: Vector[SpendingInfoWithSerialId] =
         this.offerFundingUtxos,
       offerFundingInputs: Vector[DLCFundingInput] = this.offerFundingInputs,
-      acceptFundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)] =
+      acceptFundingUtxos: Vector[SpendingInfoWithSerialId] =
         this.acceptFundingUtxos,
       acceptFundingInputs: Vector[DLCFundingInput] = this.acceptFundingInputs,
       feeRate: SatoshisPerVirtualByte = this.feeRate,
@@ -432,10 +442,10 @@ trait DLCTest {
       offerPayoutPrivKey: ECPrivateKey = this.offerPayoutPrivKey,
       acceptFundingPrivKey: ECPrivateKey = this.acceptFundingPrivKey,
       acceptPayoutPrivKey: ECPrivateKey = this.acceptPayoutPrivKey,
-      offerFundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)] =
+      offerFundingUtxos: Vector[SpendingInfoWithSerialId] =
         this.offerFundingUtxos,
       offerFundingInputs: Vector[DLCFundingInput] = this.offerFundingInputs,
-      acceptFundingUtxos: Vector[(ScriptSignatureParams[InputInfo], UInt64)] =
+      acceptFundingUtxos: Vector[SpendingInfoWithSerialId] =
         this.acceptFundingUtxos,
       acceptFundingInputs: Vector[DLCFundingInput] = this.acceptFundingInputs,
       feeRate: SatoshisPerVirtualByte = this.feeRate,

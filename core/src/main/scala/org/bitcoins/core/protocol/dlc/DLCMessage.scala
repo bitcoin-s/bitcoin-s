@@ -8,12 +8,12 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
-import scala.util._
 
 sealed trait DLCMessage
 
@@ -29,38 +29,22 @@ object DLCMessage {
 
   @tailrec
   def genSerialId(notEqualTo: Vector[UInt64] = Vector.empty): UInt64 = {
-    val genT = Try {
-      val rand = math.random() * Long.MaxValue
-      val res = UInt64(rand.toLong)
-      if (notEqualTo.contains(res))
-        throw new Exception("retry")
-      else res
-    }
+    val rand = NumberUtil.randomLong(Long.MaxValue)
+    val res = UInt64(rand)
 
-    genT match {
-      case Success(result) => result
-      case Failure(_) => // if we gen out of range or one from notEqualTo
-        genSerialId(notEqualTo)
-    }
+    if (notEqualTo.contains(res)) genSerialId(notEqualTo)
+    else res
   }
 
   @tailrec
   def genSerialIds(
       size: Int,
       notEqualTo: Vector[UInt64] = Vector.empty): Vector[UInt64] = {
-    val genT = Try {
-      val ids = 0.until(size).toVector.map(_ => genSerialId(notEqualTo))
+    val ids = 0.until(size).toVector.map(_ => genSerialId(notEqualTo))
 
-      if (ids.distinct.size != size)
-        throw new Exception("retry")
-      else ids
-    }
-
-    genT match {
-      case Success(result) => result
-      case Failure(_) => // if we gen out of range or one from notEqualTo
-        genSerialIds(size, notEqualTo)
-    }
+    if (ids.distinct.size != size)
+      genSerialIds(size, notEqualTo)
+    else ids
   }
 
   sealed trait DLCSetupMessage extends DLCMessage {
