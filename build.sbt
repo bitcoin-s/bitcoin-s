@@ -44,15 +44,15 @@ lazy val commonJsSettings = {
 lazy val crypto = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(
-    name := "bitcoin-s-crypto"
+    name := "bitcoin-s-crypto",
+    libraryDependencies ++= Deps.crypto.value
   )
+  .settings(CommonSettings.settings: _*)
   .jvmSettings(
     libraryDependencies ++= Deps.cryptoJVM
   )
+  .jvmSettings(CommonSettings.jvmSettings: _*)
   .jsSettings(commonJsSettings)
-  .settings(
-    libraryDependencies ++= Deps.crypto.value
-  )
   .in(file("crypto"))
 
 lazy val cryptoJS = crypto.js
