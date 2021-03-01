@@ -5,7 +5,7 @@ import org.bitcoins.core.p2p.{GetHeadersMessage, NetworkMessage, VersionMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
 
-abstract class NodeMessageTestUtil {
+abstract class P2PMessageTestUtil {
 
   //txid on testnet 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
   //this tx has multiple inputs and outputs
@@ -59,4 +59,4 @@ abstract class NodeMessageTestUtil {
   }
 }
 
-object NodeMessageTestUtil extends NodeMessageTestUtil
+object P2PMessageTestUtil extends P2PMessageTestUtil

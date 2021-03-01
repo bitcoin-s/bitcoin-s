@@ -4,7 +4,7 @@ import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.CryptoUtil
-import org.bitcoins.testkitcore.node.NodeMessageTestUtil
+import org.bitcoins.testkitcore.node.P2PMessageTestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -14,15 +14,15 @@ class NetworkHeaderTest extends BitcoinSUnitTest {
 
   "MessageHeader" must "must create a message header for a message" in {
     val messageHeader =
-      NetworkHeader(TestNet3, NodeMessageTestUtil.versionMessage)
+      NetworkHeader(TestNet3, P2PMessageTestUtil.versionMessage)
     messageHeader.network must be(TestNet3)
     messageHeader.commandName must be(
-      NodeMessageTestUtil.versionMessage.commandName)
+      P2PMessageTestUtil.versionMessage.commandName)
     messageHeader.payloadSize must be(
-      UInt32(NodeMessageTestUtil.versionMessage.bytes.size))
+      UInt32(P2PMessageTestUtil.versionMessage.bytes.size))
     messageHeader.checksum must be(
       CryptoUtil
-        .doubleSHA256(NodeMessageTestUtil.versionMessage.bytes)
+        .doubleSHA256(P2PMessageTestUtil.versionMessage.bytes)
         .bytes
         .take(4))
   }
