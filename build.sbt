@@ -38,7 +38,11 @@ lazy val commonJsSettings = {
       _.withModuleKind(ModuleKind.CommonJSModule)
     },
     sbt.Keys.publish / skip := true
-  )
+  ) ++ CommonSettings.settings ++
+    //get rid of -Xfatal-warnings for now with scalajs
+    //this will just give us a bunch of warnings rather than errors
+    Seq(
+      scalacOptions in Compile ~= (_ filterNot (s => s == "-Xfatal-warnings")))
 }
 
 lazy val crypto = crossProject(JVMPlatform, JSPlatform)
@@ -52,7 +56,7 @@ lazy val crypto = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Deps.cryptoJVM
   )
   .jvmSettings(CommonSettings.jvmSettings: _*)
-  .jsSettings(commonJsSettings)
+  .jsSettings(commonJsSettings: _*)
   .in(file("crypto"))
 
 lazy val cryptoJS = crypto.js
