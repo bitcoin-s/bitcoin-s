@@ -80,6 +80,8 @@ lazy val eclairRpc = project
   .in(file("eclair-rpc"))
   .dependsOn(asyncUtils, bitcoindRpc)
 
+val jsProjects: Vector[ProjectReference] = Vector(cryptoJS)
+
 // quoting the val name this way makes it appear as
 // 'bitcoin-s' in sbt/bloop instead of 'bitcoins'
 lazy val `bitcoin-s` = project
@@ -170,6 +172,11 @@ lazy val `bitcoin-s` = project
   // unidoc aggregates Scaladocs for all subprojects into one big doc
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
+    //removes scalajs projects from unidoc, see
+    //https://github.com/bitcoin-s/bitcoin-s/issues/2740
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := {
+      inAnyProject -- inProjects(jsProjects: _*)
+    },
     // we modify the unidoc task to move the generated Scaladocs into the
     // website directory afterwards
     Compile / unidoc := {
@@ -177,7 +184,7 @@ lazy val `bitcoin-s` = project
       import scala.collection.JavaConverters._
       val logger = streams.value.log
 
-      def cleanPath(path: Path, isRoot: Boolean = true): Unit =
+      def cleanPath(path: Path, isRoot: Boolean = true): Unit = {
         if (Files.isDirectory(path)) {
           path.toFile.list().map { file =>
             val toClean = path.resolve(file)
@@ -192,6 +199,7 @@ lazy val `bitcoin-s` = project
         } else {
           Files.deleteIfExists(path)
         }
+      }
 
       val websiteScaladocDir =
         Paths.get("website", "static", "api").toAbsolutePath
