@@ -37,7 +37,7 @@ lazy val commonJsSettings = {
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.CommonJSModule)
     },
-    sbt.Keys.publish / skip := true
+    skip.in(publish) := true
   ) ++ CommonSettings.settings ++
     //get rid of -Xfatal-warnings for now with scalajs
     //this will just give us a bunch of warnings rather than errors
@@ -67,6 +67,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(name := "bitcoin-s-core")
   .settings(libraryDependencies ++= Deps.core.value)
+  .settings(CommonSettings.settings: _*)
   .jvmSettings(CommonSettings.jvmSettings: _*)
   .jsSettings(commonJsSettings: _*)
   .in(file("core"))
