@@ -203,7 +203,8 @@ trait CryptoRuntime {
       msg: ByteVector,
       adaptorPoint: ECPublicKey): Boolean
 
-  def decodeSignature(signature: ECDigitalSignature): (BigInt, BigInt)
+  def decodeSignature(signature: ECDigitalSignature): (BigInt, BigInt) =
+    DERSignatureUtil.decodeSignature(signature)
 
   def isValidSignatureEncoding(signature: ECDigitalSignature): Boolean
 

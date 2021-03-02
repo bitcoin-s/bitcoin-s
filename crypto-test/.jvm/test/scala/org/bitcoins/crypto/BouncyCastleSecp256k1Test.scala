@@ -24,24 +24,6 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
     }
   }
 
-  it must "xxx" in {
-    val rng = new SecureRandom()
-    println(s"rnd,sha1,sha256,ripeMd160,sha256Hash160")
-    1.to(16).foreach { _ =>
-      val arr = Array.ofDim[Byte](32)
-      rng.nextBytes(arr)
-
-      val rnd = ByteVector(arr)
-      val ripeMd160: RipeMd160Digest = BouncycastleCryptoRuntime.ripeMd160(rnd)
-      val sha256Hash160: Sha256Hash160Digest =
-        BouncycastleCryptoRuntime.sha256Hash160(rnd)
-      val sha256: Sha256Digest = BouncycastleCryptoRuntime.sha256(rnd)
-      val sha1: Sha1Digest = BouncycastleCryptoRuntime.sha1(rnd)
-      println(
-        s"${rnd.toHex},${sha1.hex},${sha256.hex},${ripeMd160.hex},${sha256Hash160.hex}")
-    }
-  }
-
   it must "add private keys the same" in {
     forAll(CryptoGenerators.privateKey, CryptoGenerators.privateKey) {
       case (priv1, priv2) =>

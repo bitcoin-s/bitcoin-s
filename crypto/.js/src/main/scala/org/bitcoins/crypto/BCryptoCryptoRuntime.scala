@@ -18,7 +18,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   private lazy val hash160 = new Hash160
   private lazy val ripeMd160 = new RipeMd160
   private lazy val sha1 = new SHA1
-  private lazy val sha256 = new SHA256
+  private lazy val sha256 = SHA256Factory.create()
   private lazy val ecdsa = new ECDSA("SECP256K1", sha256, sha256, null)
 
   private lazy val randomBytesFunc: Int => ByteVector =
@@ -186,9 +186,6 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       key: ECPublicKey,
       msg: ByteVector,
       adaptorPoint: ECPublicKey): Boolean = ???
-
-  override def decodeSignature(
-      signature: ECDigitalSignature): (scala.BigInt, scala.BigInt) = ???
 
   override def isValidSignatureEncoding(
       signature: ECDigitalSignature): Boolean = ???

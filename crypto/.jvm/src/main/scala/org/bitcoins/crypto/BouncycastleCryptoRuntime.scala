@@ -287,10 +287,6 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       adaptorPoint: ECPublicKey): Boolean =
     AdaptorStuff.adaptorVerify(adaptorSignature, key, msg, adaptorPoint)
 
-  override def decodeSignature(
-      signature: ECDigitalSignature): (BigInt, BigInt) =
-    DERSignatureUtil.decodeSignature(signature)
-
   override def isValidSignatureEncoding(
       signature: ECDigitalSignature): Boolean =
     DERSignatureUtil.isValidSignatureEncoding(signature)
