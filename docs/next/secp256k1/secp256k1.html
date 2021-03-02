@@ -113,15 +113,18 @@ println(<span class="hljs-string">s"Verified with NativeSecp256k1 again=<span cl
 <p>Here is an example of calling bouncy castle methods in <code>ECKey</code></p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> privKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
 <span class="hljs-comment">// privKey: ECPrivateKey = Masked(ECPrivateKeyImpl)</span>
-<span class="hljs-keyword">val</span> publicKey = privKey.publicKeyWithBouncyCastle
-<span class="hljs-comment">// publicKey: ECPublicKey = ECPublicKey(029fd6129068cdef18b4538da035889e0fac5a534d7c11778afc4a9e06da5ecbaf)</span>
+<span class="hljs-comment">// calls bouncy castle indirectly via CryptoContext</span>
+<span class="hljs-keyword">val</span> publicKey = privKey.publicKey
+<span class="hljs-comment">// publicKey: ECPublicKey = ECPublicKey(029d66700bdcc8ced8bd0e9b6e8c1753ad478a310cb3f27813159d386099e0e3c6)</span>
 <span class="hljs-keyword">val</span> dataToSign = <span class="hljs-type">DoubleSha256Digest</span>.empty
 <span class="hljs-comment">// dataToSign: DoubleSha256Digest = DoubleSha256Digest(0000000000000000000000000000000000000000000000000000000000000000)</span>
 
-<span class="hljs-keyword">val</span> signature = privKey.signWithBouncyCastle(dataToSign.bytes)
-<span class="hljs-comment">// signature: ECDigitalSignature = ECDigitalSignature(3045022100a2ac6da73b50cd1468ee7c0738d86588fb5150a1b9f8f19dd12da238a340f78c02204321c4314af525592198053a11f8cab120ec60087fec13d658d600dbcea1839a)</span>
+<span class="hljs-comment">// calls bouncy castle indirectly via CryptoContext</span>
+<span class="hljs-keyword">val</span> signature = privKey.sign(dataToSign.bytes)
+<span class="hljs-comment">// signature: ECDigitalSignature = ECDigitalSignature(3044022064cedc8e0084e5df943d46535f045c2a19635eff37678a001b78c3915ae2284702204f2e1e95b0e15b9af74cdd65ddf64166cb24542966a5261af04c6eff13304358)</span>
 
-<span class="hljs-keyword">val</span> verified = publicKey.verifyWithBouncyCastle(dataToSign.bytes, signature)
+<span class="hljs-comment">// calls bouncy castle indirectly via CryptoContext</span>
+<span class="hljs-keyword">val</span> verified = publicKey.verify(dataToSign.bytes, signature)
 <span class="hljs-comment">// verified: Boolean = true</span>
 
 println(<span class="hljs-string">s"Verified with bouncy castle=<span class="hljs-subst">${verified}</span>"</span>)
