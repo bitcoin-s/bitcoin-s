@@ -4,6 +4,9 @@ import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import org.scalatest.{Outcome, Succeeded}
+import scodec.bits.ByteVector
+
+import java.security.SecureRandom
 
 class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
 
@@ -18,6 +21,24 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
       case CryptoContext.BouncyCastle | CryptoContext.BCrypto =>
         logger.warn(s"Test ${test.name} skipped as Secp256k1 is not available.")
         Succeeded
+    }
+  }
+
+  it must "xxx" in {
+    val rng = new SecureRandom()
+    println(s"rnd,sha1,sha256,ripeMd160,sha256Hash160")
+    1.to(16).foreach { _ =>
+      val arr = Array.ofDim[Byte](32)
+      rng.nextBytes(arr)
+
+      val rnd = ByteVector(arr)
+      val ripeMd160: RipeMd160Digest = BouncycastleCryptoRuntime.ripeMd160(rnd)
+      val sha256Hash160: Sha256Hash160Digest =
+        BouncycastleCryptoRuntime.sha256Hash160(rnd)
+      val sha256: Sha256Digest = BouncycastleCryptoRuntime.sha256(rnd)
+      val sha1: Sha1Digest = BouncycastleCryptoRuntime.sha1(rnd)
+      println(
+        s"${rnd.toHex},${sha1.hex},${sha256.hex},${ripeMd160.hex},${sha256Hash160.hex}")
     }
   }
 

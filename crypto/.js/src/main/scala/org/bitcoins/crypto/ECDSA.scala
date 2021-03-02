@@ -15,5 +15,19 @@ class ECDSA(
     pre: String = null)
     extends js.Object {
 
+  def privateKeyGenerate(): Buffer = js.native
+
+  def privateKeyVerify(key: Buffer): Boolean = js.native
+
   def publicKeyCreate(key: Buffer, compressed: Boolean): Buffer = js.native
+
+  def publicKeyVerify(key: Buffer): Boolean = js.native
+
+  def sign(msg: Buffer, key: Buffer): Buffer = js.native
+
+  def verify(msg: Buffer, sig: Buffer, key: Buffer): Boolean = js.native
+
+  def signDER(msg: Buffer, key: Buffer): Buffer = js.native
+
+  def verifyDER(msg: Buffer, sig: Buffer, key: Buffer): Boolean = js.native
 }

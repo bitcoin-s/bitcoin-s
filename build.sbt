@@ -90,7 +90,8 @@ lazy val `bitcoin-s` = project
     coreTest,
     cryptoJVM,
     cryptoJS,
-    cryptoTest,
+    cryptoTestJVM,
+    cryptoTestJS,
     dbCommons,
     dbCommonsTest,
     feeProvider,
@@ -130,7 +131,8 @@ lazy val `bitcoin-s` = project
     coreTest,
     cryptoJVM,
     cryptoJS,
-    cryptoTest,
+    cryptoTestJVM,
+    cryptoTestJS,
     dbCommons,
     dbCommonsTest,
     feeProvider,
@@ -282,17 +284,32 @@ lazy val secp256k1jni = project
   */
 val testAndCompile = "compile->compile;test->test"
 
-lazy val cryptoTest = project
+//lazy val cryptoTest = project
+//  .in(file("crypto-test"))
+//  .settings(CommonSettings.testSettings: _*)
+//  .settings(
+//    name := "bitcoin-s-crypto-test",
+//    libraryDependencies ++= Deps.cryptoTest.value
+//  )
+//  .dependsOn(
+//    cryptoJVM % testAndCompile,
+//    testkit
+//  )
+
+lazy val cryptoTest = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
   .in(file("crypto-test"))
-  .settings(CommonSettings.testSettings: _*)
+  .jvmSettings(CommonSettings.testSettings: _*)
+  .jsSettings(commonJsSettings)
   .settings(
     name := "bitcoin-s-crypto-test",
     libraryDependencies ++= Deps.cryptoTest.value
   )
-  .dependsOn(
-    cryptoJVM % testAndCompile,
-    testkit
-  )
+  .dependsOn(crypto % testAndCompile)
+
+lazy val cryptoTestJS = cryptoTest.js
+
+lazy val cryptoTestJVM = cryptoTest.jvm.dependsOn(testkit)
 
 lazy val coreTest = project
   .in(file("core-test"))
