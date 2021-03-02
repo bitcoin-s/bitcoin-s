@@ -24,6 +24,17 @@ object CommonSettings {
   }
 
   lazy val settings: Seq[Setting[_]] = Vector(
+    organization := "org.bitcoin-s",
+    homepage := Some(url("https://bitcoin-s.org")),
+    maintainer := "Chris Stewart <stewart.chris1234@gmail.com>",
+    developers := List(
+      Developer(
+        "christewart",
+        "Chris Stewart",
+        "stewart.chris1234@gmail.com",
+        url("https://twitter.com/Chris_Stewart_5")
+      )
+    ),
     scalacOptions in Compile := compilerOpts(scalaVersion = scalaVersion.value),
     Test / scalacOptions := testCompilerOpts(scalaVersion = scalaVersion.value),
     //remove annoying import unused things in the scala console
@@ -43,17 +54,6 @@ object CommonSettings {
   )
 
   lazy val jvmSettings: Seq[Setting[_]] = List(
-    organization := "org.bitcoin-s",
-    homepage := Some(url("https://bitcoin-s.org")),
-    maintainer := "Chris Stewart <stewart.chris1234@gmail.com>",
-    developers := List(
-      Developer(
-        "christewart",
-        "Chris Stewart",
-        "stewart.chris1234@gmail.com",
-        url("https://twitter.com/Chris_Stewart_5")
-      )
-    ),
     ////
     // scaladoc settings
     Compile / doc / scalacOptions ++= List(
