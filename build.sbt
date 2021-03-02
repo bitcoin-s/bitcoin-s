@@ -67,8 +67,8 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(name := "bitcoin-s-core")
   .settings(libraryDependencies ++= Deps.core.value)
-  //.jvmSettings(libraryDependencies ++= Deps.coreJVM)
-  .jsSettings(commonJsSettings)
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
   .in(file("core"))
   .dependsOn(crypto)
 
@@ -79,6 +79,8 @@ lazy val asyncUtils = crossProject(JVMPlatform, JSPlatform)
   .in(file("async-utils"))
   .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-async-utils")
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
   .dependsOn(core)
 
 lazy val asyncUtilsJVM = asyncUtils.jvm
@@ -89,6 +91,8 @@ lazy val testkitCore = crossProject(JVMPlatform, JSPlatform)
   .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-testkit-core",
             libraryDependencies ++= Deps.testkitCore.value)
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
   .dependsOn(asyncUtils, core, crypto)
 
 lazy val testkitCoreJVM = testkitCore.jvm
@@ -329,7 +333,8 @@ lazy val cryptoTest = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("crypto-test"))
   .settings(CommonSettings.testSettings: _*)
-  .jsSettings(commonJsSettings)
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
   .settings(
     name := "bitcoin-s-crypto-test",
     libraryDependencies ++= Deps.cryptoTest.value
@@ -351,6 +356,8 @@ lazy val coreTest = crossProject(JVMPlatform, JSPlatform)
     name := "bitcoin-s-core-test",
     libraryDependencies ++= Deps.coreTest.value
   )
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
   .dependsOn(
     core,
     testkitCore
