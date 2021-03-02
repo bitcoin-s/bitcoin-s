@@ -2,6 +2,7 @@ package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.DLCMessage.DLCAccept
 import org.bitcoins.core.protocol.dlc._
@@ -127,15 +128,20 @@ object TestDLCClient {
       isInitiator: Boolean,
       fundingPrivKey: ECPrivateKey,
       payoutPrivKey: ECPrivateKey,
+      payoutSerialId: UInt64,
       remotePubKeys: DLCPublicKeys,
+      remotePayoutSerialId: UInt64,
       input: CurrencyUnit,
       remoteInput: CurrencyUnit,
-      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]],
+      fundingUtxos: Vector[SpendingInfoWithSerialId],
       remoteFundingInputs: Vector[DLCFundingInput],
       timeouts: DLCTimeouts,
       feeRate: SatoshisPerVirtualByte,
       changeSPK: ScriptPubKey,
+      changeSerialId: UInt64,
       remoteChangeSPK: ScriptPubKey,
+      remoteChangeSerialId: UInt64,
+      fundOutputSerialId: UInt64,
       network: BitcoinNetwork)(implicit ec: ExecutionContext): TestDLCClient = {
     val pubKeys = DLCPublicKeys.fromPrivKeys(
       fundingPrivKey,
@@ -157,32 +163,44 @@ object TestDLCClient {
 
     val (offerOutcomes,
          offerPubKeys,
+         offerPayoutSerialId,
          offerInput,
          offerFundingInputs,
          offerChangeAddress,
+         offerChangeSerialId,
          acceptPubKeys,
+         acceptPayoutSerialId,
          acceptInput,
          acceptFundingInputs,
-         acceptChangeAddress) = if (isInitiator) {
+         acceptChangeAddress,
+         acceptChangeSerialId) = if (isInitiator) {
       (outcomes,
        pubKeys,
+       payoutSerialId,
        input,
-       fundingUtxos.map(DLCFundingInput.fromInputSigningInfo(_)),
+       fundingUtxos.map(_.toDLCFundingInput),
        changeAddress,
+       changeSerialId,
        remotePubKeys,
-       remoteInput,
-       remoteFundingInputs,
-       remoteChangeAddress)
-    } else {
-      (remoteOutcomes,
-       remotePubKeys,
+       remotePayoutSerialId,
        remoteInput,
        remoteFundingInputs,
        remoteChangeAddress,
+       remoteChangeSerialId)
+    } else {
+      (remoteOutcomes,
+       remotePubKeys,
+       remotePayoutSerialId,
+       remoteInput,
+       remoteFundingInputs,
+       remoteChangeAddress,
+       remoteChangeSerialId,
        pubKeys,
+       payoutSerialId,
        input,
-       fundingUtxos.map(DLCFundingInput.fromInputSigningInfo(_)),
-       changeAddress)
+       fundingUtxos.map(_.toDLCFundingInput),
+       changeAddress,
+       changeSerialId)
     }
 
     val offer = DLCMessage.DLCOffer(
@@ -191,6 +209,9 @@ object TestDLCClient {
       totalCollateral = offerInput.satoshis,
       fundingInputs = offerFundingInputs,
       changeAddress = offerChangeAddress,
+      payoutSerialId = offerPayoutSerialId,
+      changeSerialId = offerChangeSerialId,
+      fundOutputSerialId = fundOutputSerialId,
       feeRate = feeRate,
       timeouts = timeouts
     )
@@ -200,6 +221,8 @@ object TestDLCClient {
       pubKeys = acceptPubKeys,
       fundingInputs = acceptFundingInputs,
       changeAddress = acceptChangeAddress,
+      payoutSerialId = acceptPayoutSerialId,
+      changeSerialId = acceptChangeSerialId,
       negotiationFields = DLCAccept.NoNegotiationFields,
       tempContractId = offer.tempContractId
     )
@@ -209,6 +232,6 @@ object TestDLCClient {
                   isInitiator,
                   fundingPrivKey,
                   payoutPrivKey,
-                  fundingUtxos)
+                  fundingUtxos.map(_.spendingInfo))
   }
 }

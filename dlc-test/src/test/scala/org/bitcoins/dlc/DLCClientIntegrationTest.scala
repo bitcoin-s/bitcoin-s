@@ -143,28 +143,34 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
     val localFundingUtxosF = fundedInputsTxidF.map {
       case (prevTx, localOutputIndex, localOutputIndex2, _, _, tx) =>
         Vector(
-          ScriptSignatureParams(
-            inputInfo = P2WPKHV0InputInfo(
-              outPoint =
-                TransactionOutPoint(prevTx.txIdBE, UInt32(localOutputIndex)),
-              amount = tx.outputs(localOutputIndex).value,
-              pubKey = inputPubKeyOffer
+          SpendingInfoWithSerialId(
+            ScriptSignatureParams(
+              inputInfo = P2WPKHV0InputInfo(
+                outPoint =
+                  TransactionOutPoint(prevTx.txIdBE, UInt32(localOutputIndex)),
+                amount = tx.outputs(localOutputIndex).value,
+                pubKey = inputPubKeyOffer
+              ),
+              prevTransaction = prevTx,
+              signer = inputPrivKeyOffer,
+              hashType = HashType.sigHashAll
             ),
-            prevTransaction = prevTx,
-            signer = inputPrivKeyOffer,
-            hashType = HashType.sigHashAll
+            DLCMessage.genSerialId()
           ),
-          ScriptSignatureParams(
-            P2WSHV0InputInfo(
-              outPoint =
-                TransactionOutPoint(prevTx.txIdBE, UInt32(localOutputIndex2)),
-              amount = tx.outputs(localOutputIndex2).value,
-              scriptWitness = P2WSHWitnessV0(offerNestedSPK),
-              ConditionalPath.nonNestedTrue
+          SpendingInfoWithSerialId(
+            ScriptSignatureParams(
+              P2WSHV0InputInfo(
+                outPoint =
+                  TransactionOutPoint(prevTx.txIdBE, UInt32(localOutputIndex2)),
+                amount = tx.outputs(localOutputIndex2).value,
+                scriptWitness = P2WSHWitnessV0(offerNestedSPK),
+                ConditionalPath.nonNestedTrue
+              ),
+              prevTransaction = prevTx,
+              signer = inputPrivKeyOffer2A,
+              hashType = HashType.sigHashAll
             ),
-            prevTransaction = prevTx,
-            signer = inputPrivKeyOffer2A,
-            hashType = HashType.sigHashAll
+            DLCMessage.genSerialId()
           )
         )
     }
@@ -172,28 +178,34 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
     val remoteFundingUtxosF = fundedInputsTxidF.map {
       case (prevTx, _, _, remoteOutputIndex, remoteOutputIndex2, tx) =>
         Vector(
-          ScriptSignatureParams(
-            P2WPKHV0InputInfo(
-              outPoint =
-                TransactionOutPoint(prevTx.txIdBE, UInt32(remoteOutputIndex)),
-              amount = tx.outputs(remoteOutputIndex).value,
-              pubKey = inputPubKeyAccept
+          SpendingInfoWithSerialId(
+            ScriptSignatureParams(
+              P2WPKHV0InputInfo(
+                outPoint =
+                  TransactionOutPoint(prevTx.txIdBE, UInt32(remoteOutputIndex)),
+                amount = tx.outputs(remoteOutputIndex).value,
+                pubKey = inputPubKeyAccept
+              ),
+              prevTx,
+              inputPrivKeyAccept,
+              HashType.sigHashAll
             ),
-            prevTx,
-            inputPrivKeyAccept,
-            HashType.sigHashAll
+            DLCMessage.genSerialId()
           ),
-          ScriptSignatureParams(
-            P2SHNestedSegwitV0InputInfo(
-              outPoint =
-                TransactionOutPoint(prevTx.txIdBE, UInt32(remoteOutputIndex2)),
-              amount = tx.outputs(remoteOutputIndex2).value,
-              scriptWitness = P2WSHWitnessV0(acceptNestedSPK),
-              ConditionalPath.NoCondition
+          SpendingInfoWithSerialId(
+            ScriptSignatureParams(
+              P2SHNestedSegwitV0InputInfo(
+                outPoint = TransactionOutPoint(prevTx.txIdBE,
+                                               UInt32(remoteOutputIndex2)),
+                amount = tx.outputs(remoteOutputIndex2).value,
+                scriptWitness = P2WSHWitnessV0(acceptNestedSPK),
+                ConditionalPath.NoCondition
+              ),
+              prevTransaction = prevTx,
+              signers = Vector(inputPrivKeyAccept2A, inputPrivKeyAccept2B),
+              hashType = HashType.sigHashAll
             ),
-            prevTransaction = prevTx,
-            signers = Vector(inputPrivKeyAccept2A, inputPrivKeyAccept2B),
-            hashType = HashType.sigHashAll
+            DLCMessage.genSerialId()
           )
         )
     }
@@ -217,27 +229,31 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
       val remoteFundingPrivKey = ECPrivateKey.freshPrivateKey
       val remotePayoutPrivKey = ECPrivateKey.freshPrivateKey
 
-      val localFundingInputs = localFundingUtxos.map { utxo =>
-        DLCFundingInput(
-          utxo.prevTransaction,
-          utxo.outPoint.vout,
-          TransactionConstants.sequence,
-          UInt16(utxo.maxWitnessLen),
-          InputInfo
-            .getRedeemScript(utxo.inputInfo)
-            .map(_.asInstanceOf[WitnessScriptPubKey])
-        )
+      val localFundingInputs = localFundingUtxos.map {
+        case SpendingInfoWithSerialId(utxo, serialId) =>
+          DLCFundingInput(
+            serialId,
+            utxo.prevTransaction,
+            utxo.outPoint.vout,
+            TransactionConstants.sequence,
+            UInt16(utxo.maxWitnessLen),
+            InputInfo
+              .getRedeemScript(utxo.inputInfo)
+              .map(_.asInstanceOf[WitnessScriptPubKey])
+          )
       }
-      val remoteFundingInputs = remoteFundingUtxos.map { utxo =>
-        DLCFundingInput(
-          utxo.prevTransaction,
-          utxo.outPoint.vout,
-          TransactionConstants.sequence,
-          UInt16(utxo.maxWitnessLen),
-          InputInfo
-            .getRedeemScript(utxo.inputInfo)
-            .map(_.asInstanceOf[WitnessScriptPubKey])
-        )
+      val remoteFundingInputs = remoteFundingUtxos.map {
+        case SpendingInfoWithSerialId(utxo, serialId) =>
+          DLCFundingInput(
+            serialId,
+            utxo.prevTransaction,
+            utxo.outPoint.vout,
+            TransactionConstants.sequence,
+            UInt16(utxo.maxWitnessLen),
+            InputInfo
+              .getRedeemScript(utxo.inputInfo)
+              .map(_.asInstanceOf[WitnessScriptPubKey])
+          )
       }
 
       constructEnumDLCClients(

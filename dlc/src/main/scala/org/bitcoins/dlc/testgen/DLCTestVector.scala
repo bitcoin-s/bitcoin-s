@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.{
@@ -38,6 +38,7 @@ object DLCTestVector extends TestVectorParser[DLCTestVector] {
 }
 
 case class FundingInputTx(
+    serialId: UInt64,
     tx: Transaction,
     idx: Int,
     inputKeys: Vector[ECPrivateKey],
@@ -61,11 +62,12 @@ case class FundingInputTx(
   }
 
   def toFundingInput: DLCFundingInput = {
-    DLCFundingInput.fromInputSigningInfo(scriptSignatureParams)
+    DLCFundingInput.fromInputSigningInfo(scriptSignatureParams, serialId)
   }
 
   def toSerializedFundingInputTx: SerializedFundingInputTx = {
-    SerializedFundingInputTx(tx,
+    SerializedFundingInputTx(serialId,
+                             tx,
                              idx,
                              inputKeys,
                              redeemScript,
@@ -75,6 +77,7 @@ case class FundingInputTx(
 }
 
 case class SerializedFundingInputTx(
+    serialId: UInt64,
     tx: Transaction,
     idx: Int,
     inputKeys: Vector[ECPrivateKey],
@@ -83,7 +86,7 @@ case class SerializedFundingInputTx(
     maxWitnessLen: Int) {
 
   def toFundingInputTx: FundingInputTx = {
-    FundingInputTx(tx, idx, inputKeys, redeemScript, scriptWitness)
+    FundingInputTx(serialId, tx, idx, inputKeys, redeemScript, scriptWitness)
   }
 }
 
@@ -92,8 +95,11 @@ case class DLCPartyParams(
     collateral: CurrencyUnit,
     fundingInputTxs: Vector[FundingInputTx],
     changeAddress: BitcoinAddress,
+    changeSerialId: UInt64,
     fundingPrivKey: ECPrivateKey,
-    payoutAddress: BitcoinAddress) {
+    payoutAddress: BitcoinAddress,
+    payoutSerialId: UInt64,
+    fundOutputSerialId: UInt64) {
 
   def fundingInputs: Vector[DLCFundingInput] =
     fundingInputTxs.map(_.toFundingInput)
@@ -111,6 +117,9 @@ case class DLCPartyParams(
       collateral.satoshis,
       fundingInputs,
       changeAddress,
+      changeSerialId,
+      payoutSerialId,
+      fundOutputSerialId,
       params.feeRate,
       DLCTimeouts(params.contractMaturityBound, params.contractTimeout)
     )
@@ -162,6 +171,8 @@ case class ValidTestInputs(
                     acceptParams.payoutAddress),
       acceptParams.fundingInputs,
       acceptParams.changeAddress,
+      acceptParams.payoutSerialId,
+      acceptParams.changeSerialId,
       DLCAccept.NoNegotiationFields,
       offer.tempContractId
     )
@@ -216,6 +227,8 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
       { hex => hex.validate[String].map(factory.fromHex) },
       { element => JsString(element.hex) }
     )
+
+  implicit val u64Format: Format[UInt64] = hexFormat(UInt64)
 
   implicit val oracleInfoFormat: Format[EnumSingleOracleInfo] = hexFormat(
     EnumSingleOracleInfo)

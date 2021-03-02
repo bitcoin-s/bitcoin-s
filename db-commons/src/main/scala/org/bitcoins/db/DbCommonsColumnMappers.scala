@@ -1,6 +1,5 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.commons.jsonmodels.wallet.{
   WalletStateDescriptor,
   WalletStateDescriptorType
@@ -11,6 +10,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
+import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
@@ -148,14 +148,16 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   }
 
   implicit val uint64Mapper: BaseColumnType[UInt64] = {
-    MappedColumnType.base[UInt64, BigDecimal](
+    MappedColumnType.base[UInt64, String](
       { u64: UInt64 =>
-        BigDecimal(u64.toBigInt.bigInteger)
+        val bytes = u64.bytes
+        val padded = if (bytes.length <= 8) {
+          bytes.padLeft(8)
+        } else bytes
+
+        padded.toHex
       },
-      //this has the potential to throw
-      { bigDec: BigDecimal =>
-        UInt64(bigDec.toBigIntExact.get)
-      }
+      UInt64.fromHex
     )
   }
 

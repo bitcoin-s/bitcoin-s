@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
@@ -12,8 +13,10 @@ case class DLCAcceptDb(
     tempContractId: Sha256Digest,
     fundingKey: ECPublicKey,
     finalAddress: BitcoinAddress,
+    payoutSerialId: UInt64,
     totalCollateral: CurrencyUnit,
-    changeAddress: BitcoinAddress) {
+    changeAddress: BitcoinAddress,
+    changeSerialId: UInt64) {
 
   def toDLCAccept(
       fundingInputs: Vector[DLCFundingInput],
@@ -22,13 +25,17 @@ case class DLCAcceptDb(
     val pubKeys =
       DLCPublicKeys(fundingKey, finalAddress)
     val cetSigs = CETSignatures(outcomeSigs, refundSig)
-    DLCAccept(totalCollateral.satoshis,
-              pubKeys,
-              fundingInputs,
-              changeAddress,
-              cetSigs,
-              DLCAccept.NoNegotiationFields,
-              tempContractId)
+    DLCAccept(
+      totalCollateral = totalCollateral.satoshis,
+      pubKeys = pubKeys,
+      fundingInputs = fundingInputs,
+      changeAddress = changeAddress,
+      payoutSerialId = payoutSerialId,
+      changeSerialId = changeSerialId,
+      cetSigs = cetSigs,
+      negotiationFields = DLCAccept.NoNegotiationFields,
+      tempContractId = tempContractId
+    )
   }
 
   def toDLCAcceptWithoutSigs(
@@ -37,12 +44,16 @@ case class DLCAcceptDb(
     val pubKeys =
       DLCPublicKeys(fundingKey, finalAddress)
 
-    DLCAcceptWithoutSigs(totalCollateral.satoshis,
-                         pubKeys,
-                         fundingInputs,
-                         changeAddress,
-                         DLCAccept.NoNegotiationFields,
-                         tempContractId)
+    DLCAcceptWithoutSigs(
+      totalCollateral = totalCollateral.satoshis,
+      pubKeys = pubKeys,
+      fundingInputs = fundingInputs,
+      changeAddress = changeAddress,
+      payoutSerialId = payoutSerialId,
+      changeSerialId = changeSerialId,
+      negotiationFields = DLCAccept.NoNegotiationFields,
+      tempContractId = tempContractId
+    )
   }
 }
 
@@ -52,12 +63,14 @@ object DLCAcceptDbHelper {
       paramHash: Sha256DigestBE,
       accept: DLCAccept): DLCAcceptDb = {
     DLCAcceptDb(
-      paramHash,
-      accept.tempContractId,
-      accept.pubKeys.fundingKey,
-      accept.pubKeys.payoutAddress,
-      accept.totalCollateral,
-      accept.changeAddress
+      paramHash = paramHash,
+      tempContractId = accept.tempContractId,
+      fundingKey = accept.pubKeys.fundingKey,
+      finalAddress = accept.pubKeys.payoutAddress,
+      payoutSerialId = accept.payoutSerialId,
+      totalCollateral = accept.totalCollateral,
+      changeAddress = accept.changeAddress,
+      changeSerialId = accept.changeSerialId
     )
   }
 }

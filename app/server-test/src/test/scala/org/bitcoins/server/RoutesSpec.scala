@@ -1,6 +1,5 @@
 package org.bitcoins.server
 
-import java.time.{ZoneId, ZonedDateTime}
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
@@ -13,15 +12,15 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd._
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.BlockStamp.{
   BlockHash,
   BlockHeight,
   BlockTime,
   InvalidBlockStamp
 }
-import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.{EmptyScriptWitness, P2WPKHWitnessV0}
 import org.bitcoins.core.protocol.tlv._
@@ -50,9 +49,10 @@ import scodec.bits.ByteVector
 import ujson.Value.InvalidData
 import ujson._
 
+import java.time.{ZoneId, ZonedDateTime}
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
@@ -855,7 +855,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       "02000000000101a2619b5d58b209439c937e563018efcf174063ca011e4f177a5b14e5ba76211c0100000017160014614e9b96cbc7477eda98f0936385ded6b636f74efeffffff024e3f57c4000000001600147cf00288c2c1b3c5cdf275db532a1c15c514bb2fae1112000000000016001440efb02597b9e9d9bc968f12cec3347e2e264c570247304402205768c2ac8178539fd44721e2a7541bedd6b55654f095143514624203c133f7e8022060d51f33fc2b5c1f51f26c7f703de21be6246dbb5fb7e1c6919aae6d442610c6012102b99a63f166ef53ca67a5c55ae969e80c33456e07189f8457e3438f000be42c19307d1900")
 
     val fundingInput: DLCFundingInputP2WPKHV0 =
-      DLCFundingInputP2WPKHV0(wtx, UInt32.zero, UInt32.zero)
+      DLCFundingInputP2WPKHV0(UInt64.zero, wtx, UInt32.zero, UInt32.zero)
 
     val announcementTLV = OracleAnnouncementV0TLV(
       "fdd824fd0118c6a52b0901a23fe7d2febbb492e66d4cd4783483aeec1cae374c3e8e6bf779dc471104aa249f7904732d0a87e9c6aa51ff5705cf46b41bc2d55d83ad1fac998ae096a7f99df21b4a43eb92b07110dbab3aa53c81b9ba08755653512ac5246a09fdd822b40001aec3c6498dfedb0db322644e97be338417f5a552c4487b037130bf19f01a069b00000000fdd806840002406666626263646538333663656534333761326661346566376462316561336437396361373163306338323164326131393764646135316263363533346635363240653737306634326335373830383461346130393663653130383566376665353038663864393038643263356536653330346232633365616239626339373365610564756d6d79")
@@ -874,13 +874,18 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val contractInfoTLV = contractInfo.toTLV
 
     val offer = DLCOffer(
-      contractInfo,
-      dummyDLCKeys,
-      Satoshis(2500),
-      Vector(fundingInput, fundingInput),
-      Bech32Address.fromString(dummyAddress),
-      SatoshisPerVirtualByte.one,
-      DLCTimeouts(BlockStamp(contractMaturity), BlockStamp(contractTimeout))
+      contractInfo = contractInfo,
+      pubKeys = dummyDLCKeys,
+      totalCollateral = Satoshis(2500),
+      fundingInputs =
+        Vector(fundingInput, fundingInput.copy(inputSerialId = UInt64.max)),
+      changeAddress = Bech32Address.fromString(dummyAddress),
+      payoutSerialId = UInt64.zero,
+      changeSerialId = UInt64.zero,
+      fundOutputSerialId = UInt64.one,
+      feeRate = SatoshisPerVirtualByte.one,
+      timeouts =
+        DLCTimeouts(BlockStamp(contractMaturity), BlockStamp(contractTimeout))
     )
 
     "create a dlc offer" in {
@@ -919,14 +924,16 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     val accept = DLCAccept(
-      Satoshis(1000),
-      dummyDLCKeys,
-      Vector(fundingInput),
-      Bech32Address
+      totalCollateral = Satoshis(1000),
+      pubKeys = dummyDLCKeys,
+      fundingInputs = Vector(fundingInput),
+      changeAddress = Bech32Address
         .fromString(dummyAddress),
-      CETSignatures(dummyOutcomeSigs, dummyPartialSig),
-      DLCAccept.NoNegotiationFields,
-      Sha256Digest.empty
+      payoutSerialId = UInt64.zero,
+      changeSerialId = UInt64.zero,
+      cetSigs = CETSignatures(dummyOutcomeSigs, dummyPartialSig),
+      negotiationFields = DLCAccept.NoNegotiationFields,
+      tempContractId = Sha256Digest.empty
     )
 
     "accept a dlc offer" in {

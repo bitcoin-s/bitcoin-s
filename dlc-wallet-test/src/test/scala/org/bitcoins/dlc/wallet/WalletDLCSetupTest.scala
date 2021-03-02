@@ -1,8 +1,10 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -12,6 +14,7 @@ import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   type FixtureParam = (FundedDLCWallet, FundedDLCWallet)
@@ -240,17 +243,18 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     } yield accept
   }
 
-  def testDLCSignVerification(
+  def testDLCSignVerification[E <: Exception](
       walletA: DLCWallet,
       walletB: DLCWallet,
-      makeDLCSignInvalid: DLCSign => DLCSign): Future[Assertion] = {
+      makeDLCSignInvalid: DLCSign => DLCSign)(implicit
+      classTag: ClassTag[E]): Future[Assertion] = {
     val failedAddSigsF = for {
       sign <- getDLCReadyToAddSigs(walletA, walletB)
       invalidSign = makeDLCSignInvalid(sign)
       dlcDb <- walletB.addDLCSigs(invalidSign)
     } yield dlcDb
 
-    recoverToSucceededIf[IllegalArgumentException](failedAddSigsF)
+    recoverToSucceededIf[E](failedAddSigsF)
   }
 
   def testDLCAcceptVerification(
@@ -266,16 +270,33 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     recoverToSucceededIf[IllegalArgumentException](failedAddSigsF)
   }
 
+  it must "fail to add dlc funding sigs that do not correspond to the DLC" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+
+      testDLCSignVerification[NoSuchElementException](
+        walletA,
+        walletB,
+        (sign: DLCSign) =>
+          sign.copy(fundingSigs = DLCWalletUtil.dummyFundingSignatures)
+      )
+  }
+
   it must "fail to add dlc funding sigs that are invalid" in {
     FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
-      testDLCSignVerification(
+      testDLCSignVerification[IllegalArgumentException](
         walletA,
         walletB,
         (sign: DLCSign) =>
-          sign.copy(fundingSigs = DLCWalletUtil.dummyFundingSignatures))
+          sign.copy(fundingSigs = FundingSignatures(
+            sign.fundingSigs
+              .map(_.copy(_2 = P2WPKHWitnessV0(ECPublicKey.freshPublicKey)))
+              .toVector))
+      )
   }
 
   it must "fail to add dlc cet sigs that are invalid" in {
@@ -283,7 +304,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
-      testDLCSignVerification(
+      testDLCSignVerification[IllegalArgumentException](
         walletA,
         walletB,
         (sign: DLCSign) =>
@@ -297,7 +318,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
-      testDLCSignVerification(
+      testDLCSignVerification[IllegalArgumentException](
         walletA,
         walletB,
         (sign: DLCSign) =>
@@ -360,6 +381,9 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         Satoshis(5000),
         Vector(dummyFundingInputs.head),
         dummyAddress,
+        payoutSerialId = UInt64.zero,
+        changeSerialId = UInt64.one,
+        fundOutputSerialId = UInt64.max,
         SatoshisPerVirtualByte(Satoshis(3)),
         dummyTimeouts
       )

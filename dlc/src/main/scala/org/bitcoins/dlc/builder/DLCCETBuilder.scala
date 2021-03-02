@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.builder
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.dlc.{ContractInfo, DLCTimeouts, OracleOutcome}
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
@@ -16,6 +16,7 @@ import org.bitcoins.core.wallet.utxo.{
   P2WSHV0InputInfo
 }
 import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.dlc.builder.DLCTxBuilder._
 
 /** Responsible for constructing unsigned
   * Contract Execution Transactions (CETs)
@@ -24,8 +25,10 @@ case class DLCCETBuilder(
     contractInfo: ContractInfo,
     offerFundingKey: ECPublicKey,
     offerFinalSPK: ScriptPubKey,
+    offerSerialId: UInt64,
     acceptFundingKey: ECPublicKey,
     acceptFinalSPK: ScriptPubKey,
+    acceptSerialId: UInt64,
     timeouts: DLCTimeouts,
     fundingOutputRef: OutputReference) {
 
@@ -63,9 +66,11 @@ case class DLCCETBuilder(
   def buildCET(outcome: OracleOutcome): WitnessTransaction = {
     val (offerPayout, acceptPayout) = contractInfo.getPayouts(outcome)
 
-    val outputs =
-      Vector(cetOfferOutput(offerPayout), cetAcceptOutput(acceptPayout))
-        .filter(_.value >= Policy.dustThreshold)
+    val outputsWithSerialId =
+      Vector((cetOfferOutput(offerPayout), offerSerialId),
+             (cetAcceptOutput(acceptPayout), acceptSerialId))
+
+    val outputs = sortAndFilterOutputs(outputsWithSerialId)
 
     WitnessTransaction(TransactionConstants.validLockVersion,
                        Vector(fundingInput),

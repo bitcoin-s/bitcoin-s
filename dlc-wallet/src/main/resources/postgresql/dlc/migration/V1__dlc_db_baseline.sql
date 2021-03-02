@@ -15,14 +15,16 @@ CREATE TABLE "wallet_dlcs"
     "oracles_used"     TEXT,
     constraint "pk_dlc" primary key ("param_hash")
 );
-CREATE INDEX "wallet_dlcs_param_hash_index" on "wallet_dlcs" ("param_hash");
+CREATE
+INDEX "wallet_dlcs_param_hash_index" on "wallet_dlcs" ("param_hash");
 
 CREATE TABLE "oracle_announcements"
 (
     "announcement" TEXT NOT NULL PRIMARY KEY,
     "pub_key"      TEXT NOT NULL
 );
-CREATE INDEX "oracle_announcements_pub_key_index" on "oracle_announcements" ("pub_key");
+CREATE
+INDEX "oracle_announcements_pub_key_index" on "oracle_announcements" ("pub_key");
 
 CREATE TABLE "wallet_dlc_offers"
 (
@@ -40,7 +42,8 @@ CREATE TABLE "wallet_dlc_offers"
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash"),
     constraint "fk_temp_contract_id" foreign key ("temp_contract_id") references "wallet_dlcs" ("temp_contract_id") on update NO ACTION on delete NO ACTION
 );
-CREATE INDEX "wallet_dlc_offers_param_hash_index" on "wallet_dlc_offers" ("param_hash");
+CREATE
+INDEX "wallet_dlc_offers_param_hash_index" on "wallet_dlc_offers" ("param_hash");
 
 CREATE TABLE "wallet_dlc_accepts"
 (
@@ -54,12 +57,14 @@ CREATE TABLE "wallet_dlc_accepts"
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash"),
     constraint "fk_temp_contract_id" foreign key ("temp_contract_id") references "wallet_dlcs" ("temp_contract_id") on update NO ACTION on delete NO ACTION
 );
-CREATE INDEX "wallet_dlc_accepts_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
+CREATE
+INDEX "wallet_dlc_accepts_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
 
 CREATE TABLE "wallet_dlc_funding_inputs"
 (
     "param_hash"         VARCHAR(254) NOT NULL UNIQUE,
     "is_initiator"       BOOLEAN      NOT NULL,
+    "input_serial_id"    INTEGER      NOT NULL,
     "out_point"          TEXT         NOT NULL UNIQUE,
     "output"             TEXT         NOT NULL,
     "redeem_script_opt"  TEXT,
@@ -84,7 +89,8 @@ CREATE TABLE "wallet_dlc_refund_sigs"
     "refund_sig"   TEXT    NOT NULL,
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
 );
-CREATE INDEX "wallet_dlc_refund_sigs_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
+CREATE
+INDEX "wallet_dlc_refund_sigs_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
 
 CREATE TABLE tx_table
 (

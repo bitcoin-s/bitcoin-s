@@ -14,30 +14,36 @@ CREATE TABLE "wallet_dlcs"
     "outcomes"         VARCHAR(254),
     "oracles_used"     VARCHAR(254)
 );
-CREATE INDEX "wallet_dlcs_param_hash_index" on "wallet_dlcs" ("param_hash");
+CREATE
+INDEX "wallet_dlcs_param_hash_index" on "wallet_dlcs" ("param_hash");
 
 CREATE TABLE "oracle_announcements"
 (
     "announcement" VARCHAR(254) NOT NULL PRIMARY KEY,
     "pub_key"      VARCHAR(254) NOT NULL
 );
-CREATE INDEX "oracle_announcements_pub_key_index" on "oracle_announcements" ("pub_key");
+CREATE
+INDEX "oracle_announcements_pub_key_index" on "oracle_announcements" ("pub_key");
 
 CREATE TABLE "wallet_dlc_offers"
 (
-    "param_hash"        VARCHAR(254) NOT NULL UNIQUE,
-    "temp_contract_id"  VARCHAR(254) NOT NULL UNIQUE,
-    "contract_info"     VARCHAR(254) NOT NULL,
-    "contract_maturity" VARCHAR(254) NOT NULL,
-    "contract_timeout"  VARCHAR(254) NOT NULL,
-    "funding_key"       VARCHAR(254) NOT NULL,
-    "payout_address"    VARCHAR(254) NOT NULL,
-    "total_collateral"  INTEGER      NOT NULL,
-    "fee_rate"          VARCHAR(254),
-    "change_address"    VARCHAR(254) NOT NULL,
+    "param_hash"            VARCHAR(254) NOT NULL UNIQUE,
+    "temp_contract_id"      VARCHAR(254) NOT NULL UNIQUE,
+    "contract_info"         VARCHAR(254) NOT NULL,
+    "contract_maturity"     VARCHAR(254) NOT NULL,
+    "contract_timeout"      VARCHAR(254) NOT NULL,
+    "funding_key"           VARCHAR(254) NOT NULL,
+    "payout_address"        VARCHAR(254) NOT NULL,
+    "payout_serial_id"      INTEGER      NOT NULL,
+    "total_collateral"      INTEGER      NOT NULL,
+    "fee_rate"              VARCHAR(254),
+    "change_address"        VARCHAR(254) NOT NULL,
+    "change_serial_id"      INTEGER      NOT NULL,
+    "fund_output_serial_id" INTEGER      NOT NULL,
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
 );
-CREATE INDEX "wallet_dlc_offers_param_hash_index" on "wallet_dlc_offers" ("param_hash");
+CREATE
+INDEX "wallet_dlc_offers_param_hash_index" on "wallet_dlc_offers" ("param_hash");
 
 CREATE TABLE "wallet_dlc_accepts"
 (
@@ -45,16 +51,20 @@ CREATE TABLE "wallet_dlc_accepts"
     "temp_contract_id" VARCHAR(254) NOT NULL UNIQUE,
     "funding_key"      VARCHAR(254) NOT NULL,
     "payout_address"   VARCHAR(254) NOT NULL,
+    "payout_serial_id" INTEGER      NOT NULL,
     "total_collateral" INTEGER      NOT NULL,
     "change_address"   VARCHAR(254) NOT NULL,
+    "change_serial_id" INTEGER      NOT NULL,
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
 );
-CREATE INDEX "wallet_dlc_accepts_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
+CREATE
+INDEX "wallet_dlc_accepts_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
 
 CREATE TABLE "wallet_dlc_funding_inputs"
 (
     "param_hash"         VARCHAR(254) NOT NULL,
     "is_initiator"       INTEGER      NOT NULL,
+    "input_serial_id"    INTEGER      NOT NULL,
     "out_point"          VARCHAR(254) NOT NULL UNIQUE,
     "output"             VARCHAR(254) NOT NULL,
     "redeem_script_opt"  VARCHAR(254),
@@ -78,7 +88,8 @@ CREATE TABLE "wallet_dlc_refund_sigs"
     "refund_sig"   VARCHAR(254) NOT NULL,
     constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
 );
-CREATE INDEX "wallet_dlc_refund_sigs_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
+CREATE
+INDEX "wallet_dlc_refund_sigs_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
 
 CREATE TABLE "dlc_remote_tx_table"
 (

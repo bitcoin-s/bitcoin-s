@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv.ContractInfoV0TLV
@@ -16,9 +17,12 @@ case class DLCOfferDb(
     contractTimeout: BlockTimeStamp,
     fundingKey: ECPublicKey,
     payoutAddress: BitcoinAddress,
+    payoutSerialId: UInt64,
     totalCollateral: CurrencyUnit,
     feeRate: SatoshisPerVirtualByte,
-    changeAddress: BitcoinAddress) {
+    changeAddress: BitcoinAddress,
+    changeSerialId: UInt64,
+    fundOutputSerialId: UInt64) {
 
   lazy val contractInfo: ContractInfo = ContractInfo.fromTLV(contractInfoTLV)
 
@@ -30,15 +34,17 @@ case class DLCOfferDb(
     DLCTimeouts(contractMaturity, contractTimeout)
 
   def toDLCOffer(fundingInputs: Vector[DLCFundingInput]): DLCOffer = {
-
     DLCOffer(
-      contractInfo,
-      dlcPubKeys,
-      totalCollateral.satoshis,
-      fundingInputs,
-      changeAddress,
-      feeRate,
-      dlcTimeouts
+      contractInfo = contractInfo,
+      pubKeys = dlcPubKeys,
+      totalCollateral = totalCollateral.satoshis,
+      fundingInputs = fundingInputs,
+      changeAddress = changeAddress,
+      payoutSerialId = payoutSerialId,
+      changeSerialId = changeSerialId,
+      fundOutputSerialId = fundOutputSerialId,
+      feeRate = feeRate,
+      timeouts = dlcTimeouts
     )
   }
 }
@@ -54,9 +60,12 @@ object DLCOfferDbHelper {
       offer.timeouts.contractTimeout,
       offer.pubKeys.fundingKey,
       offer.pubKeys.payoutAddress,
+      offer.payoutSerialId,
       offer.totalCollateral,
       offer.feeRate,
-      offer.changeAddress
+      offer.changeAddress,
+      offer.changeSerialId,
+      offer.fundOutputSerialId
     )
   }
 }

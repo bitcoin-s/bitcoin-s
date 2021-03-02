@@ -37,11 +37,13 @@ class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
     val fundingTx = outcome.fundingTx
     assert(noEmptySPKOutputs(fundingTx))
 
+    val fundOutputIndex = dlcOffer.dlcTxBuilder.fundOutputIndex
+
     val signers = Vector(dlcOffer.fundingPrivKey, dlcAccept.fundingPrivKey)
     val closingSpendingInfo = ScriptSignatureParams(
       P2WSHV0InputInfo(
-        TransactionOutPoint(fundingTx.txId, UInt32.zero),
-        fundingTx.outputs.head.value,
+        TransactionOutPoint(fundingTx.txId, UInt32(fundOutputIndex)),
+        fundingTx.outputs(fundOutputIndex).value,
         P2WSHWitnessV0(
           MultiSignatureScriptPubKey(2,
                                      signers.map(_.publicKey).sortBy(_.hex))),

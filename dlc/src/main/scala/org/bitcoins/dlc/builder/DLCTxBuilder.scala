@@ -2,7 +2,7 @@ package org.bitcoins.dlc.builder
 
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number._
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.DLCMessage._
 import org.bitcoins.core.protocol.dlc._
@@ -27,6 +27,9 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
                offerTotalCollateral: Satoshis,
                offerFundingInputs: Vector[DLCFundingInput],
                offerChangeAddress: BitcoinAddress,
+               offerPayoutSerialId: UInt64,
+               offerChangeSerialId: UInt64,
+               fundOutputSerialId: UInt64,
                feeRate: SatoshisPerVirtualByte,
                DLCTimeouts(contractMaturity: BlockTimeStamp,
                            contractTimeout: BlockTimeStamp)) = offer
@@ -40,10 +43,31 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
                                          acceptFinalAddress: BitcoinAddress),
                            acceptFundingInputs: Vector[DLCFundingInput],
                            acceptChangeAddress: BitcoinAddress,
+                           acceptPayoutSerialId: UInt64,
+                           acceptChangeSerialId: UInt64,
                            acceptNegotiationFields: DLCAccept.NegotiationFields,
                            tempContractId: Sha256Digest) = accept
 
   val totalInput: CurrencyUnit = offerTotalCollateral + acceptTotalCollateral
+
+  val fundingInputs: Vector[DLCFundingInput] =
+    (offerFundingInputs ++ acceptFundingInputs).sortBy(_.inputSerialId)
+
+  require(
+    fundingInputs.map(_.inputSerialId).distinct.size == fundingInputs.size,
+    s"Must have all unique input serial ids, got ${fundingInputs.map(_.inputSerialId)}"
+  )
+
+  require(
+    offerPayoutSerialId != acceptPayoutSerialId,
+    s"offerPayoutSerialId ($offerPayoutSerialId) cannot equal acceptPayoutSerialId ($acceptPayoutSerialId)")
+
+  require(
+    Vector(offerChangeSerialId,
+           acceptChangeSerialId,
+           fundOutputSerialId).distinct.size == 3,
+    s"offerChangeSerialId, acceptChangeSerialId, and fundOutputSerialId must be unique got ${Vector(offerChangeSerialId, acceptChangeSerialId, fundOutputSerialId)}, respectively"
+  )
 
   // builder.offer.oracleAndContractInfo should not be used,
   // builder.oracleAndContractInfo should be used instead in case a party
@@ -115,10 +139,21 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
       offerFundingInputs = offerFundingInputs,
       acceptFundingInputs = acceptFundingInputs,
       offerChangeSPK = offerChangeAddress.scriptPubKey,
+      offerChangeSerialId = offerChangeSerialId,
       acceptChangeSPK = acceptChangeAddress.scriptPubKey,
+      acceptChangeSerialId = acceptChangeSerialId,
       fundingSPK = fundingSPK,
+      fundOutputSerialId = fundOutputSerialId,
       finalizer = fundingTxFinalizer
     )
+  }
+
+  // Need to build funding tx so it takes into account the dust threshold
+  lazy val fundOutputIndex: Int = {
+    buildFundingTx.outputs.zipWithIndex
+      .find(_._1.scriptPubKey == fundingSPK)
+      .get
+      ._2
   }
 
   private def fundingTx: Transaction = {
@@ -138,14 +173,19 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
 
   def buildCETsMap(msgs: Vector[OracleOutcome]): Vector[OutcomeCETPair] = {
     DLCTxBuilder
-      .buildCETs(msgs,
-                 contractInfo,
-                 offerFundingKey,
-                 offerFinalAddress.scriptPubKey,
-                 acceptFundingKey,
-                 acceptFinalAddress.scriptPubKey,
-                 offer.timeouts,
-                 fundingTx)
+      .buildCETs(
+        msgs,
+        contractInfo,
+        offerFundingKey,
+        offerFinalAddress.scriptPubKey,
+        offerPayoutSerialId,
+        acceptFundingKey,
+        acceptFinalAddress.scriptPubKey,
+        acceptPayoutSerialId,
+        offer.timeouts,
+        fundingTx,
+        fundOutputIndex
+      )
   }
 
   def buildCETs(msgs: Vector[OracleOutcome]): Vector[WitnessTransaction] = {
@@ -158,10 +198,13 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
       offerTotalCollateral,
       offerFundingKey,
       offerFinalAddress.scriptPubKey,
+      offerPayoutSerialId,
       acceptTotalCollateral,
       acceptFundingKey,
       acceptFinalAddress.scriptPubKey,
+      acceptPayoutSerialId,
       fundingTx,
+      fundOutputIndex,
       offer.timeouts
     )
   }
@@ -208,8 +251,11 @@ object DLCTxBuilder {
       offerFundingInputs: Vector[DLCFundingInput],
       acceptFundingInputs: Vector[DLCFundingInput],
       offerChangeSPK: ScriptPubKey,
+      offerChangeSerialId: UInt64,
       acceptChangeSPK: ScriptPubKey,
+      acceptChangeSerialId: UInt64,
       fundingSPK: P2WSHWitnessSPKV0,
+      fundOutputSerialId: UInt64,
       finalizer: DualFundingTxFinalizer): Transaction = {
     // The total collateral of both parties combined
     val totalInput: CurrencyUnit = offerInput + acceptInput
@@ -231,7 +277,10 @@ object DLCTxBuilder {
       s"Accept funding inputs must add up to at least accept's total collateral, acceptTotalFunding=$acceptTotalFunding acceptInput=$acceptInput"
     )
 
-    val inputs = (offerFundingInputs ++ acceptFundingInputs).map { ref =>
+    val fundingInputs: Vector[DLCFundingInput] =
+      (offerFundingInputs ++ acceptFundingInputs).sortBy(_.inputSerialId)
+
+    val inputs = fundingInputs.map { ref =>
       val scriptSig = ref.redeemScriptOpt match {
         case Some(redeemScript) => P2SHScriptSignature(redeemScript)
         case None               => EmptyScriptSignature
@@ -247,11 +296,15 @@ object DLCTxBuilder {
     val acceptChangeValue =
       acceptTotalFunding - acceptInput - finalizer.acceptFees
 
-    val outputs = Vector(
-      TransactionOutput(fundingValue, fundingSPK),
-      TransactionOutput(offerChangeValue, offerChangeSPK),
-      TransactionOutput(acceptChangeValue, acceptChangeSPK)
-    ).filter(_.value >= Policy.dustThreshold)
+    val outputsWithSerialId = Vector(
+      (TransactionOutput(fundingValue, fundingSPK), fundOutputSerialId),
+      (TransactionOutput(offerChangeValue, offerChangeSPK),
+       offerChangeSerialId),
+      (TransactionOutput(acceptChangeValue, acceptChangeSPK),
+       acceptChangeSerialId)
+    )
+
+    val outputs = sortAndFilterOutputs(outputsWithSerialId)
 
     BaseTransaction(TransactionConstants.validLockVersion,
                     inputs,
@@ -264,16 +317,20 @@ object DLCTxBuilder {
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
+      offerSerialId: UInt64,
       acceptFundingKey: ECPublicKey,
       acceptFinalSPK: ScriptPubKey,
+      acceptSerialId: UInt64,
       timeouts: DLCTimeouts,
       fundingOutputRef: OutputReference): WitnessTransaction = {
     val Vector(OutcomeCETPair(_, cet)) = buildCETs(Vector(outcome),
                                                    contractInfo,
                                                    offerFundingKey,
                                                    offerFinalSPK,
+                                                   offerSerialId,
                                                    acceptFundingKey,
                                                    acceptFinalSPK,
+                                                   acceptSerialId,
                                                    timeouts,
                                                    fundingOutputRef)
 
@@ -285,16 +342,20 @@ object DLCTxBuilder {
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
+      offerSerialId: UInt64,
       acceptFundingKey: ECPublicKey,
       acceptFinalSPK: ScriptPubKey,
+      acceptSerialId: UInt64,
       timeouts: DLCTimeouts,
       fundingOutputRef: OutputReference): Vector[OutcomeCETPair] = {
     val builder =
       DLCCETBuilder(contractInfo,
                     offerFundingKey,
                     offerFinalSPK,
+                    offerSerialId,
                     acceptFundingKey,
                     acceptFinalSPK,
+                    acceptSerialId,
                     timeouts,
                     fundingOutputRef)
 
@@ -308,20 +369,26 @@ object DLCTxBuilder {
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
+      offerSerialId: UInt64,
       acceptFundingKey: ECPublicKey,
       acceptFinalSPK: ScriptPubKey,
+      acceptSerialId: UInt64,
       timeouts: DLCTimeouts,
-      fundingTx: Transaction): Vector[OutcomeCETPair] = {
-    val fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
+      fundingTx: Transaction,
+      fundOutputIndex: Int): Vector[OutcomeCETPair] = {
+    val fundingOutPoint =
+      TransactionOutPoint(fundingTx.txId, UInt32(fundOutputIndex))
     val fundingOutputRef =
-      OutputReference(fundingOutPoint, fundingTx.outputs.head)
+      OutputReference(fundingOutPoint, fundingTx.outputs(fundOutputIndex))
 
     buildCETs(outcomes,
               contractInfo,
               offerFundingKey,
               offerFinalSPK,
+              offerSerialId,
               acceptFundingKey,
               acceptFinalSPK,
+              acceptSerialId,
               timeouts,
               fundingOutputRef)
   }
@@ -330,9 +397,11 @@ object DLCTxBuilder {
       offerInput: CurrencyUnit,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
+      offerSerialId: UInt64,
       acceptInput: CurrencyUnit,
       acceptFundingKey: ECPublicKey,
       acceptFinalSPK: ScriptPubKey,
+      acceptSerialId: UInt64,
       fundingOutputRef: OutputReference,
       timeouts: DLCTimeouts): WitnessTransaction = {
     val OutputReference(fundingOutPoint, fundingOutput) = fundingOutputRef
@@ -349,8 +418,11 @@ object DLCTxBuilder {
                                         EmptyScriptSignature,
                                         TransactionConstants.disableRBFSequence)
 
-    val outputs = Vector(TransactionOutput(offerInput, offerFinalSPK),
-                         TransactionOutput(acceptInput, acceptFinalSPK))
+    val outputsWithSerialId =
+      Vector((TransactionOutput(offerInput, offerFinalSPK), offerSerialId),
+             (TransactionOutput(acceptInput, acceptFinalSPK), acceptSerialId))
+
+    val outputs = sortAndFilterOutputs(outputsWithSerialId)
 
     val witness = TransactionWitness.fromWitOpt(
       Vector(InputInfo.getScriptWitness(fundingInfo))
@@ -369,22 +441,37 @@ object DLCTxBuilder {
       offerInput: CurrencyUnit,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
+      offerSerialId: UInt64,
       acceptInput: CurrencyUnit,
       acceptFundingKey: ECPublicKey,
       acceptFinalSPK: ScriptPubKey,
+      acceptSerialId: UInt64,
       fundingTx: Transaction,
+      fundOutputIndex: Int,
       timeouts: DLCTimeouts): WitnessTransaction = {
-    val fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
+    val fundingOutPoint =
+      TransactionOutPoint(fundingTx.txId, UInt32(fundOutputIndex))
     val fundingOutputRef =
-      OutputReference(fundingOutPoint, fundingTx.outputs.head)
+      OutputReference(fundingOutPoint, fundingTx.outputs(fundOutputIndex))
 
     buildRefundTx(offerInput,
                   offerFundingKey,
                   offerFinalSPK,
+                  offerSerialId,
                   acceptInput,
                   acceptFundingKey,
                   acceptFinalSPK,
+                  acceptSerialId,
                   fundingOutputRef,
                   timeouts)
+  }
+
+  def sortAndFilterOutputs(
+      outputsWithSerialId: Vector[(TransactionOutput, UInt64)]): Vector[
+    TransactionOutput] = {
+    outputsWithSerialId
+      .sortBy(_._2)
+      .map(_._1)
+      .filter(_.value >= Policy.dustThreshold)
   }
 }

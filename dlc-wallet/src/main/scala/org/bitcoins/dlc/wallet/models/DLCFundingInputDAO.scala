@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet.models
 
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
@@ -84,6 +85,8 @@ case class DLCFundingInputDAO()(implicit
 
     def paramHash: Rep[Sha256DigestBE] = column("param_hash")
 
+    def inputSerialId: Rep[UInt64] = column("input_serial_id")
+
     def isInitiator: Rep[Boolean] = column("is_initiator")
 
     def outPoint: Rep[TransactionOutPoint] = column("out_point", O.Unique)
@@ -98,6 +101,7 @@ case class DLCFundingInputDAO()(implicit
     def * : ProvenShape[DLCFundingInputDb] =
       (paramHash,
        isInitiator,
+       inputSerialId,
        outPoint,
        output,
        redeemScriptOpt,

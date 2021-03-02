@@ -97,7 +97,8 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
                            signer.fundingKey,
                            remoteFundingPubKey,
                            builder.contractInfo,
-                           dlcSetup.fundingTx)
+                           dlcSetup.fundingTx,
+                           builder.fundOutputIndex)
   }
 
   def executeRefundDLC(dlcSetup: SetupDLC): RefundDLCOutcome = {
@@ -119,7 +120,8 @@ object DLCExecutor {
       fundingKey: AdaptorSign,
       remoteFundingPubKey: ECPublicKey,
       contractInfo: ContractInfo,
-      fundingTx: Transaction
+      fundingTx: Transaction,
+      fundOutputIndex: Int
   ): ExecutedDLCOutcome = {
     val threshold = contractInfo.oracleInfo.threshold
     val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
@@ -147,7 +149,10 @@ object DLCExecutor {
       Vector(fundingKey.publicKey, remoteFundingPubKey))
 
     val signingInfo =
-      DLCTxSigner.buildCETSigningInfo(fundingTx, fundingMultiSig, fundingKey)
+      DLCTxSigner.buildCETSigningInfo(fundOutputIndex,
+                                      fundingTx,
+                                      fundingMultiSig,
+                                      fundingKey)
 
     val cet = DLCTxSigner.completeCET(msg,
                                       signingInfo,
