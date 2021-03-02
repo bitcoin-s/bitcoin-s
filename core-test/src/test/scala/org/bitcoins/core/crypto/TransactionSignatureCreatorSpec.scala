@@ -4,7 +4,7 @@ import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.scalacheck.{Prop, Properties}
 
 /** Created by chris on 7/25/16.

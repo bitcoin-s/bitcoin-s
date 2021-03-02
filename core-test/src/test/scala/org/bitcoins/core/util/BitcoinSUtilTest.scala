@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
 /** Created by chris on 4/1/16.

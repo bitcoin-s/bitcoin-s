@@ -6,12 +6,12 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput
 }
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
+import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 import scodec.bits.ByteVector
 
 /** Created by chris on 1/13/16.
   */
-class RawTransactionInputParserTest extends BitcoinSAsyncTest {
+class RawTransactionInputParserTest extends BitcoinSJvmTest {
 
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawTxInput =

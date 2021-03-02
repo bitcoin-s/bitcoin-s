@@ -7,8 +7,8 @@ import org.bitcoins.core.protocol.ln.currency.PicoBitcoins
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.Bech32
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.testkit.core.gen.NumberGenerator
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.NumberGenerator
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 import scala.util.Success

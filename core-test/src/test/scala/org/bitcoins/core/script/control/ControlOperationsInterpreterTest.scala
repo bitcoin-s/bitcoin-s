@@ -15,13 +15,13 @@ import org.bitcoins.core.script.{
 }
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
+import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 
 import scala.concurrent.Future
 
 /** Created by chris on 1/6/16.
   */
-class ControlOperationsInterpreterTest extends BitcoinSAsyncTest {
+class ControlOperationsInterpreterTest extends BitcoinSJvmTest {
 
   val COI: ControlOperationsInterpreter = ControlOperationsInterpreter
   "ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {

@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.tlv
 
-import org.bitcoins.testkit.core.gen.TLVGen
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.TLVGen
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class TLVTest extends BitcoinSUnitTest {
 

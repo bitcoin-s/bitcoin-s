@@ -17,8 +17,9 @@ import org.bitcoins.crypto.{
   ECPrivateKey,
   EmptyDigitalSignature
 }
-import org.bitcoins.testkit.core.gen.{CreditingTxGen, ScriptGenerators}
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TransactionTestUtil}
+import org.bitcoins.testkitcore.util.TransactionTestUtil
+import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import scodec.bits.ByteVector
 
 import scala.annotation.nowarn
@@ -26,7 +27,7 @@ import scala.concurrent.Future
 
 /** Created by chris on 7/21/16.
   */
-class TransactionSignatureCreatorTest extends BitcoinSAsyncTest {
+class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
 
   "TransactionSignatureCreator" must "create a signature for a scriptSignature in a transaction" in {
     //this is a signed tx, but since TransactionSignatureSerializer removes scriptSigs, it will work for testing this

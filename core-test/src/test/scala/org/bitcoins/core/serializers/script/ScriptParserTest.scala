@@ -14,7 +14,8 @@ import org.bitcoins.core.script.reserved.OP_NOP
 import org.bitcoins.core.script.splice.OP_SIZE
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP, OP_PICK, OP_SWAP}
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.TestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Created by chris on 1/7/16.

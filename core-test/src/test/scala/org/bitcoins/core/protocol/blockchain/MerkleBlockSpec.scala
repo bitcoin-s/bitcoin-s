@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.testkit.core.gen.MerkleGenerator
+import org.bitcoins.testkitcore.gen.MerkleGenerator
 import org.scalacheck.{Prop, Properties}
 
 /** Created by chris on 8/12/16.

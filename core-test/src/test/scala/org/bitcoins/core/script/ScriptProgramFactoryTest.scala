@@ -6,7 +6,8 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant.{OP_0, OP_1}
 import org.bitcoins.core.script.flag.ScriptFlagFactory
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.TestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 3/31/16.
   */

@@ -6,7 +6,7 @@ import org.bitcoins.testkit.chain.{
   ChainDbUnitTest,
   ChainTestUtil
 }
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.scalatest.FutureOutcome
 
 class CompactFilterHeaderDAOTest extends ChainDbUnitTest {

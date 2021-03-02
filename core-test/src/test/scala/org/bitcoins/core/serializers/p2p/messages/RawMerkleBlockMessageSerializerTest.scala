@@ -4,7 +4,7 @@ import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
 class RawMerkleBlockMessageSerializerTest extends BitcoinSUnitTest {

@@ -7,7 +7,8 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionConstants
 }
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.TestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Created by chris on 1/14/16.

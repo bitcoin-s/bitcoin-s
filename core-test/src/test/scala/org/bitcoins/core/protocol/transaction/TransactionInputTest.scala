@@ -4,7 +4,8 @@ import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
   P2PKScriptSignature
 }
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.TestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 3/30/16.
   */

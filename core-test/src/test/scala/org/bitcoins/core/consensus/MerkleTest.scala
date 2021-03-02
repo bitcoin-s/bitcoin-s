@@ -4,7 +4,7 @@ import org.bitcoins.core.protocol.blockchain.{Block, MainNetChainParams}
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.util.Try
 

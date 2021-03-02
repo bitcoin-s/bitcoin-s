@@ -10,13 +10,13 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.{ScriptVerifyDerSig, ScriptVerifyNullDummy}
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.ScriptProgramTestUtil
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
+import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 
 import scala.util.Try
 
 /** Created by chris on 1/6/16.
   */
-class CryptoInterpreterTest extends BitcoinSAsyncTest {
+class CryptoInterpreterTest extends BitcoinSJvmTest {
 
   val stack = List(ScriptConstant(
     "02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231".toLowerCase))

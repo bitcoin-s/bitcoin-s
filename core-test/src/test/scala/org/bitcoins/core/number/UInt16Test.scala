@@ -1,7 +1,7 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.testkit.core.gen.NumberGenerator
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.NumberGenerator
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 

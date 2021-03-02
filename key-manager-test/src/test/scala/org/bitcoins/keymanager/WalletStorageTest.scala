@@ -7,8 +7,8 @@ import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.ReadMnemonicError._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, StringGenerators}
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, StringGenerators}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.{BeforeAndAfterEach, FutureOutcome}

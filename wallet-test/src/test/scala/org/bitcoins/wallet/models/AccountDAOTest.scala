@@ -1,8 +1,8 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.api.wallet.db.AccountDb
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.WalletTestUtil
 

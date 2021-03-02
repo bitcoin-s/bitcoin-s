@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.bitwise
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 1/8/16.
   */

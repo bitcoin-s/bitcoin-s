@@ -1,7 +1,7 @@
 package org.bitcoins.core.policy
 
 import org.bitcoins.core.script.flag._
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 5/2/16.
   */

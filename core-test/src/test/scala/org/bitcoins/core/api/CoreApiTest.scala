@@ -3,9 +3,9 @@ package org.bitcoins.core.api
 import org.bitcoins.core.Core
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-class CoreApiTest extends BitcoinSAsyncTest {
+class CoreApiTest extends BitcoinSJvmTest {
 
   behavior of "CoreApi"
 

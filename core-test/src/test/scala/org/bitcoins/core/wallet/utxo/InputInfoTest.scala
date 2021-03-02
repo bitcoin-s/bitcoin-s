@@ -6,15 +6,15 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
-import org.bitcoins.testkit.core.gen.{
+import org.bitcoins.testkitcore.gen.{
   CreditingTxGen,
   GenUtil,
   ScriptGenerators,
   TransactionGenerators
 }
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-class InputInfoTest extends BitcoinSAsyncTest {
+class InputInfoTest extends BitcoinSJvmTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode

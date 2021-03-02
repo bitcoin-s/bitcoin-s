@@ -5,12 +5,12 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.builder.RawTxSigner
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.testkit.util.TestUtil
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
   WalletTestUtil,
   WalletWithBitcoind
 }
+import org.bitcoins.testkitcore.util.TestUtil
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future

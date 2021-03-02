@@ -1,7 +1,7 @@
 package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.testkit.core.gen.NumberGenerator
+import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.scalacheck.{Prop, Properties}
 
 class HashTypeSpec extends Properties("HashTypeSpec") with BitcoinSLogger {

@@ -48,6 +48,7 @@ import org.bitcoins.testkit.node.fixture.{
 }
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
+import org.bitcoins.testkitcore.node.P2PMessageTestUtil
 import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
 
@@ -544,7 +545,7 @@ object NodeUnitTest extends P2PLogger {
         chainConfig = chainAppConfig,
         actorSystem = system,
         initialSyncDone = None
-      ).setBloomFilter(NodeTestUtil.emptyBloomFilter)
+      ).setBloomFilter(P2PMessageTestUtil.emptyBloomFilter)
     }
 
     nodeF

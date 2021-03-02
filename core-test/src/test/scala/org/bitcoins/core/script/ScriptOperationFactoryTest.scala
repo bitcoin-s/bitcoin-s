@@ -9,7 +9,7 @@ import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.splice.OP_SUBSTR
 import org.bitcoins.core.script.stack.OP_TOALTSTACK
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 1/9/16.
   */

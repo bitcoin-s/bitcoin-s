@@ -2,12 +2,12 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.ECDigitalSignature
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 import scodec.bits.ByteVector
 
 /** Created by chris on 4/1/16.
   */
-class P2PKHScriptSignatureTest extends BitcoinSUnitTest {
+class P2PKHScriptSignatureTest extends BitcoinSJvmTest {
 
   "P2PKHScriptSignature" must "be able to identify it's own hash type" in {
     val p2pkhScriptSig = TestUtil.p2pkhScriptSig match {

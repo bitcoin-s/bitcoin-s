@@ -16,13 +16,13 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{ConditionalPath, InputInfo}
 import org.bitcoins.crypto._
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import org.bitcoins.testkit.util.TransactionTestUtil._
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.TransactionTestUtil.{dummyPSBT, dummyTx}
 import scodec.bits._
 
 import scala.util.{Failure, Success}
 
-class PSBTUnitTest extends BitcoinSAsyncTest {
+class PSBTUnitTest extends BitcoinSJvmTest {
 
   behavior of "PSBT"
 

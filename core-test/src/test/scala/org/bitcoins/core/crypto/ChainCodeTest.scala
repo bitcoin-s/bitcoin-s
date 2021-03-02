@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.testkit.core.gen.NumberGenerator
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.NumberGenerator
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class ChainCodeTest extends BitcoinSUnitTest {
   behavior of "ChainCode"

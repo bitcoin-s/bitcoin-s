@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
 trait KeyManagerApiUnitTest extends BitcoinSUnitTest {

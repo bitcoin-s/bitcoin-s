@@ -16,7 +16,7 @@ import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TransactionTestUtil}
+import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
 import spray.json._
 
 import scala.io.Source

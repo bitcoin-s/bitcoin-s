@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class SigningVersionTest extends BitcoinSUnitTest {
 

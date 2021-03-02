@@ -1,10 +1,9 @@
 package org.bitcoins.core.util
 
 import java.math.BigInteger
-
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 

@@ -26,9 +26,9 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
-import org.bitcoins.testkit.Implicits.GeneratorOps
+import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkit.chain.SyncUtil
-import org.bitcoins.testkit.core.gen._
+import org.bitcoins.testkitcore.gen._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil

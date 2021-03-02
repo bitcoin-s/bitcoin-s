@@ -2,7 +2,7 @@ package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class RawWitnessTransactionParserTest extends BitcoinSUnitTest {
 

@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.testkit.Implicits._
+import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
   WalletWithBitcoind,
