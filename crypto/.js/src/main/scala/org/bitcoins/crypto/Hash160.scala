@@ -7,8 +7,8 @@ import scala.scalajs.js.annotation._
   * https://github.com/bcoin-org/bcrypto/blob/master/lib/js/hash160.js
   */
 @js.native
-@JSImport("bcrypto/lib/js/hash160.js", JSImport.Default)
-class Hash160() extends Hasher {
+@JSImport("bcrypto/lib/hash160.js", JSImport.Default)
+class Hash160 extends Hasher {
   override def init(): Unit = js.native
 
   override def update(bytes: Buffer): Unit = js.native

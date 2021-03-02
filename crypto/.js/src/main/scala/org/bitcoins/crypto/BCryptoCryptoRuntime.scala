@@ -4,6 +4,8 @@ import scodec.bits.ByteVector
 
 import scala.scalajs.js
 import scala.scalajs.js.typedarray._
+import scala.scalajs.js.JSStringOps._
+import scala.scalajs.js.UnicodeNormalizationForm
 
 /** This is an implementation of [[CryptoRuntime]] that defaults to
   * Bcrypto (https://github.com/bcoin-org/bcrypto) when possible.
@@ -19,6 +21,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   private lazy val ripeMd160 = new RipeMd160
   private lazy val sha1 = new SHA1
   private lazy val sha256 = SHA256Factory.create()
+  private lazy val hmac = SHA512.hmac.apply().asInstanceOf[HMAC]
   private lazy val ecdsa = new ECDSA("SECP256K1", sha256, sha256, null)
 
   private lazy val randomBytesFunc: Int => ByteVector =
@@ -82,9 +85,14 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     Sha1Digest.fromBytes(hashBytes)
   }
 
-  override def hmac512(key: ByteVector, data: ByteVector): ByteVector = ???
+  override def hmac512(key: ByteVector, data: ByteVector): ByteVector = {
+    hmac.init(key)
+    hmac.update(data)
+    hmac.`final`()
+  }
 
-  override def normalize(str: String): String = ???
+  override def normalize(str: String): String =
+    str.normalize(UnicodeNormalizationForm.NFC)
 
   /** Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
     * can be verified with both, but only one of them matches that private key that was used to generate the signature.
@@ -142,14 +150,18 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       pubkey: ECPublicKey,
       privkey: ECPrivateKey): ECPublicKey = ???
 
-  override def isValidPubKey(bytes: ByteVector): Boolean = ???
+  override def isValidPubKey(bytes: ByteVector): Boolean =
+    ecdsa.publicKeyVerify(bytes)
 
   override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean = ???
 
   override def schnorrSign(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      auxRand: ByteVector): SchnorrDigitalSignature = ???
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    val buffer = ecdsa.schnorrSign(dataToSign, privateKey.bytes) //, auxRand)
+    SchnorrDigitalSignature.fromBytes(buffer)
+  }
 
   override def schnorrSignWithNonce(
       dataToSign: ByteVector,
@@ -159,7 +171,9 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def schnorrVerify(
       data: ByteVector,
       schnorrPubKey: SchnorrPublicKey,
-      signature: SchnorrDigitalSignature): Boolean = ???
+      signature: SchnorrDigitalSignature): Boolean = {
+    ecdsa.schnorrVerify(data, signature.bytes, schnorrPubKey.bytes)
+  }
 
   override def schnorrComputeSigPoint(
       data: ByteVector,

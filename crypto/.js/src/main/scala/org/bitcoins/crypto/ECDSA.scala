@@ -27,7 +27,10 @@ class ECDSA(
 
   def verify(msg: Buffer, sig: Buffer, key: Buffer): Boolean = js.native
 
-  def signDER(msg: Buffer, key: Buffer): Buffer = js.native
+  var schnorr: Schnorr = js.native
 
-  def verifyDER(msg: Buffer, sig: Buffer, key: Buffer): Boolean = js.native
+  def schnorrSign(msg: Buffer, key: Buffer): Buffer = js.native
+
+  def schnorrVerify(msg: Buffer, sig: Buffer, key: Buffer): Boolean =
+    js.native
 }
