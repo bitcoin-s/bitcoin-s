@@ -200,7 +200,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
       spk = MultiSignatureScriptPubKey(2, Vector(dummyKey, walletKey))
       dummyPrevTx = dummyTx(spk = spk)
-      prevTxDb = TransactionDbHelper.fromTransaction(dummyPrevTx)
+      prevTxDb = TransactionDbHelper.fromTransaction(dummyPrevTx, None)
       _ <- wallet.transactionDAO.create(prevTxDb)
 
       psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)

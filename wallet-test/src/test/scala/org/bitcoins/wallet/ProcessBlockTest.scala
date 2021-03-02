@@ -36,11 +36,13 @@ class ProcessBlockTest extends BitcoinSWalletTest {
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
+      txDbOpt <- wallet.transactionDAO.findByTxId(txId)
     } yield {
+      assert(txDbOpt.isDefined)
+      assert(txDbOpt.get.blockHashOpt.contains(hash))
       assert(utxos.size == 1)
       assert(utxos.head.output.scriptPubKey == addr.scriptPubKey)
       assert(utxos.head.output.value == 1.bitcoin)
-      assert(utxos.head.blockHash.contains(hash))
       assert(utxos.head.txid == txId)
 
       assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))

@@ -192,7 +192,10 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
 
       replacementInfo <- bitcoind.getRawTransaction(replacementTx.txIdBE)
+
+      utxos <- wallet.spendingInfoDAO.findOutputsBeingSpent(replacementTx)
     } yield {
+      assert(utxos.forall(_.spendingTxIdOpt.contains(replacementTx.txIdBE)))
       // Check correct one was confirmed
       assert(replacementInfo.blockhash.isDefined)
     }

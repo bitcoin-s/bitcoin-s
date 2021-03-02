@@ -2,13 +2,7 @@ package org.bitcoins.core.api.wallet.db
 
 import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
-import org.bitcoins.core.hd.{
-  HDChainType,
-  HDPath,
-  LegacyHDPath,
-  NestedSegWitHDPath,
-  SegWitHDPath
-}
+import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -34,8 +28,8 @@ case class SegwitV0SpendingInfo(
     scriptWitness: ScriptWitness,
     txid: DoubleSha256DigestBE,
     state: TxoState,
-    id: Option[Long] = None,
-    blockHash: Option[DoubleSha256DigestBE]
+    spendingTxIdOpt: Option[DoubleSha256DigestBE],
+    id: Option[Long] = None
 ) extends SpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
@@ -49,10 +43,10 @@ case class SegwitV0SpendingInfo(
   override def copyWithId(id: Long): SegwitV0SpendingInfo =
     copy(id = Some(id))
 
-  /** Updates the `blockHash` field */
-  override def copyWithBlockHash(
-      blockHash: DoubleSha256DigestBE): SegwitV0SpendingInfo =
-    copy(blockHash = Some(blockHash))
+  /** Updates the `spendingTxId` field */
+  override def copyWithSpendingTxId(
+      txId: DoubleSha256DigestBE): SegwitV0SpendingInfo =
+    copy(spendingTxIdOpt = Some(txId))
 }
 
 /** DB representation of a legacy UTXO
@@ -63,10 +57,11 @@ case class LegacySpendingInfo(
     privKeyPath: LegacyHDPath,
     state: TxoState,
     txid: DoubleSha256DigestBE,
-    blockHash: Option[DoubleSha256DigestBE],
+    spendingTxIdOpt: Option[DoubleSha256DigestBE],
     id: Option[Long] = None
 ) extends SpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
+
   override def scriptWitnessOpt: Option[ScriptWitness] = None
 
   override type PathType = LegacyHDPath
@@ -78,9 +73,10 @@ case class LegacySpendingInfo(
   override def copyWithState(state: TxoState): LegacySpendingInfo =
     copy(state = state)
 
-  override def copyWithBlockHash(
-      blockHash: DoubleSha256DigestBE): LegacySpendingInfo =
-    copy(blockHash = Some(blockHash))
+  /** Updates the `spendingTxId` field */
+  override def copyWithSpendingTxId(
+      txId: DoubleSha256DigestBE): LegacySpendingInfo =
+    copy(spendingTxIdOpt = Some(txId))
 }
 
 /** DB representation of a nested segwit V0
@@ -94,7 +90,7 @@ case class NestedSegwitV0SpendingInfo(
     scriptWitness: ScriptWitness,
     txid: DoubleSha256DigestBE,
     state: TxoState,
-    blockHash: Option[DoubleSha256DigestBE],
+    spendingTxIdOpt: Option[DoubleSha256DigestBE],
     id: Option[Long] = None
 ) extends SpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
@@ -109,10 +105,10 @@ case class NestedSegwitV0SpendingInfo(
   override def copyWithId(id: Long): NestedSegwitV0SpendingInfo =
     copy(id = Some(id))
 
-  /** Updates the `blockHash` field */
-  override def copyWithBlockHash(
-      blockHash: DoubleSha256DigestBE): NestedSegwitV0SpendingInfo =
-    copy(blockHash = Some(blockHash))
+  /** Updates the `spendingTxId` field */
+  override def copyWithSpendingTxId(
+      txId: DoubleSha256DigestBE): NestedSegwitV0SpendingInfo =
+    copy(spendingTxIdOpt = Some(txId))
 }
 
 /** The database level representation of a UTXO.
@@ -123,16 +119,6 @@ case class NestedSegwitV0SpendingInfo(
   * the root wallet seed.
   */
 sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
-
-  state match {
-    case TxoState.ConfirmedSpent | TxoState.ConfirmedReceived |
-        TxoState.ImmatureCoinbase =>
-      require(blockHash.isDefined,
-              "Transaction cannot be confirmed without a blockHash")
-    case TxoState.DoesNotExist | TxoState.PendingConfirmationsSpent |
-        TxoState.PendingConfirmationsReceived | TxoState.Reserved =>
-      ()
-  }
 
   protected type PathType <: HDPath
 
@@ -158,8 +144,8 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   /** The TXID of the transaction this output was received in */
   def txid: DoubleSha256DigestBE
 
-  /** The hash of the block in which the transaction was included */
-  def blockHash: Option[DoubleSha256DigestBE]
+  /** TxId of the transaction that this output was spent by */
+  def spendingTxIdOpt: Option[DoubleSha256DigestBE]
 
   /** Converts the UTXO to the canonical `txid:vout` format */
   def toHumanReadableString: String =
@@ -168,8 +154,8 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   /** Updates the `spent` field */
   def copyWithState(state: TxoState): SpendingInfoType
 
-  /** Updates the `blockHash` field */
-  def copyWithBlockHash(blockHash: DoubleSha256DigestBE): SpendingInfoType
+  /** Updates the `spendingTxId` field */
+  def copyWithSpendingTxId(txId: DoubleSha256DigestBE): SpendingInfoType
 
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO

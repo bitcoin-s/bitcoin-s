@@ -40,6 +40,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       newTransactions <- wallet.listTransactions()
     } yield {
       assert(updatedCoins.forall(_.state == TxoState.PendingConfirmationsSpent))
+      assert(updatedCoins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
       assert(!oldTransactions.map(_.transaction).contains(tx))
       assert(newTransactions.map(_.transaction).contains(tx))
     }
@@ -60,8 +61,11 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       // Give tx a fake hash so it can appear as it's in a block
       hash <- bitcoind.getBestBlockHash
-      _ <- wallet.spendingInfoDAO.upsertAllSpendingInfoDb(
-        updatedCoins.map(_.copyWithBlockHash(hash)).toVector)
+      _ <- wallet.processTransaction(tx, Some(hash))
+
+      pendingCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+      _ <- wallet.updateUtxoPendingStates()
+      _ = assert(pendingCoins.forall(_.state == PendingConfirmationsSpent))
 
       // Put confirmations on top of the tx's block
       _ <- bitcoind.getNewAddress.flatMap(
@@ -70,10 +74,13 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       // Need to call this to actually update the state, normally a node callback would do this
       _ <- wallet.updateUtxoPendingStates()
       confirmedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
-    } yield assert(confirmedCoins.forall(_.state == ConfirmedSpent))
+    } yield {
+      assert(confirmedCoins.forall(_.state == ConfirmedSpent))
+      assert(confirmedCoins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
+    }
   }
 
-  it should "track a utxo state change to pending recieved" in { param =>
+  it should "track a utxo state change to pending received" in { param =>
     val WalletWithBitcoindRpc(wallet, bitcoind) = param
 
     for {
