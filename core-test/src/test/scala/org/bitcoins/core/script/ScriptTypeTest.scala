@@ -1,6 +1,6 @@
 package org.bitcoins.core.script
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class ScriptTypeTest extends BitcoinSUnitTest {
   behavior of "ScriptType"

@@ -1,7 +1,6 @@
 package org.bitcoins.rpc.util
 
 import org.bitcoins.asyncutil.AsyncUtil
-
 import java.net.ServerSocket
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 

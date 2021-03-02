@@ -4,7 +4,7 @@ import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.{BytesUtil, Leaf, Node}
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
 /** Created by chris on 8/9/16.

@@ -12,8 +12,8 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.util.TransactionTestUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
+import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}

@@ -3,12 +3,12 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.crypto.ExtKeyVersion._
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.testkit.core.gen.{
+import org.bitcoins.testkitcore.gen.{
   CryptoGenerators,
   HDGenerators,
   NumberGenerator
 }
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.HexStringSyntax
 
 import scala.util.{Failure, Success, Try}

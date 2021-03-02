@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.scalacheck.{Prop, Properties}
 
 /** Created by chris on 6/21/16.

@@ -1,9 +1,9 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, HDGenerators}
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, HDGenerators}
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-class ExtSignTest extends BitcoinSAsyncTest {
+class ExtSignTest extends BitcoinSJvmTest {
 
   it must "be able to sign something that extends ExtSignKey" in {
     forAll(CryptoGenerators.extPrivateKey, CryptoGenerators.sha256Digest) {

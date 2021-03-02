@@ -38,21 +38,25 @@ lazy val commonJsSettings = {
       _.withModuleKind(ModuleKind.CommonJSModule)
     },
     sbt.Keys.publish / skip := true
-  )
+  ) ++ CommonSettings.settings ++
+    //get rid of -Xfatal-warnings for now with scalajs
+    //this will just give us a bunch of warnings rather than errors
+    Seq(
+      scalacOptions in Compile ~= (_ filterNot (s => s == "-Xfatal-warnings")))
 }
 
 lazy val crypto = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(
-    name := "bitcoin-s-crypto"
+    name := "bitcoin-s-crypto",
+    libraryDependencies ++= Deps.crypto.value
   )
+  .settings(CommonSettings.settings: _*)
   .jvmSettings(
     libraryDependencies ++= Deps.cryptoJVM
   )
-  .jsSettings(commonJsSettings)
-  .settings(
-    libraryDependencies ++= Deps.crypto.value
-  )
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
   .in(file("crypto"))
 
 lazy val cryptoJS = crypto.js
@@ -115,6 +119,7 @@ lazy val `bitcoin-s` = project
     appServerTest,
     appCommons,
     appCommonsTest,
+    testkitCore,
     testkit,
     zmq,
     oracleServer,
@@ -292,7 +297,7 @@ lazy val cryptoTest = project
   )
   .dependsOn(
     cryptoJVM % testAndCompile,
-    testkit
+    testkitCore
   )
 
 lazy val coreTest = project
@@ -304,7 +309,7 @@ lazy val coreTest = project
   )
   .dependsOn(
     core % testAndCompile,
-    testkit
+    testkitCore
   )
 
 lazy val asyncUtils = project
@@ -543,6 +548,13 @@ lazy val nodeTest =
     )
     .enablePlugins(FlywayPlugin)
 
+lazy val testkitCore = project
+  .in(file("testkit-core"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(name := "bitcoin-s-testkit-core",
+            libraryDependencies ++= Deps.testkitCore.value)
+  .dependsOn(asyncUtils, core % testAndCompile, cryptoJVM)
+
 lazy val testkit = project
   .in(file("testkit"))
   .settings(CommonSettings.prodSettings: _*)
@@ -560,7 +572,8 @@ lazy val testkit = project
     node,
     wallet,
     zmq,
-    dlcOracle
+    dlcOracle,
+    testkitCore
   )
 
 lazy val docs = project

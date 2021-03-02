@@ -1,7 +1,7 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import org.scalatest.{Outcome, Succeeded}
 

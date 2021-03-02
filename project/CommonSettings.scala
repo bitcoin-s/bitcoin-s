@@ -23,7 +23,7 @@ object CommonSettings {
       .isDefined
   }
 
-  lazy val settings: Seq[Setting[_]] = List(
+  lazy val settings: Seq[Setting[_]] = Vector(
     organization := "org.bitcoin-s",
     homepage := Some(url("https://bitcoin-s.org")),
     maintainer := "Chris Stewart <stewart.chris1234@gmail.com>",
@@ -35,20 +35,6 @@ object CommonSettings {
         url("https://twitter.com/Chris_Stewart_5")
       )
     ),
-    ////
-    // scaladoc settings
-    Compile / doc / scalacOptions ++= List(
-      "-doc-title",
-      "Bitcoin-S",
-      "-doc-version",
-      version.value
-    ),
-    // Set apiURL to define the base URL for the Scaladocs for our library.
-    // This will enable clients of our library to automatically link against
-    // the API documentation using autoAPIMappings.
-    apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
-    // scaladoc settings end
-    ////
     scalacOptions in Compile := compilerOpts(scalaVersion = scalaVersion.value),
     Test / scalacOptions := testCompilerOpts(scalaVersion = scalaVersion.value),
     //remove annoying import unused things in the scala console
@@ -64,6 +50,24 @@ object CommonSettings {
       s == "-Xfatal-warnings")),
     scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
     scalacOptions in Test := testCompilerOpts(scalaVersion.value),
+    licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+  )
+
+  lazy val jvmSettings: Seq[Setting[_]] = List(
+    ////
+    // scaladoc settings
+    Compile / doc / scalacOptions ++= List(
+      "-doc-title",
+      "Bitcoin-S",
+      "-doc-version",
+      version.value
+    ),
+    // Set apiURL to define the base URL for the Scaladocs for our library.
+    // This will enable clients of our library to automatically link against
+    // the API documentation using autoAPIMappings.
+    apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
+    // scaladoc settings end
+    ////
     Compile / compile / javacOptions ++= {
       if (isCI) {
         //jdk11 is used on CI, we need to use the --release flag to make sure
@@ -73,8 +77,7 @@ object CommonSettings {
       } else {
         Seq("-source", "1.8", "-target", "1.8")
       }
-    },
-    licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+    }
   )
 
   private val commonCompilerOpts = {

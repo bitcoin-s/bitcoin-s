@@ -1,7 +1,8 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.util.Base58
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.TestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 3/30/16.
   */

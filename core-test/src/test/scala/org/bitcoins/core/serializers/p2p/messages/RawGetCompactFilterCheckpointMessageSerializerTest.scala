@@ -3,7 +3,7 @@ package org.bitcoins.core.serializers.p2p.messages
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.p2p.GetCompactFilterCheckPointMessage
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 
 class RawGetCompactFilterCheckpointMessageSerializerTest

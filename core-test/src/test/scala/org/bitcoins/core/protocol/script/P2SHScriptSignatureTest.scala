@@ -6,11 +6,11 @@ import org.bitcoins.core.script.constant.{
   ScriptConstant
 }
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
+import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 
 /** Created by chris on 3/8/16.
   */
-class P2SHScriptSignatureTest extends BitcoinSAsyncTest {
+class P2SHScriptSignatureTest extends BitcoinSJvmTest {
 
   "P2SHScriptSignature" must "find the public keys embedded inside of the redeemScript" in {
     val rawP2SHScriptSig = TestUtil.rawP2shInputScript2Of2

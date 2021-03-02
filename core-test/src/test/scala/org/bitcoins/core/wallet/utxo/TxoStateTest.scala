@@ -1,6 +1,6 @@
 package org.bitcoins.core.wallet.utxo
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class TxoStateTest extends BitcoinSUnitTest {
 

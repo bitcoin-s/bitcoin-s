@@ -2,8 +2,8 @@ package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.LnPolicy
-import org.bitcoins.testkit.core.gen.ln.LnCurrencyUnitGen
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.ln.LnCurrencyUnitGen
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 
 import scala.util.{Failure, Success, Try}

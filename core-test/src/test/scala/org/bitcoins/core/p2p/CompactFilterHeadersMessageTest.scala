@@ -2,7 +2,7 @@ package org.bitcoins.core.p2p
 
 import org.bitcoins.core.gcs.{FilterHeader, FilterType}
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class CompactFilterHeadersMessageTest extends BitcoinSUnitTest {
 

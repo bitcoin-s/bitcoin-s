@@ -7,7 +7,8 @@ import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram
 }
 import org.bitcoins.core.util.ScriptProgramTestUtil
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.TestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.util.Try
 

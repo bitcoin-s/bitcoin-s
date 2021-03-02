@@ -3,7 +3,8 @@ package org.bitcoins.core.script.splice
 import org.bitcoins.core.script.ExecutedScriptProgram
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result.ScriptErrorInvalidStackOperation
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.TestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 2/4/16.
   */

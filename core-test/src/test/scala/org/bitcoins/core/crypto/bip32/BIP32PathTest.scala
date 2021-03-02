@@ -2,12 +2,12 @@ package org.bitcoins.core.crypto.bip32
 
 import org.bitcoins.core.crypto.{ExtKey, ExtPublicKey}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
-import org.bitcoins.testkit.core.gen.{
+import org.bitcoins.testkitcore.gen.{
   CryptoGenerators,
   HDGenerators,
   NumberGenerator
 }
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import scodec.bits._
 

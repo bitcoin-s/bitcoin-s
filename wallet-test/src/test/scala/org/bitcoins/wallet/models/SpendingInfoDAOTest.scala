@@ -11,8 +11,8 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput
 }
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.WalletTestUtil
 import org.bitcoins.testkit.wallet.WalletTestUtil._

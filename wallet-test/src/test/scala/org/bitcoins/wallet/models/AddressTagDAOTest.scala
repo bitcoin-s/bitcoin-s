@@ -9,8 +9,8 @@ import org.bitcoins.core.wallet.utxo.{
   UnknownAddressTagType
 }
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
-import org.bitcoins.testkit.util.TestUtil
 import org.bitcoins.testkit.wallet.WalletTestUtil
+import org.bitcoins.testkitcore.util.TestUtil
 import org.scalatest.Assertion
 
 import java.sql.SQLException

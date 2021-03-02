@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.util.Bech32
-import org.bitcoins.testkit.core.gen.ln.LnInvoiceGen
-import org.bitcoins.testkit.core.gen.{
+import org.bitcoins.testkitcore.gen.ln.LnInvoiceGen
+import org.bitcoins.testkitcore.gen.{
   AddressGenerator,
   ChainParamsGenerator,
   ScriptGenerators

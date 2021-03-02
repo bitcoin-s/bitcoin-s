@@ -2,8 +2,8 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency._
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion

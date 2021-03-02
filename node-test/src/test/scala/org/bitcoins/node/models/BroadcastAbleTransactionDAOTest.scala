@@ -1,8 +1,8 @@
 package org.bitcoins.node.models
 
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkit.fixtures.NodeDAOFixture
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 

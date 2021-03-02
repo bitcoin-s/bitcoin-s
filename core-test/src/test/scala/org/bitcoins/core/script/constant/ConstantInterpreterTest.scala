@@ -8,7 +8,8 @@ import org.bitcoins.core.script.result.{
   ScriptErrorMinimalData
 }
 import org.bitcoins.core.util.ScriptProgramTestUtil
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.TestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Created by chris on 1/24/16.

@@ -1,7 +1,7 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.CryptoGenerators
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class SchnorrNonceTest extends BitcoinSUnitTest {
 

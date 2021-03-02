@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.crypto.{ECPublicKey, Sha256Hash160Digest}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.util.{Failure, Success, Try}
 

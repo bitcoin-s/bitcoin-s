@@ -6,14 +6,14 @@ import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.testkit.core.gen.CreditingTxGen
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.gen.CreditingTxGen
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
 import scala.util.Random
 
-class RawTxFinalizerTest extends BitcoinSAsyncTest {
+class RawTxFinalizerTest extends BitcoinSJvmTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode

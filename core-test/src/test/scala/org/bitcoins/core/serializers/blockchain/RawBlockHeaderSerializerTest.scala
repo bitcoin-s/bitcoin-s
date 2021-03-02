@@ -3,7 +3,7 @@ package org.bitcoins.core.serializers.blockchain
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Values transmitted in the network are big-endian.

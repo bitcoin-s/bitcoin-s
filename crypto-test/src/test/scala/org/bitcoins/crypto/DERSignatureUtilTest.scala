@@ -1,7 +1,7 @@
 package org.bitcoins.crypto
 
 import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Created by chris on 3/23/16.

@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.ln
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.protocol.ln.LnParams._
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnits, MilliBitcoins}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.util.Try
 

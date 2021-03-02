@@ -11,7 +11,7 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.EmptyInputInfo
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class TxUtilTest extends BitcoinSUnitTest {
   behavior of "TxUtil"

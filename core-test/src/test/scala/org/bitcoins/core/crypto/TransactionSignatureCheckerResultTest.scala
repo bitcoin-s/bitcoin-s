@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 3/31/16.
   */

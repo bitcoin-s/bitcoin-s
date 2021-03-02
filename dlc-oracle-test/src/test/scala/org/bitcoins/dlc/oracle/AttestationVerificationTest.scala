@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.tlv.{
   OracleAttestmentV0TLV
 }
 import org.bitcoins.crypto.FieldElement
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class AttestationVerificationTest extends BitcoinSUnitTest {
 

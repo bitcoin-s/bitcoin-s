@@ -13,11 +13,11 @@ import org.bitcoins.core.wallet.utxo.{
   UnassignedSegwitNativeInputInfo
 }
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.ScriptGenerators
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.ScriptGenerators
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
+class StandardNonInteractiveFinalizerTest extends BitcoinSJvmTest {
   behavior of "StandardNonInteractiveFinalizer"
 
   private val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sampleSome

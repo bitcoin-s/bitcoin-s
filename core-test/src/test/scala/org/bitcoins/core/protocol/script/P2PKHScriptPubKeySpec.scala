@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, ScriptGenerators}
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, ScriptGenerators}
 import org.scalacheck.{Prop, Properties}
 
 /** Created by chris on 6/22/16.
