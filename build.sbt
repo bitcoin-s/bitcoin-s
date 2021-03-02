@@ -74,6 +74,8 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
 
 lazy val coreJVM = core.jvm
 
+lazy val coreJS = core.js
+
 lazy val asyncUtils = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("async-utils"))
@@ -123,6 +125,7 @@ lazy val `bitcoin-s` = project
     cli,
     cliTest,
     coreJVM,
+    coreJS,
     coreTestJVM,
     coreTestJS,
     cryptoJVM,
@@ -166,6 +169,7 @@ lazy val `bitcoin-s` = project
     cli,
     cliTest,
     coreJVM,
+    coreJS,
     coreTestJVM,
     coreTestJS,
     cryptoJVM,
@@ -340,7 +344,7 @@ lazy val cryptoTest = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Deps.cryptoTest.value
   )
   .dependsOn(
-    core,
+    crypto,
     testkitCore
   )
 
