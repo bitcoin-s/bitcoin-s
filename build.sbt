@@ -172,6 +172,8 @@ lazy val `bitcoin-s` = project
   // unidoc aggregates Scaladocs for all subprojects into one big doc
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
+    //removes scalajs projects from unidoc, see
+    //https://github.com/bitcoin-s/bitcoin-s/issues/2741
     unidocProjectFilter in (ScalaUnidoc, unidoc) := {
       inAnyProject -- inProjects(jsProjects: _*)
     },
