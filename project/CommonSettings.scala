@@ -6,7 +6,10 @@ import java.nio.file.Paths
 import com.typesafe.sbt.packager.Keys.{
   daemonUser,
   daemonUserUid,
+  dockerAlias,
+  dockerAliases,
   dockerRepository,
+  dockerUpdateLatest,
   maintainer
 }
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.dockerBaseImage
@@ -165,7 +168,8 @@ object CommonSettings {
       //which is 'demiourgos728'
       daemonUser in Docker := "bitcoin-s",
       packageName in Docker := packageName.value,
-      version in Docker := version.value
+      version in Docker := version.value,
+      dockerUpdateLatest := isSnapshot.value
     )
   }
 
