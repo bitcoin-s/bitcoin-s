@@ -31,7 +31,8 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
   private val rValAccount: HDAccount = {
     val purpose = conf.kmParams.purpose
     // We have to use Testnet here because before this was dictated by
-    // by the config, and the default network was regtest
+    // by the network config. The default network config was Regtest,
+    // which uses a Testnet HDCoinType, so that was chosen as the hard coded value.
     val coin = HDCoin(purpose, HDCoinType.Testnet)
     HDAccount(coin, 0)
   }
@@ -41,7 +42,8 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
   private def signingKey: ECPrivateKey = {
     // We have to use Testnet here because before this was dictated by
-    // by the config, and the default network was regtest
+    // by the network config. The default network config was Regtest,
+    // which uses a Testnet HDCoinType, so that was chosen as the hard coded value.
     val coin = HDCoin(HDPurposes.SegWit, HDCoinType.Testnet)
     val account = HDAccount(coin, 0)
     val purpose = coin.purpose
