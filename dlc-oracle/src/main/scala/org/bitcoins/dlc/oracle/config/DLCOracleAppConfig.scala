@@ -165,7 +165,13 @@ case class DLCOracleAppConfig(
                                           bip39PasswordOpt)
     val oracle = new DLCOracle(key)(this)
 
-    start().map(_ => oracle)
+    for {
+      _ <- start()
+      differentKeyDbs <- oracle.eventDAO.findDifferentPublicKey(
+        oracle.publicKey)
+      fixedDbs = differentKeyDbs.map(_.copy(pubkey = oracle.publicKey))
+      _ <- oracle.eventDAO.updateAll(fixedDbs)
+    } yield oracle
   }
 
   private lazy val rValueTable: TableQuery[Table[_]] = {
