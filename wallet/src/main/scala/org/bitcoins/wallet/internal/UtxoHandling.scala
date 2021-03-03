@@ -24,6 +24,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future
@@ -87,83 +88,91 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
   }
 
-  protected def updateUtxoConfirmedState(
+  private[wallet] def updateUtxoConfirmedState(
       txo: SpendingInfoDb): Future[Option[SpendingInfoDb]] = {
     updateUtxoConfirmedStates(Vector(txo)).map(_.headOption)
   }
 
-  protected def updateUtxoConfirmedStates(
+  private[wallet] def getDbsByRelevantBlock(
+      spendingInfoDbs: Vector[SpendingInfoDb]): Future[
+    Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]]] = {
+    val txIds =
+      spendingInfoDbs.map { db =>
+        db.spendingTxIdOpt match {
+          case Some(spendingTxId) =>
+            spendingTxId
+          case None =>
+            db.txid
+        }
+      }
+
+    transactionDAO.findByTxIdBEs(txIds).map { txDbs =>
+      val blockHashMap = txDbs.map(db => db.txIdBE -> db.blockHashOpt).toMap
+      val blockHashAndDb = spendingInfoDbs.map { txo =>
+        val txToUse = txo.state match {
+          case _: ReceivedState | DoesNotExist | ImmatureCoinbase | Reserved =>
+            txo.txid
+          case PendingConfirmationsSpent | ConfirmedSpent =>
+            txo.spendingTxIdOpt.get
+        }
+        (blockHashMap(txToUse), txo)
+      }
+      blockHashAndDb.groupBy(_._1).map { case (blockHashOpt, vec) =>
+        blockHashOpt -> vec.map(_._2)
+      }
+    }
+  }
+
+  private[wallet] def updateTxoWithConfs(
+      txo: SpendingInfoDb,
+      confs: Int): SpendingInfoDb = {
+    txo.state match {
+      case TxoState.ImmatureCoinbase =>
+        if (confs > Consensus.coinbaseMaturity) {
+          if (confs >= walletConfig.requiredConfirmations)
+            txo.copyWithState(TxoState.ConfirmedReceived)
+          else
+            txo.copyWithState(TxoState.PendingConfirmationsReceived)
+        } else txo
+      case TxoState.PendingConfirmationsReceived =>
+        if (confs >= walletConfig.requiredConfirmations)
+          txo.copyWithState(TxoState.ConfirmedReceived)
+        else txo
+      case TxoState.PendingConfirmationsSpent =>
+        if (confs >= walletConfig.requiredConfirmations)
+          txo.copyWithState(TxoState.ConfirmedSpent)
+        else txo
+      case TxoState.Reserved =>
+        // We should keep the utxo as reserved so it is not used in
+        // a future transaction that it should not be in
+        txo
+      case TxoState.DoesNotExist | TxoState.ConfirmedReceived |
+          TxoState.ConfirmedSpent =>
+        txo
+    }
+  }
+
+  private[wallet] def updateUtxoConfirmedStates(
       spendingInfoDbs: Vector[SpendingInfoDb]): Future[
     Vector[SpendingInfoDb]] = {
 
-    val txIds =
-      spendingInfoDbs.map(_.txid) ++ spendingInfoDbs.flatMap(_.spendingTxIdOpt)
-
-    val byBlockF = {
-      transactionDAO.findByTxIdBEs(txIds).map { txDbs =>
-        val blockHashMap = txDbs.map(db => db.txIdBE -> db.blockHashOpt).toMap
-        val blockHashAndDb = spendingInfoDbs.map { txo =>
-          val txToUse = txo.state match {
-            case _: ReceivedState | DoesNotExist | ImmatureCoinbase =>
-              txo.txid
-            case _: SpentState => txo.spendingTxIdOpt.get
-          }
-          (blockHashMap(txToUse), txo)
+    val toUpdateF = getDbsByRelevantBlock(spendingInfoDbs).flatMap {
+      txsByBlock =>
+        val toUpdateFs = txsByBlock.map {
+          case (Some(blockHash), txos) =>
+            chainQueryApi.getNumberOfConfirmations(blockHash).map {
+              case None =>
+                logger.warn(
+                  s"Given txos exist in block (${blockHash.hex}) that we do not have or that has been reorged! $txos")
+                Vector.empty
+              case Some(confs) => txos.map(updateTxoWithConfs(_, confs))
+            }
+          case (None, txos) =>
+            logger.debug(
+              s"Currently have ${txos.size} transactions in the mempool")
+            Future.successful(Vector.empty)
         }
-        blockHashAndDb.groupBy(_._1)
-      }
-    }
-
-    val toUpdateF = byBlockF.flatMap { z =>
-      val toUpdateFs = z.map {
-        case (Some(blockHash), txos) =>
-          chainQueryApi.getNumberOfConfirmations(blockHash).map {
-            case None =>
-              logger.warn(
-                s"Given txos exist in block (${blockHash.hex}) that we do not have or that has been reorged! $txos")
-              Vector.empty
-            case Some(confs) =>
-              txos.flatMap { case (_, txo) =>
-                txo.state match {
-                  case TxoState.ImmatureCoinbase =>
-                    if (confs > Consensus.coinbaseMaturity) {
-                      if (confs >= walletConfig.requiredConfirmations) {
-                        Some(txo.copyWithState(TxoState.ConfirmedReceived))
-                      } else {
-                        Some(txo.copyWithState(
-                          TxoState.PendingConfirmationsReceived))
-                      }
-                    } else {
-                      None
-                    }
-                  case TxoState.PendingConfirmationsReceived =>
-                    if (confs >= walletConfig.requiredConfirmations) {
-                      Some(txo.copyWithState(TxoState.ConfirmedReceived))
-                    } else {
-                      None
-                    }
-                  case TxoState.PendingConfirmationsSpent =>
-                    if (confs >= walletConfig.requiredConfirmations) {
-                      Some(txo.copyWithState(TxoState.ConfirmedSpent))
-                    } else {
-                      None
-                    }
-                  case TxoState.Reserved =>
-                    // We should keep the utxo as reserved so it is not used in
-                    // a future transaction that it should not be in
-                    None
-                  case TxoState.DoesNotExist | TxoState.ConfirmedReceived |
-                      TxoState.ConfirmedSpent =>
-                    None
-                }
-              }
-          }
-        case (None, txos) =>
-          logger.debug(
-            s"Currently have ${txos.size} transactions in the mempool")
-          Future.successful(Vector.empty)
-      }
-      FutureUtil.collect(toUpdateFs)
+        FutureUtil.collect(toUpdateFs)
     }
 
     for {

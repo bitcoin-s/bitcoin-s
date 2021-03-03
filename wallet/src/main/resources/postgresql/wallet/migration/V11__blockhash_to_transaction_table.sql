@@ -9,6 +9,6 @@ set "block_hash" = (
     where "txo_spending_info"."txid" = "tx_table"."txIdBE"
 );
 
--- Delete block_hash column, add spending_tx_id column
+-- Delete block_hash column, add spending_txid column
 ALTER TABLE "txo_spending_info" DROP COLUMN "block_hash";
-ALTER TABLE "txo_spending_info" ADD COLUMN "spending_tx_id" TEXT;
+ALTER TABLE "txo_spending_info" ADD COLUMN "spending_txid" TEXT;

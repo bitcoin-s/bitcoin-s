@@ -483,7 +483,7 @@ case class SpendingInfoDAO()(implicit
     def scriptWitnessOpt: Rep[Option[ScriptWitness]] = column("script_witness")
 
     def spendingTxIdOpt: Rep[Option[DoubleSha256DigestBE]] = column(
-      "spending_tx_id")
+      "spending_txid")
 
     /** All UTXOs must have a SPK in the wallet that gets spent to */
     def fk_scriptPubKeyId: slick.lifted.ForeignKeyQuery[_, ScriptPubKeyDb] = {
