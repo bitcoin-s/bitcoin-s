@@ -34,6 +34,7 @@ object Deps {
     val akkaActorV = akkaStreamv
     val slickV = "3.3.3"
     val sqliteV = "3.34.0"
+
     val scalameterV = "0.17"
     val scalamockV = "5.1.0"
     val scalaCollectionCompatV = "2.4.2"

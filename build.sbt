@@ -37,7 +37,7 @@ lazy val commonJsSettings = {
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.CommonJSModule)
     },
-    sbt.Keys.publish / skip := true
+    skip.in(publish) := true
   ) ++ CommonSettings.settings ++
     //get rid of -Xfatal-warnings for now with scalajs
     //this will just give us a bunch of warnings rather than errors
@@ -63,22 +63,54 @@ lazy val cryptoJS = crypto.js
 
 lazy val cryptoJVM = crypto.jvm.dependsOn(secp256k1jni)
 
-lazy val core = project
-  .in(file("core"))
+lazy val core = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .settings(name := "bitcoin-s-core")
   .settings(libraryDependencies ++= Deps.core.value)
-  .dependsOn(cryptoJVM)
+  .settings(CommonSettings.settings: _*)
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
+  .in(file("core"))
+  .dependsOn(crypto)
+
+lazy val coreJVM = core.jvm
+
+lazy val coreJS = core.js
+
+lazy val asyncUtils = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("async-utils"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(name := "bitcoin-s-async-utils")
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
+  .dependsOn(core)
+
+lazy val asyncUtilsJVM = asyncUtils.jvm
+
+lazy val testkitCore = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("testkit-core"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(name := "bitcoin-s-testkit-core",
+            libraryDependencies ++= Deps.testkitCore.value)
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
+  .dependsOn(asyncUtils, core, crypto)
+
+lazy val testkitCoreJVM = testkitCore.jvm
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
-    asyncUtils,
+    asyncUtilsJVM,
     appCommons
   )
 
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
-  .dependsOn(asyncUtils, bitcoindRpc)
+  .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
 val jsProjects: Vector[ProjectReference] = Vector(cryptoJS)
 
@@ -87,17 +119,20 @@ val jsProjects: Vector[ProjectReference] = Vector(cryptoJS)
 lazy val `bitcoin-s` = project
   .in(file("."))
   .aggregate(
-    asyncUtils,
+    asyncUtilsJVM,
     secp256k1jni,
     chain,
     chainTest,
     cli,
     cliTest,
-    core,
-    coreTest,
+    coreJVM,
+    coreJS,
+    coreTestJVM,
+    coreTestJS,
     cryptoJVM,
     cryptoJS,
-    cryptoTest,
+    cryptoTestJVM,
+    cryptoTestJS,
     dbCommons,
     dbCommonsTest,
     feeProvider,
@@ -121,7 +156,7 @@ lazy val `bitcoin-s` = project
     appServerTest,
     appCommons,
     appCommonsTest,
-    testkitCore,
+    testkitCoreJVM,
     testkit,
     zmq,
     oracleServer,
@@ -134,11 +169,14 @@ lazy val `bitcoin-s` = project
     chainTest,
     cli,
     cliTest,
-    core,
-    coreTest,
+    coreJVM,
+    coreJS,
+    coreTestJVM,
+    coreTestJS,
     cryptoJVM,
     cryptoJS,
-    cryptoTest,
+    cryptoTestJVM,
+    cryptoTestJS,
     dbCommons,
     dbCommonsTest,
     feeProvider,
@@ -296,41 +334,49 @@ lazy val secp256k1jni = project
   */
 val testAndCompile = "compile->compile;test->test"
 
-lazy val cryptoTest = project
+lazy val cryptoTest = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
   .in(file("crypto-test"))
   .settings(CommonSettings.testSettings: _*)
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
   .settings(
     name := "bitcoin-s-crypto-test",
     libraryDependencies ++= Deps.cryptoTest.value
   )
   .dependsOn(
-    cryptoJVM % testAndCompile,
+    crypto,
     testkitCore
   )
 
-lazy val coreTest = project
+lazy val cryptoTestJVM = cryptoTest.jvm
+
+lazy val cryptoTestJS = cryptoTest.js
+
+lazy val coreTest = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
   .in(file("core-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-core-test",
     libraryDependencies ++= Deps.coreTest.value
   )
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
   .dependsOn(
-    core % testAndCompile,
+    core,
     testkitCore
   )
 
-lazy val asyncUtils = project
-  .in(file("async-utils"))
-  .settings(CommonSettings.prodSettings)
-  .settings(name := "bitcoin-s-async-utils")
-  .dependsOn(core)
+lazy val coreTestJVM = coreTest.jvm
+
+lazy val coreTestJS = coreTest.js
 
 lazy val appCommons = project
   .in(file("app-commons"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
-    core % testAndCompile
+    coreJVM % testAndCompile
   )
 
 lazy val appCommonsTest = project
@@ -429,7 +475,7 @@ lazy val chain = project
     name := "bitcoin-s-chain",
     libraryDependencies ++= Deps.chain
   )
-  .dependsOn(core, dbCommons)
+  .dependsOn(coreJVM, dbCommons)
   .enablePlugins(FlywayPlugin)
 
 lazy val chainTest = project
@@ -440,7 +486,7 @@ lazy val chainTest = project
     name := "bitcoin-s-chain-test",
     libraryDependencies ++= Deps.chainTest
   )
-  .dependsOn(chain, core % testAndCompile, testkit, zmq)
+  .dependsOn(chain, coreJVM % testAndCompile, testkit, zmq)
   .enablePlugins(FlywayPlugin)
 
 lazy val dbCommons = project
@@ -450,7 +496,7 @@ lazy val dbCommons = project
     name := "bitcoin-s-db-commons",
     libraryDependencies ++= Deps.dbCommons.value
   )
-  .dependsOn(core, appCommons)
+  .dependsOn(coreJVM, appCommons)
 
 lazy val dbCommonsTest = project
   .in(file("db-commons-test"))
@@ -467,7 +513,7 @@ lazy val feeProvider = project
     name := "bitcoin-s-fee-provider",
     libraryDependencies ++= Deps.feeProvider.value
   )
-  .dependsOn(core, appCommons)
+  .dependsOn(coreJVM, appCommons)
 
 lazy val feeProviderTest = project
   .in(file("fee-provider-test"))
@@ -476,7 +522,7 @@ lazy val feeProviderTest = project
     name := "bitcoin-s-fee-provider-test",
     libraryDependencies ++= Deps.feeProviderTest.value
   )
-  .dependsOn(core, core % testAndCompile, testkit)
+  .dependsOn(coreJVM % testAndCompile, testkit)
 
 lazy val zmq = project
   .in(file("zmq"))
@@ -484,7 +530,7 @@ lazy val zmq = project
   .settings(name := "bitcoin-s-zmq",
             libraryDependencies ++= Deps.bitcoindZmq.value)
   .dependsOn(
-    core % testAndCompile
+    coreJVM % testAndCompile
   )
 
 lazy val bitcoindRpcTest = project
@@ -492,7 +538,7 @@ lazy val bitcoindRpcTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(name := "bitcoin-s-bitcoind-rpc-test",
             libraryDependencies ++= Deps.bitcoindRpcTest.value)
-  .dependsOn(core % testAndCompile, testkit)
+  .dependsOn(coreJVM % testAndCompile, testkit)
 
 lazy val bench = project
   .in(file("bench"))
@@ -502,7 +548,7 @@ lazy val bench = project
     name := "bitcoin-s-bench",
     skip in publish := true
   )
-  .dependsOn(core % testAndCompile, testkit)
+  .dependsOn(coreJVM % testAndCompile, testkit)
 
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))
@@ -511,7 +557,7 @@ lazy val eclairRpcTest = project
     libraryDependencies ++= Deps.eclairRpcTest.value,
     name := "bitcoin-s-eclair-rpc-test"
   )
-  .dependsOn(core % testAndCompile, testkit)
+  .dependsOn(coreJVM % testAndCompile, testkit)
 
 lazy val nodeDbSettings = dbFlywaySettings("nodedb")
 
@@ -525,8 +571,8 @@ lazy val node =
       libraryDependencies ++= Deps.node
     )
     .dependsOn(
-      asyncUtils,
-      core,
+      asyncUtilsJVM,
+      coreJVM,
       chain,
       dbCommons,
       bitcoindRpc
@@ -550,18 +596,11 @@ lazy val nodeTest =
       libraryDependencies ++= Deps.nodeTest.value
     )
     .dependsOn(
-      core % testAndCompile,
+      coreJVM % testAndCompile,
       node,
       testkit
     )
     .enablePlugins(FlywayPlugin)
-
-lazy val testkitCore = project
-  .in(file("testkit-core"))
-  .settings(CommonSettings.prodSettings: _*)
-  .settings(name := "bitcoin-s-testkit-core",
-            libraryDependencies ++= Deps.testkitCore.value)
-  .dependsOn(asyncUtils, core % testAndCompile, cryptoJVM)
 
 lazy val testkit = project
   .in(file("testkit"))
@@ -571,8 +610,8 @@ lazy val testkit = project
     libraryDependencies ++= Deps.testkit.value
   )
   .dependsOn(
-    asyncUtils,
-    core % testAndCompile,
+    asyncUtilsJVM,
+    coreJVM % testAndCompile,
     appServer,
     chain,
     bitcoindRpc,
@@ -581,7 +620,7 @@ lazy val testkit = project
     wallet,
     zmq,
     dlcOracle,
-    testkitCore
+    testkitCoreJVM
   )
 
 lazy val docs = project
@@ -592,7 +631,7 @@ lazy val docs = project
     bitcoindRpc,
     chain,
     cli,
-    core,
+    coreJVM,
     eclairRpc,
     keyManager,
     secp256k1jni,
@@ -604,7 +643,7 @@ lazy val docs = project
 lazy val keyManager = project
   .in(file("key-manager"))
   .settings(CommonSettings.prodSettings: _*)
-  .dependsOn(core, dbCommons)
+  .dependsOn(coreJVM, dbCommons)
 
 lazy val keyManagerTest = project
   .in(file("key-manager-test"))
@@ -623,7 +662,7 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(core, appCommons, dbCommons, keyManager)
+  .dependsOn(coreJVM, appCommons, dbCommons, keyManager)
   .enablePlugins(FlywayPlugin)
 
 lazy val walletTest = project
@@ -634,7 +673,7 @@ lazy val walletTest = project
     name := "bitcoin-s-wallet-test",
     libraryDependencies ++= Deps.walletTest
   )
-  .dependsOn(core % testAndCompile, testkit, wallet)
+  .dependsOn(coreJVM % testAndCompile, testkit, wallet)
   .enablePlugins(FlywayPlugin)
 
 lazy val dlcOracle = project
@@ -644,7 +683,7 @@ lazy val dlcOracle = project
     name := "bitcoin-s-dlc-oracle",
     libraryDependencies ++= Deps.dlcOracle
   )
-  .dependsOn(core, keyManager, dbCommons)
+  .dependsOn(coreJVM, keyManager, dbCommons)
 
 lazy val dlcOracleTest = project
   .in(file("dlc-oracle-test"))
@@ -653,7 +692,7 @@ lazy val dlcOracleTest = project
     name := "bitcoin-s-dlc-oracle-test",
     libraryDependencies ++= Deps.dlcOracleTest
   )
-  .dependsOn(core % testAndCompile, dlcOracle, testkit)
+  .dependsOn(coreJVM % testAndCompile, dlcOracle, testkit)
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet)

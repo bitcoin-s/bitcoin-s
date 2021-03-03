@@ -23,4 +23,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.13.5 downloadBitcoind coverage keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls feeProviderTest/test walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test asyncUtils/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls
+        run: sbt ++2.13.5 downloadBitcoind coverage keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls feeProviderTest/test walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test asyncUtilsJVM/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls
